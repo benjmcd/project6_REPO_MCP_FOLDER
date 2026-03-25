@@ -1,0 +1,70 @@
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+from alembic import command
+from alembic.config import Config
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy import inspect as sa_inspect
+
+from app.api.router import api_router
+from app.core.config import bootstrap_storage_tree, settings
+from app.db.session import Base, engine
+
+
+def _run_migrations() -> None:
+    backend_dir = Path(__file__).resolve().parent
+    cfg = Config(str(backend_dir / "alembic.ini"))
+    cfg.set_main_option("script_location", str(backend_dir / "alembic"))
+    cfg.set_main_option("sqlalchemy.url", settings.database_url)
+    existing_tables = set(sa_inspect(engine).get_table_names())
+    if "alembic_version" not in existing_tables and "connector_run" in existing_tables:
+        command.stamp(cfg, "head")
+        return
+    command.upgrade(cfg, "head")
+
+
+def _initialize_database() -> None:
+    mode = os.getenv("DB_INIT_MODE", "migrate").strip().lower()
+    if mode == "none":
+        return
+    if mode == "create_all":
+        Base.metadata.create_all(bind=engine)
+        return
+    _run_migrations()
+
+
+_initialize_database()
+
+app = FastAPI(title=settings.app_name)
+app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
+app.include_router(api_router, prefix=settings.api_prefix)
+bootstrap_storage_tree()
+app.mount('/storage', StaticFiles(directory=settings.storage_dir), name='storage')
+
+
+@app.get('/health')
+def health() -> dict[str, str]:
+    return {'status': 'ok'}
+
+
+@app.get('/', response_class=HTMLResponse)
+def index() -> str:
+    return """
+    <html>
+      <head><title>Method-Aware Framework</title></head>
+      <body style='font-family: sans-serif; max-width: 760px; margin: 40px auto;'>
+        <h1>Method-Aware Data Utilization Framework</h1>
+        <p>Starter backend is running.</p>
+        <ul>
+          <li><a href='/docs'>OpenAPI docs</a></li>
+          <li><a href='/health'>Health</a></li>
+        </ul>
+        <p>Use the upload endpoint first, then profile, transform, annotate, and analyze.</p>
+      </body>
+    </html>
+    """

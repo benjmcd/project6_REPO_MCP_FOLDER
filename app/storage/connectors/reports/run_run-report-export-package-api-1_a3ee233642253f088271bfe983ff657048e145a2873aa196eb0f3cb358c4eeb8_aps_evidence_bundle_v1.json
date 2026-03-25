@@ -1,0 +1,98 @@
+{
+  "bundle_checksum": "b91e4d6a365b3f25a54d62af0cb517791d7c60711efab4cc9d017a7306c9d813",
+  "bundle_id": "a3ee233642253f088271bfe983ff657048e145a2873aa196eb0f3cb358c4eeb8",
+  "generated_at_utc": "2026-03-11T18:19:22.803899Z",
+  "mode": "query",
+  "normalized_request": {
+    "filters": {
+      "accession_numbers": null,
+      "chunking_contract_id": null,
+      "content_contract_id": null,
+      "content_ids": null,
+      "normalization_contract_id": null,
+      "target_ids": null
+    },
+    "mode": "query",
+    "query": "delta",
+    "query_tokens": [
+      "delta"
+    ],
+    "request_normalization_contract_id": "aps_evidence_request_norm_v1",
+    "run_id": "run-report-export-package-api-1"
+  },
+  "query": "delta",
+  "query_tokens": [
+    "delta"
+  ],
+  "ranking_contract_id": "aps_evidence_ranking_v1",
+  "request_contract_id": "aps_evidence_request_norm_v1",
+  "request_identity_hash": "3dc20d88f169877749bebcafae93362c8e9f14f28fef83f70714b8300bc078b9",
+  "results": [
+    {
+      "accession_number": null,
+      "blob_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\report_export_package_api_refs_b\\blob.bin",
+      "blob_sha256": "blob-report-export-package-api-2",
+      "chunk_id": "chunk-report-export-package-api-3",
+      "chunk_ordinal": 0,
+      "chunk_text": "alpha delta",
+      "chunk_text_sha256": "sha-report-export-package-api-3",
+      "chunk_updated_at_utc": "2026-03-11T18:19:22.736375Z",
+      "chunking_contract_id": "aps_chunking_v1",
+      "content_contract_id": "aps_content_units_v1",
+      "content_id": "content-report-export-package-api-2",
+      "content_units_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\report_export_package_api_refs_b\\content_units.json",
+      "discovery_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\report_export_package_api_refs_b\\discovery.json",
+      "document_updated_at_utc": "2026-03-11T18:19:22.737376Z",
+      "download_exchange_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\report_export_package_api_refs_b\\download_exchange.json",
+      "end_char": 11,
+      "group_id": "5878626888e35d2b2f2a9131636846d77c722e614a0d0eb178e33f61aa63a0f2",
+      "highlight_spans": [
+        {
+          "chunk_end": 11,
+          "chunk_start": 6,
+          "snippet_end": 11,
+          "snippet_start": 6
+        }
+      ],
+      "matched_unique_query_terms": 1,
+      "normalization_contract_id": "aps_text_normalization_v1",
+      "normalized_text_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\report_export_package_api_refs_b\\normalized.txt",
+      "normalized_text_sha256": "norm-report-export-package-api-2",
+      "run_id": "run-report-export-package-api-1",
+      "selection_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\report_export_package_api_refs_b\\selection.json",
+      "snippet_end_char": 11,
+      "snippet_start_char": 0,
+      "snippet_text": "alpha delta",
+      "start_char": 0,
+      "summed_term_frequency": 1,
+      "target_id": "target-report-export-package-api-2"
+    }
+  ],
+  "run_id": "run-report-export-package-api-1",
+  "schema_id": "aps.evidence_bundle.v1",
+  "schema_version": 1,
+  "snapshot": {
+    "db_fingerprint": "6f8c353f799a5f9530618aaee5b6b56febbfba9b4809b7ee6328061c1070c84b",
+    "index_max_updated_at_utc": "2026-03-11T18:19:22.737376Z",
+    "index_row_count": 1,
+    "index_state_hash": "70c8339c2ea67ad8a66086a377e403964f7cbefae21032611af8338829733f6a",
+    "read_scope": {
+      "filters": {
+        "accession_numbers": null,
+        "chunking_contract_id": null,
+        "content_contract_id": null,
+        "content_ids": null,
+        "normalization_contract_id": null,
+        "target_ids": null
+      },
+      "run_id": "run-report-export-package-api-1"
+    },
+    "snapshot_completed_at_utc": "2026-03-11T18:19:22.803899Z",
+    "snapshot_contract_id": "aps_evidence_snapshot_v1",
+    "snapshot_started_at_utc": "2026-03-11T18:19:22.802900Z"
+  },
+  "snapshot_contract_id": "aps_evidence_snapshot_v1",
+  "snippet_contract_id": "aps_evidence_snippet_v1",
+  "total_groups": 1,
+  "total_hits": 1
+}

@@ -1,0 +1,66 @@
+{
+  "case_id": "document_55bd5b10cd8f075d6eb244bae93c560b219e4d8fac008035e5a4bc631f1de2f3",
+  "case_type": "document",
+  "dialect": "document",
+  "endpoint": "GET /aps/api/search/{AccessionNumber}",
+  "evidence_refs": [
+    "run:058084ad-a34f-448b-b25b-5ede47f0e5ce",
+    "manifest:058084ad-a34f-448b-b25b-5ede47f0e5ce_discovery.json",
+    "snapshot:058084ad-a34f-448b-b25b-5ede47f0e5ce_f2054700807f4b9da6ccd346beddb2b2_document_exchange.json"
+  ],
+  "expected": {
+    "accession_numbers": [
+      "ML900000001"
+    ],
+    "count_returned": null,
+    "dialect_order": [],
+    "parse_status": "ok",
+    "projection_keys": [
+      "accession_number",
+      "content_present",
+      "content_source_path",
+      "date_added_timestamp",
+      "docket_number",
+      "document_date",
+      "document_title",
+      "document_type",
+      "document_type_known",
+      "url"
+    ],
+    "raw_total_key": null,
+    "results_key": null,
+    "roundtrip_payload_hash": null,
+    "schema_variant": null,
+    "status_class": "success",
+    "total_hits": null,
+    "wrapper_variant": "document"
+  },
+  "metadata": {
+    "evidence_id": "058084ad-a34f-448b-b25b-5ede47f0e5ce:058084ad-a34f-448b-b25b-5ede47f0e5ce_f2054700807f4b9da6ccd346beddb2b2_document_exchange.json",
+    "provider": "nrc_adams_aps",
+    "request_id": "<redacted:request_id>",
+    "request_path": "/aps/api/search/{AccessionNumber}",
+    "request_sent_at": "<redacted:timestamp>",
+    "response_body_truncated": false,
+    "response_headers_subset": {
+      "content-type": "application/json"
+    },
+    "response_metadata_observed": {
+      "parse_status": "ok",
+      "schema_variant": "document"
+    },
+    "response_received_at": "<redacted:timestamp>",
+    "source_manifest": "058084ad-a34f-448b-b25b-5ede47f0e5ce_discovery.json",
+    "source_snapshot": "058084ad-a34f-448b-b25b-5ede47f0e5ce_f2054700807f4b9da6ccd346beddb2b2_document_exchange.json"
+  },
+  "request_body": {},
+  "response_body_text": "{\"document\": {\"AccessionNumber\": \"ML900000001\", \"DocumentTitle\": \"Inspection Report (Detailed)\", \"DocumentType\": \"Letter\", \"DocumentDate\": \"2025-02-01\", \"DateAddedTimestamp\": \"2025-02-02T00:00:00Z\", \"Url\": \"https://adams.nrc.gov/wba/test1.pdf\", \"content\": \"document body text\"}}",
+  "response_headers": {
+    "content-type": "application/json"
+  },
+  "response_status": 200,
+  "signature": "55bd5b10cd8f075d6eb244bae93c560b219e4d8fac008035e5a4bc631f1de2f3",
+  "source_run_id": "058084ad-a34f-448b-b25b-5ede47f0e5ce",
+  "source_snapshot": "058084ad-a34f-448b-b25b-5ede47f0e5ce_f2054700807f4b9da6ccd346beddb2b2_document_exchange.json",
+  "synthetic": false
+}

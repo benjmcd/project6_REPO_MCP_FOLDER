@@ -1,0 +1,85 @@
+{
+  "challenge_counts": {
+    "critical": 0,
+    "info": 1,
+    "warning": 1
+  },
+  "challenge_mode": "deterministic_checks_only",
+  "challenges": [
+    {
+      "category": "interpretation",
+      "challenge_id": "adecb5622841f63a185397bcbe23f80c7d9e208e6262272d0120727624bacc2e",
+      "check_id": "constraints_present",
+      "check_version": 1,
+      "disposition": "review",
+      "evidence_pointers": [
+        {
+          "pointer": "/source_deterministic_insight_artifact/findings/0",
+          "source_finding_id": "4808fa11cb05df4063107e12dcd5e477f7b183c65213a401bad8a82da806d4dd",
+          "source_rule_id": "dossier_constraints_present"
+        }
+      ],
+      "matched_finding_count": 1,
+      "message": "tampered message",
+      "severity": "warning",
+      "source_finding_ids": [
+        "4808fa11cb05df4063107e12dcd5e477f7b183c65213a401bad8a82da806d4dd"
+      ]
+    },
+    {
+      "category": "qualification",
+      "challenge_id": "38fe7464a33c1648b2417ee18080da9a2bf37a97346ee88ec9ce4c32c8784736",
+      "check_id": "qualification_present",
+      "check_version": 1,
+      "disposition": "acknowledge",
+      "evidence_pointers": [
+        {
+          "pointer": "/source_deterministic_insight_artifact/findings/1",
+          "source_finding_id": "2cd0bf2947cdf396a55dd033df5ff294a5400654b1b1fca219e36d4dd121b669",
+          "source_rule_id": "dossier_caveats_present"
+        }
+      ],
+      "matched_finding_count": 1,
+      "message": "Insight reports caveats that must accompany downstream use.",
+      "severity": "info",
+      "source_finding_ids": [
+        "2cd0bf2947cdf396a55dd033df5ff294a5400654b1b1fca219e36d4dd121b669"
+      ]
+    }
+  ],
+  "deterministic_challenge_artifact_checksum": "f22efc1ed35c18865d22dad969883af0aa3aa8090cc2e987890942eae487e5a3",
+  "deterministic_challenge_artifact_id": "6dfde003604a484319f557b3fdc2f0ab7584d9d099bbaaa0909afd2ed9263f7c",
+  "disposition_counts": {
+    "acknowledge": 1,
+    "block": 0,
+    "review": 1
+  },
+  "generated_at_utc": "2026-03-13T02:40:11.752990Z",
+  "ruleset_contract_id": "aps_deterministic_challenge_ruleset_v1",
+  "ruleset_id": "single_insight_challenge_checks",
+  "ruleset_version": 1,
+  "schema_id": "aps.deterministic_challenge_artifact.v1",
+  "schema_version": 1,
+  "source_deterministic_insight_artifact": {
+    "deterministic_insight_artifact_checksum": "117657137b47b4279b19df02a541da2237e1125a260838a32d304e5f8c594733",
+    "deterministic_insight_artifact_id": "cb5d732e516a1d35ea9cef7b44ce798e3c22e30aeb05cdfb576b36d8a7e9304d",
+    "deterministic_insight_artifact_ref": "C:\\Users\\benny\\AppData\\Local\\Temp\\pytest-of-benny\\pytest-96\\test_persisted_deterministic_c1\\run_run-challenge-service-2_cb5d732e516a1d35ea9cef7b_aps_deterministic_insight_artifact_v1.json",
+    "finding_counts": {
+      "critical": 0,
+      "info": 1,
+      "warning": 1
+    },
+    "insight_mode": "deterministic_rules_only",
+    "owner_run_id": "run-challenge-service-2",
+    "ruleset_contract_id": "aps_deterministic_insight_ruleset_v1",
+    "ruleset_id": "single_dossier_presence_rules",
+    "ruleset_version": 1,
+    "schema_id": "aps.deterministic_insight_artifact.v1",
+    "schema_version": 1,
+    "source_context_dossier_checksum": "1adb18cab80c0a9c6655fd6880019003011671a6941dc7f971f42512e917a78a",
+    "source_context_dossier_id": "3da2f8c03ccdc6939a80ef173b389f66ee41d58f9a0110bdc5ec46234adb9994",
+    "source_context_dossier_ref": "C:\\Users\\benny\\AppData\\Local\\Temp\\pytest-of-benny\\pytest-96\\test_persisted_deterministic_c1\\run_run-challenge-service-2_3da2f8c03ccdc6939a80ef17_aps_context_dossier_v1.json",
+    "total_findings": 2
+  },
+  "total_challenges": 2
+}

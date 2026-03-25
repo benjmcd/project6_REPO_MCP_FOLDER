@@ -1,0 +1,96 @@
+{
+  "assembly_contract_id": "aps_evidence_report_assembly_v1",
+  "evidence_report_checksum": "ee461e335568982f4dd9da5800c9e1c08d0dab1f8ce6e2273cd474e95e989aa1",
+  "evidence_report_id": "d4682e4706fc9da8ed19c975f6ed21760760a5c2636b5b20570083216ddefe57",
+  "generated_at_utc": "2026-03-11T19:42:47.848402Z",
+  "schema_id": "aps.evidence_report.v1",
+  "schema_version": 1,
+  "sectioning_contract_id": "aps_evidence_report_sectioning_v1",
+  "sections": [
+    {
+      "accession_number": null,
+      "chunking_contract_id": "aps_chunking_v1",
+      "citation_count": 1,
+      "citations": [
+        {
+          "chunk_id": "chunk-report-export-package-api-3",
+          "chunk_ordinal": 0,
+          "citation_id": "bd3779cc6da6c4f4c63a590b99b1c53b46af019bb96f0e4df7dc07ffb6f65bc4",
+          "citation_label": "APS-CIT-00001",
+          "citation_ordinal": 1,
+          "end_char": 11,
+          "highlight_spans": [
+            {
+              "chunk_end": 11,
+              "chunk_start": 6,
+              "snippet_end": 11,
+              "snippet_start": 6
+            }
+          ],
+          "snippet_end_char": 11,
+          "snippet_start_char": 0,
+          "snippet_text": "alpha delta",
+          "start_char": 0
+        }
+      ],
+      "content_contract_id": "aps_content_units_v1",
+      "content_id": "content-report-export-package-api-2",
+      "group_id": "5878626888e35d2b2f2a9131636846d77c722e614a0d0eb178e33f61aa63a0f2",
+      "run_id": "run-report-export-package-api-1",
+      "section_id": "8e28ec95f52b310b9f8e221dd7c6d2c233aa663808d44f6f06cc83642f69e323",
+      "section_ordinal": 1,
+      "section_type": "evidence_group",
+      "target_id": "target-report-export-package-api-2",
+      "title": "Content content-report-export-package-api-2"
+    }
+  ],
+  "source_citation_pack": {
+    "citation_pack_checksum": "694f8bf9f609ad61baf6aa302c692999beff1564111bcab03826fee8077443b7",
+    "citation_pack_id": "e8a5a34cff0c80aa5b44f9102000c22e14736a75bc513e872b9329735913aa58",
+    "citation_pack_ref": "app\\storage\\connectors\\reports\\run_run-report-export-package-api-1_e8a5a34cff0c80aa5b44f910_aps_evidence_citation_pack_v1.json",
+    "derivation_contract_id": "aps_evidence_citation_derivation_v1",
+    "schema_id": "aps.evidence_citation_pack.v1",
+    "schema_version": 1,
+    "source_bundle": {
+      "bundle_checksum": "01861ce0f294829e6e77bfbe96315950c9f91d07188ae4d947e7174466ebba98",
+      "bundle_id": "854608bd52f32a2bd41bab293023359da5b3e9d7a2ca8b2932db25e5ea3c98b1",
+      "bundle_ref": "app\\storage\\connectors\\reports\\run_run-report-export-package-api-1_854608bd52f32a2bd41bab293023359da5b3e9d7a2ca8b2932db25e5ea3c98b1_aps_evidence_bundle_v1.json",
+      "mode": "query",
+      "query": "delta",
+      "query_tokens": [
+        "delta"
+      ],
+      "request_identity_hash": "3dc20d88f169877749bebcafae93362c8e9f14f28fef83f70714b8300bc078b9",
+      "run_id": "run-report-export-package-api-1",
+      "schema_id": "aps.evidence_bundle.v1",
+      "schema_version": 1,
+      "snapshot": {
+        "db_fingerprint": "6f8c353f799a5f9530618aaee5b6b56febbfba9b4809b7ee6328061c1070c84b",
+        "index_max_updated_at_utc": "2026-03-11T19:42:47.751718Z",
+        "index_row_count": 1,
+        "index_state_hash": "c186d0ba85bafb7e074808ec87e72ddb41885c97dc6c8e83c2de94d640dda43a",
+        "read_scope": {
+          "filters": {
+            "accession_numbers": null,
+            "chunking_contract_id": null,
+            "content_contract_id": null,
+            "content_ids": null,
+            "normalization_contract_id": null,
+            "target_ids": null
+          },
+          "run_id": "run-report-export-package-api-1"
+        },
+        "snapshot_completed_at_utc": "2026-03-11T19:42:47.817870Z",
+        "snapshot_contract_id": "aps_evidence_snapshot_v1",
+        "snapshot_started_at_utc": "2026-03-11T19:42:47.816876Z"
+      },
+      "total_groups": 1,
+      "total_hits": 1
+    },
+    "total_citations": 1,
+    "total_groups": 1
+  },
+  "total_citations": 1,
+  "total_groups": 1,
+  "total_sections": 1
+}

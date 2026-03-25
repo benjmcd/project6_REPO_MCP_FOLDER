@@ -1,0 +1,59 @@
+{
+  "schema_id": "aps.promotion_policy.v1",
+  "schema_version": 1,
+  "window_days": 7,
+  "min_reports_in_window": 3,
+  "min_pass_rate": 0.8,
+  "latest_report_max_age_hours": 36,
+  "require_latest_report_pass": true,
+  "require_v1_ramp": true,
+  "allow_missing_v1": false,
+  "allow_v1_skipped": false,
+  "min_v1_recommended_rps": 5,
+  "expected_v2": {
+    "shape_a_status_class": "2xx",
+    "guide_native_status_class_any_of": [
+      "4xx",
+      "5xx"
+    ],
+    "shape_b_status_class_any_of": [
+      "4xx",
+      "5xx"
+    ]
+  },
+  "allowed_envelope_variants": [
+    "results",
+    "documents"
+  ],
+  "require_v5_date_added_success": true,
+  "take_effective_cap_max": 100,
+  "batch_rules": {
+    "min_completed_cycles": 3,
+    "max_batch_age_spread_hours": 24,
+    "allow_partial_failure_cycles": true,
+    "exclude_failed_cycles_from_evaluation": true,
+    "require_all_planned_cycles_attempted": true
+  },
+  "tunable_fields": [
+    "window_days",
+    "min_reports_in_window",
+    "min_pass_rate",
+    "latest_report_max_age_hours",
+    "require_latest_report_pass",
+    "require_v1_ramp",
+    "allow_missing_v1",
+    "allow_v1_skipped",
+    "min_v1_recommended_rps",
+    "allowed_envelope_variants",
+    "require_v5_date_added_success",
+    "take_effective_cap_max",
+    "expected_v2.shape_a_status_class",
+    "expected_v2.guide_native_status_class_any_of",
+    "expected_v2.shape_b_status_class_any_of",
+    "batch_rules.min_completed_cycles",
+    "batch_rules.max_batch_age_spread_hours",
+    "batch_rules.allow_partial_failure_cycles",
+    "batch_rules.exclude_failed_cycles_from_evaluation",
+    "batch_rules.require_all_planned_cycles_attempted"
+  ]
+}

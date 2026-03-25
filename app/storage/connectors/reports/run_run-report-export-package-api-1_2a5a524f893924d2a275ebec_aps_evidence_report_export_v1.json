@@ -1,0 +1,75 @@
+{
+  "evidence_report_export_checksum": "46e8f5df204dd83f9e6bca935bad5c9ca03043a25eaa2db8f11019d5797a2d4b",
+  "evidence_report_export_id": "2a5a524f893924d2a275ebec836f4686a819442f6e5ebb8a39c60fc4671da208",
+  "file_extension": ".md",
+  "format_id": "markdown",
+  "generated_at_utc": "2026-03-11T18:26:44.363819Z",
+  "media_type": "text/markdown; charset=utf-8",
+  "render_contract_id": "aps_evidence_report_export_render_v1",
+  "rendered_markdown": "# NRC ADAMS APS Evidence Report Export\n\n- Export ID: 2a5a524f893924d2a275ebec836f4686a819442f6e5ebb8a39c60fc4671da208\n- Format: markdown\n- Render Contract: aps\\_evidence\\_report\\_export\\_render\\_v1\n- Template Contract: aps\\_evidence\\_report\\_export\\_markdown\\_template\\_v1\n- Source Evidence Report ID: 38160091b5f53d4e94cd46789a57a6b9bd0cb8e9ae6e3bd726144bb4f56227c8\n- Source Evidence Report Checksum: c8765b048cb8f8f2d568d1c512e39890448093ede529bc1fa83cabd079943161\n- Source Citation Pack ID: 6de68a83e3c230b620a5bafe7dd4dca234eaf29a1e9405a574dd6c7c8d4d72ce\n- Source Citation Pack Checksum: 93105090b3e3592c766953a71aaa0827503906b0cfdaf3b1f619267ce8f37e00\n- Total Sections: 2\n- Total Citations: 3\n- Total Groups: 2\n\n## Section 00001: Accession ML\\-REPORT\\-EXPORT\\-PACKAGE\\-API\\-1 / Content content\\-report\\-export\\-package\\-api\\-1\n\n- Group ID: 4b1c09d29b5068db190dec9ae7880bc4b3b912a91f5e291826645b46ffe05091\n- Run ID: run\\-report\\-export\\-package\\-api\\-1\n- Target ID: target\\-report\\-export\\-package\\-api\\-1\n- Content ID: content\\-report\\-export\\-package\\-api\\-1\n- Accession Number: ML\\-REPORT\\-EXPORT\\-PACKAGE\\-API\\-1\n- Content Contract ID: aps\\_content\\_units\\_v1\n- Chunking Contract ID: aps\\_chunking\\_v1\n- Citation Count: 2\n\n1. APS\\-CIT\\-00001 | 31ba2b4546a30b0243ad86150990c514afa0bbc2005d5b1bde7a9d1f43a4e9cc\n   - Chunk ID: chunk\\-report\\-export\\-package\\-api\\-1\n   - Chunk Ordinal: 0\n   - Character Span: 0:16\n   - Snippet: alpha alpha beta\n\n2. APS\\-CIT\\-00002 | 416cbb3cfc052a02ac251f82cf153ce29dc5ce795cc831ae4c57fc882aa9bcd2\n   - Chunk ID: chunk\\-report\\-export\\-package\\-api\\-2\n   - Chunk Ordinal: 1\n   - Character Span: 17:28\n   - Snippet: alpha gamma\n\n## Section 00002: Content content\\-report\\-export\\-package\\-api\\-2\n\n- Group ID: 5878626888e35d2b2f2a9131636846d77c722e614a0d0eb178e33f61aa63a0f2\n- Run ID: run\\-report\\-export\\-package\\-api\\-1\n- Target ID: target\\-report\\-export\\-package\\-api\\-2\n- Content ID: content\\-report\\-export\\-package\\-api\\-2\n- Content Contract ID: aps\\_content\\_units\\_v1\n- Chunking Contract ID: aps\\_chunking\\_v1\n- Citation Count: 1\n\n1. APS\\-CIT\\-00003 | 0e91b106f4b4d928844ef38630bc223034e9aab8264d706af4c0b3c18c0a0749\n   - Chunk ID: chunk\\-report\\-export\\-package\\-api\\-3\n   - Chunk Ordinal: 0\n   - Character Span: 0:11\n   - Snippet: alpha delta\n",
+  "rendered_markdown_sha256": "9ea7ddd3e726d97e1ab5795152b7698642dd418cafa2ae8d4ac6705b78f5b6c1",
+  "schema_id": "aps.evidence_report_export.v1",
+  "schema_version": 1,
+  "source_evidence_report": {
+    "assembly_contract_id": "aps_evidence_report_assembly_v1",
+    "evidence_report_checksum": "c8765b048cb8f8f2d568d1c512e39890448093ede529bc1fa83cabd079943161",
+    "evidence_report_id": "38160091b5f53d4e94cd46789a57a6b9bd0cb8e9ae6e3bd726144bb4f56227c8",
+    "evidence_report_ref": "app\\storage\\connectors\\reports\\run_run-report-export-package-api-1_38160091b5f53d4e94cd4678_aps_evidence_report_v1.json",
+    "schema_id": "aps.evidence_report.v1",
+    "schema_version": 1,
+    "sectioning_contract_id": "aps_evidence_report_sectioning_v1",
+    "source_citation_pack": {
+      "citation_pack_checksum": "93105090b3e3592c766953a71aaa0827503906b0cfdaf3b1f619267ce8f37e00",
+      "citation_pack_id": "6de68a83e3c230b620a5bafe7dd4dca234eaf29a1e9405a574dd6c7c8d4d72ce",
+      "citation_pack_ref": "app\\storage\\connectors\\reports\\run_run-report-export-package-api-1_6de68a83e3c230b620a5bafe_aps_evidence_citation_pack_v1.json",
+      "derivation_contract_id": "aps_evidence_citation_derivation_v1",
+      "schema_id": "aps.evidence_citation_pack.v1",
+      "schema_version": 1,
+      "source_bundle": {
+        "bundle_checksum": "e50ec9d07f1bd873afd549968477da6fcb35eece1afd7d3a616bc31cabf160f2",
+        "bundle_id": "5436643bd6cf13be8720f5f8e1f256059f2ab91b9c511b67487af09b21a28818",
+        "bundle_ref": "app\\storage\\connectors\\reports\\run_run-report-export-package-api-1_5436643bd6cf13be8720f5f8e1f256059f2ab91b9c511b67487af09b21a28818_aps_evidence_bundle_v1.json",
+        "mode": "query",
+        "query": "alpha",
+        "query_tokens": [
+          "alpha"
+        ],
+        "request_identity_hash": "9a16e5dbf5eb3fba54834a4a73ad40ed7b57a85dcde81286d05fed07646d31d8",
+        "run_id": "run-report-export-package-api-1",
+        "schema_id": "aps.evidence_bundle.v1",
+        "schema_version": 1,
+        "snapshot": {
+          "db_fingerprint": "6f8c353f799a5f9530618aaee5b6b56febbfba9b4809b7ee6328061c1070c84b",
+          "index_max_updated_at_utc": "2026-03-11T18:26:44.205311Z",
+          "index_row_count": 3,
+          "index_state_hash": "0e734683621e80a76aa07a35a58a65fa9214ae5ae141e0eedacef3f0c91874b2",
+          "read_scope": {
+            "filters": {
+              "accession_numbers": null,
+              "chunking_contract_id": null,
+              "content_contract_id": null,
+              "content_ids": null,
+              "normalization_contract_id": null,
+              "target_ids": null
+            },
+            "run_id": "run-report-export-package-api-1"
+          },
+          "snapshot_completed_at_utc": "2026-03-11T18:26:44.279263Z",
+          "snapshot_contract_id": "aps_evidence_snapshot_v1",
+          "snapshot_started_at_utc": "2026-03-11T18:26:44.214740Z"
+        },
+        "total_groups": 2,
+        "total_hits": 3
+      },
+      "total_citations": 3,
+      "total_groups": 2
+    },
+    "total_citations": 3,
+    "total_groups": 2,
+    "total_sections": 2
+  },
+  "template_contract_id": "aps_evidence_report_export_markdown_template_v1",
+  "total_citations": 3,
+  "total_groups": 2,
+  "total_sections": 2
+}

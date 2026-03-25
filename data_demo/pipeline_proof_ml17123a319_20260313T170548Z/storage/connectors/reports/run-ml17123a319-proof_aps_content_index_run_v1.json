@@ -1,0 +1,29 @@
+{
+  "content_status_counts": {
+    "indexed": 1
+  },
+  "content_units_artifacts": [
+    {
+      "chunk_count": 93,
+      "content_id": "3fdc47c81c3badfb66ddc462b8450fa1655e1c8f8ef02bfe55d93e4a293ce5b4",
+      "content_status": "indexed",
+      "ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\pipeline_proof_ml17123a319_20260313T170548Z\\storage\\connectors\\reports\\run-ml17123a319-proof_target-ml17123a319-proof_aps_content_units_v2.json",
+      "sha256": "bc836a89662de37dcee9d6b39028c00df43c185106db38da2c61f9616769dc4d",
+      "status": "processed",
+      "target_id": "target-ml17123a319-proof"
+    }
+  ],
+  "generated_at_utc": "2026-03-13T17:05:50.193041Z",
+  "indexed_content_units": 1,
+  "indexing_failure_code_counts": {},
+  "indexing_failures": [],
+  "indexing_failures_count": 0,
+  "payload_sha256": "26296c1b93fe4c3a89e53e0086057c161a19f5bc733b78e2a6efbbca4f7e55ee",
+  "processed_targets": 1,
+  "run_id": "run-ml17123a319-proof",
+  "run_outcome": "targets_processed",
+  "run_status": "completed",
+  "schema_id": "aps.content_index_run.v1",
+  "schema_version": 1,
+  "selected_targets": 1
+}

@@ -1,0 +1,171 @@
+{
+  "citation_pack_checksum": "4c48041612949d5743f9d481960a519fe6dd84de273deacb974db11122f87c56",
+  "citation_pack_id": "0f2f8e5243df52b108cb17e6d58cc4ac8464b044ac4c102a1712691b2ad122a1",
+  "citations": [
+    {
+      "accession_number": "ML-CONTEXT-DOSSIER-API-1",
+      "blob_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_a\\blob.bin",
+      "blob_sha256": "blob-context-dossier-api-1",
+      "chunk_id": "chunk-context-dossier-api-1",
+      "chunk_ordinal": 0,
+      "chunk_text_sha256": "sha-context-dossier-api-1",
+      "chunking_contract_id": "aps_chunking_v1",
+      "citation_id": "bd9dfa88aa3003f1981dd0c105a231efc2c41d4d7ef18a676f7c7ec6e5dc2588",
+      "citation_label": "APS-CIT-00001",
+      "citation_ordinal": 1,
+      "content_contract_id": "aps_content_units_v1",
+      "content_id": "content-context-dossier-api-1",
+      "content_units_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_a\\content_units.json",
+      "discovery_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_a\\discovery.json",
+      "download_exchange_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_a\\download_exchange.json",
+      "end_char": 16,
+      "group_id": "9d3cd6e009cb9244d336c13d23e2843fa02e3e5254200e5c21e6501a9ffe751d",
+      "highlight_spans": [
+        {
+          "chunk_end": 5,
+          "chunk_start": 0,
+          "snippet_end": 5,
+          "snippet_start": 0
+        },
+        {
+          "chunk_end": 11,
+          "chunk_start": 6,
+          "snippet_end": 11,
+          "snippet_start": 6
+        }
+      ],
+      "matched_unique_query_terms": 1,
+      "normalization_contract_id": "aps_text_normalization_v1",
+      "normalized_text_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_a\\normalized.txt",
+      "normalized_text_sha256": "norm-context-dossier-api-1",
+      "run_id": "run-context-dossier-api-1",
+      "selection_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_a\\selection.json",
+      "snippet_end_char": 16,
+      "snippet_start_char": 0,
+      "snippet_text": "alpha alpha beta",
+      "start_char": 0,
+      "summed_term_frequency": 2,
+      "target_id": "target-context-dossier-api-1"
+    },
+    {
+      "accession_number": "ML-CONTEXT-DOSSIER-API-1",
+      "blob_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_a\\blob.bin",
+      "blob_sha256": "blob-context-dossier-api-1",
+      "chunk_id": "chunk-context-dossier-api-2",
+      "chunk_ordinal": 1,
+      "chunk_text_sha256": "sha-context-dossier-api-2",
+      "chunking_contract_id": "aps_chunking_v1",
+      "citation_id": "aaa23c0724516c82473bf5ef59d7e7e9e2d020b213d0a2b01acefe9bf774772b",
+      "citation_label": "APS-CIT-00002",
+      "citation_ordinal": 2,
+      "content_contract_id": "aps_content_units_v1",
+      "content_id": "content-context-dossier-api-1",
+      "content_units_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_a\\content_units.json",
+      "discovery_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_a\\discovery.json",
+      "download_exchange_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_a\\download_exchange.json",
+      "end_char": 28,
+      "group_id": "9d3cd6e009cb9244d336c13d23e2843fa02e3e5254200e5c21e6501a9ffe751d",
+      "highlight_spans": [
+        {
+          "chunk_end": 5,
+          "chunk_start": 0,
+          "snippet_end": 5,
+          "snippet_start": 0
+        }
+      ],
+      "matched_unique_query_terms": 1,
+      "normalization_contract_id": "aps_text_normalization_v1",
+      "normalized_text_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_a\\normalized.txt",
+      "normalized_text_sha256": "norm-context-dossier-api-1",
+      "run_id": "run-context-dossier-api-1",
+      "selection_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_a\\selection.json",
+      "snippet_end_char": 11,
+      "snippet_start_char": 0,
+      "snippet_text": "alpha gamma",
+      "start_char": 17,
+      "summed_term_frequency": 1,
+      "target_id": "target-context-dossier-api-1"
+    },
+    {
+      "accession_number": null,
+      "blob_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_b\\blob.bin",
+      "blob_sha256": "blob-context-dossier-api-2",
+      "chunk_id": "chunk-context-dossier-api-3",
+      "chunk_ordinal": 0,
+      "chunk_text_sha256": "sha-context-dossier-api-3",
+      "chunking_contract_id": "aps_chunking_v1",
+      "citation_id": "a4af787e89e0075c13b82636f85d7ca067b212de771f80c34db16c72dcf31b1c",
+      "citation_label": "APS-CIT-00003",
+      "citation_ordinal": 3,
+      "content_contract_id": "aps_content_units_v1",
+      "content_id": "content-context-dossier-api-2",
+      "content_units_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_b\\content_units.json",
+      "discovery_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_b\\discovery.json",
+      "download_exchange_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_b\\download_exchange.json",
+      "end_char": 11,
+      "group_id": "b2bce92e3ba1811228780c28420a147de08f21ee04a681699b04e6bf7e26cab1",
+      "highlight_spans": [
+        {
+          "chunk_end": 5,
+          "chunk_start": 0,
+          "snippet_end": 5,
+          "snippet_start": 0
+        }
+      ],
+      "matched_unique_query_terms": 1,
+      "normalization_contract_id": "aps_text_normalization_v1",
+      "normalized_text_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_b\\normalized.txt",
+      "normalized_text_sha256": "norm-context-dossier-api-2",
+      "run_id": "run-context-dossier-api-1",
+      "selection_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_b\\selection.json",
+      "snippet_end_char": 11,
+      "snippet_start_char": 0,
+      "snippet_text": "alpha delta",
+      "start_char": 0,
+      "summed_term_frequency": 1,
+      "target_id": "target-context-dossier-api-2"
+    }
+  ],
+  "derivation_contract_id": "aps_evidence_citation_derivation_v1",
+  "generated_at_utc": "2026-03-12T22:59:08.056661Z",
+  "schema_id": "aps.evidence_citation_pack.v1",
+  "schema_version": 1,
+  "source_bundle": {
+    "bundle_checksum": "3f98f596706ad9667c6e2cfbac19a6a3476c692324da2c6abe2444640d90ca24",
+    "bundle_id": "0f26e3c49919e5f07e49f95533dc160298f35a1a702ae51b8e17407a78368004",
+    "bundle_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_0f26e3c49919e5f07e49f95533dc160298f35a1a702ae51b8e17407a78368004_aps_evidence_bundle_v1.json",
+    "mode": "query",
+    "query": "alpha",
+    "query_tokens": [
+      "alpha"
+    ],
+    "request_identity_hash": "eae447a32571aac40a3c6002fc02dea91f787cd1cf9417cb6cd2cecf4f9ef4b3",
+    "run_id": "run-context-dossier-api-1",
+    "schema_id": "aps.evidence_bundle.v1",
+    "schema_version": 1,
+    "snapshot": {
+      "db_fingerprint": "6f8c353f799a5f9530618aaee5b6b56febbfba9b4809b7ee6328061c1070c84b",
+      "index_max_updated_at_utc": "2026-03-12T22:59:08.026650Z",
+      "index_row_count": 3,
+      "index_state_hash": "312e70fa8d6f03aef6d2e9f07caae474350f5b65d190ec9e6e44b69ba257ee7d",
+      "read_scope": {
+        "filters": {
+          "accession_numbers": null,
+          "chunking_contract_id": null,
+          "content_contract_id": null,
+          "content_ids": null,
+          "normalization_contract_id": null,
+          "target_ids": null
+        },
+        "run_id": "run-context-dossier-api-1"
+      },
+      "snapshot_completed_at_utc": "2026-03-12T22:59:08.038650Z",
+      "snapshot_contract_id": "aps_evidence_snapshot_v1",
+      "snapshot_started_at_utc": "2026-03-12T22:59:08.036650Z"
+    },
+    "total_groups": 2,
+    "total_hits": 3
+  },
+  "total_citations": 3,
+  "total_groups": 2
+}

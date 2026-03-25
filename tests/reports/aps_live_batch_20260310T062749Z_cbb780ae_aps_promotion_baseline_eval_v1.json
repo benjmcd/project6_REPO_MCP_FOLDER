@@ -1,0 +1,159 @@
+{
+  "batch_cycle_spacing": {
+    "cycle_spacing_affects_batch_validity": false,
+    "cycle_spacing_enforced": true,
+    "cycle_spacing_seconds_requested": 1.0
+  },
+  "batch_id": "aps_live_batch_20260310T062749Z_cbb780ae",
+  "batch_manifest_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage\\connectors\\reports\\nrc_aps_live_batches\\aps_live_batch_20260310T062749Z_cbb780ae\\aps_live_batch_20260310T062749Z_cbb780ae_manifest_v1.json",
+  "batch_manifest_sha256": "a25deae8b3162e3d62d53d8e70e298501d81eb601b29cec5654f11e7786d6819",
+  "batch_manifest_valid": true,
+  "batch_status": "completed",
+  "collector_provenance": {
+    "collector_config": {
+      "continue_on_cycle_failure": true,
+      "cycle_count": 1,
+      "pagination_max_pages": 5,
+      "pagination_take": 50,
+      "spacing_seconds": 1.0,
+      "timeout_seconds": 30,
+      "url_probe_bytes": 262144
+    },
+    "collector_invocation_argv": [
+      "--cycle-count",
+      "1",
+      "--spacing-seconds",
+      "1",
+      "--timeout-seconds",
+      "30",
+      "--batch-root",
+      "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage\\connectors\\reports\\nrc_aps_live_batches"
+    ],
+    "collector_version": "nrc_aps_live_batch_collector_v1"
+  },
+  "cycle_rows": [
+    {
+      "cycle_index": 1,
+      "cycle_status": "completed",
+      "eligible_for_evaluation": true,
+      "evidence": {
+        "cycle_index": 1,
+        "date_added_success": true,
+        "envelope_variant": "results",
+        "failures": [
+          {
+            "code": "v1_status_error",
+            "context": {},
+            "message": "V1 probe returned error status"
+          }
+        ],
+        "generated_at_utc": "2026-03-10T06:28:29.395686Z",
+        "guide_native_status_class": "5xx",
+        "passed": false,
+        "path": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage\\connectors\\reports\\nrc_aps_live_batches\\aps_live_batch_20260310T062749Z_cbb780ae\\aps_live_batch_20260310T062749Z_cbb780ae_cycle_001_aps_live_validation_v1.json",
+        "shape_a_status_class": "2xx",
+        "shape_b_status_class": "5xx",
+        "take_1000_count_returned": 100,
+        "v1_first_failure_rps": 0,
+        "v1_key_present": true,
+        "v1_recommended_max_rps": 0,
+        "v1_status": "error",
+        "warnings": []
+      },
+      "failures": [
+        {
+          "code": "v1_status_error",
+          "context": {},
+          "message": "V1 probe returned error status"
+        }
+      ],
+      "generated_at_utc": "2026-03-10T06:28:29.395686Z",
+      "passed": false,
+      "report_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage\\connectors\\reports\\nrc_aps_live_batches\\aps_live_batch_20260310T062749Z_cbb780ae\\aps_live_batch_20260310T062749Z_cbb780ae_cycle_001_aps_live_validation_v1.json",
+      "report_schema_id": "aps.live_validation_report.v1",
+      "report_schema_version": 1,
+      "report_sha256": "1f71b76929494940c90342fc1d024210c13c1e1c1ec4018f8a13939c7e74dab3",
+      "report_sha256_computed": "1f71b76929494940c90342fc1d024210c13c1e1c1ec4018f8a13939c7e74dab3",
+      "warnings": []
+    }
+  ],
+  "cycle_warnings": [],
+  "evaluation": {
+    "evaluated_cycle_count": 1,
+    "fail_count": 1,
+    "failures": [
+      {
+        "code": "v1_status_error",
+        "context": {
+          "cycle_index": 1
+        },
+        "message": "V1 probe returned error status"
+      },
+      {
+        "code": "batch_min_completed_cycles_not_met",
+        "context": {
+          "completed_cycle_count": 1,
+          "min_completed_cycles": 3
+        },
+        "message": "completed cycle count is below policy minimum"
+      },
+      {
+        "code": "promotion_min_cycles_not_met",
+        "context": {
+          "evaluated_cycles": 1,
+          "min_reports_in_window": 3
+        },
+        "message": "eligible cycle count is below policy minimum"
+      },
+      {
+        "code": "promotion_pass_rate_below_threshold",
+        "context": {
+          "min_pass_rate": 0.8,
+          "pass_rate": 0.0
+        },
+        "message": "cycle pass rate is below promotion threshold"
+      },
+      {
+        "code": "promotion_latest_cycle_failed",
+        "context": {},
+        "message": "latest cycle failed promotion invariants"
+      }
+    ],
+    "latest_cycle_index": 1,
+    "latest_report_generated_at_utc": "2026-03-10T06:28:29.395686Z",
+    "latest_report_max_age_hours": 36,
+    "latest_report_passed": false,
+    "latest_report_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage\\connectors\\reports\\nrc_aps_live_batches\\aps_live_batch_20260310T062749Z_cbb780ae\\aps_live_batch_20260310T062749Z_cbb780ae_cycle_001_aps_live_validation_v1.json",
+    "min_pass_rate_required": 0.8,
+    "min_reports_required": 3,
+    "pass_count": 0,
+    "pass_rate": 0.0,
+    "passed": false
+  },
+  "evaluator_version": "nrc_aps_promotion_gate_v2",
+  "generated_at_utc": "2026-03-10T06:29:12.966294Z",
+  "passed": false,
+  "policy_path": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\services\\nrc_adams_resources\\aps_promotion_policy_v1.json",
+  "policy_schema_id": "aps.promotion_policy.v1",
+  "policy_schema_version": 1,
+  "policy_settings": {
+    "allow_missing_v1": false,
+    "allow_v1_skipped": false,
+    "batch_rules": {
+      "allow_partial_failure_cycles": true,
+      "exclude_failed_cycles_from_evaluation": true,
+      "max_batch_age_spread_hours": 24.0,
+      "min_completed_cycles": 3,
+      "require_all_planned_cycles_attempted": true
+    },
+    "latest_report_max_age_hours": 36,
+    "min_pass_rate": 0.8,
+    "min_reports_in_window": 3,
+    "min_v1_recommended_rps": 5,
+    "require_latest_report_pass": true,
+    "require_v1_ramp": true
+  },
+  "policy_sha256": "27bd8c3aa2914f497036385d59b2944c2434e99ebb46776d21d67a90f7e300ba",
+  "schema_id": "aps.promotion_governance.v2",
+  "schema_version": 1
+}

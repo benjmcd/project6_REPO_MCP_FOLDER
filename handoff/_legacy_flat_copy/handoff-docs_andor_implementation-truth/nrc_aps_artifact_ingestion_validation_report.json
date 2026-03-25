@@ -1,0 +1,131 @@
+{
+  "checked_runs": 13,
+  "checks": [
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\f7cd846b-de59-4d3b-97ec-572080e6ff20_aps_artifact_ingestion_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\f7cd846b-de59-4d3b-97ec-572080e6ff20_aps_artifact_ingestion_run_v1.json",
+      "run_id": "f7cd846b-de59-4d3b-97ec-572080e6ff20"
+    },
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\6c5a0bc3-11d3-4eca-be37-bac382145479_aps_artifact_ingestion_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\6c5a0bc3-11d3-4eca-be37-bac382145479_aps_artifact_ingestion_run_v1.json",
+      "run_id": "6c5a0bc3-11d3-4eca-be37-bac382145479"
+    },
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\66427fb3-b980-464d-90ec-384285edeb1f_aps_artifact_ingestion_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\66427fb3-b980-464d-90ec-384285edeb1f_aps_artifact_ingestion_run_v1.json",
+      "run_id": "66427fb3-b980-464d-90ec-384285edeb1f"
+    },
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\861a2c90-6f4b-4369-9030-9d5b412e265c_aps_artifact_ingestion_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\861a2c90-6f4b-4369-9030-9d5b412e265c_aps_artifact_ingestion_run_v1.json",
+      "run_id": "861a2c90-6f4b-4369-9030-9d5b412e265c"
+    },
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\06c711b2-5256-4cef-ba68-c47d90a05f07_aps_artifact_ingestion_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\06c711b2-5256-4cef-ba68-c47d90a05f07_aps_artifact_ingestion_run_v1.json",
+      "run_id": "06c711b2-5256-4cef-ba68-c47d90a05f07"
+    },
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\bb1d0d2c-e1ea-4c85-a603-45f80b24320c_aps_artifact_ingestion_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\bb1d0d2c-e1ea-4c85-a603-45f80b24320c_aps_artifact_ingestion_run_v1.json",
+      "run_id": "bb1d0d2c-e1ea-4c85-a603-45f80b24320c"
+    },
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\012c5bae-fb30-4a55-a577-02eafdbebee8_aps_artifact_ingestion_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\012c5bae-fb30-4a55-a577-02eafdbebee8_aps_artifact_ingestion_run_v1.json",
+      "run_id": "012c5bae-fb30-4a55-a577-02eafdbebee8"
+    },
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\75b095f9-7aea-4506-9113-3cb39cd7b4cb_aps_artifact_ingestion_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\75b095f9-7aea-4506-9113-3cb39cd7b4cb_aps_artifact_ingestion_run_v1.json",
+      "run_id": "75b095f9-7aea-4506-9113-3cb39cd7b4cb"
+    },
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\6029bbcf-b4a5-4ed3-b71a-38c1f9693223_aps_artifact_ingestion_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\6029bbcf-b4a5-4ed3-b71a-38c1f9693223_aps_artifact_ingestion_run_v1.json",
+      "run_id": "6029bbcf-b4a5-4ed3-b71a-38c1f9693223"
+    },
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\551dd1da-d1b5-42e0-86f5-41d26d6509e8_aps_artifact_ingestion_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\551dd1da-d1b5-42e0-86f5-41d26d6509e8_aps_artifact_ingestion_run_v1.json",
+      "run_id": "551dd1da-d1b5-42e0-86f5-41d26d6509e8"
+    },
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\7bb289e5-8955-4694-a5a2-489b92f77912_aps_artifact_ingestion_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\7bb289e5-8955-4694-a5a2-489b92f77912_aps_artifact_ingestion_run_v1.json",
+      "run_id": "7bb289e5-8955-4694-a5a2-489b92f77912"
+    },
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\6f37495b-7ad3-4a46-8211-69fcbdde6b92_aps_artifact_ingestion_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\6f37495b-7ad3-4a46-8211-69fcbdde6b92_aps_artifact_ingestion_run_v1.json",
+      "run_id": "6f37495b-7ad3-4a46-8211-69fcbdde6b92"
+    },
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\04cdaff1-b2af-4d9f-b610-43d48e8128ea_aps_artifact_ingestion_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\04cdaff1-b2af-4d9f-b610-43d48e8128ea_aps_artifact_ingestion_run_v1.json",
+      "run_id": "04cdaff1-b2af-4d9f-b610-43d48e8128ea"
+    }
+  ],
+  "evaluated_run_rows": 13,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-11T07:44:45.632654Z",
+  "passed": true,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.artifact_ingestion_gate.v1",
+  "schema_version": 1,
+  "validated_at_utc": "2026-03-11T07:44:45.632654Z"
+}

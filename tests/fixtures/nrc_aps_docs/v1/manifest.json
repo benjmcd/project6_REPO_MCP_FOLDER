@@ -1,0 +1,163 @@
+{
+  "schema_id": "aps.document_corpus_manifest.v2",
+  "schema_version": 2,
+  "entries": [
+    {
+      "fixture_id": "txt_utf8",
+      "path": "txt_utf8.txt",
+      "fixture_role": "representative_lower_bound",
+      "declared_content_type": "text/plain",
+      "expected_document_class": "text_plain",
+      "expected_quality_status": "weak",
+      "searchable_expected": false,
+      "gold_queries": [
+        "reactor inspection summary"
+      ],
+      "downstream_usefulness_anchor": "reactor inspection summary"
+    },
+    {
+      "fixture_id": "txt_utf16",
+      "path": "txt_utf16.txt",
+      "fixture_role": "representative_lower_bound",
+      "declared_content_type": "text/plain",
+      "expected_document_class": "text_plain",
+      "expected_quality_status": "weak",
+      "searchable_expected": false,
+      "gold_queries": [
+        "safety analysis delta"
+      ],
+      "downstream_usefulness_anchor": "safety analysis delta"
+    },
+    {
+      "fixture_id": "born_digital",
+      "path": "born_digital.pdf",
+      "fixture_role": "regression_only",
+      "declared_content_type": "application/pdf",
+      "expected_document_class": "born_digital_pdf",
+      "expected_quality_status": "limited",
+      "searchable_expected": true,
+      "gold_queries": [
+        "reactor coolant pump wear"
+      ]
+    },
+    {
+      "fixture_id": "ml17123a319",
+      "path": "ML17123A319.pdf",
+      "fixture_role": "representative_lower_bound",
+      "declared_content_type": "application/pdf",
+      "expected_document_class": "layout_complex_pdf",
+      "expected_quality_status": "strong",
+      "searchable_expected": true,
+      "gold_queries": [
+        "responses to public comments",
+        "security event notifications",
+        "background checks"
+      ],
+      "downstream_usefulness_anchor": "security event notifications"
+    },
+    {
+      "fixture_id": "layout",
+      "path": "layout.pdf",
+      "fixture_role": "representative_lower_bound",
+      "declared_content_type": "application/pdf",
+      "expected_document_class": "born_digital_pdf",
+      "expected_quality_status": "strong",
+      "searchable_expected": true,
+      "gold_queries": [
+        "emergency diesel generator",
+        "corrective actions beta"
+      ],
+      "downstream_usefulness_anchor": "emergency diesel generator"
+    },
+    {
+      "fixture_id": "fontish",
+      "path": "fontish.pdf",
+      "fixture_role": "representative_lower_bound",
+      "declared_content_type": "application/pdf",
+      "expected_document_class": "born_digital_pdf",
+      "expected_quality_status": "limited",
+      "searchable_expected": true,
+      "gold_queries": [
+        "unicode delta epsilon"
+      ],
+      "downstream_usefulness_anchor": "unicode delta epsilon"
+    },
+    {
+      "fixture_id": "scanned",
+      "path": "scanned.pdf",
+      "fixture_role": "representative_lower_bound",
+      "declared_content_type": "application/pdf",
+      "expected_document_class": "scanned_pdf",
+      "expected_quality_status": "limited",
+      "expected_failure_without_ocr": "ocr_required_but_unavailable",
+      "searchable_expected": true,
+      "searchable_expected_without_ocr": false,
+      "gold_queries_without_ocr": [],
+      "expected_degradation_codes": [
+        "ocr_fallback_used"
+      ],
+      "gold_queries": [
+        "turbine blade inspection"
+      ],
+      "requires_ocr": true,
+      "downstream_usefulness_anchor": "turbine blade inspection"
+    },
+    {
+      "fixture_id": "mixed",
+      "path": "mixed.pdf",
+      "fixture_role": "representative_lower_bound",
+      "declared_content_type": "application/pdf",
+      "expected_document_class": "mixed_pdf",
+      "expected_quality_status": "limited",
+      "expected_document_class_without_ocr": "font_encoded_pdf",
+      "expected_quality_status_without_ocr": "weak",
+      "searchable_expected": true,
+      "searchable_expected_without_ocr": false,
+      "expected_degradation_codes": [
+        "ocr_fallback_used"
+      ],
+      "expected_degradation_codes_without_ocr": [
+        "ocr_required_but_unavailable"
+      ],
+      "gold_queries": [
+        "mixed native alpha",
+        "mixed image beta"
+      ],
+      "gold_queries_without_ocr": [
+        "mixed native alpha"
+      ],
+      "requires_ocr": true,
+      "downstream_usefulness_anchor": "mixed image beta"
+    },
+    {
+      "fixture_id": "mismatch_pdf_body",
+      "path": "mismatch_pdf_body.txt",
+      "fixture_role": "regression_only",
+      "declared_content_type": "application/pdf",
+      "expected_document_class": "text_plain",
+      "expected_quality_status": "weak",
+      "searchable_expected": false,
+      "expected_degradation_codes": [
+        "content_type_mismatch",
+        "low_quality_text"
+      ],
+      "gold_queries": [
+        "mismatch alpha beta"
+      ]
+    },
+    {
+      "fixture_id": "corrupt",
+      "path": "corrupt.pdf",
+      "fixture_role": "regression_only",
+      "declared_content_type": "application/pdf",
+      "expected_failure": "pdf_open_failed"
+    },
+    {
+      "fixture_id": "truncated",
+      "path": "truncated.pdf",
+      "fixture_role": "regression_only",
+      "declared_content_type": "application/pdf",
+      "expected_failure": "pdf_open_failed"
+    }
+  ]
+}

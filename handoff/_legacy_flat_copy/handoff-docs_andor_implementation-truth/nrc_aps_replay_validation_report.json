@@ -1,0 +1,12 @@
+{
+  "corpus_path": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\tests\\fixtures\\nrc_aps_replay\\v1",
+  "failed_cases": 0,
+  "failures": [],
+  "generated_at": "2026-03-11T07:44:44.762057Z",
+  "overrides_applied": 0,
+  "passed": true,
+  "schema_version": 1,
+  "total_cases": 22,
+  "warning_count": 0,
+  "warnings": []
+}

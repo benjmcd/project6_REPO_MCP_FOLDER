@@ -1,0 +1,110 @@
+NRC APS HANDOFF: START HERE
+
+0. Package truth model and precedence:
+   - This package uses a mixed model (MODEL B).
+   - Control docs in this root are package-local handoff surfaces.
+   - CRITICAL WARNING: `handoff/backend/*` is an explicitly STALE mirror and MUST NOT be trusted as implementation authority. Always refer to live root `backend/app/services/*`.
+   - Root `README.md` and `REPO_INDEX.md` may reference root `tests/...` and `tools/...` that are not established from current workspace evidence.
+   - Code/tests/proof anchors are mirrored copies unless marked otherwise in handoff_manifest.json.
+   - If live repo and handoff differ, live repo authority wins.
+   - `handoff/handoff_manifest.json` is intentionally scoped; it is exhaustive for the packaged current-state authority subset, not for every file under `handoff/`.
+
+1. Read this package status surface first:
+   - handoff/docs/nrc_adams/nrc_aps_status_handoff.md
+
+2. Then read package controls:
+   - handoff/HANDOFF_INDEX.md
+   - handoff/handoff_manifest.json
+
+3. Current frozen upper analytical ceiling (closed through):
+   - replay regression control
+   - 2A sync delta / drift correctness
+   - operational safeguards
+   - 2B promotion governance
+   - evidence retrieval / assembly
+   - citation-pack v1
+   - evidence-report v1
+   - evidence-report export v1
+   - evidence-report export package v1
+   - Context Packet v1
+   - Context Dossier v1
+   - Deterministic Insight Artifact v1
+   - Deterministic Challenge Artifact v1
+
+   Lower-layer exception:
+   - artifact ingestion and content indexing have been reopened additively in the live repo for document/media handling expansion
+   - live authority for that work is the root status doc plus the live lower-layer service files
+   - current fresh OCR-enabled lower-layer proof is:
+     - handoff/tests/reports/nrc_aps_document_processing_proof_report.json
+     - handoff/tests/reports/nrc_aps_artifact_ingestion_validation_report.json
+     - handoff/tests/reports/nrc_aps_content_index_validation_report.json
+   - current fresh aggregate gate proof is:
+     - handoff/tests/reports/nrc_aps_evidence_bundle_validation_report.json
+     - handoff/tests/reports/nrc_aps_evidence_citation_pack_validation_report.json
+     - handoff/tests/reports/nrc_aps_evidence_report_validation_report.json
+     - handoff/tests/reports/nrc_aps_evidence_report_export_validation_report.json
+     - handoff/tests/reports/nrc_aps_evidence_report_export_package_validation_report.json
+     - handoff/tests/reports/nrc_aps_context_packet_validation_report.json
+     - handoff/tests/reports/nrc_aps_context_dossier_validation_report.json
+     - handoff/tests/reports/nrc_aps_deterministic_insight_artifact_validation_report.json
+     - handoff/tests/reports/nrc_aps_deterministic_challenge_artifact_validation_report.json
+   - other checked-in `tests/reports/*.json` files are historical snapshots unless explicitly regenerated in the current verification pass
+
+4. Current validator semantics (critical):
+   - validate-nrc-aps-evidence-report-export: validate-only
+   - validate-nrc-aps-evidence-report-export-package: validate-only
+   - validate-nrc-aps-context-packet: validate-only
+   - validate-nrc-aps-context-dossier: validate-only
+   - validate-nrc-aps-deterministic-insight-artifact: validate-only
+   - validate-nrc-aps-deterministic-challenge-artifact: validate-only
+   - all validate existing persisted test-runtime artifacts only
+   - all fail closed on empty runtime
+   - none generate artifacts
+
+5. Current aggregate local gate note:
+   - gate-nrc-aps code path now includes Challenge pytest coverage
+   - it now invokes `validate-nrc-aps-deterministic-challenge-artifact` inside the aggregate path after Insight
+   - fresh full aggregate PASS was rerun on March 13, 2026
+   - aggregate pytest slice: 143 passed, 29 deselected
+   - post-validator dossier ambiguity negative slice: 1 passed, 55 deselected
+   - refreshed PASS reports now cover evidence bundle, citation pack, evidence report/export/package, context packet, context dossier, deterministic insight, and deterministic challenge
+
+6. Dossier retrieval rule:
+   - same `context_dossier_id` may legitimately exist across multiple run scopes
+   - id-only retrieval fails closed on ambiguity
+   - use `context_dossier_ref` for deterministic dossier retrieval in that case
+
+7. Operator note:
+   - current `gate-nrc-aps` dossier behavior still matches the accepted isolation:
+     the main API pytest slice excludes only `test_nrc_context_dossier_get_fails_closed_on_ambiguous_id`
+     and runs that negative dossier ambiguity test after the validator phase
+   - current live `validate-nrc-aps-context-packet` also invokes the dossier gate in the same action block
+
+8. Proof artifacts included in this package:
+   - handoff/tests/reports/nrc_aps_document_processing_proof_report.json
+   - handoff/tests/reports/nrc_aps_artifact_ingestion_validation_report.json
+   - handoff/tests/reports/nrc_aps_content_index_validation_report.json
+   - handoff/tests/reports/nrc_aps_evidence_bundle_validation_report.json
+   - handoff/tests/reports/nrc_aps_evidence_citation_pack_validation_report.json
+   - handoff/tests/reports/nrc_aps_evidence_report_validation_report.json
+   - handoff/tests/reports/nrc_aps_evidence_report_export_validation_report.json
+   - handoff/tests/reports/nrc_aps_evidence_report_export_package_validation_report.json
+   - handoff/tests/reports/nrc_aps_context_packet_validation_report.json
+   - handoff/tests/reports/nrc_aps_context_dossier_validation_report.json
+   - handoff/tests/reports/nrc_aps_deterministic_insight_artifact_validation_report.json
+   - handoff/tests/reports/nrc_aps_deterministic_challenge_artifact_validation_report.json
+
+   Important proof note:
+   - the three lower-layer document-processing reports above are current for the OCR-enabled lane
+   - the aggregate-scoped APS gate reports listed above are current for the fresh March 13, 2026 aggregate gate rerun
+   - any remaining checked-in report JSONs are carried package snapshots, not automatic proof of current branch truth
+
+9. Next safe direction:
+   - lower-layer OCR proof is now established in this workspace
+   - the next safe continuation can move above Deterministic Challenge Artifact v1
+   - rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes or when validating a new environment
+   - do not reopen the frozen upper analytical layers except for defect-driven work
+
+10. Historical note:
+   - handoff/_legacy_flat_copy/ is intentionally historical reference content.
+   - Use this structured handoff root as the current portable authority package.

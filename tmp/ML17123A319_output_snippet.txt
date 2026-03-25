@@ -1,0 +1,148 @@
+U.S. NUCLEAR REGULATORY COMMISSION
+Responses to Public Comments on
+Regulatory Guidance Documents Supporting the
+Final Rule on Enhanced Weapons, Firearms
+Background Checks, and Security Event
+Notifications
+NRC-2011-0014; NRC-2011-0015; NRC-2011-0017; RIN 3150-AI49
+U.S. Nuclear Regulatory Commission
+Office of Nuclear Security and Incident Response
+Office of Nuclear Reactor Regulation
+Office of Nuclear Material Safety and Safeguards
+Office of Nuclear Regulatory Research
+March 2023
+Technical Lead: P. Brochman, NSIR
+Project Manager: S. Schneider, NMSS
+ML17123A319
+This page intentionally blank.
+ii
+TABLE OF CONTENTS
+LIST OF ACRONYMS ................................................................................................................. iv
+INTRODUCTION .......................................................................................................................... 1
+Summary .................................................................................................................................. 1
+Public Meetings ....................................................................................................................... 2
+Discussion ............................................................................................................................... 2
+Comment Overview ................................................................................................................. 4
+Comment Grouping ................................................................................................................. 7
+RESPONSES TO SPECIFIC COMMENTS .................................................................................. 7
+A.
+Group A – General Comments .................................................................................... 7
+B.
+Group B – Regulatory Guide 5.62 ............................................................................... 7
+C.
+Group C – Regulatory Guide 5.86 ............................................................................. 32
+D.
+Group D – Regulatory Guide 5.87 ............................................................................. 34
+E.
+Group E – Weapons Safety Assessment ..................................................................... 37
+iii
+LIST OF ACRONYMS
+ADAMS
+Agencywide Documents Access and Management System
+AEA
+Atomic Energy Act of 1954 , as amended
+ATF
+Bureau of Alcohol, Tobacco, Firearms and Explosives
+CAA
+controlled access area
+CAP
+Corrective Action Program
+CFR
+Code of Federal Regulations
+CIKR
+Critical Infrastructure and Key Resource
+CJIS
+FBI’s Criminal Justice Information Services Division
+CSEN
+Cybersecurity Event Notification
+CY
+calendar year
+DCJS
+Department of Criminal Justice Services
+DG
+draft regulatory guide
+DHS
+U.S. Department of Homeland Security
+DOE
+U.S. Department of Energy
+FAA
+Federal Aviation Administration
+FBI
+Federal Bureau of Investigation
+FFL
+federal firearms license
+FRN
+Federal Register notice
+GTCC
+greater than Class C waste
+ILTAB
+Intelligence Liaison and Threat Assessment Branch (NRC)
+ILTAT
+Intelligence Liaison and Threat Assessment Team
+(NRC-Region IV)
+ISFSI
+independent spent fuel storage installation
+JTTF
+Joint Terrorism Task Force
+LLEA
+local law enforcement agency
+MAA
+material access area
+MILES
+multiple integrated laser engagement system
+NFA
+National Firearms Act of 1934
+NFAD
+ATF’s National Firearms Act Division
+NEI
+Nuclear Energy Institute
+NICS
+National Instant Criminal Background Check System
+NPUF
+non-power production or utilization facility
+NRC
+U.S. Nuclear Regulatory Commission
+NTN
+NICS transaction number
+NUREG
+NRC technical report designation series document
+PA
+protected area
+iv
+RD
+restricted data
+SEL
+Safeguards Event Log
+SNF
+spent nuclear fuel
+SNM
+special nuclear material
+SSNM
+strategic special nuclear material
+TTRG
+Terrorist Threats to the U.S. Homeland Reporting Guide for
+Critical Infrastructure and Key Resource Owners and Operators
+TVA
+Tennessee Valley Authority
+USACE
+U.S. Army Corps of Engineers
+VA
+vital area
+VAF
+voluntary appeal file
+WSA
+Weapons Safety Assessment
+v
+INTRODUCTION
+Summary
+This document presents the U.S. Nuclear Regulatory Commission (NRC) responses to written
+public comments received on the regulatory guidance documents supporting the final rule on
+“Enhanced Weapons, Firearms Background Checks, and Security Event Notifications”
+(hereafter the enhanced weapons) [RIN 3150-AI49]. The NRC published a proposed rule on
+February 3, 2011, in the Federal Register (76 FR 6200) for public comment with a 180-day
+public comment period. The NRC also published on the same day in the Federal Register
+separate notices (76 FR 6085, 76 FR 6086, and 76 FR 6087) for public comment on supporting
+guidance documents for the same 180-day period. These guidance documents included draft
+regulatory guides (DG)-5019, Revision 1, 1 and DG-5020, Revision 0, 2 and a draft weapons
+safety assessment (WSA). 3 On January 10, 2013, the NRC published a first supplemental
+proposed rule (78 FR 2214); 

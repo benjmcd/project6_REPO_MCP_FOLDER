@@ -1,0 +1,148 @@
+{
+  "checked_runs": 15,
+  "checks": [
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\25fa790e-2a61-4798-b5c6-09d265dba2db_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "25fa790e-2a61-4798-b5c6-09d265dba2db",
+      "schema_ok": true
+    },
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\ee3e00f0-1e55-494e-9a89-bf385f731fc3_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "ee3e00f0-1e55-494e-9a89-bf385f731fc3",
+      "schema_ok": true
+    },
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\1817f6de-9fda-4c01-8e15-11f733d4b30d_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "1817f6de-9fda-4c01-8e15-11f733d4b30d",
+      "schema_ok": true
+    },
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\0734c762-ab2f-4254-a005-140b636c287d_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "0734c762-ab2f-4254-a005-140b636c287d",
+      "schema_ok": true
+    },
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\ce30883f-1c1c-4f8e-b8ef-04194ca77246_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "ce30883f-1c1c-4f8e-b8ef-04194ca77246",
+      "schema_ok": true
+    },
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\fa9f8e74-9ecf-492d-9689-5cf9a87916d3_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "fa9f8e74-9ecf-492d-9689-5cf9a87916d3",
+      "schema_ok": true
+    },
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\6906930e-9795-4290-af8c-079819913061_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "6906930e-9795-4290-af8c-079819913061",
+      "schema_ok": true
+    },
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\7b8d83ab-e28c-4647-bd83-5ac436e4f616_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "7b8d83ab-e28c-4647-bd83-5ac436e4f616",
+      "schema_ok": true
+    },
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\0176d4f4-83d8-4124-b551-c90ba7860eff_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "0176d4f4-83d8-4124-b551-c90ba7860eff",
+      "schema_ok": true
+    },
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\81defb8c-fa0d-4916-a884-bd8f529e9196_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "81defb8c-fa0d-4916-a884-bd8f529e9196",
+      "schema_ok": true
+    },
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\6472aae3-246d-4507-9d09-c9ba8e7172fd_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "6472aae3-246d-4507-9d09-c9ba8e7172fd",
+      "schema_ok": true
+    },
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\a391b538-520a-4c22-b2aa-2768029b8b67_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "a391b538-520a-4c22-b2aa-2768029b8b67",
+      "schema_ok": true
+    },
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\3a0ea9fb-db5b-44b3-aca1-6782e10c0eb1_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "3a0ea9fb-db5b-44b3-aca1-6782e10c0eb1",
+      "schema_ok": true
+    },
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\6f0d2bac-8441-47f6-b437-5e205204a0a0_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "6f0d2bac-8441-47f6-b437-5e205204a0a0",
+      "schema_ok": true
+    },
+    {
+      "artifact_exists": true,
+      "artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\d6c81d31-05c8-4d09-a222-8188dced8054_aps_safeguard_v1.json",
+      "parse_ok": true,
+      "passed": true,
+      "reasons": [],
+      "run_id": "d6c81d31-05c8-4d09-a222-8188dced8054",
+      "schema_ok": true
+    }
+  ],
+  "evaluated_run_rows": 15,
+  "failed_runs": 0,
+  "passed": true,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.safeguard_validation.v1",
+  "schema_version": 1,
+  "validated_at_utc": "2026-03-13T15:54:06.432917Z"
+}

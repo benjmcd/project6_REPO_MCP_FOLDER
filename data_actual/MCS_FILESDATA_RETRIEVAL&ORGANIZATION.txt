@@ -1,0 +1,300 @@
+Code Block 1:
+"""
+################## RETRIEVE MCS documents v3 (optimized) -------------- USE THIS FOR FILE RETIEVAL
+### NOTE FOR CODEX: DO NOT IMPLEMENT/INTEGRATE THIS FILE RETRIEVAL CODE (RO ANY FILE RETRIEVAL CODE) INTO THE REPO. THIS IS JUST FOR REFERENCE.
+import os
+import time
+import requests
+import sciencebasepy
+import logging
+import re
+from requests.exceptions import RequestException
+
+# ------------------
+# 1) Specify the focus year here, e.g. "2025", "2024", etc.
+# ------------------
+focus_year = "2026"
+
+# Initialize ScienceBase session
+sb = sciencebasepy.SbSession()
+
+# Define search queries for all MCS <focus_year> datasets
+search_queries = {
+    "Salient": f"Mineral Commodity Summaries {focus_year} - Salient Commodity Data Release",
+    "Trends": f"Mineral Commodity Summaries {focus_year} - Mineral Industry Trends and Statistics",
+    "World":  f"Mineral Commodity Summaries {focus_year} - World Production, Capacity, and Reserves Commodity Data Release"
+}
+
+# Base directory for downloads (could also incorporate the year if you want)
+base_download_dir = f"mcs{focus_year}"
+
+# Rate limit settings
+REQUEST_DELAY = 1      # Base delay between API requests
+RETRY_DELAY = 2        # Delay for retries (1-2 seconds)
+MAX_RETRIES = 3        # Maximum retry attempts for failed downloads
+BACKOFF_FACTOR = 2     # Exponential backoff multiplier
+
+# Set up logging
+log_file = "api_requests.log"
+logging.basicConfig(
+    filename=log_file, level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+# Store failed downloads for later retries
+failed_downloads = []
+
+# Regex matches "MCS####_Mineral_Industry_Trends_and_Salient_Statistics.xml"
+# This remains year-agnostic, so it handles any 4-digit year.
+TRENDS_STATS_PATTERN = re.compile(r"MCS\d{4}_Mineral_Industry_Trends_and_Salient_Statistics\.xml", re.IGNORECASE)
+
+def get_target_directory(category, file_name):
+    """
+    Decide which folder the file should go in, based on:
+      - category (Salient, Trends, or World)
+      - file_name content
+      - focus_year usage for MCS<YEAR>_Fig / MCS<YEAR>_T...
+    """
+
+    # 1) If it's a ZIP, go to "archive":
+    if file_name.lower().endswith(".zip"):
+        return os.path.join(base_download_dir, "archive")
+
+    # 2) If it matches "..._Mineral_Industry_Trends_and_Salient_Statistics.xml",
+    #    put it in trends/metadata. (Regex is year-agnostic.)
+    if TRENDS_STATS_PATTERN.match(file_name):
+        return os.path.join(base_download_dir, "trends", "metadata")
+
+    # 3) If the file name starts with MCS<focus_year>_Fig or MCS<focus_year>_T, treat as "Trends"
+    if (file_name.startswith(f"MCS{focus_year}_Fig") or
+        file_name.startswith(f"MCS{focus_year}_T")):
+
+        # Distinguish CSV figures vs. tables vs. XML
+        if file_name.lower().endswith(".csv"):
+            # If 'fig' is in the name, we assume it's a figure
+            if "fig" in file_name.lower():
+                return os.path.join(base_download_dir, "trends", "figures")
+            elif "t" in file_name.lower():
+                return os.path.join(base_download_dir, "trends", "tables")
+        elif file_name.lower().endswith(".xml"):
+            return os.path.join(base_download_dir, "trends", "metadata")
+
+        # fallback if uncertain
+        return os.path.join(base_download_dir, "trends", "others")
+
+    # 4) Check if it's world data
+    if "World_Data" in file_name:
+        return os.path.join(base_download_dir, "world")
+
+    # 5) Commodity logic (Salient)
+    if category == "Salient":
+        if file_name.lower().startswith(f"mcs{focus_year}-"):
+            remainder = file_name[len(f"mcs{focus_year}-"):]  # e.g. "tin_meta.xml"
+            parts = remainder.split("_", 1)
+            commodity = parts[0] if parts else "unknown"
+            return os.path.join(base_download_dir, "commodities", commodity)
+        # If it doesn't match the known pattern, store in "unknown"
+        return os.path.join(base_download_dir, "commodities", "unknown")
+
+    # 6) If "Trends" or "World" was the category but not recognized, do:
+    if category == "Trends":
+        return os.path.join(base_download_dir, "trends", "others")
+    elif category == "World":
+        return os.path.join(base_download_dir, "world")
+
+    # 7) Fallback
+    return os.path.join(base_download_dir, "others")
+
+
+def download_file(file_url, file_name, category, attempt=1):
+    """
+    Download a file from file_url and save it in the target directory based on category and file name.
+    """
+    dir_path = get_target_directory(category, file_name)
+
+    # Create directory if it does not exist
+    os.makedirs(dir_path, exist_ok=True)
+
+    file_path = os.path.join(dir_path, file_name)
+
+    try:
+        start_time = time.time()
+        response = requests.get(file_url, stream=True)
+        elapsed_time = time.time() - start_time  # Track response time
+
+        if response.status_code == 200:
+            with open(file_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            log_msg = f"✅ SUCCESS: {file_name} | {response.status_code} | {elapsed_time:.2f}s"
+            print(f"  {log_msg}")
+            logging.info(log_msg)
+            return True  # Download successful
+
+        else:
+            log_msg = f"❌ ERROR: {file_name} | HTTP {response.status_code} | {elapsed_time:.2f}s"
+            print(f"  {log_msg}")
+            logging.error(log_msg)
+            return False  # Download failed
+
+    except RequestException as e:
+        log_msg = f"❌ REQUEST FAILED: {file_name} | {str(e)}"
+        print(f"  {log_msg}")
+        logging.error(log_msg)
+        return False  # Mark as failed
+
+# Main retrieval loop
+for category, query in search_queries.items():
+    print(f"\n🔍 Searching for: {query}")
+    logging.info(f"Searching for: {query}")
+
+    retry_attempts = 0
+    while retry_attempts < MAX_RETRIES:
+        try:
+            start_time = time.time()
+            search_results = sb.find_items({'q': query, 'max': 100})
+            elapsed_time = time.time() - start_time  # Calculate API response time
+            time.sleep(REQUEST_DELAY)
+            logging.info(f"✅ SEARCH SUCCESS: {query} | {elapsed_time:.2f}s")
+            break
+        except RequestException as e:
+            wait_time = (BACKOFF_FACTOR ** retry_attempts) * REQUEST_DELAY
+            log_msg = f"⚠️ API FAILURE: {query} | Retrying in {wait_time:.2f}s | Error: {str(e)}"
+            print(log_msg)
+            logging.warning(log_msg)
+            time.sleep(wait_time)
+            retry_attempts += 1
+    else:
+        log_msg = f"❌ MAX RETRIES REACHED: {query} | Skipping..."
+        print(log_msg)
+        logging.error(log_msg)
+        continue
+
+    if 'items' in search_results:
+        for item in search_results['items']:
+            item_id = item['id']
+            item_title = item['title']
+            print(f"\n📌 Item ID: {item_id}")
+            print(f"📄 Title: {item_title}")
+            logging.info(f"Processing Item: {item_id} - {item_title}")
+
+            # Retrieve full item details (with retries)
+            retry_attempts = 0
+            while retry_attempts < MAX_RETRIES:
+                try:
+                    start_time = time.time()
+                    item_details = sb.get_item(item_id)
+                    elapsed_time = time.time() - start_time
+                    time.sleep(REQUEST_DELAY)
+                    logging.info(f"✅ ITEM RETRIEVED: {item_id} | {elapsed_time:.2f}s")
+                    break
+                except RequestException as e:
+                    wait_time = (BACKOFF_FACTOR ** retry_attempts) * REQUEST_DELAY
+                    log_msg = f"⚠️ ITEM FAILURE: {item_id} | Retrying in {wait_time:.2f}s | Error: {str(e)}"
+                    print(log_msg)
+                    logging.warning(log_msg)
+                    time.sleep(wait_time)
+                    retry_attempts += 1
+            else:
+                log_msg = f"❌ MAX RETRIES REACHED: {item_id} | Skipping..."
+                print(log_msg)
+                logging.error(log_msg)
+                continue
+
+            # Download files associated with the item.
+            if 'files' in item_details:
+                files = item_details['files']
+                print(f"  🔹 Found {len(files)} file(s).")
+                logging.info(f"Found {len(files)} file(s) for {item_id}")
+
+                for file_info in files:
+                    file_name = file_info['name']
+                    file_url = file_info['url']
+                    print(f"  ⬇️ Downloading {file_name} from {file_url}")
+                    success = download_file(file_url, file_name, category)
+                    if not success:
+                        failed_downloads.append((file_url, file_name, category))
+            else:
+                log_msg = f"  ⚠️ No files found for {item_id}"
+                print(log_msg)
+                logging.warning(log_msg)
+
+# Retry any failed downloads
+if failed_downloads:
+    print("\n🔄 Retrying failed downloads...\n")
+    logging.info("🔄 Retrying failed downloads...")
+
+    for file_url, file_name, category in failed_downloads:
+        print(f"  ⬇️ Retrying {file_name} from {file_url}")
+        time.sleep(RETRY_DELAY)
+        success = download_file(file_url, file_name, category)
+        if not success:
+            print(f"  ❌ FINAL FAILURE: {file_name}")
+            logging.error(f"FINAL FAILURE: {file_name}")
+
+print("\n✅ Download process complete.")
+logging.info("✅ Download process complete.")
+
+"""
+
+Code Block 2:
+"""
+import os
+import json
+
+def build_directory_structure(directory):
+    """
+    Recursively builds a dictionary representing the directory structure.
+
+    Each directory is represented as:
+      {
+         "name": <directory name>,
+         "type": "directory",
+         "children": [<list of subdirectories and files>]
+      }
+    Files are represented as:
+      {
+         "name": <file name>,
+         "type": "file"
+      }
+    """
+    # Check if the directory exists; if not, output a message and return None.
+    if not os.path.exists(directory):
+        print(f"Directory '{directory}' does not exist. No files were downloaded.")
+        return None
+
+    # Build the dictionary for this directory.
+    structure = {
+        "name": os.path.basename(directory),
+        "type": "directory",
+        "children": []  # This will hold files and subdirectories.
+    }
+
+    # Process each item in the directory in sorted order.
+    for item in sorted(os.listdir(directory)):
+        item_path = os.path.join(directory, item)
+        if os.path.isdir(item_path):
+            # Recursively build structure for subdirectory.
+            structure["children"].append(build_directory_structure(item_path))
+        else:
+            # Append file details.
+            structure["children"].append({
+                "name": item,
+                "type": "file"
+            })
+    return structure
+
+# Define the base directory.
+base_dir = "mcs206"
+
+# Build the JSON structure for the folder hierarchy.
+directory_structure = build_directory_structure(base_dir)
+
+if directory_structure is not None:
+    # Output the result as a JSON-formatted string.
+    json_output = json.dumps(directory_structure, indent=2)
+    print(json_output)
+
+
+"""
+

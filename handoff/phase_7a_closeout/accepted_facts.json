@@ -1,0 +1,20 @@
+{
+  "phase_7_status": "accepted-state",
+  "phase_7a_status": "accepted-state",
+  "corpus_total": 43,
+  "stage_a_count": 16,
+  "stage_b_count": 27,
+  "advanced_ocr_total": 19,
+  "advanced_table_total": 28,
+  "fallback_only_total": 7,
+  "key_artifact_directories": [
+    "backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136",
+    "backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136/artifact_audit"
+  ],
+  "acceptance_basis": "Artifact Audit run_20260314_010136",
+  "frozen_next_milestone_inputs": [
+    "extracted_text_units",
+    "table_markdown_units",
+    "quality_metadata"
+  ]
+}

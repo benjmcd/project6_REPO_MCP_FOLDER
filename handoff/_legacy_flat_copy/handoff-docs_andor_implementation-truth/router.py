@@ -1,0 +1,429 @@
+from __future__ import annotations
+
+from datetime import datetime
+
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Header, HTTPException, Query, UploadFile, status
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_db
+from app.models import AnalysisRun, AnnotationWindow, ConnectorRun, ConnectorRunTarget, Dataset, DatasetVersion, VariableProfile
+from app.schemas.api import (
+    AnalysisRecommendationOut,
+    AnalysisRecommendationRequest,
+    AnalysisRunIn,
+    AnalysisRunOut,
+    AnnotationWindowIn,
+    AnnotationWindowOut,
+    ConnectorRunOut,
+    ConnectorRunEventsPageOut,
+    ConnectorRunContentUnitsPageOut,
+    ConnectorRunReportsOut,
+    ConnectorRunSubmitOut,
+    ConnectorRunTargetsPageOut,
+    DatasetDetailOut,
+    DatasetOut,
+    NrcApsContentSearchIn,
+    NrcApsContentSearchOut,
+    NrcApsEvidenceBundleAssembleIn,
+    NrcApsEvidenceBundleOut,
+    NrcAdamsApsConnectorRunIn,
+    ProfileRequest,
+    ScienceBaseConnectorRunIn,
+    ScienceBaseMcsConnectorRunIn,
+    TransformRecommendationOut,
+    TransformationApplyOut,
+    TransformationApplyRequest,
+    UploadResponse,
+    VariableProfileOut,
+)
+from app.services.analysis import recommend_analysis, run_analysis
+from app.services.connectors_sciencebase import (
+    RunNotFoundError,
+    SubmissionConflictError,
+    execute_connector_run,
+    request_cancel_run,
+    request_resume_run,
+    list_connector_run_events,
+    serialize_connector_run_reports,
+    serialize_connector_run,
+    serialize_connector_target,
+    submit_connector_run,
+)
+from app.services.connectors_nrc_adams import execute_nrc_adams_run, submit_nrc_adams_run
+from app.services import nrc_aps_content_index
+from app.services import nrc_aps_evidence_bundle
+from app.services.ingest import upload_csv_to_dataset
+from app.services.profiling import profile_dataset_version
+from app.services.transforms import apply_transformations, recommend_transformations
+
+api_router = APIRouter()
+
+
+@api_router.post('/sources/upload', response_model=UploadResponse)
+def upload_source(file: UploadFile = File(...), name: str = Form(...), description: str | None = Form(None), domain_pack: str | None = Form(None), primary_time_column: str | None = Form(None), db: Session = Depends(get_db)) -> UploadResponse:
+    return UploadResponse.model_validate(upload_csv_to_dataset(db, file, name, description, domain_pack, primary_time_column))
+
+
+@api_router.get('/datasets', response_model=list[DatasetOut])
+def list_datasets(db: Session = Depends(get_db)) -> list[DatasetOut]:
+    datasets = db.query(Dataset).all()
+    return [DatasetOut.model_validate({'dataset_id': item.dataset_id, 'name': item.name, 'description': item.description, 'time_column': item.time_column, 'frequency_hint': item.frequency_hint}) for item in datasets]
+
+
+@api_router.get('/datasets/{dataset_id}', response_model=DatasetDetailOut)
+def get_dataset(dataset_id: str, db: Session = Depends(get_db)) -> DatasetDetailOut:
+    dataset = db.get(Dataset, dataset_id)
+    if not dataset:
+        raise HTTPException(status_code=404, detail='dataset not found')
+    versions = db.query(DatasetVersion).filter(DatasetVersion.dataset_id == dataset_id).all()
+    return DatasetDetailOut.model_validate({'dataset_id': dataset.dataset_id, 'name': dataset.name, 'description': dataset.description, 'time_column': dataset.time_column, 'frequency_hint': dataset.frequency_hint, 'versions': [{'dataset_version_id': v.dataset_version_id, 'version_label': v.version_label, 'version_type': v.version_type, 'row_count': v.row_count} for v in versions]})
+
+
+@api_router.post('/datasets/{dataset_id}/versions/{dataset_version_id}/profile', response_model=list[VariableProfileOut])
+def profile_version(dataset_id: str, dataset_version_id: str, payload: ProfileRequest, db: Session = Depends(get_db)) -> list[VariableProfileOut]:
+    dataset = db.get(Dataset, dataset_id)
+    version = db.get(DatasetVersion, dataset_version_id)
+    if not dataset or not version or version.dataset_id != dataset.dataset_id:
+        raise HTTPException(status_code=404, detail='dataset or version not found')
+    profiles = profile_dataset_version(db, dataset_version_id, detect_seasonality=payload.detect_seasonality, detect_stationarity=payload.detect_stationarity)
+    return [VariableProfileOut.model_validate({'variable_profile_id': p.variable_profile_id, 'variable_id': p.variable_id, 'missingness_rate': p.missingness_rate, 'mean_value': p.mean_value, 'median_value': p.median_value, 'min_value': p.min_value, 'max_value': p.max_value, 'std_dev': p.std_dev, 'skewness': p.skewness, 'outlier_fraction': p.outlier_fraction, 'negative_values_flag': p.negative_values_flag, 'zero_values_flag': p.zero_values_flag, 'bounded_flag': p.bounded_flag, 'seasonality_flag': p.seasonality_flag, 'stationarity_hint': p.stationarity_hint, 'summary_json': p.summary_json}) for p in profiles]
+
+
+@api_router.post('/datasets/{dataset_id}/versions/{dataset_version_id}/transformations/recommend', response_model=list[TransformRecommendationOut])
+def recommend_transforms_route(dataset_id: str, dataset_version_id: str, db: Session = Depends(get_db)) -> list[TransformRecommendationOut]:
+    dataset = db.get(Dataset, dataset_id)
+    version = db.get(DatasetVersion, dataset_version_id)
+    if not dataset or not version or version.dataset_id != dataset.dataset_id:
+        raise HTTPException(status_code=404, detail='dataset or version not found')
+    profile_count = db.query(VariableProfile).filter(VariableProfile.dataset_version_id == dataset_version_id).count()
+    if profile_count == 0:
+        profile_dataset_version(db, dataset_version_id)
+    return [TransformRecommendationOut.model_validate(item) for item in recommend_transformations(db, dataset_version_id)]
+
+
+@api_router.post('/datasets/{dataset_id}/versions/{dataset_version_id}/transformations/apply', response_model=TransformationApplyOut)
+def apply_transforms_route(dataset_id: str, dataset_version_id: str, payload: TransformationApplyRequest, db: Session = Depends(get_db)) -> TransformationApplyOut:
+    try:
+        return TransformationApplyOut.model_validate(apply_transformations(db, dataset_id, dataset_version_id, payload.version_label, payload.rationale, [item.model_dump() for item in payload.steps]))
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@api_router.post('/datasets/{dataset_id}/versions/{dataset_version_id}/annotations', response_model=AnnotationWindowOut)
+def create_annotation(dataset_id: str, dataset_version_id: str, payload: AnnotationWindowIn, db: Session = Depends(get_db)) -> AnnotationWindowOut:
+    dataset = db.get(Dataset, dataset_id)
+    version = db.get(DatasetVersion, dataset_version_id)
+    if not dataset or not version or version.dataset_id != dataset.dataset_id:
+        raise HTTPException(status_code=404, detail='dataset or version not found')
+    annotation = AnnotationWindow(dataset_version_id=dataset_version_id, label=payload.label, annotation_type=payload.annotation_type, start_time=datetime.fromisoformat(payload.start_time), end_time=datetime.fromisoformat(payload.end_time), notes=payload.notes)
+    db.add(annotation)
+    db.commit()
+    db.refresh(annotation)
+    return AnnotationWindowOut.model_validate({'annotation_window_id': annotation.annotation_window_id, 'label': annotation.label, 'annotation_type': annotation.annotation_type, 'start_time': annotation.start_time, 'end_time': annotation.end_time, 'notes': annotation.notes})
+
+
+@api_router.get('/datasets/{dataset_id}/versions/{dataset_version_id}/annotations', response_model=list[AnnotationWindowOut])
+def list_annotations(dataset_id: str, dataset_version_id: str, db: Session = Depends(get_db)) -> list[AnnotationWindowOut]:
+    dataset = db.get(Dataset, dataset_id)
+    version = db.get(DatasetVersion, dataset_version_id)
+    if not dataset or not version or version.dataset_id != dataset.dataset_id:
+        raise HTTPException(status_code=404, detail='dataset or version not found')
+    annotations = db.query(AnnotationWindow).filter(AnnotationWindow.dataset_version_id == dataset_version_id).order_by(AnnotationWindow.start_time.asc()).all()
+    return [AnnotationWindowOut.model_validate({'annotation_window_id': a.annotation_window_id, 'label': a.label, 'annotation_type': a.annotation_type, 'start_time': a.start_time, 'end_time': a.end_time, 'notes': a.notes}) for a in annotations]
+
+
+@api_router.post('/datasets/{dataset_id}/versions/{dataset_version_id}/analysis/recommend', response_model=AnalysisRecommendationOut)
+def recommend_analysis_route(dataset_id: str, dataset_version_id: str, payload: AnalysisRecommendationRequest, db: Session = Depends(get_db)) -> AnalysisRecommendationOut:
+    dataset = db.get(Dataset, dataset_id)
+    version = db.get(DatasetVersion, dataset_version_id)
+    if not dataset or not version or version.dataset_id != dataset.dataset_id:
+        raise HTTPException(status_code=404, detail='dataset or version not found')
+    try:
+        return AnalysisRecommendationOut.model_validate(recommend_analysis(db, dataset_version_id, payload.goal_type))
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@api_router.post('/analysis-runs', response_model=AnalysisRunOut)
+def create_analysis_run(payload: AnalysisRunIn, db: Session = Depends(get_db)) -> AnalysisRunOut:
+    try:
+        run = run_analysis(db, payload.dataset_version_id, payload.method_name, payload.goal_type, payload.parameters, payload.annotation_window_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _serialize_analysis_run(db, run.analysis_run_id)
+
+
+@api_router.get('/analysis-runs/{analysis_run_id}', response_model=AnalysisRunOut)
+def get_analysis_run(analysis_run_id: str, db: Session = Depends(get_db)) -> AnalysisRunOut:
+    return _serialize_analysis_run(db, analysis_run_id)
+
+
+@api_router.post("/connectors/sciencebase-public/runs", status_code=status.HTTP_202_ACCEPTED, response_model=ConnectorRunSubmitOut)
+def create_sciencebase_public_run(
+    payload: ScienceBaseConnectorRunIn,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> ConnectorRunSubmitOut:
+    try:
+        run, created = submit_connector_run(
+            db,
+            connector_key="sciencebase_public",
+            payload=payload.model_dump(),
+            idempotency_key=idempotency_key,
+        )
+    except SubmissionConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if created and run.status == "pending":
+        background_tasks.add_task(execute_connector_run, run.connector_run_id)
+    return ConnectorRunSubmitOut.model_validate(
+        {
+            "connector_run_id": run.connector_run_id,
+            "status": run.status,
+            "created": created,
+            "submitted_at": run.submitted_at,
+            "poll_url": f"/api/v1/connectors/runs/{run.connector_run_id}",
+            "submission_idempotency_key": run.submission_idempotency_key,
+            "request_fingerprint": run.request_fingerprint,
+        }
+    )
+
+
+@api_router.post("/connectors/sciencebase-mcs/runs", status_code=status.HTTP_202_ACCEPTED, response_model=ConnectorRunSubmitOut)
+def create_sciencebase_mcs_run(
+    payload: ScienceBaseMcsConnectorRunIn,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> ConnectorRunSubmitOut:
+    try:
+        run, created = submit_connector_run(
+            db,
+            connector_key="sciencebase_mcs",
+            payload=payload.model_dump(),
+            idempotency_key=idempotency_key,
+        )
+    except SubmissionConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if created and run.status == "pending":
+        background_tasks.add_task(execute_connector_run, run.connector_run_id)
+    return ConnectorRunSubmitOut.model_validate(
+        {
+            "connector_run_id": run.connector_run_id,
+            "status": run.status,
+            "created": created,
+            "submitted_at": run.submitted_at,
+            "poll_url": f"/api/v1/connectors/runs/{run.connector_run_id}",
+            "submission_idempotency_key": run.submission_idempotency_key,
+            "request_fingerprint": run.request_fingerprint,
+        }
+    )
+
+
+@api_router.post("/connectors/nrc-adams-aps/runs", status_code=status.HTTP_202_ACCEPTED, response_model=ConnectorRunSubmitOut)
+def create_nrc_adams_aps_run(
+    payload: NrcAdamsApsConnectorRunIn,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> ConnectorRunSubmitOut:
+    try:
+        run, created = submit_nrc_adams_run(
+            db,
+            payload=payload.model_dump(),
+            idempotency_key=idempotency_key,
+        )
+    except SubmissionConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if created and run.status == "pending":
+        background_tasks.add_task(execute_nrc_adams_run, run.connector_run_id)
+    return ConnectorRunSubmitOut.model_validate(
+        {
+            "connector_run_id": run.connector_run_id,
+            "status": run.status,
+            "created": created,
+            "submitted_at": run.submitted_at,
+            "poll_url": f"/api/v1/connectors/runs/{run.connector_run_id}",
+            "submission_idempotency_key": run.submission_idempotency_key,
+            "request_fingerprint": run.request_fingerprint,
+        }
+    )
+
+
+@api_router.get("/connectors/runs/{connector_run_id}", response_model=ConnectorRunOut)
+def get_connector_run(connector_run_id: str, db: Session = Depends(get_db)) -> ConnectorRunOut:
+    run = db.get(ConnectorRun, connector_run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="connector run not found")
+    return ConnectorRunOut.model_validate(serialize_connector_run(db, run))
+
+
+@api_router.get("/connectors/runs/{connector_run_id}/targets", response_model=ConnectorRunTargetsPageOut)
+def get_connector_run_targets(
+    connector_run_id: str,
+    limit: int = Query(default=50, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    status_filter: str | None = Query(default=None, alias="status"),
+    db: Session = Depends(get_db),
+) -> ConnectorRunTargetsPageOut:
+    run = db.get(ConnectorRun, connector_run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="connector run not found")
+    query = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == connector_run_id)
+    if status_filter:
+        query = query.filter(ConnectorRunTarget.status == status_filter)
+    total = query.count()
+    targets = query.order_by(ConnectorRunTarget.ordinal.asc()).offset(offset).limit(limit).all()
+    return ConnectorRunTargetsPageOut.model_validate(
+        {
+            "connector_run_id": connector_run_id,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "targets": [serialize_connector_target(item) for item in targets],
+        }
+    )
+
+
+@api_router.get("/connectors/runs/{connector_run_id}/events", response_model=ConnectorRunEventsPageOut)
+def get_connector_run_events(
+    connector_run_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+) -> ConnectorRunEventsPageOut:
+    run = db.get(ConnectorRun, connector_run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="connector run not found")
+    return ConnectorRunEventsPageOut.model_validate(
+        list_connector_run_events(
+            db,
+            connector_run_id=connector_run_id,
+            limit=limit,
+            offset=offset,
+        )
+    )
+
+
+@api_router.get("/connectors/runs/{connector_run_id}/reports", response_model=ConnectorRunReportsOut)
+def get_connector_run_reports(connector_run_id: str, db: Session = Depends(get_db)) -> ConnectorRunReportsOut:
+    run = db.get(ConnectorRun, connector_run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="connector run not found")
+    return ConnectorRunReportsOut.model_validate(serialize_connector_run_reports(connector_run_id))
+
+
+@api_router.get("/connectors/runs/{connector_run_id}/content-units", response_model=ConnectorRunContentUnitsPageOut)
+def get_connector_run_content_units(
+    connector_run_id: str,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+) -> ConnectorRunContentUnitsPageOut:
+    run = db.get(ConnectorRun, connector_run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="connector run not found")
+    payload = nrc_aps_content_index.list_content_units_for_run(
+        db,
+        run_id=connector_run_id,
+        limit=limit,
+        offset=offset,
+    )
+    return ConnectorRunContentUnitsPageOut.model_validate(payload)
+
+
+@api_router.post("/connectors/nrc-adams-aps/content-search", response_model=NrcApsContentSearchOut)
+def search_nrc_adams_content(
+    payload: NrcApsContentSearchIn,
+    db: Session = Depends(get_db),
+) -> NrcApsContentSearchOut:
+    run_id = str(payload.run_id or "").strip() or None
+    if run_id:
+        run = db.get(ConnectorRun, run_id)
+        if not run:
+            raise HTTPException(status_code=404, detail="connector run not found")
+    limit = max(1, min(int(payload.limit), 100))
+    offset = max(0, int(payload.offset))
+    try:
+        result = nrc_aps_content_index.search_content_units(
+            db,
+            query_text=payload.query,
+            run_id=run_id,
+            limit=limit,
+            offset=offset,
+        )
+    except ValueError as exc:
+        if str(exc) == "empty_query":
+            raise HTTPException(status_code=422, detail="query must contain at least one alphanumeric token") from exc
+        raise
+    return NrcApsContentSearchOut.model_validate(result)
+
+
+@api_router.post("/connectors/nrc-adams-aps/evidence-bundles", response_model=NrcApsEvidenceBundleOut)
+def assemble_nrc_adams_evidence_bundle(
+    payload: NrcApsEvidenceBundleAssembleIn,
+    db: Session = Depends(get_db),
+) -> NrcApsEvidenceBundleOut:
+    try:
+        result = nrc_aps_evidence_bundle.assemble_evidence_bundle(
+            db,
+            request_payload=payload.model_dump(),
+        )
+    except nrc_aps_evidence_bundle.EvidenceBundleError as exc:
+        raise HTTPException(
+            status_code=int(exc.status_code),
+            detail={"code": str(exc.code), "message": str(exc.message)},
+        ) from exc
+    return NrcApsEvidenceBundleOut.model_validate(result)
+
+
+@api_router.get("/connectors/nrc-adams-aps/evidence-bundles/{bundle_id}", response_model=NrcApsEvidenceBundleOut)
+def get_nrc_adams_evidence_bundle(
+    bundle_id: str,
+    limit: int | None = Query(default=None),
+    offset: int | None = Query(default=0),
+) -> NrcApsEvidenceBundleOut:
+    try:
+        result = nrc_aps_evidence_bundle.get_persisted_bundle_page(
+            bundle_id=str(bundle_id or "").strip(),
+            limit=limit,
+            offset=offset,
+        )
+    except nrc_aps_evidence_bundle.EvidenceBundleError as exc:
+        raise HTTPException(
+            status_code=int(exc.status_code),
+            detail={"code": str(exc.code), "message": str(exc.message)},
+        ) from exc
+    return NrcApsEvidenceBundleOut.model_validate(result)
+
+
+@api_router.post("/connectors/runs/{connector_run_id}/resume", status_code=status.HTTP_202_ACCEPTED, response_model=ConnectorRunOut)
+def resume_connector_run(
+    connector_run_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+) -> ConnectorRunOut:
+    try:
+        run = request_resume_run(db, connector_run_id)
+    except RunNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if run.status == "pending":
+        background_tasks.add_task(execute_connector_run, run.connector_run_id)
+    return ConnectorRunOut.model_validate(serialize_connector_run(db, run))
+
+
+@api_router.post("/connectors/runs/{connector_run_id}/cancel", response_model=ConnectorRunOut)
+def cancel_connector_run(connector_run_id: str, db: Session = Depends(get_db)) -> ConnectorRunOut:
+    try:
+        run = request_cancel_run(db, connector_run_id)
+    except RunNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return ConnectorRunOut.model_validate(serialize_connector_run(db, run))
+
+
+def _serialize_analysis_run(db: Session, analysis_run_id: str) -> AnalysisRunOut:
+    run = db.get(AnalysisRun, analysis_run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail='analysis run not found')
+    payload = {'analysis_run_id': run.analysis_run_id, 'dataset_version_id': run.dataset_version_id, 'method_name': run.method_name, 'goal_type': run.goal_type, 'status': run.status, 'route_reason': run.route_reason, 'parameters_json': run.parameters_json, 'artifacts': [{'artifact_id': a.artifact_id, 'artifact_type': a.artifact_type, 'title': a.title, 'storage_ref': a.storage_ref, 'summary': a.summary, 'metadata_json': a.metadata_json} for a in run.artifacts], 'assumptions': [{'assumption_check_id': a.assumption_check_id, 'assumption_name': a.assumption_name, 'check_result': a.check_result, 'severity': a.severity, 'notes': a.notes} for a in run.assumptions], 'caveats': [{'caveat_note_id': c.caveat_note_id, 'caveat_type': c.caveat_type, 'severity': c.severity, 'message': c.message} for c in run.caveats]}
+    return AnalysisRunOut.model_validate(payload)

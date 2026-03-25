@@ -1,0 +1,12 @@
+{
+  "bytes_read": 332891,
+  "declared_content_type": "application/pdf",
+  "generated_at_utc": "2026-03-13T17:05:49.774942Z",
+  "run_id": "run-ml17123a319-proof",
+  "schema_id": "local.nrc_aps_download_exchange.v1",
+  "sha256": "a7f28a01ed83168ee1d8fcdf25f4f57aa6636283d1791000d9ec1b6ec5675605",
+  "source_mode": "local_file_injection",
+  "source_pdf": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\ML17123A319.pdf",
+  "source_pdf_uri": "file:///C:/Users/benny/OneDrive/Desktop/Project6/data_demo/ML17123A319.pdf",
+  "target_id": "target-ml17123a319-proof"
+}

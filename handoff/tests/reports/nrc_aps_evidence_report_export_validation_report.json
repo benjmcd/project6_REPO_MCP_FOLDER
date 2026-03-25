@@ -1,0 +1,42 @@
+{
+  "checked_runs": 3,
+  "checks": [
+    {
+      "evidence_report_export_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-context-packet-api-1_61afae9d94387ecea764c2ee_aps_evidence_report_export_v1.json",
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-context-packet-api-1_683c4b85b763a788c7d5a1a7_aps_evidence_report_export_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-context-packet-api-1"
+    },
+    {
+      "evidence_report_export_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-report-export-package-api-1_55804d6d929c0bb9cf46042a_aps_evidence_report_export_v1.json",
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-report-export-package-api-1_8afd9a5c01f1c79cfb7dc327_aps_evidence_report_export_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-report-export-package-api-1"
+    },
+    {
+      "evidence_report_export_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-report-export-api-1_aaaf681300e969755352ebb2_aps_evidence_report_export_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-report-export-api-1"
+    }
+  ],
+  "evaluated_run_rows": 3,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-11T21:56:15.400681Z",
+  "passed": true,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.evidence_report_export_gate.v1",
+  "schema_version": 1
+}

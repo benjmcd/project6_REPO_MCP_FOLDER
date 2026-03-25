@@ -1,0 +1,87 @@
+{
+  "citation_pack_checksum": "4ded157c5dc455e96e8c5834627aafcbf8c2b70297372d6f578b5e382c84962c",
+  "citation_pack_id": "e3c9a2fd1c08fa0127d645a1ca3049d651a93965138c7f414aafb2317aea9ae1",
+  "citations": [
+    {
+      "accession_number": null,
+      "blob_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_b\\blob.bin",
+      "blob_sha256": "blob-context-dossier-api-2",
+      "chunk_id": "chunk-context-dossier-api-3",
+      "chunk_ordinal": 0,
+      "chunk_text_sha256": "sha-context-dossier-api-3",
+      "chunking_contract_id": "aps_chunking_v1",
+      "citation_id": "b88934be0e2459c648fcc5cbd3f3a75db00681441dfb7f3ace34c3ef99d1c5d1",
+      "citation_label": "APS-CIT-00001",
+      "citation_ordinal": 1,
+      "content_contract_id": "aps_content_units_v1",
+      "content_id": "content-context-dossier-api-2",
+      "content_units_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_b\\content_units.json",
+      "discovery_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_b\\discovery.json",
+      "download_exchange_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_b\\download_exchange.json",
+      "end_char": 11,
+      "group_id": "b2bce92e3ba1811228780c28420a147de08f21ee04a681699b04e6bf7e26cab1",
+      "highlight_spans": [
+        {
+          "chunk_end": 11,
+          "chunk_start": 6,
+          "snippet_end": 11,
+          "snippet_start": 6
+        }
+      ],
+      "matched_unique_query_terms": 1,
+      "normalization_contract_id": "aps_text_normalization_v1",
+      "normalized_text_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_b\\normalized.txt",
+      "normalized_text_sha256": "norm-context-dossier-api-2",
+      "run_id": "run-context-dossier-api-1",
+      "selection_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\context_dossier_api_refs_b\\selection.json",
+      "snippet_end_char": 11,
+      "snippet_start_char": 0,
+      "snippet_text": "alpha delta",
+      "start_char": 0,
+      "summed_term_frequency": 1,
+      "target_id": "target-context-dossier-api-2"
+    }
+  ],
+  "derivation_contract_id": "aps_evidence_citation_derivation_v1",
+  "generated_at_utc": "2026-03-12T19:31:01.750433Z",
+  "schema_id": "aps.evidence_citation_pack.v1",
+  "schema_version": 1,
+  "source_bundle": {
+    "bundle_checksum": "7464484f8a4709d9ca9f86feeaedf3461f52977ff806977d33cccf2f7d14e605",
+    "bundle_id": "030eb20c369adf83a9ad8436bd64fca79422d21734875357ebcc5188145c7e34",
+    "bundle_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_030eb20c369adf83a9ad8436bd64fca79422d21734875357ebcc5188145c7e34_aps_evidence_bundle_v1.json",
+    "mode": "query",
+    "query": "delta",
+    "query_tokens": [
+      "delta"
+    ],
+    "request_identity_hash": "d5424d90d5348665439cb4794c811e4dedca4111c273125decd9eb007466e108",
+    "run_id": "run-context-dossier-api-1",
+    "schema_id": "aps.evidence_bundle.v1",
+    "schema_version": 1,
+    "snapshot": {
+      "db_fingerprint": "6f8c353f799a5f9530618aaee5b6b56febbfba9b4809b7ee6328061c1070c84b",
+      "index_max_updated_at_utc": "2026-03-12T19:31:01.663917Z",
+      "index_row_count": 1,
+      "index_state_hash": "c7ba0623dff058361bf6cea0ef085531b14676f3407badb11cf28b76afc7a4eb",
+      "read_scope": {
+        "filters": {
+          "accession_numbers": null,
+          "chunking_contract_id": null,
+          "content_contract_id": null,
+          "content_ids": null,
+          "normalization_contract_id": null,
+          "target_ids": null
+        },
+        "run_id": "run-context-dossier-api-1"
+      },
+      "snapshot_completed_at_utc": "2026-03-12T19:31:01.733431Z",
+      "snapshot_contract_id": "aps_evidence_snapshot_v1",
+      "snapshot_started_at_utc": "2026-03-12T19:31:01.732431Z"
+    },
+    "total_groups": 1,
+    "total_hits": 1
+  },
+  "total_citations": 1,
+  "total_groups": 1
+}

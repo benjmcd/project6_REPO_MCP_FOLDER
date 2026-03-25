@@ -1,0 +1,24 @@
+{
+  "challenge_mode": "deterministic_checks_only",
+  "deterministic_challenge_artifact_checksum": "7f868dabe420a63317ed6239cd453230306ea042a0c36c64d23be6abed314086",
+  "deterministic_challenge_artifact_id": "694b5e23508d4e3ee5ee7a05b91371a5266096e32fa16d3658b9b3e2f847d777",
+  "error_code": "challenge_artifact_conflict",
+  "error_message": "existing persisted deterministic challenge artifact conflicts with derived artifact: challenge_artifact_invalid",
+  "generated_at_utc": "2026-03-13T02:40:11.770033Z",
+  "owner_run_id": "run-challenge-service-2",
+  "ruleset_contract_id": "aps_deterministic_challenge_ruleset_v1",
+  "ruleset_id": "single_insight_challenge_checks",
+  "ruleset_version": 1,
+  "schema_id": "aps.deterministic_challenge_artifact_failure.v1",
+  "schema_version": 1,
+  "source_deterministic_insight_artifact": {
+    "deterministic_insight_artifact_checksum": "117657137b47b4279b19df02a541da2237e1125a260838a32d304e5f8c594733",
+    "deterministic_insight_artifact_id": "cb5d732e516a1d35ea9cef7b44ce798e3c22e30aeb05cdfb576b36d8a7e9304d",
+    "deterministic_insight_artifact_ref": "C:\\Users\\benny\\AppData\\Local\\Temp\\pytest-of-benny\\pytest-96\\test_persisted_deterministic_c1\\run_run-challenge-service-2_cb5d732e516a1d35ea9cef7b_aps_deterministic_insight_artifact_v1.json"
+  },
+  "source_request": {
+    "deterministic_insight_artifact_id": null,
+    "deterministic_insight_artifact_ref": "C:\\Users\\benny\\AppData\\Local\\Temp\\pytest-of-benny\\pytest-96\\test_persisted_deterministic_c1\\run_run-challenge-service-2_cb5d732e516a1d35ea9cef7b_aps_deterministic_insight_artifact_v1.json",
+    "persist_challenge_artifact": true
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "checked_runs": 0,
+  "checks": [],
+  "evaluated_run_rows": 0,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-12T13:50:35.643179Z",
+  "no_runs_failure": true,
+  "passed": false,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_ctx_phase_a\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.context_packet_gate.v1",
+  "schema_version": 1
+}

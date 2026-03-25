@@ -1,0 +1,92 @@
+{
+  "case_id": "search_282794c070db205db754abb6c14394055555fd4ff73e02d89ce39af86c321fce",
+  "case_type": "search",
+  "dialect": "guide_native",
+  "endpoint": "POST /aps/api/search",
+  "evidence_refs": [
+    "run:8b297957-c2f5-4fe2-add9-1f2e4409e972",
+    "manifest:8b297957-c2f5-4fe2-add9-1f2e4409e972_discovery.json",
+    "snapshot:8b297957-c2f5-4fe2-add9-1f2e4409e972_19543669926e4ac581c56191931b5bbc_search_exchange.json"
+  ],
+  "expected": {
+    "accession_numbers": [
+      "ML900000001"
+    ],
+    "count_returned": 1,
+    "dialect_order": [],
+    "parse_status": "ok",
+    "projection_keys": [
+      "accession_number",
+      "content_present",
+      "content_source_path",
+      "date_added_timestamp",
+      "docket_number",
+      "document_date",
+      "document_title",
+      "document_type",
+      "document_type_known",
+      "url"
+    ],
+    "raw_total_key": "count",
+    "results_key": "results",
+    "roundtrip_payload_hash": "b2d63273a29feb18491366f9fab86935aad347dae171bbade15e01e7d3e70b4b",
+    "schema_variant": "results_with_document",
+    "status_class": "success",
+    "total_hits": 1,
+    "wrapper_variant": null
+  },
+  "metadata": {
+    "dialect_observed": "guide_native",
+    "dialect_observed_raw": "guide_native",
+    "evidence_id": "8b297957-c2f5-4fe2-add9-1f2e4409e972:8b297957-c2f5-4fe2-add9-1f2e4409e972_19543669926e4ac581c56191931b5bbc_search_exchange.json",
+    "provider": "nrc_adams_aps",
+    "request_id": "<redacted:request_id>",
+    "request_path": "/aps/api/search",
+    "request_sent_at": "<redacted:timestamp>",
+    "response_body_truncated": false,
+    "response_headers_subset": {
+      "content-type": "application/json"
+    },
+    "response_metadata_observed": {
+      "attempt_index": 1,
+      "count_returned": 1,
+      "parse_status": "ok",
+      "raw_total_key": "count",
+      "results_key_observed": "results",
+      "schema_variant_observed": "results_with_document",
+      "total_hits": 1,
+      "wire_shape": "guide_native"
+    },
+    "response_received_at": "<redacted:timestamp>",
+    "source_manifest": "8b297957-c2f5-4fe2-add9-1f2e4409e972_discovery.json",
+    "source_snapshot": "8b297957-c2f5-4fe2-add9-1f2e4409e972_19543669926e4ac581c56191931b5bbc_search_exchange.json"
+  },
+  "request_body": {
+    "content": false,
+    "searchCriteria": {
+      "legacyLibFilter": false,
+      "mainLibFilter": true,
+      "properties": [
+        {
+          "name": "DateAddedTimestamp",
+          "operator": "ge",
+          "value": "2025-01-30T00:00:00Z"
+        }
+      ],
+      "q": "inspection report"
+    },
+    "skip": 0,
+    "sort": "DateAddedTimestamp",
+    "sortDirection": 1,
+    "take": 100
+  },
+  "response_body_text": "{\"count\": 1, \"results\": [{\"score\": 0.9, \"document\": {\"AccessionNumber\": \"ML900000001\", \"DocumentTitle\": \"Inspection Report\", \"DocumentType\": \"Letter\", \"DocumentDate\": \"2025-02-01\", \"DateAddedTimestamp\": \"2025-02-02T00:00:00Z\", \"Url\": \"https://adams.nrc.gov/wba/test1.pdf\"}}]}",
+  "response_headers": {
+    "content-type": "application/json"
+  },
+  "response_status": 200,
+  "signature": "282794c070db205db754abb6c14394055555fd4ff73e02d89ce39af86c321fce",
+  "source_run_id": "8b297957-c2f5-4fe2-add9-1f2e4409e972",
+  "source_snapshot": "8b297957-c2f5-4fe2-add9-1f2e4409e972_19543669926e4ac581c56191931b5bbc_search_exchange.json",
+  "synthetic": false
+}

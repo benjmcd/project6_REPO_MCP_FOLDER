@@ -1,0 +1,18 @@
+{
+    "schema_version":  1,
+    "entries":  [
+                    {
+                        "key":  "min_reports_in_window",
+                        "reason":  "Temporary single-cycle batch evaluation for smoke validation."
+                    },
+                    {
+                        "key":  "batch_rules.min_completed_cycles",
+                        "reason":  "Align with single-cycle batch smoke validation."
+                    },
+                    {
+                        "key":  "min_pass_rate",
+                        "reason":  "Disable pass-rate threshold for smoke validation."
+                    }
+                ],
+    "schema_id":  "aps.promotion_policy_rationale.v1"
+}

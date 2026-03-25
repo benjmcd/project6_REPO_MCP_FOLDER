@@ -1,0 +1,60 @@
+{
+  "checked_runs": 5,
+  "checks": [
+    {
+      "citation_pack_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-context-packet-api-1_9e7c1b67ee9e228daaf74325_aps_evidence_citation_pack_v1.json",
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-context-packet-api-1_e7e6f0a31006521f088f51f9_aps_evidence_citation_pack_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-context-packet-api-1"
+    },
+    {
+      "citation_pack_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-report-export-package-api-1_541f43fe42485fe608e2d5cc_aps_evidence_citation_pack_v1.json",
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-report-export-package-api-1_910826987d558c5c11b64f41_aps_evidence_citation_pack_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-report-export-package-api-1"
+    },
+    {
+      "citation_pack_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-report-export-api-1_cccffd546691196cb1e22e22_aps_evidence_citation_pack_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-report-export-api-1"
+    },
+    {
+      "citation_pack_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-report-api-1_e1e29a4bb9e8973a554c4c1b_aps_evidence_citation_pack_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-report-api-1"
+    },
+    {
+      "citation_pack_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-citation-api-1_70dd3f6b3e0cbc50ed595aae_aps_evidence_citation_pack_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-citation-api-1"
+    }
+  ],
+  "evaluated_run_rows": 5,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-11T21:56:14.501159Z",
+  "passed": true,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.evidence_citation_pack_gate.v1",
+  "schema_version": 1
+}

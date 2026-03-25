@@ -1,0 +1,62 @@
+{
+  "case_id": "search_1a1b202a0f4616d14c55471d22723100fe7c8e07bd6f867b4d73aaf64b2a21e8",
+  "case_type": "search",
+  "dialect": "shape_a",
+  "endpoint": "POST /aps/api/search",
+  "evidence_refs": [
+    "synthetic:shape_a_success_results"
+  ],
+  "expected": {
+    "accession_numbers": [
+      "MLSYN000001"
+    ],
+    "count_returned": 1,
+    "dialect_order": [],
+    "parse_status": "ok",
+    "projection_keys": [
+      "accession_number",
+      "content_present",
+      "content_source_path",
+      "date_added_timestamp",
+      "docket_number",
+      "document_date",
+      "document_title",
+      "document_type",
+      "document_type_known",
+      "url"
+    ],
+    "raw_total_key": "count",
+    "results_key": "results",
+    "roundtrip_payload_hash": "f93f02bd8731ba2bbbac2c6271f4ca88f745e7f509cc6a0417a63bdd9b61ac75",
+    "schema_variant": "results_with_document",
+    "status_class": "success",
+    "total_hits": 1,
+    "wrapper_variant": null
+  },
+  "metadata": {
+    "evidence_id": "synthetic:shape_a_success_results",
+    "provider": "nrc_adams_aps",
+    "source_manifest": "synthetic",
+    "source_snapshot": "synthetic_shape_a_success_results.json"
+  },
+  "request_body": {
+    "anyFilters": [],
+    "filters": [],
+    "legacyLibFilter": false,
+    "mainLibFilter": true,
+    "q": "__synthetic_shape_a_success__",
+    "skip": 0,
+    "sort": "DateAddedTimestamp",
+    "sortDirection": 1,
+    "take": 10
+  },
+  "response_body_text": "{\"count\":1,\"results\":[{\"document\":{\"AccessionNumber\":\"MLSYN000001\",\"DocumentTitle\":\"Synthetic\"}}]}",
+  "response_headers": {
+    "content-type": "application/json"
+  },
+  "response_status": 200,
+  "signature": "1a1b202a0f4616d14c55471d22723100fe7c8e07bd6f867b4d73aaf64b2a21e8",
+  "source_run_id": "synthetic",
+  "source_snapshot": "synthetic_shape_a_success_results.json",
+  "synthetic": true
+}

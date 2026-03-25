@@ -1,0 +1,613 @@
+{
+  "schema_id": "nrc_aps_handoff_manifest.v1",
+  "schema_version": 1,
+  "generated_at": "2026-03-13T15:40:00-07:00",
+  "source_repo_root": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6",
+  "handoff_root": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\handoff",
+  "canonical_status_doc": "docs/nrc_adams/nrc_aps_status_handoff.md",
+  "canonical_status_doc_handoff_path": "docs/nrc_adams/nrc_aps_status_handoff.md",
+  "canonical_status_doc_source_path": "docs/nrc_adams/nrc_aps_status_handoff.md",
+  "frozen_ceiling": "Upper analytical ceiling through Deterministic Challenge Artifact v1",
+  "next_safe_direction": "continue above Deterministic Challenge Artifact v1 from the restored lower-layer baseline; rerun OCR proof when OCR/corpus behavior changes or when validating a new environment",
+  "manifest_scope": "scoped_current_state_authority_package",
+  "is_exhaustive_of_handoff_tree": false,
+  "entries_exhaustive_for_manifest_scope": true,
+  "manifest_scope_description": "The entries array is an intentional current-state authority subset for session transfer. It includes package-local control docs, frozen upper analytical code/tests/proof anchors, and explicitly STALE mirrored code surfaces (handoff/backend/*) which are preserved for lineage references only and MUST NOT be trusted as live implementation authority. You must use root backend/ instead.",
+  "path_interpretation": "entries.handoff_path values are relative to handoff_root; entries.source_path values are repo-root relative source/provenance paths.",
+  "entries": [
+    {
+      "handoff_path": "README.md",
+      "source_path": "handoff/README.md",
+      "entry_mode": "package_local_control"
+    },
+    {
+      "handoff_path": "START_HERE.txt",
+      "source_path": "handoff/START_HERE.txt",
+      "entry_mode": "package_local_control"
+    },
+    {
+      "handoff_path": "HANDOFF_INDEX.md",
+      "source_path": "handoff/HANDOFF_INDEX.md",
+      "entry_mode": "package_local_control"
+    },
+    {
+      "handoff_path": "handoff_manifest.json",
+      "source_path": "handoff/handoff_manifest.json",
+      "entry_mode": "package_local_control"
+    },
+    {
+      "handoff_path": "docs/nrc_adams/nrc_aps_status_handoff.md",
+      "source_path": "docs/nrc_adams/nrc_aps_status_handoff.md",
+      "entry_mode": "package_local_control"
+    },
+    {
+      "handoff_path": "project6.ps1",
+      "source_path": "project6.ps1",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/api/router.py",
+      "source_path": "backend/app/api/router.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/schemas/api.py",
+      "source_path": "backend/app/schemas/api.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/connectors_sciencebase.py",
+      "source_path": "backend/app/services/connectors_sciencebase.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_citation_pack_contract.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_citation_pack_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_citation_pack.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_citation_pack.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_citation_pack_gate.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_citation_pack_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_report_contract.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_report_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_report.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_report.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_report_gate.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_report_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_report_export_contract.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_report_export_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_report_export.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_report_export.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_report_export_gate.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_report_export_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_report_export_package_contract.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_report_export_package_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_report_export_package.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_report_export_package.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_report_export_package_gate.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_report_export_package_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_context_packet_contract.py",
+      "source_path": "backend/app/services/nrc_aps_context_packet_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_context_packet.py",
+      "source_path": "backend/app/services/nrc_aps_context_packet.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_context_packet_gate.py",
+      "source_path": "backend/app/services/nrc_aps_context_packet_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_context_dossier_contract.py",
+      "source_path": "backend/app/services/nrc_aps_context_dossier_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_context_dossier.py",
+      "source_path": "backend/app/services/nrc_aps_context_dossier.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_context_dossier_gate.py",
+      "source_path": "backend/app/services/nrc_aps_context_dossier_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tools/nrc_aps_evidence_citation_pack_gate.py",
+      "source_path": "tools/nrc_aps_evidence_citation_pack_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tools/nrc_aps_evidence_report_gate.py",
+      "source_path": "tools/nrc_aps_evidence_report_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tools/nrc_aps_evidence_report_export_gate.py",
+      "source_path": "tools/nrc_aps_evidence_report_export_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tools/nrc_aps_evidence_report_export_package_gate.py",
+      "source_path": "tools/nrc_aps_evidence_report_export_package_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tools/nrc_aps_context_packet_gate.py",
+      "source_path": "tools/nrc_aps_context_packet_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tools/nrc_aps_context_dossier_gate.py",
+      "source_path": "tools/nrc_aps_context_dossier_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_api.py",
+      "source_path": "tests/test_api.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_citation_pack_contract.py",
+      "source_path": "tests/test_nrc_aps_evidence_citation_pack_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_citation_pack.py",
+      "source_path": "tests/test_nrc_aps_evidence_citation_pack.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_citation_pack_gate.py",
+      "source_path": "tests/test_nrc_aps_evidence_citation_pack_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_report_contract.py",
+      "source_path": "tests/test_nrc_aps_evidence_report_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_report.py",
+      "source_path": "tests/test_nrc_aps_evidence_report.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_report_gate.py",
+      "source_path": "tests/test_nrc_aps_evidence_report_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_report_export_contract.py",
+      "source_path": "tests/test_nrc_aps_evidence_report_export_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_report_export.py",
+      "source_path": "tests/test_nrc_aps_evidence_report_export.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_report_export_gate.py",
+      "source_path": "tests/test_nrc_aps_evidence_report_export_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_report_export_package_contract.py",
+      "source_path": "tests/test_nrc_aps_evidence_report_export_package_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_report_export_package.py",
+      "source_path": "tests/test_nrc_aps_evidence_report_export_package.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_report_export_package_gate.py",
+      "source_path": "tests/test_nrc_aps_evidence_report_export_package_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_context_packet_contract.py",
+      "source_path": "tests/test_nrc_aps_context_packet_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_context_packet.py",
+      "source_path": "tests/test_nrc_aps_context_packet.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_context_packet_gate.py",
+      "source_path": "tests/test_nrc_aps_context_packet_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_context_dossier_contract.py",
+      "source_path": "tests/test_nrc_aps_context_dossier_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_context_dossier.py",
+      "source_path": "tests/test_nrc_aps_context_dossier.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_context_dossier_gate.py",
+      "source_path": "tests/test_nrc_aps_context_dossier_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/reports/nrc_aps_evidence_citation_pack_validation_report.json",
+      "source_path": "tests/reports/nrc_aps_evidence_citation_pack_validation_report.json",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/reports/nrc_aps_evidence_report_validation_report.json",
+      "source_path": "tests/reports/nrc_aps_evidence_report_validation_report.json",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/reports/nrc_aps_evidence_report_export_validation_report.json",
+      "source_path": "tests/reports/nrc_aps_evidence_report_export_validation_report.json",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/reports/nrc_aps_evidence_report_export_package_validation_report.json",
+      "source_path": "tests/reports/nrc_aps_evidence_report_export_package_validation_report.json",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/reports/nrc_aps_context_packet_validation_report.json",
+      "source_path": "tests/reports/nrc_aps_context_packet_validation_report.json",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/reports/nrc_aps_context_dossier_validation_report.json",
+      "source_path": "tests/reports/nrc_aps_context_dossier_validation_report.json",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_deterministic_insight_artifact_contract.py",
+      "source_path": "backend/app/services/nrc_aps_deterministic_insight_artifact_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_deterministic_insight_artifact.py",
+      "source_path": "backend/app/services/nrc_aps_deterministic_insight_artifact.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py",
+      "source_path": "backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tools/nrc_aps_deterministic_insight_artifact_gate.py",
+      "source_path": "tools/nrc_aps_deterministic_insight_artifact_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_deterministic_insight_artifact_contract.py",
+      "source_path": "tests/test_nrc_aps_deterministic_insight_artifact_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_deterministic_insight_artifact.py",
+      "source_path": "tests/test_nrc_aps_deterministic_insight_artifact.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_deterministic_insight_artifact_gate.py",
+      "source_path": "tests/test_nrc_aps_deterministic_insight_artifact_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/reports/nrc_aps_deterministic_insight_artifact_validation_report.json",
+      "source_path": "tests/reports/nrc_aps_deterministic_insight_artifact_validation_report.json",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_deterministic_challenge_artifact_contract.py",
+      "source_path": "backend/app/services/nrc_aps_deterministic_challenge_artifact_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_deterministic_challenge_artifact.py",
+      "source_path": "backend/app/services/nrc_aps_deterministic_challenge_artifact.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py",
+      "source_path": "backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tools/nrc_aps_deterministic_challenge_artifact_gate.py",
+      "source_path": "tools/nrc_aps_deterministic_challenge_artifact_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_deterministic_challenge_artifact_contract.py",
+      "source_path": "tests/test_nrc_aps_deterministic_challenge_artifact_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_deterministic_challenge_artifact.py",
+      "source_path": "tests/test_nrc_aps_deterministic_challenge_artifact.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_deterministic_challenge_artifact_gate.py",
+      "source_path": "tests/test_nrc_aps_deterministic_challenge_artifact_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/reports/nrc_aps_deterministic_challenge_artifact_validation_report.json",
+      "source_path": "tests/reports/nrc_aps_deterministic_challenge_artifact_validation_report.json",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/models/models.py",
+      "source_path": "backend/app/models/models.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/connectors_nrc_adams.py",
+      "source_path": "backend/app/services/connectors_nrc_adams.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_artifact_ingestion.py",
+      "source_path": "backend/app/services/nrc_aps_artifact_ingestion.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_content_index.py",
+      "source_path": "backend/app/services/nrc_aps_content_index.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_media_detection.py",
+      "source_path": "backend/app/services/nrc_aps_media_detection.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_document_processing.py",
+      "source_path": "backend/app/services/nrc_aps_document_processing.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_ocr.py",
+      "source_path": "backend/app/services/nrc_aps_ocr.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/alembic/versions/0009_aps_document_processing_metadata.py",
+      "source_path": "backend/alembic/versions/0009_aps_document_processing_metadata.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/requirements.txt",
+      "source_path": "backend/requirements.txt",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_artifact_ingestion.py",
+      "source_path": "tests/test_nrc_aps_artifact_ingestion.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_content_index.py",
+      "source_path": "tests/test_nrc_aps_content_index.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_content_index_gate.py",
+      "source_path": "tests/test_nrc_aps_content_index_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_media_detection.py",
+      "source_path": "tests/test_nrc_aps_media_detection.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_document_processing.py",
+      "source_path": "tests/test_nrc_aps_document_processing.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/fixtures/nrc_aps_docs/v1/manifest.json",
+      "source_path": "tests/fixtures/nrc_aps_docs/v1/manifest.json",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_bundle_contract.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_bundle_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_bundle.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_bundle.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "backend/app/services/nrc_aps_evidence_bundle_gate.py",
+      "source_path": "backend/app/services/nrc_aps_evidence_bundle_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tools/nrc_aps_evidence_bundle_gate.py",
+      "source_path": "tools/nrc_aps_evidence_bundle_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tools/run_nrc_aps_document_processing_proof.py",
+      "source_path": "tools/run_nrc_aps_document_processing_proof.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/support_nrc_aps_doc_corpus.py",
+      "source_path": "tests/support_nrc_aps_doc_corpus.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_document_corpus.py",
+      "source_path": "tests/test_nrc_aps_document_corpus.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_bundle_contract.py",
+      "source_path": "tests/test_nrc_aps_evidence_bundle_contract.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_bundle.py",
+      "source_path": "tests/test_nrc_aps_evidence_bundle.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/test_nrc_aps_evidence_bundle_gate.py",
+      "source_path": "tests/test_nrc_aps_evidence_bundle_gate.py",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/reports/nrc_aps_document_processing_proof_report.json",
+      "source_path": "tests/reports/nrc_aps_document_processing_proof_report.json",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/reports/nrc_aps_artifact_ingestion_validation_report.json",
+      "source_path": "tests/reports/nrc_aps_artifact_ingestion_validation_report.json",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/reports/nrc_aps_content_index_validation_report.json",
+      "source_path": "tests/reports/nrc_aps_content_index_validation_report.json",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/reports/nrc_aps_evidence_bundle_validation_report.json",
+      "source_path": "tests/reports/nrc_aps_evidence_bundle_validation_report.json",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/fixtures/nrc_aps_docs/v1/born_digital.pdf",
+      "source_path": "tests/fixtures/nrc_aps_docs/v1/born_digital.pdf",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/fixtures/nrc_aps_docs/v1/corrupt.pdf",
+      "source_path": "tests/fixtures/nrc_aps_docs/v1/corrupt.pdf",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/fixtures/nrc_aps_docs/v1/fontish.pdf",
+      "source_path": "tests/fixtures/nrc_aps_docs/v1/fontish.pdf",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/fixtures/nrc_aps_docs/v1/layout.pdf",
+      "source_path": "tests/fixtures/nrc_aps_docs/v1/layout.pdf",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/fixtures/nrc_aps_docs/v1/mismatch_pdf_body.txt",
+      "source_path": "tests/fixtures/nrc_aps_docs/v1/mismatch_pdf_body.txt",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/fixtures/nrc_aps_docs/v1/mixed.pdf",
+      "source_path": "tests/fixtures/nrc_aps_docs/v1/mixed.pdf",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/fixtures/nrc_aps_docs/v1/ML17123A319.pdf",
+      "source_path": "tests/fixtures/nrc_aps_docs/v1/ML17123A319.pdf",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/fixtures/nrc_aps_docs/v1/scanned.pdf",
+      "source_path": "tests/fixtures/nrc_aps_docs/v1/scanned.pdf",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/fixtures/nrc_aps_docs/v1/truncated.pdf",
+      "source_path": "tests/fixtures/nrc_aps_docs/v1/truncated.pdf",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/fixtures/nrc_aps_docs/v1/txt_utf16.txt",
+      "source_path": "tests/fixtures/nrc_aps_docs/v1/txt_utf16.txt",
+      "entry_mode": "mirrored_copy"
+    },
+    {
+      "handoff_path": "tests/fixtures/nrc_aps_docs/v1/txt_utf8.txt",
+      "source_path": "tests/fixtures/nrc_aps_docs/v1/txt_utf8.txt",
+      "entry_mode": "mirrored_copy"
+    }
+  ],
+  "historical_surfaces": [
+    {
+      "path": "_legacy_flat_copy",
+      "note": "Intentionally historical lineage snapshot; not current authority."
+    }
+  ],
+  "truth_model": "MODEL_B_mixed_package",
+  "truth_model_description": "Control docs are package-local handoff surfaces; code/tests/proof anchors are mirrored copies from the live repo unless explicitly marked otherwise.",
+  "source_of_truth_precedence": [
+    "live_repo_code_and_authority_docs",
+    "handoff_package_navigation_controls",
+    "historical_docs_only_if_not_contradicted"
+  ],
+  "entry_mode_legend": {
+    "package_local_control": "Package-local control surface; maintained for handoff navigation and may not be byte-identical to the live source path.",
+    "mirrored_copy": "Mirrored copy of a live repo file; expected to stay byte-identical unless explicitly refreshed."
+  },
+  "package_local_control_paths": [
+    "README.md",
+    "START_HERE.txt",
+    "HANDOFF_INDEX.md",
+    "handoff_manifest.json",
+    "docs/nrc_adams/nrc_aps_status_handoff.md"
+  ]
+}

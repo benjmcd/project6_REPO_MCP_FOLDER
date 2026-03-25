@@ -1,0 +1,75 @@
+{
+  "evidence_report_export_checksum": "a94acf66c50cea586f54ccb2687d532bf9b3dd7e7527f42f698067c21569a13a",
+  "evidence_report_export_id": "31992036f4649b9a4939a0b1a8bf515de74950b499c7ddf23398226d7f4c066d",
+  "file_extension": ".md",
+  "format_id": "markdown",
+  "generated_at_utc": "2026-03-16T19:26:54.157201Z",
+  "media_type": "text/markdown; charset=utf-8",
+  "render_contract_id": "aps_evidence_report_export_render_v1",
+  "rendered_markdown": "# NRC ADAMS APS Evidence Report Export\n\n- Export ID: 31992036f4649b9a4939a0b1a8bf515de74950b499c7ddf23398226d7f4c066d\n- Format: markdown\n- Render Contract: aps\\_evidence\\_report\\_export\\_render\\_v1\n- Template Contract: aps\\_evidence\\_report\\_export\\_markdown\\_template\\_v1\n- Source Evidence Report ID: 745f1ea788959f7ee020396fb7c5f5ac0ade68a07d5c7c6e67c6e6f967b1aced\n- Source Evidence Report Checksum: 6709d0e6a5ef6f29f5f286fdeae6b90327b352ba5522dd0a1329679706748693\n- Source Citation Pack ID: 59f04bc6a801380eaa0d5744ccb801030dfcf3aaae85e7724ed4d51aadffb91c\n- Source Citation Pack Checksum: 38816bd134422472ac9e5a1b8746f7ee6e4dcbfd76fb1571e61cb3d3e124420e\n- Total Sections: 1\n- Total Citations: 18\n- Total Groups: 1\n\n## Section 00001: Accession 0b52fb0f / Content bbc954bc394a72979b25c37b633e25c950e5c2afa8c9fe6b5a9061de6902f2c7\n\n- Group ID: 3b92c8f14ff86055c814cedfd494baea5622485b9127deb011aba6ccb0674144\n- Run ID: closure\\-run\\-005\n- Target ID: 2a4f876d\\-2e87\\-50f9\\-8cf6\\-c1e85e05fe9c\n- Content ID: bbc954bc394a72979b25c37b633e25c950e5c2afa8c9fe6b5a9061de6902f2c7\n- Accession Number: 0b52fb0f\n- Content Contract ID: aps\\_content\\_units\\_v2\n- Chunking Contract ID: aps\\_chunking\\_v2\n- Citation Count: 18\n\n1. APS\\-CIT\\-00001 | 6ae24b8ed8ab17a3529767de0be8ee15af8770883ce72bed3f7180d0f59dc9fa\n   - Chunk ID: 59165cea2bcfca35a3a52fdbb4481eb7773bed6e868106477aa111faac2a05f3\n   - Chunk Ordinal: 0\n   - Character Span: 0:1012\n   - Snippet: From:\\\\nCarol Grosso\\\\nTo:\\\\nHoc, HOO X\\\\nSubject:\\\\n\\[External\\_Sender\\] RSCC Wire & Cable \\- Part 21 Ongoing Evaluation\\\\nDate:\\\\nThursday, February 13, 2025 11:41:01 AM\\\\nAttach\n\n2. APS\\-CIT\\-00002 | f412829b7a2b2e617ec2c96eaa5dc6ba957fcccde3b88015fb04c8f30792fa39\n   - Chunk ID: a244683a252673d3839aa11a5787cda4085ff3dec2f336bb5fd28669d3b97a7b\n   - Chunk Ordinal: 1\n   - Character Span: 756:1775\n   - Snippet: to Paul LaFlamme and have been advised to direct this information via email.\\\\nAs we communicated to the NRC in our last update to the NRC in mid\\-Fall 2024, durin\n\n3. APS\\-CIT\\-00003 | 15cc8276e797e32a0c69311f89c9f147cafe82806d1288d61d476c33cc26fc26\n   - Chunk ID: 669be9a39773eda9eace4a36caa87ef26d4dec184b79f818928e341a618707ba\n   - Chunk Ordinal: 2\n   - Character Span: 1546:3649\n   - Snippet: the cable\u2019s safety related function.\u00a0 Once the testing is complete, we will notify the NRC with\\\\nan updated and final Part 21 report.\\\\nNote, our previous updates\n\n4. APS\\-CIT\\-00004 | f831e48be0353cf5299ba28e879c54d86fc74c44554cdf70966e36213eb337a6\n   - Chunk ID: d0fa6f446d9178d637d905fd2ff2bb594ef59c23580a030774d0ebdb44d2e4de\n   - Chunk Ordinal: 3\n   - Character Span: 2005:3665\n   - Snippet: I am writing on behalf of RSCC Wire & Cable to provide a status for our ongoing evaluation of\\\\nwire and cable product related to our Part 21 initiated in July 20\n\n5. APS\\-CIT\\-00005 | 249cd8cca596ad01b06c20616927e2e4df87704aef801b95eb79912d8bd2c43c\n   - Chunk ID: 2fe505cb3996cddbdfb566a1046e164fab34de0c23ad1100d5349e63a53f6353\n   - Chunk Ordinal: 4\n   - Character Span: 2005:3701\n   - Snippet: I am writing on behalf of RSCC Wire & Cable to provide a status for our ongoing evaluation of\\\\nwire and cable product related to our Part 21 initiated in July 20\n\n6. APS\\-CIT\\-00006 | 336322e74f74f51e555aee6d28b85625684d197090b2dc3b5fd9fa9cad049cf9\n   - Chunk ID: e8db570770bd28ad24f0544a400e04fd2e5f6761b231c2b4db19f2ffa2861354\n   - Chunk Ordinal: 5\n   - Character Span: 2005:3772\n   - Snippet: I am writing on behalf of RSCC Wire & Cable to provide a status for our ongoing evaluation of\\\\nwire and cable product related to our Part 21 initiated in July 20\n\n7. APS\\-CIT\\-00007 | 207b43249a00db1aa6e3fc945d773613eb1fb3d17620b65c9f1ffe4baca6828d\n   - Chunk ID: 6cfb1bfce4d02495651302dd16ff94e4d73328c57369fe72dc8cf5213cc7b1de\n   - Chunk Ordinal: 6\n   - Character Span: 2005:3789\n   - Snippet: I am writing on behalf of RSCC Wire & Cable to provide a status for our ongoing evaluation of\\\\nwire and cable product related to our Part 21 initiated in July 20\n\n8. APS\\-CIT\\-00008 | d8dbebf02a68ce5bdccd0d265aa2785269f0f0137836c6919f2c7129b6463a36\n   - Chunk ID: f3f1a7050d9354a2b1499e31ce30476499a382ce489c1c78da829c083d482637\n   - Chunk Ordinal: 7\n   - Character Span: 2005:3797\n   - Snippet: I am writing on behalf of RSCC Wire & Cable to provide a status for our ongoing evaluation of\\\\nwire and cable product related to our Part 21 initiated in July 20\n\n9. APS\\-CIT\\-00009 | 1c8357ca600f975851c51914d600821e800f2bb1091d5e87f6ead048208a9fa9\n   - Chunk ID: deb5ac4e9274eb27446613febfb64f54924e7974b9262addaa700c9a5e96ba38\n   - Chunk Ordinal: 8\n   - Character Span: 2005:3812\n   - Snippet: I am writing on behalf of RSCC Wire & Cable to provide a status for our ongoing evaluation of\\\\nwire and cable product related to our Part 21 initiated in July 20\n\n10. APS\\-CIT\\-00010 | 3c79c7e4c5bc0f526b241c8a658dbcbd6e967fd35295d4577c5611638a504927\n   - Chunk ID: f8a320eea9ec2f38f2d42453c97aabd522f0b47f6bc287c47cb2e5a36e18ec09\n   - Chunk Ordinal: 9\n   - Character Span: 2005:3818\n   - Snippet: I am writing on behalf of RSCC Wire & Cable to provide a status for our ongoing evaluation of\\\\nwire and cable product related to our Part 21 initiated in July 20\n\n11. APS\\-CIT\\-00011 | 5176f38a36f617b423cb2cf066119bdaa4ef6500367e7551fa072d334af155d3\n   - Chunk ID: 59c3bf22d69debb058eda2d5f40bcb986c6da25a94f7bf29a52881b89c318e01\n   - Chunk Ordinal: 10\n   - Character Span: 2005:3833\n   - Snippet: I am writing on behalf of RSCC Wire & Cable to provide a status for our ongoing evaluation of\\\\nwire and cable product related to our Part 21 initiated in July 20\n\n12. APS\\-CIT\\-00012 | 54adb6c046089f5c94d3ff80738db483dc3bbe9b24f0ac8a4eb7b305cc19d502\n   - Chunk ID: 8b5ae5caa4d7e775abbe7160a3226a7ad97407bdad7c01c8747a8f2879d8e579\n   - Chunk Ordinal: 11\n   - Character Span: 2005:3840\n   - Snippet: I am writing on behalf of RSCC Wire & Cable to provide a status for our ongoing evaluation of\\\\nwire and cable product related to our Part 21 initiated in July 20\n\n13. APS\\-CIT\\-00013 | 4d3c120e3fbb3c14b31e52874f241ee08616d3da0faf5e565db5dc03eb1bad4b\n   - Chunk ID: 64addd262e3ab9d420b1ee845e5101a0894150ca89325dcb7a434809e912646c\n   - Chunk Ordinal: 12\n   - Character Span: 2005:3867\n   - Snippet: I am writing on behalf of RSCC Wire & Cable to provide a status for our ongoing evaluation of\\\\nwire and cable product related to our Part 21 initiated in July 20\n\n14. APS\\-CIT\\-00014 | 1d1a2f66ffc7b7b8235e3077c93731d09109dd146e9817ed7412cbd8a325e4e9\n   - Chunk ID: 59c2f8334e3a3c94d296f3b06e75b9d5da86e354f1e8bb56a9ae83763f10812e\n   - Chunk Ordinal: 13\n   - Character Span: 3666:4699\n   - Snippet: Strategic Market Director \\- Nuclear\\\\nMarmon Industrial Energy & Infrastructure \\| 20 Bradley Park Road, East\\\\nGranby, CT 06026\\\\nDirect:\\\\n860\\-653\\-8441 \\|\\\\nCell:\\\\n860\\-874\n\n15. APS\\-CIT\\-00015 | facce509b66819aae4563be99242287ae801c96c1a28b23e90f48bd1ba6e7d63\n   - Chunk ID: acc2d1f69f69fb9a47b02e87fdca533d71bf43ac25906c65a0e8aa782e9bd811\n   - Chunk Ordinal: 14\n   - Character Span: 4393:5413\n   - Snippet: ll transactions are subject to compliance with the terms and conditions of sale or purchase, as applicable, which are available on the\\\\nrespective Marmon Industr\n\n16. APS\\-CIT\\-00016 | 1b38994c2218ce37705ff3fed86a445fa14192834f2d48814c4ba4bc2b99bb7b\n   - Chunk ID: 7964bea5b96ca93a93f2dd147d978bc72abf6cd59f2cf5fca1917b879503ff8a\n   - Chunk Ordinal: 15\n   - Character Span: 5057:6110\n   - Snippet: CONFIDENTIALITY NOTICE:\u00a0 This email and any attachments are confidential and may be protected by legal privilege or otherwise.\u00a0 If you\\\\nhave received this e\\-mail\n\n17. APS\\-CIT\\-00017 | 21fb38a19c6e5ec7775b918e8def65e920bdd77b7f519c1ba1ca4f4d93a4f1e2\n   - Chunk ID: a21bcab0fc968c7deb6d47de49281a3f8ae85c2403f7838220ddc9966df233a9\n   - Chunk Ordinal: 16\n   - Character Span: 5721:6735\n   - Snippet: All transactions are subject to compliance with the terms and conditions of sale or purchase, as\\\\napplicable, which are available on the respective Marmon Indust\n\n18. APS\\-CIT\\-00018 | eebc53cb92cdc967a09b235ada7e6c72f531adfe46836f66393baa459ecbea68\n   - Chunk ID: f91c500dbf0cd69315c9a2e85167c022871f65ff62666255275deca5433dad58\n   - Chunk Ordinal: 17\n   - Character Span: 6382:6735\n   - Snippet: CONFIDENTIALITY NOTICE: This email and any attachments are confidential and may be\\\\nprotected by legal privilege or otherwise. If you have received this e\\-mail i\n",
+  "rendered_markdown_sha256": "08ca311a8b6321a5e621f945ed17ef2a31739b904a93753a7dc44d4cfc9d85fe",
+  "schema_id": "aps.evidence_report_export.v1",
+  "schema_version": 1,
+  "source_evidence_report": {
+    "assembly_contract_id": "aps_evidence_report_assembly_v1",
+    "evidence_report_checksum": "6709d0e6a5ef6f29f5f286fdeae6b90327b352ba5522dd0a1329679706748693",
+    "evidence_report_id": "745f1ea788959f7ee020396fb7c5f5ac0ade68a07d5c7c6e67c6e6f967b1aced",
+    "evidence_report_ref": "app\\storage\\connectors\\reports\\run_closure-run-005_745f1ea788959f7ee020396f_aps_evidence_report_v1.json",
+    "schema_id": "aps.evidence_report.v1",
+    "schema_version": 1,
+    "sectioning_contract_id": "aps_evidence_report_sectioning_v1",
+    "source_citation_pack": {
+      "citation_pack_checksum": "38816bd134422472ac9e5a1b8746f7ee6e4dcbfd76fb1571e61cb3d3e124420e",
+      "citation_pack_id": "59f04bc6a801380eaa0d5744ccb801030dfcf3aaae85e7724ed4d51aadffb91c",
+      "citation_pack_ref": "app\\storage\\connectors\\reports\\run_closure-run-005_59f04bc6a801380eaa0d5744_aps_evidence_citation_pack_v2.json",
+      "derivation_contract_id": "aps_evidence_citation_derivation_v1",
+      "schema_id": "aps.evidence_citation_pack.v2",
+      "schema_version": 2,
+      "source_bundle": {
+        "bundle_checksum": "da29a478f5f6e11b4db141363424a8803218b6064e4726b0aff38c9e0c11ecf1",
+        "bundle_id": "748053a746978a4e50893cd26d1330083da555a3d749fc501acc8d81a366b3a2",
+        "bundle_ref": "app\\storage\\connectors\\reports\\run_closure-run-005_748053a746978a4e_8d81a366b3a2_aps_evidence_bundle_v2.json",
+        "mode": "browse",
+        "query": null,
+        "query_tokens": [],
+        "request_identity_hash": "8d2b4a36d85b5cd56b92b47e946f1b9eee6233fedc1daf185755bde2562a413d",
+        "run_id": "closure-run-005",
+        "schema_id": "aps.evidence_bundle.v2",
+        "schema_version": 2,
+        "snapshot": {
+          "db_fingerprint": "6f8c353f799a5f9530618aaee5b6b56febbfba9b4809b7ee6328061c1070c84b",
+          "index_max_updated_at_utc": "2026-03-16T08:24:48.888573Z",
+          "index_row_count": 18,
+          "index_state_hash": "a7d4442809b9395cf4af7d07f33540668cfc5f9a6418efd048ac50c915ebcb0d",
+          "read_scope": {
+            "filters": {
+              "accession_numbers": null,
+              "chunking_contract_id": null,
+              "content_contract_id": null,
+              "content_ids": null,
+              "normalization_contract_id": null,
+              "target_ids": [
+                "2a4f876d-2e87-50f9-8cf6-c1e85e05fe9c"
+              ]
+            },
+            "run_id": "closure-run-005"
+          },
+          "snapshot_completed_at_utc": "2026-03-16T17:29:32.457899Z",
+          "snapshot_contract_id": "aps_evidence_snapshot_v1",
+          "snapshot_started_at_utc": "2026-03-16T17:29:32.452893Z"
+        },
+        "total_groups": 1,
+        "total_hits": 18
+      },
+      "total_citations": 18,
+      "total_groups": 1
+    },
+    "total_citations": 18,
+    "total_groups": 1,
+    "total_sections": 1
+  },
+  "template_contract_id": "aps_evidence_report_export_markdown_template_v1",
+  "total_citations": 18,
+  "total_groups": 1,
+  "total_sections": 1
+}

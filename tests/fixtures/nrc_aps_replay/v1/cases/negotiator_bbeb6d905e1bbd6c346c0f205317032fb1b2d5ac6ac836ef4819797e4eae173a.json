@@ -1,0 +1,61 @@
+{
+  "case_id": "negotiator_bbeb6d905e1bbd6c346c0f205317032fb1b2d5ac6ac836ef4819797e4eae173a",
+  "case_type": "negotiator",
+  "dialect": "auto_probe",
+  "endpoint": "internal://dialect-negotiator",
+  "evidence_refs": [
+    "synthetic:negotiator_capability_preferred"
+  ],
+  "expected": {
+    "accession_numbers": [],
+    "count_returned": null,
+    "dialect_order": [
+      "guide_native",
+      "shape_a",
+      "shape_b"
+    ],
+    "parse_status": "synthetic",
+    "projection_keys": [],
+    "raw_total_key": null,
+    "results_key": null,
+    "roundtrip_payload_hash": null,
+    "schema_variant": null,
+    "status_class": "success",
+    "total_hits": null,
+    "wrapper_variant": null
+  },
+  "metadata": {
+    "capabilities": [
+      {
+        "cooldown_until": null,
+        "dialect": "guide_native",
+        "failure_count": 1,
+        "last_status": 200,
+        "success_count": 8
+      },
+      {
+        "cooldown_until": null,
+        "dialect": "shape_a",
+        "failure_count": 0,
+        "last_status": 200,
+        "success_count": 2
+      }
+    ],
+    "evidence_id": "synthetic:negotiator_capability_preferred",
+    "forced_mode": "auto_probe",
+    "now_utc": "2026-01-01T00:00:00Z",
+    "provider": "nrc_adams_aps",
+    "source_manifest": "synthetic",
+    "source_snapshot": "synthetic_negotiator_capability_preferred.json"
+  },
+  "request_body": {
+    "case": "negotiator_capability_preferred"
+  },
+  "response_body_text": "{}",
+  "response_headers": {},
+  "response_status": 200,
+  "signature": "bbeb6d905e1bbd6c346c0f205317032fb1b2d5ac6ac836ef4819797e4eae173a",
+  "source_run_id": "synthetic",
+  "source_snapshot": "synthetic_negotiator_capability_preferred.json",
+  "synthetic": true
+}

@@ -1,0 +1,27 @@
+{
+  "artifact_required_for_target_success": true,
+  "failure_code_counts": {},
+  "generated_at_utc": "2026-03-13T17:05:50.172534Z",
+  "outcome_counts": {
+    "processed": 1
+  },
+  "payload_sha256": "1a6be30bbad943f71ebd5b04cdb9b600b6d8845a5206605d3d76ed088ea6ea0e",
+  "pipeline_mode": "hydrate_process",
+  "processed_targets": 1,
+  "run_id": "run-ml17123a319-proof",
+  "run_outcome": "targets_processed",
+  "run_status": "completed",
+  "schema_id": "aps.artifact_ingestion_run.v1",
+  "schema_version": 1,
+  "selected_targets": 1,
+  "target_artifacts": [
+    {
+      "failure": null,
+      "outcome_status": "processed",
+      "ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\pipeline_proof_ml17123a319_20260313T170548Z\\storage\\connectors\\reports\\run-ml17123a319-proof_target-ml17123a319-proof_aps_artifact_ingestion_target_v1.json",
+      "sha256": "55782d53aac02322e87c1080582eda1cb98bb5dd2691c19c2fb494b9223a399d",
+      "status": "processed",
+      "target_id": "target-ml17123a319-proof"
+    }
+  ]
+}

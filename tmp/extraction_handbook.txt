@@ -1,0 +1,1026 @@
+| U.S. NUCLEAR REGULATORY COMMISSION DIRECTIVE HANDBOOK (DH) DH 5.2 COOPERATION WITH STATES AT DT-XX-XX COMMERCIAL NUCLEAR POWER PLANTS AND OTHER NUCLEAR PRODUCTION OR UTILIZATION FACILITIES Volume 5: Governmental Relations and Public Affairs Approved By: [Name and Title of Approving Official Date Approved: Month X, 200X [Date of Final Approval] Cert. Date: N/A, for the latest version of any NRC directive or handbook, see the online MD Catalog. Issuing Office: Office of Nuclear Material Safety and Safeguards State Agreement and Liaison Programs Branch Contact: Jeffery Lynch EXECUTIVE SUMMARY Management Directive (MD) 5.2, “Cooperation with States at Commercial Nuclear Power Plants and Other Nuclear Production or Utilization Facilities,” is revised to— • Update organizational changes and authorities as well as lessons learned to reflect NRC’s continued coordination and communication with States and State personnel. • Clarify roles and responsibilities and delegations of authority for affected offices. • Update the handbook to clarify and update the NRC’s information exchange with States and State Liaison Officers, State Personnel observation of NRC meetings, State participation in and observation of NRC Inspections, State attendance at NRC predecisional enforcement and regulatory conferences, and NRC MOUs with States. • Eliminate outdated references. TABLE OF CONTENTS PURPOSE OF THIS HANDBOOK ...................................................................................... 3 A. Purpose .......................................................................................................................... 3 B. NRC State Liaison Officer (SLO) Program Development and Implementation ............................................................................................................... 3 For updates or revisions to policies contained in this MD that were issued after the MD was signed, please see the Yellow Announcement to Management Directive index (YA-to-MD index). |  |
+| DH 5.2 |  |  |  | COOPERATION WITH STATES AT |  | DT-XX-XX |  |
+|  |  |  |  | COMMERCIAL NUCLEAR POWER PLANTS |  |  |  |
+|  |  |  |  | AND OTHER NUCLEAR PRODUCTION OR |  |  |  |
+|  |  |  |  | UTILIZATION FACILITIES |  |  |  |
+| Volume 5: Governmental Relations and Public Affairs |  |  |  |  |  |  |  |
+|  | Approved By: |  |  | [Name and Title of Approving Official |  |  |  |
+|  | Date Approved: |  |  | Month X, 200X [Date of Final Approval] |  |  |  |
+| Cert. Date: | Cert. Date: |  |  | N/A, for the latest version of any NRC directive or handbook, |  |  |  |
+|  |  |  |  | see the online MD Catalog. |  |  |  |
+| Issuing Office: Office of Nuclear Material Safety and Safeguards State Agreement and Liaison Programs Branch |  |  |  |  |  |  |  |
+| Contact: Jeffery Lynch |  |  |  |  |  |  |  |
+| EXECUTIVE SUMMARY Management Directive (MD) 5.2, “Cooperation with States at Commercial Nuclear Power Plants and Other Nuclear Production or Utilization Facilities,” is revised to— • Update organizational changes and authorities as well as lessons learned to reflect NRC’s continued coordination and communication with States and State personnel. • Clarify roles and responsibilities and delegations of authority for affected offices. • Update the handbook to clarify and update the NRC’s information exchange with States and State Liaison Officers, State Personnel observation of NRC meetings, State participation in and observation of NRC Inspections, State attendance at NRC predecisional enforcement and regulatory conferences, and NRC MOUs with States. • Eliminate outdated references. |  |  |  |  |  |  |  |
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+C. NRC Policy on Cooperation With States ........................................................................ 4
+INFORMATION EXCHANGE WITH STATES ..................................................................... 6
+A. Policy .............................................................................................................................. 6
+B. Implementation ............................................................................................................... 6
+C. Information To Communicate ......................................................................................... 6
+D. Requesting Information From States .............................................................................. 8
+OBSERVATION OF NRC PUBLIC MEETINGS BY STATE PERSONNEL ........................ 8
+A. Policy .............................................................................................................................. 8
+B. Implementation ............................................................................................................... 8
+OBSERVATION OF NRC INSPECTIONS AND INSPECTION ENTRANCE AND
+EXIT MEETINGS BY STATE PERSONNEL ....................................................................... 9
+A. Policy .............................................................................................................................. 9
+B. Implementation ............................................................................................................... 9
+STATE PARTICIPATION IN NRC INSPECTIONS ............................................................ 11
+A. Policy ............................................................................................................................ 11
+B. Implementation ............................................................................................................. 12
+STATE ATTENDANCE AT PREDECISIONAL ENFORCEMENT AND
+REGULATORY CONFERENCES ..................................................................................... 13
+EXHIBITS
+Exhibit 1
+Sample Protocol Agreement for State Observation of NRC
+Inspections/Audits ............................................................................................... 14
+Exhibit 2
+Sample Memorandum of Understanding for the State of
+____________ Participation in U.S. Nuclear Regulatory
+Commission Inspections...................................................................................... 17
+Exhibit 3
+List of Current Memoranda of Understanding (MOUs) with States* .................... 25
+Exhibit 4
+List of Current Memoranda of Understanding (MOUs) on the
+Emergency Response Data System (ERDS)* ..................................................... 27
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+2
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+PURPOSE OF THIS HANDBOOK
+A. Purpose
+The U.S. Nuclear Regulatory Commission’s mission to protect the public health and
+safety, provide for the common defense and security, and protect the environment, can
+be served by a policy of cooperation with State Governments. The Commission has
+formally adopted a statement of policy on “Cooperation With States at Commercial
+Nuclear Power Plants and Other Nuclear Production or Utilization Facilities”
+(57 FR 6462, February 25, 1992). With respect to commercial nuclear production or
+utilization facilities, States, Tribes, and local governments may have the primary
+responsibility for offsite emergency response while the NRC regulates operations and
+onsite activities. However, the Commission recognizes the interest of States in the
+security and operational safety of nuclear reactors and other nuclear production or
+utilization facilities (e.g., fuel cycle facilities). Accordingly, the NRC believes that the
+agency’s mission can best be served by a policy of cooperation with State governments
+to facilitate the common goals of the NRC and the States. The Commission’s policy
+statement of February 25, 1992, provides the basis for how NRC staff communicates
+and works with Governor-appointed State officials regarding oversight of such facilities.
+This handbook provides an overview of the historical basis for this policy, as well as
+implementation guidance for NRC staff. This handbook outlines how NRC staff interacts
+with States on matters pertaining to nuclear power reactors in the following areas:
+1. Information exchanges;
+2. Observation of NRC public meetings;
+3. Observation of NRC inspections and inspection entrance and exit meetings;
+4. Participation in NRC inspections; and
+5. Attendance at predecisional enforcement and regulatory conferences.
+B. NRC State Liaison Officer (SLO) Program Development and Implementation
+1. In the 1960s, the Atomic Energy Commission sought State input on siting concerns
+and environmental reviews for nuclear power reactor construction and operation
+applications. Often, this entailed contacting and coordinating with multiple State
+agencies and officials. The NRC established the State Liaison Officer (SLO) Program
+in 1976, in response to recommendations from the National Governors Association
+and other organizations, to coordinate with States more efficiently on such licensing
+efforts. Under this program, the NRC requested that Governors identify one
+individual to serve as the primary technical-level contact with the NRC on
+environmental questions of mutual interest. For this reason, many of the SLOs were
+originally selected from the State environmental agencies.
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+3
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+2. Largely because of the Three Mile Island (TMI) accident, the scope of interactions
+between the NRC and States grew to encompass other operational aspects of the
+plants, as well as emergency planning and preparedness. The current program
+establishes a single point of contact in each State to provide the primary
+communication channel between the NRC and the States.
+3. The Governor-appointed SLO is intended to be the primary person in the State to—
+(a) Keep the Governor informed of issues under the jurisdiction of the NRC,
+including nuclear regulatory, security, and radiological public health and safety
+matters.
+(b) Inform and coordinate with other State agencies regarding these matters.
+(c) Answer NRC inquiries and provide the NRC with State information on nuclear
+safety, security, or environmental issues.
+(d) Provide communications and support to Federal, State, and local emergency
+agencies during emergency events.
+4. The NRC requests that the individual appointed as SLO be someone in whom the
+Governor has confidence and who is authorized to represent to the NRC the official
+State position on issues. The individual should also be able to communicate directly,
+quickly, and effectively with the Governor’s office.
+5. The Regional State Liaison Officers (RSLOs) are the NRC points of contact for the
+SLOs within each NRC region. The NRC developed these full-time positions
+beginning in 1977 to meet the States’ needs as interest and involvement in nuclear
+matters increased.
+6. The Office of Nuclear Material Safety and Safeguards routinely communicates with
+SLOs on generic issues, holds periodic virtual seminars, and hosts routine national
+conferences (typically held at least on a triennial basis) on issues of State interest.
+C. NRC Policy on Cooperation With States
+1. Interactions between the NRC and the States regarding the regulation of nuclear
+power reactors is defined and governed by the Commission’s policy statement,
+“Cooperation With States at Commercial Nuclear Power Plants and Other Nuclear
+Production or Utilization Facilities.” The policy statement stems from the Atomic
+Energy Act of 1954, which was amended in 1959 to add Section 274, “Cooperation
+with States.” Much of this section relates to the concept of the Agreement State
+program, by which States can assume regulatory responsibility with respect to
+byproduct, source, and special nuclear materials. However, Subsection (i) authorizes
+the NRC to “enter into agreements with any State, or group of States, to perform
+inspections or other functions on a cooperative basis as the Commission deems
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+4
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+appropriate.” This subsection clarifies the NRC’s authority to obtain the services of
+State personnel to perform functions on its behalf.
+2. The NRC first proposed a formal policy statement outlining State involvement at
+nuclear production or utilization facilities in response to increasing State interest
+stemming from the TMI accident. State Governments, under pressure from citizens
+to ensure the protection of public health and safety, began asserting an oversight
+role at commercial power reactors. Oregon installed a State Resident Inspector
+(authorized by State law) at the Trojan Plant in 1980. Similarly, in 1980,
+Pennsylvania passed its Radiation Protection Act, and hired nuclear engineers to
+monitor nuclear power plant status.
+3. In 1984, the State of Illinois entered into a Memorandum of Understanding (MOU)
+with the NRC to perform inspections of low-level waste activities at NRC-licensed
+facilities, including nuclear power plants. This was the first MOU of its kind, and its
+execution was soon copied in other States. Some States requested that their
+personnel be permitted to attend NRC inspections, inspection entrance and exit
+meetings, and enforcement conferences involving nuclear power reactors. This
+practice resulted in informal letter agreements with some States, outlining protocols
+for State observation of certain NRC activities.
+4. The NRC determined that increased cooperation would enhance States’
+understanding of the NRC’s oversight and would, therefore, increase public
+confidence in the regulation of nuclear power. The Commission determined that
+there should be a uniform policy governing the agency’s interactions with States
+regarding commercial nuclear power oversight. On February 22, 1989 (54 FR 7530),
+the Commission published a final policy statement that built upon the already
+established SLO program and expanded it to include NRC/State communications,
+opportunities for States to observe NRC meetings and inspections, and a process by
+which States may themselves conduct certain inspections on behalf of or in concert
+with the NRC. The NRC encouraged the States to revise pre-existing instruments of
+cooperation to meet the provisions of the policy statement, even though the letter
+agreements remained effective. See Exhibit 3 for a list of agreements.
+5. Shortly after publication of this policy statement, the Commission approved interim
+implementation guidance outlining roles and responsibilities for both State observers
+and the NRC in a protocol agreement. On February 25, 1992, the Commission
+formally revised the policy statement to allow adjacent States to observe (but not to
+participate in) NRC staff inspections and inspection entrance and exit meetings. The
+revision also formally incorporated into the policy the protocol agreement for State
+observation of NRC inspections.
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+5
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+INFORMATION EXCHANGE WITH STATES
+A. Policy
+The NRC will keep SLOs informed on matters of interest to the States. In general, all State
+requests for information or observation of NRC inspections should come from the SLO to
+the appropriate NRC regional office. Channeling all State inquiries through the SLO
+assures the Commission that NRC information of interest to the States will be sent forward
+to those State agencies that need to know. It also assures interested State agencies that
+their requests and inquiries will be handled in a uniform and businesslike manner.
+B. Implementation
+1. The NRC will make every attempt to respond to all requests from States for
+information on matters concerning nuclear production or utilization facility safety
+within 30 days or less. The NRC will work to achieve a timely response to State
+recommendations relating to the safe operation of nuclear production or utilization
+facilities.
+2. The level and areas of interest in matters involving nuclear power plants and other
+nuclear production or utilization facilities varies from State to State and may change
+over time. The RSLOs will continually communicate with the SLOs in their region to
+determine the type and frequency of information from the NRC that is desired. The
+RSLOs will also provide feedback to these State contacts on the information NRC
+management requests of States.
+C. Information To Communicate
+The following is a list of the types of information that the NRC may provide to States.
+This list is meant to be illustrative of the types of information that may be shared and is
+not meant to be all-inclusive or to be uniformly applied to all States. As mentioned
+previously, the information needs of each State are different and may vary over time.
+1. Event Notifications (Other Than Emergency Classifications)
+The RSLO routinely informs States (SLO or designee) of licensee events, particularly
+when the information will become publicly available. This notification includes events
+reported to the NRC under Title 10 of the Code of Federal Regulations (CFR) 50.72
+(for reactors) and Appendix A to 10 CFR Part 70 (for fuel cycle facilities), events
+involving offsite response agencies (e.g., local law enforcement agencies), and
+events that may attract public or media interest. Ideally, these notifications should
+occur before the information is made available to the public.
+2. NRC Actions
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+6
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+The RSLOs routinely inform States of the pending issuance of significant NRC
+actions, including escalated enforcement actions, orders, and confirmatory action
+letters. Such notifications should occur before the documents are released to the
+public and should consist of providing the State contact a copy of the document, if
+requested. The RSLOs will ensure sharing of such information with the SLO is
+consistent with the NRC’s Sensitive Unclassified Non-Safeguards Information
+Program (and Controlled Unclassified Information Program, when implemented).
+3. NRC Documents
+The RSLOs routinely inform States of the pending issuance of NRC documents,
+including Preliminary Notifications, press releases, advisories, meeting notices,
+inspection reports, and licensing documents (licenses or requests for additional
+information) that are of high State or public interest. Even though States are included
+in the distribution of these documents, verbal or prompt electronic notification should
+occur before significant documents are released to the public and should consist of
+providing the State contact a copy of the document, if requested.
+4. Reactor and Fuel Cycle Facility Licensing Changes
+The RSLOs pay special attention to NRC actions taken and documents issued or
+related to significant events or changes at commercial power reactor and fuel cycle
+facilities, because of the infrequent nature of these significant events or changes.
+Example actions or documents include issuance of construction permits, combined
+licenses, initial operating licenses, and/or authorizations to operate; notifications of
+permanent shutdown; and license termination. The RSLOs also consider the
+potential for significant impacts to State and local government programs and
+resources and a high level of public interest. The RSLOs routinely maintain
+awareness of reactor decommissioning activities and milestones and, in coordination
+with the responsible NRC headquarters office, participate in the development of a
+communication plan to inform State and local officials of certain key actions the NRC
+may take following the permanent shutdown of a commercial nuclear power plant.
+Examples of events or key NRC actions that may be of interest to a State include—
+(a) Licensee submittals of decommissioning planning documents (Post-Shutdown
+Decommissioning Activities Report, License Termination Plan) and dates of
+associated NRC public meetings,
+(b) Licensing actions that relax Offsite Emergency Preparedness requirements,
+(c) Termination of the Emergency Response Data System data link,
+(d) Licensing actions related to the use of the Decommissioning Trust Fund, and
+(e) NRC rulemaking activities associated with any of the above activities.
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+7
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+D. Requesting Information From States
+As stated previously, the SLO is the Governor-appointed individual within each State
+with whom the NRC communicates. Through the RSLOs or NMSS/MSS/SLPB Staff,, the
+NRC provides information to these designees for dissemination to other State
+organizations with interest or need to know. The SLO program also establishes the
+expectation of mutual information exchange, engendered by the complementary roles
+the NRC and the States play in protecting public health and safety. The NRC requests
+that the SLOs similarly inform the NRC of matters of interest to the agency, including—
+1. State policies as expressed in proposed or enacted legislation, regulations,
+initiatives, referenda, official policy statements, significant press releases, and
+adjudicatory advisories or decisions;
+2. Concerns within the State as expressed among agencies or other entities within
+State Governments;
+3. Concerns expressed between State bodies and affected or interested local entities,
+Federally recognized Tribal Nations, interstate and regional organizations, public
+interest groups, and industry; and
+4. State comments on license amendments requested by power reactors in the State,
+as discussed in 10 CFR 50.91(b).
+OBSERVATION OF NRC PUBLIC MEETINGS BY STATE PERSONNEL
+A. Policy
+Host State or adjacent State representatives are free to attend as observers any public
+meeting between the NRC and its applicants and licensees. The appropriate NRC regional
+office will, upon request, routinely inform SLOs of the scheduling of public meetings.
+B. Implementation
+The RSLOs should inform SLOs of upcoming public meetings, including meetings
+involving licensees within the SLO’s State or emergency planning zone (EPZ) and
+meetings on topics of high public or State interest. The RSLOs may verbally or
+electronically inform SLOs of such meetings and may provide an electronic copy of the
+meeting notice. The RSLOs should notify the NRC meeting contact of expected State
+attendance at an NRC public meeting so that the State attendee may be recognized and
+afforded the opportunity to ask a question or make a statement as appropriate for the
+meeting category.
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+8
+| DH 5.2 COOPERATION WITH STATES AT COMMERCIAL Date Approved: XX/XX/20XX NUCLEAR POWER PLANTS AND OTHER NUCLEAR PRODUCTION OR UTILIZATION FACILITIES OBSERVATION OF NRC INSPECTIONS AND INSPECTION ENTRANCE AND EXIT MEETINGS BY STATE PERSONNEL A. Policy If requested, the NRC will allow State observation of NRC inspection or licensing audit activities. State requests to observe NRC inspections and audits, and inspection entrance and exit meetings will normally be coordinated through the RSLOs. B. Implementation 1. Notice of Inspections As stated previously, SLOs receive copies of all NRC inspection reports related to facilities within their States and EPZs. Regarding the NRC’s Reactor Oversight Process, SLOs receive NRC regional mid-cycle and end-of-cycle letters, which include at least an 18-month look ahead NRC inspection schedule, to licensees for each site in that region summarizing the staff’s review and assessment of that facility’s performance and inspection findings. When made aware, the RSLOs also should communicate to the SLOs any emergent inspections or inspection schedule changes so that State representatives are afforded the opportunity to observe associated inspection activities. 2. Observation Requests State observation requests should be made in writing and should identify the specific inspection or audit the State wishes to observe. All State observation requests require the approval of the appropriate regional administrator or lead program office director, who may limit the scope and duration of the observation period if observation activities would compromise the efficiency or effectiveness of the inspection. The regional administrator or program office director may delegate approval authority to the RSLO or other appropriate staff. 3. Observation Protocol (a) State observers must sign a copy of the “Protocol Agreement for State Observation of NRC Inspections/Audits” (Exhibit 1) before conducting an observation. The regional administrator or office director determines the periodicity with which this agreement must be signed (e.g., for each observation, annually). The regional administrator or office director may delegate authority for this determination to the RSLO or other appropriate staff. States will be informed that they must not release information concerning the time and purpose of unannounced inspections. Additionally, NRC inspectors and staff will make it clear to the licensee that State views are not necessarily endorsed by the NRC, For the latest version of any NRC directive or handbook, see the online MD Catalog. 9 | Commented [RA1]: Following suggested inclusion of audit activity observations by State personnel based on recent experience with California requesting to observe Diablo Canyon License Renewal Application Audit activities. Was generally determined that the same protocol could be followed for state observation of audits as used for inspection observations. |
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+and that only the NRC has regulatory authority for inspection findings and
+enforcement actions regarding radiological health, safety, and security.
+(b) The State will be responsible for determining the technical and professional
+competence of its representatives who accompany NRC inspectors and staff;
+however, they must have some general understanding of the nature of nuclear
+power for the observation to be meaningful. The State observer will be expected
+to exhibit the same standard of professional conduct as NRC inspectors during
+the accompaniment. State observation may be terminated by the NRC if the
+observer’s conduct interferes with a fair and orderly inspection.
+(c) A State observer accompanies an NRC inspector and staff at their own risk. The
+NRC will not be responsible for injuries or exposures to harmful substances that
+may occur to the accompanying individual during the inspection and will assume
+no liability for any incidents associated with the accompaniment. The State
+observer will remain in the company of NRC personnel throughout the course of
+the inspection. Before the actual inspection, the State will make advance
+arrangements with the licensee for site access training and badging (subject to
+requirements set forth in 10 CFR 73.55(b)(7)).
+(d) The State observer will communicate with the licensee through appropriate NRC
+staff (e.g., senior resident inspector or inspection or audit team leader). If the
+State observer notices any apparent nonconformance with safety, security, or
+regulatory requirements during the inspection, they will make those observations
+promptly known to the NRC lead inspector/staff. If overall conclusions or views of
+the State observer are substantially different from those of the NRC staff, the
+State will advise the NRC lead inspector or audit or team leader and forward
+those views, in writing, to the cognizant NRC region. This course of action will
+allow the NRC to take any necessary regulatory action. Under no circumstances
+should State communications regarding these inspections be released to the
+public or the licensee before they are reviewed by the NRC and the inspection or
+audit report is issued. State communications regarding NRC inspection or audit
+activities may be made publicly available as attachments to the NRC inspection
+reports after they have been transmitted to and reviewed by the NRC.
+(e) The adjacent State SLO must also communicate their observation request to the
+host State SLO so that each State is aware of the other’s intentions. Normally, no
+more than one State representative will be allowed to observe an NRC inspection
+or audit. If a host and an adjacent State request observation of the same
+inspection or audit, the regional administrator or office director will make the final
+determination on the number of State observers who may accompany the NRC
+staff during the inspection or audit. If there is a need to limit the number of
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+10
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+observers, the regional administrator or office director will normally give
+preference to the host State.
+4. Information Security – Safeguards Information and Sensitive Unclassified
+Non-Safeguards Information (or Controlled Unclassified Information)
+(a) A State observer is permitted to review Safeguards Information (SGI) or sensitive
+unclassified safeguards information (SUNSI) or Controlled Unclassified
+Information (CUI), including proprietary information, associated with certain types
+of inspections or audits, provided the State observer meets the requirements for
+access to such information (e.g., for SGI 10 CFR 73.22(b) and 10 CFR 73.23(b).
+Observers will not remove any material from the site without NRC or licensee
+approval, as appropriate. A State observer of such inspections may be required
+to complete a non-disclosure agreement in accordance with the licensee
+protocols. For more information on specific SGI requirements, see 10 CFR 73.21.
+(b) Proprietary information and security-related information are the most likely forms
+of other sensitive information that State observers may be permitted to review;
+these are types of CUI. For more information on CUI requirements, see MD 12.6,
+“NRC Controlled Unclassified Information (CUI) Program,” as well as the
+“NRC Policy for Handling, Marking, and Protecting Sensitive Unclassified
+Non-Safeguards Information,” which is available on the internal NRC SharePoint
+site https://usnrc.sharepoint.com/sites/SUNSI .
+(c) When the NRC implements the revised Controlled Unclassified Information (CUI)
+Program, the SUNSI Program and guidance will be superseded by the CUI
+Program policies and procedures. The RSLO will be responsible for ensuring that
+any State observers are afforded awareness of the changes included in the new
+program before the State observation of the inspection or audit.
+STATE PARTICIPATION IN NRC INSPECTIONS
+A. Policy
+Section 161.f of the Atomic Energy Act of 1954, as amended, gives the Commission broad
+discretionary authority to enter into arrangements with States. In 1959, Congress clarified
+this authority by providing in the first sentence of Section 274i that, “The Commission in
+carrying out its licensing and regulatory responsibilities under this Act is authorized to
+enter into agreements with any State, or group of States, to perform inspections or other
+functions on a cooperative basis as the Commission deems appropriate.”
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+11
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+B. Implementation
+Accordingly, the NRC will consider host and adjacent State participation in inspections
+and the associated inspection entrance and exit meetings where the State proposes an
+instrument of cooperation identifying the specific inspections with which they wish to
+assist the NRC and provide a program containing specific elements.
+1. State Program Elements
+The proposed State program must—
+(a) Recognize the Federal Government, specifically the NRC, as having the
+exclusive authority and responsibility to regulate the radiological and national
+security aspects of the construction and operation of nuclear production or
+utilization facilities, except for certain authorities granted to States by the Clean
+Air Act;
+(b) Be in accordance with Federal standards and regulations;
+(c) Specify minimum education, experience, training, and qualifications requirements
+for State representatives that are patterned after those of NRC inspectors;
+(d) Contain provisions for the findings and observations of State representatives to
+be transmitted to the NRC for disposition;
+(e) Not impose an undue burden on the NRC and its licensees and applicants; and
+(f) Abide by NRC protocol not to publicly disclose inspection findings and
+observations before the release of the NRC inspection report.
+2. NRC Approval
+The Commission will decide policy matters related to proposed instruments of
+cooperation. Once the Commission has decided the policy on a specific type of
+instrument, similar State-proposed instruments may be approved, consistent with
+Commission policy, by the Executive Director for Operations. A State-proposed
+instrument of cooperation will be documented in a formal MOU signed by the NRC
+and the State. A sample MOU is provided as Exhibit 2.
+3. NRC Coordination
+The NRC may develop inspection plans along with qualified State representatives
+using applicable procedures in the NRC Inspection Manual. Qualified State
+representatives may be permitted to perform inspections in cooperation with, and on
+behalf of, the NRC under the oversight of an authorized NRC representative. The
+degree of oversight provided would depend on the activity. For instance, State
+representatives may be accompanied by an NRC representative initially to assess
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+12
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+the State inspector’s preparedness to conduct the inspection independently. Other
+activities may be conducted using an inspection team approach, with the NRC taking
+the lead. All enforcement action will be undertaken by the NRC.
+4. NRC Reviews
+Once the NRC has decided to enter into an MOU for State involvement in NRC
+inspections, a formal review, not less than 6 months after the effective date, will be
+conducted by the NRC to evaluate implementation of the MOU and resolve any
+problems identified. Final agreements will be subject to periodic reviews and may be
+amended or modified upon written agreement by both parties and may be terminated
+upon 30 days’ written notice by either party.
+STATE ATTENDANCE AT PREDECISIONAL ENFORCEMENT AND
+REGULATORY CONFERENCES
+The Commission’s policy regarding State Government attendance at predecisional
+enforcement and regulatory conferences, and guidance for its implementation, is described
+in Part 1, Section 1.2.15.2.D, “Stakeholder Attendance at PECs and Regulatory
+Conferences,” of the NRC Enforcement Manual (current version available at
+https://www.nrc.gov/about-nrc/regulatory/enforcement/guidance.html).
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+13
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+EXHIBITS
+Exhibit 1
+Sample Protocol Agreement for State Observation of NRC Inspections/Audits
+The following protocol is extracted from the Commission Statement of Policy on “Cooperation
+With States at Commercial Nuclear Power Plants and Other Nuclear Production or Utilization
+Facilities” as published in the Federal Register on February 25, 1992 (see 57 FR 6462 ).
+Protocol Agreement for State Observation of NRC Inspections
+NRC Protocol
+• The Regional State Liaison Officer (RSLO) will normally be the lead individual responsible
+for tracking requests for State observation, assuring consistency regarding these requests, and
+for advising the Regional Administrator on the disposition of these requests.  The appropriate
+technical representative or Division Director will communicate with the State on specific issues
+concerning the inspection(s).
+• Requests for observations of Headquarters-based inspections will also be coordinated
+through the RSLO.  Headquarters-based inspections should be referred through the RSLO to a
+technical representative designated by the Region.
+• [The] NRC will process written requests to the Regional Administrator through the
+Governor-appointed State Liaison Officer (SLO).  Requests should identify the type of
+inspection activity and facility the State wishes to observe.
+• Limits on scope and duration of the observation period may be imposed if, in the view of
+the Regional Administrator, they compromise the efficiency or effectiveness of the inspection.
+Regions should use their discretion as to which, if any, inspections will be excluded from
+observations.
+• States will be informed they must not release information concerning the time and purpose
+of unannounced inspections.
+• The Region will make it clear to the licensee that the State views are not necessarily
+endorsed by NRC.  The Region will also make it clear that only [the] NRC has regulatory
+authority for inspection findings and enforcement actions regarding radiological health and
+safety.
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+14
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+State Protocol
+• A State will make advance arrangements with the licensee for site access training,
+badging (subject to fitness for duty requirements), as well as obtain appropriate security
+clearances for its observers, based on a need-to-know determination, if applicable, prior to the
+actual inspection.
+• Normally, no more than one individual will be allowed to observe an NRC inspection.
+• The State will be responsible for determining the technical and professional competence of
+its representatives who accompany NRC inspectors.
+• An observer's communication with the licensee [will] be through the appropriate NRC team
+member, usually the senior resident inspector or the team leader.
+• When informed of an unannounced inspection, a State must not release information
+concerning its time and purpose.
+• An observer will remain in the company of NRC personnel throughout the course of the
+inspection.
+• State observation may be terminated by the NRC if the observer's conduct interferes with
+a fair and orderly inspection.
+• An observer will not be provided with proprietary or safeguards information. [1] Observers
+will not remove any material from the site without NRC or licensee approval.
+• The State observer, in accompanying the NRC inspectors, does so at his or her own risk.
+NRC will not be responsible for injuries or exposures to harmful substances which may occur to
+the accompanying individual during the inspection and will assume no liability for any incidents
+associated with the accompaniment.
+• The State observer will be expected to adhere to the same conduct as NRC inspectors
+during an inspection accompaniment.
+• If the State observer notices any apparent non-conformance with safety or regulatory
+requirements during the inspection, he/she will make those observations promptly known to the
+NRC team leader or lead inspector.  Likewise, when overall conclusions or views of the State
+observer are substantially different from those of the NRC inspectors, the State will advise the
+1 Under current NRC regulations, a State observer is permitted to review Safeguards Information (SGI) or
+sensitive unclassified non-safeguards information (SUNSI), including proprietary information associated
+with certain types of inspections, provided the State observer meets the requirements for access to such
+information (e.g., for SGI 10 CFR 73.22(b) and 10 CFR 73.23(b).
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+15
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+team leader or lead inspector and forward those views, in writing, to the NRC Region.  This will
+allow NRC to take any necessary regulatory actions.
+• Under no circumstances should State communications regarding these inspections be
+released to the public or the licensee before they are reviewed by the NRC and the inspection
+report is issued.  State communications may be made publicly available, similar to NRC
+inspection reports, after they have been transmitted to and reviewed by [the] NRC.
+Adjacent State Protocol
+• An adjacent State is a State within the plume exposure pathway emergency planning zone
+(EPZ) (within approximately a 10-mile radius) of an NRC-licensed facility located in another
+State.  A host State is a State in which an NRC-licensed facility is located.  An adjacent State
+may request permission to observe NRC inspections at an NRC-licensed facility in a host State.
+• The adjacent State SLO must communicate his/her request for observation to the
+Regional Administrator for the region in which the facility is located.
+• The adjacent State SLO must also communicate his/her request to the host State SLO so
+that each State is aware of the other's intentions.
+• If a host State and an adjacent State request observation of the same inspection, the
+Regional Administrator will make the final determination on the number of State observers who
+may attend the inspection.  If there is a need to limit the number of observers, the Regional
+Administrator will routinely give preference to the host State observers.
+• Adjacent State observers will abide by the same protocol in all aspects of the inspection as
+host States under this agreement.
+Signature of State Observer
+Date
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+16
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+Exhibit 2
+Sample Memorandum of Understanding for the State of ____________
+Participation in U.S. Nuclear Regulatory Commission Inspections
+I.
+Authority
+The U.S. Nuclear Regulatory Commission (NRC) and the State of __________ enter into this
+Memorandum of Understanding (MOU) under the authority of Section 274i of the Atomic Energy
+Act of 1954, as amended, and Section 4 of the __________ Facility Safety Act (State legislation).
+II.
+Background
+A.
+The Atomic Energy Act of 1954, as amended, and the Energy Reorganization Act of 1974,
+as amended, authorize the NRC to license and regulate, among other activities, the
+manufacture, construction, and operation of utilization facilities in order to promote the
+common defense and security and to protect the public health and safety.  Under these
+statutes, the NRC is the responsible agency regulating commercial nuclear power safety.
+B.
+The NRC believes that its mission to protect the public health and safety, provide for the
+common defense and security, and protect the environment, can be served by a policy of
+cooperation with State governments and has formally adopted a policy statement on
+“Cooperation With States at Commercial Nuclear Power Plants and Other Nuclear
+Production or Utilization Facilities” (57 FR 6462, February 25, 1992).  The policy statement
+provides that the NRC will consider State proposals to enter into instruments of
+cooperation for State participation in NRC inspection activities when these programs have
+provisions to ensure close cooperation with the NRC.  The NRC will only consider State
+proposals for instruments of cooperation to conduct inspection programs of NRC-regulated
+activities that provide for close cooperation with, and oversight by, the NRC.
+C.
+The NRC fulfills its statutory mandate to regulate the safety of commercial nuclear
+activities by, among other things, conducting safety inspections of nuclear production or
+utilization facilities to assure that they are designed, constructed, tested, maintained,
+operated and decommissioned in accordance with NRC regulatory requirements.  The
+NRC operating reactor inspection program is conducted by Headquarters personnel,
+region-based inspectors and Resident Inspectors.  The NRC Resident Inspectors are
+located at each nuclear production or utilization facility.  Resident Inspectors provide the
+major onsite presence for direct observation and verification of licensee activities.  The
+NRC Resident Inspector also acts as the primary onsite evaluator for the NRC inspection
+effort related to such items as licensee event reports, events, and incidents.  The NRC
+Resident Inspectors also interact with local officials, the press, and the public.
+Ill.
+Scope
+A.
+This MOU defines the way in which the NRC and the State, with the assistance of State
+Resident Engineers, will cooperate in planning and conducting inspections of nuclear
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+17
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+production or utilization facilities in the State to ensure compliance with NRC regulations.
+This MOU does not apply to investigations or inquiries conducted by the NRC.
+B.
+For the purpose of this MOU, inspection is defined as the examination, review, or
+evaluation of any program or activity of a licensee to determine the effectiveness of the
+program or activity in ensuring that the health and safety of the public and site personnel
+are adequately protected and that the facility is operated safely; and to determine
+compliance with any applicable NRC rule, order, regulation, or license condition pursuant
+to the Atomic Energy Act of 1954, as amended, and commitments made to the NRC.
+C.
+Nothing in this MOU is intended to restrict or expand the statutory authority of the NRC or
+the State or to affect or otherwise alter the terms of any agreement in effect under the
+authority of Section 274.b of the Atomic Energy Act of 1954, as amended; nor is anything
+in this MOU intended to restrict or expand the authority of the State on matters not within
+the scope of this MOU.
+D.
+Nothing in this MOU confers upon the State or State Resident Engineers authority to
+(1) interpret or modify NRC regulations and NRC requirements imposed on the licensee;
+(2) take enforcement actions; (3) issue confirmatory letters; (4) amend, modify, or revoke a
+license issued by the NRC; or (5) direct or recommend nuclear power plant employees to
+take or not to take any action.  Authority for all such actions is reserved exclusively for the
+NRC.
+E.
+Under this MOU, one State Resident Engineer may be assigned to each nuclear power
+plant site in the State.
+IV.
+NRC's General Responsibilities
+NRC is responsible for conducting safety and security inspections of nuclear power plants to
+ensure that the plants are designed, constructed, tested, operated, maintained, and
+decommissioned in accordance with NRC regulatory requirements.  These inspections are
+conducted in accordance with the NRC Inspection Manual using personnel appropriately
+qualified and trained to perform the necessary tasks.  Only the NRC may take appropriate
+enforcement actions for all inspections conducted under this MOU.
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+18
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+V.
+The State's General Responsibilities
+A.
+The State, through its State Resident Engineer, will cooperate with the NRC in performing
+safety inspections.  Such inspections shall be conducted in accordance with NRC
+regulatory requirements and procedures governing operating nuclear power plants in the
+State and under the oversight of an authorized NRC representative.
+B.
+The State will cooperate with the NRC in such inspections as necessary for the NRC to
+ensure that power reactors in the State continue to be operated without undue risk to
+public health and safety and the environment.
+C.
+State activities will be performed in accordance with Federal standards and requirements
+and NRC practices, with no undue burden on the NRC or its licensees.
+VI.
+Implementation
+The State and the NRC agree to work in concert to assure that the following staffing, training,
+inspection and enforcement, communications and information exchange, and conflict resolution
+protocol regarding the State Resident Engineer Program are followed.
+A.
+Staffing
+1.
+The State will select its State Resident Engineers in accordance with its own procedures
+and qualifications, patterned after those for NRC Resident Inspectors.
+2.
+State Resident Engineers will have education and experience equivalent to that required
+for an NRC Resident Inspector.
+3.
+The State is responsible for meeting safeguards information and site access requirements
+for State Resident Engineers that are acceptable to the nuclear power plant licensee.
+4.
+The State is responsible for ensuring that State Resident Engineers comply with all
+requirements established by the licensee, including fitness-for-duty, site access, and
+onsite space and support.  The NRC is not responsible for ensuring access or working
+space for State personnel.
+5.
+The State will certify to the NRC that each State Resident Engineer has no financial or
+other interests that may call into question his or her objectivity or that create a conflict of
+interest or the appearance of a conflict of interest.
+B.
+Training
+1.
+State Resident Engineers performing inspection functions will be qualified and certified by
+the State in accordance with the NRC Inspection Manual or its equivalent.  Such
+qualification and certification will be made for each inspection activity in which a State
+Resident Engineer will participate, such as—
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+19
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+Reactor operations (boiling-water reactor (BWR))
+Reactor operations (pressurized-water reactor (PWR))
+Reactor engineering—electrical
+Reactor engineering—instrumentation
+2.
+The NRC will use its best efforts to make space available in its inspector training courses and
+special orientation programs to accommodate the training needs of State Resident Engineers.
+3.
+The State will pay the travel and per diem expenses of State Resident Engineers attending
+training courses. Where the NRC establishes special training classes, the State agrees to
+reimburse the NRC for its costs of training State Resident Engineers, if requested.
+4.
+The NRC will provide one week of on-the-job training and orientation for the State
+Resident Engineer at each site.
+5.
+Information acquired by the NRC relating to the ability of a State Resident Engineer to
+perform inspections satisfactorily in accordance with NRC regulations, requirements,
+standards, and procedures will be provided to the State for appropriate action.
+C.
+Inspections and Enforcement
+1.
+The State Resident Engineers’ activities are intended to assist the NRC in the conduct of
+its regulatory activities.
+2.
+The State Resident Engineers are responsible for meeting all requirements imposed by a
+licensee related to personal safety, radiological protection, and access at the plant site.
+3.
+To the extent practicable, it is intended that the State Resident Engineers will arrange their
+schedules of inspection activities in coordination with NRC personnel in order to provide
+the widest possible coverage of the plant and its operations.
+4.
+If the State intends to participate in the inspection process, the State will provide
+recommendations for the NRC inspection plan, consistent with NRC Inspection Manual
+Chapter 2515, generally describing proposed inspection activities for the upcoming month.
+These recommendations will include a schedule of the inspections and a listing of NRC
+procedures to be used by the State Resident Engineer.  In accordance with Section VI.C.1
+above, such recommendations shall be designed to assist NRC site inspection activities.
+The NRC shall take such recommendations into account in formulating its Master
+Inspection Plans (MIP).
+5.
+The State will submit the monthly inspection recommendations to the NRC Resident
+Inspector in sufficient time to allow NRC review before preparation for the inspection plan.
+The NRC will review the State's inspection recommendations and will inform the State of
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+20
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+any activities that appear inappropriate, untimely, or impose an undue burden on NRC or
+the licensee, such as schedule conflicts with NRC special inspections, management
+meetings, or Institute for Nuclear Power Operations (INPO) visits.  The State will make
+adjustments to the State inspection recommendations, as necessary, to address NRC
+comments.  Taking into account recommendations made by the State, NRC will be
+responsible for developing a single site inspection plan.  The NRC staff inspection activity
+will not be reduced for a facility below minimum program requirements on the basis of the
+availability of the State's inspection resources.
+6.
+The NRC will coordinate with the State Resident Engineers, to the extent practicable,
+unscheduled inspections conducted in response to events, issues, and allegations.
+7.
+An NRC Resident Inspector will initially accompany each State Resident Engineer on at
+least two inspections to review the performance of the State Resident Engineer.  On the
+basis of these reviews, the NRC Resident Inspector will make recommendations to the
+State Resident Engineer regarding the preparation, conduct, and technical adequacy of
+the inspections.
+8.
+The NRC Resident Inspectors may accompany the State Resident Engineers on any
+inspection.  The State Resident Engineers may, at the NRC's discretion, accompany the
+NRC Resident Inspectors on inspections, at inspection entrance and exit interviews, and
+at enforcement meetings.  The State recognizes that there may be occasions when,
+because of the sensitive nature of certain inspections and meetings, it will be necessary
+for the NRC, at its discretion, to conduct such activities privately and separately.
+9.
+The NRC will provide the State with a copy and current updates of the NRC Inspection
+Manual and MIP for each reactor site in the State at which a State Resident Engineer is
+stationed.  The State will hold the MIP in confidence and will not release it to the public or
+licensees except in accordance with Section VI.D.6 of this MOU.
+10. Allegations received by the State Resident Engineers will be provided to the NRC
+Resident Inspectors and processed in accordance with NRC procedures.  Upon request
+by the NRC, the State Resident Engineers will be made available to assist the NRC in
+addressing allegations.
+11. The results of all State Resident Engineers’ inspections will be discussed in a timely
+manner with the NRC Resident Inspectors.  Matters that may require action by the
+licensee will be discussed with licensee management by the NRC Resident Inspectors, or
+by the State Resident Engineers in the presence of the NRC Resident Inspectors, except
+as may be necessary under Section VI.C.12 of this MOU.
+12. If a State Resident Engineer identifies situations with immediate safety or security
+significance, he or she will immediately communicate this information to the licensee and
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+21
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+the NRC Resident Inspectors.  It is essential that this information be discussed with an
+NRC representative immediately upon discovery so that the NRC may take prompt action
+as dictated by the situation.  If the NRC Resident Inspectors are unavailable, a State
+Resident Engineer will transmit this information immediately to the NRC, Region ___ (the
+Regional Duty Officer during non-business hours).
+13. All written communications with the licensee will be made through the NRC.  If a State
+Resident Engineer prepares a written report of the results of an inspection activity covered
+by this MOU, the report will not be sent directly to the licensee, but will be sent to the NRC
+Region ___ office and the NRC Resident Inspectors.  The State is responsible for the
+technical adequacy of State Resident Engineers' inspection reports.  The NRC will forward
+the report to the licensee with a cover letter discussing the issues, if any, that the NRC
+believes warrant action by the licensee.
+14. If the NRC identifies potential violations of NRC regulatory requirements as a result of the
+State's inspection activities, the NRC may take appropriate enforcement action as set forth
+in 10 CFR Part 2, Appendix N.  The State Resident Engineers will assist the NRC, if
+requested by NRC, in the preparation of enforcement actions and during any enforcement
+conferences or hearings for those matters that were identified as a result of the State's
+inspection activities. Enforcement action, if any, will be taken only by the NRC.
+D.
+Communications and Information Exchange
+1.
+The State and the NRC agree in good faith to make available to each other information
+within the intent and scope of this MOU.
+2.
+The NRC and the State agree to meet periodically, at least annually, at mutually agreeable
+times to exchange information on matters of common concern pertinent to this MOU.
+Unless otherwise agreed, such meetings will be held in the NRC Region ___ office or at
+the NRC Resident Inspector's office.
+3.
+The NRC will inform the State of formal meetings with licensee management involving a
+site to which a State Resident Engineer is assigned and provide the State the opportunity
+to attend with the exception of those meetings that the NRC determines should be closed
+as provided in Section VI.C.8 of this MOU.
+4.
+The State and the NRC agree to consider each other's identified information needs and
+concerns when developing inspection plans.
+5.
+The State will conform to NRC practices regarding information disclosure.  For instance,
+the State must abide by NRC protocol not to publicly disclose inspection findings prior to
+the release of the NRC inspection report.
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+22
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+6.
+To preclude the premature public release of sensitive information, the State and NRC shall
+protect sensitive information to the extent permitted by the Federal Freedom of Information
+Act, the (State) Freedom of Information Act and other applicable authority.  The State and
+the NRC shall consult with each other before releasing sensitive or Proprietary Information
+related to this MOU.
+7.
+Press releases regarding the State's activities or NRC inspections in which the State has
+been involved under this MOU that are prepared by one party will be provided to the other
+party before issuance.  Press releases are to conform to information disclosure restraints
+of Sections VI.D.5 and VI.D.6 of this MOU.
+8.
+The State will provide the NRC with written notice at least 60 days before the stationing of
+a State Resident Engineer at a site.
+VII. Contacts
+A.
+The primary senior management contacts for this MOU will be      Name/Title      for the
+NRC and      Name/Title      for the State.  These individuals may designate appropriate
+staff representatives for the purpose of administering this MOU.
+B.
+Identification of these contacts is not intended to restrict communication between the NRC
+and State staff members on technical and other day-to-day activities.
+VIII. Resolution of Conflicts
+A.
+If disagreements or conflicts arise about matters within the scope of this MOU, NRC and
+the State will work together to resolve these differences.
+B.
+Resolution of differences between the State and NRC staff over the significance of findings will
+be the initial responsibility of the Director, Division of Reactor Projects, Region ___, NRC.
+C.
+Differences that cannot be resolved in accordance with Sections VIII.A and VIII.B of this
+MOU will be reviewed and resolved by the Regional Administrator, Region ___, NRC, and
+the    Name/Title         , State.  The decision of the Regional Administrator will be final.
+D.
+The NRC's General Counsel has the final authority to interpret the NRC's regulations.
+IX.
+Effective Date
+This MOU shall become effective upon signing by the           Name/Title          , State, and
+the       Name/Title          , NRC, and shall remain in effect permanently unless terminated by
+either party on 30 days written notice.
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+23
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+X.
+Duration, Termination, and Modification
+A formal review, not less than six months after the MOU effective date, will be performed by the
+NRC to evaluate implementation of the MOU and resolve any issues identified.  This MOU will
+be subject to periodic reviews and may be amended or modified upon written agreement by
+both parties, and may be terminated upon 30 days’ written notice by either party.
+XI.
+Separability
+If any provision(s) of this MOU, or the application of any provision(s) to any person or
+circumstances is held invalid, the remainder of this MOU and the application of such provisions
+to other persons or circumstances shall not be affected.
+FOR THE U.S. NUCLEAR REGULATORY COMMISSION,
+_
+Executive Director for Operations
+Date
+FOR THE STATE OF                                                                       ,
+(Name and Title of Department Director)
+Date
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+24
+| State | MOU |
+| Illinois | Umbrella Memorandum of Understanding (MOU) (49 FR 20586 5/15/84) Low-Level Radioactive Waste (LLW) Inspection (49 FR 27861 7/6/84) American Society of Mechanical Engineers Code Inspections (55 FR 23317 6/7/90) Resident Engineers (55 FR 51973 12/18/90) |
+| Indiana | Water Quality (43 FR 61053 12/29/78) Umbrella MOU (43 FR 61053 12/29/78) |
+| Louisiana | Inspections in Outer Continental Shelf (32 FR 6807 5/3/67) [MOA subsequently terminated 4/26/2000, (65 FR 25508, 5/2/2000)] |
+| Maryland | State Regulation of Effluents (35 FR 20021, 12/30/70) |
+| Nebraska | Water Quality (44 FR 49529 8/23/79) In Situ Uranium Mining (47 FR 55444 12/9/82) |
+| New York | Umbrella MOU (43 FR 19485 5/5/78) Information Exchange (30 FR 6883, 5/20/65) |
+| Oregon | Proprietary Information (45 FR 8394 2/7/80) Umbrella MOU (45 FR 8394 2/7/80) |
+| Pennsylvania | LLW Inspection (52 FR 43695 11/13/87) Site Decommissioning Management Plan (61 FR 46832 9/5/96) Umbrella MOU (51 FR 43487 12/2/86) |
+| South Carolina | Water Quality (43 FR 19486 5/5/78) Transportation Regulation at Waste Site (47 FR 23836 6/1/82) |
+| Virginia | Water Quality (43 FR 19487 5/5/78) |
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+Exhibit 3
+List of Current Memoranda of Understanding (MOUs) with States*
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+25
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+Washington
+Transportation Regulation at Waste Site (47 FR 17893 4/26/82)
+Public Information (48 FR 38358 8/23/83)
+Exchange of Information (50 FR 14782 4/15/85)
+Umbrella MOU (43 FR 43774 9/27/78)
+Wyoming
+Memorandum of Understanding Between the U.S. Nuclear Regulatory
+Commission and the Wyoming Department of Environmental Quality (83
+FR 58787 11/21/18)
+*As of August 2015.  Instruments of cooperation (other than MOUs) with States may include
+informal letters of agreement not listed in this table.
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+26
+Date Approved: XX/XX/20XX
+DH 5.2
+COOPERATION WITH STATES AT COMMERCIAL
+NUCLEAR POWER PLANTS AND OTHER NUCLEAR
+PRODUCTION OR UTILIZATION FACILITIES
+Exhibit 4
+List of Current Memoranda of Understanding (MOUs) on the Emergency
+Response Data System (ERDS)*
+.
+.
+State
+.
+.
+Alabama
+Arizona
+Arkansas
+California
+Delaware
+.
+.
+.
+.
+Georgia
+.
+.
+Iowa
+.
+.
+Kansas
+.
+.
+Louisiana
+.
+.
+Maryland
+Massachusetts
+Michigan
+Missouri
+Minnesota
+.
+.
+New Hampshire
+New Jersey
+New York
+North Carolina
+Ohio
+.
+.
+Pennsylvania
+.
+.
+South Carolina
+.
+.
+Tennessee
+Texas
+.
+.
+Virginia
+.
+.
+Washington
+Wisconsin
+.
+.
+* NSIR maintains the list of states with current MOUs for use of ERDS..
+For the latest version of any NRC directive or handbook, see the online MD Catalog.
+27

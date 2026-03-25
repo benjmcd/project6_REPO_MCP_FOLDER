@@ -1,0 +1,96 @@
+{
+  "assembly_contract_id": "aps_evidence_report_assembly_v1",
+  "evidence_report_checksum": "1ff56321b72591407145bb55bcd70046890c6ec942b0317a17f3e826a92ec120",
+  "evidence_report_id": "141684001bea269f91b56ee887c4d8c67b25a6e2ad6b4201c132ac9a3e3f3034",
+  "generated_at_utc": "2026-03-12T19:09:13.853051Z",
+  "schema_id": "aps.evidence_report.v1",
+  "schema_version": 1,
+  "sectioning_contract_id": "aps_evidence_report_sectioning_v1",
+  "sections": [
+    {
+      "accession_number": null,
+      "chunking_contract_id": "aps_chunking_v1",
+      "citation_count": 1,
+      "citations": [
+        {
+          "chunk_id": "chunk-context-packet-api-3",
+          "chunk_ordinal": 0,
+          "citation_id": "154f5ea321c2778dcb15d3ebceb2d33fb057ef05b761e06f5edc9a7667ed77db",
+          "citation_label": "APS-CIT-00001",
+          "citation_ordinal": 1,
+          "end_char": 11,
+          "highlight_spans": [
+            {
+              "chunk_end": 11,
+              "chunk_start": 6,
+              "snippet_end": 11,
+              "snippet_start": 6
+            }
+          ],
+          "snippet_end_char": 11,
+          "snippet_start_char": 0,
+          "snippet_text": "alpha delta",
+          "start_char": 0
+        }
+      ],
+      "content_contract_id": "aps_content_units_v1",
+      "content_id": "content-context-packet-api-2",
+      "group_id": "414d13a5ec0ea027f7739b4232000a705a1b8f91e6fc50e1097ccbdbc3a89700",
+      "run_id": "run-context-packet-api-1",
+      "section_id": "b97664138d3e373303f167f2ed68088c3459c99f8fbc5ae3b9c49c9cef1e2352",
+      "section_ordinal": 1,
+      "section_type": "evidence_group",
+      "target_id": "target-context-packet-api-2",
+      "title": "Content content-context-packet-api-2"
+    }
+  ],
+  "source_citation_pack": {
+    "citation_pack_checksum": "dbe1b88bcfe5d30631594caa62ce6f0bde13652825c79e4ecf4fab329dd6aa50",
+    "citation_pack_id": "060904d61c7a15cb714b140d7e6e240246dfb1d6af526d8049feedcccebf32a1",
+    "citation_pack_ref": "app\\storage\\connectors\\reports\\run_run-context-packet-api-1_060904d61c7a15cb714b140d_aps_evidence_citation_pack_v1.json",
+    "derivation_contract_id": "aps_evidence_citation_derivation_v1",
+    "schema_id": "aps.evidence_citation_pack.v1",
+    "schema_version": 1,
+    "source_bundle": {
+      "bundle_checksum": "9b21bf3c1d6df19cf628a7f284ae8b17b4b78f09887a8cbe2aa0e808599907c5",
+      "bundle_id": "f0ecc9ad5fb9d652471f7b2fb9a6487fdeb06c284f20314a292bbd1b7a58b4f8",
+      "bundle_ref": "app\\storage\\connectors\\reports\\run_run-context-packet-api-1_f0ecc9ad5fb9d652471f7b2fb9a6487fdeb06c284f20314a292bbd1b7a58b4f8_aps_evidence_bundle_v1.json",
+      "mode": "query",
+      "query": "delta",
+      "query_tokens": [
+        "delta"
+      ],
+      "request_identity_hash": "138910c36c1069eb37dcdee4c29ab75de02cfd4923d7a82ce32ce6f12fd6d233",
+      "run_id": "run-context-packet-api-1",
+      "schema_id": "aps.evidence_bundle.v1",
+      "schema_version": 1,
+      "snapshot": {
+        "db_fingerprint": "6f8c353f799a5f9530618aaee5b6b56febbfba9b4809b7ee6328061c1070c84b",
+        "index_max_updated_at_utc": "2026-03-12T19:09:13.746301Z",
+        "index_row_count": 1,
+        "index_state_hash": "f5ede6c0bc062f9a597915306b37bb9d75d60679927df4425effffea807a8f45",
+        "read_scope": {
+          "filters": {
+            "accession_numbers": null,
+            "chunking_contract_id": null,
+            "content_contract_id": null,
+            "content_ids": null,
+            "normalization_contract_id": null,
+            "target_ids": null
+          },
+          "run_id": "run-context-packet-api-1"
+        },
+        "snapshot_completed_at_utc": "2026-03-12T19:09:13.823967Z",
+        "snapshot_contract_id": "aps_evidence_snapshot_v1",
+        "snapshot_started_at_utc": "2026-03-12T19:09:13.822966Z"
+      },
+      "total_groups": 1,
+      "total_hits": 1
+    },
+    "total_citations": 1,
+    "total_groups": 1
+  },
+  "total_citations": 1,
+  "total_groups": 1,
+  "total_sections": 1
+}

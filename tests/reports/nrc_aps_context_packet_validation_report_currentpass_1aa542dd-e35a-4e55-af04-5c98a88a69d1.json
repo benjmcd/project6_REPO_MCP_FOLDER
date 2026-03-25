@@ -1,0 +1,23 @@
+{
+  "checked_runs": 1,
+  "checks": [
+    {
+      "context_packet_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_1aa542dd-e35a-4e55-af04-5c98a88a69d1_1cf8e81278c92f6d347807eb_aps_context_packet_v1.json",
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_1aa542dd-e35a-4e55-af04-5c98a88a69d1_e1635be2e3c4e4e2cffd7705_aps_context_packet_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "1aa542dd-e35a-4e55-af04-5c98a88a69d1"
+    }
+  ],
+  "evaluated_run_rows": 1,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-19T17:52:26.639244Z",
+  "passed": true,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.context_packet_gate.v1",
+  "schema_version": 1
+}

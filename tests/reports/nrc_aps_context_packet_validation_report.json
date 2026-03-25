@@ -1,0 +1,33 @@
+{
+  "checked_runs": 2,
+  "checks": [
+    {
+      "context_packet_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-context-dossier-api-1_08aa822f2f620b3fd5d2d357_aps_context_packet_v1.json",
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-context-dossier-api-1_3e5fd24613f4cc8236ac9736_aps_context_packet_v1.json",
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-context-dossier-api-1_6a73732c20cffa7097cb923e_aps_context_packet_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-context-dossier-api-1"
+    },
+    {
+      "context_packet_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-context-packet-api-1_fcf30276d6190338eb428f78_aps_context_packet_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-context-packet-api-1"
+    }
+  ],
+  "evaluated_run_rows": 2,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-13T15:54:10.836773Z",
+  "passed": true,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.context_packet_gate.v1",
+  "schema_version": 1
+}

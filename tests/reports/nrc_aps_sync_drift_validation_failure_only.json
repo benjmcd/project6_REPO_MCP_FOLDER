@@ -1,0 +1,31 @@
+{
+  "checked_runs": 1,
+  "checks": [
+    {
+      "delta_exists": false,
+      "drift_exists": false,
+      "failure_exists": true,
+      "passed": false,
+      "paths": {
+        "aps_sync_delta": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\d2819d67-58bd-4692-8c14-7bfff36cfe6d_aps_sync_delta_v1.json",
+        "aps_sync_drift": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\d2819d67-58bd-4692-8c14-7bfff36cfe6d_aps_sync_drift_v1.json",
+        "aps_sync_drift_failure": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\d2819d67-58bd-4692-8c14-7bfff36cfe6d_aps_sync_drift_failure_v1.json"
+      },
+      "reasons": [
+        "failure_artifact_without_success",
+        "missing_delta_artifact",
+        "missing_drift_artifact"
+      ],
+      "run_id": "d2819d67-58bd-4692-8c14-7bfff36cfe6d",
+      "success_exists": false
+    }
+  ],
+  "evaluated_run_rows": 1,
+  "failed_runs": 1,
+  "passed": false,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.sync_drift_validation.v1",
+  "schema_version": 1,
+  "validated_at_utc": "2026-03-10T04:02:28.748570Z"
+}

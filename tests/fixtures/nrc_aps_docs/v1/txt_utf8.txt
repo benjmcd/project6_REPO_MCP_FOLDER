@@ -1,0 +1,1 @@
+NRC APS plain text fixture. Reactor inspection summary alpha beta gamma.

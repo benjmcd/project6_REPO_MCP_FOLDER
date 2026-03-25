@@ -1,0 +1,22 @@
+{
+  "checked_runs": 1,
+  "checks": [
+    {
+      "bundle_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-evidence-api-1_732ba6fada89b0e64be1cda2f20ccffade730bcec511dd109eb1335b947616ff_aps_evidence_bundle_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-evidence-api-1"
+    }
+  ],
+  "evaluated_run_rows": 1,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-11T07:44:46.696429Z",
+  "passed": true,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.evidence_bundle_gate.v1",
+  "schema_version": 1
+}

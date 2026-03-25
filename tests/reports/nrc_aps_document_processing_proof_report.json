@@ -1,0 +1,95 @@
+{
+  "artifact_ingestion_report_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\tests\\reports\\nrc_aps_artifact_ingestion_validation_report.json",
+  "commands": [
+    {
+      "args": [
+        "C:\\Users\\benny\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-m",
+        "pytest",
+        "tests/test_nrc_aps_media_detection.py",
+        "tests/test_nrc_aps_document_processing.py",
+        "tests/test_nrc_aps_document_corpus.py",
+        "tests/test_nrc_aps_artifact_ingestion.py",
+        "tests/test_nrc_aps_content_index.py",
+        "tests/test_nrc_aps_content_index_gate.py",
+        "-q"
+      ],
+      "cwd": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6",
+      "exit_code": 0,
+      "label": "lower_layer_pytest",
+      "passed": true,
+      "stderr": "",
+      "stdout": "..............................................                           [100%]\n46 passed in 4.47s\n"
+    },
+    {
+      "args": [
+        "C:\\Users\\benny\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-m",
+        "pytest",
+        "tests/test_api.py",
+        "-k",
+        "test_nrc_content_index_artifacts_and_search_route or test_nrc_real_born_digital_content_search_and_evidence_bundle or test_nrc_scanned_content_search_and_evidence_bundle_with_ocr",
+        "-q"
+      ],
+      "cwd": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6",
+      "exit_code": 0,
+      "label": "api_proof_pytest",
+      "passed": true,
+      "stderr": "",
+      "stdout": "...                                                                      [100%]\n3 passed, 53 deselected in 3.82s\n"
+    },
+    {
+      "args": [
+        "C:\\Users\\benny\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "tools/nrc_aps_artifact_ingestion_gate.py",
+        "--report",
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\tests\\reports\\nrc_aps_artifact_ingestion_validation_report.json"
+      ],
+      "cwd": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6",
+      "exit_code": 0,
+      "label": "artifact_ingestion_gate",
+      "passed": true,
+      "stderr": "",
+      "stdout": ""
+    },
+    {
+      "args": [
+        "C:\\Users\\benny\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "tools/nrc_aps_content_index_gate.py",
+        "--report",
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\tests\\reports\\nrc_aps_content_index_validation_report.json"
+      ],
+      "cwd": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6",
+      "exit_code": 0,
+      "label": "content_index_gate",
+      "passed": true,
+      "stderr": "",
+      "stdout": ""
+    }
+  ],
+  "content_index_report_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\tests\\reports\\nrc_aps_content_index_validation_report.json",
+  "corpus_fixture_ids": [
+    "born_digital",
+    "corrupt",
+    "fontish",
+    "layout",
+    "mismatch_pdf_body",
+    "mixed",
+    "ml17123a319",
+    "scanned",
+    "truncated",
+    "txt_utf16",
+    "txt_utf8"
+  ],
+  "database_url": "sqlite:///C:/Users/benny/AppData/Local/Temp/apsdocproof_tzqqfteh/proof.db",
+  "failure_reason": null,
+  "generated_at_utc": "2026-03-13T15:43:32.170952Z",
+  "ocr_mode": "required",
+  "ocr_success_proven": true,
+  "passed": true,
+  "runtime_root": "C:\\Users\\benny\\AppData\\Local\\Temp\\apsdocproof_tzqqfteh",
+  "schema_id": "aps.document_processing_proof.v1",
+  "schema_version": 1,
+  "storage_dir": "C:\\Users\\benny\\AppData\\Local\\Temp\\apsdocproof_tzqqfteh\\storage",
+  "tesseract_available": true
+}

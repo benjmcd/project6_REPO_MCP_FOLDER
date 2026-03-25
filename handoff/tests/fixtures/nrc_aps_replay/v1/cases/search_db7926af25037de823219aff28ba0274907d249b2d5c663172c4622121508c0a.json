@@ -1,0 +1,50 @@
+{
+  "case_id": "search_db7926af25037de823219aff28ba0274907d249b2d5c663172c4622121508c0a",
+  "case_type": "search",
+  "dialect": "guide_native",
+  "endpoint": "POST /aps/api/search",
+  "evidence_refs": [
+    "synthetic:guide_native_failure"
+  ],
+  "expected": {
+    "accession_numbers": [],
+    "count_returned": 0,
+    "dialect_order": [],
+    "parse_status": "ok",
+    "projection_keys": [],
+    "raw_total_key": null,
+    "results_key": null,
+    "roundtrip_payload_hash": "4ff5bbf4a2f50dfacfb1146627da7f22bd6edd65efda329c5e87268abefcdd5b",
+    "schema_variant": "unknown",
+    "status_class": "server_error",
+    "total_hits": null,
+    "wrapper_variant": null
+  },
+  "metadata": {
+    "evidence_id": "synthetic:guide_native_failure",
+    "provider": "nrc_adams_aps",
+    "source_manifest": "synthetic",
+    "source_snapshot": "synthetic_guide_native_failure.json"
+  },
+  "request_body": {
+    "searchCriteria": {
+      "legacyLibFilter": false,
+      "mainLibFilter": true,
+      "properties": [],
+      "q": "__synthetic_guide_failure__"
+    },
+    "skip": 0,
+    "sort": "DateAddedTimestamp",
+    "sortDirection": 1,
+    "take": 10
+  },
+  "response_body_text": "{}",
+  "response_headers": {
+    "content-type": "application/json"
+  },
+  "response_status": 500,
+  "signature": "db7926af25037de823219aff28ba0274907d249b2d5c663172c4622121508c0a",
+  "source_run_id": "synthetic",
+  "source_snapshot": "synthetic_guide_native_failure.json",
+  "synthetic": true
+}

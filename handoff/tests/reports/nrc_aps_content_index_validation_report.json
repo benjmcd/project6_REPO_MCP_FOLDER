@@ -1,0 +1,41 @@
+{
+  "checked_runs": 3,
+  "checks": [
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\AppData\\Local\\Temp\\apsdocproof_tzqqfteh\\storage\\connectors\\reports\\4f077352-430a-4db1-8e65-fc8865e77547_aps_content_index_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\AppData\\Local\\Temp\\apsdocproof_tzqqfteh\\storage\\connectors\\reports\\4f077352-430a-4db1-8e65-fc8865e77547_aps_content_index_run_v1.json",
+      "run_id": "4f077352-430a-4db1-8e65-fc8865e77547"
+    },
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\AppData\\Local\\Temp\\apsdocproof_tzqqfteh\\storage\\connectors\\reports\\cb325b6d-d786-48fd-95fa-889cbc2bc44e_aps_content_index_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\AppData\\Local\\Temp\\apsdocproof_tzqqfteh\\storage\\connectors\\reports\\cb325b6d-d786-48fd-95fa-889cbc2bc44e_aps_content_index_run_v1.json",
+      "run_id": "cb325b6d-d786-48fd-95fa-889cbc2bc44e"
+    },
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\AppData\\Local\\Temp\\apsdocproof_tzqqfteh\\storage\\connectors\\reports\\9efc85f8-538b-487d-a746-7a5bc13c9127_aps_content_index_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\AppData\\Local\\Temp\\apsdocproof_tzqqfteh\\storage\\connectors\\reports\\9efc85f8-538b-487d-a746-7a5bc13c9127_aps_content_index_run_v1.json",
+      "run_id": "9efc85f8-538b-487d-a746-7a5bc13c9127"
+    }
+  ],
+  "evaluated_run_rows": 3,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-13T15:43:32.051098Z",
+  "passed": true,
+  "reports_dir": "C:\\Users\\benny\\AppData\\Local\\Temp\\apsdocproof_tzqqfteh\\storage\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.content_index_gate.v1",
+  "schema_version": 1,
+  "validated_at_utc": "2026-03-13T15:43:32.051098Z"
+}

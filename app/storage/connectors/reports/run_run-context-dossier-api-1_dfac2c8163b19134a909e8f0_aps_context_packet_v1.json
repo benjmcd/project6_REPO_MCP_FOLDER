@@ -1,0 +1,227 @@
+{
+  "caveats": [
+    {
+      "caveat_ordinal": 1,
+      "code": "optional_fields_may_be_absent",
+      "context_key": "evidence_report",
+      "fields": {},
+      "source_pointer": "evidence_report"
+    },
+    {
+      "caveat_ordinal": 2,
+      "code": "section_accession_number_absent",
+      "context_key": "b7781b9dde0ca99843fe1c118e4ac3db526f22064bd63bb4410a6e9f0be5d6f7",
+      "fields": {},
+      "source_pointer": "section:00002"
+    },
+    {
+      "caveat_ordinal": 3,
+      "code": "single_source_projection",
+      "context_key": "evidence_report",
+      "fields": {
+        "source_family": "evidence_report"
+      },
+      "source_pointer": "evidence_report"
+    }
+  ],
+  "constraints": [
+    {
+      "code": "deterministic_projection_ordering",
+      "constraint_ordinal": 1,
+      "context_key": "evidence_report",
+      "fields": {},
+      "source_pointer": "evidence_report"
+    },
+    {
+      "code": "no_lower_layer_regeneration",
+      "constraint_ordinal": 2,
+      "context_key": "evidence_report",
+      "fields": {},
+      "source_pointer": "evidence_report"
+    },
+    {
+      "code": "no_paraphrase_or_inference",
+      "constraint_ordinal": 3,
+      "context_key": "evidence_report",
+      "fields": {},
+      "source_pointer": "evidence_report"
+    },
+    {
+      "code": "persisted_source_only",
+      "constraint_ordinal": 4,
+      "context_key": "evidence_report",
+      "fields": {},
+      "source_pointer": "evidence_report"
+    },
+    {
+      "code": "single_source_family_per_packet",
+      "constraint_ordinal": 5,
+      "context_key": "evidence_report",
+      "fields": {},
+      "source_pointer": "evidence_report"
+    }
+  ],
+  "context_packet_checksum": "fe51cd4c05530cc050dd8bb4b18b92f0df2d588a48bc03c315c0f59ee27ad7ac",
+  "context_packet_id": "dfac2c8163b19134a909e8f0d350a38fa0fe8f51391e8151cf0215ef91466478",
+  "fact_grammar_contract_id": "aps_context_packet_fact_grammar_v1",
+  "facts": [
+    {
+      "fact_ordinal": 1,
+      "fact_type": "report_summary",
+      "fields": {
+        "assembly_contract_id": "aps_evidence_report_assembly_v1",
+        "schema_id": "aps.evidence_report.v1",
+        "schema_version": 1,
+        "sectioning_contract_id": "aps_evidence_report_sectioning_v1",
+        "total_citations": 3,
+        "total_groups": 2,
+        "total_sections": 2
+      },
+      "source_checksum": "c411afbe3f09e7e6616e3e9d64b733c75a5e7fac7ee290159766ae58b1c6c9bb",
+      "source_id": "880ad306aa40ac6c81633d5f0f6be4481cec29d7144bc065db2e77cada8139cb",
+      "source_pointer": "report",
+      "source_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_880ad306aa40ac6c81633d5f_aps_evidence_report_v1.json"
+    },
+    {
+      "fact_ordinal": 2,
+      "fact_type": "section_summary",
+      "fields": {
+        "accession_number": "ML-CONTEXT-DOSSIER-API-1",
+        "chunking_contract_id": "aps_chunking_v1",
+        "citation_count": 2,
+        "content_contract_id": "aps_content_units_v1",
+        "content_id": "content-context-dossier-api-1",
+        "group_id": "9d3cd6e009cb9244d336c13d23e2843fa02e3e5254200e5c21e6501a9ffe751d",
+        "run_id": "run-context-dossier-api-1",
+        "section_id": "72c1c51a782e1bbbc86ac60846a25fe69ac394147e4361f5f05ccec71759008b",
+        "section_ordinal": 1,
+        "section_type": "evidence_group",
+        "target_id": "target-context-dossier-api-1",
+        "title": "Accession ML-CONTEXT-DOSSIER-API-1 / Content content-context-dossier-api-1"
+      },
+      "source_checksum": "c411afbe3f09e7e6616e3e9d64b733c75a5e7fac7ee290159766ae58b1c6c9bb",
+      "source_id": "880ad306aa40ac6c81633d5f0f6be4481cec29d7144bc065db2e77cada8139cb",
+      "source_pointer": "section:00001",
+      "source_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_880ad306aa40ac6c81633d5f_aps_evidence_report_v1.json"
+    },
+    {
+      "fact_ordinal": 3,
+      "fact_type": "citation_link",
+      "fields": {
+        "chunk_id": "chunk-context-dossier-api-1",
+        "chunk_ordinal": 0,
+        "citation_id": "cbfa9a4834bbc5a153084c343e5dbd4a3c0fe2540224148c33693177b3088f46",
+        "citation_label": "APS-CIT-00001",
+        "citation_ordinal": 1,
+        "end_char": 16,
+        "section_id": "72c1c51a782e1bbbc86ac60846a25fe69ac394147e4361f5f05ccec71759008b",
+        "snippet_text": "alpha alpha beta",
+        "start_char": 0
+      },
+      "source_checksum": "c411afbe3f09e7e6616e3e9d64b733c75a5e7fac7ee290159766ae58b1c6c9bb",
+      "source_id": "880ad306aa40ac6c81633d5f0f6be4481cec29d7144bc065db2e77cada8139cb",
+      "source_pointer": "section:00001:citation:00001",
+      "source_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_880ad306aa40ac6c81633d5f_aps_evidence_report_v1.json"
+    },
+    {
+      "fact_ordinal": 4,
+      "fact_type": "citation_link",
+      "fields": {
+        "chunk_id": "chunk-context-dossier-api-2",
+        "chunk_ordinal": 1,
+        "citation_id": "05dd9acdd73eebf8b702228fea3764d222f9125453c9afe405ce7e7c5c65f568",
+        "citation_label": "APS-CIT-00002",
+        "citation_ordinal": 2,
+        "end_char": 28,
+        "section_id": "72c1c51a782e1bbbc86ac60846a25fe69ac394147e4361f5f05ccec71759008b",
+        "snippet_text": "alpha gamma",
+        "start_char": 17
+      },
+      "source_checksum": "c411afbe3f09e7e6616e3e9d64b733c75a5e7fac7ee290159766ae58b1c6c9bb",
+      "source_id": "880ad306aa40ac6c81633d5f0f6be4481cec29d7144bc065db2e77cada8139cb",
+      "source_pointer": "section:00001:citation:00002",
+      "source_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_880ad306aa40ac6c81633d5f_aps_evidence_report_v1.json"
+    },
+    {
+      "fact_ordinal": 5,
+      "fact_type": "section_summary",
+      "fields": {
+        "chunking_contract_id": "aps_chunking_v1",
+        "citation_count": 1,
+        "content_contract_id": "aps_content_units_v1",
+        "content_id": "content-context-dossier-api-2",
+        "group_id": "b2bce92e3ba1811228780c28420a147de08f21ee04a681699b04e6bf7e26cab1",
+        "run_id": "run-context-dossier-api-1",
+        "section_id": "b7781b9dde0ca99843fe1c118e4ac3db526f22064bd63bb4410a6e9f0be5d6f7",
+        "section_ordinal": 2,
+        "section_type": "evidence_group",
+        "target_id": "target-context-dossier-api-2",
+        "title": "Content content-context-dossier-api-2"
+      },
+      "source_checksum": "c411afbe3f09e7e6616e3e9d64b733c75a5e7fac7ee290159766ae58b1c6c9bb",
+      "source_id": "880ad306aa40ac6c81633d5f0f6be4481cec29d7144bc065db2e77cada8139cb",
+      "source_pointer": "section:00002",
+      "source_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_880ad306aa40ac6c81633d5f_aps_evidence_report_v1.json"
+    },
+    {
+      "fact_ordinal": 6,
+      "fact_type": "citation_link",
+      "fields": {
+        "chunk_id": "chunk-context-dossier-api-3",
+        "chunk_ordinal": 0,
+        "citation_id": "701f558dde25f3f6dfa9b9f519f4c2ae338bc19b781f00d14beeaa3c85185888",
+        "citation_label": "APS-CIT-00003",
+        "citation_ordinal": 3,
+        "end_char": 11,
+        "section_id": "b7781b9dde0ca99843fe1c118e4ac3db526f22064bd63bb4410a6e9f0be5d6f7",
+        "snippet_text": "alpha delta",
+        "start_char": 0
+      },
+      "source_checksum": "c411afbe3f09e7e6616e3e9d64b733c75a5e7fac7ee290159766ae58b1c6c9bb",
+      "source_id": "880ad306aa40ac6c81633d5f0f6be4481cec29d7144bc065db2e77cada8139cb",
+      "source_pointer": "section:00002:citation:00003",
+      "source_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_880ad306aa40ac6c81633d5f_aps_evidence_report_v1.json"
+    }
+  ],
+  "generated_at_utc": "2026-03-12T19:49:28.058760Z",
+  "objective": "normalize_persisted_source_for_downstream_consumption",
+  "projection_contract_id": "aps_context_packet_projection_v1",
+  "schema_id": "aps.context_packet.v1",
+  "schema_version": 1,
+  "scope": {
+    "source_checksum": "c411afbe3f09e7e6616e3e9d64b733c75a5e7fac7ee290159766ae58b1c6c9bb",
+    "source_family": "evidence_report",
+    "source_id": "880ad306aa40ac6c81633d5f0f6be4481cec29d7144bc065db2e77cada8139cb"
+  },
+  "source_descriptor": {
+    "assembly_contract_id": "aps_evidence_report_assembly_v1",
+    "owner_run_id": "run-context-dossier-api-1",
+    "sectioning_contract_id": "aps_evidence_report_sectioning_v1",
+    "source_checksum": "c411afbe3f09e7e6616e3e9d64b733c75a5e7fac7ee290159766ae58b1c6c9bb",
+    "source_citation_pack_checksum": "52e88faff120cf038ce59616b85409c75e78238e32c1a6dcbbe4371f06dfc266",
+    "source_citation_pack_id": "b801f83ac1d40d65446ac13363e7d4c6c15034e8239f388c7b44ffe5e2ae05af",
+    "source_citation_pack_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_b801f83ac1d40d65446ac133_aps_evidence_citation_pack_v1.json",
+    "source_family": "evidence_report",
+    "source_id": "880ad306aa40ac6c81633d5f0f6be4481cec29d7144bc065db2e77cada8139cb",
+    "source_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_880ad306aa40ac6c81633d5f_aps_evidence_report_v1.json",
+    "total_citations": 3,
+    "total_groups": 2,
+    "total_sections": 2
+  },
+  "source_family": "evidence_report",
+  "total_caveats": 3,
+  "total_constraints": 5,
+  "total_facts": 6,
+  "total_unresolved_questions": 1,
+  "unresolved_questions": [
+    {
+      "code": "missing_accession_number",
+      "context_key": "b7781b9dde0ca99843fe1c118e4ac3db526f22064bd63bb4410a6e9f0be5d6f7",
+      "fields": {
+        "section_ordinal": 2
+      },
+      "source_pointer": "section:00002",
+      "unresolved_question_ordinal": 1
+    }
+  ]
+}

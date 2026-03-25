@@ -1,0 +1,44 @@
+{
+  "case_id": "negotiator_ab80e7f9ae51c00e1bca02c0501662338f917596466b85d5e076744f738b3b85",
+  "case_type": "negotiator",
+  "dialect": "auto_probe",
+  "endpoint": "internal://dialect-negotiator",
+  "evidence_refs": [
+    "synthetic:negotiator_forced_shape_b"
+  ],
+  "expected": {
+    "accession_numbers": [],
+    "count_returned": null,
+    "dialect_order": [
+      "shape_b"
+    ],
+    "parse_status": "synthetic",
+    "projection_keys": [],
+    "raw_total_key": null,
+    "results_key": null,
+    "roundtrip_payload_hash": null,
+    "schema_variant": null,
+    "status_class": "success",
+    "total_hits": null,
+    "wrapper_variant": null
+  },
+  "metadata": {
+    "capabilities": [],
+    "evidence_id": "synthetic:negotiator_forced_shape_b",
+    "forced_mode": "shape_b",
+    "now_utc": "2026-01-01T00:00:00Z",
+    "provider": "nrc_adams_aps",
+    "source_manifest": "synthetic",
+    "source_snapshot": "synthetic_negotiator_forced_shape_b.json"
+  },
+  "request_body": {
+    "case": "negotiator_forced_shape_b"
+  },
+  "response_body_text": "{}",
+  "response_headers": {},
+  "response_status": 200,
+  "signature": "ab80e7f9ae51c00e1bca02c0501662338f917596466b85d5e076744f738b3b85",
+  "source_run_id": "synthetic",
+  "source_snapshot": "synthetic_negotiator_forced_shape_b.json",
+  "synthetic": true
+}

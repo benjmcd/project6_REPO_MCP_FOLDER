@@ -1,0 +1,22 @@
+{
+  "checked_runs": 1,
+  "checks": [
+    {
+      "evidence_report_export_package_refs": [
+        "app\\storage\\connectors\\reports\\run_run-report-export-package-api-1_509dbaf44e3c05e5982c6a24_aps_evidence_report_export_package_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-report-export-package-api-1"
+    }
+  ],
+  "evaluated_run_rows": 1,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-11T18:19:42.500641Z",
+  "passed": true,
+  "reports_dir": "app\\storage\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.evidence_report_export_package_gate.v1",
+  "schema_version": 1
+}

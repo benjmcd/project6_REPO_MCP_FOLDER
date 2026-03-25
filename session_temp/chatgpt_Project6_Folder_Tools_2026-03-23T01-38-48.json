@@ -1,0 +1,881 @@
+{
+  "schema_version": "1.3.1",
+  "source": "chatgpt-web",
+  "extractor_version": "1.3.0",
+  "exported_at": "2026-03-23T01:38:48.213Z",
+  "conversation": {
+    "title": "Project6 Folder Tools",
+    "url": "https://chatgpt.com/c/69bf54d8-db18-83e8-9b2e-8989a7cd90cf",
+    "platform": "chatgpt"
+  },
+  "turn_count": 23,
+  "turns": [
+    {
+      "seq": 1,
+      "role": "user",
+      "content_type": "markdown",
+      "text": "Use the Project6 Folder app only.\r\nList the tools available from that app before doing anything else.",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.210Z"
+    },
+    {
+      "seq": 2,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "Available tools in the Project6 Folder app:\n\n/MCP-project6-repo-directory/link_69bf5493117c8191b2542b96cfb0ef74/search\nSearches files under the configured folder and returns file IDs.\n\n/MCP-project6-repo-directory/link_69bf5493117c8191b2542b96cfb0ef74/fetch\nFetches one file by ID returned from search.\n\nProceed with those only.",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 3,
+      "role": "user",
+      "content_type": "markdown",
+      "text": "Can you list the directory files available for viewing?",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 4,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "I’m checking whether the Project6 app’s search can enumerate the folder contents directly. If it cannot, I’ll say so rather than inventing a list.",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 5,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "I’m checking what the folder app exposes and will use its search endpoint to surface the files it can view.",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 6,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "Context: the Project6 Folder app does not expose a raw directory walker. It exposes only search and fetch. I therefore used a wildcard-style search through that app to surface the files it currently makes viewable. So this is a search-derived file list, not a guaranteed exhaustive ls -R.\nFiles surfaced as viewable:\nTop level:\n\nchatgpt_project6_repo_creation.json\n\ncorpus_diagnostics.py\n\nDECOMP_BREAK_PATCH_SUMMARY.md\n\nMETHOD_AWARE_FRAMEWORK_CHANGELOG.md\n\nREADME.md\n\nREPO_INDEX.md\n\nrun_context_packet_single_export.py chatgpt_project6_repo_creation corpus_diagnostics DECOMP_BREAK_PATCH_SUMMARY METHOD_AWARE_FRAMEWORK_CHANGELOG README REPO_INDEX run_context_packet_single_export\n\nHidden/cache:\n\n.pytest_cache/README.md README\n\nbackend/:\n\nbackend/main.py\n\nbackend/verify_handoff.py main verify_handoff\n\ndata_actual/:\n\ndata_actual/data_actual_full_comparison.md\n\ndata_actual/data_actual_full_comparison_post_encoding_fix.md\n\ndata_actual/MCS_FILESDATA_RETRIEVAL&ORGANIZATION.txt data_actual_full_comparison data_actual_full_comparison_pos… MCS_FILESDATA_RETRIEVAL&ORGANIZ…\n\nhandoff/:\n\nhandoff/document_ingestion_report.md\n\nhandoff/HANDOFF_INDEX.md\n\nhandoff/handoff_manifest.json\n\nhandoff/previous_session_context.txt\n\nhandoff/README.md\n\nhandoff/START_HERE.txt document_ingestion_report HANDOFF_INDEX handoff_manifest previous_session_context README START_HERE\n\ntests/:\n\ntests/support_nrc_aps_doc_corpus.py\n\ntests/test_api.py\n\ntests/test_import_guardrail.py\n\ntests/test_nrc_aps_content_index.py\n\ntests/test_nrc_aps_context_dossier.py\n\ntests/test_nrc_aps_context_dossier_contract.py support_nrc_aps_doc_corpus test_api test_import_guardrail test_nrc_aps_content_index test_nrc_aps_context_dossier test_nrc_aps_context_dossier_co…\n\nWeak point: because the app only gives search/fetch, this may be incomplete if some files were not returned by the wildcard query. If you want, I can now use only the Project6 app to fetch any of these files or probe specific subpaths by name patterns.",
+      "code_blocks": [],
+      "attachments": [
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        }
+      ],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 7,
+      "role": "user",
+      "content_type": "markdown",
+      "text": "Are you able to see file contents (partially or in their entirety)? Try and see if you can inspect 'nrc_aps_document_processing.py'",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 8,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "I can test that directly. I’ll search for the file by name in the Project6 folder app, and if it exists I’ll fetch it to see whether the app exposes partial or full contents.",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 9,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "I can test that directly through the Project6 app by searching for the file and, if found, fetching it to see whether the app returns partial text or the full file body.",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 10,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "Search found the live file, not just references to it. Next step is fetching that exact file ID to see whether the app returns the full body or only a truncated excerpt.",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 11,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "Yes.\nI was able to inspect backend/app/services/nrc_aps_document_processing.py directly through the Project6 Folder app, not just via search snippets. The fetch call returned the file body as a text field, and for this file it appears to be the substantive contents, likely the full file or very close to it. The returned content includes the module header, imports, constants, process_document, _process_plain_text, _process_image, _process_zip, _process_pdf, and helper functions down through _with_char_offsets. That is enough to do real code inspection. Relevant confirmation points: the live file was found at backend/app/services/nrc_aps_document_processing.py, and the fetch response contained its code body directly. nrc_aps_document_processing\nTwo caveats:\n\nSearch results only showed truncated snippets, so search alone is not enough for full inspection. nrc_aps_document_processing\n\nThere is also a stale handoff mirror at handoff/backend/app/services/nrc_aps_document_processing.py, but the repo’s own handoff docs explicitly say the live root backend/... file is the authority, not the handoff mirror.\n\nSo the answer is: yes, I can inspect file contents through this app, and for this file I successfully accessed the live implementation body. If you want, next step is an actual audit of nrc_aps_document_processing.py for defects, dead paths, inconsistencies, and likely failure modes.",
+      "code_blocks": [],
+      "attachments": [
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        }
+      ],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 12,
+      "role": "user",
+      "content_type": "markdown",
+      "text": "Are you able to determine the state of specific files given specific context/info? For example, verify the accuracy of the following perspectives (as it pertains to file state/content/etc.):\n\"\"\"\"\n\"\"\"\nI checked the **latest attached canonical files directly**:\n\n* [nrc_aps_document_processing.py](sandbox:/mnt/data/nrc_aps_document_processing.py)\n* [nrc_aps_artifact_ingestion.py](sandbox:/mnt/data/nrc_aps_artifact_ingestion.py)\n\nI also used the two forensic notes as context for **why** this got so confused:\n\n* [forensic_reconstruction_report.md](sandbox:/mnt/data/forensic_reconstruction_report.md)\n* [confusion_causality_ledger.md](sandbox:/mnt/data/confusion_causality_ledger.md)\n\nThe main point is this:\n\n## Current actual state\n\nYou are **not** at “nothing exists.”\nYou are also **not** at “Phase 3 is implemented.”\n\nYou are here:\n\n* **Phase 0:** mostly present, but not fully clean\n* **Phase 1/2:** materially present in the current canonical nrc_aps_document_processing.py\n* **Phase 3:** absent\n\nThat means the correct path is:\n\n## close the remaining Phase 0/1/2 gaps first, then implement bounded Phase 3\n\n---\n\n# 1. Main blockers we encountered\n\nThere are really **two blocker classes**:\n\n## A. Process/evidence blockers\n\nThese explain the confusion.\n\n### 1) Canonical authority kept drifting\n\nThe work repeatedly mixed:\n\n* live canonical files\n* handoff/mirror files\n* forensic exports\n* stale summaries\n* remembered editor state\n\nThat is the biggest confusion source. It is explicitly identified in the causality ledger. See [confusion_causality_ledger.md](sandbox:/mnt/data/confusion_causality_ledger.md).\n\n**Why it matters:**\nYou can think you are “fixing the repo” while actually editing or reasoning from the wrong authority surface.\n\n### 2) Real file-state corruption/drift happened\n\nThe forensic notes describe actual truncation/damage episodes, not just misunderstanding. See:\n\n* [confusion_causality_ledger.md](sandbox:/mnt/data/confusion_causality_ledger.md)\n* [forensic_reconstruction_report.md](sandbox:/mnt/data/forensic_reconstruction_report.md)\n\n**Why it matters:**\nSome contradictions are not interpretive. Different sessions really were looking at different or damaged file states.\n\n### 3) No reliable rollback anchor\n\nThe confusion ledger explicitly calls out the lack of a stable VCS rollback baseline.\n\n**Why it matters:**\nOnce a file was damaged, later reasoning often shifted toward “reconstruct from whatever copy exists,” which contaminated later conclusions.\n\n### 4) Read-only / conceptual passes emitted patch-shaped output\n\nThat happened repeatedly.\n\n**Why it matters:**\nPatch-looking text got misremembered as applied code.\n\n### 5) Contradictory runtime validation happened under drifting code states\n\nThe archive records contradictory OCR outcomes for the same pathway.\n\n**Why it matters:**\nA runtime proof was often only proof of one local state at one moment, not of terminal repo truth.\n\n---\n\n## B. Current code blockers\n\nThese are what still block a clean “Phases 0–3 implemented” claim in the attached canonical files.\n\n---\n\n# 2. What is already present in the current code\n\n## In nrc_aps_document_processing.py\n\n### _process_pdf exists\n\nSo you do have a live PDF path.\n\n### Phase 1/2 visual surface exists\n\nThe current code already does this:\n\n* calls _extract_native_pdf_units(page, config=config, pdf_content=content) and unpacks:\n\n  * native_units, image_candidates\n* computes:\n\n  * visual_features = _provisional_visual_class(page, image_candidates, native_text)\n\nThat happens around lines **475–478** in the attached file.\n\n### page_summaries already emits the visual surface\n\nThe current page_summaries.append(...) includes:\n\n* **visual_features\n* **image_candidates\n\naround lines **603–617**.\n\nSo the repo is **past** the earlier “Phase 1/2 missing” state.\n\n---\n\n# 3. What is still incomplete or wrong\n\n## Phase 0 blockers still open\n\n### Blocker P0-1: fallback advanced OCR is still too broad\n\nIn the fallback branch, the code still does:\n\n* ocr_payload = nrc_aps_advanced_ocr.run_advanced_ocr(page=page)\n\ninside the fallback path around lines **510–516**, without first gating that call by is_advanced_doc.\n\nYou already compute:\n\n* is_advanced_doc = config.get(\"document_type\") in nrc_aps_settings.ADVANCED_OCR_DOC_TYPES\n\naround line **494**.\n\nBut fallback still calls advanced OCR unconditionally.\n\n**Why this matters:**\nThis reintroduces the old Phase 0 semantic bug: advanced OCR gets treated like a generic fallback behavior instead of a doc-type-routed behavior.\n\n**Action required:**\nChange the fallback OCR block so advanced OCR only runs when is_advanced_doc is true. Otherwise set ocr_payload = None and fall through to regular OCR if available.\n\n---\n\n### Blocker P0-2: config propagation is still incomplete in nrc_aps_artifact_ingestion.py\n\nCurrent code at roughly **145–163** forwards:\n\n* document_type: yes\n* file_path: incoming.get(\"source_file_path\")\n* pdf_path: incoming.get(\"source_file_path\")\n\nIt does **not** use fallback precedence from explicit file_path / pdf_path.\n\n**Why this matters:**\nPath-sensitive routing and exact-file-aware processing remain weaker than intended.\n\n**Action required:**\nChange it to:\n\n* \"document_type\": incoming.get(\"document_type\")\n* \"file_path\": incoming.get(\"file_path\") or incoming.get(\"source_file_path\")\n* \"pdf_path\": incoming.get(\"pdf_path\") or incoming.get(\"source_file_path\")\n\n---\n\n## Phase 1/2 correctness blockers still open\n\n### Blocker P1/2-1: coordinate regime mixing in image candidate metrics\n\nIn _extract_embedded_image_candidates(...):\n\n* dict_block and get_image_info branches use page-space bbox-derived width/height\n* but the get_images() branch uses raw image w / h at lines around **786–792**\n\nThat mixes:\n\n* page-space geometry\n  with\n* pixel/image metadata\n\n**Why this matters:**\nYour image area metrics become internally inconsistent. Then Phase 2 classifications that depend on area ratios become untrustworthy.\n\n**Action required:**\nIn the get_images() branch, use the page-space bbox dimensions derived from page.get_image_bbox(xref) instead of raw w/h.\n\n---\n\n### Blocker P1/2-2: misleading metric naming in _provisional_visual_class\n\nCurrent code computes:\n\n* total_image_area = image_candidates.get(\"total_image_area_approx\", 0.0)\n* image_area_ratio = total_image_area / page_area\n\nbut emits:\n\n* \"max_image_area_ratio_approx\": round(image_area_ratio, 4)\n\naround **824–844**.\n\nThat is a semantic mismatch.\n\n**Why this matters:**\nA field named “max” is currently carrying an aggregate ratio.\n\n**Action required:**\nSplit this into two fields:\n\n* total_image_area_ratio_approx\n* max_single_candidate_area_ratio_approx\n\nand classify against the correct one.\n\n---\n\n### Blocker P1/2-3: ratio clamping / overscan sanity not visible in the current file\n\nThe current provisional classifier does not visibly clamp the area ratio.\n\n**Why this matters:**\nCTM / bbox weirdness can produce ratios above 1.0. Earlier work already surfaced this as a real issue.\n\n**Action required:**\nClamp page-area ratios to [0, 1] before emitting them.\n\n---\n\n### Blocker P1/2-4: is_raster_only normalization is incomplete\n\nCurrent candidates set is_raster_only only on the get_image_info branch.\n\n**Why this matters:**\nBranch-asymmetric flags make corpus metrics harder to interpret and easier to misread.\n\n**Action required:**\nNormalize the field on all candidate branches:\n\n* explicit False where not inferred\n* inferred True/False where applicable\n\n---\n\n## Phase 3 blocker still open\n\n### Blocker P3-1: no artifact-generation surface exists yet\n\nThe current final result does **not** include:\n\n* visual_artifact_refs\n* visual_artifact_failures\n\nAnd the file does not yet implement bounded artifact creation.\n\n**Why this matters:**\nPhase 3 is simply not there yet.\n\n**Action required:**\nImplement bounded visual artifact generation against the already-live Phase 2 labels.\n\n---\n\n# 4. What we need to do, in order\n\nThis should be done in **four passes**.\n\n---\n\n## Pass A — Re-freeze authority before any more edits\n\n### Do this\n\nBefore editing anything again, record for both canonical files:\n\n* absolute path\n* modified timestamp\n* SHA256\n* line count\n\n### Purpose\n\nThis prevents another “edited the wrong state / reasoned from the wrong state” cycle.\n\n### Why\n\nThis was the single biggest source of confusion historically.\n\n---\n\n## Pass B — Finish the remaining Phase 0 cleanup\n\n### Implement\n\n1. Gate fallback advanced OCR by is_advanced_doc\n2. Fix processing_config_from_run_config() fallback precedence for:\n\n   * file_path\n   * pdf_path\n\n### Purpose\n\nRestore trustworthy OCR routing and trustworthy path-aware config propagation.\n\n### Why\n\nPhase 3 should not be built on top of still-regressed OCR semantics.\n\n### Validate\n\nUse one non-advanced PDF and confirm:\n\n* fallback does **not** call advanced OCR\n\nUse one config case with explicit file_path/pdf_path and confirm:\n\n* the processor receives those exact values\n\n---\n\n## Pass C — Clean up Phase 1/2 metric correctness\n\n### Implement\n\n1. Fix get_images() branch to use page-space bbox dimensions\n2. Split aggregate vs max-single area metrics\n3. Clamp ratio outputs\n4. Normalize is_raster_only field\n5. Reconfirm emitted page_summaries fields\n\n### Purpose\n\nMake the visual labels trustworthy enough to drive Phase 3 artifact gating.\n\n### Why\n\nRight now Phase 1/2 exists, but some metrics are still semantically unstable.\n\n### Validate\n\nRun one real PDF fixture and inspect page_summaries for:\n\n* visual_class_provisional\n* consistent candidate metrics\n* sane bounded ratios\n\nIf you still have the earlier corpus available, rerun that too.\n\n---\n\n## Pass D — Implement bounded Phase 3\n\nThis is the actual missing phase.\n\n### Implement\n\nAt minimum:\n\n1. Add imports actually needed for artifact generation\n   likely:\n\n   * datetime, timezone\n   * Path is already imported\n   * config settings\n   * nrc_aps_safeguards or reuse an existing atomic JSON write surface\n\n2. Add accumulators:\n\n   * visual_artifact_refs: list[str] = []\n   * visual_artifact_failures: list[str] = []\n\n3. Create artifact root:\n\n   * under settings.artifact_storage_dir / \"visual_artifacts\"\n\n4. Deterministic artifact ID generation\n   stable inputs only, such as:\n\n   * PDF content hash\n   * page number\n   * artifact type\n   * visual class\n   * crop bbox if cropped artifact\n\n5. PNG write\n\n6. JSON sidecar write\n\n7. Page-level gating using live labels:\n\n   * vector_dominant\n   * raster_dominant\n   * mixed_visual_text\n   * text_heavy_or_empty => no-op, not failure\n\n8. Extend final_result with:\n\n   * visual_artifact_refs\n   * visual_artifact_failures\n\n### Purpose\n\nThis is the first actual visual-preservation output surface.\n\n### Why\n\nPhase 1/2 gives you reviewed telemetry. Phase 3 should consume it, not redefine it.\n\n---\n\n# 5. One important Phase 3 design decision you still need to settle\n\nThere is still one scope question:\n\n## Do you want a minimal bounded Phase 3 or a richer preservation Phase 3?\n\n### Option 1 — Minimal bounded Phase 3\n\nImplement only:\n\n* full-page PNG for preserve-eligible pages\n* sidecar JSON\n* refs/failures arrays\n\n**Why choose this:**\nFastest route to “Phase 3 exists and is stable.”\n\n### Option 2 — Richer bounded Phase 3\n\nAlso add:\n\n* top raster candidate crops\n* vector union crop for vector_dominant pages\n\n**Why choose this:**\nBetter downstream utility for multimodal analysis / search / human review.\n\n### My recommendation\n\nDo **Option 1 first**, unless you are explicitly trying to complete the richer preservation contract right now.\n\nReason:\n\n* your biggest recurring problem has been state drift and partially-correct code\n* full-page bounded Phase 3 is enough to establish the artifact surface\n* candidate crops and vector unions can be added after the base artifact path is proven stable\n\n---\n\n# 6. What is still unclear and should be investigated before signing off\n\nThese are not blockers to coding, but they are blockers to claiming “done.”\n\n## Investigation I-1: confirm runtime imports against the actual canonical files\n\n### Purpose\n\nEnsure the code you validate is the code the runtime actually loads.\n\n### Why\n\nThis was a historical failure mode.\n\n---\n\n## Investigation I-2: verify the actual artifact contract surface\n\n### Purpose\n\nMake sure downstream expects:\n\n* absolute refs vs relative refs\n* PNG-only vs PNG+JSON refs\n* failure JSON shape\n\n### Why\n\nWithout that, Phase 3 can be implemented but still mismatched to consumers.\n\n---\n\n## Investigation I-3: run deterministic repeat processing\n\n### Purpose\n\nProcess the same PDF twice and confirm:\n\n* same artifact IDs\n* same artifact paths\n\n### Why\n\nDeterminism was part of the historical intent.\n\n---\n\n## Investigation I-4: verify no-op behavior for text_heavy_or_empty\n\n### Purpose\n\nEnsure these pages do not generate artifacts and do not create failures.\n\n### Why\n\nA non-eligible page is not an error.\n\n---\n\n# 7. Practical status by phase\n\n## Phase 0\n\n**Status:** mostly implemented, not fully clean\n**Missing:** fallback advanced OCR gating, config forwarding fallback precedence\n\n## Phase 1\n\n**Status:** implemented, needs metric cleanup\n**Missing:** coordinate regime consistency\n\n## Phase 2\n\n**Status:** implemented, needs metric naming/sanity cleanup\n**Missing:** aggregate vs max metric correction, ratio clamping, normalized raster-only semantics\n\n## Phase 3\n\n**Status:** not implemented\n**Missing:** artifact generation, sidecars, refs/failures surface, validation\n\n---\n\n# 8. The shortest correct action plan\n\nIf you want the shortest sane route to “Phases 0–3 implemented,” do this exact sequence:\n\n1. **Freeze file identity**\n2. **Patch Phase 0 residuals**\n\n   * fallback advanced OCR gate\n   * config forwarding fallback precedence\n3. **Patch Phase 1/2 residuals**\n\n   * page-space bbox metrics only\n   * split max vs total ratios\n   * clamp ratios\n4. **Implement minimal bounded Phase 3**\n\n   * full-page PNG + JSON sidecar + refs/failures\n5. **Run validation**\n\n   * import proof\n   * one real PDF fixture\n   * deterministic rerun\n   * no-op text-heavy page check\n\nThat is the cleanest route.\n\n\"\"\"\n\"\"\"\nYes. Reconceived against the **attached files**, the problem is not just “missing code.” It is two layers of blockers:\n\n1. **process / authority blockers** that kept producing false repo-state beliefs, and\n2. **actual implementation blockers** in the current code.\n\nI am assuming the **attached saved files are the source of truth**. That is the only assumption worth making here, because the reconstruction docs explicitly show repeated state drift caused by competing authority surfaces, rooted execution ambiguity, real file corruption, no rollback anchor, and planning text being mistaken for applied code.  \n\n## Main blockers we encountered\n\n### A. Meta-blockers that caused the confusion\n\nThese are why the repo/project progress kept being misread:\n\n* **Canonical-authority fragmentation**: live code, handoff copies, forensic exports, old prose, and stale editor state were repeatedly treated as if they were equivalent. They are not. \n* **Multiple rooted execution realities**: imports, DBs, storage trees, and working directories could point at different realities, so one “successful run” did not necessarily prove the repo globally correct. \n* **Real file corruption / file-identity drift**: the archive records actual destructive edits and broken file states, not just confusion. \n* **No reliable rollback anchor**: the ledger explicitly notes the absence of a normal VCS recovery baseline, which made restoration claims much weaker. \n* **Plan-mode artifacts being mistaken for implementation**: some sessions produced patch-shaped text during conceptual/read-only work, and those later got remembered as applied changes. \n* **Contradictory runtime proofs against drifting code states**: the OCR/page-8 lane is the clearest example; both contradictory empirical runs were real for their respective states. \n* **Archive lossiness / duplicate exports**: missing diff bodies, metadata-only tool blocks, truncated outputs, and duplicate session exports made later reconstruction noisier.\n\nPurpose of calling these out first: half the work now is preventing another bad implementation decision based on the wrong “current state.”\n\n---\n\n## What the attached code appears to be now\n\nFrom the attached code files themselves:\n\n### nrc_aps_document_processing.py\n\nCurrent live state appears to be:\n\n* _process_pdf(...) **exists**\n* the PDF page loop **exists**\n* _extract_native_pdf_units(...) is consumed as a **single return value**\n* there is **no live visual pipeline** in the current processing flow:\n\n  * no _extract_embedded_image_candidates\n  * no _provisional_visual_class\n  * no visual_features\n  * no visual_class_provisional\n  * no image_candidates merged into page_summaries\n* there is **no Phase 3 artifact surface**:\n\n  * no visual_artifact_refs\n  * no visual_artifact_failures\n\n### nrc_aps_artifact_ingestion.py\n\nprocessing_config_from_run_config(...) is still only **partially** right:\n\n* document_type forwarding may be present depending on the exact attached revision, but\n* file_path and pdf_path fallback propagation still need to be normalized to:\n\n  * incoming.get(\"file_path\") or incoming.get(\"source_file_path\")\n  * incoming.get(\"pdf_path\") or incoming.get(\"source_file_path\")\n\nSo the current repo is best treated as:\n\n## **Phase 0 partially present, Phase 1/2 absent or not live, Phase 3 absent**\n\nThat means the next step is **not Phase 3**.\n\n---\n\n## The implementation blockers by phase\n\n## Phase 0 blockers\n\nPurpose of Phase 0: make OCR routing and telemetry truthful enough that later visual routing and artifact generation are based on stable behavior.\n\nMain blockers still visible / likely open in the attached state:\n\n1. **Fallback advanced OCR gating needs to be verified and, if necessary, restored**\n\n   * It must only call advanced OCR when is_advanced_doc is true.\n   * Reason: otherwise fallback behavior depends on the wrong OCR path and contaminates later routing.\n\n2. **The fallback ocr_max_pages hard stop should not control live correctness**\n\n   * If still present in the live fallback gate, remove it from the gating condition.\n   * Reason: it silently changes behavior by page position rather than page quality/content.\n\n3. **Hybrid OCR must respect ocr_enabled**\n\n   * Reason: hybrid path should not run when OCR is disabled.\n\n4. **Weak-page counting must reflect actual weak/unusable native pages**\n\n   * Increment only when native quality is truly weak/unusable.\n   * Reason: otherwise document-level telemetry lies.\n\n5. **page_native_quality_is_weak should be based on pre-branch native quality**\n\n   * Not on possibly replaced OCR text quality.\n   * Reason: this field is meant to describe the native state, not the post-fallback state.\n\n6. **OCR-path telemetry should be non-lossy**\n\n   * Prefer ocr_paths_taken: list[str] over a single string if fallback and hybrid can both occur.\n   * Reason: Phase 0 telemetry should describe the actual path history.\n\n7. **Config propagation in ingestion is still incomplete**\n\n   * Fix document_type / file_path / pdf_path propagation cleanly.\n   * Reason: doc-type and file-path sensitive routing cannot be trusted otherwise.\n\n### Specific Phase 0 actions\n\nDo these first:\n\n* Inspect the live fallback block and repair advanced-OCR gating if needed.\n* Remove the fallback hard stop from correctness gating.\n* Add ocr_enabled to the hybrid gate.\n* Compute page_native_quality_is_weak from the pre-branch status.\n* Replace single-path OCR telemetry with a non-lossy list if the current code is lossy.\n* Fix processing_config_from_run_config(...) to forward:\n\n  * document_type\n  * file_path = incoming.get(\"file_path\") or incoming.get(\"source_file_path\")\n  * pdf_path = incoming.get(\"pdf_path\") or incoming.get(\"source_file_path\")\n\n---\n\n## Phase 1 blockers\n\nPurpose of Phase 1: expose a stable page-level visual signal from the live PDF processor.\n\nMain blockers:\n\n1. **No embedded-image candidate extraction is live**\n\n   * Without this, you have no structured raster-image candidate surface.\n\n2. **No candidate-area metrics are emitted into page_summaries**\n\n   * So downstream logic cannot distinguish text-heavy vs visual-heavy pages.\n\n3. **No candidate geometry / counts in the live processing flow**\n\n   * Which means later preservation policy has no substrate.\n\n### Specific Phase 1 actions\n\nImplement:\n\n* _extract_embedded_image_candidates(page, text_dict)\n  returning at least:\n\n  * candidate_count_approx\n  * total_image_area_approx\n  * max_image_width_approx\n  * max_image_height_approx\n  * raster_only_count_approx\n  * max_single_candidate_area_ratio_approx\n  * plus candidate geometry if you want Phase 3 crops later\n\n### Recommended narrow design choice\n\nDo **not** widen _extract_native_pdf_units(...) unless necessary.\n\nReason:\n\n* current helper already has a stable role: extract native units\n* changing its signature increases break risk\n* the narrower restoration is:\n\n  * keep _extract_native_pdf_units(...) returning units\n  * compute text_dict, image_candidates, and later visual_features directly in _process_pdf\n\nThat is the least disruptive path unless you prove no other caller depends on the current return shape.\n\n---\n\n## Phase 2 blockers\n\nPurpose of Phase 2: classify pages into a live visual taxonomy that downstream code can consume.\n\nMain blockers:\n\n1. **No live provisional visual classifier**\n\n   * So Phase 3 has no legal gating surface.\n\n2. **No live visual fields in page_summaries**\n\n   * So diagnostics and preservation policy have nothing to consume.\n\n3. **corpus_diagnostics.py cannot be trusted until it matches the live surface**\n\n   * If it expects fields/functions that the processor does not emit, it becomes another confusion source.\n\n### Specific Phase 2 actions\n\nImplement:\n\n* _provisional_visual_class(page, image_candidates, native_text)\n\nFor the bounded version, use the minimal live label surface:\n\n* vector_dominant\n* raster_dominant\n* mixed_visual_text\n* text_heavy_or_empty\n\nReason:\n\n* this is enough to support a bounded Phase 3\n* it avoids a broader ontology rewrite\n* it keeps the classifier surface simple and auditable\n\nEmit into page_summaries at least:\n\n* visual_class_provisional\n* drawing_density_proxy\n* total_image_area_ratio_approx\n* max_single_candidate_area_ratio_approx\n* text_block_bbox_area_ratio_sum_approx\n* the candidate metrics from Phase 1\n\nThen align corpus_diagnostics.py to those actual emitted fields, not the other way around.\n\n---\n\n## Phase 3 blockers\n\nPurpose of Phase 3: bounded visual artifact generation based on the live Phase 1/2 surface.\n\nMain blockers right now:\n\n1. **No live artifact accumulators**\n\n   * visual_artifact_refs\n   * visual_artifact_failures\n\n2. **No artifact storage / deterministic ID / sidecar writer**\n\n   * so there is no artifact contract yet\n\n3. **No live per-page gating surface**\n\n   * because Phase 1/2 are not yet live in the attached processor\n\n### Specific Phase 3 actions\n\nOnly after Phase 0 + Phase 1/2 are stable:\n\nImplement bounded Phase 3 with:\n\n* visual_artifact_refs\n* visual_artifact_failures\n* artifact storage root creation\n* deterministic artifact-id generation\n* PNG write\n* JSON sidecar write\n* additive-only final_result extension\n\nGate on the live labels:\n\n* vector_dominant → preserve eligible\n* raster_dominant → preserve eligible\n* mixed_visual_text → preserve eligible\n* text_heavy_or_empty → no-op, not failure\n\nReason:\n\n* this is the narrowest bounded Phase 3\n* it consumes live telemetry instead of inventing a second classifier surface\n* it avoids schema/DB/downstream changes\n\n---\n\n## What still needs investigation before coding\n\nBecause the archive shows repeated state drift, there are a few things you should prove before the next edit pass:\n\n### Investigation 1 — runtime truth proof\n\nPurpose: eliminate import-path ambiguity.\n\nDo one strict proof pass:\n\n* hash the saved canonical file\n* import app.services.nrc_aps_document_processing\n* confirm runtime file path and hash match the saved file\n\n### Investigation 2 — one real PDF execution proof\n\nPurpose: prove the current attached processor’s actual runtime failure/success mode.\n\nRun one real PDF fixture and capture:\n\n* does _process_pdf run\n* does the current OCR routing behave as expected\n* what exactly appears in page_summaries\n\n### Investigation 3 — diagnostics alignment proof\n\nPurpose: stop corpus_diagnostics.py from becoming another false authority surface.\n\nCheck:\n\n* what fields it expects\n* what the processor actually emits\n* whether it imports helpers that do not exist\n\n### Investigation 4 — helper ownership decision\n\nPurpose: avoid another broken transplant.\n\nDecide before editing:\n\n* keep _extract_native_pdf_units(...) signature stable and compute visual metrics in _process_pdf\n* or deliberately widen the helper and update all callers\n\nThe narrow path is the first one.\n\n---\n\n## Recommended order of work\n\nThis is the clean sequence:\n\n### Step 1\n\n**Truth pass**\n\n* saved-file hash/path/import proof\n* one PDF fixture proof\n* diagnostics expectation proof\n\n### Step 2\n\n**Finish Phase 0**\n\n* routing correctness\n* truthful telemetry\n* config propagation\n\n### Step 3\n\n**Restore Phase 1**\n\n* image candidate extraction\n\n### Step 4\n\n**Restore Phase 2**\n\n* provisional visual classifier\n* live visual fields in page_summaries\n\n### Step 5\n\n**Implement bounded Phase 3**\n\n* artifact refs/failures\n* artifact writes + sidecars\n* additive final-result extension\n\n### Step 6\n\n**Validation**\n\n* import success\n* PDF fixture success\n* page_summaries show live visual surface\n* eligible pages generate artifacts\n* text-heavy pages no-op\n* deterministic artifact IDs across two runs\n\n---\n\n## Bottom line\n\nThe main blockers were:\n\n* **state-truth blockers**: competing authority surfaces, rooted execution ambiguity, real file corruption, planning text mistaken for implementation, contradictory runtime proofs, and archive lossiness\n* **code blockers**: the attached processor still lacks a live Phase 1/2 visual pipeline and lacks any Phase 3 artifact surface\n\nSo the correct plan is:\n\n## **Do not go straight to Phase 3.**\n\nFirst:\n\n* stabilize Phase 0\n* restore live Phase 1/2\n* then do bounded Phase 3\n\nThat is the narrowest path that actually gets you to “phases 0–3 implemented” without another round of state confusion.\n\n\"\"\"\n\"\"\"\"",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 13,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "I’m verifying this against the live files, not the prose. The key distinction is between “code exists,” “code is wired into the live path,” and “code is actually complete.”",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 14,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "I’m checking the current Project6 folder surfaces directly against the claims, rather than relying on the pasted narrative. I’ll verify the live file states first, then separate what is supported, contradicted, or still unproven.",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 15,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "One early correction: the Project6 folder does show a live backend/app/services/nrc_aps_document_processing.py with visual-classification code and artifact-writing code present. So any claim that Phase 1/2 are absent in the live canonical file is already suspect.",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 16,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "I’ve verified the live document-processing file already. I’m fetching the live artifact-ingestion file now so I can compare both perspectives against the same authority surface.",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.211Z"
+    },
+    {
+      "seq": 17,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "Yes, to a point.\nI can determine the state of specific files from the Project6 Folder app, and I can verify whether a perspective matches the live repo surfaces. But there is an important limit: I can verify current file state/content and repo-contained status claims; I cannot verify claims about external attached sandbox files that are not in Project6 unless those files also exist in the folder. In your example, I could not find forensic_reconstruction_report.md or confusion_causality_ledger.md inside Project6, so I cannot validate any claim that depends specifically on those documents. I can validate the claims that are grounded in the live Project6 files. HANDOFF_INDEX handoff_manifest\nMy interpretation: you want to know whether those two pasted assessments are accurate as statements about the current canonical Project6 file state. On that narrower question, large parts of both assessments are wrong.\nBottom line\nOf the two perspectives:\n\nThe first perspective is partly right about authority drift as a risk, but wrong about current code state in major ways.\n\nThe second perspective is more wrong on the live code state. Its central claim that Phase 1/2 are absent from the live canonical nrc_aps_document_processing.py is contradicted by the file itself. nrc_aps_document_processing\n\nThe strongest repo-grounded conclusion is this:\nCurrent live state in Project6 is not “Phase 1/2 absent” and not “Phase 3 absent.”\nThe live backend/app/services/nrc_aps_document_processing.py already contains:\n\n_extract_embedded_image_candidates(...)\n\n_provisional_visual_class(...)\n\npage-level use of image_candidates and visual_features\n\nemission of **visual_features and **image_candidates into page_summaries\n\nvisual artifact generation logic\n\nvisual_artifact_refs and visual_artifact_failures accumulators in _process_pdf nrc_aps_document_processing\n\nThat means any claim that the live canonical file lacks the Phase 1/2 visual pipeline or lacks any Phase 3 artifact surface is false for the current Project6 state. nrc_aps_document_processing\nWhat is accurate in the pasted assessments\nFrom an industry/repo-governance perspective, this part is supported:\n\nThe repo explicitly warns that handoff surfaces and mirrored files are not equal to live implementation authority.\n\nThe handoff docs explicitly say live root code wins over handoff copies.\n\nThe handoff package explicitly warns that handoff/backend/* is stale and must not be trusted as implementation authority. HANDOFF_INDEX handoff_manifest nrc_aps_status_handoff\n\nSo these general claims are valid:\n\nauthority drift is a real repo hazard\n\nstale mirrors exist\n\nreasoning from the wrong surface would produce false conclusions\n\nThat part is not speculation; the repo says so directly. HANDOFF_INDEX handoff_manifest\nWhat is false or materially misleading\n1. “Phase 1/2 are absent”\nFalse.\nThe live canonical backend/app/services/nrc_aps_document_processing.py includes:\n\nnative_units, image_candidates = _extract_native_pdf_units(...)\n\nvisual_features = _provisional_visual_class(page, image_candidates, native_text)\n\npage_summaries.append({... **visual_features, **image_candidates}) nrc_aps_document_processing\n\nThat is not “absent.” It is present in the live file.\n2. “Phase 3 is absent”\nFalse as stated.\nThe live file already contains:\n\nvisual_artifact_refs: list[str] = []\n\nvisual_artifact_failures: list[str] = []\n\nartifact root creation under settings.artifact_storage_dir / \"visual_artifacts\"\n\ndeterministic-ish artifact ID generation from content, page number, and visual class\n\nPNG write\n\nJSON sidecar write\n\nfailure sidecar write on exception nrc_aps_document_processing\n\nThat is a Phase-3-like artifact-generation surface. Whether it is good enough is a separate question. But “absent” is inaccurate.\n3. “The live processing flow has no visual pipeline”\nFalse.\nThe second perspective claims there is no live visual surface, no _extract_embedded_image_candidates, no _provisional_visual_class, no visual fields in page_summaries, and no artifact refs/failures. Every one of those claims is contradicted by the current live file. nrc_aps_document_processing\nWhat the current code state actually looks like\nA realist reading of the live files is:\n\nnrc_aps_document_processing.py is not minimal anymore. It already has Phase 1/2-style visual extraction/classification and a bounded artifact-writing path. nrc_aps_document_processing\n\nnrc_aps_artifact_ingestion.py already contains the file_path / pdf_path fallback precedence that the first perspective says is still missing:\n\n\"file_path\": incoming.get(\"file_path\") or incoming.get(\"source_file_path\")\n\n\"pdf_path\": incoming.get(\"pdf_path\") or incoming.get(\"source_file_path\") nrc_aps_artifact_ingestion\n\nThe repo status surfaces say the lower document-processing layer is reopened additively and repo-confirmed in this workspace, and the proof report records a fresh lower-layer pytest pass plus API proof pass. nrc_aps_status_handoff nrc_aps_document_processing_pro…\n\nSo the current repo state is better described as:\n“Advanced lower-layer code is present in the live canonical files, with proof artifacts indicating passing validation, but some implementation quality questions may still remain.”\nThat is the evidence-based statement.\nWhich specific blockers from perspective 1 still survive?\nSome do. Some do not.\nSurvives\nThe first perspective raises some code-quality concerns that are plausible from the live file:\n\nThe artifact-generation data is created but not obviously added to final_result in the fetched final_result payload shown. That means the writing may exist without the refs being surfaced to downstream consumers. That is a real implementation concern, not a fabricated one. nrc_aps_document_processing\n\nThere are signs of awkward control flow in _process_pdf, including comments about removed duplicate OCR fallback blocks and mixed instrumentation flags. That supports the view that the code is present but not necessarily clean. nrc_aps_document_processing\n\nThe live file is doing a lot in one module: media routing, OCR, visual classification, artifact writing, PDF parsing. From a systems perspective, that is brittle even if tests pass. nrc_aps_document_processing\n\nDoes not survive\nThese claims are outdated or wrong against the live Project6 state:\n\nmissing file_path / pdf_path fallback precedence in nrc_aps_artifact_ingestion.py — already present in the live file nrc_aps_artifact_ingestion\n\nno artifact-generation surface exists yet — false for the live file nrc_aps_document_processing\n\nPhase 1/2 materially present only in one interpretation but absent in another — the live file settles this: they are present in code, regardless of what older narratives said nrc_aps_document_processing\n\nSkeptical view\nPassing tests do not prove the pasted narratives are accurate. The proof reports show that a lower-layer suite and selected API proofs passed in a specific workspace state. That supports “the repo had a validated state,” but it does not rescue stale prose that misdescribes the current file contents. nrc_aps_document_processing_pro…\nBest concise verdict on the two perspectives\nPerspective 1\nVerdict: mixed; materially outdated.\nCorrect:\n\nauthority drift is real\n\nstale handoff surfaces are dangerous\n\nsome cleanup concerns may still be legitimate\n\nIncorrect:\n\nnrc_aps_artifact_ingestion.py still lacks file_path / pdf_path fallback precedence\n\nPhase 3 is absent\n\nthe current repo is only at “Phase 0 mostly present, Phase 1/2 present, Phase 3 absent” as a statement of live file state\n\nPerspective 2\nVerdict: mostly false for current canonical file state.\nIt appears to describe an older or different file state. Its central assertions about the live nrc_aps_document_processing.py are contradicted by the current Project6 file. nrc_aps_document_processing\nMost defensible current statement\nUse this instead:\n\nIn the current canonical Project6 files, the live backend/app/services/nrc_aps_document_processing.py already contains Phase 1/2-style visual extraction/classification logic and a bounded visual artifact-generation path, while backend/app/services/nrc_aps_artifact_ingestion.py already includes document_type, file_path, and pdf_path config forwarding with fallback precedence. The remaining question is not whether these surfaces exist, but whether they are semantically correct, cleanly wired, and fully exposed in downstream result contracts. nrc_aps_artifact_ingestion nrc_aps_document_processing\n\nIf you want, I’ll do the next useful step: a line-by-line truth table of the first perspective, marking each claim as supported, contradicted, or unverifiable from Project6.",
+      "code_blocks": [],
+      "attachments": [
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        }
+      ],
+      "captured_at": "2026-03-23T01:38:48.212Z"
+    },
+    {
+      "seq": 18,
+      "role": "user",
+      "content_type": "markdown",
+      "text": "proceed",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.212Z"
+    },
+    {
+      "seq": 19,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "I’m turning the first perspective into a truth table against the live Project6 files. The useful split is: supported by current file state, contradicted by current file state, or not provable from Project6 alone.",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.212Z"
+    },
+    {
+      "seq": 20,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "I’m checking a few of the key disputed markers directly in the Project6 folder before I score the claims one by one. The main questions are whether the two forensic note files are present here at all, and whether the live canonical files expose the cited surfaces.",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.212Z"
+    },
+    {
+      "seq": 21,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "Proceeding against the first perspective only, using the live Project6 files as authority.\nAssumption: “accuracy” here means “does this describe the current canonical Project6 state,” not “was this ever true in some earlier exported or damaged state.” That distinction matters because the repo explicitly contains stale handoff surfaces and forensic exports alongside the live code. HANDOFF_INDEX handoff_manifest nrc_aps_status_handoff\nVerdict on the first perspective\nOverall: mixed, materially outdated.\nIt gets the governance problem mostly right:\n\nauthority drift is real\n\nstale mirrors/exports exist\n\nfile-state confusion is a real hazard in this repo layout HANDOFF_INDEX handoff_manifest\n\nBut it gets several major current-state code claims wrong:\n\nnrc_aps_artifact_ingestion.py already has the file_path / pdf_path fallback precedence it says is missing\n\nthe live nrc_aps_document_processing.py already has Phase 1/2 visual-surface code\n\nthe live file already has a Phase-3-like visual artifact generation path\n\ncorpus_diagnostics.py itself imports the visual helpers, which contradicts the claim that those helpers are absent from the live surface nrc_aps_artifact_ingestion nrc_aps_document_processing corpus_diagnostics\n\nTruth table for the first perspective\n1. “Canonical authority kept drifting”\nSupported.\nThe repo itself says the live root is authoritative, handoff files are mixed-model control surfaces, and handoff/backend/* is explicitly stale and must not be trusted as implementation authority. HANDOFF_INDEX handoff_manifest nrc_aps_status_handoff\n2. “Real file-state corruption/drift happened”\nPartly supported, but not proven from the exact cited docs.\nI could not verify forensic_reconstruction_report.md or confusion_causality_ledger.md inside Project6 by name, so I cannot confirm those exact documents from this app. What is visible is that the repo contains multiple _forensic_exports/... snapshots of both target files, which supports the idea that historical state drift/reconstruction existed. nrc_aps_artifact_ingestion_2026… nrc_aps_artifact_ingestion_2026… nrc_aps_artifact_ingestion_2026… nrc_aps_document_processing_202… nrc_aps_document_processing_202… nrc_aps_document_processing_202… nrc_aps_document_processing_202… nrc_aps_document_processing_202…\n3. “No reliable rollback anchor”\nUnverifiable from current Project6 evidence alone.\nPlausible, but I do not have direct Project6 evidence establishing the absence of a rollback baseline. The pasted claim may be true historically, but I cannot prove it from the inspected live files.\n4. “Read-only / conceptual passes emitted patch-shaped output”\nUnverifiable from current Project6 evidence alone.\nSame issue. Plausible, but not provable from the current folder surfaces I inspected.\n5. “Contradictory runtime validation happened under drifting code states”\nPartly supported.\nI can support the weaker statement that multiple forensic export snapshots exist and that current proof reports record one passing validated state. That means at minimum there were multiple file states plus a later passing state. I cannot fully prove the stronger narrative of contradictory validations from the exact cited docs because those specific docs were not found by name here. nrc_aps_artifact_ingestion_2026… nrc_aps_document_processing_202… nrc_aps_document_processing_pro…\n6. “Current actual state: Phase 0 mostly present, Phase 1/2 materially present, Phase 3 absent”\nContradicted.\nThis is the biggest failure in the perspective.\nThe live backend/app/services/nrc_aps_document_processing.py already contains:\n\n_extract_embedded_image_candidates\n\n_provisional_visual_class\n\npage-level use of image_candidates\n\nvisual-feature emission into page_summaries\n\nvisual artifact accumulators\n\nartifact storage root creation\n\nPNG write + JSON sidecar write path nrc_aps_document_processing\n\nThat means “Phase 3 absent” is not accurate as a description of current live file state. The better formulation is: a bounded artifact-generation surface exists; whether it is clean or correctly exposed downstream is a separate question.\n7. “In nrc_aps_document_processing.py, _process_pdf exists”\nSupported. nrc_aps_document_processing\n8. “Phase 1/2 visual surface exists in current code”\nSupported.\nThis part of the first perspective is correct. The live file contains the visual-classification helpers, uses them in _process_pdf, and corpus_diagnostics.py imports those helpers directly for Phase 1/2 validation. nrc_aps_document_processing corpus_diagnostics\n9. “Blocker P0-1: fallback advanced OCR is still too broad / advanced OCR still called unconditionally in fallback”\nUnproven from the current evidence shown.\nThis might be true or false, but from the fetched file content I cannot cleanly confirm the exact fallback block behavior the perspective describes. I can say the OCR flow in _process_pdf is messy and deserves targeted audit. I cannot honestly mark this specific claim as established.\n10. “Blocker P0-2: config propagation in nrc_aps_artifact_ingestion.py is still incomplete; file_path / pdf_path fallback precedence missing”\nContradicted.\nThe live processing_config_from_run_config(...) already contains:\n\n\"document_type\": incoming.get(\"document_type\")\n\n\"file_path\": incoming.get(\"file_path\") or incoming.get(\"source_file_path\")\n\n\"pdf_path\": incoming.get(\"pdf_path\") or incoming.get(\"source_file_path\") nrc_aps_artifact_ingestion\n\nThis is a direct contradiction.\n11. “Blocker P1/2-1: coordinate regime mixing in image candidate metrics”\nPlausible but not fully provable from the snippet-level evidence alone.\nThis sounds technically plausible and may well be a real defect. But I am not going to overclaim precision here. I have enough of the live file body to suspect metric/geometry issues, not enough to certify this exact bug without a line-anchored internal audit.\n12. “Blocker P1/2-2 / P1/2-3 / P1/2-4: naming, clamping, raster-only normalization issues”\nPlausible, partially supported as audit concerns; not fully established as definitive defects.\nThe live file does include max_single_candidate_area_ratio_approx, total_image_area_ratio_approx, and is_raster_only handling in the candidate extractor/classifier region, so at least some of the perspective’s wording appears outdated relative to current code. There may still be correctness issues, but the “missing” framing is too strong. nrc_aps_document_processing\n13. “Blocker P3-1: no artifact-generation surface exists yet”\nContradicted.\nFalse for the current live canonical file. The live file already has an artifact-generation surface. The stronger criticism that refs/failures may not be surfaced in final_result is much more plausible. nrc_aps_document_processing\n14. “Need to re-freeze authority before any more edits”\nReasonable recommendation, supported by repo layout.\nThis is a process recommendation, not a state claim, and it is a good one given the repo’s explicit stale/mirror split and the presence of forensic exports. HANDOFF_INDEX handoff_manifest nrc_aps_artifact_ingestion_2026…\nBest corrected version of the first perspective\nIf I rewrite it to match the current Project6 state, it becomes:\n\nThe repo does have real authority-surface fragmentation, and you should reason only from the live root files, not handoff mirrors or older forensic exports. In the current canonical Project6 files, nrc_aps_document_processing.py already contains Phase 1/2-style visual extraction/classification and a bounded visual artifact-generation path, while nrc_aps_artifact_ingestion.py already contains document_type, file_path, and pdf_path forwarding with fallback precedence. The remaining work is therefore not “restore missing Phase 1/2 and add Phase 3 from scratch,” but “audit the current implementation for semantic correctness, cleanliness, and downstream contract exposure.” nrc_aps_artifact_ingestion nrc_aps_document_processing nrc_aps_status_handoff\n\nPractical conclusion\nFrom five lenses:\n\nIndustry expert: treat live root code as authority; the first perspective overstates what is missing.\n\nData-driven researcher: the strongest contradictions are direct file-state contradictions in the live canonical files.\n\nContrarian innovator: the next problem is not “implement missing phases,” it is “reduce complexity and prove semantics.”\n\nSkeptic: do not trust historical prose over live code.\n\nRealist: the repo likely contains a mixture of true historical observations and outdated file-state claims.\n\nNet result:\nThe first perspective is not reliable as a current-state description without correction.\nIts process diagnosis is useful.\nIts current-file-state diagnosis is partially obsolete.\nNext useful move: I can do the same truth-table treatment for the second perspective, or I can switch to a live-code audit list of what is actually suspect in nrc_aps_document_processing.py right now.",
+      "code_blocks": [],
+      "attachments": [
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        }
+      ],
+      "captured_at": "2026-03-23T01:38:48.212Z"
+    },
+    {
+      "seq": 22,
+      "role": "user",
+      "content_type": "markdown",
+      "text": "proceed",
+      "code_blocks": [],
+      "attachments": [],
+      "captured_at": "2026-03-23T01:38:48.212Z"
+    },
+    {
+      "seq": 23,
+      "role": "assistant",
+      "content_type": "markdown",
+      "text": "Interpreting “proceed” as: do the same truth-table pass for the second perspective against the live Project6 files.\nAssumption: again, I am scoring it as a claim about the current canonical Project6 state, not about some earlier damaged/exported state. That distinction is decisive here because the repo explicitly contains mixed authority surfaces, stale handoff mirrors, and forensic exports alongside the live code. HANDOFF_INDEX handoff_manifest nrc_aps_status_handoff\nVerdict on the second perspective\nOverall: mostly false as a description of the current canonical files.\nWhy: its core thesis is that the live nrc_aps_document_processing.py lacks the visual pipeline and lacks the artifact-generation surface. The current live file contradicts that directly. The live file already contains visual-candidate extraction, provisional visual classification, visual fields in page summaries, and a bounded visual artifact write path. nrc_aps_document_processing\nTruth table for the second perspective\n1. “The problem is two layers of blockers: process/authority blockers and actual implementation blockers”\nSupported in a broad sense.\nThat is a fair framing. The repo explicitly distinguishes live root authority from handoff/mirrored/stale surfaces, so authority confusion is a real blocker class. And implementation questions can still remain even if code exists. HANDOFF_INDEX handoff_manifest nrc_aps_status_handoff\n2. “Attached saved files are the source of truth”\nContradicted by the repo’s own authority rules, if this is meant generally.\nWithin Project6, the authority rule is not “whatever attached saved files you have”; it is live root repo first, then current root docs, then handoff controls, then older/historical material. So as a repo-governance claim, this is wrong unless “attached saved files” happen to be the live canonical root files. nrc_aps_status_handoff HANDOFF_INDEX handoff_manifest\n3. “Canonical-authority fragmentation caused confusion”\nSupported.\nYes. That is explicitly consistent with the repo’s mixed-model warnings and stale-handoff warnings. HANDOFF_INDEX handoff_manifest\n4. “Multiple rooted execution realities caused confusion”\nPlausible, partly supported.\nThe tests and proof scripts do manipulate sys.path, storage dirs, database URLs, and test runtime roots. That supports the weaker claim that execution context can vary and therefore “one pass succeeded” is not automatically universal truth. test_nrc_aps_document_processing run_nrc_aps_document_processing…\n5. “Real file corruption / file-identity drift happened”\nPartly supported, not fully proven from the exact cited materials.\nI cannot verify the external prose it references, but the Project6 folder does contain multiple _forensic_exports snapshots for both core files, which supports the idea that there were multiple tracked/reconstructed states. nrc_aps_artifact_ingestion_2026… nrc_aps_artifact_ingestion_2026… nrc_aps_artifact_ingestion_2026… nrc_aps_document_processing_202… nrc_aps_document_processing_202… nrc_aps_document_processing_202… nrc_aps_document_processing_202… nrc_aps_document_processing_202…\n6. “Current live nrc_aps_document_processing.py: _process_pdf(...) exists”\nSupported. nrc_aps_document_processing\n7. “The PDF page loop exists”\nSupported. nrc_aps_document_processing\n8. “_extract_native_pdf_units(...) is consumed as a single return value”\nContradicted.\nThe live file unpacks it into two values:\n\nnative_units, image_candidates = _extract_native_pdf_units(...) nrc_aps_document_processing\n\nSo the perspective is describing an older or different code state.\n9. “There is no live visual pipeline in current processing flow”\nContradicted.\nFalse in multiple ways. The live file contains:\n\n_extract_embedded_image_candidates(...)\n\n_provisional_visual_class(...)\n\npage-level image_candidates\n\npage-level visual_features\n\nvisual fields merged into page_summaries nrc_aps_document_processing\n\n10. “No _extract_embedded_image_candidates”\nContradicted. The function exists in the live file. nrc_aps_document_processing\n11. “No _provisional_visual_class”\nContradicted. The function exists in the live file. nrc_aps_document_processing\n12. “No visual_features / no visual_class_provisional / no image_candidates merged into page_summaries”\nContradicted.\nThe live file computes visual_features and merges both **visual_features and **image_candidates into page_summaries. Also, corpus_diagnostics.py imports _extract_embedded_image_candidates and _provisional_visual_class specifically for “Phase 1/2 validation,” which reinforces that these are not absent from the current live surface. nrc_aps_document_processing corpus_diagnostics\n13. “There is no Phase 3 artifact surface: no visual_artifact_refs, no visual_artifact_failures”\nContradicted.\nThe live _process_pdf initializes both accumulators and includes artifact writing logic. nrc_aps_document_processing\n14. “So the current repo is best treated as: Phase 0 partially present, Phase 1/2 absent or not live, Phase 3 absent”\nContradicted.\nThis is the central failure. The live file shows Phase 1/2-style logic is present and Phase-3-like artifact writing is present. The more defensible concern is not absence but quality/completeness/wiring. nrc_aps_document_processing\n15. “Phase 0 blockers: fallback advanced OCR gating / ocr_max_pages gating / hybrid OCR respecting ocr_enabled / weak-page counting / path telemetry”\nPartly plausible, but mostly unproven from the evidence quoted.\nThese may be good audit hypotheses. But the second perspective overreaches by presenting them as established current-state facts. I can support that the _process_pdf control flow looks complex and messy enough to justify this audit. I cannot honestly certify each one here without a more focused line-by-line code review. nrc_aps_document_processing\n16. “Config propagation in ingestion is still incomplete”\nContradicted.\nThe live processing_config_from_run_config(...) already forwards:\n\ndocument_type\n\nfile_path = incoming.get(\"file_path\") or incoming.get(\"source_file_path\")\n\npdf_path = incoming.get(\"pdf_path\") or incoming.get(\"source_file_path\") nrc_aps_artifact_ingestion\n\n17. “Phase 1 blockers: no embedded-image candidate extraction is live / no candidate-area metrics / no candidate geometry in live flow”\nContradicted.\nThese are already present in the live file. Also, corpus_diagnostics.py directly imports the candidate/classifier helpers and uses processing_config_from_run_config({\"file_path\": ..., \"pdf_path\": ...}), which further contradicts the claim that those surfaces are not live. corpus_diagnostics nrc_aps_document_processing\n18. “Recommended design choice: do not widen _extract_native_pdf_units(...) unless necessary”\nReasonable recommendation.\nThis is advice, not a statement of current state. It is technically reasonable.\n19. “Phase 2 blockers: no live provisional visual classifier / no live visual fields in page_summaries”\nContradicted.\nBoth are already present in the live canonical file. nrc_aps_document_processing\n20. “corpus_diagnostics.py cannot be trusted until it matches the live surface”\nPartly contradicted by the current file state.\nIt may still have issues, but the strong implication that it depends on non-existent helper surfaces is wrong. It already imports the visual helpers from the live module, which means at least on that point it is aligned with the live surface rather than disconnected from it. corpus_diagnostics\n21. “Phase 3 blockers: no live artifact accumulators / no storage-deterministic-id-sidecar writer / no live per-page gating surface”\nContradicted.\nThe live file already has:\n\nvisual_artifact_refs\n\nvisual_artifact_failures\n\nartifact root creation\n\nartifact ID derivation\n\nPNG writes\n\nJSON sidecar writes\n\ngating based on provisional visual class values nrc_aps_document_processing\n\n22. “Only after Phase 0 + Phase 1/2 are stable should Phase 3 be implemented”\nAs current-state advice: outdated.\nThe current live repo already has a Phase-3-like implementation surface. So the correct sequencing now is not “implement Phase 3 from scratch after restoring Phase 1/2,” but rather:\n\nverify semantics\n\nverify exposure in result contracts\n\nverify determinism\n\nverify downstream compatibility\n\n23. “Need import-truth proof and one real PDF execution proof before coding”\nReasonable recommendation.\nThat is prudent, especially given the repo’s history of multiple authority surfaces and forensic exports. The proof reports also show that such validation habits already exist in the repo. nrc_aps_document_processing_pro…\nStrongest correction to the second perspective\nThe second perspective appears to be describing an older or alternate code state, not the current canonical Project6 state.\nThe clean correction is:\n\nIn the current canonical Project6 files, the live backend/app/services/nrc_aps_document_processing.py already includes _extract_embedded_image_candidates, _provisional_visual_class, visual fields merged into page_summaries, and a bounded visual artifact-generation path with refs/failures accumulators and sidecar writes. backend/app/services/nrc_aps_artifact_ingestion.py already forwards document_type, file_path, and pdf_path with fallback precedence. The remaining work is therefore not restoration of missing Phase 1/2 or initial creation of Phase 3, but verification that the existing implementation is semantically correct, cleanly routed, and fully surfaced to consumers. nrc_aps_artifact_ingestion nrc_aps_document_processing\n\nNet ranking of the two perspectives\nFrom strongest to weakest as a description of current Project6 state:\n\nFirst perspective — mixed, partly outdated, but at least recognizes Phase 1/2 presence.\n\nSecond perspective — mostly stale/false for current live files.\n\nPractical next step\nThe useful next move is no longer another prose comparison. It is a live-code audit list of what in nrc_aps_document_processing.py still looks suspect despite the features being present.",
+      "code_blocks": [],
+      "attachments": [
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        },
+        {
+          "type": "image",
+          "label": "MCP-project6-repo-directory",
+          "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjNWQyZGJlIi8+PHRleHQgeD0iMTIiIHk9IjEyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjM1ZW0iIGZvbnQtZmFtaWx5PSJJbnRlciwgdWktc2Fucy1zZXJpZiwgLWFwcGxlLXN5c3RlbSwgc3lzdGVtLXVpLCAnU2Vnb2UgVUknLCBSb2JvdG8sIEFyaWFsIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjEyIiBmaWxsPSIjZmZmZmZmIj5NPC90ZXh0Pjwvc3ZnPg=="
+        }
+      ],
+      "captured_at": "2026-03-23T01:38:48.213Z"
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "case_id": "search_57faf51dd2452266160d85023624944c86d212904063f05ee5028a86e0ee0b29",
+  "case_type": "search",
+  "dialect": "guide_native",
+  "endpoint": "POST /aps/api/search",
+  "evidence_refs": [
+    "run:0ce3fbb6-2642-48d1-a683-e95d43bb203c",
+    "manifest:0ce3fbb6-2642-48d1-a683-e95d43bb203c_discovery.json",
+    "snapshot:0ce3fbb6-2642-48d1-a683-e95d43bb203c_fc7a789fc7784ea3a9f43cf03915ba68_search_exchange.json"
+  ],
+  "expected": {
+    "accession_numbers": [],
+    "count_returned": 0,
+    "dialect_order": [],
+    "parse_status": "ok",
+    "projection_keys": [],
+    "raw_total_key": null,
+    "results_key": null,
+    "roundtrip_payload_hash": "35f9226122f44dea6be006bee0b524ce6375ee4868b72ce25107554189cd744c",
+    "schema_variant": "unknown",
+    "status_class": "server_error",
+    "total_hits": null,
+    "wrapper_variant": null
+  },
+  "metadata": {
+    "dialect_observed": "guide_native",
+    "dialect_observed_raw": "guide_native",
+    "evidence_id": "0ce3fbb6-2642-48d1-a683-e95d43bb203c:0ce3fbb6-2642-48d1-a683-e95d43bb203c_fc7a789fc7784ea3a9f43cf03915ba68_search_exchange.json",
+    "provider": "nrc_adams_aps",
+    "request_id": "<redacted:request_id>",
+    "request_path": "/aps/api/search",
+    "request_sent_at": "<redacted:timestamp>",
+    "response_body_truncated": false,
+    "response_headers_subset": {
+      "content-type": "application/json"
+    },
+    "response_metadata_observed": {
+      "attempt_index": 1,
+      "count_returned": 0,
+      "parse_status": "ok",
+      "raw_total_key": null,
+      "results_key_observed": null,
+      "schema_variant_observed": "unknown",
+      "total_hits": null,
+      "wire_shape": "guide_native"
+    },
+    "response_received_at": "<redacted:timestamp>",
+    "source_manifest": "0ce3fbb6-2642-48d1-a683-e95d43bb203c_discovery.json",
+    "source_snapshot": "0ce3fbb6-2642-48d1-a683-e95d43bb203c_fc7a789fc7784ea3a9f43cf03915ba68_search_exchange.json"
+  },
+  "request_body": {
+    "searchCriteria": {
+      "legacyLibFilter": false,
+      "mainLibFilter": true,
+      "properties": [],
+      "q": "inspection report"
+    },
+    "skip": 0,
+    "sort": "DateAddedTimestamp",
+    "sortDirection": 1,
+    "take": 10
+  },
+  "response_body_text": "{}",
+  "response_headers": {
+    "content-type": "application/json"
+  },
+  "response_status": 500,
+  "signature": "57faf51dd2452266160d85023624944c86d212904063f05ee5028a86e0ee0b29",
+  "source_run_id": "0ce3fbb6-2642-48d1-a683-e95d43bb203c",
+  "source_snapshot": "0ce3fbb6-2642-48d1-a683-e95d43bb203c_fc7a789fc7784ea3a9f43cf03915ba68_search_exchange.json",
+  "synthetic": false
+}

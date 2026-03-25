@@ -1,0 +1,51 @@
+{
+  "checked_runs": 4,
+  "checks": [
+    {
+      "evidence_report_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-context-packet-api-1_36a6270a866b0c3ba8ef6b3e_aps_evidence_report_v1.json",
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-context-packet-api-1_ccfcaccf482709369f2b4c43_aps_evidence_report_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-context-packet-api-1"
+    },
+    {
+      "evidence_report_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-report-export-package-api-1_08d8713217fcf8d11802bb52_aps_evidence_report_v1.json",
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-report-export-package-api-1_2a2638ce35678be09e83e941_aps_evidence_report_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-report-export-package-api-1"
+    },
+    {
+      "evidence_report_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-report-export-api-1_320602666e8c1c557e023378_aps_evidence_report_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-report-export-api-1"
+    },
+    {
+      "evidence_report_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-report-api-1_af8bc2a0fee4c9b4a2220a0b_aps_evidence_report_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-report-api-1"
+    }
+  ],
+  "evaluated_run_rows": 4,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-11T21:56:14.949067Z",
+  "passed": true,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.evidence_report_gate.v1",
+  "schema_version": 1
+}

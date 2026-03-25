@@ -1,0 +1,158 @@
+{
+  "assembly_contract_id": "aps_evidence_report_assembly_v1",
+  "evidence_report_checksum": "00d229fa24c50da2e04edba59f6cf8b9a3b07c6c6cf3da8b281f1b41c3577a1f",
+  "evidence_report_id": "85efeb88785f1b8a21d9e49ef2c3b89e5be5d4d83a0c336c7da99193b35bc153",
+  "generated_at_utc": "2026-03-12T19:31:01.704436Z",
+  "schema_id": "aps.evidence_report.v1",
+  "schema_version": 1,
+  "sectioning_contract_id": "aps_evidence_report_sectioning_v1",
+  "sections": [
+    {
+      "accession_number": "ML-CONTEXT-DOSSIER-API-1",
+      "chunking_contract_id": "aps_chunking_v1",
+      "citation_count": 2,
+      "citations": [
+        {
+          "chunk_id": "chunk-context-dossier-api-1",
+          "chunk_ordinal": 0,
+          "citation_id": "2fc7d6c8c464e9ca3e08066c088c132350205983732e97b12042875142c1b5b4",
+          "citation_label": "APS-CIT-00001",
+          "citation_ordinal": 1,
+          "end_char": 16,
+          "highlight_spans": [
+            {
+              "chunk_end": 5,
+              "chunk_start": 0,
+              "snippet_end": 5,
+              "snippet_start": 0
+            },
+            {
+              "chunk_end": 11,
+              "chunk_start": 6,
+              "snippet_end": 11,
+              "snippet_start": 6
+            }
+          ],
+          "snippet_end_char": 16,
+          "snippet_start_char": 0,
+          "snippet_text": "alpha alpha beta",
+          "start_char": 0
+        },
+        {
+          "chunk_id": "chunk-context-dossier-api-2",
+          "chunk_ordinal": 1,
+          "citation_id": "deeab48d6fbaef88bf7c8702bbc8fd06a29c0671b030d2a8148f6c7532e3db95",
+          "citation_label": "APS-CIT-00002",
+          "citation_ordinal": 2,
+          "end_char": 28,
+          "highlight_spans": [
+            {
+              "chunk_end": 5,
+              "chunk_start": 0,
+              "snippet_end": 5,
+              "snippet_start": 0
+            }
+          ],
+          "snippet_end_char": 11,
+          "snippet_start_char": 0,
+          "snippet_text": "alpha gamma",
+          "start_char": 17
+        }
+      ],
+      "content_contract_id": "aps_content_units_v1",
+      "content_id": "content-context-dossier-api-1",
+      "group_id": "9d3cd6e009cb9244d336c13d23e2843fa02e3e5254200e5c21e6501a9ffe751d",
+      "run_id": "run-context-dossier-api-1",
+      "section_id": "678f786c8337919f963916d8e9aad42306342ec11c4f1811d8ce26fccaaf67d5",
+      "section_ordinal": 1,
+      "section_type": "evidence_group",
+      "target_id": "target-context-dossier-api-1",
+      "title": "Accession ML-CONTEXT-DOSSIER-API-1 / Content content-context-dossier-api-1"
+    },
+    {
+      "accession_number": null,
+      "chunking_contract_id": "aps_chunking_v1",
+      "citation_count": 1,
+      "citations": [
+        {
+          "chunk_id": "chunk-context-dossier-api-3",
+          "chunk_ordinal": 0,
+          "citation_id": "acd23093068168ce1cdbc6158581726ca4b00055592e2dcc069bb7f39d8ca3b1",
+          "citation_label": "APS-CIT-00003",
+          "citation_ordinal": 3,
+          "end_char": 11,
+          "highlight_spans": [
+            {
+              "chunk_end": 5,
+              "chunk_start": 0,
+              "snippet_end": 5,
+              "snippet_start": 0
+            }
+          ],
+          "snippet_end_char": 11,
+          "snippet_start_char": 0,
+          "snippet_text": "alpha delta",
+          "start_char": 0
+        }
+      ],
+      "content_contract_id": "aps_content_units_v1",
+      "content_id": "content-context-dossier-api-2",
+      "group_id": "b2bce92e3ba1811228780c28420a147de08f21ee04a681699b04e6bf7e26cab1",
+      "run_id": "run-context-dossier-api-1",
+      "section_id": "413aa49565d528643dded577b8cc0312112a85b9cd0ed8cf6a43d8b003d3ce4a",
+      "section_ordinal": 2,
+      "section_type": "evidence_group",
+      "target_id": "target-context-dossier-api-2",
+      "title": "Content content-context-dossier-api-2"
+    }
+  ],
+  "source_citation_pack": {
+    "citation_pack_checksum": "a4d18b99691ba0e6d5ab10736f92a66ddcc917c016da26debf3f90f1da5da54b",
+    "citation_pack_id": "e1fbb225e1d3d3d6551cb40690ccb009e85f2d9f05088ba035ce56a7f695f981",
+    "citation_pack_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_e1fbb225e1d3d3d6551cb406_aps_evidence_citation_pack_v1.json",
+    "derivation_contract_id": "aps_evidence_citation_derivation_v1",
+    "schema_id": "aps.evidence_citation_pack.v1",
+    "schema_version": 1,
+    "source_bundle": {
+      "bundle_checksum": "db8cfda617095e34b058222e4a51dee2ba86ec6bf823025a50f761302dd93102",
+      "bundle_id": "c0f2d0f0ef376e84c63a96d9e3b5339bab43810edaa9c654f888f21a40693ca7",
+      "bundle_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_c0f2d0f0ef376e84c63a96d9e3b5339bab43810edaa9c654f888f21a40693ca7_aps_evidence_bundle_v1.json",
+      "mode": "query",
+      "query": "alpha",
+      "query_tokens": [
+        "alpha"
+      ],
+      "request_identity_hash": "eae447a32571aac40a3c6002fc02dea91f787cd1cf9417cb6cd2cecf4f9ef4b3",
+      "run_id": "run-context-dossier-api-1",
+      "schema_id": "aps.evidence_bundle.v1",
+      "schema_version": 1,
+      "snapshot": {
+        "db_fingerprint": "6f8c353f799a5f9530618aaee5b6b56febbfba9b4809b7ee6328061c1070c84b",
+        "index_max_updated_at_utc": "2026-03-12T19:31:01.663917Z",
+        "index_row_count": 3,
+        "index_state_hash": "ebeb9f736c2a1fe7022da1b4d1a5cec4909fb02d56a56fd70f15f08c57a5a570",
+        "read_scope": {
+          "filters": {
+            "accession_numbers": null,
+            "chunking_contract_id": null,
+            "content_contract_id": null,
+            "content_ids": null,
+            "normalization_contract_id": null,
+            "target_ids": null
+          },
+          "run_id": "run-context-dossier-api-1"
+        },
+        "snapshot_completed_at_utc": "2026-03-12T19:31:01.675427Z",
+        "snapshot_contract_id": "aps_evidence_snapshot_v1",
+        "snapshot_started_at_utc": "2026-03-12T19:31:01.673919Z"
+      },
+      "total_groups": 2,
+      "total_hits": 3
+    },
+    "total_citations": 3,
+    "total_groups": 2
+  },
+  "total_citations": 3,
+  "total_groups": 2,
+  "total_sections": 2
+}

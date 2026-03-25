@@ -1,0 +1,96 @@
+{
+  "assembly_contract_id": "aps_evidence_report_assembly_v1",
+  "evidence_report_checksum": "51c0077a36e87aa0a0e69febb2d49cfc61a6896acaa45e8a3c53f2a1795a5213",
+  "evidence_report_id": "09710d3f138990ff7561b1962ad3a06874d97ec99e5b2499771ff1a05f87d3d1",
+  "generated_at_utc": "2026-03-12T22:59:08.133182Z",
+  "schema_id": "aps.evidence_report.v1",
+  "schema_version": 1,
+  "sectioning_contract_id": "aps_evidence_report_sectioning_v1",
+  "sections": [
+    {
+      "accession_number": null,
+      "chunking_contract_id": "aps_chunking_v1",
+      "citation_count": 1,
+      "citations": [
+        {
+          "chunk_id": "chunk-context-dossier-api-3",
+          "chunk_ordinal": 0,
+          "citation_id": "416a12bb37f22fdabe30bbea1d87efa0ae101426bdee157ec1bae436796dc7bc",
+          "citation_label": "APS-CIT-00001",
+          "citation_ordinal": 1,
+          "end_char": 11,
+          "highlight_spans": [
+            {
+              "chunk_end": 11,
+              "chunk_start": 6,
+              "snippet_end": 11,
+              "snippet_start": 6
+            }
+          ],
+          "snippet_end_char": 11,
+          "snippet_start_char": 0,
+          "snippet_text": "alpha delta",
+          "start_char": 0
+        }
+      ],
+      "content_contract_id": "aps_content_units_v1",
+      "content_id": "content-context-dossier-api-2",
+      "group_id": "b2bce92e3ba1811228780c28420a147de08f21ee04a681699b04e6bf7e26cab1",
+      "run_id": "run-context-dossier-api-1",
+      "section_id": "cd7e33cd1c15d39ab10db845416385d086b8c9491a1f5aa1e3e5ad44569f75dc",
+      "section_ordinal": 1,
+      "section_type": "evidence_group",
+      "target_id": "target-context-dossier-api-2",
+      "title": "Content content-context-dossier-api-2"
+    }
+  ],
+  "source_citation_pack": {
+    "citation_pack_checksum": "fbdd1037b7421c121b4d068a0de0d79d6d5cb9a86e51445bc5df9fb0da644f3c",
+    "citation_pack_id": "2d08a90b4dea2e94b3caaa4bf1f15e130c07725e55ea529ee85f938e426f203f",
+    "citation_pack_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_2d08a90b4dea2e94b3caaa4b_aps_evidence_citation_pack_v1.json",
+    "derivation_contract_id": "aps_evidence_citation_derivation_v1",
+    "schema_id": "aps.evidence_citation_pack.v1",
+    "schema_version": 1,
+    "source_bundle": {
+      "bundle_checksum": "ebfdcce6c99d79767a2d2bb85d3095009e16bb9e9a0926c6d1fee405aad7b45e",
+      "bundle_id": "70f101a0e543c22610b0a7859dc7451de9cf9c41dd95dd08f31309e90dd9c2fd",
+      "bundle_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_70f101a0e543c22610b0a7859dc7451de9cf9c41dd95dd08f31309e90dd9c2fd_aps_evidence_bundle_v1.json",
+      "mode": "query",
+      "query": "delta",
+      "query_tokens": [
+        "delta"
+      ],
+      "request_identity_hash": "d5424d90d5348665439cb4794c811e4dedca4111c273125decd9eb007466e108",
+      "run_id": "run-context-dossier-api-1",
+      "schema_id": "aps.evidence_bundle.v1",
+      "schema_version": 1,
+      "snapshot": {
+        "db_fingerprint": "6f8c353f799a5f9530618aaee5b6b56febbfba9b4809b7ee6328061c1070c84b",
+        "index_max_updated_at_utc": "2026-03-12T22:59:08.026650Z",
+        "index_row_count": 1,
+        "index_state_hash": "413d2a070aa1ecfee4af412ac2c5c6f77c22ca4266edcc5e0887df2b68d11d6e",
+        "read_scope": {
+          "filters": {
+            "accession_numbers": null,
+            "chunking_contract_id": null,
+            "content_contract_id": null,
+            "content_ids": null,
+            "normalization_contract_id": null,
+            "target_ids": null
+          },
+          "run_id": "run-context-dossier-api-1"
+        },
+        "snapshot_completed_at_utc": "2026-03-12T22:59:08.102181Z",
+        "snapshot_contract_id": "aps_evidence_snapshot_v1",
+        "snapshot_started_at_utc": "2026-03-12T22:59:08.101181Z"
+      },
+      "total_groups": 1,
+      "total_hits": 1
+    },
+    "total_citations": 1,
+    "total_groups": 1
+  },
+  "total_citations": 1,
+  "total_groups": 1,
+  "total_sections": 1
+}

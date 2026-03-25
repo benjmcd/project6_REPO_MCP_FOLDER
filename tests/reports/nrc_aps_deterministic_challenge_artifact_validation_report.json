@@ -1,0 +1,22 @@
+{
+  "checked_runs": 1,
+  "checks": [
+    {
+      "deterministic_challenge_artifact_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-context-dossier-api-1_139e470a46bfda77f944f453_aps_deterministic_challenge_artifact_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-context-dossier-api-1"
+    }
+  ],
+  "evaluated_run_rows": 1,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-13T15:54:12.485014Z",
+  "passed": true,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.deterministic_challenge_artifact_gate.v1",
+  "schema_version": 1
+}

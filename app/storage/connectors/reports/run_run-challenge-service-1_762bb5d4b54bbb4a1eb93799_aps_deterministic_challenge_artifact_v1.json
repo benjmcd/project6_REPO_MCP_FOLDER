@@ -1,0 +1,85 @@
+{
+  "challenge_counts": {
+    "critical": 0,
+    "info": 1,
+    "warning": 1
+  },
+  "challenge_mode": "deterministic_checks_only",
+  "challenges": [
+    {
+      "category": "interpretation",
+      "challenge_id": "332902b815ea8c6af34dd6ba9203626b66095dfe03632bb531d8b46aa9a3e55b",
+      "check_id": "constraints_present",
+      "check_version": 1,
+      "disposition": "review",
+      "evidence_pointers": [
+        {
+          "pointer": "/source_deterministic_insight_artifact/findings/0",
+          "source_finding_id": "4270176183cdb8476de90a7e1ba6edb7cc3ce2afa240cd945ebea9e35859a7e9",
+          "source_rule_id": "dossier_constraints_present"
+        }
+      ],
+      "matched_finding_count": 1,
+      "message": "Insight reports operative constraints that require explicit downstream review.",
+      "severity": "warning",
+      "source_finding_ids": [
+        "4270176183cdb8476de90a7e1ba6edb7cc3ce2afa240cd945ebea9e35859a7e9"
+      ]
+    },
+    {
+      "category": "qualification",
+      "challenge_id": "0fe590bf9865109a8f28a9028248203966b4922667b2d18b6a64725627631ebb",
+      "check_id": "qualification_present",
+      "check_version": 1,
+      "disposition": "acknowledge",
+      "evidence_pointers": [
+        {
+          "pointer": "/source_deterministic_insight_artifact/findings/1",
+          "source_finding_id": "b62abf4cc4eced38fabeef76b6ebebbd3133cad631692077285df49ed1ba1c26",
+          "source_rule_id": "dossier_caveats_present"
+        }
+      ],
+      "matched_finding_count": 1,
+      "message": "Insight reports caveats that must accompany downstream use.",
+      "severity": "info",
+      "source_finding_ids": [
+        "b62abf4cc4eced38fabeef76b6ebebbd3133cad631692077285df49ed1ba1c26"
+      ]
+    }
+  ],
+  "deterministic_challenge_artifact_checksum": "a5385c92f32d4eb85043449d1066057e5014f58278010d2ea543e7d70e7c5f27",
+  "deterministic_challenge_artifact_id": "762bb5d4b54bbb4a1eb93799d7f2b09a0374c0d1e046c5a60c2ccb568d81109f",
+  "disposition_counts": {
+    "acknowledge": 1,
+    "block": 0,
+    "review": 1
+  },
+  "generated_at_utc": "2026-03-13T02:40:11.612554Z",
+  "ruleset_contract_id": "aps_deterministic_challenge_ruleset_v1",
+  "ruleset_id": "single_insight_challenge_checks",
+  "ruleset_version": 1,
+  "schema_id": "aps.deterministic_challenge_artifact.v1",
+  "schema_version": 1,
+  "source_deterministic_insight_artifact": {
+    "deterministic_insight_artifact_checksum": "43f7c4e4437cde91833f48125f6cd4efb50046b7e72f398f43d8e2e4b3ee99df",
+    "deterministic_insight_artifact_id": "171c2e5f0c6568330849bf79dd9301c539fa690830b3094cf80dd0ea89c0ab42",
+    "deterministic_insight_artifact_ref": "C:\\Users\\benny\\AppData\\Local\\Temp\\pytest-of-benny\\pytest-96\\test_persisted_deterministic_c0\\run_run-challenge-service-1_171c2e5f0c6568330849bf79_aps_deterministic_insight_artifact_v1.json",
+    "finding_counts": {
+      "critical": 0,
+      "info": 1,
+      "warning": 1
+    },
+    "insight_mode": "deterministic_rules_only",
+    "owner_run_id": "run-challenge-service-1",
+    "ruleset_contract_id": "aps_deterministic_insight_ruleset_v1",
+    "ruleset_id": "single_dossier_presence_rules",
+    "ruleset_version": 1,
+    "schema_id": "aps.deterministic_insight_artifact.v1",
+    "schema_version": 1,
+    "source_context_dossier_checksum": "bcf0f3582ebb356d4ddb9f4c279d7837e994de19461c7ad7adfcbe347b4c9ebc",
+    "source_context_dossier_id": "e9727889573f7fe881bc1269e234426737e7c3fda73076343263a9b2ae848f44",
+    "source_context_dossier_ref": "C:\\Users\\benny\\AppData\\Local\\Temp\\pytest-of-benny\\pytest-96\\test_persisted_deterministic_c0\\run_run-challenge-service-1_e9727889573f7fe881bc1269_aps_context_dossier_v1.json",
+    "total_findings": 2
+  },
+  "total_challenges": 2
+}

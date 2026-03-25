@@ -1,0 +1,22 @@
+{
+  "checked_runs": 1,
+  "checks": [
+    {
+      "context_packet_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_ctx_phase_b\\connectors\\reports\\run_run-context-packet-api-1_aa3930e4592f206adc901193_aps_context_packet_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-context-packet-api-1"
+    }
+  ],
+  "evaluated_run_rows": 1,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-12T13:51:44.227997Z",
+  "passed": true,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_ctx_phase_b\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.context_packet_gate.v1",
+  "schema_version": 1
+}

@@ -1,0 +1,105 @@
+{
+  "deterministic_insight_artifact_checksum": "27bd55e375e8feda07a406d5c3c31b3824dff379539241bdb80160aea898191b",
+  "deterministic_insight_artifact_id": "c23a9f36b9daa8d52df2d50faf0e7185d1de29607a938be9c43d75896e97bf65",
+  "finding_counts": {
+    "critical": 0,
+    "info": 1,
+    "warning": 1
+  },
+  "findings": [
+    {
+      "category": "constraint",
+      "evidence_pointers": [
+        {
+          "pointer": "/source_context_dossier/total_constraints"
+        },
+        {
+          "context_packet_id": "6f81a672ad592b56cd17ac3c9c29adb2486c4863cd194f70e8eb602595432eee",
+          "packet_ordinal": 1,
+          "pointer": "/source_context_dossier/source_packets/0/total_constraints"
+        },
+        {
+          "context_packet_id": "a6f5bba927102c77e69f2a8ca28f96b85a35d959aa9e6ec8e3c8f5a9cc3505af",
+          "packet_ordinal": 2,
+          "pointer": "/source_context_dossier/source_packets/1/total_constraints"
+        }
+      ],
+      "finding_id": "cfb5c2c001b1b07897fa7232d0759de519fff7e4c733d74d123b8d00339e5dee",
+      "matched_source_packet_count": 2,
+      "message": "Dossier records 10 constraints across 2 source packets.",
+      "rule_id": "dossier_constraints_present",
+      "rule_version": 1,
+      "severity": "warning"
+    },
+    {
+      "category": "qualification",
+      "evidence_pointers": [
+        {
+          "pointer": "/source_context_dossier/total_caveats"
+        },
+        {
+          "context_packet_id": "6f81a672ad592b56cd17ac3c9c29adb2486c4863cd194f70e8eb602595432eee",
+          "packet_ordinal": 1,
+          "pointer": "/source_context_dossier/source_packets/0/total_caveats"
+        },
+        {
+          "context_packet_id": "a6f5bba927102c77e69f2a8ca28f96b85a35d959aa9e6ec8e3c8f5a9cc3505af",
+          "packet_ordinal": 2,
+          "pointer": "/source_context_dossier/source_packets/1/total_caveats"
+        }
+      ],
+      "finding_id": "0fbf35567659e0e69e4d34d102612f0b87ffc7db7371de9f9bf35b5e815be415",
+      "matched_source_packet_count": 2,
+      "message": "Dossier records 4 caveats across 2 source packets.",
+      "rule_id": "dossier_caveats_present",
+      "rule_version": 1,
+      "severity": "info"
+    }
+  ],
+  "generated_at_utc": "2026-03-13T02:40:12.319117Z",
+  "insight_mode": "deterministic_rules_only",
+  "ruleset_contract_id": "aps_deterministic_insight_ruleset_v1",
+  "ruleset_id": "single_dossier_presence_rules",
+  "ruleset_version": 1,
+  "schema_id": "aps.deterministic_insight_artifact.v1",
+  "schema_version": 1,
+  "source_context_dossier": {
+    "composition_contract_id": "aps_context_dossier_manifest_v1",
+    "context_dossier_checksum": "448ee95d7e711004ead153827714e09bf7f23c0089ddc7527eb1d35e64b408d9",
+    "context_dossier_id": "9a8f85199ae63537616e1408377265d9ccc2447bc5210e99bc3d76208f1850c5",
+    "context_dossier_ref": "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_9a8f85199ae63537616e1408_aps_context_dossier_v1.json",
+    "dossier_mode": "manifest_only",
+    "fact_grammar_contract_id": "aps_context_packet_fact_grammar_v1",
+    "objective": "normalize_persisted_source_for_downstream_consumption",
+    "ordered_source_packets_sha256": "8b31d3f944fc95f9b2e4a60506b42b76efbed5874dddfd97442e2ca4fa804ff7",
+    "owner_run_id": "run-context-dossier-api-1",
+    "projection_contract_id": "aps_context_packet_projection_v1",
+    "schema_id": "aps.context_dossier.v1",
+    "schema_version": 1,
+    "source_family": "evidence_report_export",
+    "source_packet_count": 2,
+    "source_packets": [
+      {
+        "context_packet_id": "6f81a672ad592b56cd17ac3c9c29adb2486c4863cd194f70e8eb602595432eee",
+        "packet_ordinal": 1,
+        "total_caveats": 2,
+        "total_constraints": 5,
+        "total_facts": 3,
+        "total_unresolved_questions": 0
+      },
+      {
+        "context_packet_id": "a6f5bba927102c77e69f2a8ca28f96b85a35d959aa9e6ec8e3c8f5a9cc3505af",
+        "packet_ordinal": 2,
+        "total_caveats": 2,
+        "total_constraints": 5,
+        "total_facts": 3,
+        "total_unresolved_questions": 0
+      }
+    ],
+    "total_caveats": 4,
+    "total_constraints": 10,
+    "total_facts": 6,
+    "total_unresolved_questions": 0
+  },
+  "total_findings": 2
+}

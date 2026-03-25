@@ -1,0 +1,62 @@
+{
+  "accession_number": "ML17123A319",
+  "artifact_required_for_target_success": true,
+  "download": {
+    "blob_bytes": 332891,
+    "blob_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\pipeline_proof_ml17123a319_20260313T170548Z\\storage\\connectors\\raw\\nrc_adams_aps\\blobs\\sha256\\a7\\f2\\a7f28a01ed83168ee1d8fcdf25f4f57aa6636283d1791000d9ec1b6ec5675605.bin",
+    "blob_rel_ref": "nrc_adams_aps/blobs/sha256/a7/f2/a7f28a01ed83168ee1d8fcdf25f4f57aa6636283d1791000d9ec1b6ec5675605.bin",
+    "blob_sha256": "a7f28a01ed83168ee1d8fcdf25f4f57aa6636283d1791000d9ec1b6ec5675605",
+    "blob_storage_layout": "nrc_aps_blob_sha256_v1",
+    "content_type": "application/pdf",
+    "download_exchange_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\pipeline_proof_ml17123a319_20260313T170548Z\\storage\\connectors\\reports\\run-ml17123a319-proof_target-ml17123a319-proof_download_exchange.json",
+    "url": "file:///C:/Users/benny/OneDrive/Desktop/Project6/data_demo/ML17123A319.pdf"
+  },
+  "evidence": {
+    "discovery_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\pipeline_proof_ml17123a319_20260313T170548Z\\storage\\connectors\\reports\\run-ml17123a319-proof_discovery.json",
+    "selection_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\pipeline_proof_ml17123a319_20260313T170548Z\\storage\\connectors\\reports\\run-ml17123a319-proof_selection.json",
+    "url_fields_checked": [
+      "local_file_path"
+    ]
+  },
+  "extraction": {
+    "declared_content_type": "application/pdf",
+    "degradation_codes": [],
+    "diagnostics_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\pipeline_proof_ml17123a319_20260313T170548Z\\storage\\artifacts\\nrc_adams_aps\\diagnostics\\run-ml17123a319-proof_target-ml17123a319-proof_document_processing_v1.json",
+    "diagnostics_rel_ref": "nrc_adams_aps/diagnostics/run-ml17123a319-proof_target-ml17123a319-proof_document_processing_v1.json",
+    "diagnostics_sha256": "8faa238a1190e998edc8fc5d1a222dc1f6c3d5f006bb42e0ad840713db04ac3e",
+    "document_class": "layout_complex_pdf",
+    "document_processing_contract_id": "aps_document_extraction_v1",
+    "effective_content_type": "application/pdf",
+    "extractor_family": "pdf",
+    "extractor_id": "aps_pdf_text_extractor",
+    "extractor_version": "2.0.0",
+    "media_detection_contract_id": "aps_media_detection_v1",
+    "media_detection_reason": "declared_matches_sniffed",
+    "media_detection_status": "declared_and_sniffed_match",
+    "normalization_contract_id": "aps_text_normalization_v2",
+    "normalized_char_count": 137286,
+    "normalized_text_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\pipeline_proof_ml17123a319_20260313T170548Z\\storage\\artifacts\\nrc_adams_aps\\normalized_text\\f9\\03\\f90330842b1eef3582f7045d5662185dffefff4ecf864ce1b8fc7212d2228e0d.txt",
+    "normalized_text_sha256": "f90330842b1eef3582f7045d5662185dffefff4ecf864ce1b8fc7212d2228e0d",
+    "page_count": 45,
+    "quality_metrics": {
+      "alpha_ratio": 0.7487,
+      "average_confidence": null,
+      "char_count": 137286,
+      "quality_status": "strong",
+      "token_count": 23169
+    },
+    "quality_status": "strong",
+    "sniffed_content_type": "application/pdf"
+  },
+  "generated_at_utc": "2026-03-13T17:05:50.165536Z",
+  "normalization_contract_id": "aps_text_normalization_v2",
+  "outcome_status": "processed",
+  "payload_sha256": "c6e07e4a8fba2c9c5be0ff7278ffa5f0e49076a3d9910992ad67b81ff12046e0",
+  "pipeline_mode": "hydrate_process",
+  "run_id": "run-ml17123a319-proof",
+  "schema_id": "aps.artifact_ingestion_target.v1",
+  "schema_version": 1,
+  "source_metadata_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\pipeline_proof_ml17123a319_20260313T170548Z\\storage\\connectors\\reports\\run-ml17123a319-proof_target-ml17123a319-proof_source_metadata.json",
+  "target_id": "target-ml17123a319-proof",
+  "target_success": true
+}

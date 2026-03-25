@@ -1,0 +1,46 @@
+{
+  "case_id": "search_c648d3f593b96c08b541d6ab32d2e6eb6aecf79e86e4725719d833c437b2df61",
+  "case_type": "search",
+  "dialect": "shape_b",
+  "endpoint": "POST /aps/api/search",
+  "evidence_refs": [
+    "synthetic:shape_b_failure"
+  ],
+  "expected": {
+    "accession_numbers": [],
+    "count_returned": 0,
+    "dialect_order": [],
+    "parse_status": "ok",
+    "projection_keys": [],
+    "raw_total_key": null,
+    "results_key": null,
+    "roundtrip_payload_hash": "4b9fb302b8b7c6f7fbf416a1d29cde0561eb736c351ebd68ab332f3e345c5fe5",
+    "schema_variant": "unknown",
+    "status_class": "server_error",
+    "total_hits": null,
+    "wrapper_variant": null
+  },
+  "metadata": {
+    "evidence_id": "synthetic:shape_b_failure",
+    "provider": "nrc_adams_aps",
+    "source_manifest": "synthetic",
+    "source_snapshot": "synthetic_shape_b_failure.json"
+  },
+  "request_body": {
+    "docketNumber": "05000000",
+    "filters": [],
+    "queryString": "__synthetic_shape_b_failure__",
+    "skip": 0,
+    "sort": "-DateAddedTimestamp",
+    "take": 10
+  },
+  "response_body_text": "{}",
+  "response_headers": {
+    "content-type": "application/json"
+  },
+  "response_status": 500,
+  "signature": "c648d3f593b96c08b541d6ab32d2e6eb6aecf79e86e4725719d833c437b2df61",
+  "source_run_id": "synthetic",
+  "source_snapshot": "synthetic_shape_b_failure.json",
+  "synthetic": true
+}

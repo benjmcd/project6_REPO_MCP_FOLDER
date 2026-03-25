@@ -1,0 +1,29 @@
+{
+  "checked_runs": 1,
+  "checks": [
+    {
+      "context_dossier_refs": [
+        "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_04f7a215e448db2ec6b1bef7_aps_context_dossier_v1.json",
+        "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_3ac351b2c051be2337f0d340_aps_context_dossier_v1.json",
+        "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_4108b1841cf233bfa24f1a3b_aps_context_dossier_v1.json",
+        "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_4b48fdd2a29198fcf9501b55_aps_context_dossier_v1.json",
+        "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_6ab0744fe15338390c06582a_aps_context_dossier_v1.json",
+        "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_8f59684a80de69eccf3da370_aps_context_dossier_v1.json",
+        "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_b53ffac43e5b64f63fa464c0_aps_context_dossier_v1.json",
+        "app\\storage\\connectors\\reports\\run_run-context-dossier-api-1_e54d9c9222f158a9a8a8e106_aps_context_dossier_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-context-dossier-api-1"
+    }
+  ],
+  "evaluated_run_rows": 1,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-12T20:41:06.946612Z",
+  "passed": true,
+  "reports_dir": "app\\storage\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.context_dossier_gate.v1",
+  "schema_version": 1
+}

@@ -1,0 +1,22 @@
+{
+  "checked_runs": 1,
+  "checks": [
+    {
+      "context_dossier_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_1aa542dd-e35a-4e55-af04-5c98a88a69d1_4fc99cd591dabf2c6e09e12b_aps_context_dossier_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "1aa542dd-e35a-4e55-af04-5c98a88a69d1"
+    }
+  ],
+  "evaluated_run_rows": 1,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-19T17:52:53.657675Z",
+  "passed": true,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage_test_runtime\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.context_dossier_gate.v1",
+  "schema_version": 1
+}

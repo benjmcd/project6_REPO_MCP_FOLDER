@@ -1,0 +1,27 @@
+{
+  "accession_number": "ML17123A319",
+  "declared_content_type": "application/pdf",
+  "fixture_manifest_entry": {
+    "declared_content_type": "application/pdf",
+    "downstream_usefulness_anchor": "security event notifications",
+    "expected_document_class": "layout_complex_pdf",
+    "expected_quality_status": "strong",
+    "fixture_id": "ml17123a319",
+    "fixture_role": "representative_lower_bound",
+    "gold_queries": [
+      "responses to public comments",
+      "security event notifications",
+      "background checks"
+    ],
+    "path": "ML17123A319.pdf",
+    "searchable_expected": true
+  },
+  "generated_at_utc": "2026-03-13T17:05:49.773944Z",
+  "run_id": "run-ml17123a319-proof",
+  "schema_id": "local.nrc_aps_source_metadata.v1",
+  "source_mode": "local_file_injection",
+  "source_pdf": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\ML17123A319.pdf",
+  "source_pdf_uri": "file:///C:/Users/benny/OneDrive/Desktop/Project6/data_demo/ML17123A319.pdf",
+  "source_sha256": "a7f28a01ed83168ee1d8fcdf25f4f57aa6636283d1791000d9ec1b6ec5675605",
+  "target_id": "target-ml17123a319-proof"
+}

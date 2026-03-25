@@ -1,0 +1,49 @@
+{
+  "case_id": "search_94c2b6a209511374d6ef72ba6ead0a006bbb1700d68dd46615e74a4a97a38df6",
+  "case_type": "search",
+  "dialect": "shape_a",
+  "endpoint": "POST /aps/api/search",
+  "evidence_refs": [
+    "synthetic:parse_non_dict_json"
+  ],
+  "expected": {
+    "accession_numbers": [],
+    "count_returned": 0,
+    "dialect_order": [],
+    "parse_status": "non_dict_json",
+    "projection_keys": [],
+    "raw_total_key": null,
+    "results_key": null,
+    "roundtrip_payload_hash": "f8dbf28669bbd9684e07fd04a4ba88f6ac456d631f9a89d515a7e2174d60a1a5",
+    "schema_variant": "unknown",
+    "status_class": "success",
+    "total_hits": null,
+    "wrapper_variant": null
+  },
+  "metadata": {
+    "evidence_id": "synthetic:parse_non_dict_json",
+    "provider": "nrc_adams_aps",
+    "source_manifest": "synthetic",
+    "source_snapshot": "synthetic_parse_non_dict_json.json"
+  },
+  "request_body": {
+    "anyFilters": [],
+    "filters": [],
+    "legacyLibFilter": false,
+    "mainLibFilter": true,
+    "q": "__synthetic_parse_non_dict__",
+    "skip": 0,
+    "sort": "DateAddedTimestamp",
+    "sortDirection": 1,
+    "take": 10
+  },
+  "response_body_text": "[]",
+  "response_headers": {
+    "content-type": "application/json"
+  },
+  "response_status": 200,
+  "signature": "94c2b6a209511374d6ef72ba6ead0a006bbb1700d68dd46615e74a4a97a38df6",
+  "source_run_id": "synthetic",
+  "source_snapshot": "synthetic_parse_non_dict_json.json",
+  "synthetic": true
+}

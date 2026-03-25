@@ -1,0 +1,14 @@
+{
+  "corpus_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\tests\\fixtures\\nrc_aps_replay\\v1",
+  "file_diff": {
+    "added_count": 0,
+    "added_files": [],
+    "changed_count": 0,
+    "changed_files": [],
+    "removed_count": 0,
+    "removed_files": []
+  },
+  "passed": true,
+  "schema_version": 1,
+  "tool_version": "nrc_aps_replay_gate_v1"
+}

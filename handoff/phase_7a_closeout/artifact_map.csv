@@ -1,0 +1,8 @@
+Mapping,Path,Role
+Implementation Top,backend/app/services/nrc_aps_document_processing.py,Core Routing and Extraction
+Advanced OCR Adapter,backend/app/services/nrc_aps_advanced_ocr.py,PaddleOCR Bridge
+Advanced Table Adapter,backend/app/services/nrc_aps_advanced_table_parser.py,Camelot Bridge
+Validation Root,backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136,Preserved Evidence Package
+Audit Root,backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136/artifact_audit,Accepted Reconciliation Basis
+Status Surface,docs/nrc_adams/nrc_aps_status_handoff.md,Durable Repo Truth
+Closeout Index,handoff/phase_7a_closeout/handoff_package_index.md,Handoff Entrance

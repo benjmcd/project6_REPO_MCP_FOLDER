@@ -1,0 +1,158 @@
+{
+  "assembly_contract_id": "aps_evidence_report_assembly_v1",
+  "evidence_report_checksum": "c8765b048cb8f8f2d568d1c512e39890448093ede529bc1fa83cabd079943161",
+  "evidence_report_id": "38160091b5f53d4e94cd46789a57a6b9bd0cb8e9ae6e3bd726144bb4f56227c8",
+  "generated_at_utc": "2026-03-11T18:26:44.348707Z",
+  "schema_id": "aps.evidence_report.v1",
+  "schema_version": 1,
+  "sectioning_contract_id": "aps_evidence_report_sectioning_v1",
+  "sections": [
+    {
+      "accession_number": "ML-REPORT-EXPORT-PACKAGE-API-1",
+      "chunking_contract_id": "aps_chunking_v1",
+      "citation_count": 2,
+      "citations": [
+        {
+          "chunk_id": "chunk-report-export-package-api-1",
+          "chunk_ordinal": 0,
+          "citation_id": "31ba2b4546a30b0243ad86150990c514afa0bbc2005d5b1bde7a9d1f43a4e9cc",
+          "citation_label": "APS-CIT-00001",
+          "citation_ordinal": 1,
+          "end_char": 16,
+          "highlight_spans": [
+            {
+              "chunk_end": 5,
+              "chunk_start": 0,
+              "snippet_end": 5,
+              "snippet_start": 0
+            },
+            {
+              "chunk_end": 11,
+              "chunk_start": 6,
+              "snippet_end": 11,
+              "snippet_start": 6
+            }
+          ],
+          "snippet_end_char": 16,
+          "snippet_start_char": 0,
+          "snippet_text": "alpha alpha beta",
+          "start_char": 0
+        },
+        {
+          "chunk_id": "chunk-report-export-package-api-2",
+          "chunk_ordinal": 1,
+          "citation_id": "416cbb3cfc052a02ac251f82cf153ce29dc5ce795cc831ae4c57fc882aa9bcd2",
+          "citation_label": "APS-CIT-00002",
+          "citation_ordinal": 2,
+          "end_char": 28,
+          "highlight_spans": [
+            {
+              "chunk_end": 5,
+              "chunk_start": 0,
+              "snippet_end": 5,
+              "snippet_start": 0
+            }
+          ],
+          "snippet_end_char": 11,
+          "snippet_start_char": 0,
+          "snippet_text": "alpha gamma",
+          "start_char": 17
+        }
+      ],
+      "content_contract_id": "aps_content_units_v1",
+      "content_id": "content-report-export-package-api-1",
+      "group_id": "4b1c09d29b5068db190dec9ae7880bc4b3b912a91f5e291826645b46ffe05091",
+      "run_id": "run-report-export-package-api-1",
+      "section_id": "0e986a067cbc81f444c68b75f2c9d08e98a753dc9640d949fa4140e9ddfeafd5",
+      "section_ordinal": 1,
+      "section_type": "evidence_group",
+      "target_id": "target-report-export-package-api-1",
+      "title": "Accession ML-REPORT-EXPORT-PACKAGE-API-1 / Content content-report-export-package-api-1"
+    },
+    {
+      "accession_number": null,
+      "chunking_contract_id": "aps_chunking_v1",
+      "citation_count": 1,
+      "citations": [
+        {
+          "chunk_id": "chunk-report-export-package-api-3",
+          "chunk_ordinal": 0,
+          "citation_id": "0e91b106f4b4d928844ef38630bc223034e9aab8264d706af4c0b3c18c0a0749",
+          "citation_label": "APS-CIT-00003",
+          "citation_ordinal": 3,
+          "end_char": 11,
+          "highlight_spans": [
+            {
+              "chunk_end": 5,
+              "chunk_start": 0,
+              "snippet_end": 5,
+              "snippet_start": 0
+            }
+          ],
+          "snippet_end_char": 11,
+          "snippet_start_char": 0,
+          "snippet_text": "alpha delta",
+          "start_char": 0
+        }
+      ],
+      "content_contract_id": "aps_content_units_v1",
+      "content_id": "content-report-export-package-api-2",
+      "group_id": "5878626888e35d2b2f2a9131636846d77c722e614a0d0eb178e33f61aa63a0f2",
+      "run_id": "run-report-export-package-api-1",
+      "section_id": "a55d6338aa04ea23a4d9b7b2dc943416f2db930216c97e1a4b23dcf0907caff2",
+      "section_ordinal": 2,
+      "section_type": "evidence_group",
+      "target_id": "target-report-export-package-api-2",
+      "title": "Content content-report-export-package-api-2"
+    }
+  ],
+  "source_citation_pack": {
+    "citation_pack_checksum": "93105090b3e3592c766953a71aaa0827503906b0cfdaf3b1f619267ce8f37e00",
+    "citation_pack_id": "6de68a83e3c230b620a5bafe7dd4dca234eaf29a1e9405a574dd6c7c8d4d72ce",
+    "citation_pack_ref": "app\\storage\\connectors\\reports\\run_run-report-export-package-api-1_6de68a83e3c230b620a5bafe_aps_evidence_citation_pack_v1.json",
+    "derivation_contract_id": "aps_evidence_citation_derivation_v1",
+    "schema_id": "aps.evidence_citation_pack.v1",
+    "schema_version": 1,
+    "source_bundle": {
+      "bundle_checksum": "e50ec9d07f1bd873afd549968477da6fcb35eece1afd7d3a616bc31cabf160f2",
+      "bundle_id": "5436643bd6cf13be8720f5f8e1f256059f2ab91b9c511b67487af09b21a28818",
+      "bundle_ref": "app\\storage\\connectors\\reports\\run_run-report-export-package-api-1_5436643bd6cf13be8720f5f8e1f256059f2ab91b9c511b67487af09b21a28818_aps_evidence_bundle_v1.json",
+      "mode": "query",
+      "query": "alpha",
+      "query_tokens": [
+        "alpha"
+      ],
+      "request_identity_hash": "9a16e5dbf5eb3fba54834a4a73ad40ed7b57a85dcde81286d05fed07646d31d8",
+      "run_id": "run-report-export-package-api-1",
+      "schema_id": "aps.evidence_bundle.v1",
+      "schema_version": 1,
+      "snapshot": {
+        "db_fingerprint": "6f8c353f799a5f9530618aaee5b6b56febbfba9b4809b7ee6328061c1070c84b",
+        "index_max_updated_at_utc": "2026-03-11T18:26:44.205311Z",
+        "index_row_count": 3,
+        "index_state_hash": "0e734683621e80a76aa07a35a58a65fa9214ae5ae141e0eedacef3f0c91874b2",
+        "read_scope": {
+          "filters": {
+            "accession_numbers": null,
+            "chunking_contract_id": null,
+            "content_contract_id": null,
+            "content_ids": null,
+            "normalization_contract_id": null,
+            "target_ids": null
+          },
+          "run_id": "run-report-export-package-api-1"
+        },
+        "snapshot_completed_at_utc": "2026-03-11T18:26:44.279263Z",
+        "snapshot_contract_id": "aps_evidence_snapshot_v1",
+        "snapshot_started_at_utc": "2026-03-11T18:26:44.214740Z"
+      },
+      "total_groups": 2,
+      "total_hits": 3
+    },
+    "total_citations": 3,
+    "total_groups": 2
+  },
+  "total_citations": 3,
+  "total_groups": 2,
+  "total_sections": 2
+}

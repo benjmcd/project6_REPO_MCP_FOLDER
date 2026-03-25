@@ -1,0 +1,67 @@
+{
+  "baseline_policy_path": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\services\\nrc_adams_resources\\aps_promotion_policy_v1.json",
+  "baseline_policy_sha256": "27bd8c3aa2914f497036385d59b2944c2434e99ebb46776d21d67a90f7e300ba",
+  "batch_id": "aps_live_batch_20260310T062749Z_cbb780ae",
+  "changed_fields": [
+    {
+      "baseline_value": 3,
+      "path": "batch_rules.min_completed_cycles",
+      "rationale": {
+        "key": "batch_rules.min_completed_cycles",
+        "reason": "Align with single-cycle batch smoke validation."
+      },
+      "tunable": true,
+      "tuned_value": 1
+    },
+    {
+      "baseline_value": 0.8,
+      "path": "min_pass_rate",
+      "rationale": {
+        "key": "min_pass_rate",
+        "reason": "Disable pass-rate threshold for smoke validation."
+      },
+      "tunable": true,
+      "tuned_value": 0
+    },
+    {
+      "baseline_value": 3,
+      "path": "min_reports_in_window",
+      "rationale": {
+        "key": "min_reports_in_window",
+        "reason": "Temporary single-cycle batch evaluation for smoke validation."
+      },
+      "tunable": true,
+      "tuned_value": 1
+    }
+  ],
+  "failures": [],
+  "generated_at_utc": "2026-03-10T06:29:12.969294Z",
+  "rationale_path": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\tests\\reports\\aps_promotion_policy_rationale_tmp.json",
+  "rationale_sha256": "ca11a64bca461b9bc1eaf652a105861b4f483bdb104c8512873ab1d9ec50063e",
+  "schema_id": "aps.promotion_policy_diff.v1",
+  "schema_version": 1,
+  "tunable_fields": [
+    "allow_missing_v1",
+    "allow_v1_skipped",
+    "allowed_envelope_variants",
+    "batch_rules.allow_partial_failure_cycles",
+    "batch_rules.exclude_failed_cycles_from_evaluation",
+    "batch_rules.max_batch_age_spread_hours",
+    "batch_rules.min_completed_cycles",
+    "batch_rules.require_all_planned_cycles_attempted",
+    "expected_v2.guide_native_status_class_any_of",
+    "expected_v2.shape_a_status_class",
+    "expected_v2.shape_b_status_class_any_of",
+    "latest_report_max_age_hours",
+    "min_pass_rate",
+    "min_reports_in_window",
+    "min_v1_recommended_rps",
+    "require_latest_report_pass",
+    "require_v1_ramp",
+    "require_v5_date_added_success",
+    "take_effective_cap_max",
+    "window_days"
+  ],
+  "tuned_policy_path": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\tests\\reports\\aps_promotion_policy_tuned_tmp.json",
+  "tuned_policy_sha256": "6cce3b72a9755eb1323596a110e009912cd648657e05574f50734e49bab13840"
+}

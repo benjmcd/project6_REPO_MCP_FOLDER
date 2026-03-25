@@ -1,0 +1,30 @@
+{
+  "bundle_checksum": "d521340f34ad5a69f65ba5139598dbaec287ce31d9817c1e89fbcd6ea1eec720",
+  "bundle_id": "2bc29f4f2d507cc248319ab8f574ec90e963630b4918fbe5d2f94814efd8e173",
+  "error_code": "bundle_size_limit_exceeded",
+  "error_message": "bundle byte size exceeds cap (16777216)",
+  "generated_at_utc": "2026-03-16T09:15:06.642854Z",
+  "mode": "browse",
+  "normalized_request": {
+    "filters": {
+      "accession_numbers": null,
+      "chunking_contract_id": null,
+      "content_contract_id": null,
+      "content_ids": null,
+      "normalization_contract_id": null,
+      "target_ids": null
+    },
+    "mode": "browse",
+    "query": null,
+    "query_tokens": [],
+    "request_normalization_contract_id": "aps_evidence_request_norm_v1",
+    "run_id": "closure-run-005"
+  },
+  "query": null,
+  "query_tokens": [],
+  "request_contract_id": "aps_evidence_request_norm_v1",
+  "request_identity_hash": "2d1a9887d1eeb5960ff13540b39d49b785e2cd75ba5eff7f1231edc814b163bb",
+  "run_id": "closure-run-005",
+  "schema_id": "aps.evidence_bundle_failure.v2",
+  "schema_version": 2
+}

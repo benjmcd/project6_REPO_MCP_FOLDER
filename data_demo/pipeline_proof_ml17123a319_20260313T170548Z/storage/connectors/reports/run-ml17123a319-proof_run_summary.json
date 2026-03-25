@@ -1,0 +1,44 @@
+{
+  "connector_run_id": "run-ml17123a319-proof",
+  "status": "completed",
+  "connector_key": "nrc_adams_aps",
+  "totals": {
+    "discovered": 1,
+    "selected": 1,
+    "ignored": 0,
+    "collapsed_duplicate": 0,
+    "deduped_within_run": 0,
+    "blocked_by_fetch_policy": 0,
+    "skipped_unchanged": 0,
+    "not_modified_remote": 0,
+    "reconciliation_only": 0,
+    "budget_blocked": 0,
+    "downloaded": 1,
+    "ingested": 1,
+    "profiled": 0,
+    "recommended": 0,
+    "failed": 0,
+    "retryable_target_count": 0,
+    "terminal_target_count": 1,
+    "nonterminal_target_count": 0
+  },
+  "effective_search_envelope": {
+    "params": {
+      "scope_mode": "local_file_injection",
+      "scope_values": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\ML17123A319.pdf"
+      ],
+      "q": "ML17123A319 local pipeline proof",
+      "sort": "DateAddedTimestamp",
+      "order": "desc",
+      "page_size": 1
+    },
+    "filters": [
+      "fixture_id=ml17123a319"
+    ],
+    "sort": "DateAddedTimestamp",
+    "order": "desc",
+    "page_size": 1,
+    "search_exhaustion_reason": "local_file_singleton"
+  }
+}

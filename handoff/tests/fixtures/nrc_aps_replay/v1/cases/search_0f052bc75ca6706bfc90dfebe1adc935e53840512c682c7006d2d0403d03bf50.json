@@ -1,0 +1,49 @@
+{
+  "case_id": "search_0f052bc75ca6706bfc90dfebe1adc935e53840512c682c7006d2d0403d03bf50",
+  "case_type": "search",
+  "dialect": "shape_a",
+  "endpoint": "POST /aps/api/search",
+  "evidence_refs": [
+    "synthetic:parse_empty_body"
+  ],
+  "expected": {
+    "accession_numbers": [],
+    "count_returned": 0,
+    "dialect_order": [],
+    "parse_status": "empty_body",
+    "projection_keys": [],
+    "raw_total_key": null,
+    "results_key": null,
+    "roundtrip_payload_hash": "f6748f3413bd53c2f6329a8aa400ff30e1418024718b0204a946f99dc6216fff",
+    "schema_variant": "unknown",
+    "status_class": "success",
+    "total_hits": null,
+    "wrapper_variant": null
+  },
+  "metadata": {
+    "evidence_id": "synthetic:parse_empty_body",
+    "provider": "nrc_adams_aps",
+    "source_manifest": "synthetic",
+    "source_snapshot": "synthetic_parse_empty_body.json"
+  },
+  "request_body": {
+    "anyFilters": [],
+    "filters": [],
+    "legacyLibFilter": false,
+    "mainLibFilter": true,
+    "q": "__synthetic_parse_empty__",
+    "skip": 0,
+    "sort": "DateAddedTimestamp",
+    "sortDirection": 1,
+    "take": 10
+  },
+  "response_body_text": "",
+  "response_headers": {
+    "content-type": "application/json"
+  },
+  "response_status": 200,
+  "signature": "0f052bc75ca6706bfc90dfebe1adc935e53840512c682c7006d2d0403d03bf50",
+  "source_run_id": "synthetic",
+  "source_snapshot": "synthetic_parse_empty_body.json",
+  "synthetic": true
+}

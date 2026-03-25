@@ -1,0 +1,33 @@
+{
+  "baseline_pass_rate": 0.0,
+  "baseline_passed": false,
+  "baseline_policy_path": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\services\\nrc_adams_resources\\aps_promotion_policy_v1.json",
+  "baseline_policy_sha256": "27bd8c3aa2914f497036385d59b2944c2434e99ebb46776d21d67a90f7e300ba",
+  "baseline_report_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\tests\\reports\\aps_live_batch_20260310T062749Z_cbb780ae_aps_promotion_baseline_eval_v1.json",
+  "batch_manifest_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\backend\\app\\storage\\connectors\\reports\\nrc_aps_live_batches\\aps_live_batch_20260310T062749Z_cbb780ae\\aps_live_batch_20260310T062749Z_cbb780ae_manifest_v1.json",
+  "batch_manifest_sha256": "a25deae8b3162e3d62d53d8e70e298501d81eb601b29cec5654f11e7786d6819",
+  "canonical_policy_unchanged": true,
+  "evaluator_version": "nrc_aps_promotion_tuning_v1",
+  "failure_code_delta": {
+    "added_in_tuned": [],
+    "removed_in_tuned": [
+      "batch_min_completed_cycles_not_met",
+      "promotion_min_cycles_not_met",
+      "promotion_pass_rate_below_threshold"
+    ]
+  },
+  "failures": [],
+  "generated_at_utc": "2026-03-10T06:29:12.969294Z",
+  "passed": true,
+  "policy_diff_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\tests\\reports\\aps_live_batch_20260310T062749Z_cbb780ae_aps_promotion_policy_diff_v1.json",
+  "rationale_path": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\tests\\reports\\aps_promotion_policy_rationale_tmp.json",
+  "rationale_sha256": "ca11a64bca461b9bc1eaf652a105861b4f483bdb104c8512873ab1d9ec50063e",
+  "schema_id": "aps.promotion_policy_compare.v1",
+  "schema_version": 1,
+  "tuned_pass_rate": 0.0,
+  "tuned_passed": false,
+  "tuned_policy_path": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\tests\\reports\\aps_promotion_policy_tuned_tmp.json",
+  "tuned_policy_sha256": "6cce3b72a9755eb1323596a110e009912cd648657e05574f50734e49bab13840",
+  "tuned_policy_status": "experimental_fail",
+  "tuned_report_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\tests\\reports\\aps_live_batch_20260310T062749Z_cbb780ae_aps_promotion_tuned_eval_v1.json"
+}

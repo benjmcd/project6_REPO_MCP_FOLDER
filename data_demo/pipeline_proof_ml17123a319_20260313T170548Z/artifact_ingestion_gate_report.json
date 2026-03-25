@@ -1,0 +1,23 @@
+{
+  "checked_runs": 1,
+  "checks": [
+    {
+      "failure_artifact_exists": false,
+      "failure_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\pipeline_proof_ml17123a319_20260313T170548Z\\storage\\connectors\\reports\\run-ml17123a319-proof_aps_artifact_ingestion_failure_v1.json",
+      "passed": true,
+      "reasons": [],
+      "run_artifact_exists": true,
+      "run_artifact_ref": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\pipeline_proof_ml17123a319_20260313T170548Z\\storage\\connectors\\reports\\run-ml17123a319-proof_aps_artifact_ingestion_run_v1.json",
+      "run_id": "run-ml17123a319-proof"
+    }
+  ],
+  "evaluated_run_rows": 1,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-13T17:07:34.458495Z",
+  "passed": true,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\pipeline_proof_ml17123a319_20260313T170548Z\\storage\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.artifact_ingestion_gate.v1",
+  "schema_version": 1,
+  "validated_at_utc": "2026-03-13T17:07:34.458495Z"
+}

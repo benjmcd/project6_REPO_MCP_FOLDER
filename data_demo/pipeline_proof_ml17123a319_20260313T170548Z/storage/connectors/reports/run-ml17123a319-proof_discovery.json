@@ -1,0 +1,13 @@
+{
+  "generated_at_utc": "2026-03-13T17:05:49.773944Z",
+  "items": [
+    {
+      "accession_number": "ML17123A319",
+      "artifact_uri": "file:///C:/Users/benny/OneDrive/Desktop/Project6/data_demo/ML17123A319.pdf",
+      "source_pdf": "C:\\Users\\benny\\OneDrive\\Desktop\\Project6\\data_demo\\ML17123A319.pdf",
+      "target_id": "target-ml17123a319-proof"
+    }
+  ],
+  "run_id": "run-ml17123a319-proof",
+  "schema_id": "local.nrc_aps_discovery.v1"
+}
