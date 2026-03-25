@@ -144,20 +144,23 @@ def normalization_contract_id() -> str:
 
 def processing_config_from_run_config(config: dict[str, Any] | None = None) -> dict[str, Any]:
     incoming = dict(config or {})
-    return nrc_aps_document_processing.default_processing_config(
-        {
-            "content_sniff_bytes": incoming.get("content_sniff_bytes", 4096),
-            "content_parse_max_pages": incoming.get("content_parse_max_pages", 500),
-            "content_parse_timeout_seconds": incoming.get("content_parse_timeout_seconds", 30),
-            "ocr_enabled": incoming.get("ocr_enabled", True),
-            "ocr_max_pages": incoming.get("ocr_max_pages", 50),
-            "ocr_render_dpi": incoming.get("ocr_render_dpi", 300),
-            "ocr_language": incoming.get("ocr_language", "eng"),
-            "ocr_timeout_seconds": incoming.get("ocr_timeout_seconds", 120),
-            "content_min_searchable_chars": incoming.get("content_min_searchable_chars", 200),
-            "content_min_searchable_tokens": incoming.get("content_min_searchable_tokens", 30),
-        }
-    )
+    overrides: dict[str, Any] = {
+        "content_sniff_bytes": incoming.get("content_sniff_bytes", 4096),
+        "content_parse_max_pages": incoming.get("content_parse_max_pages", 500),
+        "content_parse_timeout_seconds": incoming.get("content_parse_timeout_seconds", 30),
+        "ocr_enabled": incoming.get("ocr_enabled", True),
+        "ocr_max_pages": incoming.get("ocr_max_pages", 50),
+        "ocr_render_dpi": incoming.get("ocr_render_dpi", 300),
+        "ocr_language": incoming.get("ocr_language", "eng"),
+        "ocr_timeout_seconds": incoming.get("ocr_timeout_seconds", 120),
+        "content_min_searchable_chars": incoming.get("content_min_searchable_chars", 200),
+        "content_min_searchable_tokens": incoming.get("content_min_searchable_tokens", 30),
+    }
+    if incoming.get("artifact_storage_dir"):
+        overrides["artifact_storage_dir"] = incoming["artifact_storage_dir"]
+    if incoming.get("visual_render_dpi") is not None:
+        overrides["visual_render_dpi"] = incoming["visual_render_dpi"]
+    return nrc_aps_document_processing.default_processing_config(overrides)
 
 
 def detect_media_type(*, content: bytes, content_type: Any, config: dict[str, Any] | None = None) -> dict[str, Any]:

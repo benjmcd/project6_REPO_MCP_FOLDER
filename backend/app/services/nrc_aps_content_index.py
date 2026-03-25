@@ -273,7 +273,11 @@ def _load_processed_document(
         raise RuntimeError("content_blob_ref_unresolvable")
     content_type = str(download.get("content_type") or "")
     content = blob_path.read_bytes()
-    extracted = nrc_aps_artifact_ingestion.extract_and_normalize(content=content, content_type=content_type)
+    extracted = nrc_aps_artifact_ingestion.extract_and_normalize(
+        content=content,
+        content_type=content_type,
+        config={"artifact_storage_dir": str(artifact_storage_dir)},
+    )
     normalized_text = str(extracted.get("normalized_text") or "")
     normalized_blob = _write_normalized_text_blob(artifact_storage_dir=artifact_storage_dir, text=normalized_text)
     diagnostics_payload = _build_processing_diagnostics_payload(
