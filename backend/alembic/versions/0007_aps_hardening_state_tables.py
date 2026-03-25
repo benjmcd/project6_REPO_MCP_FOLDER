@@ -10,6 +10,13 @@ from __future__ import annotations
 from alembic import op
 import sqlalchemy as sa
 
+from migration_compat import (
+    create_table_idempotent,
+    create_index_idempotent,
+    drop_table_idempotent,
+    drop_index_idempotent,
+)
+
 
 revision = "0007_aps_hardening_state_tables"
 down_revision = "0006_connector_run_core_counters"
@@ -18,7 +25,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.create_table(
+    create_table_idempotent(
         "aps_dialect_capability",
         sa.Column("aps_dialect_capability_id", sa.String(length=36), nullable=False),
         sa.Column("subscription_key_hash", sa.String(length=64), nullable=False),
@@ -40,10 +47,10 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("aps_dialect_capability_id"),
         sa.UniqueConstraint("subscription_key_hash", "api_host", "dialect", name="uq_aps_capability_key_host_dialect"),
     )
-    op.create_index("ix_aps_capability_key_host", "aps_dialect_capability", ["subscription_key_hash", "api_host"])
-    op.create_index("ix_aps_capability_cooldown", "aps_dialect_capability", ["cooldown_until"])
+    create_index_idempotent("ix_aps_capability_key_host", "aps_dialect_capability", ["subscription_key_hash", "api_host"])
+    create_index_idempotent("ix_aps_capability_cooldown", "aps_dialect_capability", ["cooldown_until"])
 
-    op.create_table(
+    create_table_idempotent(
         "aps_sync_cursor",
         sa.Column("aps_sync_cursor_id", sa.String(length=36), nullable=False),
         sa.Column("source_system", sa.String(length=100), nullable=False),
@@ -61,12 +68,12 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("aps_sync_cursor_id"),
         sa.UniqueConstraint("source_system", "logical_query_fingerprint", name="uq_aps_sync_cursor_query"),
     )
-    op.create_index("ix_aps_sync_cursor_source_query", "aps_sync_cursor", ["source_system", "logical_query_fingerprint"])
+    create_index_idempotent("ix_aps_sync_cursor_source_query", "aps_sync_cursor", ["source_system", "logical_query_fingerprint"])
 
 
 def downgrade() -> None:
-    op.drop_index("ix_aps_sync_cursor_source_query", table_name="aps_sync_cursor")
-    op.drop_table("aps_sync_cursor")
-    op.drop_index("ix_aps_capability_cooldown", table_name="aps_dialect_capability")
-    op.drop_index("ix_aps_capability_key_host", table_name="aps_dialect_capability")
-    op.drop_table("aps_dialect_capability")
+    drop_index_idempotent("ix_aps_sync_cursor_source_query", table_name="aps_sync_cursor")
+    drop_table_idempotent("aps_sync_cursor")
+    drop_index_idempotent("ix_aps_capability_cooldown", table_name="aps_dialect_capability")
+    drop_index_idempotent("ix_aps_capability_key_host", table_name="aps_dialect_capability")
+    drop_table_idempotent("aps_dialect_capability")
