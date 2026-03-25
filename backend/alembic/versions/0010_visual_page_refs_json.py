@@ -10,6 +10,8 @@ from __future__ import annotations
 from alembic import op
 import sqlalchemy as sa
 
+from migration_compat import add_column_idempotent, drop_column_idempotent
+
 
 revision = "0010_visual_page_refs_json"
 down_revision = "0009_aps_document_processing_metadata"
@@ -18,8 +20,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column("aps_content_document", sa.Column("visual_page_refs_json", sa.Text(), nullable=True))
+    add_column_idempotent("aps_content_document", sa.Column("visual_page_refs_json", sa.Text(), nullable=True))
 
 
 def downgrade() -> None:
-    op.drop_column("aps_content_document", "visual_page_refs_json")
+    drop_column_idempotent("aps_content_document", "visual_page_refs_json")

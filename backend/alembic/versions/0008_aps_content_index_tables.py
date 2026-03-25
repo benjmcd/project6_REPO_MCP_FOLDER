@@ -10,6 +10,13 @@ from __future__ import annotations
 from alembic import op
 import sqlalchemy as sa
 
+from migration_compat import (
+    create_table_idempotent,
+    create_index_idempotent,
+    drop_table_idempotent,
+    drop_index_idempotent,
+)
+
 
 revision = "0008_aps_content_index_tables"
 down_revision = "0007_aps_hardening_state_tables"
@@ -18,7 +25,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.create_table(
+    create_table_idempotent(
         "aps_content_document",
         sa.Column("aps_content_document_id", sa.String(length=36), nullable=False),
         sa.Column("content_id", sa.String(length=64), nullable=False),
@@ -39,13 +46,13 @@ def upgrade() -> None:
             name="uq_aps_content_document_contract",
         ),
     )
-    op.create_index(
+    create_index_idempotent(
         "ix_aps_content_document_content",
         "aps_content_document",
         ["content_id", "content_contract_id", "chunking_contract_id"],
     )
 
-    op.create_table(
+    create_table_idempotent(
         "aps_content_chunk",
         sa.Column("aps_content_chunk_id", sa.String(length=36), nullable=False),
         sa.Column("content_id", sa.String(length=64), nullable=False),
@@ -68,13 +75,13 @@ def upgrade() -> None:
             name="uq_aps_content_chunk_key",
         ),
     )
-    op.create_index(
+    create_index_idempotent(
         "ix_aps_content_chunk_lookup",
         "aps_content_chunk",
         ["content_id", "content_contract_id", "chunking_contract_id", "chunk_ordinal"],
     )
 
-    op.create_table(
+    create_table_idempotent(
         "aps_content_linkage",
         sa.Column("aps_content_linkage_id", sa.String(length=36), nullable=False),
         sa.Column("content_id", sa.String(length=64), nullable=False),
@@ -102,12 +109,12 @@ def upgrade() -> None:
             name="uq_aps_content_linkage",
         ),
     )
-    op.create_index(
+    create_index_idempotent(
         "ix_aps_content_linkage_run",
         "aps_content_linkage",
         ["run_id", "content_id", "target_id"],
     )
-    op.create_index(
+    create_index_idempotent(
         "ix_aps_content_linkage_content",
         "aps_content_linkage",
         ["content_id", "content_contract_id", "chunking_contract_id"],
@@ -115,10 +122,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index("ix_aps_content_linkage_content", table_name="aps_content_linkage")
-    op.drop_index("ix_aps_content_linkage_run", table_name="aps_content_linkage")
-    op.drop_table("aps_content_linkage")
-    op.drop_index("ix_aps_content_chunk_lookup", table_name="aps_content_chunk")
-    op.drop_table("aps_content_chunk")
-    op.drop_index("ix_aps_content_document_content", table_name="aps_content_document")
-    op.drop_table("aps_content_document")
+    drop_index_idempotent("ix_aps_content_linkage_content", table_name="aps_content_linkage")
+    drop_index_idempotent("ix_aps_content_linkage_run", table_name="aps_content_linkage")
+    drop_table_idempotent("aps_content_linkage")
+    drop_index_idempotent("ix_aps_content_chunk_lookup", table_name="aps_content_chunk")
+    drop_table_idempotent("aps_content_chunk")
+    drop_index_idempotent("ix_aps_content_document_content", table_name="aps_content_document")
+    drop_table_idempotent("aps_content_document")
