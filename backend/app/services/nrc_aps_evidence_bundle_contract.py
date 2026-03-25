@@ -370,6 +370,16 @@ def grouped_page(items: list[dict[str, Any]], *, mode: str) -> list[dict[str, An
                 "content_contract_id": seed["content_contract_id"],
                 "chunking_contract_id": seed["chunking_contract_id"],
                 "chunk_count": 0,
+                "visual_page_refs": item.get("visual_page_refs", []),
+                "quality_status": item.get("quality_status"),
+                "document_class": item.get("document_class"),
+                "media_type": item.get("media_type"),
+                "page_count": item.get("page_count", 0),
+                "diagnostics_ref": item.get("diagnostics_ref"),
+                "blob_ref": item.get("blob_ref"),
+                "blob_sha256": item.get("blob_sha256"),
+                "normalized_text_ref": item.get("normalized_text_ref"),
+                "normalized_text_sha256": item.get("normalized_text_sha256"),
                 "chunks": [],
             }
             seen[group_id] = group

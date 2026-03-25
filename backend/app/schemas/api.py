@@ -539,6 +539,11 @@ class NrcApsEvidenceChunkOut(BaseModel):
     selection_ref: str | None = None
     normalized_text_sha256: str | None = None
     blob_sha256: str | None = None
+    page_start: int | None = None
+    page_end: int | None = None
+    unit_kind: str | None = None
+    quality_status: str | None = None
+    diagnostics_ref: str | None = None
 
 
 class NrcApsEvidenceGroupOut(BaseModel):
@@ -550,6 +555,16 @@ class NrcApsEvidenceGroupOut(BaseModel):
     content_contract_id: str
     chunking_contract_id: str
     chunk_count: int
+    visual_page_refs: list[dict[str, Any]] = Field(default_factory=list)
+    quality_status: str | None = None
+    document_class: str | None = None
+    media_type: str | None = None
+    page_count: int = 0
+    diagnostics_ref: str | None = None
+    blob_ref: str | None = None
+    blob_sha256: str | None = None
+    normalized_text_ref: str | None = None
+    normalized_text_sha256: str | None = None
     chunks: list[NrcApsEvidenceChunkOut] = Field(default_factory=list)
 
 
