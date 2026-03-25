@@ -4,6 +4,7 @@ import hashlib
 import re
 import time
 import unicodedata
+import uuid
 import zipfile
 from pathlib import Path
 from typing import Any
@@ -95,6 +96,46 @@ def _capture_visual_page_ref(page: Any, page_number: int, visual_page_class: str
     }
 
 
+APS_VISUAL_ARTIFACT_NAMESPACE = "nrc_adams_aps/visual_pages/sha256"
+APS_VISUAL_RENDER_DPI_DEFAULT = 150
+APS_VISUAL_ARTIFACT_FORMAT = "png"
+APS_VISUAL_ARTIFACT_SEMANTICS = "whole_page_rasterization"
+
+
+def _write_visual_page_artifact(
+    *,
+    artifact_storage_dir: str | Path,
+    page: Any,
+    page_number: int,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    """Render a PDF page to PNG at a standard DPI, store content-addressed, and
+    return artifact metadata including a storage-stable canonical reference.
+
+    The returned ``visual_artifact_ref`` is a storage-relative path suitable for
+    downstream consumers — NOT a machine-local absolute filesystem path.
+    """
+    dpi = int(config.get("visual_render_dpi") or APS_VISUAL_RENDER_DPI_DEFAULT)
+    pixmap = page.get_pixmap(dpi=dpi)
+    png_bytes: bytes = pixmap.tobytes(output="png")
+
+    digest = hashlib.sha256(png_bytes).hexdigest()
+    rel_path = f"{APS_VISUAL_ARTIFACT_NAMESPACE}/{digest[0:2]}/{digest[2:4]}/{digest}.png"
+    absolute = Path(artifact_storage_dir) / rel_path
+    absolute.parent.mkdir(parents=True, exist_ok=True)
+    if not absolute.exists():
+        temp = absolute.with_name(f".{absolute.name}.{uuid.uuid4().hex}.tmp")
+        temp.write_bytes(png_bytes)
+        os.replace(temp, absolute)
+    return {
+        "visual_artifact_ref": rel_path.replace("\\", "/"),
+        "visual_artifact_sha256": digest,
+        "visual_artifact_dpi": dpi,
+        "visual_artifact_format": APS_VISUAL_ARTIFACT_FORMAT,
+        "visual_artifact_semantics": APS_VISUAL_ARTIFACT_SEMANTICS,
+    }
+
+
 def default_processing_config(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
     config = {
         "content_sniff_bytes": 4096,
@@ -107,6 +148,7 @@ def default_processing_config(overrides: dict[str, Any] | None = None) -> dict[s
         "ocr_timeout_seconds": 120,
         "content_min_searchable_chars": 200,
         "content_min_searchable_tokens": 30,
+        "visual_render_dpi": APS_VISUAL_RENDER_DPI_DEFAULT,
     }
     config.update(dict(overrides or {}))
     return config
@@ -132,12 +174,12 @@ def process_document(
     declared_content_type: Any,
     config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    resolved_config = default_processing_config(config)
-    deadline = _deadline_from_config(resolved_config)
+    config = default_processing_config(config)
+    deadline = _deadline_from_config(config)
     detection = nrc_aps_media_detection.detect_media_type(
         content,
         declared_content_type=declared_content_type,
-        sniff_bytes=int(resolved_config["content_sniff_bytes"]),
+        sniff_bytes=int(config["content_sniff_bytes"]),
     )
     effective_type = str(detection.get("effective_content_type") or "")
     if not bool(detection.get("supported_for_processing")):
@@ -146,13 +188,13 @@ def process_document(
         raise ValueError("empty_content")
     _raise_if_deadline_exceeded(deadline)
     if effective_type == "text/plain":
-        return _process_plain_text(content=content, detection=detection, config=resolved_config, deadline=deadline)
+        return _process_plain_text(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type == "application/pdf":
-        return _process_pdf(content=content, detection=detection, config=resolved_config, deadline=deadline)
+        return _process_pdf(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type in APS_IMAGE_CONTENT_TYPES:
-        return _process_image(content=content, detection=detection, config=resolved_config, deadline=deadline)
+        return _process_image(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type == "application/zip":
-        return _process_zip(content=content, detection=detection, config=resolved_config, deadline=deadline)
+        return _process_zip(content=content, detection=detection, config=config, deadline=deadline)
     raise ValueError(f"unsupported_content_type:{effective_type or 'unknown'}")
 
 
@@ -641,9 +683,21 @@ def _process_pdf(
             )
             if visual_page_class == APS_VISUAL_CLASS_DIAGRAM:
                 try:
-                    visual_page_refs.append(
-                        _capture_visual_page_ref(page, page_number, visual_page_class)
-                    )
+                    ref = _capture_visual_page_ref(page, page_number, visual_page_class)
+                    _art_dir = str(config.get("artifact_storage_dir") or "").strip()
+                    if _art_dir:
+                        try:
+                            artifact = _write_visual_page_artifact(
+                                artifact_storage_dir=_art_dir,
+                                page=page,
+                                page_number=page_number,
+                                config=config,
+                            )
+                            ref.update(artifact)
+                        except Exception:  # noqa: BLE001
+                            ref["status"] = "visual_capture_failed"
+                            degradation_codes.append("visual_artifact_failed")
+                    visual_page_refs.append(ref)
                 except Exception:  # noqa: BLE001
                     visual_page_refs.append({
                         "page_number": page_number,
