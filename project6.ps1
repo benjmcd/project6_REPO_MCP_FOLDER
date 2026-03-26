@@ -1,11 +1,15 @@
 [CmdletBinding()]
 param(
-    [ValidateSet("setup", "migrate", "start-api", "status", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-promotion", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
+    [ValidateSet("setup", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-promotion", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
     [string]$Action = "status",
     [string]$BaseUrl = "http://127.0.0.1:8000",
     [int]$ConsecutiveRuns = 3,
     [int]$TimeoutSeconds = 600,
     [int]$BatchSpacingSeconds = 5,
+    [ValidateSet("sqlite", "postgresql")]
+    [string]$Tier1DatabaseBackend = "sqlite",
+    [string]$Tier1PostgresUrl = "",
+    [switch]$TruncateTier1PostgresTarget,
     [string]$NrcApsBatchManifest = "",
     [string]$NrcApsPromotionPolicy = "",
     [string]$NrcApsTunedPromotionPolicy = "",
@@ -68,6 +72,7 @@ $NrcApsPromotionComparisonReportPath = Join-Path $RepoRoot "tests\reports\nrc_ap
 $NrcApsDocumentProcessingProofPath = Join-Path $RepoRoot "tools\run_nrc_aps_document_processing_proof.py"
 $NrcApsDocumentProcessingProofReportPath = Join-Path $RepoRoot "tests\reports\nrc_aps_document_processing_proof_report.json"
 $AttachedEvalPath = Join-Path $RepoRoot "tools\run_attached_dataset_eval.py"
+$SQLiteToPostgresMigrationPath = Join-Path $RepoRoot "tools\migrate_sqlite_to_postgres.py"
 
 function Normalize-AbsPath {
     param(
@@ -85,8 +90,27 @@ function To-SqliteUrl {
     return "sqlite:///" + ($AbsPath -replace '\\', '/')
 }
 
+function Resolve-Tier1DatabaseUrl {
+    if ($Tier1DatabaseBackend -eq "postgresql") {
+        $candidate = ($Tier1PostgresUrl | ForEach-Object { "$_".Trim() })
+        if ([string]::IsNullOrWhiteSpace($candidate)) {
+            throw "Tier1PostgresUrl is required when Tier1DatabaseBackend=postgresql."
+        }
+        if (-not (
+            $candidate.StartsWith("postgresql://") -or
+            $candidate.StartsWith("postgresql+psycopg://") -or
+            $candidate.StartsWith("postgres://")
+        )) {
+            throw "Tier1PostgresUrl must be a PostgreSQL URL."
+        }
+        return $candidate
+    }
+    return $Tier1SqliteUrl
+}
+
 $Tier1DbPath = Join-Path $BackendDirAbs "method_aware.db"
-$Tier1DatabaseUrl = To-SqliteUrl (Normalize-AbsPath $Tier1DbPath)
+$Tier1SqliteUrl = To-SqliteUrl (Normalize-AbsPath $Tier1DbPath)
+$Tier1DatabaseUrl = Resolve-Tier1DatabaseUrl
 $Tier1StorageDir = Normalize-AbsPath (Join-Path $BackendDirAbs "app\storage")
 $Tier2DbPath = Join-Path $BackendDirAbs "test_method_aware.db"
 $Tier2DatabaseUrl = To-SqliteUrl (Normalize-AbsPath $Tier2DbPath)
@@ -234,11 +258,32 @@ switch ($Action) {
         Write-Host "Setup complete."
     }
     "migrate" {
-        Invoke-Py -Arguments @("-m", "alembic", "-c", "alembic.ini", "upgrade", "head") -WorkingDirectory $BackendDir
+        Invoke-WithTier $Tier1DatabaseUrl $Tier1StorageDir {
+            Invoke-Py -Arguments @("-m", "alembic", "-c", "alembic.ini", "upgrade", "head") -WorkingDirectory $BackendDir
+        }
         Write-Host "Migrations applied."
     }
+    "migrate-tier1-postgres" {
+        if ($Tier1DatabaseBackend -ne "postgresql") {
+            throw "migrate-tier1-postgres requires Tier1DatabaseBackend=postgresql."
+        }
+        if (-not (Test-Path $SQLiteToPostgresMigrationPath)) {
+            throw "SQLite-to-PostgreSQL migration script not found: $SQLiteToPostgresMigrationPath"
+        }
+        $args = @(
+            $SQLiteToPostgresMigrationPath,
+            "--source-url", $Tier1SqliteUrl,
+            "--target-url", $Tier1DatabaseUrl
+        )
+        if ($TruncateTier1PostgresTarget) {
+            $args += "--truncate-target"
+        }
+        Invoke-Py -Arguments $args -WorkingDirectory $RepoRoot
+    }
     "start-api" {
-        Start-ApiForeground
+        Invoke-WithTier $Tier1DatabaseUrl $Tier1StorageDir {
+            Start-ApiForeground
+        }
     }
     "status" {
         try {
@@ -687,29 +732,33 @@ switch ($Action) {
     }
     "bootstrap-sciencebase-live" {
         Invoke-Py -Arguments @("-m", "pip", "install", "-r", $RequirementsPath)
-        Invoke-Py -Arguments @("-m", "alembic", "-c", "alembic.ini", "upgrade", "head") -WorkingDirectory $BackendDir
-        $proc = Start-ApiBackground
-        try {
-            Wait-ApiReady -HealthUrl ($BaseUrl.TrimEnd("/") + "/health") -MaxWaitSeconds 90
-            Invoke-Py -Arguments @($LiveValidatorPath, "--base-url", $BaseUrl, "--consecutive-runs", "$ConsecutiveRuns", "--timeout-seconds", "$TimeoutSeconds")
-        }
-        finally {
-            if ($null -ne $proc -and -not $proc.HasExited) {
-                Stop-Process -Id $proc.Id -Force
+        Invoke-WithTier $Tier1DatabaseUrl $Tier1StorageDir {
+            Invoke-Py -Arguments @("-m", "alembic", "-c", "alembic.ini", "upgrade", "head") -WorkingDirectory $BackendDir
+            $proc = Start-ApiBackground
+            try {
+                Wait-ApiReady -HealthUrl ($BaseUrl.TrimEnd("/") + "/health") -MaxWaitSeconds 90
+                Invoke-Py -Arguments @($LiveValidatorPath, "--base-url", $BaseUrl, "--consecutive-runs", "$ConsecutiveRuns", "--timeout-seconds", "$TimeoutSeconds")
+            }
+            finally {
+                if ($null -ne $proc -and -not $proc.HasExited) {
+                    Stop-Process -Id $proc.Id -Force
+                }
             }
         }
     }
     "all" {
         Invoke-Py -Arguments @("-m", "pip", "install", "-r", $RequirementsPath)
-        Invoke-Py -Arguments @("-m", "alembic", "-c", "alembic.ini", "upgrade", "head") -WorkingDirectory $BackendDir
-        $proc = Start-ApiBackground
-        try {
-            Wait-ApiReady -HealthUrl ($BaseUrl.TrimEnd("/") + "/health") -MaxWaitSeconds 90
-            Invoke-Py -Arguments @($LiveValidatorPath, "--base-url", $BaseUrl, "--consecutive-runs", "$ConsecutiveRuns", "--timeout-seconds", "$TimeoutSeconds")
-        }
-        finally {
-            if ($null -ne $proc -and -not $proc.HasExited) {
-                Stop-Process -Id $proc.Id -Force
+        Invoke-WithTier $Tier1DatabaseUrl $Tier1StorageDir {
+            Invoke-Py -Arguments @("-m", "alembic", "-c", "alembic.ini", "upgrade", "head") -WorkingDirectory $BackendDir
+            $proc = Start-ApiBackground
+            try {
+                Wait-ApiReady -HealthUrl ($BaseUrl.TrimEnd("/") + "/health") -MaxWaitSeconds 90
+                Invoke-Py -Arguments @($LiveValidatorPath, "--base-url", $BaseUrl, "--consecutive-runs", "$ConsecutiveRuns", "--timeout-seconds", "$TimeoutSeconds")
+            }
+            finally {
+                if ($null -ne $proc -and -not $proc.HasExited) {
+                    Stop-Process -Id $proc.Id -Force
+                }
             }
         }
     }
