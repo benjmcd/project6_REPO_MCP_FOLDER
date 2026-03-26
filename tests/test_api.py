@@ -2359,6 +2359,7 @@ def test_nrc_content_index_artifacts_and_search_route(monkeypatch):
 
 def test_nrc_real_born_digital_content_search_and_evidence_bundle(monkeypatch):
     from app.services import connectors_nrc_adams as nrc
+    from app.services import nrc_aps_evidence_bundle_contract as contract
 
     fixture = _nrc_manifest_entry("ml17123a319")
     (TEST_STORAGE_DIR / "connectors" / "reports").mkdir(parents=True, exist_ok=True)
@@ -2407,7 +2408,7 @@ def test_nrc_real_born_digital_content_search_and_evidence_bundle(monkeypatch):
     )
     assert assembled.status_code == 200, assembled.text
     assembled_payload = assembled.json()
-    assert assembled_payload["schema_id"] == "aps.evidence_bundle.v1"
+    assert assembled_payload["schema_id"] == contract.APS_EVIDENCE_BUNDLE_SCHEMA_ID
     assert assembled_payload["persisted"] is True
     assert assembled_payload["total_hits"] >= 1
     assert assembled_payload["items"]

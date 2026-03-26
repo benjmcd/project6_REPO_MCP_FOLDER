@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import random
+import tempfile
 import threading
 import time
 import uuid
@@ -801,9 +802,18 @@ def write_json_atomic(path: str | Path, payload: dict[str, Any]) -> str:
                 return str(target)
         except OSError:
             pass
-    tmp = target.with_name(f".{target.name}.{uuid.uuid4().hex}.tmp")
-    tmp.write_text(serialized, encoding="utf-8")
-    os.replace(tmp, target)
+    fd, tmp_name = tempfile.mkstemp(dir=str(target.parent), prefix="._", suffix=".tmp")
+    tmp = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(serialized)
+        os.replace(tmp, target)
+    except Exception:
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
     return str(target)
 
 
