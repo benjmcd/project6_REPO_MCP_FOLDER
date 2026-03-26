@@ -1,7 +1,7 @@
 # NRC ADAMS APS Status Handoff
 
 ## 1. Purpose and truth model
-This document is the canonical live-repo status surface for the NRC ADAMS APS stack. Last updated March 26, 2026 to reflect the narrow Tier2 diagnostics-write closeout that reconciled the March 25, 2026 hardening state with refreshed checked-in validate-only reports.
+This document is the canonical live-repo status surface for the NRC ADAMS APS stack. Last updated March 26, 2026 to reflect the committed Deterministic Challenge Review Packet v1 closeout and refreshed checked-in validate-only review-packet report, on top of the earlier narrow Tier2 diagnostics-write closeout.
 
 Repo truth precedence used here:
 1. live code, tests, scripts, migrations, and repo-contained proof artifacts
@@ -18,7 +18,7 @@ Status wording used below:
 ### Repo-confirmed in this workspace
 | Surface | Current state | Proof |
 | --- | --- | --- |
-| Upper analytical ceiling | Still closed/frozen through Deterministic Challenge Artifact v1 | current live contract/service/gate/tests/report surfaces for citation pack, evidence report/export/package, context packet, context dossier, deterministic insight, deterministic challenge |
+| Upper analytical ceiling | Still closed/frozen through Deterministic Challenge Review Packet v1 | current live contract/service/gate/tests/report surfaces for citation pack, evidence report/export/package, context packet, context dossier, deterministic insight, deterministic challenge, deterministic challenge review packet |
 | Lower document-processing layer | Reopened additively for deterministic media detection, real PDF extraction, OCR fallback hooks, quality gating, and content-units v2 | `backend/app/services/nrc_aps_media_detection.py`, `backend/app/services/nrc_aps_document_processing.py`, `backend/app/services/nrc_aps_ocr.py`, `backend/app/services/nrc_aps_artifact_ingestion.py`, `backend/app/services/nrc_aps_content_index.py`, `backend/alembic/versions/0009_aps_document_processing_metadata.py` |
 | Phase 8 APS bridge | **Closed** - All required APS-table materialization invariants satisfied (41 targets, 41 linkages, 40 distinct content IDs, 40 documents) using run `closure-run-005`. | `backend/app/services/nrc_adams_index_builder.py` run with `closure-run-005` on `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136` |
 
@@ -34,7 +34,7 @@ Status wording used below:
 | Surface | Current state | Proof |
 | --- | --- | --- |
 | Fresh full aggregate NRC gate PASS after lower-layer expansion | Available; covers pre-March-25 state | rerun on March 13, 2026 via `./project6.ps1 -Action gate-nrc-aps`: aggregate pytest slice `143 passed, 29 deselected`, post-validator dossier ambiguity negative slice `1 passed, 55 deselected`, and aggregate validate-only reports refreshed to PASS through Deterministic Challenge Artifact. Note: March 25, 2026 hardening commits (`2f597f9`, `90c0c58`) changed diagnostics_ref resolution and visual artifact materialization behavior after this gate run. |
-| Existing APS validation reports under `tests/reports/` | Partially fresh | refreshed in this workspace for the March 26 closeout: `nrc_aps_content_index_validation_report.json` and `nrc_aps_evidence_bundle_validation_report.json`; other checked-in APS reports remain prior generated artifacts unless explicitly rerun |
+| Existing APS validation reports under `tests/reports/` | Partially fresh | refreshed in this workspace for the March 26 closeouts: `nrc_aps_content_index_validation_report.json`, `nrc_aps_evidence_bundle_validation_report.json`, and `nrc_aps_deterministic_challenge_review_packet_validation_report.json`; other checked-in APS reports remain prior generated artifacts unless explicitly rerun |
 | Fresh live batch and promotion validation | Not rerun in this pass | existing manifests/reports remain available under `backend/app/storage/connectors/reports/` and `tests/reports/` |
 
 ## 3. Active lower-layer implementation state
@@ -115,6 +115,7 @@ These layers remain closed/frozen except for defect-driven work:
 - Context Dossier v1
 - Deterministic Insight Artifact v1
 - Deterministic Challenge Artifact v1
+- Deterministic Challenge Review Packet v1
 
 Important correction:
 - artifact ingestion and content indexing are no longer treated as closed/frozen in this document-processing workstream
@@ -167,7 +168,9 @@ Important correction:
   - `tests/reports/nrc_aps_context_dossier_validation_report.json`
   - `tests/reports/nrc_aps_deterministic_insight_artifact_validation_report.json`
   - `tests/reports/nrc_aps_deterministic_challenge_artifact_validation_report.json`
-- March 25, 2026 hardening commits (`2f597f9`, `90c0c58`) changed diagnostics_ref resolution semantics and visual artifact materialization behavior. Proof of those changes still lives in `backend/tests/test_diagnostics_ref_persistence.py` and the expanded `backend/tests/test_nrc_aps_evidence_bundle_integration.py`. The narrow March 26, 2026 Tier2 closeout resolved the local diagnostics-write blocker and refreshed `tests/reports/nrc_aps_content_index_validation_report.json` plus `tests/reports/nrc_aps_evidence_bundle_validation_report.json` in this workspace; other checked-in `tests/reports/*.json` artifacts remain historical unless regenerated separately.
+- The current checked-in dedicated post-challenge validate-only proof basis in this workspace is:
+  - `tests/reports/nrc_aps_deterministic_challenge_review_packet_validation_report.json`
+- March 25, 2026 hardening commits (`2f597f9`, `90c0c58`) changed diagnostics_ref resolution semantics and visual artifact materialization behavior. Proof of those changes still lives in `backend/tests/test_diagnostics_ref_persistence.py` and the expanded `backend/tests/test_nrc_aps_evidence_bundle_integration.py`. The narrow March 26, 2026 Tier2 closeout resolved the local diagnostics-write blocker and refreshed `tests/reports/nrc_aps_content_index_validation_report.json` plus `tests/reports/nrc_aps_evidence_bundle_validation_report.json` in this workspace. The post-commit March 26, 2026 review-packet closeout refreshed `tests/reports/nrc_aps_deterministic_challenge_review_packet_validation_report.json` via the dedicated validate-only action from current `HEAD`; other checked-in `tests/reports/*.json` artifacts remain historical unless regenerated separately.
 - Other checked-in `tests/reports/*.json` artifacts should still be treated as historical snapshots unless explicitly regenerated in the current verification pass.
 - **Phase 7A Validation Package**: `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136`
 - **Phase 7A Artifact Audit**: `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136/artifact_audit`
