@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet("setup", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-promotion", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
+    [ValidateSet("setup", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "validate-nrc-aps-promotion", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
     [string]$Action = "status",
     [string]$BaseUrl = "http://127.0.0.1:8000",
     [int]$ConsecutiveRuns = 3,
@@ -45,6 +45,7 @@ $NrcApsContextPacketGatePath = Join-Path $RepoRoot "tools\nrc_aps_context_packet
 $NrcApsContextDossierGatePath = Join-Path $RepoRoot "tools\nrc_aps_context_dossier_gate.py"
 $NrcApsDeterministicInsightArtifactGatePath = Join-Path $RepoRoot "tools\nrc_aps_deterministic_insight_artifact_gate.py"
 $NrcApsDeterministicChallengeArtifactGatePath = Join-Path $RepoRoot "tools\nrc_aps_deterministic_challenge_artifact_gate.py"
+$NrcApsDeterministicChallengeReviewPacketGatePath = Join-Path $RepoRoot "tools\nrc_aps_deterministic_challenge_review_packet_gate.py"
 $NrcApsPromotionGatePath = Join-Path $RepoRoot "tools\nrc_aps_promotion_gate.py"
 $NrcApsPromotionTuningPath = Join-Path $RepoRoot "tools\nrc_aps_promotion_tuning.py"
 $NrcApsReplaySourceRoot = Join-Path $BackendDir "app\storage_test\connectors"
@@ -67,6 +68,7 @@ $NrcApsContextPacketValidationReportPath = Join-Path $RepoRoot "tests\reports\nr
 $NrcApsContextDossierValidationReportPath = Join-Path $RepoRoot "tests\reports\nrc_aps_context_dossier_validation_report.json"
 $NrcApsDeterministicInsightArtifactValidationReportPath = Join-Path $RepoRoot "tests\reports\nrc_aps_deterministic_insight_artifact_validation_report.json"
 $NrcApsDeterministicChallengeArtifactValidationReportPath = Join-Path $RepoRoot "tests\reports\nrc_aps_deterministic_challenge_artifact_validation_report.json"
+$NrcApsDeterministicChallengeReviewPacketValidationReportPath = Join-Path $RepoRoot "tests\reports\nrc_aps_deterministic_challenge_review_packet_validation_report.json"
 $NrcApsPromotionValidationReportPath = Join-Path $RepoRoot "tests\reports\nrc_aps_promotion_validation_report.json"
 $NrcApsPromotionComparisonReportPath = Join-Path $RepoRoot "tests\reports\nrc_aps_promotion_policy_compare_v1.json"
 $NrcApsDocumentProcessingProofPath = Join-Path $RepoRoot "tools\run_nrc_aps_document_processing_proof.py"
@@ -558,6 +560,17 @@ switch ($Action) {
             ) -WorkingDirectory $BackendDirAbs
         }
     }
+    "validate-nrc-aps-deterministic-challenge-review-packet" {
+        if (-not (Test-Path $NrcApsDeterministicChallengeReviewPacketGatePath)) {
+            throw "NRC APS deterministic challenge review packet gate script not found: $NrcApsDeterministicChallengeReviewPacketGatePath"
+        }
+        Invoke-WithTier $Tier2DatabaseUrl $Tier2StorageDir {
+            Invoke-Py -Arguments @(
+                $NrcApsDeterministicChallengeReviewPacketGatePath,
+                "--report", $NrcApsDeterministicChallengeReviewPacketValidationReportPath
+            ) -WorkingDirectory $BackendDirAbs
+        }
+    }
     "validate-nrc-aps-promotion" {
         if (-not (Test-Path $NrcApsPromotionGatePath)) {
             throw "NRC APS promotion gate script not found: $NrcApsPromotionGatePath"
@@ -660,6 +673,9 @@ switch ($Action) {
         if (-not (Test-Path $NrcApsDeterministicChallengeArtifactGatePath)) {
             throw "NRC APS deterministic challenge artifact gate script not found: $NrcApsDeterministicChallengeArtifactGatePath"
         }
+        if (-not (Test-Path $NrcApsDeterministicChallengeReviewPacketGatePath)) {
+            throw "NRC APS deterministic challenge review packet gate script not found: $NrcApsDeterministicChallengeReviewPacketGatePath"
+        }
         Invoke-WithTier $Tier2DatabaseUrl $Tier2StorageDir {
             Invoke-Py -Arguments @(
                 "-m", "pytest",
@@ -699,6 +715,9 @@ switch ($Action) {
                 "tests/test_nrc_aps_deterministic_challenge_artifact_contract.py",
                 "tests/test_nrc_aps_deterministic_challenge_artifact.py",
                 "tests/test_nrc_aps_deterministic_challenge_artifact_gate.py",
+                "tests/test_nrc_aps_deterministic_challenge_review_packet_contract.py",
+                "tests/test_nrc_aps_deterministic_challenge_review_packet.py",
+                "tests/test_nrc_aps_deterministic_challenge_review_packet_gate.py",
                 "tests/test_nrc_aps_live_validation.py",
                 "tests/test_nrc_aps_promotion_gate.py",
                 "tests/test_nrc_aps_live_batch.py",
@@ -761,6 +780,10 @@ switch ($Action) {
             Invoke-Py -Arguments @(
                 $NrcApsDeterministicChallengeArtifactGatePath,
                 "--report", $NrcApsDeterministicChallengeArtifactValidationReportPath
+            ) -WorkingDirectory $BackendDirAbs
+            Invoke-Py -Arguments @(
+                $NrcApsDeterministicChallengeReviewPacketGatePath,
+                "--report", $NrcApsDeterministicChallengeReviewPacketValidationReportPath
             ) -WorkingDirectory $BackendDirAbs
             # This negative test persists synthetic same-id dossier artifacts that intentionally fail the dossier gate.
             Invoke-Py -Arguments @(
