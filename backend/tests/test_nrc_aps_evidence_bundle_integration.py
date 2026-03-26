@@ -2,10 +2,10 @@
 
 Verifies that visual_page_refs, document_class, media_type, page_count, and
 diagnostics_ref flow through:
-  1. _serialize_index_row()  →  serialized dict
-  2. _index_signature()      →  checksum sensitivity
-  3. grouped_page()          →  group assembly
-  4. Pydantic schemas        →  API response validation
+  1. _serialize_index_row()  ->  serialized dict
+  2. _index_signature()      ->  checksum sensitivity
+  3. grouped_page()          ->  group assembly
+  4. Pydantic schemas        ->  API response validation
 
 Also covers chunk-level fields (page_start, page_end, unit_kind, quality_status)
 that were previously silently stripped.
@@ -168,13 +168,13 @@ class TestSerializeIndexRow(unittest.TestCase):
         )
         self.assertEqual(row["diagnostics_ref"], "linkage_diag")
 
-    def test_diagnostics_ref_falls_back_to_document(self):
+    def test_diagnostics_ref_does_not_fall_back_to_document(self):
         row = _serialize_index_row(
             linkage=_make_linkage(diagnostics_ref=None),
             document=_make_document(diagnostics_ref="doc_diag"),
             chunk=_make_chunk(),
         )
-        self.assertEqual(row["diagnostics_ref"], "doc_diag")
+        self.assertIsNone(row["diagnostics_ref"])
 
     def test_null_page_start_serializes_as_none(self):
         row = _serialize_index_row(
@@ -434,11 +434,11 @@ class TestEvidenceGroupSchema(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# 5. End-to-end roundtrip: serialize → group → schema validation
+# 5. End-to-end roundtrip: serialize -> group -> schema validation
 # ---------------------------------------------------------------------------
 
 class TestEndToEndRoundtrip(unittest.TestCase):
-    """Full roundtrip: ORM mock → _serialize_index_row → grouped_page →
+    """Full roundtrip: ORM mock -> _serialize_index_row -> grouped_page ->
     Pydantic validation. Proves no fields are silently dropped."""
 
     def test_full_provenance_roundtrip(self):
@@ -480,7 +480,7 @@ class TestEndToEndRoundtrip(unittest.TestCase):
 
     def test_visual_artifact_fields_survive_roundtrip(self):
         """Artifact-specific fields within visual_page_refs survive the
-        full serialization → group → schema pipeline."""
+        full serialization -> group -> schema pipeline."""
         row = _serialize_index_row(
             linkage=_make_linkage(),
             document=_make_document(),
@@ -506,5 +506,115 @@ class TestEndToEndRoundtrip(unittest.TestCase):
         self.assertEqual(vpr["visual_artifact_semantics"], "whole_page_rasterization")
 
 
+# ---------------------------------------------------------------------------
+# 6. Provenance hardening: diagnostics_ref resolver + quality_status fallback
+# ---------------------------------------------------------------------------
+
+class TestResolveDiagnosticsRef(unittest.TestCase):
+    """Verify _resolve_diagnostics_ref returns linkage-only value.
+
+    Diagnostics artifacts are run-target-specific.  The deduplicated
+    document row must NOT be used as a fallback (authority:
+    nrc_aps_status_handoff.md Section 3 Content indexing).
+    """
+
+    def test_linkage_wins_when_both_present(self):
+        from app.services.nrc_aps_content_index import _resolve_diagnostics_ref
+        linkage = _make_linkage(diagnostics_ref="linkage_diag")
+        document = _make_document(diagnostics_ref="doc_diag")
+        self.assertEqual(_resolve_diagnostics_ref(linkage, document), "linkage_diag")
+
+    def test_no_document_fallback_when_linkage_absent(self):
+        from app.services.nrc_aps_content_index import _resolve_diagnostics_ref
+        linkage = _make_linkage(diagnostics_ref=None)
+        document = _make_document(diagnostics_ref="doc_diag")
+        self.assertIsNone(_resolve_diagnostics_ref(linkage, document))
+
+    def test_none_when_both_absent(self):
+        from app.services.nrc_aps_content_index import _resolve_diagnostics_ref
+        linkage = _make_linkage(diagnostics_ref=None)
+        document = _make_document(diagnostics_ref=None)
+        self.assertIsNone(_resolve_diagnostics_ref(linkage, document))
+
+    def test_whitespace_only_treated_as_absent(self):
+        from app.services.nrc_aps_content_index import _resolve_diagnostics_ref
+        linkage = _make_linkage(diagnostics_ref="   ")
+        document = _make_document(diagnostics_ref="doc_diag")
+        self.assertIsNone(_resolve_diagnostics_ref(linkage, document))
+
+
+class TestContentIndexSerializerDiagnosticsRef(unittest.TestCase):
+    """Verify the content-index _serialize_index_row uses linkage-only resolver."""
+
+    def test_linkage_value_used_when_present(self):
+        from app.services.nrc_aps_content_index import _serialize_index_row as ci_serialize
+        row = ci_serialize(
+            linkage=_make_linkage(diagnostics_ref="linkage_val"),
+            document=_make_document(diagnostics_ref="doc_val"),
+            chunk=_make_chunk(),
+        )
+        self.assertEqual(row["diagnostics_ref"], "linkage_val")
+
+    def test_no_document_fallback_when_linkage_absent(self):
+        from app.services.nrc_aps_content_index import _serialize_index_row as ci_serialize
+        row = ci_serialize(
+            linkage=_make_linkage(diagnostics_ref=None),
+            document=_make_document(diagnostics_ref="doc_val"),
+            chunk=_make_chunk(),
+        )
+        self.assertIsNone(row["diagnostics_ref"])
+
+
+class TestEvidenceBundleSerializerDiagnosticsRef(unittest.TestCase):
+    """Verify the evidence-bundle _serialize_index_row uses linkage-only resolver."""
+
+    def test_linkage_value_used_when_present(self):
+        row = _serialize_index_row(
+            linkage=_make_linkage(diagnostics_ref="linkage_val"),
+            document=_make_document(diagnostics_ref="doc_val"),
+            chunk=_make_chunk(),
+        )
+        self.assertEqual(row["diagnostics_ref"], "linkage_val")
+
+    def test_no_document_fallback_when_linkage_absent(self):
+        row = _serialize_index_row(
+            linkage=_make_linkage(diagnostics_ref=None),
+            document=_make_document(diagnostics_ref="doc_val"),
+            chunk=_make_chunk(),
+        )
+        self.assertIsNone(row["diagnostics_ref"])
+
+
+class TestEvidenceBundleQualityStatusFallback(unittest.TestCase):
+    """Verify evidence-bundle serializer falls back to document.quality_status
+    when chunk.quality_status is absent."""
+
+    def test_chunk_quality_used_when_present(self):
+        row = _serialize_index_row(
+            linkage=_make_linkage(),
+            document=_make_document(quality_status="weak"),
+            chunk=_make_chunk(quality_status="usable"),
+        )
+        self.assertEqual(row["quality_status"], "usable")
+
+    def test_document_fallback_when_chunk_absent(self):
+        row = _serialize_index_row(
+            linkage=_make_linkage(),
+            document=_make_document(quality_status="weak"),
+            chunk=_make_chunk(quality_status=None),
+        )
+        self.assertEqual(row["quality_status"], "weak")
+
+    def test_none_when_both_absent(self):
+        row = _serialize_index_row(
+            linkage=_make_linkage(),
+            document=_make_document(quality_status=None),
+            chunk=_make_chunk(quality_status=None),
+        )
+        self.assertIsNone(row["quality_status"])
+
+
 if __name__ == "__main__":
     unittest.main()
+
+

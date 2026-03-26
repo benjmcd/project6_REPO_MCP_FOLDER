@@ -13,7 +13,7 @@ from app.core.config import settings
 from app.models import ApsContentChunk, ApsContentDocument, ApsContentLinkage, ConnectorRun
 from app.services import nrc_aps_evidence_bundle_contract as contract
 from app.services import nrc_aps_safeguards
-from app.services.nrc_aps_content_index import _deserialize_visual_page_refs
+from app.services.nrc_aps_content_index import _deserialize_visual_page_refs, _resolve_diagnostics_ref
 
 
 class EvidenceBundleError(RuntimeError):
@@ -182,12 +182,12 @@ def _serialize_index_row(*, linkage: ApsContentLinkage, document: ApsContentDocu
         "page_start": int(chunk.page_start) if chunk.page_start is not None else None,
         "page_end": int(chunk.page_end) if chunk.page_end is not None else None,
         "unit_kind": str(chunk.unit_kind or "").strip() or None,
-        "quality_status": str(chunk.quality_status or "").strip() or None,
+        "quality_status": str(chunk.quality_status or document.quality_status or "").strip() or None,
         "visual_page_refs": _deserialize_visual_page_refs(document.visual_page_refs_json),
         "document_class": str(document.document_class or "").strip() or None,
         "media_type": str(document.media_type or "").strip() or None,
         "page_count": int(document.page_count or 0),
-        "diagnostics_ref": str(linkage.diagnostics_ref or document.diagnostics_ref or "").strip() or None,
+        "diagnostics_ref": _resolve_diagnostics_ref(linkage, document),
         "document_updated_at_utc": document_updated,
         "chunk_updated_at_utc": chunk_updated,
     }
