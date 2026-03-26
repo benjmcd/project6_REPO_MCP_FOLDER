@@ -7,7 +7,7 @@ param(
     [int]$TimeoutSeconds = 600,
     [int]$BatchSpacingSeconds = 5,
     [ValidateSet("sqlite", "postgresql")]
-    [string]$Tier1DatabaseBackend = "sqlite",
+    [string]$Tier1DatabaseBackend = "postgresql",
     [string]$Tier1PostgresUrl = "",
     [switch]$TruncateTier1PostgresTarget,
     [string]$NrcApsBatchManifest = "",
@@ -90,27 +90,85 @@ function To-SqliteUrl {
     return "sqlite:///" + ($AbsPath -replace '\\', '/')
 }
 
-function Resolve-Tier1DatabaseUrl {
-    if ($Tier1DatabaseBackend -eq "postgresql") {
-        $candidate = ($Tier1PostgresUrl | ForEach-Object { "$_".Trim() })
-        if ([string]::IsNullOrWhiteSpace($candidate)) {
-            throw "Tier1PostgresUrl is required when Tier1DatabaseBackend=postgresql."
+function Test-IsPostgresUrl {
+    param(
+        [AllowEmptyString()]
+        [string]$Url
+    )
+    $candidate = "$Url".Trim()
+    return (
+        $candidate.StartsWith("postgresql://") -or
+        $candidate.StartsWith("postgresql+psycopg://") -or
+        $candidate.StartsWith("postgres://")
+    )
+}
+
+function Get-BackendConfiguredDatabaseUrl {
+    $hadDatabaseUrl = Test-Path Env:DATABASE_URL
+    $previousDatabaseUrl = if ($hadDatabaseUrl) { $env:DATABASE_URL } else { $null }
+    $locationPushed = $false
+    try {
+        if ($hadDatabaseUrl) {
+            Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue
         }
-        if (-not (
-            $candidate.StartsWith("postgresql://") -or
-            $candidate.StartsWith("postgresql+psycopg://") -or
-            $candidate.StartsWith("postgres://")
-        )) {
+        Push-Location $BackendDirAbs
+        $locationPushed = $true
+        $output = & py "-$PythonVersion" "-c" "from app.core.config import Settings; print(Settings().database_url)"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to resolve backend/.env DATABASE_URL through backend config."
+        }
+        return (($output -join "`n").Trim())
+    }
+    finally {
+        if ($locationPushed) {
+            Pop-Location
+        }
+        if ($hadDatabaseUrl) {
+            $env:DATABASE_URL = $previousDatabaseUrl
+        }
+        else {
+            Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+function Resolve-Tier1DatabaseUrl {
+    if ($Tier1DatabaseBackend -ne "postgresql") {
+        return $Tier1SqliteUrl
+    }
+
+    $explicitCandidate = "$Tier1PostgresUrl".Trim()
+    if (-not [string]::IsNullOrWhiteSpace($explicitCandidate)) {
+        if (-not (Test-IsPostgresUrl $explicitCandidate)) {
             throw "Tier1PostgresUrl must be a PostgreSQL URL."
         }
-        return $candidate
+        return $explicitCandidate
     }
-    return $Tier1SqliteUrl
+
+    $processCandidate = if (Test-Path Env:DATABASE_URL) { "$env:DATABASE_URL".Trim() } else { "" }
+    if (Test-IsPostgresUrl $processCandidate) {
+        return $processCandidate
+    }
+
+    $backendConfiguredCandidate = Get-BackendConfiguredDatabaseUrl
+    if (Test-IsPostgresUrl $backendConfiguredCandidate) {
+        return $backendConfiguredCandidate
+    }
+
+    throw "Tier1 PostgreSQL default requires a PostgreSQL DATABASE_URL. Provide -Tier1PostgresUrl, set process env DATABASE_URL to a PostgreSQL URL, or set backend/.env DATABASE_URL to a PostgreSQL URL."
+}
+
+function Invoke-WithTier1 {
+    param(
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$Body
+    )
+    $resolvedTier1DatabaseUrl = Resolve-Tier1DatabaseUrl
+    Invoke-WithTier $resolvedTier1DatabaseUrl $Tier1StorageDir $Body
 }
 
 $Tier1DbPath = Join-Path $BackendDirAbs "method_aware.db"
 $Tier1SqliteUrl = To-SqliteUrl (Normalize-AbsPath $Tier1DbPath)
-$Tier1DatabaseUrl = Resolve-Tier1DatabaseUrl
 $Tier1StorageDir = Normalize-AbsPath (Join-Path $BackendDirAbs "app\storage")
 $Tier2DbPath = Join-Path $BackendDirAbs "test_method_aware.db"
 $Tier2DatabaseUrl = To-SqliteUrl (Normalize-AbsPath $Tier2DbPath)
@@ -258,7 +316,7 @@ switch ($Action) {
         Write-Host "Setup complete."
     }
     "migrate" {
-        Invoke-WithTier $Tier1DatabaseUrl $Tier1StorageDir {
+        Invoke-WithTier1 {
             Invoke-Py -Arguments @("-m", "alembic", "-c", "alembic.ini", "upgrade", "head") -WorkingDirectory $BackendDir
         }
         Write-Host "Migrations applied."
@@ -273,7 +331,7 @@ switch ($Action) {
         $args = @(
             $SQLiteToPostgresMigrationPath,
             "--source-url", $Tier1SqliteUrl,
-            "--target-url", $Tier1DatabaseUrl
+            "--target-url", (Resolve-Tier1DatabaseUrl)
         )
         if ($TruncateTier1PostgresTarget) {
             $args += "--truncate-target"
@@ -281,7 +339,7 @@ switch ($Action) {
         Invoke-Py -Arguments $args -WorkingDirectory $RepoRoot
     }
     "start-api" {
-        Invoke-WithTier $Tier1DatabaseUrl $Tier1StorageDir {
+        Invoke-WithTier1 {
             Start-ApiForeground
         }
     }
@@ -305,7 +363,7 @@ switch ($Action) {
         if (-not (Test-Path $NrcApsValidatorPath)) {
             throw "NRC APS validator script not found: $NrcApsValidatorPath"
         }
-        Invoke-WithTier $Tier1DatabaseUrl $Tier1StorageDir {
+        Invoke-WithTier1 {
             Invoke-Py -Arguments @($NrcApsValidatorPath, "--timeout-seconds", "$TimeoutSeconds") -WorkingDirectory $BackendDirAbs
         }
     }
@@ -323,7 +381,7 @@ switch ($Action) {
         if ($AbortBatchOnCycleFailure) {
             $args += "--abort-on-failure"
         }
-        Invoke-WithTier $Tier1DatabaseUrl $Tier1StorageDir {
+        Invoke-WithTier1 {
             Invoke-Py -Arguments $args -WorkingDirectory $BackendDirAbs
         }
     }
@@ -732,7 +790,7 @@ switch ($Action) {
     }
     "bootstrap-sciencebase-live" {
         Invoke-Py -Arguments @("-m", "pip", "install", "-r", $RequirementsPath)
-        Invoke-WithTier $Tier1DatabaseUrl $Tier1StorageDir {
+        Invoke-WithTier1 {
             Invoke-Py -Arguments @("-m", "alembic", "-c", "alembic.ini", "upgrade", "head") -WorkingDirectory $BackendDir
             $proc = Start-ApiBackground
             try {
@@ -748,7 +806,7 @@ switch ($Action) {
     }
     "all" {
         Invoke-Py -Arguments @("-m", "pip", "install", "-r", $RequirementsPath)
-        Invoke-WithTier $Tier1DatabaseUrl $Tier1StorageDir {
+        Invoke-WithTier1 {
             Invoke-Py -Arguments @("-m", "alembic", "-c", "alembic.ini", "upgrade", "head") -WorkingDirectory $BackendDir
             $proc = Start-ApiBackground
             try {
