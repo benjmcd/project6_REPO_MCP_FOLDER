@@ -149,14 +149,24 @@ The connector runtime is in-process and currently includes ScienceBase public/MC
 Use the helper script from repo root:
 
 ```powershell
+# configure Tier1 PostgreSQL for this shell, or set the same DATABASE_URL in backend/.env
+$env:DATABASE_URL = "postgresql+psycopg://user:password@localhost:5432/method_aware"
+
 # install/update Python deps
 .\project6.ps1 -Action setup
 
-# apply alembic migrations
+# apply Tier1 migrations (PostgreSQL-backed by default)
 .\project6.ps1 -Action migrate
 
-# start API (foreground)
+# start API (foreground; Tier1 PostgreSQL by default)
 .\project6.ps1 -Action start-api -Reload
+```
+
+SQLite fallback for Tier1 remains available explicitly:
+
+```powershell
+.\project6.ps1 -Action migrate -Tier1DatabaseBackend sqlite
+.\project6.ps1 -Action start-api -Tier1DatabaseBackend sqlite -Reload
 ```
 
 In another terminal:
