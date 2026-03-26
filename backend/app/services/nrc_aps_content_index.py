@@ -649,7 +649,7 @@ def upsert_content_units_payload(db: Session, *, payload: dict[str, Any]) -> Non
         doc.document_class = str(payload.get("document_class") or "").strip() or None
         doc.quality_status = str(payload.get("quality_status") or "").strip() or None
         doc.page_count = int(payload.get("page_count") or 0)
-        doc.diagnostics_ref = None
+        doc.diagnostics_ref = str(payload.get("diagnostics_ref") or "").strip() or None
         _raw_vpr = payload.get("visual_page_refs")
         doc.visual_page_refs_json = json.dumps(_raw_vpr) if isinstance(_raw_vpr, list) else None
         doc.updated_at = datetime.now(timezone.utc)
@@ -744,6 +744,22 @@ def _deserialize_visual_page_refs(raw: str | None) -> list[dict[str, Any]]:
     return [dict(item) for item in parsed if isinstance(item, dict)]
 
 
+def _resolve_diagnostics_ref(linkage, document) -> str | None:
+    """Return the linkage-level diagnostics_ref only.
+
+    Diagnostics artifacts are run-target-specific by construction.  The
+    deduplicated document row must NOT be used as a fallback because it
+    may hold a stale ref from a different run that shares the same
+    content_id.  Returning ``None`` when linkage has no value is safer
+    than surfacing potentially wrong provenance.
+
+    The ``document`` parameter is accepted but intentionally ignored so
+    that both serializer call-sites (content-index and evidence-bundle)
+    can share this helper without changing their signatures.
+    """
+    return str(getattr(linkage, "diagnostics_ref", "") or "").strip() or None
+
+
 def _serialize_index_row(
     *,
     linkage: ApsContentLinkage,
@@ -769,7 +785,7 @@ def _serialize_index_row(
         "accession_number": linkage.accession_number,
         "content_units_ref": linkage.content_units_ref,
         "normalized_text_ref": linkage.normalized_text_ref,
-        "diagnostics_ref": str(linkage.diagnostics_ref or "").strip() or None,
+        "diagnostics_ref": _resolve_diagnostics_ref(linkage, document),
         "blob_ref": linkage.blob_ref,
         "download_exchange_ref": linkage.download_exchange_ref,
         "discovery_ref": linkage.discovery_ref,
