@@ -1,7 +1,7 @@
 # NRC ADAMS APS Status Handoff
 
 ## 1. Purpose and truth model
-This document is the canonical live-repo status surface for the NRC ADAMS APS stack. Last updated March 25, 2026 to reflect defect-driven hardening commits (`2f597f9`, `90c0c58`) landed after the March 14, 2026 baseline.
+This document is the canonical live-repo status surface for the NRC ADAMS APS stack. Last updated March 26, 2026 to reflect the narrow Tier2 diagnostics-write closeout that reconciled the March 25, 2026 hardening state with refreshed checked-in validate-only reports.
 
 Repo truth precedence used here:
 1. live code, tests, scripts, migrations, and repo-contained proof artifacts
@@ -34,7 +34,7 @@ Status wording used below:
 | Surface | Current state | Proof |
 | --- | --- | --- |
 | Fresh full aggregate NRC gate PASS after lower-layer expansion | Available; covers pre-March-25 state | rerun on March 13, 2026 via `./project6.ps1 -Action gate-nrc-aps`: aggregate pytest slice `143 passed, 29 deselected`, post-validator dossier ambiguity negative slice `1 passed, 55 deselected`, and aggregate validate-only reports refreshed to PASS through Deterministic Challenge Artifact. Note: March 25, 2026 hardening commits (`2f597f9`, `90c0c58`) changed diagnostics_ref resolution and visual artifact materialization behavior after this gate run. |
-| Existing APS validation reports under `tests/reports/` | Partially fresh | current in this pass: `nrc_aps_document_processing_proof_report.json`, `nrc_aps_artifact_ingestion_validation_report.json`, `nrc_aps_content_index_validation_report.json`, `nrc_aps_evidence_bundle_validation_report.json`, `nrc_aps_evidence_citation_pack_validation_report.json`, `nrc_aps_evidence_report_validation_report.json`, `nrc_aps_evidence_report_export_validation_report.json`, `nrc_aps_evidence_report_export_package_validation_report.json`, `nrc_aps_context_packet_validation_report.json`, `nrc_aps_context_dossier_validation_report.json`, `nrc_aps_deterministic_insight_artifact_validation_report.json`, and `nrc_aps_deterministic_challenge_artifact_validation_report.json`; other checked-in reports were not all rerun |
+| Existing APS validation reports under `tests/reports/` | Partially fresh | refreshed in this workspace for the March 26 closeout: `nrc_aps_content_index_validation_report.json` and `nrc_aps_evidence_bundle_validation_report.json`; other checked-in APS reports remain prior generated artifacts unless explicitly rerun |
 | Fresh live batch and promotion validation | Not rerun in this pass | existing manifests/reports remain available under `backend/app/storage/connectors/reports/` and `tests/reports/` |
 
 ## 3. Active lower-layer implementation state
@@ -167,7 +167,7 @@ Important correction:
   - `tests/reports/nrc_aps_context_dossier_validation_report.json`
   - `tests/reports/nrc_aps_deterministic_insight_artifact_validation_report.json`
   - `tests/reports/nrc_aps_deterministic_challenge_artifact_validation_report.json`
-- March 25, 2026 hardening commits (`2f597f9`, `90c0c58`) changed diagnostics_ref resolution semantics and visual artifact materialization behavior. Proof of those changes lives in `backend/tests/test_diagnostics_ref_persistence.py` and the expanded `backend/tests/test_nrc_aps_evidence_bundle_integration.py`; checked-in report artifacts under `tests/reports/` have not been refreshed as of this reconciliation pass and do not yet cover the March 25 state. Run `.\project6.ps1 -Action validate-nrc-aps-content-index` and `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` to refresh those reports.
+- March 25, 2026 hardening commits (`2f597f9`, `90c0c58`) changed diagnostics_ref resolution semantics and visual artifact materialization behavior. Proof of those changes still lives in `backend/tests/test_diagnostics_ref_persistence.py` and the expanded `backend/tests/test_nrc_aps_evidence_bundle_integration.py`. The narrow March 26, 2026 Tier2 closeout resolved the local diagnostics-write blocker and refreshed `tests/reports/nrc_aps_content_index_validation_report.json` plus `tests/reports/nrc_aps_evidence_bundle_validation_report.json` in this workspace; other checked-in `tests/reports/*.json` artifacts remain historical unless regenerated separately.
 - Other checked-in `tests/reports/*.json` artifacts should still be treated as historical snapshots unless explicitly regenerated in the current verification pass.
 - **Phase 7A Validation Package**: `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136`
 - **Phase 7A Artifact Audit**: `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136/artifact_audit`
@@ -177,7 +177,7 @@ The next safe continuation is:
 1. preserve the restored lower-layer baseline and current OCR-enabled proof basis
 2. continue above the frozen analytical ceiling with a single bounded slice
 3. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` whenever OCR/corpus behavior changes or when validating a new environment
-4. run `.\project6.ps1 -Action validate-nrc-aps-content-index` and `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` to refresh checked-in validation reports against the current post-March-25 diagnostics_ref and visual artifact behavior (the March 13 reports predate those changes)
+4. treat `.\project6.ps1 -Action validate-nrc-aps-content-index` and `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` as the validate-only refresh path for these two checked-in reports; rerun them only when those surfaces change again or when re-establishing a new workspace-local baseline
 
 ## 9. Primary live authority surfaces for this workstream
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
