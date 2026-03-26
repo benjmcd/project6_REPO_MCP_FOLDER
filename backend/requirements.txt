@@ -9,6 +9,7 @@ matplotlib>=3.8
 python-multipart>=0.0.9
 pydantic-settings>=2.4
 alembic>=1.13
+psycopg[binary]>=3.1
 requests>=2.31
 statsmodels>=0.14
 pyarrow>=18.0

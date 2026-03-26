@@ -65,7 +65,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=str(BACKEND_ENV_FILE), env_file_encoding="utf-8", extra="ignore")
 
     def model_post_init(self, __context: object) -> None:
-        self.database_url = _normalize_sqlite_url(self.database_url)
+        if self.database_url.startswith("sqlite"):
+            self.database_url = _normalize_sqlite_url(self.database_url)
         self.storage_dir = _normalize_storage_path(self.storage_dir)
 
     @property

@@ -103,7 +103,7 @@ def upgrade() -> None:
         sa.Column("error_stage", sa.String(length=100)),
         sa.Column("error_message", sa.Text()),
         sa.Column("last_error_class", sa.String(length=100)),
-        sa.Column("retry_eligible", sa.Boolean(), nullable=False, server_default=sa.text("0")),
+        sa.Column("retry_eligible", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("attempt_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("last_attempt_at", sa.DateTime(timezone=True)),
         sa.Column("backoff_until", sa.DateTime(timezone=True)),
@@ -154,7 +154,7 @@ def upgrade() -> None:
         sa.Column("status", sa.String(length=50), nullable=False),
         sa.Column("error_class", sa.String(length=100)),
         sa.Column("error_message", sa.Text()),
-        sa.Column("retryable", sa.Boolean(), nullable=False, server_default=sa.text("0")),
+        sa.Column("retryable", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("metrics_json", sa.JSON(), nullable=False, server_default=sa.text("'{}'")),
     )
     op.create_index("ix_stage_attempt_target_stage", "connector_target_stage_attempt", ["connector_run_target_id", "stage"])
