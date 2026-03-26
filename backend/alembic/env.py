@@ -6,7 +6,8 @@ import sys
 from pathlib import Path
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from alembic.ddl.postgresql import PostgresqlImpl
+from sqlalchemy import Column, MetaData, PrimaryKeyConstraint, String, Table, engine_from_config, pool
 
 
 config = context.config
@@ -24,6 +25,23 @@ from app.db.session import Base  # noqa: E402
 
 
 target_metadata = Base.metadata
+
+
+class ProjectPostgresqlImpl(PostgresqlImpl):
+    """Allow repo revision IDs longer than Alembic's default 32 chars on PostgreSQL."""
+
+    __dialect__ = "postgresql"
+
+    def version_table_impl(self, *, version_table: str, version_table_schema: str | None, version_table_pk: bool, **kw):
+        vt = Table(
+            version_table,
+            MetaData(),
+            Column("version_num", String(64), nullable=False),
+            schema=version_table_schema,
+        )
+        if version_table_pk:
+            vt.append_constraint(PrimaryKeyConstraint("version_num", name=f"{version_table}_pkc"))
+        return vt
 
 
 def _database_url() -> str:

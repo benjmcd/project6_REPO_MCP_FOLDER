@@ -21,7 +21,7 @@ def upgrade() -> None:
     op.add_column("connector_run", sa.Column("search_exhaustion_reason", sa.String(length=100), nullable=True))
     op.add_column("connector_run", sa.Column("page_count_completed", sa.Integer(), nullable=False, server_default="0"))
     op.add_column("connector_run", sa.Column("partition_count_completed", sa.Integer(), nullable=False, server_default="0"))
-    op.add_column("connector_run", sa.Column("next_page_available", sa.Boolean(), nullable=False, server_default=sa.text("0")))
+    op.add_column("connector_run", sa.Column("next_page_available", sa.Boolean(), nullable=False, server_default=sa.text("false")))
     op.add_column("connector_run", sa.Column("last_offset_committed", sa.Integer(), nullable=True))
     op.add_column("connector_run", sa.Column("deduped_within_run_count", sa.Integer(), nullable=False, server_default="0"))
     op.add_column("connector_run", sa.Column("not_modified_count", sa.Integer(), nullable=False, server_default="0"))
@@ -29,14 +29,14 @@ def upgrade() -> None:
     op.add_column("connector_run", sa.Column("budget_blocked_count", sa.Integer(), nullable=False, server_default="0"))
     op.add_column("connector_run", sa.Column("policy_skipped_count_by_reason_json", sa.JSON(), nullable=False, server_default=sa.text("'{}'")))
     op.add_column("connector_run", sa.Column("consumed_bytes", sa.Integer(), nullable=False, server_default="0"))
-    op.add_column("connector_run", sa.Column("budget_exhausted", sa.Boolean(), nullable=False, server_default=sa.text("0")))
+    op.add_column("connector_run", sa.Column("budget_exhausted", sa.Boolean(), nullable=False, server_default=sa.text("false")))
 
     op.add_column("connector_run_target", sa.Column("selection_source", sa.String(length=50), nullable=True))
     op.add_column("connector_run_target", sa.Column("selection_scope", sa.String(length=50), nullable=True))
     op.add_column("connector_run_target", sa.Column("selection_match_basis", sa.String(length=100), nullable=True))
     op.add_column("connector_run_target", sa.Column("permission_snapshot_json", sa.JSON(), nullable=False, server_default=sa.text("'{}'")))
     op.add_column("connector_run_target", sa.Column("access_level_summary", sa.String(length=100), nullable=True))
-    op.add_column("connector_run_target", sa.Column("public_read_confirmed", sa.Boolean(), nullable=False, server_default=sa.text("0")))
+    op.add_column("connector_run_target", sa.Column("public_read_confirmed", sa.Boolean(), nullable=False, server_default=sa.text("false")))
 
     op.create_index("ix_connector_run_target_run_status", "connector_run_target", ["connector_run_id", "status"])
 
@@ -50,7 +50,7 @@ def upgrade() -> None:
         sa.Column("last_offset", sa.Integer(), nullable=True),
         sa.Column("last_item_sort_key", sa.String(length=255), nullable=True),
         sa.Column("last_page_link", sa.String(length=1024), nullable=True),
-        sa.Column("partition_exhausted", sa.Boolean(), nullable=False, server_default=sa.text("0")),
+        sa.Column("partition_exhausted", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("connector_run_partition_cursor_id"),
         sa.UniqueConstraint("connector_run_id", "partition_id", name="uq_run_partition_cursor"),

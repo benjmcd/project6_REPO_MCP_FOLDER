@@ -1,4 +1,4 @@
-"""Idempotency helpers for Alembic migrations on SQLite.
+"""Idempotency helpers for Alembic migrations.
 
 These guards let migrations survive a database that was partially set up by
 ``Base.metadata.create_all()`` (DB_INIT_MODE=create_all) before Alembic took
@@ -9,7 +9,7 @@ absent, so ``alembic upgrade head`` becomes safe to re-run at any point.
 from __future__ import annotations
 
 from alembic import op
-from sqlalchemy import inspect as sa_inspect, text
+from sqlalchemy import inspect as sa_inspect
 import sqlalchemy as sa
 
 
@@ -27,11 +27,12 @@ def column_exists(table: str, column: str) -> bool:
 
 def index_exists(name: str) -> bool:
     bind = op.get_bind()
-    result = bind.execute(
-        text("SELECT 1 FROM sqlite_master WHERE type='index' AND name=:name"),
-        {"name": name},
-    )
-    return result.fetchone() is not None
+    inspector = sa_inspect(bind)
+    for table_name in inspector.get_table_names():
+        for idx in inspector.get_indexes(table_name):
+            if idx["name"] == name:
+                return True
+    return False
 
 
 def create_table_idempotent(name: str, *args, **kwargs) -> None:
