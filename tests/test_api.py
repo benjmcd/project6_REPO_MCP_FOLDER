@@ -4408,13 +4408,19 @@ def test_nrc_deterministic_challenge_review_packet_persist_and_report_refs(monke
         db.expire_all()
         run = db.get(ConnectorRun, run_id)
         report_refs = dict((run.query_plan_json or {}).get("aps_deterministic_challenge_review_packet_report_refs") or {})
-        assert rp_data["deterministic_challenge_review_packet_ref"] in (report_refs.get("aps_deterministic_challenge_review_packets") or [])
+        assert report_refs.get("aps_deterministic_challenge_review_packets") == [
+            rp_data["deterministic_challenge_review_packet_ref"]
+        ]
+        assert report_refs.get("aps_deterministic_challenge_review_packet_failures") == []
 
         run_detail = client.get(f"/api/v1/connectors/runs/{run_id}")
-        if run_detail.status_code == 200:
-            detail_data = run_detail.json()
-            rr = detail_data.get("report_refs") or {}
-            assert "aps_deterministic_challenge_review_packets" in rr or rp_data["deterministic_challenge_review_packet_ref"] in str(rr)
+        assert run_detail.status_code == 200, run_detail.text
+        detail_data = run_detail.json()
+        rr = detail_data.get("report_refs") or {}
+        assert rr["aps_deterministic_challenge_review_packets"] == [
+            rp_data["deterministic_challenge_review_packet_ref"]
+        ]
+        assert rr["aps_deterministic_challenge_review_packet_failures"] == []
     finally:
         db.close()
 
