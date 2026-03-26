@@ -1,0 +1,22 @@
+{
+  "checked_runs": 1,
+  "checks": [
+    {
+      "deterministic_challenge_review_packet_refs": [
+        "C:\\Users\\benny\\OneDrive\\Desktop\\project6_REPO_MCP_FOLDER\\backend\\app\\storage_test_runtime\\connectors\\reports\\run_run-review-packet-api-e2e_b523508ef545e564105754c5_aps_deterministic_challenge_review_packet_v1.json"
+      ],
+      "failure_refs": [],
+      "passed": true,
+      "reasons": [],
+      "run_id": "run-review-packet-api-e2e"
+    }
+  ],
+  "evaluated_run_rows": 1,
+  "failed_runs": 0,
+  "generated_at_utc": "2026-03-26T15:50:07.552536Z",
+  "passed": true,
+  "reports_dir": "C:\\Users\\benny\\OneDrive\\Desktop\\project6_REPO_MCP_FOLDER\\backend\\app\\storage_test_runtime\\connectors\\reports",
+  "require_runs": true,
+  "schema_id": "aps.deterministic_challenge_review_packet_gate.v1",
+  "schema_version": 1
+}
