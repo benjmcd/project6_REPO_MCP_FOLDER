@@ -4,6 +4,7 @@
 > - [nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md) (Accepted 7A Truth)
 > - [nrc_aps_authority_matrix.md](docs/nrc_adams/nrc_aps_authority_matrix.md) (Repo-wide Authority Map)
 > - [nrc_aps_reader_path.md](docs/nrc_adams/nrc_aps_reader_path.md) (Navigational Guide)
+> - [postgres_status_handoff.md](docs/postgres/postgres_status_handoff.md) (PostgreSQL Tier1 Status)
 >
 > **CRITICAL WARNING**: Unverified `tests/...` and `tools/...` paths referenced below may not exist in this specific export workspace and should not be trusted as safe authority paths unless their on-disk presence is directly confirmed.
 
@@ -161,6 +162,8 @@ $env:DATABASE_URL = "postgresql+psycopg://user:password@localhost:5432/method_aw
 # start API (foreground; Tier1 PostgreSQL by default)
 .\project6.ps1 -Action start-api -Reload
 ```
+
+Note: the helper script now defaults Tier1 operator actions to PostgreSQL, but the bare no-env runtime default in [backend/app/core/config.py](backend/app/core/config.py) intentionally remains SQLite for now.
 
 SQLite fallback for Tier1 remains available explicitly:
 
