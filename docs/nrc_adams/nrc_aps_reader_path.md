@@ -20,4 +20,4 @@ To establish a rigorous mental model without inheriting prior session context, r
 
 ## Context Maps
 - **The True Proof Evidence:** `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136/artifact_audit/artifact_audit_report.md`
-- **The Next Milestone Bounding:** `docs/nrc_adams/phase_8_contract.md` (Provisional bridge reconciliation/validation above accepted Phase 7A outputs) **with the acceptance condition being successful APS table materialization; Evidence Bundle remains a downstream consumer**
+- **Phase 8 (Closed):** `docs/nrc_adams/phase_8_contract.md`. Phase 8 APS table materialization is complete; all invariants satisfied in closure-run-005 (41 targets, 41 linkages, 40 distinct content IDs, 40 documents). The next work surface is above the frozen analytical ceiling.

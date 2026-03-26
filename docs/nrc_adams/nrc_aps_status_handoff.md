@@ -1,7 +1,7 @@
 # NRC ADAMS APS Status Handoff
 
 ## 1. Purpose and truth model
-This document is the canonical live-repo status surface for the NRC ADAMS APS stack as of March 14, 2026.
+This document is the canonical live-repo status surface for the NRC ADAMS APS stack. Last updated March 25, 2026 to reflect defect-driven hardening commits (`2f597f9`, `90c0c58`) landed after the March 14, 2026 baseline.
 
 Repo truth precedence used here:
 1. live code, tests, scripts, migrations, and repo-contained proof artifacts
@@ -20,12 +20,12 @@ Status wording used below:
 | --- | --- | --- |
 | Upper analytical ceiling | Still closed/frozen through Deterministic Challenge Artifact v1 | current live contract/service/gate/tests/report surfaces for citation pack, evidence report/export/package, context packet, context dossier, deterministic insight, deterministic challenge |
 | Lower document-processing layer | Reopened additively for deterministic media detection, real PDF extraction, OCR fallback hooks, quality gating, and content-units v2 | `backend/app/services/nrc_aps_media_detection.py`, `backend/app/services/nrc_aps_document_processing.py`, `backend/app/services/nrc_aps_ocr.py`, `backend/app/services/nrc_aps_artifact_ingestion.py`, `backend/app/services/nrc_aps_content_index.py`, `backend/alembic/versions/0009_aps_document_processing_metadata.py` |
-| Phase 8 APS bridge | **Closed** – All required APS‑table materialization invariants satisfied (41 targets, 41 linkages, 40 distinct content IDs, 40 documents) using run `closure-run-005`. | `backend/app/services/nrc_adams_index_builder.py` run with `closure-run-005` on `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136` |
+| Phase 8 APS bridge | **Closed** - All required APS-table materialization invariants satisfied (41 targets, 41 linkages, 40 distinct content IDs, 40 documents) using run `closure-run-005`. | `backend/app/services/nrc_adams_index_builder.py` run with `closure-run-005` on `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136` |
 
-/schema wiring for lower-layer controls | Present | `backend/app/schemas/api.py`, `backend/app/api/router.py` |
+| API/schema wiring for lower-layer controls | Present | `backend/app/schemas/api.py`, `backend/app/api/router.py` |
 | Lower-layer fixture corpus | Present and manifest-driven | `tests/fixtures/nrc_aps_docs/v1/manifest.json`, `tests/support_nrc_aps_doc_corpus.py`, `tests/test_nrc_aps_document_corpus.py`, plus live text/PDF/corrupt/truncated fixtures including `tests/fixtures/nrc_aps_docs/v1/ML17123A319.pdf` |
 | Fresh lower-layer proof runner | Present and current | `tools/run_nrc_aps_document_processing_proof.py`, `project6.ps1 -Action prove-nrc-aps-document-processing`, and `tests/reports/nrc_aps_document_processing_proof_report.json` |
-| Focused lower-layer verification | Green with OCR-enabled proof | fresh isolated proof rerun on March 13, 2026: `46 passed` across lower-layer media-detection/document-processing/corpus/content-index/OCR-adapter tests plus `3 passed` API proof tests for real extracted born-digital and OCR-backed content search/evidence-bundle persistence |
+| Focused lower-layer verification | Green (March 13 baseline; March 25 adds new coverage) | fresh isolated proof rerun on March 13, 2026: `46 passed` across lower-layer media-detection/document-processing/corpus/content-index/OCR-adapter tests plus `3 passed` API proof tests. March 25 hardening (`2f597f9`) added `backend/tests/test_diagnostics_ref_persistence.py` and expanded `backend/tests/test_nrc_aps_evidence_bundle_integration.py`; these test files are on disk but not yet reflected in a refreshed checked-in report. |
 | Fresh lower-layer gate proof | Green in isolated temp runtime | `validate-nrc-aps-artifact-ingestion` and `validate-nrc-aps-content-index` both reran PASS on March 13, 2026 against a fresh isolated SQLite/runtime proof set built from repaired hydrate-process, download-only, and OCR-backed lower-layer paths |
 | Upper-layer schema stability during lower-layer changes | Preserved | broader APS pytest rerun on March 13, 2026: `208 passed`; no upper `v1` schema ids were widened |
 | Phase 7A Advanced Validation | `accepted-state` | Rerun on March 14, 2026: 43/43 files processed with real advanced OCR (19) and advanced table (28) evidence |
@@ -33,7 +33,7 @@ Status wording used below:
 ### Current proof freshness and remaining gaps
 | Surface | Current state | Proof |
 | --- | --- | --- |
-| Fresh full aggregate NRC gate PASS after lower-layer expansion | Available and fresh | rerun on March 13, 2026 via `./project6.ps1 -Action gate-nrc-aps`: aggregate pytest slice `143 passed, 29 deselected`, post-validator dossier ambiguity negative slice `1 passed, 55 deselected`, and aggregate validate-only reports refreshed to PASS through Deterministic Challenge Artifact |
+| Fresh full aggregate NRC gate PASS after lower-layer expansion | Available; covers pre-March-25 state | rerun on March 13, 2026 via `./project6.ps1 -Action gate-nrc-aps`: aggregate pytest slice `143 passed, 29 deselected`, post-validator dossier ambiguity negative slice `1 passed, 55 deselected`, and aggregate validate-only reports refreshed to PASS through Deterministic Challenge Artifact. Note: March 25, 2026 hardening commits (`2f597f9`, `90c0c58`) changed diagnostics_ref resolution and visual artifact materialization behavior after this gate run. |
 | Existing APS validation reports under `tests/reports/` | Partially fresh | current in this pass: `nrc_aps_document_processing_proof_report.json`, `nrc_aps_artifact_ingestion_validation_report.json`, `nrc_aps_content_index_validation_report.json`, `nrc_aps_evidence_bundle_validation_report.json`, `nrc_aps_evidence_citation_pack_validation_report.json`, `nrc_aps_evidence_report_validation_report.json`, `nrc_aps_evidence_report_export_validation_report.json`, `nrc_aps_evidence_report_export_package_validation_report.json`, `nrc_aps_context_packet_validation_report.json`, `nrc_aps_context_dossier_validation_report.json`, `nrc_aps_deterministic_insight_artifact_validation_report.json`, and `nrc_aps_deterministic_challenge_artifact_validation_report.json`; other checked-in reports were not all rerun |
 | Fresh live batch and promotion validation | Not rerun in this pass | existing manifests/reports remain available under `backend/app/storage/connectors/reports/` and `tests/reports/` |
 
@@ -66,7 +66,8 @@ Status wording used below:
 - Chunks are now built from ordered document units with page/unit metadata rather than pure raw-character slicing.
 - DB metadata now includes media type, document class, quality status, page count, diagnostics refs, and chunk page spans/unit kinds.
 - `download_only` reprocessing now persists a diagnostics artifact as part of content-index derivation.
-- `diagnostics_ref` is authoritative at the run-target/linkage and content-artifact level; the deduplicated content-document row must not be treated as the authoritative diagnostics pointer across runs.
+- `diagnostics_ref` is authoritative at the run-target/linkage and content-artifact level; the deduplicated content-document row must not be treated as the authoritative diagnostics pointer across runs. Hardened March 25, 2026 (`2f597f9`): the upsert path now correctly persists `diagnostics_ref` from payload (prior code hardcoded `None`), and the serializer uses linkage-only authority via `_resolve_diagnostics_ref` with no document-level fallback.
+- Visual artifact materialization in the production hydrate pipeline was corrected March 25, 2026 (`90c0c58`): `connectors_nrc_adams.py` now passes `artifact_storage_dir` from settings into the extraction config, enabling visual page refs to be written to storage during the hydrate-process path.
 
 ### Corpus and proof
 - `tests/fixtures/nrc_aps_docs/v1/manifest.json` is now the executable corpus oracle rather than a descriptive inventory only.
@@ -152,11 +153,11 @@ Important correction:
 - Tesseract CLI availability is an external prerequisite for scanned/mixed PDF OCR success.
 - In a no-Tesseract environment, scanned PDFs fail closed with `ocr_required_but_unavailable`, and mixed PDFs may degrade to weak/native-only output.
 - The checked-in fixture corpus now proves manifest-driven parser routing, degradation semantics, downstream usefulness for representative born-digital content, and OCR-success usefulness for the scanned/mixed corpus fixtures in this workspace.
-- The current checked-in lower-layer proof basis in this workspace is:
+- The current checked-in lower-layer proof basis in this workspace (covers behavior through March 13, 2026) is:
   - `tests/reports/nrc_aps_document_processing_proof_report.json`
   - `tests/reports/nrc_aps_artifact_ingestion_validation_report.json`
   - `tests/reports/nrc_aps_content_index_validation_report.json`
-- The current checked-in fresh aggregate gate proof basis in this workspace is:
+- The current checked-in fresh aggregate gate proof basis in this workspace (covers behavior through March 13, 2026) is:
   - `tests/reports/nrc_aps_evidence_bundle_validation_report.json`
   - `tests/reports/nrc_aps_evidence_citation_pack_validation_report.json`
   - `tests/reports/nrc_aps_evidence_report_validation_report.json`
@@ -166,6 +167,7 @@ Important correction:
   - `tests/reports/nrc_aps_context_dossier_validation_report.json`
   - `tests/reports/nrc_aps_deterministic_insight_artifact_validation_report.json`
   - `tests/reports/nrc_aps_deterministic_challenge_artifact_validation_report.json`
+- March 25, 2026 hardening commits (`2f597f9`, `90c0c58`) changed diagnostics_ref resolution semantics and visual artifact materialization behavior. Proof of those changes lives in `backend/tests/test_diagnostics_ref_persistence.py` and the expanded `backend/tests/test_nrc_aps_evidence_bundle_integration.py`; checked-in report artifacts under `tests/reports/` have not been refreshed as of this reconciliation pass and do not yet cover the March 25 state. Run `.\project6.ps1 -Action validate-nrc-aps-content-index` and `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` to refresh those reports.
 - Other checked-in `tests/reports/*.json` artifacts should still be treated as historical snapshots unless explicitly regenerated in the current verification pass.
 - **Phase 7A Validation Package**: `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136`
 - **Phase 7A Artifact Audit**: `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136/artifact_audit`
@@ -175,6 +177,7 @@ The next safe continuation is:
 1. preserve the restored lower-layer baseline and current OCR-enabled proof basis
 2. continue above the frozen analytical ceiling with a single bounded slice
 3. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` whenever OCR/corpus behavior changes or when validating a new environment
+4. run `.\project6.ps1 -Action validate-nrc-aps-content-index` and `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` to refresh checked-in validation reports against the current post-March-25 diagnostics_ref and visual artifact behavior (the March 13 reports predate those changes)
 
 ## 9. Primary live authority surfaces for this workstream
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
@@ -198,18 +201,20 @@ The next safe continuation is:
 - `tests/test_nrc_aps_content_index.py`
 - `tests/test_nrc_aps_content_index_gate.py`
 - `tests/test_api.py`
+- `backend/tests/test_diagnostics_ref_persistence.py`
+- `backend/tests/test_nrc_aps_evidence_bundle_integration.py`
 - `tools/run_nrc_aps_document_processing_proof.py`
 - `tests/reports/nrc_aps_document_processing_proof_report.json`
 
-## 10. Frozen Next-Milestone Boundary
-- **Next Milestone**: Downstream bridge reconciliation and validation above accepted Phase 7A outputs into already-existing upper analytical layers.
-- **Acceptance Criterion**: Successful population of the APS content tables (`ApsContentDocument`, `ApsContentChunk`, `ApsContentLinkage`); Evidence Bundle execution remains a downstream consumer and is **not** required for this milestone.
-- **Authoritative Inputs**: 
+## 10. Closed Phase 8 Boundary
+- **Closed milestone**: Downstream bridge reconciliation and validation from accepted Phase 7A outputs into the APS content tables.
+- **Closure criterion satisfied**: Successful population of the APS content tables (`ApsContentDocument`, `ApsContentChunk`, `ApsContentLinkage`); Evidence Bundle execution remained a downstream consumer and was **not** required for closure.
+- **Authoritative inputs used for closure**:
   - Content Schema: `aps_content_units_v2` (extracted text units, table markdown units, quality metadata)
   - Validation Basis: `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136`
   - Audit Basis: `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136/artifact_audit`
 - **Immutable Facts**: OCR (19) and Table (28) counts are frozen as verified in the Artifact Audit.
-- **Do Not Reopen**: Ingestion routing logic and advanced capability adapters are considered stable/frozen for the next milestone.
+- **Do Not Reopen**: Ingestion routing logic and advanced capability adapters are considered stable/frozen for this closed bridge milestone.
 
 ## 11. Phase 7A Closeout Archive
 - **Closeout Package**: [handoff/phase_7a_closeout/](../../handoff/phase_7a_closeout/)

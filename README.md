@@ -1,6 +1,6 @@
 # Project6: Method-Aware Framework + Connector Stack
 
-> Status note (2026-03-14): Phase 7/7A (Advanced NRC APS Ingestion) is in an `accepted-state`. Phase 8 (Downstream Consumption) is in a PROVISIONAL state. The authoritative status and navigation surfaces live in:
+> Status note (2026-03-25): Phase 7/7A (Advanced NRC APS Ingestion) is in an `accepted-state`. Phase 8 (Downstream Consumption) is in a **CLOSED** state (all APS-table materialization invariants satisfied in closure-run-005). The authoritative status and navigation surfaces live in:
 > - [nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md) (Accepted 7A Truth)
 > - [nrc_aps_authority_matrix.md](docs/nrc_adams/nrc_aps_authority_matrix.md) (Repo-wide Authority Map)
 > - [nrc_aps_reader_path.md](docs/nrc_adams/nrc_aps_reader_path.md) (Navigational Guide)

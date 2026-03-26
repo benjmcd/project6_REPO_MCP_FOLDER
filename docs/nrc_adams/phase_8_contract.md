@@ -1,18 +1,20 @@
 # Phase 8 Data Handoff Contract: Extraction -> Insight (Closed)
 
 ## 1. Objective
-- **Next Milestone Ceiling:** APS content-table materialization (populating `aps_content_linkage`, `aps_content_document`, `aps_content_chunk`) from accepted Phase 7A outputs. Evidence Bundle execution is a downstream consumer and **not** required for this milestone.
+- **Closed milestone scope:** APS content-table materialization (populating `aps_content_linkage`, `aps_content_document`, `aps_content_chunk`) from accepted Phase 7A outputs. Evidence Bundle execution is a downstream consumer and **not** required for closure.
 
 This encompasses establishing a deterministic mapping between Phase 7A "Advanced Capability" JSON extraction artifacts (extracted text units, table markdown units, quality metadata) and the Phase 8 "Evidence Layer" database tables (`aps_content_linkage`, `aps_content_document`, `aps_content_chunk`).
 
---- 
-**Important Update – Phase 8 is now closed**  
-The bridge has been hardened into a thin adapter that faithfully re‑uses the canonical APS persistence helpers. All required APS‑table materialization invariants are satisfied (41 `ConnectorRunTarget` rows, 41 `ApsContentLinkage` rows, 40 distinct `content_id`s, 40 `ApsContentDocument` rows). Evidence Bundle remains downstream and is not part of the closure criterion.
+This contract is historical/closed. It records the completed bridge milestone; use `docs/nrc_adams/nrc_aps_status_handoff.md` for the current next continuation above the frozen analytical ceiling.
 
-**Duplicate Content Handling:** The bridge deduplicates identical content across files, resulting in a single `content_id` for duplicate artifacts while preserving distinct `ConnectorRunTarget` entries (41 targets, 40 unique content IDs). All invariants have been verified in closure‑run‑005.
+--- 
+**Important Update - Phase 8 is now closed**  
+The bridge has been hardened into a thin adapter that faithfully re-uses the canonical APS persistence helpers. All required APS-table materialization invariants are satisfied (41 `ConnectorRunTarget` rows, 41 `ApsContentLinkage` rows, 40 distinct `content_id`s, 40 `ApsContentDocument` rows). Evidence Bundle remains downstream and is not part of the closure criterion.
+
+**Duplicate Content Handling:** The bridge deduplicates identical content across files, resulting in a single `content_id` for duplicate artifacts while preserving distinct `ConnectorRunTarget` entries (41 targets, 40 unique content IDs). All invariants have been verified in `closure-run-005`.
 
 ## 2. Handoff Bridge (`index_builder.py`)
-The bridge will process Phase 7A result JSONs and populate the local database with the accepted Phase 7A outputs, creating APS content‑table rows intended for downstream consumers (including Evidence Bundle).
+The bridge processes Phase 7A result JSONs and populates the local database with the accepted Phase 7A outputs, creating APS content-table rows intended for downstream consumers (including Evidence Bundle).
 
 ### 2.1 Bootstrapping Strategy
 To maintain referential integrity in a developer-only/standalone environment, the bridge implements a **Synthetic Run Strategy**:
