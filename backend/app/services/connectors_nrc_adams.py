@@ -2491,11 +2491,12 @@ def _run_target_artifact_pipeline(
             "metrics": {"artifact_pipeline_mode": mode, "artifact_outcome_status": "failed"},
         }
 
+    extraction_config = {**config, "artifact_storage_dir": settings.artifact_storage_dir}
     try:
         extraction = nrc_aps_artifact_ingestion.extract_and_normalize(
             content=download_result.content,
             content_type=str(download_result.content_type or ""),
-            config=config,
+            config=extraction_config,
         )
     except ValueError as exc:
         payload = nrc_aps_artifact_ingestion.build_target_artifact_payload(
