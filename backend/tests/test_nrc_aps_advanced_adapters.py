@@ -25,7 +25,8 @@ import fitz
 
 class TestAdvancedAdapters(unittest.TestCase):
 
-    def test_table_adapter_multiple_tables(self):
+    @patch('app.services.nrc_aps_advanced_table_parser.camelot')
+    def test_table_adapter_multiple_tables(self, patched_camelot):
         """Verify multiple tables per page, single-pass Camelot, and hull-based geometry."""
         # Setup fitz mock for page height
         with patch('fitz.open') as mock_fitz_open:
@@ -39,37 +40,36 @@ class TestAdvancedAdapters(unittest.TestCase):
             # Mock two Camelot tables
             mock_tab1 = MagicMock()
             mock_tab2 = MagicMock()
-            
+
             # Setup cells for tab1: (10, 10, 50, 50) bottom-left
             c1 = MagicMock(); c1.x1, c1.y1, c1.x2, c1.y2 = 10, 10, 50, 50
             mock_tab1.cells = [[c1]]
             mock_tab1.df = MagicMock()
             mock_tab1.df.iterrows.return_value = []
-            
+
             # Setup cells for tab2: (60, 60, 100, 100) bottom-left
             c2 = MagicMock(); c2.x1, c2.y1, c2.x2, c2.y2 = 60, 60, 100, 100
             mock_tab2.cells = [[c2]]
             mock_tab2.df = MagicMock()
             mock_tab2.df.iterrows.return_value = []
-            
+
             # GOAL 3: Ensure _bbox is NOT accessed
             type(mock_tab1)._bbox = PropertyMock(side_effect=AttributeError("Should not access _bbox"))
             type(mock_tab2)._bbox = PropertyMock(side_effect=AttributeError("Should not access _bbox"))
 
             # GOAL 2: camelot.read_pdf returned 2 tables
-            mock_camelot.read_pdf.return_value = [mock_tab1, mock_tab2]
-            mock_camelot.read_pdf.reset_mock()
-            
+            patched_camelot.read_pdf.return_value = [mock_tab1, mock_tab2]
+
             result = nrc_aps_advanced_table_parser.extract_advanced_table(
-                pdf_source=b"%PDF-bytes", 
+                pdf_source=b"%PDF-bytes",
                 page_index_0=0
             )
-            
+
             # Assertions
             self.assertEqual(len(result['tables']), 2)
             self.assertEqual(len(result['exclusion_bboxes']), 2)
-            self.assertEqual(mock_camelot.read_pdf.call_count, 1) # SINGLE CALL
-            
+            self.assertEqual(patched_camelot.read_pdf.call_count, 1)  # SINGLE CALL
+
             # Assert bboxes (Top-left mapping: y_top = height - c_y_top)
             self.assertEqual(result['exclusion_bboxes'][0], [10.0, 950.0, 50.0, 990.0])
             self.assertEqual(result['exclusion_bboxes'][1], [60.0, 900.0, 100.0, 940.0])
