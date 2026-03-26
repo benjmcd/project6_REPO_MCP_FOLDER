@@ -1073,3 +1073,82 @@ class NrcApsDeterministicChallengeArtifactOut(BaseModel):
     disposition_counts: dict[str, int] = Field(default_factory=dict)
     challenges: list[NrcApsDeterministicChallengeArtifactChallengeOut] = Field(default_factory=list)
     persisted: bool = False
+
+
+class NrcApsDeterministicChallengeReviewPacketCreateIn(BaseModel):
+    deterministic_challenge_artifact_id: str | None = None
+    deterministic_challenge_artifact_ref: str | None = None
+    persist_review_packet: bool = False
+
+
+class NrcApsDeterministicChallengeReviewPacketSourceInsightOut(BaseModel):
+    schema_id: str
+    schema_version: int
+    deterministic_insight_artifact_id: str
+    deterministic_insight_artifact_checksum: str
+    deterministic_insight_artifact_ref: str | None = None
+    ruleset_contract_id: str
+    ruleset_id: str
+    ruleset_version: int
+    insight_mode: str
+    owner_run_id: str
+    source_context_dossier_id: str
+    source_context_dossier_checksum: str
+    source_context_dossier_ref: str | None = None
+    total_findings: int
+    finding_counts: dict[str, int] = Field(default_factory=dict)
+
+
+class NrcApsDeterministicChallengeReviewPacketSourceChallengeOut(BaseModel):
+    schema_id: str
+    schema_version: int
+    deterministic_challenge_artifact_id: str
+    deterministic_challenge_artifact_checksum: str
+    deterministic_challenge_artifact_ref: str | None = None
+    ruleset_contract_id: str
+    ruleset_id: str
+    ruleset_version: int
+    challenge_mode: str
+    total_challenges: int
+    challenge_counts: dict[str, int] = Field(default_factory=dict)
+    disposition_counts: dict[str, int] = Field(default_factory=dict)
+    source_deterministic_insight_artifact: NrcApsDeterministicChallengeReviewPacketSourceInsightOut
+
+
+class NrcApsDeterministicChallengeReviewPacketEvidencePointerOut(BaseModel):
+    pointer: str
+    source_finding_id: str | None = None
+    source_rule_id: str | None = None
+
+
+class NrcApsDeterministicChallengeReviewPacketChallengeRowOut(BaseModel):
+    challenge_id: str
+    check_id: str
+    check_version: int
+    category: str
+    severity: str
+    disposition: str
+    matched_finding_count: int
+    source_finding_ids: list[str] = Field(default_factory=list)
+    message: str
+    evidence_pointers: list[NrcApsDeterministicChallengeReviewPacketEvidencePointerOut] = Field(default_factory=list)
+
+
+class NrcApsDeterministicChallengeReviewPacketOut(BaseModel):
+    generated_at_utc: str
+    schema_id: str
+    schema_version: int
+    deterministic_challenge_review_packet_id: str
+    deterministic_challenge_review_packet_checksum: str
+    deterministic_challenge_review_packet_ref: str | None = None
+    projection_contract_id: str
+    projection_mode: str
+    source_deterministic_challenge_artifact: NrcApsDeterministicChallengeReviewPacketSourceChallengeOut
+    total_challenges: int
+    blocker_count: int
+    review_item_count: int
+    acknowledgement_count: int
+    blockers: list[NrcApsDeterministicChallengeReviewPacketChallengeRowOut] = Field(default_factory=list)
+    review_items: list[NrcApsDeterministicChallengeReviewPacketChallengeRowOut] = Field(default_factory=list)
+    acknowledgements: list[NrcApsDeterministicChallengeReviewPacketChallengeRowOut] = Field(default_factory=list)
+    persisted: bool = False

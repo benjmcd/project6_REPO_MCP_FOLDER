@@ -2958,6 +2958,7 @@ def _connector_report_refs_for_run(run: ConnectorRun) -> dict[str, Any]:
         **dict((run.query_plan_json or {}).get("aps_context_dossier_report_refs") or {}),
         **dict((run.query_plan_json or {}).get("aps_deterministic_insight_artifact_report_refs") or {}),
         **dict((run.query_plan_json or {}).get("aps_deterministic_challenge_artifact_report_refs") or {}),
+        **dict((run.query_plan_json or {}).get("aps_deterministic_challenge_review_packet_report_refs") or {}),
         "run_summary": run.report_ref or build_report_refs(run.connector_run_id)["run_summary"],
     }
 

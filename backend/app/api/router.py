@@ -34,6 +34,8 @@ from app.schemas.api import (
     NrcApsContextDossierOut,
     NrcApsDeterministicChallengeArtifactCreateIn,
     NrcApsDeterministicChallengeArtifactOut,
+    NrcApsDeterministicChallengeReviewPacketCreateIn,
+    NrcApsDeterministicChallengeReviewPacketOut,
     NrcApsDeterministicInsightArtifactCreateIn,
     NrcApsDeterministicInsightArtifactOut,
     NrcApsEvidenceReportExportPackageCreateIn,
@@ -72,6 +74,7 @@ from app.services import nrc_aps_content_index
 from app.services import nrc_aps_context_dossier
 from app.services import nrc_aps_context_packet
 from app.services import nrc_aps_deterministic_challenge_artifact
+from app.services import nrc_aps_deterministic_challenge_review_packet
 from app.services import nrc_aps_deterministic_insight_artifact
 from app.services import nrc_aps_evidence_citation_pack
 from app.services import nrc_aps_evidence_report_export_package
@@ -781,6 +784,46 @@ def get_nrc_adams_deterministic_challenge_artifact(
             detail={"code": str(exc.code), "message": str(exc.message)},
         ) from exc
     return NrcApsDeterministicChallengeArtifactOut.model_validate(result)
+
+
+@api_router.post(
+    "/connectors/nrc-adams-aps/deterministic-challenge-review-packets",
+    response_model=NrcApsDeterministicChallengeReviewPacketOut,
+)
+def assemble_nrc_adams_deterministic_challenge_review_packet(
+    payload: NrcApsDeterministicChallengeReviewPacketCreateIn,
+    db: Session = Depends(get_db),
+) -> NrcApsDeterministicChallengeReviewPacketOut:
+    try:
+        result = nrc_aps_deterministic_challenge_review_packet.assemble_deterministic_challenge_review_packet(
+            db,
+            request_payload=payload.model_dump(),
+        )
+    except nrc_aps_deterministic_challenge_review_packet.DeterministicChallengeReviewPacketError as exc:
+        raise HTTPException(
+            status_code=int(exc.status_code),
+            detail={"code": str(exc.code), "message": str(exc.message)},
+        ) from exc
+    return NrcApsDeterministicChallengeReviewPacketOut.model_validate(result)
+
+
+@api_router.get(
+    "/connectors/nrc-adams-aps/deterministic-challenge-review-packets/{deterministic_challenge_review_packet_id}",
+    response_model=NrcApsDeterministicChallengeReviewPacketOut,
+)
+def get_nrc_adams_deterministic_challenge_review_packet(
+    deterministic_challenge_review_packet_id: str,
+) -> NrcApsDeterministicChallengeReviewPacketOut:
+    try:
+        result = nrc_aps_deterministic_challenge_review_packet.get_persisted_deterministic_challenge_review_packet(
+            deterministic_challenge_review_packet_id=str(deterministic_challenge_review_packet_id or "").strip(),
+        )
+    except nrc_aps_deterministic_challenge_review_packet.DeterministicChallengeReviewPacketError as exc:
+        raise HTTPException(
+            status_code=int(exc.status_code),
+            detail={"code": str(exc.code), "message": str(exc.message)},
+        ) from exc
+    return NrcApsDeterministicChallengeReviewPacketOut.model_validate(result)
 
 
 @api_router.post("/connectors/runs/{connector_run_id}/resume", status_code=status.HTTP_202_ACCEPTED, response_model=ConnectorRunOut)

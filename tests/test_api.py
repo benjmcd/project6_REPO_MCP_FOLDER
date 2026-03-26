@@ -4291,6 +4291,134 @@ def test_nrc_deterministic_challenge_artifact_routes_return_errors(monkeypatch):
     assert ambiguous.status_code == 409, ambiguous.text
     assert ambiguous.json()["detail"]["code"] == challenge_contract.APS_RUNTIME_FAILURE_SOURCE_INSIGHT_ARTIFACT_CONFLICT
 
+
+def test_nrc_deterministic_challenge_review_packet_routes_return_errors(monkeypatch):
+    from app.services import nrc_aps_deterministic_challenge_review_packet
+    from app.services import nrc_aps_deterministic_challenge_review_packet_contract as rp_contract
+    from app.services import nrc_aps_deterministic_challenge_artifact
+
+    invalid_request = client.post(
+        "/api/v1/connectors/nrc-adams-aps/deterministic-challenge-review-packets",
+        json={
+            "deterministic_challenge_artifact_id": "id-1",
+            "deterministic_challenge_artifact_ref": "C:/tmp/challenge.json",
+            "persist_review_packet": False,
+        },
+    )
+    assert invalid_request.status_code == 422, invalid_request.text
+    assert invalid_request.json()["detail"]["code"] == "invalid_request"
+
+    missing_source = client.post(
+        "/api/v1/connectors/nrc-adams-aps/deterministic-challenge-review-packets",
+        json={
+            "deterministic_challenge_artifact_id": "missing-challenge",
+            "persist_review_packet": False,
+        },
+    )
+    assert missing_source.status_code == 404, missing_source.text
+    assert missing_source.json()["detail"]["code"] == "source_challenge_artifact_not_found"
+
+    def _raise_conflict(**kwargs):
+        raise nrc_aps_deterministic_challenge_artifact.DeterministicChallengeArtifactError(
+            rp_contract.APS_RUNTIME_FAILURE_SOURCE_CHALLENGE_ARTIFACT_CONFLICT,
+            "ambiguous across runs",
+            status_code=409,
+        )
+
+    monkeypatch.setattr(
+        nrc_aps_deterministic_challenge_review_packet.nrc_aps_deterministic_challenge_artifact,
+        "load_persisted_deterministic_challenge_artifact",
+        _raise_conflict,
+    )
+    ambiguous = client.post(
+        "/api/v1/connectors/nrc-adams-aps/deterministic-challenge-review-packets",
+        json={
+            "deterministic_challenge_artifact_id": "ambiguous-challenge",
+            "persist_review_packet": False,
+        },
+    )
+    assert ambiguous.status_code == 409, ambiguous.text
+    assert ambiguous.json()["detail"]["code"] == rp_contract.APS_RUNTIME_FAILURE_SOURCE_CHALLENGE_ARTIFACT_CONFLICT
+
+
+def test_nrc_deterministic_challenge_review_packet_persist_and_report_refs(monkeypatch):
+    from app.models import ConnectorRun
+    from app.services import nrc_aps_deterministic_insight_artifact
+    from app.services import nrc_aps_deterministic_challenge_artifact as challenge_svc
+    from app.services import nrc_aps_deterministic_challenge_review_packet as rp_svc
+    from app.services import nrc_aps_context_dossier
+    from app.services import nrc_aps_context_packet
+    from app.services import nrc_aps_evidence_report_export_package
+    from app.services import nrc_aps_evidence_report_export
+    from app.services import nrc_aps_evidence_report
+    from app.services import nrc_aps_evidence_citation_pack
+    from app.services import nrc_aps_evidence_bundle
+
+    reports_dir = Path(os.environ.get("STORAGE_DIR") or str(BACKEND / "app" / "storage_test_runtime")) / "connectors" / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+
+    db = TestingSessionLocal()
+    try:
+        run_id = "run-review-packet-api-e2e"
+        from test_nrc_aps_deterministic_insight_artifact import _persisted_context_dossier, _seed_report_index_rows
+        _seed_report_index_rows(db, reports_dir=reports_dir, run_id=run_id)
+        seeded = _persisted_context_dossier(db, run_id=run_id)
+
+        insight_result = client.post(
+            "/api/v1/connectors/nrc-adams-aps/deterministic-insight-artifacts",
+            json={
+                "context_dossier_ref": seeded["dossier"]["context_dossier_ref"],
+                "persist_insight_artifact": True,
+            },
+        )
+        assert insight_result.status_code == 200, insight_result.text
+        insight_data = insight_result.json()
+
+        challenge_result = client.post(
+            "/api/v1/connectors/nrc-adams-aps/deterministic-challenge-artifacts",
+            json={
+                "deterministic_insight_artifact_ref": insight_data["deterministic_insight_artifact_ref"],
+                "persist_challenge_artifact": True,
+            },
+        )
+        assert challenge_result.status_code == 200, challenge_result.text
+        challenge_data = challenge_result.json()
+
+        review_packet_result = client.post(
+            "/api/v1/connectors/nrc-adams-aps/deterministic-challenge-review-packets",
+            json={
+                "deterministic_challenge_artifact_ref": challenge_data["deterministic_challenge_artifact_ref"],
+                "persist_review_packet": True,
+            },
+        )
+        assert review_packet_result.status_code == 200, review_packet_result.text
+        rp_data = review_packet_result.json()
+        assert rp_data["persisted"] is True
+        assert rp_data["deterministic_challenge_review_packet_ref"] is not None
+        assert rp_data["total_challenges"] == rp_data["blocker_count"] + rp_data["review_item_count"] + rp_data["acknowledgement_count"]
+
+        get_result = client.get(
+            f"/api/v1/connectors/nrc-adams-aps/deterministic-challenge-review-packets/{rp_data['deterministic_challenge_review_packet_id']}",
+        )
+        assert get_result.status_code == 200, get_result.text
+        get_data = get_result.json()
+        assert get_data["deterministic_challenge_review_packet_id"] == rp_data["deterministic_challenge_review_packet_id"]
+        assert get_data["persisted"] is True
+
+        db.expire_all()
+        run = db.get(ConnectorRun, run_id)
+        report_refs = dict((run.query_plan_json or {}).get("aps_deterministic_challenge_review_packet_report_refs") or {})
+        assert rp_data["deterministic_challenge_review_packet_ref"] in (report_refs.get("aps_deterministic_challenge_review_packets") or [])
+
+        run_detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+        if run_detail.status_code == 200:
+            detail_data = run_detail.json()
+            rr = detail_data.get("report_refs") or {}
+            assert "aps_deterministic_challenge_review_packets" in rr or rp_data["deterministic_challenge_review_packet_ref"] in str(rr)
+    finally:
+        db.close()
+
+
 def test_nrc_content_index_not_available_zero_chunk_artifact(monkeypatch):
     from app.services import connectors_nrc_adams as nrc
 
@@ -4956,4 +5084,3 @@ def test_senate_lda_connector_resume_uses_senate_executor(monkeypatch):
     assert targets.status_code == 200, targets.text
     assert {row["status"] for row in targets.json()["targets"]} == {"recommended"}
     assert len(fake.list_calls) == 1
-
