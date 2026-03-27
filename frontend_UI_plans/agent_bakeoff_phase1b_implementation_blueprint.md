@@ -18,6 +18,7 @@ Responsibilities:
 - keep existing public APS endpoints unchanged
 - reuse current schema contracts
 - fail closed when retrieval rows are absent for a non-empty required scope
+- return HTTP `409` with explicit retrieval-not-materialized detail on required empty retrieval scope
 
 Do not add a new standalone router file for this round.
 
@@ -113,3 +114,14 @@ Do not silently execute the canonical join path and pretend the retrieval plane 
 This slice is about read-path comparison, not contract redesign.
 
 Reuse the current request/response shapes and keep any operator distinction in the route path only.
+
+### 4.4 No Auth-System Detour
+
+`Operator-only` in this packet is route classification only.
+
+Do not spend this slice on:
+
+- auth
+- permissions
+- role gating
+- session-state changes

@@ -23,6 +23,7 @@ Each submission must explicitly state:
 - whether existing public APS routes remained unchanged
 - whether schema reuse succeeded without modifying `backend\app\schemas\api.py`
 - how empty retrieval scope fails closed
+- whether the empty retrieval scope route returns the frozen HTTP `409`
 - how retrieval search ordering matches current canonical behavior
 
 ## Required owned-output locations

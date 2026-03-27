@@ -49,11 +49,13 @@ Hard constraints:
 - additive only
 - canonical APS evidence truth remains canonical
 - operator-only retrieval routes only; existing public routes must remain unchanged
+- `operator-only` means route classification only; do not introduce auth, permissions, or session-model work
 - no default read-path cutover
 - no review-UI changes
 - no schema widening unless a repo-confirmed blocker proves reuse impossible
 - no embeddings or vector work
 - retrieval empty scope must fail closed
+- no model or Alembic migration changes unless a repo-confirmed blocker proves they are required
 - never delete/remove files; if removal is unavoidable, move to an archive location instead
 - distinguish repo-confirmed facts from assumptions explicitly
 - call out likely tech-debt risks instead of silently accepting them
@@ -107,10 +109,12 @@ Preserve these constraints:
 
 - existing public content-search and content-units routes must remain unchanged
 - reuse existing request and response schemas if at all possible
+- `operator-only` means route classification only; do not introduce auth, permissions, or session-model work
 - no review-UI changes
 - no default cutover
 - no embeddings or vector work
 - no hidden fallback from retrieval route to canonical route
+- no model or Alembic migration changes unless a repo-confirmed blocker proves they are required
 - never delete/remove files; if removal is unavoidable, move to an archive location instead
 
 Required endpoint routes:
@@ -123,6 +127,8 @@ Required behavioral rules:
 - list order must match the frozen Phase1B ordering rules
 - search token and sort semantics must match the frozen Phase1B ordering rules
 - retrieval empty scope must fail closed
+- retrieval empty scope must return HTTP 409 with explicit retrieval-not-materialized detail
+- use isolated in-memory or temp-database state for tests; do not rely on shared checked-in runtime state
 - if the task framing drifts back to Phase1A or review UI work, stop and report wrong-context drift
 
 At the end, provide a submission that includes:
