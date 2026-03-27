@@ -107,6 +107,8 @@ There are now two distinct bake-off packets in this folder:
 
 Use the Phase1A packet for the next milestone. Do not reuse the Slice 01 prompts for the retrieval-plane round.
 
+For both Jules and Antigravity, start a brand-new session/task for each new milestone round. Do not reuse an older Slice 01 thread and try to steer it onto Phase1A.
+
 ## Carry-Forward QA Guardrails
 
 The current review UI baseline has already been live-validated. Those learnings must be carried forward when planning later milestones:

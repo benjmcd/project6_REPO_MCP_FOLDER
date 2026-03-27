@@ -6,6 +6,8 @@ Implement a bounded first slice of the APS Tier1 retrieval-plane Phase1 plan.
 
 This is a backend-first additive slice. It is not a UI redesign, not a public read-path cutover, and not a semantic retrieval buildout.
 
+The existing NRC APS review UI Slice 01 and Slice 02 work is baseline context only. It is not the task to be re-executed, re-documented, or re-packaged during this round.
+
 ## 2. Canonical Source Of Truth
 
 Treat the following as the authority for this bake-off round:
@@ -88,6 +90,7 @@ Do not add in this round:
 - make rebuild scope explicit
 - make source-signature derivation explicit
 - surface missing or invalid canonical prerequisites as validation failures, not silent fallbacks
+- if the agent notices itself drifting back to `Slice 01`, `review UI`, or old deliverable-generation work, it must stop and explicitly call out wrong-session context instead of improvising within the wrong milestone
 
 ## 7. Expected Deliverable Type
 

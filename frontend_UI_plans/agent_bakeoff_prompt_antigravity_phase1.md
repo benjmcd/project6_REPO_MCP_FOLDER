@@ -7,9 +7,12 @@ Use this file when running the APS Tier1 retrieval-plane Phase1A bake-off in Ant
 Recommended flow:
 
 1. use the prepared Antigravity lane defined in `agent_bakeoff_local_setup_phase1.md`
-2. run the Round 0 dry-run prompt first
-3. review the resulting plan for scope drift
-4. if acceptable, run the Round 1 implementation prompt
+2. start a brand-new Antigravity task for this milestone
+3. verify the very first agent summary explicitly names `APS Tier1 retrieval-plane Phase1A`
+4. if the agent mentions `Slice 01`, `review UI deliverables`, or another older milestone, stop and restart with a fresh task
+5. run the Round 0 dry-run prompt first
+6. review the resulting plan for scope drift
+7. if acceptable, run the Round 1 implementation prompt
 
 ## 2. Round 0 Dry-Run Prompt
 
@@ -41,8 +44,15 @@ Important:
 
 - actual code edits belong in the editable repo lane
 - the owned output directory is the canonical drop zone for your notes, logs, screenshots, and exported patch artifacts
+- this is a brand-new milestone task; do not reinterpret older Slice 01 review-UI work as the objective for this round
 
 This round is DRY RUN ONLY. Do not implement code yet.
+
+Context sanity gate:
+
+- this round is `APS Tier1 retrieval-plane Phase1A`
+- the accepted review UI baseline is prior context only
+- if you find yourself summarizing `Slice 01`, `review UI deliverables`, or prior bake-off packaging work as the task, stop immediately and report wrong-context drift instead of continuing
 
 Read and use the following planning docs as the authority for scope and implementation shape:
 
@@ -154,6 +164,7 @@ Important implementation requirements:
 - keep the retrieval plane clearly derived, never canonical
 - do not make Postgres-specific indexing/ranking the center of this round
 - if shared code paths are touched, preserve the validated review UI baseline
+- if the task framing drifts back to `Slice 01` or prior review-UI deliverables, stop and report wrong-context drift instead of continuing
 
 At the end, provide a submission that includes:
 

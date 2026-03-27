@@ -86,6 +86,24 @@ If true isolated code-edit worktrees are created later, these owned folders shou
 
 ## 5. Recommended Bake-Off Order
 
+### 5.0 Session Hygiene
+
+Each new milestone round must start in a brand-new agent session/thread.
+
+Do not:
+
+- reuse an older Slice 01 thread for a Phase1A retrieval-plane round
+- continue an earlier dry-run or implementation chat that already discussed a different milestone
+- assume the agent will reliably discard stale task memory on its own
+
+Do:
+
+- start a new Jules session for each new milestone round
+- start a new Antigravity task for each new milestone round
+- verify that the first agent summary names the correct milestone before accepting any plan
+
+Treat any agent response that shifts back to `Slice 01`, `review UI deliverables`, or another prior milestone as a wrong-context failure. Stop and restart with a fresh session instead of trying to steer the same stale thread back onto scope.
+
 ### 5.1 Round 0: Prompt Dry Run
 
 Give each tool the packet without asking for code yet.

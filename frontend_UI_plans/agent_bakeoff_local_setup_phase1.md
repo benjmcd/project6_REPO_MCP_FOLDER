@@ -11,15 +11,15 @@ It supersedes the older Slice 01 lane names for this milestone.
 Use this source state for the Phase1A bake-off:
 
 - primary committed baseline:
-  - `4197988`
-  - `Add phase1 retrieval bake-off packet`
+  - `7b67f58`
+  - `Embed repo guardrails directly in phase1 packet`
 - committed milestone-plan context:
   - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\next_milestone_plans\2026-03-27_aps_tier1_retrieval_plane_phase1.md`
 
 Important:
 
 - the milestone-plan file is now part of the committed Phase1A packet
-- the Phase1A lanes should reflect commit `4197988` or an equivalent synced copy of its packet contents
+- the Phase1A lanes should reflect commit `7b67f58` or an equivalent synced copy of its packet contents
 
 ## 3. Exact Lane Mapping
 
@@ -86,3 +86,10 @@ Do not reuse:
 - the older Slice 01 prompts
 
 Those lanes remain historical references only.
+
+Also do not reuse:
+
+- an older Jules chat/session that previously worked on Slice 01 review UI deliverables
+- an older Antigravity task that previously targeted a different milestone
+
+Each Phase1A run must begin in a fresh session/task whose first summary explicitly names `APS Tier1 retrieval-plane Phase1A`.
