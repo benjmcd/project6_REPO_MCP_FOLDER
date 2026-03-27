@@ -52,6 +52,11 @@ const API = {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return await res.json();
     },
+    async fetchFilePreview(runId, treeId) {
+        const res = await fetch(`/api/v1/review/nrc-aps/runs/${runId}/files/${encodeURIComponent(treeId)}/preview`);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return await res.json();
+    },
 };
 
 let panZoomInstance = null;
@@ -241,6 +246,15 @@ function formatValue(value) {
     return String(value);
 }
 
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function renderDetails(data, type) {
     let html = '';
 
@@ -282,6 +296,10 @@ function renderDetails(data, type) {
             html += `<dt>Mapped Nodes</dt><dd>${data.mapped_node_ids.join(', ')}</dd>`;
         }
 
+        if (data.preview_available) {
+            html += `<dt>Preview</dt><dd><div id="file-preview-container" class="preview-container loading">Loading ${data.preview_kind} preview...</div></dd>`;
+        }
+
         if (data.structured_summary && Object.keys(data.structured_summary).length > 0) {
             html += '<dt>Metadata Summary</dt><dd><ul>';
             Object.entries(data.structured_summary).forEach(([key, value]) => {
@@ -296,6 +314,29 @@ function renderDetails(data, type) {
     openDrawer();
 }
 
+function renderFilePreview(preview) {
+    const container = document.getElementById('file-preview-container');
+    if (!container) {
+        return;
+    }
+    const truncatedNote = preview.truncated ? `<div class="preview-note">Preview truncated to ${preview.max_chars} characters.</div>` : '';
+    container.classList.remove('loading');
+    container.innerHTML = `
+        <div class="preview-meta">${preview.preview_kind.toUpperCase()} preview</div>
+        ${truncatedNote}
+        <pre class="preview-block"><code class="language-${preview.language}">${escapeHtml(preview.content)}</code></pre>
+    `;
+}
+
+function renderPreviewError(message) {
+    const container = document.getElementById('file-preview-container');
+    if (!container) {
+        return;
+    }
+    container.classList.remove('loading');
+    container.innerHTML = `<div class="warning">${escapeHtml(message)}</div>`;
+}
+
 async function loadDetails(type, id) {
     try {
         elements.detailsContent.innerHTML = '<p>Loading details...</p>';
@@ -307,6 +348,14 @@ async function loadDetails(type, id) {
         } else if (type === 'file') {
             const data = await API.fetchFileDetails(State.selectedRunId, id);
             renderDetails(data, 'file');
+            if (data.preview_available) {
+                try {
+                    const preview = await API.fetchFilePreview(State.selectedRunId, id);
+                    renderFilePreview(preview);
+                } catch (previewError) {
+                    renderPreviewError(`Preview unavailable: ${previewError.message}`);
+                }
+            }
         }
     } catch (error) {
         elements.detailsContent.innerHTML = `<p class="warning">Error loading details: ${error.message}</p>`;

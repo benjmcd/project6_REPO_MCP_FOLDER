@@ -96,7 +96,21 @@ class NrcApsReviewFileDetailsOut(BaseModel):
     run_id: str
     size_bytes: int | None = None
     modified_time: str | None = None
+    preview_available: bool = False
+    preview_kind: str | None = None
     structured_summary: dict[str, Any] = Field(default_factory=dict)
+
+
+class NrcApsReviewFilePreviewOut(BaseModel):
+    tree_id: str
+    path: str
+    name: str
+    run_id: str
+    preview_kind: str
+    language: str
+    content: str
+    truncated: bool = False
+    max_chars: int
 
 
 class NrcApsReviewOverviewOut(BaseModel):

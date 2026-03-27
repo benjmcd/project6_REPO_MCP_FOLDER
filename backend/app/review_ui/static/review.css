@@ -57,6 +57,12 @@ body { display: flex; flex-direction: column; height: 100vh; background: var(--b
 .drawer-header { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid var(--border-color); }
 .drawer-content { padding: 15px; overflow-y: auto; flex: 1; }
 .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+.preview-container { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.preview-container.loading { color: var(--muted-text); }
+.preview-meta { font-size: 0.78rem; font-weight: 700; color: var(--muted-text); text-transform: uppercase; letter-spacing: 0.04em; }
+.preview-note { font-size: 0.82rem; color: var(--muted-text); }
+.preview-block { margin: 0; padding: 12px; max-height: 320px; overflow: auto; border: 1px solid var(--border-color); border-radius: 8px; background: #101828; color: #e5eefc; font-size: 0.84rem; line-height: 1.45; }
+.preview-block code { font-family: Consolas, "Courier New", monospace; white-space: pre-wrap; word-break: break-word; }
 
 .hidden { display: none !important; }
 
