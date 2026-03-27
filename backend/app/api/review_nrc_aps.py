@@ -11,13 +11,14 @@ from app.schemas.review_nrc_aps import (
     NrcApsReviewTreeOut,
     NrcApsReviewNodeDetailsOut,
     NrcApsReviewFileDetailsOut,
+    NrcApsReviewFilePreviewOut,
 )
 from app.services.review_nrc_aps_catalog import discover_candidate_runs
 from app.services.review_nrc_aps_graph import build_canonical_graph
 from app.services.review_nrc_aps_runtime import find_review_root_for_run, normalize_path
 from app.services.review_nrc_aps_overview import compose_overview
 from app.services.review_nrc_aps_tree import get_node_by_tree_id
-from app.services.review_nrc_aps_details import get_node_details, get_file_details
+from app.services.review_nrc_aps_details import get_node_details, get_file_details, get_file_preview
 
 router = APIRouter()
 
@@ -80,3 +81,29 @@ def get_file_details_route(run_id: str, tree_id: str):
         return get_file_details(run_id, root, tree_id, file_path)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.get("/runs/{run_id}/files/{tree_id}/preview", response_model=NrcApsReviewFilePreviewOut)
+def get_file_preview_route(run_id: str, tree_id: str):
+    """Return safe JSON/text preview content for a specific tree file."""
+    root = find_review_root_for_run(run_id)
+    if not root:
+        raise HTTPException(status_code=404, detail="Review root not found for run")
+
+    tree = compose_overview(run_id, root).tree
+    node = get_node_by_tree_id(tree.root, tree_id)
+    if not node:
+        raise HTTPException(status_code=404, detail="Tree id not found")
+
+    file_path = root / node.path
+    try:
+        normalize_path(root, node.path)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Path outside review root")
+
+    try:
+        return get_file_preview(run_id, root, tree_id, file_path)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=415, detail=str(exc))

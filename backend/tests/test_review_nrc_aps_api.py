@@ -81,3 +81,16 @@ def test_api_file_details():
     file_response = client.get(f"/api/v1/review/nrc-aps/runs/{run_id}/files/{summary_child['tree_id']}")
     assert file_response.status_code == 200
     assert file_response.json()["name"] == "local_corpus_e2e_summary.json"
+    assert file_response.json()["preview_available"] is True
+
+
+def test_api_file_preview():
+    run_id = "d6be0fff-bbd7-468a-9b00-7103d5995494"
+    tree_response = client.get(f"/api/v1/review/nrc-aps/runs/{run_id}/tree")
+    assert tree_response.status_code == 200
+    summary_child = next(item for item in tree_response.json()["root"]["children"] if item["name"] == "local_corpus_e2e_summary.json")
+    preview_response = client.get(f"/api/v1/review/nrc-aps/runs/{run_id}/files/{summary_child['tree_id']}/preview")
+    assert preview_response.status_code == 200
+    data = preview_response.json()
+    assert data["preview_kind"] == "json"
+    assert '"schema_id": "aps.local_corpus_e2e_summary.v1"' in data["content"]
