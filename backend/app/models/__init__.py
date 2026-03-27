@@ -1,4 +1,5 @@
 from app.models.models import (
+    ApsRetrievalChunk,
     ApsContentChunk,
     ApsContentDocument,
     ApsContentLinkage,
