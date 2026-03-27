@@ -1,6 +1,6 @@
-# NRC APS Review UI Planning Set
+# NRC APS Planning And Bake-Off Set
 
-This folder contains the planning/specification set for the proposed read-only NRC APS pipeline review UI.
+This folder contains the planning/specification set for the NRC APS review UI work and the later APS retrieval-plane bake-off rounds.
 
 ## Purpose
 

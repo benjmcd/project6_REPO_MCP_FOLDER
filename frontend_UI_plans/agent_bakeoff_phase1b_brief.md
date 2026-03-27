@@ -36,8 +36,8 @@ This round uses explicit operator-only endpoints, not a hidden feature flag on t
 
 Required endpoint shapes:
 
-- `GET /api/v1/connectors/runs/{connector_run_id}/_operator/retrieval-content-units`
-- `POST /api/v1/connectors/nrc-adams-aps/_operator/retrieval-content-search`
+- external HTTP route: `GET /api/v1/connectors/runs/{connector_run_id}/_operator/retrieval-content-units`
+- external HTTP route: `POST /api/v1/connectors/nrc-adams-aps/_operator/retrieval-content-search`
 
 Reason:
 
