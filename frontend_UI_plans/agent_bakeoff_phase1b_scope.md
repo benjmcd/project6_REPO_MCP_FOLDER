@@ -26,8 +26,8 @@ Add one retrieval-plane read service that can:
 
 Add exactly these operator-only endpoints:
 
-- `GET /connectors/runs/{connector_run_id}/_operator/retrieval-content-units`
-- `POST /connectors/nrc-adams-aps/_operator/retrieval-content-search`
+- external HTTP route: `GET /api/v1/connectors/runs/{connector_run_id}/_operator/retrieval-content-units`
+- external HTTP route: `POST /api/v1/connectors/nrc-adams-aps/_operator/retrieval-content-search`
 
 These endpoints must:
 

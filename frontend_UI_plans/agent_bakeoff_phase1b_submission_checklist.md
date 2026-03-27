@@ -19,7 +19,7 @@ Each submission must provide all of the following in its owned workspace folder.
 
 Each submission must explicitly state:
 
-- the exact operator-only routes implemented
+- the exact operator-only external HTTP routes implemented
 - whether existing public APS routes remained unchanged
 - whether schema reuse succeeded without modifying `backend\app\schemas\api.py`
 - how empty retrieval scope fails closed
