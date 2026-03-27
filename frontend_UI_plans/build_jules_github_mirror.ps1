@@ -103,17 +103,20 @@ else {
 $backendRoot = Join-Path $DestinationRoot "backend"
 $plansRoot = Join-Path $DestinationRoot "frontend_UI_plans"
 $docsRoot = Join-Path $DestinationRoot "docs\nrc_adams"
+$docsPostgresRoot = Join-Path $DestinationRoot "docs\postgres"
 $nextMilestoneRoot = Join-Path $DestinationRoot "next_milestone_plans"
 $julesWorkspaceRoot = Join-Path $plansRoot "agent_workspaces\jules"
 
 New-MirrorDirectory -Path $backendRoot
 New-MirrorDirectory -Path $plansRoot
 New-MirrorDirectory -Path $docsRoot
+New-MirrorDirectory -Path $docsPostgresRoot
 New-MirrorDirectory -Path $nextMilestoneRoot
 New-MirrorDirectory -Path $julesWorkspaceRoot
 
 # Core repo context
 Copy-MirrorFile -SourcePath (Join-Path $sourceRoot "README.md") -DestinationPath (Join-Path $DestinationRoot "README.md")
+Copy-MirrorFile -SourcePath (Join-Path $sourceRoot "project6.ps1") -DestinationPath (Join-Path $DestinationRoot "project6.ps1")
 
 # Backend code surface needed for Slice 01
 Copy-MirrorFile -SourcePath (Join-Path $sourceRoot "backend\main.py") -DestinationPath (Join-Path $DestinationRoot "backend\main.py")
@@ -172,6 +175,9 @@ foreach ($doc in $planningDocs) {
 }
 
 Copy-MirrorTree -SourcePath (Join-Path $sourceRoot "docs\nrc_adams") -DestinationPath $docsRoot
+if (Test-Path -LiteralPath (Join-Path $sourceRoot "docs\postgres")) {
+    Copy-MirrorTree -SourcePath (Join-Path $sourceRoot "docs\postgres") -DestinationPath $docsPostgresRoot
+}
 
 if (Test-Path -LiteralPath (Join-Path $sourceRoot "next_milestone_plans")) {
     Copy-MirrorTree `
@@ -225,6 +231,7 @@ It intentionally includes:
 
 - the backend code surface needed for the NRC APS review UI slice
 - the frozen planning/spec documents
+- selected root/docs authority files needed by the active milestone packet
 - the current `next_milestone_plans/` context when present in the source repo
 - the committed golden runtime fixture under `backend/app/storage_test_runtime/lc_e2e/20260327_062011`
 
