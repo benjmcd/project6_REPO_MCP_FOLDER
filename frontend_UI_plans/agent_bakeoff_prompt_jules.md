@@ -6,7 +6,7 @@ Use this file when running the controlled bake-off in Jules.
 
 Recommended flow:
 
-1. create an isolated Jules branch/worktree from the shared starting commit
+1. create the isolated Jules lane defined in `agent_bakeoff_local_setup.md`
 2. run the Round 0 dry-run prompt first
 3. review the plan output for scope drift
 4. if acceptable, run the Round 1 implementation prompt
@@ -23,6 +23,15 @@ C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER
 Focused workspace:
 
 C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans
+
+Your exact editable repo lane for this run is:
+
+C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-jules-slice01
+
+Your lane should be created from:
+
+- branch: codex/bakeoff-jules-slice01
+- starting point: the committed HEAD of codex/frontend-ui-bakeoff-setup
 
 Your owned bake-off output/work directory for this run is:
 
@@ -113,6 +122,15 @@ C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER
 Focused planning workspace:
 
 C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans
+
+Your exact editable repo lane for this run is:
+
+C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-jules-slice01
+
+Your lane should be based on:
+
+- branch: codex/bakeoff-jules-slice01
+- starting point: the committed HEAD of codex/frontend-ui-bakeoff-setup
 
 Your owned bake-off output/work directory for this run is:
 

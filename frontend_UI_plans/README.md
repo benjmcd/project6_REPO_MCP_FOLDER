@@ -54,6 +54,8 @@ Design references:
   - concrete example payloads derived from the verified golden run
 - `agent_bakeoff_execution_protocol.md`
   - controlled A/B process for running Jules and Antigravity separately against the same scope
+- `agent_bakeoff_local_setup.md`
+  - exact local branch/worktree setup, lane paths, and frozen starting commit for the bake-off
 - `agent_bakeoff_brief.md`
   - vendor-neutral implementation brief to hand to each agent
 - `agent_bakeoff_scope_slice_01.md`

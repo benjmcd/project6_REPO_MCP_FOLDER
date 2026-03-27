@@ -24,6 +24,15 @@ The owned bake-off directory is the canonical place for:
 
 Actual code edits for the implementation slice should still occur in the tool's isolated repo lane.
 
+Recommended exact editable lanes:
+
+- Jules:
+  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-jules-slice01`
+- Antigravity:
+  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-slice01`
+
+If rerun lanes are used instead, keep the same `jules`/`antigravity` owned output directories and only change the editable lane path.
+
 ### 2.1 Change Summary
 
 - concise implementation summary
