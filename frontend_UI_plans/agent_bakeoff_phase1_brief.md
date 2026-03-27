@@ -10,6 +10,7 @@ This is a backend-first additive slice. It is not a UI redesign, not a public re
 
 Treat the following as the authority for this bake-off round:
 
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\AGENTS.md`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\next_milestone_plans\2026-03-27_aps_tier1_retrieval_plane_phase1.md`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\docs\nrc_adams\nrc_aps_authority_matrix.md`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\docs\nrc_adams\nrc_aps_reader_path.md`
@@ -52,6 +53,7 @@ Implication for this round:
 
 You must preserve all of the following:
 
+- root repo guardrails from `AGENTS.md`
 - canonical APS evidence truth remains in `ApsContentDocument`, `ApsContentChunk`, and `ApsContentLinkage`
 - this slice is additive only
 - no default read-path cutover
@@ -60,6 +62,7 @@ You must preserve all of the following:
 - no schema widening above the retrieval layer
 - validate-only semantics remain validate-only and fail closed on empty runtime
 - no business artifact generation
+- Tier1 PostgreSQL scope must remain explicit; do not assume SQLite-shaped behavior is the design ceiling for this slice
 
 ## 5. Explicit Non-Goals
 
@@ -94,6 +97,12 @@ This is a code-and-tests deliverable for the bounded Phase1A slice defined in:
 Your output must satisfy:
 
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_phase1_submission_checklist.md`
+
+That includes explicit discussion of:
+
+- introduced tech debt
+- avoided tech debt
+- any temporary compromises that would complicate later cutover, validation, or hybrid retrieval work
 
 ## 9. Evaluation Standard
 

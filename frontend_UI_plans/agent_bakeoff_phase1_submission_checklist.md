@@ -40,7 +40,17 @@ Submission artifacts should be written into the tool's owned Phase1A output dire
 - deferred concerns
 - anything intentionally left for a later retrieval-plane slice
 
-### 2.6 Validation Evidence
+### 2.6 Tech Debt Accounting
+
+- explicit note of any new tech debt introduced
+- explicit note of any avoided tech debt the slice was designed to prevent
+- any shortcuts that could complicate:
+  - later lexical indexing work
+  - later read-path cutover decisions
+  - later hybrid/vector extension work
+  - future parity validation
+
+### 2.7 Validation Evidence
 
 - tests added
 - tests run
@@ -49,7 +59,7 @@ Submission artifacts should be written into the tool's owned Phase1A output dire
 - any tests not run and why
 - whether review UI regression tests were run
 
-### 2.7 Optional Evidence
+### 2.8 Optional Evidence
 
 When useful, include:
 
@@ -58,7 +68,7 @@ When useful, include:
 
 Do not inflate the slice with UI walkthroughs unless shared code unexpectedly required UI regression evidence.
 
-### 2.8 Scope-Conformance Statement
+### 2.9 Scope-Conformance Statement
 
 Explicitly confirm whether the submission:
 
@@ -68,6 +78,7 @@ Explicitly confirm whether the submission:
 - avoided public API/UI changes
 - avoided embeddings/vector work
 - preserved validate-only semantics
+- followed root repo guardrails from `AGENTS.md`
 
 ## 3. Required Comparison Questions
 
@@ -87,4 +98,5 @@ A submission is not comparison-ready unless it includes:
 - validation evidence
 - assumptions
 - risks
+- tech-debt accounting
 - scope-conformance statement

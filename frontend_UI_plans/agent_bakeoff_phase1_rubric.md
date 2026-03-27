@@ -26,7 +26,7 @@ Recommended weighting:
 | Derivation and source-signature correctness | 15 |
 | Validate-only parity handling | 10 |
 | Test quality | 10 |
-| Repo-fit simplicity | 10 |
+| Repo-fit simplicity and tech-debt control | 10 |
 | Regression discipline | 5 |
 
 ## 3. Category Definitions
@@ -80,7 +80,7 @@ Score whether tests are:
 - meaningful
 - aligned to the validation plan
 
-### 3.7 Repo-Fit Simplicity
+### 3.7 Repo-Fit Simplicity And Tech-Debt Control
 
 Score whether the implementation fits the repo without unnecessary platform expansion.
 
@@ -88,6 +88,7 @@ High score requires:
 
 - minimal touched-file surface consistent with the blueprint
 - no unnecessary API/UI/framework work
+- explicit avoidance of avoidable tech debt in derivation, validation, and future cutover paths
 
 ### 3.8 Regression Discipline
 
