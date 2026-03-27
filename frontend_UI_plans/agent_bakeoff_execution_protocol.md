@@ -76,6 +76,10 @@ Recommended branch/worktree naming:
 - Jules: `codex/bakeoff-jules-slice01`
 - Antigravity: `codex/bakeoff-antigravity-slice01`
 
+Exact local lane setup, including the frozen starting commit and the recommended `.claude\worktrees\...` paths, is defined in:
+
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_local_setup.md`
+
 The two agent workspaces should not share a writable tree.
 
 If true isolated code-edit worktrees are created later, these owned folders should still be used as the canonical submission/output drop zones for each tool.
