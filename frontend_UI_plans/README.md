@@ -68,6 +68,24 @@ Design references:
   - ready-to-paste Jules prompts for the dry-run round and Slice 01 implementation round
 - `agent_bakeoff_prompt_antigravity.md`
   - ready-to-paste Antigravity prompts for the dry-run round and Slice 01 implementation round
+- `agent_bakeoff_local_setup_phase1.md`
+  - exact local lane mapping for the Phase1 retrieval-plane bake-off
+- `agent_bakeoff_phase1_brief.md`
+  - vendor-neutral brief for the Tier1 retrieval-plane Phase1A bake-off slice
+- `agent_bakeoff_phase1_scope.md`
+  - strict bounded scope for the first retrieval-plane implementation round
+- `agent_bakeoff_phase1_implementation_blueprint.md`
+  - repo-fit file/module ownership plan for the retrieval-plane slice
+- `agent_bakeoff_phase1_validation_plan.md`
+  - required validation and non-regression checks for the retrieval-plane slice
+- `agent_bakeoff_phase1_submission_checklist.md`
+  - required delivery artifacts for the retrieval-plane bake-off round
+- `agent_bakeoff_phase1_rubric.md`
+  - scoring rubric for the retrieval-plane bake-off round
+- `agent_bakeoff_prompt_antigravity_phase1.md`
+  - ready-to-paste Antigravity prompts for the retrieval-plane dry run and implementation round
+- `agent_bakeoff_prompt_jules_phase1.md`
+  - ready-to-paste Jules GitHub-mirror prompts for the retrieval-plane dry run and implementation round
 - `agent_workspaces\jules\`
   - dedicated bake-off workspace/output directory for Jules
 - `agent_workspaces\antigravity\`
@@ -79,3 +97,31 @@ Design references:
 - This planning set assumes a read-only UI.
 - This planning set does not authorize implementation changes by itself.
 - This planning set does not authorize file preview, run execution, polling, or mutation as part of v1.
+
+## Current Bake-Off Status
+
+There are now two distinct bake-off packets in this folder:
+
+- the historical Slice 01 review-UI packet
+- the current Phase1A APS Tier1 retrieval-plane packet
+
+Use the Phase1A packet for the next milestone. Do not reuse the Slice 01 prompts for the retrieval-plane round.
+
+## Carry-Forward QA Guardrails
+
+The current review UI baseline has already been live-validated. Those learnings must be carried forward when planning later milestones:
+
+- verified pass conditions:
+  - graph renders
+  - filesystem tree expands
+  - file click opens the details drawer
+  - default run selection is correct
+- known non-blocking debt:
+  - graph-node-to-tree visual reveal is only partial
+  - the drawer overlays the tree instead of preserving a visible third-pane feel
+  - header/button styling still needs polish
+
+Those known UI issues are not blockers for the retrieval-plane Phase1A bake-off. They are regression guardrails:
+
+- later milestones must not break the verified pass conditions
+- do not opportunistically broaden a backend retrieval slice into UI redesign work unless the prompt explicitly asks for that
