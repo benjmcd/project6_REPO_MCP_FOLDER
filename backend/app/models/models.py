@@ -611,6 +611,58 @@ class ApsContentLinkage(Base, TimestampMixin):
     connector_run_target: Mapped[ConnectorRunTarget] = relationship()
 
 
+class ApsRetrievalChunk(Base, TimestampMixin):
+    __tablename__ = "aps_retrieval_chunk_v1"
+    __table_args__ = (
+        UniqueConstraint(
+            "retrieval_contract_id",
+            "run_id",
+            "target_id",
+            "content_id",
+            "chunk_id",
+            name="uq_aps_retrieval_chunk_v1_lookup",
+        ),
+    )
+
+    aps_retrieval_chunk_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    retrieval_contract_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    run_id: Mapped[str] = mapped_column(ForeignKey("connector_run.connector_run_id"), nullable=False)
+    target_id: Mapped[str] = mapped_column(ForeignKey("connector_run_target.connector_run_target_id"), nullable=False)
+    content_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    chunk_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    content_contract_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    chunking_contract_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    normalization_contract_id: Mapped[str | None] = mapped_column(String(64))
+    accession_number: Mapped[str | None] = mapped_column(String(255))
+    chunk_ordinal: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    start_char: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    end_char: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    page_start: Mapped[int | None] = mapped_column(Integer)
+    page_end: Mapped[int | None] = mapped_column(Integer)
+    chunk_text: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    chunk_text_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    search_text: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    content_status: Mapped[str] = mapped_column(String(64), nullable=False, default="indexed")
+    quality_status: Mapped[str | None] = mapped_column(String(32))
+    document_class: Mapped[str | None] = mapped_column(String(64))
+    media_type: Mapped[str | None] = mapped_column(String(128))
+    page_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    content_units_ref: Mapped[str | None] = mapped_column(String(1024))
+    normalized_text_ref: Mapped[str | None] = mapped_column(String(1024))
+    blob_ref: Mapped[str | None] = mapped_column(String(1024))
+    download_exchange_ref: Mapped[str | None] = mapped_column(String(1024))
+    discovery_ref: Mapped[str | None] = mapped_column(String(1024))
+    selection_ref: Mapped[str | None] = mapped_column(String(1024))
+    diagnostics_ref: Mapped[str | None] = mapped_column(String(1024))
+    visual_page_refs_json: Mapped[str | None] = mapped_column(Text)
+    source_signature_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    rebuilt_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    connector_run: Mapped[ConnectorRun] = relationship()
+    connector_run_target: Mapped[ConnectorRunTarget] = relationship()
+
+
 class ConnectorArtifactAlias(Base, TimestampMixin):
     __tablename__ = "connector_artifact_alias"
 
