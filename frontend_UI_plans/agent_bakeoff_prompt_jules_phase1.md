@@ -39,6 +39,7 @@ This round is DRY RUN ONLY. Do not implement code yet.
 
 Treat the following docs as the authority for scope and implementation shape:
 
+- ./AGENTS.md
 - ./frontend_UI_plans/agent_bakeoff_local_setup_phase1.md
 - ./frontend_UI_plans/agent_bakeoff_phase1_brief.md
 - ./frontend_UI_plans/agent_bakeoff_phase1_scope.md
@@ -57,6 +58,8 @@ Hard constraints:
 - no default read-path cutover
 - no embeddings or vector work
 - validate-only parity logic must fail closed on empty scope
+- follow the root repo guardrails in AGENTS.md
+- explicitly call out likely tech-debt risks rather than silently accepting them
 
 Carry-forward regression guardrail:
 
@@ -68,7 +71,7 @@ For this dry run, do not modify files. Produce:
 2. the exact files you expect to modify
 3. the exact new files you expect to add
 4. assumptions
-5. likely blockers or risk areas
+5. likely blockers, risk areas, and tech-debt risks
 6. a clear statement confirming whether you can stay within the frozen scope
 
 Write your dry-run notes and planning artifacts into:
@@ -103,6 +106,7 @@ Use the output directory for:
 
 Implement the bounded Phase1A slice exactly as defined by:
 
+- ./AGENTS.md
 - ./frontend_UI_plans/agent_bakeoff_phase1_brief.md
 - ./frontend_UI_plans/agent_bakeoff_phase1_scope.md
 - ./frontend_UI_plans/agent_bakeoff_phase1_implementation_blueprint.md
@@ -128,6 +132,7 @@ Preserve these constraints:
 - no embeddings/vector work
 - no artifact generation
 - no silent fallback to document-row diagnostics authority
+- follow the root repo guardrails in AGENTS.md
 
 Important implementation requirements:
 
@@ -143,7 +148,7 @@ At the end, provide a submission that includes:
 2. changed file list with reasons
 3. architecture notes
 4. assumptions made
-5. risks and tradeoffs
+5. risks, tradeoffs, and explicit tech-debt accounting
 6. tests added and tests run
 7. commands used for validation
 8. scope-conformance statement
