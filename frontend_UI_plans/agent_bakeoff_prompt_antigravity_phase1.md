@@ -46,14 +46,14 @@ This round is DRY RUN ONLY. Do not implement code yet.
 
 Read and use the following planning docs as the authority for scope and implementation shape:
 
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_local_setup_phase1.md
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_phase1_brief.md
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_phase1_scope.md
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_phase1_implementation_blueprint.md
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_phase1_validation_plan.md
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_phase1_submission_checklist.md
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_phase1_rubric.md
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\next_milestone_plans\2026-03-27_aps_tier1_retrieval_plane_phase1.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\frontend_UI_plans\agent_bakeoff_local_setup_phase1.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\frontend_UI_plans\agent_bakeoff_phase1_brief.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\frontend_UI_plans\agent_bakeoff_phase1_scope.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\frontend_UI_plans\agent_bakeoff_phase1_implementation_blueprint.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\frontend_UI_plans\agent_bakeoff_phase1_validation_plan.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\frontend_UI_plans\agent_bakeoff_phase1_submission_checklist.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\frontend_UI_plans\agent_bakeoff_phase1_rubric.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\next_milestone_plans\2026-03-27_aps_tier1_retrieval_plane_phase1.md
 
 Hard constraints:
 
@@ -111,13 +111,13 @@ Use the output directory for:
 
 Implement the bounded Phase1A slice exactly as defined by:
 
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_phase1_brief.md
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_phase1_scope.md
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_phase1_implementation_blueprint.md
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_phase1_validation_plan.md
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_phase1_submission_checklist.md
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\agent_bakeoff_phase1_rubric.md
-- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\next_milestone_plans\2026-03-27_aps_tier1_retrieval_plane_phase1.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\frontend_UI_plans\agent_bakeoff_phase1_brief.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\frontend_UI_plans\agent_bakeoff_phase1_scope.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\frontend_UI_plans\agent_bakeoff_phase1_implementation_blueprint.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\frontend_UI_plans\agent_bakeoff_phase1_validation_plan.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\frontend_UI_plans\agent_bakeoff_phase1_submission_checklist.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\frontend_UI_plans\agent_bakeoff_phase1_rubric.md
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.claude\worktrees\bakeoff-antigravity-phase1\next_milestone_plans\2026-03-27_aps_tier1_retrieval_plane_phase1.md
 
 Implement only:
 
