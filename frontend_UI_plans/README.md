@@ -86,6 +86,24 @@ Design references:
   - ready-to-paste Antigravity prompts for the retrieval-plane dry run and implementation round
 - `agent_bakeoff_prompt_jules_phase1.md`
   - ready-to-paste Jules GitHub-mirror prompts for the retrieval-plane dry run and implementation round
+- `agent_bakeoff_local_setup_phase1b.md`
+  - exact local lane mapping for the Phase1B operator retrieval read-path bake-off
+- `agent_bakeoff_phase1b_brief.md`
+  - vendor-neutral brief for the Tier1 retrieval-plane Phase1B slice
+- `agent_bakeoff_phase1b_scope.md`
+  - strict bounded scope for the operator-only retrieval read-path round
+- `agent_bakeoff_phase1b_implementation_blueprint.md`
+  - repo-fit file and module ownership plan for the Phase1B slice
+- `agent_bakeoff_phase1b_validation_plan.md`
+  - required validation and non-regression checks for the Phase1B slice
+- `agent_bakeoff_phase1b_submission_checklist.md`
+  - required delivery artifacts for the Phase1B bake-off round
+- `agent_bakeoff_phase1b_rubric.md`
+  - scoring rubric for the Phase1B bake-off round
+- `agent_bakeoff_prompt_antigravity_phase1b.md`
+  - ready-to-paste Antigravity prompts for the Phase1B dry run and implementation round
+- `agent_bakeoff_prompt_jules_phase1b.md`
+  - ready-to-paste Jules prompts for the Phase1B dry run and implementation round
 - `agent_workspaces\jules\`
   - dedicated bake-off workspace/output directory for Jules
 - `agent_workspaces\antigravity\`
@@ -104,10 +122,11 @@ There are now two distinct bake-off packets in this folder:
 
 - the historical Slice 01 review-UI packet
 - the current Phase1A APS Tier1 retrieval-plane packet
+- the new Phase1B APS Tier1 operator retrieval read-path packet
 
-Use the Phase1A packet for the next milestone. Do not reuse the Slice 01 prompts for the retrieval-plane round.
+Use the Phase1B packet for the next retrieval bake-off round. Do not reuse the Slice 01 or Phase1A prompts for the Phase1B round.
 
-For both Jules and Antigravity, start a brand-new session/task for each new milestone round. Do not reuse an older Slice 01 thread and try to steer it onto Phase1A.
+For both Jules and Antigravity, start a brand-new session/task for each new milestone round. Do not reuse an older Slice 01 or Phase1A thread and try to steer it onto Phase1B.
 
 ## Carry-Forward QA Guardrails
 
@@ -123,7 +142,19 @@ The current review UI baseline has already been live-validated. Those learnings 
   - the drawer overlays the tree instead of preserving a visible third-pane feel
   - header/button styling still needs polish
 
-Those known UI issues are not blockers for the retrieval-plane Phase1A bake-off. They are regression guardrails:
+Those known UI issues are not blockers for the retrieval-plane bake-off. They are regression guardrails:
 
 - later milestones must not break the verified pass conditions
 - do not opportunistically broaden a backend retrieval slice into UI redesign work unless the prompt explicitly asks for that
+
+## Active Phase1B Packet
+
+- `agent_bakeoff_local_setup_phase1b.md`
+- `agent_bakeoff_phase1b_brief.md`
+- `agent_bakeoff_phase1b_scope.md`
+- `agent_bakeoff_phase1b_implementation_blueprint.md`
+- `agent_bakeoff_phase1b_validation_plan.md`
+- `agent_bakeoff_phase1b_submission_checklist.md`
+- `agent_bakeoff_phase1b_rubric.md`
+- `agent_bakeoff_prompt_antigravity_phase1b.md`
+- `agent_bakeoff_prompt_jules_phase1b.md`
