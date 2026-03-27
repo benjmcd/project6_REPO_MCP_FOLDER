@@ -39,7 +39,6 @@ This round is DRY RUN ONLY. Do not implement code yet.
 
 Treat the following docs as the authority for scope and implementation shape:
 
-- ./AGENTS.md
 - ./frontend_UI_plans/agent_bakeoff_local_setup_phase1.md
 - ./frontend_UI_plans/agent_bakeoff_phase1_brief.md
 - ./frontend_UI_plans/agent_bakeoff_phase1_scope.md
@@ -58,7 +57,11 @@ Hard constraints:
 - no default read-path cutover
 - no embeddings or vector work
 - validate-only parity logic must fail closed on empty scope
-- follow the root repo guardrails in AGENTS.md
+- follow these repo guardrails:
+  - never delete/remove files; if removal is unavoidable, move to an archive location instead
+  - keep validation/proof behavior validate-only and fail closed on empty runtime
+  - prefer the narrowest correct change and stop on repo-confirmed blockers
+  - distinguish repo-confirmed facts from assumptions explicitly
 - explicitly call out likely tech-debt risks rather than silently accepting them
 
 Carry-forward regression guardrail:
@@ -106,7 +109,6 @@ Use the output directory for:
 
 Implement the bounded Phase1A slice exactly as defined by:
 
-- ./AGENTS.md
 - ./frontend_UI_plans/agent_bakeoff_phase1_brief.md
 - ./frontend_UI_plans/agent_bakeoff_phase1_scope.md
 - ./frontend_UI_plans/agent_bakeoff_phase1_implementation_blueprint.md
@@ -132,7 +134,11 @@ Preserve these constraints:
 - no embeddings/vector work
 - no artifact generation
 - no silent fallback to document-row diagnostics authority
-- follow the root repo guardrails in AGENTS.md
+- follow these repo guardrails:
+  - never delete/remove files; if removal is unavoidable, move to an archive location instead
+  - keep validation/proof behavior validate-only and fail closed on empty runtime
+  - prefer the narrowest correct change and stop on repo-confirmed blockers
+  - distinguish repo-confirmed facts from assumptions explicitly
 
 Important implementation requirements:
 
