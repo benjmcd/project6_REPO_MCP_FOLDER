@@ -45,6 +45,14 @@ app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_credentials=True, 
 app.include_router(api_router, prefix=settings.api_prefix)
 bootstrap_storage_tree()
 app.mount('/storage', StaticFiles(directory=settings.storage_dir), name='storage')
+review_ui_static_dir = Path(__file__).resolve().parent / "app" / "review_ui" / "static"
+app.mount('/review/nrc-aps/static', StaticFiles(directory=review_ui_static_dir), name='review_ui_static')
+
+
+@app.get('/review/nrc-aps', response_class=HTMLResponse)
+def review_nrc_aps_page() -> HTMLResponse:
+    index_file = review_ui_static_dir / "index.html"
+    return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
 
 
 @app.get('/health')
