@@ -11,15 +11,15 @@ It supersedes the older Slice 01 lane names for this milestone.
 Use this source state for the Phase1A bake-off:
 
 - primary committed baseline:
-  - `500155b`
-  - `Add safe JSON and text preview for review files`
-- current carry-forward planning context:
+  - `4197988`
+  - `Add phase1 retrieval bake-off packet`
+- committed milestone-plan context:
   - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\next_milestone_plans\2026-03-27_aps_tier1_retrieval_plane_phase1.md`
 
 Important:
 
-- the retrieval-plane phase plan is currently untracked in the main repo
-- the Phase1A lanes were prepared by explicitly syncing that planning file into each lane
+- the milestone-plan file is now part of the committed Phase1A packet
+- the Phase1A lanes should reflect commit `4197988` or an equivalent synced copy of its packet contents
 
 ## 3. Exact Lane Mapping
 
