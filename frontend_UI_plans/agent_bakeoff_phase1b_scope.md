@@ -34,10 +34,16 @@ These endpoints must:
 - read from the retrieval plane, not from canonical APS joins
 - reuse the current public request/response schemas
 - leave the current public endpoints unchanged
+- remain operator-only by route shape only; do not introduce auth or permission-system work in this slice
 
 ### 3.3 Empty-Scope Fail-Closed Behavior
 
 If the requested run has no retrieval-plane rows where rows are required, the operator-only retrieval path must fail closed rather than silently falling back to canonical APS reads.
+
+The required route behavior for this condition is:
+
+- HTTP `409`
+- explicit error detail stating that the retrieval plane is not materialized for the requested scope
 
 ### 3.4 Focused Parity Tests
 
@@ -100,9 +106,12 @@ This slice should normally touch only:
 - `backend\app\services\aps_retrieval_plane_read.py`
 - `backend\tests\`
 
-Touch `backend\app\schemas\api.py` only if a repo-confirmed blocker makes schema reuse impossible.
-
 Do not touch:
+
+- `backend\alembic\versions\`
+- `backend\app\models\`
+
+Touch `backend\app\schemas\api.py` only if a repo-confirmed blocker makes schema reuse impossible.
 
 - `backend\app\review_ui\*`
 - `backend\main.py`
@@ -118,6 +127,7 @@ This slice is adequate only if all of the following are true:
 - operator-only retrieval endpoints exist at the exact frozen routes
 - current public content-search and content-units routes remain unchanged by default
 - retrieval endpoints reuse existing request/response contracts
+- retrieval empty-scope failures return HTTP `409` with explicit non-fallback detail
 - retrieval list/search results preserve current deterministic ordering semantics
 - retrieval reads do not silently fall back to canonical joins when retrieval rows are missing
 - linkage-authoritative `diagnostics_ref` semantics remain intact

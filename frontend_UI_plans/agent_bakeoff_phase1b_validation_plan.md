@@ -11,6 +11,8 @@ This document defines the minimum validation bar for the operator-only retrieval
 - validation must not seed or generate business artifacts
 - canonical APS truth remains the authority for parity comparison
 - current public endpoint behavior must remain unchanged
+- use isolated runtime state for tests and proof whenever possible
+- do not rely on shared checked-in SQLite runtime state such as `backend\method_aware.db`
 
 ## 3. Required Validation Areas
 
@@ -31,6 +33,7 @@ Must prove:
 Must prove:
 
 - if canonical APS rows exist for a run but retrieval rows are absent, the operator-only retrieval path fails closed instead of falling back silently
+- the operator-only route returns HTTP `409` for that condition
 
 ### 3.4 Public Path Non-Regression
 
@@ -47,6 +50,8 @@ If the submission touches shared code with plausible review UI impact, rerun the
 
 At minimum, the submission should run the focused Phase1B tests.
 
+The focused Phase1B tests should use isolated in-memory or temp-database state and explicitly rebuild retrieval rows inside test setup instead of relying on shared prebuilt runtime state.
+
 If `router.py` is touched, the submission must also state whether it reran:
 
 ```powershell
@@ -61,5 +66,6 @@ This slice is inadequately validated if:
 
 - retrieval parity is asserted without actual operator-route or read-service tests
 - retrieval empty-scope behavior silently falls back to canonical APS reads
+- retrieval empty-scope behavior uses a vague or inconsistent status code instead of the frozen HTTP `409`
 - public content-search or content-units behavior changes without explicit disclosure
 - response ordering semantics drift from the frozen rules

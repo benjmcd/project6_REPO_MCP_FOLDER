@@ -34,6 +34,15 @@ At the end of this round, the repo should have:
 
 This round uses explicit operator-only endpoints, not a hidden feature flag on the existing public endpoints.
 
+For this slice, `operator-only` means route classification only.
+
+It does not authorize:
+
+- auth-system work
+- role/permission model work
+- token or session model work
+- UI/operator console work
+
 Required endpoint shapes:
 
 - external HTTP route: `GET /api/v1/connectors/runs/{connector_run_id}/_operator/retrieval-content-units`
