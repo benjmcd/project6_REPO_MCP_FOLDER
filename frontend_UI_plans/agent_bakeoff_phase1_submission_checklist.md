@@ -78,7 +78,7 @@ Explicitly confirm whether the submission:
 - avoided public API/UI changes
 - avoided embeddings/vector work
 - preserved validate-only semantics
-- followed root repo guardrails from `AGENTS.md`
+- followed the repo guardrails stated in the Phase1A packet
 
 ## 3. Required Comparison Questions
 

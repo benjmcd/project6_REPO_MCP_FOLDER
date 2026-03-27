@@ -10,7 +10,6 @@ This is a backend-first additive slice. It is not a UI redesign, not a public re
 
 Treat the following as the authority for this bake-off round:
 
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\AGENTS.md`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\next_milestone_plans\2026-03-27_aps_tier1_retrieval_plane_phase1.md`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\docs\nrc_adams\nrc_aps_authority_matrix.md`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\docs\nrc_adams\nrc_aps_reader_path.md`
@@ -53,7 +52,11 @@ Implication for this round:
 
 You must preserve all of the following:
 
-- root repo guardrails from `AGENTS.md`
+- repo guardrails for this bake-off round:
+  - never delete/remove files; if removal is unavoidable, move to an archive location instead
+  - treat validate/proof actions as validate-only and fail closed on empty runtime
+  - prefer the narrowest correct change and stop on repo-confirmed blockers
+  - distinguish repo-confirmed facts from assumptions and call assumptions out explicitly
 - canonical APS evidence truth remains in `ApsContentDocument`, `ApsContentChunk`, and `ApsContentLinkage`
 - this slice is additive only
 - no default read-path cutover

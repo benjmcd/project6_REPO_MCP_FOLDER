@@ -116,7 +116,6 @@ New-MirrorDirectory -Path $julesWorkspaceRoot
 
 # Core repo context
 Copy-MirrorFile -SourcePath (Join-Path $sourceRoot "README.md") -DestinationPath (Join-Path $DestinationRoot "README.md")
-Copy-MirrorFile -SourcePath (Join-Path $sourceRoot "AGENTS.md") -DestinationPath (Join-Path $DestinationRoot "AGENTS.md")
 Copy-MirrorFile -SourcePath (Join-Path $sourceRoot "project6.ps1") -DestinationPath (Join-Path $DestinationRoot "project6.ps1")
 
 # Backend code surface needed for Slice 01
@@ -255,9 +254,12 @@ Important path rule:
 - when older planning docs mention `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\...`, interpret that as the matching repo-relative path inside this mirror
 - ignore any references to local `.claude\worktrees\...` lanes; your editable lane is this GitHub branch itself
 
-Root repo guardrails:
+Repo guardrails:
 
-- read and follow `./AGENTS.md` before implementation
+- never delete/remove files; if removal is unavoidable, move to an archive location instead
+- keep validation/proof behavior validate-only and fail closed on empty runtime
+- prefer the narrowest correct change and stop on repo-confirmed blockers
+- distinguish repo-confirmed facts from assumptions explicitly
 
 Golden runtime fixture in this mirror:
 
