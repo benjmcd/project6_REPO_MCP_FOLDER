@@ -249,6 +249,12 @@ Set-Content -LiteralPath (Join-Path $DestinationRoot "frontend_UI_plans\JULES_GI
 
 Use this repo, not the main local-only workspace, when running the Jules bake-off.
 
+Session hygiene:
+
+- start a brand-new Jules session for each new milestone round
+- do not reuse an older Slice 01 chat/thread for a Phase1A retrieval-plane round
+- if the first Jules summary mentions `Slice 01`, `review UI deliverables`, or older bake-off packaging work, stop and restart with a fresh session instead of trying to steer the stale thread back on course
+
 Important path rule:
 
 - when older planning docs mention `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\...`, interpret that as the matching repo-relative path inside this mirror
@@ -285,6 +291,8 @@ If you are executing a later milestone beyond the original Slice 01 bake-off, al
 - `./frontend_UI_plans/agent_bakeoff_phase1_brief.md`
 - `./frontend_UI_plans/agent_bakeoff_phase1_scope.md`
 - `./frontend_UI_plans/agent_bakeoff_prompt_jules_phase1.md`
+
+For the current retrieval-plane round, the accepted review UI baseline is prior context only. It is not the deliverable to be regenerated or re-packaged.
 '@
 
 Set-Content -LiteralPath (Join-Path $DestinationRoot "frontend_UI_plans\agent_bakeoff_prompt_jules_github.md") -Value @'

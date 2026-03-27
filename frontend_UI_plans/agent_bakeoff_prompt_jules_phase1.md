@@ -7,9 +7,12 @@ Use this file when running the APS Tier1 retrieval-plane Phase1A bake-off in the
 Recommended flow:
 
 1. use the prepared GitHub branch defined in `agent_bakeoff_local_setup_phase1.md`
-2. run the Round 0 dry-run prompt first
-3. review the resulting plan for scope drift
-4. if acceptable, run the Round 1 implementation prompt
+2. start a brand-new Jules session for this milestone
+3. verify the very first Jules summary explicitly names `APS Tier1 retrieval-plane Phase1A`
+4. if Jules mentions `Slice 01`, `review UI deliverables`, or another older milestone, stop and restart with a fresh session
+5. run the Round 0 dry-run prompt first
+6. review the resulting plan for scope drift
+7. if acceptable, run the Round 1 implementation prompt
 
 ## 2. Round 0 Dry-Run Prompt
 
@@ -36,6 +39,12 @@ Use the output directory for:
 - screenshots/
 
 This round is DRY RUN ONLY. Do not implement code yet.
+
+Context sanity gate:
+
+- this round is `APS Tier1 retrieval-plane Phase1A`
+- the accepted review UI baseline is prior context only
+- if you find yourself summarizing `Slice 01`, `review UI deliverables`, or prior bake-off packaging work as the task, stop immediately and report wrong-context drift instead of continuing
 
 Treat the following docs as the authority for scope and implementation shape:
 
@@ -147,6 +156,7 @@ Important implementation requirements:
 - keep the retrieval plane clearly derived, never canonical
 - do not make Postgres-specific indexing/ranking the center of this round
 - if shared code paths are touched, preserve the validated review UI baseline
+- if the task framing drifts back to `Slice 01` or prior review-UI deliverables, stop and report wrong-context drift instead of continuing
 
 At the end, provide a submission that includes:
 
