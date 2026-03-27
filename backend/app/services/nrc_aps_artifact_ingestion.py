@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import tempfile
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -197,9 +198,18 @@ def write_blob_content_addressed(*, raw_root: str | Path, content: bytes) -> dic
     absolute = Path(raw_root) / rel
     absolute.parent.mkdir(parents=True, exist_ok=True)
     if not absolute.exists():
-        temp = absolute.with_name(f".{absolute.name}.{uuid.uuid4().hex}.tmp")
-        temp.write_bytes(content)
-        os.replace(temp, absolute)
+        fd, tmp_name = tempfile.mkstemp(dir=str(absolute.parent), prefix="._", suffix=".tmp")
+        temp = Path(tmp_name)
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(content)
+            os.replace(temp, absolute)
+        except Exception:
+            try:
+                temp.unlink(missing_ok=True)
+            except OSError:
+                pass
+            raise
     return {
         "blob_ref": str(absolute),
         "blob_rel_ref": rel.replace("\\", "/"),

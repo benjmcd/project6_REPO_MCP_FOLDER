@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import tempfile
 import unicodedata
 import uuid
 from collections import Counter
@@ -218,9 +219,18 @@ def _write_normalized_text_blob(*, artifact_storage_dir: str | Path, text: str) 
     base.mkdir(parents=True, exist_ok=True)
     out = base / f"{digest}.txt"
     if not out.exists():
-        temp = out.with_name(f".{out.name}.{uuid.uuid4().hex}.tmp")
-        temp.write_bytes(content)
-        os.replace(temp, out)
+        fd, tmp_name = tempfile.mkstemp(dir=str(out.parent), prefix="._", suffix=".tmp")
+        temp = Path(tmp_name)
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(content)
+            os.replace(temp, out)
+        except Exception:
+            try:
+                temp.unlink(missing_ok=True)
+            except OSError:
+                pass
+            raise
     return {
         "normalized_text_ref": str(out),
         "normalized_text_sha256": digest,
