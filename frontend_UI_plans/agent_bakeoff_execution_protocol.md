@@ -104,9 +104,15 @@ Purpose:
 
 ### 5.2 Round 1: Bounded Implementation Slice
 
-Once both dry-run plans look acceptable, give each tool the same bounded slice defined in:
+Once both dry-run plans look acceptable, give each tool the same bounded slice defined by the active milestone packet.
+
+Historical example:
 
 - `agent_bakeoff_scope_slice_01.md`
+
+Current retrieval-plane example:
+
+- `agent_bakeoff_phase1_scope.md`
 
 This is the first real comparison round.
 
@@ -120,15 +126,33 @@ Do not run a second slice until the first slice has been reviewed and scored usi
 
 Each tool should receive the same packet:
 
-- `agent_bakeoff_brief.md`
-- `agent_bakeoff_scope_slice_01.md`
-- `agent_bakeoff_submission_checklist.md`
-- `agent_bakeoff_rubric.md`
-- all review UI planning docs listed in Section 2
+- the phase-appropriate brief
+- the phase-appropriate scope doc
+- the phase-appropriate submission checklist
+- the phase-appropriate rubric
+- any phase-specific implementation/validation docs
+- the authority docs listed by that phase packet
+
+Do not mix packets across milestones.
+
+Examples:
+
+- Slice 01 review UI:
+  - `agent_bakeoff_brief.md`
+  - `agent_bakeoff_scope_slice_01.md`
+  - `agent_bakeoff_submission_checklist.md`
+  - `agent_bakeoff_rubric.md`
+- Phase1A retrieval plane:
+  - `agent_bakeoff_phase1_brief.md`
+  - `agent_bakeoff_phase1_scope.md`
+  - `agent_bakeoff_phase1_submission_checklist.md`
+  - `agent_bakeoff_phase1_rubric.md`
 
 ## 7. First Slice Recommendation
 
-The optimal first comparison slice is:
+The optimal first comparison slice depends on the active milestone packet.
+
+Historical review-UI example:
 
 - additive read-only review endpoints
 - canonical/run-specific review model plumbing
@@ -138,7 +162,15 @@ The optimal first comparison slice is:
 - view toggle
 - right-side details drawer shell
 
-This slice is large enough to reveal architectural quality and scope discipline, but still small enough to compare cleanly.
+Current retrieval-plane example:
+
+- additive retrieval-plane migration/model
+- retrieval-plane contract/source-signature logic
+- deterministic run-scoped derivation/materialization service
+- validate-only parity comparison service
+- focused retrieval-plane tests
+
+In both cases, the first slice should be large enough to reveal architectural quality and scope discipline, but still small enough to compare cleanly.
 
 ## 8. Evaluation Procedure
 
