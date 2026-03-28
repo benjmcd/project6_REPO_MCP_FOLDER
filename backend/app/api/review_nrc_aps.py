@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.schemas.review_nrc_aps import (
     NrcApsReviewRunSelectorOut,
-    NrcApsReviewCanonicalGraphOut,
+    NrcApsReviewPipelineDefinitionOut,
     NrcApsReviewOverviewOut,
     NrcApsReviewTreeOut,
     NrcApsReviewNodeDetailsOut,
@@ -14,9 +14,8 @@ from app.schemas.review_nrc_aps import (
     NrcApsReviewFilePreviewOut,
 )
 from app.services.review_nrc_aps_catalog import discover_candidate_runs
-from app.services.review_nrc_aps_graph import build_canonical_graph
 from app.services.review_nrc_aps_runtime import find_review_root_for_run, normalize_path
-from app.services.review_nrc_aps_overview import compose_overview
+from app.services.review_nrc_aps_overview import compose_overview, compose_pipeline_definition
 from app.services.review_nrc_aps_tree import get_node_by_tree_id
 from app.services.review_nrc_aps_details import get_node_details, get_file_details, get_file_preview
 
@@ -27,10 +26,13 @@ def get_runs(db: Session = Depends(get_db)):
     """List reviewable runs and the default run id."""
     return discover_candidate_runs(db)
 
-@router.get("/pipeline-definition", response_model=NrcApsReviewCanonicalGraphOut)
-def get_pipeline_definition():
-    """Return the frozen canonical graph shape."""
-    return build_canonical_graph()
+@router.get("/pipeline-definition", response_model=NrcApsReviewPipelineDefinitionOut)
+def get_pipeline_definition(run_id: str):
+    """Return the canonical graph plus the conceptual pipeline projection."""
+    root = find_review_root_for_run(run_id)
+    if not root:
+        raise HTTPException(status_code=404, detail="Review root not found for run")
+    return compose_pipeline_definition(run_id, root)
 
 @router.get("/runs/{run_id}/overview", response_model=NrcApsReviewOverviewOut)
 def get_run_overview(run_id: str):

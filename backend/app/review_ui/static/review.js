@@ -1,13 +1,9 @@
-/**
- * NRC APS Review UI Controller
- */
-
 const State = {
     runs: [],
     selectedRunId: null,
     viewMode: 'run',
-    graphData: null,
-    treeData: null,
+    pipelineDefinition: null,
+    overview: null,
     selectedNodeId: null,
     selectedTreeId: null,
     openTreeIds: new Set(),
@@ -19,6 +15,7 @@ const elements = {
     viewRun: document.getElementById('view-run'),
     mermaidContainer: document.getElementById('mermaid-container'),
     fileTree: document.getElementById('file-tree'),
+    treePaneHeader: document.querySelector('#tree-pane .pane-header'),
     detailsDrawer: document.getElementById('details-drawer'),
     detailsContent: document.getElementById('details-content'),
     closeDrawerBtn: document.getElementById('close-drawer'),
@@ -37,8 +34,8 @@ const API = {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return await res.json();
     },
-    async fetchPipelineDefinition() {
-        const res = await fetch('/api/v1/review/nrc-aps/pipeline-definition');
+    async fetchPipelineDefinition(runId) {
+        const res = await fetch(`/api/v1/review/nrc-aps/pipeline-definition?run_id=${encodeURIComponent(runId)}`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return await res.json();
     },
@@ -65,106 +62,118 @@ function escapeMermaidLabel(label) {
     return String(label ?? '').replace(/"/g, '&quot;');
 }
 
-function renderGraphClasses(graph, nodeStates = {}) {
-    let mermaidText = 'flowchart TD\n';
-    mermaidText += '    classDef state_complete fill:#d9f2e3,stroke:#1f7a45,stroke-width:2px;\n';
-    mermaidText += '    classDef state_missing fill:#fbe3e6,stroke:#b42318,stroke-width:2px,stroke-dasharray:5 3;\n';
-    mermaidText += '    classDef state_not_exercised fill:#eceff3,stroke:#6b7280,stroke-width:2px,stroke-dasharray:3 3;\n';
-    mermaidText += '    classDef state_unknown fill:#eef2ff,stroke:#4f46e5,stroke-width:2px;\n';
-    mermaidText += '    classDef selected fill:#dbeafe,stroke:#1d4ed8,stroke-width:4px;\n';
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatValue(value) {
+    if (typeof value === 'object' && value !== null) {
+        return `<pre>${escapeHtml(JSON.stringify(value, null, 2))}</pre>`;
+    }
+    return escapeHtml(String(value));
+}
+
+function currentGraph() {
+    if (State.viewMode === 'general') {
+        return State.pipelineDefinition?.pipeline_projection ?? null;
+    }
+    return State.overview?.run_projection ?? null;
+}
+
+function findCurrentNode(nodeId) {
+    const graph = currentGraph();
+    return graph?.nodes?.find((node) => node.projection_id === nodeId) ?? null;
+}
+
+function nodeMermaidLabel(node) {
+    const lines = [node.title, ...(node.detail_lines || []), ...((node.warnings || []).slice(0, 2).map((warning) => `[!] ${warning}`))];
+    return lines.filter(Boolean).join('<br/>');
+}
+
+function projectionClasses(node) {
+    const classes = [`state_${node.state || 'unknown'}`];
+    if (node.is_composite) classes.push('projection_composite');
+    else if (State.viewMode === 'general') classes.push('projection_concept');
+    else classes.push('projection_run');
+    if (State.selectedNodeId === node.projection_id) classes.push('selected');
+    return classes;
+}
+
+function buildMermaidText(graph) {
+    let text = 'flowchart TD\n';
+    text += '    classDef state_complete fill:#e5f7ec,stroke:#20864f,stroke-width:2px;\n';
+    text += '    classDef state_missing fill:#fde8e8,stroke:#b42318,stroke-width:2px,stroke-dasharray:5 3;\n';
+    text += '    classDef state_mismatch fill:#fff4d7,stroke:#b54708,stroke-width:2px;\n';
+    text += '    classDef state_unknown fill:#eef2ff,stroke:#4f46e5,stroke-width:2px;\n';
+    text += '    classDef projection_concept fill:#f6f8fc,stroke:#506176,stroke-width:1.75px,color:#18212f;\n';
+    text += '    classDef projection_run fill:#f8fff9,stroke:#1f7a45,stroke-width:1.5px,color:#10261a;\n';
+    text += '    classDef projection_composite fill:#eef4fb,stroke:#315ea8,stroke-width:2.5px,color:#10233f;\n';
+    text += '    classDef selected fill:#dbeafe,stroke:#1d4ed8,stroke-width:4px;\n';
 
     graph.nodes.forEach((node) => {
-        const stateInfo = nodeStates[node.node_id] || { state: 'unknown', warnings: [] };
-        let labelSuffix = '';
-        if ((stateInfo.warnings || []).length > 0) {
-            labelSuffix = ' [!]';
-        } else if (stateInfo.state === 'missing') {
-            labelSuffix = ' [x]';
-        }
-
-        mermaidText += `    ${node.node_id}["${escapeMermaidLabel(node.label + labelSuffix)}"]\n`;
-        mermaidText += `    click ${node.node_id} handleNodeClick\n`;
-        mermaidText += `    class ${node.node_id} state_${stateInfo.state || 'unknown'}\n`;
-        if (State.selectedNodeId === node.node_id) {
-            mermaidText += `    class ${node.node_id} selected\n`;
-        }
+        text += `    ${node.projection_id}["${escapeMermaidLabel(nodeMermaidLabel(node))}"]\n`;
+        text += `    click ${node.projection_id} handleNodeClick\n`;
+        text += `    class ${node.projection_id} ${projectionClasses(node).join(',')}\n`;
     });
-
     graph.edges.forEach((edge) => {
-        mermaidText += `    ${edge.source_id} --> ${edge.target_id}\n`;
+        text += `    ${edge.source_id} --> ${edge.target_id}\n`;
     });
-
-    return mermaidText;
+    return text;
 }
 
 async function renderGraph() {
-    if (!State.graphData) {
-        elements.mermaidContainer.innerHTML = '<div class="graph-placeholder">No graph data available.</div>';
-        return;
-    }
-
-    const graph = State.viewMode === 'general'
-        ? (State.graphData.canonical_graph || State.graphData)
-        : State.graphData.graph?.canonical_graph;
-
-    const nodeStates = State.viewMode === 'general'
-        ? {}
-        : (State.graphData.graph?.node_states || {});
-
+    const graph = currentGraph();
     if (!graph || !graph.nodes || !graph.edges) {
         elements.mermaidContainer.innerHTML = '<div class="graph-placeholder">No graph data available.</div>';
         return;
     }
 
-    const mermaidText = renderGraphClasses(graph, nodeStates);
     elements.mermaidContainer.innerHTML = '<div class="graph-placeholder">Rendering graph...</div>';
-
     try {
         const renderId = `nrc-aps-graph-${Date.now()}`;
-        const rendered = await mermaid.render(renderId, mermaidText);
+        const rendered = await mermaid.render(renderId, buildMermaidText(graph));
         elements.mermaidContainer.innerHTML = rendered.svg;
-        if (typeof rendered.bindFunctions === 'function') {
-            rendered.bindFunctions(elements.mermaidContainer);
-        }
-
+        if (typeof rendered.bindFunctions === 'function') rendered.bindFunctions(elements.mermaidContainer);
         const svgElement = elements.mermaidContainer.querySelector('svg');
-        if (!svgElement) {
-            elements.mermaidContainer.innerHTML = '<div class="graph-placeholder">Graph render returned no SVG output.</div>';
-            return;
-        }
-
+        if (!svgElement) throw new Error('Graph render returned no SVG output.');
         svgElement.setAttribute('width', '100%');
         svgElement.setAttribute('height', '100%');
-
-        if (panZoomInstance) {
-            panZoomInstance.destroy();
-        }
+        if (panZoomInstance) panZoomInstance.destroy();
         panZoomInstance = svgPanZoom(svgElement, {
             zoomEnabled: true,
             controlIconsEnabled: true,
             fit: true,
             center: true,
-            minZoom: 0.5,
+            minZoom: 0.45,
         });
     } catch (error) {
-        console.error('Mermaid parsing error', error);
-        elements.mermaidContainer.innerHTML = `<pre class="warning">Graph render failed: ${error.message}</pre>`;
+        elements.mermaidContainer.innerHTML = `<pre class="warning">Graph render failed: ${escapeHtml(error.message)}</pre>`;
     }
 }
 
 window.handleNodeClick = async (nodeId) => {
     State.selectedNodeId = nodeId;
-    State.selectedTreeId = null;
+    if (State.viewMode === 'run') {
+        State.selectedTreeId = null;
+        await renderGraph();
+        renderSidePane();
+        await loadDetails('node', nodeId);
+        return;
+    }
     await renderGraph();
-    renderTree();
-    await loadDetails('node', nodeId);
+    renderSidePane();
+    renderGeneralNodeDetails(nodeId);
 };
 
 function buildTreeElement(node, depth = 0) {
     const li = document.createElement('li');
     const mappedToSelectedNode = State.selectedNodeId && (node.mapped_node_ids || []).includes(State.selectedNodeId);
     const isOpen = Boolean(node.is_dir && (depth === 0 || mappedToSelectedNode || State.openTreeIds.has(node.tree_id)));
-
     li.classList.toggle('dir', Boolean(node.is_dir));
     li.classList.toggle('selected', State.selectedTreeId === node.tree_id);
     li.classList.toggle('mapped', Boolean(mappedToSelectedNode));
@@ -182,157 +191,160 @@ function buildTreeElement(node, depth = 0) {
 
     if (node.is_dir && node.children && node.children.length > 0) {
         const ul = document.createElement('ul');
-        node.children.forEach((child) => {
-            ul.appendChild(buildTreeElement(child, depth + 1));
-        });
+        node.children.forEach((child) => ul.appendChild(buildTreeElement(child, depth + 1)));
         li.appendChild(ul);
     }
-
     return li;
 }
 
+function renderPipelineLayout() {
+    const layout = State.overview?.pipeline_layout;
+    elements.treePaneHeader.textContent = 'Pipeline Layout Summary';
+    if (!layout || !layout.sections) {
+        elements.fileTree.innerHTML = '<li>No layout summary available</li>';
+        return;
+    }
+    const wrapper = document.createElement('div');
+    wrapper.className = 'layout-summary';
+    layout.sections.forEach((section) => {
+        const block = document.createElement('section');
+        block.className = 'layout-section';
+        const title = document.createElement('h3');
+        title.textContent = section.title;
+        block.appendChild(title);
+        const list = document.createElement('ul');
+        section.entries.forEach((entry) => {
+            const li = document.createElement('li');
+            li.className = 'layout-entry';
+            if (entry.path) li.classList.toggle('mapped', Boolean(State.selectedNodeId && findCurrentNode(State.selectedNodeId)?.mapped_file_refs?.includes(entry.path)));
+            li.innerHTML = `<strong>${escapeHtml(entry.label)}</strong><span>${escapeHtml(entry.value)}</span>`;
+            list.appendChild(li);
+        });
+        block.appendChild(list);
+        wrapper.appendChild(block);
+    });
+    elements.fileTree.innerHTML = '';
+    const li = document.createElement('li');
+    li.className = 'layout-shell';
+    li.appendChild(wrapper);
+    elements.fileTree.appendChild(li);
+}
+
 function renderTree() {
-    if (!State.treeData || !State.treeData.tree || !State.treeData.tree.root) {
+    elements.treePaneHeader.textContent = 'Strict Filesystem Tree';
+    if (!State.overview?.tree?.root) {
         elements.fileTree.innerHTML = '<li>No tree data available</li>';
         return;
     }
-
     elements.fileTree.innerHTML = '';
-    const rootNode = State.treeData.tree.root;
+    const rootNode = State.overview.tree.root;
     State.openTreeIds.add(rootNode.tree_id);
     elements.fileTree.appendChild(buildTreeElement(rootNode));
+}
+
+function renderSidePane() {
+    if (State.viewMode === 'general') renderPipelineLayout();
+    else renderTree();
 }
 
 async function handleTreeClick(button) {
     const treeId = button.dataset.treeId;
     const isDir = button.dataset.isDir === 'true';
     const mappedNodeIds = JSON.parse(button.dataset.mappedNodeIds || '[]');
-
     if (isDir) {
-        if (State.openTreeIds.has(treeId)) {
-            State.openTreeIds.delete(treeId);
-        } else {
-            State.openTreeIds.add(treeId);
-        }
+        if (State.openTreeIds.has(treeId)) State.openTreeIds.delete(treeId);
+        else State.openTreeIds.add(treeId);
     }
-
     State.selectedTreeId = treeId;
-    if (!isDir && mappedNodeIds.length > 0) {
-        State.selectedNodeId = mappedNodeIds[0];
-    }
-
-    renderTree();
-    if (State.selectedNodeId) {
-        await renderGraph();
-    }
-
-    if (!isDir) {
-        await loadDetails('file', treeId);
-    }
+    if (!isDir && mappedNodeIds.length > 0) State.selectedNodeId = mappedNodeIds[0];
+    renderSidePane();
+    if (State.selectedNodeId) await renderGraph();
+    if (!isDir) await loadDetails('file', treeId);
 }
 
-function openDrawer() {
-    elements.detailsDrawer.classList.add('open');
-}
+function openDrawer() { elements.detailsDrawer.classList.add('open'); }
+function closeDrawer() { elements.detailsDrawer.classList.remove('open'); }
 
-function closeDrawer() {
-    elements.detailsDrawer.classList.remove('open');
-}
-
-function formatValue(value) {
-    if (typeof value === 'object' && value !== null) {
-        return `<pre>${JSON.stringify(value, null, 2)}</pre>`;
+function renderGeneralNodeDetails(nodeId) {
+    const node = findCurrentNode(nodeId);
+    if (!node) return;
+    let html = `<h3>${escapeHtml(node.title)}</h3><dl>`;
+    html += `<dt>Projection ID</dt><dd>${escapeHtml(node.projection_id)}</dd>`;
+    html += `<dt>Canonical Nodes</dt><dd>${escapeHtml((node.canonical_node_ids || []).join(', '))}</dd>`;
+    html += `<dt>Stage Family</dt><dd>${escapeHtml(node.stage_family)}</dd>`;
+    if (node.detail_lines?.length) {
+        html += '<dt>Summary</dt><dd><ul>';
+        node.detail_lines.forEach((line) => { html += `<li>${escapeHtml(line)}</li>`; });
+        html += '</ul></dd>';
     }
-    return String(value);
-}
-
-function escapeHtml(value) {
-    return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    if (node.warnings?.length) {
+        html += `<dt class="warning">Warnings</dt><dd class="warning">${node.warnings.map(escapeHtml).join('<br>')}</dd>`;
+    }
+    if (node.mapped_file_refs?.length) {
+        html += '<dt>Mapped Files</dt><dd><ul>';
+        node.mapped_file_refs.forEach((ref) => { html += `<li>${escapeHtml(ref)}</li>`; });
+        html += '</ul></dd>';
+    }
+    if (node.structured_summary && Object.keys(node.structured_summary).length) {
+        html += '<dt>Structured Summary</dt><dd><ul>';
+        Object.entries(node.structured_summary).forEach(([key, value]) => {
+            html += `<li><strong>${escapeHtml(key)}:</strong> ${formatValue(value)}</li>`;
+        });
+        html += '</ul></dd>';
+    }
+    html += '</dl>';
+    elements.detailsContent.innerHTML = html;
+    openDrawer();
 }
 
 function renderDetails(data, type) {
     let html = '';
-
     if (type === 'node') {
-        html += `<h3>${data.label}</h3>`;
-        html += `<dl>
-            <dt>ID</dt><dd>${data.node_id}</dd>
-            <dt>Stage Family</dt><dd>${data.stage_family}</dd>
-            <dt>State</dt><dd>${data.state}</dd>`;
-
-        if (data.warnings && data.warnings.length > 0) {
-            html += `<dt class="warning">Warnings</dt><dd class="warning">${data.warnings.join('<br>')}</dd>`;
-        }
-
-        if (data.mapped_file_refs && data.mapped_file_refs.length > 0) {
+        html += `<h3>${escapeHtml(data.label)}</h3><dl>`;
+        html += `<dt>ID</dt><dd>${escapeHtml(data.node_id)}</dd>`;
+        html += `<dt>Stage Family</dt><dd>${escapeHtml(data.stage_family)}</dd>`;
+        html += `<dt>State</dt><dd>${escapeHtml(data.state)}</dd>`;
+        if (data.warnings?.length) html += `<dt class="warning">Warnings</dt><dd class="warning">${data.warnings.map(escapeHtml).join('<br>')}</dd>`;
+        if (data.mapped_file_refs?.length) {
             html += '<dt>Mapped Files</dt><dd><ul>';
-            data.mapped_file_refs.forEach((ref) => {
-                html += `<li>${ref}</li>`;
-            });
+            data.mapped_file_refs.forEach((ref) => { html += `<li>${escapeHtml(ref)}</li>`; });
             html += '</ul></dd>';
         }
-
-        if (data.structured_summary && Object.keys(data.structured_summary).length > 0) {
+        if (data.structured_summary && Object.keys(data.structured_summary).length) {
             html += '<dt>Summary Metrics</dt><dd><ul>';
-            Object.entries(data.structured_summary).forEach(([key, value]) => {
-                html += `<li><strong>${key}:</strong> ${formatValue(value)}</li>`;
-            });
+            Object.entries(data.structured_summary).forEach(([key, value]) => { html += `<li><strong>${escapeHtml(key)}:</strong> ${formatValue(value)}</li>`; });
             html += '</ul></dd>';
         }
         html += '</dl>';
-    } else if (type === 'file') {
-        html += `<h3>${data.name}</h3>`;
-        html += `<dl>
-            <dt>Path</dt><dd>${data.path}</dd>
-            <dt>Size</dt><dd>${data.size_bytes ? `${data.size_bytes} bytes` : '-'}</dd>
-            <dt>Modified</dt><dd>${data.modified_time ? new Date(parseFloat(data.modified_time) * 1000).toLocaleString() : '-'}</dd>`;
-
-        if (data.mapped_node_ids && data.mapped_node_ids.length > 0) {
-            html += `<dt>Mapped Nodes</dt><dd>${data.mapped_node_ids.join(', ')}</dd>`;
-        }
-
-        if (data.preview_available) {
-            html += `<dt>Preview</dt><dd><div id="file-preview-container" class="preview-container loading">Loading ${data.preview_kind} preview...</div></dd>`;
-        }
-
-        if (data.structured_summary && Object.keys(data.structured_summary).length > 0) {
+    } else {
+        html += `<h3>${escapeHtml(data.name)}</h3><dl>`;
+        html += `<dt>Path</dt><dd>${escapeHtml(data.path)}</dd>`;
+        html += `<dt>Size</dt><dd>${data.size_bytes ? `${data.size_bytes} bytes` : '-'}</dd>`;
+        html += `<dt>Modified</dt><dd>${data.modified_time ? new Date(parseFloat(data.modified_time) * 1000).toLocaleString() : '-'}</dd>`;
+        if (data.mapped_node_ids?.length) html += `<dt>Mapped Nodes</dt><dd>${escapeHtml(data.mapped_node_ids.join(', '))}</dd>`;
+        if (data.preview_available) html += `<dt>Preview</dt><dd><div id="file-preview-container" class="preview-container loading">Loading ${escapeHtml(data.preview_kind)} preview...</div></dd>`;
+        if (data.structured_summary && Object.keys(data.structured_summary).length) {
             html += '<dt>Metadata Summary</dt><dd><ul>';
-            Object.entries(data.structured_summary).forEach(([key, value]) => {
-                html += `<li><strong>${key}:</strong> ${formatValue(value)}</li>`;
-            });
+            Object.entries(data.structured_summary).forEach(([key, value]) => { html += `<li><strong>${escapeHtml(key)}:</strong> ${formatValue(value)}</li>`; });
             html += '</ul></dd>';
         }
         html += '</dl>';
     }
-
     elements.detailsContent.innerHTML = html;
     openDrawer();
 }
 
 function renderFilePreview(preview) {
     const container = document.getElementById('file-preview-container');
-    if (!container) {
-        return;
-    }
+    if (!container) return;
     const truncatedNote = preview.truncated ? `<div class="preview-note">Preview truncated to ${preview.max_chars} characters.</div>` : '';
     container.classList.remove('loading');
-    container.innerHTML = `
-        <div class="preview-meta">${preview.preview_kind.toUpperCase()} preview</div>
-        ${truncatedNote}
-        <pre class="preview-block"><code class="language-${preview.language}">${escapeHtml(preview.content)}</code></pre>
-    `;
+    container.innerHTML = `<div class="preview-meta">${escapeHtml(preview.preview_kind.toUpperCase())} preview</div>${truncatedNote}<pre class="preview-block"><code class="language-${escapeHtml(preview.language)}">${escapeHtml(preview.content)}</code></pre>`;
 }
 
 function renderPreviewError(message) {
     const container = document.getElementById('file-preview-container');
-    if (!container) {
-        return;
-    }
+    if (!container) return;
     container.classList.remove('loading');
     container.innerHTML = `<div class="warning">${escapeHtml(message)}</div>`;
 }
@@ -341,24 +353,22 @@ async function loadDetails(type, id) {
     try {
         elements.detailsContent.innerHTML = '<p>Loading details...</p>';
         openDrawer();
-
         if (type === 'node') {
             const data = await API.fetchNodeDetails(State.selectedRunId, id);
             renderDetails(data, 'node');
-        } else if (type === 'file') {
+        } else {
             const data = await API.fetchFileDetails(State.selectedRunId, id);
             renderDetails(data, 'file');
             if (data.preview_available) {
                 try {
-                    const preview = await API.fetchFilePreview(State.selectedRunId, id);
-                    renderFilePreview(preview);
+                    renderFilePreview(await API.fetchFilePreview(State.selectedRunId, id));
                 } catch (previewError) {
                     renderPreviewError(`Preview unavailable: ${previewError.message}`);
                 }
             }
         }
     } catch (error) {
-        elements.detailsContent.innerHTML = `<p class="warning">Error loading details: ${error.message}</p>`;
+        elements.detailsContent.innerHTML = `<p class="warning">Error loading details: ${escapeHtml(error.message)}</p>`;
     }
 }
 
@@ -373,85 +383,56 @@ async function loadRun(runId) {
     if (runInfo && !runInfo.reviewable) {
         elements.disabledOverlay.classList.remove('hidden');
         elements.disabledReason.textContent = runInfo.disabled_reason_code || 'Unknown reason';
-        State.graphData = null;
-        State.treeData = null;
+        State.pipelineDefinition = null;
+        State.overview = null;
         await renderGraph();
-        renderTree();
+        renderSidePane();
         return;
     }
 
     elements.disabledOverlay.classList.add('hidden');
-
     try {
-        if (State.viewMode === 'general') {
-            State.graphData = await API.fetchPipelineDefinition();
-            State.treeData = await API.fetchOverview(runId);
-        } else {
-            const overview = await API.fetchOverview(runId);
-            State.graphData = overview;
-            State.treeData = overview;
-        }
+        const [pipelineDefinition, overview] = await Promise.all([API.fetchPipelineDefinition(runId), API.fetchOverview(runId)]);
+        State.pipelineDefinition = pipelineDefinition;
+        State.overview = overview;
         await renderGraph();
-        renderTree();
+        renderSidePane();
     } catch (error) {
-        console.error('Failed to load run data', error);
         elements.disabledOverlay.classList.remove('hidden');
         elements.disabledReason.textContent = 'Failed to load overview payload.';
     }
 }
 
 async function init() {
-    mermaid.initialize({
-        startOnLoad: false,
-        securityLevel: 'loose',
-        flowchart: { useMaxWidth: false, htmlLabels: true },
-    });
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', flowchart: { useMaxWidth: false, htmlLabels: true } });
 
-    elements.runSelector.addEventListener('change', async (event) => {
-        await loadRun(event.target.value);
-    });
-
-    elements.viewGeneral.addEventListener('change', async () => {
-        State.viewMode = 'general';
-        await loadRun(State.selectedRunId);
-    });
-
-    elements.viewRun.addEventListener('change', async () => {
-        State.viewMode = 'run';
-        await loadRun(State.selectedRunId);
-    });
-
+    elements.runSelector.addEventListener('change', async (event) => { await loadRun(event.target.value); });
+    elements.viewGeneral.addEventListener('change', async () => { State.viewMode = 'general'; await loadRun(State.selectedRunId); });
+    elements.viewRun.addEventListener('change', async () => { State.viewMode = 'run'; await loadRun(State.selectedRunId); });
     elements.fileTree.addEventListener('click', async (event) => {
         const button = event.target.closest('button.tree-entry');
-        if (!button) {
-            return;
-        }
+        if (!button || State.viewMode !== 'run') return;
         event.preventDefault();
         await handleTreeClick(button);
     });
-
     elements.closeDrawerBtn.addEventListener('click', closeDrawer);
 
     try {
         const data = await API.fetchRuns();
         State.runs = data.runs;
         elements.runSelector.innerHTML = data.runs.map((run) => (
-            `<option value="${run.run_id}" ${!run.reviewable ? 'disabled' : ''}>${run.display_label || run.run_id}${!run.reviewable ? ` (${run.disabled_reason_code})` : ''}</option>`
+            `<option value="${run.run_id}" ${!run.reviewable ? 'disabled' : ''}>${escapeHtml(run.display_label || run.run_id)}${!run.reviewable ? ` (${escapeHtml(run.disabled_reason_code)})` : ''}</option>`
         )).join('');
-
-        if (data.default_run_id) {
-            elements.runSelector.value = data.default_run_id;
-            await loadRun(data.default_run_id);
-        } else if (data.runs.length > 0) {
-            elements.runSelector.value = data.runs[0].run_id;
-            await loadRun(data.runs[0].run_id);
+        const defaultRun = data.default_run_id || data.runs[0]?.run_id;
+        if (defaultRun) {
+            elements.runSelector.value = defaultRun;
+            await loadRun(defaultRun);
         } else {
             elements.runSelector.innerHTML = '<option>No NRC APS runs found</option>';
             elements.disabledOverlay.classList.remove('hidden');
             elements.disabledReason.textContent = 'No runs available.';
         }
     } catch (error) {
-        console.error('Initialization failed', error);
         elements.disabledOverlay.classList.remove('hidden');
         elements.disabledReason.textContent = 'Failed to load run catalog.';
     }

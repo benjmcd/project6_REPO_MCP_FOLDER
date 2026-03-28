@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from app.schemas.review_nrc_aps import NrcApsReviewFileDetailsOut, NrcApsReviewFilePreviewOut, NrcApsReviewNodeDetailsOut
-from app.services.review_nrc_aps_graph import CANONICAL_NODES, build_file_to_node_map, map_run_specific_graph
+from app.services.review_nrc_aps_graph import CANONICAL_NODE_INDEX, build_file_to_node_map, build_run_projection, get_run_projection_node
 from app.services.review_nrc_aps_runtime import normalize_path
 
 
@@ -15,16 +15,16 @@ TEXT_PREVIEW_SUFFIXES = {".txt", ".md", ".csv", ".ndjson", ".jsonl", ".log"}
 
 
 def _canonical_label_and_family(node_id: str) -> tuple[str, str]:
-    for candidate_id, label, stage_family, _, _ in CANONICAL_NODES:
-        if candidate_id == node_id:
-            return label, stage_family
-    raise ValueError(f"Unknown canonical node id: {node_id}")
+    node = CANONICAL_NODE_INDEX.get(node_id)
+    if not node:
+        raise ValueError(f"Unknown canonical node id: {node_id}")
+    return str(node["label"]), str(node["stage_family"])
 
 
 def get_node_details(run_id: str, review_root: Path, node_id: str) -> NrcApsReviewNodeDetailsOut:
-    node_states = map_run_specific_graph(run_id, review_root)
-    node_state = node_states.get(node_id)
-    if node_state is None:
+    run_projection = build_run_projection(run_id, review_root)
+    node = get_run_projection_node(run_projection, node_id)
+    if node is None:
         raise ValueError(f"Unknown canonical node id: {node_id}")
     label, stage_family = _canonical_label_and_family(node_id)
     return NrcApsReviewNodeDetailsOut(
@@ -32,10 +32,10 @@ def get_node_details(run_id: str, review_root: Path, node_id: str) -> NrcApsRevi
         label=label,
         stage_family=stage_family,
         run_id=run_id,
-        state=node_state.state,
-        warnings=node_state.warnings,
-        mapped_file_refs=node_state.mapped_file_refs,
-        structured_summary=node_state.summary_metrics,
+        state=node.state,
+        warnings=node.warnings,
+        mapped_file_refs=node.mapped_file_refs,
+        structured_summary=node.structured_summary,
     )
 
 
@@ -123,7 +123,7 @@ def get_file_details(run_id: str, review_root: Path, tree_id: str, file_path: Pa
         raise FileNotFoundError(f"File {file_path} does not exist.")
 
     relative_path = normalize_path(review_root, file_path)
-    file_node_map = build_file_to_node_map(map_run_specific_graph(run_id, review_root))
+    file_node_map = build_file_to_node_map(build_run_projection(run_id, review_root))
     stat = file_path.stat()
     preview_kind = None if file_path.is_dir() else _preview_kind(file_path)
     return NrcApsReviewFileDetailsOut(

@@ -7,6 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.services.review_nrc_aps_details import get_node_details, get_file_details, get_file_preview
 from app.services.review_nrc_aps_runtime import find_review_root_for_run
+from app.services.review_nrc_aps_graph import build_run_projection, build_file_to_node_map
 from app.services.review_nrc_aps_tree import build_strict_filesystem_tree
 
 def test_get_node_details():
@@ -24,7 +25,7 @@ def test_get_node_details():
 def test_get_file_details():
     run_id = "d6be0fff-bbd7-468a-9b00-7103d5995494"
     root = find_review_root_for_run(run_id)
-    tree = build_strict_filesystem_tree(run_id, root)
+    tree = build_strict_filesystem_tree(run_id, root, build_file_to_node_map(build_run_projection(run_id, root)))
     summary_node = next(c for c in tree.root.children if c.name == "local_corpus_e2e_summary.json")
 
     file_path = root / summary_node.path
@@ -41,7 +42,7 @@ def test_get_file_details():
 def test_get_file_preview():
     run_id = "d6be0fff-bbd7-468a-9b00-7103d5995494"
     root = find_review_root_for_run(run_id)
-    tree = build_strict_filesystem_tree(run_id, root)
+    tree = build_strict_filesystem_tree(run_id, root, build_file_to_node_map(build_run_projection(run_id, root)))
     summary_node = next(c for c in tree.root.children if c.name == "local_corpus_e2e_summary.json")
 
     file_path = root / summary_node.path
