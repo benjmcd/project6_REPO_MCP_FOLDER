@@ -72,41 +72,45 @@ _ALEMBIC_STUB_INSTALLED = False
 class CorpusFolderSpec:
     folder_name: str
     slug: str
-    expected_count: int
     document_type: str
     allow_unknown_document_type: bool = False
+    source: str = "known"
 
 
-EXPECTED_CORPUS_FOLDERS: tuple[CorpusFolderSpec, ...] = (
-    CorpusFolderSpec("exemption_from_nrc_requirements_documents_for_testing", "exemption", 3, "Exemption from NRC Requirements"),
-    CorpusFolderSpec("handbook_documents_for_testing", "handbook", 1, "Handbook"),
-    CorpusFolderSpec("inspection_reports_for_testing", "inspection", 4, "Inspection Report"),
-    CorpusFolderSpec(
-        "license-application_for_combined_license_documents_for_testing",
-        "combined-license",
-        3,
-        "License-Application for Combined License (COLA)",
-    ),
-    CorpusFolderSpec(
-        "license-application_for_facility _operating_license_documents_for_testing",
-        "facility-operating-license",
-        5,
-        "License-Application for Facility Operating License (Amend/Renewal) DKT 50",
-    ),
-    CorpusFolderSpec("licensee_event_reports_for_testing", "licensee-event", 4, "Licensee Event Report (LER)"),
-    CorpusFolderSpec("notice_of_violation_documents_for_testing", "notice-of-violation", 5, "Notice of Violation"),
-    CorpusFolderSpec("part_21_correspondence_documents_for_testing", "part-21", 5, "Part 21 Correspondence"),
-    CorpusFolderSpec("regulatory_guidance_documents_for_testing", "regulatory-guidance", 1, "Regulatory Guidance"),
-    CorpusFolderSpec("strategic_plan_documents_for_testing", "strategic-plan", 6, "Strategic Plan"),
-    CorpusFolderSpec(
-        "technical_specification_amendment_documents_for_testing",
-        "technical-spec-amendment",
-        3,
-        "Technical Specification Amendment",
-        allow_unknown_document_type=True,
-    ),
-    CorpusFolderSpec("weekly_information_report_documents_for_testing", "weekly-information-report", 3, "Weekly Information Report"),
-)
+UNKNOWN_LOCAL_CORPUS_DOCUMENT_TYPE = "Unknown Local Corpus Document"
+CORPUS_ROOT_GROUP_NAME = "__corpus_root__"
+
+
+KNOWN_CORPUS_FOLDERS: dict[str, CorpusFolderSpec] = {
+    spec.folder_name: spec
+    for spec in (
+        CorpusFolderSpec("exemption_from_nrc_requirements_documents_for_testing", "exemption", "Exemption from NRC Requirements"),
+        CorpusFolderSpec("handbook_documents_for_testing", "handbook", "Handbook"),
+        CorpusFolderSpec("inspection_reports_for_testing", "inspection", "Inspection Report"),
+        CorpusFolderSpec(
+            "license-application_for_combined_license_documents_for_testing",
+            "combined-license",
+            "License-Application for Combined License (COLA)",
+        ),
+        CorpusFolderSpec(
+            "license-application_for_facility _operating_license_documents_for_testing",
+            "facility-operating-license",
+            "License-Application for Facility Operating License (Amend/Renewal) DKT 50",
+        ),
+        CorpusFolderSpec("licensee_event_reports_for_testing", "licensee-event", "Licensee Event Report (LER)"),
+        CorpusFolderSpec("notice_of_violation_documents_for_testing", "notice-of-violation", "Notice of Violation"),
+        CorpusFolderSpec("part_21_correspondence_documents_for_testing", "part-21", "Part 21 Correspondence"),
+        CorpusFolderSpec("regulatory_guidance_documents_for_testing", "regulatory-guidance", "Regulatory Guidance"),
+        CorpusFolderSpec("strategic_plan_documents_for_testing", "strategic-plan", "Strategic Plan"),
+        CorpusFolderSpec(
+            "technical_specification_amendment_documents_for_testing",
+            "technical-spec-amendment",
+            "Technical Specification Amendment",
+            allow_unknown_document_type=True,
+        ),
+        CorpusFolderSpec("weekly_information_report_documents_for_testing", "weekly-information-report", "Weekly Information Report"),
+    )
+}
 
 GATE_SPECS: tuple[tuple[str, str, str], ...] = (
     ("artifact_ingestion", "nrc_aps_artifact_ingestion_gate.py", "artifact_ingestion.json"),
@@ -228,12 +232,12 @@ class LocalCorpusNrcClient:
         doc = self.docs_by_url.get(str(url))
         if doc is None:
             raise ProofError(f"unexpected download URL: {url}")
-        content = doc.file_path.read_bytes()
+        content = _safe_local_read_bytes(doc.file_path)
         if max_file_bytes is not None and len(content) > int(max_file_bytes):
             raise ProofError(f"fixture exceeds max_file_bytes: {doc.file_path}")
         self.download_urls.append(doc.url)
         digest = hashlib.sha256(content).hexdigest()
-        last_modified = format_datetime(datetime.fromtimestamp(doc.file_path.stat().st_mtime, tz=timezone.utc), usegmt=True)
+        last_modified = format_datetime(datetime.fromtimestamp(_safe_local_stat(doc.file_path).st_mtime, tz=timezone.utc), usegmt=True)
         return type(
             "LocalApsDownloadResult",
             (),
@@ -312,6 +316,96 @@ def _normalize_title(stem: str) -> str:
     return re.sub(r"\s+", " ", stem.replace("_", " ")).strip()
 
 
+def _slugify_corpus_group_name(name: str) -> str:
+    if name == CORPUS_ROOT_GROUP_NAME:
+        return "corpus-root"
+    normalized = name.strip().lower()
+    normalized = normalized.replace("_documents_for_testing", "")
+    normalized = normalized.replace("_for_testing", "")
+    normalized = re.sub(r"[^a-z0-9]+", "-", normalized)
+    normalized = normalized.strip("-")
+    return normalized or "corpus"
+
+
+def _strip_windows_extended_prefix(value: str) -> str:
+    if value.startswith("\\\\?\\UNC\\"):
+        return "\\\\" + value[8:]
+    if value.startswith("\\\\?\\"):
+        return value[4:]
+    return value
+
+
+def _to_filesystem_io_path(path: Path) -> Path:
+    if os.name != "nt":
+        return path
+    raw = str(path)
+    if raw.startswith("\\\\?\\"):
+        return Path(raw)
+    if not path.is_absolute():
+        raw = str((Path.cwd() / path).absolute())
+    if raw.startswith("\\\\"):
+        return Path("\\\\?\\UNC\\" + raw.lstrip("\\"))
+    return Path("\\\\?\\" + raw)
+
+
+def _safe_local_stat(path: Path) -> os.stat_result:
+    return _to_filesystem_io_path(path).stat()
+
+
+def _safe_local_read_bytes(path: Path) -> bytes:
+    return _to_filesystem_io_path(path).read_bytes()
+
+
+def _walk_corpus_pdfs(corpus_root: Path) -> list[Path]:
+    pdfs: list[Path] = []
+    for dirpath, dirnames, filenames in os.walk(str(_to_filesystem_io_path(corpus_root))):
+        dirnames.sort(key=str.lower)
+        for filename in sorted(filenames, key=str.lower):
+            if Path(filename).suffix.lower() != ".pdf":
+                continue
+            pdfs.append(Path(_strip_windows_extended_prefix(os.path.join(dirpath, filename))))
+    return pdfs
+
+
+def _group_corpus_pdfs(corpus_root: Path) -> tuple[dict[str, list[Path]], list[str]]:
+    normalized_root = Path(_strip_windows_extended_prefix(str(corpus_root.resolve())))
+    grouped: dict[str, list[Path]] = {}
+    for pdf_path in _walk_corpus_pdfs(normalized_root):
+        relative = pdf_path.relative_to(normalized_root)
+        group_name = relative.parts[0] if len(relative.parts) > 1 else CORPUS_ROOT_GROUP_NAME
+        grouped.setdefault(group_name, []).append(pdf_path)
+
+    ignored_empty_dirs = sorted(
+        child.name
+        for child in normalized_root.iterdir()
+        if child.is_dir() and child.name not in grouped
+    )
+    return grouped, ignored_empty_dirs
+
+
+def _resolve_corpus_folder_spec(folder_name: str) -> CorpusFolderSpec:
+    if folder_name == CORPUS_ROOT_GROUP_NAME:
+        return CorpusFolderSpec(
+            folder_name=folder_name,
+            slug=_slugify_corpus_group_name(folder_name),
+            document_type=UNKNOWN_LOCAL_CORPUS_DOCUMENT_TYPE,
+            allow_unknown_document_type=True,
+            source="root",
+        )
+
+    known = KNOWN_CORPUS_FOLDERS.get(folder_name)
+    if known is not None:
+        return known
+
+    return CorpusFolderSpec(
+        folder_name=folder_name,
+        slug=_slugify_corpus_group_name(folder_name),
+        document_type=UNKNOWN_LOCAL_CORPUS_DOCUMENT_TYPE,
+        allow_unknown_document_type=True,
+        source="dynamic",
+    )
+
+
 def _extract_accession_number(stem: str, *, ordinal: int, seen: set[str]) -> str:
     match = re.search(r"\b(ML\d{6,})\b", stem, flags=re.IGNORECASE)
     if match:
@@ -329,26 +423,38 @@ def _build_local_corpus_documents(corpus_root: Path) -> tuple[list[LocalCorpusDo
     _assert(corpus_root.resolve() == DEFAULT_CORPUS_ROOT.resolve(), f"corpus root must be {DEFAULT_CORPUS_ROOT}")
     _assert(corpus_root.exists(), f"corpus root not found: {corpus_root}")
 
-    folder_names_on_disk = sorted(path.name for path in corpus_root.iterdir() if path.is_dir())
-    expected_folder_names = sorted(spec.folder_name for spec in EXPECTED_CORPUS_FOLDERS)
-    _assert(folder_names_on_disk == expected_folder_names, "local corpus folder set does not match expected shape")
-
     document_types_reference = _load_document_types_reference()
+    pdf_groups, ignored_empty_dirs = _group_corpus_pdfs(corpus_root)
+    _assert(pdf_groups, f"no PDF files found under corpus root: {corpus_root}")
+
     folder_counts: dict[str, int] = {}
+    folder_specs: list[dict[str, Any]] = []
     docs: list[LocalCorpusDocument] = []
     seen_accessions: set[str] = set()
+    seen_slugs: set[str] = set()
     ordinal = 0
 
-    for spec in EXPECTED_CORPUS_FOLDERS:
+    for folder_name in sorted(pdf_groups, key=str.lower):
+        spec = _resolve_corpus_folder_spec(folder_name)
+        _assert(spec.slug not in seen_slugs, f"duplicate corpus folder slug resolved for {folder_name}: {spec.slug}")
+        seen_slugs.add(spec.slug)
         if not spec.allow_unknown_document_type:
             _assert(spec.document_type in document_types_reference, f"document type missing from document_types.json: {spec.document_type}")
-        folder_path = corpus_root / spec.folder_name
-        pdfs = sorted(path for path in folder_path.iterdir() if path.is_file() and path.suffix.lower() == ".pdf")
+        pdfs = pdf_groups[folder_name]
         folder_counts[spec.slug] = len(pdfs)
-        _assert(len(pdfs) == spec.expected_count, f"unexpected PDF count for {spec.folder_name}: expected {spec.expected_count}, found {len(pdfs)}")
+        folder_specs.append(
+            {
+                "folder_name": spec.folder_name,
+                "slug": spec.slug,
+                "document_type": spec.document_type,
+                "allow_unknown_document_type": spec.allow_unknown_document_type,
+                "source": spec.source,
+                "pdf_count": len(pdfs),
+            }
+        )
         for pdf_path in pdfs:
             ordinal += 1
-            mtime = datetime.fromtimestamp(pdf_path.stat().st_mtime, tz=timezone.utc)
+            mtime = datetime.fromtimestamp(_safe_local_stat(pdf_path).st_mtime, tz=timezone.utc)
             accession = _extract_accession_number(pdf_path.stem, ordinal=ordinal, seen=seen_accessions)
             docs.append(
                 LocalCorpusDocument(
@@ -366,7 +472,6 @@ def _build_local_corpus_documents(corpus_root: Path) -> tuple[list[LocalCorpusDo
                 )
             )
 
-    _assert(len(docs) == 43, f"unexpected corpus PDF total: {len(docs)}")
     _assert("Technical Specification, Amendment" in document_types_reference, "document_types.json must contain Technical Specification, Amendment")
     _assert("Technical Specification Amendment" not in document_types_reference, "document_types.json unexpectedly already contains Technical Specification Amendment")
 
@@ -374,6 +479,10 @@ def _build_local_corpus_documents(corpus_root: Path) -> tuple[list[LocalCorpusDo
         "corpus_root": str(corpus_root),
         "folder_counts": folder_counts,
         "total_pdfs": len(docs),
+        "folder_specs": folder_specs,
+        "dynamic_folder_names": [item["folder_name"] for item in folder_specs if item["source"] == "dynamic"],
+        "root_level_pdf_count": sum(item["pdf_count"] for item in folder_specs if item["source"] == "root"),
+        "ignored_empty_top_level_dirs": ignored_empty_dirs,
         "document_type_reference_path": str(DOCUMENT_TYPES_JSON),
         "technical_spec_runtime_type": "Technical Specification Amendment",
         "technical_spec_reference_type": "Technical Specification, Amendment",
@@ -429,18 +538,7 @@ def _run_preflight(runtime_root: Path) -> tuple[list[LocalCorpusDocument], dict[
         _assert(runtime_root.resolve().is_relative_to(DEFAULT_RUNTIME_PARENT.resolve()), f"runtime_root must stay under {DEFAULT_RUNTIME_PARENT}")
         _assert(not any(runtime_root.iterdir()), f"runtime_root must be empty when provided: {runtime_root}")
 
-    return docs, {
-        "interpreter_path": str(Path(sys.executable).resolve()),
-        "expected_interpreter_path": str(EXPECTED_INTERPRETER.resolve()),
-        "corpus_shape": corpus_shape,
-        "imports": imported_modules,
-        "ghostscript_path": ghostscript,
-        "paddle_model_dirs": {name: str(path) for name, path in paddle_dirs.items()},
-        "isolated_runtime_overrides": {
-            "CONNECTOR_LEASE_TTL_SECONDS": LOCAL_PROOF_CONNECTOR_LEASE_TTL_SECONDS,
-        },
-        "runtime_root": str(runtime_root),
-    }, [
+    findings: list[dict[str, Any]] = [
         {
             "code": "technical_spec_document_type_vocabulary_mismatch",
             "message": (
@@ -466,6 +564,56 @@ def _run_preflight(runtime_root: Path) -> tuple[list[LocalCorpusDocument], dict[
         },
         dict(LEASE_TTL_OVERRIDE_FINDING),
     ]
+
+    dynamic_folder_names = [str(name) for name in (corpus_shape.get("dynamic_folder_names") or []) if str(name).strip()]
+    if dynamic_folder_names:
+        findings.append(
+            {
+                "code": "dynamic_local_corpus_folder_set",
+                "message": (
+                    "The local corpus contains additional top-level PDF folders outside the historical fixed corpus set. "
+                    "The proof now discovers folders from disk deterministically and assigns placeholder document-type "
+                    f"metadata to dynamic folders: {', '.join(dynamic_folder_names)}."
+                ),
+            }
+        )
+
+    ignored_empty_top_level_dirs = [str(name) for name in (corpus_shape.get("ignored_empty_top_level_dirs") or []) if str(name).strip()]
+    if ignored_empty_top_level_dirs:
+        findings.append(
+            {
+                "code": "ignored_empty_local_corpus_dirs",
+                "message": (
+                    "Top-level corpus directories without PDFs were ignored by the proof corpus scan: "
+                    f"{', '.join(ignored_empty_top_level_dirs)}."
+                ),
+            }
+        )
+
+    root_level_pdf_count = int(corpus_shape.get("root_level_pdf_count") or 0)
+    if root_level_pdf_count > 0:
+        findings.append(
+            {
+                "code": "root_level_local_corpus_pdfs",
+                "message": (
+                    "The local corpus contains PDFs directly under the corpus root; the proof grouped them under the "
+                    f"'corpus-root' synthetic folder ({root_level_pdf_count} PDFs)."
+                ),
+            }
+        )
+
+    return docs, {
+        "interpreter_path": str(Path(sys.executable).resolve()),
+        "expected_interpreter_path": str(EXPECTED_INTERPRETER.resolve()),
+        "corpus_shape": corpus_shape,
+        "imports": imported_modules,
+        "ghostscript_path": ghostscript,
+        "paddle_model_dirs": {name: str(path) for name, path in paddle_dirs.items()},
+        "isolated_runtime_overrides": {
+            "CONNECTOR_LEASE_TTL_SECONDS": LOCAL_PROOF_CONNECTOR_LEASE_TTL_SECONDS,
+        },
+        "runtime_root": str(runtime_root),
+    }, findings
 
 
 def _allocate_runtime_root() -> Path:
@@ -866,8 +1014,10 @@ def _execute_proof(runtime: RuntimeContext, docs: list[LocalCorpusDocument], run
 
     execution_stamp = runtime_root.name
     idempotency_key = f"local-corpus-e2e-{execution_stamp}"
-    corpus_total_bytes = sum(doc.file_path.stat().st_size for doc in docs)
-    corpus_max_file_bytes = max(doc.file_path.stat().st_size for doc in docs)
+    total_docs = len(docs)
+    page_size = 10
+    corpus_total_bytes = sum(_safe_local_stat(doc.file_path).st_size for doc in docs)
+    corpus_max_file_bytes = max(_safe_local_stat(doc.file_path).st_size for doc in docs)
     submit_payload = {
         "mode": "strict_builder",
         "wire_shape_mode": "shape_a",
@@ -875,8 +1025,8 @@ def _execute_proof(runtime: RuntimeContext, docs: list[LocalCorpusDocument], run
         "artifact_pipeline_mode": "hydrate_process",
         "artifact_required_for_target_success": True,
         "include_document_details": True,
-        "page_size": 10,
-        "max_items": 43,
+        "page_size": page_size,
+        "max_items": total_docs,
         "max_file_bytes": _round_up_to_mib(corpus_max_file_bytes),
         "max_run_bytes": _round_up_to_mib(corpus_total_bytes),
         "content_parse_timeout_seconds": 0,
@@ -888,11 +1038,11 @@ def _execute_proof(runtime: RuntimeContext, docs: list[LocalCorpusDocument], run
     _assert(run_id, "run submission did not return connector_run_id")
     detail = _poll_run_detail(runtime.client, run_id)
     _assert(str(detail.get("status") or "") == "completed", f"run ended in unexpected status: {detail.get('status')}")
-    _assert(int(detail.get("discovered_count") or 0) == 43, "run did not discover 43 documents")
-    _assert(int(detail.get("selected_count") or 0) == 43, "run did not select 43 documents")
-    _assert(int(detail.get("downloaded_count") or 0) == 43, "run did not download 43 documents")
+    _assert(int(detail.get("discovered_count") or 0) == total_docs, f"run did not discover {total_docs} documents")
+    _assert(int(detail.get("selected_count") or 0) == total_docs, f"run did not select {total_docs} documents")
+    _assert(int(detail.get("downloaded_count") or 0) == total_docs, f"run did not download {total_docs} documents")
     _assert(int(detail.get("failed_count") or 0) == 0, "run reported failed targets")
-    _assert(int(detail.get("terminal_target_count") or 0) == 43, "not all targets reached a terminal state")
+    _assert(int(detail.get("terminal_target_count") or 0) == total_docs, "not all targets reached a terminal state")
     _assert(int(detail.get("nonterminal_target_count") or 0) == 0, "run left nonterminal targets")
 
     report_refs = dict(detail.get("report_refs") or {})
@@ -905,10 +1055,10 @@ def _execute_proof(runtime: RuntimeContext, docs: list[LocalCorpusDocument], run
     _assert(Path(artifact_ingestion_ref).exists(), f"aps_artifact_ingestion ref missing on disk: {artifact_ingestion_ref}")
     _assert(Path(content_index_ref).exists(), f"aps_content_index ref missing on disk: {content_index_ref}")
     artifact_run_payload = _read_json(Path(artifact_ingestion_ref))
-    _assert(len(list(artifact_run_payload.get("target_artifacts") or [])) == 43, "artifact-ingestion run artifact did not carry 43 target rows")
+    _assert(len(list(artifact_run_payload.get("target_artifacts") or [])) == total_docs, f"artifact-ingestion run artifact did not carry {total_docs} target rows")
 
     targets = _collect_all_targets(runtime.client, run_id)
-    _assert(len(targets) == 43, "targets route did not return 43 target rows")
+    _assert(len(targets) == total_docs, f"targets route did not return {total_docs} target rows")
     _assert(all(str(row.get("status") or "").strip() not in {"failed", "cancelled"} for row in targets), "targets route exposed failed/cancelled targets")
 
     content_units = _collect_all_content_units(runtime.client, run_id)
@@ -988,10 +1138,11 @@ def _execute_proof(runtime: RuntimeContext, docs: list[LocalCorpusDocument], run
         max(1, _coerce_int(payload.get("take"), _coerce_int(payload.get("page_size"), 100)))
         for payload in fake_client.search_payloads
     ]
-    _assert(sorted(set(skips)) == [0, 10, 20, 30, 40], f"unexpected search skip sequence: {skips}")
-    _assert(all(take == 10 for take in takes), f"unexpected search take values: {takes}")
-    _assert(len(fake_client.document_ids) == 43, f"expected 43 document detail fetches, observed {len(fake_client.document_ids)}")
-    _assert(len(fake_client.download_urls) == 43, f"expected 43 artifact downloads, observed {len(fake_client.download_urls)}")
+    expected_skips = list(range(0, total_docs, page_size))
+    _assert(sorted(set(skips)) == expected_skips, f"unexpected search skip sequence: {skips}")
+    _assert(all(take == page_size for take in takes), f"unexpected search take values: {takes}")
+    _assert(len(fake_client.document_ids) == total_docs, f"expected {total_docs} document detail fetches, observed {len(fake_client.document_ids)}")
+    _assert(len(fake_client.download_urls) == total_docs, f"expected {total_docs} artifact downloads, observed {len(fake_client.download_urls)}")
 
     return {
         "run_id": run_id,
