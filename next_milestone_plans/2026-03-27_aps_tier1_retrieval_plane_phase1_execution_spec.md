@@ -4,7 +4,7 @@
 
 Planning only. This document is an execution-grade planning packet for Phase 1. It is still not authorization to edit code or run migrations.
 
-This packet resolves the remaining Phase 1 ambiguities from `2026-03-27_aps_tier1_retrieval_plane_phase1.md`.
+This packet resolves the remaining Phase 1 ambiguities from the earlier Phase 1 direction-planning pass.
 
 ## Canonical Basis
 
@@ -51,7 +51,10 @@ The following decisions are resolved for Phase 1:
 - Use a derived retrieval table, not a materialized view.
 - Keep the retrieval plane current-state-only. Do not add retrieval-history tables in Phase 1.
 - Keep `search_text` equal to canonical `chunk_text` in Phase 1.
+- Use PostgreSQL lexical acceleration through an expression-index strategy over `search_text`. Do not require a literal `tsvector` storage column in SQLite-shaped lanes.
 - Keep Phase 1 lexical-only. Do not add vector columns, extension requirements, or embedding tables.
+- Keep Phase 1 search semantics exactly aligned with current `normalize_query_tokens()` and current list/search ordering rules. PostgreSQL search acceleration is for candidate pruning only, not for semantic or ranking changes.
+- Keep shadow build explicit and operator-invoked. Do not piggyback retrieval-plane maintenance onto canonical content-index upserts, existing validate actions, or migrations.
 - Keep Phase 1 public-surface behavior unchanged by default.
 - Use a dedicated validate-only parity action for verification.
 - Do not introduce a new public API endpoint in Phase 1.
@@ -97,7 +100,9 @@ The retrieval plane must therefore be able to reproduce, without widening:
 
 ## Logical DDL
 
-The Phase 1 retrieval plane should be implemented as one table with the following logical shape:
+The Phase 1 retrieval plane should be implemented as one table with the following logical row shape.
+
+This is a logical contract, not a requirement that every physical column exist identically in every dialect. Phase 1 must keep the cross-dialect retrieval row portable while allowing PostgreSQL-only lexical acceleration.
 
 ```text
 table aps_retrieval_chunk_v1
@@ -121,8 +126,6 @@ table aps_retrieval_chunk_v1
   chunk_text                     text         not null
   chunk_text_sha256              string(64)   not null
   search_text                    text         not null
-  search_vector                  tsvector     not null
-  search_config                  string(64)   not null
 
   content_status                 string(64)   not null
   quality_status                 string(32)   null
@@ -147,6 +150,12 @@ table aps_retrieval_chunk_v1
   created_at                     timestamptz  not null
 ```
 
+Physicalization rules:
+
+- PostgreSQL must accelerate lexical candidate pruning from `search_text`.
+- SQLite-shaped lanes must not be forced to emulate a literal `tsvector` type.
+- If PostgreSQL-specific search state is needed beyond `search_text`, keep it dialect-local and out of the cross-dialect logical row contract.
+
 ## Constraints And Indexes
 
 Required uniqueness:
@@ -161,7 +170,12 @@ Required lookup and ordering indexes:
 btree(run_id, content_id, chunk_ordinal, target_id)
 btree(run_id, quality_status, document_class)
 btree(content_id, chunk_id)
-gin(search_vector)
+```
+
+Required PostgreSQL lexical-acceleration index:
+
+```text
+gin(to_tsvector('simple', search_text))
 ```
 
 Optional Phase 1 index only if profiling proves need:
@@ -240,7 +254,7 @@ The Phase 1 rebuild algorithm should be:
 3. Serialize the canonical retrieval-visible payload exactly as current APS list/search surfaces would.
 4. Compute `source_signature_sha256`.
 5. Build `search_text = chunk_text`.
-6. Build `search_vector` from `search_text` using the chosen Phase 1 search config.
+6. Build PostgreSQL lexical-acceleration state from `search_text` only when the active dialect supports it.
 7. Upsert the retrieval row if absent.
 8. Update the retrieval row if signature changed.
 9. Leave the retrieval row untouched if signature is unchanged.
@@ -265,6 +279,54 @@ Reason:
 - it keeps lexical parity reasoning simpler
 
 If later evidence shows language-aware config is needed, that is a separate slice.
+
+## Search Semantics Contract
+
+Phase 1 retrieval-backed search must preserve current search behavior exactly.
+
+Required contract:
+
+- query tokenization must continue to use `normalize_query_tokens()`
+- empty-query handling must continue to fail with `empty_query`
+- candidate rows must satisfy all-token containment after current normalization
+- PostgreSQL lexical acceleration may only reduce the candidate set to likely matches; it must not widen or redefine token semantics
+- final result ranking must continue to sort by:
+  1. `matched_unique_query_terms` descending
+  2. `summed_term_frequency` descending
+  3. `chunk_length` ascending
+  4. `content_id` ascending
+  5. `chunk_ordinal` ascending
+  6. `run_id` ascending
+  7. `target_id` ascending
+- pagination must be applied after final ranking, not before
+
+List ordering parity must remain:
+
+1. `content_id` ascending
+2. `chunk_ordinal` ascending
+3. `target_id` ascending
+
+Phase 1 is not allowed to replace the current lexical ranking contract with `ts_rank`, stemming-sensitive ranking, semantic retrieval, or database-native pagination that changes final row order.
+
+## Shadow Build Rules
+
+Phase 1 shadow-build behavior must be explicit and separate from validation.
+
+Required rules:
+
+- retrieval-plane build is a non-validate operator/internal action
+- validate-only parity actions must never build or seed retrieval rows
+- migrations must never backfill retrieval rows
+- canonical content-index upserts must not automatically maintain retrieval rows in Phase 1
+- any shadow-build invocation must declare a bounded scope
+- if no scope is declared, the shadow-build surface must fail closed rather than perform an implicit broad rebuild
+
+Allowed bounded scopes:
+
+- run scope
+- target scope
+
+Full-scope rebuild remains out of base Phase 1 unless explicitly opened later.
 
 ## Read-Path Rules
 
@@ -354,6 +416,7 @@ Required tests:
 
 Required operator behavior:
 
+- retrieval-plane build must remain separate from retrieval-plane validation
 - new retrieval-plane validator must be validate-only
 - validator must fail closed on empty runtime
 - validator must not seed or generate business artifacts
@@ -378,6 +441,7 @@ The implementation must not:
 - change lower-layer document-processing behavior
 - change artifact-ingestion semantics
 - weaken any validate-only rule
+- violate the canonical `app.*` import-path guardrail
 - introduce dependency on OCR proof reruns unless lower-layer behavior changed
 
 ## Tech-Debt Controls
@@ -395,6 +459,7 @@ Phase 1 intentionally accepts:
 
 - dual-state debt between APS truth and retrieval shadow state
 - one additional validator surface
+- one explicit non-validate shadow-build surface
 
 Phase 1 intentionally rejects:
 
@@ -407,7 +472,7 @@ Phase 1 intentionally rejects:
 If implemented exactly to this packet, the deliverables should be:
 
 - one new retrieval table
-- one rebuild path
+- one explicit shadow-build path
 - one validate-only parity artifact/report
 - one operator entrypoint for parity validation
 - supporting tests for serializer compatibility, signature stability, rebuild correctness, and parity
@@ -422,7 +487,8 @@ Phase 1 is execution-complete only when all of the following are true:
 - it is derived only from canonical APS truth
 - it reproduces current retrieval-visible fields without schema widening
 - it preserves linkage-authoritative diagnostics semantics
-- it supports DB-native lexical retrieval
+- it supports PostgreSQL lexical candidate pruning without changing current ranking semantics
+- it can be shadow-built only through a separate non-validate surface
 - its parity validator passes on the intended scope
 - default public APS read behavior is still unchanged
 
