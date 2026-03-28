@@ -1,0 +1,66 @@
+# Slice 01 Implementation Diff
+
+The following changes were implemented in the `bakeoff-antigravity-slice01` lane.
+
+```diff
+--- a/backend/app/api/router.py
++++ b/backend/app/api/router.py
+@@ -84,6 +84,7 @@
+ from app.services.ingest import upload_csv_to_dataset
+ from app.services.profiling import profile_dataset_version
+ from app.services.transforms import apply_transformations, recommend_transformations
++from app.api.review_nrc_aps import router as review_nrc_aps_router
+ 
+ api_router = APIRouter()
+ 
+@@ -850,6 +851,8 @@
+         raise HTTPException(status_code=404, detail=str(exc)) from exc
+     return ConnectorRunOut.model_validate(serialize_connector_run(db, run))
+ 
++api_router.include_router(review_nrc_aps_router)
++
+ 
+ def _serialize_analysis_run(db: Session, analysis_run_id: str) -> AnalysisRunOut:
+--- a/backend/main.py
++++ b/backend/main.py
+@@ -14,6 +14,7 @@
+ from app.api.router import api_router
+ from app.core.config import bootstrap_storage_tree, settings
+ from app.db.session import Base, engine
++from app.review_ui.page import get_review_page_html
+ 
+ 
+ def _run_migrations() -> None:
+@@ -44,6 +45,13 @@
+ app.include_router(api_router, prefix=settings.api_prefix)
+ bootstrap_storage_tree()
+ app.mount('/storage', StaticFiles(directory=settings.storage_dir), name='storage')
++static_ui_dir = Path(__file__).resolve().parent / "app" / "review_ui" / "static"
++app.mount('/review/static', StaticFiles(directory=str(static_ui_dir)), name='review_static')
++
++
++@app.get('/review/nrc-aps', response_class=HTMLResponse)
++def review_nrc_aps() -> str:
++    return get_review_page_html()
+ 
+ 
+ @app.get('/health')
+```
+
+## New Files Created
+
+- `backend/app/schemas/review_nrc_aps.py`
+- `backend/app/api/review_nrc_aps.py`
+- `backend/app/services/review_nrc_aps_runtime.py`
+- `backend/app/services/review_nrc_aps_catalog.py`
+- `backend/app/services/review_nrc_aps_graph.py`
+- `backend/app/services/review_nrc_aps_tree.py`
+- `backend/app/services/review_nrc_aps_details.py`
+- `backend/app/services/review_nrc_aps_overview.py`
+- `backend/app/review_ui/page.py`
+- `backend/app/review_ui/static/review.css`
+- `backend/app/review_ui/static/review.js`
+- `backend/app/review_ui/static/vendor/mermaid.min.js`
+- `backend/app/review_ui/static/vendor/svg-pan-zoom.min.js`
+- `backend/app/review_ui/static/vendor/THIRD_PARTY_NOTICES.md`
+- `backend/tests/test_review_nrc_aps.py`
