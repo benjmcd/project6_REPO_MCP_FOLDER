@@ -48,18 +48,52 @@ class NrcApsReviewCanonicalGraphOut(BaseModel):
     edges: list[NrcApsReviewCanonicalEdgeOut] = Field(default_factory=list)
 
 
-class NrcApsReviewRunNodeStateOut(BaseModel):
-    node_id: str
-    state: str
+class NrcApsReviewProjectionNodeOut(BaseModel):
+    projection_id: str
+    title: str
+    detail_lines: list[str] = Field(default_factory=list)
+    stage_family: str
+    canonical_node_ids: list[str] = Field(default_factory=list)
+    state: str = "unknown"
     warnings: list[str] = Field(default_factory=list)
     mapped_file_refs: list[str] = Field(default_factory=list)
-    summary_metrics: dict[str, Any] = Field(default_factory=dict)
+    mapped_tree_ids: list[str] = Field(default_factory=list)
+    artifact_refs: list[str] = Field(default_factory=list)
+    structured_summary: dict[str, Any] = Field(default_factory=dict)
+    is_composite: bool = False
 
 
-class NrcApsReviewRunGraphOut(BaseModel):
+class NrcApsReviewProjectionEdgeOut(BaseModel):
+    source_id: str
+    target_id: str
+
+
+class NrcApsReviewProjectionGraphOut(BaseModel):
+    projection_id: str
+    version: str = "1"
+    nodes: list[NrcApsReviewProjectionNodeOut] = Field(default_factory=list)
+    edges: list[NrcApsReviewProjectionEdgeOut] = Field(default_factory=list)
+
+
+class NrcApsReviewPipelineLayoutEntryOut(BaseModel):
+    label: str
+    value: str
+    path: str | None = None
+
+
+class NrcApsReviewPipelineLayoutSectionOut(BaseModel):
+    title: str
+    entries: list[NrcApsReviewPipelineLayoutEntryOut] = Field(default_factory=list)
+
+
+class NrcApsReviewPipelineLayoutOut(BaseModel):
     run_id: str
+    sections: list[NrcApsReviewPipelineLayoutSectionOut] = Field(default_factory=list)
+
+
+class NrcApsReviewPipelineDefinitionOut(BaseModel):
     canonical_graph: NrcApsReviewCanonicalGraphOut
-    node_states: dict[str, NrcApsReviewRunNodeStateOut] = Field(default_factory=dict)
+    pipeline_projection: NrcApsReviewProjectionGraphOut
 
 
 class NrcApsReviewTreeNodeOut(BaseModel):
@@ -115,5 +149,7 @@ class NrcApsReviewFilePreviewOut(BaseModel):
 
 class NrcApsReviewOverviewOut(BaseModel):
     run_id: str
-    graph: NrcApsReviewRunGraphOut
+    run_summary: dict[str, Any] = Field(default_factory=dict)
+    run_projection: NrcApsReviewProjectionGraphOut
+    pipeline_layout: NrcApsReviewPipelineLayoutOut
     tree: NrcApsReviewTreeOut
