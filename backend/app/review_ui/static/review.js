@@ -1,7 +1,7 @@
 const State = {
     runs: [],
     selectedRunId: null,
-    viewMode: 'run',
+    viewMode: 'run_heavy',
     pipelineDefinition: null,
     overview: null,
     selectedNodeId: null,
@@ -11,8 +11,9 @@ const State = {
 
 const elements = {
     runSelector: document.getElementById('run-selector'),
-    viewGeneral: document.getElementById('view-general'),
-    viewRun: document.getElementById('view-run'),
+    viewPipeline: document.getElementById('view-pipeline'),
+    viewRunLight: document.getElementById('view-run-light'),
+    viewRunHeavy: document.getElementById('view-run-heavy'),
     mermaidContainer: document.getElementById('mermaid-container'),
     fileTree: document.getElementById('file-tree'),
     treePaneHeader: document.querySelector('#tree-pane .pane-header'),
@@ -78,8 +79,49 @@ function formatValue(value) {
     return escapeHtml(String(value));
 }
 
+function isPipelineMode() {
+    return State.viewMode === 'pipeline';
+}
+
+function isRunLightMode() {
+    return State.viewMode === 'run_light';
+}
+
+function isRunHeavyMode() {
+    return State.viewMode === 'run_heavy';
+}
+
+function buildCanonicalProjection() {
+    const graph = State.pipelineDefinition?.canonical_graph;
+    if (!graph) return null;
+    return {
+        projection_id: graph.pipeline_id || 'nrc_aps_canonical_pipeline',
+        nodes: graph.nodes.map((node) => ({
+            projection_id: node.node_id,
+            title: node.label,
+            detail_lines: [],
+            stage_family: node.stage_family,
+            canonical_node_ids: [node.node_id],
+            state: 'unknown',
+            warnings: [],
+            mapped_file_refs: [],
+            mapped_tree_ids: [],
+            artifact_refs: [],
+            structured_summary: {
+                description: node.description || '',
+                expected_artifact_classes: node.expected_artifact_classes || [],
+            },
+            is_composite: false,
+        })),
+        edges: graph.edges.map((edge) => ({ source_id: edge.source_id, target_id: edge.target_id })),
+    };
+}
+
 function currentGraph() {
-    if (State.viewMode === 'general') {
+    if (isPipelineMode()) {
+        return buildCanonicalProjection();
+    }
+    if (isRunLightMode()) {
         return State.pipelineDefinition?.pipeline_projection ?? null;
     }
     return State.overview?.run_projection ?? null;
@@ -98,8 +140,9 @@ function nodeMermaidLabel(node) {
 function projectionClasses(node) {
     const classes = [`state_${node.state || 'unknown'}`];
     if (node.is_composite) classes.push('projection_composite');
-    else if (State.viewMode === 'general') classes.push('projection_concept');
-    else classes.push('projection_run');
+    else if (isPipelineMode()) classes.push('projection_canonical');
+    else if (isRunLightMode()) classes.push('projection_light');
+    else classes.push('projection_heavy');
     if (State.selectedNodeId === node.projection_id) classes.push('selected');
     return classes;
 }
@@ -110,8 +153,9 @@ function buildMermaidText(graph) {
     text += '    classDef state_missing fill:#fde8e8,stroke:#b42318,stroke-width:2px,stroke-dasharray:5 3;\n';
     text += '    classDef state_mismatch fill:#fff4d7,stroke:#b54708,stroke-width:2px;\n';
     text += '    classDef state_unknown fill:#eef2ff,stroke:#4f46e5,stroke-width:2px;\n';
-    text += '    classDef projection_concept fill:#f6f8fc,stroke:#506176,stroke-width:1.75px,color:#18212f;\n';
-    text += '    classDef projection_run fill:#f8fff9,stroke:#1f7a45,stroke-width:1.5px,color:#10261a;\n';
+    text += '    classDef projection_canonical fill:#ffffff,stroke:#4f46e5,stroke-width:1.75px,color:#1f2557;\n';
+    text += '    classDef projection_light fill:#f6f8fc,stroke:#506176,stroke-width:1.75px,color:#18212f;\n';
+    text += '    classDef projection_heavy fill:#f8fff9,stroke:#1f7a45,stroke-width:1.5px,color:#10261a;\n';
     text += '    classDef projection_composite fill:#eef4fb,stroke:#315ea8,stroke-width:2.5px,color:#10233f;\n';
     text += '    classDef selected fill:#dbeafe,stroke:#1d4ed8,stroke-width:4px;\n';
 
@@ -158,16 +202,28 @@ async function renderGraph() {
 
 window.handleNodeClick = async (nodeId) => {
     State.selectedNodeId = nodeId;
-    if (State.viewMode === 'run') {
+    if (isRunHeavyMode()) {
         State.selectedTreeId = null;
         await renderGraph();
         renderSidePane();
         await loadDetails('node', nodeId);
         return;
     }
+    if (isRunLightMode()) {
+        State.selectedTreeId = null;
+        await renderGraph();
+        renderSidePane();
+        const node = findCurrentNode(nodeId);
+        if (node?.is_composite) {
+            renderProjectionNodeDetails(node);
+            return;
+        }
+        await loadDetails('node', nodeId);
+        return;
+    }
     await renderGraph();
     renderSidePane();
-    renderGeneralNodeDetails(nodeId);
+    renderPipelineNodeDetails(nodeId);
 };
 
 function buildTreeElement(node, depth = 0) {
@@ -243,8 +299,11 @@ function renderTree() {
 }
 
 function renderSidePane() {
-    if (State.viewMode === 'general') renderPipelineLayout();
-    else renderTree();
+    if (isRunHeavyMode()) {
+        renderTree();
+        return;
+    }
+    renderPipelineLayout();
 }
 
 async function handleTreeClick(button) {
@@ -265,9 +324,27 @@ async function handleTreeClick(button) {
 function openDrawer() { elements.detailsDrawer.classList.add('open'); }
 function closeDrawer() { elements.detailsDrawer.classList.remove('open'); }
 
-function renderGeneralNodeDetails(nodeId) {
+function renderPipelineNodeDetails(nodeId) {
     const node = findCurrentNode(nodeId);
     if (!node) return;
+    let html = `<h3>${escapeHtml(node.title)}</h3><dl>`;
+    html += `<dt>Projection ID</dt><dd>${escapeHtml(node.projection_id)}</dd>`;
+    html += `<dt>Canonical Nodes</dt><dd>${escapeHtml((node.canonical_node_ids || []).join(', '))}</dd>`;
+    html += `<dt>Stage Family</dt><dd>${escapeHtml(node.stage_family)}</dd>`;
+    const description = node.structured_summary?.description;
+    if (description) {
+        html += `<dt>Description</dt><dd>${escapeHtml(description)}</dd>`;
+    }
+    const expectedArtifacts = node.structured_summary?.expected_artifact_classes || [];
+    if (expectedArtifacts.length) {
+        html += `<dt>Expected Artifact Classes</dt><dd>${escapeHtml(expectedArtifacts.join(', '))}</dd>`;
+    }
+    html += '</dl>';
+    elements.detailsContent.innerHTML = html;
+    openDrawer();
+}
+
+function renderProjectionNodeDetails(node) {
     let html = `<h3>${escapeHtml(node.title)}</h3><dl>`;
     html += `<dt>Projection ID</dt><dd>${escapeHtml(node.projection_id)}</dd>`;
     html += `<dt>Canonical Nodes</dt><dd>${escapeHtml((node.canonical_node_ids || []).join(', '))}</dd>`;
@@ -403,15 +480,25 @@ async function loadRun(runId) {
     }
 }
 
+async function setViewMode(viewMode) {
+    State.viewMode = viewMode;
+    State.selectedNodeId = null;
+    if (!isRunHeavyMode()) State.selectedTreeId = null;
+    closeDrawer();
+    await renderGraph();
+    renderSidePane();
+}
+
 async function init() {
     mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', flowchart: { useMaxWidth: false, htmlLabels: true } });
 
     elements.runSelector.addEventListener('change', async (event) => { await loadRun(event.target.value); });
-    elements.viewGeneral.addEventListener('change', async () => { State.viewMode = 'general'; await loadRun(State.selectedRunId); });
-    elements.viewRun.addEventListener('change', async () => { State.viewMode = 'run'; await loadRun(State.selectedRunId); });
+    elements.viewPipeline.addEventListener('change', async () => { await setViewMode('pipeline'); });
+    elements.viewRunLight.addEventListener('change', async () => { await setViewMode('run_light'); });
+    elements.viewRunHeavy.addEventListener('change', async () => { await setViewMode('run_heavy'); });
     elements.fileTree.addEventListener('click', async (event) => {
         const button = event.target.closest('button.tree-entry');
-        if (!button || State.viewMode !== 'run') return;
+        if (!button || !isRunHeavyMode()) return;
         event.preventDefault();
         await handleTreeClick(button);
     });

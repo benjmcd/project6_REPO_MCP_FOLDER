@@ -24,9 +24,9 @@ body { display: flex; flex-direction: column; height: 100vh; background: var(--b
 .header-right label { color: var(--muted-text); font-size: 0.92rem; font-weight: 600; }
 .header-right select { min-width: 420px; max-width: 520px; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: #fff; color: var(--text-color); }
 
-.view-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 4px; border: 1px solid var(--border-color); border-radius: 999px; background: #eef3fb; }
+.view-toggle { display: inline-flex; align-items: stretch; gap: 6px; padding: 4px; border: 1px solid var(--border-color); border-radius: 999px; background: #eef3fb; flex-wrap: wrap; max-width: min(100%, 900px); }
 .view-toggle input { display: none; }
-.view-toggle label { padding: 8px 14px; border-radius: 999px; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--primary-color); white-space: nowrap; }
+.view-toggle label { padding: 8px 14px; border-radius: 999px; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--primary-color); white-space: nowrap; text-align: center; }
 .view-toggle input:checked + label { background: var(--primary-color); color: white; box-shadow: 0 2px 6px rgba(24, 100, 217, 0.22); }
 
 .app-body { display: flex; flex: 1; overflow: hidden; position: relative; }
@@ -79,6 +79,9 @@ body { display: flex; flex-direction: column; height: 100vh; background: var(--b
 
 .node.selected rect, .node.selected polygon, .node.selected path { stroke: var(--primary-color) !important; stroke-width: 3px !important; }
 .node.projection_composite rect, .node.projection_composite polygon { rx: 10px; ry: 10px; }
+.node.projection_canonical .label { font-size: 13px; font-weight: 600; }
+.node.projection_light .label { font-size: 12px; }
+.node.projection_heavy .label { font-size: 11px; }
 .node .label { font-size: 14px; line-height: 1.35; }
 
 .disabled-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); z-index: 100; display: flex; align-items: center; justify-content: center; }
@@ -93,4 +96,5 @@ dd { margin-left: 10px; color: #555; word-break: break-all; }
 @media (max-width: 1280px) {
     .header-right select { min-width: 280px; max-width: 100%; }
     .tree-pane { width: 320px; min-width: 280px; }
+    .view-toggle { max-width: 100%; }
 }
