@@ -122,6 +122,24 @@ Design references:
   - ready-to-paste Antigravity prompts for the Phase1C dry run and implementation round
 - `agent_bakeoff_prompt_jules_phase1c.md`
   - ready-to-paste Jules prompts for the Phase1C dry run and implementation round
+- `agent_bakeoff_local_setup_phase1d.md`
+  - exact local lane mapping for the Phase1D public run-scoped retrieval cutover bake-off
+- `agent_bakeoff_phase1d_brief.md`
+  - vendor-neutral brief for the Tier1 retrieval-plane Phase1D slice
+- `agent_bakeoff_phase1d_scope.md`
+  - strict bounded scope for the public run-scoped cutover round
+- `agent_bakeoff_phase1d_implementation_blueprint.md`
+  - repo-fit file and module ownership plan for the Phase1D slice
+- `agent_bakeoff_phase1d_validation_plan.md`
+  - required validation and non-regression checks for the Phase1D slice
+- `agent_bakeoff_phase1d_submission_checklist.md`
+  - required delivery artifacts for the Phase1D bake-off round
+- `agent_bakeoff_phase1d_rubric.md`
+  - scoring rubric for the Phase1D bake-off round
+- `agent_bakeoff_prompt_antigravity_phase1d.md`
+  - ready-to-paste Antigravity prompts for the Phase1D dry run and implementation round
+- `agent_bakeoff_prompt_jules_phase1d.md`
+  - ready-to-paste Jules prompts for the Phase1D dry run and implementation round
 - `agent_workspaces\jules\`
   - dedicated bake-off workspace/output directory for Jules
 - `agent_workspaces\antigravity\`
@@ -136,16 +154,17 @@ Design references:
 
 ## Current Bake-Off Status
 
-There are now four distinct bake-off packets in this folder:
+There are now five distinct bake-off packets in this folder:
 
 - the historical Slice 01 review-UI packet
 - the historical Phase1A APS Tier1 retrieval-plane packet
 - the historical Phase1B APS Tier1 operator retrieval read-path packet
-- the current Phase1C APS Tier1 validate-only cutover-proof packet
+- the historical Phase1C APS Tier1 validate-only cutover-proof packet
+- the current Phase1D APS Tier1 public run-scoped cutover packet
 
-Use the Phase1C packet for the next retrieval bake-off round. Do not reuse the Slice 01, Phase1A, or Phase1B prompts for the Phase1C round.
+Use the Phase1D packet for the next retrieval bake-off round. Do not reuse the Slice 01, Phase1A, Phase1B, or Phase1C prompts for the Phase1D round.
 
-For both Jules and Antigravity, start a brand-new session/task for each new milestone round. Do not reuse an older Slice 01, Phase1A, or Phase1B thread and try to steer it onto Phase1C.
+For both Jules and Antigravity, start a brand-new session or task for each new milestone round. Do not reuse an older Slice 01, Phase1A, Phase1B, or Phase1C thread and try to steer it onto Phase1D.
 
 ## Carry-Forward QA Guardrails
 
@@ -166,14 +185,14 @@ Those known UI issues are not blockers for the retrieval-plane bake-off. They ar
 - later milestones must not break the verified pass conditions
 - do not opportunistically broaden a backend retrieval slice into UI redesign work unless the prompt explicitly asks for that
 
-## Active Phase1C Packet
+## Active Phase1D Packet
 
-- `agent_bakeoff_local_setup_phase1c.md`
-- `agent_bakeoff_phase1c_brief.md`
-- `agent_bakeoff_phase1c_scope.md`
-- `agent_bakeoff_phase1c_implementation_blueprint.md`
-- `agent_bakeoff_phase1c_validation_plan.md`
-- `agent_bakeoff_phase1c_submission_checklist.md`
-- `agent_bakeoff_phase1c_rubric.md`
-- `agent_bakeoff_prompt_antigravity_phase1c.md`
-- `agent_bakeoff_prompt_jules_phase1c.md`
+- `agent_bakeoff_local_setup_phase1d.md`
+- `agent_bakeoff_phase1d_brief.md`
+- `agent_bakeoff_phase1d_scope.md`
+- `agent_bakeoff_phase1d_implementation_blueprint.md`
+- `agent_bakeoff_phase1d_validation_plan.md`
+- `agent_bakeoff_phase1d_submission_checklist.md`
+- `agent_bakeoff_phase1d_rubric.md`
+- `agent_bakeoff_prompt_antigravity_phase1d.md`
+- `agent_bakeoff_prompt_jules_phase1d.md`
