@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet("setup", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "validate-nrc-aps-promotion", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
+    [ValidateSet("setup", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "validate-nrc-aps-promotion", "validate-nrc-aps-retrieval-cutover", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
     [string]$Action = "status",
     [string]$BaseUrl = "http://127.0.0.1:8000",
     [int]$ConsecutiveRuns = 3,
@@ -14,6 +14,8 @@ param(
     [string]$NrcApsPromotionPolicy = "",
     [string]$NrcApsTunedPromotionPolicy = "",
     [string]$NrcApsPromotionRationale = "",
+    [string]$NrcApsRunId = "",
+    [string]$NrcApsSearchQuery = "",
     [string]$PythonVersion = "3.12",
     [switch]$AbortBatchOnCycleFailure,
     [switch]$RequireOcr,
@@ -47,6 +49,7 @@ $NrcApsDeterministicInsightArtifactGatePath = Join-Path $RepoRoot "tools\nrc_aps
 $NrcApsDeterministicChallengeArtifactGatePath = Join-Path $RepoRoot "tools\nrc_aps_deterministic_challenge_artifact_gate.py"
 $NrcApsDeterministicChallengeReviewPacketGatePath = Join-Path $RepoRoot "tools\nrc_aps_deterministic_challenge_review_packet_gate.py"
 $NrcApsPromotionGatePath = Join-Path $RepoRoot "tools\nrc_aps_promotion_gate.py"
+$NrcApsRetrievalCutoverGatePath = Join-Path $RepoRoot "tools\nrc_aps_retrieval_cutover_gate.py"
 $NrcApsPromotionTuningPath = Join-Path $RepoRoot "tools\nrc_aps_promotion_tuning.py"
 $NrcApsReplaySourceRoot = Join-Path $BackendDir "app\storage_test\connectors"
 $NrcApsLiveReportsDir = Join-Path $BackendDir "app\storage\connectors\reports"
@@ -584,6 +587,24 @@ switch ($Action) {
                 "--policy", $policyPath,
                 "--report", $NrcApsPromotionValidationReportPath
             ) -WorkingDirectory $BackendDirAbs
+        }
+    }
+    "validate-nrc-aps-retrieval-cutover" {
+        if (-not (Test-Path $NrcApsRetrievalCutoverGatePath)) {
+            throw "NRC APS retrieval cutover gate script not found: $NrcApsRetrievalCutoverGatePath"
+        }
+        if ([string]::IsNullOrWhiteSpace($NrcApsRunId)) {
+            throw "NrcApsRunId is required for validate-nrc-aps-retrieval-cutover."
+        }
+        $args = @(
+            $NrcApsRetrievalCutoverGatePath,
+            "--run-id", $NrcApsRunId
+        )
+        if (-not [string]::IsNullOrWhiteSpace($NrcApsSearchQuery)) {
+            $args += @("--query", $NrcApsSearchQuery)
+        }
+        Invoke-WithTier1 {
+            Invoke-Py -Arguments $args -WorkingDirectory $BackendDirAbs
         }
     }
     "compare-nrc-aps-promotion-policy" {
