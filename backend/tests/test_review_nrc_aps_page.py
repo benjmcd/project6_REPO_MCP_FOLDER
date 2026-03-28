@@ -20,3 +20,4 @@ def test_page_loads():
     assert "Pipeline Overview" in response.text
     assert "Run-specific Overview (Light)" in response.text
     assert "Run-specific Overview (Heavy)" in response.text
+    assert 'aria-label="Close details"' in response.text

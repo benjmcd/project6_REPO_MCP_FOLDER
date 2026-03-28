@@ -58,6 +58,8 @@ const API = {
 };
 
 let panZoomInstance = null;
+let _runSeq = 0;
+let _detailsSeq = 0;
 
 function escapeMermaidLabel(label) {
     return String(label ?? '').replace(/"/g, '&quot;');
@@ -427,29 +429,38 @@ function renderPreviewError(message) {
 }
 
 async function loadDetails(type, id) {
+    const seq = ++_detailsSeq;
     try {
         elements.detailsContent.innerHTML = '<p>Loading details...</p>';
         openDrawer();
         if (type === 'node') {
             const data = await API.fetchNodeDetails(State.selectedRunId, id);
+            if (seq !== _detailsSeq) return;
             renderDetails(data, 'node');
         } else {
             const data = await API.fetchFileDetails(State.selectedRunId, id);
+            if (seq !== _detailsSeq) return;
             renderDetails(data, 'file');
             if (data.preview_available) {
                 try {
-                    renderFilePreview(await API.fetchFilePreview(State.selectedRunId, id));
+                    const preview = await API.fetchFilePreview(State.selectedRunId, id);
+                    if (seq !== _detailsSeq) return;
+                    renderFilePreview(preview);
                 } catch (previewError) {
+                    if (seq !== _detailsSeq) return;
                     renderPreviewError(`Preview unavailable: ${previewError.message}`);
                 }
             }
         }
     } catch (error) {
+        if (seq !== _detailsSeq) return;
         elements.detailsContent.innerHTML = `<p class="warning">Error loading details: ${escapeHtml(error.message)}</p>`;
     }
 }
 
 async function loadRun(runId) {
+    const seq = ++_runSeq;
+    ++_detailsSeq;
     State.selectedRunId = runId;
     State.selectedNodeId = null;
     State.selectedTreeId = null;
@@ -463,6 +474,7 @@ async function loadRun(runId) {
         State.pipelineDefinition = null;
         State.overview = null;
         await renderGraph();
+        if (seq !== _runSeq) return;
         renderSidePane();
         return;
     }
@@ -470,17 +482,21 @@ async function loadRun(runId) {
     elements.disabledOverlay.classList.add('hidden');
     try {
         const [pipelineDefinition, overview] = await Promise.all([API.fetchPipelineDefinition(runId), API.fetchOverview(runId)]);
+        if (seq !== _runSeq) return;
         State.pipelineDefinition = pipelineDefinition;
         State.overview = overview;
         await renderGraph();
+        if (seq !== _runSeq) return;
         renderSidePane();
     } catch (error) {
+        if (seq !== _runSeq) return;
         elements.disabledOverlay.classList.remove('hidden');
         elements.disabledReason.textContent = 'Failed to load overview payload.';
     }
 }
 
 async function setViewMode(viewMode) {
+    ++_detailsSeq;
     State.viewMode = viewMode;
     State.selectedNodeId = null;
     if (!isRunHeavyMode()) State.selectedTreeId = null;
