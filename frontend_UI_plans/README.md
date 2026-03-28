@@ -10,6 +10,7 @@ The retained files here are the UI-facing planning references for:
 - the internal review UI data contract
 - node/artifact mapping and reviewability rules
 - validation expectations for the review surface
+- the separate document-trace workspace for run-scoped source-to-extraction inspection
 
 These files remain useful as design and maintenance references even though the separate Jules/Antigravity bake-off packet is no longer part of the active repo surface.
 
@@ -48,6 +49,16 @@ The files in this folder are reference material, not the live implementation sur
   - review-UI validation expectations
 - `nrc_aps_review_ui_example_payloads.md`
   - example payloads derived from the golden run
+- `nrc_aps_document_trace_ui_spec.md`
+  - product specification for the separate run-scoped document-trace workspace
+- `nrc_aps_document_trace_ui_data_contract.md`
+  - additive read-only route and payload plan for the document-trace workspace
+- `nrc_aps_document_trace_ui_implementation_blueprint.md`
+  - repo-fit module, file, and phase blueprint for implementing document trace
+- `nrc_aps_document_trace_ui_validation_plan.md`
+  - validation requirements for document-trace behavior, safety, and regression control
+- `nrc_aps_document_trace_ui_phase_partition_plan.md`
+  - bounded Antigravity-oriented implementation phase partition for document trace
 
 ## Archived Bake-Off Material
 
