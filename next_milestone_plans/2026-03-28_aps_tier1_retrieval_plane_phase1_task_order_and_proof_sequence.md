@@ -39,7 +39,7 @@ The implementation order below must remain aligned with these repo-confirmed fac
 
 ### New files
 
-1. `backend/alembic/versions/0011_aps_retrieval_plane_v1.py`
+1. `backend/alembic/versions/<next_free_revision>_aps_retrieval_plane_v1.py`
 2. `backend/app/services/nrc_aps_retrieval_plane.py`
 3. `backend/app/services/nrc_aps_retrieval_plane_gate.py`
 4. `tools/nrc_aps_retrieval_plane_shadow_build.py`
@@ -106,10 +106,11 @@ Stop condition:
 
 Edit file:
 
-- `backend/alembic/versions/0011_aps_retrieval_plane_v1.py`
+- `backend/alembic/versions/<next_free_revision>_aps_retrieval_plane_v1.py`
 
 Required content:
 
+- determine the next free Alembic revision at implementation time
 - create retrieval-plane table
 - create cross-dialect-safe columns
 - create uniqueness and btree indexes
@@ -120,6 +121,7 @@ Required content:
 
 Must not:
 
+- hardcode `0011_...` if the migration chain moved
 - require literal `tsvector` support in SQLite
 - alter canonical APS content tables
 - alter upper-layer tables
@@ -195,6 +197,7 @@ Required content:
 - stale-row reconciliation in-scope only
 - retrieval-backed list/search helpers
 - current lexical ranking preservation
+- PostgreSQL candidate pruning only if bounded query-parity proof establishes no false negatives; otherwise leave candidate pruning disabled in Phase 1
 
 Must not:
 
@@ -233,6 +236,7 @@ Required coverage:
 - ranking parity
 - pagination-after-ranking parity
 - linkage-only diagnostics parity
+- PostgreSQL candidate-pruning parity on representative bounded queries, or explicit proof that pruning remains disabled for Phase 1
 
 Immediate proof after Step 5:
 
@@ -252,6 +256,7 @@ Add file:
 Required content:
 
 - explicit non-validate build wrapper
+- accept `--run-id` and `--target-id`
 - bounded-scope requirement
 - fail-closed when no bounded scope is supplied
 
@@ -280,10 +285,11 @@ Add file:
 Required content:
 
 - validate-only parity logic
-- fail-closed semantics on empty runtime by default
+- explicit bounded run/target scope contract matching the shadow-build surface
+- fail-closed semantics on missing scope and empty runtime by default
 - deterministic JSON report generation
-- exact mismatch classes
-- candidate-run loading semantics compatible with current gate style
+- exact mismatch classes, including search parity
+- no implicit latest-run discovery fallback
 
 Must not:
 
@@ -312,8 +318,10 @@ Required coverage:
 - fail on missing retrieval rows
 - fail on orphan rows
 - fail on field mismatch
+- fail on search-parity mismatch
 - fail on diagnostics-authority mismatch
 - pass on canonical/retrieval parity
+- fail on missing bounded scope
 - prove gate does not build retrieval rows as a side effect
 
 Immediate proof after Step 8:
@@ -325,7 +333,29 @@ Stop condition:
 
 - if gate tests require state-building inside the validator path, stop and correct the design; do not weaken validate-only semantics
 
-### Step 9: Wire the validate-only operator action
+### Step 9: Add the retrieval-plane gate tool wrapper
+
+Add file:
+
+- `tools/nrc_aps_retrieval_plane_gate.py`
+
+Required content:
+
+- thin wrapper following the existing APS gate bootstrap pattern
+- accept `--run-id` and `--target-id`
+- explicit bounded-scope argument pass-through into the gate service
+- no latest-run discovery fallback
+
+Immediate proof after Step 9:
+
+1. wrapper imports cleanly
+2. wrapper rejects invocation without explicit bounded scope
+
+Stop condition:
+
+- if the wrapper requires a broader run-selection model than the gate service and shadow-build surfaces, stop and correct the gate boundary before wiring operator entrypoints
+
+### Step 10: Wire the validate-only operator action
 
 Edit file:
 
@@ -334,11 +364,13 @@ Edit file:
 Required changes only:
 
 - add `validate-nrc-aps-retrieval-plane` to `ValidateSet`
+- add narrow scope params `NrcApsRunId` and `NrcApsTargetId`
 - add one report path variable:
   - `tests/reports/nrc_aps_retrieval_plane_validation_report.json`
 - add one tool-path variable
 - add tool existence check
-- invoke the gate under Tier2 isolated runtime semantics
+- add explicit bounded-scope argument pass-through for the new action
+- invoke the gate under Tier1 PostgreSQL validate-only semantics for the bounded scope being checked
 
 Must not:
 
@@ -346,17 +378,18 @@ Must not:
 - repoint existing actions
 - change existing validate/prove semantics
 
-Immediate proof after Step 9:
+Immediate proof after Step 10:
 
 1. `project6.ps1` parses successfully
 2. new action is isolated and validate-only
-3. existing actions remain textually untouched except for narrow insertion points
+3. new action rejects missing explicit bounded scope
+4. existing actions remain textually untouched except for narrow insertion points
 
 Stop condition:
 
-- if wiring the action would require altering Tier2/Tier3 semantics or runtime-default logic, stop and re-plan
+- if wiring the action would require altering existing Tier2 validate semantics or runtime-default logic, stop and re-plan
 
-### Step 10: Run targeted existing non-regression tests
+### Step 11: Run targeted existing non-regression tests
 
 Execute targeted tests:
 
@@ -378,7 +411,7 @@ Stop condition:
 
 - if any existing canonical surface regresses, fix that before any migration proof or operator validation
 
-### Step 11: Run migration proofs
+### Step 12: Run migration proofs
 
 Execute:
 
@@ -396,7 +429,7 @@ Stop condition:
 - if SQLite head-upgrade fails, do not continue to parity validation
 - if PostgreSQL head-upgrade succeeds but SQLite fails, the slice is not acceptable
 
-### Step 12: Run SQLite metadata/create_all compatibility proof
+### Step 13: Run SQLite metadata/create_all compatibility proof
 
 Required proof:
 
@@ -410,7 +443,7 @@ Stop condition:
 
 - if this fails, the ORM/migration design is still too PostgreSQL-specific and must be corrected before parity validation
 
-### Step 13: Shadow-build bounded scope in PostgreSQL
+### Step 14: Shadow-build bounded scope in PostgreSQL
 
 Execute:
 
@@ -425,24 +458,26 @@ Stop condition:
 
 - if shadow build requires unbounded scope or mutates canonical APS truth, stop and correct before validation
 
-### Step 14: Run the new validate-only parity gate
+### Step 15: Run the new validate-only parity gate
 
 Execute:
 
-- `.\project6.ps1 -Action validate-nrc-aps-retrieval-plane`
+- `.\project6.ps1 -Action validate-nrc-aps-retrieval-plane -NrcApsRunId <run_id>` or `-NrcApsTargetId <target_id>` using the same explicit bounded scope used for the shadow build
 
 Required outcome:
 
 - validate-only parity report is generated
-- gate passes on the intended isolated scope/runtime
-- gate fails closed on empty runtime when appropriate
+- gate passes on the same bounded Tier1 PostgreSQL scope that was shadow-built
+- query-parity section passes for the representative bounded query suite before PostgreSQL candidate pruning is enabled
+- gate fails closed when no explicit bounded scope is supplied or runtime is empty
 - gate does not build or seed retrieval rows
 
 Stop condition:
 
 - if parity validation depends on implicit build/seed behavior, stop and correct the operator boundary
+- if query parity cannot be established with candidate pruning enabled, disable candidate pruning rather than ship semantic drift; if semantics-correct fallback is not possible, stop and re-plan
 
-### Step 15: Re-run existing validate-only lower-layer gates
+### Step 16: Re-run existing validate-only lower-layer gates
 
 Execute:
 
@@ -458,7 +493,7 @@ Stop condition:
 
 - if either gate fails due to retrieval-plane changes, treat that as a regression in the bounded slice
 
-### Step 16: Optional documentation update only after all proofs are green
+### Step 17: Optional documentation update only after all proofs are green
 
 Edit file only if implementation is accepted:
 
@@ -488,7 +523,7 @@ The proof sequence must occur in this exact order:
 5. PostgreSQL head-upgrade proof
 6. SQLite metadata/create_all proof
 7. PostgreSQL bounded shadow-build proof
-8. Validate-only retrieval-plane parity proof
+8. Validate-only retrieval-plane parity proof on the same bounded Tier1 PostgreSQL scope
 9. Existing validate-only content-index proof
 10. Existing validate-only evidence-bundle proof
 11. Optional README update
@@ -508,6 +543,7 @@ The slice is complete only if all of the following are true:
 7. Existing lower-layer gates still pass.
 8. No public route cutover occurred.
 9. No upper analytical artifact surface was widened.
+10. PostgreSQL candidate pruning is either proven semantics-safe or remains disabled in Phase 1.
 
 ## Explicit Non-Goals During Implementation
 

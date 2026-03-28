@@ -142,8 +142,8 @@ The minimum viable implementation should not:
 These are the narrowest expected new live files.
 
 1. Alembic migration
-   - expected isolated-lane filename: `backend/alembic/versions/0011_aps_retrieval_plane_v1.py`
-   - if another migration lands first, renumber to the next free Alembic revision without changing scope
+   - expected isolated-lane filename pattern: `backend/alembic/versions/<next_free_revision>_aps_retrieval_plane_v1.py`
+   - determine the next free Alembic revision at implementation time; do not hardcode `0011_...` if the chain moved
 
 2. Retrieval-plane service
    - `backend/app/services/nrc_aps_retrieval_plane.py`
@@ -176,9 +176,12 @@ These modifications are part of the slice and should be treated as required, not
 
 3. `project6.ps1`
    - add a new validate-only action for retrieval-plane parity
+   - add explicit bounded-scope argument pass-through for that action
+   - add narrow scope parameters `NrcApsRunId` and `NrcApsTargetId`
    - add the exact report-path variable
    - add report-path wiring
-   - keep Tier2/Tier3 isolation semantics explicit
+   - keep existing Tier2/Tier3 validate/proof semantics unchanged for existing actions
+   - run the new retrieval-plane parity action against Tier1 PostgreSQL because the validated shadow plane lives there
    - do not repoint existing actions to the retrieval plane
 
 4. `README.md`
@@ -259,7 +262,7 @@ Required split:
 
 - PostgreSQL-only:
   - lexical acceleration over `search_text`
-  - GIN expression index over `to_tsvector('simple', search_text)` or a strictly equivalent strategy
+  - GIN expression index over `to_tsvector('simple', search_text)` or a strictly equivalent strategy, but only if bounded PostgreSQL query-parity proof shows the prefilter is no-false-negative relative to current token semantics
   - any dialect-specific SQL needed to populate or maintain PostgreSQL lexical acceleration if expression indexing alone is insufficient
 
 Implementation implication:
@@ -332,6 +335,7 @@ The model should not:
    - preserve current exact ranking/tie-break behavior
    - apply pagination only after final ranking
    - treat PostgreSQL FTS as candidate pruning only, not ranking replacement
+   - if candidate pruning cannot be proven semantics-safe in PostgreSQL, leave retrieval-backed search on Python-side filtering over retrieval rows for Phase 1
 
 5. scoped rebuild
    - run scope
@@ -350,6 +354,8 @@ The model should not:
 8. parity validator
    - compare canonical APS list/search outputs against retrieval-plane outputs
    - report exact mismatch classes
+   - require explicit bounded scope that matches the shadow-build surface
+   - do not substitute latest-run discovery for explicit scope
 
 9. explicit build separation
    - rebuild must remain separate from validate-only parity actions
@@ -380,9 +386,11 @@ It should:
 
 - read existing APS canonical data
 - compare canonical versus retrieval-plane rows
+- require explicit bounded run/target scope matching the shadow-build surface
 - write a deterministic JSON report using the same deterministic-writer pattern already used by current APS gates
 - fail when:
-  - no candidate runs exist and empties are not allowed
+  - explicit bounded scope is omitted
+  - the scoped runtime is empty and empties are not allowed
   - retrieval rows are missing
   - orphan retrieval rows exist
   - field parity mismatches exist
@@ -402,15 +410,20 @@ It should:
 
 3. `tools/nrc_aps_retrieval_plane_gate.py`
    - thin wrapper following the existing gate pattern
-   - should reuse current candidate-run loading / allow-empty semantics rather than inventing a different run-selection model
+   - should stay thin for import/bootstrap only
+   - should accept `--run-id` and `--target-id`
+   - must require explicit bounded scope arguments compatible with the gate service
+   - must not substitute latest-run discovery for explicit bounded scope
 
 4. `project6.ps1`
-   - add:
-     - action name: `validate-nrc-aps-retrieval-plane`
-     - report path: `tests/reports/nrc_aps_retrieval_plane_validation_report.json`
-     - report path variable
-     - tool existence check
-     - Tier2 isolated invocation path
+    - add:
+      - action name: `validate-nrc-aps-retrieval-plane`
+      - scope params: `-NrcApsRunId`, `-NrcApsTargetId`
+      - report path: `tests/reports/nrc_aps_retrieval_plane_validation_report.json`
+      - report path variable
+      - tool existence check
+      - explicit bounded-scope argument pass-through
+      - Tier1 PostgreSQL validate-only invocation path for the new action
 
 ### Tooling non-goals
 
@@ -444,6 +457,7 @@ This file should cover at least:
 - linkage-only diagnostics parity
 - current-state-only deletion semantics
 - explicit failure on unbounded build scope
+- PostgreSQL candidate-pruning parity on a bounded representative query suite, or explicit proof that candidate pruning stays disabled for Phase 1
 
 #### 2. `tests/test_nrc_aps_retrieval_plane_gate.py`
 
@@ -453,8 +467,10 @@ This file should cover at least:
 - fail when retrieval rows are missing
 - fail on orphan rows
 - fail on field mismatch
+- fail on search parity mismatch
 - fail on diagnostics authority mismatch
 - pass on clean canonical/retrieval parity
+- fail when explicit bounded scope is omitted
 
 ### Required updates to existing tests
 
@@ -539,10 +555,10 @@ Run the new and existing targeted tests for:
    - `validate-nrc-aps-content-index`
    - `validate-nrc-aps-evidence-bundle`
 
-2. New retrieval-plane gate passes on isolated runtime:
+2. New retrieval-plane gate passes on explicit bounded Tier1 PostgreSQL scope:
    - `validate-nrc-aps-retrieval-plane`
 
-3. Retrieval-plane gate fails closed on empty runtime
+3. Retrieval-plane gate fails closed on missing scope or empty runtime
 
 4. Retrieval-plane gate does not build or seed retrieval rows as part of validation
 
@@ -552,6 +568,7 @@ In Tier1 PostgreSQL runtime:
 
 - shadow-build retrieval plane for a bounded scope through the explicit non-validate build surface
 - validate parity for that same scope
+- prove bounded query-parity for representative search cases before enabling PostgreSQL candidate pruning
 - prove no public-route cutover occurred by default
 
 ### Optional verification
@@ -618,7 +635,19 @@ Control:
 - keep public default reads unchanged until parity is proven
 - keep search ranking and pagination semantics explicitly pinned to the current Python contract
 
-### 3. Dual-state storage debt
+### 3. Lexical-pruning semantic drift debt
+
+Risk:
+
+- PostgreSQL candidate pruning excludes true matches or changes effective ranking because its tokenization diverges from `normalize_query_tokens()`
+
+Control:
+
+- require bounded PostgreSQL query-parity proof before enabling candidate pruning
+- keep candidate pruning as prefilter only, never ranking authority
+- disable PostgreSQL candidate pruning in Phase 1 if no-false-negative proof is not established
+
+### 4. Dual-state storage debt
 
 Risk:
 
@@ -631,7 +660,7 @@ Control:
 - explicit stale-row deletion inside scope
 - validate-only orphan detection
 
-### 4. Scope-creep debt
+### 5. Scope-creep debt
 
 Risk:
 
@@ -644,7 +673,7 @@ Control:
 - no default route cutover
 - no vector/semantic features
 
-### 5. Migration-helper debt
+### 6. Migration-helper debt
 
 Risk:
 
@@ -656,7 +685,7 @@ Control:
 - widen helper surface only if clearly necessary
 - if widened, add the smallest helper that is demonstrably reusable
 
-### 6. Import-path drift debt
+### 7. Import-path drift debt
 
 Risk:
 
@@ -668,7 +697,7 @@ Control:
 - keep `tests/test_import_guardrail.py` green
 - export new ORM model through `backend/app/models/__init__.py` if package-level imports are used
 
-### 7. Report proliferation debt
+### 8. Report proliferation debt
 
 Risk:
 
@@ -690,9 +719,11 @@ Implementation must not assume any of the following:
 5. Validate-only parity actions may build retrieval rows as part of validation.
 6. PostgreSQL lexical acceleration is allowed to replace current ranking semantics.
 7. New service/tool files may ignore the import-path guardrail.
-5. Document-level `diagnostics_ref` can be used as a fallback for retrieval parity.
-6. Existing validate-only gates cover retrieval-plane parity without a dedicated new gate.
-7. The new migration file can safely hardcode `0011_...` if another revision lands first.
+8. Document-level `diagnostics_ref` can be used as a fallback for retrieval parity.
+9. Existing validate-only gates cover retrieval-plane parity without a dedicated new gate.
+10. The new retrieval-plane gate can safely reuse latest-run discovery instead of explicit bounded scope.
+11. A Tier2 SQLite validate path is an adequate proxy for Tier1 PostgreSQL retrieval-plane parity.
+12. The new migration file can safely hardcode `0011_...` if another revision lands first.
 
 ## Exit Criteria For This Planning Packet
 
