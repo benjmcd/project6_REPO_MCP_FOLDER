@@ -70,6 +70,7 @@ from app.services.connectors_sciencebase import (
 )
 from app.services.connectors_nrc_adams import execute_nrc_adams_run, submit_nrc_adams_run
 from app.services.connectors_senate_lda import execute_senate_lda_run, submit_senate_lda_run
+from app.services import aps_retrieval_plane_read
 from app.services import nrc_aps_content_index
 from app.services import nrc_aps_context_dossier
 from app.services import nrc_aps_context_packet
@@ -430,6 +431,63 @@ def search_nrc_adams_content(
             limit=limit,
             offset=offset,
         )
+    except ValueError as exc:
+        if str(exc) == "empty_query":
+            raise HTTPException(status_code=422, detail="query must contain at least one alphanumeric token") from exc
+        raise
+    return NrcApsContentSearchOut.model_validate(result)
+
+
+@api_router.get(
+    "/connectors/runs/{connector_run_id}/_operator/retrieval-content-units",
+    response_model=ConnectorRunContentUnitsPageOut,
+)
+def get_connector_run_retrieval_content_units(
+    connector_run_id: str,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+) -> ConnectorRunContentUnitsPageOut:
+    run = db.get(ConnectorRun, connector_run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="connector run not found")
+    try:
+        payload = aps_retrieval_plane_read.list_content_units_for_run(
+            db,
+            run_id=connector_run_id,
+            limit=limit,
+            offset=offset,
+        )
+    except aps_retrieval_plane_read.RetrievalPlaneReadError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.to_detail()) from exc
+    return ConnectorRunContentUnitsPageOut.model_validate(payload)
+
+
+@api_router.post(
+    "/connectors/nrc-adams-aps/_operator/retrieval-content-search",
+    response_model=NrcApsContentSearchOut,
+)
+def search_nrc_adams_retrieval_content(
+    payload: NrcApsContentSearchIn,
+    db: Session = Depends(get_db),
+) -> NrcApsContentSearchOut:
+    run_id = str(payload.run_id or "").strip() or None
+    if run_id:
+        run = db.get(ConnectorRun, run_id)
+        if not run:
+            raise HTTPException(status_code=404, detail="connector run not found")
+    limit = max(1, min(int(payload.limit), 100))
+    offset = max(0, int(payload.offset))
+    try:
+        result = aps_retrieval_plane_read.search_content_units(
+            db,
+            query_text=payload.query,
+            run_id=run_id,
+            limit=limit,
+            offset=offset,
+        )
+    except aps_retrieval_plane_read.RetrievalPlaneReadError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.to_detail()) from exc
     except ValueError as exc:
         if str(exc) == "empty_query":
             raise HTTPException(status_code=422, detail="query must contain at least one alphanumeric token") from exc
