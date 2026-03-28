@@ -2,6 +2,7 @@ const State = {
     runs: [],
     selectedRunId: null,
     viewMode: 'run_heavy',
+    themePreference: document.documentElement.dataset.themePreference || 'system',
     pipelineDefinition: null,
     overview: null,
     selectedNodeId: null,
@@ -11,6 +12,7 @@ const State = {
 
 const elements = {
     runSelector: document.getElementById('run-selector'),
+    themeSelector: document.getElementById('theme-selector'),
     viewPipeline: document.getElementById('view-pipeline'),
     viewRunLight: document.getElementById('view-run-light'),
     viewRunHeavy: document.getElementById('view-run-heavy'),
@@ -23,6 +25,11 @@ const elements = {
     disabledOverlay: document.getElementById('disabled-overlay'),
     disabledReason: document.getElementById('disabled-reason'),
 };
+
+const THEME_STORAGE_KEY = 'nrc_aps_review_theme';
+const systemThemeQuery = typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : null;
 
 const API = {
     async fetchRuns() {
@@ -60,6 +67,7 @@ const API = {
 let panZoomInstance = null;
 let _runSeq = 0;
 let _detailsSeq = 0;
+let _graphSeq = 0;
 
 function escapeMermaidLabel(label) {
     return String(label ?? '').replace(/"/g, '&quot;');
@@ -79,6 +87,70 @@ function formatValue(value) {
         return `<pre>${escapeHtml(JSON.stringify(value, null, 2))}</pre>`;
     }
     return escapeHtml(String(value));
+}
+
+function isValidThemePreference(value) {
+    return value === 'system' || value === 'light' || value === 'dark';
+}
+
+function resolveTheme(preference) {
+    if (preference === 'light' || preference === 'dark') return preference;
+    return systemThemeQuery?.matches ? 'dark' : 'light';
+}
+
+function persistThemePreference(preference) {
+    try {
+        localStorage.setItem(THEME_STORAGE_KEY, preference);
+    } catch (error) {
+        // Ignore storage failures and keep the preference in memory only.
+    }
+}
+
+function applyThemePreference(preference, { persist = true } = {}) {
+    const normalizedPreference = isValidThemePreference(preference) ? preference : 'system';
+    const resolvedTheme = resolveTheme(normalizedPreference);
+    State.themePreference = normalizedPreference;
+    document.documentElement.dataset.themePreference = normalizedPreference;
+    document.documentElement.dataset.theme = resolvedTheme;
+    if (elements.themeSelector) {
+        elements.themeSelector.value = normalizedPreference;
+    }
+    if (persist) {
+        persistThemePreference(normalizedPreference);
+    }
+}
+
+function readThemeVariable(variableName, fallback) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+    return value || fallback;
+}
+
+function currentGraphPalette() {
+    return {
+        edgeColor: readThemeVariable('--graph-edge-color', '#475569'),
+        stateCompleteFill: readThemeVariable('--graph-state-complete-fill', '#e5f7ec'),
+        stateCompleteStroke: readThemeVariable('--graph-state-complete-stroke', '#20864f'),
+        stateMissingFill: readThemeVariable('--graph-state-missing-fill', '#fde8e8'),
+        stateMissingStroke: readThemeVariable('--graph-state-missing-stroke', '#b42318'),
+        stateMismatchFill: readThemeVariable('--graph-state-mismatch-fill', '#fff4d7'),
+        stateMismatchStroke: readThemeVariable('--graph-state-mismatch-stroke', '#b54708'),
+        stateUnknownFill: readThemeVariable('--graph-state-unknown-fill', '#eef2ff'),
+        stateUnknownStroke: readThemeVariable('--graph-state-unknown-stroke', '#4f46e5'),
+        canonicalFill: readThemeVariable('--graph-canonical-fill', '#ffffff'),
+        canonicalStroke: readThemeVariable('--graph-canonical-stroke', '#4f46e5'),
+        canonicalText: readThemeVariable('--graph-canonical-text', '#1f2557'),
+        lightFill: readThemeVariable('--graph-light-fill', '#f6f8fc'),
+        lightStroke: readThemeVariable('--graph-light-stroke', '#506176'),
+        lightText: readThemeVariable('--graph-light-text', '#18212f'),
+        heavyFill: readThemeVariable('--graph-heavy-fill', '#f8fff9'),
+        heavyStroke: readThemeVariable('--graph-heavy-stroke', '#1f7a45'),
+        heavyText: readThemeVariable('--graph-heavy-text', '#10261a'),
+        compositeFill: readThemeVariable('--graph-composite-fill', '#eef4fb'),
+        compositeStroke: readThemeVariable('--graph-composite-stroke', '#315ea8'),
+        compositeText: readThemeVariable('--graph-composite-text', '#10233f'),
+        selectedFill: readThemeVariable('--graph-selected-fill', '#dbeafe'),
+        selectedStroke: readThemeVariable('--graph-selected-stroke', '#1d4ed8'),
+    };
 }
 
 function isPipelineMode() {
@@ -150,21 +222,25 @@ function projectionClasses(node) {
 }
 
 function buildMermaidText(graph) {
+    const palette = currentGraphPalette();
     let text = 'flowchart TD\n';
-    text += '    classDef state_complete fill:#e5f7ec,stroke:#20864f,stroke-width:2px;\n';
-    text += '    classDef state_missing fill:#fde8e8,stroke:#b42318,stroke-width:2px,stroke-dasharray:5 3;\n';
-    text += '    classDef state_mismatch fill:#fff4d7,stroke:#b54708,stroke-width:2px;\n';
-    text += '    classDef state_unknown fill:#eef2ff,stroke:#4f46e5,stroke-width:2px;\n';
-    text += '    classDef projection_canonical fill:#ffffff,stroke:#4f46e5,stroke-width:1.75px,color:#1f2557;\n';
-    text += '    classDef projection_light fill:#f6f8fc,stroke:#506176,stroke-width:1.75px,color:#18212f;\n';
-    text += '    classDef projection_heavy fill:#f8fff9,stroke:#1f7a45,stroke-width:1.5px,color:#10261a;\n';
-    text += '    classDef projection_composite fill:#eef4fb,stroke:#315ea8,stroke-width:2.5px,color:#10233f;\n';
-    text += '    classDef selected fill:#dbeafe,stroke:#1d4ed8,stroke-width:4px;\n';
+    text += `    classDef state_complete fill:${palette.stateCompleteFill},stroke:${palette.stateCompleteStroke},stroke-width:2px;\n`;
+    text += `    classDef state_missing fill:${palette.stateMissingFill},stroke:${palette.stateMissingStroke},stroke-width:2px,stroke-dasharray:5 3;\n`;
+    text += `    classDef state_mismatch fill:${palette.stateMismatchFill},stroke:${palette.stateMismatchStroke},stroke-width:2px;\n`;
+    text += `    classDef state_unknown fill:${palette.stateUnknownFill},stroke:${palette.stateUnknownStroke},stroke-width:2px;\n`;
+    text += `    classDef projection_canonical fill:${palette.canonicalFill},stroke:${palette.canonicalStroke},stroke-width:1.75px,color:${palette.canonicalText};\n`;
+    text += `    classDef projection_light fill:${palette.lightFill},stroke:${palette.lightStroke},stroke-width:1.75px,color:${palette.lightText};\n`;
+    text += `    classDef projection_heavy fill:${palette.heavyFill},stroke:${palette.heavyStroke},stroke-width:1.5px,color:${palette.heavyText};\n`;
+    text += `    classDef projection_composite fill:${palette.compositeFill},stroke:${palette.compositeStroke},stroke-width:2.5px,color:${palette.compositeText};\n`;
+    text += `    classDef selected fill:${palette.selectedFill},stroke:${palette.selectedStroke},stroke-width:4px;\n`;
+    text += `    linkStyle default stroke:${palette.edgeColor},stroke-width:1.75px,fill:none;\n`;
 
     graph.nodes.forEach((node) => {
         text += `    ${node.projection_id}["${escapeMermaidLabel(nodeMermaidLabel(node))}"]\n`;
         text += `    click ${node.projection_id} handleNodeClick\n`;
-        text += `    class ${node.projection_id} ${projectionClasses(node).join(',')}\n`;
+        projectionClasses(node).forEach((className) => {
+            text += `    class ${node.projection_id} ${className}\n`;
+        });
     });
     graph.edges.forEach((edge) => {
         text += `    ${edge.source_id} --> ${edge.target_id}\n`;
@@ -172,9 +248,29 @@ function buildMermaidText(graph) {
     return text;
 }
 
-async function renderGraph() {
+function captureGraphViewport() {
+    if (!panZoomInstance) return null;
+    return {
+        zoom: panZoomInstance.getZoom(),
+        pan: panZoomInstance.getPan(),
+    };
+}
+
+function restoreGraphViewport(viewport) {
+    if (!panZoomInstance || !viewport) return;
+    panZoomInstance.zoom(viewport.zoom);
+    panZoomInstance.pan(viewport.pan);
+}
+
+async function renderGraph({ preserveViewport = false } = {}) {
     const graph = currentGraph();
+    const seq = ++_graphSeq;
+    const viewport = preserveViewport ? captureGraphViewport() : null;
     if (!graph || !graph.nodes || !graph.edges) {
+        if (panZoomInstance) {
+            panZoomInstance.destroy();
+            panZoomInstance = null;
+        }
         elements.mermaidContainer.innerHTML = '<div class="graph-placeholder">No graph data available.</div>';
         return;
     }
@@ -183,6 +279,7 @@ async function renderGraph() {
     try {
         const renderId = `nrc-aps-graph-${Date.now()}`;
         const rendered = await mermaid.render(renderId, buildMermaidText(graph));
+        if (seq !== _graphSeq) return;
         elements.mermaidContainer.innerHTML = rendered.svg;
         if (typeof rendered.bindFunctions === 'function') rendered.bindFunctions(elements.mermaidContainer);
         const svgElement = elements.mermaidContainer.querySelector('svg');
@@ -197,23 +294,29 @@ async function renderGraph() {
             center: true,
             minZoom: 0.45,
         });
+        restoreGraphViewport(viewport);
     } catch (error) {
+        if (seq !== _graphSeq) return;
         elements.mermaidContainer.innerHTML = `<pre class="warning">Graph render failed: ${escapeHtml(error.message)}</pre>`;
     }
+}
+
+async function refreshForThemeChange() {
+    await renderGraph({ preserveViewport: true });
 }
 
 window.handleNodeClick = async (nodeId) => {
     State.selectedNodeId = nodeId;
     if (isRunHeavyMode()) {
         State.selectedTreeId = null;
-        await renderGraph();
+        await renderGraph({ preserveViewport: true });
         renderSidePane();
         await loadDetails('node', nodeId);
         return;
     }
     if (isRunLightMode()) {
         State.selectedTreeId = null;
-        await renderGraph();
+        await renderGraph({ preserveViewport: true });
         renderSidePane();
         const node = findCurrentNode(nodeId);
         if (node?.is_composite) {
@@ -223,7 +326,7 @@ window.handleNodeClick = async (nodeId) => {
         await loadDetails('node', nodeId);
         return;
     }
-    await renderGraph();
+    await renderGraph({ preserveViewport: true });
     renderSidePane();
     renderPipelineNodeDetails(nodeId);
 };
@@ -319,7 +422,7 @@ async function handleTreeClick(button) {
     State.selectedTreeId = treeId;
     if (!isDir && mappedNodeIds.length > 0) State.selectedNodeId = mappedNodeIds[0];
     renderSidePane();
-    if (State.selectedNodeId) await renderGraph();
+    if (State.selectedNodeId) await renderGraph({ preserveViewport: true });
     if (!isDir) await loadDetails('file', treeId);
 }
 
@@ -509,6 +612,11 @@ async function init() {
     mermaid.initialize({ startOnLoad: false, securityLevel: 'loose', flowchart: { useMaxWidth: false, htmlLabels: true } });
 
     elements.runSelector.addEventListener('change', async (event) => { await loadRun(event.target.value); });
+    elements.themeSelector.value = State.themePreference;
+    elements.themeSelector.addEventListener('change', async (event) => {
+        applyThemePreference(event.target.value);
+        await refreshForThemeChange();
+    });
     elements.viewPipeline.addEventListener('change', async () => { await setViewMode('pipeline'); });
     elements.viewRunLight.addEventListener('change', async () => { await setViewMode('run_light'); });
     elements.viewRunHeavy.addEventListener('change', async () => { await setViewMode('run_heavy'); });
@@ -519,6 +627,18 @@ async function init() {
         await handleTreeClick(button);
     });
     elements.closeDrawerBtn.addEventListener('click', closeDrawer);
+    if (systemThemeQuery) {
+        const handleSystemThemeChange = async () => {
+            if (State.themePreference !== 'system') return;
+            applyThemePreference('system', { persist: false });
+            await refreshForThemeChange();
+        };
+        if (typeof systemThemeQuery.addEventListener === 'function') {
+            systemThemeQuery.addEventListener('change', handleSystemThemeChange);
+        } else if (typeof systemThemeQuery.addListener === 'function') {
+            systemThemeQuery.addListener(handleSystemThemeChange);
+        }
+    }
 
     try {
         const data = await API.fetchRuns();
