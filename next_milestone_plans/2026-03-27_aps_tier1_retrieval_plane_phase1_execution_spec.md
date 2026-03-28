@@ -152,9 +152,10 @@ table aps_retrieval_chunk_v1
 
 Physicalization rules:
 
-- PostgreSQL must accelerate lexical candidate pruning from `search_text`.
+- PostgreSQL may accelerate lexical candidate pruning from `search_text`, but only if the chosen prefilter is proven no-false-negative against current `normalize_query_tokens()` containment semantics for the bounded Phase 1 query suite.
 - SQLite-shaped lanes must not be forced to emulate a literal `tsvector` type.
 - If PostgreSQL-specific search state is needed beyond `search_text`, keep it dialect-local and out of the cross-dialect logical row contract.
+- If that no-false-negative proof is not met, retrieval-backed search must fall back to Python-side lexical filtering over retrieval rows in Phase 1 rather than shipping semantics drift.
 
 ## Constraints And Indexes
 
@@ -172,7 +173,7 @@ btree(run_id, quality_status, document_class)
 btree(content_id, chunk_id)
 ```
 
-Required PostgreSQL lexical-acceleration index:
+Conditional PostgreSQL lexical-acceleration index when semantics-safe candidate pruning is enabled:
 
 ```text
 gin(to_tsvector('simple', search_text))
@@ -254,7 +255,7 @@ The Phase 1 rebuild algorithm should be:
 3. Serialize the canonical retrieval-visible payload exactly as current APS list/search surfaces would.
 4. Compute `source_signature_sha256`.
 5. Build `search_text = chunk_text`.
-6. Build PostgreSQL lexical-acceleration state from `search_text` only when the active dialect supports it.
+6. Build PostgreSQL lexical-acceleration state from `search_text` only when the active dialect supports it and the chosen prefilter is allowed by the Phase 1 parity rules.
 7. Upsert the retrieval row if absent.
 8. Update the retrieval row if signature changed.
 9. Leave the retrieval row untouched if signature is unchanged.
@@ -268,7 +269,7 @@ For stale-row reconciliation, Phase 1 uses current-state-only semantics:
 
 Phase 1 should use one deterministic search config, not per-row heuristics.
 
-Settle this now as:
+Default candidate-pruning attempt:
 
 - default Postgres simple lexical config
 
@@ -278,7 +279,12 @@ Reason:
 - it avoids premature language-specific stemming assumptions
 - it keeps lexical parity reasoning simpler
 
-If later evidence shows language-aware config is needed, that is a separate slice.
+Enable it only if bounded Tier1 PostgreSQL query-parity proof shows:
+
+- no false negatives relative to current all-token containment semantics
+- no ranking or pagination drift relative to the current Python contract
+
+If that proof does not pass, disable database-side candidate pruning and keep retrieval-backed search on Python-side filtering over retrieval rows for Phase 1. If later evidence shows language-aware config is needed, that is a separate slice.
 
 ## Search Semantics Contract
 
@@ -289,7 +295,8 @@ Required contract:
 - query tokenization must continue to use `normalize_query_tokens()`
 - empty-query handling must continue to fail with `empty_query`
 - candidate rows must satisfy all-token containment after current normalization
-- PostgreSQL lexical acceleration may only reduce the candidate set to likely matches; it must not widen or redefine token semantics
+- PostgreSQL lexical acceleration may only act as a proven superset-safe prefilter; it must not widen, narrow, or redefine current token semantics
+- any PostgreSQL prefilter that can exclude a row that current Python lexical matching would include is forbidden
 - final result ranking must continue to sort by:
   1. `matched_unique_query_terms` descending
   2. `summed_term_frequency` descending
@@ -326,7 +333,29 @@ Allowed bounded scopes:
 - run scope
 - target scope
 
+Exact bounded-scope semantics:
+
+- run scope requires `run_id` and no `target_id`
+- target scope requires `target_id`; `run_id` may be omitted
+- if both `run_id` and `target_id` are supplied, the operation remains target scope and must fail closed unless that target resolves to the same run
+- a supplied `target_id` that does not resolve is a scope failure, not an empty-scope success
+- a supplied `run_id` that does not resolve is a scope failure, not an empty-scope success
+
 Full-scope rebuild remains out of base Phase 1 unless explicitly opened later.
+
+## Scope Wiring Rules
+
+Phase 1 build and parity validation must share one explicit bounded-scope contract.
+
+Required rules:
+
+- the shadow-build surface and the validate-only parity surface must accept the same explicit bounded scope inputs
+- the bounded scope contract is `run_id` and/or `target_id`; tool/CLI spellings should stay aligned as `--run-id`, `--target-id`, `-NrcApsRunId`, and `-NrcApsTargetId`
+- Phase 1 parity validation must not discover latest runs implicitly
+- Phase 1 parity validation must fail closed when no explicit bounded scope is supplied
+- Phase 1 parity validation must fail closed on conflicting or unresolved scope inputs
+- Phase 1 operator parity validation must run against Tier1 PostgreSQL for the exact bounded scope that was shadow-built
+- Tier2/Tier3 SQLite-shaped lanes remain proof and compatibility lanes; they are not the authoritative parity surface for this Tier1 PostgreSQL milestone
 
 ## Read-Path Rules
 
@@ -351,6 +380,8 @@ Phase 1 Stage 4, if opened later:
 
 Phase 1 should add one validate-only parity artifact.
 
+This validator operates only on explicit `run_scope` or `target_scope`. Full-scope validation remains out of base Phase 1.
+
 Recommended logical schema:
 
 ```json
@@ -362,7 +393,7 @@ Recommended logical schema:
   "scope": {
     "run_id": null,
     "target_id": null,
-    "mode": "run_scope|target_scope|full_scope"
+    "mode": "run_scope|target_scope"
   },
   "passed": true,
   "canonical_row_count": 0,
@@ -372,9 +403,10 @@ Recommended logical schema:
   "orphan_retrieval_rows": [],
   "field_mismatches": [],
   "ordering_mismatches": [],
-  "diagnostics_authority_mismatches": [],
-  "reasons": [],
-  "payload_sha256": "..."
+   "search_parity_failures": [],
+   "diagnostics_authority_mismatches": [],
+   "reasons": [],
+   "payload_sha256": "..."
 }
 ```
 
@@ -384,9 +416,11 @@ Required failure classes:
 - `retrieval_orphan_row`
 - `retrieval_field_mismatch`
 - `retrieval_ordering_mismatch`
+- `retrieval_search_parity_mismatch`
 - `retrieval_diagnostics_authority_mismatch`
 - `retrieval_contract_mismatch`
 - `retrieval_scope_empty`
+- `retrieval_scope_invalid`
 
 ## Verification Matrix
 
@@ -402,6 +436,12 @@ Required tests:
 - stale-row deletion within rebuild scope
 - linkage-authoritative diagnostics behavior
 - search ordering compatibility against current deterministic tie-break rules
+- PostgreSQL candidate-pruning safety or explicit fallback behavior for representative bounded-query cases
+- explicit scope-resolution behavior for:
+  1. run-only scope
+  2. target-only scope
+  3. run-plus-target consistent scope
+  4. run-plus-target conflicting scope
 
 ### 2. Integration Level
 
@@ -411,6 +451,19 @@ Required tests:
 - validate parity report passes on known-good APS runtime
 - current public content-search route remains unchanged by default
 - current public content-units listing remains unchanged by default
+- bounded Tier1 PostgreSQL query-parity proof covers representative query cases before database-side candidate pruning is enabled
+
+The bounded query-parity proof must include at least:
+
+- single-token alpha query
+- multi-token all-match query
+- punctuation/normalization query where current `normalize_query_tokens()` collapses punctuation
+- mixed-case query
+- duplicate-token query
+- numeric or accession-like token query
+- zero-result query
+- tie-order query that exercises the current deterministic secondary sort keys
+- run-scoped search case
 
 ### 3. Validate-Only Operator Level
 
@@ -419,6 +472,9 @@ Required operator behavior:
 - retrieval-plane build must remain separate from retrieval-plane validation
 - new retrieval-plane validator must be validate-only
 - validator must fail closed on empty runtime
+- validator must fail closed when explicit bounded scope is omitted
+- validator must not rely on latest-run discovery as a substitute for explicit scope
+- validator must target Tier1 PostgreSQL for the actual shadow-built scope
 - validator must not seed or generate business artifacts
 
 ### 4. Cutover-Gate Level
@@ -487,7 +543,8 @@ Phase 1 is execution-complete only when all of the following are true:
 - it is derived only from canonical APS truth
 - it reproduces current retrieval-visible fields without schema widening
 - it preserves linkage-authoritative diagnostics semantics
-- it supports PostgreSQL lexical candidate pruning without changing current ranking semantics
+- if PostgreSQL lexical candidate pruning is enabled, it is proven not to change current search semantics
+- if that proof is not met, retrieval-backed search remains semantics-correct without database-side candidate pruning in Phase 1
 - it can be shadow-built only through a separate non-validate surface
 - its parity validator passes on the intended scope
 - default public APS read behavior is still unchanged
