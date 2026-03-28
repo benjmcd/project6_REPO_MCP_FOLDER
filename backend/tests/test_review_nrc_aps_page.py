@@ -17,3 +17,6 @@ def test_page_loads():
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert "NRC APS Pipeline Review" in response.text
+    assert "Pipeline Overview" in response.text
+    assert "Run-specific Overview (Light)" in response.text
+    assert "Run-specific Overview (Heavy)" in response.text
