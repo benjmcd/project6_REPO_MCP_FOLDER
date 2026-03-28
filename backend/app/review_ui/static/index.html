@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NRC APS Pipeline Review</title>
+    <link rel="stylesheet" href="/review/nrc-aps/static/review.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-left">
+            <h1>NRC APS Pipeline Review</h1>
+        </div>
+        <div class="header-right">
+            <label for="run-selector">Select Run:</label>
+            <select id="run-selector">
+                <option value="">Loading runs...</option>
+            </select>
+            <div class="view-toggle">
+                <input type="radio" id="view-pipeline" name="view-mode" value="pipeline">
+                <label for="view-pipeline">Pipeline Overview</label>
+                <input type="radio" id="view-run-light" name="view-mode" value="run_light">
+                <label for="view-run-light">Run-specific Overview (Light)</label>
+                <input type="radio" id="view-run-heavy" name="view-mode" value="run_heavy" checked>
+                <label for="view-run-heavy">Run-specific Overview (Heavy)</label>
+            </div>
+        </div>
+    </header>
+
+    <main class="app-body">
+        <div id="disabled-overlay" class="disabled-overlay hidden">
+            <div class="disabled-message">
+                <h2>Run is not reviewable</h2>
+                <p id="disabled-reason"></p>
+            </div>
+        </div>
+
+        <section class="pane diagram-pane" id="diagram-pane">
+            <div class="pane-header">Pipeline Graph</div>
+            <div id="mermaid-container" class="mermaid-container"></div>
+        </section>
+
+        <section class="pane tree-pane" id="tree-pane">
+            <div class="pane-header">Strict Filesystem Tree</div>
+            <ul id="file-tree" class="file-tree"></ul>
+        </section>
+
+        <aside class="details-drawer" id="details-drawer">
+            <div class="drawer-header">
+                <h2>Details</h2>
+                <button id="close-drawer" class="close-btn">&times;</button>
+            </div>
+            <div id="details-content" class="drawer-content">
+                <p class="placeholder">Select a node or file to view details.</p>
+            </div>
+        </aside>
+    </main>
+
+    <script src="/review/nrc-aps/static/vendor/mermaid.min.js"></script>
+    <script src="/review/nrc-aps/static/vendor/svg-pan-zoom.min.js"></script>
+    <script src="/review/nrc-aps/static/review.js"></script>
+</body>
+</html>

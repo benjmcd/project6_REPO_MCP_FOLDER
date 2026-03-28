@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import tempfile
 import time
 import uuid
 from dataclasses import dataclass
@@ -588,6 +589,16 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
                 "retry_jitter_mode",
                 "retry_respect_retry_after",
                 "max_redirects",
+                "content_sniff_bytes",
+                "content_parse_max_pages",
+                "content_parse_timeout_seconds",
+                "ocr_enabled",
+                "ocr_max_pages",
+                "ocr_render_dpi",
+                "ocr_language",
+                "ocr_timeout_seconds",
+                "content_min_searchable_chars",
+                "content_min_searchable_tokens",
                 "content_chunk_size_chars",
                 "content_chunk_overlap_chars",
                 "content_chunk_min_chars",
@@ -674,6 +685,16 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
         "max_file_bytes": max_file_bytes,
         "max_run_bytes": max_run_bytes,
         "max_redirects": max(0, _coerce_int(config.get("max_redirects", settings.connector_max_redirects), settings.connector_max_redirects)),
+        "content_sniff_bytes": max(0, _coerce_int(config.get("content_sniff_bytes", 4096), 4096)),
+        "content_parse_max_pages": max(1, _coerce_int(config.get("content_parse_max_pages", 500), 500)),
+        "content_parse_timeout_seconds": max(0, _coerce_int(config.get("content_parse_timeout_seconds", 30), 30)),
+        "ocr_enabled": bool(config.get("ocr_enabled", True)),
+        "ocr_max_pages": max(0, _coerce_int(config.get("ocr_max_pages", 50), 50)),
+        "ocr_render_dpi": max(1, _coerce_int(config.get("ocr_render_dpi", 300), 300)),
+        "ocr_language": str(config.get("ocr_language", "eng") or "eng"),
+        "ocr_timeout_seconds": max(1, _coerce_int(config.get("ocr_timeout_seconds", 120), 120)),
+        "content_min_searchable_chars": max(0, _coerce_int(config.get("content_min_searchable_chars", 200), 200)),
+        "content_min_searchable_tokens": max(0, _coerce_int(config.get("content_min_searchable_tokens", 30), 30)),
         "content_chunk_size_chars": _coerce_int(config.get("content_chunk_size_chars", APS_CONTENT_INDEX_DEFAULT_CHUNK_SIZE), APS_CONTENT_INDEX_DEFAULT_CHUNK_SIZE),
         "content_chunk_overlap_chars": _coerce_int(
             config.get("content_chunk_overlap_chars", APS_CONTENT_INDEX_DEFAULT_CHUNK_OVERLAP),
@@ -2688,9 +2709,18 @@ def _write_normalized_text_blob(*, text: str) -> dict[str, Any]:
     base.mkdir(parents=True, exist_ok=True)
     out = base / f"{digest}.txt"
     if not out.exists():
-        temp = out.with_name(f".{out.name}.{uuid.uuid4().hex}.tmp")
-        temp.write_bytes(content)
-        os.replace(temp, out)
+        fd, tmp_name = tempfile.mkstemp(dir=str(out.parent), prefix="._", suffix=".tmp")
+        temp = Path(tmp_name)
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(content)
+            os.replace(temp, out)
+        except Exception:
+            try:
+                temp.unlink(missing_ok=True)
+            except OSError:
+                pass
+            raise
     return {
         "normalized_text_ref": str(out),
         "normalized_text_sha256": digest,

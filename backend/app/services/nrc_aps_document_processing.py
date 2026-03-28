@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import re
+import tempfile
 import time
 import unicodedata
 import uuid
 import zipfile
 from pathlib import Path
 from typing import Any
-
-import os
 import fitz
 
 from app.services import nrc_aps_media_detection
@@ -124,9 +124,18 @@ def _write_visual_page_artifact(
     absolute = Path(artifact_storage_dir) / rel_path
     absolute.parent.mkdir(parents=True, exist_ok=True)
     if not absolute.exists():
-        temp = absolute.with_name(f".{absolute.name}.{uuid.uuid4().hex}.tmp")
-        temp.write_bytes(png_bytes)
-        os.replace(temp, absolute)
+        fd, tmp_name = tempfile.mkstemp(dir=str(absolute.parent), prefix="._", suffix=".tmp")
+        temp = Path(tmp_name)
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(png_bytes)
+            os.replace(temp, absolute)
+        except Exception:
+            try:
+                temp.unlink(missing_ok=True)
+            except OSError:
+                pass
+            raise
     return {
         "visual_artifact_ref": rel_path.replace("\\", "/"),
         "visual_artifact_sha256": digest,
