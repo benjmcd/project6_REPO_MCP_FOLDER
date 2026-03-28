@@ -166,12 +166,21 @@ $planningDocs = @(
     "agent_bakeoff_phase1c_validation_plan.md",
     "agent_bakeoff_phase1c_submission_checklist.md",
     "agent_bakeoff_phase1c_rubric.md",
+    "agent_bakeoff_local_setup_phase1d.md",
+    "agent_bakeoff_phase1d_brief.md",
+    "agent_bakeoff_phase1d_scope.md",
+    "agent_bakeoff_phase1d_implementation_blueprint.md",
+    "agent_bakeoff_phase1d_validation_plan.md",
+    "agent_bakeoff_phase1d_submission_checklist.md",
+    "agent_bakeoff_phase1d_rubric.md",
     "agent_bakeoff_prompt_antigravity_phase1.md",
     "agent_bakeoff_prompt_jules_phase1.md",
     "agent_bakeoff_prompt_antigravity_phase1b.md",
     "agent_bakeoff_prompt_jules_phase1b.md",
     "agent_bakeoff_prompt_antigravity_phase1c.md",
     "agent_bakeoff_prompt_jules_phase1c.md",
+    "agent_bakeoff_prompt_antigravity_phase1d.md",
+    "agent_bakeoff_prompt_jules_phase1d.md",
     "agent_bakeoff_rubric.md",
     "agent_bakeoff_scope_slice_01.md",
     "agent_bakeoff_submission_checklist.md",
@@ -270,8 +279,8 @@ Use this repo, not the main local-only workspace, when running the Jules bake-of
 Session hygiene:
 
 - start a brand-new Jules session for each new milestone round
-- do not reuse an older Slice 01, Phase1A, or Phase1B chat/thread for a later retrieval-plane round
-- if the first Jules summary mentions `Slice 01`, `Phase1A`, `Phase1B`, `review UI deliverables`, or older bake-off packaging work, stop and restart with a fresh session instead of trying to steer the stale thread back on course
+- do not reuse an older Slice 01, Phase1A, Phase1B, or Phase1C chat/thread for a later retrieval-plane round
+- if the first Jules summary mentions `Slice 01`, `Phase1A`, `Phase1B`, `Phase1C`, `review UI deliverables`, or older bake-off packaging work, stop and restart with a fresh session instead of trying to steer the stale thread back on course
 
 Important path rule:
 
@@ -306,11 +315,11 @@ Start with the current milestone prompt under `frontend_UI_plans/`.
 For the current later retrieval-plane round, review the current files under:
 
 - `./next_milestone_plans/`
-- `./frontend_UI_plans/agent_bakeoff_phase1c_brief.md`
-- `./frontend_UI_plans/agent_bakeoff_phase1c_scope.md`
-- `./frontend_UI_plans/agent_bakeoff_prompt_jules_phase1c.md`
+- `./frontend_UI_plans/agent_bakeoff_phase1d_brief.md`
+- `./frontend_UI_plans/agent_bakeoff_phase1d_scope.md`
+- `./frontend_UI_plans/agent_bakeoff_prompt_jules_phase1d.md`
 
-For the current Phase1C retrieval-plane round, the accepted Phase1A/Phase1B retrieval work and review UI baseline are prior context only. They are not the deliverables to be regenerated or re-packaged.
+For the current Phase1D retrieval-plane round, the accepted Phase1A/Phase1B/Phase1C work and review UI baseline are prior context only. They are not the deliverables to be regenerated or re-packaged.
 '@
 
 Set-Content -LiteralPath (Join-Path $DestinationRoot "frontend_UI_plans\agent_bakeoff_prompt_jules_github.md") -Value @'
