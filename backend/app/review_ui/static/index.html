@@ -4,6 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NRC APS Pipeline Review</title>
+    <script>
+        (function () {
+            const storageKey = 'nrc_aps_review_theme';
+            let preference = 'system';
+            try {
+                preference = localStorage.getItem(storageKey) || 'system';
+            } catch (error) {
+                preference = 'system';
+            }
+            const prefersDark = typeof window.matchMedia === 'function'
+                && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const resolvedTheme = preference === 'dark' ? 'dark' : preference === 'light' ? 'light' : (prefersDark ? 'dark' : 'light');
+            document.documentElement.dataset.theme = resolvedTheme;
+            document.documentElement.dataset.themePreference = preference;
+        }());
+    </script>
     <link rel="stylesheet" href="/review/nrc-aps/static/review.css">
 </head>
 <body>
@@ -15,6 +31,12 @@
             <label for="run-selector">Select Run:</label>
             <select id="run-selector">
                 <option value="">Loading runs...</option>
+            </select>
+            <label for="theme-selector">Theme:</label>
+            <select id="theme-selector">
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
             </select>
             <div class="view-toggle">
                 <input type="radio" id="view-pipeline" name="view-mode" value="pipeline">
