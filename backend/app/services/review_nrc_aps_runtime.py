@@ -98,3 +98,13 @@ def path_exists(review_root: Path, candidate: str | Path) -> bool:
     if not target.is_absolute():
         target = review_root / target
     return target.exists()
+
+
+def is_absolute_path_safe(review_root: Path, absolute_path: Path) -> bool:
+    """Verify that an absolute path is strictly within the run's review root."""
+    resolved_path = absolute_path.resolve()
+    try:
+        resolved_path.relative_to(review_root.resolve())
+        return True
+    except ValueError:
+        return False

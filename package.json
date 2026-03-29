@@ -1,0 +1,27 @@
+{
+  "name": "project6_repo_mcp_folder",
+  "version": "1.0.0",
+  "description": "> Status note (2026-03-25): Phase 7/7A (Advanced NRC APS Ingestion) is in an `accepted-state`. Phase 8 (Downstream Consumption) is in a **CLOSED** state (all APS-table materialization invariants satisfied in closure-run-005). The authoritative status and navigation surfaces live in: > - [nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md) (Accepted 7A Truth) > - [nrc_aps_authority_matrix.md](docs/nrc_adams/nrc_aps_authority_matrix.md) (Repo-wide Authority Map) > - [nrc_aps_reader_path.md](docs/nrc_adams/nrc_aps_reader_path.md) (Navigational Guide) > - [postgres_status_handoff.md](docs/postgres/postgres_status_handoff.md) (PostgreSQL Tier1 Status) > > **CRITICAL WARNING**: Unverified `tests/...` and `tools/...` paths referenced below may not exist in this specific export workspace and should not be trusted as safe authority paths unless their on-disk presence is directly confirmed.",
+  "main": "qa_live_review_ui.spec.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benjmcd/bakeoff-jules.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/benjmcd/bakeoff-jules/issues"
+  },
+  "homepage": "https://github.com/benjmcd/bakeoff-jules#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.5.0"
+  }
+}

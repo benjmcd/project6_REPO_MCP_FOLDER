@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NRC APS Document Trace</title>
+    <script>
+        (function () {
+            const storageKey = 'nrc_aps_review_theme';
+            let preference = 'system';
+            try {
+                preference = localStorage.getItem(storageKey) || 'system';
+            } catch (error) {
+                preference = 'system';
+            }
+            const prefersDark = typeof window.matchMedia === 'function'
+                && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const resolvedTheme = preference === 'dark' ? 'dark' : preference === 'light' ? 'light' : (prefersDark ? 'dark' : 'light');
+            document.documentElement.dataset.theme = resolvedTheme;
+            document.documentElement.dataset.themePreference = preference;
+        }());
+    </script>
+    <link rel="stylesheet" href="/review/nrc-aps/static/review.css">
+    <link rel="stylesheet" href="/review/nrc-aps/static/document_trace.css">
+    <script type="module">
+        import * as pdfjsLib from '/review/nrc-aps/static/vendor/pdfjs/pdf.min.mjs';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/review/nrc-aps/static/vendor/pdfjs/pdf.worker.min.mjs';
+        window.pdfjsLib = pdfjsLib;
+        window.dispatchEvent(new Event('pdfjs-ready'));
+    </script>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-left trace-header-left">
+            <a href="/review/nrc-aps" class="back-link" aria-label="Back to Pipeline Review">&larr; Back</a>
+            <h1>Document Trace</h1>
+        </div>
+        <div class="header-right">
+            <label for="run-selector">Run:</label>
+            <select id="run-selector">
+                <option value="">Loading...</option>
+            </select>
+            
+            <label for="doc-selector">Document:</label>
+            <select id="doc-selector" disabled>
+                <option value="">Loading...</option>
+            </select>
+
+            <label for="theme-selector">Theme:</label>
+            <select id="theme-selector">
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+        </div>
+    </header>
+
+    <main class="app-body">
+        <div id="disabled-overlay" class="disabled-overlay hidden">
+            <div class="disabled-message">
+                <h2>Trace Unavailable</h2>
+                <p id="disabled-reason"></p>
+            </div>
+        </div>
+
+        <div class="trace-workspace hidden" id="trace-workspace">
+            <section class="pane source-pane">
+                <div class="pane-header">Original Document</div>
+                <div class="identity-summary" id="identity-summary">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="pane-content" id="source-content">
+                    <div class="placeholder">Source loading...</div>
+                </div>
+            </section>
+
+            <section class="pane provenance-pane">
+                <div class="tabs-header" id="tabs-header">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="tab-content-area" id="tab-content-area">
+                    <div class="placeholder">Loading tabs...</div>
+                </div>
+            </section>
+        </div>
+    </main>
+    <script src="/review/nrc-aps/static/document_trace.js"></script>
+</body>
+</html>

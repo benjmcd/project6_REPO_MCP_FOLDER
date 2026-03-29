@@ -16,3 +16,11 @@ backend/app/storage_eval/
 backend/app/storage_eval_full/
 backend/app/storage_salient_*/
 backend/app/storage_nonsalient_sample/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+.gstack/

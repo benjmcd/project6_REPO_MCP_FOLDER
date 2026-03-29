@@ -1,0 +1,321 @@
+.trace-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.back-link {
+    text-decoration: none;
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.trace-workspace {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    width: 100%;
+}
+
+.source-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-color);
+}
+
+.provenance-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-right: none;
+}
+
+.tabs-header {
+    display: flex;
+    background: var(--pane-header-bg);
+    border-bottom: 1px solid var(--border-color);
+    overflow-x: auto;
+}
+
+.tab-btn {
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted-text);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+}
+
+.tab-btn:hover:not(:disabled) {
+    color: var(--text-color);
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.tab-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.identity-summary {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--layout-section-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pane-content, .tab-content-area {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--muted-text);
+    font-size: 0.9rem;
+    text-align: center;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+}
+
+/* Tab-specific Phase 4 styles */
+.tab-pane-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.card-stat {
+    background: var(--layout-section-bg);
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    min-width: 100px;
+}
+
+.text-scroll-block {
+    background: var(--layout-section-bg);
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: auto;
+    font-family: inherit;
+}
+
+.card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.chunk-card {
+    background: var(--layout-section-bg);
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.chunk-card-header {
+    border-bottom: 1px dashed var(--border-color);
+    padding-bottom: 8px;
+}
+
+.chunk-card-meta {
+    font-size: 0.85rem;
+    color: var(--primary-color);
+}
+
+.chunk-card-text {
+    font-family: monospace;
+    white-space: pre-wrap;
+    background: var(--pane-header-bg);
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+/* --- Phase 5: PDF Viewer Styles --- */
+
+.source-pane .pane-content {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.pdf-viewer-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--pane-header-bg);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.pdf-viewer-controls button {
+    background: var(--layout-section-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 0.85rem;
+    color: var(--text-color);
+    cursor: pointer;
+}
+.pdf-viewer-controls button:hover {
+    background: var(--border-color);
+}
+
+.pdf-viewer-controls .page-info {
+    font-size: 0.85rem;
+    color: var(--muted-text);
+    min-width: 80px;
+    text-align: center;
+}
+
+.pdf-viewer-controls .zoom-info {
+    font-size: 0.85rem;
+    color: var(--muted-text);
+    min-width: 50px;
+    text-align: center;
+}
+
+.pdf-viewer-container {
+    flex: 1;
+    overflow: auto;
+    background: var(--layout-section-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    gap: 12px;
+}
+
+.pdf-page-canvas {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    border: 1px solid var(--border-color);
+    max-width: 100%;
+}
+
+.source-meta-bar {
+    display: flex;
+    gap: 16px;
+    padding: 8px 16px;
+    background: var(--pane-header-bg);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--muted-text);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.source-meta-bar .meta-item {
+    display: flex;
+    gap: 4px;
+}
+
+.source-meta-bar .meta-label {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.source-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 24px;
+    color: var(--muted-text);
+    text-align: center;
+}
+
+/* --- Phase 6: Extracted Units & Page Sync Styles --- */
+
+.eu-provenance-bar {
+    display: flex;
+    gap: 16px;
+    padding: 8px 12px;
+    background: var(--pane-header-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: var(--muted-text);
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.eu-provenance {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.eu-precision {
+    font-style: italic;
+}
+
+.eu-page-scope {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.eu-page-badge {
+    background: var(--primary-color);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.eu-page-count {
+    font-size: 0.85rem;
+    color: var(--muted-text);
+}
+
+.eu-card-clickable {
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.eu-card-clickable:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.15);
+}
+
+.eu-card-clickable:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.eu-precision-badge {
+    display: inline-block;
+    background: var(--border-color);
+    color: var(--text-color);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    margin-left: 6px;
+    vertical-align: middle;
+}
