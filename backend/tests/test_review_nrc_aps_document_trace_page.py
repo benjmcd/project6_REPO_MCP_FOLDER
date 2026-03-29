@@ -60,7 +60,9 @@ from app.schemas.review_nrc_aps import (
     NrcApsReviewTraceSummaryOut,
     NrcApsReviewDiagnosticsOut,
     NrcApsReviewNormalizedTextOut,
-    NrcApsReviewIndexedChunkItemOut
+    NrcApsReviewIndexedChunkItemOut,
+    NrcApsReviewExtractedUnitsOut,
+    NrcApsReviewExtractedUnitItemOut,
 )
 
 def test_document_trace_js_binds_to_valid_schema() -> None:
@@ -72,10 +74,14 @@ def test_document_trace_js_binds_to_valid_schema() -> None:
     source_fields = set(re.findall(r"source\.([a-z_]+)", js_content))
     identity_fields = set(re.findall(r"identity\.([a-z_]+)", js_content))
     summary_fields = set(re.findall(r"summary\.([a-z_]+)", js_content))
-    diag_fields = set(re.findall(r"data\.([a-z_]+)", js_content.split("renderDiagnosticsTab")[1].split("renderNormalizedTextTab")[0]))
-    norm_fields = set(re.findall(r"data\.([a-z_]+)", js_content.split("renderNormalizedTextTab")[1].split("renderIndexedChunksTab")[0]))
-    chunk_meta_fields = set(re.findall(r"data\.([a-z_]+)", js_content.split("renderIndexedChunksTab")[1].split("window.switchTab")[0]))
-    chunk_item_fields = set(re.findall(r"c\.([a-z_]+)", js_content.split("renderIndexedChunksTab")[1].split("window.switchTab")[0]))
+    diag_fields = set(re.findall(r"data\.([a-z_]+)", js_content.split("function renderDiagnosticsTab")[1].split("function renderNormalizedTextTab")[0]))
+    norm_fields = set(re.findall(r"data\.([a-z_]+)", js_content.split("function renderNormalizedTextTab")[1].split("function renderIndexedChunksTab")[0]))
+    chunk_section = js_content.split("function renderIndexedChunksTab")[1].split("function renderExtractedUnitsTab")[0]
+    extracted_section = js_content.split("function renderExtractedUnitsTab")[1].split("window.switchTab")[0]
+    chunk_meta_fields = set(re.findall(r"data\.([a-z_]+)", chunk_section))
+    chunk_item_fields = set(re.findall(r"c\.([a-z_]+)", chunk_section))
+    extracted_meta_fields = set(re.findall(r"data\.([a-z_]+)", extracted_section))
+    extracted_item_fields = set(re.findall(r"unit\.([a-z_]+)", extracted_section))
     
     # Retrieve valid fields from the actual Pydantic schema
     valid_source_fields = set(NrcApsReviewTraceSourceOut.model_fields.keys())
@@ -84,6 +90,8 @@ def test_document_trace_js_binds_to_valid_schema() -> None:
     valid_diag_fields = set(NrcApsReviewDiagnosticsOut.model_fields.keys())
     valid_norm_fields = set(NrcApsReviewNormalizedTextOut.model_fields.keys())
     valid_chunk_item_fields = set(NrcApsReviewIndexedChunkItemOut.model_fields.keys())
+    valid_extracted_meta_fields = set(NrcApsReviewExtractedUnitsOut.model_fields.keys())
+    valid_extracted_item_fields = set(NrcApsReviewExtractedUnitItemOut.model_fields.keys())
     
     for field in source_fields:
         assert field in valid_source_fields, f"JS reads non-existent source field: {field}"
@@ -95,8 +103,26 @@ def test_document_trace_js_binds_to_valid_schema() -> None:
         assert field in valid_diag_fields, f"JS reads non-existent diagnostics field: {field}"
     for field in norm_fields:
         assert field in valid_norm_fields, f"JS reads non-existent normalized text field: {field}"
+    for field in extracted_meta_fields:
+        assert field in valid_extracted_meta_fields, f"JS reads non-existent extracted-units field: {field}"
     for field in chunk_item_fields:
         assert field in valid_chunk_item_fields, f"JS reads non-existent chunk item field: {field}"
+    for field in extracted_item_fields:
+        assert field in valid_extracted_item_fields, f"JS reads non-existent extracted-unit item field: {field}"
+
+
+def test_document_trace_phase6_extract_units_markers_present() -> None:
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.css"
+
+    js_content = js_path.read_text(encoding="utf-8")
+    css_content = css_path.read_text(encoding="utf-8")
+
+    assert "Source: diagnostics ordered_units" in js_content
+    assert "unit (page-level jump)" in js_content
+    assert "eu-page-badge" in js_content
+    assert ".eu-provenance-bar" in css_content
+    assert ".eu-precision-badge" in css_content
 
 def test_document_trace_html_semantic_containers() -> None:
     """Verify the served page shell contains the semantic containers needed for source and viewer rendering."""

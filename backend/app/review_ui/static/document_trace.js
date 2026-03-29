@@ -18,11 +18,11 @@ const State = {
         pdfDoc: null,
         objectUrl: null,
         currentPage: 1,
+        focusedPage: 1,
         totalPages: 0,
         scale: 1.0,
         rendering: false,
-        focusedPage: 1,
-        scrollObserver: null
+        pageFocusCleanup: null
     }
 };
 
@@ -76,13 +76,10 @@ const API = {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return await res.json();
     },
-    async fetchExtractedUnits(runId, targetId) {
-        const res = await fetch(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/extracted-units`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-    },
-    async fetchDownstreamUsage(runId, targetId) {
-        const res = await fetch(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/downstream-usage`);
+    async fetchExtractedUnits(runId, targetId, pageNumber = null) {
+        const url = new URL(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/extracted-units`, window.location.origin);
+        if (pageNumber !== null) url.searchParams.set('page_number', String(pageNumber));
+        const res = await fetch(url.pathname + url.search);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return await res.json();
     }
@@ -97,6 +94,102 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+function formatBbox(bbox) {
+    if (!Array.isArray(bbox) || bbox.length !== 4) return null;
+    return bbox.map(value => {
+        if (typeof value !== 'number' || !Number.isFinite(value)) return '?';
+        return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, '');
+    }).join(', ');
+}
+
+function getFocusedSourcePage() {
+    return Number.isInteger(State.viewer.focusedPage) && State.viewer.focusedPage > 0 ? State.viewer.focusedPage : 1;
+}
+
+function setFocusedSourcePage(pageNum, { force = false } = {}) {
+    if (!Number.isInteger(pageNum) || pageNum < 1) return;
+    const nextPage = State.viewer.totalPages > 0 ? Math.min(pageNum, State.viewer.totalPages) : pageNum;
+    const changed = force || State.viewer.focusedPage !== nextPage || State.viewer.currentPage !== nextPage;
+    State.viewer.focusedPage = nextPage;
+    State.viewer.currentPage = nextPage;
+    PDFViewer.updatePageInfo();
+    if (changed && State.activeTab === 'extracted_units' && State.tabData.extracted_units !== null) {
+        renderExtractedUnitsTab();
+    }
+}
+
+function detectFocusedPdfPage(container) {
+    const canvases = Array.from(container.querySelectorAll('canvas[data-page-num]'));
+    if (canvases.length === 0) return null;
+
+    const containerRect = container.getBoundingClientRect();
+    let bestPage = null;
+    let bestVisibleHeight = -1;
+    let bestTopDistance = Number.POSITIVE_INFINITY;
+
+    canvases.forEach((canvas) => {
+        const pageNum = Number.parseInt(canvas.dataset.pageNum || '', 10);
+        if (!Number.isInteger(pageNum)) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const visibleTop = Math.max(rect.top, containerRect.top);
+        const visibleBottom = Math.min(rect.bottom, containerRect.bottom);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+        const topDistance = Math.abs(rect.top - containerRect.top);
+
+        if (visibleHeight > bestVisibleHeight || (visibleHeight === bestVisibleHeight && topDistance < bestTopDistance)) {
+            bestPage = pageNum;
+            bestVisibleHeight = visibleHeight;
+            bestTopDistance = topDistance;
+        }
+    });
+
+    return bestPage;
+}
+
+function attachViewerPageFocusTracking() {
+    if (State.viewer.pageFocusCleanup) {
+        State.viewer.pageFocusCleanup();
+        State.viewer.pageFocusCleanup = null;
+    }
+
+    const container = document.getElementById('pdf-viewer-container');
+    if (!container) return;
+
+    let debounceHandle = null;
+    const syncFocusedPage = () => {
+        const detectedPage = detectFocusedPdfPage(container);
+        if (detectedPage !== null) setFocusedSourcePage(detectedPage);
+    };
+    const onScroll = () => {
+        if (debounceHandle !== null) window.clearTimeout(debounceHandle);
+        debounceHandle = window.setTimeout(syncFocusedPage, 120);
+    };
+
+    container.addEventListener('scroll', onScroll, { passive: true });
+    syncFocusedPage();
+
+    State.viewer.pageFocusCleanup = () => {
+        container.removeEventListener('scroll', onScroll);
+        if (debounceHandle !== null) window.clearTimeout(debounceHandle);
+    };
+}
+
+function jumpToSourcePage(pageNum) {
+    if (!State.viewer.pdfDoc) return;
+    if (!Number.isInteger(pageNum) || pageNum < 1) return;
+    PDFViewer.goToPage(pageNum);
+}
+
+if (elements.tabContentArea) {
+    elements.tabContentArea.addEventListener('click', (event) => {
+        const trigger = event.target.closest('.eu-jump-btn');
+        if (!trigger) return;
+        const pageNum = Number.parseInt(trigger.dataset.pageNumber || '', 10);
+        jumpToSourcePage(pageNum);
+    });
 }
 
 // --- Theme Management ---
@@ -121,54 +214,14 @@ const PDFViewer = {
     MAX_SCALE: 3.0,
 
     async init(runId, targetId, viewerKind, blobRefPresent) {
-        // Only init for PDFs or text-based fallbacks with available blobs
+        // Only init for PDFs with available blobs
         const sourceContent = document.getElementById('source-content');
         if (!blobRefPresent) {
             sourceContent.innerHTML = `<div class="source-fallback"><span id="observed-source-status">Source blob not available.</span></div>`;
             return;
         }
-
-        if (viewerKind === 'unsupported' || !['pdf', 'text', 'json', 'csv'].includes(viewerKind)) {
-            sourceContent.innerHTML = `
-                <div class="source-fallback">
-                    <span id="observed-source-status">Unsupported source view for format: '${escapeHtml(viewerKind || 'unknown')}'. Trace metadata controls are still active.</span>
-                </div>
-            `;
-            return;
-        }
-
-        if (viewerKind === 'text' || viewerKind === 'json' || viewerKind === 'csv') {
-            sourceContent.innerHTML = `<div class="text-source-container"><pre id="text-source-viewer" style="padding:20px; margin:0; overflow:auto; height:100%; font-family:var(--font-mono); font-size:13px; color:var(--text-color); white-space:pre-wrap; word-break:break-all;">Loading ${escapeHtml(viewerKind)}...</pre></div>`;
-            try {
-                const url = `/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/source`;
-                const resp = await fetch(url);
-                if (State.selectedRunId !== runId || State.selectedTargetId !== targetId) return;
-                if (!resp.ok) {
-                    const container = document.getElementById('text-source-viewer');
-                    if (container) container.textContent = `Source fetch failed: HTTP ${resp.status}`;
-                    return;
-                }
-                const textData = await resp.text();
-                if (State.selectedRunId !== runId || State.selectedTargetId !== targetId) return;
-                
-                const container = document.getElementById('text-source-viewer');
-                if (container) {
-                    if (viewerKind === 'json') {
-                        try {
-                            container.textContent = JSON.stringify(JSON.parse(textData), null, 2);
-                        } catch {
-                            // fallback if not strictly pure JSON
-                            container.textContent = textData;
-                        }
-                    } else {
-                        container.textContent = textData;
-                    }
-                }
-            } catch (err) {
-                if (State.selectedRunId !== runId || State.selectedTargetId !== targetId) return;
-                const container = document.getElementById('text-source-viewer');
-                if (container) container.textContent = `Error loading source: ${escapeHtml(err.message)}`;
-            }
+        if (viewerKind !== 'pdf') {
+            sourceContent.innerHTML = `<div class="source-fallback"><span id="observed-source-status">Viewer for '${escapeHtml(viewerKind || 'unknown')}' format arrives in a later phase.</span></div>`;
             return;
         }
 
@@ -232,11 +285,8 @@ const PDFViewer = {
 
             State.viewer.pdfDoc = pdfDoc;
             State.viewer.totalPages = pdfDoc.numPages;
-            State.viewer.currentPage = 1;
-            State.viewer.focusedPage = 1;
-            PDFViewer.updatePageInfo();
+            setFocusedSourcePage(1, { force: true });
             await PDFViewer.renderAllVisiblePages();
-            setupScrollPageTracking();
         } catch (err) {
             if (State.selectedRunId !== runId || State.selectedTargetId !== targetId) return;
             const container = document.getElementById('pdf-viewer-container');
@@ -263,8 +313,8 @@ const PDFViewer = {
             const ctx = canvas.getContext('2d');
             await page.render({ canvasContext: ctx, viewport }).promise;
         }
-        PDFViewer.scrollToPage(State.viewer.currentPage);
-        setupScrollPageTracking();
+        PDFViewer.scrollToPage(getFocusedSourcePage());
+        attachViewerPageFocusTracking();
     },
 
     scrollToPage(pageNum) {
@@ -277,10 +327,7 @@ const PDFViewer = {
     goToPage(pageNum) {
         if (!State.viewer.pdfDoc) return;
         const clamped = Math.max(1, Math.min(pageNum, State.viewer.totalPages));
-        State.viewer.currentPage = clamped;
-        State.viewer.focusedPage = clamped;
-        onFocusedPageChange();
-        PDFViewer.updatePageInfo();
+        setFocusedSourcePage(clamped, { force: true });
         PDFViewer.scrollToPage(clamped);
     },
 
@@ -324,64 +371,15 @@ const PDFViewer = {
         State.viewer.runId = null;
         State.viewer.targetId = null;
         State.viewer.currentPage = 1;
+        State.viewer.focusedPage = 1;
         State.viewer.totalPages = 0;
         State.viewer.scale = 1.0;
-        State.viewer.focusedPage = 1;
-        if (State.viewer.scrollObserver) {
-            State.viewer.scrollObserver.disconnect();
-            State.viewer.scrollObserver = null;
+        if (State.viewer.pageFocusCleanup) {
+            State.viewer.pageFocusCleanup();
+            State.viewer.pageFocusCleanup = null;
         }
     }
 };
-
-// --- Page Focus Change Handler ---
-function onFocusedPageChange() {
-    // If the Extracted Units tab is active, re-render with page scope
-    if (State.activeTab === 'extracted_units' && State.tabData.extracted_units) {
-        renderExtractedUnitsTab();
-    }
-}
-
-function setupScrollPageTracking() {
-    if (State.viewer.scrollObserver) return; // Already attached
-    const container = document.getElementById('pdf-viewer-container');
-    if (!container) return;
-    
-    let scrollTimer = null;
-    const scrollHandler = () => {
-        if (scrollTimer) clearTimeout(scrollTimer);
-        scrollTimer = setTimeout(() => {
-            const canvases = container.querySelectorAll('canvas[data-page-num]');
-            if (!canvases.length) return;
-            const containerRect = container.getBoundingClientRect();
-            const containerMid = containerRect.top + containerRect.height * 0.3;
-            let bestPage = State.viewer.focusedPage;
-            let bestDist = Infinity;
-            canvases.forEach(c => {
-                const r = c.getBoundingClientRect();
-                const dist = Math.abs(r.top - containerMid);
-                if (dist < bestDist) {
-                    bestDist = dist;
-                    bestPage = parseInt(c.dataset.pageNum);
-                }
-            });
-            if (bestPage !== State.viewer.focusedPage) {
-                State.viewer.focusedPage = bestPage;
-                State.viewer.currentPage = bestPage;
-                PDFViewer.updatePageInfo();
-                onFocusedPageChange();
-            }
-        }, 150);
-    };
-
-    container.addEventListener('scroll', scrollHandler);
-    State.viewer.scrollObserver = {
-        disconnect: () => {
-            container.removeEventListener('scroll', scrollHandler);
-            if (scrollTimer) clearTimeout(scrollTimer);
-        }
-    };
-}
 
 // --- UI Updates ---
 function updateUrlParams(method = 'replace') {
@@ -596,127 +594,99 @@ function renderIndexedChunksTab() {
     elements.tabContentArea.innerHTML = html;
 }
 
-window.jumpToSourcePage = function(pageNum) {
-    if (!State.viewer.pdfDoc) return;
-    PDFViewer.goToPage(pageNum);
-};
-
-window.handleUnitKeydown = function(event, pageNum) {
-    if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault(); // Prevent scrolling on Space
-        window.jumpToSourcePage(pageNum);
-    }
-};
-
 function renderExtractedUnitsTab() {
     const data = State.tabData.extracted_units;
     if (!data) {
-        elements.tabContentArea.innerHTML = `<div class="placeholder">No extracted units data.</div>`;
+        elements.tabContentArea.innerHTML = `<div class="placeholder">Extracted Units unavailable.</div>`;
         return;
     }
+
+    const focusedPage = getFocusedSourcePage();
+    const totalPages = State.viewer.totalPages;
+    const allUnits = Array.isArray(data.units) ? data.units : [];
+    const hasPageScope = totalPages > 0;
+    const scopedUnits = hasPageScope ? allUnits.filter(unit => unit.page_number === focusedPage) : allUnits;
+    const precisionLabel = data.source_precision === 'unit' ? 'unit (page-level jump)' : (data.source_precision || 'none');
+    const pageScopeLabel = hasPageScope
+        ? `Page ${focusedPage}${totalPages ? ` / ${totalPages}` : ''}`
+        : 'Page scope unavailable';
+    const pageCountLabel = hasPageScope
+        ? `${scopedUnits.length} units on this page (${data.total_unit_count} total)`
+        : `${allUnits.length} units loaded`;
+
+    let html = `<div class="tab-pane-content eu-pane" data-source-layer="${escapeHtml(data.source_layer || 'diagnostics_ordered_units')}" data-sync-precision="${escapeHtml(data.source_precision || 'none')}">`;
+    html += `
+        <div class="eu-provenance-bar">
+            <span class="eu-provenance">Source: diagnostics ordered_units</span>
+            <span class="eu-precision" data-sync-precision="${escapeHtml(data.source_precision || 'none')}">Sync: ${escapeHtml(precisionLabel)}</span>
+        </div>
+        <div class="eu-page-scope">
+            <span class="eu-page-badge">${escapeHtml(pageScopeLabel)}</span>
+            <span class="eu-page-count">${escapeHtml(pageCountLabel)}</span>
+        </div>
+    `;
 
     if (!data.available) {
-        elements.tabContentArea.innerHTML = `<div class="tab-pane-content">
-            <div class="eu-provenance-bar">
-                <span class="eu-provenance">Source: diagnostics ordered_units</span>
-            </div>
-            <div class="placeholder" style="margin-top:16px">Extracted units unavailable: ${escapeHtml(data.reason_code || 'unknown')}</div>
-        </div>`;
-        return;
-    }
-
-    const focusedPage = State.viewer.focusedPage;
-    const allUnits = data.units || [];
-    const pageUnits = allUnits.filter(u => u.page_number === focusedPage);
-    const totalOnPage = pageUnits.length;
-
-    let html = `<div class="tab-pane-content">`;
-    // Provenance and precision bar
-    html += `<div class="eu-provenance-bar">
-        <span class="eu-provenance">Source: diagnostics ordered_units</span>
-        <span class="eu-precision">Sync: ${escapeHtml(data.source_precision)} (page-level jump)</span>
-    </div>`;
-    // Page scope indicator
-    html += `<div class="eu-page-scope">
-        <span class="eu-page-badge">Page ${focusedPage}${State.viewer.totalPages ? ' / ' + State.viewer.totalPages : ''}</span>
-        <span class="eu-page-count">${totalOnPage} unit${totalOnPage !== 1 ? 's' : ''} on this page (${data.total_unit_count} total)</span>
-    </div>`;
-
-    if (totalOnPage === 0) {
-        html += `<div class="placeholder" style="margin-top:16px;height:auto;padding:24px;">No extracted units on page ${focusedPage}.</div>`;
-    } else {
-        html += `<div class="card-list">`;
-        pageUnits.forEach(u => {
-            const canJump = u.page_number != null;
-            const jumpAttr = canJump ? `onclick="window.jumpToSourcePage(${u.page_number})" onkeydown="window.handleUnitKeydown(event, ${u.page_number})" tabindex="0" role="button" aria-label="Jump to page ${u.page_number}"` : '';
-            const jumpClass = canJump ? 'eu-card-clickable' : '';
-            html += `<div class="chunk-card eu-card ${jumpClass}" ${jumpAttr}>
-                <div class="chunk-card-header">
-                    <span class="chunk-card-meta">
-                        ${escapeHtml(u.unit_kind || 'unit')}
-                        ${u.page_number != null ? ` · p.${u.page_number}` : ''}
-                        ${u.start_char != null ? ` · chars ${u.start_char}–${u.end_char}` : ''}
-                        <span class="eu-precision-badge">${escapeHtml(u.mapping_precision)}</span>
-                    </span>
-                </div>
-                <div class="chunk-card-text">${escapeHtml(u.text || '')}</div>
-            </div>`;
-        });
-        html += `</div>`;
-    }
-    html += `</div>`;
-    elements.tabContentArea.innerHTML = html;
-}
-
-function renderDownstreamUsageTab() {
-    const data = State.tabData.downstream_usage;
-    if (!data) {
-        elements.tabContentArea.innerHTML = `<div class="placeholder">Loading downstream usage...</div>`;
-        return;
-    }
-
-    if (!data.available) {
-        let html = `<div class="tab-pane-content">`;
-        html += `<div class="placeholder">Downstream usage is explicitly unavailable or empty for this target.</div>`;
-        if (data.limitations && data.limitations.length > 0) {
-            html += `<ul style="color:var(--muted-text); margin-top:20px;">`;
-            data.limitations.forEach(l => html += `<li>${escapeHtml(l)}</li>`);
-            html += `</ul>`;
-        }
+        html += `<div class="placeholder eu-empty-state">Extracted Units unavailable: ${escapeHtml(data.reason_code || 'unknown')}</div>`;
         html += `</div>`;
         elements.tabContentArea.innerHTML = html;
         return;
     }
 
-    let html = `<div class="tab-pane-content">`;
-    if (data.limitations && data.limitations.length > 0) {
-        html += `<div style="color: var(--warning-color); margin-bottom: 20px;"><strong>Limitations:</strong><ul>`;
-        data.limitations.forEach(l => html += `<li>${escapeHtml(l)}</li>`);
-        html += `</ul></div>`;
-    }
-
-    if (data.usage && data.usage.length > 0) {
-        html += `<div class="card-list">`;
-        data.usage.forEach(u => {
-            html += `
-                <div class="chunk-card">
-                    <div class="chunk-card-header">
-                        <strong>${escapeHtml(u.consumer_stage)}</strong>
-                        <span style="float: right; font-size: 0.85em; color: var(--muted-text);">Precision: ${escapeHtml(u.attribution_precision)}</span>
-                    </div>
-                    <div class="chunk-card-meta">
-                        <span>Artifact Class: ${escapeHtml(u.artifact_class)}</span>
-                    </div>
-                    <div class="chunk-card-text">Ref: ${escapeHtml(u.display_ref)}</div>
-                </div>
-            `;
-        });
+    if (hasPageScope && scopedUnits.length === 0) {
+        html += `<div class="placeholder eu-empty-state">No extracted units on page ${focusedPage}.</div>`;
         html += `</div>`;
-    } else {
-        html += `<div class="placeholder">No attributable usage found.</div>`;
+        elements.tabContentArea.innerHTML = html;
+        return;
     }
 
-    html += `</div>`;
+    html += `<div class="card-list">`;
+    scopedUnits.forEach((unit) => {
+        const detailParts = [];
+        if (unit.page_number !== null && unit.page_number !== undefined) detailParts.push(`p. ${unit.page_number}`);
+        if (unit.start_char !== null && unit.start_char !== undefined && unit.end_char !== null && unit.end_char !== undefined) {
+            detailParts.push(`chars ${unit.start_char}-${unit.end_char}`);
+        }
+        const bboxText = formatBbox(unit.bbox);
+        if (bboxText) detailParts.push(`bbox ${bboxText}`);
+
+        const metaText = detailParts.join(' | ');
+        const unitKind = escapeHtml(unit.unit_kind || 'unit');
+        const mappingPrecision = escapeHtml(unit.mapping_precision || 'none');
+        const unitText = escapeHtml(unit.text || '');
+        const canJump = Number.isInteger(unit.page_number) && unit.page_number > 0;
+
+        if (canJump) {
+            html += `
+                <button
+                    type="button"
+                    class="chunk-card eu-card eu-card-in-scope eu-card-clickable eu-jump-btn"
+                    data-page-number="${unit.page_number}"
+                    data-unit-id="${escapeHtml(unit.unit_id || '')}"
+                    aria-label="Jump source viewer to page ${unit.page_number}"
+                >
+                    <div class="chunk-card-header">
+                        <span class="chunk-card-meta">${unitKind}</span>
+                        <span class="eu-precision-badge" data-unit-precision="${mappingPrecision}">${mappingPrecision}</span>
+                    </div>
+                    ${metaText ? `<div class="eu-card-details">${escapeHtml(metaText)}</div>` : ''}
+                    <div class="chunk-card-text">${unitText}</div>
+                </button>
+            `;
+        } else {
+            html += `
+                <article class="chunk-card eu-card eu-card-in-scope" data-unit-id="${escapeHtml(unit.unit_id || '')}">
+                    <div class="chunk-card-header">
+                        <span class="chunk-card-meta">${unitKind}</span>
+                        <span class="eu-precision-badge" data-unit-precision="${mappingPrecision}">${mappingPrecision}</span>
+                    </div>
+                    ${metaText ? `<div class="eu-card-details">${escapeHtml(metaText)}</div>` : ''}
+                    <div class="chunk-card-text">${unitText}</div>
+                </article>
+            `;
+        }
+    });
+    html += `</div></div>`;
     elements.tabContentArea.innerHTML = html;
 }
 
@@ -724,7 +694,7 @@ window.switchTab = async function(tabId, pushHistory = true) {
     if (!State.manifest) return;
 
     // Reject unimplemented tabs immediately and fallback to summary
-    const supportedTabs = ['summary', 'diagnostics', 'normalized_text', 'indexed_chunks', 'extracted_units', 'downstream_usage'];
+    const supportedTabs = ['summary', 'diagnostics', 'normalized_text', 'indexed_chunks', 'extracted_units'];
     if (!supportedTabs.includes(tabId)) {
         tabId = 'summary';
     }
@@ -776,7 +746,6 @@ async function loadActiveTab() {
         else if (tabId === 'normalized_text') renderNormalizedTextTab();
         else if (tabId === 'indexed_chunks') renderIndexedChunksTab();
         else if (tabId === 'extracted_units') renderExtractedUnitsTab();
-        else if (tabId === 'downstream_usage') renderDownstreamUsageTab();
         return;
     }
 
@@ -803,11 +772,6 @@ async function loadActiveTab() {
             if (seq !== _actionSeq) return;
             State.tabData.extracted_units = data;
             renderExtractedUnitsTab();
-        } else if (tabId === 'downstream_usage') {
-            const data = await API.fetchDownstreamUsage(State.selectedRunId, State.selectedTargetId);
-            if (seq !== _actionSeq) return;
-            State.tabData.downstream_usage = data;
-            renderDownstreamUsageTab();
         }
     } catch (err) {
         if (seq !== _actionSeq) return;
@@ -822,7 +786,7 @@ async function loadTargetDoc(targetId, seq) {
     elements.docSelector.value = targetId || "";
     
     // Clear tab state cache since target changed
-    State.tabData = { diagnostics: null, normalized_text: null, indexed_chunks: null, extracted_units: null, downstream_usage: null };
+    State.tabData = { diagnostics: null, normalized_text: null, indexed_chunks: null, extracted_units: null };
 
     // Tear down old viewer for previous target
     PDFViewer.teardown();

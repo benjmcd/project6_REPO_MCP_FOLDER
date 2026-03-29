@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 from sqlalchemy.orm import Session
@@ -25,8 +26,6 @@ from app.schemas.review_nrc_aps import (
     NrcApsReviewIndexedChunkItemOut,
     NrcApsReviewExtractedUnitsOut,
     NrcApsReviewExtractedUnitItemOut,
-    NrcApsReviewDownstreamUsageOut,
-    NrcApsReviewDownstreamUsageItemOut,
 )
 
 
@@ -167,6 +166,104 @@ def compose_document_selector(db: Session, run_id: str, root: Path) -> NrcApsRev
 # Source Resolution
 # ---------------------------------------------------------------------------
 
+def _resolve_safe_runtime_path(root: Path, artifact_ref: str | None) -> Path | None:
+    """Resolve a runtime artifact reference and reject paths outside the allowed root."""
+    if not artifact_ref:
+        return None
+
+    from app.services.review_nrc_aps_runtime import is_absolute_path_safe
+
+    raw_path = Path(artifact_ref)
+    absolute_path = (root / raw_path).resolve() if not raw_path.is_absolute() else raw_path.resolve()
+    if not is_absolute_path_safe(root, absolute_path) or not absolute_path.exists():
+        return None
+    return absolute_path
+
+
+def _load_diagnostics_json(lnk: ApsContentLinkage | None, root: Path) -> tuple[dict | None, str | None]:
+    """Load diagnostics JSON for a linkage, returning a reason code on explicit missingness."""
+    if not lnk or not lnk.diagnostics_ref:
+        return None, "diagnostics_absent"
+
+    diag_path = _resolve_safe_runtime_path(root, lnk.diagnostics_ref)
+    if diag_path is None:
+        return None, "diagnostics_unreadable"
+
+    try:
+        data = json.loads(diag_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None, "diagnostics_parse_error"
+
+    if not isinstance(data, dict):
+        return None, "diagnostics_parse_error"
+    return data, None
+
+
+def _as_positive_int(value) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value if value > 0 else None
+
+
+def _resolve_unit_kind(unit: dict) -> str | None:
+    kind = unit.get("unit_kind")
+    if isinstance(kind, str) and kind:
+        return kind
+    fallback_kind = unit.get("kind")
+    if isinstance(fallback_kind, str) and fallback_kind:
+        return fallback_kind
+    return None
+
+
+def _resolve_bbox(unit: dict) -> list[float] | None:
+    bbox = unit.get("bbox")
+    if not isinstance(bbox, list) or len(bbox) != 4:
+        return None
+    if any(not isinstance(value, (int, float)) for value in bbox):
+        return None
+    return [float(value) for value in bbox]
+
+
+def _resolve_char_offset(unit: dict, key: str) -> int | None:
+    value = unit.get(key)
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value
+
+
+def _resolve_mapping_precision(page_number: int | None, bbox: list[float] | None, start_char: int | None, end_char: int | None) -> str:
+    has_chars = start_char is not None and end_char is not None
+    if page_number is not None and bbox is not None and has_chars:
+        return "unit"
+    if page_number is not None:
+        return "page"
+    if bbox is not None or has_chars:
+        return "best_effort"
+    return "none"
+
+
+def _deterministic_unit_id(target_id: str, index: int, unit: dict) -> str:
+    """Prefer an explicit diagnostics identifier; otherwise derive a stable target-scoped ID."""
+    for key in ("unit_id", "id"):
+        existing = unit.get(key)
+        if isinstance(existing, str) and existing.strip():
+            return existing.strip()
+
+    stable_payload = {
+        "target_id": target_id,
+        "index": index,
+        "page_number": unit.get("page_number"),
+        "unit_kind": _resolve_unit_kind(unit),
+        "text": unit.get("text"),
+        "start_char": unit.get("start_char"),
+        "end_char": unit.get("end_char"),
+        "bbox": unit.get("bbox"),
+    }
+    digest = hashlib.sha256(
+        json.dumps(stable_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    ).hexdigest()
+    return f"eu_{digest[:24]}"
+
 def resolve_source_blob_info(db: Session, run_id: str, target_id: str, root: Path) -> tuple[Path, str, str | None]:
     """Resolve the original source blob for a target, ensuring path safety.
     
@@ -260,15 +357,11 @@ def compose_trace_manifest(db: Session, run_id: str, target_id: str, root: Path)
         if lnk.diagnostics_ref:
             completeness.has_diagnostics = True
 
-            # Read diagnostics to get ordered_unit_count
-            diag_path = root / lnk.diagnostics_ref
-            if diag_path.exists():
-                try:
-                    diag_data = json.loads(diag_path.read_text(encoding="utf-8"))
-                    units = diag_data.get("ordered_units", [])
-                    summary.ordered_unit_count = len(units)
-                except Exception:
-                    pass
+            diagnostics_data, _ = _load_diagnostics_json(lnk, root)
+            if diagnostics_data is not None:
+                ordered_units = diagnostics_data.get("ordered_units")
+                if isinstance(ordered_units, list):
+                    summary.ordered_unit_count = len(ordered_units)
 
         if lnk.normalized_text_ref:
             completeness.has_normalized_text = True
@@ -318,7 +411,7 @@ def compose_trace_manifest(db: Session, run_id: str, target_id: str, root: Path)
             source.viewer_kind = "pdf"
             source.content_type = "application/pdf"
 
-    # Tabs: advertise endpoints only for routes that are implemented in Phase 4.
+    # Tabs: advertise only the implemented routes. Summary remains client-rendered.
     tabs = [
         NrcApsReviewTraceTabOut(tab_id="summary", label="Summary", available=True),
         NrcApsReviewTraceTabOut(
@@ -349,7 +442,6 @@ def compose_trace_manifest(db: Session, run_id: str, target_id: str, root: Path)
             tab_id="downstream_usage",
             label="Downstream Usage",
             available=completeness.has_downstream_usage,
-            endpoint=f"/api/v1/review/nrc-aps/runs/{run_id}/documents/{target_id}/downstream-usage",
         ),
     ]
 
@@ -397,25 +489,15 @@ def compose_diagnostics_payload(db: Session, run_id: str, target_id: str, root: 
     if not lnk or not lnk.diagnostics_ref:
         return payload
 
-    from app.services.review_nrc_aps_runtime import is_absolute_path_safe
-    diag_path_raw = Path(lnk.diagnostics_ref)
-    if not diag_path_raw.is_absolute():
-        diag_path = (root / diag_path_raw).resolve()
-    else:
-        diag_path = diag_path_raw.resolve()
-
-    if not is_absolute_path_safe(root, diag_path) or not diag_path.exists():
+    diagnostics_data, _ = _load_diagnostics_json(lnk, root)
+    if diagnostics_data is None:
         return payload
 
-    try:
-        diag_data = json.loads(diag_path.read_text(encoding="utf-8"))
-        payload.available = True
-        payload.ordered_unit_count = len(diag_data.get("ordered_units", []))
-        payload.extractor_metadata = diag_data.get("extractor_metadata")
-        payload.warnings = diag_data.get("warnings", [])
-        payload.degradation_codes = diag_data.get("degradation_codes", [])
-    except Exception:
-        pass
+    payload.available = True
+    payload.ordered_unit_count = len(diagnostics_data.get("ordered_units", []))
+    payload.extractor_metadata = diagnostics_data.get("extractor_metadata")
+    payload.warnings = diagnostics_data.get("warnings", [])
+    payload.degradation_codes = diagnostics_data.get("degradation_codes", [])
 
     doc = db.query(ApsContentDocument).filter(ApsContentDocument.content_id == lnk.content_id).first()
     if doc:
@@ -460,20 +542,13 @@ def compose_normalized_text_payload(db: Session, run_id: str, target_id: str, ro
         payload.text = text_content
         payload.char_count = len(text_content)
 
-        diag_path_raw = Path(lnk.diagnostics_ref) if lnk.diagnostics_ref else None
-        if diag_path_raw:
-            if not diag_path_raw.is_absolute():
-                diag_path = (root / diag_path_raw).resolve()
-            else:
-                diag_path = diag_path_raw.resolve()
-            
-            if is_absolute_path_safe(root, diag_path) and diag_path.exists():
-                diag_data = json.loads(diag_path.read_text(encoding="utf-8"))
-                units = diag_data.get("ordered_units", [])
-                if len(units) > 0:
-                    payload.mapping_precision = "best_effort"
-                elif payload.char_count > 0:
-                    payload.mapping_precision = "document"
+        diagnostics_data, _ = _load_diagnostics_json(lnk, root)
+        if diagnostics_data is not None:
+            units = diagnostics_data.get("ordered_units", [])
+            if len(units) > 0:
+                payload.mapping_precision = "best_effort"
+            elif payload.char_count > 0:
+                payload.mapping_precision = "document"
     except Exception:
         pass
 
@@ -523,32 +598,24 @@ def compose_indexed_chunks_payload(db: Session, run_id: str, target_id: str, roo
     return payload
 
 
-# ---------------------------------------------------------------------------
-# Extracted Units (Phase 6)
-# ---------------------------------------------------------------------------
-
-def _deterministic_unit_id(target_id: str, index: int, unit: dict) -> str:
-    """Generate a stable, deterministic unit_id from ordered position and content."""
-    import hashlib
-    key = f"{target_id}:{index}:{unit.get('page_number', '')}:{unit.get('start_char', '')}:{unit.get('end_char', '')}"
-    return hashlib.sha256(key.encode()).hexdigest()[:16]
-
-
 def compose_extracted_units_payload(
-    db: Session, run_id: str, target_id: str, root: Path,
+    db: Session,
+    run_id: str,
+    target_id: str,
+    root: Path,
     page_number: int | None = None,
 ) -> NrcApsReviewExtractedUnitsOut:
-    """Assemble extracted units from diagnostics ordered_units."""
+    """Assemble the diagnostics-backed extracted-units payload for a target."""
     target = db.query(ConnectorRunTarget).filter(
         ConnectorRunTarget.connector_run_id == run_id,
-        ConnectorRunTarget.connector_run_target_id == target_id
+        ConnectorRunTarget.connector_run_target_id == target_id,
     ).first()
     if not target:
         raise KeyError(f"Target {target_id} not found in run {run_id}")
 
     lnk = db.query(ApsContentLinkage).filter(
         ApsContentLinkage.run_id == run_id,
-        ApsContentLinkage.target_id == target_id
+        ApsContentLinkage.target_id == target_id,
     ).first()
 
     payload = NrcApsReviewExtractedUnitsOut(
@@ -560,28 +627,13 @@ def compose_extracted_units_payload(
         page_number=page_number,
     )
 
-    if not lnk or not lnk.diagnostics_ref:
+    diagnostics_data, reason_code = _load_diagnostics_json(lnk, root)
+    if diagnostics_data is None:
+        payload.reason_code = reason_code or "diagnostics_absent"
         return payload
 
-    from app.services.review_nrc_aps_runtime import is_absolute_path_safe
-    diag_path_raw = Path(lnk.diagnostics_ref)
-    if not diag_path_raw.is_absolute():
-        diag_path = (root / diag_path_raw).resolve()
-    else:
-        diag_path = diag_path_raw.resolve()
-
-    if not is_absolute_path_safe(root, diag_path) or not diag_path.exists():
-        payload.reason_code = "diagnostics_unreadable"
-        return payload
-
-    try:
-        diag_data = json.loads(diag_path.read_text(encoding="utf-8"))
-    except Exception:
-        payload.reason_code = "diagnostics_parse_error"
-        return payload
-
-    ordered_units = diag_data.get("ordered_units", [])
-    if not ordered_units:
+    ordered_units = diagnostics_data.get("ordered_units")
+    if not isinstance(ordered_units, list) or len(ordered_units) == 0:
         payload.reason_code = "no_ordered_units"
         return payload
 
@@ -590,59 +642,29 @@ def compose_extracted_units_payload(
     payload.source_precision = "unit"
     payload.total_unit_count = len(ordered_units)
 
-    for idx, u in enumerate(ordered_units):
-        pg = u.get("page_number")
-        # Page filter: skip units not matching requested page
-        if page_number is not None and pg != page_number:
+    for index, raw_unit in enumerate(ordered_units):
+        if not isinstance(raw_unit, dict):
             continue
 
-        # Determine mapping precision per unit
-        has_bbox = isinstance(u.get("bbox"), list) and len(u.get("bbox", [])) == 4
-        has_chars = u.get("start_char") is not None and u.get("end_char") is not None
-        if has_bbox and has_chars:
-            precision = "unit"
-        elif pg is not None:
-            precision = "page"
-        else:
-            precision = "best_effort"
+        resolved_page = _as_positive_int(raw_unit.get("page_number"))
+        if page_number is not None and resolved_page != page_number:
+            continue
 
-        payload.units.append(NrcApsReviewExtractedUnitItemOut(
-            unit_id=_deterministic_unit_id(target_id, idx, u),
-            page_number=pg,
-            unit_kind=u.get("unit_kind"),
-            text=u.get("text"),
-            bbox=u.get("bbox") if has_bbox else None,
-            start_char=u.get("start_char"),
-            end_char=u.get("end_char"),
-            mapping_precision=precision,
-        ))
+        bbox = _resolve_bbox(raw_unit)
+        start_char = _resolve_char_offset(raw_unit, "start_char")
+        end_char = _resolve_char_offset(raw_unit, "end_char")
 
-    return payload
-
-
-# ---------------------------------------------------------------------------
-# Downstream Usage (Phase 7)
-# ---------------------------------------------------------------------------
-
-def compose_downstream_usage_payload(db: Session, run_id: str, target_id: str, root: Path) -> NrcApsReviewDownstreamUsageOut:
-    """Implement the downstream usage query. Missingness is explicit if none are found."""
-    target = db.query(ConnectorRunTarget).filter(
-        ConnectorRunTarget.connector_run_id == run_id,
-        ConnectorRunTarget.connector_run_target_id == target_id
-    ).first()
-    if not target:
-        raise KeyError(f"Target {target_id} not found in run {run_id}")
-
-    payload = NrcApsReviewDownstreamUsageOut(
-        run_id=run_id,
-        target_id=target_id,
-        available=False,
-        usage=[],
-        limitations=["Attributable downstream usage tracking is not yet populated in the current test runtime or the target has no usage."]
-    )
-
-    # In a full db implementation, we'd query DatasetSourceProvenance or AnalysisArtifact
-    # Since the audited runtime is explicitly void of downstream records, this safely 
-    # honors the real zero-state truthfulness constraint safely bounded.
+        payload.units.append(
+            NrcApsReviewExtractedUnitItemOut(
+                unit_id=_deterministic_unit_id(target_id, index, raw_unit),
+                page_number=resolved_page,
+                unit_kind=_resolve_unit_kind(raw_unit),
+                text=raw_unit.get("text") if isinstance(raw_unit.get("text"), str) else None,
+                bbox=bbox,
+                start_char=start_char,
+                end_char=end_char,
+                mapping_precision=_resolve_mapping_precision(resolved_page, bbox, start_char, end_char),
+            )
+        )
 
     return payload
