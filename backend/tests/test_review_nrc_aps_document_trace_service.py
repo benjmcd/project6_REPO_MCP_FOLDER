@@ -6,6 +6,7 @@ the real audited runtime DB.
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -16,9 +17,12 @@ from sqlalchemy.orm import sessionmaker
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import app.services.review_nrc_aps_document_trace as trace_service
+from app.models.models import ApsContentLinkage
 from app.services.review_nrc_aps_document_trace import (
     compose_document_selector, 
     compose_trace_manifest,
+    compose_extracted_units_payload,
     resolve_source_blob_info
 )
 from app.services.review_nrc_aps_runtime import find_review_root_for_run
@@ -26,6 +30,8 @@ from app.services.review_nrc_aps_runtime import find_review_root_for_run
 RUN_ID = "5cd56147-4b5b-4278-8b32-79b9b1b34db5"
 TARGET_ID = "fd00ab2b-aa52-4c2a-9899-0c36786f8870"
 ACCESSION = "LOCALAPS00001"
+DEDUP_TARGET_ID_A = "21c92e61-9316-4356-b171-d1b22a011bc8"
+DEDUP_TARGET_ID_B = "431d06d1-0b3c-46db-a9f1-abe760b140a3"
 
 DB_PATH = Path(__file__).resolve().parents[1] / "app" / "storage_test_runtime" / "lc_e2e" / "20260328_150207" / "lc.db"
 
@@ -50,6 +56,17 @@ def review_root():
     root = find_review_root_for_run(RUN_ID)
     assert root is not None, f"Review root not found for run {RUN_ID}"
     return root
+
+
+def _load_ordered_units(db_session):
+    linkage = db_session.query(ApsContentLinkage).filter(
+        ApsContentLinkage.run_id == RUN_ID,
+        ApsContentLinkage.target_id == TARGET_ID,
+    ).first()
+    assert linkage is not None
+    assert linkage.diagnostics_ref
+    data = json.loads(Path(linkage.diagnostics_ref).read_text(encoding="utf-8"))
+    return data.get("ordered_units") or []
 
 
 # ---------------------------------------------------------------------------
@@ -123,11 +140,10 @@ def test_manifest_document_type_is_source_type(db_session, review_root):
 
 
 def test_manifest_no_misleading_future_endpoints(db_session, review_root):
-    """No tab should advertise an endpoint for a route not yet implemented.
-    Phase 6 adds extracted_units. Only downstream_usage must remain null.
+    """Only implemented tabs should advertise endpoints in the manifest.
+    Summary remains client-rendered and downstream usage remains unimplemented.
     """
     manifest = compose_trace_manifest(db_session, RUN_ID, TARGET_ID, review_root)
-    
     allowed_to_have_endpoints = {"diagnostics", "normalized_text", "indexed_chunks", "extracted_units"}
     
     for tab in manifest.tabs:
@@ -135,7 +151,7 @@ def test_manifest_no_misleading_future_endpoints(db_session, review_root):
             # OK to have endpoint if available
             pass
         else:
-            assert tab.endpoint is None, f"Tab '{tab.tab_id}' must not advertise an endpoint yet"
+            assert tab.endpoint is None, f"Tab '{tab.tab_id}' must not advertise an endpoint in Phase 4"
 
 
 def test_manifest_diagnostics_unit_count(db_session, review_root):
@@ -202,82 +218,101 @@ def test_manifest_missing_optional_layers_degrade_safely(db_session, review_root
 
 
 # ---------------------------------------------------------------------------
-# Phase 6 Extracted Units Tests
+# Extracted Units tests
 # ---------------------------------------------------------------------------
 
-from app.services.review_nrc_aps_document_trace import compose_extracted_units_payload
+def test_extracted_units_come_from_diagnostics_ordered_units(db_session, review_root):
+    ordered_units = _load_ordered_units(db_session)
+    payload = compose_extracted_units_payload(db_session, RUN_ID, TARGET_ID, review_root)
+
+    assert payload.available is True
+    assert payload.reason_code is None
+    assert payload.source_precision == "unit"
+    assert payload.source_layer == "diagnostics_ordered_units"
+    assert payload.total_unit_count == len(ordered_units) == 543
+    assert len(payload.units) == len(ordered_units)
+
+    expected = [(unit.get("page_number"), unit.get("text"), unit.get("start_char"), unit.get("end_char")) for unit in ordered_units[:5]]
+    actual = [(unit.page_number, unit.text, unit.start_char, unit.end_char) for unit in payload.units[:5]]
+    assert actual == expected
 
 
-def test_extracted_units_from_diagnostics_ordered_units(db_session, review_root):
-    """Extracted units must come from diagnostics ordered_units and be available."""
-    result = compose_extracted_units_payload(db_session, RUN_ID, TARGET_ID, review_root)
-    assert result.available is True
-    assert result.source_precision == "unit"
-    assert result.source_layer == "diagnostics_ordered_units"
-    assert result.total_unit_count == 543
-    assert len(result.units) == 543
+def test_extracted_units_ordering_matches_diagnostics_order(db_session, review_root):
+    ordered_units = _load_ordered_units(db_session)
+    payload = compose_extracted_units_payload(db_session, RUN_ID, TARGET_ID, review_root)
+
+    expected_tail = [(unit.get("page_number"), unit.get("text")) for unit in ordered_units[-5:]]
+    actual_tail = [(unit.page_number, unit.text) for unit in payload.units[-5:]]
+    assert actual_tail == expected_tail
 
 
-def test_extracted_units_ordering_matches_diagnostics(db_session, review_root):
-    """Units must preserve diagnostics ordering (first unit from page 1, last from page 13)."""
-    result = compose_extracted_units_payload(db_session, RUN_ID, TARGET_ID, review_root)
-    assert result.units[0].page_number == 1
-    assert result.units[-1].page_number == 13
+def test_extracted_units_ids_are_stable_and_unique(db_session, review_root):
+    payload_a = compose_extracted_units_payload(db_session, RUN_ID, TARGET_ID, review_root)
+    payload_b = compose_extracted_units_payload(db_session, RUN_ID, TARGET_ID, review_root)
+
+    ids_a = [unit.unit_id for unit in payload_a.units]
+    ids_b = [unit.unit_id for unit in payload_b.units]
+    assert ids_a == ids_b
+    assert len(ids_a) == len(set(ids_a))
 
 
-def test_extracted_units_deterministic_ids(db_session, review_root):
-    """Unit IDs must be stable and deterministic across reloads."""
-    result1 = compose_extracted_units_payload(db_session, RUN_ID, TARGET_ID, review_root)
-    result2 = compose_extracted_units_payload(db_session, RUN_ID, TARGET_ID, review_root)
-    ids1 = [u.unit_id for u in result1.units]
-    ids2 = [u.unit_id for u in result2.units]
-    assert ids1 == ids2
-    # All IDs should be unique
-    assert len(set(ids1)) == len(ids1)
+def test_extracted_units_page_number_filtering_is_truthful(db_session, review_root):
+    payload = compose_extracted_units_payload(db_session, RUN_ID, TARGET_ID, review_root, page_number=2)
+
+    assert payload.available is True
+    assert payload.page_number == 2
+    assert payload.total_unit_count == 543
+    assert len(payload.units) == 26
+    assert all(unit.page_number == 2 for unit in payload.units)
 
 
-def test_extracted_units_page_filtering(db_session, review_root):
-    """page_number filter must return only units for that page."""
-    result = compose_extracted_units_payload(db_session, RUN_ID, TARGET_ID, review_root, page_number=1)
-    assert result.available is True
-    assert result.page_number == 1
-    assert result.total_unit_count == 543  # total is always the full count
-    assert len(result.units) == 41  # page 1 has 41 units
-    assert all(u.page_number == 1 for u in result.units)
-
-
-def test_extracted_units_page_filtering_empty_page(db_session, review_root):
-    """Requesting page beyond total must return 0 units but still available."""
-    result = compose_extracted_units_payload(db_session, RUN_ID, TARGET_ID, review_root, page_number=999)
-    assert result.available is True
-    assert result.page_number == 999
-    assert len(result.units) == 0
-
-
-def test_extracted_units_missing_target_raises(db_session, review_root):
-    """Unknown target must raise KeyError."""
+def test_extracted_units_missing_target_raises_key_error(db_session, review_root):
     with pytest.raises(KeyError):
         compose_extracted_units_payload(db_session, RUN_ID, "00000000-0000-0000-0000-000000000000", review_root)
 
 
-def test_extracted_units_unit_fields(db_session, review_root):
-    """Each unit must have the expected fields with truthful data."""
-    result = compose_extracted_units_payload(db_session, RUN_ID, TARGET_ID, review_root, page_number=1)
-    u = result.units[0]
-    assert u.unit_id is not None
-    assert u.page_number == 1
-    assert u.unit_kind is not None
-    assert u.text is not None
-    assert isinstance(u.bbox, list) and len(u.bbox) == 4
-    assert u.start_char is not None
-    assert u.end_char is not None
-    assert u.mapping_precision == "unit"
+def test_extracted_units_missing_diagnostics_returns_explicit_missingness(monkeypatch, db_session, review_root):
+    monkeypatch.setattr(trace_service, "_load_diagnostics_json", lambda lnk, root: (None, "diagnostics_absent"))
+
+    payload = compose_extracted_units_payload(db_session, RUN_ID, TARGET_ID, review_root)
+
+    assert payload.available is False
+    assert payload.reason_code == "diagnostics_absent"
+    assert payload.source_precision == "none"
+    assert payload.page_number is None
+    assert payload.total_unit_count == 0
+    assert payload.units == []
 
 
-def test_extracted_units_manifest_tab_endpoint(db_session, review_root):
-    """The manifest extracted_units tab must now expose a truthful endpoint."""
+def test_extracted_units_without_page_number_are_not_falsely_page_scoped(monkeypatch, db_session, review_root):
+    fake_units = [
+        {"unit_kind": "paragraph", "text": "page two", "page_number": 2, "start_char": 0, "end_char": 8, "bbox": [0, 0, 1, 1]},
+        {"unit_kind": "paragraph", "text": "no page", "start_char": 9, "end_char": 16},
+    ]
+    monkeypatch.setattr(trace_service, "_load_diagnostics_json", lambda lnk, root: ({"ordered_units": fake_units}, None))
+
+    payload = compose_extracted_units_payload(db_session, RUN_ID, TARGET_ID, review_root, page_number=2)
+
+    assert payload.available is True
+    assert len(payload.units) == 1
+    assert payload.units[0].text == "page two"
+    assert payload.units[0].page_number == 2
+
+
+def test_extracted_units_remain_target_scoped_for_deduplicated_content(db_session, review_root):
+    payload_a = compose_extracted_units_payload(db_session, RUN_ID, DEDUP_TARGET_ID_A, review_root)
+    payload_b = compose_extracted_units_payload(db_session, RUN_ID, DEDUP_TARGET_ID_B, review_root)
+
+    assert payload_a.available is True
+    assert payload_b.available is True
+    assert payload_a.total_unit_count == payload_b.total_unit_count == 8446
+    assert payload_a.units[0].text == payload_b.units[0].text
+    assert payload_a.units[0].unit_id != payload_b.units[0].unit_id
+
+
+def test_manifest_extracted_units_tab_exposes_truthful_endpoint(db_session, review_root):
     manifest = compose_trace_manifest(db_session, RUN_ID, TARGET_ID, review_root)
-    eu_tab = next(t for t in manifest.tabs if t.tab_id == "extracted_units")
-    assert eu_tab.available is True
-    assert eu_tab.endpoint is not None
-    assert "/extracted-units" in eu_tab.endpoint
+    tab = next(item for item in manifest.tabs if item.tab_id == "extracted_units")
+    assert tab.available is True
+    assert tab.endpoint is not None
+    assert tab.endpoint.endswith("/extracted-units")

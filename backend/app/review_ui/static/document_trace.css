@@ -3,12 +3,14 @@
     align-items: center;
     gap: 16px;
 }
+
 .back-link {
     text-decoration: none;
     color: var(--primary-color);
     font-weight: 600;
     font-size: 0.95rem;
 }
+
 .back-link:hover {
     text-decoration: underline;
 }
@@ -76,7 +78,8 @@
     gap: 8px;
 }
 
-.pane-content, .tab-content-area {
+.pane-content,
+.tab-content-area {
     flex: 1;
     padding: 24px;
     overflow-y: auto;
@@ -181,6 +184,7 @@
     color: var(--text-color);
     cursor: pointer;
 }
+
 .pdf-viewer-controls button:hover {
     background: var(--border-color);
 }
@@ -211,7 +215,7 @@
 }
 
 .pdf-page-canvas {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     border: 1px solid var(--border-color);
     max-width: 100%;
 }
@@ -248,74 +252,119 @@
     text-align: center;
 }
 
-/* --- Phase 6: Extracted Units & Page Sync Styles --- */
+/* Phase 6: Extracted Units */
+
+.eu-pane {
+    gap: 12px;
+}
 
 .eu-provenance-bar {
     display: flex;
-    gap: 16px;
-    padding: 8px 12px;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 10px 12px;
     background: var(--pane-header-bg);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
-    font-size: 0.8rem;
-    color: var(--muted-text);
-    flex-wrap: wrap;
-    margin-bottom: 12px;
+    border-radius: 8px;
 }
 
 .eu-provenance {
-    font-weight: 600;
     color: var(--primary-color);
+    font-size: 0.8rem;
+    font-weight: 700;
 }
 
 .eu-precision {
-    font-style: italic;
+    color: var(--muted-text);
+    font-size: 0.8rem;
 }
 
 .eu-page-scope {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
+    gap: 10px;
     flex-wrap: wrap;
 }
 
 .eu-page-badge {
-    background: var(--primary-color);
-    color: white;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--primary-color) 14%, var(--layout-section-bg));
+    border: 1px solid color-mix(in srgb, var(--primary-color) 35%, var(--border-color));
+    color: var(--text-color);
+    font-size: 0.82rem;
+    font-weight: 700;
 }
 
 .eu-page-count {
-    font-size: 0.85rem;
     color: var(--muted-text);
+    font-size: 0.84rem;
+}
+
+.eu-empty-state {
+    margin-top: 4px;
+    min-height: 132px;
+}
+
+.eu-card {
+    width: 100%;
+}
+
+.eu-card .chunk-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.eu-card-in-scope {
+    border-color: color-mix(in srgb, var(--primary-color) 22%, var(--border-color));
 }
 
 .eu-card-clickable {
+    text-align: left;
+    font: inherit;
+    color: inherit;
     cursor: pointer;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
 .eu-card-clickable:hover {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.15);
+    border-color: color-mix(in srgb, var(--primary-color) 52%, var(--border-color));
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
 }
 
-.eu-card-clickable:focus {
+.eu-card-clickable:focus-visible {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
 
+.eu-jump-btn {
+    appearance: none;
+    margin: 0;
+    border: 1px solid var(--border-color);
+    background: var(--layout-section-bg);
+}
+
+.eu-card-details {
+    color: var(--muted-text);
+    font-size: 0.82rem;
+}
+
 .eu-precision-badge {
-    display: inline-block;
-    background: var(--border-color);
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--pane-header-bg);
+    border: 1px solid var(--border-color);
     color: var(--text-color);
-    padding: 1px 6px;
-    border-radius: 3px;
     font-size: 0.75rem;
-    margin-left: 6px;
-    vertical-align: middle;
+    font-weight: 600;
 }

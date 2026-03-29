@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -18,7 +18,6 @@ from app.schemas.review_nrc_aps import (
     NrcApsReviewNormalizedTextOut,
     NrcApsReviewIndexedChunksOut,
     NrcApsReviewExtractedUnitsOut,
-    NrcApsReviewDownstreamUsageOut,
 )
 from fastapi.responses import FileResponse
 from app.services.review_nrc_aps_catalog import discover_candidate_runs
@@ -34,7 +33,6 @@ from app.services.review_nrc_aps_document_trace import (
     compose_normalized_text_payload,
     compose_indexed_chunks_payload,
     compose_extracted_units_payload,
-    compose_downstream_usage_payload,
 )
 
 router = APIRouter()
@@ -215,29 +213,16 @@ def get_document_indexed_chunks(run_id: str, target_id: str, db: Session = Depen
 
 @router.get("/runs/{run_id}/documents/{target_id}/extracted-units", response_model=NrcApsReviewExtractedUnitsOut)
 def get_document_extracted_units(
-    run_id: str, target_id: str,
-    page_number: int | None = None,
+    run_id: str,
+    target_id: str,
+    page_number: int | None = Query(default=None, ge=1),
     db: Session = Depends(get_db),
 ):
-    """Return the extracted units from diagnostics ordered_units."""
+    """Return diagnostics-backed extracted units for a target, optionally filtered to one page."""
     root = find_review_root_for_run(run_id)
     if not root:
         raise HTTPException(status_code=404, detail="Review root not found for run")
-    if page_number is not None and page_number < 1:
-        raise HTTPException(status_code=422, detail="page_number must be a positive integer")
     try:
         return compose_extracted_units_payload(db, run_id, target_id, root, page_number=page_number)
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-
-
-@router.get("/runs/{run_id}/documents/{target_id}/downstream-usage", response_model=NrcApsReviewDownstreamUsageOut)
-def get_document_downstream_usage(run_id: str, target_id: str, db: Session = Depends(get_db)):
-    """Return truthful downstream usage payload for a target."""
-    root = find_review_root_for_run(run_id)
-    if not root:
-        raise HTTPException(status_code=404, detail="Review root not found for run")
-    try:
-        return compose_downstream_usage_payload(db, run_id, target_id, root)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))

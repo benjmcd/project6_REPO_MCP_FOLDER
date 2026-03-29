@@ -22,11 +22,14 @@ os.environ["DB_INIT_MODE"] = "none"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.api.deps import get_db
+from app.schemas.review_nrc_aps import NrcApsReviewExtractedUnitsOut
 from main import app
 
 RUN_ID = "5cd56147-4b5b-4278-8b32-79b9b1b34db5"
 TARGET_ID = "fd00ab2b-aa52-4c2a-9899-0c36786f8870"
 ACCESSION = "LOCALAPS00001"
+DEDUP_TARGET_ID_A = "21c92e61-9316-4356-b171-d1b22a011bc8"
+DEDUP_TARGET_ID_B = "431d06d1-0b3c-46db-a9f1-abe760b140a3"
 
 DB_PATH = Path(__file__).resolve().parents[1] / "app" / "storage_test_runtime" / "lc_e2e" / "20260328_150207" / "lc.db"
 
@@ -215,6 +218,93 @@ def test_api_phase4_routes_200_missingness_for_known_target_missing_layer(monkey
     assert data["run_id"] == RUN_ID
     assert data["target_id"] == TARGET_ID
     assert data["available"] is False
+
+
+def test_api_extracted_units_happy_path():
+    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{TARGET_ID}/extracted-units")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["run_id"] == RUN_ID
+    assert data["target_id"] == TARGET_ID
+    assert data["available"] is True
+    assert data["reason_code"] is None
+    assert data["source_precision"] == "unit"
+    assert data["source_layer"] == "diagnostics_ordered_units"
+    assert data["total_unit_count"] == 543
+    assert len(data["units"]) == 543
+
+
+def test_api_extracted_units_page_filter():
+    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{TARGET_ID}/extracted-units?page_number=3")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["available"] is True
+    assert data["page_number"] == 3
+    assert len(data["units"]) == 29
+    assert all(unit["page_number"] == 3 for unit in data["units"])
+
+
+def test_api_extracted_units_invalid_page_number():
+    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{TARGET_ID}/extracted-units?page_number=0")
+    assert response.status_code == 422
+
+    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{TARGET_ID}/extracted-units?page_number=-5")
+    assert response.status_code == 422
+
+
+def test_api_extracted_units_unknown_target_404():
+    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/00000000-0000-0000-0000-000000000000/extracted-units")
+    assert response.status_code == 404
+
+
+def test_api_extracted_units_known_target_missing_diagnostics_returns_explicit_missingness(monkeypatch):
+    monkeypatch.setattr(
+        "app.api.review_nrc_aps.compose_extracted_units_payload",
+        lambda db, run_id, target_id, root, page_number=None: NrcApsReviewExtractedUnitsOut(
+            run_id=run_id,
+            target_id=target_id,
+            available=False,
+            reason_code="diagnostics_absent",
+            source_precision="none",
+            page_number=page_number,
+            units=[],
+        ),
+    )
+
+    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{TARGET_ID}/extracted-units")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["available"] is False
+    assert data["reason_code"] == "diagnostics_absent"
+    assert data["source_precision"] == "none"
+    assert data["units"] == []
+
+
+def test_api_extracted_units_no_retrieval_dependency():
+    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{TARGET_ID}/extracted-units")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["available"] is True
+
+    trace_response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{TARGET_ID}/trace")
+    trace_data = trace_response.json()
+    assert trace_data["trace_completeness"]["retrieval_available"] is False
+
+
+def test_api_extracted_units_remain_target_scoped_for_deduplicated_content():
+    response_a = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{DEDUP_TARGET_ID_A}/extracted-units")
+    response_b = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{DEDUP_TARGET_ID_B}/extracted-units")
+
+    assert response_a.status_code == 200
+    assert response_b.status_code == 200
+
+    data_a = response_a.json()
+    data_b = response_b.json()
+    assert data_a["target_id"] == DEDUP_TARGET_ID_A
+    assert data_b["target_id"] == DEDUP_TARGET_ID_B
+    assert data_a["total_unit_count"] == data_b["total_unit_count"] == 8446
+    assert data_a["units"][0]["text"] == data_b["units"][0]["text"]
+    assert data_a["units"][0]["unit_id"] != data_b["units"][0]["unit_id"]
     
 # ---------------------------------------------------------------------------
 # Regression: existing review routes must still work
@@ -227,58 +317,3 @@ def test_api_existing_overview_not_regressed():
     data = response.json()
     assert "tree" in data
     assert "run_projection" in data
-
-
-# ---------------------------------------------------------------------------
-# Phase 6 Extracted Units API Tests
-# ---------------------------------------------------------------------------
-
-def test_api_extracted_units_happy_path():
-    """GET /extracted-units for pinned target must return diagnostics-backed units."""
-    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{TARGET_ID}/extracted-units")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["available"] is True
-    assert data["source_precision"] == "unit"
-    assert data["source_layer"] == "diagnostics_ordered_units"
-    assert data["total_unit_count"] == 543
-    assert len(data["units"]) == 543
-
-
-def test_api_extracted_units_page_filter():
-    """page_number query param must filter to only matching units."""
-    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{TARGET_ID}/extracted-units?page_number=2")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["available"] is True
-    assert data["page_number"] == 2
-    assert all(u["page_number"] == 2 for u in data["units"])
-    assert len(data["units"]) == 26  # page 2 has 26 units
-
-
-def test_api_extracted_units_invalid_page_number():
-    """Negative page_number must return 422."""
-    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{TARGET_ID}/extracted-units?page_number=0")
-    assert response.status_code == 422
-
-    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{TARGET_ID}/extracted-units?page_number=-1")
-    assert response.status_code == 422
-
-
-def test_api_extracted_units_unknown_target_404():
-    """Unknown target must return 404."""
-    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/00000000-0000-0000-0000-000000000000/extracted-units")
-    assert response.status_code == 404
-
-
-def test_api_extracted_units_no_retrieval_dependency():
-    """Verify extracted units work without retrieval dependency.
-    The audited runtime has zero retrieval rows — extracted units must still work."""
-    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{TARGET_ID}/extracted-units")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["available"] is True
-    # Also verify trace completeness confirms no retrieval
-    trace_resp = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{TARGET_ID}/trace")
-    trace_data = trace_resp.json()
-    assert trace_data["trace_completeness"]["retrieval_available"] is False
