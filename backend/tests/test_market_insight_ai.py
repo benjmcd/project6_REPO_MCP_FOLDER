@@ -84,7 +84,7 @@ def test_api_post_returns_json_insights() -> None:
         "integrated": {"signals_by_category": {"p": 20, "q": 16}},
         "validation_summary": {"invalid_count": 0, "failed_count": 0, "pass_rate": 0.95},
     }
-    res = client.post("/api/v1/market-insight/process", json=body)
+    res = client.post("/api/v1/market-pipeline/insights/process", json=body)
     assert res.status_code == 200
     data = res.json()
     assert isinstance(data, list)

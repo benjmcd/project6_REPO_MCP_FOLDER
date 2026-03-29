@@ -6,11 +6,11 @@ from fastapi import APIRouter, Body
 
 from app.services.market_insight_ai import MarketInsight, process_market_insights
 
-router = APIRouter()
+router = APIRouter(prefix="/market-pipeline/insights", tags=["market-pipeline"])
 
 
 @router.post(
-    "/market-insight/process",
+    "/process",
     response_model=list[MarketInsight],
     summary="Run heuristic market insight processor (Stage 3)",
 )
