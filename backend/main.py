@@ -55,6 +55,12 @@ def review_nrc_aps_page() -> HTMLResponse:
     return HTMLResponse(content=index_file.read_text(encoding="utf-8"))
 
 
+@app.get('/review/nrc-aps/document-trace', response_class=HTMLResponse)
+def review_nrc_aps_document_trace_page() -> HTMLResponse:
+    trace_file = review_ui_static_dir / "document_trace.html"
+    return HTMLResponse(content=trace_file.read_text(encoding="utf-8"))
+
+
 @app.get('/health')
 def health() -> dict[str, str]:
     return {'status': 'ok'}

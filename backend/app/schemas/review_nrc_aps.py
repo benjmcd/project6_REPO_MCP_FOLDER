@@ -153,3 +153,176 @@ class NrcApsReviewOverviewOut(BaseModel):
     run_projection: NrcApsReviewProjectionGraphOut
     pipeline_layout: NrcApsReviewPipelineLayoutOut
     tree: NrcApsReviewTreeOut
+
+
+class NrcApsReviewTraceStateOut(BaseModel):
+    has_source_blob: bool = False
+    has_diagnostics: bool = False
+    has_normalized_text: bool = False
+    has_indexed_chunks: bool = False
+    has_downstream_usage: bool = False
+
+
+class NrcApsReviewDocumentSelectorRowOut(BaseModel):
+    target_id: str
+    accession_number: str | None = None
+    document_title: str | None = None
+    document_type: str | None = None
+    media_type: str | None = None
+    content_id: str | None = None
+    trace_state: NrcApsReviewTraceStateOut
+
+
+class NrcApsReviewDocumentSelectorOut(BaseModel):
+    run_id: str
+    default_target_id: str | None = None
+    documents: list[NrcApsReviewDocumentSelectorRowOut] = Field(default_factory=list)
+
+
+class NrcApsReviewTraceIdentityOut(BaseModel):
+    accession_number: str | None = None
+    document_title: str | None = None
+    document_type: str | None = None
+    media_type: str | None = None
+    source_file_name: str | None = None
+    content_id: str | None = None
+    content_contract_id: str | None = None
+    chunking_contract_id: str | None = None
+    normalization_contract_id: str | None = None
+
+
+class NrcApsReviewTraceSourceOut(BaseModel):
+    viewer_kind: str = "unsupported"
+    blob_ref_present: bool = False
+    source_endpoint: str | None = None
+    content_type: str | None = None
+    size_bytes: int | None = None
+
+
+class NrcApsReviewTraceSummaryOut(BaseModel):
+    document_class: str | None = None
+    quality_status: str | None = None
+    page_count: int = 0
+    ordered_unit_count: int = 0
+    indexed_chunk_count: int = 0
+
+
+class NrcApsReviewTraceCompletenessOut(BaseModel):
+    has_linkage_row: bool = False
+    has_document_row: bool = False
+    has_source_blob: bool = False
+    has_diagnostics: bool = False
+    has_normalized_text: bool = False
+    has_indexed_chunks: bool = False
+    has_visual_derivatives: bool = False
+    has_downstream_usage: bool = False
+    retrieval_available: bool = False
+
+
+class NrcApsReviewTraceSyncCapabilitiesOut(BaseModel):
+    source_to_units: str = "none"
+    units_to_source: str = "none"
+    normalized_text_to_source: str = "none"
+    chunk_to_source: str = "none"
+
+
+class NrcApsReviewTraceTabOut(BaseModel):
+    tab_id: str
+    label: str
+    available: bool = False
+    endpoint: str | None = None
+
+
+class NrcApsReviewTraceManifestOut(BaseModel):
+    run_id: str
+    target_id: str
+    identity: NrcApsReviewTraceIdentityOut
+    source: NrcApsReviewTraceSourceOut
+    summary: NrcApsReviewTraceSummaryOut
+    trace_completeness: NrcApsReviewTraceCompletenessOut
+    sync_capabilities: NrcApsReviewTraceSyncCapabilitiesOut
+    tabs: list[NrcApsReviewTraceTabOut] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+
+
+class NrcApsReviewDiagnosticsOut(BaseModel):
+    run_id: str
+    target_id: str
+    available: bool = False
+    quality_status: str | None = None
+    document_class: str | None = None
+    page_count: int = 0
+    ordered_unit_count: int = 0
+    warnings: list[str] = Field(default_factory=list)
+    degradation_codes: list[str] = Field(default_factory=list)
+    extractor_metadata: dict[str, Any] | None = None
+
+
+class NrcApsReviewNormalizedTextOut(BaseModel):
+    run_id: str
+    target_id: str
+    available: bool = False
+    char_count: int = 0
+    mapping_precision: str | None = None
+    text: str | None = None
+
+
+class NrcApsReviewIndexedChunkItemOut(BaseModel):
+    chunk_id: str
+    chunk_ordinal: int
+    page_start: int | None = None
+    page_end: int | None = None
+    start_char: int | None = None
+    end_char: int | None = None
+    unit_kind: str | None = None
+    quality_status: str | None = None
+    chunk_text: str
+    mapping_precision: str | None = None
+
+
+class NrcApsReviewIndexedChunksOut(BaseModel):
+    run_id: str
+    target_id: str
+    available: bool = False
+    chunk_count: int = 0
+    chunks: list[NrcApsReviewIndexedChunkItemOut] = Field(default_factory=list)
+
+
+class NrcApsReviewExtractedUnitItemOut(BaseModel):
+    unit_id: str
+    page_number: int | None = None
+    unit_kind: str | None = None
+    text: str | None = None
+    bbox: list[float] | None = None
+    start_char: int | None = None
+    end_char: int | None = None
+    mapping_precision: str = "unit"
+
+
+class NrcApsReviewExtractedUnitsOut(BaseModel):
+    run_id: str
+    target_id: str
+    available: bool = False
+    reason_code: str | None = None
+    source_precision: str = "none"
+    source_layer: str = "diagnostics_ordered_units"
+    page_number: int | None = None
+    total_unit_count: int = 0
+    units: list[NrcApsReviewExtractedUnitItemOut] = Field(default_factory=list)
+
+
+class NrcApsReviewDownstreamUsageItemOut(BaseModel):
+    consumer_stage: str
+    artifact_class: str
+    display_ref: str
+    attribution_precision: str
+
+
+class NrcApsReviewDownstreamUsageOut(BaseModel):
+    run_id: str
+    target_id: str
+    available: bool = False
+    usage: list[NrcApsReviewDownstreamUsageItemOut] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+

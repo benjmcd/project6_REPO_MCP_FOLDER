@@ -1,0 +1,967 @@
+const State = {
+    runs: [],
+    documents: [],
+    selectedRunId: null,
+    selectedTargetId: null,
+    activeTab: 'summary',
+    themePreference: document.documentElement.dataset.themePreference || 'system',
+    manifest: null,
+    tabData: {
+        diagnostics: null,
+        normalized_text: null,
+        indexed_chunks: null,
+        extracted_units: null
+    },
+    viewer: {
+        runId: null,
+        targetId: null,
+        pdfDoc: null,
+        objectUrl: null,
+        currentPage: 1,
+        totalPages: 0,
+        scale: 1.0,
+        rendering: false,
+        focusedPage: 1,
+        scrollObserver: null
+    }
+};
+
+const elements = {
+    runSelector: document.getElementById('run-selector'),
+    docSelector: document.getElementById('doc-selector'),
+    themeSelector: document.getElementById('theme-selector'),
+    disabledOverlay: document.getElementById('disabled-overlay'),
+    disabledReason: document.getElementById('disabled-reason'),
+    traceWorkspace: document.getElementById('trace-workspace'),
+    identitySummary: document.getElementById('identity-summary'),
+    tabsHeader: document.getElementById('tabs-header'),
+    tabContentArea: document.getElementById('tab-content-area'),
+};
+
+const THEME_STORAGE_KEY = 'nrc_aps_review_theme';
+const systemThemeQuery = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+// --- API Helpers ---
+const API = {
+    async fetchRuns() {
+        const res = await fetch('/api/v1/review/nrc-aps/runs');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    },
+    async fetchDocuments(runId) {
+        const res = await fetch(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    },
+    async fetchTrace(runId, targetId) {
+        const res = await fetch(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/trace`);
+        if (!res.ok) {
+            if (res.status === 404) throw new Error(`Document target not found in run.`);
+            throw new Error(`HTTP ${res.status}`);
+        }
+        return await res.json();
+    },
+    async fetchDiagnostics(runId, targetId) {
+        const res = await fetch(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/diagnostics`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    },
+    async fetchNormalizedText(runId, targetId) {
+        const res = await fetch(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/normalized-text`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    },
+    async fetchIndexedChunks(runId, targetId) {
+        const res = await fetch(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/indexed-chunks`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    },
+    async fetchExtractedUnits(runId, targetId) {
+        const res = await fetch(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/extracted-units`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    },
+    async fetchDownstreamUsage(runId, targetId) {
+        const res = await fetch(`/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/downstream-usage`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    }
+};
+
+let _actionSeq = 0;
+
+function escapeHtml(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// --- Theme Management ---
+function persistThemePreference(preference) {
+    try { localStorage.setItem(THEME_STORAGE_KEY, preference); } catch (e) {}
+}
+
+function applyThemePreference(preference, { persist = true } = {}) {
+    const valid = ['system', 'light', 'dark'].includes(preference) ? preference : 'system';
+    const resolved = valid === 'system' ? (systemThemeQuery?.matches ? 'dark' : 'light') : valid;
+    State.themePreference = valid;
+    document.documentElement.dataset.themePreference = valid;
+    document.documentElement.dataset.theme = resolved;
+    if (elements.themeSelector) elements.themeSelector.value = valid;
+    if (persist) persistThemePreference(valid);
+}
+
+// --- PDF Viewer Lifecycle ---
+const PDFViewer = {
+    ZOOM_STEP: 0.25,
+    MIN_SCALE: 0.5,
+    MAX_SCALE: 3.0,
+
+    async init(runId, targetId, viewerKind, blobRefPresent) {
+        // Only init for PDFs or text-based fallbacks with available blobs
+        const sourceContent = document.getElementById('source-content');
+        if (!blobRefPresent) {
+            sourceContent.innerHTML = `<div class="source-fallback"><span id="observed-source-status">Source blob not available.</span></div>`;
+            return;
+        }
+
+        if (viewerKind === 'unsupported' || !['pdf', 'text', 'json', 'csv'].includes(viewerKind)) {
+            sourceContent.innerHTML = `
+                <div class="source-fallback">
+                    <span id="observed-source-status">Unsupported source view for format: '${escapeHtml(viewerKind || 'unknown')}'. Trace metadata controls are still active.</span>
+                </div>
+            `;
+            return;
+        }
+
+        if (viewerKind === 'text' || viewerKind === 'json' || viewerKind === 'csv') {
+            sourceContent.innerHTML = `<div class="text-source-container"><pre id="text-source-viewer" style="padding:20px; margin:0; overflow:auto; height:100%; font-family:var(--font-mono); font-size:13px; color:var(--text-color); white-space:pre-wrap; word-break:break-all;">Loading ${escapeHtml(viewerKind)}...</pre></div>`;
+            try {
+                const url = `/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/source`;
+                const resp = await fetch(url);
+                if (State.selectedRunId !== runId || State.selectedTargetId !== targetId) return;
+                if (!resp.ok) {
+                    const container = document.getElementById('text-source-viewer');
+                    if (container) container.textContent = `Source fetch failed: HTTP ${resp.status}`;
+                    return;
+                }
+                const textData = await resp.text();
+                if (State.selectedRunId !== runId || State.selectedTargetId !== targetId) return;
+                
+                const container = document.getElementById('text-source-viewer');
+                if (container) {
+                    if (viewerKind === 'json') {
+                        try {
+                            container.textContent = JSON.stringify(JSON.parse(textData), null, 2);
+                        } catch {
+                            // fallback if not strictly pure JSON
+                            container.textContent = textData;
+                        }
+                    } else {
+                        container.textContent = textData;
+                    }
+                }
+            } catch (err) {
+                if (State.selectedRunId !== runId || State.selectedTargetId !== targetId) return;
+                const container = document.getElementById('text-source-viewer');
+                if (container) container.textContent = `Error loading source: ${escapeHtml(err.message)}`;
+            }
+            return;
+        }
+
+        // Build viewer DOM
+        sourceContent.innerHTML = `
+            <div class="pdf-viewer-controls" id="pdf-controls">
+                <button id="pdf-prev" title="Previous page">&laquo; Prev</button>
+                <span class="page-info" id="pdf-page-info">-- / --</span>
+                <button id="pdf-next" title="Next page">Next &raquo;</button>
+                <span style="border-left:1px solid var(--border-color);height:20px;"></span>
+                <button id="pdf-zoom-out" title="Zoom out">&minus;</button>
+                <span class="zoom-info" id="pdf-zoom-info">100%</span>
+                <button id="pdf-zoom-in" title="Zoom in">&plus;</button>
+                <button id="pdf-zoom-fit" title="Fit width">Fit</button>
+            </div>
+            <div class="pdf-viewer-container" id="pdf-viewer-container">
+                <div class="placeholder">Loading PDF...</div>
+            </div>
+        `;
+
+        // Wire controls
+        document.getElementById('pdf-prev').addEventListener('click', () => PDFViewer.goToPage(State.viewer.currentPage - 1));
+        document.getElementById('pdf-next').addEventListener('click', () => PDFViewer.goToPage(State.viewer.currentPage + 1));
+        document.getElementById('pdf-zoom-in').addEventListener('click', () => PDFViewer.setZoom(State.viewer.scale + PDFViewer.ZOOM_STEP));
+        document.getElementById('pdf-zoom-out').addEventListener('click', () => PDFViewer.setZoom(State.viewer.scale - PDFViewer.ZOOM_STEP));
+        document.getElementById('pdf-zoom-fit').addEventListener('click', () => PDFViewer.fitWidth());
+
+        // Fetch and render
+        try {
+            const url = `/api/v1/review/nrc-aps/runs/${encodeURIComponent(runId)}/documents/${encodeURIComponent(targetId)}/source`;
+            const resp = await fetch(url);
+            // Check stale: if target changed while fetching, abort
+            if (State.selectedRunId !== runId || State.selectedTargetId !== targetId) return;
+            if (!resp.ok) {
+                const container = document.getElementById('pdf-viewer-container');
+                if (container) container.innerHTML = `<div class="source-fallback"><span id="observed-source-status">Source fetch failed: HTTP ${resp.status}</span></div>`;
+                return;
+            }
+            const blob = await resp.blob();
+            if (State.selectedRunId !== runId || State.selectedTargetId !== targetId) return;
+
+            const objUrl = URL.createObjectURL(blob);
+            State.viewer.objectUrl = objUrl;
+            State.viewer.runId = runId;
+            State.viewer.targetId = targetId;
+
+            // Wait for PDF.js to be ready
+            const pdfjsLib = window.pdfjsLib;
+            if (!pdfjsLib) {
+                const container = document.getElementById('pdf-viewer-container');
+                if (container) container.innerHTML = `<div class="source-fallback">PDF viewer library not loaded.</div>`;
+                return;
+            }
+
+            const loadingTask = pdfjsLib.getDocument(objUrl);
+            const pdfDoc = await loadingTask.promise;
+            if (State.selectedRunId !== runId || State.selectedTargetId !== targetId) {
+                pdfDoc.destroy();
+                return;
+            }
+
+            State.viewer.pdfDoc = pdfDoc;
+            State.viewer.totalPages = pdfDoc.numPages;
+            State.viewer.currentPage = 1;
+            State.viewer.focusedPage = 1;
+            PDFViewer.updatePageInfo();
+            await PDFViewer.renderAllVisiblePages();
+            setupScrollPageTracking();
+        } catch (err) {
+            if (State.selectedRunId !== runId || State.selectedTargetId !== targetId) return;
+            const container = document.getElementById('pdf-viewer-container');
+            if (container) container.innerHTML = `<div class="source-fallback"><span id="observed-source-status">Error loading PDF: ${escapeHtml(err.message)}</span></div>`;
+        }
+    },
+
+    async renderAllVisiblePages() {
+        const container = document.getElementById('pdf-viewer-container');
+        if (!container || !State.viewer.pdfDoc) return;
+        container.innerHTML = '';
+
+        const pdfDoc = State.viewer.pdfDoc;
+        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+            const page = await pdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale: State.viewer.scale });
+            const canvas = document.createElement('canvas');
+            canvas.className = 'pdf-page-canvas';
+            canvas.dataset.pageNum = pageNum;
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            container.appendChild(canvas);
+
+            const ctx = canvas.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport }).promise;
+        }
+        PDFViewer.scrollToPage(State.viewer.currentPage);
+        setupScrollPageTracking();
+    },
+
+    scrollToPage(pageNum) {
+        const container = document.getElementById('pdf-viewer-container');
+        if (!container) return;
+        const canvas = container.querySelector(`canvas[data-page-num="${pageNum}"]`);
+        if (canvas) canvas.scrollIntoView({ behavior: 'auto', block: 'start' });
+    },
+
+    goToPage(pageNum) {
+        if (!State.viewer.pdfDoc) return;
+        const clamped = Math.max(1, Math.min(pageNum, State.viewer.totalPages));
+        State.viewer.currentPage = clamped;
+        State.viewer.focusedPage = clamped;
+        onFocusedPageChange();
+        PDFViewer.updatePageInfo();
+        PDFViewer.scrollToPage(clamped);
+    },
+
+    setZoom(newScale) {
+        const clamped = Math.max(PDFViewer.MIN_SCALE, Math.min(newScale, PDFViewer.MAX_SCALE));
+        State.viewer.scale = clamped;
+        PDFViewer.updateZoomInfo();
+        PDFViewer.renderAllVisiblePages();
+    },
+
+    fitWidth() {
+        const container = document.getElementById('pdf-viewer-container');
+        if (!container || !State.viewer.pdfDoc) return;
+        State.viewer.pdfDoc.getPage(State.viewer.currentPage).then(page => {
+            const unscaled = page.getViewport({ scale: 1.0 });
+            const availableWidth = container.clientWidth - 40; // padding
+            const fitScale = availableWidth / unscaled.width;
+            PDFViewer.setZoom(fitScale);
+        });
+    },
+
+    updatePageInfo() {
+        const el = document.getElementById('pdf-page-info');
+        if (el) el.textContent = `${State.viewer.currentPage} / ${State.viewer.totalPages}`;
+    },
+
+    updateZoomInfo() {
+        const el = document.getElementById('pdf-zoom-info');
+        if (el) el.textContent = `${Math.round(State.viewer.scale * 100)}%`;
+    },
+
+    teardown() {
+        if (State.viewer.pdfDoc) {
+            State.viewer.pdfDoc.destroy();
+            State.viewer.pdfDoc = null;
+        }
+        if (State.viewer.objectUrl) {
+            URL.revokeObjectURL(State.viewer.objectUrl);
+            State.viewer.objectUrl = null;
+        }
+        State.viewer.runId = null;
+        State.viewer.targetId = null;
+        State.viewer.currentPage = 1;
+        State.viewer.totalPages = 0;
+        State.viewer.scale = 1.0;
+        State.viewer.focusedPage = 1;
+        if (State.viewer.scrollObserver) {
+            State.viewer.scrollObserver.disconnect();
+            State.viewer.scrollObserver = null;
+        }
+    }
+};
+
+// --- Page Focus Change Handler ---
+function onFocusedPageChange() {
+    // If the Extracted Units tab is active, re-render with page scope
+    if (State.activeTab === 'extracted_units' && State.tabData.extracted_units) {
+        renderExtractedUnitsTab();
+    }
+}
+
+function setupScrollPageTracking() {
+    if (State.viewer.scrollObserver) return; // Already attached
+    const container = document.getElementById('pdf-viewer-container');
+    if (!container) return;
+    
+    let scrollTimer = null;
+    const scrollHandler = () => {
+        if (scrollTimer) clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+            const canvases = container.querySelectorAll('canvas[data-page-num]');
+            if (!canvases.length) return;
+            const containerRect = container.getBoundingClientRect();
+            const containerMid = containerRect.top + containerRect.height * 0.3;
+            let bestPage = State.viewer.focusedPage;
+            let bestDist = Infinity;
+            canvases.forEach(c => {
+                const r = c.getBoundingClientRect();
+                const dist = Math.abs(r.top - containerMid);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    bestPage = parseInt(c.dataset.pageNum);
+                }
+            });
+            if (bestPage !== State.viewer.focusedPage) {
+                State.viewer.focusedPage = bestPage;
+                State.viewer.currentPage = bestPage;
+                PDFViewer.updatePageInfo();
+                onFocusedPageChange();
+            }
+        }, 150);
+    };
+
+    container.addEventListener('scroll', scrollHandler);
+    State.viewer.scrollObserver = {
+        disconnect: () => {
+            container.removeEventListener('scroll', scrollHandler);
+            if (scrollTimer) clearTimeout(scrollTimer);
+        }
+    };
+}
+
+// --- UI Updates ---
+function updateUrlParams(method = 'replace') {
+    const url = new URL(window.location);
+    if (State.selectedRunId) url.searchParams.set('run_id', State.selectedRunId);
+    else url.searchParams.delete('run_id');
+    
+    if (State.selectedTargetId) url.searchParams.set('target_id', State.selectedTargetId);
+    else url.searchParams.delete('target_id');
+
+    if (State.activeTab && State.activeTab !== 'summary') url.searchParams.set('tab', State.activeTab);
+    else url.searchParams.delete('tab');
+    
+    if (method === 'push') {
+        window.history.pushState({ tab: State.activeTab, targetId: State.selectedTargetId, runId: State.selectedRunId }, '', url);
+    } else {
+        window.history.replaceState({ tab: State.activeTab, targetId: State.selectedTargetId, runId: State.selectedRunId }, '', url);
+    }
+}
+
+function renderShellError(message) {
+    elements.traceWorkspace.classList.add('hidden');
+    elements.disabledOverlay.classList.remove('hidden');
+    elements.disabledReason.textContent = message;
+}
+
+function renderTraceShell() {
+    elements.disabledOverlay.classList.add('hidden');
+    elements.traceWorkspace.classList.remove('hidden');
+    
+    const { identity, source } = State.manifest;
+    
+    // 1. Identity Summary
+    elements.identitySummary.innerHTML = `
+        <div class="layout-entry">
+            <strong>ACCESSION NUMBER</strong>
+            <span>${escapeHtml(identity.accession_number || 'N/A')}</span>
+        </div>
+        <div class="layout-entry">
+            <strong>DOCUMENT TYPE</strong>
+            <span>${escapeHtml(identity.document_type || 'N/A')}</span>
+        </div>
+        <div class="layout-entry">
+            <strong>TARGET ID</strong>
+            <span>${escapeHtml(State.selectedTargetId)}</span>
+        </div>
+    `;
+
+    // 2. Source pane — metadata bar + viewer initialization
+    const sourceContent = document.getElementById('source-content');
+    if (source) {
+        const availabilityStatus = source.blob_ref_present ? 'Available' : 'Missing';
+        // Build compact metadata bar at top of source pane
+        let metaBarHtml = `<div class="source-meta-bar">`;
+        metaBarHtml += `<div class="meta-item"><span class="meta-label">Status:</span> <span id="observed-source-status">${escapeHtml(availabilityStatus)}</span></div>`;
+        metaBarHtml += `<div class="meta-item"><span class="meta-label">Viewer:</span> ${escapeHtml(source.viewer_kind || 'none')}</div>`;
+        if (source.content_type) metaBarHtml += `<div class="meta-item"><span class="meta-label">Type:</span> ${escapeHtml(source.content_type)}</div>`;
+        if (identity.source_file_name) metaBarHtml += `<div class="meta-item"><span class="meta-label">File:</span> ${escapeHtml(identity.source_file_name)}</div>`;
+        metaBarHtml += `</div>`;
+
+        // Only initialize viewer if the viewer isn't already loaded for this target
+        if (State.viewer.runId === State.selectedRunId && State.viewer.targetId === State.selectedTargetId && State.viewer.pdfDoc) {
+            // Viewer already initialized for this target — preserve it, just ensure meta bar exists
+            const existingMetaBar = sourceContent.querySelector('.source-meta-bar');
+            if (!existingMetaBar) {
+                sourceContent.insertAdjacentHTML('afterbegin', metaBarHtml);
+            }
+        } else {
+            // Initialize fresh viewer
+            PDFViewer.teardown();
+            sourceContent.innerHTML = metaBarHtml + `<div class="source-fallback">Initializing viewer...</div>`;
+            PDFViewer.init(State.selectedRunId, State.selectedTargetId, source.viewer_kind, source.blob_ref_present);
+        }
+    } else {
+        PDFViewer.teardown();
+        sourceContent.innerHTML = `<div class="source-fallback"><span id="observed-source-status">Source unavailable.</span></div>`;
+    }
+}
+
+// --- Tab Rendering Helpers ---
+
+function renderSummaryTab() {
+    const { summary, trace_completeness, sync_capabilities, warnings, limitations } = State.manifest;
+    let html = `<div class="tab-pane-content">`;
+
+    html += `
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+            <div class="layout-entry card-stat"><strong>DOCUMENT CLASS</strong><br><span>${escapeHtml(summary.document_class || 'Unknown')}</span></div>
+            <div class="layout-entry card-stat"><strong>QUALITY STATUS</strong><br><span>${escapeHtml(summary.quality_status || 'Unknown')}</span></div>
+            <div class="layout-entry card-stat"><strong>PAGE COUNT</strong><br><span>${summary.page_count}</span></div>
+            <div class="layout-entry card-stat"><strong>UNIT COUNT</strong><br><span>${summary.ordered_unit_count}</span></div>
+            <div class="layout-entry card-stat"><strong>CHUNK COUNT</strong><br><span>${summary.indexed_chunk_count}</span></div>
+        </div>
+    `;
+
+    html += `<h3>Trace Completeness</h3><ul style="margin-bottom: 20px">`;
+    html += `<li>Source Blob: ${trace_completeness.has_source_blob ? 'Yes' : 'No'}</li>`;
+    html += `<li>Diagnostics: ${trace_completeness.has_diagnostics ? 'Yes' : 'No'}</li>`;
+    html += `<li>Normalized Text: ${trace_completeness.has_normalized_text ? 'Yes' : 'No'}</li>`;
+    html += `<li>Indexed Chunks: ${trace_completeness.has_indexed_chunks ? 'Yes' : 'No'}</li>`;
+    html += `</ul>`;
+
+    html += `<h3>Sync Capabilities</h3><ul style="margin-bottom: 20px">`;
+    html += `<li>Source to Units: ${escapeHtml(sync_capabilities.source_to_units)}</li>`;
+    html += `<li>Units to Source: ${escapeHtml(sync_capabilities.units_to_source)}</li>`;
+    html += `<li>Chunk to Source: ${escapeHtml(sync_capabilities.chunk_to_source)}</li>`;
+    html += `</ul>`;
+
+    if (warnings && warnings.length > 0) {
+        html += `<div style="color: #c92a2a; margin-top: 20px;"><strong>Warnings:</strong><ul>`;
+        warnings.forEach(w => html += `<li>${escapeHtml(w)}</li>`);
+        html += `</ul></div>`;
+    }
+    
+    html += `</div>`;
+    elements.tabContentArea.innerHTML = html;
+}
+
+function renderDiagnosticsTab() {
+    const data = State.tabData.diagnostics;
+    if (!data || !data.available) {
+        elements.tabContentArea.innerHTML = `<div class="placeholder">Diagnostics unavailable.</div>`;
+        return;
+    }
+
+    let html = `<div class="tab-pane-content">`;
+    
+    html += `
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+            <div class="layout-entry card-stat"><strong>DOCUMENT CLASS</strong><br><span>${escapeHtml(data.document_class || 'Unknown')}</span></div>
+            <div class="layout-entry card-stat"><strong>QUALITY STATUS</strong><br><span>${escapeHtml(data.quality_status || 'Unknown')}</span></div>
+            <div class="layout-entry card-stat"><strong>PAGE COUNT</strong><br><span>${data.page_count}</span></div>
+            <div class="layout-entry card-stat"><strong>UNIT COUNT</strong><br><span>${data.ordered_unit_count}</span></div>
+        </div>
+    `;
+
+    if (data.extractor_metadata) {
+        html += `<h3>Extractor Metadata</h3><div class="text-scroll-block"><pre>${escapeHtml(JSON.stringify(data.extractor_metadata, null, 2))}</pre></div>`;
+    }
+
+    if (data.degradation_codes && data.degradation_codes.length > 0) {
+        html += `<div style="margin-top: 20px;"><strong>Degradation Codes:</strong><ul>`;
+        data.degradation_codes.forEach(w => html += `<li>${escapeHtml(w)}</li>`);
+        html += `</ul></div>`;
+    }
+
+    if (data.warnings && data.warnings.length > 0) {
+        html += `<div style="color: #c92a2a; margin-top: 20px;"><strong>Warnings:</strong><ul>`;
+        data.warnings.forEach(w => html += `<li>${escapeHtml(w)}</li>`);
+        html += `</ul></div>`;
+    }
+
+    html += `</div>`;
+    elements.tabContentArea.innerHTML = html;
+}
+
+function renderNormalizedTextTab() {
+    const data = State.tabData.normalized_text;
+    if (!data || !data.available) {
+        elements.tabContentArea.innerHTML = `<div class="placeholder">Normalized Text unavailable.</div>`;
+        return;
+    }
+
+    let html = `<div class="tab-pane-content" style="display:flex; flex-direction:column; height: 100%;">`;
+    
+    html += `
+        <div style="display: flex; gap: 20px; margin-bottom: 12px; flex-shrink: 0;">
+            <div class="layout-entry card-stat"><strong>CHARACTER COUNT</strong><br><span>${data.char_count}</span></div>
+            <div class="layout-entry card-stat"><strong>MAPPING PRECISION</strong><br><span>${escapeHtml(data.mapping_precision || 'Unknown')}</span></div>
+        </div>
+    `;
+
+    html += `<div class="text-scroll-block" style="flex:1; margin-top: 10px; font-family: monospace; white-space: pre-wrap;">${escapeHtml(data.text || '')}</div>`;
+    html += `</div>`;
+    elements.tabContentArea.innerHTML = html;
+}
+
+function renderIndexedChunksTab() {
+    const data = State.tabData.indexed_chunks;
+    if (!data || !data.available) {
+        elements.tabContentArea.innerHTML = `<div class="placeholder">Indexed Chunks unavailable.</div>`;
+        return;
+    }
+
+    let html = `<div class="tab-pane-content">`;
+    
+    html += `
+        <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+            <div class="layout-entry card-stat"><strong>CHUNK COUNT</strong><br><span>${data.chunk_count}</span></div>
+        </div>
+    `;
+
+    html += `<div class="card-list">`;
+    data.chunks.forEach(c => {
+        const pages = (c.page_start !== null && c.page_end !== null) ? `Pages ${c.page_start}-${c.page_end}` : 'Unknown Pages';
+        const chars = (c.start_char !== null && c.end_char !== null) ? `Chars ${c.start_char}-${c.end_char}` : 'Unknown Chars';
+        html += `
+            <div class="chunk-card">
+                <div class="chunk-card-header">
+                    <strong>Chunk #${c.chunk_ordinal}</strong>
+                    <span style="float: right; font-size: 0.85em; color: var(--muted-text);">${escapeHtml(pages)} | ${escapeHtml(chars)}</span>
+                </div>
+                <div class="chunk-card-meta">
+                    ${c.unit_kind ? `<span>Kind: ${escapeHtml(c.unit_kind)}</span> ` : ''}
+                    ${c.quality_status ? `<span style="margin-left:8px;">Status: ${escapeHtml(c.quality_status)}</span>` : ''}
+                </div>
+                <div class="chunk-card-text">${escapeHtml(c.chunk_text)}</div>
+            </div>
+        `;
+    });
+    html += `</div></div>`;
+    elements.tabContentArea.innerHTML = html;
+}
+
+window.jumpToSourcePage = function(pageNum) {
+    if (!State.viewer.pdfDoc) return;
+    PDFViewer.goToPage(pageNum);
+};
+
+window.handleUnitKeydown = function(event, pageNum) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault(); // Prevent scrolling on Space
+        window.jumpToSourcePage(pageNum);
+    }
+};
+
+function renderExtractedUnitsTab() {
+    const data = State.tabData.extracted_units;
+    if (!data) {
+        elements.tabContentArea.innerHTML = `<div class="placeholder">No extracted units data.</div>`;
+        return;
+    }
+
+    if (!data.available) {
+        elements.tabContentArea.innerHTML = `<div class="tab-pane-content">
+            <div class="eu-provenance-bar">
+                <span class="eu-provenance">Source: diagnostics ordered_units</span>
+            </div>
+            <div class="placeholder" style="margin-top:16px">Extracted units unavailable: ${escapeHtml(data.reason_code || 'unknown')}</div>
+        </div>`;
+        return;
+    }
+
+    const focusedPage = State.viewer.focusedPage;
+    const allUnits = data.units || [];
+    const pageUnits = allUnits.filter(u => u.page_number === focusedPage);
+    const totalOnPage = pageUnits.length;
+
+    let html = `<div class="tab-pane-content">`;
+    // Provenance and precision bar
+    html += `<div class="eu-provenance-bar">
+        <span class="eu-provenance">Source: diagnostics ordered_units</span>
+        <span class="eu-precision">Sync: ${escapeHtml(data.source_precision)} (page-level jump)</span>
+    </div>`;
+    // Page scope indicator
+    html += `<div class="eu-page-scope">
+        <span class="eu-page-badge">Page ${focusedPage}${State.viewer.totalPages ? ' / ' + State.viewer.totalPages : ''}</span>
+        <span class="eu-page-count">${totalOnPage} unit${totalOnPage !== 1 ? 's' : ''} on this page (${data.total_unit_count} total)</span>
+    </div>`;
+
+    if (totalOnPage === 0) {
+        html += `<div class="placeholder" style="margin-top:16px;height:auto;padding:24px;">No extracted units on page ${focusedPage}.</div>`;
+    } else {
+        html += `<div class="card-list">`;
+        pageUnits.forEach(u => {
+            const canJump = u.page_number != null;
+            const jumpAttr = canJump ? `onclick="window.jumpToSourcePage(${u.page_number})" onkeydown="window.handleUnitKeydown(event, ${u.page_number})" tabindex="0" role="button" aria-label="Jump to page ${u.page_number}"` : '';
+            const jumpClass = canJump ? 'eu-card-clickable' : '';
+            html += `<div class="chunk-card eu-card ${jumpClass}" ${jumpAttr}>
+                <div class="chunk-card-header">
+                    <span class="chunk-card-meta">
+                        ${escapeHtml(u.unit_kind || 'unit')}
+                        ${u.page_number != null ? ` · p.${u.page_number}` : ''}
+                        ${u.start_char != null ? ` · chars ${u.start_char}–${u.end_char}` : ''}
+                        <span class="eu-precision-badge">${escapeHtml(u.mapping_precision)}</span>
+                    </span>
+                </div>
+                <div class="chunk-card-text">${escapeHtml(u.text || '')}</div>
+            </div>`;
+        });
+        html += `</div>`;
+    }
+    html += `</div>`;
+    elements.tabContentArea.innerHTML = html;
+}
+
+function renderDownstreamUsageTab() {
+    const data = State.tabData.downstream_usage;
+    if (!data) {
+        elements.tabContentArea.innerHTML = `<div class="placeholder">Loading downstream usage...</div>`;
+        return;
+    }
+
+    if (!data.available) {
+        let html = `<div class="tab-pane-content">`;
+        html += `<div class="placeholder">Downstream usage is explicitly unavailable or empty for this target.</div>`;
+        if (data.limitations && data.limitations.length > 0) {
+            html += `<ul style="color:var(--muted-text); margin-top:20px;">`;
+            data.limitations.forEach(l => html += `<li>${escapeHtml(l)}</li>`);
+            html += `</ul>`;
+        }
+        html += `</div>`;
+        elements.tabContentArea.innerHTML = html;
+        return;
+    }
+
+    let html = `<div class="tab-pane-content">`;
+    if (data.limitations && data.limitations.length > 0) {
+        html += `<div style="color: var(--warning-color); margin-bottom: 20px;"><strong>Limitations:</strong><ul>`;
+        data.limitations.forEach(l => html += `<li>${escapeHtml(l)}</li>`);
+        html += `</ul></div>`;
+    }
+
+    if (data.usage && data.usage.length > 0) {
+        html += `<div class="card-list">`;
+        data.usage.forEach(u => {
+            html += `
+                <div class="chunk-card">
+                    <div class="chunk-card-header">
+                        <strong>${escapeHtml(u.consumer_stage)}</strong>
+                        <span style="float: right; font-size: 0.85em; color: var(--muted-text);">Precision: ${escapeHtml(u.attribution_precision)}</span>
+                    </div>
+                    <div class="chunk-card-meta">
+                        <span>Artifact Class: ${escapeHtml(u.artifact_class)}</span>
+                    </div>
+                    <div class="chunk-card-text">Ref: ${escapeHtml(u.display_ref)}</div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+    } else {
+        html += `<div class="placeholder">No attributable usage found.</div>`;
+    }
+
+    html += `</div>`;
+    elements.tabContentArea.innerHTML = html;
+}
+
+window.switchTab = async function(tabId, pushHistory = true) {
+    if (!State.manifest) return;
+
+    // Reject unimplemented tabs immediately and fallback to summary
+    const supportedTabs = ['summary', 'diagnostics', 'normalized_text', 'indexed_chunks', 'extracted_units', 'downstream_usage'];
+    if (!supportedTabs.includes(tabId)) {
+        tabId = 'summary';
+    }
+
+    const tabMeta = State.manifest.tabs.find(t => t.tab_id === tabId);
+    if (!tabMeta || !tabMeta.available) {
+        if (tabId !== 'summary') {
+            tabId = 'summary';
+        }
+    }
+
+    State.activeTab = tabId;
+    
+    // Update active UI button states
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.trim().toLowerCase().replace(' ', '_') === tabId) {
+            btn.classList.add('active'); // Wait, label matching is brittle. Re-render shell.
+        }
+    });
+    // Simpler to just re-generate the tabs header
+    elements.tabsHeader.innerHTML = State.manifest.tabs.map(t => {
+        const isActive = t.tab_id === State.activeTab;
+        const isAvailable = t.available;
+        const clickHandler = isAvailable ? `onclick="window.switchTab('${escapeHtml(t.tab_id)}', true)"` : '';
+        return `<button class="tab-btn ${isActive ? 'active' : ''}" ${!isAvailable ? 'disabled title="Data unavailable"' : ''} ${clickHandler}>
+            ${escapeHtml(t.label || t.tab_id)}
+        </button>`;
+    }).join('');
+
+    if (pushHistory) updateUrlParams('push');
+    else updateUrlParams('replace');
+
+    loadActiveTab();
+};
+
+async function loadActiveTab() {
+    const tabId = State.activeTab;
+    const seq = _actionSeq;
+
+    if (tabId === 'summary') {
+        renderSummaryTab();
+        return;
+    }
+
+    // Check Cache
+    if (State.tabData[tabId] !== null) {
+        if (tabId === 'diagnostics') renderDiagnosticsTab();
+        else if (tabId === 'normalized_text') renderNormalizedTextTab();
+        else if (tabId === 'indexed_chunks') renderIndexedChunksTab();
+        else if (tabId === 'extracted_units') renderExtractedUnitsTab();
+        else if (tabId === 'downstream_usage') renderDownstreamUsageTab();
+        return;
+    }
+
+    // Fetch
+    elements.tabContentArea.innerHTML = `<div class="placeholder">Loading...</div>`;
+    try {
+        if (tabId === 'diagnostics') {
+            const data = await API.fetchDiagnostics(State.selectedRunId, State.selectedTargetId);
+            if (seq !== _actionSeq) return;
+            State.tabData.diagnostics = data;
+            renderDiagnosticsTab();
+        } else if (tabId === 'normalized_text') {
+            const data = await API.fetchNormalizedText(State.selectedRunId, State.selectedTargetId);
+            if (seq !== _actionSeq) return;
+            State.tabData.normalized_text = data;
+            renderNormalizedTextTab();
+        } else if (tabId === 'indexed_chunks') {
+            const data = await API.fetchIndexedChunks(State.selectedRunId, State.selectedTargetId);
+            if (seq !== _actionSeq) return;
+            State.tabData.indexed_chunks = data;
+            renderIndexedChunksTab();
+        } else if (tabId === 'extracted_units') {
+            const data = await API.fetchExtractedUnits(State.selectedRunId, State.selectedTargetId);
+            if (seq !== _actionSeq) return;
+            State.tabData.extracted_units = data;
+            renderExtractedUnitsTab();
+        } else if (tabId === 'downstream_usage') {
+            const data = await API.fetchDownstreamUsage(State.selectedRunId, State.selectedTargetId);
+            if (seq !== _actionSeq) return;
+            State.tabData.downstream_usage = data;
+            renderDownstreamUsageTab();
+        }
+    } catch (err) {
+        if (seq !== _actionSeq) return;
+        elements.tabContentArea.innerHTML = `<div class="placeholder" style="color:var(--danger-color)">Error loading tab: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
+
+// --- Bootstrapping Actions ---
+async function loadTargetDoc(targetId, seq) {
+    State.selectedTargetId = targetId;
+    elements.docSelector.value = targetId || "";
+    
+    // Clear tab state cache since target changed
+    State.tabData = { diagnostics: null, normalized_text: null, indexed_chunks: null, extracted_units: null, downstream_usage: null };
+
+    // Tear down old viewer for previous target
+    PDFViewer.teardown();
+
+    updateUrlParams('replace');
+
+    if (!targetId) {
+        renderShellError("No document selected.");
+        return;
+    }
+
+    if (State.documents.length && !State.documents.some(d => d.target_id === targetId)) {
+        renderShellError("Requested document target is not available in the selected run.");
+        return;
+    }
+
+    try {
+        const manifest = await API.fetchTrace(State.selectedRunId, targetId);
+        if (seq !== _actionSeq) return;
+        State.manifest = manifest;
+        renderTraceShell();
+        window.switchTab(State.activeTab, false);
+    } catch (err) {
+        if (seq !== _actionSeq) return;
+        renderShellError(err.message);
+    }
+}
+
+async function loadRun(runId, targetIdOverride, seq) {
+    State.selectedRunId = runId;
+    elements.runSelector.value = runId || "";
+    elements.docSelector.innerHTML = '<option value="">Loading...</option>';
+    elements.docSelector.disabled = true;
+
+    try {
+        const docRes = await API.fetchDocuments(runId);
+        if (seq !== _actionSeq) return;
+        State.documents = docRes.documents || [];
+        
+        if (State.documents.length === 0) {
+            elements.docSelector.innerHTML = '<option value="">No documents found</option>';
+            renderShellError("No documents available in this run.");
+            updateUrlParams('replace');
+            return;
+        }
+
+        elements.docSelector.innerHTML = State.documents.map(d => {
+            const label = [d.accession_number, d.document_title].filter(Boolean).join(' - ') || d.target_id;
+            return `<option value="${escapeHtml(d.target_id)}">${escapeHtml(label)}</option>`;
+        }).join('');
+        elements.docSelector.disabled = false;
+
+        // Determine target
+        if (!targetIdOverride) {
+            await loadTargetDoc(State.documents[0].target_id, seq);
+            return;
+        }
+
+        if (!State.documents.some(d => d.target_id === targetIdOverride)) {
+            State.selectedTargetId = targetIdOverride;
+            elements.docSelector.value = "";
+            renderShellError("Requested document target is not available in the selected run.");
+            updateUrlParams('replace');
+            return;
+        }
+
+        await loadTargetDoc(targetIdOverride, seq);
+    } catch (err) {
+        if (seq !== _actionSeq) return;
+        elements.docSelector.innerHTML = '<option value="">Error</option>';
+        renderShellError("Failed to fetch documents for run.");
+    }
+}
+
+window.addEventListener('popstate', (e) => {
+    // History back/forward handler
+    if (e.state) {
+        const seq = ++_actionSeq;
+        if (State.selectedRunId !== e.state.runId || State.selectedTargetId !== e.state.targetId) {
+            State.activeTab = e.state.tab || 'summary';
+            loadRun(e.state.runId, e.state.targetId, seq);
+        } else if (State.activeTab !== e.state.tab) {
+            // Same run+target, different tab: apply tab state through the shared path
+            window.switchTab(e.state.tab || 'summary', false);
+        }
+    }
+});
+
+async function init() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialRunId = urlParams.get('run_id');
+    const initialTargetId = urlParams.get('target_id');
+    State.activeTab = urlParams.get('tab') || 'summary';
+    
+    // Setup theme listeners
+    elements.themeSelector.value = State.themePreference;
+    elements.themeSelector.addEventListener('change', (e) => applyThemePreference(e.target.value));
+    if (systemThemeQuery) {
+        systemThemeQuery.addEventListener?.('change', () => {
+            if (State.themePreference === 'system') applyThemePreference('system', { persist: false });
+        });
+    }
+
+    // Setup Selectors
+    elements.runSelector.addEventListener('change', (e) => {
+        const seq = ++_actionSeq;
+        State.activeTab = 'summary'; // Reset tab on new run
+        loadRun(e.target.value, null, seq);
+    });
+    elements.docSelector.addEventListener('change', (e) => {
+        const seq = ++_actionSeq;
+        loadTargetDoc(e.target.value, seq);
+    });
+
+    const seq = ++_actionSeq;
+    try {
+        const data = await API.fetchRuns();
+        if (seq !== _actionSeq) return;
+        
+        State.runs = data.runs;
+        elements.runSelector.innerHTML = State.runs.map(r => 
+            `<option value="${escapeHtml(r.run_id)}">${escapeHtml(r.display_label || r.run_id)}</option>`
+        ).join('');
+
+        let runToLoad = initialRunId;
+        if (!runToLoad || !State.runs.some(r => r.run_id === runToLoad)) {
+            runToLoad = data.default_run_id || State.runs[0]?.run_id;
+        }
+
+        if (runToLoad) {
+            await loadRun(runToLoad, initialTargetId, seq);
+        } else {
+            elements.runSelector.innerHTML = '<option value="">No runs available</option>';
+            renderShellError("No runs available.");
+        }
+    } catch (err) {
+        if (seq !== _actionSeq) return;
+        renderShellError("Failed to fetch run catalog.");
+    }
+}
+
+document.addEventListener('DOMContentLoaded', init);

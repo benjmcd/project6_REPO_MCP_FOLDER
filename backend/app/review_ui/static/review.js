@@ -570,6 +570,11 @@ async function loadRun(runId) {
     State.openTreeIds = new Set();
     closeDrawer();
 
+    const traceLink = document.getElementById('launch-document-trace');
+    if (traceLink) {
+        traceLink.href = `/review/nrc-aps/document-trace?run_id=${encodeURIComponent(runId)}`;
+    }
+
     const runInfo = State.runs.find((run) => run.run_id === runId);
     if (runInfo && !runInfo.reviewable) {
         elements.disabledOverlay.classList.remove('hidden');

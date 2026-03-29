@@ -12,12 +12,30 @@ from app.schemas.review_nrc_aps import (
     NrcApsReviewNodeDetailsOut,
     NrcApsReviewFileDetailsOut,
     NrcApsReviewFilePreviewOut,
+    NrcApsReviewDocumentSelectorOut,
+    NrcApsReviewTraceManifestOut,
+    NrcApsReviewDiagnosticsOut,
+    NrcApsReviewNormalizedTextOut,
+    NrcApsReviewIndexedChunksOut,
+    NrcApsReviewExtractedUnitsOut,
+    NrcApsReviewDownstreamUsageOut,
 )
+from fastapi.responses import FileResponse
 from app.services.review_nrc_aps_catalog import discover_candidate_runs
 from app.services.review_nrc_aps_runtime import find_review_root_for_run, normalize_path
 from app.services.review_nrc_aps_overview import compose_overview, compose_pipeline_definition
 from app.services.review_nrc_aps_tree import get_node_by_tree_id
 from app.services.review_nrc_aps_details import get_node_details, get_file_details, get_file_preview
+from app.services.review_nrc_aps_document_trace import (
+    compose_document_selector, 
+    compose_trace_manifest,
+    resolve_source_blob_info,
+    compose_diagnostics_payload,
+    compose_normalized_text_payload,
+    compose_indexed_chunks_payload,
+    compose_extracted_units_payload,
+    compose_downstream_usage_payload,
+)
 
 router = APIRouter()
 
@@ -109,3 +127,117 @@ def get_file_preview_route(run_id: str, tree_id: str):
         raise HTTPException(status_code=404, detail=str(exc))
     except ValueError as exc:
         raise HTTPException(status_code=415, detail=str(exc))
+
+
+@router.get("/runs/{run_id}/documents", response_model=NrcApsReviewDocumentSelectorOut)
+def get_run_documents(run_id: str, db: Session = Depends(get_db)):
+    """Return the document selector for a specific run."""
+    root = find_review_root_for_run(run_id)
+    if not root:
+        raise HTTPException(status_code=404, detail="Review root not found for run")
+    return compose_document_selector(db, run_id, root)
+
+
+@router.get("/runs/{run_id}/documents/{target_id}/trace", response_model=NrcApsReviewTraceManifestOut)
+def get_document_trace(run_id: str, target_id: str, db: Session = Depends(get_db)):
+    """Return the trace manifest for a specific document target."""
+    root = find_review_root_for_run(run_id)
+    if not root:
+        raise HTTPException(status_code=404, detail="Review root not found for run")
+    try:
+        return compose_trace_manifest(db, run_id, target_id, root)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/runs/{run_id}/documents/{target_id}/source")
+def get_document_source(run_id: str, target_id: str, db: Session = Depends(get_db)):
+    """Stream the original source document for a target."""
+    root = find_review_root_for_run(run_id)
+    if not root:
+        raise HTTPException(status_code=404, detail="Review root not found for run")
+        
+    try:
+        blob_path, media_type, filename = resolve_source_blob_info(db, run_id, target_id, root)
+        
+        # We use FileResponse for efficient streaming
+        return FileResponse(
+            path=blob_path,
+            media_type=media_type,
+            filename=filename
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        # Business/safety error
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/runs/{run_id}/documents/{target_id}/diagnostics", response_model=NrcApsReviewDiagnosticsOut)
+def get_document_diagnostics(run_id: str, target_id: str, db: Session = Depends(get_db)):
+    """Return the structured diagnostics payload for a trackable target."""
+    root = find_review_root_for_run(run_id)
+    if not root:
+        raise HTTPException(status_code=404, detail="Review root not found for run")
+    try:
+        return compose_diagnostics_payload(db, run_id, target_id, root)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/runs/{run_id}/documents/{target_id}/normalized-text", response_model=NrcApsReviewNormalizedTextOut)
+def get_document_normalized_text(run_id: str, target_id: str, db: Session = Depends(get_db)):
+    """Return the normalized text payload for a trackable target."""
+    root = find_review_root_for_run(run_id)
+    if not root:
+        raise HTTPException(status_code=404, detail="Review root not found for run")
+    try:
+        return compose_normalized_text_payload(db, run_id, target_id, root)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/runs/{run_id}/documents/{target_id}/indexed-chunks", response_model=NrcApsReviewIndexedChunksOut)
+def get_document_indexed_chunks(run_id: str, target_id: str, db: Session = Depends(get_db)):
+    """Return the indexed chunks payload for a trackable target."""
+    root = find_review_root_for_run(run_id)
+    if not root:
+        raise HTTPException(status_code=404, detail="Review root not found for run")
+    try:
+        return compose_indexed_chunks_payload(db, run_id, target_id, root)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/runs/{run_id}/documents/{target_id}/extracted-units", response_model=NrcApsReviewExtractedUnitsOut)
+def get_document_extracted_units(
+    run_id: str, target_id: str,
+    page_number: int | None = None,
+    db: Session = Depends(get_db),
+):
+    """Return the extracted units from diagnostics ordered_units."""
+    root = find_review_root_for_run(run_id)
+    if not root:
+        raise HTTPException(status_code=404, detail="Review root not found for run")
+    if page_number is not None and page_number < 1:
+        raise HTTPException(status_code=422, detail="page_number must be a positive integer")
+    try:
+        return compose_extracted_units_payload(db, run_id, target_id, root, page_number=page_number)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/runs/{run_id}/documents/{target_id}/downstream-usage", response_model=NrcApsReviewDownstreamUsageOut)
+def get_document_downstream_usage(run_id: str, target_id: str, db: Session = Depends(get_db)):
+    """Return truthful downstream usage payload for a target."""
+    root = find_review_root_for_run(run_id)
+    if not root:
+        raise HTTPException(status_code=404, detail="Review root not found for run")
+    try:
+        return compose_downstream_usage_payload(db, run_id, target_id, root)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))

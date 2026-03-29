@@ -1,0 +1,427 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1774702520797,
+  "projectRoot": "C:\\Users\\benny\\OneDrive\\Desktop\\project6_REPO_MCP_FOLDER",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "@playwright/test",
+        "version": "1.58.2",
+        "category": "testing"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "app",
+      "docs",
+      "tests"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "app": {
+      "path": "app",
+      "purpose": "Application code",
+      "fileCount": 1,
+      "lastAccessed": 1774702520780,
+      "keyFiles": [
+        "__init__.py"
+      ]
+    },
+    "archive": {
+      "path": "archive",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1774702520781,
+      "keyFiles": []
+    },
+    "audit_review_tmp_20260328": {
+      "path": "audit_review_tmp_20260328",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1774702520786,
+      "keyFiles": []
+    },
+    "backend": {
+      "path": "backend",
+      "purpose": null,
+      "fileCount": 13,
+      "lastAccessed": 1774702520786,
+      "keyFiles": [
+        "alembic.ini",
+        "alembic_smoke.db",
+        "main.py",
+        "method_aware.db",
+        "migration_compat.py"
+      ]
+    },
+    "data_actual": {
+      "path": "data_actual",
+      "purpose": null,
+      "fileCount": 40,
+      "lastAccessed": 1774702520786,
+      "keyFiles": [
+        "data_actual_full_break.csv",
+        "data_actual_full_break.json",
+        "data_actual_full_break.md",
+        "data_actual_full_break_post_encoding_fix.csv",
+        "data_actual_full_break_post_encoding_fix.json"
+      ]
+    },
+    "data_demo": {
+      "path": "data_demo",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1774702520787,
+      "keyFiles": [
+        "demo_macro_timeseries.csv"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 0,
+      "lastAccessed": 1774702520787,
+      "keyFiles": []
+    },
+    "e2e": {
+      "path": "e2e",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1774702520787,
+      "keyFiles": [
+        "example.spec.js"
+      ]
+    },
+    "files_to_be_trashed": {
+      "path": "files_to_be_trashed",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1774702520787,
+      "keyFiles": []
+    },
+    "frontend_UI_plans": {
+      "path": "frontend_UI_plans",
+      "purpose": null,
+      "fileCount": 10,
+      "lastAccessed": 1774702520787,
+      "keyFiles": [
+        "nrc_aps_review_ui_canonical_graph_registry.md",
+        "nrc_aps_review_ui_data_contract.md",
+        "nrc_aps_review_ui_dependency_and_asset_strategy.md",
+        "nrc_aps_review_ui_example_payloads.md",
+        "nrc_aps_review_ui_implementation_blueprint.md"
+      ]
+    },
+    "handoff": {
+      "path": "handoff",
+      "purpose": null,
+      "fileCount": 9,
+      "lastAccessed": 1774702520788,
+      "keyFiles": [
+        "desktop.ini",
+        "document_ingestion_report.md",
+        "HANDOFF_INDEX.md",
+        "handoff_manifest.json",
+        "previous_session_context.txt"
+      ]
+    },
+    "mcp_current_filestates": {
+      "path": "mcp_current_filestates",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1774702520788,
+      "keyFiles": []
+    },
+    "next_milestone_plans": {
+      "path": "next_milestone_plans",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1774702520788,
+      "keyFiles": []
+    },
+    "plans": {
+      "path": "plans",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1774702520788,
+      "keyFiles": [
+        "glistening-humming-pinwheel.md"
+      ]
+    },
+    "playwright-report": {
+      "path": "playwright-report",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1774702520788,
+      "keyFiles": [
+        "index.html"
+      ]
+    },
+    "qa_edge_profile": {
+      "path": "qa_edge_profile",
+      "purpose": null,
+      "fileCount": 8,
+      "lastAccessed": 1774702520788,
+      "keyFiles": [
+        "BrowserMetrics-spare.pma",
+        "FirstLaunchAfterInstallation",
+        "first_party_sets.db",
+        "first_party_sets.db-journal",
+        "Last Browser"
+      ]
+    },
+    "sessionhistory_extracted": {
+      "path": "sessionhistory_extracted",
+      "purpose": null,
+      "fileCount": 25,
+      "lastAccessed": 1774702520789,
+      "keyFiles": [
+        "chatgpt_Branch___Branch___Branch___Branch___Repo_2026-03-23T01-40-10.json",
+        "chatgpt_Branch___Branch___Branch___Repo_Indexing_2026-03-23T01-40-01.json",
+        "chatgpt_Branch___Branch___Repo_Indexing_Pass_2026-03-23T01-39-50.json",
+        "chatgpt_Branch___Branch___Repo_Indexing_Pass_2026-03-23T01-39-54.json",
+        "chatgpt_Branch___Repo_Indexing_Pass_2026-03-23T01-40-14.json"
+      ]
+    },
+    "session_extracted": {
+      "path": "session_extracted",
+      "purpose": null,
+      "fileCount": 25,
+      "lastAccessed": 1774702520789,
+      "keyFiles": [
+        "chatgpt_Branch___Branch___Branch___Branch___Repo_2026-03-23T01-40-10.json",
+        "chatgpt_Branch___Branch___Branch___Repo_Indexing_2026-03-23T01-40-01.json",
+        "chatgpt_Branch___Branch___Repo_Indexing_Pass_2026-03-23T01-39-50.json",
+        "chatgpt_Branch___Branch___Repo_Indexing_Pass_2026-03-23T01-39-54.json",
+        "chatgpt_Branch___Repo_Indexing_Pass_2026-03-23T01-40-14.json"
+      ]
+    },
+    "session_temp": {
+      "path": "session_temp",
+      "purpose": null,
+      "fileCount": 25,
+      "lastAccessed": 1774702520789,
+      "keyFiles": [
+        "chatgpt_Branch___Branch___Branch___Branch___Repo_2026-03-23T01-40-10.json",
+        "chatgpt_Branch___Branch___Branch___Repo_Indexing_2026-03-23T01-40-01.json",
+        "chatgpt_Branch___Branch___Repo_Indexing_Pass_2026-03-23T01-39-50.json",
+        "chatgpt_Branch___Branch___Repo_Indexing_Pass_2026-03-23T01-39-54.json",
+        "chatgpt_Branch___Repo_Indexing_Pass_2026-03-23T01-40-14.json"
+      ]
+    },
+    "setup_logs": {
+      "path": "setup_logs",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1774702520789,
+      "keyFiles": [
+        "phase7a_py311_setup_20260313_235122.log",
+        "phase7a_py311_setup_20260314_010000.log"
+      ]
+    },
+    "temp_extract": {
+      "path": "temp_extract",
+      "purpose": null,
+      "fileCount": 25,
+      "lastAccessed": 1774702520789,
+      "keyFiles": [
+        "chatgpt_Branch___Branch___Branch___Branch___Repo_2026-03-23T01-40-10.json",
+        "chatgpt_Branch___Branch___Branch___Repo_Indexing_2026-03-23T01-40-01.json",
+        "chatgpt_Branch___Branch___Repo_Indexing_Pass_2026-03-23T01-39-50.json",
+        "chatgpt_Branch___Branch___Repo_Indexing_Pass_2026-03-23T01-39-54.json",
+        "chatgpt_Branch___Repo_Indexing_Pass_2026-03-23T01-40-14.json"
+      ]
+    },
+    "test-results": {
+      "path": "test-results",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1774702520790,
+      "keyFiles": []
+    },
+    "tests": {
+      "path": "tests",
+      "purpose": "Test files",
+      "fileCount": 49,
+      "lastAccessed": 1774702520790,
+      "keyFiles": [
+        "support_nrc_aps_doc_corpus.py",
+        "test_api.py",
+        "test_import_guardrail.py",
+        "test_nrc_aps_artifact_ingestion.py",
+        "test_nrc_aps_artifact_ingestion_gate.py"
+      ]
+    },
+    "tmp": {
+      "path": "tmp",
+      "purpose": null,
+      "fileCount": 10,
+      "lastAccessed": 1774702520790,
+      "keyFiles": [
+        "analyze_sample.py",
+        "cross_category_verify.py",
+        "detail_verify.py",
+        "extraction_handbook.txt",
+        "extraction_weekly_report.txt"
+      ]
+    },
+    "tools": {
+      "path": "tools",
+      "purpose": null,
+      "fileCount": 25,
+      "lastAccessed": 1774702520790,
+      "keyFiles": [
+        "migrate_sqlite_to_postgres.py",
+        "nrc_aps_artifact_ingestion_gate.py",
+        "nrc_aps_content_index_gate.py",
+        "nrc_aps_context_dossier_gate.py",
+        "nrc_aps_context_packet_gate.py"
+      ]
+    },
+    "_external": {
+      "path": "_external",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1774702520790,
+      "keyFiles": []
+    },
+    "_forensic_exports": {
+      "path": "_forensic_exports",
+      "purpose": null,
+      "fileCount": 8,
+      "lastAccessed": 1774702520791,
+      "keyFiles": [
+        "nrc_aps_artifact_ingestion_20260321081800.py",
+        "nrc_aps_artifact_ingestion_20260321105833.py",
+        "nrc_aps_artifact_ingestion_20260321_113721.py",
+        "nrc_aps_document_processing_20260321081800.py",
+        "nrc_aps_document_processing_20260321105826.py"
+      ]
+    },
+    "__pycache__": {
+      "path": "__pycache__",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1774702520791,
+      "keyFiles": [
+        "corpus_diagnostics.cpython-311.pyc"
+      ]
+    },
+    "backend\\app": {
+      "path": "backend\\app",
+      "purpose": "Application code",
+      "fileCount": 1,
+      "lastAccessed": 1774702520791,
+      "keyFiles": [
+        "__init__.py"
+      ]
+    },
+    "handoff\\docs": {
+      "path": "handoff\\docs",
+      "purpose": "Documentation",
+      "fileCount": 0,
+      "lastAccessed": 1774702520792,
+      "keyFiles": []
+    },
+    "tests\\fixtures": {
+      "path": "tests\\fixtures",
+      "purpose": "Test fixtures",
+      "fileCount": 0,
+      "lastAccessed": 1774702520794,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "backend\\app\\review_ui\\static\\review.js",
+      "accessCount": 8,
+      "lastAccessed": 1774702921641,
+      "type": "file"
+    },
+    {
+      "path": "backend\\app\\review_ui\\static\\review.css",
+      "accessCount": 3,
+      "lastAccessed": 1774702945025,
+      "type": "file"
+    },
+    {
+      "path": "backend\\app\\review_ui\\static\\index.html",
+      "accessCount": 3,
+      "lastAccessed": 1774702945946,
+      "type": "file"
+    },
+    {
+      "path": "backend\\tests\\test_review_nrc_aps_page.py",
+      "accessCount": 3,
+      "lastAccessed": 1774702946242,
+      "type": "file"
+    },
+    {
+      "path": "2026-03-28_review_ui_hardening_and_cleanup_plan.md",
+      "accessCount": 1,
+      "lastAccessed": 1774702661179,
+      "type": "file"
+    },
+    {
+      "path": "backend\\tests\\test_review_nrc_aps_api.py",
+      "accessCount": 1,
+      "lastAccessed": 1774702673573,
+      "type": "file"
+    },
+    {
+      "path": "backend\\tests\\test_review_nrc_aps_graph.py",
+      "accessCount": 1,
+      "lastAccessed": 1774702674015,
+      "type": "file"
+    },
+    {
+      "path": "backend\\tests\\test_review_nrc_aps_tree.py",
+      "accessCount": 1,
+      "lastAccessed": 1774702674892,
+      "type": "file"
+    },
+    {
+      "path": "backend\\tests\\test_review_nrc_aps_details.py",
+      "accessCount": 1,
+      "lastAccessed": 1774702674990,
+      "type": "file"
+    },
+    {
+      "path": "backend\\tests\\test_review_nrc_aps_catalog.py",
+      "accessCount": 1,
+      "lastAccessed": 1774702853430,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
