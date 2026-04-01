@@ -36,6 +36,8 @@ def runtime_db_session_for_binding(binding: ReviewRuntimeBinding) -> Iterator[Se
     database_path = binding.database_path.resolve()
     if not database_path.exists():
         raise FileNotFoundError(f"Review database missing on disk for run {binding.run_id}: {database_path}")
+    if not database_path.is_file():
+        raise FileNotFoundError(f"Review database path is not a file for run {binding.run_id}: {database_path}")
 
     SessionLocal = _session_factory_for_database(str(database_path))
     session = SessionLocal()
