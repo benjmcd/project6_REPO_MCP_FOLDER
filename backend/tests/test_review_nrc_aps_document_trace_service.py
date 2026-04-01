@@ -7,15 +7,13 @@ the real audited runtime DB.
 from __future__ import annotations
 
 import json
-import os
 import sys
 from pathlib import Path
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import app.services.review_nrc_aps_document_trace as trace_service
 from app.models.models import ApsContentLinkage
@@ -26,14 +24,18 @@ from app.services.review_nrc_aps_document_trace import (
     resolve_source_blob_info
 )
 from app.services.review_nrc_aps_runtime import find_review_root_for_run
+from review_nrc_aps_runtime_fixture import latest_passed_runtime, make_session, resolve_deduplicated_target_pair, resolve_target_for_accession
 
-RUN_ID = "5cd56147-4b5b-4278-8b32-79b9b1b34db5"
-TARGET_ID = "fd00ab2b-aa52-4c2a-9899-0c36786f8870"
-ACCESSION = "LOCALAPS00001"
-DEDUP_TARGET_ID_A = "21c92e61-9316-4356-b171-d1b22a011bc8"
-DEDUP_TARGET_ID_B = "431d06d1-0b3c-46db-a9f1-abe760b140a3"
+RUNTIME = latest_passed_runtime()
+RUN_ID = RUNTIME.run_id
+DB_PATH = RUNTIME.db_path
 
-DB_PATH = Path(__file__).resolve().parents[1] / "app" / "storage_test_runtime" / "lc_e2e" / "20260328_150207" / "lc.db"
+_bootstrap_session = make_session(RUNTIME)
+try:
+    TARGET_ID, ACCESSION = resolve_target_for_accession(_bootstrap_session, RUN_ID)
+    DEDUP_TARGET_ID_A, DEDUP_TARGET_ID_B = resolve_deduplicated_target_pair(_bootstrap_session, RUN_ID)
+finally:
+    _bootstrap_session.close()
 
 
 @pytest.fixture(scope="module")
@@ -43,9 +45,7 @@ def db_session():
     Fails closed if the DB file is missing or unreadable.
     """
     assert DB_PATH.exists(), f"Audited runtime DB not found at {DB_PATH}. Tests cannot run."
-    engine = create_engine(f"sqlite:///{DB_PATH}")
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    session = SessionLocal()
+    session = make_session(RUNTIME)
     yield session
     session.close()
 
@@ -229,7 +229,7 @@ def test_extracted_units_come_from_diagnostics_ordered_units(db_session, review_
     assert payload.reason_code is None
     assert payload.source_precision == "unit"
     assert payload.source_layer == "diagnostics_ordered_units"
-    assert payload.total_unit_count == len(ordered_units) == 543
+    assert payload.total_unit_count == len(ordered_units)
     assert len(payload.units) == len(ordered_units)
 
     expected = [(unit.get("page_number"), unit.get("text"), unit.get("start_char"), unit.get("end_char")) for unit in ordered_units[:5]]

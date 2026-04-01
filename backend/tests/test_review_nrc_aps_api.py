@@ -9,12 +9,15 @@ from fastapi.testclient import TestClient
 
 os.environ["DB_INIT_MODE"] = "none"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.api.deps import get_db
 from main import app
+from review_nrc_aps_runtime_fixture import discover_passed_runtimes
 
 
 RUN_ID = "d6be0fff-bbd7-468a-9b00-7103d5995494"
+MULTI_RUNTIME_RUN_IDS = {runtime.run_id for runtime in discover_passed_runtimes()[:3]}
 
 
 def override_get_db():
@@ -89,3 +92,12 @@ def test_api_file_details_and_preview():
     preview_response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/files/{summary_child['tree_id']}/preview")
     assert preview_response.status_code == 200
     assert '"schema_id": "aps.local_corpus_e2e_summary.v1"' in preview_response.json()["content"]
+
+
+def test_api_runs_lists_multiple_runtime_backed_candidates():
+    assert MULTI_RUNTIME_RUN_IDS, "Expected at least one passed local-corpus runtime for /runs validation"
+    response = client.get("/api/v1/review/nrc-aps/runs")
+    assert response.status_code == 200
+    data = response.json()
+    returned_run_ids = {item["run_id"] for item in data["runs"]}
+    assert MULTI_RUNTIME_RUN_IDS.issubset(returned_run_ids)

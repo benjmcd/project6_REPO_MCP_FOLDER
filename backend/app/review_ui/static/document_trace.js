@@ -12,6 +12,9 @@ const State = {
         indexed_chunks: null,
         extracted_units: null
     },
+    tabRequests: {
+        extracted_units: null
+    },
     viewer: {
         runId: null,
         targetId: null,
@@ -21,6 +24,7 @@ const State = {
         focusedPage: 1,
         totalPages: 0,
         scale: 1.0,
+        showBboxes: true,
         rendering: false,
         pageFocusCleanup: null
     }
@@ -104,6 +108,107 @@ function formatBbox(bbox) {
     }).join(', ');
 }
 
+function hasRenderableBbox(bbox) {
+    if (!Array.isArray(bbox) || bbox.length !== 4) return false;
+    return bbox.every(v => typeof v === 'number' && Number.isFinite(v));
+}
+
+function clearViewerOverlays() {
+    document.querySelectorAll('.pdf-page-overlay').forEach(o => o.replaceChildren());
+}
+
+function syncBboxToggleControl() {
+    const toggle = document.getElementById('bbox-visibility-toggle');
+    if (toggle) toggle.checked = State.viewer.showBboxes;
+}
+
+function setBboxVisibility(enabled) {
+    State.viewer.showBboxes = enabled !== false;
+    syncBboxToggleControl();
+    syncViewerOverlays();
+}
+
+function syncViewerOverlays() {
+    const extractedUnits = State.tabData.extracted_units;
+    const pageShells = document.querySelectorAll('.pdf-page-shell');
+    if (pageShells.length === 0) return;
+
+    if (!State.viewer.showBboxes || !extractedUnits || !extractedUnits.available || !Array.isArray(extractedUnits.units)) {
+        clearViewerOverlays();
+        return;
+    }
+
+    pageShells.forEach((pageShell) => {
+        const pageNum = Number.parseInt(pageShell.dataset.pageNum || '', 10);
+        const overlay = pageShell.querySelector('.pdf-page-overlay');
+        if (!Number.isInteger(pageNum) || !overlay) return;
+
+        const shellWidth = pageShell.clientWidth;
+        const shellHeight = pageShell.clientHeight;
+        const shellArea = shellWidth * shellHeight;
+        const pageUnits = extractedUnits.units.filter(u => u.page_number === pageNum && hasRenderableBbox(u.bbox));
+
+        overlay.replaceChildren();
+        pageUnits.forEach((unit) => {
+            let [x0, y0, x1, y1] = unit.bbox;
+            // Normalize inverted coordinates
+            if (x0 > x1) { const t = x0; x0 = x1; x1 = t; }
+            if (y0 > y1) { const t = y0; y0 = y1; y1 = t; }
+
+            const left = x0 * State.viewer.scale;
+            const top = y0 * State.viewer.scale;
+            const width = (x1 - x0) * State.viewer.scale;
+            const height = (y1 - y0) * State.viewer.scale;
+
+            // Suppress zero or near-zero extents
+            if (width < 1 || height < 1) return;
+
+            // Suppress page-coverage boxes
+            if (shellArea > 0 && (width * height) / shellArea >= 0.98) return;
+
+            const marker = document.createElement('div');
+            marker.className = 'pdf-bbox-marker';
+            marker.dataset.unitId = unit.unit_id || '';
+            marker.title = [unit.unit_kind || 'unit', formatBbox(unit.bbox) || ''].filter(Boolean).join(' | ');
+            marker.style.left = `${left}px`;
+            marker.style.top = `${top}px`;
+            marker.style.width = `${width}px`;
+            marker.style.height = `${height}px`;
+            overlay.appendChild(marker);
+        });
+    });
+}
+
+async function ensureExtractedUnitsLoaded(seq = _actionSeq) {
+    if (State.tabData.extracted_units !== null) {
+        syncViewerOverlays();
+        return State.tabData.extracted_units;
+    }
+
+    if (State.tabRequests.extracted_units) {
+        return State.tabRequests.extracted_units;
+    }
+
+    const requestedRunId = State.selectedRunId;
+    const requestedTargetId = State.selectedTargetId;
+    const requestPromise = API.fetchExtractedUnits(requestedRunId, requestedTargetId)
+        .then((data) => {
+            if (seq !== _actionSeq) return null;
+            if (State.selectedRunId !== requestedRunId || State.selectedTargetId !== requestedTargetId) return null;
+            State.tabData.extracted_units = data;
+            syncViewerOverlays();
+            return data;
+        })
+        .finally(() => {
+            if (State.tabRequests.extracted_units === requestPromise) {
+                State.tabRequests.extracted_units = null;
+            }
+        });
+
+    State.tabRequests.extracted_units = requestPromise;
+    return requestPromise;
+}
+
 function getFocusedSourcePage() {
     return Number.isInteger(State.viewer.focusedPage) && State.viewer.focusedPage > 0 ? State.viewer.focusedPage : 1;
 }
@@ -121,19 +226,19 @@ function setFocusedSourcePage(pageNum, { force = false } = {}) {
 }
 
 function detectFocusedPdfPage(container) {
-    const canvases = Array.from(container.querySelectorAll('canvas[data-page-num]'));
-    if (canvases.length === 0) return null;
+    const shells = Array.from(container.querySelectorAll('.pdf-page-shell[data-page-num]'));
+    if (shells.length === 0) return null;
 
     const containerRect = container.getBoundingClientRect();
     let bestPage = null;
     let bestVisibleHeight = -1;
     let bestTopDistance = Number.POSITIVE_INFINITY;
 
-    canvases.forEach((canvas) => {
-        const pageNum = Number.parseInt(canvas.dataset.pageNum || '', 10);
+    shells.forEach((shell) => {
+        const pageNum = Number.parseInt(shell.dataset.pageNum || '', 10);
         if (!Number.isInteger(pageNum)) return;
 
-        const rect = canvas.getBoundingClientRect();
+        const rect = shell.getBoundingClientRect();
         const visibleTop = Math.max(rect.top, containerRect.top);
         const visibleBottom = Math.min(rect.bottom, containerRect.bottom);
         const visibleHeight = Math.max(0, visibleBottom - visibleTop);
@@ -227,18 +332,24 @@ const PDFViewer = {
 
         // Build viewer DOM
         sourceContent.innerHTML = `
-            <div class="pdf-viewer-controls" id="pdf-controls">
-                <button id="pdf-prev" title="Previous page">&laquo; Prev</button>
-                <span class="page-info" id="pdf-page-info">-- / --</span>
-                <button id="pdf-next" title="Next page">Next &raquo;</button>
-                <span style="border-left:1px solid var(--border-color);height:20px;"></span>
-                <button id="pdf-zoom-out" title="Zoom out">&minus;</button>
-                <span class="zoom-info" id="pdf-zoom-info">100%</span>
-                <button id="pdf-zoom-in" title="Zoom in">&plus;</button>
-                <button id="pdf-zoom-fit" title="Fit width">Fit</button>
-            </div>
-            <div class="pdf-viewer-container" id="pdf-viewer-container">
-                <div class="placeholder">Loading PDF...</div>
+            <div class="pdf-viewer-stage">
+                <div class="pdf-viewer-controls" id="pdf-controls">
+                    <button id="pdf-prev" title="Previous page">&laquo; Prev</button>
+                    <span class="page-info" id="pdf-page-info">-- / --</span>
+                    <button id="pdf-next" title="Next page">Next &raquo;</button>
+                    <span style="border-left:1px solid var(--border-color);height:20px;"></span>
+                    <button id="pdf-zoom-out" title="Zoom out">&minus;</button>
+                    <span class="zoom-info" id="pdf-zoom-info">100%</span>
+                    <button id="pdf-zoom-in" title="Zoom in">&plus;</button>
+                    <button id="pdf-zoom-fit" title="Fit width">Fit</button>
+                </div>
+                <label class="bbox-toggle-float" for="bbox-visibility-toggle" aria-label="Toggle bounding box overlays">
+                    <input id="bbox-visibility-toggle" type="checkbox" checked aria-label="Show bounding box overlays">
+                    <span>BBoxes</span>
+                </label>
+                <div class="pdf-viewer-container" id="pdf-viewer-container">
+                    <div class="placeholder">Loading PDF...</div>
+                </div>
             </div>
         `;
 
@@ -248,6 +359,10 @@ const PDFViewer = {
         document.getElementById('pdf-zoom-in').addEventListener('click', () => PDFViewer.setZoom(State.viewer.scale + PDFViewer.ZOOM_STEP));
         document.getElementById('pdf-zoom-out').addEventListener('click', () => PDFViewer.setZoom(State.viewer.scale - PDFViewer.ZOOM_STEP));
         document.getElementById('pdf-zoom-fit').addEventListener('click', () => PDFViewer.fitWidth());
+        document.getElementById('bbox-visibility-toggle').addEventListener('change', (e) => {
+            setBboxVisibility(e.target.checked);
+        });
+        syncBboxToggleControl();
 
         // Fetch and render
         try {
@@ -303,16 +418,30 @@ const PDFViewer = {
         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
             const page = await pdfDoc.getPage(pageNum);
             const viewport = page.getViewport({ scale: State.viewer.scale });
+
+            const pageShell = document.createElement('div');
+            pageShell.className = 'pdf-page-shell';
+            pageShell.dataset.pageNum = pageNum;
+            pageShell.style.width = `${viewport.width}px`;
+            pageShell.style.height = `${viewport.height}px`;
+
             const canvas = document.createElement('canvas');
             canvas.className = 'pdf-page-canvas';
-            canvas.dataset.pageNum = pageNum;
             canvas.width = viewport.width;
             canvas.height = viewport.height;
-            container.appendChild(canvas);
+            pageShell.appendChild(canvas);
+
+            const overlay = document.createElement('div');
+            overlay.className = 'pdf-page-overlay';
+            overlay.setAttribute('aria-hidden', 'true');
+            pageShell.appendChild(overlay);
+
+            container.appendChild(pageShell);
 
             const ctx = canvas.getContext('2d');
             await page.render({ canvasContext: ctx, viewport }).promise;
         }
+        syncViewerOverlays();
         PDFViewer.scrollToPage(getFocusedSourcePage());
         attachViewerPageFocusTracking();
     },
@@ -320,8 +449,8 @@ const PDFViewer = {
     scrollToPage(pageNum) {
         const container = document.getElementById('pdf-viewer-container');
         if (!container) return;
-        const canvas = container.querySelector(`canvas[data-page-num="${pageNum}"]`);
-        if (canvas) canvas.scrollIntoView({ behavior: 'auto', block: 'start' });
+        const pageShell = container.querySelector(`.pdf-page-shell[data-page-num="${pageNum}"]`);
+        if (pageShell) pageShell.scrollIntoView({ behavior: 'auto', block: 'start' });
     },
 
     goToPage(pageNum) {
@@ -768,9 +897,8 @@ async function loadActiveTab() {
             State.tabData.indexed_chunks = data;
             renderIndexedChunksTab();
         } else if (tabId === 'extracted_units') {
-            const data = await API.fetchExtractedUnits(State.selectedRunId, State.selectedTargetId);
-            if (seq !== _actionSeq) return;
-            State.tabData.extracted_units = data;
+            const data = await ensureExtractedUnitsLoaded(seq);
+            if (seq !== _actionSeq || data === null) return;
             renderExtractedUnitsTab();
         }
     } catch (err) {
@@ -787,6 +915,7 @@ async function loadTargetDoc(targetId, seq) {
     
     // Clear tab state cache since target changed
     State.tabData = { diagnostics: null, normalized_text: null, indexed_chunks: null, extracted_units: null };
+    State.tabRequests.extracted_units = null;
 
     // Tear down old viewer for previous target
     PDFViewer.teardown();
@@ -808,6 +937,7 @@ async function loadTargetDoc(targetId, seq) {
         if (seq !== _actionSeq) return;
         State.manifest = manifest;
         renderTraceShell();
+        ensureExtractedUnitsLoaded(seq).catch(() => {});
         window.switchTab(State.activeTab, false);
     } catch (err) {
         if (seq !== _actionSeq) return;

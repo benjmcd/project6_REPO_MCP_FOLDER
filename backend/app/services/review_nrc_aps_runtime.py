@@ -2,14 +2,26 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from app.core.config import settings
+from app.services.nrc_aps_contract import parse_iso_datetime
 
 
 GOLDEN_RUN_ID = "d6be0fff-bbd7-468a-9b00-7103d5995494"
 PIPELINE_ID = "nrc_aps_review_v1"
+
+
+@dataclass(frozen=True)
+class ReviewRuntimeBinding:
+    run_id: str
+    review_root: Path
+    summary: dict[str, Any]
+    database_path: Path | None
+    storage_dir: Path | None
 
 
 def get_allowlisted_roots() -> list[Path]:
@@ -59,14 +71,113 @@ def load_summary(review_root: Path) -> dict[str, Any]:
     return json.loads(summary_path.read_text(encoding="utf-8"))
 
 
-def find_review_root_for_run(run_id: str) -> Path | None:
+def _candidate_database_paths(review_root: Path, summary: dict[str, Any]) -> list[Path]:
+    candidates: list[Path] = []
+
+    raw_database_path = str(summary.get("database_path") or "").strip()
+    if raw_database_path:
+        candidates.append(Path(raw_database_path))
+
+    raw_database_url = str(summary.get("database_url") or "").strip()
+    sqlite_prefix = "sqlite:///"
+    if raw_database_url.startswith(sqlite_prefix):
+        candidates.append(Path(raw_database_url[len(sqlite_prefix) :]))
+
+    candidates.append(review_root / "lc.db")
+
+    deduped: dict[str, Path] = {}
+    for candidate in candidates:
+        try:
+            deduped[str(candidate.resolve())] = candidate.resolve()
+        except OSError:
+            continue
+    return list(deduped.values())
+
+
+def resolve_runtime_database_path(review_root: Path, summary: dict[str, Any]) -> Path | None:
+    for candidate in _candidate_database_paths(review_root, summary):
+        if candidate.exists() and candidate.is_file():
+            return candidate
+    return None
+
+
+def _candidate_storage_dirs(review_root: Path, summary: dict[str, Any]) -> list[Path]:
+    candidates: list[Path] = []
+
+    raw_storage_dir = str(summary.get("storage_dir") or "").strip()
+    if raw_storage_dir:
+        candidates.append(Path(raw_storage_dir))
+
+    candidates.append(review_root / "storage")
+
+    deduped: dict[str, Path] = {}
+    for candidate in candidates:
+        try:
+            deduped[str(candidate.resolve())] = candidate.resolve()
+        except OSError:
+            continue
+    return list(deduped.values())
+
+
+def resolve_runtime_storage_dir(review_root: Path, summary: dict[str, Any]) -> Path | None:
+    for candidate in _candidate_storage_dirs(review_root, summary):
+        if candidate.exists() and candidate.is_dir():
+            return candidate
+    return None
+
+
+def _binding_sort_key(summary: dict[str, Any]) -> tuple[datetime, str]:
+    run_detail = summary.get("run_detail") or {}
+    for candidate in (
+        run_detail.get("completed_at"),
+        (summary.get("submission") or {}).get("submitted_at"),
+        summary.get("generated_at_utc"),
+    ):
+        parsed = parse_iso_datetime(candidate)
+        if parsed is not None:
+            return parsed, str(candidate or "")
+    return datetime.min, ""
+
+
+def discover_runtime_bindings() -> list[ReviewRuntimeBinding]:
+    bindings_by_run_id: dict[str, ReviewRuntimeBinding] = {}
     for root in discover_review_roots():
         try:
-            data = load_summary(root)
+            summary = load_summary(root)
         except (json.JSONDecodeError, OSError):
             continue
-        if data.get("run_id") == run_id:
-            return root
+
+        run_id = str(summary.get("run_id") or "").strip()
+        if not run_id:
+            continue
+
+        candidate = ReviewRuntimeBinding(
+            run_id=run_id,
+            review_root=root,
+            summary=summary,
+            database_path=resolve_runtime_database_path(root, summary),
+            storage_dir=resolve_runtime_storage_dir(root, summary),
+        )
+
+        existing = bindings_by_run_id.get(run_id)
+        if existing is None or _binding_sort_key(candidate.summary) > _binding_sort_key(existing.summary):
+            bindings_by_run_id[run_id] = candidate
+
+    return list(bindings_by_run_id.values())
+
+
+def find_review_root_for_run(run_id: str) -> Path | None:
+    binding = find_runtime_binding_for_run(run_id)
+    return binding.review_root if binding is not None else None
+
+
+def find_runtime_binding_for_run(run_id: str) -> ReviewRuntimeBinding | None:
+    requested_run_id = str(run_id or "").strip()
+    if not requested_run_id:
+        return None
+    for binding in discover_runtime_bindings():
+        if binding.run_id == requested_run_id:
+            return binding
     return None
 
 
