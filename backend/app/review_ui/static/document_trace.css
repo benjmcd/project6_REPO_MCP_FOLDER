@@ -163,6 +163,15 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
+}
+
+.pdf-viewer-stage {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
 }
 
 .pdf-viewer-controls {
@@ -203,6 +212,38 @@
     text-align: center;
 }
 
+.bbox-toggle-float {
+    position: absolute;
+    top: 50px;
+    right: 16px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #f5f7fa;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1;
+    user-select: none;
+    cursor: pointer;
+    backdrop-filter: blur(2px);
+}
+
+.bbox-toggle-float input {
+    width: 13px;
+    height: 13px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.bbox-toggle-float span {
+    white-space: nowrap;
+}
+
 .pdf-viewer-container {
     flex: 1;
     overflow: auto;
@@ -214,10 +255,31 @@
     gap: 12px;
 }
 
+.pdf-page-shell {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+    max-width: 100%;
+}
+
 .pdf-page-canvas {
+    display: block;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
     border: 1px solid var(--border-color);
     max-width: 100%;
+}
+
+.pdf-page-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.pdf-bbox-marker {
+    position: absolute;
+    border: 1px solid rgba(220, 38, 38, 0.85);
+    background: rgba(220, 38, 38, 0.06);
+    box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.12);
 }
 
 .source-meta-bar {

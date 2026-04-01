@@ -124,6 +124,30 @@ def test_document_trace_phase6_extract_units_markers_present() -> None:
     assert ".eu-provenance-bar" in css_content
     assert ".eu-precision-badge" in css_content
 
+def test_document_trace_bbox_overlay_identifiers_present() -> None:
+    """Verify bbox overlay identifiers exist in JS and CSS as presence/regression guards."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.css"
+
+    js_content = js_path.read_text(encoding="utf-8")
+    css_content = css_path.read_text(encoding="utf-8")
+
+    # JS: overlay functions and DOM identifiers
+    assert "syncViewerOverlays" in js_content
+    assert "ensureExtractedUnitsLoaded" in js_content
+    assert "pdf-page-shell" in js_content
+    assert "pdf-page-overlay" in js_content
+    assert "pdf-bbox-marker" in js_content
+    assert "bbox-visibility-toggle" in js_content
+    assert "showBboxes" in js_content
+
+    # CSS: overlay styles
+    assert ".pdf-page-shell" in css_content
+    assert ".pdf-page-overlay" in css_content
+    assert ".pdf-bbox-marker" in css_content
+    assert ".bbox-toggle-float" in css_content
+
+
 def test_document_trace_html_semantic_containers() -> None:
     """Verify the served page shell contains the semantic containers needed for source and viewer rendering."""
     response = client.get("/review/nrc-aps/document-trace")

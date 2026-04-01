@@ -1,0 +1,183 @@
+Implementation pass. Execute the attached bbox-overlay execution plan as the governing implementation spec.
+
+Repo:
+C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER
+
+Attach and obey:
+- C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\frontend_UI_plans\bbox_overlay_execution_plan.md
+
+This is an implementation / test / verification pass, not a planning pass.
+
+Primary execution objective:
+Implement bbox overlays for the NRC APS Document Trace PDF viewer on the current `main` baseline only, in a way that remains aligned with the repo's existing document-trace goals and phase structure:
+- preserve `/review/nrc-aps` as the system entry surface
+- preserve the separate two-pane `Document Trace` page
+- remain frontend-only
+- keep the work narrow
+- do not broaden into generic annotation, viewer refactoring, or backend contract work
+
+Project / milestone alignment:
+Treat this as a bounded Phase 6 / Phase 8 addendum to the existing document-trace implementation plans under:
+- `frontend_UI_plans/nrc_aps_document_trace_ui_spec.md`
+- `frontend_UI_plans/nrc_aps_document_trace_ui_data_contract.md`
+- `frontend_UI_plans/nrc_aps_document_trace_ui_implementation_blueprint.md`
+- `frontend_UI_plans/nrc_aps_document_trace_ui_validation_plan.md`
+- `frontend_UI_plans/nrc_aps_document_trace_ui_phase_partition_plan.md`
+
+Do not turn this into:
+- a Phase 5 viewer rewrite
+- a Phase 7 fallback expansion
+- a performance or virtualization pass
+- a generic future-proof overlay system
+
+Authority order:
+1. The attached execution plan
+2. The current live `main` baseline
+3. The existing document-trace planning docs listed above
+4. Live donor worktrees only as donor evidence:
+   - `zwl`
+   - `zli`
+   - `zag`
+   - `mro`
+5. Older synthesis or adjudication artifacts only as background, not authority
+
+Current known baseline from planning time:
+- `main` HEAD was `679eb59a0d2010b016bd53817c30ebf644abb61c`
+Revalidate that rather than assuming it is still current.
+
+Critical execution rules:
+- execute only against the current `main` baseline
+- do not merge, transplant, or cherry-pick donor branches or worktrees wholesale
+- respect repo-local instructions, including audit -> edit -> re-audit discipline
+- prefer the narrowest correct change
+- do not edit planning docs during this pass
+- do not create helper scripts, temp exports, or donor snapshot files inside the repo unless strictly required by a blocker and explicitly justified first
+- do not use donor screenshots, untracked screenshot directories, or other untracked donor artifacts as implementation authority or runtime dependency
+
+State Preservation Gate -1:
+Before Gate 0, preserve the exact current repo/worktree state and do not implement in the current dirty `main` checkout.
+
+You are explicitly authorized for this task to create exactly one fresh implementation branch and exactly one fresh implementation worktree outside the focused workspace if needed, using the planning-time recommended names unless they collide:
+- branch: `codex/bbox-overlay-main-implementation`
+- worktree path: `C:\Users\benny\OneDrive\Desktop\project6-wt-bbox-overlay-main`
+
+If either collides, choose the narrowest replacement and report it.
+Perform all implementation in that fresh worktree only.
+Treat the current `main` checkout and donor worktrees as read-only evidence surfaces.
+If this isolation cannot be established cleanly, stop and return a blocker report before coding.
+
+Before any edit, complete Gate 0 exactly as written in the attached plan.
+
+Host-donor / coordinate-donor posture:
+- treat `zwl` as the host-pattern donor only to the extent justified in the plan
+- treat `zli` as coordinate-seam donor only if Slice 03 verification proves scale mapping wrong
+- do not import:
+  - `zli`'s separate fetch path
+  - `zli`'s `bboxByPage` state
+  - `State.bboxOverlay`
+  - a second fetch path
+  - a second overlay cache
+  - backend or schema changes
+  - generic annotation abstractions
+  - broader viewer refactors
+
+File scope:
+Keep file scope to:
+- `backend/app/review_ui/static/document_trace.js`
+- `backend/app/review_ui/static/document_trace.css`
+- `backend/tests/test_review_nrc_aps_document_trace_page.py`
+
+Do not expand file scope unless a verified regression blocker forces it.
+If expansion is required:
+- identify the exact blocker
+- identify the exact additional file needed
+- justify why the expansion remains narrow
+- report that before editing the extra file
+
+Implementation contract:
+Honor the implementation contract exactly:
+- `State.tabData.extracted_units` is the sole source of truth for overlay content
+- `State.tabRequests.extracted_units` is the sole in-flight request holder
+- `State.viewer.showBboxes` is the only overlay-specific viewer state
+- derived per-page grouping must be recomputed during overlay sync and not stored persistently
+- do not introduce a second overlay state domain
+
+Overlay rendering eligibility:
+- render boxes only for units with:
+  - a valid numeric `page_number`
+  - the same page-number convention already used by current document-trace navigation and jump logic
+  - a valid renderable `bbox`
+- do not invent new page-number normalization rules in this pass
+
+DOM / geometry rules:
+- keep the page shell as the canonical page identity node
+- move scroll, jump, focus, and overlay lookup selectors to that shell consistently
+- ensure overlay sync runs only after the shell has final rendered viewport geometry for that render cycle
+- apply suppression only after final pixel mapping using:
+  `mapped_rect_area / page_shell_area >= 0.98`
+- page-shell area means rendered viewport width x height, not outer container or flex space
+
+Testing / verification rules:
+- static tests are only presence/regression guards and must not be treated as proof of behavioral correctness
+- in Slice 03, do not change architecture: keep scale mapping unless verification shows reproducible coordinate drift, then replace only the mapping seam with `viewport.convertToViewportRectangle()`
+- in Slice 04, harden and verify previously defined behavior rather than redefining semantics ad hoc
+
+At the start of work:
+1. Restate the execution plan in your own words.
+2. Identify any unresolved contradiction before coding.
+3. Complete State Preservation Gate -1.
+4. Complete Gate 0.
+5. Then proceed slice by slice.
+
+After each slice, report exactly:
+- files changed
+- what contract points were satisfied
+- what was intentionally deferred
+- whether any stop condition was triggered
+- whether the next slice is still justified
+
+Testing and verification:
+Run automated tests to the fullest extent justified by scope.
+At minimum, run targeted tests covering:
+- `backend/tests/test_review_nrc_aps_document_trace_page.py`
+- `backend/tests/test_review_nrc_aps_page.py`
+
+If scope expansion forces additional shared-file edits, expand the regression test set accordingly and explain why.
+
+Manual verification must include:
+- born-digital multi-page PDF
+- mixed-geometry or layout-complex PDF
+- rotated-page case if available
+- OCR-heavy noisy-bbox case if available
+- repeated zoom in and out
+- existing fit-width control on `main` only; do not introduce new zoom or view modes
+- page revisit
+- target switch during in-flight extracted-units load
+- absence, empty, and failure cases
+- overlay non-interference
+- theme legibility
+- a basic performance sanity check confirming no obvious DOM explosion or noticeable lag during repeated zoom rerenders
+
+If rotated or OCR-heavy cases are unavailable in the audited runtime, report them as unavailable and do not infer pass status for them.
+
+Behavioral correctness rule:
+If live browser or manual verification is unavailable in this session, do not change the coordinate seam.
+You may still implement earlier slices if justified, but stop and report a verification blocker before any Slice 03 mapping change.
+
+Final reporting:
+At the end, report:
+- final files changed
+- exact tests run and results
+- exact manual verification scenarios completed
+- which scenarios were unavailable
+- any remaining risks
+- whether the implementation remained fully within the attached plan
+- whether any deviation occurred and why
+
+If any step would require:
+- backend changes
+- broader viewer restructuring
+- a second overlay state, fetch, or cache path
+- or scope expansion beyond the attached plan
+
+stop and return a blocker report instead of improvising.
