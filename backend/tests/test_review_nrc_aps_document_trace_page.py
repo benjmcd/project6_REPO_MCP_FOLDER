@@ -168,3 +168,23 @@ def test_document_trace_vendor_pdfjs_assets_served() -> None:
     
     resp_worker = client.get("/review/nrc-aps/static/vendor/pdfjs/pdf.worker.min.mjs")
     assert resp_worker.status_code == 200
+
+
+def test_document_trace_js_renders_run_identity() -> None:
+    """Verify that the document trace JS populates run identity in the identity summary."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    # renderTraceShell must include a RUN identity row
+    assert '<strong>RUN</strong>' in js_content
+    # loadTargetDoc must clear stale identity with immediate run display
+    assert 'Immediately update run identity and clear stale document identity' in js_content
+
+
+def test_review_js_has_run_identity_update() -> None:
+    """Verify that the review JS updates the run identity bar on run selection."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "review.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert 'updateRunIdentity' in js_content
+    assert 'current-run-info' in js_content

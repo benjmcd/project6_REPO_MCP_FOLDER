@@ -541,8 +541,14 @@ function renderTraceShell() {
     
     const { identity, source } = State.manifest;
     
-    // 1. Identity Summary
+    // 1. Identity Summary — run + document identity
+    const runInfo = State.runs.find(r => r.run_id === State.selectedRunId);
+    const runStatus = runInfo ? runInfo.status || 'unknown' : 'unknown';
     elements.identitySummary.innerHTML = `
+        <div class="layout-entry">
+            <strong>RUN</strong>
+            <span>${escapeHtml(State.selectedRunId)} (${escapeHtml(runStatus)})</span>
+        </div>
         <div class="layout-entry">
             <strong>ACCESSION NUMBER</strong>
             <span>${escapeHtml(identity.accession_number || 'N/A')}</span>
@@ -919,6 +925,16 @@ async function loadTargetDoc(targetId, seq) {
 
     // Tear down old viewer for previous target
     PDFViewer.teardown();
+
+    // Immediately update run identity and clear stale document identity
+    const runInfo = State.runs.find(r => r.run_id === State.selectedRunId);
+    const runStatus = runInfo ? runInfo.status || 'unknown' : 'unknown';
+    elements.identitySummary.innerHTML = `
+        <div class="layout-entry">
+            <strong>RUN</strong>
+            <span>${escapeHtml(State.selectedRunId)} (${escapeHtml(runStatus)})</span>
+        </div>
+    `;
 
     updateUrlParams('replace');
 

@@ -25,3 +25,10 @@ def test_page_loads():
     assert ">Light<" in response.text
     assert ">Dark<" in response.text
     assert 'aria-label="Close details"' in response.text
+
+
+def test_page_has_run_identity_container():
+    response = client.get("/review/nrc-aps")
+    assert response.status_code == 200
+    assert 'id="current-run-info"' in response.text
+    assert 'run-identity-bar' in response.text
