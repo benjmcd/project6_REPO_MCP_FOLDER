@@ -12,6 +12,7 @@ const State = {
 
 const elements = {
     runSelector: document.getElementById('run-selector'),
+    currentRunInfo: document.getElementById('current-run-info'),
     themeSelector: document.getElementById('theme-selector'),
     viewPipeline: document.getElementById('view-pipeline'),
     viewRunLight: document.getElementById('view-run-light'),
@@ -561,10 +562,29 @@ async function loadDetails(type, id) {
     }
 }
 
+function updateRunIdentity(runId) {
+    const el = elements.currentRunInfo;
+    if (!el) return;
+    const runInfo = State.runs.find((run) => run.run_id === runId);
+    if (!runInfo) {
+        el.classList.add('hidden');
+        return;
+    }
+    const status = runInfo.status || 'unknown';
+    const counters = runInfo.summary_counters || {};
+    el.innerHTML =
+        `<div class="meta-item"><span class="meta-label">Run:</span> ${escapeHtml(runId)}</div>` +
+        `<div class="meta-item"><span class="meta-label">Status:</span> ${escapeHtml(status)}</div>` +
+        `<div class="meta-item"><span class="meta-label">Selected:</span> ${counters.selected_count ?? 0}</div>` +
+        `<div class="meta-item"><span class="meta-label">Failed:</span> ${counters.failed_count ?? 0}</div>`;
+    el.classList.remove('hidden');
+}
+
 async function loadRun(runId) {
     const seq = ++_runSeq;
     ++_detailsSeq;
     State.selectedRunId = runId;
+    updateRunIdentity(runId);
     State.selectedNodeId = null;
     State.selectedTreeId = null;
     State.openTreeIds = new Set();
