@@ -59,6 +59,8 @@ The files in this folder are reference material, not the live implementation sur
   - validation requirements for document-trace behavior, safety, and regression control
 - `nrc_aps_document_trace_ui_phase_partition_plan.md`
   - bounded Antigravity-oriented implementation phase partition for document trace
+- `nrc_aps_runtime_db_reconceptualization_and_next_steps.md`
+  - current-state reconceptualization of the NRC APS runtime DB model and the recommended next implementation order
 
 ## Archived Bake-Off Material
 
