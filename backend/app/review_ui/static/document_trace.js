@@ -101,6 +101,34 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
+function formatTraceContext(runId = State.selectedRunId, targetId = State.selectedTargetId) {
+    const safeRunId = escapeHtml(runId || 'unknown run');
+    if (targetId) {
+        return `target ${escapeHtml(targetId)} in run ${safeRunId}`;
+    }
+    return `run ${safeRunId}`;
+}
+
+function formatReasonCode(reasonCode) {
+    if (!reasonCode) return '';
+    return String(reasonCode)
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function formatUnavailableMessage(label, { runId, targetId, reasonCode } = {}) {
+    const context = formatTraceContext(runId, targetId);
+    const reason = formatReasonCode(reasonCode);
+    return `${escapeHtml(label)} is not available for ${context}.${reason ? ` Reason: ${escapeHtml(reason)}.` : ''}`;
+}
+
+function formatEmptyMessage(label, { runId, targetId, detail } = {}) {
+    const context = formatTraceContext(runId, targetId);
+    const suffix = detail ? ` ${escapeHtml(detail)}` : '';
+    return `No ${escapeHtml(label)} are available for ${context}.${suffix}`;
+}
+
 function formatBbox(bbox) {
     if (!Array.isArray(bbox) || bbox.length !== 4) return null;
     return bbox.map(value => {
@@ -323,11 +351,11 @@ const PDFViewer = {
         // Only init for PDFs with available blobs
         const sourceContent = document.getElementById('source-content');
         if (!blobRefPresent) {
-            sourceContent.innerHTML = `<div class="source-fallback"><span id="observed-source-status">Source blob not available.</span></div>`;
+            sourceContent.innerHTML = `<div class="source-fallback"><span id="observed-source-status">${formatUnavailableMessage('Source file', { runId, targetId })}</span></div>`;
             return;
         }
         if (viewerKind !== 'pdf') {
-            sourceContent.innerHTML = `<div class="source-fallback"><span id="observed-source-status">Viewer for '${escapeHtml(viewerKind || 'unknown')}' format arrives in a later phase.</span></div>`;
+            sourceContent.innerHTML = `<div class="source-fallback"><span id="observed-source-status">Source preview for ${escapeHtml(viewerKind || 'unknown')} content is not supported for ${formatTraceContext(runId, targetId)}.</span></div>`;
             return;
         }
 
@@ -373,7 +401,7 @@ const PDFViewer = {
             if (State.selectedRunId !== runId || State.selectedTargetId !== targetId) return;
             if (!resp.ok) {
                 const container = document.getElementById('pdf-viewer-container');
-                if (container) container.innerHTML = `<div class="source-fallback"><span id="observed-source-status">Source fetch failed: HTTP ${resp.status}</span></div>`;
+                if (container) container.innerHTML = `<div class="source-fallback"><span id="observed-source-status">Source fetch failed for ${formatTraceContext(runId, targetId)}: HTTP ${resp.status}.</span></div>`;
                 return;
             }
             const blob = await resp.blob();
@@ -388,7 +416,7 @@ const PDFViewer = {
             const pdfjsLib = window.pdfjsLib;
             if (!pdfjsLib) {
                 const container = document.getElementById('pdf-viewer-container');
-                if (container) container.innerHTML = `<div class="source-fallback">PDF viewer library not loaded.</div>`;
+                if (container) container.innerHTML = `<div class="source-fallback">PDF viewer library not loaded for ${formatTraceContext(runId, targetId)}.</div>`;
                 return;
             }
 
@@ -406,7 +434,7 @@ const PDFViewer = {
         } catch (err) {
             if (State.selectedRunId !== runId || State.selectedTargetId !== targetId) return;
             const container = document.getElementById('pdf-viewer-container');
-            if (container) container.innerHTML = `<div class="source-fallback"><span id="observed-source-status">Error loading PDF: ${escapeHtml(err.message)}</span></div>`;
+            if (container) container.innerHTML = `<div class="source-fallback"><span id="observed-source-status">Error loading PDF for ${formatTraceContext(runId, targetId)}: ${escapeHtml(err.message)}</span></div>`;
         }
     },
 
@@ -592,7 +620,7 @@ function renderTraceShell() {
         }
     } else {
         PDFViewer.teardown();
-        sourceContent.innerHTML = `<div class="source-fallback"><span id="observed-source-status">Source unavailable.</span></div>`;
+        sourceContent.innerHTML = `<div class="source-fallback"><span id="observed-source-status">${formatUnavailableMessage('Source metadata', { runId: State.selectedRunId, targetId: State.selectedTargetId })}</span></div>`;
     }
 }
 
@@ -638,7 +666,7 @@ function renderSummaryTab() {
 function renderDiagnosticsTab() {
     const data = State.tabData.diagnostics;
     if (!data || !data.available) {
-        elements.tabContentArea.innerHTML = `<div class="placeholder">Diagnostics unavailable.</div>`;
+        elements.tabContentArea.innerHTML = `<div class="placeholder">${formatUnavailableMessage('Diagnostics', { runId: data?.run_id, targetId: data?.target_id })}</div>`;
         return;
     }
 
@@ -676,7 +704,7 @@ function renderDiagnosticsTab() {
 function renderNormalizedTextTab() {
     const data = State.tabData.normalized_text;
     if (!data || !data.available) {
-        elements.tabContentArea.innerHTML = `<div class="placeholder">Normalized Text unavailable.</div>`;
+        elements.tabContentArea.innerHTML = `<div class="placeholder">${formatUnavailableMessage('Normalized Text', { runId: data?.run_id, targetId: data?.target_id })}</div>`;
         return;
     }
 
@@ -697,7 +725,7 @@ function renderNormalizedTextTab() {
 function renderIndexedChunksTab() {
     const data = State.tabData.indexed_chunks;
     if (!data || !data.available) {
-        elements.tabContentArea.innerHTML = `<div class="placeholder">Indexed Chunks unavailable.</div>`;
+        elements.tabContentArea.innerHTML = `<div class="placeholder">${formatUnavailableMessage('Indexed Chunks', { runId: data?.run_id, targetId: data?.target_id })}</div>`;
         return;
     }
 
@@ -734,7 +762,7 @@ function renderIndexedChunksTab() {
 function renderExtractedUnitsTab() {
     const data = State.tabData.extracted_units;
     if (!data) {
-        elements.tabContentArea.innerHTML = `<div class="placeholder">Extracted Units unavailable.</div>`;
+        elements.tabContentArea.innerHTML = `<div class="placeholder">${formatUnavailableMessage('Extracted Units')}</div>`;
         return;
     }
 
@@ -764,14 +792,14 @@ function renderExtractedUnitsTab() {
     `;
 
     if (!data.available) {
-        html += `<div class="placeholder eu-empty-state">Extracted Units unavailable: ${escapeHtml(data.reason_code || 'unknown')}</div>`;
+        html += `<div class="placeholder eu-empty-state">${formatUnavailableMessage('Extracted Units', { runId: data.run_id, targetId: data.target_id, reasonCode: data.reason_code })}</div>`;
         html += `</div>`;
         elements.tabContentArea.innerHTML = html;
         return;
     }
 
     if (hasPageScope && scopedUnits.length === 0) {
-        html += `<div class="placeholder eu-empty-state">No extracted units on page ${focusedPage}.</div>`;
+        html += `<div class="placeholder eu-empty-state">${formatEmptyMessage('extracted units', { runId: data.run_id, targetId: data.target_id, detail: `Page ${focusedPage}.` })}</div>`;
         html += `</div>`;
         elements.tabContentArea.innerHTML = html;
         return;

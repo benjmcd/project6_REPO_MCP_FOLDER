@@ -237,3 +237,24 @@ def test_document_trace_js_tab_error_includes_identity() -> None:
     js_content = js_path.read_text(encoding="utf-8")
 
     assert "Failed to load ${escapeHtml(tabId)} for ${escapeHtml(State.selectedTargetId)} in run ${escapeHtml(State.selectedRunId)}" in js_content
+
+
+def test_document_trace_js_source_and_tab_unavailable_states_are_identity_aware() -> None:
+    """Verify remaining source-pane and tab-level unavailable states include run/target context."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "function formatTraceContext(runId = State.selectedRunId, targetId = State.selectedTargetId)" in js_content
+    assert "function formatUnavailableMessage(label, { runId, targetId, reasonCode } = {})" in js_content
+    assert "function formatEmptyMessage(label, { runId, targetId, detail } = {})" in js_content
+
+    assert "Source file', { runId, targetId }" in js_content
+    assert "Source preview for ${escapeHtml(viewerKind || 'unknown')} content is not supported for ${formatTraceContext(runId, targetId)}." in js_content
+    assert "Source fetch failed for ${formatTraceContext(runId, targetId)}: HTTP ${resp.status}." in js_content
+    assert "Source metadata', { runId: State.selectedRunId, targetId: State.selectedTargetId }" in js_content
+
+    assert "Diagnostics', { runId: data?.run_id, targetId: data?.target_id }" in js_content
+    assert "Normalized Text', { runId: data?.run_id, targetId: data?.target_id }" in js_content
+    assert "Indexed Chunks', { runId: data?.run_id, targetId: data?.target_id }" in js_content
+    assert "Extracted Units', { runId: data.run_id, targetId: data.target_id, reasonCode: data.reason_code }" in js_content
+    assert "formatEmptyMessage('extracted units', { runId: data.run_id, targetId: data.target_id, detail: `Page ${focusedPage}.` })" in js_content
