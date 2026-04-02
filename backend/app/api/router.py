@@ -85,10 +85,16 @@ from app.services import nrc_aps_evidence_bundle
 from app.services.ingest import upload_csv_to_dataset
 from app.services.profiling import profile_dataset_version
 from app.services.transforms import apply_transformations, recommend_transformations
+from app.api import market_data_integration
+from app.api import market_data_validation
+from app.api import market_insight_ai
 from app.api import review_nrc_aps
 
 api_router = APIRouter()
 api_router.include_router(review_nrc_aps.router, prefix="/review/nrc-aps", tags=["review_nrc_aps"])
+api_router.include_router(market_data_integration.router)
+api_router.include_router(market_data_validation.router)
+api_router.include_router(market_insight_ai.router)
 
 
 def _connector_executor(connector_key: str):

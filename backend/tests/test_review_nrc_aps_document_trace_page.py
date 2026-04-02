@@ -63,6 +63,7 @@ from app.schemas.review_nrc_aps import (
     NrcApsReviewIndexedChunkItemOut,
     NrcApsReviewExtractedUnitsOut,
     NrcApsReviewExtractedUnitItemOut,
+    NrcApsReviewVisualArtifactItemOut,
 )
 
 def test_document_trace_js_binds_to_valid_schema() -> None:
@@ -82,6 +83,7 @@ def test_document_trace_js_binds_to_valid_schema() -> None:
     chunk_item_fields = set(re.findall(r"c\.([a-z_]+)", chunk_section))
     extracted_meta_fields = set(re.findall(r"data\.([a-z_]+)", extracted_section))
     extracted_item_fields = set(re.findall(r"unit\.([a-z_]+)", extracted_section))
+    visual_artifact_fields = set(re.findall(r"artifact\.([a-z_]+)", extracted_section))
     
     # Retrieve valid fields from the actual Pydantic schema
     valid_source_fields = set(NrcApsReviewTraceSourceOut.model_fields.keys())
@@ -92,6 +94,7 @@ def test_document_trace_js_binds_to_valid_schema() -> None:
     valid_chunk_item_fields = set(NrcApsReviewIndexedChunkItemOut.model_fields.keys())
     valid_extracted_meta_fields = set(NrcApsReviewExtractedUnitsOut.model_fields.keys())
     valid_extracted_item_fields = set(NrcApsReviewExtractedUnitItemOut.model_fields.keys())
+    valid_visual_artifact_fields = set(NrcApsReviewVisualArtifactItemOut.model_fields.keys())
     
     for field in source_fields:
         assert field in valid_source_fields, f"JS reads non-existent source field: {field}"
@@ -109,6 +112,8 @@ def test_document_trace_js_binds_to_valid_schema() -> None:
         assert field in valid_chunk_item_fields, f"JS reads non-existent chunk item field: {field}"
     for field in extracted_item_fields:
         assert field in valid_extracted_item_fields, f"JS reads non-existent extracted-unit item field: {field}"
+    for field in visual_artifact_fields:
+        assert field in valid_visual_artifact_fields, f"JS reads non-existent visual-artifact field: {field}"
 
 
 def test_document_trace_phase6_extract_units_markers_present() -> None:
@@ -123,6 +128,30 @@ def test_document_trace_phase6_extract_units_markers_present() -> None:
     assert "eu-page-badge" in js_content
     assert ".eu-provenance-bar" in css_content
     assert ".eu-precision-badge" in css_content
+
+def test_document_trace_bbox_overlay_identifiers_present() -> None:
+    """Verify bbox overlay identifiers exist in JS and CSS as presence/regression guards."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.css"
+
+    js_content = js_path.read_text(encoding="utf-8")
+    css_content = css_path.read_text(encoding="utf-8")
+
+    # JS: overlay functions and DOM identifiers
+    assert "syncViewerOverlays" in js_content
+    assert "ensureExtractedUnitsLoaded" in js_content
+    assert "pdf-page-shell" in js_content
+    assert "pdf-page-overlay" in js_content
+    assert "pdf-bbox-marker" in js_content
+    assert "bbox-visibility-toggle" in js_content
+    assert "showBboxes" in js_content
+
+    # CSS: overlay styles
+    assert ".pdf-page-shell" in css_content
+    assert ".pdf-page-overlay" in css_content
+    assert ".pdf-bbox-marker" in css_content
+    assert ".bbox-toggle-float" in css_content
+
 
 def test_document_trace_html_semantic_containers() -> None:
     """Verify the served page shell contains the semantic containers needed for source and viewer rendering."""
@@ -144,3 +173,119 @@ def test_document_trace_vendor_pdfjs_assets_served() -> None:
     
     resp_worker = client.get("/review/nrc-aps/static/vendor/pdfjs/pdf.worker.min.mjs")
     assert resp_worker.status_code == 200
+
+
+def test_document_trace_js_renders_run_identity() -> None:
+    """Verify that the document trace JS populates run identity in the identity summary."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    # renderTraceShell must include a RUN identity row
+    assert '<strong>RUN</strong>' in js_content
+    # loadTargetDoc must clear stale identity with immediate run display
+    assert 'Immediately update run identity and clear stale document identity' in js_content
+
+
+def test_review_js_has_run_identity_update() -> None:
+    """Verify that the review JS updates the run identity bar on run selection."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "review.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert 'updateRunIdentity' in js_content
+    assert 'current-run-info' in js_content
+
+
+def test_document_trace_js_identity_aware_shell_errors() -> None:
+    """Verify document_trace.js shell-level error messages include run/target identity."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    # disabledTitle element reference
+    assert "disabledTitle" in js_content
+
+    # renderShellError accepts a title parameter
+    assert "function renderShellError(message, title)" in js_content
+
+    # Shell-level messages include run identity
+    assert "No document selected for run" in js_content
+    assert "is not available in run" in js_content
+    assert "No documents available in run" in js_content
+    assert "Failed to fetch documents for run" in js_content
+    assert "Failed to load trace for" in js_content
+
+    # State-type-specific overlay titles
+    assert "'No Document Selected'" in js_content
+    assert "'Document Not Available'" in js_content
+    assert "'No Documents Available'" in js_content
+    assert "'Error Loading Trace'" in js_content
+    assert "'Error Loading Documents'" in js_content
+
+
+def test_document_trace_js_non_reviewable_run_guard() -> None:
+    """Verify document_trace.js checks run reviewability before fetching documents."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    # Non-reviewable guard in loadRun
+    assert "!runInfo.reviewable" in js_content
+    assert "'Run Not Reviewable'" in js_content
+    assert "is not reviewable" in js_content
+
+    # Non-reviewable runs disabled in selector
+    assert "disabled_reason_code" in js_content
+    assert "not reviewable" in js_content
+
+
+def test_document_trace_js_tab_error_includes_identity() -> None:
+    """Verify tab-level fetch errors include run and target identity."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "Failed to load ${escapeHtml(tabId)} for ${escapeHtml(State.selectedTargetId)} in run ${escapeHtml(State.selectedRunId)}" in js_content
+
+
+def test_document_trace_js_source_and_tab_unavailable_states_are_identity_aware() -> None:
+    """Verify remaining source-pane and tab-level unavailable states include run/target context."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "function formatTraceContext(runId = State.selectedRunId, targetId = State.selectedTargetId)" in js_content
+    assert "function formatUnavailableMessage(label, { runId, targetId, reasonCode } = {})" in js_content
+    assert "function formatEmptyMessage(label, { runId, targetId, detail } = {})" in js_content
+
+    assert "Source file', { runId, targetId }" in js_content
+    assert "Source preview for ${escapeHtml(viewerKind || 'unknown')} content is not supported for ${formatTraceContext(runId, targetId)}." in js_content
+    assert "Source fetch failed for ${formatTraceContext(runId, targetId)}: HTTP ${resp.status}." in js_content
+    assert "Source metadata', { runId: State.selectedRunId, targetId: State.selectedTargetId }" in js_content
+
+    assert "Diagnostics', { runId: data?.run_id, targetId: data?.target_id }" in js_content
+    assert "Normalized Text', { runId: data?.run_id, targetId: data?.target_id }" in js_content
+    assert "Indexed Chunks', { runId: data?.run_id, targetId: data?.target_id }" in js_content
+    assert "Extracted Units', { runId: data.run_id, targetId: data.target_id, reasonCode: data.reason_code }" in js_content
+    assert "formatEmptyMessage('extracted units', { runId: data.run_id, targetId: data.target_id, detail: `Page ${focusedPage}.` })" in js_content
+
+
+def test_document_trace_js_visual_summary_and_diagnostics_counters_present() -> None:
+    """Verify the trace UI renders visual counters and diagnostics breakdown sections."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "VISUAL PAGES" in js_content
+    assert "VISUAL-DERIVED UNITS" in js_content
+    assert "Visual Derivatives:" in js_content
+    assert "Unit Kind Breakdown" in js_content
+    assert "Object.entries(data.unit_kind_counts || {})" in js_content
+
+
+def test_document_trace_js_visual_artifact_extract_units_rendering_present() -> None:
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.css"
+    js_content = js_path.read_text(encoding="utf-8")
+    css_content = css_path.read_text(encoding="utf-8")
+
+    assert "Visual Artifacts on This Page" in js_content
+    assert "data.visual_artifacts" in js_content
+    assert "eu-visual-preview" in js_content
+    assert "artifact.endpoint" in js_content
+    assert ".eu-visual-preview" in css_content
+    assert ".eu-visual-card" in css_content

@@ -9,39 +9,135 @@ with other test modules that override get_db at module scope on the shared app s
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 os.environ["DB_INIT_MODE"] = "none"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.api.deps import get_db
+from app.models.models import ApsContentLinkage, ApsContentDocument
 from app.schemas.review_nrc_aps import NrcApsReviewExtractedUnitsOut
 from main import app
+from review_nrc_aps_runtime_fixture import (
+    discover_passed_runtimes,
+    latest_passed_runtime,
+    make_session,
+    resolve_deduplicated_target_pair,
+    resolve_target_for_accession,
+)
 
-RUN_ID = "5cd56147-4b5b-4278-8b32-79b9b1b34db5"
-TARGET_ID = "fd00ab2b-aa52-4c2a-9899-0c36786f8870"
-ACCESSION = "LOCALAPS00001"
-DEDUP_TARGET_ID_A = "21c92e61-9316-4356-b171-d1b22a011bc8"
-DEDUP_TARGET_ID_B = "431d06d1-0b3c-46db-a9f1-abe760b140a3"
+RUNTIME = latest_passed_runtime()
+RUN_ID = RUNTIME.run_id
+DB_PATH = RUNTIME.db_path
+MULTI_RUNTIME_RUN_IDS = [runtime.run_id for runtime in discover_passed_runtimes()[:3]]
+TEXT_LIKE_UNIT_KINDS = {
+    "text_block",
+    "paragraph",
+    "ocr_text",
+    "pdf_native_span",
+    "pdf_text_block",
+    "pdf_paragraph",
+}
 
-DB_PATH = Path(__file__).resolve().parents[1] / "app" / "storage_test_runtime" / "lc_e2e" / "20260328_150207" / "lc.db"
+_bootstrap_session = make_session(RUNTIME)
+try:
+    TARGET_ID, ACCESSION = resolve_target_for_accession(_bootstrap_session, RUN_ID)
+    VISUAL_TARGET_ID, VISUAL_ACCESSION = resolve_target_for_accession(_bootstrap_session, RUN_ID, accession_number="LOCALAPS00020")
+    DEDUP_TARGET_ID_A, DEDUP_TARGET_ID_B = resolve_deduplicated_target_pair(_bootstrap_session, RUN_ID)
 
-# Fail closed: if the audited runtime DB is missing, fail immediately at import time
-assert DB_PATH.exists(), f"Audited runtime DB not found at {DB_PATH}. API tests cannot run."
+    pinned_linkage = (
+        _bootstrap_session.query(ApsContentLinkage)
+        .filter(
+            ApsContentLinkage.run_id == RUN_ID,
+            ApsContentLinkage.target_id == TARGET_ID,
+        )
+        .first()
+    )
+    assert pinned_linkage is not None and pinned_linkage.diagnostics_ref
+    ordered_units = json.loads(Path(pinned_linkage.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
+    EXPECTED_TOTAL_UNIT_COUNT = len(ordered_units)
+    EXPECTED_PAGE3_UNIT_COUNT = len([unit for unit in ordered_units if unit.get("page_number") == 3])
+    EXPECTED_UNIT_KIND_COUNTS = {}
+    for unit in ordered_units:
+        unit_kind = str(unit.get("unit_kind") or "").strip()
+        if not unit_kind:
+            continue
+        EXPECTED_UNIT_KIND_COUNTS[unit_kind] = EXPECTED_UNIT_KIND_COUNTS.get(unit_kind, 0) + 1
+    EXPECTED_UNIT_KIND_COUNTS = dict(sorted(EXPECTED_UNIT_KIND_COUNTS.items()))
+    EXPECTED_VISUAL_DERIVATIVE_UNIT_COUNT = sum(
+        count for unit_kind, count in EXPECTED_UNIT_KIND_COUNTS.items() if unit_kind not in TEXT_LIKE_UNIT_KINDS
+    )
+    pinned_doc = (
+        _bootstrap_session.query(ApsContentDocument)
+        .filter(ApsContentDocument.content_id == pinned_linkage.content_id)
+        .first()
+    )
+    assert pinned_doc is not None
+    EXPECTED_VISUAL_PAGE_REF_COUNT = len(json.loads(pinned_doc.visual_page_refs_json or "[]"))
+
+    visual_linkage = (
+        _bootstrap_session.query(ApsContentLinkage)
+        .filter(
+            ApsContentLinkage.run_id == RUN_ID,
+            ApsContentLinkage.target_id == VISUAL_TARGET_ID,
+        )
+        .first()
+    )
+    assert visual_linkage is not None and visual_linkage.diagnostics_ref
+    visual_ordered_units = json.loads(Path(visual_linkage.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
+    visual_doc = (
+        _bootstrap_session.query(ApsContentDocument)
+        .filter(ApsContentDocument.content_id == visual_linkage.content_id)
+        .first()
+    )
+    assert visual_doc is not None
+    EXPECTED_VISUAL_ARTIFACT_REFS = json.loads(visual_doc.visual_page_refs_json or "[]")
+    EXPECTED_VISUAL_ARTIFACT_PAGE2_COUNT = len([item for item in EXPECTED_VISUAL_ARTIFACT_REFS if item.get("page_number") == 2])
+    EXPECTED_VISUAL_ARTIFACT_PAGE2_SHA256 = str(EXPECTED_VISUAL_ARTIFACT_REFS[0].get("visual_artifact_sha256"))
+    EXPECTED_VISUAL_UNIT_PAGE3_KINDS = sorted({
+        str(unit.get("unit_kind") or "").strip()
+        for unit in visual_ordered_units
+        if unit.get("page_number") == 3 and str(unit.get("unit_kind") or "").strip() in {"pdf_table", "ocr_image_supplement"}
+    })
+
+    dedup_linkage_a = (
+        _bootstrap_session.query(ApsContentLinkage)
+        .filter(
+            ApsContentLinkage.run_id == RUN_ID,
+            ApsContentLinkage.target_id == DEDUP_TARGET_ID_A,
+        )
+        .first()
+    )
+    dedup_linkage_b = (
+        _bootstrap_session.query(ApsContentLinkage)
+        .filter(
+            ApsContentLinkage.run_id == RUN_ID,
+            ApsContentLinkage.target_id == DEDUP_TARGET_ID_B,
+        )
+        .first()
+    )
+    assert dedup_linkage_a is not None and dedup_linkage_a.diagnostics_ref
+    assert dedup_linkage_b is not None and dedup_linkage_b.diagnostics_ref
+    EXPECTED_DEDUP_UNIT_COUNT_A = len(
+        json.loads(Path(dedup_linkage_a.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
+    )
+    EXPECTED_DEDUP_UNIT_COUNT_B = len(
+        json.loads(Path(dedup_linkage_b.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
+    )
+finally:
+    _bootstrap_session.close()
 
 
 def _override_get_db():
     """Yield a real SQLAlchemy session against the audited runtime DB."""
-    engine = create_engine(f"sqlite:///{DB_PATH}")
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    session = SessionLocal()
+    session = make_session(RUNTIME)
     try:
         yield session
     finally:
@@ -117,6 +213,11 @@ def test_api_trace_manifest_content():
     assert data["identity"]["accession_number"] == ACCESSION
     assert data["identity"]["document_type"] == "Exemption from NRC Requirements"
     assert "sync_capabilities" in data
+    assert data["summary"]["visual_page_ref_count"] == EXPECTED_VISUAL_PAGE_REF_COUNT
+    assert data["summary"]["visual_derivative_unit_count"] == EXPECTED_VISUAL_DERIVATIVE_UNIT_COUNT
+    assert data["trace_completeness"]["has_visual_derivatives"] is (
+        EXPECTED_VISUAL_PAGE_REF_COUNT > 0 or EXPECTED_VISUAL_DERIVATIVE_UNIT_COUNT > 0
+    )
 
 
 def test_api_trace_manifest_source_endpoint_truthfulness():
@@ -172,6 +273,9 @@ def test_api_document_diagnostics_payload():
     data = response.json()
     assert data["target_id"] == TARGET_ID
     assert "available" in data
+    assert data["visual_page_ref_count"] == EXPECTED_VISUAL_PAGE_REF_COUNT
+    assert data["visual_derivative_unit_count"] == EXPECTED_VISUAL_DERIVATIVE_UNIT_COUNT
+    assert data["unit_kind_counts"] == EXPECTED_UNIT_KIND_COUNTS
 
 
 def test_api_document_normalized_text_payload():
@@ -230,8 +334,8 @@ def test_api_extracted_units_happy_path():
     assert data["reason_code"] is None
     assert data["source_precision"] == "unit"
     assert data["source_layer"] == "diagnostics_ordered_units"
-    assert data["total_unit_count"] == 543
-    assert len(data["units"]) == 543
+    assert data["total_unit_count"] == EXPECTED_TOTAL_UNIT_COUNT
+    assert len(data["units"]) == EXPECTED_TOTAL_UNIT_COUNT
 
 
 def test_api_extracted_units_page_filter():
@@ -240,7 +344,7 @@ def test_api_extracted_units_page_filter():
     data = response.json()
     assert data["available"] is True
     assert data["page_number"] == 3
-    assert len(data["units"]) == 29
+    assert len(data["units"]) == EXPECTED_PAGE3_UNIT_COUNT
     assert all(unit["page_number"] == 3 for unit in data["units"])
 
 
@@ -260,7 +364,7 @@ def test_api_extracted_units_unknown_target_404():
 def test_api_extracted_units_known_target_missing_diagnostics_returns_explicit_missingness(monkeypatch):
     monkeypatch.setattr(
         "app.api.review_nrc_aps.compose_extracted_units_payload",
-        lambda db, run_id, target_id, root, page_number=None: NrcApsReviewExtractedUnitsOut(
+        lambda db, run_id, target_id, root, storage_root=None, page_number=None: NrcApsReviewExtractedUnitsOut(
             run_id=run_id,
             target_id=target_id,
             available=False,
@@ -291,6 +395,36 @@ def test_api_extracted_units_no_retrieval_dependency():
     assert trace_data["trace_completeness"]["retrieval_available"] is False
 
 
+def test_api_extracted_units_expose_visual_artifacts_for_positive_document():
+    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{VISUAL_TARGET_ID}/extracted-units?page_number=2")
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload["visual_artifacts"]) == EXPECTED_VISUAL_ARTIFACT_PAGE2_COUNT
+    artifact = payload["visual_artifacts"][0]
+    assert artifact["page_number"] == 2
+    assert artifact["status"] == "preserved"
+    assert artifact["format"] == "png"
+    assert artifact["media_type"] == "image/png"
+    assert artifact["sha256"] == EXPECTED_VISUAL_ARTIFACT_PAGE2_SHA256
+    assert artifact["endpoint"].endswith(f"/visual-artifacts/{artifact['artifact_id']}")
+
+
+def test_api_extracted_units_page3_preserves_visual_derived_unit_kinds():
+    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{VISUAL_TARGET_ID}/extracted-units?page_number=3")
+    assert response.status_code == 200
+    payload = response.json()
+    actual_kinds = sorted({unit["unit_kind"] for unit in payload["units"] if unit.get("unit_kind") in {"pdf_table", "ocr_image_supplement"}})
+    assert actual_kinds == EXPECTED_VISUAL_UNIT_PAGE3_KINDS
+
+
+def test_api_visual_artifact_stream_success():
+    extracted_units = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{VISUAL_TARGET_ID}/extracted-units?page_number=2").json()
+    artifact = extracted_units["visual_artifacts"][0]
+    response = client.get(artifact["endpoint"])
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("image/png")
+
+
 def test_api_extracted_units_remain_target_scoped_for_deduplicated_content():
     response_a = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{DEDUP_TARGET_ID_A}/extracted-units")
     response_b = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{DEDUP_TARGET_ID_B}/extracted-units")
@@ -302,7 +436,9 @@ def test_api_extracted_units_remain_target_scoped_for_deduplicated_content():
     data_b = response_b.json()
     assert data_a["target_id"] == DEDUP_TARGET_ID_A
     assert data_b["target_id"] == DEDUP_TARGET_ID_B
-    assert data_a["total_unit_count"] == data_b["total_unit_count"] == 8446
+    assert data_a["total_unit_count"] == EXPECTED_DEDUP_UNIT_COUNT_A
+    assert data_b["total_unit_count"] == EXPECTED_DEDUP_UNIT_COUNT_B
+    assert EXPECTED_DEDUP_UNIT_COUNT_A == EXPECTED_DEDUP_UNIT_COUNT_B
     assert data_a["units"][0]["text"] == data_b["units"][0]["text"]
     assert data_a["units"][0]["unit_id"] != data_b["units"][0]["unit_id"]
     
@@ -317,3 +453,22 @@ def test_api_existing_overview_not_regressed():
     data = response.json()
     assert "tree" in data
     assert "run_projection" in data
+
+
+@pytest.mark.parametrize("run_id", MULTI_RUNTIME_RUN_IDS)
+def test_api_document_trace_routes_switch_across_multiple_runtime_dbs(run_id: str):
+    selector_response = client.get(f"/api/v1/review/nrc-aps/runs/{run_id}/documents")
+    assert selector_response.status_code == 200
+
+    selector_data = selector_response.json()
+    assert selector_data["run_id"] == run_id
+    assert selector_data["documents"], f"Expected non-empty document selector for run {run_id}"
+
+    target_id = selector_data["default_target_id"] or selector_data["documents"][0]["target_id"]
+    assert target_id
+
+    trace_response = client.get(f"/api/v1/review/nrc-aps/runs/{run_id}/documents/{target_id}/trace")
+    assert trace_response.status_code == 200
+    trace_data = trace_response.json()
+    assert trace_data["run_id"] == run_id
+    assert trace_data["target_id"] == target_id
