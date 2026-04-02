@@ -637,6 +637,8 @@ function renderSummaryTab() {
             <div class="layout-entry card-stat"><strong>PAGE COUNT</strong><br><span>${summary.page_count}</span></div>
             <div class="layout-entry card-stat"><strong>UNIT COUNT</strong><br><span>${summary.ordered_unit_count}</span></div>
             <div class="layout-entry card-stat"><strong>CHUNK COUNT</strong><br><span>${summary.indexed_chunk_count}</span></div>
+            <div class="layout-entry card-stat"><strong>VISUAL PAGES</strong><br><span>${summary.visual_page_ref_count}</span></div>
+            <div class="layout-entry card-stat"><strong>VISUAL-DERIVED UNITS</strong><br><span>${summary.visual_derivative_unit_count}</span></div>
         </div>
     `;
 
@@ -645,6 +647,7 @@ function renderSummaryTab() {
     html += `<li>Diagnostics: ${trace_completeness.has_diagnostics ? 'Yes' : 'No'}</li>`;
     html += `<li>Normalized Text: ${trace_completeness.has_normalized_text ? 'Yes' : 'No'}</li>`;
     html += `<li>Indexed Chunks: ${trace_completeness.has_indexed_chunks ? 'Yes' : 'No'}</li>`;
+    html += `<li>Visual Derivatives: ${trace_completeness.has_visual_derivatives ? 'Yes' : 'No'}</li>`;
     html += `</ul>`;
 
     html += `<h3>Sync Capabilities</h3><ul style="margin-bottom: 20px">`;
@@ -678,8 +681,19 @@ function renderDiagnosticsTab() {
             <div class="layout-entry card-stat"><strong>QUALITY STATUS</strong><br><span>${escapeHtml(data.quality_status || 'Unknown')}</span></div>
             <div class="layout-entry card-stat"><strong>PAGE COUNT</strong><br><span>${data.page_count}</span></div>
             <div class="layout-entry card-stat"><strong>UNIT COUNT</strong><br><span>${data.ordered_unit_count}</span></div>
+            <div class="layout-entry card-stat"><strong>VISUAL PAGES</strong><br><span>${data.visual_page_ref_count}</span></div>
+            <div class="layout-entry card-stat"><strong>VISUAL-DERIVED UNITS</strong><br><span>${data.visual_derivative_unit_count}</span></div>
         </div>
     `;
+
+    const unitKindEntries = Object.entries(data.unit_kind_counts || {});
+    if (unitKindEntries.length > 0) {
+        html += `<h3>Unit Kind Breakdown</h3><ul style="margin-bottom: 20px">`;
+        unitKindEntries.forEach(([unitKind, count]) => {
+            html += `<li>${escapeHtml(unitKind)}: ${count}</li>`;
+        });
+        html += `</ul>`;
+    }
 
     if (data.extractor_metadata) {
         html += `<h3>Extractor Metadata</h3><div class="text-scroll-block"><pre>${escapeHtml(JSON.stringify(data.extractor_metadata, null, 2))}</pre></div>`;

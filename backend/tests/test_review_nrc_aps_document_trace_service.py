@@ -29,6 +29,14 @@ from review_nrc_aps_runtime_fixture import latest_passed_runtime, make_session, 
 RUNTIME = latest_passed_runtime()
 RUN_ID = RUNTIME.run_id
 DB_PATH = RUNTIME.db_path
+TEXT_LIKE_UNIT_KINDS = {
+    "text_block",
+    "paragraph",
+    "ocr_text",
+    "pdf_native_span",
+    "pdf_text_block",
+    "pdf_paragraph",
+}
 
 _bootstrap_session = make_session(RUNTIME)
 try:
@@ -67,6 +75,29 @@ def _load_ordered_units(db_session):
     assert linkage.diagnostics_ref
     data = json.loads(Path(linkage.diagnostics_ref).read_text(encoding="utf-8"))
     return data.get("ordered_units") or []
+
+
+def _load_visual_page_refs(db_session):
+    linkage = db_session.query(ApsContentLinkage).filter(
+        ApsContentLinkage.run_id == RUN_ID,
+        ApsContentLinkage.target_id == TARGET_ID,
+    ).first()
+    assert linkage is not None
+    doc = db_session.query(trace_service.ApsContentDocument).filter(
+        trace_service.ApsContentDocument.content_id == linkage.content_id,
+    ).first()
+    assert doc is not None
+    raw = doc.visual_page_refs_json or "[]"
+    return json.loads(raw)
+
+
+def _expected_visual_derivative_unit_count(ordered_units):
+    return sum(
+        1
+        for unit in ordered_units
+        if str(unit.get("unit_kind") or "").strip()
+        and str(unit.get("unit_kind") or "").strip() not in TEXT_LIKE_UNIT_KINDS
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +194,18 @@ def test_manifest_diagnostics_unit_count(db_session, review_root):
         assert manifest.summary.ordered_unit_count >= 0
 
 
+def test_manifest_exposes_visual_derivative_counts(db_session, review_root):
+    manifest = compose_trace_manifest(db_session, RUN_ID, TARGET_ID, review_root)
+    ordered_units = _load_ordered_units(db_session)
+    visual_page_refs = _load_visual_page_refs(db_session)
+
+    assert manifest.summary.visual_page_ref_count == len(visual_page_refs)
+    assert manifest.summary.visual_derivative_unit_count == _expected_visual_derivative_unit_count(ordered_units)
+    assert manifest.trace_completeness.has_visual_derivatives is (
+        manifest.summary.visual_page_ref_count > 0 or manifest.summary.visual_derivative_unit_count > 0
+    )
+
+
 def test_manifest_exposes_source_endpoint_truthfully(db_session, review_root):
     """source_endpoint must be non-null in Phase 2 if the source blob is present."""
     manifest = compose_trace_manifest(db_session, RUN_ID, TARGET_ID, review_root)
@@ -235,6 +278,24 @@ def test_extracted_units_come_from_diagnostics_ordered_units(db_session, review_
     expected = [(unit.get("page_number"), unit.get("text"), unit.get("start_char"), unit.get("end_char")) for unit in ordered_units[:5]]
     actual = [(unit.page_number, unit.text, unit.start_char, unit.end_char) for unit in payload.units[:5]]
     assert actual == expected
+
+
+def test_diagnostics_payload_exposes_visual_counts_and_unit_breakdown(db_session, review_root):
+    payload = trace_service.compose_diagnostics_payload(db_session, RUN_ID, TARGET_ID, review_root)
+    ordered_units = _load_ordered_units(db_session)
+    visual_page_refs = _load_visual_page_refs(db_session)
+
+    expected_unit_kind_counts = {}
+    for unit in ordered_units:
+        unit_kind = str(unit.get("unit_kind") or "").strip()
+        if not unit_kind:
+            continue
+        expected_unit_kind_counts[unit_kind] = expected_unit_kind_counts.get(unit_kind, 0) + 1
+
+    assert payload.available is True
+    assert payload.visual_page_ref_count == len(visual_page_refs)
+    assert payload.visual_derivative_unit_count == _expected_visual_derivative_unit_count(ordered_units)
+    assert payload.unit_kind_counts == dict(sorted(expected_unit_kind_counts.items()))
 
 
 def test_extracted_units_ordering_matches_diagnostics_order(db_session, review_root):

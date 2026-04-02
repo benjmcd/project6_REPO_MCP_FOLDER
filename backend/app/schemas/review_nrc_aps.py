@@ -205,6 +205,8 @@ class NrcApsReviewTraceSummaryOut(BaseModel):
     page_count: int = 0
     ordered_unit_count: int = 0
     indexed_chunk_count: int = 0
+    visual_page_ref_count: int = 0
+    visual_derivative_unit_count: int = 0
 
 
 class NrcApsReviewTraceCompletenessOut(BaseModel):
@@ -254,6 +256,9 @@ class NrcApsReviewDiagnosticsOut(BaseModel):
     document_class: str | None = None
     page_count: int = 0
     ordered_unit_count: int = 0
+    visual_page_ref_count: int = 0
+    visual_derivative_unit_count: int = 0
+    unit_kind_counts: dict[str, int] = Field(default_factory=dict)
     warnings: list[str] = Field(default_factory=list)
     degradation_codes: list[str] = Field(default_factory=list)
     extractor_metadata: dict[str, Any] | None = None

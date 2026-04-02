@@ -1,5 +1,6 @@
 import hashlib
 import json
+from collections import Counter
 from pathlib import Path
 from sqlalchemy.orm import Session
 
@@ -27,6 +28,15 @@ from app.schemas.review_nrc_aps import (
     NrcApsReviewExtractedUnitsOut,
     NrcApsReviewExtractedUnitItemOut,
 )
+
+TEXT_LIKE_UNIT_KINDS = frozenset({
+    "text_block",
+    "paragraph",
+    "ocr_text",
+    "pdf_native_span",
+    "pdf_text_block",
+    "pdf_paragraph",
+})
 
 
 # ---------------------------------------------------------------------------
@@ -199,6 +209,45 @@ def _load_diagnostics_json(lnk: ApsContentLinkage | None, root: Path) -> tuple[d
     return data, None
 
 
+def _deserialize_visual_page_refs(raw: str | None) -> list[dict]:
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return []
+    if not isinstance(parsed, list):
+        return []
+    return [dict(item) for item in parsed if isinstance(item, dict)]
+
+
+def _ordered_unit_kind_counts(diagnostics_data: dict | None) -> dict[str, int]:
+    if not isinstance(diagnostics_data, dict):
+        return {}
+
+    ordered_units = diagnostics_data.get("ordered_units")
+    if not isinstance(ordered_units, list):
+        return {}
+
+    counts = Counter()
+    for raw_unit in ordered_units:
+        if not isinstance(raw_unit, dict):
+            continue
+        unit_kind = _resolve_unit_kind(raw_unit)
+        if not unit_kind:
+            continue
+        counts[unit_kind] += 1
+    return dict(sorted(counts.items()))
+
+
+def _count_visual_derivative_units(unit_kind_counts: dict[str, int]) -> int:
+    return sum(
+        count
+        for unit_kind, count in unit_kind_counts.items()
+        if unit_kind not in TEXT_LIKE_UNIT_KINDS
+    )
+
+
 def _as_positive_int(value) -> int | None:
     if isinstance(value, bool) or not isinstance(value, int):
         return None
@@ -337,6 +386,7 @@ def compose_trace_manifest(db: Session, run_id: str, target_id: str, root: Path)
     summary = NrcApsReviewTraceSummaryOut()
     completeness = NrcApsReviewTraceCompletenessOut()
     sync_cap = NrcApsReviewTraceSyncCapabilitiesOut()
+    unit_kind_counts: dict[str, int] = {}
 
     # Resolve identity from normalized source metadata
     identity.document_title = _resolve_document_title(target)
@@ -362,6 +412,8 @@ def compose_trace_manifest(db: Session, run_id: str, target_id: str, root: Path)
                 ordered_units = diagnostics_data.get("ordered_units")
                 if isinstance(ordered_units, list):
                     summary.ordered_unit_count = len(ordered_units)
+                unit_kind_counts = _ordered_unit_kind_counts(diagnostics_data)
+                summary.visual_derivative_unit_count = _count_visual_derivative_units(unit_kind_counts)
 
         if lnk.normalized_text_ref:
             completeness.has_normalized_text = True
@@ -388,6 +440,7 @@ def compose_trace_manifest(db: Session, run_id: str, target_id: str, root: Path)
             summary.document_class = doc.document_class
             summary.quality_status = doc.quality_status
             summary.page_count = doc.page_count
+            summary.visual_page_ref_count = len(_deserialize_visual_page_refs(doc.visual_page_refs_json))
 
             if doc.chunk_count > 0:
                 completeness.has_indexed_chunks = True
@@ -403,6 +456,10 @@ def compose_trace_manifest(db: Session, run_id: str, target_id: str, root: Path)
 
             if summary.indexed_chunk_count > 0:
                 sync_cap.chunk_to_source = "page"
+
+        completeness.has_visual_derivatives = (
+            summary.visual_page_ref_count > 0 or summary.visual_derivative_unit_count > 0
+        )
 
     else:
         # No linkage — limited inference only
@@ -495,6 +552,8 @@ def compose_diagnostics_payload(db: Session, run_id: str, target_id: str, root: 
 
     payload.available = True
     payload.ordered_unit_count = len(diagnostics_data.get("ordered_units", []))
+    payload.unit_kind_counts = _ordered_unit_kind_counts(diagnostics_data)
+    payload.visual_derivative_unit_count = _count_visual_derivative_units(payload.unit_kind_counts)
     payload.extractor_metadata = diagnostics_data.get("extractor_metadata")
     payload.warnings = diagnostics_data.get("warnings", [])
     payload.degradation_codes = diagnostics_data.get("degradation_codes", [])
@@ -504,6 +563,7 @@ def compose_diagnostics_payload(db: Session, run_id: str, target_id: str, root: 
         payload.document_class = doc.document_class
         payload.quality_status = doc.quality_status
         payload.page_count = doc.page_count
+        payload.visual_page_ref_count = len(_deserialize_visual_page_refs(doc.visual_page_refs_json))
 
     return payload
 

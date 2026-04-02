@@ -11,7 +11,29 @@ from app.models.models import ApsContentLinkage
 
 
 TESTS_ROOT = Path(__file__).resolve().parent
-RUNTIME_PARENT = TESTS_ROOT.parent / "app" / "storage_test_runtime" / "lc_e2e"
+
+
+def _resolve_runtime_parent() -> Path:
+    local_candidate = TESTS_ROOT.parent / "app" / "storage_test_runtime" / "lc_e2e"
+    candidates = [local_candidate]
+    candidates.extend(
+        ancestor / "backend" / "app" / "storage_test_runtime" / "lc_e2e"
+        for ancestor in TESTS_ROOT.parents
+    )
+
+    seen: set[Path] = set()
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        if resolved.exists():
+            return resolved
+
+    return local_candidate.resolve()
+
+
+RUNTIME_PARENT = _resolve_runtime_parent()
 
 
 @dataclass(frozen=True)

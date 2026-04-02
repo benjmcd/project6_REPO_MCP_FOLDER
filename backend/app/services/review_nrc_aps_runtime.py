@@ -29,11 +29,16 @@ def get_allowlisted_roots() -> list[Path]:
     app_runtime_root = Path(__file__).resolve().parents[1] / "storage_test_runtime" / "lc_e2e"
     backend_runtime_root = Path(__file__).resolve().parents[2] / "storage_test_runtime" / "lc_e2e"
     roots = [app_runtime_root, backend_runtime_root]
+    roots.extend(
+        ancestor / "backend" / "app" / "storage_test_runtime" / "lc_e2e"
+        for ancestor in Path(__file__).resolve().parents
+    )
     if storage_dir.name == "storage":
         roots.append(storage_dir / "lc_e2e")
     deduped: dict[str, Path] = {}
     for root in roots:
-        deduped[str(root.resolve())] = root.resolve()
+        resolved = root.resolve()
+        deduped[str(resolved)] = resolved
     return list(deduped.values())
 
 
