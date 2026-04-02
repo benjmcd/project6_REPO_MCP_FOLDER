@@ -35,6 +35,7 @@ const elements = {
     docSelector: document.getElementById('doc-selector'),
     themeSelector: document.getElementById('theme-selector'),
     disabledOverlay: document.getElementById('disabled-overlay'),
+    disabledTitle: document.querySelector('#disabled-overlay h2'),
     disabledReason: document.getElementById('disabled-reason'),
     traceWorkspace: document.getElementById('trace-workspace'),
     identitySummary: document.getElementById('identity-summary'),
@@ -529,9 +530,10 @@ function updateUrlParams(method = 'replace') {
     }
 }
 
-function renderShellError(message) {
+function renderShellError(message, title) {
     elements.traceWorkspace.classList.add('hidden');
     elements.disabledOverlay.classList.remove('hidden');
+    if (elements.disabledTitle) elements.disabledTitle.textContent = title || 'Trace Unavailable';
     elements.disabledReason.textContent = message;
 }
 
@@ -909,7 +911,7 @@ async function loadActiveTab() {
         }
     } catch (err) {
         if (seq !== _actionSeq) return;
-        elements.tabContentArea.innerHTML = `<div class="placeholder" style="color:var(--danger-color)">Error loading tab: ${escapeHtml(err.message)}</div>`;
+        elements.tabContentArea.innerHTML = `<div class="placeholder" style="color:var(--danger-color)">Failed to load ${escapeHtml(tabId)} for ${escapeHtml(State.selectedTargetId)} in run ${escapeHtml(State.selectedRunId)}: ${escapeHtml(err.message)}</div>`;
     }
 }
 
@@ -939,12 +941,12 @@ async function loadTargetDoc(targetId, seq) {
     updateUrlParams('replace');
 
     if (!targetId) {
-        renderShellError("No document selected.");
+        renderShellError(`No document selected for run ${State.selectedRunId}.`, 'No Document Selected');
         return;
     }
 
     if (State.documents.length && !State.documents.some(d => d.target_id === targetId)) {
-        renderShellError("Requested document target is not available in the selected run.");
+        renderShellError(`Document ${targetId} is not available in run ${State.selectedRunId}.`, 'Document Not Available');
         return;
     }
 
@@ -957,7 +959,7 @@ async function loadTargetDoc(targetId, seq) {
         window.switchTab(State.activeTab, false);
     } catch (err) {
         if (seq !== _actionSeq) return;
-        renderShellError(err.message);
+        renderShellError(`Failed to load trace for ${targetId} in run ${State.selectedRunId}: ${err.message}`, 'Error Loading Trace');
     }
 }
 
@@ -967,14 +969,22 @@ async function loadRun(runId, targetIdOverride, seq) {
     elements.docSelector.innerHTML = '<option value="">Loading...</option>';
     elements.docSelector.disabled = true;
 
+    const runInfo = State.runs.find(r => r.run_id === runId);
+    if (runInfo && !runInfo.reviewable) {
+        elements.docSelector.innerHTML = '<option value="">Run not reviewable</option>';
+        renderShellError(`Run ${runId} is not reviewable (${runInfo.disabled_reason_code || 'unknown reason'}).`, 'Run Not Reviewable');
+        updateUrlParams('replace');
+        return;
+    }
+
     try {
         const docRes = await API.fetchDocuments(runId);
         if (seq !== _actionSeq) return;
         State.documents = docRes.documents || [];
-        
+
         if (State.documents.length === 0) {
             elements.docSelector.innerHTML = '<option value="">No documents found</option>';
-            renderShellError("No documents available in this run.");
+            renderShellError(`No documents available in run ${runId}.`, 'No Documents Available');
             updateUrlParams('replace');
             return;
         }
@@ -994,7 +1004,7 @@ async function loadRun(runId, targetIdOverride, seq) {
         if (!State.documents.some(d => d.target_id === targetIdOverride)) {
             State.selectedTargetId = targetIdOverride;
             elements.docSelector.value = "";
-            renderShellError("Requested document target is not available in the selected run.");
+            renderShellError(`Document ${targetIdOverride} is not available in run ${runId}.`, 'Document Not Available');
             updateUrlParams('replace');
             return;
         }
@@ -1003,7 +1013,7 @@ async function loadRun(runId, targetIdOverride, seq) {
     } catch (err) {
         if (seq !== _actionSeq) return;
         elements.docSelector.innerHTML = '<option value="">Error</option>';
-        renderShellError("Failed to fetch documents for run.");
+        renderShellError(`Failed to fetch documents for run ${runId}.`, 'Error Loading Documents');
     }
 }
 
@@ -1053,9 +1063,11 @@ async function init() {
         if (seq !== _actionSeq) return;
         
         State.runs = data.runs;
-        elements.runSelector.innerHTML = State.runs.map(r => 
-            `<option value="${escapeHtml(r.run_id)}">${escapeHtml(r.display_label || r.run_id)}</option>`
-        ).join('');
+        elements.runSelector.innerHTML = State.runs.map(r => {
+            const disabled = !r.reviewable ? ' disabled' : '';
+            const suffix = !r.reviewable ? ` (${escapeHtml(r.disabled_reason_code || 'not reviewable')})` : '';
+            return `<option value="${escapeHtml(r.run_id)}"${disabled}>${escapeHtml(r.display_label || r.run_id)}${suffix}</option>`;
+        }).join('');
 
         let runToLoad = initialRunId;
         if (!runToLoad || !State.runs.some(r => r.run_id === runToLoad)) {
@@ -1066,11 +1078,11 @@ async function init() {
             await loadRun(runToLoad, initialTargetId, seq);
         } else {
             elements.runSelector.innerHTML = '<option value="">No runs available</option>';
-            renderShellError("No runs available.");
+            renderShellError('No NRC APS runs are available.', 'No Runs Available');
         }
     } catch (err) {
         if (seq !== _actionSeq) return;
-        renderShellError("Failed to fetch run catalog.");
+        renderShellError('Failed to load the run catalog.', 'Error');
     }
 }
 

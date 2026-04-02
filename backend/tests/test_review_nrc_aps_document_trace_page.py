@@ -188,3 +188,52 @@ def test_review_js_has_run_identity_update() -> None:
 
     assert 'updateRunIdentity' in js_content
     assert 'current-run-info' in js_content
+
+
+def test_document_trace_js_identity_aware_shell_errors() -> None:
+    """Verify document_trace.js shell-level error messages include run/target identity."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    # disabledTitle element reference
+    assert "disabledTitle" in js_content
+
+    # renderShellError accepts a title parameter
+    assert "function renderShellError(message, title)" in js_content
+
+    # Shell-level messages include run identity
+    assert "No document selected for run" in js_content
+    assert "is not available in run" in js_content
+    assert "No documents available in run" in js_content
+    assert "Failed to fetch documents for run" in js_content
+    assert "Failed to load trace for" in js_content
+
+    # State-type-specific overlay titles
+    assert "'No Document Selected'" in js_content
+    assert "'Document Not Available'" in js_content
+    assert "'No Documents Available'" in js_content
+    assert "'Error Loading Trace'" in js_content
+    assert "'Error Loading Documents'" in js_content
+
+
+def test_document_trace_js_non_reviewable_run_guard() -> None:
+    """Verify document_trace.js checks run reviewability before fetching documents."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    # Non-reviewable guard in loadRun
+    assert "!runInfo.reviewable" in js_content
+    assert "'Run Not Reviewable'" in js_content
+    assert "is not reviewable" in js_content
+
+    # Non-reviewable runs disabled in selector
+    assert "disabled_reason_code" in js_content
+    assert "not reviewable" in js_content
+
+
+def test_document_trace_js_tab_error_includes_identity() -> None:
+    """Verify tab-level fetch errors include run and target identity."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "Failed to load ${escapeHtml(tabId)} for ${escapeHtml(State.selectedTargetId)} in run ${escapeHtml(State.selectedRunId)}" in js_content

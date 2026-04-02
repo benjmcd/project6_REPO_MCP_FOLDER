@@ -24,6 +24,7 @@ const elements = {
     detailsContent: document.getElementById('details-content'),
     closeDrawerBtn: document.getElementById('close-drawer'),
     disabledOverlay: document.getElementById('disabled-overlay'),
+    disabledTitle: document.querySelector('#disabled-overlay h2'),
     disabledReason: document.getElementById('disabled-reason'),
 };
 
@@ -598,7 +599,8 @@ async function loadRun(runId) {
     const runInfo = State.runs.find((run) => run.run_id === runId);
     if (runInfo && !runInfo.reviewable) {
         elements.disabledOverlay.classList.remove('hidden');
-        elements.disabledReason.textContent = runInfo.disabled_reason_code || 'Unknown reason';
+        if (elements.disabledTitle) elements.disabledTitle.textContent = 'Run Not Reviewable';
+        elements.disabledReason.textContent = `Run ${runId} is not reviewable (${runInfo.disabled_reason_code || 'unknown reason'}).`;
         State.pipelineDefinition = null;
         State.overview = null;
         await renderGraph();
@@ -619,7 +621,8 @@ async function loadRun(runId) {
     } catch (error) {
         if (seq !== _runSeq) return;
         elements.disabledOverlay.classList.remove('hidden');
-        elements.disabledReason.textContent = 'Failed to load overview payload.';
+        if (elements.disabledTitle) elements.disabledTitle.textContent = 'Error Loading Run';
+        elements.disabledReason.textContent = `Failed to load overview for run ${runId}.`;
     }
 }
 
@@ -678,11 +681,13 @@ async function init() {
         } else {
             elements.runSelector.innerHTML = '<option>No NRC APS runs found</option>';
             elements.disabledOverlay.classList.remove('hidden');
-            elements.disabledReason.textContent = 'No runs available.';
+            if (elements.disabledTitle) elements.disabledTitle.textContent = 'No Runs Available';
+            elements.disabledReason.textContent = 'No NRC APS runs are available.';
         }
     } catch (error) {
         elements.disabledOverlay.classList.remove('hidden');
-        elements.disabledReason.textContent = 'Failed to load run catalog.';
+        if (elements.disabledTitle) elements.disabledTitle.textContent = 'Error';
+        elements.disabledReason.textContent = 'Failed to load the run catalog.';
     }
 }
 
