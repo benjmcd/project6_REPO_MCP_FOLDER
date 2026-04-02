@@ -30,6 +30,15 @@ const State = {
     }
 };
 
+const TAB_SCOPE = {
+    summary: 'document',
+    diagnostics: 'document',
+    normalized_text: 'document',
+    indexed_chunks: 'document',
+    extracted_units: 'page',
+    downstream_usage: 'document',
+};
+
 const elements = {
     runSelector: document.getElementById('run-selector'),
     docSelector: document.getElementById('doc-selector'),
@@ -127,6 +136,12 @@ function formatEmptyMessage(label, { runId, targetId, detail } = {}) {
     const context = formatTraceContext(runId, targetId);
     const suffix = detail ? ` ${escapeHtml(detail)}` : '';
     return `No ${escapeHtml(label)} are available for ${context}.${suffix}`;
+}
+
+function renderScopeContextBar(tabId) {
+    const scope = TAB_SCOPE[tabId] || 'document';
+    if (scope === 'page') return '';
+    return '<div class="scope-context-bar">Scope: entire document \u2014 not affected by page navigation</div>';
 }
 
 function formatBbox(bbox) {
@@ -668,6 +683,7 @@ function renderTraceShell() {
 function renderSummaryTab() {
     const { summary, trace_completeness, sync_capabilities, warnings, limitations } = State.manifest;
     let html = `<div class="tab-pane-content">`;
+    html += renderScopeContextBar('summary');
 
     html += `
         <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
@@ -708,12 +724,13 @@ function renderSummaryTab() {
 function renderDiagnosticsTab() {
     const data = State.tabData.diagnostics;
     if (!data || !data.available) {
-        elements.tabContentArea.innerHTML = `<div class="placeholder">${formatUnavailableMessage('Diagnostics', { runId: data?.run_id, targetId: data?.target_id })}</div>`;
+        elements.tabContentArea.innerHTML = `<div class="tab-pane-content">${renderScopeContextBar('diagnostics')}<div class="placeholder">${formatUnavailableMessage('Diagnostics', { runId: data?.run_id, targetId: data?.target_id })}</div></div>`;
         return;
     }
 
     let html = `<div class="tab-pane-content">`;
-    
+    html += renderScopeContextBar('diagnostics');
+
     html += `
         <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
             <div class="layout-entry card-stat"><strong>DOCUMENT CLASS</strong><br><span>${escapeHtml(data.document_class || 'Unknown')}</span></div>
@@ -757,12 +774,13 @@ function renderDiagnosticsTab() {
 function renderNormalizedTextTab() {
     const data = State.tabData.normalized_text;
     if (!data || !data.available) {
-        elements.tabContentArea.innerHTML = `<div class="placeholder">${formatUnavailableMessage('Normalized Text', { runId: data?.run_id, targetId: data?.target_id })}</div>`;
+        elements.tabContentArea.innerHTML = `<div class="tab-pane-content">${renderScopeContextBar('normalized_text')}<div class="placeholder">${formatUnavailableMessage('Normalized Text', { runId: data?.run_id, targetId: data?.target_id })}</div></div>`;
         return;
     }
 
     let html = `<div class="tab-pane-content" style="display:flex; flex-direction:column; height: 100%;">`;
-    
+    html += renderScopeContextBar('normalized_text');
+
     html += `
         <div style="display: flex; gap: 20px; margin-bottom: 12px; flex-shrink: 0;">
             <div class="layout-entry card-stat"><strong>CHARACTER COUNT</strong><br><span>${data.char_count}</span></div>
@@ -778,12 +796,13 @@ function renderNormalizedTextTab() {
 function renderIndexedChunksTab() {
     const data = State.tabData.indexed_chunks;
     if (!data || !data.available) {
-        elements.tabContentArea.innerHTML = `<div class="placeholder">${formatUnavailableMessage('Indexed Chunks', { runId: data?.run_id, targetId: data?.target_id })}</div>`;
+        elements.tabContentArea.innerHTML = `<div class="tab-pane-content">${renderScopeContextBar('indexed_chunks')}<div class="placeholder">${formatUnavailableMessage('Indexed Chunks', { runId: data?.run_id, targetId: data?.target_id })}</div></div>`;
         return;
     }
 
     let html = `<div class="tab-pane-content">`;
-    
+    html += renderScopeContextBar('indexed_chunks');
+
     html += `
         <div style="display: flex; gap: 20px; margin-bottom: 20px;">
             <div class="layout-entry card-stat"><strong>CHUNK COUNT</strong><br><span>${data.chunk_count}</span></div>
@@ -958,8 +977,11 @@ window.switchTab = async function(tabId, pushHistory = true) {
         const isActive = t.tab_id === State.activeTab;
         const isAvailable = t.available;
         const clickHandler = isAvailable ? `onclick="window.switchTab('${escapeHtml(t.tab_id)}', true)"` : '';
+        const scope = TAB_SCOPE[t.tab_id] || 'document';
+        const scopeLabel = scope === 'page' ? 'page' : 'doc';
         return `<button class="tab-btn ${isActive ? 'active' : ''}" ${!isAvailable ? 'disabled title="Data unavailable"' : ''} ${clickHandler}>
             ${escapeHtml(t.label || t.tab_id)}
+            <span class="tab-scope-badge">${scopeLabel}</span>
         </button>`;
     }).join('');
 

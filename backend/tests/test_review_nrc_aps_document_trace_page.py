@@ -289,3 +289,48 @@ def test_document_trace_js_visual_artifact_extract_units_rendering_present() -> 
     assert "artifact.endpoint" in js_content
     assert ".eu-visual-preview" in css_content
     assert ".eu-visual-card" in css_content
+
+
+def test_document_trace_js_scope_labels_present() -> None:
+    """Verify scope labeling infrastructure exists in JS and CSS."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.css"
+    js_content = js_path.read_text(encoding="utf-8")
+    css_content = css_path.read_text(encoding="utf-8")
+
+    # TAB_SCOPE constant
+    assert "TAB_SCOPE" in js_content
+    assert "extracted_units: 'page'" in js_content
+    assert "diagnostics: 'document'" in js_content
+
+    # Scope context bar function and content
+    assert "renderScopeContextBar" in js_content
+    assert "scope-context-bar" in js_content
+    assert "Scope: entire document" in js_content
+    assert "not affected by page navigation" in js_content
+
+    # Tab header scope badges
+    assert "tab-scope-badge" in js_content
+    assert ".tab-scope-badge" in css_content
+    assert ".scope-context-bar" in css_content
+
+
+def test_document_trace_js_document_scoped_tabs_have_scope_context() -> None:
+    """Verify each document-scoped tab renderer includes scope context."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "renderScopeContextBar('summary')" in js_content
+    assert "renderScopeContextBar('diagnostics')" in js_content
+    assert "renderScopeContextBar('normalized_text')" in js_content
+    assert "renderScopeContextBar('indexed_chunks')" in js_content
+
+
+def test_document_trace_js_scope_badges_in_tab_headers() -> None:
+    """Verify tab header rendering includes scope badge markup."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "TAB_SCOPE[t.tab_id]" in js_content
+    assert "scopeLabel" in js_content
+    assert "'page' ? 'page' : 'doc'" in js_content
