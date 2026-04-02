@@ -9,12 +9,16 @@ from fastapi.testclient import TestClient
 
 os.environ["DB_INIT_MODE"] = "none"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.api.deps import get_db
+from app.services.review_nrc_aps_runtime_roots import candidate_review_runtime_roots
 from main import app
+from review_nrc_aps_runtime_fixture import discover_passed_runtimes
 
 
 RUN_ID = "d6be0fff-bbd7-468a-9b00-7103d5995494"
+MULTI_RUNTIME_RUN_IDS = {runtime.run_id for runtime in discover_passed_runtimes()[:3]}
 
 
 def override_get_db():
@@ -89,3 +93,40 @@ def test_api_file_details_and_preview():
     preview_response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/files/{summary_child['tree_id']}/preview")
     assert preview_response.status_code == 200
     assert '"schema_id": "aps.local_corpus_e2e_summary.v1"' in preview_response.json()["content"]
+
+
+def test_api_runs_lists_multiple_runtime_backed_candidates():
+    assert MULTI_RUNTIME_RUN_IDS, "Expected at least one passed local-corpus runtime for /runs validation"
+    response = client.get("/api/v1/review/nrc-aps/runs")
+    assert response.status_code == 200
+    data = response.json()
+    returned_run_ids = {item["run_id"] for item in data["runs"]}
+    assert MULTI_RUNTIME_RUN_IDS.issubset(returned_run_ids)
+
+
+def test_candidate_review_runtime_roots_use_deterministic_local_roots(tmp_path):
+    app_root = tmp_path / "backend" / "app"
+    backend_root = app_root.parent
+    app_root.mkdir(parents=True)
+
+    roots = candidate_review_runtime_roots(app_root=app_root, backend_root=backend_root)
+
+    assert roots == [
+        (app_root / "storage_test_runtime" / "lc_e2e").resolve(),
+        (backend_root / "storage_test_runtime" / "lc_e2e").resolve(),
+    ]
+
+
+def test_candidate_review_runtime_roots_accept_configured_storage_test_runtime(tmp_path):
+    app_root = tmp_path / "backend" / "app"
+    backend_root = app_root.parent
+    app_root.mkdir(parents=True)
+
+    configured_storage_root = tmp_path / "shared" / "storage_test_runtime"
+    roots = candidate_review_runtime_roots(
+        app_root=app_root,
+        backend_root=backend_root,
+        storage_dir=configured_storage_root,
+    )
+
+    assert (configured_storage_root / "lc_e2e").resolve() in roots

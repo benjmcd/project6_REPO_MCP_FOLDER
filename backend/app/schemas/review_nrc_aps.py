@@ -205,6 +205,8 @@ class NrcApsReviewTraceSummaryOut(BaseModel):
     page_count: int = 0
     ordered_unit_count: int = 0
     indexed_chunk_count: int = 0
+    visual_page_ref_count: int = 0
+    visual_derivative_unit_count: int = 0
 
 
 class NrcApsReviewTraceCompletenessOut(BaseModel):
@@ -254,6 +256,9 @@ class NrcApsReviewDiagnosticsOut(BaseModel):
     document_class: str | None = None
     page_count: int = 0
     ordered_unit_count: int = 0
+    visual_page_ref_count: int = 0
+    visual_derivative_unit_count: int = 0
+    unit_kind_counts: dict[str, int] = Field(default_factory=dict)
     warnings: list[str] = Field(default_factory=list)
     degradation_codes: list[str] = Field(default_factory=list)
     extractor_metadata: dict[str, Any] | None = None
@@ -300,6 +305,21 @@ class NrcApsReviewExtractedUnitItemOut(BaseModel):
     mapping_precision: str = "unit"
 
 
+class NrcApsReviewVisualArtifactItemOut(BaseModel):
+    artifact_id: str
+    page_number: int | None = None
+    status: str | None = None
+    visual_page_class: str | None = None
+    artifact_semantics: str | None = None
+    format: str | None = None
+    media_type: str | None = None
+    width: float | None = None
+    height: float | None = None
+    dpi: int | None = None
+    sha256: str | None = None
+    endpoint: str | None = None
+
+
 class NrcApsReviewExtractedUnitsOut(BaseModel):
     run_id: str
     target_id: str
@@ -309,6 +329,7 @@ class NrcApsReviewExtractedUnitsOut(BaseModel):
     source_layer: str = "diagnostics_ordered_units"
     page_number: int | None = None
     total_unit_count: int = 0
+    visual_artifacts: list[NrcApsReviewVisualArtifactItemOut] = Field(default_factory=list)
     units: list[NrcApsReviewExtractedUnitItemOut] = Field(default_factory=list)
 
 
