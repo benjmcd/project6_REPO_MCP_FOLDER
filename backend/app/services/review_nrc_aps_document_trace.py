@@ -27,6 +27,7 @@ from app.schemas.review_nrc_aps import (
     NrcApsReviewIndexedChunkItemOut,
     NrcApsReviewExtractedUnitsOut,
     NrcApsReviewExtractedUnitItemOut,
+    NrcApsReviewVisualArtifactItemOut,
 )
 
 TEXT_LIKE_UNIT_KINDS = frozenset({
@@ -248,6 +249,101 @@ def _count_visual_derivative_units(unit_kind_counts: dict[str, int]) -> int:
     )
 
 
+def _resolve_visual_artifact_id(target_id: str, page_ref: dict, index: int) -> str:
+    sha256 = str(page_ref.get("visual_artifact_sha256") or "").strip()
+    if sha256:
+        return sha256
+
+    stable_payload = {
+        "target_id": target_id,
+        "index": index,
+        "page_number": page_ref.get("page_number"),
+        "visual_artifact_ref": page_ref.get("visual_artifact_ref"),
+        "visual_page_class": page_ref.get("visual_page_class"),
+        "visual_artifact_semantics": page_ref.get("visual_artifact_semantics"),
+    }
+    digest = hashlib.sha256(
+        json.dumps(stable_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    ).hexdigest()
+    return f"va_{digest[:24]}"
+
+
+def _media_type_for_visual_format(value: str | None) -> str | None:
+    visual_format = str(value or "").strip().lower()
+    if visual_format == "png":
+        return "image/png"
+    if visual_format == "jpg" or visual_format == "jpeg":
+        return "image/jpeg"
+    if visual_format == "webp":
+        return "image/webp"
+    if visual_format == "gif":
+        return "image/gif"
+    return None
+
+
+def _resolve_safe_visual_artifact_path(storage_root: Path | None, artifact_ref: str | None) -> Path | None:
+    if storage_root is None or not artifact_ref:
+        return None
+
+    raw_path = Path(artifact_ref)
+    storage_root_resolved = storage_root.resolve()
+    candidate_paths: list[Path] = []
+    if raw_path.is_absolute():
+        candidate_paths.append(raw_path.resolve())
+    else:
+        candidate_paths.append((storage_root_resolved / raw_path).resolve())
+        candidate_paths.append((storage_root_resolved / "artifacts" / raw_path).resolve())
+
+    for candidate in candidate_paths:
+        try:
+            candidate.relative_to(storage_root_resolved)
+        except ValueError:
+            continue
+        if candidate.exists() and candidate.is_file():
+            return candidate
+    return None
+
+
+def _build_visual_artifact_items(
+    target_id: str,
+    run_id: str,
+    visual_page_refs: list[dict],
+    storage_root: Path | None,
+    page_number: int | None = None,
+) -> list[NrcApsReviewVisualArtifactItemOut]:
+    items: list[NrcApsReviewVisualArtifactItemOut] = []
+    for index, page_ref in enumerate(visual_page_refs):
+        resolved_page = _as_positive_int(page_ref.get("page_number"))
+        if page_number is not None and resolved_page != page_number:
+            continue
+
+        artifact_id = _resolve_visual_artifact_id(target_id, page_ref, index)
+        artifact_ref = str(page_ref.get("visual_artifact_ref") or "").strip()
+        artifact_format = str(page_ref.get("visual_artifact_format") or "").strip() or None
+        safe_path = _resolve_safe_visual_artifact_path(storage_root, artifact_ref)
+        endpoint = None
+        if safe_path is not None:
+            endpoint = f"/api/v1/review/nrc-aps/runs/{run_id}/documents/{target_id}/visual-artifacts/{artifact_id}"
+
+        items.append(
+            NrcApsReviewVisualArtifactItemOut(
+                artifact_id=artifact_id,
+                page_number=resolved_page,
+                status=str(page_ref.get("status") or "").strip() or None,
+                visual_page_class=str(page_ref.get("visual_page_class") or "").strip() or None,
+                artifact_semantics=str(page_ref.get("visual_artifact_semantics") or "").strip() or None,
+                format=artifact_format,
+                media_type=_media_type_for_visual_format(artifact_format),
+                width=float(page_ref["width"]) if isinstance(page_ref.get("width"), (int, float)) else None,
+                height=float(page_ref["height"]) if isinstance(page_ref.get("height"), (int, float)) else None,
+                dpi=int(page_ref["visual_artifact_dpi"]) if isinstance(page_ref.get("visual_artifact_dpi"), int) else None,
+                sha256=str(page_ref.get("visual_artifact_sha256") or "").strip() or None,
+                endpoint=endpoint,
+            )
+        )
+    return items
+
+
 def _as_positive_int(value) -> int | None:
     if isinstance(value, bool) or not isinstance(value, int):
         return None
@@ -360,6 +456,48 @@ def resolve_source_blob_info(db: Session, run_id: str, target_id: str, root: Pat
     filename = target.sciencebase_file_name or absolute_blob_path.name
     
     return absolute_blob_path, media_type, filename
+
+
+def resolve_visual_artifact_info(
+    db: Session,
+    run_id: str,
+    target_id: str,
+    storage_root: Path | None,
+    artifact_id: str,
+) -> tuple[Path, str, str | None]:
+    target = db.query(ConnectorRunTarget).filter(
+        ConnectorRunTarget.connector_run_id == run_id,
+        ConnectorRunTarget.connector_run_target_id == target_id,
+    ).first()
+    if not target:
+        raise KeyError(f"Target {target_id} not found in run {run_id}")
+
+    lnk = db.query(ApsContentLinkage).filter(
+        ApsContentLinkage.run_id == run_id,
+        ApsContentLinkage.target_id == target_id,
+    ).first()
+    if not lnk:
+        raise KeyError(f"No content linkage available for target {target_id}")
+
+    doc = db.query(ApsContentDocument).filter(ApsContentDocument.content_id == lnk.content_id).first()
+    if doc is None:
+        raise KeyError(f"No content document available for target {target_id}")
+
+    visual_page_refs = _deserialize_visual_page_refs(doc.visual_page_refs_json)
+    for index, page_ref in enumerate(visual_page_refs):
+        candidate_id = _resolve_visual_artifact_id(target_id, page_ref, index)
+        if candidate_id != artifact_id:
+            continue
+
+        safe_path = _resolve_safe_visual_artifact_path(storage_root, str(page_ref.get("visual_artifact_ref") or "").strip())
+        if safe_path is None:
+            raise FileNotFoundError(f"Visual artifact missing on disk for {artifact_id}")
+
+        filename = safe_path.name
+        media_type = _media_type_for_visual_format(str(page_ref.get("visual_artifact_format") or "").strip()) or "application/octet-stream"
+        return safe_path, media_type, filename
+
+    raise KeyError(f"Visual artifact {artifact_id} not found for target {target_id}")
 
 
 # ---------------------------------------------------------------------------
@@ -663,6 +801,7 @@ def compose_extracted_units_payload(
     run_id: str,
     target_id: str,
     root: Path,
+    storage_root: Path | None = None,
     page_number: int | None = None,
 ) -> NrcApsReviewExtractedUnitsOut:
     """Assemble the diagnostics-backed extracted-units payload for a target."""
@@ -686,6 +825,18 @@ def compose_extracted_units_payload(
         source_precision="none",
         page_number=page_number,
     )
+
+    if lnk:
+        doc = db.query(ApsContentDocument).filter(ApsContentDocument.content_id == lnk.content_id).first()
+        if doc is not None:
+            visual_page_refs = _deserialize_visual_page_refs(doc.visual_page_refs_json)
+            payload.visual_artifacts = _build_visual_artifact_items(
+                target_id=target_id,
+                run_id=run_id,
+                visual_page_refs=visual_page_refs,
+                storage_root=storage_root,
+                page_number=page_number,
+            )
 
     diagnostics_data, reason_code = _load_diagnostics_json(lnk, root)
     if diagnostics_data is None:

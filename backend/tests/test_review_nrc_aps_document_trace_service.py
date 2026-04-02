@@ -21,7 +21,8 @@ from app.services.review_nrc_aps_document_trace import (
     compose_document_selector, 
     compose_trace_manifest,
     compose_extracted_units_payload,
-    resolve_source_blob_info
+    resolve_source_blob_info,
+    resolve_visual_artifact_info,
 )
 from app.services.review_nrc_aps_runtime import find_review_root_for_run
 from review_nrc_aps_runtime_fixture import latest_passed_runtime, make_session, resolve_deduplicated_target_pair, resolve_target_for_accession
@@ -41,6 +42,7 @@ TEXT_LIKE_UNIT_KINDS = {
 _bootstrap_session = make_session(RUNTIME)
 try:
     TARGET_ID, ACCESSION = resolve_target_for_accession(_bootstrap_session, RUN_ID)
+    VISUAL_TARGET_ID, VISUAL_ACCESSION = resolve_target_for_accession(_bootstrap_session, RUN_ID, accession_number="LOCALAPS00020")
     DEDUP_TARGET_ID_A, DEDUP_TARGET_ID_B = resolve_deduplicated_target_pair(_bootstrap_session, RUN_ID)
 finally:
     _bootstrap_session.close()
@@ -77,10 +79,10 @@ def _load_ordered_units(db_session):
     return data.get("ordered_units") or []
 
 
-def _load_visual_page_refs(db_session):
+def _load_visual_page_refs(db_session, target_id=TARGET_ID):
     linkage = db_session.query(ApsContentLinkage).filter(
         ApsContentLinkage.run_id == RUN_ID,
-        ApsContentLinkage.target_id == TARGET_ID,
+        ApsContentLinkage.target_id == target_id,
     ).first()
     assert linkage is not None
     doc = db_session.query(trace_service.ApsContentDocument).filter(
@@ -369,6 +371,57 @@ def test_extracted_units_remain_target_scoped_for_deduplicated_content(db_sessio
     assert payload_a.total_unit_count == payload_b.total_unit_count == 8446
     assert payload_a.units[0].text == payload_b.units[0].text
     assert payload_a.units[0].unit_id != payload_b.units[0].unit_id
+
+
+def test_extracted_units_expose_visual_artifacts(db_session, review_root):
+    payload = compose_extracted_units_payload(
+        db_session,
+        RUN_ID,
+        VISUAL_TARGET_ID,
+        review_root,
+        storage_root=review_root / "storage",
+        page_number=2,
+    )
+
+    visual_page_refs = _load_visual_page_refs(db_session, VISUAL_TARGET_ID)
+
+    assert payload.available is True
+    assert len(payload.visual_artifacts) == 1
+    assert len(visual_page_refs) == 1
+    artifact = payload.visual_artifacts[0]
+    assert artifact.page_number == 2
+    assert artifact.status == "preserved"
+    assert artifact.visual_page_class == "diagram_or_visual"
+    assert artifact.artifact_semantics == "whole_page_rasterization"
+    assert artifact.format == "png"
+    assert artifact.media_type == "image/png"
+    assert artifact.endpoint is not None
+    assert artifact.endpoint.endswith(f"/visual-artifacts/{artifact.artifact_id}")
+
+
+def test_resolve_visual_artifact_info_success(db_session, review_root):
+    payload = compose_extracted_units_payload(
+        db_session,
+        RUN_ID,
+        VISUAL_TARGET_ID,
+        review_root,
+        storage_root=review_root / "storage",
+        page_number=2,
+    )
+    artifact = payload.visual_artifacts[0]
+
+    artifact_path, media_type, filename = resolve_visual_artifact_info(
+        db_session,
+        RUN_ID,
+        VISUAL_TARGET_ID,
+        review_root / "storage",
+        artifact.artifact_id,
+    )
+
+    assert artifact_path.exists()
+    assert artifact_path.is_absolute()
+    assert media_type == "image/png"
+    assert filename is not None and filename.endswith(".png")
 
 
 def test_manifest_extracted_units_tab_exposes_truthful_endpoint(db_session, review_root):

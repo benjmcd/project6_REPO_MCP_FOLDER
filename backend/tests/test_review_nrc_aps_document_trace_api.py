@@ -49,6 +49,7 @@ TEXT_LIKE_UNIT_KINDS = {
 _bootstrap_session = make_session(RUNTIME)
 try:
     TARGET_ID, ACCESSION = resolve_target_for_accession(_bootstrap_session, RUN_ID)
+    VISUAL_TARGET_ID, VISUAL_ACCESSION = resolve_target_for_accession(_bootstrap_session, RUN_ID, accession_number="LOCALAPS00020")
     DEDUP_TARGET_ID_A, DEDUP_TARGET_ID_B = resolve_deduplicated_target_pair(_bootstrap_session, RUN_ID)
 
     pinned_linkage = (
@@ -80,6 +81,31 @@ try:
     )
     assert pinned_doc is not None
     EXPECTED_VISUAL_PAGE_REF_COUNT = len(json.loads(pinned_doc.visual_page_refs_json or "[]"))
+
+    visual_linkage = (
+        _bootstrap_session.query(ApsContentLinkage)
+        .filter(
+            ApsContentLinkage.run_id == RUN_ID,
+            ApsContentLinkage.target_id == VISUAL_TARGET_ID,
+        )
+        .first()
+    )
+    assert visual_linkage is not None and visual_linkage.diagnostics_ref
+    visual_ordered_units = json.loads(Path(visual_linkage.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
+    visual_doc = (
+        _bootstrap_session.query(ApsContentDocument)
+        .filter(ApsContentDocument.content_id == visual_linkage.content_id)
+        .first()
+    )
+    assert visual_doc is not None
+    EXPECTED_VISUAL_ARTIFACT_REFS = json.loads(visual_doc.visual_page_refs_json or "[]")
+    EXPECTED_VISUAL_ARTIFACT_PAGE2_COUNT = len([item for item in EXPECTED_VISUAL_ARTIFACT_REFS if item.get("page_number") == 2])
+    EXPECTED_VISUAL_ARTIFACT_PAGE2_SHA256 = str(EXPECTED_VISUAL_ARTIFACT_REFS[0].get("visual_artifact_sha256"))
+    EXPECTED_VISUAL_UNIT_PAGE3_KINDS = sorted({
+        str(unit.get("unit_kind") or "").strip()
+        for unit in visual_ordered_units
+        if unit.get("page_number") == 3 and str(unit.get("unit_kind") or "").strip() in {"pdf_table", "ocr_image_supplement"}
+    })
 
     dedup_linkage_a = (
         _bootstrap_session.query(ApsContentLinkage)
@@ -338,7 +364,7 @@ def test_api_extracted_units_unknown_target_404():
 def test_api_extracted_units_known_target_missing_diagnostics_returns_explicit_missingness(monkeypatch):
     monkeypatch.setattr(
         "app.api.review_nrc_aps.compose_extracted_units_payload",
-        lambda db, run_id, target_id, root, page_number=None: NrcApsReviewExtractedUnitsOut(
+        lambda db, run_id, target_id, root, storage_root=None, page_number=None: NrcApsReviewExtractedUnitsOut(
             run_id=run_id,
             target_id=target_id,
             available=False,
@@ -367,6 +393,36 @@ def test_api_extracted_units_no_retrieval_dependency():
     trace_response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{TARGET_ID}/trace")
     trace_data = trace_response.json()
     assert trace_data["trace_completeness"]["retrieval_available"] is False
+
+
+def test_api_extracted_units_expose_visual_artifacts_for_positive_document():
+    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{VISUAL_TARGET_ID}/extracted-units?page_number=2")
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload["visual_artifacts"]) == EXPECTED_VISUAL_ARTIFACT_PAGE2_COUNT
+    artifact = payload["visual_artifacts"][0]
+    assert artifact["page_number"] == 2
+    assert artifact["status"] == "preserved"
+    assert artifact["format"] == "png"
+    assert artifact["media_type"] == "image/png"
+    assert artifact["sha256"] == EXPECTED_VISUAL_ARTIFACT_PAGE2_SHA256
+    assert artifact["endpoint"].endswith(f"/visual-artifacts/{artifact['artifact_id']}")
+
+
+def test_api_extracted_units_page3_preserves_visual_derived_unit_kinds():
+    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{VISUAL_TARGET_ID}/extracted-units?page_number=3")
+    assert response.status_code == 200
+    payload = response.json()
+    actual_kinds = sorted({unit["unit_kind"] for unit in payload["units"] if unit.get("unit_kind") in {"pdf_table", "ocr_image_supplement"}})
+    assert actual_kinds == EXPECTED_VISUAL_UNIT_PAGE3_KINDS
+
+
+def test_api_visual_artifact_stream_success():
+    extracted_units = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{VISUAL_TARGET_ID}/extracted-units?page_number=2").json()
+    artifact = extracted_units["visual_artifacts"][0]
+    response = client.get(artifact["endpoint"])
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("image/png")
 
 
 def test_api_extracted_units_remain_target_scoped_for_deduplicated_content():
