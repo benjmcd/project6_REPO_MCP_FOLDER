@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.api.deps import get_db
-from app.models.models import ApsContentLinkage
+from app.models.models import ApsContentLinkage, ApsContentDocument
 from app.schemas.review_nrc_aps import NrcApsReviewExtractedUnitsOut
 from main import app
 from review_nrc_aps_runtime_fixture import (
@@ -37,6 +37,14 @@ RUNTIME = latest_passed_runtime()
 RUN_ID = RUNTIME.run_id
 DB_PATH = RUNTIME.db_path
 MULTI_RUNTIME_RUN_IDS = [runtime.run_id for runtime in discover_passed_runtimes()[:3]]
+TEXT_LIKE_UNIT_KINDS = {
+    "text_block",
+    "paragraph",
+    "ocr_text",
+    "pdf_native_span",
+    "pdf_text_block",
+    "pdf_paragraph",
+}
 
 _bootstrap_session = make_session(RUNTIME)
 try:
@@ -55,6 +63,23 @@ try:
     ordered_units = json.loads(Path(pinned_linkage.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
     EXPECTED_TOTAL_UNIT_COUNT = len(ordered_units)
     EXPECTED_PAGE3_UNIT_COUNT = len([unit for unit in ordered_units if unit.get("page_number") == 3])
+    EXPECTED_UNIT_KIND_COUNTS = {}
+    for unit in ordered_units:
+        unit_kind = str(unit.get("unit_kind") or "").strip()
+        if not unit_kind:
+            continue
+        EXPECTED_UNIT_KIND_COUNTS[unit_kind] = EXPECTED_UNIT_KIND_COUNTS.get(unit_kind, 0) + 1
+    EXPECTED_UNIT_KIND_COUNTS = dict(sorted(EXPECTED_UNIT_KIND_COUNTS.items()))
+    EXPECTED_VISUAL_DERIVATIVE_UNIT_COUNT = sum(
+        count for unit_kind, count in EXPECTED_UNIT_KIND_COUNTS.items() if unit_kind not in TEXT_LIKE_UNIT_KINDS
+    )
+    pinned_doc = (
+        _bootstrap_session.query(ApsContentDocument)
+        .filter(ApsContentDocument.content_id == pinned_linkage.content_id)
+        .first()
+    )
+    assert pinned_doc is not None
+    EXPECTED_VISUAL_PAGE_REF_COUNT = len(json.loads(pinned_doc.visual_page_refs_json or "[]"))
 
     dedup_linkage_a = (
         _bootstrap_session.query(ApsContentLinkage)
@@ -162,6 +187,11 @@ def test_api_trace_manifest_content():
     assert data["identity"]["accession_number"] == ACCESSION
     assert data["identity"]["document_type"] == "Exemption from NRC Requirements"
     assert "sync_capabilities" in data
+    assert data["summary"]["visual_page_ref_count"] == EXPECTED_VISUAL_PAGE_REF_COUNT
+    assert data["summary"]["visual_derivative_unit_count"] == EXPECTED_VISUAL_DERIVATIVE_UNIT_COUNT
+    assert data["trace_completeness"]["has_visual_derivatives"] is (
+        EXPECTED_VISUAL_PAGE_REF_COUNT > 0 or EXPECTED_VISUAL_DERIVATIVE_UNIT_COUNT > 0
+    )
 
 
 def test_api_trace_manifest_source_endpoint_truthfulness():
@@ -217,6 +247,9 @@ def test_api_document_diagnostics_payload():
     data = response.json()
     assert data["target_id"] == TARGET_ID
     assert "available" in data
+    assert data["visual_page_ref_count"] == EXPECTED_VISUAL_PAGE_REF_COUNT
+    assert data["visual_derivative_unit_count"] == EXPECTED_VISUAL_DERIVATIVE_UNIT_COUNT
+    assert data["unit_kind_counts"] == EXPECTED_UNIT_KIND_COUNTS
 
 
 def test_api_document_normalized_text_payload():

@@ -258,3 +258,15 @@ def test_document_trace_js_source_and_tab_unavailable_states_are_identity_aware(
     assert "Indexed Chunks', { runId: data?.run_id, targetId: data?.target_id }" in js_content
     assert "Extracted Units', { runId: data.run_id, targetId: data.target_id, reasonCode: data.reason_code }" in js_content
     assert "formatEmptyMessage('extracted units', { runId: data.run_id, targetId: data.target_id, detail: `Page ${focusedPage}.` })" in js_content
+
+
+def test_document_trace_js_visual_summary_and_diagnostics_counters_present() -> None:
+    """Verify the trace UI renders visual counters and diagnostics breakdown sections."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "VISUAL PAGES" in js_content
+    assert "VISUAL-DERIVED UNITS" in js_content
+    assert "Visual Derivatives:" in js_content
+    assert "Unit Kind Breakdown" in js_content
+    assert "Object.entries(data.unit_kind_counts || {})" in js_content
