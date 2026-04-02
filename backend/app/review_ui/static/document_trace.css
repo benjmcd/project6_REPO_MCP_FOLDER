@@ -372,6 +372,24 @@
     min-height: 132px;
 }
 
+.eu-inline-note {
+    margin-top: 4px;
+    min-height: 0;
+}
+
+.eu-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.eu-section-title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
 .eu-card {
     width: 100%;
 }
@@ -429,4 +447,31 @@
     color: var(--text-color);
     font-size: 0.75rem;
     font-weight: 600;
+}
+
+.eu-visual-card {
+    gap: 12px;
+}
+
+.eu-visual-preview-link {
+    display: block;
+    text-decoration: none;
+}
+
+.eu-visual-preview {
+    display: block;
+    width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    background: var(--pane-header-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.eu-visual-preview-fallback {
+    padding: 16px;
+    border-radius: 4px;
+    background: var(--pane-header-bg);
+    color: var(--muted-text);
+    font-size: 0.85rem;
 }

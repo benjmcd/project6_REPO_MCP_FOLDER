@@ -63,6 +63,7 @@ from app.schemas.review_nrc_aps import (
     NrcApsReviewIndexedChunkItemOut,
     NrcApsReviewExtractedUnitsOut,
     NrcApsReviewExtractedUnitItemOut,
+    NrcApsReviewVisualArtifactItemOut,
 )
 
 def test_document_trace_js_binds_to_valid_schema() -> None:
@@ -82,6 +83,7 @@ def test_document_trace_js_binds_to_valid_schema() -> None:
     chunk_item_fields = set(re.findall(r"c\.([a-z_]+)", chunk_section))
     extracted_meta_fields = set(re.findall(r"data\.([a-z_]+)", extracted_section))
     extracted_item_fields = set(re.findall(r"unit\.([a-z_]+)", extracted_section))
+    visual_artifact_fields = set(re.findall(r"artifact\.([a-z_]+)", extracted_section))
     
     # Retrieve valid fields from the actual Pydantic schema
     valid_source_fields = set(NrcApsReviewTraceSourceOut.model_fields.keys())
@@ -92,6 +94,7 @@ def test_document_trace_js_binds_to_valid_schema() -> None:
     valid_chunk_item_fields = set(NrcApsReviewIndexedChunkItemOut.model_fields.keys())
     valid_extracted_meta_fields = set(NrcApsReviewExtractedUnitsOut.model_fields.keys())
     valid_extracted_item_fields = set(NrcApsReviewExtractedUnitItemOut.model_fields.keys())
+    valid_visual_artifact_fields = set(NrcApsReviewVisualArtifactItemOut.model_fields.keys())
     
     for field in source_fields:
         assert field in valid_source_fields, f"JS reads non-existent source field: {field}"
@@ -109,6 +112,8 @@ def test_document_trace_js_binds_to_valid_schema() -> None:
         assert field in valid_chunk_item_fields, f"JS reads non-existent chunk item field: {field}"
     for field in extracted_item_fields:
         assert field in valid_extracted_item_fields, f"JS reads non-existent extracted-unit item field: {field}"
+    for field in visual_artifact_fields:
+        assert field in valid_visual_artifact_fields, f"JS reads non-existent visual-artifact field: {field}"
 
 
 def test_document_trace_phase6_extract_units_markers_present() -> None:
@@ -270,3 +275,17 @@ def test_document_trace_js_visual_summary_and_diagnostics_counters_present() -> 
     assert "Visual Derivatives:" in js_content
     assert "Unit Kind Breakdown" in js_content
     assert "Object.entries(data.unit_kind_counts || {})" in js_content
+
+
+def test_document_trace_js_visual_artifact_extract_units_rendering_present() -> None:
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.css"
+    js_content = js_path.read_text(encoding="utf-8")
+    css_content = css_path.read_text(encoding="utf-8")
+
+    assert "Visual Artifacts on This Page" in js_content
+    assert "data.visual_artifacts" in js_content
+    assert "eu-visual-preview" in js_content
+    assert "artifact.endpoint" in js_content
+    assert ".eu-visual-preview" in css_content
+    assert ".eu-visual-card" in css_content

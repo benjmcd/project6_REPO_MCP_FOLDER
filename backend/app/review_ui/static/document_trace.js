@@ -137,6 +137,45 @@ function formatBbox(bbox) {
     }).join(', ');
 }
 
+function formatArtifactDimensions(artifact) {
+    const width = typeof artifact?.width === 'number' && Number.isFinite(artifact.width) ? artifact.width : null;
+    const height = typeof artifact?.height === 'number' && Number.isFinite(artifact.height) ? artifact.height : null;
+    if (width === null || height === null) return null;
+    return `${width}x${height}`;
+}
+
+function renderVisualArtifactCard(artifact) {
+    const detailParts = [];
+    if (artifact.page_number !== null && artifact.page_number !== undefined) detailParts.push(`p. ${artifact.page_number}`);
+    if (artifact.status) detailParts.push(`status ${artifact.status}`);
+    if (artifact.visual_page_class) detailParts.push(`class ${artifact.visual_page_class}`);
+    if (artifact.artifact_semantics) detailParts.push(`semantics ${artifact.artifact_semantics}`);
+    if (artifact.dpi !== null && artifact.dpi !== undefined) detailParts.push(`${artifact.dpi} dpi`);
+    if (artifact.format) detailParts.push(artifact.format.toUpperCase());
+    const dimensions = formatArtifactDimensions(artifact);
+    if (dimensions) detailParts.push(dimensions);
+
+    const metaText = detailParts.join(' | ');
+    const safeEndpoint = artifact.endpoint ? escapeHtml(artifact.endpoint) : '';
+    const previewAlt = `Visual artifact preview for ${formatTraceContext(State.selectedRunId, State.selectedTargetId)} on page ${artifact.page_number || '?'}`;
+    const previewHtml = safeEndpoint
+        ? `<a class="eu-visual-preview-link" href="${safeEndpoint}" target="_blank" rel="noopener noreferrer">
+                <img class="eu-visual-preview" src="${safeEndpoint}" alt="${escapeHtml(previewAlt)}" loading="lazy">
+           </a>`
+        : `<div class="eu-visual-preview-fallback">${formatUnavailableMessage('Visual artifact preview', { runId: State.selectedRunId, targetId: State.selectedTargetId })}</div>`;
+
+    return `
+        <article class="chunk-card eu-card eu-visual-card">
+            <div class="chunk-card-header">
+                <span class="chunk-card-meta">${escapeHtml(artifact.visual_page_class || artifact.artifact_semantics || 'visual artifact')}</span>
+                <span class="eu-precision-badge">${escapeHtml(artifact.status || 'metadata')}</span>
+            </div>
+            ${metaText ? `<div class="eu-card-details">${escapeHtml(metaText)}</div>` : ''}
+            ${previewHtml}
+        </article>
+    `;
+}
+
 function hasRenderableBbox(bbox) {
     if (!Array.isArray(bbox) || bbox.length !== 4) return false;
     return bbox.every(v => typeof v === 'number' && Number.isFinite(v));
@@ -783,15 +822,19 @@ function renderExtractedUnitsTab() {
     const focusedPage = getFocusedSourcePage();
     const totalPages = State.viewer.totalPages;
     const allUnits = Array.isArray(data.units) ? data.units : [];
+    const allVisualArtifacts = Array.isArray(data.visual_artifacts) ? data.visual_artifacts : [];
     const hasPageScope = totalPages > 0;
     const scopedUnits = hasPageScope ? allUnits.filter(unit => unit.page_number === focusedPage) : allUnits;
+    const scopedVisualArtifacts = hasPageScope
+        ? allVisualArtifacts.filter(artifact => artifact.page_number === focusedPage)
+        : allVisualArtifacts;
     const precisionLabel = data.source_precision === 'unit' ? 'unit (page-level jump)' : (data.source_precision || 'none');
     const pageScopeLabel = hasPageScope
         ? `Page ${focusedPage}${totalPages ? ` / ${totalPages}` : ''}`
         : 'Page scope unavailable';
     const pageCountLabel = hasPageScope
-        ? `${scopedUnits.length} units on this page (${data.total_unit_count} total)`
-        : `${allUnits.length} units loaded`;
+        ? `${scopedUnits.length} units and ${scopedVisualArtifacts.length} visual artifacts on this page (${data.total_unit_count} total units, ${allVisualArtifacts.length} total visual artifacts)`
+        : `${allUnits.length} units loaded and ${allVisualArtifacts.length} visual artifacts loaded`;
 
     let html = `<div class="tab-pane-content eu-pane" data-source-layer="${escapeHtml(data.source_layer || 'diagnostics_ordered_units')}" data-sync-precision="${escapeHtml(data.source_precision || 'none')}">`;
     html += `
@@ -805,20 +848,36 @@ function renderExtractedUnitsTab() {
         </div>
     `;
 
+    if (hasPageScope && scopedUnits.length === 0 && scopedVisualArtifacts.length === 0) {
+        html += `<div class="placeholder eu-empty-state">${formatEmptyMessage('extracted units or visual artifacts', { runId: data.run_id, targetId: data.target_id, detail: `Page ${focusedPage}.` })}</div>`;
+        html += `</div>`;
+        elements.tabContentArea.innerHTML = html;
+        return;
+    }
+
+    if (scopedVisualArtifacts.length > 0) {
+        html += `<section class="eu-section"><h3 class="eu-section-title">Visual Artifacts on This Page</h3><div class="card-list">`;
+        scopedVisualArtifacts.forEach((artifact) => {
+            html += renderVisualArtifactCard(artifact);
+        });
+        html += `</div></section>`;
+    }
+
     if (!data.available) {
-        html += `<div class="placeholder eu-empty-state">${formatUnavailableMessage('Extracted Units', { runId: data.run_id, targetId: data.target_id, reasonCode: data.reason_code })}</div>`;
+        html += `<div class="placeholder eu-inline-note">${formatUnavailableMessage('Extracted Units', { runId: data.run_id, targetId: data.target_id, reasonCode: data.reason_code })}</div>`;
         html += `</div>`;
         elements.tabContentArea.innerHTML = html;
         return;
     }
 
-    if (hasPageScope && scopedUnits.length === 0) {
-        html += `<div class="placeholder eu-empty-state">${formatEmptyMessage('extracted units', { runId: data.run_id, targetId: data.target_id, detail: `Page ${focusedPage}.` })}</div>`;
+    if (scopedUnits.length === 0) {
+        html += `<div class="placeholder eu-inline-note">${formatEmptyMessage('extracted units', { runId: data.run_id, targetId: data.target_id, detail: `Page ${focusedPage}.` })}</div>`;
         html += `</div>`;
         elements.tabContentArea.innerHTML = html;
         return;
     }
 
+    html += `<section class="eu-section"><h3 class="eu-section-title">Extracted Units</h3>`;
     html += `<div class="card-list">`;
     scopedUnits.forEach((unit) => {
         const detailParts = [];
@@ -865,7 +924,7 @@ function renderExtractedUnitsTab() {
             `;
         }
     });
-    html += `</div></div>`;
+    html += `</div></section></div>`;
     elements.tabContentArea.innerHTML = html;
 }
 

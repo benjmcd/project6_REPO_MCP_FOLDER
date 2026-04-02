@@ -28,6 +28,7 @@ from app.services.review_nrc_aps_document_trace import (
     compose_document_selector, 
     compose_trace_manifest,
     resolve_source_blob_info,
+    resolve_visual_artifact_info,
     compose_diagnostics_payload,
     compose_normalized_text_payload,
     compose_indexed_chunks_payload,
@@ -170,6 +171,30 @@ def get_document_source(run_id: str, target_id: str):
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@router.get("/runs/{run_id}/documents/{target_id}/visual-artifacts/{artifact_id}")
+def get_document_visual_artifact(run_id: str, target_id: str, artifact_id: str):
+    """Stream a preserved visual artifact for a target."""
+    try:
+        with runtime_db_session_for_run(run_id) as (binding, db):
+            artifact_path, media_type, filename = resolve_visual_artifact_info(
+                db,
+                run_id,
+                target_id,
+                binding.storage_dir,
+                artifact_id,
+            )
+
+        return FileResponse(
+            path=artifact_path,
+            media_type=media_type,
+            filename=filename,
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @router.get("/runs/{run_id}/documents/{target_id}/diagnostics", response_model=NrcApsReviewDiagnosticsOut)
 def get_document_diagnostics(run_id: str, target_id: str):
     """Return the structured diagnostics payload for a trackable target."""
@@ -215,7 +240,14 @@ def get_document_extracted_units(
     """Return diagnostics-backed extracted units for a target, optionally filtered to one page."""
     try:
         with runtime_db_session_for_run(run_id) as (binding, db):
-            return compose_extracted_units_payload(db, run_id, target_id, binding.review_root, page_number=page_number)
+            return compose_extracted_units_payload(
+                db,
+                run_id,
+                target_id,
+                binding.review_root,
+                storage_root=binding.storage_dir,
+                page_number=page_number,
+            )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except FileNotFoundError as e:
