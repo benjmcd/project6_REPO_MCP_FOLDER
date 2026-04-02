@@ -1,7 +1,9 @@
 import hashlib
 import json
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 from app.models.models import (
@@ -38,6 +40,70 @@ TEXT_LIKE_UNIT_KINDS = frozenset({
     "pdf_text_block",
     "pdf_paragraph",
 })
+
+
+@dataclass(slots=True)
+class _TraceEvidenceContext:
+    run_id: str
+    target_id: str
+    root: Path
+    storage_root: Path | None
+    target: ConnectorRunTarget
+    linkage: ApsContentLinkage | None
+    document: ApsContentDocument | None
+    diagnostics_loaded: bool = False
+    diagnostics_data: dict | None = None
+    diagnostics_reason: str | None = None
+
+
+def _resolve_trace_evidence_context(
+    db: Session,
+    run_id: str,
+    target_id: str,
+    *,
+    root: Path,
+    storage_root: Path | None = None,
+) -> _TraceEvidenceContext:
+    row = (
+        db.query(ConnectorRunTarget, ApsContentLinkage, ApsContentDocument)
+        .outerjoin(
+            ApsContentLinkage,
+            and_(
+                ApsContentLinkage.run_id == ConnectorRunTarget.connector_run_id,
+                ApsContentLinkage.target_id == ConnectorRunTarget.connector_run_target_id,
+            ),
+        )
+        .outerjoin(ApsContentDocument, ApsContentDocument.content_id == ApsContentLinkage.content_id)
+        .filter(
+            ConnectorRunTarget.connector_run_id == run_id,
+            ConnectorRunTarget.connector_run_target_id == target_id,
+        )
+        .first()
+    )
+    if row is None:
+        raise KeyError(f"Target {target_id} not found in run {run_id}")
+
+    target, linkage, document = row
+    return _TraceEvidenceContext(
+        run_id=run_id,
+        target_id=target_id,
+        root=root,
+        storage_root=storage_root,
+        target=target,
+        linkage=linkage,
+        document=document,
+    )
+
+
+def _load_context_diagnostics(context: _TraceEvidenceContext) -> tuple[dict | None, str | None]:
+    if context.diagnostics_loaded:
+        return context.diagnostics_data, context.diagnostics_reason
+
+    diagnostics_data, reason_code = _load_diagnostics_json(context.linkage, context.root)
+    context.diagnostics_loaded = True
+    context.diagnostics_data = diagnostics_data
+    context.diagnostics_reason = reason_code
+    return diagnostics_data, reason_code
 
 
 # ---------------------------------------------------------------------------
@@ -415,18 +481,14 @@ def resolve_source_blob_info(db: Session, run_id: str, target_id: str, root: Pat
     Returns: (absolute_path, media_type, filename)
     Raises: KeyError for missing target/blob, ValueError for safety, FileNotFoundError for missing disk objects.
     """
-    target = db.query(ConnectorRunTarget).filter(
-        ConnectorRunTarget.connector_run_id == run_id,
-        ConnectorRunTarget.connector_run_target_id == target_id
-    ).first()
-    
-    if not target:
-        raise KeyError(f"Target {target_id} not found in run {run_id}")
-
-    lnk = db.query(ApsContentLinkage).filter(
-        ApsContentLinkage.run_id == run_id,
-        ApsContentLinkage.target_id == target_id
-    ).first()
+    context = _resolve_trace_evidence_context(
+        db,
+        run_id,
+        target_id,
+        root=root,
+    )
+    target = context.target
+    lnk = context.linkage
 
     if not lnk or not lnk.blob_ref:
         raise KeyError(f"No source blob available for target {target_id}")
@@ -449,7 +511,7 @@ def resolve_source_blob_info(db: Session, run_id: str, target_id: str, root: Pat
 
     # Resolve media type (prioritize ApsContentDocument)
     media_type = "application/octet-stream"
-    doc_row = db.query(ApsContentDocument).filter(ApsContentDocument.content_id == lnk.content_id).first()
+    doc_row = context.document
     if doc_row and doc_row.media_type:
         media_type = doc_row.media_type
     
@@ -465,21 +527,18 @@ def resolve_visual_artifact_info(
     storage_root: Path | None,
     artifact_id: str,
 ) -> tuple[Path, str, str | None]:
-    target = db.query(ConnectorRunTarget).filter(
-        ConnectorRunTarget.connector_run_id == run_id,
-        ConnectorRunTarget.connector_run_target_id == target_id,
-    ).first()
-    if not target:
-        raise KeyError(f"Target {target_id} not found in run {run_id}")
-
-    lnk = db.query(ApsContentLinkage).filter(
-        ApsContentLinkage.run_id == run_id,
-        ApsContentLinkage.target_id == target_id,
-    ).first()
+    context = _resolve_trace_evidence_context(
+        db,
+        run_id,
+        target_id,
+        root=Path("."),
+        storage_root=storage_root,
+    )
+    lnk = context.linkage
     if not lnk:
         raise KeyError(f"No content linkage available for target {target_id}")
 
-    doc = db.query(ApsContentDocument).filter(ApsContentDocument.content_id == lnk.content_id).first()
+    doc = context.document
     if doc is None:
         raise KeyError(f"No content document available for target {target_id}")
 
@@ -506,18 +565,14 @@ def resolve_visual_artifact_info(
 
 def compose_trace_manifest(db: Session, run_id: str, target_id: str, root: Path) -> NrcApsReviewTraceManifestOut:
     """Assemble the authoritative trace manifest for run_id + target_id."""
-    target = db.query(ConnectorRunTarget).filter(
-        ConnectorRunTarget.connector_run_id == run_id,
-        ConnectorRunTarget.connector_run_target_id == target_id
-    ).first()
-
-    if not target:
-        raise KeyError(f"Target {target_id} not found in run {run_id}")
-
-    lnk = db.query(ApsContentLinkage).filter(
-        ApsContentLinkage.run_id == run_id,
-        ApsContentLinkage.target_id == target_id
-    ).first()
+    context = _resolve_trace_evidence_context(
+        db,
+        run_id,
+        target_id,
+        root=root,
+    )
+    target = context.target
+    lnk = context.linkage
 
     identity = NrcApsReviewTraceIdentityOut()
     source = NrcApsReviewTraceSourceOut()
@@ -545,7 +600,7 @@ def compose_trace_manifest(db: Session, run_id: str, target_id: str, root: Path)
         if lnk.diagnostics_ref:
             completeness.has_diagnostics = True
 
-            diagnostics_data, _ = _load_diagnostics_json(lnk, root)
+            diagnostics_data, _ = _load_context_diagnostics(context)
             if diagnostics_data is not None:
                 ordered_units = diagnostics_data.get("ordered_units")
                 if isinstance(ordered_units, list):
@@ -556,7 +611,7 @@ def compose_trace_manifest(db: Session, run_id: str, target_id: str, root: Path)
         if lnk.normalized_text_ref:
             completeness.has_normalized_text = True
 
-        doc = db.query(ApsContentDocument).filter(ApsContentDocument.content_id == lnk.content_id).first()
+        doc = context.document
         if doc:
             completeness.has_document_row = True
             identity.media_type = doc.media_type
@@ -667,24 +722,20 @@ def compose_trace_manifest(db: Session, run_id: str, target_id: str, root: Path)
 # ---------------------------------------------------------------------------
 
 def compose_diagnostics_payload(db: Session, run_id: str, target_id: str, root: Path) -> NrcApsReviewDiagnosticsOut:
-    target = db.query(ConnectorRunTarget).filter(
-        ConnectorRunTarget.connector_run_id == run_id,
-        ConnectorRunTarget.connector_run_target_id == target_id
-    ).first()
-    if not target:
-        raise KeyError(f"Target {target_id} not found in run {run_id}")
-
-    lnk = db.query(ApsContentLinkage).filter(
-        ApsContentLinkage.run_id == run_id,
-        ApsContentLinkage.target_id == target_id
-    ).first()
+    context = _resolve_trace_evidence_context(
+        db,
+        run_id,
+        target_id,
+        root=root,
+    )
+    lnk = context.linkage
 
     payload = NrcApsReviewDiagnosticsOut(run_id=run_id, target_id=target_id, available=False)
 
     if not lnk or not lnk.diagnostics_ref:
         return payload
 
-    diagnostics_data, _ = _load_diagnostics_json(lnk, root)
+    diagnostics_data, _ = _load_context_diagnostics(context)
     if diagnostics_data is None:
         return payload
 
@@ -696,7 +747,7 @@ def compose_diagnostics_payload(db: Session, run_id: str, target_id: str, root: 
     payload.warnings = diagnostics_data.get("warnings", [])
     payload.degradation_codes = diagnostics_data.get("degradation_codes", [])
 
-    doc = db.query(ApsContentDocument).filter(ApsContentDocument.content_id == lnk.content_id).first()
+    doc = context.document
     if doc:
         payload.document_class = doc.document_class
         payload.quality_status = doc.quality_status
@@ -707,17 +758,13 @@ def compose_diagnostics_payload(db: Session, run_id: str, target_id: str, root: 
 
 
 def compose_normalized_text_payload(db: Session, run_id: str, target_id: str, root: Path) -> NrcApsReviewNormalizedTextOut:
-    target = db.query(ConnectorRunTarget).filter(
-        ConnectorRunTarget.connector_run_id == run_id,
-        ConnectorRunTarget.connector_run_target_id == target_id
-    ).first()
-    if not target:
-        raise KeyError(f"Target {target_id} not found in run {run_id}")
-
-    lnk = db.query(ApsContentLinkage).filter(
-        ApsContentLinkage.run_id == run_id,
-        ApsContentLinkage.target_id == target_id
-    ).first()
+    context = _resolve_trace_evidence_context(
+        db,
+        run_id,
+        target_id,
+        root=root,
+    )
+    lnk = context.linkage
 
     payload = NrcApsReviewNormalizedTextOut(run_id=run_id, target_id=target_id, available=False)
 
@@ -740,7 +787,7 @@ def compose_normalized_text_payload(db: Session, run_id: str, target_id: str, ro
         payload.text = text_content
         payload.char_count = len(text_content)
 
-        diagnostics_data, _ = _load_diagnostics_json(lnk, root)
+        diagnostics_data, _ = _load_context_diagnostics(context)
         if diagnostics_data is not None:
             units = diagnostics_data.get("ordered_units", [])
             if len(units) > 0:
@@ -754,17 +801,13 @@ def compose_normalized_text_payload(db: Session, run_id: str, target_id: str, ro
 
 
 def compose_indexed_chunks_payload(db: Session, run_id: str, target_id: str, root: Path) -> NrcApsReviewIndexedChunksOut:
-    target = db.query(ConnectorRunTarget).filter(
-        ConnectorRunTarget.connector_run_id == run_id,
-        ConnectorRunTarget.connector_run_target_id == target_id
-    ).first()
-    if not target:
-        raise KeyError(f"Target {target_id} not found in run {run_id}")
-
-    lnk = db.query(ApsContentLinkage).filter(
-        ApsContentLinkage.run_id == run_id,
-        ApsContentLinkage.target_id == target_id
-    ).first()
+    context = _resolve_trace_evidence_context(
+        db,
+        run_id,
+        target_id,
+        root=root,
+    )
+    lnk = context.linkage
 
     payload = NrcApsReviewIndexedChunksOut(run_id=run_id, target_id=target_id, available=False)
 
@@ -805,17 +848,14 @@ def compose_extracted_units_payload(
     page_number: int | None = None,
 ) -> NrcApsReviewExtractedUnitsOut:
     """Assemble the diagnostics-backed extracted-units payload for a target."""
-    target = db.query(ConnectorRunTarget).filter(
-        ConnectorRunTarget.connector_run_id == run_id,
-        ConnectorRunTarget.connector_run_target_id == target_id,
-    ).first()
-    if not target:
-        raise KeyError(f"Target {target_id} not found in run {run_id}")
-
-    lnk = db.query(ApsContentLinkage).filter(
-        ApsContentLinkage.run_id == run_id,
-        ApsContentLinkage.target_id == target_id,
-    ).first()
+    context = _resolve_trace_evidence_context(
+        db,
+        run_id,
+        target_id,
+        root=root,
+        storage_root=storage_root,
+    )
+    lnk = context.linkage
 
     payload = NrcApsReviewExtractedUnitsOut(
         run_id=run_id,
@@ -827,7 +867,7 @@ def compose_extracted_units_payload(
     )
 
     if lnk:
-        doc = db.query(ApsContentDocument).filter(ApsContentDocument.content_id == lnk.content_id).first()
+        doc = context.document
         if doc is not None:
             visual_page_refs = _deserialize_visual_page_refs(doc.visual_page_refs_json)
             payload.visual_artifacts = _build_visual_artifact_items(
@@ -838,7 +878,7 @@ def compose_extracted_units_payload(
                 page_number=page_number,
             )
 
-    diagnostics_data, reason_code = _load_diagnostics_json(lnk, root)
+    diagnostics_data, reason_code = _load_context_diagnostics(context)
     if diagnostics_data is None:
         payload.reason_code = reason_code or "diagnostics_absent"
         return payload
