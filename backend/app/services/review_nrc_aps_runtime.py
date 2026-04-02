@@ -9,6 +9,7 @@ from typing import Any
 
 from app.core.config import settings
 from app.services.nrc_aps_contract import parse_iso_datetime
+from app.services.review_nrc_aps_runtime_roots import candidate_review_runtime_roots
 
 
 GOLDEN_RUN_ID = "d6be0fff-bbd7-468a-9b00-7103d5995494"
@@ -25,21 +26,12 @@ class ReviewRuntimeBinding:
 
 
 def get_allowlisted_roots() -> list[Path]:
-    storage_dir = Path(settings.storage_dir)
-    app_runtime_root = Path(__file__).resolve().parents[1] / "storage_test_runtime" / "lc_e2e"
-    backend_runtime_root = Path(__file__).resolve().parents[2] / "storage_test_runtime" / "lc_e2e"
-    roots = [app_runtime_root, backend_runtime_root]
-    roots.extend(
-        ancestor / "backend" / "app" / "storage_test_runtime" / "lc_e2e"
-        for ancestor in Path(__file__).resolve().parents
+    service_path = Path(__file__).resolve()
+    return candidate_review_runtime_roots(
+        app_root=service_path.parents[1],
+        backend_root=service_path.parents[2],
+        storage_dir=settings.storage_dir,
     )
-    if storage_dir.name == "storage":
-        roots.append(storage_dir / "lc_e2e")
-    deduped: dict[str, Path] = {}
-    for root in roots:
-        resolved = root.resolve()
-        deduped[str(resolved)] = resolved
-    return list(deduped.values())
 
 
 def is_summary_backed(directory: Path) -> bool:

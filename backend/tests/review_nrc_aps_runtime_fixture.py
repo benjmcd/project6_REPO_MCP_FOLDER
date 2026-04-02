@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -8,29 +9,23 @@ from sqlalchemy import create_engine, func
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.models.models import ApsContentLinkage
+from app.services.review_nrc_aps_runtime_roots import candidate_review_runtime_roots
 
 
 TESTS_ROOT = Path(__file__).resolve().parent
 
 
 def _resolve_runtime_parent() -> Path:
-    local_candidate = TESTS_ROOT.parent / "app" / "storage_test_runtime" / "lc_e2e"
-    candidates = [local_candidate]
-    candidates.extend(
-        ancestor / "backend" / "app" / "storage_test_runtime" / "lc_e2e"
-        for ancestor in TESTS_ROOT.parents
+    candidates = candidate_review_runtime_roots(
+        app_root=TESTS_ROOT.parent / "app",
+        backend_root=TESTS_ROOT.parent,
+        storage_dir=os.environ.get("STORAGE_DIR"),
     )
-
-    seen: set[Path] = set()
     for candidate in candidates:
-        resolved = candidate.resolve()
-        if resolved in seen:
-            continue
-        seen.add(resolved)
-        if resolved.exists():
-            return resolved
+        if candidate.exists():
+            return candidate
 
-    return local_candidate.resolve()
+    return candidates[0]
 
 
 RUNTIME_PARENT = _resolve_runtime_parent()
