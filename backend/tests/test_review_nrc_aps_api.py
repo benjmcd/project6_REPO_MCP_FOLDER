@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.api.deps import get_db
+from app.services.review_nrc_aps_runtime_roots import candidate_review_runtime_roots
 from main import app
 from review_nrc_aps_runtime_fixture import discover_passed_runtimes
 
@@ -101,3 +102,31 @@ def test_api_runs_lists_multiple_runtime_backed_candidates():
     data = response.json()
     returned_run_ids = {item["run_id"] for item in data["runs"]}
     assert MULTI_RUNTIME_RUN_IDS.issubset(returned_run_ids)
+
+
+def test_candidate_review_runtime_roots_use_deterministic_local_roots(tmp_path):
+    app_root = tmp_path / "backend" / "app"
+    backend_root = app_root.parent
+    app_root.mkdir(parents=True)
+
+    roots = candidate_review_runtime_roots(app_root=app_root, backend_root=backend_root)
+
+    assert roots == [
+        (app_root / "storage_test_runtime" / "lc_e2e").resolve(),
+        (backend_root / "storage_test_runtime" / "lc_e2e").resolve(),
+    ]
+
+
+def test_candidate_review_runtime_roots_accept_configured_storage_test_runtime(tmp_path):
+    app_root = tmp_path / "backend" / "app"
+    backend_root = app_root.parent
+    app_root.mkdir(parents=True)
+
+    configured_storage_root = tmp_path / "shared" / "storage_test_runtime"
+    roots = candidate_review_runtime_roots(
+        app_root=app_root,
+        backend_root=backend_root,
+        storage_dir=configured_storage_root,
+    )
+
+    assert (configured_storage_root / "lc_e2e").resolve() in roots
