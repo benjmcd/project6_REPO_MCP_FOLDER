@@ -422,3 +422,50 @@ def test_document_trace_css_keeps_split_panes_shrinkable_for_large_docs() -> Non
     assert ".tab-content-area {" in css_content
     assert "min-width: 0;" in css_content
     assert "min-height: 0;" in css_content
+
+
+def test_document_trace_js_indexed_chunks_sync_toggle_markers_present() -> None:
+    """Indexed Chunks should expose an explicit page-jump sync toggle."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.css"
+    js_content = js_path.read_text(encoding="utf-8")
+    css_content = css_path.read_text(encoding="utf-8")
+
+    assert "indexedChunksSyncEnabled: true" in js_content
+    assert "formatPageJumpPrecisionLabel(precision)" in js_content
+    assert "chunk_to_source" in js_content
+    assert "const chunkSyncAvailable = chunkSyncPrecision === 'page';" in js_content
+    assert "indexed-chunk-sync-toggle" in js_content
+    assert "State.indexedChunksSyncEnabled = toggle.checked" in js_content
+    assert "indexed-chunk-jump-btn" in js_content
+    assert ".indexed-chunks-sync-bar" in css_content
+    assert ".trace-sync-toggle" in css_content
+    assert ".trace-sync-checkbox" in css_content
+
+
+def test_document_trace_js_indexed_chunks_sync_reset_on_document_switch() -> None:
+    """loadTargetDoc must reset indexedChunksSyncEnabled to true when the target changes.
+
+    This is a static code-path guard, not a browser behavioral test.
+    It verifies that the reset line exists inside loadTargetDoc's
+    document-scoped state reset block, co-located with the tabData reset.
+    Full browser toggle behavior across document switches is not exercised here.
+    """
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    # Extract the loadTargetDoc function body (up to the next top-level async/function)
+    fn_start = js_content.index("async function loadTargetDoc(")
+    # Find the next top-level function declaration after loadTargetDoc
+    next_fn = js_content.index("\nasync function ", fn_start + 1)
+    load_target_body = js_content[fn_start:next_fn]
+
+    # The reset must live inside loadTargetDoc, not just anywhere in the file
+    assert "State.indexedChunksSyncEnabled = true;" in load_target_body, \
+        "indexedChunksSyncEnabled is not reset to true inside loadTargetDoc"
+
+    # It must appear after the tabData reset (same reset block)
+    tab_data_pos = load_target_body.index("State.tabData =")
+    sync_reset_pos = load_target_body.index("State.indexedChunksSyncEnabled = true;")
+    assert sync_reset_pos > tab_data_pos, \
+        "indexedChunksSyncEnabled reset should follow tabData reset in loadTargetDoc"
