@@ -9,6 +9,8 @@ with other test modules that override get_db at module scope on the shared app s
 """
 from __future__ import annotations
 
+from collections import Counter
+from contextlib import contextmanager
 import json
 import os
 import sys
@@ -16,12 +18,14 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm.session import Session as OrmSession
 
 os.environ["DB_INIT_MODE"] = "none"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.api.deps import get_db
+import app.services.review_nrc_aps_document_trace as trace_service
 from app.models.models import ApsContentLinkage, ApsContentDocument
 from app.schemas.review_nrc_aps import NrcApsReviewExtractedUnitsOut
 from main import app
@@ -33,10 +37,25 @@ from review_nrc_aps_runtime_fixture import (
     resolve_target_for_accession,
 )
 
+PASSED_RUNTIMES = discover_passed_runtimes()
+RUNTIMES_BY_RUN_ID = {runtime.run_id: runtime for runtime in PASSED_RUNTIMES}
+
 RUNTIME = latest_passed_runtime()
 RUN_ID = RUNTIME.run_id
 DB_PATH = RUNTIME.db_path
-MULTI_RUNTIME_RUN_IDS = [runtime.run_id for runtime in discover_passed_runtimes()[:3]]
+MULTI_RUNTIME_RUN_IDS = [runtime.run_id for runtime in PASSED_RUNTIMES[:3]]
+
+RUN_A_ID = "6a3dadd8-625a-4465-9b20-df05b39b8fc6"
+RUN_B_ID = "282ae183-0f73-4e73-ba6e-f124c56d957d"
+
+RUN_A_POSITIVE_TARGET_ID = "54a334ee-e2eb-43ea-9648-fba7d11ef59e"
+RUN_A_MIXED_TARGET_ID = "7287ce0a-710e-43e2-afe0-454ae4a32116"
+RUN_A_NEGATIVE_TARGET_ID = "4044136b-586f-419c-88c7-5d2c5b79ccef"
+RUN_A_LARGE_TARGET_ID = "9a2cdbda-e94a-4ac8-a294-a60b1c3daa61"
+RUN_B_POSITIVE_TARGET_ID = "fc7d00dc-d4e7-4da6-ace1-83babbc0a324"
+
+assert RUN_A_ID in RUNTIMES_BY_RUN_ID, f"Required representative run missing from test runtimes: {RUN_A_ID}"
+assert RUN_B_ID in RUNTIMES_BY_RUN_ID, f"Required representative run missing from test runtimes: {RUN_B_ID}"
 TEXT_LIKE_UNIT_KINDS = {
     "text_block",
     "paragraph",
@@ -159,6 +178,91 @@ def _apply_db_override():
 client = TestClient(app)
 
 
+def _resolve_runtime_artifact_path(runtime_root: Path, artifact_ref: str | None) -> Path | None:
+    if not artifact_ref:
+        return None
+    raw_path = Path(artifact_ref)
+    return (runtime_root / raw_path).resolve() if not raw_path.is_absolute() else raw_path.resolve()
+
+
+def _resolve_target_runtime_artifact_paths(run_id: str, target_id: str) -> tuple[Path | None, Path | None]:
+    runtime = RUNTIMES_BY_RUN_ID[run_id]
+    session = make_session(runtime)
+    try:
+        linkage = (
+            session.query(ApsContentLinkage)
+            .filter(
+                ApsContentLinkage.run_id == run_id,
+                ApsContentLinkage.target_id == target_id,
+            )
+            .first()
+        )
+    finally:
+        session.close()
+    assert linkage is not None, f"Expected linkage for representative target {target_id} in run {run_id}"
+    diagnostics_path = _resolve_runtime_artifact_path(runtime.runtime_dir, linkage.diagnostics_ref)
+    normalized_text_path = _resolve_runtime_artifact_path(runtime.runtime_dir, linkage.normalized_text_ref)
+    return diagnostics_path, normalized_text_path
+
+
+def _normalized_path_key(path_value: str | Path) -> str:
+    try:
+        return str(Path(path_value).resolve()).lower()
+    except Exception:
+        return str(path_value).lower()
+
+
+@contextmanager
+def _instrument_document_trace_route_backend(run_id: str, target_id: str):
+    diagnostics_path, normalized_text_path = _resolve_target_runtime_artifact_paths(run_id, target_id)
+    diagnostics_key = _normalized_path_key(diagnostics_path) if diagnostics_path is not None else None
+    normalized_text_key = _normalized_path_key(normalized_text_path) if normalized_text_path is not None else None
+
+    counters = {
+        "query_total": 0,
+        "query_by_model": Counter(),
+        "diagnostics_loader_calls": 0,
+        "diagnostics_file_reads": 0,
+        "normalized_text_reads": 0,
+    }
+    tracked_model_names = {"ConnectorRunTarget", "ApsContentLinkage", "ApsContentDocument", "ApsContentChunk"}
+
+    original_query = OrmSession.query
+    original_load_diagnostics = trace_service._load_diagnostics_json
+    original_read_text = Path.read_text
+
+    def wrapped_query(self, *entities, **kwargs):  # noqa: ANN001
+        if entities:
+            first = entities[0]
+            model_name = getattr(first, "__name__", None)
+            if model_name in tracked_model_names:
+                counters["query_total"] += 1
+                counters["query_by_model"][model_name] += 1
+        return original_query(self, *entities, **kwargs)
+
+    def wrapped_load_diagnostics(lnk, root):  # noqa: ANN001
+        counters["diagnostics_loader_calls"] += 1
+        return original_load_diagnostics(lnk, root)
+
+    def wrapped_read_text(path_obj, *args, **kwargs):  # noqa: ANN001
+        resolved_key = _normalized_path_key(path_obj)
+        if diagnostics_key and resolved_key == diagnostics_key:
+            counters["diagnostics_file_reads"] += 1
+        if normalized_text_key and resolved_key == normalized_text_key:
+            counters["normalized_text_reads"] += 1
+        return original_read_text(path_obj, *args, **kwargs)
+
+    OrmSession.query = wrapped_query
+    trace_service._load_diagnostics_json = wrapped_load_diagnostics
+    Path.read_text = wrapped_read_text
+    try:
+        yield counters
+    finally:
+        OrmSession.query = original_query
+        trace_service._load_diagnostics_json = original_load_diagnostics
+        Path.read_text = original_read_text
+
+
 # ---------------------------------------------------------------------------
 # Document selector route tests
 # ---------------------------------------------------------------------------
@@ -225,6 +329,19 @@ def test_api_trace_manifest_source_endpoint_truthfulness():
     data = response.json()
     assert data["source"]["source_endpoint"] is not None
     assert f"/runs/{RUN_ID}/documents/{TARGET_ID}/source" in data["source"]["source_endpoint"]
+
+
+def test_api_trace_manifest_exposes_page_geometry_for_large_pdf():
+    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_LARGE_TARGET_ID}/trace")
+    assert response.status_code == 200
+    data = response.json()
+
+    geometries = data["source"]["page_geometries"]
+    assert data["source"]["viewer_kind"] == "pdf"
+    assert len(geometries) == data["summary"]["page_count"] == 728
+    assert geometries[0]["page_number"] == 1
+    assert geometries[-1]["page_number"] == 728
+    assert all(item["width"] > 0 and item["height"] > 0 for item in geometries)
 
 
 def test_api_document_source_stream_success():
@@ -472,3 +589,208 @@ def test_api_document_trace_routes_switch_across_multiple_runtime_dbs(run_id: st
     trace_data = trace_response.json()
     assert trace_data["run_id"] == run_id
     assert trace_data["target_id"] == target_id
+
+
+def test_api_route_level_document_trace_backend_data_path_audit() -> None:
+    base = f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_POSITIVE_TARGET_ID}"
+    route_expectations = [
+        (
+            "trace",
+            f"{base}/trace",
+            {
+                "query_total": 2,
+                "chunk_queries": 1,
+                "diagnostics_loader_calls": 1,
+                "diagnostics_file_reads": 1,
+                "normalized_text_reads": 0,
+            },
+        ),
+        (
+            "diagnostics",
+            f"{base}/diagnostics",
+            {
+                "query_total": 1,
+                "chunk_queries": 0,
+                "diagnostics_loader_calls": 1,
+                "diagnostics_file_reads": 1,
+                "normalized_text_reads": 0,
+            },
+        ),
+        (
+            "normalized_text",
+            f"{base}/normalized-text",
+            {
+                "query_total": 1,
+                "chunk_queries": 0,
+                "diagnostics_loader_calls": 1,
+                "diagnostics_file_reads": 1,
+                "normalized_text_reads": 1,
+            },
+        ),
+        (
+            "indexed_chunks",
+            f"{base}/indexed-chunks",
+            {
+                "query_total": 2,
+                "chunk_queries": 1,
+                "diagnostics_loader_calls": 0,
+                "diagnostics_file_reads": 0,
+                "normalized_text_reads": 0,
+            },
+        ),
+        (
+            "extracted_units_all",
+            f"{base}/extracted-units",
+            {
+                "query_total": 1,
+                "chunk_queries": 0,
+                "diagnostics_loader_calls": 1,
+                "diagnostics_file_reads": 1,
+                "normalized_text_reads": 0,
+            },
+        ),
+        (
+            "extracted_units_page2",
+            f"{base}/extracted-units?page_number=2",
+            {
+                "query_total": 1,
+                "chunk_queries": 0,
+                "diagnostics_loader_calls": 1,
+                "diagnostics_file_reads": 1,
+                "normalized_text_reads": 0,
+            },
+        ),
+        (
+            "extracted_units_page3",
+            f"{base}/extracted-units?page_number=3",
+            {
+                "query_total": 1,
+                "chunk_queries": 0,
+                "diagnostics_loader_calls": 1,
+                "diagnostics_file_reads": 1,
+                "normalized_text_reads": 0,
+            },
+        ),
+    ]
+
+    for route_label, route_path, expected in route_expectations:
+        with _instrument_document_trace_route_backend(RUN_A_ID, RUN_A_POSITIVE_TARGET_ID) as counters:
+            response = client.get(route_path)
+
+        assert response.status_code == 200, f"Route {route_label} should return 200 in representative run A positive case"
+        assert counters["query_total"] == expected["query_total"], f"Unexpected query count for route {route_label}"
+        assert counters["query_by_model"]["ConnectorRunTarget"] == 1, f"Route {route_label} must resolve one target context query"
+        assert counters["query_by_model"].get("ApsContentChunk", 0) == expected["chunk_queries"], (
+            f"Unexpected chunk query count for route {route_label}"
+        )
+        assert counters["diagnostics_loader_calls"] == expected["diagnostics_loader_calls"], (
+            f"Unexpected diagnostics loader count for route {route_label}"
+        )
+        assert counters["diagnostics_file_reads"] == expected["diagnostics_file_reads"], (
+            f"Unexpected diagnostics file read count for route {route_label}"
+        )
+        assert counters["normalized_text_reads"] == expected["normalized_text_reads"], (
+            f"Unexpected normalized-text read count for route {route_label}"
+        )
+
+
+def test_api_session_level_document_trace_backend_data_path_audit() -> None:
+    base = f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_POSITIVE_TARGET_ID}"
+    flow = [
+        f"{base}/trace",
+        f"{base}/extracted-units",
+        f"{base}/diagnostics",
+        f"{base}/normalized-text",
+        f"{base}/indexed-chunks",
+    ]
+
+    with _instrument_document_trace_route_backend(RUN_A_ID, RUN_A_POSITIVE_TARGET_ID) as counters:
+        statuses = [client.get(route_path).status_code for route_path in flow]
+
+    assert statuses == [200, 200, 200, 200, 200]
+    assert counters["query_total"] == 7
+    assert counters["query_by_model"]["ConnectorRunTarget"] == 5
+    assert counters["query_by_model"].get("ApsContentChunk", 0) == 2
+    assert counters["diagnostics_loader_calls"] == 4
+    assert counters["diagnostics_file_reads"] == 4
+    assert counters["normalized_text_reads"] == 1
+
+
+def test_api_representative_run_a_positive_visual_behavior_preserved() -> None:
+    base = f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_POSITIVE_TARGET_ID}"
+    page2_payload = client.get(f"{base}/extracted-units?page_number=2").json()
+    page3_payload = client.get(f"{base}/extracted-units?page_number=3").json()
+
+    assert page2_payload["available"] is True
+    assert len(page2_payload["visual_artifacts"]) > 0
+    assert all(item["page_number"] == 2 for item in page2_payload["visual_artifacts"])
+    assert all(item["status"] == "preserved" for item in page2_payload["visual_artifacts"])
+
+    assert page3_payload["available"] is True
+    assert page3_payload["visual_artifacts"] == []
+    page3_visual_kinds = {
+        unit["unit_kind"]
+        for unit in page3_payload["units"]
+        if unit.get("unit_kind") in {"pdf_table", "ocr_image_supplement"}
+    }
+    assert page3_visual_kinds == {"pdf_table", "ocr_image_supplement"}
+
+
+def test_api_representative_run_a_mixed_behavior_preserved() -> None:
+    base = f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_MIXED_TARGET_ID}"
+    diagnostics_payload = client.get(f"{base}/diagnostics").json()
+    extracted_payload = client.get(f"{base}/extracted-units").json()
+
+    assert diagnostics_payload["available"] is True
+    assert diagnostics_payload["visual_derivative_unit_count"] > 0
+    assert extracted_payload["available"] is True
+    assert extracted_payload["visual_artifacts"] == []
+
+
+def test_api_representative_run_a_negative_behavior_preserved() -> None:
+    base = f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_NEGATIVE_TARGET_ID}"
+    diagnostics_payload = client.get(f"{base}/diagnostics").json()
+    extracted_payload = client.get(f"{base}/extracted-units").json()
+
+    assert diagnostics_payload["available"] is True
+    assert diagnostics_payload["visual_derivative_unit_count"] == 0
+    assert extracted_payload["available"] is True
+    assert extracted_payload["visual_artifacts"] == []
+    assert not any(
+        unit.get("unit_kind") in {"pdf_table", "ocr_image_supplement"}
+        for unit in extracted_payload["units"]
+    )
+
+
+def test_api_representative_run_b_positive_matches_run_a_positive() -> None:
+    run_a_base = f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_POSITIVE_TARGET_ID}"
+    run_b_base = f"/api/v1/review/nrc-aps/runs/{RUN_B_ID}/documents/{RUN_B_POSITIVE_TARGET_ID}"
+
+    run_a_trace = client.get(f"{run_a_base}/trace").json()
+    run_b_trace = client.get(f"{run_b_base}/trace").json()
+    run_a_page2 = client.get(f"{run_a_base}/extracted-units?page_number=2").json()
+    run_b_page2 = client.get(f"{run_b_base}/extracted-units?page_number=2").json()
+    run_a_page3 = client.get(f"{run_a_base}/extracted-units?page_number=3").json()
+    run_b_page3 = client.get(f"{run_b_base}/extracted-units?page_number=3").json()
+
+    assert run_a_trace["summary"]["visual_page_ref_count"] == run_b_trace["summary"]["visual_page_ref_count"]
+    assert run_a_trace["summary"]["visual_derivative_unit_count"] == run_b_trace["summary"]["visual_derivative_unit_count"]
+    assert len(run_a_page2["visual_artifacts"]) == len(run_b_page2["visual_artifacts"])
+    assert all(item["page_number"] == 2 for item in run_b_page2["visual_artifacts"])
+    assert run_a_page3["visual_artifacts"] == run_b_page3["visual_artifacts"] == []
+
+    run_a_page3_kinds = sorted(
+        {
+            unit["unit_kind"]
+            for unit in run_a_page3["units"]
+            if unit.get("unit_kind") in {"pdf_table", "ocr_image_supplement"}
+        }
+    )
+    run_b_page3_kinds = sorted(
+        {
+            unit["unit_kind"]
+            for unit in run_b_page3["units"]
+            if unit.get("unit_kind") in {"pdf_table", "ocr_image_supplement"}
+        }
+    )
+    assert run_a_page3_kinds == run_b_page3_kinds
