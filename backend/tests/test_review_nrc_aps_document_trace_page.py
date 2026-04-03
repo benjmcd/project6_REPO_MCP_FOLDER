@@ -289,3 +289,183 @@ def test_document_trace_js_visual_artifact_extract_units_rendering_present() -> 
     assert "artifact.endpoint" in js_content
     assert ".eu-visual-preview" in css_content
     assert ".eu-visual-card" in css_content
+
+
+def test_document_trace_js_scope_labels_present() -> None:
+    """Verify scope labeling infrastructure exists in JS and CSS."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.css"
+    js_content = js_path.read_text(encoding="utf-8")
+    css_content = css_path.read_text(encoding="utf-8")
+
+    # TAB_SCOPE constant
+    assert "TAB_SCOPE" in js_content
+    assert "extracted_units: 'page'" in js_content
+    assert "diagnostics: 'document'" in js_content
+
+    # Scope context bar function and content
+    assert "renderScopeContextBar" in js_content
+    assert "scope-context-bar" in js_content
+    assert "Scope: entire document" in js_content
+    assert "not affected by page navigation" in js_content
+
+    # Tab header scope badges
+    assert "tab-scope-badge" in js_content
+    assert ".tab-scope-badge" in css_content
+    assert ".scope-context-bar" in css_content
+
+
+def test_document_trace_js_document_scoped_tabs_have_scope_context() -> None:
+    """Verify each document-scoped tab renderer includes scope context."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "renderScopeContextBar('summary')" in js_content
+    assert "renderScopeContextBar('diagnostics')" in js_content
+    assert "renderScopeContextBar('normalized_text')" in js_content
+    assert "renderScopeContextBar('indexed_chunks')" in js_content
+
+
+def test_document_trace_js_scope_badges_in_tab_headers() -> None:
+    """Verify tab header rendering includes scope badge markup."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "TAB_SCOPE[t.tab_id]" in js_content
+    assert "scopeLabel" in js_content
+    assert "'page' ? 'page' : 'doc'" in js_content
+
+
+def test_document_trace_js_large_document_gating_rule_is_explicit() -> None:
+    """Large-document optimization must be gated by deterministic document facts."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "const LARGE_DOC_RENDER_POLICY = Object.freeze({" in js_content
+    assert "PAGE_THRESHOLD: 200" in js_content
+    assert "PREFETCH_RADIUS: 2" in js_content
+    assert "function shouldUseVirtualizedPageRendering(totalPages)" in js_content
+    assert "totalPages >= LARGE_DOC_RENDER_POLICY.PAGE_THRESHOLD" in js_content
+
+
+def test_document_trace_js_large_document_gating_has_no_document_specific_special_case() -> None:
+    """The optimization path must not key off specific accession/target/title identifiers."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "LOCALAPS00035" not in js_content
+    assert "9a2cdbda-e94a-4ac8-a294-a60b1c3daa61" not in js_content
+    assert "ML26050A483" not in js_content
+
+
+def test_document_trace_js_virtualized_render_markers_present() -> None:
+    """Large-doc viewer markers should show bounded windowing and geometry handling."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.css"
+    js_content = js_path.read_text(encoding="utf-8")
+    css_content = css_path.read_text(encoding="utf-8")
+
+    assert "useVirtualizedPages" in js_content
+    assert "windowToken" in js_content
+    assert "pageGeometryByPage" in js_content
+    assert "seedViewerPageGeometryFromManifest" in js_content
+    assert "source?.page_geometries" in js_content
+    assert "ensureViewerPageGeometry" in js_content
+    assert "pruneVirtualizedPageShells" in js_content
+    assert "ensureExtractedUnitsPageIndexes" in js_content
+    assert "overlayUnitsByPage" in js_content
+    assert "pdf-page-placeholder" in js_content
+    assert ".pdf-page-placeholder" in css_content
+
+
+def test_document_trace_js_focus_tracking_uses_probe_points() -> None:
+    """Large-doc focus tracking should not rely on scanning every page shell."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "PDF_FOCUS_PROBE_OFFSETS" in js_content
+    assert "document.elementFromPoint" in js_content
+
+
+def test_document_trace_js_focus_tracking_handles_scroll_edges_truthfully() -> None:
+    """Large-doc focus tracking should clamp to the real document edges."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "focusAnchorPage" in js_content
+    assert "clearViewerFocusAnchor" in js_content
+    assert "alignFocusAnchorPage" in js_content
+    assert "PDF_SCROLL_EDGE_TOLERANCE_PX" in js_content
+    assert "maxScrollTop" in js_content
+    assert "remainingScroll" in js_content
+    assert "const anchoredPage = State.viewer.focusAnchorPage" in js_content
+    assert "return anchoredPage;" in js_content
+    assert "pageShell.scrollIntoView({ behavior: 'auto', block });" in js_content
+    assert "let syncGeneration = 0;" in js_content
+    assert "window.requestAnimationFrame" in js_content
+    assert "const settledPage = detectFocusedPdfPage(container);" in js_content
+    assert "container.scrollTop <= PDF_SCROLL_EDGE_TOLERANCE_PX" in js_content
+    assert "remainingScroll <= PDF_SCROLL_EDGE_TOLERANCE_PX" in js_content
+    assert "candidate.pageNum === State.viewer.totalPages && candidate.offset >= 0.8" in js_content
+    assert "candidate.pageNum === 1 && candidate.offset <= 0.2" in js_content
+    assert "return State.viewer.totalPages > 0 ? State.viewer.totalPages : null;" in js_content
+
+
+def test_document_trace_css_keeps_split_panes_shrinkable_for_large_docs() -> None:
+    """Large PDF widths must not push the provenance pane off-screen."""
+    css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.css"
+    css_content = css_path.read_text(encoding="utf-8")
+
+    assert ".source-pane {" in css_content
+    assert ".provenance-pane {" in css_content
+    assert ".pane-content," in css_content
+    assert ".tab-content-area {" in css_content
+    assert "min-width: 0;" in css_content
+    assert "min-height: 0;" in css_content
+
+
+def test_document_trace_js_indexed_chunks_sync_toggle_markers_present() -> None:
+    """Indexed Chunks should expose an explicit page-jump sync toggle."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.css"
+    js_content = js_path.read_text(encoding="utf-8")
+    css_content = css_path.read_text(encoding="utf-8")
+
+    assert "indexedChunksSyncEnabled: true" in js_content
+    assert "formatPageJumpPrecisionLabel(precision)" in js_content
+    assert "chunk_to_source" in js_content
+    assert "const chunkSyncAvailable = chunkSyncPrecision === 'page';" in js_content
+    assert "indexed-chunk-sync-toggle" in js_content
+    assert "State.indexedChunksSyncEnabled = toggle.checked" in js_content
+    assert "indexed-chunk-jump-btn" in js_content
+    assert ".indexed-chunks-sync-bar" in css_content
+    assert ".trace-sync-toggle" in css_content
+    assert ".trace-sync-checkbox" in css_content
+
+
+def test_document_trace_js_indexed_chunks_sync_reset_on_document_switch() -> None:
+    """loadTargetDoc must reset indexedChunksSyncEnabled to true when the target changes.
+
+    This is a static code-path guard, not a browser behavioral test.
+    It verifies that the reset line exists inside loadTargetDoc's
+    document-scoped state reset block, co-located with the tabData reset.
+    Full browser toggle behavior across document switches is not exercised here.
+    """
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    # Extract the loadTargetDoc function body (up to the next top-level async/function)
+    fn_start = js_content.index("async function loadTargetDoc(")
+    # Find the next top-level function declaration after loadTargetDoc
+    next_fn = js_content.index("\nasync function ", fn_start + 1)
+    load_target_body = js_content[fn_start:next_fn]
+
+    # The reset must live inside loadTargetDoc, not just anywhere in the file
+    assert "State.indexedChunksSyncEnabled = true;" in load_target_body, \
+        "indexedChunksSyncEnabled is not reset to true inside loadTargetDoc"
+
+    # It must appear after the tabData reset (same reset block)
+    tab_data_pos = load_target_body.index("State.tabData =")
+    sync_reset_pos = load_target_body.index("State.indexedChunksSyncEnabled = true;")
+    assert sync_reset_pos > tab_data_pos, \
+        "indexedChunksSyncEnabled reset should follow tabData reset in loadTargetDoc"
