@@ -5,6 +5,7 @@ const State = {
     selectedTargetId: null,
     activeTab: 'summary',
     themePreference: document.documentElement.dataset.themePreference || 'system',
+    indexedChunksSyncEnabled: true,
     manifest: null,
     tabData: {
         diagnostics: null,
@@ -161,6 +162,12 @@ function renderScopeContextBar(tabId) {
     const scope = TAB_SCOPE[tabId] || 'document';
     if (scope === 'page') return '';
     return '<div class="scope-context-bar">Scope: entire document \u2014 not affected by page navigation</div>';
+}
+
+function formatPageJumpPrecisionLabel(precision) {
+    if (precision === 'unit') return 'unit (page-level jump)';
+    if (precision === 'page') return 'page (page-level jump)';
+    return precision || 'none';
 }
 
 function formatBbox(bbox) {
@@ -592,6 +599,14 @@ if (elements.tabContentArea) {
         if (!trigger) return;
         const pageNum = Number.parseInt(trigger.dataset.pageNumber || '', 10);
         jumpToSourcePage(pageNum);
+    });
+    elements.tabContentArea.addEventListener('change', (event) => {
+        const toggle = event.target.closest('#indexed-chunk-sync-toggle');
+        if (!toggle) return;
+        State.indexedChunksSyncEnabled = toggle.checked;
+        if (State.activeTab === 'indexed_chunks') {
+            renderIndexedChunksTab();
+        }
     });
 }
 
@@ -1221,10 +1236,32 @@ function renderIndexedChunksTab() {
         return;
     }
 
+    const chunkSyncPrecision = State.manifest?.sync_capabilities?.chunk_to_source || 'none';
+    const chunkSyncAvailable = chunkSyncPrecision === 'page';
+    const chunkSyncEnabled = chunkSyncAvailable && State.indexedChunksSyncEnabled;
+    const chunkSyncLabel = formatPageJumpPrecisionLabel('page');
+    const chunkSyncStatus = chunkSyncAvailable
+        ? (chunkSyncEnabled ? chunkSyncLabel : 'off')
+        : 'unavailable';
+
     let html = `<div class="tab-pane-content">`;
     html += renderScopeContextBar('indexed_chunks');
 
     html += `
+        <div class="eu-provenance-bar indexed-chunks-sync-bar">
+            <span class="eu-provenance">Source sync</span>
+            <label class="trace-sync-toggle" for="indexed-chunk-sync-toggle">
+                <input
+                    id="indexed-chunk-sync-toggle"
+                    class="trace-sync-checkbox"
+                    type="checkbox"
+                    ${chunkSyncEnabled ? 'checked' : ''}
+                    ${chunkSyncAvailable ? '' : 'disabled'}
+                >
+                <span>Enable ${escapeHtml(chunkSyncLabel)}</span>
+            </label>
+            <span class="eu-precision" data-sync-precision="${escapeHtml(chunkSyncPrecision)}">Sync: ${escapeHtml(chunkSyncStatus)}</span>
+        </div>
         <div style="display: flex; gap: 20px; margin-bottom: 20px;">
             <div class="layout-entry card-stat"><strong>CHUNK COUNT</strong><br><span>${data.chunk_count}</span></div>
         </div>
@@ -1234,18 +1271,42 @@ function renderIndexedChunksTab() {
     data.chunks.forEach(c => {
         const pages = (c.page_start !== null && c.page_end !== null) ? `Pages ${c.page_start}-${c.page_end}` : 'Unknown Pages';
         const chars = (c.start_char !== null && c.end_char !== null) ? `Chars ${c.start_char}-${c.end_char}` : 'Unknown Chars';
-        html += `
-            <div class="chunk-card">
-                <div class="chunk-card-header">
-                    <strong>Chunk #${c.chunk_ordinal}</strong>
-                    <span style="float: right; font-size: 0.85em; color: var(--muted-text);">${escapeHtml(pages)} | ${escapeHtml(chars)}</span>
-                </div>
-                <div class="chunk-card-meta">
-                    ${c.unit_kind ? `<span>Kind: ${escapeHtml(c.unit_kind)}</span> ` : ''}
-                    ${c.quality_status ? `<span style="margin-left:8px;">Status: ${escapeHtml(c.quality_status)}</span>` : ''}
-                </div>
-                <div class="chunk-card-text">${escapeHtml(c.chunk_text)}</div>
+        const mappedPage = Number.isInteger(c.page_start) && c.page_start > 0
+            ? c.page_start
+            : (Number.isInteger(c.page_end) && c.page_end > 0 ? c.page_end : null);
+        const canJump = chunkSyncEnabled && mappedPage !== null;
+        const cardInnerHtml = `
+            <div class="chunk-card-header">
+                <strong>Chunk #${c.chunk_ordinal}</strong>
+                <span style="float: right; font-size: 0.85em; color: var(--muted-text);">${escapeHtml(pages)} | ${escapeHtml(chars)}</span>
             </div>
+            <div class="chunk-card-meta">
+                ${c.unit_kind ? `<span>Kind: ${escapeHtml(c.unit_kind)}</span> ` : ''}
+                ${c.quality_status ? `<span style="margin-left:8px;">Status: ${escapeHtml(c.quality_status)}</span>` : ''}
+                ${canJump ? `<span style="margin-left:8px;">Jump: p. ${mappedPage}</span>` : ''}
+            </div>
+            <div class="chunk-card-text">${escapeHtml(c.chunk_text)}</div>
+        `;
+
+        if (canJump) {
+            html += `
+                <button
+                    type="button"
+                    class="chunk-card eu-card eu-card-clickable eu-jump-btn indexed-chunk-jump-btn"
+                    data-page-number="${mappedPage}"
+                    data-chunk-id="${escapeHtml(c.chunk_id || '')}"
+                    aria-label="Jump source viewer to page ${mappedPage} for chunk ${c.chunk_ordinal}"
+                >
+                    ${cardInnerHtml}
+                </button>
+            `;
+            return;
+        }
+
+        html += `
+            <article class="chunk-card" data-chunk-id="${escapeHtml(c.chunk_id || '')}">
+                ${cardInnerHtml}
+            </article>
         `;
     });
     html += `</div></div>`;
@@ -1271,7 +1332,7 @@ function renderExtractedUnitsTab() {
     const scopedVisualArtifacts = hasPageScope
         ? (pageIndexes?.visualArtifactsByPage.get(focusedPage) || [])
         : allVisualArtifacts;
-    const precisionLabel = data.source_precision === 'unit' ? 'unit (page-level jump)' : (data.source_precision || 'none');
+    const precisionLabel = formatPageJumpPrecisionLabel(data.source_precision);
     const pageScopeLabel = hasPageScope
         ? `Page ${focusedPage}${totalPages ? ` / ${totalPages}` : ''}`
         : 'Page scope unavailable';
@@ -1471,6 +1532,7 @@ async function loadTargetDoc(targetId, seq) {
     // Clear tab state cache since target changed
     State.tabData = { diagnostics: null, normalized_text: null, indexed_chunks: null, extracted_units: null };
     State.tabRequests.extracted_units = null;
+    State.indexedChunksSyncEnabled = true;
     clearExtractedUnitsPageIndexes();
 
     // Tear down old viewer for previous target

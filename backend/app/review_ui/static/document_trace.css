@@ -355,6 +355,36 @@
     font-weight: 700;
 }
 
+.indexed-chunks-sync-bar {
+    justify-content: space-between;
+}
+
+.trace-sync-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-color);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.trace-sync-checkbox {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.trace-sync-checkbox:disabled {
+    cursor: not-allowed;
+}
+
+.trace-sync-checkbox:disabled + span {
+    opacity: 0.6;
+}
+
 .eu-precision {
     color: var(--muted-text);
     font-size: 0.8rem;
