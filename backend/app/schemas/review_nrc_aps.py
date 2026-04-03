@@ -197,6 +197,13 @@ class NrcApsReviewTraceSourceOut(BaseModel):
     source_endpoint: str | None = None
     content_type: str | None = None
     size_bytes: int | None = None
+    page_geometries: list["NrcApsReviewTracePageGeometryOut"] = Field(default_factory=list)
+
+
+class NrcApsReviewTracePageGeometryOut(BaseModel):
+    page_number: int
+    width: float
+    height: float
 
 
 class NrcApsReviewTraceSummaryOut(BaseModel):

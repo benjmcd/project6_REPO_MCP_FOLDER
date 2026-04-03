@@ -334,3 +334,91 @@ def test_document_trace_js_scope_badges_in_tab_headers() -> None:
     assert "TAB_SCOPE[t.tab_id]" in js_content
     assert "scopeLabel" in js_content
     assert "'page' ? 'page' : 'doc'" in js_content
+
+
+def test_document_trace_js_large_document_gating_rule_is_explicit() -> None:
+    """Large-document optimization must be gated by deterministic document facts."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "const LARGE_DOC_RENDER_POLICY = Object.freeze({" in js_content
+    assert "PAGE_THRESHOLD: 200" in js_content
+    assert "PREFETCH_RADIUS: 2" in js_content
+    assert "function shouldUseVirtualizedPageRendering(totalPages)" in js_content
+    assert "totalPages >= LARGE_DOC_RENDER_POLICY.PAGE_THRESHOLD" in js_content
+
+
+def test_document_trace_js_large_document_gating_has_no_document_specific_special_case() -> None:
+    """The optimization path must not key off specific accession/target/title identifiers."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "LOCALAPS00035" not in js_content
+    assert "9a2cdbda-e94a-4ac8-a294-a60b1c3daa61" not in js_content
+    assert "ML26050A483" not in js_content
+
+
+def test_document_trace_js_virtualized_render_markers_present() -> None:
+    """Large-doc viewer markers should show bounded windowing and geometry handling."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.css"
+    js_content = js_path.read_text(encoding="utf-8")
+    css_content = css_path.read_text(encoding="utf-8")
+
+    assert "useVirtualizedPages" in js_content
+    assert "windowToken" in js_content
+    assert "pageGeometryByPage" in js_content
+    assert "seedViewerPageGeometryFromManifest" in js_content
+    assert "source?.page_geometries" in js_content
+    assert "ensureViewerPageGeometry" in js_content
+    assert "pruneVirtualizedPageShells" in js_content
+    assert "ensureExtractedUnitsPageIndexes" in js_content
+    assert "overlayUnitsByPage" in js_content
+    assert "pdf-page-placeholder" in js_content
+    assert ".pdf-page-placeholder" in css_content
+
+
+def test_document_trace_js_focus_tracking_uses_probe_points() -> None:
+    """Large-doc focus tracking should not rely on scanning every page shell."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "PDF_FOCUS_PROBE_OFFSETS" in js_content
+    assert "document.elementFromPoint" in js_content
+
+
+def test_document_trace_js_focus_tracking_handles_scroll_edges_truthfully() -> None:
+    """Large-doc focus tracking should clamp to the real document edges."""
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "focusAnchorPage" in js_content
+    assert "clearViewerFocusAnchor" in js_content
+    assert "alignFocusAnchorPage" in js_content
+    assert "PDF_SCROLL_EDGE_TOLERANCE_PX" in js_content
+    assert "maxScrollTop" in js_content
+    assert "remainingScroll" in js_content
+    assert "const anchoredPage = State.viewer.focusAnchorPage" in js_content
+    assert "return anchoredPage;" in js_content
+    assert "pageShell.scrollIntoView({ behavior: 'auto', block });" in js_content
+    assert "let syncGeneration = 0;" in js_content
+    assert "window.requestAnimationFrame" in js_content
+    assert "const settledPage = detectFocusedPdfPage(container);" in js_content
+    assert "container.scrollTop <= PDF_SCROLL_EDGE_TOLERANCE_PX" in js_content
+    assert "remainingScroll <= PDF_SCROLL_EDGE_TOLERANCE_PX" in js_content
+    assert "candidate.pageNum === State.viewer.totalPages && candidate.offset >= 0.8" in js_content
+    assert "candidate.pageNum === 1 && candidate.offset <= 0.2" in js_content
+    assert "return State.viewer.totalPages > 0 ? State.viewer.totalPages : null;" in js_content
+
+
+def test_document_trace_css_keeps_split_panes_shrinkable_for_large_docs() -> None:
+    """Large PDF widths must not push the provenance pane off-screen."""
+    css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.css"
+    css_content = css_path.read_text(encoding="utf-8")
+
+    assert ".source-pane {" in css_content
+    assert ".provenance-pane {" in css_content
+    assert ".pane-content," in css_content
+    assert ".tab-content-area {" in css_content
+    assert "min-width: 0;" in css_content
+    assert "min-height: 0;" in css_content

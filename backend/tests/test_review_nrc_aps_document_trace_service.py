@@ -218,6 +218,15 @@ def test_manifest_exposes_source_endpoint_truthfully(db_session, review_root):
         assert manifest.source.source_endpoint is None
 
 
+def test_manifest_exposes_pdf_page_geometry_metadata(db_session, review_root):
+    manifest = compose_trace_manifest(db_session, RUN_ID, TARGET_ID, review_root)
+    assert manifest.source.viewer_kind == "pdf"
+    assert len(manifest.source.page_geometries) == manifest.summary.page_count
+    assert manifest.source.page_geometries[0].page_number == 1
+    assert manifest.source.page_geometries[-1].page_number == manifest.summary.page_count
+    assert all(item.width > 0 and item.height > 0 for item in manifest.source.page_geometries)
+
+
 # ---------------------------------------------------------------------------
 # Source Resolution tests
 # ---------------------------------------------------------------------------
