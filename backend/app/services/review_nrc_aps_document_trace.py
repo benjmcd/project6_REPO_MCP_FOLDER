@@ -18,6 +18,7 @@ from app.schemas.review_nrc_aps import (
     NrcApsReviewTraceStateOut,
     NrcApsReviewTraceManifestOut,
     NrcApsReviewTraceIdentityOut,
+    NrcApsReviewTracePageGeometryOut,
     NrcApsReviewTraceSourceOut,
     NrcApsReviewTraceSummaryOut,
     NrcApsReviewTraceCompletenessOut,
@@ -475,35 +476,25 @@ def _deterministic_unit_id(target_id: str, index: int, unit: dict) -> str:
     ).hexdigest()
     return f"eu_{digest[:24]}"
 
-def resolve_source_blob_info(db: Session, run_id: str, target_id: str, root: Path) -> tuple[Path, str, str | None]:
-    """Resolve the original source blob for a target, ensuring path safety.
-    
-    Returns: (absolute_path, media_type, filename)
-    Raises: KeyError for missing target/blob, ValueError for safety, FileNotFoundError for missing disk objects.
-    """
-    context = _resolve_trace_evidence_context(
-        db,
-        run_id,
-        target_id,
-        root=root,
-    )
+def _resolve_source_blob_info_from_context(context: _TraceEvidenceContext) -> tuple[Path, str, str | None]:
+    """Resolve the original source blob for an already-resolved trace context."""
     target = context.target
     lnk = context.linkage
 
     if not lnk or not lnk.blob_ref:
-        raise KeyError(f"No source blob available for target {target_id}")
+        raise KeyError(f"No source blob available for target {context.target_id}")
 
     # blob_ref is the durable contract. It can be relative to root or absolute.
     blob_path_raw = Path(lnk.blob_ref)
     if not blob_path_raw.is_absolute():
-        absolute_blob_path = (root / blob_path_raw).resolve()
+        absolute_blob_path = (context.root / blob_path_raw).resolve()
     else:
         absolute_blob_path = blob_path_raw.resolve()
 
     # Path Safety: Ensure the path is within the run's review root or an allowlisted root.
     from app.services.review_nrc_aps_runtime import is_absolute_path_safe
     
-    if not is_absolute_path_safe(root, absolute_blob_path):
+    if not is_absolute_path_safe(context.root, absolute_blob_path):
         raise ValueError("Requested blob path is outside allowed runtime boundaries")
 
     if not absolute_blob_path.exists():
@@ -518,6 +509,36 @@ def resolve_source_blob_info(db: Session, run_id: str, target_id: str, root: Pat
     filename = target.sciencebase_file_name or absolute_blob_path.name
     
     return absolute_blob_path, media_type, filename
+
+
+def resolve_source_blob_info(db: Session, run_id: str, target_id: str, root: Path) -> tuple[Path, str, str | None]:
+    """Resolve the original source blob for a target, ensuring path safety.
+    
+    Returns: (absolute_path, media_type, filename)
+    Raises: KeyError for missing target/blob, ValueError for safety, FileNotFoundError for missing disk objects.
+    """
+    context = _resolve_trace_evidence_context(
+        db,
+        run_id,
+        target_id,
+        root=root,
+    )
+    return _resolve_source_blob_info_from_context(context)
+
+
+def _load_pdf_page_geometries(blob_path: Path) -> list[NrcApsReviewTracePageGeometryOut]:
+    """Return per-page unscaled geometry for a PDF source using the repo's canonical page.rect path."""
+    import fitz
+
+    with fitz.open(blob_path) as pdf_doc:
+        return [
+            NrcApsReviewTracePageGeometryOut(
+                page_number=index,
+                width=float(page.rect.width),
+                height=float(page.rect.height),
+            )
+            for index, page in enumerate(pdf_doc, start=1)
+        ]
 
 
 def resolve_visual_artifact_info(
@@ -695,11 +716,20 @@ def compose_trace_manifest(db: Session, run_id: str, target_id: str, root: Path)
         ),
     ]
 
+    warnings: list[str] = []
+
     # source_endpoint is now truthful for Phase 2 if blob is present.
     if completeness.has_source_blob:
         source.source_endpoint = f"/api/v1/review/nrc-aps/runs/{run_id}/documents/{target_id}/source"
-
-    warnings: list[str] = []
+        if source.viewer_kind == "pdf":
+            try:
+                blob_path, _, _ = _resolve_source_blob_info_from_context(context)
+                source.size_bytes = int(blob_path.stat().st_size)
+                source.page_geometries = _load_pdf_page_geometries(blob_path)
+            except (FileNotFoundError, ValueError):
+                warnings.append("PDF page geometry metadata is unavailable for this source document.")
+            except Exception:
+                warnings.append("PDF page geometry metadata could not be loaded for this source document.")
 
     limitations: list[str] = []
 

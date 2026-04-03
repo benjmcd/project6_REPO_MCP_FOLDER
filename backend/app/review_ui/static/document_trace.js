@@ -26,7 +26,18 @@ const State = {
         scale: 1.0,
         showBboxes: true,
         rendering: false,
-        pageFocusCleanup: null
+        pageFocusCleanup: null,
+        useVirtualizedPages: false,
+        renderToken: 0,
+        windowToken: 0,
+        activeWindowPages: null,
+        pageGeometrySource: null,
+        pageGeometryByPage: null,
+        focusAnchorPage: null,
+        extractedUnitsIndexSource: null,
+        unitsByPage: null,
+        overlayUnitsByPage: null,
+        visualArtifactsByPage: null
     }
 };
 
@@ -38,6 +49,14 @@ const TAB_SCOPE = {
     extracted_units: 'page',
     downstream_usage: 'document',
 };
+
+const LARGE_DOC_RENDER_POLICY = Object.freeze({
+    PAGE_THRESHOLD: 200,
+    PREFETCH_RADIUS: 2,
+});
+
+const PDF_FOCUS_PROBE_OFFSETS = Object.freeze([0.5, 0.2, 0.8, 0.05, 0.95]);
+const PDF_SCROLL_EDGE_TOLERANCE_PX = 8;
 
 const elements = {
     runSelector: document.getElementById('run-selector'),
@@ -196,6 +215,135 @@ function hasRenderableBbox(bbox) {
     return bbox.every(v => typeof v === 'number' && Number.isFinite(v));
 }
 
+function shouldUseVirtualizedPageRendering(totalPages) {
+    return Number.isInteger(totalPages) && totalPages >= LARGE_DOC_RENDER_POLICY.PAGE_THRESHOLD;
+}
+
+function clearExtractedUnitsPageIndexes() {
+    State.viewer.extractedUnitsIndexSource = null;
+    State.viewer.unitsByPage = null;
+    State.viewer.overlayUnitsByPage = null;
+    State.viewer.visualArtifactsByPage = null;
+}
+
+function ensureExtractedUnitsPageIndexes(extractedUnits = State.tabData.extracted_units) {
+    if (!extractedUnits || typeof extractedUnits !== 'object') return null;
+    if (State.viewer.extractedUnitsIndexSource === extractedUnits) {
+        return {
+            unitsByPage: State.viewer.unitsByPage,
+            overlayUnitsByPage: State.viewer.overlayUnitsByPage,
+            visualArtifactsByPage: State.viewer.visualArtifactsByPage,
+        };
+    }
+
+    const unitsByPage = new Map();
+    const overlayUnitsByPage = new Map();
+    const visualArtifactsByPage = new Map();
+    const units = Array.isArray(extractedUnits.units) ? extractedUnits.units : [];
+    const visualArtifacts = Array.isArray(extractedUnits.visual_artifacts) ? extractedUnits.visual_artifacts : [];
+
+    units.forEach((unit) => {
+        const pageNum = Number.isInteger(unit.page_number) && unit.page_number > 0 ? unit.page_number : null;
+        if (pageNum === null) return;
+
+        if (!unitsByPage.has(pageNum)) unitsByPage.set(pageNum, []);
+        unitsByPage.get(pageNum).push(unit);
+
+        if (hasRenderableBbox(unit.bbox)) {
+            if (!overlayUnitsByPage.has(pageNum)) overlayUnitsByPage.set(pageNum, []);
+            overlayUnitsByPage.get(pageNum).push(unit);
+        }
+    });
+
+    visualArtifacts.forEach((artifact) => {
+        const pageNum = Number.isInteger(artifact.page_number) && artifact.page_number > 0 ? artifact.page_number : null;
+        if (pageNum === null) return;
+
+        if (!visualArtifactsByPage.has(pageNum)) visualArtifactsByPage.set(pageNum, []);
+        visualArtifactsByPage.get(pageNum).push(artifact);
+    });
+
+    State.viewer.extractedUnitsIndexSource = extractedUnits;
+    State.viewer.unitsByPage = unitsByPage;
+    State.viewer.overlayUnitsByPage = overlayUnitsByPage;
+    State.viewer.visualArtifactsByPage = visualArtifactsByPage;
+
+    return { unitsByPage, overlayUnitsByPage, visualArtifactsByPage };
+}
+
+function clearViewerPageGeometryCache() {
+    State.viewer.pageGeometrySource = null;
+    State.viewer.pageGeometryByPage = null;
+    State.viewer.activeWindowPages = null;
+}
+
+function clearViewerFocusAnchor() {
+    State.viewer.focusAnchorPage = null;
+}
+
+function currentViewerGeometryKey() {
+    return `${State.selectedRunId || ''}:${State.selectedTargetId || ''}:${State.viewer.totalPages || 0}`;
+}
+
+function seedViewerPageGeometryFromManifest() {
+    const source = State.manifest?.source;
+    const rawPageGeometries = Array.isArray(source?.page_geometries) ? source.page_geometries : [];
+    if (rawPageGeometries.length === 0 || !Number.isInteger(State.viewer.totalPages) || State.viewer.totalPages <= 0) {
+        return null;
+    }
+
+    const geometryByPage = new Map();
+    rawPageGeometries.forEach((entry) => {
+        const pageNum = Number.isInteger(entry?.page_number) && entry.page_number > 0 ? entry.page_number : null;
+        const width = typeof entry?.width === 'number' && Number.isFinite(entry.width) && entry.width > 0 ? entry.width : null;
+        const height = typeof entry?.height === 'number' && Number.isFinite(entry.height) && entry.height > 0 ? entry.height : null;
+        if (pageNum === null || width === null || height === null) return;
+        geometryByPage.set(pageNum, { width, height });
+    });
+
+    if (geometryByPage.size !== State.viewer.totalPages) {
+        return null;
+    }
+
+    State.viewer.pageGeometrySource = currentViewerGeometryKey();
+    State.viewer.pageGeometryByPage = geometryByPage;
+    return geometryByPage;
+}
+
+async function ensureViewerPageGeometry(renderToken = State.viewer.renderToken) {
+    if (!State.viewer.useVirtualizedPages || !State.viewer.pdfDoc) return null;
+    const geometryKey = currentViewerGeometryKey();
+    if (
+        State.viewer.pageGeometrySource === geometryKey
+        && State.viewer.pageGeometryByPage instanceof Map
+        && State.viewer.pageGeometryByPage.size === State.viewer.totalPages
+    ) {
+        return State.viewer.pageGeometryByPage;
+    }
+
+    const manifestGeometry = seedViewerPageGeometryFromManifest();
+    if (manifestGeometry instanceof Map && manifestGeometry.size === State.viewer.totalPages) {
+        return manifestGeometry;
+    }
+
+    const geometryByPage = new Map();
+    const pdfDoc = State.viewer.pdfDoc;
+    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+        const page = await pdfDoc.getPage(pageNum);
+        if (!State.viewer.pdfDoc || renderToken !== State.viewer.renderToken) return null;
+        const viewport = page.getViewport({ scale: 1.0 });
+        geometryByPage.set(pageNum, {
+            width: viewport.width,
+            height: viewport.height,
+        });
+    }
+
+    if (!State.viewer.pdfDoc || renderToken !== State.viewer.renderToken) return null;
+    State.viewer.pageGeometrySource = geometryKey;
+    State.viewer.pageGeometryByPage = geometryByPage;
+    return geometryByPage;
+}
+
 function clearViewerOverlays() {
     document.querySelectorAll('.pdf-page-overlay').forEach(o => o.replaceChildren());
 }
@@ -213,10 +361,16 @@ function setBboxVisibility(enabled) {
 
 function syncViewerOverlays() {
     const extractedUnits = State.tabData.extracted_units;
-    const pageShells = document.querySelectorAll('.pdf-page-shell');
+    const pageShells = document.querySelectorAll('.pdf-page-shell[data-rendered="true"]');
     if (pageShells.length === 0) return;
 
     if (!State.viewer.showBboxes || !extractedUnits || !extractedUnits.available || !Array.isArray(extractedUnits.units)) {
+        clearViewerOverlays();
+        return;
+    }
+
+    const pageIndexes = ensureExtractedUnitsPageIndexes(extractedUnits);
+    if (!pageIndexes || !(pageIndexes.overlayUnitsByPage instanceof Map)) {
         clearViewerOverlays();
         return;
     }
@@ -229,7 +383,7 @@ function syncViewerOverlays() {
         const shellWidth = pageShell.clientWidth;
         const shellHeight = pageShell.clientHeight;
         const shellArea = shellWidth * shellHeight;
-        const pageUnits = extractedUnits.units.filter(u => u.page_number === pageNum && hasRenderableBbox(u.bbox));
+        const pageUnits = pageIndexes.overlayUnitsByPage.get(pageNum) || [];
 
         overlay.replaceChildren();
         pageUnits.forEach((unit) => {
@@ -278,6 +432,7 @@ async function ensureExtractedUnitsLoaded(seq = _actionSeq) {
         .then((data) => {
             if (seq !== _actionSeq) return null;
             if (State.selectedRunId !== requestedRunId || State.selectedTargetId !== requestedTargetId) return null;
+            clearExtractedUnitsPageIndexes();
             State.tabData.extracted_units = data;
             syncViewerOverlays();
             return data;
@@ -309,32 +464,74 @@ function setFocusedSourcePage(pageNum, { force = false } = {}) {
 }
 
 function detectFocusedPdfPage(container) {
-    const shells = Array.from(container.querySelectorAll('.pdf-page-shell[data-page-num]'));
-    if (shells.length === 0) return null;
-
     const containerRect = container.getBoundingClientRect();
-    let bestPage = null;
-    let bestVisibleHeight = -1;
-    let bestTopDistance = Number.POSITIVE_INFINITY;
-
-    shells.forEach((shell) => {
-        const pageNum = Number.parseInt(shell.dataset.pageNum || '', 10);
-        if (!Number.isInteger(pageNum)) return;
-
-        const rect = shell.getBoundingClientRect();
-        const visibleTop = Math.max(rect.top, containerRect.top);
-        const visibleBottom = Math.min(rect.bottom, containerRect.bottom);
-        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-        const topDistance = Math.abs(rect.top - containerRect.top);
-
-        if (visibleHeight > bestVisibleHeight || (visibleHeight === bestVisibleHeight && topDistance < bestTopDistance)) {
-            bestPage = pageNum;
-            bestVisibleHeight = visibleHeight;
-            bestTopDistance = topDistance;
+    if (containerRect.width <= 0 || containerRect.height <= 0) return null;
+    const anchoredPage = State.viewer.focusAnchorPage;
+    if (Number.isInteger(anchoredPage) && anchoredPage > 0) {
+        const anchoredShell = container.querySelector(`.pdf-page-shell[data-page-num="${anchoredPage}"]`);
+        if (anchoredShell) {
+            const anchoredRect = anchoredShell.getBoundingClientRect();
+            const visibleTop = Math.max(anchoredRect.top, containerRect.top);
+            const visibleBottom = Math.min(anchoredRect.bottom, containerRect.bottom);
+            if (visibleBottom > visibleTop) {
+                clearViewerFocusAnchor();
+                return anchoredPage;
+            }
+        } else {
+            clearViewerFocusAnchor();
         }
+    }
+    const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+    const remainingScroll = Math.max(0, maxScrollTop - container.scrollTop);
+
+    if (container.scrollTop <= PDF_SCROLL_EDGE_TOLERANCE_PX) {
+        return 1;
+    }
+    if (remainingScroll <= PDF_SCROLL_EDGE_TOLERANCE_PX) {
+        return State.viewer.totalPages > 0 ? State.viewer.totalPages : null;
+    }
+
+    const probeX = Math.max(
+        containerRect.left + 8,
+        Math.min(containerRect.right - 8, containerRect.left + (containerRect.width / 2))
+    );
+
+    const seenPages = new Set();
+    const candidates = [];
+    PDF_FOCUS_PROBE_OFFSETS.forEach((offset) => {
+        const probeY = Math.max(
+            containerRect.top + 8,
+            Math.min(containerRect.bottom - 8, containerRect.top + (containerRect.height * offset))
+        );
+        const shell = document.elementFromPoint(probeX, probeY)?.closest('.pdf-page-shell[data-page-num]');
+        if (!shell) return;
+
+        const pageNum = Number.parseInt(shell.dataset.pageNum || '', 10);
+        if (!Number.isInteger(pageNum) || seenPages.has(pageNum)) return;
+
+        seenPages.add(pageNum);
+        candidates.push({
+            pageNum,
+            offset,
+            centerDistance: Math.abs(offset - 0.5),
+        });
     });
 
-    return bestPage;
+    if (candidates.length === 0) return null;
+    const lowerEdgeCandidate = candidates.find((candidate) => (
+        candidate.pageNum === State.viewer.totalPages && candidate.offset >= 0.8
+    ));
+    if (lowerEdgeCandidate) {
+        return State.viewer.totalPages;
+    }
+    const upperEdgeCandidate = candidates.find((candidate) => (
+        candidate.pageNum === 1 && candidate.offset <= 0.2
+    ));
+    if (upperEdgeCandidate) {
+        return 1;
+    }
+    candidates.sort((a, b) => a.centerDistance - b.centerDistance || a.pageNum - b.pageNum);
+    return candidates[0].pageNum;
 }
 
 function attachViewerPageFocusTracking() {
@@ -347,9 +544,27 @@ function attachViewerPageFocusTracking() {
     if (!container) return;
 
     let debounceHandle = null;
+    let syncGeneration = 0;
     const syncFocusedPage = () => {
+        const syncId = ++syncGeneration;
         const detectedPage = detectFocusedPdfPage(container);
-        if (detectedPage !== null) setFocusedSourcePage(detectedPage);
+        if (detectedPage === null) return;
+
+        setFocusedSourcePage(detectedPage);
+        if (!State.viewer.useVirtualizedPages) return;
+
+        PDFViewer.renderPageWindow(detectedPage)
+            .then(() => new Promise((resolve) => window.requestAnimationFrame(resolve)))
+            .then(() => {
+                if (syncId !== syncGeneration || !State.viewer.pdfDoc) return;
+                const settledPage = detectFocusedPdfPage(container);
+                if (settledPage === null) return;
+                setFocusedSourcePage(settledPage);
+                if (!(State.viewer.activeWindowPages instanceof Set) || !State.viewer.activeWindowPages.has(settledPage)) {
+                    PDFViewer.renderPageWindow(settledPage).catch(() => {});
+                }
+            })
+            .catch(() => {});
     };
     const onScroll = () => {
         if (debounceHandle !== null) window.clearTimeout(debounceHandle);
@@ -483,6 +698,7 @@ const PDFViewer = {
 
             State.viewer.pdfDoc = pdfDoc;
             State.viewer.totalPages = pdfDoc.numPages;
+            State.viewer.useVirtualizedPages = shouldUseVirtualizedPageRendering(pdfDoc.numPages);
             setFocusedSourcePage(1, { force: true });
             await PDFViewer.renderAllVisiblePages();
         } catch (err) {
@@ -492,38 +708,232 @@ const PDFViewer = {
         }
     },
 
-    async renderAllVisiblePages() {
+    createVirtualPagePlaceholder(pageNum) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'pdf-page-placeholder';
+        placeholder.textContent = `Page ${pageNum}`;
+        return placeholder;
+    },
+
+    createVirtualPageShell(pageNum) {
+        const pageShell = document.createElement('div');
+        pageShell.className = 'pdf-page-shell';
+        pageShell.dataset.pageNum = String(pageNum);
+        pageShell.dataset.rendered = 'false';
+        pageShell.dataset.rendering = 'false';
+        pageShell.dataset.renderScale = '';
+
+        pageShell.appendChild(PDFViewer.createVirtualPagePlaceholder(pageNum));
+
+        const overlay = document.createElement('div');
+        overlay.className = 'pdf-page-overlay';
+        overlay.setAttribute('aria-hidden', 'true');
+        pageShell.appendChild(overlay);
+
+        return pageShell;
+    },
+
+    applyPageShellGeometry(pageShell, pageNum) {
+        const geometry = State.viewer.pageGeometryByPage?.get(pageNum);
+        if (!geometry) return;
+        pageShell.style.width = `${geometry.width * State.viewer.scale}px`;
+        pageShell.style.height = `${geometry.height * State.viewer.scale}px`;
+    },
+
+    ensurePageShellPlaceholder(pageShell, pageNum) {
+        let placeholder = pageShell.querySelector('.pdf-page-placeholder');
+        if (!placeholder) {
+            placeholder = PDFViewer.createVirtualPagePlaceholder(pageNum);
+            const overlay = pageShell.querySelector('.pdf-page-overlay');
+            if (overlay) pageShell.insertBefore(placeholder, overlay);
+            else pageShell.appendChild(placeholder);
+        }
+        return placeholder;
+    },
+
+    resetVirtualizedPageShell(pageShell, pageNum) {
+        const canvas = pageShell.querySelector('.pdf-page-canvas');
+        if (canvas) canvas.remove();
+        const overlay = pageShell.querySelector('.pdf-page-overlay');
+        if (overlay) overlay.replaceChildren();
+        PDFViewer.ensurePageShellPlaceholder(pageShell, pageNum);
+        pageShell.dataset.rendered = 'false';
+        pageShell.dataset.rendering = 'false';
+        pageShell.dataset.renderScale = '';
+    },
+
+    getVirtualizedWindowPages(centerPage) {
+        const totalPages = State.viewer.totalPages;
+        const clampedCenter = Math.max(1, Math.min(centerPage, totalPages));
+        const startPage = Math.max(1, clampedCenter - LARGE_DOC_RENDER_POLICY.PREFETCH_RADIUS);
+        const endPage = Math.min(totalPages, clampedCenter + LARGE_DOC_RENDER_POLICY.PREFETCH_RADIUS);
+        const pageNums = [];
+        for (let pageNum = startPage; pageNum <= endPage; pageNum++) {
+            pageNums.push(pageNum);
+        }
+        return new Set(pageNums);
+    },
+
+    pruneVirtualizedPageShells(activePageNums) {
+        const container = document.getElementById('pdf-viewer-container');
+        if (!container) return;
+
+        container.querySelectorAll('.pdf-page-shell[data-page-num]').forEach((pageShell) => {
+            const pageNum = Number.parseInt(pageShell.dataset.pageNum || '', 10);
+            if (!Number.isInteger(pageNum) || activePageNums.has(pageNum)) return;
+            if (pageShell.dataset.rendering === 'true') return;
+            PDFViewer.resetVirtualizedPageShell(pageShell, pageNum);
+        });
+    },
+
+    async prepareVirtualizedPageShells(renderToken) {
         const container = document.getElementById('pdf-viewer-container');
         if (!container || !State.viewer.pdfDoc) return;
-        container.innerHTML = '';
 
-        const pdfDoc = State.viewer.pdfDoc;
-        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-            const page = await pdfDoc.getPage(pageNum);
+        const geometryByPage = await ensureViewerPageGeometry(renderToken);
+        if (!geometryByPage || !State.viewer.pdfDoc || renderToken !== State.viewer.renderToken) return;
+
+        container.innerHTML = '';
+        for (let pageNum = 1; pageNum <= State.viewer.totalPages; pageNum++) {
+            const pageShell = PDFViewer.createVirtualPageShell(pageNum);
+            PDFViewer.applyPageShellGeometry(pageShell, pageNum);
+            container.appendChild(pageShell);
+        }
+    },
+
+    alignFocusAnchorPage(container) {
+        const anchoredPage = State.viewer.focusAnchorPage;
+        if (!Number.isInteger(anchoredPage) || anchoredPage < 1) return;
+        const pageShell = container.querySelector(`.pdf-page-shell[data-page-num="${anchoredPage}"][data-rendered="true"]`);
+        if (!pageShell) return;
+        const block = anchoredPage === State.viewer.totalPages ? 'end' : 'start';
+        pageShell.scrollIntoView({ behavior: 'auto', block });
+    },
+
+    async renderPageWindow(centerPage, { force = false, renderToken = State.viewer.renderToken, updateWindowToken = true } = {}) {
+        if (!State.viewer.useVirtualizedPages || !State.viewer.pdfDoc) return;
+        const container = document.getElementById('pdf-viewer-container');
+        if (!container) return;
+
+        const windowToken = updateWindowToken ? (State.viewer.windowToken + 1) : State.viewer.windowToken;
+        State.viewer.windowToken = windowToken;
+        const activePageNums = PDFViewer.getVirtualizedWindowPages(centerPage);
+        State.viewer.activeWindowPages = activePageNums;
+
+        PDFViewer.pruneVirtualizedPageShells(activePageNums);
+
+        const tasks = [];
+        activePageNums.forEach((pageNum) => {
+            tasks.push(PDFViewer.renderSinglePage(pageNum, { force, renderToken, windowToken }));
+        });
+
+        await Promise.all(tasks);
+        if (!State.viewer.pdfDoc || renderToken !== State.viewer.renderToken || windowToken !== State.viewer.windowToken) return;
+        PDFViewer.alignFocusAnchorPage(container);
+        PDFViewer.pruneVirtualizedPageShells(activePageNums);
+        syncViewerOverlays();
+    },
+
+    async renderSinglePage(pageNum, { force = false, renderToken = State.viewer.renderToken, windowToken = State.viewer.windowToken } = {}) {
+        if (!State.viewer.useVirtualizedPages || !State.viewer.pdfDoc) return;
+
+        const container = document.getElementById('pdf-viewer-container');
+        if (!container) return;
+
+        const pageShell = container.querySelector(`.pdf-page-shell[data-page-num="${pageNum}"]`);
+        if (!pageShell) return;
+        if (pageShell.dataset.rendering === 'true') return;
+
+        PDFViewer.applyPageShellGeometry(pageShell, pageNum);
+
+        const renderedScale = Number.parseFloat(pageShell.dataset.renderScale || '');
+        const renderedForCurrentScale = pageShell.dataset.rendered === 'true'
+            && Number.isFinite(renderedScale)
+            && Math.abs(renderedScale - State.viewer.scale) < 0.0001;
+        if (!force && renderedForCurrentScale) return;
+
+        pageShell.dataset.rendering = 'true';
+        try {
+            const page = await State.viewer.pdfDoc.getPage(pageNum);
+            if (!State.viewer.pdfDoc || renderToken !== State.viewer.renderToken) return;
             const viewport = page.getViewport({ scale: State.viewer.scale });
 
-            const pageShell = document.createElement('div');
-            pageShell.className = 'pdf-page-shell';
-            pageShell.dataset.pageNum = pageNum;
             pageShell.style.width = `${viewport.width}px`;
             pageShell.style.height = `${viewport.height}px`;
 
-            const canvas = document.createElement('canvas');
-            canvas.className = 'pdf-page-canvas';
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            pageShell.appendChild(canvas);
-
-            const overlay = document.createElement('div');
-            overlay.className = 'pdf-page-overlay';
-            overlay.setAttribute('aria-hidden', 'true');
-            pageShell.appendChild(overlay);
-
-            container.appendChild(pageShell);
+            let canvas = pageShell.querySelector('.pdf-page-canvas');
+            if (!canvas) {
+                canvas = document.createElement('canvas');
+                canvas.className = 'pdf-page-canvas';
+                pageShell.insertBefore(canvas, pageShell.firstChild);
+            }
+            canvas.width = Math.max(1, Math.floor(viewport.width));
+            canvas.height = Math.max(1, Math.floor(viewport.height));
 
             const ctx = canvas.getContext('2d');
+            if (!ctx) return;
             await page.render({ canvasContext: ctx, viewport }).promise;
+            if (!State.viewer.pdfDoc || renderToken !== State.viewer.renderToken) return;
+
+            if (windowToken !== State.viewer.windowToken || !(State.viewer.activeWindowPages instanceof Set) || !State.viewer.activeWindowPages.has(pageNum)) {
+                PDFViewer.resetVirtualizedPageShell(pageShell, pageNum);
+                return;
+            }
+
+            pageShell.dataset.rendered = 'true';
+            pageShell.dataset.renderScale = String(State.viewer.scale);
+            const placeholder = pageShell.querySelector('.pdf-page-placeholder');
+            if (placeholder) placeholder.remove();
+        } finally {
+            pageShell.dataset.rendering = 'false';
         }
+    },
+
+    async renderAllVisiblePages() {
+        const container = document.getElementById('pdf-viewer-container');
+        if (!container || !State.viewer.pdfDoc) return;
+        const renderToken = ++State.viewer.renderToken;
+        const pdfDoc = State.viewer.pdfDoc;
+        if (State.viewer.useVirtualizedPages) {
+            await PDFViewer.prepareVirtualizedPageShells(renderToken);
+            if (!State.viewer.pdfDoc || renderToken !== State.viewer.renderToken) return;
+            await PDFViewer.renderPageWindow(getFocusedSourcePage(), { force: true, renderToken, updateWindowToken: true });
+        } else {
+            container.innerHTML = '';
+            for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                if (!State.viewer.pdfDoc || renderToken !== State.viewer.renderToken) return;
+                const page = await pdfDoc.getPage(pageNum);
+                if (!State.viewer.pdfDoc || renderToken !== State.viewer.renderToken) return;
+                const viewport = page.getViewport({ scale: State.viewer.scale });
+
+                const pageShell = document.createElement('div');
+                pageShell.className = 'pdf-page-shell';
+                pageShell.dataset.pageNum = String(pageNum);
+                pageShell.dataset.rendered = 'true';
+                pageShell.dataset.rendering = 'false';
+                pageShell.dataset.renderScale = String(State.viewer.scale);
+                pageShell.style.width = `${viewport.width}px`;
+                pageShell.style.height = `${viewport.height}px`;
+
+                const canvas = document.createElement('canvas');
+                canvas.className = 'pdf-page-canvas';
+                canvas.width = Math.max(1, Math.floor(viewport.width));
+                canvas.height = Math.max(1, Math.floor(viewport.height));
+                pageShell.appendChild(canvas);
+
+                const overlay = document.createElement('div');
+                overlay.className = 'pdf-page-overlay';
+                overlay.setAttribute('aria-hidden', 'true');
+                pageShell.appendChild(overlay);
+
+                container.appendChild(pageShell);
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) continue;
+                await page.render({ canvasContext: ctx, viewport }).promise;
+            }
+        }
+        if (!State.viewer.pdfDoc || renderToken !== State.viewer.renderToken) return;
         syncViewerOverlays();
         PDFViewer.scrollToPage(getFocusedSourcePage());
         attachViewerPageFocusTracking();
@@ -539,8 +949,12 @@ const PDFViewer = {
     goToPage(pageNum) {
         if (!State.viewer.pdfDoc) return;
         const clamped = Math.max(1, Math.min(pageNum, State.viewer.totalPages));
+        State.viewer.focusAnchorPage = clamped;
         setFocusedSourcePage(clamped, { force: true });
         PDFViewer.scrollToPage(clamped);
+        if (State.viewer.useVirtualizedPages) {
+            PDFViewer.renderPageWindow(clamped).catch(() => {});
+        }
     },
 
     setZoom(newScale) {
@@ -572,6 +986,8 @@ const PDFViewer = {
     },
 
     teardown() {
+        State.viewer.renderToken += 1;
+        State.viewer.windowToken += 1;
         if (State.viewer.pdfDoc) {
             State.viewer.pdfDoc.destroy();
             State.viewer.pdfDoc = null;
@@ -586,10 +1002,15 @@ const PDFViewer = {
         State.viewer.focusedPage = 1;
         State.viewer.totalPages = 0;
         State.viewer.scale = 1.0;
+        State.viewer.useVirtualizedPages = false;
+        State.viewer.activeWindowPages = null;
+        clearViewerFocusAnchor();
         if (State.viewer.pageFocusCleanup) {
             State.viewer.pageFocusCleanup();
             State.viewer.pageFocusCleanup = null;
         }
+        clearViewerPageGeometryCache();
+        clearExtractedUnitsPageIndexes();
     }
 };
 
@@ -842,10 +1263,13 @@ function renderExtractedUnitsTab() {
     const totalPages = State.viewer.totalPages;
     const allUnits = Array.isArray(data.units) ? data.units : [];
     const allVisualArtifacts = Array.isArray(data.visual_artifacts) ? data.visual_artifacts : [];
+    const pageIndexes = ensureExtractedUnitsPageIndexes(data);
     const hasPageScope = totalPages > 0;
-    const scopedUnits = hasPageScope ? allUnits.filter(unit => unit.page_number === focusedPage) : allUnits;
+    const scopedUnits = hasPageScope
+        ? (pageIndexes?.unitsByPage.get(focusedPage) || [])
+        : allUnits;
     const scopedVisualArtifacts = hasPageScope
-        ? allVisualArtifacts.filter(artifact => artifact.page_number === focusedPage)
+        ? (pageIndexes?.visualArtifactsByPage.get(focusedPage) || [])
         : allVisualArtifacts;
     const precisionLabel = data.source_precision === 'unit' ? 'unit (page-level jump)' : (data.source_precision || 'none');
     const pageScopeLabel = hasPageScope
@@ -1047,6 +1471,7 @@ async function loadTargetDoc(targetId, seq) {
     // Clear tab state cache since target changed
     State.tabData = { diagnostics: null, normalized_text: null, indexed_chunks: null, extracted_units: null };
     State.tabRequests.extracted_units = null;
+    clearExtractedUnitsPageIndexes();
 
     // Tear down old viewer for previous target
     PDFViewer.teardown();

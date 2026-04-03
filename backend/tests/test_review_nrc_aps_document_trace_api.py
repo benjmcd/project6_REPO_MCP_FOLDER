@@ -51,6 +51,7 @@ RUN_B_ID = "282ae183-0f73-4e73-ba6e-f124c56d957d"
 RUN_A_POSITIVE_TARGET_ID = "54a334ee-e2eb-43ea-9648-fba7d11ef59e"
 RUN_A_MIXED_TARGET_ID = "7287ce0a-710e-43e2-afe0-454ae4a32116"
 RUN_A_NEGATIVE_TARGET_ID = "4044136b-586f-419c-88c7-5d2c5b79ccef"
+RUN_A_LARGE_TARGET_ID = "9a2cdbda-e94a-4ac8-a294-a60b1c3daa61"
 RUN_B_POSITIVE_TARGET_ID = "fc7d00dc-d4e7-4da6-ace1-83babbc0a324"
 
 assert RUN_A_ID in RUNTIMES_BY_RUN_ID, f"Required representative run missing from test runtimes: {RUN_A_ID}"
@@ -328,6 +329,19 @@ def test_api_trace_manifest_source_endpoint_truthfulness():
     data = response.json()
     assert data["source"]["source_endpoint"] is not None
     assert f"/runs/{RUN_ID}/documents/{TARGET_ID}/source" in data["source"]["source_endpoint"]
+
+
+def test_api_trace_manifest_exposes_page_geometry_for_large_pdf():
+    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_LARGE_TARGET_ID}/trace")
+    assert response.status_code == 200
+    data = response.json()
+
+    geometries = data["source"]["page_geometries"]
+    assert data["source"]["viewer_kind"] == "pdf"
+    assert len(geometries) == data["summary"]["page_count"] == 728
+    assert geometries[0]["page_number"] == 1
+    assert geometries[-1]["page_number"] == 728
+    assert all(item["width"] > 0 and item["height"] > 0 for item in geometries)
 
 
 def test_api_document_source_stream_success():
