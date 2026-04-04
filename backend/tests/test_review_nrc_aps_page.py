@@ -25,6 +25,7 @@ def test_page_loads():
     assert ">Light<" in response.text
     assert ">Dark<" in response.text
     assert 'aria-label="Close details"' in response.text
+    assert 'href="/review/analyst-insight"' in response.text
 
 
 def test_page_has_run_identity_container():
