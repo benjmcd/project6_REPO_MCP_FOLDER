@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from app.services.market_data_validation import validate_market_rows
 
 router = APIRouter(prefix="/market-pipeline/validation", tags=["market_data_validation"])
+alias_router = APIRouter(prefix="/analyst-insight/validation", tags=["analyst-insight"])
 
 
 class MarketDataValidationOptions(BaseModel):
@@ -38,3 +39,11 @@ def run_market_data_validation(payload: MarketDataValidationRunRequest) -> dict[
         normalize_columns=opts.normalize_columns,
         check_key_consistency=opts.check_key_consistency,
     )
+
+
+alias_router.add_api_route(
+    "/run",
+    run_market_data_validation,
+    methods=["POST"],
+    name="analyst_insight_run_validation",
+)
