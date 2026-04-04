@@ -87,11 +87,6 @@
         return data;
     }
 
-    const STORAGE_BRIDGE_404_HINT =
-        "\n\nIf you expected this run to exist: the API process must use the same Tier1 DATABASE_URL " +
-        "as the database where that run was ingested (backend/.env). For SQLite with project6.ps1, " +
-        "use -Tier1DatabaseBackend sqlite so .env is honored, then restart the server.";
-
     async function runIntegration() {
         const raw = $("integration-json").value;
         let body;
@@ -233,37 +228,6 @@
             $("insight-json").value = JSON.stringify(defaults.insight, null, 2);
         });
         $("btn-full-pipeline").addEventListener("click", runFullPipeline);
-        $("btn-doc-storage").addEventListener("click", runDocumentStorageBridge);
-    }
-
-    async function runDocumentStorageBridge() {
-        const runId = ($("ds-run-id").value || "").trim();
-        if (!runId) {
-            setOut("ds-out", "Enter a connector_run_id.", true);
-            setStatus("ds-status", "");
-            return;
-        }
-        const material = $("ds-material").value;
-        setStatus("ds-status", "Running…");
-        setOut("ds-out", "Calling /market-pipeline/from-document-storage/…", false);
-        try {
-            const path =
-                "/market-pipeline/from-document-storage/" + encodeURIComponent(runId);
-            const data = await postJson(path, {
-                material_source: material,
-                limit: 80,
-                offset: 0,
-            });
-            setOut("ds-out", JSON.stringify(data, null, 2), false);
-            setStatus("ds-status", "OK");
-        } catch (e) {
-            let msg = "HTTP " + (e.status || "?") + "\n" + e.message;
-            if (e.status === 404) {
-                msg += STORAGE_BRIDGE_404_HINT;
-            }
-            setOut("ds-out", msg, true);
-            setStatus("ds-status", "Error");
-        }
     }
 
     if (document.readyState === "loading") {
