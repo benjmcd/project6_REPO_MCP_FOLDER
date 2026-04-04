@@ -45,42 +45,6 @@
             This page calls the live backend at <code>/api/v1/market-pipeline/…</code>: cross-reference
             multiple sources, validate rows, then run heuristic insights (no external LLM).
         </p>
-        <p>
-            The <strong>document storage bridge</strong> below reads persisted Tier1 database rows
-            (PostgreSQL or SQLite — the same store the connector + NRC APS ingestion/indexing
-            pipeline writes after processing documents). It uses the same data as
-            <code>GET /api/v1/connectors/runs/{id}/content-units</code> and runs the full
-            integrate → validate → insight chain on that material.
-        </p>
-    </section>
-
-    <section class="mp-doc-bridge" aria-labelledby="doc-bridge-title">
-        <h2 id="doc-bridge-title">Bridge — document processing &amp; storage → structuring layer</h2>
-        <p class="hint">
-            Paste a <code>connector_run_id</code> from an NRC ADAMS APS run (see
-            <a href="/review/nrc-aps">NRC APS review</a> or <code>GET /api/v1/connectors/runs</code>).
-            Uses indexed content units by default; switch to retrieval plane if that scope is materialized.
-            The server must point <code>DATABASE_URL</code> (in <code>backend/.env</code>) at the same Tier1
-            database that holds the run — <code>start-api</code> with SQLite now prefers that URL instead of
-            always using <code>method_aware.db</code> alone.
-        </p>
-        <div class="mp-doc-bridge-controls">
-            <label for="ds-run-id">Connector run ID
-                <input type="text" id="ds-run-id" autocomplete="off" placeholder="e.g. from connector runs API" />
-            </label>
-            <label for="ds-material">Material source
-                <select id="ds-material" aria-label="Material source">
-                    <option value="content_index">content_index (indexed chunks)</option>
-                    <option value="retrieval_plane">retrieval_plane</option>
-                </select>
-            </label>
-            <button type="button" id="btn-doc-storage">Run pipeline from storage</button>
-            <span class="status" id="ds-status"></span>
-        </div>
-        <label for="ds-out" class="visually-hidden">Bridge response</label>
-        <pre id="ds-out" class="mp-out" aria-live="polite" style="max-height: 520px; margin-top: 0.5rem">
-Enter a connector run id and click &quot;Run pipeline from storage&quot;.
-        </pre>
     </section>
 
     <div class="mp-stages">
