@@ -31,6 +31,9 @@ def test_document_trace_page_shell_content() -> None:
     assert 'id="run-selector"' in html
     assert 'id="doc-selector"' in html
 
+    # Analyst Insight affordance
+    assert 'href="/review/analyst-insight"' in html
+
     # Panes
     assert 'class="pane source-pane"' in html
     assert 'class="pane provenance-pane"' in html
