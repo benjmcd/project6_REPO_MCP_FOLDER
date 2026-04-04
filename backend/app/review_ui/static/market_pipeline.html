@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market pipeline — Data integration, validation, insights</title>
+    <script>
+        (function () {
+            const storageKey = "nrc_aps_review_theme";
+            let preference = "system";
+            try {
+                preference = localStorage.getItem(storageKey) || "system";
+            } catch (e) {
+                preference = "system";
+            }
+            const prefersDark =
+                typeof window.matchMedia === "function" &&
+                window.matchMedia("(prefers-color-scheme: dark)").matches;
+            const resolvedTheme =
+                preference === "dark"
+                    ? "dark"
+                    : preference === "light"
+                      ? "light"
+                      : prefersDark
+                        ? "dark"
+                        : "light";
+            document.documentElement.dataset.theme = resolvedTheme;
+        })();
+    </script>
+    <link rel="stylesheet" href="/review/nrc-aps/static/review.css">
+    <link rel="stylesheet" href="/review/nrc-aps/static/market_pipeline.css">
+</head>
+<body class="market-pipeline-page">
+    <header class="mp-header">
+        <h1>Market pipeline</h1>
+        <nav class="mp-nav" aria-label="Project navigation">
+            <a href="/">Home</a>
+            <a href="/docs">API docs</a>
+            <a href="/review/nrc-aps">NRC APS review</a>
+        </nav>
+    </header>
+
+    <section class="mp-intro">
+        <p>
+            This page calls the live backend at <code>/api/v1/market-pipeline/…</code>: cross-reference
+            multiple sources, validate rows, then run heuristic insights (no external LLM).
+        </p>
+    </section>
+
+    <div class="mp-stages">
+        <section class="mp-stage" aria-labelledby="stage1-title">
+            <div class="mp-stage-header" id="stage1-title">1 — Data integration &amp; cross-reference</div>
+            <div class="mp-stage-body">
+                <label for="integration-json">Request JSON (POST …/integration/cross-reference)</label>
+                <textarea id="integration-json" spellcheck="false" aria-label="Integration request JSON"></textarea>
+                <div class="mp-actions">
+                    <button type="button" id="btn-integration">Run stage 1</button>
+                    <button type="button" id="btn-reset-integration" class="secondary">Reset sample</button>
+                    <span class="status" id="integration-status"></span>
+                </div>
+                <label for="integration-out">Response</label>
+                <pre id="integration-out" class="mp-out" aria-live="polite">Click Run stage 1.</pre>
+            </div>
+        </section>
+
+        <section class="mp-stage" aria-labelledby="stage2-title">
+            <div class="mp-stage-header" id="stage2-title">2 — Validation &amp; anomaly detection</div>
+            <div class="mp-stage-body">
+                <label for="validation-json">Request JSON (POST …/validation/run)</label>
+                <textarea id="validation-json" spellcheck="false" aria-label="Validation request JSON"></textarea>
+                <div class="mp-actions">
+                    <button type="button" id="btn-validation">Run stage 2</button>
+                    <button type="button" id="btn-reset-validation" class="secondary">Reset sample</button>
+                    <span class="status" id="validation-status"></span>
+                </div>
+                <label for="validation-out">Response</label>
+                <pre id="validation-out" class="mp-out" aria-live="polite">Click Run stage 2.</pre>
+            </div>
+        </section>
+
+        <section class="mp-stage mp-stage--wide" aria-labelledby="stage3-title">
+            <div class="mp-stage-header" id="stage3-title">3 — Market insight processor (heuristic)</div>
+            <div class="mp-stage-body">
+                <label for="insight-json">Request JSON (POST …/insights/process)</label>
+                <textarea id="insight-json" spellcheck="false" aria-label="Insight request JSON"></textarea>
+                <div class="mp-actions">
+                    <button type="button" id="btn-insight">Run stage 3</button>
+                    <button type="button" id="btn-reset-insight" class="secondary">Reset sample</button>
+                    <span class="status" id="insight-status"></span>
+                </div>
+                <label for="insight-out">Response</label>
+                <pre id="insight-out" class="mp-out" aria-live="polite">Click Run stage 3.</pre>
+            </div>
+        </section>
+    </div>
+
+    <section class="mp-full-run" aria-labelledby="full-title">
+        <h2 id="full-title" class="visually-hidden">Full pipeline</h2>
+        <button type="button" id="btn-full-pipeline">Run full pipeline (1 → 2 → 3)</button>
+        <p class="hint">
+            Uses the default stage 1 sample, flattens cross-references for validation, then builds a combined
+            payload for insights. Results appear below.
+        </p>
+        <label for="full-out" class="visually-hidden">Full pipeline output</label>
+        <pre id="full-out" class="mp-out" aria-live="polite" style="max-height: 480px; margin-top: 0.75rem">
+Click &quot;Run full pipeline&quot; to chain all stages.
+        </pre>
+    </section>
+
+    <script src="/review/nrc-aps/static/market_pipeline.js"></script>
+</body>
+</html>
