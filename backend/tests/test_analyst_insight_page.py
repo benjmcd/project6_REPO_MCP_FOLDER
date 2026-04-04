@@ -42,11 +42,18 @@ def test_market_pipeline_page_remains_absent() -> None:
     assert response.status_code == 404
 
 
-def test_analyst_insight_js_preserves_existing_backend_routes() -> None:
+def test_analyst_insight_js_uses_alias_routes() -> None:
     js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "analyst_insight.js"
     js_content = js_path.read_text(encoding="utf-8")
 
-    assert "/market-pipeline/integration/cross-reference" in js_content
-    assert "/market-pipeline/validation/run" in js_content
-    assert "/market-pipeline/insights/process" in js_content
-    assert 'The route names remain unchanged in this slice' not in js_content
+    assert "/analyst-insight/integration/cross-reference" in js_content
+    assert "/analyst-insight/validation/run" in js_content
+    assert "/analyst-insight/insights/process" in js_content
+
+
+def test_analyst_insight_html_references_alias_routes() -> None:
+    html_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "analyst_insight.html"
+    html_content = html_path.read_text(encoding="utf-8")
+
+    assert "/api/v1/analyst-insight/..." in html_content
+    assert "market-pipeline" not in html_content

@@ -95,6 +95,9 @@ api_router.include_router(review_nrc_aps.router, prefix="/review/nrc-aps", tags=
 api_router.include_router(market_data_integration.router)
 api_router.include_router(market_data_validation.router)
 api_router.include_router(market_insight_ai.router)
+api_router.include_router(market_data_integration.alias_router)
+api_router.include_router(market_data_validation.alias_router)
+api_router.include_router(market_insight_ai.alias_router)
 
 
 def _connector_executor(connector_key: str):
