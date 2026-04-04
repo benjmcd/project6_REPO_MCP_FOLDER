@@ -2,7 +2,7 @@
 
 ## 1. Purpose and truth model
 
-This document is the canonical live-repo status surface for the analyst-insight layer. It records the current state of the analyst-insight page, API routes, and deferred tech debt as of April 3, 2026.
+This document is the canonical live-repo status surface for the analyst-insight layer. It records the current state of the analyst-insight page, API routes, and deferred tech debt as of April 4, 2026.
 
 The analyst-insight layer is the product-facing deterministic integration, validation, and insight surface. It is not the retired document-storage bridge lane and is not part of the `handoff/` package.
 
@@ -25,6 +25,7 @@ Repo truth precedence for analyst-insight decisions:
 | Static asset serving | Shared mount at `/review/nrc-aps/static/` | `backend/main.py` static mount; `backend/app/review_ui/static/analyst_insight.html` references `/review/nrc-aps/static/review.css`, `/review/nrc-aps/static/analyst_insight.css`, `/review/nrc-aps/static/analyst_insight.js` |
 | Shared styling | Inherits `review.css` from the NRC APS review UI | `backend/app/review_ui/static/analyst_insight.html`; `backend/tests/test_analyst_insight_page.py` |
 | Root discoverability | Home page links to analyst-insight | `backend/main.py` index route; `backend/tests/test_analyst_insight_page.py::test_root_exposes_analyst_insight_link` |
+| Review-shell discoverability | `/review/nrc-aps` and `/review/nrc-aps/document-trace` link to analyst-insight | `backend/app/review_ui/static/index.html`; `backend/app/review_ui/static/document_trace.html`; `backend/tests/test_review_nrc_aps_page.py`; `backend/tests/test_review_nrc_aps_document_trace_page.py` |
 
 ## 3. Current contract summary
 
@@ -75,7 +76,7 @@ The following are deferred by design and are not missing work:
 - **Shared styling**: The analyst-insight page inherits `review.css` from the NRC APS review UI. This is intentional shared styling, not a missing analyst-insight-specific stylesheet.
 - **Mixed OpenAPI tags**: Legacy routes retain their original tags (`market-pipeline`, `market_data_validation`). Alias routes use the `analyst-insight` tag. No tag normalization or OpenAPI deprecation annotations have been applied.
 - **No deprecation decision**: Legacy `market-pipeline` routes remain fully supported. No timeline or mechanism for deprecation has been established.
-- **No cross-shell discoverability expansion**: The analyst-insight page is linked from the root home page but is not integrated into the NRC APS review shell navigation. That expansion has not been justified or planned.
+- **Cross-shell discoverability**: The NRC APS review shell pages (`/review/nrc-aps` and `/review/nrc-aps/document-trace`) now link to `/review/analyst-insight`. No broader navigation redesign or additional cross-shell coupling has been introduced.
 
 ## 5. What is not authoritative
 
@@ -101,7 +102,7 @@ These are not the ongoing live authority for analyst-insight state:
 
 If analyst-insight work continues, the next reasonable lanes are:
 
-1. **Discoverability refinement**: Expand analyst-insight visibility beyond the root home page link (e.g., integration into review shell navigation or cross-page linking). This is product-shape work and should be separately justified.
+1. **Discoverability refinement**: Review-shell discoverability links are now live (Slice 4). Further discoverability work (e.g., broader navigation redesign or additional cross-shell affordances) should be separately justified if needed.
 2. **Deprecation / rename strategy**: Establish a timeline and mechanism for retiring the legacy `market-pipeline` route prefix, normalizing internal module naming, and cleaning up the mixed OpenAPI tag surface. This has high blast radius and should be a distinct slice.
 
-Until one of those lanes is intentionally opened, the current analyst-insight state should be treated as stable and complete for its current docs/governance scope.
+Until one of those lanes is intentionally opened, the current analyst-insight state should be treated as stable and complete for its current scope.

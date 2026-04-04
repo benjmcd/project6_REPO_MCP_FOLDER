@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from alembic import command
@@ -29,7 +28,7 @@ def _run_migrations() -> None:
 
 
 def _initialize_database() -> None:
-    mode = os.getenv("DB_INIT_MODE", "migrate").strip().lower()
+    mode = settings.db_init_mode
     if mode == "none":
         return
     if mode == "create_all":
