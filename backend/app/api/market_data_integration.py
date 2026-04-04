@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from app.services.market_data_integration import build_integrated_dataset
 
 router = APIRouter(prefix="/market-pipeline/integration", tags=["market-pipeline"])
+alias_router = APIRouter(prefix="/analyst-insight/integration", tags=["analyst-insight"])
 
 
 class CrossReferenceRequest(BaseModel):
@@ -47,3 +48,12 @@ def cross_reference(body: CrossReferenceRequest) -> IntegratedDatasetResponse:
             for g in raw["cross_references"]
         ],
     )
+
+
+alias_router.add_api_route(
+    "/cross-reference",
+    cross_reference,
+    methods=["POST"],
+    response_model=IntegratedDatasetResponse,
+    name="analyst_insight_cross_reference",
+)

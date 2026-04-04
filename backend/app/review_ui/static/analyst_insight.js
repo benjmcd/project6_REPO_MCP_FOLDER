@@ -100,7 +100,7 @@
         }
         setStatus("integration-status", "Running...");
         try {
-            const data = await postJson("/market-pipeline/integration/cross-reference", body);
+            const data = await postJson("/analyst-insight/integration/cross-reference", body);
             setOut("integration-out", JSON.stringify(data, null, 2), false);
             setStatus("integration-status", "OK");
         } catch (e) {
@@ -120,7 +120,7 @@
         }
         setStatus("validation-status", "Running...");
         try {
-            const data = await postJson("/market-pipeline/validation/run", body);
+            const data = await postJson("/analyst-insight/validation/run", body);
             setOut("validation-out", JSON.stringify(data, null, 2), false);
             setStatus("validation-status", "OK");
         } catch (e) {
@@ -140,7 +140,7 @@
         }
         setStatus("insight-status", "Running...");
         try {
-            const data = await postJson("/market-pipeline/insights/process", body);
+            const data = await postJson("/analyst-insight/insights/process", body);
             setOut("insight-out", JSON.stringify(data, null, 2), false);
             setStatus("insight-status", "OK");
         } catch (e) {
@@ -153,7 +153,7 @@
         setOut("full-out", "Running stages 1 -> 2 -> 3...", false);
         try {
             const integrated = await postJson(
-                "/market-pipeline/integration/cross-reference",
+                "/analyst-insight/integration/cross-reference",
                 defaults.integration
             );
 
@@ -167,7 +167,7 @@
                 }
             }
 
-            const validated = await postJson("/market-pipeline/validation/run", {
+            const validated = await postJson("/analyst-insight/validation/run", {
                 rows: flatRows.length ? flatRows : [{ note: "no_cross_refs", region: "USW" }],
                 options: {
                     required_fields: [],
@@ -198,7 +198,7 @@
                 },
             };
 
-            const insights = await postJson("/market-pipeline/insights/process", insightPayload);
+            const insights = await postJson("/analyst-insight/insights/process", insightPayload);
             setOut(
                 "full-out",
                 JSON.stringify(
