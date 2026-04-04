@@ -61,12 +61,6 @@ def review_nrc_aps_document_trace_page() -> HTMLResponse:
     return HTMLResponse(content=trace_file.read_text(encoding="utf-8"))
 
 
-@app.get('/review/market-pipeline', response_class=HTMLResponse)
-def market_pipeline_page() -> HTMLResponse:
-    page_file = review_ui_static_dir / "market_pipeline.html"
-    return HTMLResponse(content=page_file.read_text(encoding="utf-8"))
-
-
 @app.get('/health')
 def health() -> dict[str, str]:
     return {'status': 'ok'}
@@ -83,8 +77,6 @@ def index() -> str:
         <ul>
           <li><a href='/docs'>OpenAPI docs</a></li>
           <li><a href='/health'>Health</a></li>
-          <li><a href='/review/market-pipeline'>Market pipeline demo</a> — integration, validation, insights UI</li>
-          <li><a href='/review/nrc-aps'>NRC APS pipeline review</a></li>
         </ul>
         <p>Use the upload endpoint first, then profile, transform, annotate, and analyze.</p>
       </body>
