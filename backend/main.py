@@ -61,6 +61,12 @@ def review_nrc_aps_document_trace_page() -> HTMLResponse:
     return HTMLResponse(content=trace_file.read_text(encoding="utf-8"))
 
 
+@app.get('/review/analyst-insight', response_class=HTMLResponse)
+def analyst_insight_page() -> HTMLResponse:
+    page_file = review_ui_static_dir / "analyst_insight.html"
+    return HTMLResponse(content=page_file.read_text(encoding="utf-8"))
+
+
 @app.get('/health')
 def health() -> dict[str, str]:
     return {'status': 'ok'}
@@ -77,6 +83,7 @@ def index() -> str:
         <ul>
           <li><a href='/docs'>OpenAPI docs</a></li>
           <li><a href='/health'>Health</a></li>
+          <li><a href='/review/analyst-insight'>Analyst insight layer</a> - deterministic integration, validation, and insight demo</li>
         </ul>
         <p>Use the upload endpoint first, then profile, transform, annotate, and analyze.</p>
       </body>
