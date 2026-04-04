@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
@@ -16,6 +17,7 @@ def _sqlite_url_for_path(path: Path) -> str:
 
 
 DEFAULT_DATABASE_URL = _sqlite_url_for_path(DEFAULT_DATABASE_PATH)
+DB_INIT_MODES = {"migrate", "create_all", "none"}
 
 
 def _normalize_sqlite_url(value: str) -> str:
@@ -47,6 +49,7 @@ def _normalize_storage_path(value: str | Path) -> str:
 class Settings(BaseSettings):
     app_name: str = "Method-Aware Framework"
     api_prefix: str = "/api/v1"
+    db_init_mode: Literal["migrate", "create_all", "none"] = Field(default="migrate", alias="DB_INIT_MODE")
     database_url: str = Field(default=DEFAULT_DATABASE_URL, alias="DATABASE_URL")
     storage_dir: str = Field(default=str(DEFAULT_STORAGE_PATH.resolve()), alias="STORAGE_DIR")
     max_upload_mb: int = Field(default=64, alias="MAX_UPLOAD_MB")
@@ -63,6 +66,15 @@ class Settings(BaseSettings):
     connector_per_host_fetch_limit: int = Field(default=2, alias="CONNECTOR_PER_HOST_FETCH_LIMIT")
 
     model_config = SettingsConfigDict(env_file=str(BACKEND_ENV_FILE), env_file_encoding="utf-8", extra="ignore")
+
+    @field_validator("db_init_mode", mode="before")
+    @classmethod
+    def _normalize_db_init_mode(cls, value: object) -> str:
+        normalized = "migrate" if value is None else str(value).strip().lower()
+        if normalized not in DB_INIT_MODES:
+            allowed = ", ".join(sorted(DB_INIT_MODES))
+            raise ValueError(f"DB_INIT_MODE must be one of: {allowed}")
+        return normalized
 
     def model_post_init(self, __context: object) -> None:
         if self.database_url.startswith("sqlite"):
