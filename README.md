@@ -315,6 +315,7 @@ py -3.12 tools\run_attached_dataset_eval.py --method-name cross_correlation --da
 ```
 
 ## Key docs
+- [docs/analyst_insight/analyst_insight_status_handoff.md](docs/analyst_insight/analyst_insight_status_handoff.md)
 - [docs/nrc_adams/nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md)
 - [SCIENCEBASE_PILOT_RUNBOOK.md](SCIENCEBASE_PILOT_RUNBOOK.md)
 - [METHOD_AWARE_FRAMEWORK_CHANGELOG.md](METHOD_AWARE_FRAMEWORK_CHANGELOG.md)
