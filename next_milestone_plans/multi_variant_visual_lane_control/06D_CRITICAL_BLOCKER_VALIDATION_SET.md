@@ -8,7 +8,7 @@ Prioritize the small subset of validation surfaces that should be treated as imm
 
 ### Category A — Test-verified blockers (B1–B6)
 
-Each of these has a verified test file that must pass under the canonical acceptance convention (see `06K`).
+Each of these has one or more verified test files that must pass under the canonical acceptance convention (see `06K`).
 
 #### B1 -- Owner behavior
 - `tests/test_nrc_aps_document_processing.py`
@@ -31,10 +31,11 @@ Why:
 - protects the repo-native control path most likely to carry selector activation later.
 
 #### B4 -- Runtime-root discovery
-- `backend/tests/test_review_nrc_aps_api.py`
+- `backend/tests/test_review_nrc_aps_catalog.py`
 
 Why:
-- protects deterministic `lc_e2e` review/runtime discovery behavior.
+- protects summary-backed candidate-run discovery under the allowlisted `lc_e2e` review roots
+- protects stable default-run selection once candidate runs are discovered
 
 #### B5 -- Diagnostics persistence safety
 - `backend/tests/test_diagnostics_ref_persistence.py`
@@ -42,11 +43,14 @@ Why:
 Why:
 - protects cross-run diagnostics-ref correctness and serializer safety.
 
-#### B6 -- Runtime DB binding/isolation
-- `backend/tests/test_review_nrc_aps_runtime_db.py`
+#### B6 -- Run-scoped review-root / runtime DB access
+- `backend/tests/test_review_nrc_aps_document_trace_api.py`
+- `backend/tests/test_review_nrc_aps_document_trace_service.py`
 
 Why:
-- protects runtime binding correctness, read-only access, schema validity, and per-runtime isolation.
+- protects run-scoped review-root resolution
+- protects read-only runtime DB access against audited `lc_e2e` data
+- protects path safety and run-bound trace payload access on review surfaces
 
 ### Category B — Planning-closed blockers (B7–B8)
 
@@ -75,5 +79,5 @@ Why:
 If any future selector/bootstrap proposal cannot state how it preserves **all of B1 through B8**, it is not strict enough to proceed.
 
 ### Status interpretation
-- **Category A (B1–B6):** Test-verified. Each has a verified test file that must pass under the canonical acceptance convention (see `06K`).
+- **Category A (B1–B6):** Test-verified. Each has one or more verified test files that must pass under the canonical acceptance convention (see `06K`).
 - **Category B (B7–B8):** Planning-closed only. Each requires implementation-produced visibility controls or test coverage before it can be marked implementation-closed. Planning closure alone is not sufficient.

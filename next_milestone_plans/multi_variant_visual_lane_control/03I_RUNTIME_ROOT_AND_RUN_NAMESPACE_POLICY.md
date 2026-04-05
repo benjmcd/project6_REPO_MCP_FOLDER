@@ -3,19 +3,17 @@
 ## Verified live evidence
 
 ### Runtime-root normalization
-`review_nrc_aps_runtime_roots.py`:
-- appends `lc_e2e` when given a root named `storage` or `storage_test_runtime`
-- uses deterministic candidate roots including:
+`review_nrc_aps_runtime.py`:
+- `get_allowlisted_roots()` deterministically includes:
   - `backend/app/storage_test_runtime/lc_e2e`
   - `backend/storage_test_runtime/lc_e2e`
+- appends `settings.storage_dir / "lc_e2e"` only when `settings.storage_dir` ends in `storage`
+- `discover_review_roots()` scans those allowlisted bases for summary-backed directories
+- `find_review_root_for_run(run_id)` resolves run IDs by loading those summary-backed roots
 
-### Runtime-root caller
-`review_nrc_aps_runtime.get_allowlisted_roots()` calls `candidate_review_runtime_roots(...)` with `settings.storage_dir`.
-
-### Tests
-`backend/tests/test_review_nrc_aps_api.py` verifies:
-- deterministic candidate review/runtime roots
-- configured `storage_test_runtime` roots normalize to `.../lc_e2e`
+### Tests and caller evidence
+- `backend/tests/test_review_nrc_aps_catalog.py` verifies summary-backed candidate run discovery and stable default selection.
+- `backend/tests/test_review_nrc_aps_details.py`, `backend/tests/test_review_nrc_aps_tree.py`, `backend/tests/test_review_nrc_aps_graph.py`, and `backend/tests/test_review_nrc_aps_document_trace_service.py` all rely on `find_review_root_for_run(...)` returning a valid audited review root.
 
 ## Operational decision
 

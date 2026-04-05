@@ -31,12 +31,12 @@
 
 ### A.2 Runtime and review discovery
 
-13. `review_nrc_aps_runtime_roots.py` explicitly normalizes `storage` or `storage_test_runtime` to `.../lc_e2e`.
-14. `candidate_review_runtime_roots(...)` explicitly includes:
+13. `review_nrc_aps_runtime.get_allowlisted_roots()` explicitly includes:
     - `backend/app/storage_test_runtime/lc_e2e`
     - `backend/storage_test_runtime/lc_e2e`
-15. `review_nrc_aps_runtime.get_allowlisted_roots()` delegates to `candidate_review_runtime_roots(...)` with `settings.storage_dir`.
-16. `backend/app/api/review_nrc_aps.py` imports `runtime_db_session_for_run` and uses it across multiple endpoints.
+14. The same function appends `settings.storage_dir / "lc_e2e"` only when `settings.storage_dir` ends in `storage`.
+15. `review_nrc_aps_runtime.discover_review_roots()` scans those allowlisted bases for summary-backed directories, and `find_review_root_for_run(run_id)` resolves run IDs by loading those summaries.
+16. `backend/app/api/review_nrc_aps.py` imports `find_review_root_for_run` and uses run-scoped review-root resolution across its run-bound endpoints.
 
 ### A.3 Test roots and verified tests
 
@@ -45,9 +45,22 @@
     - `backend/tests/`
 18. `backend/tests/test_nrc_aps_run_config.py` verifies preserved processing overrides.
 19. `backend/tests/test_visual_artifact_pipeline.py` verifies artifact existence, file SHA-256, artifact metadata, and content-index roundtrip behavior.
-20. `backend/tests/test_review_nrc_aps_api.py` verifies deterministic candidate review/runtime roots and configured `storage_test_runtime` normalization into `.../lc_e2e`.
+20. `backend/tests/test_review_nrc_aps_catalog.py` verifies summary-backed candidate run discovery and stable default-run selection.
 21. `backend/tests/test_diagnostics_ref_persistence.py` verifies diagnostics-ref persistence and cross-run safety.
-22. `backend/tests/test_review_nrc_aps_runtime_db.py` verifies runtime binding/session correctness, read-only behavior, schema validation, and per-runtime isolation.
+22. `backend/tests/test_review_nrc_aps_document_trace_api.py` and `backend/tests/test_review_nrc_aps_document_trace_service.py` verify run-scoped review-root resolution, read-only runtime DB-backed trace access, path safety, and missing-layer handling against an audited `lc_e2e` runtime.
+
+### A.3a Root-live correction
+
+The focused workspace root does **not** contain:
+- `review_nrc_aps_runtime_roots.py`
+- `candidate_review_runtime_roots(...)`
+- `runtime_db_session_for_run(...)`
+- `backend/tests/test_review_nrc_aps_runtime_db.py`
+
+Current root-live review/runtime authority is instead:
+- `backend/app/services/review_nrc_aps_runtime.py`
+- run-bound review routes in `backend/app/api/review_nrc_aps.py`
+- document-trace review tests under `backend/tests/test_review_nrc_aps_document_trace_*.py`
 
 ### A.4 Control-key and packaging surface
 
@@ -57,12 +70,12 @@
 
 ### A.5 Review/catalog/API visibility surface
 
-26. `review_nrc_aps_catalog.discover_candidate_runs()` iterates all discovered runtime bindings and builds the run selector list from them.
+26. `review_nrc_aps_catalog.discover_candidate_runs()` enumerates summary-backed review roots via `discover_review_roots()`, merges them with `ConnectorRun` rows, and builds the run selector list from them.
 27. `backend/app/api/review_nrc_aps.py:get_runs()` returns `discover_candidate_runs()` directly.
-28. `backend/app/api/review_nrc_aps.py:get_document_visual_artifact()` serves preserved visual artifacts by `run_id` via `runtime_db_session_for_run(...)`.
-29. `backend/app/api/review_nrc_aps.py:get_document_diagnostics()` serves diagnostics by `run_id` via `runtime_db_session_for_run(...)`.
-30. `backend/app/api/review_nrc_aps.py:get_document_normalized_text()` serves normalized text by `run_id` via `runtime_db_session_for_run(...)`.
-31. `backend/app/api/review_nrc_aps.py` also exposes indexed chunks and extracted units by `run_id`.
+28. `backend/app/api/review_nrc_aps.py:get_run_documents()` and `get_document_trace()` expose run-/target-scoped selector and trace data after resolving `find_review_root_for_run(run_id)`.
+29. `backend/app/api/review_nrc_aps.py:get_document_source()` streams source blobs after resolving the run-scoped review root and applying in-root path safety.
+30. `backend/app/api/review_nrc_aps.py:get_document_diagnostics()`, `get_document_normalized_text()`, `get_document_indexed_chunks()`, and `get_document_extracted_units()` expose run-bound derived data after resolving `find_review_root_for_run(run_id)` and delegating to document-trace payload composers.
+31. `backend/app/api/review_nrc_aps.py` also exposes run-bound overview/tree/node/file-detail/file-preview surfaces keyed by `run_id`.
 
 ### A.6 Report/export run-bound persistence
 

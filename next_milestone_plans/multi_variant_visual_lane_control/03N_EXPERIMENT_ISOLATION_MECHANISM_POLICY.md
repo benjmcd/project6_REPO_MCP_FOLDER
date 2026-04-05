@@ -74,7 +74,11 @@ The live repo now confirms that separate roots are not enough by themselves, bec
 So an experiment is **not** sufficiently isolated if it remains visible through:
 - `get_runs()`
 - review catalog run selectors
-- visual artifact retrieval
+- pipeline-definition / overview / tree views
+- node details / file details / file preview
+- document selector retrieval
+- document trace retrieval
+- source blob retrieval
 - diagnostics retrieval
 - normalized text retrieval
 - indexed chunk retrieval
