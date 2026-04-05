@@ -1,0 +1,548 @@
+You are performing a **strict, bounded implementation pass** for the planning pack in:
+
+C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\next_milestone_plans\multi_variant_visual_lane_control
+
+All relevant planning docs/spec docs in that directory are part of the implementation-control baseline for this task.
+
+This implementation pass occurs **after**:
+- the major planning-doc hardening pass,
+- the narrow stale-closure / hierarchy cleanup pass,
+- and the bounded live-repo verification pass.
+
+You must treat this as a **strict, bounded implementation task**.
+
+---
+
+## Objective
+
+Implement the **baseline-preserving integrated selector bootstrap** required by the current planning pack.
+
+This means:
+
+- create the live `visual_lane_mode` selector path end-to-end,
+- implement only the minimum baseline-only selector/registry structure required by the current milestone,
+- wire it only through the frozen insertion / propagation / default / first-consumption surfaces,
+- preserve baseline behavior by default,
+- keep non-baseline behavior unavailable in normal runtime,
+- keep scope locked to the first integrated phase,
+- and verify that the implementation is consistent with the planning-control baseline.
+
+This is **not** a redesign task.
+This is **not** a broad refactor.
+This is **not** a future-architecture implementation.
+
+---
+
+## Current milestone and scope lock
+
+Your work must remain aligned with the current intended phase:
+
+- baseline-preserving integrated selector bootstrap
+- baseline only integrated first
+- PDF visual-lane only
+- experimental variants remain out-of-band / worktree-only at this phase
+- no outward API/report/review/export/persistence contract redesign
+- no artifact path/hash/byte semantics redesign
+- no OCR subsystem redesign
+- no simultaneous integrated baseline + A + B + C selector architecture
+- no repo-native enforcement implementation in this task
+
+Do **not** drift into broader future-state redesign.
+
+---
+
+## Authority model and conflict resolution
+
+Treat the active planning docs in:
+
+C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\next_milestone_plans\multi_variant_visual_lane_control
+
+as the planning authority baseline for this task.
+
+Treat the following as **non-authoritative unless explicitly promoted**:
+- `99_CLAUDE_CODE_AUDIT_NOTES_AND_RECOMMENDATIONS.md`
+- exported session findings / transcripts
+- `mvvlc_reconciliation_checklist_v6.md`
+- `multi_variant_visual_lane_program_spec_v2.md`
+- one-off task/prompt/input files
+- PRD/progress/task-control artifacts
+
+Do not let those override the active planning docs.
+
+### Conflict-resolution rule
+If planning docs appear to conflict, follow this strength order:
+
+1. control/evidence docs governing the frozen implementation boundary and blocker posture
+2. implementation-baseline docs governing bootstrap and validation
+3. navigation/workflow/playbook docs
+
+In practice, the implementation should be governed primarily by the current equivalents of:
+- `03U`
+- `03V`
+- `03W`
+- `03M`
+- `03N`
+- `05D`
+- `06D`
+- `06E`
+- `06J`
+- `06K`
+- `06I`
+
+Do **not** let operational playbooks or session summaries override stronger control/evidence docs.
+
+---
+
+## Edit scope
+
+### Default allowed code surfaces
+Your first implementation attempt must be limited to the minimum likely owner path:
+
+- `backend/app/services/connectors_nrc_adams.py`
+- `backend/app/services/nrc_aps_artifact_ingestion.py`
+- `backend/app/services/nrc_aps_document_processing.py`
+
+## Change-discipline rules
+
+Before editing any file, first identify and report the **initial target file set**:
+
+- primary implementation files
+- conditionally allowed supporting files
+- tests expected to change, if any
+
+For each file in that initial set, state in one line why it is necessary.
+
+### File-scope widening rule
+If, during implementation, you conclude that an additional file must be changed beyond the initial target file set, do **not** silently widen scope.
+Instead:
+- stop,
+- identify the exact additional file,
+- explain why the current milestone cannot be completed without touching it,
+- and classify that need as either:
+  - bounded supporting change
+  - or stop-condition scope widening
+
+### Structural-drift prohibition
+Do **not** perform any of the following unless they are strictly required for milestone completion and you explicitly justify them:
+- file renames
+- file moves
+- module extraction
+- broad cleanup refactors
+- generalized config-framework restructuring
+- generalized selector-framework restructuring
+
+### No future scaffolding rule
+Do **not** add any dormant or speculative future-state infrastructure, including:
+- unused selector modes
+- unused registry slots
+- placeholder variant implementations
+- unused config keys
+- dead branching paths
+- extra abstractions intended “for later”
+
+Implement only the minimum live surfaces required for the current baseline-only milestone.
+
+### Test-scope discipline
+If tests must change:
+- touch only the minimum tests required to prove the milestone behavior
+- do not perform broad fixture cleanup
+- do not rewrite unrelated tests
+- do not widen the validation surface beyond what the changed implementation actually requires
+
+### Conditionally allowed supporting surfaces
+Touch these only if the minimum owner-path implementation cannot be completed safely without them:
+
+- targeted tests under:
+  - `tests/`
+  - `backend/tests/`
+- root utility consumers / ingestion-gate surfaces affected by the change, such as:
+  - `corpus_diagnostics.py`
+  - `run_full_export.py`
+  - `nrc_aps_artifact_ingestion_gate.py` if present and affected
+
+### Disallowed unless you prove necessity and stop first
+Do **not** widen into these surfaces without first stopping and explicitly reporting why the milestone cannot be completed within the bounded path:
+
+- API routes
+- review/report/export services
+- models/schemas
+- retrieval/evidence-bundle contracts
+- migrations
+- workflows / enforcement surfaces
+- broad utility refactors
+- planning docs
+
+### Planning-doc rule
+Do **not** edit planning docs in this task.
+
+---
+
+## Read-first implementation method
+
+Before changing any file, you must:
+
+1. identify the exact existing source-of-truth pattern for:
+   - request-config normalization
+   - processing-config forwarding
+   - default config population
+   - first seam-local behavior branching
+
+2. trace how the relevant state reaches the owner path
+
+3. check whether the repo already solved the same class of problem elsewhere and reuse the repo-native pattern if one exists
+
+4. choose the **narrowest correct implementation** consistent with the current milestone
+
+Do not invent a new generalized config/selector framework if the repo already has a simpler local pattern.
+
+---
+
+## Core implementation target
+
+The bounded verification phase established that the selector path is **planning-frozen but not implemented**.
+
+You must treat the remaining work as the **creation of a localized selector path**, not as “activating” something already present.
+
+Implement only the minimum live-code changes required to create:
+
+- selector-key normalization
+- processing-config forwarding
+- owner defaulting
+- first seam consumption
+
+for:
+
+- `visual_lane_mode`
+
+Do not create additional selector infrastructure beyond what is required for this milestone.
+
+---
+
+## Canonical implementation intent
+
+The implementation must create `visual_lane_mode` only across the frozen path:
+
+1. request/config normalization surface
+2. processing-config forwarding surface
+3. processing default surface
+4. first allowed owner-path consumption surface inside the frozen PDF visual-lane seam
+
+You must **not**:
+- consume the selector above the frozen seam,
+- consume the selector in unrelated paths,
+- use it to alter OCR fallback or hybrid OCR behavior,
+- or let it leak into query payload / non-processing surfaces.
+
+### Fail-closed requirement
+The selector must honor the pack’s fail-closed control intent.
+That means:
+- baseline/default behavior must remain the live default,
+- unsupported or non-integrated modes must not silently widen runtime behavior,
+- and non-baseline modes must not become normally available just because the key exists.
+
+If any doc-to-code ambiguity remains, prefer the narrowest interpretation consistent with the current milestone and fail-closed design.
+
+---
+
+## Mandatory implementation boundaries
+
+### You must preserve
+- baseline behavior as the default
+- baseline review/runtime discovery behavior
+- baseline diagnostics-ref persistence behavior
+- baseline runtime DB binding/discovery behavior
+- baseline report/export/review behavior
+- baseline artifact semantics
+- baseline retrieval/evidence-bundle/model/schema behavior except where existing baseline behavior must simply tolerate the new internal selector key path
+
+### You must not widen
+- media scope beyond PDF visual-lane
+- public/runtime-visible variant identity
+- report/export/review payload semantics
+- promotion/replay/safeguard behavior
+- artifact writer semantics
+- OCR fallback behavior
+- hybrid OCR behavior
+- page-summary accumulation behavior
+- top-level media routing
+
+### You must treat as regression-awareness surfaces
+Even if they are not primary implementation targets, implementation must not silently break:
+- `corpus_diagnostics.py`
+- `run_full_export.py`
+- any ingestion-gate surface found during bounded verification (for example `nrc_aps_artifact_ingestion_gate.py` if present in live repo)
+
+Do not widen scope to refactor them unless needed for compatibility.
+If they are affected, make the minimum safe compatibility-preserving adjustment.
+
+---
+
+## Mandatory planning-doc guidance to use
+
+You must read and follow the active planning docs in the pack, especially the ones governing:
+
+- selector activation scope/lifetime
+- experiment isolation
+- selector control-key and fail-closed policy
+- selector insertion and consumption map
+- exact PDF seam freeze
+- bootstrap baseline-only plan
+- blocker validation set
+- blocker decision table
+- canonical acceptance command convention
+- shell-specific canonical acceptance commands
+- performance baseline/regression gate
+- implementation preparation / execution playbook
+
+At minimum, ground your implementation against the current versions of the docs equivalent to:
+- `00C`
+- `03M`
+- `03N`
+- `03P`
+- `03U`
+- `03V`
+- `03W`
+- `05D`
+- `06D`
+- `06E`
+- `06I`
+- `06J`
+- `06K`
+
+Do not substitute session summaries for those docs.
+
+---
+
+## Required implementation questions you must answer while working
+
+You must explicitly determine and respect:
+
+1. Where exactly `visual_lane_mode` should be normalized.
+2. Where exactly it should be forwarded into processing config.
+3. Where exactly it should receive a default value.
+4. Where exactly the first seam consumption belongs.
+5. What the default value must be to preserve baseline behavior.
+6. How to prevent non-baseline behavior from becoming active in normal runtime.
+7. What minimum baseline-only registry/selector structure is required by the current milestone, if any.
+8. What tests prove the selector path exists while baseline behavior remains unchanged.
+9. What compatibility checks are needed for root utility consumers / ingestion-gate surfaces.
+10. Whether implementation can remain inside the bounded owner path or would force prohibited scope widening.
+
+---
+
+## Stop conditions
+
+You must **stop and report instead of widening scope** if completing the milestone would require any of the following:
+
+- outward API/report/review/export contract change
+- retrieval/model/schema contract change
+- migration requirement
+- OCR/hybrid OCR redesign
+- top-level media-routing change
+- public variant-identity exposure
+- broad utility refactor
+- multi-variant runtime activation beyond baseline-only integration
+
+If you hit a stop condition:
+- do not push through with a broader implementation,
+- do not improvise a larger framework,
+- report the exact blocker and the smallest correction/re-plan needed.
+
+---
+
+## Validation requirements
+
+You must verify the implementation using the active validation surfaces relevant to this milestone.
+
+### Required validation categories
+At minimum cover:
+
+1. **Selector-path creation**
+   - prove the key exists where required
+   - prove defaulting preserves baseline behavior
+   - prove first seam consumption exists only at the allowed seam
+   - prove fail-closed behavior is preserved
+
+2. **Baseline-preservation**
+   - prove baseline remains default
+   - prove no public/runtime-visible behavior drift for the frozen surfaces
+   - prove no widened review/report/export/runtime leakage
+
+3. **Regression-awareness**
+   - prove no silent breakage to relevant root utility / ingestion-gate surfaces
+   - if a utility surface is affected, prove compatibility or document the exact bounded impact
+
+4. **Performance gate**
+   - execute the local performance gate if it is operationally runnable within this task scope
+   - if it is not runnable for environment reasons, state that explicitly and distinguish:
+     - environment limitation
+     - from implementation failure
+
+### Required testing posture
+- Use the canonical acceptance-command convention from the planning pack.
+- Use the smallest set of commands necessary.
+- Do not skip relevant tests once a surface is touched.
+- Do not delete or weaken tests to make the task pass.
+- Add or adjust only the minimum targeted tests required to prove the milestone behavior.
+- Do not treat “defined in docs” as equivalent to “verified by execution.”
+
+---
+
+## Implementation-tech-debt control requirements
+
+While implementing, explicitly avoid introducing:
+
+- selector propagation debt from half-wired path creation
+- review/report/runtime leakage debt
+- policy duplication debt
+- hidden coupling debt
+- broad refactor debt
+- maintenance debt from speculative abstractions
+- baseline drift hidden behind new defaults
+- false closure claims unsupported by test or execution evidence
+- dead registry/selector infrastructure that is not used by the current milestone
+
+Prefer the **smallest correct implementation**.
+
+If a simpler narrower implementation achieves the milestone safely, prefer it over a more general system.
+
+---
+
+## Edit minimization rule
+
+Default to the **smallest code change sufficient** to satisfy the current milestone.
+
+Do not:
+- build future multi-variant infrastructure beyond what this phase requires,
+- add speculative abstractions “for later,”
+- or widen the selector semantics prematurely.
+
+Use only the minimum changes needed for:
+- selector-key creation
+- bounded propagation
+- bounded seam consumption
+- baseline-preserving verification
+
+---
+
+## What you must not do
+
+- Do not broaden into future multi-variant architecture.
+- Do not redesign OCR/hybrid OCR.
+- Do not redesign artifact contracts.
+- Do not redesign review/report/export surfaces.
+- Do not redesign retrieval/evidence-bundle/model/schema contracts.
+- Do not redesign migrations/workflows/enforcement.
+- Do not treat worktree-only variants as part of this integrated implementation.
+- Do not confuse a localized implementation gap with a reason to re-plan the milestone.
+- Do not silently widen scope because the code path is convenient.
+
+---
+
+## Expected implementation posture
+
+You should behave as though the current planning pack is correct unless live code directly forces a narrower interpretation.
+
+If you find a genuine contradiction between:
+- the active planning baseline
+- and live repo reality
+
+then:
+- implement the narrowest safe interpretation you can,
+- explicitly document the contradiction in your final report,
+- and classify it as one of:
+  - localized implementation gap
+  - doc/repo mismatch
+  - bounded residual
+  - blocker-level issue
+
+Do not self-upgrade ordinary implementation friction into a blocker.
+
+---
+
+## Output requirements
+
+When finished, respond with exactly this structure:
+
+## 1. Executive result
+State one of:
+- IMPLEMENTATION COMPLETE
+- IMPLEMENTATION COMPLETE WITH BOUNDED FOLLOW-UPS
+- IMPLEMENTATION NOT COMPLETE
+
+Explain why in a few precise sentences.
+
+## 2. Files changed
+List every code/test file changed.
+If you believe any non-code/non-test file had to change, explain exactly why that was unavoidable.
+
+## 2A. Initial target file set vs actual file set
+List:
+- the initial target file set you declared before editing
+- any additional files added later
+- why each widening was necessary
+- whether any stop-condition was triggered
+
+## 3. Exact implementation by surface
+For each changed code surface, state:
+- what was added/changed
+- why it was needed
+- which part of the planning/control path it corresponds to:
+  - normalization
+  - forwarding
+  - defaulting
+  - first seam consumption
+  - minimal selector/registry structure
+  - compatibility/regression-awareness
+  - validation only
+
+## 4. Validation performed
+List:
+- exact commands run
+- working directory assumptions
+- exact tests/suites executed
+- whether the local performance gate was executed
+- what passed
+- what failed
+- and whether any failure was environment/setup-only vs product/code failure
+
+## 5. Baseline-preservation assessment
+State explicitly whether baseline behavior remained default and whether any frozen outward surfaces changed.
+
+## 6. Root utility / hidden consumer assessment
+State whether:
+- `corpus_diagnostics.py`
+- `run_full_export.py`
+- and any ingestion-gate surface reviewed
+remain compatible, were unaffected, or required bounded adjustment.
+
+## 7. Remaining implementation gaps or bounded follow-ups
+List only real remaining items.
+For each:
+- exact surface
+- classification:
+  - localized implementation gap
+  - bounded follow-up
+  - bounded residual
+  - blocker
+- why it does or does not prevent milestone completion
+
+## 8. Tech-debt assessment
+State any real tech-debt risks introduced or avoided by your implementation choices.
+
+## 9. Stop conditions encountered, if any
+List any stop condition that was triggered and whether it prevented completion.
+
+## 10. Final milestone position
+State whether the repo is now ready for the next intended step after this implementation pass.
+
+---
+
+## Strict style rules
+
+- Be adversarial, not agreeable.
+- Prefer narrow file-specific explanation over broad rhetoric.
+- Do not overclaim certainty.
+- Do not confuse “implemented minimally” with “future-proof architecture.”
+- If the implementation is complete but localized follow-ups remain, say that exactly.
+- If something truly blocks completion, prove it with repo evidence and validation evidence.
