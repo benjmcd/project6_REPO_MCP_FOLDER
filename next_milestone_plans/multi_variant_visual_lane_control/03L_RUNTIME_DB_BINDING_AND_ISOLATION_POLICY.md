@@ -2,31 +2,37 @@
 
 ## Verified live evidence
 
-`backend/tests/test_review_nrc_aps_runtime_db.py` verifies:
+`backend/app/services/review_nrc_aps_runtime.py` defines:
+- allowlisted `lc_e2e` review-root discovery
+- summary-backed review-root resolution by run via `find_review_root_for_run(...)`
 
-- runtime DB session lookup by run
-- binding/session correctness
-- session closure behavior
-- read-only behavior
-- schema validation
-- per-runtime session isolation
+`backend/tests/test_review_nrc_aps_document_trace_api.py` and
+`backend/tests/test_review_nrc_aps_document_trace_service.py` verify:
+
+- run-scoped review-root resolution for audited runs
+- read-only SQLAlchemy access against an audited runtime DB under `.../storage_test_runtime/lc_e2e/...`
+- path safety and missing-layer behavior for run-bound trace payloads
+
+`backend/tests/test_review_nrc_aps_details.py`,
+`backend/tests/test_review_nrc_aps_tree.py`, and
+`backend/tests/test_review_nrc_aps_graph.py` also fail if `find_review_root_for_run(...)` stops resolving audited runs.
 
 ## Current policy
 
-Runtime DB binding/discovery behavior is baseline-locked in the first integrated selector pass.
+Run-scoped review-root resolution and audited runtime DB access behavior are baseline-locked in the first integrated selector pass.
 
 ## Why
 
-Even if selector changes are local to PDF visual-lane logic, review/runtime tooling depends on stable runtime bindings and safe per-runtime isolation.
+Even if selector changes are local to PDF visual-lane logic, review/runtime tooling still depends on stable run-to-review-root resolution, safe in-root path handling, and read-only runtime DB access for audited runs.
 
 ## First-pass rule
 
 Do not change:
-- how a run resolves to a runtime binding,
-- read-only expectations for runtime sessions,
-- runtime DB schema expectations,
-- per-runtime session isolation guarantees.
+- how a run resolves to a review root,
+- the allowlisted `lc_e2e` discovery bases used by review/runtime lookup,
+- read-only expectations for runtime DB sessions used by run-bound review/document-trace flows,
+- path-safety guarantees that keep resolved artifacts inside the review root.
 
 ## Experimental policy
 
-Experimental runs must remain out-of-band from default baseline runtime binding unless and until a later explicit decision reopens that scope.
+Experimental runs must remain out-of-band from default baseline review-root discovery and audited runtime DB access unless and until a later explicit decision reopens that scope.

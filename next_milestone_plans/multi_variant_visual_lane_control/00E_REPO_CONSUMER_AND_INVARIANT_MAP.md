@@ -82,32 +82,28 @@ The verified minimum impact surface includes:
 
 ## 3. Runtime-root / review discovery surfaces
 
-### `backend/app/services/review_nrc_aps_runtime_roots.py`
+### `backend/app/services/review_nrc_aps_runtime.py`
 **Verified live fact**
-- normalizes `storage` / `storage_test_runtime` roots to `.../lc_e2e`
-- deterministic candidate roots include:
+- `get_allowlisted_roots()` deterministically includes:
   - `backend/app/storage_test_runtime/lc_e2e`
   - `backend/storage_test_runtime/lc_e2e`
+- appends `settings.storage_dir / "lc_e2e"` only when `settings.storage_dir` ends in `storage`
+- `discover_review_roots()` scans those allowlisted bases for summary-backed directories
+- `find_review_root_for_run(run_id)` resolves run IDs by loading those summary-backed roots
 
 **Sensitivity:** Highest
 
-### `backend/app/services/review_nrc_aps_runtime.py`
-**Verified live fact**
-- `get_allowlisted_roots()` delegates to `candidate_review_runtime_roots(...)`
-- passes `settings.storage_dir`
-
-**Sensitivity:** High
-
 ### `backend/app/api/review_nrc_aps.py`
 **Verified live fact**
-- imports `runtime_db_session_for_run`
-- uses it on many review API endpoints
+- imports `find_review_root_for_run`
 - also imports review/runtime and document-trace service functions
+- uses run-scoped review-root resolution across run-bound review endpoints
+- passes the resolved review root plus DB session into document-trace/source helpers
 
 **Sensitivity:** High
 
 **Implication:**  
-Runtime DB binding is API-facing, not just an internal helper.
+Run-scoped review-root resolution and runtime DB-backed trace access are API-facing, not just internal helpers.
 
 ### `backend/app/services/review_nrc_aps_document_trace.py`
 **Verified live fact**
@@ -134,15 +130,17 @@ Verified concerns:
 
 ### Runtime DB binding / isolation
 Evidence:
-- `backend/tests/test_review_nrc_aps_runtime_db.py`
+- `backend/app/services/review_nrc_aps_runtime.py`
+- `backend/tests/test_review_nrc_aps_catalog.py`
+- `backend/tests/test_review_nrc_aps_details.py`
+- `backend/tests/test_review_nrc_aps_document_trace_api.py`
+- `backend/tests/test_review_nrc_aps_document_trace_service.py`
 
 Verified concerns:
-- runtime binding lookup per run
-- runtime DB session correctness
-- session closure behavior
-- read-only behavior
-- schema validation
-- per-runtime isolation
+- allowlisted `lc_e2e` review-root discovery remains deterministic
+- run IDs continue to resolve to summary-backed review roots
+- run-bound trace/API flows continue to use read-only runtime DB access against audited `lc_e2e` data
+- path safety remains enforced relative to the resolved review root
 
 **Sensitivity:** High
 
@@ -230,7 +228,8 @@ These are now treated as likely blocker surfaces until re-verified or disproven.
 The attached session materially strengthens the interpretation that the review API surface is broad enough to expose selector mistakes through multiple endpoint classes, not just through generic runtime discovery.
 
 ### API-facing exposure classes elevated by session evidence
-- visual artifact retrieval
+- document selector retrieval
+- source blob retrieval
 - diagnostics retrieval
 - normalized text retrieval
 - indexed chunks retrieval

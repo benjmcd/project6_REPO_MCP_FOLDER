@@ -2,7 +2,7 @@
 
 ## Status
 
-This revision strengthens the matrix by explicitly recognizing diagnostics-persistence, runtime-DB safety, activation semantics, and isolation semantics as first-class validation surfaces.
+This revision strengthens the matrix by explicitly recognizing diagnostics-persistence, review-root/runtime-data safety, activation semantics, and isolation semantics as first-class validation surfaces.
 
 Command text is still partly provisional because repo-local runner wrappers/config files have not yet been fully verified.
 
@@ -38,10 +38,11 @@ Verified:
 - `test_diagnostics_ref_persistence.py`
 - `test_nrc_aps_evidence_bundle_integration.py`
 - `test_review_nrc_aps_api.py`
+- `test_review_nrc_aps_catalog.py`
+- `test_review_nrc_aps_details.py`
 - `test_review_nrc_aps_document_trace_api.py`
 - `test_review_nrc_aps_document_trace_service.py`
 - `test_review_nrc_aps_document_trace_page.py`
-- `test_review_nrc_aps_runtime_db.py`
 - other `backend/tests/test_review_nrc_aps_*`
 
 ---
@@ -69,10 +70,15 @@ Covers:
 - artifact metadata verification
 - content-index roundtrip for artifact metadata
 
+### `backend/tests/test_review_nrc_aps_catalog.py`
+Covers:
+- summary-backed candidate run discovery
+- golden-run presence
+- stable default-run selection contract
+
 ### `backend/tests/test_review_nrc_aps_api.py`
 Covers:
-- deterministic candidate review/runtime roots
-- configured `storage_test_runtime` normalization into `.../lc_e2e`
+- review route wiring for runs / pipeline-definition / overview / tree / node / file surfaces on audited run ids
 
 ### `backend/tests/test_diagnostics_ref_persistence.py`
 Covers:
@@ -80,12 +86,12 @@ Covers:
 - cross-run diagnostics safety
 - absent linkage behavior
 
-### `backend/tests/test_review_nrc_aps_runtime_db.py`
+### `backend/tests/test_review_nrc_aps_document_trace_api.py` and `backend/tests/test_review_nrc_aps_document_trace_service.py`
 Covers:
-- runtime binding/session correctness
+- run-scoped review-root resolution
 - read-only behavior
-- schema validation
-- per-runtime isolation
+- path safety
+- diagnostics / normalized-text / indexed-chunk / trace payload behavior against an audited `lc_e2e` runtime
 
 ---
 
@@ -113,7 +119,7 @@ This matrix has three distinct layers:
 | T5 | PROVISIONAL | Root context/API/guardrail behavior | `pytest tests/test_nrc_aps_context_packet.py tests/test_nrc_aps_context_packet_gate.py tests/test_nrc_aps_context_dossier.py tests/test_nrc_aps_context_dossier_gate.py tests/test_api.py tests/test_import_guardrail.py` |
 | T6 | PROVISIONAL | Root corpus/E2E checks | `pytest tests/test_nrc_aps_document_corpus.py tests/test_run_nrc_aps_local_corpus_e2e.py` |
 | T7 | FILES VERIFIED | Backend visual/artifact/config/diagnostics behavior | `pytest backend/tests/test_visual_artifact_pipeline.py backend/tests/test_nrc_aps_advanced_adapters.py backend/tests/test_nrc_aps_run_config.py backend/tests/test_diagnostics_ref_persistence.py backend/tests/test_nrc_aps_evidence_bundle_integration.py` |
-| T8 | FILES VERIFIED | Backend review/trace/runtime behavior | `pytest backend/tests/test_review_nrc_aps_api.py backend/tests/test_review_nrc_aps_document_trace_api.py backend/tests/test_review_nrc_aps_document_trace_service.py backend/tests/test_review_nrc_aps_document_trace_page.py backend/tests/test_review_nrc_aps_runtime_db.py backend/tests/test_review_nrc_aps_catalog.py backend/tests/test_review_nrc_aps_details.py backend/tests/test_review_nrc_aps_graph.py backend/tests/test_review_nrc_aps_tree.py backend/tests/test_review_nrc_aps_page.py` |
+| T8 | FILES VERIFIED | Backend review/trace/runtime-root behavior | `pytest backend/tests/test_review_nrc_aps_api.py backend/tests/test_review_nrc_aps_document_trace_api.py backend/tests/test_review_nrc_aps_document_trace_service.py backend/tests/test_review_nrc_aps_document_trace_page.py backend/tests/test_review_nrc_aps_catalog.py backend/tests/test_review_nrc_aps_details.py backend/tests/test_review_nrc_aps_graph.py backend/tests/test_review_nrc_aps_tree.py backend/tests/test_review_nrc_aps_page.py` |
 
 ---
 
@@ -126,7 +132,7 @@ Additional acceptance expectations:
 - experiments do not silently appear under the baseline `lc_e2e` namespace
 - artifact-equivalence controls are satisfied
 - diagnostics-ref persistence behavior is unchanged
-- runtime DB binding/discovery behavior is unchanged
+- review-root/runtime-data behavior is unchanged
 
 ---
 

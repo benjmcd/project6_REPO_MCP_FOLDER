@@ -11,9 +11,41 @@ Enumerate the verified baseline-facing review API surfaces that would expose exp
 - Source: `discover_candidate_runs()`
 - Exposure class: run visibility / discoverability
 
-### Visual artifact
-- `get_document_visual_artifact(run_id, target_id, artifact_id)`
-- Exposure class: preserved visual artifacts by run
+### Pipeline definition
+- `get_pipeline_definition(run_id)`
+- Exposure class: run-scoped pipeline projection visibility
+
+### Overview
+- `get_run_overview(run_id)`
+- Exposure class: run-scoped summary / projection / tree visibility
+
+### Tree
+- `get_run_tree(run_id)`
+- Exposure class: run-scoped filesystem layout visibility
+
+### Node details
+- `get_node_details_route(run_id, node_id)`
+- Exposure class: run-scoped node metadata visibility
+
+### File details
+- `get_file_details_route(run_id, tree_id)`
+- Exposure class: run-scoped file metadata visibility
+
+### File preview
+- `get_file_preview_route(run_id, tree_id)`
+- Exposure class: run-scoped file-content preview visibility
+
+### Document selector
+- `get_run_documents(run_id)`
+- Exposure class: run-scoped target visibility
+
+### Document trace
+- `get_document_trace(run_id, target_id)`
+- Exposure class: run-scoped trace visibility
+
+### Source blob
+- `get_document_source(run_id, target_id)`
+- Exposure class: run-scoped source artifact visibility
 
 ### Diagnostics
 - `get_document_diagnostics(run_id, target_id)`

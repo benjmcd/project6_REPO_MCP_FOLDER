@@ -9,7 +9,8 @@ experiments may remain visible to baseline-facing surfaces even when runtime and
 
 ### Catalog run discovery
 `backend/app/services/review_nrc_aps_catalog.py:discover_candidate_runs()`
-- iterates all discovered runtime bindings
+- enumerates summary-backed review roots via `discover_review_roots()`
+- merges them with `ConnectorRun` rows
 - builds the run selector list from them
 
 ### Review API run listing
@@ -18,19 +19,26 @@ experiments may remain visible to baseline-facing surfaces even when runtime and
 
 ### Review API run-bound exposure
 `backend/app/api/review_nrc_aps.py` exposes run-bound endpoints for:
-- visual artifacts
+- pipeline definition
+- overview / tree
+- node details
+- file details / preview
+- document selector rows
+- trace manifests
+- source blobs
 - diagnostics
 - normalized text
 - indexed chunks
 - extracted units
 
-These surfaces resolve via `runtime_db_session_for_run(run_id)`.
+These surfaces first resolve `find_review_root_for_run(run_id)`.
+The document-trace/source subset then passes the run-scoped review root plus DB session into document-trace/source helpers, while the overview/tree/node/file subset uses the same resolved root in its own review helpers.
 
 ## Current blocker rule
 
 No claim that experiments are “out-of-band” is acceptable unless it also answers:
 
-1. Are experiment runs present in discovered runtime bindings?
+1. Are experiment runs present in discovered summary-backed review roots or the candidate-run selector inputs?
 2. Are experiment runs present in the catalog run selector?
 3. Are experiment runs queryable through review API endpoints by `run_id`?
 4. If yes, how is that prevented or consciously deferred?
