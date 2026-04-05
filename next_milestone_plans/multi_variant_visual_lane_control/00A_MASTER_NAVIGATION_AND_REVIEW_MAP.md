@@ -1,0 +1,327 @@
+# 00A Master Navigation and Review Map
+
+## Purpose
+
+This document is the front door for the pack.
+
+### Authority note
+This navigation map is an operational aid. It organizes access to the pack but does not carry interpretive authority over foundational (`00F`, `00T`), control (`03*` series), or evidence (`06E`) docs. If this map appears to conflict with a stronger doc, the stronger doc governs. See `00U` Section 5 for the full strength hierarchy.
+
+The pack is now large enough that a flat file list is no longer the best way to review it.
+This map tells you:
+
+- what each document family is for
+- which order to read things in for different goals
+- which documents are foundational vs derivative
+- where to start depending on whether you are planning, auditing, implementing, or challenging the pack
+
+---
+
+## 1. Document families
+
+### `00*` — repo evidence, closure state, and control-layer orientation
+Use these to understand:
+- what was actually verified
+- what remains open
+- how strong or bounded the claims are
+- where the repo consumer surfaces are
+
+These are the pack’s factual backbone.
+
+Most important in this family:
+- `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
+- `00E_REPO_CONSUMER_AND_INVARIANT_MAP.md`
+- `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
+- `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
+
+Later narrowing/correction docs in the `00*` family remain important, but they are derivative unless they explicitly narrow or correct a stronger earlier claim.
+
+### `03*` — policies, control boundaries, seam/scope freeze
+Use these to understand:
+- what is allowed
+- what is baseline-locked
+- what the selector is allowed to touch
+- how runtime/review/report visibility must be controlled
+- where the exact seam is
+
+These are the pack’s normative/control documents.
+
+Most important in this family:
+- `03M_SELECTOR_ACTIVATION_SCOPE_AND_LIFETIME_POLICY.md`
+- `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
+- `03Q_REVIEW_CATALOG_REPORT_VISIBILITY_BLOCKER_POLICY.md`
+- `03U_CANONICAL_SELECTOR_CONFIG_KEY_AND_FAIL_CLOSED_POLICY.md`
+- `03V_SELECTOR_KEY_INSERTION_AND_CONSUMPTION_MAP.md`
+- `03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md`
+
+### `05*` — implementation/program path
+Use these to understand:
+- how to move from pack to controlled execution
+- what bootstrap sequence the pack expects
+
+Key doc:
+- `05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md`
+
+### `06*` — validation, acceptance, runner/perf, residual risk
+Use these to understand:
+- how the pack expects work to be validated
+- how to run tests
+- what performance gate exists
+- what still remains bounded but not zero
+
+Most important in this family:
+- `06E_BLOCKER_DECISION_TABLE.md`
+- `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+- `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
+- `06K_SHELL_SPECIFIC_CANONICAL_ACCEPTANCE_COMMANDS.md`
+- `06L_BOUNDED_UNCERTAINTY_AND_ENFORCEMENT_GAP_REGISTER.md`
+
+---
+
+## 2. Fastest reading paths by goal
+
+### Goal A — “What is this pack actually saying?”
+Read in this order:
+1. `README_INDEX.md`
+2. `00A_MASTER_NAVIGATION_AND_REVIEW_MAP.md`
+3. `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
+4. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
+5. `06E_BLOCKER_DECISION_TABLE.md`
+
+This gives the shortest orientation path.
+
+### Goal B — “What is frozen vs still changeable?”
+Read:
+1. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
+2. `03M_SELECTOR_ACTIVATION_SCOPE_AND_LIFETIME_POLICY.md`
+3. `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
+4. `03U_CANONICAL_SELECTOR_CONFIG_KEY_AND_FAIL_CLOSED_POLICY.md`
+5. `03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md`
+
+### Goal C — “What exact code path is implicated?”
+Read:
+1. `00E_REPO_CONSUMER_AND_INVARIANT_MAP.md`
+2. `00I_DIRECT_BACKEND_CALLER_CLOSURE_REPORT.md`
+3. `00J_LIVE_APP_SURFACE_CONSUMER_CLOSURE_REPORT.md`
+4. `03V_SELECTOR_KEY_INSERTION_AND_CONSUMPTION_MAP.md`
+5. `03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md`
+
+### Goal D — “Why can’t we just treat experiments as isolated?”
+Read:
+1. `03I_RUNTIME_ROOT_AND_RUN_NAMESPACE_POLICY.md`
+2. `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
+3. `03Q_REVIEW_CATALOG_REPORT_VISIBILITY_BLOCKER_POLICY.md`
+4. `03S_REVIEW_API_ENDPOINT_EXPOSURE_MATRIX.md`
+5. `03T_REPORT_EXPORT_RUN_VISIBILITY_MATRIX.md`
+
+### Goal E — “How do we validate implementation?”
+Read:
+1. `06E_BLOCKER_DECISION_TABLE.md`
+2. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
+3. `06K_SHELL_SPECIFIC_CANONICAL_ACCEPTANCE_COMMANDS.md`
+4. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+5. `05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md`
+
+### Goal F — “What is still uncertain, and how serious is it?”
+Read:
+1. `00L_CLOSURE_CLAIM_RETRACTION_AND_BOUNDED_UNCERTAINTY.md`
+2. `00M_ENFORCEMENT_AND_MIGRATION_SURFACE_AUDIT.md`
+3. `00N_REPO_NATIVE_ENFORCEMENT_SURFACE_NARROWING.md`
+4. `00Q_NON_APP_LIVE_SURFACE_NARROWING.md`
+5. `00R_ARCHIVE_AND_WORKTREE_DUPLICATION_NARROWING.md`
+6. `06L_BOUNDED_UNCERTAINTY_AND_ENFORCEMENT_GAP_REGISTER.md`
+7. `00S_NARROWING_STOP_RULE_AND_RECOMMENDATION.md`
+
+---
+
+## 3. Foundational vs derivative documents
+
+### Foundational
+These establish the pack’s core claims and should be trusted first:
+
+- `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
+- `00E_REPO_CONSUMER_AND_INVARIANT_MAP.md`
+- `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
+- `03M_SELECTOR_ACTIVATION_SCOPE_AND_LIFETIME_POLICY.md`
+- `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
+- `03U_CANONICAL_SELECTOR_CONFIG_KEY_AND_FAIL_CLOSED_POLICY.md`
+- `03V_SELECTOR_KEY_INSERTION_AND_CONSUMPTION_MAP.md`
+- `03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md`
+- `06E_BLOCKER_DECISION_TABLE.md`
+
+### Derivative / narrowing / challenge docs
+These refine, challenge, or narrow earlier claims:
+
+- `00G_ATTACHED_SESSION_FINDINGS_TRIAGE.md`
+- `00H_SESSION_ORIGIN_CORROBORATION_ADDENDUM.md`
+- `00L_CLOSURE_CLAIM_RETRACTION_AND_BOUNDED_UNCERTAINTY.md`
+- `00M_ENFORCEMENT_AND_MIGRATION_SURFACE_AUDIT.md`
+- `00N_REPO_NATIVE_ENFORCEMENT_SURFACE_NARROWING.md`
+- `00O_SCHEMA_AND_CONTRACT_DRIFT_RISK_NARROWING.md`
+- `00P_VISUAL_PAGE_CLASS_ROUNDTRIP_SUPPORT_NOTE.md`
+- `00Q_NON_APP_LIVE_SURFACE_NARROWING.md`
+- `00R_ARCHIVE_AND_WORKTREE_DUPLICATION_NARROWING.md`
+- `00S_NARROWING_STOP_RULE_AND_RECOMMENDATION.md`
+
+Interpretation rule:
+- if a derivative doc narrows or corrects an older claim, the later narrower statement wins
+
+---
+
+## 4. Minimal “decision packet” for a human reviewer
+
+If someone needs to decide “are we ready to move from review into controlled implementation?”, the minimum set is:
+
+1. `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
+2. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
+3. `03U_CANONICAL_SELECTOR_CONFIG_KEY_AND_FAIL_CLOSED_POLICY.md`
+4. `03V_SELECTOR_KEY_INSERTION_AND_CONSUMPTION_MAP.md`
+5. `03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md`
+6. `06E_BLOCKER_DECISION_TABLE.md`
+7. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+8. `00S_NARROWING_STOP_RULE_AND_RECOMMENDATION.md`
+
+That is the smallest review set that still preserves the critical reasoning.
+
+---
+
+## 5. Same-directory authority hygiene
+
+The following artifacts exist in this directory but are **not** part of the active planning control spine:
+
+| Artifact | Status | Role |
+|---|---|---|
+| `99_CLAUDE_CODE_AUDIT_NOTES_AND_RECOMMENDATIONS.md` | Non-authoritative | Commentary/work product. Not planning authority |
+| `mvvlc_reconciliation_checklist_v6.md` | Working artifact | Reconciliation/hardening task control. Not architecture authority |
+| `multi_variant_visual_lane_program_spec_v2.md` | Legacy | Non-governing unless explicitly re-adopted |
+| Exported session transcripts / findings | Tertiary evidence | Not active planning docs |
+
+Do not treat these as active control authority. See `00U` Section 5 for the full hierarchy.
+
+---
+
+## 6. Minimal “implementation packet” for actual work
+
+If work starts, the implementation-critical subset is:
+
+1. `03M_SELECTOR_ACTIVATION_SCOPE_AND_LIFETIME_POLICY.md`
+2. `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
+3. `03P_SELECTOR_CONTROL_KEY_AND_QUERY_PAYLOAD_LEAKAGE_POLICY.md`
+4. `03U_CANONICAL_SELECTOR_CONFIG_KEY_AND_FAIL_CLOSED_POLICY.md`
+5. `03V_SELECTOR_KEY_INSERTION_AND_CONSUMPTION_MAP.md`
+6. `03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md`
+7. `05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md`
+8. `03G_IMPLEMENTATION_SEAM_FREEZE_CHECKLIST.md`
+9. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
+10. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
+11. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+
+This matches the minimal packet in `00C` Section 4.
+
+---
+
+## 7. Questions -> exact documents
+
+### “Where is the selector supposed to live?”
+- `03U_CANONICAL_SELECTOR_CONFIG_KEY_AND_FAIL_CLOSED_POLICY.md`
+- `03V_SELECTOR_KEY_INSERTION_AND_CONSUMPTION_MAP.md`
+
+### “What exact part of `_process_pdf(...)` are we allowed to vary?”
+- `03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md`
+
+### “Why is runtime-root separation alone not enough?”
+- `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
+- `03Q_REVIEW_CATALOG_REPORT_VISIBILITY_BLOCKER_POLICY.md`
+
+### “How would experiment runs leak into review/report surfaces?”
+- `03S_REVIEW_API_ENDPOINT_EXPOSURE_MATRIX.md`
+- `03T_REPORT_EXPORT_RUN_VISIBILITY_MATRIX.md`
+
+### “What does the pack still admit it does not know?”
+- `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
+- `06L_BOUNDED_UNCERTAINTY_AND_ENFORCEMENT_GAP_REGISTER.md`
+
+### “How do we run validation?”
+- `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
+- `06K_SHELL_SPECIFIC_CANONICAL_ACCEPTANCE_COMMANDS.md`
+- `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+
+---
+
+## 8. Practical review recommendation
+
+For future use, review in this order:
+
+### Pass 1 — orientation
+- `README_INDEX.md`
+- `00A_MASTER_NAVIGATION_AND_REVIEW_MAP.md`
+- `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
+
+### Pass 2 — control boundaries
+- `03M`
+- `03N`
+- `03U`
+- `03V`
+- `03W`
+
+### Pass 3 — validation and residuals
+- `06E`
+- `06I`
+- `06J`
+- `06K`
+- `06L`
+- `00S`
+
+This is the most efficient way to re-enter the pack later without rereading everything.
+
+---
+
+## 9. Final interpretation
+
+The pack no longer suffers from lack of evidence.
+Its remaining usability problem was traversal.
+
+This document exists to solve that problem directly:
+- fewer blind rereads
+- clearer review paths
+- clearer distinction between core docs and later narrowing docs
+- faster orientation for anyone picking it up later
+
+
+## 10. If you want the direct “can we proceed?” answer
+
+Read:
+1. `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
+2. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
+3. `00S_NARROWING_STOP_RULE_AND_RECOMMENDATION.md`
+
+That is the shortest path to the current go/no-go position.
+
+
+## 11. Additional operational playbooks
+
+For explicit, task-oriented usage:
+
+### Review / audit / assessment
+Use:
+- `00B_REVIEW_AUDIT_ASSESSMENT_PLAYBOOK.md`
+
+### Implementation preparation / execution
+Use:
+- `00C_IMPLEMENTATION_PREPARATION_AND_EXECUTION_PLAYBOOK.md`
+
+These are the two docs to use when the question is not just “where is everything?” but “how exactly should I work through it?”
+
+
+## 12. Additional reasoning / traceability layer
+
+If the question is:
+- “why should I trust this assertion?”
+- “which docs actually govern this one?”
+- “is this policy grounded in evidence or just planning language?”
+
+read:
+- `00U_ASSERTION_JUSTIFICATION_AND_EVIDENTIARY_STANDARD.md`
+- `00V_PLANNING_TRACEABILITY_AND_DEPENDENCY_MATRIX.md`
+
+These two docs are the pack’s reasoning/traceability layer.

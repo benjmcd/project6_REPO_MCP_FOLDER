@@ -1,0 +1,343 @@
+You are performing a **document-only control-pack hardening pass** on the planning-pack directory:
+
+C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\next_milestone_plans\multi_variant_visual_lane_control
+
+This is **not** a code implementation task.
+Do **not** edit code, tests, workflows, configs, migrations, runtime files, or non-planning repo files.
+
+You are allowed to edit **only the active planning docs that are part of the current control pack**.
+You are **not** allowed to edit sidecars, audit notes, reconciliation checklists, or legacy/spec artifacts unless explicitly told to do so later.
+
+---
+
+## Objective
+
+Harden the planning pack so it can safely serve as the implementation-control baseline for the next phase, without:
+
+- authority drift
+- current-state vs target-state blur
+- stale open/closed contradictions
+- misleading validation guidance
+- traceability ambiguity
+- workflow inconsistency
+- or avoidable planning-doc tech debt
+
+The goal is **not** to redesign the project.
+The goal is to make the current planning pack stricter, clearer, and safer for the next implementing/testing agent.
+
+---
+
+## Current milestone and scope lock
+
+This hardening pass must remain aligned with the pack’s **current intended phase**:
+
+- baseline-preserving integrated selector bootstrap
+- baseline only integrated first
+- PDF visual-lane only
+- experimental variants remain out-of-band / worktree-only at this phase
+- no outward API/report/review/export/persistence contract redesign
+- no artifact path/hash/byte semantics redesign
+- no OCR subsystem redesign
+- no simultaneous integrated baseline + A + B + C selector architecture
+- no repo-native enforcement implementation in this task
+
+Do **not** rewrite the planning docs toward a broader future-state architecture.
+Harden them for the **current milestone only**.
+
+---
+
+## Directory-level authority model
+
+The directory contains multiple kinds of documents. They are **not equal by default**.
+
+### Treat as authoritative candidates only:
+the active planning docs that form the current control pack.
+
+### Treat as non-authoritative unless explicitly promoted:
+- `99_CLAUDE_CODE_AUDIT_NOTES_AND_RECOMMENDATIONS.md`
+- exported session findings / prior audit transcripts
+- `mvvlc_reconciliation_checklist_v6.md`
+- `multi_variant_visual_lane_program_spec_v2.md`
+- candidate-only notes
+- historical narrowing/support docs unless they are explicitly still active governing docs
+
+Do **not** let sidecar notes, exported sessions, reconciliation-checklist text, or legacy program-spec language override active planning docs.
+
+### Important handling rule
+`mvvlc_reconciliation_checklist_v6.md` is a **working control artifact for this task**, not a governing planning doc.
+Use it to stay on scope and sequencing.
+Do **not** treat it as architecture authority.
+Do **not** edit it in this task.
+
+---
+
+## Hard constraints
+
+- Modify **only** active planning docs in the directory above.
+- Do **not** edit:
+  - `99_CLAUDE_CODE_AUDIT_NOTES_AND_RECOMMENDATIONS.md`
+  - `mvvlc_reconciliation_checklist_v6.md`
+  - `multi_variant_visual_lane_program_spec_v2.md`
+  unless explicitly instructed later.
+- Do **not** make any code changes.
+- Do **not** create a replacement planning pack in a second directory.
+- Do **not** widen scope into repo-native enforcement implementation.
+- Do **not** convert bounded residuals into “solved” unless another existing planning doc already provides stronger closure basis.
+- Do **not** silently treat planning closure as proof that implementation already exists.
+- Do **not** introduce new live-repo factual claims unless they are already supported by the current planning pack’s own evidence posture.
+- Do **not** ask for confirmation. Execute directly.
+
+---
+
+## Non-expansion rule
+
+Do **not** introduce new substantive architecture, new policy, new scope, or new implementation requirements unless strictly necessary to resolve an already-existing:
+
+- contradiction
+- ambiguity
+- authority defect
+- stale closure-state conflict
+- checklist defect
+- or workflow inconsistency
+
+If a defect can be fixed by:
+- clarification
+- relabeling
+- synchronization
+- section restructuring
+- narrower wording
+- or explicit status notes
+
+prefer that over inventing new policy.
+
+---
+
+## Edit minimization rule
+
+Default to the **smallest change sufficient** to eliminate the identified defect.
+
+Use **full-file rewrites only** where the document is structurally broken or materially unsafe in its current form.
+
+Do **not** rewrite for style, elegance, or consistency alone.
+
+---
+
+## Primary task
+
+Perform a focused hardening pass on the Tier-1 planning docs below.
+
+### Tier-1 docs to harden, in this exact order
+
+1. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
+2. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
+3. `06E_BLOCKER_DECISION_TABLE.md`
+4. `00U_ASSERTION_JUSTIFICATION_AND_EVIDENTIARY_STANDARD.md`
+5. `00C_IMPLEMENTATION_PREPARATION_AND_EXECUTION_PLAYBOOK.md`
+6. `05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md`
+7. `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md`
+8. `03H_SELECTOR_CONFIG_INSERTION_POLICY.md`
+9. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
+10. `00A_MASTER_NAVIGATION_AND_REVIEW_MAP.md`
+11. `README_INDEX.md`
+
+### Conditionally synchronize only if needed after Tier-1 edits
+
+- `06F_RUNNER_CONVENTION_EVIDENCE_AND_REMAINING_UNCERTAINTY.md`
+- `06H_ACCEPTANCE_COMMAND_CONVENTION_NARROWING_REPORT.md`
+- `00B_REVIEW_AUDIT_ASSESSMENT_PLAYBOOK.md`
+- `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
+- `00V_PLANNING_TRACEABILITY_AND_DEPENDENCY_MATRIX.md`
+- `06L_BOUNDED_UNCERTAINTY_AND_ENFORCEMENT_GAP_REGISTER.md`
+
+Do **not** broaden the pass beyond those unless a changed Tier-1 doc would otherwise leave a directly conflicting active-use document behind.
+
+---
+
+## Required document outcomes
+
+### 1. Fix checklist / blocker integrity
+For `06D`:
+- eliminate duplicate/ambiguous blocker numbering
+- make the blocker set structurally coherent
+- ensure the governing rule covers the full intended blocker set
+
+### 2. Separate fact vs implication vs closure vs residual
+For `00F`:
+- remove ambiguous reused numbering
+- separate:
+  - verified facts
+  - inferred implications
+  - closure-state determinations
+  - bounded residuals
+- remove stale command-convention “still open” language that is no longer consistent with `06K`
+
+### 3. Distinguish planning closure from implemented state
+For `06E` and any other touched doc that needs it:
+- do not let planning/control closure read like implemented-state proof
+- explicitly distinguish:
+  - current verified live mechanism
+  - planning/control freeze
+  - implementation work still required
+  - post-implementation target state
+  - true closure
+  - bounded residual
+
+Where a doc mixes those categories, rewrite so they are **explicitly labeled**, not inferable from tone.
+
+### 4. Remove authority leakage
+For `00U`, `00A`, `00C`, and `README_INDEX.md`:
+- ensure navigation/workflow docs cannot override foundational/evidence/control docs
+- make the hierarchy explicit
+- state clearly that workflow usefulness is not interpretive authority
+- prevent same-directory non-authoritative artifacts from being mistaken for active control authority
+
+### 5. Make implementation start criteria internally consistent
+For `00C` and `05D`:
+- make the minimal implementation packet consistent with the staged workflow
+- make seam-checklist dependency explicit
+- ensure bootstrap preconditions are concrete enough for controlled execution
+
+### 6. Fix validation-surface clarity
+For `06C`:
+- distinguish verified file-level tests from grouped command bundles
+- distinguish command bundles from hard acceptance gates
+- label partially verified or provisional surfaces clearly
+
+### 7. Remove stale selector-key contradiction
+For `03H`:
+- eliminate the contradiction where the selector key is both “still unresolved” and canonically frozen
+
+### 8. Synchronize command-convention closure
+For `06J`:
+- synchronize the command-convention narrative to `06K_SHELL_SPECIFIC_CANONICAL_ACCEPTANCE_COMMANDS.md`
+- distinguish:
+  - conceptual convention
+  - shell realization
+  - repo-native enforcement
+
+### 9. Reduce front-door historical layering debt
+For `README_INDEX.md`:
+- make it function as a current-state front door
+- do not leave stale unresolved-state language near the top if the pack has already narrowed or closed those items elsewhere
+- explicitly clarify active vs historical vs sidecar vs legacy status where needed
+
+### 10. Improve exact traceability where needed
+For `00V` if touched:
+- prefer exact document references over abstract evidence-category phrasing
+- preserve or improve traceability
+- where line-specific references are brittle, pair them with stable file/function/semantic-zone references
+
+---
+
+## Command-convention synchronization rule
+
+Treat `06K_SHELL_SPECIFIC_CANONICAL_ACCEPTANCE_COMMANDS.md` as the **command-convention anchor**.
+
+That means:
+- `06J`
+- and, if needed after Tier-1 edits, `06F`
+- `06H`
+
+must be synchronized **to `06K`**, not left carrying parallel closure narratives.
+
+Only edit `06F` / `06H` if needed to prevent stale contradiction after the Tier-1 pass.
+
+---
+
+## Same-directory status hygiene rule
+
+Prevent authority contamination through active docs (`README_INDEX.md`, `00A`, `00U`), not by rewriting sidecars/checklists/spec artifacts.
+
+The pack should make it clear, where necessary, that:
+- `99_CLAUDE_CODE_AUDIT_NOTES_AND_RECOMMENDATIONS.md` is commentary/work product
+- `mvvlc_reconciliation_checklist_v6.md` is a working reconciliation artifact for this task, not planning authority
+- `multi_variant_visual_lane_program_spec_v2.md` is legacy/non-governing unless explicitly re-adopted
+
+Do **not** edit those files in this task.
+
+---
+
+## Tech-debt control requirements
+
+While editing, explicitly reduce:
+- authority drift
+- closure-state drift
+- checklist ambiguity
+- validation ambiguity
+- traceability ambiguity
+- workflow inconsistency
+- and historical layering debt in front-door docs
+
+Do **not** add broad new rhetoric.
+Prefer:
+- exact role labeling
+- exact status labeling
+- explicit category distinction
+- exact synchronization
+- and concise operational wording
+
+---
+
+## Preferred edit style
+
+When revising docs, prefer:
+- exact role/status/interpretation notes
+- exact section rewrites
+- exact synchronization edits
+- concise operational wording
+
+Avoid:
+- speculative new claims
+- future-state redesign language
+- fresh unresolved items unless strictly necessary
+- broad architecture invention
+- and “cleanup” edits that do not reduce a real control-pack defect
+
+---
+
+## Execution method
+
+1. Read `mvvlc_reconciliation_checklist_v6.md` for task scope/sequence only.
+2. Read the Tier-1 docs and their nearest governing/supporting docs.
+3. Make the Tier-1 edits in the exact order listed above.
+4. Perform only the minimum conditional synchronization edits needed to prevent stale contradiction in:
+   - `06F`
+   - `06H`
+   - `00B`
+   - `00T`
+   - `00V`
+   - `06L`
+5. Do **not** proceed to any live-code verification pass in this task.
+6. Stop after the planning-pack hardening pass is complete.
+
+---
+
+## Output requirements
+
+When finished, respond with:
+
+### 1. Files changed
+List every planning doc changed.
+
+### 2. Exact change summary by file
+For each changed file:
+- what defect was fixed
+- what kind of change it was:
+  - full rewrite
+  - section rewrite
+  - synchronization edit
+  - status/authority clarification
+- why it mattered
+
+### 3. Files intentionally not changed
+List relevant files you intentionally left unchanged and why.
+
+### 4. Post-hardening proceed position
+State whether the pack is now ready for the **bounded live-code verification pass**.
+
+### 5. Remaining bounded verification questions
+List only the live-code questions that should be checked next.
+
+Do not implement code.
+Do not widen scope.
+Stop after the document-hardening pass.
