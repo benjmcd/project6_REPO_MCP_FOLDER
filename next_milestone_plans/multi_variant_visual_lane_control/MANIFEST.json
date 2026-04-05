@@ -1,0 +1,230 @@
+{
+  "package_name": "multi_variant_visual_lane_control_pack_v37",
+  "purpose": "Control-doc pack tightened with activation-scope, OCR-boundary, and isolation-mechanism controls",
+  "improvements_over_v6": [
+    "added selector activation scope/lifetime policy",
+    "added experiment isolation mechanism policy",
+    "added critical blocker validation set",
+    "elevated OCR-vs-visual boundary ambiguity into a first-class freeze item",
+    "incorporated adversarial second-opinion critique without treating its code suggestions as settled truth"
+  ],
+  "remaining_open_items": [
+    "Python acceptance path is pack-specified but not visibly repo-enforced in checked root workflow/hook/config surfaces",
+    "bounded uncertainty remains in duplicated archive/worktree state and other non-audited/generated surfaces"
+  ],
+  "contains": [
+    "00A_MASTER_NAVIGATION_AND_REVIEW_MAP.md",
+    "00B_REVIEW_AUDIT_ASSESSMENT_PLAYBOOK.md",
+    "00C_IMPLEMENTATION_PREPARATION_AND_EXECUTION_PLAYBOOK.md",
+    "00D_MULTI_VARIANT_PROGRAM_DECISION.md",
+    "00E_REPO_CONSUMER_AND_INVARIANT_MAP.md",
+    "00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md",
+    "00G_ATTACHED_SESSION_FINDINGS_TRIAGE.md",
+    "00H_SESSION_ORIGIN_CORROBORATION_ADDENDUM.md",
+    "00I_DIRECT_BACKEND_CALLER_CLOSURE_REPORT.md",
+    "00J_LIVE_APP_SURFACE_CONSUMER_CLOSURE_REPORT.md",
+    "00K_RESIDUAL_APP_SURFACE_CONSUMER_AND_VISIBILITY_CLOSURE_REPORT.md",
+    "00L_CLOSURE_CLAIM_RETRACTION_AND_BOUNDED_UNCERTAINTY.md",
+    "00M_ENFORCEMENT_AND_MIGRATION_SURFACE_AUDIT.md",
+    "00N_REPO_NATIVE_ENFORCEMENT_SURFACE_NARROWING.md",
+    "00O_SCHEMA_AND_CONTRACT_DRIFT_RISK_NARROWING.md",
+    "00P_VISUAL_PAGE_CLASS_ROUNDTRIP_SUPPORT_NOTE.md",
+    "00Q_NON_APP_LIVE_SURFACE_NARROWING.md",
+    "00R_ARCHIVE_AND_WORKTREE_DUPLICATION_NARROWING.md",
+    "00S_NARROWING_STOP_RULE_AND_RECOMMENDATION.md",
+    "00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md",
+    "00U_ASSERTION_JUSTIFICATION_AND_EVIDENTIARY_STANDARD.md",
+    "00V_PLANNING_TRACEABILITY_AND_DEPENDENCY_MATRIX.md",
+    "03D_MEDIA_TYPE_SCOPE_AND_SELECTOR_BOUNDARY.md",
+    "03E_VARIANT_IDENTITY_VISIBILITY_POLICY.md",
+    "03F_REPLAY_PROMOTION_AND_REVIEW_COMPATIBILITY_POLICY.md",
+    "03G_IMPLEMENTATION_SEAM_FREEZE_CHECKLIST.md",
+    "03H_SELECTOR_CONFIG_INSERTION_POLICY.md",
+    "03I_RUNTIME_ROOT_AND_RUN_NAMESPACE_POLICY.md",
+    "03J_ARTIFACT_EQUIVALENCE_CONTROL_POLICY.md",
+    "03K_DIAGNOSTICS_REF_PERSISTENCE_POLICY.md",
+    "03L_RUNTIME_DB_BINDING_AND_ISOLATION_POLICY.md",
+    "03M_SELECTOR_ACTIVATION_SCOPE_AND_LIFETIME_POLICY.md",
+    "03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md",
+    "03O_PROCESS_PDF_SEAM_CANDIDATE_MAP.md",
+    "03P_SELECTOR_CONTROL_KEY_AND_QUERY_PAYLOAD_LEAKAGE_POLICY.md",
+    "03Q_REVIEW_CATALOG_REPORT_VISIBILITY_BLOCKER_POLICY.md",
+    "03R_DOCUMENT_TYPE_THREADING_CANDIDATE_POLICY.md",
+    "03S_REVIEW_API_ENDPOINT_EXPOSURE_MATRIX.md",
+    "03T_REPORT_EXPORT_RUN_VISIBILITY_MATRIX.md",
+    "03U_CANONICAL_SELECTOR_CONFIG_KEY_AND_FAIL_CLOSED_POLICY.md",
+    "03V_SELECTOR_KEY_INSERTION_AND_CONSUMPTION_MAP.md",
+    "03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md",
+    "03X_VISUAL_OUTPUT_SURFACE_CLOSURE_MATRIX.md",
+    "05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md",
+    "06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md",
+    "06D_CRITICAL_BLOCKER_VALIDATION_SET.md",
+    "06E_BLOCKER_DECISION_TABLE.md",
+    "06F_RUNNER_CONVENTION_EVIDENCE_AND_REMAINING_UNCERTAINTY.md",
+    "06G_PERFORMANCE_BUDGET_EVIDENCE_AND_REMAINING_UNCERTAINTY.md",
+    "06H_ACCEPTANCE_COMMAND_CONVENTION_NARROWING_REPORT.md",
+    "06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md",
+    "06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md",
+    "06K_SHELL_SPECIFIC_CANONICAL_ACCEPTANCE_COMMANDS.md",
+    "06L_BOUNDED_UNCERTAINTY_AND_ENFORCEMENT_GAP_REGISTER.md",
+    "MANIFEST.json",
+    "README_INDEX.md",
+    "multi_variant_visual_lane_program_spec_v2.md"
+  ],
+  "improvements_over_v7": [
+    "added line-based _process_pdf seam candidate map",
+    "added blocker decision table tied directly to live code/test evidence",
+    "reduced ambiguity about which regions of _process_pdf are selector candidates vs baseline-locked",
+    "tightened bootstrap prerequisites around explicit blocker review"
+  ],
+  "improvements_over_v8": [
+    "added selector control-key / query-payload leakage policy",
+    "added runner-convention evidence doc",
+    "tightened selector config insertion guidance using live _normalize_request_config implementation",
+    "narrowed runner uncertainty using root package.json evidence and absence of live pytest references"
+  ],
+  "improvements_over_v9": [
+    "incorporated attached-session findings as triaged secondary evidence",
+    "tightened experiment-isolation model beyond runtime/artifact root separation",
+    "added review/catalog/report visibility blocker policy",
+    "elevated session-origin document_type threading and shared-visibility findings without falsely marking them as fully re-verified"
+  ],
+  "improvements_over_v10": [
+    "added session-origin caller and config-path corroboration addendum",
+    "added document_type threading candidate policy",
+    "added review API endpoint exposure matrix",
+    "tightened experiment isolation to include API-facing invisibility, not just root separation"
+  ],
+  "improvements_over_v11": [
+    "directly verified review/catalog/API visibility blocker in live repo",
+    "added review API endpoint exposure matrix",
+    "upgraded review/catalog/API experiment visibility from session-origin concern to verified live blocker",
+    "tightened experiment isolation model beyond root separation"
+  ],
+  "improvements_over_v12": [
+    "directly verified report/export run-visibility blocker in live repo",
+    "added report/export run visibility matrix",
+    "upgraded shared run-bound report/export persistence from open concern to verified live blocker",
+    "tightened isolation model beyond review/catalog/API visibility alone"
+  ],
+  "improvements_over_v13": [
+    "added direct backend caller closure report",
+    "verified the direct backend call chain into process_document and extract_and_normalize",
+    "narrowed the remaining caller/call-graph uncertainty to indirect consumer closure beyond the verified backend chain"
+  ],
+  "improvements_over_v14": [
+    "added performance-budget evidence doc",
+    "further narrowed runner-convention uncertainty with negative evidence",
+    "rephrased performance open item as lack of any repo-advertised benchmark surface in scanned authority areas",
+    "rephrased runner open item as lack of any repo-advertised Python runner/config surface in scanned authority areas"
+  ],
+  "improvements_over_v15": [
+    "added live app-surface consumer closure report",
+    "verified live app-surface callers of extract_and_normalize",
+    "narrowed the remaining consumer open item from indirect consumer closure to broader residual visibility/effect closure beyond the verified live app-surface chain"
+  ],
+  "improvements_over_v16": [
+    "closed framework-choice part of acceptance-command question",
+    "verified active suite is mixed-style but pytest-required",
+    "narrowed remaining command uncertainty to invocation form and working-dir/env"
+  ],
+  "improvements_over_v17": [
+    "added acceptance-command convention narrowing report",
+    "narrowed test invocation requirement to pytest-family with backend on sys.path",
+    "ruled out freezing a bare repo-root pytest command with no backend path bootstrap"
+  ],
+  "improvements_over_v18": [
+    "added explicit local performance baseline/regression check specification",
+    "closed the definition side of the performance item using repo-native fixture sources",
+    "reframed performance from discovery problem to execution problem tied to command/bootstrap convention"
+  ],
+  "improvements_over_v19": [
+    "added canonical acceptance command convention",
+    "closed command-convention concept at repo-root + pytest-family + backend-on-sys.path + both active trees",
+    "reduced remaining command uncertainty to shell/platform-specific spelling only"
+  ],
+  "improvements_over_v20": [
+    "added canonical selector config key and fail-closed policy",
+    "closed selector-key concept as visual_lane_mode with default/fail-closed baseline",
+    "aligned selector-control recommendation with live repo normalization and processing-config patterns"
+  ],
+  "improvements_over_v21": [
+    "added selector key insertion and consumption map",
+    "closed code-path ambiguity for visual_lane_mode propagation",
+    "reduced selector-key open item to seam-internal behavior only"
+  ],
+  "improvements_over_v22": [
+    "added shell-specific canonical acceptance commands",
+    "closed shell/platform-specific spelling of the canonical acceptance convention"
+  ],
+  "improvements_over_v23": [
+    "added exact _process_pdf seam freeze specification",
+    "closed seam boundary at helper-contract level",
+    "closed OCR-vs-visual boundary for first-phase scope by keeping OCR paths outside the frozen seam"
+  ],
+  "improvements_over_v24": [
+    "added residual app-surface consumer and visibility closure report",
+    "added visual output surface closure matrix",
+    "closed the final residual consumer/visibility planning item within the live app authority surface"
+  ],
+  "improvements_over_v25": [
+    "retracted the over-strong zero-open-items closure claim",
+    "added bounded uncertainty and enforcement gap register",
+    "added missed review-schema surface to visual output closure mapping"
+  ],
+  "improvements_over_v26": [
+    "added enforcement and migration surface audit",
+    "verified explicit migration support for visual_page_refs_json",
+    "sharpened enforcement gap using visible root workflow evidence"
+  ],
+  "improvements_over_v27": [
+    "added repo-native enforcement surface narrowing",
+    "verified exactly one root workflow and no visible pre-commit surface",
+    "made the Python acceptance-path enforcement gap concrete with direct negative evidence"
+  ],
+  "improvements_over_v28": [
+    "added schema and contract drift risk narrowing",
+    "verified broad visual_page_refs schema/contract representation",
+    "localized residual schema/contract risk to narrower visual_page_class handling"
+  ],
+  "improvements_over_v29": [
+    "added visual_page_class roundtrip support note",
+    "downgraded residual schema/contract asymmetry from open risk to watch-note using test-backed evidence"
+  ],
+  "improvements_over_v30": [
+    "added non-app live surface narrowing",
+    "verified no additional visual-lane consumers in checked tools/root/docs/helper-script surfaces",
+    "concentrated remaining outside-scope uncertainty toward archive/worktree and other non-audited/generated surfaces"
+  ],
+  "improvements_over_v31": [
+    "added archive and worktree duplication narrowing",
+    "verified worktree/archive matches are dominated by duplicated NRC APS service/test/tool paths",
+    "narrowed outside-scope uncertainty away from observed new consumer categories"
+  ],
+  "improvements_over_v32": [
+    "added narrowing stop rule and recommendation",
+    "made explicit that further narrowing is not necessary by default",
+    "reframed next justified work as either repo-native enforcement work or exhaustive residual-surface audit"
+  ],
+  "improvements_over_v33": [
+    "added master navigation and review map",
+    "added goal-based reading paths and document-family guidance",
+    "added minimal decision packet and implementation packet",
+    "made traversal/review of the pack materially easier"
+  ],
+  "improvements_over_v34": [
+    "added strict adequacy audit and proceed decision doc",
+    "made the proceed/no-proceed judgment explicit with bounded qualifications",
+    "wired the final adequacy answer into the navigation layer"
+  ],
+  "improvements_over_v35": [
+    "added review/audit/assessment playbook",
+    "added implementation preparation and execution playbook",
+    "wired both playbooks into README and master navigation"
+  ],
+  "improvements_over_v36": [
+    "added assertion/justification/evidentiary standard doc",
+    "added planning traceability and dependency matrix",
+    "updated navigation, review, and implementation playbooks to use the new reasoning layer"
+  ]
+}
