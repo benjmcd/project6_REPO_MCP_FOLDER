@@ -1,6 +1,6 @@
 {
-  "package_name": "multi_variant_visual_lane_control_pack_v38",
-  "purpose": "Control-doc pack with merged M3/M4 closure recorded and a post-M4 approval-ready next-lane plan",
+  "package_name": "multi_variant_visual_lane_control_pack_v39",
+  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a post-M4 approval-ready next-lane plan, and a standalone field-sensitivity map",
   "improvements_over_v6": [
     "added selector activation scope/lifetime policy",
     "added experiment isolation mechanism policy",
@@ -9,9 +9,10 @@
     "incorporated adversarial second-opinion critique without treating its code suggestions as settled truth"
   ],
   "remaining_open_items": [
-    "experiment runtime-root coexistence and baseline-facing visibility controls remain later-scope work",
-    "exact review/report/export field-sensitivity map is not yet a standalone post-M4 artifact",
+    "experiment runtime-root coexistence mechanism remains later-scope work",
+    "baseline-facing visibility controls for experiment runs remain later-scope work",
     "Python acceptance path is pack-specified but not visibly repo-enforced in checked root workflow/hook/config surfaces",
+    "Tier 2 performance sample breadth remains bounded by the declared-root handoff fallback sample",
     "bounded uncertainty remains in duplicated archive/worktree state and other non-audited/generated surfaces"
   ],
   "contains": [
@@ -58,6 +59,7 @@
     "03V_SELECTOR_KEY_INSERTION_AND_CONSUMPTION_MAP.md",
     "03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md",
     "03X_VISUAL_OUTPUT_SURFACE_CLOSURE_MATRIX.md",
+    "03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md",
     "05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md",
     "05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md",
     "06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md",
@@ -234,5 +236,10 @@
     "updated front-door status docs to reflect merged M3/M4 closure",
     "added an explicit post-M4 approval-ready next-lane plan",
     "shifted the next justified MVVLC scope from bootstrap closure to experiment coexistence and visibility control"
+  ],
+  "improvements_over_v38": [
+    "added the standalone review/report/export field-sensitivity map",
+    "closed the missing field-level exposure inventory gap for the post-M4 lane",
+    "tightened next-lane prep so coexistence and visibility work can target explicit outward fields and persistence keys"
   ]
 }

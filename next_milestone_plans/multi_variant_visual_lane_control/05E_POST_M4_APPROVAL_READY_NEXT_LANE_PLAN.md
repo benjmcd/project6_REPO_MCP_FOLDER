@@ -97,7 +97,8 @@ The next lane must define explicit no-change rules for:
 
 Before approve-as-is execution, produce a standalone artifact that maps which review/report/export fields would expose experiment state if not locked down.
 
-This is still missing in the current pack and should not remain implicit.
+This output is now supplied by `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md`.
+Keep it current if the live authority chain changes.
 
 ### 6. Freeze the exact implementation file set
 
@@ -167,7 +168,7 @@ Stop instead of widening scope if the next lane appears to require:
 ## Recommended execution order
 
 1. Re-audit the root-live authority chain.
-2. Produce the standalone field-sensitivity map.
+2. Re-audit `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md` against live authority and refresh it only if the authority chain changed.
 3. Freeze the exact coexistence mechanism and baseline-facing visibility rules.
 4. Freeze the narrow implementation and validation packet.
 5. Implement on a fresh merged-main worktree.

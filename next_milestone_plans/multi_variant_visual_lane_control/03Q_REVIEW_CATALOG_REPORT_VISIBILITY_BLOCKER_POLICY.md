@@ -36,7 +36,7 @@ The document-trace/source subset then passes the run-scoped review root plus DB 
 
 ## Current blocker rule
 
-No claim that experiments are “out-of-band” is acceptable unless it also answers:
+No claim that experiments are "out-of-band" is acceptable unless it also answers:
 
 1. Are experiment runs present in discovered summary-backed review roots or the candidate-run selector inputs?
 2. Are experiment runs present in the catalog run selector?
@@ -79,3 +79,5 @@ The visibility blocker is now directly verified across:
 - report/export/package surfaces.
 
 So separate runtime/artifact roots are definitively insufficient, by themselves, for first-phase experiment invisibility.
+
+For the exact field-level exposure inventory that now has to be controlled in the later-scope lane, see `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md`.
