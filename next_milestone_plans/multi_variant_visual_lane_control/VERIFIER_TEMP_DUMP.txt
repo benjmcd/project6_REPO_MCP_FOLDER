@@ -4,7 +4,7 @@
 
 This is the planning and control pack for the MVVLC program, still bounded to the PDF visual-lane seam.
 
-Merged `main` now contains the baseline-only selector/bootstrap implementation, the recorded M4 acceptance closure for that baseline path, and the bounded M5 coexistence / visibility barrier implementation recorded on the current clean branch. The pack's current job is to preserve those closures, carry the bounded residuals honestly, and define the next later-scope lane explicitly.
+Merged `main` now contains the baseline-only selector/bootstrap implementation, the recorded M4 acceptance closure for that baseline path, and the bounded M5 coexistence / visibility barrier implementation. The pack's current job is to preserve those closures, carry the bounded residuals honestly, and define the next later-scope lane explicitly.
 
 ### What is closed
 
@@ -14,7 +14,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M4 baseline-only acceptance gate: T1-T8 and the local `06I` performance gate were executed and recorded for the merged baseline path (`05D`, `06C`, `06E`, `06I`)
 - Review/report/export field-sensitivity map: standalone later-scope exposure inventory is now frozen (`03Y`)
 - M5 execution packet boundary: exact owner/test/widening boundary is now frozen (`05F`)
-- M5 coexistence / visibility mechanism: exact baseline-facing classification and runtime-root coexistence design is frozen and implemented on the current clean branch (`03Z`, `05G`)
+- M5 coexistence / visibility mechanism: exact baseline-facing classification and runtime-root coexistence design is frozen and implemented on merged `main` (`03Z`, `05G`)
 - M5 barrier implementation record and handoff: exact owner files, validations, `06I` rerun, and no-drift judgment are recorded (`05G`)
 - Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
 - Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
@@ -25,21 +25,23 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 
 - M3 baseline-only selector/bootstrap is implemented and accepted on merged `main`
 - M4 acceptance gate is passed for the baseline-only bootstrap path
-- M5 later-scope coexistence / visibility barrier is implemented and locally validated on the current clean branch under the frozen `03Z` + `05F` packet (`05G`, `06E`)
-- The next justified MVVLC milestone step is M6 planning/freeze for controlled admission / promotion, not more M5 mechanism implementation
+- M5 later-scope coexistence / visibility barrier is implemented and locally validated on merged `main` under the frozen `03Z` + `05F` packet (`05G`, `06E`)
+- M6 planning/freeze packet is now frozen on the current clean branch as `03AA` + `05H`
+- The next justified MVVLC milestone step is bounded M6 admission implementation only after one approved target is explicitly named, not more M5 mechanism implementation
 
 ### Next lane to execute
 
-- Freeze the exact controlled-admission / promotion rule for one approved non-baseline variant at a time
-- Freeze the exact owner-boundary widening, if any, into connector / processing path for admission work
-- Freeze the exact baseline-comparison and explicit-approval gate before any non-baseline integrated admission
-- Keep M5 barrier closure intact; do not treat it as permission for uncontrolled multi-variant integrated rollout
+- Record one exact approved non-baseline selector value before any M6 code edits
+- Implement only the frozen M6 admission boundary under `03AA` + `05H`
+- Keep M5 barrier closure intact for all non-approved values
+- Do not treat the M6 packet as permission for uncontrolled multi-variant integrated rollout
 
 ### What is bounded residual
 
 - Repo-native Python acceptance-path enforcement (pack-specified, not CI-enforced)
 - Tier 2 performance capture breadth: the recorded artifact-aware comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture did not complete within practical session budget
 - Future drift outside audited authority surface
+- Exact approved M6 target is not yet named in the pack; implementation remains fail-closed until that record exists
 
 ---
 
@@ -58,6 +60,8 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`
 - `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
 - `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
+- `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
+- `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
 
 ### For "can we proceed?"
 - `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
@@ -115,6 +119,7 @@ This remains a control pack.
 Do not convert candidate control ideas into code without explicit freeze.
 Do not reopen merged M3/M4 closure without live contradictory evidence.
 Do not treat achieved M5 barrier closure as permission to admit approved non-baseline integrated runs without a separate frozen M6 packet.
+Do not treat the frozen M6 packet as permission to start code before one exact approved target is explicitly named.
 
 # 00A Master Navigation and Review Map
 
@@ -170,6 +175,7 @@ Most important in this family:
 - `03Q_REVIEW_CATALOG_REPORT_VISIBILITY_BLOCKER_POLICY.md`
 - `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md`
 - `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`
+- `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
 - `03U_CANONICAL_SELECTOR_CONFIG_KEY_AND_FAIL_CLOSED_POLICY.md`
 - `03V_SELECTOR_KEY_INSERTION_AND_CONSUMPTION_MAP.md`
 - `03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md`
@@ -185,6 +191,7 @@ Key docs:
 - `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
 - `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
 - `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
+- `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
 
 ### `06*` - validation, acceptance, runner/perf, residual risk
 Use these to understand:
@@ -285,6 +292,7 @@ These establish the pack's core claims and should be trusted first:
 - `03M_SELECTOR_ACTIVATION_SCOPE_AND_LIFETIME_POLICY.md`
 - `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
 - `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`
+- `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
 - `03U_CANONICAL_SELECTOR_CONFIG_KEY_AND_FAIL_CLOSED_POLICY.md`
 - `03V_SELECTOR_KEY_INSERTION_AND_CONSUMPTION_MAP.md`
 - `03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md`
@@ -311,7 +319,7 @@ Interpretation rule:
 
 ## 4. Minimal decision packet for a human reviewer
 
-If someone needs to decide whether we are ready to move from achieved M5 barrier closure into controlled M6 planning/freeze, the minimum set is:
+If someone needs to decide whether we are ready to move from achieved M5 barrier closure into bounded M6 admission work, the minimum set is:
 
 1. `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
 2. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
@@ -320,10 +328,10 @@ If someone needs to decide whether we are ready to move from achieved M5 barrier
 5. `03S_REVIEW_API_ENDPOINT_EXPOSURE_MATRIX.md`
 6. `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md`
 7. `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`
-8. `06E_BLOCKER_DECISION_TABLE.md`
-9. `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
-10. `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
-11. `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
+8. `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
+9. `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
+10. `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
+11. `06E_BLOCKER_DECISION_TABLE.md`
 12. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
 That is the smallest review set that still preserves the critical reasoning.
@@ -355,11 +363,11 @@ If the next MVVLC lane starts after M5 barrier closure, the implementation-criti
 4. `03T_REPORT_EXPORT_RUN_VISIBILITY_MATRIX.md`
 5. `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md`
 6. `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`
-7. `03K_DIAGNOSTICS_REF_PERSISTENCE_POLICY.md`
-8. `03L_RUNTIME_DB_BINDING_AND_ISOLATION_POLICY.md`
-9. `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
-10. `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
-11. `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
+7. `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
+8. `03K_DIAGNOSTICS_REF_PERSISTENCE_POLICY.md`
+9. `03L_RUNTIME_DB_BINDING_AND_ISOLATION_POLICY.md`
+10. `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
+11. `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
 12. `03G_IMPLEMENTATION_SEAM_FREEZE_CHECKLIST.md`
 13. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
 14. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
@@ -387,6 +395,11 @@ This is the minimal packet for the next later-scope lane after achieved M5 barri
 - `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
 - `06E_BLOCKER_DECISION_TABLE.md`
 - `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+
+### What exactly has to be true before one non-baseline value can be admitted?
+- `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
+- `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
+- `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
 
 ### How would experiment runs leak into review/report surfaces?
 - `03S_REVIEW_API_ENDPOINT_EXPOSURE_MATRIX.md`
@@ -426,6 +439,8 @@ For future use, review in this order:
 - `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
 - `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
 - `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
+- `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
+- `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
 - `06E_BLOCKER_DECISION_TABLE.md`
 - `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
@@ -655,7 +670,8 @@ Items that have been planning-closed or narrowed to explicit remaining scope.
 5. **Validation harness operability for baseline-only bootstrap:** CLOSED. The grouped T1-T8 bundles and the local performance gate are operational and recorded in the clean merged-main worktree.
 6. **Standalone review/report/export field-sensitivity map:** CLOSED as `03Y`. The field-level exposure inventory is now explicit, so the remaining later-scope work is the coexistence/visibility mechanism itself, not discovery of which baseline-facing fields matter.
 7. **Exact M5 execution packet boundary:** CLOSED as `05F`, and the bounded implementation stayed within the default owner set with no widening.
-8. **Exact M5 coexistence / visibility mechanism:** CLOSED by freeze-and-implementation. `03Z` froze the mechanism, and the current clean branch now implements the baseline-facing root-placement, runtime-binding visibility filter, and run-bound report/export/package persistence guards recorded in `05G`.
+8. **Exact M5 coexistence / visibility mechanism:** CLOSED by freeze-and-implementation. `03Z` froze the mechanism, and merged `main` now implements the baseline-facing root-placement, runtime-binding visibility filter, and run-bound report/export/package persistence guards recorded in `05G`.
+9. **Exact M6 planning/freeze packet boundary:** CLOSED as planning input. `03AA` now freezes the admission/promotion mechanism, and `05H` now freezes the owner boundary, validation boundary, widening rules, and fail-closed stop conditions for the next lane.
 
 ---
 
@@ -666,7 +682,8 @@ Items that remain genuinely open or bounded.
 1. **Tier 2 performance sample breadth:** The local performance gate was executed and passed, but the recorded artifact-aware Tier 2 comparison still uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget.
 2. **Broader residual consumer/visibility effects:** Residual effects beyond the already-verified live app-surface chain remain bounded but not zero. Mostly duplicated worktree/archive state and non-audited/generated surfaces.
 3. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.
-4. **Integrated admission of approved non-baseline runs:** Still later-scope. The achieved M5 barrier lane does not itself admit new non-baseline run creation through the connector/processing owner path by default.
+4. **Exact approved M6 target naming:** Still open. The pack now freezes the M6 mechanism and execution packet, but it does not yet name one approved non-baseline selector value plus its explicit approval record and evidence refs.
+5. **Integrated admission of approved non-baseline runs:** Still later-scope. The achieved M5 barrier lane does not itself admit new non-baseline run creation through the connector/processing owner path by default.
 
 ---
 
@@ -674,13 +691,13 @@ Items that remain genuinely open or bounded.
 
 ### Recommended stop condition
 
-At the current evidence level, the next justified scope is a dedicated post-M5 M6 planning/freeze lane for controlled admission / promotion.
+At the current evidence level, the next justified scope is bounded M6 admission work only after one explicit approved target is named under the frozen `03AA` + `05H` packet.
 Repo-native Python enforcement remains a valid parallel hardening lane, but it is not the primary next MVVLC milestone step.
 
 ### Current proceed position
 
-Proceeding is justified for bounded M6 planning/freeze on a fresh lane using the achieved M5 barrier closure as fixed input.
-Baseline-only bootstrap closure and the later-scope M5 barrier closure remain accepted; the remaining uncertainty is bounded, explicit, and no longer blocks starting the controlled-admission planning lane.
+Proceeding is justified for bounded M6 implementation preparation on a fresh lane using the achieved M5 barrier closure and the frozen `03AA` + `05H` packet as fixed input.
+Baseline-only bootstrap closure and the later-scope M5 barrier closure remain accepted; the remaining uncertainty is bounded, explicit, and no longer blocks final target-selection freeze for the controlled-admission lane.
 
 # 03Y Review/Report/Export Field Sensitivity Map
 
@@ -1236,6 +1253,206 @@ The exact M5 coexistence / visibility mechanism is now frozen.
 
 The next justified step is no longer discovery of the mechanism.
 It is bounded implementation of this mechanism under `05F`.
+
+# 03AA Exact M6 Controlled Admission and Promotion Mechanism
+
+## Purpose
+
+Freeze the exact M6 controlled-admission / promotion mechanism before implementation.
+
+## Status note
+
+This is a planning/freeze input for the bounded M6 lane.
+
+It does **not** itself approve any specific non-baseline selector value.
+Instead, it freezes:
+
+- what must be true before one value can be admitted,
+- how that approval must be evidenced,
+- how admission interacts with the achieved M5 visibility barrier,
+- and what remains fail-closed until explicit approval exists.
+
+If a later M6 code lane cannot name exactly one approved target under the rules below, it must stop before editing.
+
+---
+
+## Verified live anchors this mechanism is built on
+
+1. `connectors_nrc_adams._normalize_request_config(...)` currently persists `visual_lane_mode` into `ConnectorRun.request_config_json`, but fail-closes every non-`baseline` value back to `baseline`.
+2. `nrc_aps_artifact_ingestion.processing_config_from_run_config(...)` forwards `visual_lane_mode` into processing config.
+3. `nrc_aps_document_processing._normalize_visual_lane_mode(...)` currently fail-closes every non-`baseline` value back to `baseline`, and `_process_pdf(...)` only executes the baseline visual lane helper.
+4. `review_nrc_aps_runtime.request_config_is_baseline_visible(...)` currently treats only `baseline` or missing `visual_lane_mode` as baseline-visible; every other explicit value is experiment-hidden.
+5. `nrc_aps_promotion_gate.validate_promotion_gate(...)` already provides repo-native evaluation of a finalized live-validation batch against a canonical promotion policy and emits `aps.promotion_governance.v2`.
+6. `nrc_aps_promotion_tuning.compare_promotion_policies(...)` already provides repo-native baseline-vs-tuned comparison with explicit rationale requirements and leaves even a passing tuned candidate in `experimental_pass_not_promoted`, not implicitly admitted.
+7. T3 already contains the repo-native governance validation surfaces most relevant to admission/promotion: replay, promotion gate, promotion tuning, safeguards, sync drift, live batch, and live validation.
+
+---
+
+## Rejected mechanisms
+
+### 1. Admitting arbitrary non-baseline selector values
+
+Rejected.
+
+The M6 lane must not convert `visual_lane_mode` from a bounded control into an open registry.
+Only one explicitly approved non-baseline value may be admitted at a time.
+
+### 2. Admitting multiple non-baseline values concurrently
+
+Rejected.
+
+The program decision remains:
+- baseline first,
+- then one approved variant at a time,
+- not baseline + A + B + C simultaneously in integrated runtime.
+
+### 3. Inferring approval from passing tests alone
+
+Rejected.
+
+Passing validation is necessary but insufficient.
+Repo-native promotion/tuning evidence plus an explicit approval record are both required.
+
+### 4. Public variant-identity exposure as the admission mechanism
+
+Rejected.
+
+M6 may widen integrated runtime behavior for one approved value, but it does not authorize new outward review/API/report/export identity fields for that value.
+
+### 5. Treating M5 hidden/visible classification as obsolete
+
+Rejected.
+
+M5 remains the default barrier for all non-approved non-baseline values.
+M6 only carves out one approved integrated exception.
+
+---
+
+## Exact approved-target rule
+
+No non-baseline selector value is approved by default by this document.
+
+Before any M6 code edits begin, the lane must freeze exactly one:
+
+- `approved_admission_target.selector_value`
+
+And must record, in the lane report or equivalent freeze artifact:
+
+- the exact selector string,
+- the source worktree / branch / commit or other concrete provenance for the candidate,
+- the comparison-evidence refs used to justify the candidate,
+- and the explicit approval statement that this one value, and only this one value, is being admitted.
+
+If that record does not exist, the M6 code lane must stop before editing.
+
+Integrated runtime rule after approval:
+
+- `baseline` remains the default when the selector is absent, invalid, unsupported, or unapproved.
+- the one named approved selector value may survive integrated normalization / forwarding / seam consumption.
+- every other non-`baseline` value must continue to fail closed to `baseline` in the connector/processing owner path and remain experiment-hidden under the achieved M5 barrier.
+
+---
+
+## Exact baseline-comparison and explicit-approval rule
+
+Baseline remains the control and comparison anchor.
+
+An M6 admission decision is only valid if it is backed by all of the following:
+
+1. A finalized candidate batch manifest or equivalent concrete candidate-evidence reference.
+2. Repo-native promotion-governance evidence from `nrc_aps_promotion_gate.validate_promotion_gate(...)`.
+3. Repo-native baseline-vs-candidate comparison evidence from `nrc_aps_promotion_tuning.compare_promotion_policies(...)` if any policy tuning is involved.
+4. Explicit rationale entries for every tuned policy key if policy tuning is used.
+5. An explicit human approval record naming the admitted selector value.
+
+Additional interpretation rules:
+
+- A passing tuned comparison is **not** itself promotion.
+- `experimental_pass_not_promoted` is still not admitted.
+- Approval must be explicit and recorded; do not infer it from `tuned_passed=True`, from green tests, or from local preference.
+
+---
+
+## Exact runtime and visibility rule after admission
+
+M6 widens integrated runtime in a controlled way:
+
+- exactly one approved non-baseline selector value may become integrated-runtime-admissible,
+- baseline remains the default,
+- variant identity remains internal-only on outward surfaces,
+- and the achieved M5 barrier remains active for every non-approved non-baseline value.
+
+This means:
+
+1. The approved value may be allowed through the connector/processing owner path.
+2. The approved value may become baseline-visible operationally where an admitted integrated run must be reviewable or reportable.
+3. That visibility widening must apply only to the one approved selector value.
+4. Unapproved non-baseline values must still be treated as absent on baseline-facing discovery and run-bound surfaces.
+5. No new outward field may advertise variant identity merely because the admitted value is now integrated.
+
+---
+
+## Exact owner-boundary implication
+
+Unlike M5, M6 is expected to widen into both:
+
+- the connector/processing owner path, and
+- the visibility-classification path.
+
+### Default owner files expected to change
+
+- `backend/app/services/connectors_nrc_adams.py`
+- `backend/app/services/nrc_aps_artifact_ingestion.py`
+- `backend/app/services/nrc_aps_document_processing.py`
+- `backend/app/services/review_nrc_aps_runtime.py`
+
+### Conditional owner promotion files
+
+These are not part of the default owner set.
+They may become editable only if the default owner path proves insufficient and the widening is recorded explicitly:
+
+- `backend/app/services/review_nrc_aps_catalog.py`
+- `backend/app/api/review_nrc_aps.py`
+- `backend/app/services/review_nrc_aps_document_trace.py`
+- `backend/app/services/nrc_aps_evidence_report.py`
+- `backend/app/services/nrc_aps_evidence_report_export.py`
+- `backend/app/services/nrc_aps_evidence_report_export_package.py`
+
+### Inspect-only governance / compatibility files
+
+These should normally remain edit-free:
+
+- `backend/app/services/nrc_aps_promotion_gate.py`
+- `backend/app/services/nrc_aps_promotion_tuning.py`
+- `backend/app/services/review_nrc_aps_runtime_roots.py`
+- `backend/app/services/review_nrc_aps_runtime_db.py`
+- `backend/app/services/nrc_aps_content_index.py`
+- `backend/app/services/connectors_sciencebase.py`
+
+---
+
+## Exact non-goals of this mechanism freeze
+
+This document does **not** authorize:
+
+- admitting more than one non-baseline value,
+- changing the canonical selector key,
+- making a non-baseline value the new default,
+- exposing variant identity through new outward fields,
+- reopening OCR / hybrid OCR / media-scope boundaries,
+- bypassing repo-native promotion evidence with ad hoc judgment,
+- or replacing the achieved M5 barrier with a broader multi-variant registry.
+
+---
+
+## Result
+
+The exact M6 admission / promotion mechanism is now frozen enough to proceed,
+but it is intentionally fail-closed on one point:
+
+the exact admitted non-baseline target must still be named explicitly before code begins.
+
+That is now an explicit stop condition, not a hidden assumption.
 
 # 05E Post-M4 Approval-Ready Next-Lane Plan
 
@@ -1846,6 +2063,291 @@ That next lane should freeze:
 
 Repo-native Python enforcement remains a valid parallel hardening lane, but it is not the primary next MVVLC milestone step.
 
+# 05H M6 Approve-As-Is Execution Packet
+
+## Purpose
+
+Freeze the concrete execution packet for the bounded M6 controlled-admission / promotion lane.
+
+## Status note
+
+This packet is built on:
+
+- achieved M3/M4 closure,
+- achieved M5 coexistence / visibility barrier closure,
+- and the exact M6 mechanism frozen in `03AA`.
+
+This packet does **not** itself approve a non-baseline selector value.
+It freezes the owner boundary, validation boundary, widening rules, and stop conditions for the M6 lane.
+
+If the lane cannot name exactly one approved target under `03AA`, it must stop before code edits.
+
+---
+
+## Current milestone position
+
+- M3 baseline-only selector bootstrap is merged and accepted.
+- M4 acceptance closure is merged and recorded.
+- M5 coexistence / visibility barrier is merged and recorded.
+- The next milestone is M6: controlled admission / promotion of one explicitly approved non-baseline variant at a time.
+
+What remains before M6 can be called approve-as-is is not more M5 barrier work.
+It is a bounded M6 lane that:
+
+1. records the exact approved target,
+2. implements only the narrow owner changes required to admit that one value,
+3. preserves the M5 barrier for every other non-approved value,
+4. and proves no-drift on the already-achieved review/report/export/runtime surfaces.
+
+---
+
+## Canonical live authority chain for the M6 lane
+
+The M6 lane must start from these live authority files:
+
+- `backend/app/services/connectors_nrc_adams.py`
+- `backend/app/services/nrc_aps_artifact_ingestion.py`
+- `backend/app/services/nrc_aps_document_processing.py`
+- `backend/app/services/review_nrc_aps_runtime.py`
+- `backend/app/services/nrc_aps_promotion_gate.py`
+- `backend/app/services/nrc_aps_promotion_tuning.py`
+
+The M6 lane must also respect the already-frozen control docs:
+
+- `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
+- `03E_VARIANT_IDENTITY_VISIBILITY_POLICY.md`
+- `03F_REPLAY_PROMOTION_AND_REVIEW_COMPATIBILITY_POLICY.md`
+- `03K_DIAGNOSTICS_REF_PERSISTENCE_POLICY.md`
+- `03L_RUNTIME_DB_BINDING_AND_ISOLATION_POLICY.md`
+- `03M_SELECTOR_ACTIVATION_SCOPE_AND_LIFETIME_POLICY.md`
+- `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
+- `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md`
+- `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`
+- `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
+- `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md`
+- `06E_BLOCKER_DECISION_TABLE.md`
+- `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+- `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
+- `06K_SHELL_SPECIFIC_CANONICAL_ACCEPTANCE_COMMANDS.md`
+
+---
+
+## Exact pre-edit stop conditions
+
+The M6 lane must stop before editing if any of the following is true:
+
+1. no exact `approved_admission_target.selector_value` is recorded
+2. no explicit approval record exists for that one selector value
+3. no concrete comparison-evidence refs are recorded for the candidate
+4. the needed implementation would admit more than one non-baseline value
+5. the needed implementation would expose variant identity through new outward review/API/report/export fields
+6. the needed implementation would reopen OCR / hybrid OCR / media-scope boundaries
+
+If a stop condition is encountered, report it explicitly instead of widening by inference.
+
+---
+
+## Exact lane outcome required
+
+The M6 lane must make all of the following true:
+
+1. exactly one explicitly approved non-baseline selector value may be admitted through the integrated owner path
+2. `baseline` remains the default for absent, invalid, unsupported, or unapproved values
+3. every non-approved non-baseline value remains fail-closed to `baseline` in the owner path and experiment-hidden under the achieved M5 barrier
+4. the admitted value can execute through the integrated PDF visual-lane seam without adding new outward variant-identity fields
+5. repo-native promotion / comparison evidence and explicit approval are recorded for the admitted value
+6. baseline diagnostics/runtime DB/review/report/export behavior remains correct
+7. M5 barrier behavior remains intact for all non-approved values
+
+If the implementation cannot make all seven true, it is not approve-as-is.
+
+---
+
+## Exact owner-file boundary
+
+### Primary owner files expected to change
+
+These are the only files that should be assumed editable at the start of the M6 lane:
+
+- `backend/app/services/connectors_nrc_adams.py`
+- `backend/app/services/nrc_aps_artifact_ingestion.py`
+- `backend/app/services/nrc_aps_document_processing.py`
+- `backend/app/services/review_nrc_aps_runtime.py`
+
+### Expected test-edit files
+
+- `backend/tests/test_nrc_aps_run_config.py`
+- `tests/test_nrc_aps_document_processing.py`
+- `tests/test_nrc_aps_artifact_ingestion.py`
+- `tests/test_nrc_aps_artifact_ingestion_gate.py`
+
+### Conditional owner promotion files
+
+These are **not** part of the default owner set.
+They may become editable only if the primary owner path proves insufficient and the widening is recorded explicitly:
+
+- `backend/app/services/review_nrc_aps_catalog.py`
+- `backend/app/api/review_nrc_aps.py`
+- `backend/app/services/review_nrc_aps_document_trace.py`
+- `backend/app/services/nrc_aps_evidence_report.py`
+- `backend/app/services/nrc_aps_evidence_report_export.py`
+- `backend/app/services/nrc_aps_evidence_report_export_package.py`
+
+### Inspect-only hidden-consumer / governance files
+
+These must be inspected for compatibility, but should remain edit-free unless a repo-confirmed blocker forces widening:
+
+- `backend/app/services/nrc_aps_promotion_gate.py`
+- `backend/app/services/nrc_aps_promotion_tuning.py`
+- `backend/app/services/review_nrc_aps_runtime_roots.py`
+- `backend/app/services/review_nrc_aps_runtime_db.py`
+- `backend/app/services/nrc_aps_content_index.py`
+- `backend/app/services/connectors_sciencebase.py`
+- `backend/app/services/aps_retrieval_plane.py`
+- `backend/app/services/aps_retrieval_plane_read.py`
+
+### Exact scope exclusion
+
+The default M6 lane does **not** authorize:
+
+- admission of more than one non-baseline selector value
+- replacement of the baseline default
+- new outward identity fields
+- replay/promotion/safeguard redesign
+- report/export schema widening
+- runtime-root allowlist redesign
+
+---
+
+## Exact validation boundary
+
+### Required owner-path bundle
+
+- `backend/tests/test_nrc_aps_run_config.py`
+- `tests/test_nrc_aps_document_processing.py`
+- `tests/test_nrc_aps_artifact_ingestion.py`
+- `tests/test_nrc_aps_artifact_ingestion_gate.py`
+
+### Required governance bundle
+
+- `tests/test_nrc_aps_replay_gate.py`
+- `tests/test_nrc_aps_promotion_gate.py`
+- `tests/test_nrc_aps_promotion_tuning.py`
+- `tests/test_nrc_aps_safeguard_gate.py`
+- `tests/test_nrc_aps_safeguards.py`
+- `tests/test_nrc_aps_sync_drift.py`
+- `tests/test_nrc_aps_live_batch.py`
+- `tests/test_nrc_aps_live_validation.py`
+
+### Required M5 no-drift backend bundle
+
+- `backend/tests/test_review_nrc_aps_catalog.py`
+- `backend/tests/test_review_nrc_aps_api.py`
+- `backend/tests/test_review_nrc_aps_details.py`
+- `backend/tests/test_review_nrc_aps_tree.py`
+- `backend/tests/test_review_nrc_aps_graph.py`
+- `backend/tests/test_review_nrc_aps_document_trace_api.py`
+- `backend/tests/test_review_nrc_aps_document_trace_service.py`
+- `backend/tests/test_review_nrc_aps_document_trace_page.py`
+- `backend/tests/test_review_nrc_aps_runtime_db.py`
+- `backend/tests/test_diagnostics_ref_persistence.py`
+
+### Required root-side report/export/context bundle
+
+- `tests/test_nrc_aps_evidence_report.py`
+- `tests/test_nrc_aps_evidence_report_contract.py`
+- `tests/test_nrc_aps_evidence_report_gate.py`
+- `tests/test_nrc_aps_evidence_report_export.py`
+- `tests/test_nrc_aps_evidence_report_export_contract.py`
+- `tests/test_nrc_aps_evidence_report_export_gate.py`
+- `tests/test_nrc_aps_evidence_report_export_package.py`
+- `tests/test_nrc_aps_evidence_report_export_package_contract.py`
+- `tests/test_nrc_aps_evidence_report_export_package_gate.py`
+- `tests/test_api.py`
+- `tests/test_nrc_aps_document_corpus.py`
+
+### Performance posture
+
+Rerun `06I`.
+
+For M6 this is not optional, because the lane is expected to touch:
+
+- connector/processing owner behavior,
+- review/runtime visibility classification,
+- and potentially admitted-run operational paths that can affect aggregate runtime cost.
+
+---
+
+## Exact widening rules
+
+The M6 lane must not widen casually.
+
+Allowed widening trigger classes are only:
+
+1. the admitted value cannot become baseline-visible operationally without promoting a review/catalog/API/report/export owner file
+2. the admitted value cannot preserve baseline document-trace/runtime semantics without promoting a conditional owner file
+3. an inspect-only governance / hidden-consumer file proves to be a real outward leak or normalization surface under execution evidence
+
+Every widening decision must be recorded explicitly in the final report as:
+
+- file widened into
+- reason class
+- why the default owner set was insufficient
+- what new risk the widening introduced
+
+---
+
+## Exact no-drift assertions the lane must prove
+
+The M6 lane must prove all of the following:
+
+- baseline remains default
+- the one admitted value is the only non-baseline integrated value
+- unapproved non-baseline values remain hidden or fail-closed by explicit design
+- no new outward review/API/report/export identity fields were introduced
+- baseline review/runtime/report/export/package behavior remains correct
+- baseline diagnostics-ref persistence remains correct
+- baseline runtime DB read-only access and review-root resolution remain correct
+- M5 coexistence / visibility barrier behavior remains correct for non-approved values
+
+---
+
+## Exact status language allowed at the end of the lane
+
+The next lane may be described as approve-as-is only if it provides:
+
+1. one explicitly named approved selector value
+2. explicit promotion/comparison evidence refs for that value
+3. explicit approval record for that value
+4. passing execution evidence for the required validation bundles
+5. explicit no-drift findings for review/runtime/report-export surfaces
+6. a refreshed `06I` result
+
+Do not use softer overclaim language such as:
+
+- effectively complete
+- done pending minor validation
+- ready for promotion
+- functionally closed
+
+unless the formal evidence above actually exists.
+
+---
+
+## Immediate next action after this packet
+
+The next justified move is:
+
+1. keep working on a fresh merged-main M6 lane
+2. record the exact approved target and evidence refs before code edits
+3. re-audit the canonical authority files above
+4. implement only within the packet frozen here
+5. run the required validation bundles
+6. freeze that lane separately
+
+The M6 lane is now prepared enough to proceed,
+but it remains intentionally fail-closed until one approved target is explicitly named.
+
 # 06E Blocker Decision Table
 
 ## Purpose
@@ -1877,7 +2379,8 @@ Each row carries one of these explicit statuses:
 | Run-scoped review-root / runtime DB access semantics | TRUE CLOSURE | `backend/tests/review_nrc_aps_runtime_fixture.py`; grouped T8 backend bundle; `backend/tests/test_review_nrc_aps_runtime_db.py`; `03L` | Clean-worktree review/runtime validation now resolves the shared audited runtime root read-only without seeding new data, and grouped review/runtime acceptance passes under the canonical command posture |
 | Review/report/export field-sensitivity inventory | TRUE CLOSURE | `03Y`; `review_nrc_aps.py`; `review_nrc_aps_document_trace.py`; `nrc_aps_evidence_report*.py`; `nrc_aps_content_index.py` | The standalone field-level exposure map exists and now serves as fixed input to the achieved M5 barrier closure and the next M6 planning lane |
 | Exact M5 execution packet boundary | TRUE CLOSURE | `05F`; live owner files in `review_nrc_aps_runtime*.py`, `review_nrc_aps_catalog.py`, `review_nrc_aps.py`, `nrc_aps_evidence_report*.py` | The frozen owner-file boundary, validation bundle boundary, hidden-consumer inspection set, and widening rule set were sufficient for the achieved M5 barrier lane with no default-owner widening |
-| Exact M5 coexistence / visibility mechanism | TRUE CLOSURE | `03Z`; `05G`; `review_nrc_aps_runtime_roots.py`; `review_nrc_aps_runtime.py`; `nrc_aps_evidence_report*.py` | The exact canonical visibility signal, backward-compatibility fallback, path-level coexistence rule, and baseline-facing persistence rule are now frozen and implemented on the current clean branch |
+| Exact M5 coexistence / visibility mechanism | TRUE CLOSURE | `03Z`; `05G`; `review_nrc_aps_runtime_roots.py`; `review_nrc_aps_runtime.py`; `nrc_aps_evidence_report*.py` | The exact canonical visibility signal, backward-compatibility fallback, path-level coexistence rule, and baseline-facing persistence rule are now frozen and implemented on merged `main` |
+| Exact M6 admission/promotion packet boundary | TRUE CLOSURE | `03AA`; `05H`; `connectors_nrc_adams.py`; `nrc_aps_artifact_ingestion.py`; `nrc_aps_document_processing.py`; `review_nrc_aps_runtime.py`; `nrc_aps_promotion_gate.py`; `nrc_aps_promotion_tuning.py` | The exact M6 mechanism, owner boundary, validation packet, widening rules, and fail-closed stop conditions are now frozen. The packet remains intentionally blocked on one explicit approved target, rather than silently inferring it |
 | Runtime-root coexistence mechanism | TRUE CLOSURE | `03Z`; `05G`; `backend/app/services/review_nrc_aps_runtime.py`; `backend/app/services/review_nrc_aps_runtime_roots.py`; `backend/tests/test_review_nrc_aps_api.py` | Baseline default discovery now rejects arbitrary differently named configured roots and filters discovered runtime bindings by canonical baseline-visible run metadata |
 | Review/catalog/report/API visibility | TRUE CLOSURE | `03Z`; `03Y`; `05G`; `review_nrc_aps_catalog.discover_candidate_runs()`; `review_nrc_aps.py` run-bound endpoints; `nrc_aps_evidence_report*.py` | Baseline-facing selector and direct run-bound review surfaces treat experiment-hidden runs as absent, and shared report/export/package persistence now fails closed for experiment-hidden runs |
 | Diagnostics persistence semantics | TRUE CLOSURE | `03Z`; `05G`; `backend/tests/test_diagnostics_ref_persistence.py`; `nrc_aps_content_index.py` diagnostics payload path | The M5 barrier implementation preserves diagnostics-ref persistence and read-only runtime DB semantics for baseline-visible runs while blocking experiment-hidden outward visibility |
@@ -1890,13 +2393,14 @@ Each row carries one of these explicit statuses:
 |---|---|---|---|
 | Bounded uncertainty / enforcement gap | BOUNDED RESIDUAL | `00L`; `06L`; `backend/app/schemas/review_nrc_aps.py` | The pack is strong but not equivalent to repo-native total closure. Acceptance/performance controls are specified by the pack (`06J`, `06K`, `06I`), but not visibly enforced via repo-native CI/hook mechanisms. At least one additional review-schema surface was found during re-audit. Carry explicitly instead of claiming zero remaining open items |
 | Tier 2 performance sample breadth | BOUNDED RESIDUAL | `06C`; `06E`; `06I`; `backend/tests/test_visual_artifact_pipeline.py` | The earlier T5/T6/T7/T8 harness defects are resolved and the full T1-T8 gate passes in this clean worktree. The remaining acceptance-side caveat is narrower: the recorded Tier 2 performance comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget |
+| Exact approved M6 target naming | BOUNDED RESIDUAL | `00D`; `03AA`; `05H` | The M6 packet is frozen, but no one selector value has yet been explicitly approved and recorded with evidence refs. The next code lane must stop until that one-target record exists |
 
 ---
 
 ## Interpretation
 
 The pack is now strong enough that the next useful improvement is not more M5 barrier work.
-It is using the achieved M5 barrier closure as fixed input for a separate M6 planning/freeze lane.
+It is using the achieved M5 barrier closure and the frozen `03AA` + `05H` packet as fixed input for a bounded M6 admission lane once one exact target is named.
 
 ### How to read this table
 

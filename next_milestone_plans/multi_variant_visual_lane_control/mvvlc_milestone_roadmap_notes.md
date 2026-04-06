@@ -43,36 +43,36 @@ If it conflicts with `00F`, `05E`, `05F`, `06E`, `03Y`, `03Z`, or `README_INDEX`
 - No accepted public/artifact/review/runtime drift was introduced on the merged baseline path.
 - Baseline discovery / persistence / DB behavior remained unchanged.
 
-### M5 - Coexistence / visibility barrier (achieved on current branch)
+### M5 - Coexistence / visibility barrier (achieved / previous)
 - `03Y` standalone field-sensitivity map is now frozen.
 - `05F` exact execution packet boundary is now frozen.
 - `03Z` exact runtime-root coexistence plus baseline-facing visibility mechanism is now frozen and implemented.
 - `05G` records the achieved owner set, validation results, `06I` rerun, and no-drift judgment for the bounded M5 barrier lane.
-- Baseline-facing review/catalog/API/report/export surfaces now hide experiment-marked runs by explicit design on the current clean branch.
+- Baseline-facing review/catalog/API/report/export surfaces now hide experiment-marked runs by explicit design on merged `main`.
 - Upstream admission of approved non-baseline run creation remains later-scope and is not implied by this barrier lane.
 
-### M6 - Admission / promotion (next planning milestone)
-- Explicit baseline comparison.
-- Explicit approval before admission.
+### M6 - Admission / promotion (planning packet frozen; implementation next)
+- `03AA` freezes the exact controlled-admission / promotion mechanism.
+- `05H` freezes the exact owner boundary, widening rules, validation packet, and fail-closed stop conditions.
+- No specific non-baseline selector value is approved by default.
+- Exactly one approved non-baseline value must be named explicitly before code begins.
 - No simultaneous baseline + A + B + C integrated rollout.
-- Any widening into connector / processing owner path requires separate freeze planning.
 
 ## Current roadmap position
 
 - M3 is complete for the baseline-only selector/bootstrap path.
 - M4 is complete for that same baseline-only path.
-- M5 coexistence / visibility barrier is implemented and locally validated on the current clean branch.
-- The immediate next work is M6 planning/freeze, not more M5 mechanism implementation and not another M3/M4 closure pass.
+- M5 coexistence / visibility barrier is implemented and recorded on merged `main`.
+- The immediate next work is bounded M6 admission implementation only after one exact approved target is explicitly named.
 
 ## Key threshold
 
-The earliest justified point for separate integrated ingestion/processing work has now been reached in principle because M3 is implemented, M4 has passed, and the M5 barrier lane is closed on the current clean branch.
+The earliest justified point for separate integrated ingestion/processing work has now been reached in principle because M3 is implemented, M4 has passed, and the M5 barrier lane is closed on merged `main`.
 
 The remaining prerequisite before starting later-scope admission work is:
-- a separate M6 freeze packet for controlled admission / promotion
-- exact owner-boundary widening, if any, into connector / processing path
-- exact explicit-approval and baseline-comparison rule for one approved non-baseline variant at a time
-- exact validation packet for admission work that preserves achieved M5 barrier behavior
+- one exact approved non-baseline selector value named explicitly
+- explicit approval and baseline-comparison evidence recorded for that one value
+- implementation that stays within the frozen `03AA` + `05H` packet or records any justified widening explicitly
 
 Bounded residuals that do not block M6 planning remain:
 - repo-native Python acceptance-path enforcement
