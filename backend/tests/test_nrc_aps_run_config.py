@@ -51,3 +51,69 @@ class TestNrcApsRunConfig(unittest.TestCase):
         self.assertNotIn("ocr_enabled", config["query_payload_inbound"])
         self.assertEqual(config["content_parse_timeout_seconds"], 0)
         self.assertFalse(config["ocr_enabled"])
+
+    def test_visual_lane_mode_defaults_to_baseline(self):
+        """Absent visual_lane_mode must default to baseline (fail-closed)."""
+        config = connectors_nrc_adams._normalize_request_config(
+            {
+                "mode": "strict_builder",
+                "wire_shape_mode": "shape_a",
+            },
+            "local-proof",
+        )
+
+        self.assertEqual(config["visual_lane_mode"], "baseline")
+
+    def test_visual_lane_mode_preserves_baseline(self):
+        """Explicit baseline value must be preserved."""
+        config = connectors_nrc_adams._normalize_request_config(
+            {
+                "mode": "strict_builder",
+                "wire_shape_mode": "shape_a",
+                "visual_lane_mode": "baseline",
+            },
+            "local-proof",
+        )
+
+        self.assertEqual(config["visual_lane_mode"], "baseline")
+
+    def test_visual_lane_mode_fail_closed_for_invalid_value(self):
+        """Invalid visual_lane_mode must fail closed to baseline."""
+        config = connectors_nrc_adams._normalize_request_config(
+            {
+                "mode": "strict_builder",
+                "wire_shape_mode": "shape_a",
+                "visual_lane_mode": "invalid_mode",
+            },
+            "local-proof",
+        )
+
+        self.assertEqual(config["visual_lane_mode"], "baseline")
+
+    def test_visual_lane_mode_fail_closed_for_unsupported_variant(self):
+        """Non-baseline values must fail closed to baseline in baseline-only phase."""
+        config = connectors_nrc_adams._normalize_request_config(
+            {
+                "mode": "strict_builder",
+                "wire_shape_mode": "shape_a",
+                "visual_lane_mode": "experimental_a",
+            },
+            "local-proof",
+        )
+
+        self.assertEqual(config["visual_lane_mode"], "baseline")
+
+    def test_visual_lane_mode_excluded_from_query_payload(self):
+        """visual_lane_mode must not leak into query_payload_inbound."""
+        config = connectors_nrc_adams._normalize_request_config(
+            {
+                "mode": "lenient_pass_through",
+                "wire_shape_mode": "shape_a",
+                "q": "inspection",
+                "visual_lane_mode": "baseline",
+            },
+            "local-proof",
+        )
+
+        self.assertEqual(config["visual_lane_mode"], "baseline")
+        self.assertNotIn("visual_lane_mode", config["query_payload_inbound"])

@@ -156,6 +156,7 @@ def processing_config_from_run_config(config: dict[str, Any] | None = None) -> d
         "ocr_timeout_seconds": incoming.get("ocr_timeout_seconds", 120),
         "content_min_searchable_chars": incoming.get("content_min_searchable_chars", 200),
         "content_min_searchable_tokens": incoming.get("content_min_searchable_tokens", 30),
+        "visual_lane_mode": incoming.get("visual_lane_mode", "baseline"),
     }
     if incoming.get("artifact_storage_dir"):
         overrides["artifact_storage_dir"] = incoming["artifact_storage_dir"]
