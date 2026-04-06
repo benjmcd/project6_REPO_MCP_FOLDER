@@ -224,7 +224,8 @@ Items that have been planning-closed or narrowed to explicit remaining scope.
 5. **Validation harness operability for baseline-only bootstrap:** CLOSED. The grouped T1-T8 bundles and the local performance gate are operational and recorded in the clean merged-main worktree.
 6. **Standalone review/report/export field-sensitivity map:** CLOSED as `03Y`. The field-level exposure inventory is now explicit, so the remaining later-scope work is the coexistence/visibility mechanism itself, not discovery of which baseline-facing fields matter.
 7. **Exact M5 execution packet boundary:** CLOSED as `05F`, and the bounded implementation stayed within the default owner set with no widening.
-8. **Exact M5 coexistence / visibility mechanism:** CLOSED by freeze-and-implementation. `03Z` froze the mechanism, and the current clean branch now implements the baseline-facing root-placement, runtime-binding visibility filter, and run-bound report/export/package persistence guards recorded in `05G`.
+8. **Exact M5 coexistence / visibility mechanism:** CLOSED by freeze-and-implementation. `03Z` froze the mechanism, and merged `main` now implements the baseline-facing root-placement, runtime-binding visibility filter, and run-bound report/export/package persistence guards recorded in `05G`.
+9. **Exact M6 planning/freeze packet boundary:** CLOSED as planning input. `03AA` now freezes the admission/promotion mechanism, and `05H` now freezes the owner boundary, validation boundary, widening rules, and fail-closed stop conditions for the next lane.
 
 ---
 
@@ -235,7 +236,8 @@ Items that remain genuinely open or bounded.
 1. **Tier 2 performance sample breadth:** The local performance gate was executed and passed, but the recorded artifact-aware Tier 2 comparison still uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget.
 2. **Broader residual consumer/visibility effects:** Residual effects beyond the already-verified live app-surface chain remain bounded but not zero. Mostly duplicated worktree/archive state and non-audited/generated surfaces.
 3. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.
-4. **Integrated admission of approved non-baseline runs:** Still later-scope. The achieved M5 barrier lane does not itself admit new non-baseline run creation through the connector/processing owner path by default.
+4. **Exact approved M6 target naming:** Still open. The pack now freezes the M6 mechanism and execution packet, but it does not yet name one approved non-baseline selector value plus its explicit approval record and evidence refs.
+5. **Integrated admission of approved non-baseline runs:** Still later-scope. The achieved M5 barrier lane does not itself admit new non-baseline run creation through the connector/processing owner path by default.
 
 ---
 
@@ -243,10 +245,10 @@ Items that remain genuinely open or bounded.
 
 ### Recommended stop condition
 
-At the current evidence level, the next justified scope is a dedicated post-M5 M6 planning/freeze lane for controlled admission / promotion.
+At the current evidence level, the next justified scope is bounded M6 admission work only after one explicit approved target is named under the frozen `03AA` + `05H` packet.
 Repo-native Python enforcement remains a valid parallel hardening lane, but it is not the primary next MVVLC milestone step.
 
 ### Current proceed position
 
-Proceeding is justified for bounded M6 planning/freeze on a fresh lane using the achieved M5 barrier closure as fixed input.
-Baseline-only bootstrap closure and the later-scope M5 barrier closure remain accepted; the remaining uncertainty is bounded, explicit, and no longer blocks starting the controlled-admission planning lane.
+Proceeding is justified for bounded M6 implementation preparation on a fresh lane using the achieved M5 barrier closure and the frozen `03AA` + `05H` packet as fixed input.
+Baseline-only bootstrap closure and the later-scope M5 barrier closure remain accepted; the remaining uncertainty is bounded, explicit, and no longer blocks final target-selection freeze for the controlled-admission lane.
