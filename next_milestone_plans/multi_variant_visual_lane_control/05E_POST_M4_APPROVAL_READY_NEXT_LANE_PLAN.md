@@ -4,6 +4,12 @@
 
 Define what must be true before a new MVVLC implementation lane can honestly be reviewed as approve-as-is after merged M3/M4 baseline closure.
 
+## Status note
+
+This document is the frozen pre-M5 planning packet.
+Its required outputs were satisfied by the `03Y` + `03Z` + `05F` preparation packet and then executed/recorded in `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`.
+Use `README_INDEX.md`, `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`, and `06E_BLOCKER_DECISION_TABLE.md` for current milestone position.
+
 This doc is for the next later-scope lane only.
 It does not reopen the accepted M3/M4 baseline selector/bootstrap path.
 
@@ -63,18 +69,24 @@ Minimum authority files:
 - `backend/app/services/nrc_aps_evidence_report_export_package.py`
 - `backend/app/services/nrc_aps_content_index.py`
 
-### 2. Freeze the exact experiment runtime-root coexistence mechanism
+### 2. Exact experiment runtime-root coexistence mechanism
 
-The next lane must define, before code edits:
+This output is now supplied by `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`.
+
+The implementation lane must re-audit that mechanism against live authority before code edits and refresh it only if the authority changed.
+
+The frozen mechanism now defines:
 
 1. exact experiment root naming and placement
 2. exact discovery-exclusion rule for default baseline review/runtime discovery
 3. exact relationship between experiment roots and shared `ConnectorRun` rows
 4. exact no-seeding / no-cross-run contamination rule
 
-### 3. Freeze the exact baseline-facing visibility rules
+### 3. Exact baseline-facing visibility rules
 
-The next lane must define, before code edits, what remains baseline-locked across:
+This output is now also concretized by `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`.
+
+The implementation lane must preserve those baseline-lock rules across:
 
 - `get_runs()`
 - review catalog selector surfaces
@@ -83,9 +95,11 @@ The next lane must define, before code edits, what remains baseline-locked acros
 - diagnostics / normalized-text / indexed-chunk / extracted-unit surfaces
 - report / export / package persistence and retrieval surfaces
 
-### 4. Freeze the exact no-drift rules
+### 4. Exact no-drift rules
 
-The next lane must define explicit no-change rules for:
+These rules are now frozen by the combined `03Z` + `05F` packet.
+
+The implementation lane must keep explicit no-change behavior for:
 
 - diagnostics-ref persistence semantics
 - runtime DB binding and read-only access semantics
@@ -132,7 +146,7 @@ Required rules:
 
 Before the next lane can be described as approve-as-is, it must provide:
 
-1. updated `00F` and `06E` entries matching the exact later-scope mechanism
+1. updated `00F` and `06E` entries matching the exact implemented `03Z` mechanism
 2. the standalone field-sensitivity map
 3. exact validation command bundles with isolated-runtime posture
 4. proof that baseline-facing review/catalog/API/report/export surfaces remain locked as intended
@@ -171,8 +185,8 @@ Stop instead of widening scope if the next lane appears to require:
 
 1. Re-audit the root-live authority chain.
 2. Re-audit `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md` against live authority and refresh it only if the authority chain changed.
-3. Freeze the exact coexistence mechanism and baseline-facing visibility rules.
-4. Freeze the narrow implementation and validation packet.
+3. Re-audit `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md` against live authority and refresh it only if the authority changed.
+4. Re-audit `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md` and keep scope bounded to that packet.
 5. Implement on a fresh merged-main worktree.
 6. Run the affected grouped acceptance bundles plus any new isolation-specific tests.
 7. Re-run `06I` if the changed surfaces justify it.

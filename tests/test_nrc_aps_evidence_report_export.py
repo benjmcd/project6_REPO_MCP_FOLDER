@@ -397,3 +397,44 @@ def test_persisted_failure_artifact_is_source_report_scoped(monkeypatch, tmp_pat
     finally:
         db.close()
         engine.dispose()
+
+
+def test_hidden_run_persist_export_fails_closed_without_shared_refs(monkeypatch, tmp_path: Path):
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base.metadata.create_all(bind=engine)
+    db = Session()
+    try:
+        class _Settings:
+            connector_reports_dir = str(tmp_path)
+            database_url = "sqlite:///:memory:"
+
+        monkeypatch.setattr(nrc_aps_evidence_bundle, "settings", _Settings())
+        monkeypatch.setattr(nrc_aps_evidence_citation_pack, "settings", _Settings())
+        monkeypatch.setattr(nrc_aps_evidence_report, "settings", _Settings())
+        monkeypatch.setattr(nrc_aps_evidence_report_export, "settings", _Settings())
+        run_id = "run-er-export-hidden"
+        _seed_report_index_rows(db, reports_dir=tmp_path, run_id=run_id)
+
+        report = _persisted_report(db, run_id)
+        run = db.get(ConnectorRun, run_id)
+        run.request_config_json = {"visual_lane_mode": "variant_hidden"}
+        db.commit()
+
+        with pytest.raises(nrc_aps_evidence_report_export.EvidenceReportExportError) as exc_info:
+            nrc_aps_evidence_report_export.assemble_evidence_report_export(
+                db,
+                request_payload={"evidence_report_id": report["evidence_report_id"], "persist_export": True},
+            )
+        assert exc_info.value.code == contract.APS_RUNTIME_FAILURE_INVALID_REQUEST
+        assert exc_info.value.status_code == 422
+
+        run = db.get(ConnectorRun, run_id)
+        refs = dict((run.query_plan_json or {}).get("aps_evidence_report_export_report_refs") or {})
+        assert refs.get("aps_evidence_report_exports") in (None, [])
+        assert refs.get("aps_evidence_report_export_failures") in (None, [])
+        assert list(tmp_path.glob("*_aps_evidence_report_export_v1.json")) == []
+        assert list(tmp_path.glob("*_aps_evidence_report_export_failure_v1.json")) == []
+    finally:
+        db.close()
+        engine.dispose()

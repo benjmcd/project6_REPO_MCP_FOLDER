@@ -7,7 +7,7 @@ Define what “out-of-band experiments” must mean operationally.
 ## Why this doc exists
 
 Earlier revisions stated that experiments should remain out-of-band, but that was still too loose.
-This document freezes the required behavior even where the exact implementation mechanism is still unresolved.
+This document freezes the required behavior. The exact M5 mechanism is now frozen separately in `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`.
 
 ## Required isolation outcomes
 
@@ -27,14 +27,14 @@ Experiments may run only when they use:
 - explicit manual or bakeoff invocation paths,
 - explicit comparison workflows outside default review/runtime discovery.
 
-## Not yet frozen
+## Mechanism note
 
-This document does **not** freeze:
+This document still does **not** require:
 - a specific context-manager abstraction,
 - a specific experiment ID field,
 - a specific namespacing scheme inside persisted payloads.
 
-Those remain candidate mechanisms until explicitly frozen.
+The exact coexistence / visibility mechanism is now frozen by `03Z`.
 
 ## Current operational rule
 

@@ -378,3 +378,53 @@ def test_persisted_same_id_drifted_package_artifact_fails_closed_without_overwri
     finally:
         db.close()
         engine.dispose()
+
+
+def test_hidden_run_persist_package_fails_closed_without_shared_refs(monkeypatch, tmp_path: Path):
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base.metadata.create_all(bind=engine)
+    db = Session()
+    try:
+        class _Settings:
+            connector_reports_dir = str(tmp_path)
+            database_url = "sqlite:///:memory:"
+
+        monkeypatch.setattr(nrc_aps_evidence_bundle, "settings", _Settings())
+        monkeypatch.setattr(nrc_aps_evidence_citation_pack, "settings", _Settings())
+        monkeypatch.setattr(nrc_aps_evidence_report, "settings", _Settings())
+        monkeypatch.setattr(nrc_aps_evidence_report_export, "settings", _Settings())
+        monkeypatch.setattr(nrc_aps_evidence_report_export_package, "settings", _Settings())
+
+        run_id = "run-er-export-package-hidden"
+        _seed_report_index_rows(db, reports_dir=tmp_path, run_id=run_id)
+        export_a = _persisted_export(db, run_id=run_id, query="alpha")
+        export_b = _persisted_export(db, run_id=run_id, query="delta")
+
+        run = db.get(ConnectorRun, run_id)
+        run.request_config_json = {"visual_lane_mode": "variant_hidden"}
+        db.commit()
+
+        with pytest.raises(nrc_aps_evidence_report_export_package.EvidenceReportExportPackageError) as exc_info:
+            nrc_aps_evidence_report_export_package.assemble_evidence_report_export_package(
+                db,
+                request_payload={
+                    "evidence_report_export_ids": [
+                        export_a["evidence_report_export_id"],
+                        export_b["evidence_report_export_id"],
+                    ],
+                    "persist_package": True,
+                },
+            )
+        assert exc_info.value.code == contract.APS_RUNTIME_FAILURE_INVALID_REQUEST
+        assert exc_info.value.status_code == 422
+
+        run = db.get(ConnectorRun, run_id)
+        refs = dict((run.query_plan_json or {}).get("aps_evidence_report_export_package_report_refs") or {})
+        assert refs.get("aps_evidence_report_export_packages") in (None, [])
+        assert refs.get("aps_evidence_report_export_package_failures") in (None, [])
+        assert list(tmp_path.glob("*_aps_evidence_report_export_package_v1.json")) == []
+        assert list(tmp_path.glob("*_aps_evidence_report_export_package_failure_v1.json")) == []
+    finally:
+        db.close()
+        engine.dispose()
