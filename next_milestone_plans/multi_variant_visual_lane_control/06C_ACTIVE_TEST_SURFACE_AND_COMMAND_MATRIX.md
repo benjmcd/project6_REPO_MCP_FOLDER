@@ -4,7 +4,7 @@
 
 This revision strengthens the matrix by explicitly recognizing diagnostics-persistence, review-root/runtime-data safety, activation semantics, and isolation semantics as first-class validation surfaces.
 
-The canonical repo-root `python -m pytest` posture is now live-verified for T1-T4, T7, and T8 in this clean worktree. Full bootstrap acceptance remains open because T5 and T6 are still failing, and the local performance gate from `06I` has not yet been executed.
+The canonical repo-root `python -m pytest` posture is now live-verified for T1-T8 in this clean worktree. The local performance gate from `06I` has also been executed: Tier 1 main-vs-candidate comparison passed without regression, and a declared-root Tier 2 fallback artifact-aware sample also passed after the preferred real-ADAMS timed attempt exceeded a practical local session budget. This satisfies the bootstrap gate in the clean worktree; repo-native CI enforcement remains a separate bounded residual.
 
 ---
 
@@ -147,7 +147,5 @@ Additional acceptance expectations:
 - **Performance regression gate:** Defined in `06I`. Execution depends on applying the frozen command convention.
 
 ### Remaining
-- T5 grouped execution is currently failing on broader root API/state surfaces, including dataset-version lookup against an uninitialized DB path and connector submission tests that trip the active-run concurrency limit; these failures are outside the localized MVVLC selector path but still block full T1-T8 acceptance closure
-- T6 grouped execution is currently failing on broader corpus/E2E expectation surfaces, including document-class expectation drift in `tests/test_nrc_aps_document_corpus.py`; import-resolution and clean-worktree path issues were resolved, but output expectations still do not match current live behavior
-- Because T5/T6 are still failing, the `06I` performance gate has not been executed; output-stability preconditions are not yet satisfied
 - Repo-native CI enforcement of the Python acceptance path is not yet implemented (bounded residual, not a blocker for this matrix)
+- The recorded `06I` Tier 2 comparison uses the declared-root handoff fallback sample (`layout.pdf`, `mixed.pdf`, `scanned.pdf`) because the preferred real-ADAMS timed attempt exceeded practical local session budget. Carry that capture-breadth limitation explicitly instead of pretending the preferred heavier sample was completed.

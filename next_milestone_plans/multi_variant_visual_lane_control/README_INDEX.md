@@ -16,11 +16,10 @@ The pack is materially closed at the planning/control level. That does **not** m
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
 - Residual consumer/visibility closure: app-surface consumers explicitly enumerated (`00K`, `03X`)
 
-### What still blocks milestone acceptance
+### Milestone acceptance status
 
-- T5 broader root-side API/context acceptance bundle (`06C`, `06E`)
-- T6 broader root-side corpus/e2e acceptance bundle (`06C`, `06E`)
-- Local performance gate execution after T1-T8 are green (`06I`)
+- T1-T8 acceptance bundles are green in this clean worktree under the canonical repo-root pytest posture (`06C`, `06E`)
+- The local performance gate has been executed: Tier 1 main-vs-candidate comparison passed without regression, and a declared-root Tier 2 fallback artifact-aware sample also passed after the preferred real-ADAMS timed attempt exceeded practical local session budget (`06I`)
 
 ### Later milestone scope, not current M3 acceptance
 
@@ -30,6 +29,7 @@ The pack is materially closed at the planning/control level. That does **not** m
 ### What is bounded residual
 
 - Repo-native Python acceptance-path enforcement (pack-specified, not CI-enforced)
+- Tier 2 performance capture breadth: the recorded artifact-aware comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture did not complete within practical session budget
 - Future drift outside audited authority surface
 
 ---
