@@ -9,8 +9,10 @@ from sqlalchemy.orm import sessionmaker
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
+TESTS_DIR = ROOT / "tests"
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(BACKEND))
+sys.path.insert(0, str(TESTS_DIR))
 
 TEST_STORAGE_DIR = BACKEND / "app" / "storage_test_runtime"
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test_method_aware.db")
@@ -22,7 +24,7 @@ os.environ.setdefault("NRC_ADAMS_APS_API_BASE_URL", "https://adams-api.nrc.gov")
 from app.db.session import Base  # noqa: E402
 from app.services import nrc_aps_content_index  # noqa: E402
 from app.services import nrc_aps_document_processing  # noqa: E402
-from tests.support_nrc_aps_doc_corpus import corpus_ocr_available, expected_behavior, fixture_bytes, fixture_path, manifest_entries  # noqa: E402
+from support_nrc_aps_doc_corpus import corpus_ocr_available, expected_behavior, fixture_bytes, fixture_path, manifest_entries  # noqa: E402
 
 
 def _entry_id(entry: dict[str, object]) -> str:

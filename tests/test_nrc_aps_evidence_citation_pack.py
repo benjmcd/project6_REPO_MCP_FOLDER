@@ -196,7 +196,7 @@ def test_persisted_failure_artifact_is_source_bundle_scoped(monkeypatch, tmp_pat
         )
         bundle_path = Path(bundle["bundle_ref"])
         tampered = json.loads(bundle_path.read_text(encoding="utf-8"))
-        tampered["results"][0]["selection_ref"] = None
+        tampered["results"][0]["content_units_ref"] = None
         tampered["bundle_checksum"] = bundle_contract.compute_bundle_checksum(tampered)
         bundle_path.write_text(json.dumps(tampered, indent=2, sort_keys=True), encoding="utf-8")
 

@@ -83,6 +83,13 @@ def _classify_visual_page(
     return APS_VISUAL_CLASS_TEXT_HEAVY
 
 
+def _normalize_visual_lane_mode(value: Any) -> str:
+    visual_lane_mode = str(value or "baseline").strip().lower() or "baseline"
+    if visual_lane_mode != "baseline":
+        return "baseline"
+    return visual_lane_mode
+
+
 def _capture_visual_page_ref(page: Any, page_number: int, visual_page_class: str) -> dict[str, Any]:
     """Build a visual-page reference dict.  Accesses page.rect as lightweight
     proof that the page is readable for visual preservation.  Raises on failure."""
@@ -145,6 +152,47 @@ def _write_visual_page_artifact(
     }
 
 
+def _run_baseline_visual_lane(
+    *,
+    page: Any,
+    page_number: int,
+    pre_branch_native_quality_status: str,
+    config: dict[str, Any],
+) -> tuple[str, dict[str, Any] | None, list[str]]:
+    has_visual = _has_significant_visual_content(page)
+    visual_page_class = _classify_visual_page(
+        native_quality_status=pre_branch_native_quality_status,
+        has_visual=has_visual,
+    )
+    visual_ref: dict[str, Any] | None = None
+    visual_degradation_codes: list[str] = []
+    if visual_page_class == APS_VISUAL_CLASS_DIAGRAM:
+        try:
+            ref = _capture_visual_page_ref(page, page_number, visual_page_class)
+            _art_dir = str(config.get("artifact_storage_dir") or "").strip()
+            if _art_dir:
+                try:
+                    artifact = _write_visual_page_artifact(
+                        artifact_storage_dir=_art_dir,
+                        page=page,
+                        page_number=page_number,
+                        config=config,
+                    )
+                    ref.update(artifact)
+                except Exception:  # noqa: BLE001
+                    ref["status"] = "visual_capture_failed"
+                    visual_degradation_codes.append("visual_artifact_failed")
+            visual_ref = ref
+        except Exception:  # noqa: BLE001
+            visual_ref = {
+                "page_number": page_number,
+                "visual_page_class": visual_page_class,
+                "status": "visual_capture_failed",
+            }
+            visual_degradation_codes.append("visual_capture_failed")
+    return visual_page_class, visual_ref, visual_degradation_codes
+
+
 def default_processing_config(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
     config = {
         "content_sniff_bytes": 4096,
@@ -158,6 +206,7 @@ def default_processing_config(overrides: dict[str, Any] | None = None) -> dict[s
         "content_min_searchable_chars": 200,
         "content_min_searchable_tokens": 30,
         "visual_render_dpi": APS_VISUAL_RENDER_DPI_DEFAULT,
+        "visual_lane_mode": "baseline",
     }
     config.update(dict(overrides or {}))
     return config
@@ -685,35 +734,20 @@ def _process_pdf(
                 ocr_page_count += 1
 
             # --- Visual-preservation lane ---------------------------------
-            has_visual = _has_significant_visual_content(page)
-            visual_page_class = _classify_visual_page(
-                native_quality_status=pre_branch_native_quality_status,
-                has_visual=has_visual,
-            )
-            if visual_page_class == APS_VISUAL_CLASS_DIAGRAM:
-                try:
-                    ref = _capture_visual_page_ref(page, page_number, visual_page_class)
-                    _art_dir = str(config.get("artifact_storage_dir") or "").strip()
-                    if _art_dir:
-                        try:
-                            artifact = _write_visual_page_artifact(
-                                artifact_storage_dir=_art_dir,
-                                page=page,
-                                page_number=page_number,
-                                config=config,
-                            )
-                            ref.update(artifact)
-                        except Exception:  # noqa: BLE001
-                            ref["status"] = "visual_capture_failed"
-                            degradation_codes.append("visual_artifact_failed")
-                    visual_page_refs.append(ref)
-                except Exception:  # noqa: BLE001
-                    visual_page_refs.append({
-                        "page_number": page_number,
-                        "visual_page_class": visual_page_class,
-                        "status": "visual_capture_failed",
-                    })
-                    degradation_codes.append("visual_capture_failed")
+            visual_lane_mode = _normalize_visual_lane_mode(config.get("visual_lane_mode"))
+            visual_page_class = APS_VISUAL_CLASS_TEXT_HEAVY
+            visual_ref: dict[str, Any] | None = None
+            visual_lane_degradation_codes: list[str] = []
+            if visual_lane_mode == "baseline":
+                visual_page_class, visual_ref, visual_lane_degradation_codes = _run_baseline_visual_lane(
+                    page=page,
+                    page_number=page_number,
+                    pre_branch_native_quality_status=pre_branch_native_quality_status,
+                    config=config,
+                )
+            if visual_ref is not None:
+                visual_page_refs.append(visual_ref)
+            degradation_codes.extend(visual_lane_degradation_codes)
             # text_heavy_or_empty → skip (no ref added)
             # ---------------------------------------------------------------
 

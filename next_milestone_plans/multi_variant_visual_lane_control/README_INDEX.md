@@ -10,22 +10,26 @@ The pack is materially closed at the planning/control level. That does **not** m
 
 - Selector config key: `visual_lane_mode`, normalized, forwarded, defaulted, fail-closed to `baseline` (`03U`, `03V`)
 - Exact seam boundary: helper-contract freeze at the visual-preservation lane (`03W`)
+- M3 selector path: baseline-preserving seam consumption is implemented in the frozen owner path (`05D`, `06E`)
+- Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
+- Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
 - Residual consumer/visibility closure: app-surface consumers explicitly enumerated (`00K`, `03X`)
-- Local performance gate: defined (`06I`), execution pending on applying frozen command convention
 
-### What requires implementation
+### Milestone acceptance status
 
-- Seam-internal branch behavior within the frozen seam
-- Control-key / query-payload exclusion behavior
+- T1-T8 acceptance bundles are green in this clean worktree under the canonical repo-root pytest posture (`06C`, `06E`)
+- The local performance gate has been executed: Tier 1 main-vs-candidate comparison passed without regression, and a declared-root Tier 2 fallback artifact-aware sample also passed after the preferred real-ADAMS timed attempt exceeded practical local session budget (`06I`)
+
+### Later milestone scope, not current M3 acceptance
+
 - Runtime-root coexistence mechanism for experiments
 - Review/catalog/report/API/export visibility controls for experiment runs
-- Diagnostics persistence and runtime DB binding no-change rules
-- Artifact equivalence acceptance procedure
 
 ### What is bounded residual
 
 - Repo-native Python acceptance-path enforcement (pack-specified, not CI-enforced)
+- Tier 2 performance capture breadth: the recorded artifact-aware comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture did not complete within practical session budget
 - Future drift outside audited authority surface
 
 ---

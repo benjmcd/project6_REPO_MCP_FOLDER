@@ -17,6 +17,7 @@ import hashlib
 import tempfile
 from pathlib import Path
 from datetime import datetime
+import pytest
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -320,6 +321,52 @@ def _content_index_roundtrip(processing_results: list[dict], storage_dir: Path) 
         "failed": sum(1 for r in roundtrip_results if not r["roundtrip_success"]),
         "details": roundtrip_results,
     }
+
+
+def _pytest_visual_fixture() -> Path:
+    fixture_path = FIXTURE_DIRS[0] / "mixed.pdf"
+    assert fixture_path.exists(), f"Expected visual artifact fixture at {fixture_path}"
+    return fixture_path
+
+
+@pytest.fixture
+def artifact_probe_result(tmp_path: Path) -> tuple[dict, Path]:
+    artifact_dir = tmp_path / "visual_artifacts"
+    result = process_pdf_with_artifacts(
+        pdf_path=_pytest_visual_fixture(),
+        artifact_dir=artifact_dir,
+        dpi=150,
+    )
+    return result, artifact_dir
+
+
+def test_visual_artifact_pipeline_materializes_pngs(artifact_probe_result: tuple[dict, Path]) -> None:
+    result, artifact_dir = artifact_probe_result
+
+    assert result["status"] == "success"
+    assert result["visual_page_refs_count"] >= 1
+    assert result["artifacts_created"] >= 1
+    assert result["degradation_codes"] == []
+
+    artifact_refs = result["artifact_refs"]
+    assert artifact_refs, "Expected at least one preserved visual artifact"
+    for artifact in artifact_refs:
+        verified = artifact["verified"]
+        assert verified["exists"] is True
+        assert Path(verified["path"]).exists()
+        assert artifact_dir in Path(verified["path"]).parents
+        assert verified["sha256"] == artifact["sha256"]
+        assert artifact["format"] == "png"
+        assert artifact["semantics"] == "whole_page_rasterization"
+
+
+def test_visual_artifact_pipeline_roundtrip_preserves_metadata(artifact_probe_result: tuple[dict, Path]) -> None:
+    result, artifact_dir = artifact_probe_result
+    roundtrip = _content_index_roundtrip([result], artifact_dir)
+
+    assert roundtrip["total_tested"] == 1
+    assert roundtrip["passed"] == 1
+    assert roundtrip["failed"] == 0
 
 
 def main():

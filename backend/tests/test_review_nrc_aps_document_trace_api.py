@@ -30,17 +30,17 @@ from app.models.models import ApsContentLinkage, ApsContentDocument
 from app.schemas.review_nrc_aps import NrcApsReviewExtractedUnitsOut
 from main import app
 from review_nrc_aps_runtime_fixture import (
-    discover_passed_runtimes,
-    latest_passed_runtime,
+    discover_document_trace_ready_runtimes,
+    latest_document_trace_ready_runtime,
     make_session,
     resolve_deduplicated_target_pair,
     resolve_target_for_accession,
 )
 
-PASSED_RUNTIMES = discover_passed_runtimes()
+PASSED_RUNTIMES = discover_document_trace_ready_runtimes()
 RUNTIMES_BY_RUN_ID = {runtime.run_id: runtime for runtime in PASSED_RUNTIMES}
 
-RUNTIME = latest_passed_runtime()
+RUNTIME = latest_document_trace_ready_runtime()
 RUN_ID = RUNTIME.run_id
 DB_PATH = RUNTIME.db_path
 MULTI_RUNTIME_RUN_IDS = [runtime.run_id for runtime in PASSED_RUNTIMES[:3]]
