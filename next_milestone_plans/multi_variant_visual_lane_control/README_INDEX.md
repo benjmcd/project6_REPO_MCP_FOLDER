@@ -2,29 +2,33 @@
 
 ## Current state
 
-This is the planning and control pack for baseline-preserving integrated selector bootstrap, scoped to the PDF visual-lane only.
+This is the planning and control pack for the MVVLC program, still bounded to the PDF visual-lane seam.
 
-The pack is materially closed at the planning/control level. That does **not** mean implementation is done. It means the planning layer no longer has a major unresolved structural blocker.
+Merged `main` now contains the baseline-only selector/bootstrap implementation and the recorded M4 acceptance closure for that baseline path. The pack's current job is to preserve that closure, carry the bounded residuals honestly, and define the next later-scope lane explicitly.
 
 ### What is closed
 
 - Selector config key: `visual_lane_mode`, normalized, forwarded, defaulted, fail-closed to `baseline` (`03U`, `03V`)
 - Exact seam boundary: helper-contract freeze at the visual-preservation lane (`03W`)
 - M3 selector path: baseline-preserving seam consumption is implemented in the frozen owner path (`05D`, `06E`)
+- M4 baseline-only acceptance gate: T1-T8 and the local `06I` performance gate were executed and recorded for the merged baseline path (`05D`, `06C`, `06E`, `06I`)
 - Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
 - Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
 - Residual consumer/visibility closure: app-surface consumers explicitly enumerated (`00K`, `03X`)
 
-### Milestone acceptance status
+### Current milestone position
 
-- T1-T8 acceptance bundles are green in this clean worktree under the canonical repo-root pytest posture (`06C`, `06E`)
-- The local performance gate has been executed: Tier 1 main-vs-candidate comparison passed without regression, and a declared-root Tier 2 fallback artifact-aware sample also passed after the preferred real-ADAMS timed attempt exceeded practical local session budget (`06I`)
+- M3 baseline-only selector/bootstrap is implemented and accepted on merged `main`
+- M4 acceptance gate is passed for the baseline-only bootstrap path
+- M5 later-scope experiment coexistence / visibility work is the next active planning and implementation lane (`05E`, roadmap)
 
-### Later milestone scope, not current M3 acceptance
+### Next lane to prepare
 
 - Runtime-root coexistence mechanism for experiments
 - Review/catalog/report/API/export visibility controls for experiment runs
+- Exact review/report/export field-sensitivity and persistence no-drift map for experiment runs
+- An approval-ready M5 execution packet before any new integrated experiment work starts (`05E`)
 
 ### What is bounded residual
 
@@ -45,6 +49,7 @@ The pack is materially closed at the planning/control level. That does **not** m
 
 ### For implementation
 - `00C_IMPLEMENTATION_PREPARATION_AND_EXECUTION_PLAYBOOK.md`
+- `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
 
 ### For "can we proceed?"
 - `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
@@ -100,4 +105,5 @@ The v25 claim of "no remaining open items" was too strong. The evidence supports
 
 This remains a control pack.
 Do not convert candidate control ideas into code without explicit freeze.
-Do not treat planning closure as proof that implementation already exists.
+Do not reopen merged M3/M4 closure without live contradictory evidence.
+Do not treat merged M3/M4 closure as permission to start M5 without a separate freeze packet.

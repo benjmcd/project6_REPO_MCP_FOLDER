@@ -1,6 +1,6 @@
 {
-  "package_name": "multi_variant_visual_lane_control_pack_v37",
-  "purpose": "Control-doc pack tightened with activation-scope, OCR-boundary, and isolation-mechanism controls",
+  "package_name": "multi_variant_visual_lane_control_pack_v38",
+  "purpose": "Control-doc pack with merged M3/M4 closure recorded and a post-M4 approval-ready next-lane plan",
   "improvements_over_v6": [
     "added selector activation scope/lifetime policy",
     "added experiment isolation mechanism policy",
@@ -9,6 +9,8 @@
     "incorporated adversarial second-opinion critique without treating its code suggestions as settled truth"
   ],
   "remaining_open_items": [
+    "experiment runtime-root coexistence and baseline-facing visibility controls remain later-scope work",
+    "exact review/report/export field-sensitivity map is not yet a standalone post-M4 artifact",
     "Python acceptance path is pack-specified but not visibly repo-enforced in checked root workflow/hook/config surfaces",
     "bounded uncertainty remains in duplicated archive/worktree state and other non-audited/generated surfaces"
   ],
@@ -57,6 +59,7 @@
     "03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md",
     "03X_VISUAL_OUTPUT_SURFACE_CLOSURE_MATRIX.md",
     "05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md",
+    "05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md",
     "06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md",
     "06D_CRITICAL_BLOCKER_VALIDATION_SET.md",
     "06E_BLOCKER_DECISION_TABLE.md",
@@ -226,5 +229,10 @@
     "added assertion/justification/evidentiary standard doc",
     "added planning traceability and dependency matrix",
     "updated navigation, review, and implementation playbooks to use the new reasoning layer"
+  ],
+  "improvements_over_v37": [
+    "updated front-door status docs to reflect merged M3/M4 closure",
+    "added an explicit post-M4 approval-ready next-lane plan",
+    "shifted the next justified MVVLC scope from bootstrap closure to experiment coexistence and visibility control"
   ]
 }
