@@ -406,3 +406,51 @@ def test_persisted_failure_artifact_is_source_pack_scoped(monkeypatch, tmp_path:
     finally:
         db.close()
         engine.dispose()
+
+
+def test_hidden_run_persist_report_fails_closed_without_shared_refs(monkeypatch, tmp_path: Path):
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base.metadata.create_all(bind=engine)
+    db = Session()
+    try:
+        class _Settings:
+            connector_reports_dir = str(tmp_path)
+            database_url = "sqlite:///:memory:"
+
+        monkeypatch.setattr(nrc_aps_evidence_bundle, "settings", _Settings())
+        monkeypatch.setattr(nrc_aps_evidence_citation_pack, "settings", _Settings())
+        monkeypatch.setattr(nrc_aps_evidence_report, "settings", _Settings())
+        run_id = "run-evidence-report-hidden"
+        _seed_report_index_rows(db, reports_dir=tmp_path, run_id=run_id)
+
+        bundle = nrc_aps_evidence_bundle.assemble_evidence_bundle(
+            db,
+            request_payload={"run_id": run_id, "query": "alpha", "persist_bundle": True},
+        )
+        citation_pack = nrc_aps_evidence_citation_pack.assemble_evidence_citation_pack(
+            db,
+            request_payload={"bundle_id": bundle["bundle_id"], "persist_pack": True},
+        )
+
+        run = db.get(ConnectorRun, run_id)
+        run.request_config_json = {"visual_lane_mode": "variant_hidden"}
+        db.commit()
+
+        with pytest.raises(nrc_aps_evidence_report.EvidenceReportError) as exc_info:
+            nrc_aps_evidence_report.assemble_evidence_report(
+                db,
+                request_payload={"citation_pack_id": citation_pack["citation_pack_id"], "persist_report": True},
+            )
+        assert exc_info.value.code == contract.APS_RUNTIME_FAILURE_INVALID_REQUEST
+        assert exc_info.value.status_code == 422
+
+        run = db.get(ConnectorRun, run_id)
+        refs = dict((run.query_plan_json or {}).get("aps_evidence_report_report_refs") or {})
+        assert refs.get("aps_evidence_reports") in (None, [])
+        assert refs.get("aps_evidence_report_failures") in (None, [])
+        assert list(tmp_path.glob("*_aps_evidence_report_v1.json")) == []
+        assert list(tmp_path.glob("*_aps_evidence_report_failure_v1.json")) == []
+    finally:
+        db.close()
+        engine.dispose()

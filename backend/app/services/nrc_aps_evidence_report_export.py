@@ -12,6 +12,7 @@ from app.models import ConnectorRun
 from app.services import nrc_aps_evidence_report
 from app.services import nrc_aps_evidence_report_export_contract as contract
 from app.services import nrc_aps_safeguards
+from app.services.review_nrc_aps_runtime import connector_run_is_baseline_visible
 
 
 class EvidenceReportExportError(RuntimeError):
@@ -219,6 +220,8 @@ def _persist_failure_artifact(
     error_code: str,
     error_message: str,
 ) -> str | None:
+    if run is not None and not connector_run_is_baseline_visible(run):
+        return None
     effective_run_id = str(run_id or getattr(run, "connector_run_id", "") or "").strip()
     if not effective_run_id:
         return None
@@ -343,6 +346,12 @@ def assemble_evidence_report_export(
         )
 
         if persist_export:
+            if run is not None and not connector_run_is_baseline_visible(run):
+                raise EvidenceReportExportError(
+                    contract.APS_RUNTIME_FAILURE_INVALID_REQUEST,
+                    "persist_export is unavailable for experiment-hidden runs",
+                    status_code=422,
+                )
             effective_run_id = str(run_id or "").strip()
             if not effective_run_id:
                 raise EvidenceReportExportError(contract.APS_RUNTIME_FAILURE_SOURCE_REPORT_INVALID, "source evidence report missing run id", status_code=500)

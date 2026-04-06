@@ -12,6 +12,7 @@ from app.models import ConnectorRun
 from app.services import nrc_aps_evidence_citation_pack
 from app.services import nrc_aps_evidence_report_contract as contract
 from app.services import nrc_aps_safeguards
+from app.services.review_nrc_aps_runtime import connector_run_is_baseline_visible
 
 
 class EvidenceReportError(RuntimeError):
@@ -248,6 +249,8 @@ def _persist_failure_artifact(
     error_code: str,
     error_message: str,
 ) -> str | None:
+    if run is not None and not connector_run_is_baseline_visible(run):
+        return None
     effective_run_id = str(run_id or getattr(run, "connector_run_id", "") or "").strip()
     if not effective_run_id:
         return None
@@ -393,6 +396,12 @@ def assemble_evidence_report(
         report_payload["evidence_report_checksum"] = contract.compute_evidence_report_checksum(report_payload)
 
         if persist_report:
+            if run is not None and not connector_run_is_baseline_visible(run):
+                raise EvidenceReportError(
+                    contract.APS_RUNTIME_FAILURE_INVALID_REQUEST,
+                    "persist_report is unavailable for experiment-hidden runs",
+                    status_code=422,
+                )
             effective_run_id = str(run_id or "").strip()
             if not effective_run_id:
                 raise EvidenceReportError(contract.APS_RUNTIME_FAILURE_SOURCE_CITATION_PACK_INVALID, "source citation pack missing run id", status_code=500)

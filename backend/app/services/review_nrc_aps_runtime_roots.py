@@ -3,6 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 
+def _is_baseline_review_runtime_root(candidate: Path) -> bool:
+    return candidate.name == "lc_e2e" and candidate.parent.name in {"storage", "storage_test_runtime"}
+
+
 def _normalize_runtime_root(candidate: str | Path | None) -> Path | None:
     raw = str(candidate or "").strip()
     if not raw:
@@ -33,7 +37,7 @@ def candidate_review_runtime_roots(
     ]
 
     configured_root = _normalize_runtime_root(storage_dir)
-    if configured_root is not None:
+    if configured_root is not None and _is_baseline_review_runtime_root(configured_root):
         roots.append(configured_root)
 
     deduped: dict[str, Path] = {}
