@@ -4,6 +4,13 @@
 
 Introduce selector/registry structure without introducing experimental runtime behavior yet.
 
+## Status
+
+This plan is now satisfied on merged `main` for the baseline-only bootstrap path.
+
+Keep this doc as the historical M3/M4 execution/acceptance plan.
+Use `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md` for the next later-scope lane.
+
 ## This pass does
 
 1. define registry shape
