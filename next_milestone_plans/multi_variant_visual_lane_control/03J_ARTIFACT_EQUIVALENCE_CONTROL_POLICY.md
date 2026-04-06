@@ -14,6 +14,10 @@
   - semantics
 - content-index roundtrip behavior
 
+Current harness note:
+- the live file is currently a script-style probe with `main()`, not a pytest-collected module
+- grouped canonical acceptance behavior for this surface is tracked separately in `06C`, `06D`, and `06E`
+
 ## Minimum baseline-equivalence controls
 
 For the baseline integrated path, selector bootstrap must preserve:

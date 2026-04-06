@@ -24,6 +24,10 @@ Why:
 Why:
 - directly exercises artifact existence, hashing, metadata, and roundtrip persistence.
 
+Current operational caveat:
+- the live file is currently a script-style probe with `main()`, not a pytest-collected module under the canonical acceptance command
+- treat artifact behavior as a verified surface whose harness still needs reconciliation, not as a cleanly executed grouped pytest gate
+
 #### B3 -- Config-path behavior
 - `backend/tests/test_nrc_aps_run_config.py`
 
@@ -46,11 +50,16 @@ Why:
 #### B6 -- Run-scoped review-root / runtime DB access
 - `backend/tests/test_review_nrc_aps_document_trace_api.py`
 - `backend/tests/test_review_nrc_aps_document_trace_service.py`
+- `backend/tests/test_review_nrc_aps_runtime_db.py`
 
 Why:
 - protects run-scoped review-root resolution
 - protects read-only runtime DB access against audited `lc_e2e` data
 - protects path safety and run-bound trace payload access on review surfaces
+
+Current operational caveat:
+- in this clean worktree, review/runtime validation requires explicit read-only `STORAGE_DIR` pointing at the shared audited runtime root
+- shared runtime `20260331_101919` is summary-marked passed but contains no `aps_content_*` rows, leaving one multi-runtime document-selector failure that appears fixture-quality rather than selector-path-related
 
 ### Category B — Planning-closed blockers (B7–B8)
 
