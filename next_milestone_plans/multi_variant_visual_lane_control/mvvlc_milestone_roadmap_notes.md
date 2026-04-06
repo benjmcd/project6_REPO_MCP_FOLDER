@@ -1,5 +1,10 @@
 # MVVLC Milestone Roadmap Notes
 
+## Status note
+
+This roadmap is a high-level orientation artifact.
+If it conflicts with `00F`, `05E`, `06E`, `03Y`, or `README_INDEX`, those stronger docs govern.
+
 ## Milestone sequence
 
 ### M0 - Program decision (achieved / previous)
@@ -20,7 +25,7 @@
 - Pack considered aligned enough to proceed.
 - No blocker-level architecture issue proven.
 - Main unresolved issue was localized.
-- `visual_lane_mode` was planning-frozen and later implemented in M3.
+- `visual_lane_mode` planning freeze completed and was later implemented in M3.
 
 ### M3 - Baseline selector bootstrap (achieved / previous)
 - Implemented baseline-preserving integrated selector bootstrap.
@@ -33,27 +38,41 @@
 - Kept non-baseline behavior unavailable in normal runtime.
 
 ### M4 - Acceptance gate (achieved / previous)
-- No public behavior drift was accepted.
-- No artifact/report/review/runtime drift was accepted under the frozen T1-T8 gate.
+- T1-T8 acceptance gate passed for the baseline-only bootstrap path.
+- Local `06I` performance gate was executed and recorded.
+- No accepted public/artifact/review/runtime drift was introduced on the merged baseline path.
 - Baseline discovery / persistence / DB behavior remained unchanged.
-- Targeted validation and local performance checks were executed and recorded.
 
-### M5 - Next implementation lane
-- Freeze and implement controlled experiment runtime-root coexistence.
-- Freeze and implement baseline-facing visibility controls for experiment runs.
-- Produce the exact review/report/export field-sensitivity and no-drift map needed for approve-as-is execution.
-- Integrate candidate later-scope behavior one bounded step at a time.
-- Stay bounded to the frozen seam and preserve accepted M3/M4 baseline behavior.
+### M5 - Current prep / next implementation milestone
+- `03Y` standalone field-sensitivity map is now frozen.
+- Still must freeze the exact experiment runtime-root coexistence mechanism.
+- Still must freeze the exact baseline-facing visibility rules across review/catalog/API/report/export surfaces.
+- Still must freeze the exact no-drift rules plus the narrow owner/validation packet.
+- Only after that approval-ready freeze packet is complete should bounded M5 implementation begin on fresh merged `main`.
 
-### M6 - Admission / promotion
+### M6 - Admission / promotion (later future)
 - Explicit baseline comparison.
-- Explicit approval.
+- Explicit approval before admission.
 - No simultaneous baseline + A + B + C integrated rollout.
 - Further widening requires later planning.
 
+## Current roadmap position
+
+- M3 is complete for the baseline-only selector/bootstrap path.
+- M4 is complete for that same baseline-only path.
+- We are now between M4 closure and M5 implementation.
+- The immediate work is M5 freeze prep, not another M3/M4 closure pass.
+
 ## Key threshold
 
-The earliest justified point for working on separate integrated ingestion/processing approaches has now been reached.
+The earliest justified point for separate integrated ingestion/processing work has now been reached in principle because M3 is implemented and M4 has passed.
 
-The remaining prerequisite for an approve-as-is M5 lane is not another M3/M4 closure pass.
-It is an explicit post-M4 approval packet and scoped freeze for experiment coexistence and visibility work (`05E`).
+The remaining prerequisite for an approve-as-is M5 lane is:
+- a frozen experiment runtime-root coexistence mechanism
+- frozen baseline-facing visibility controls
+- frozen no-drift rules and implementation/validation packet
+
+Bounded residuals that do not block M5 prep remain:
+- repo-native Python acceptance-path enforcement
+- Tier 2 performance sample breadth
+- broader non-audited duplicate/generated surfaces
