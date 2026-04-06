@@ -166,8 +166,100 @@ class TestClassifyVisualPage:
         assert result == nrc_aps_document_processing.APS_VISUAL_CLASS_TEXT_HEAVY
 
 
+class TestNormalizeVisualLaneMode:
+    def test_preserves_baseline(self):
+        result = nrc_aps_document_processing._normalize_visual_lane_mode("baseline")
+        assert result == "baseline"
+
+    def test_fail_closed_for_non_baseline_values(self):
+        result = nrc_aps_document_processing._normalize_visual_lane_mode("experimental_a")
+        assert result == "baseline"
+
+
 class TestVisualLaneIntegration:
     """Integration tests through process_document for the visual lane."""
+
+    def test_visual_lane_mode_routes_pdf_seam_through_baseline_handler(self, monkeypatch):
+        seen_configs: list[dict[str, object]] = []
+        seen_modes: list[object] = []
+
+        real_normalize = nrc_aps_document_processing._normalize_visual_lane_mode
+
+        def _tracking_normalize(value):
+            seen_modes.append(value)
+            return real_normalize(value)
+
+        def _tracking_baseline_lane(**kwargs):
+            seen_configs.append(dict(kwargs["config"]))
+            return (
+                nrc_aps_document_processing.APS_VISUAL_CLASS_TEXT_HEAVY,
+                None,
+                [],
+            )
+
+        monkeypatch.setattr(
+            nrc_aps_document_processing,
+            "_run_baseline_visual_lane",
+            _tracking_baseline_lane,
+        )
+        monkeypatch.setattr(
+            nrc_aps_document_processing,
+            "_normalize_visual_lane_mode",
+            _tracking_normalize,
+        )
+
+        result = nrc_aps_document_processing.process_document(
+            content=_fixture_bytes("born_digital.pdf"),
+            declared_content_type="application/pdf",
+            config={"visual_lane_mode": "baseline"},
+        )
+
+        assert seen_modes == ["baseline"]
+        assert len(seen_configs) == 1
+        assert seen_configs[0]["visual_lane_mode"] == "baseline"
+        assert result["visual_page_refs"] == []
+        assert result["page_summaries"][0]["visual_page_class"] == "text_heavy_or_empty"
+
+    def test_non_baseline_visual_lane_mode_fails_closed_to_baseline_handler(self, monkeypatch):
+        seen_configs: list[dict[str, object]] = []
+        seen_modes: list[object] = []
+
+        real_normalize = nrc_aps_document_processing._normalize_visual_lane_mode
+
+        def _tracking_normalize(value):
+            seen_modes.append(value)
+            return real_normalize(value)
+
+        def _tracking_baseline_lane(**kwargs):
+            seen_configs.append(dict(kwargs["config"]))
+            return (
+                nrc_aps_document_processing.APS_VISUAL_CLASS_TEXT_HEAVY,
+                None,
+                [],
+            )
+
+        monkeypatch.setattr(
+            nrc_aps_document_processing,
+            "_run_baseline_visual_lane",
+            _tracking_baseline_lane,
+        )
+        monkeypatch.setattr(
+            nrc_aps_document_processing,
+            "_normalize_visual_lane_mode",
+            _tracking_normalize,
+        )
+
+        result = nrc_aps_document_processing.process_document(
+            content=_fixture_bytes("born_digital.pdf"),
+            declared_content_type="application/pdf",
+            config={"visual_lane_mode": "experimental_a"},
+        )
+
+        assert seen_modes == ["experimental_a"]
+        assert len(seen_configs) == 1
+        assert seen_configs[0]["visual_lane_mode"] == "experimental_a"
+        assert result["visual_page_refs"] == []
+        assert result["page_summaries"][0]["visual_page_class"] == "text_heavy_or_empty"
 
     def test_text_heavy_page_skipped_in_visual_refs(self):
         """Born-digital PDF with strong text → text_heavy_or_empty, no visual refs."""
