@@ -68,8 +68,8 @@ Current root-live review/runtime authority includes:
 
 Current validation caveat:
 - this clean worktree does **not** carry its own `backend/app/storage_test_runtime/lc_e2e` fixture tree
-- review/runtime validation can be performed read-only by pointing `STORAGE_DIR` at the shared audited runtime root under the repo root
-- shared runtime `20260331_101919` is summary-marked passed but currently contains zero `aps_content_linkage`, `aps_content_document`, and `aps_content_chunk` rows, so one multi-runtime document-selector assertion can fail for fixture-quality reasons unrelated to `visual_lane_mode`
+- clean-worktree review/runtime validation now auto-aligns read-only to the shared audited runtime root under the repo root through `backend/tests/review_nrc_aps_runtime_fixture.py`
+- grouped T8 review/runtime acceptance currently passes under the canonical repo-root `pytest` posture without seeding new runtime data
 
 ### A.4 Control-key and packaging surface
 

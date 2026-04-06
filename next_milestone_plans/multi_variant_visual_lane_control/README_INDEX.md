@@ -10,18 +10,22 @@ The pack is materially closed at the planning/control level. That does **not** m
 
 - Selector config key: `visual_lane_mode`, normalized, forwarded, defaulted, fail-closed to `baseline` (`03U`, `03V`)
 - Exact seam boundary: helper-contract freeze at the visual-preservation lane (`03W`)
+- M3 selector path: baseline-preserving seam consumption is implemented in the frozen owner path (`05D`, `06E`)
+- Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
+- Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
 - Residual consumer/visibility closure: app-surface consumers explicitly enumerated (`00K`, `03X`)
-- Local performance gate: defined (`06I`), execution pending on applying frozen command convention
 
-### What requires implementation
+### What still blocks milestone acceptance
 
-- Seam-internal branch behavior within the frozen seam
-- Control-key / query-payload exclusion behavior
+- T5 broader root-side API/context acceptance bundle (`06C`, `06E`)
+- T6 broader root-side corpus/e2e acceptance bundle (`06C`, `06E`)
+- Local performance gate execution after T1-T8 are green (`06I`)
+
+### Later milestone scope, not current M3 acceptance
+
 - Runtime-root coexistence mechanism for experiments
 - Review/catalog/report/API/export visibility controls for experiment runs
-- Diagnostics persistence and runtime DB binding no-change rules
-- Artifact equivalence acceptance procedure
 
 ### What is bounded residual
 

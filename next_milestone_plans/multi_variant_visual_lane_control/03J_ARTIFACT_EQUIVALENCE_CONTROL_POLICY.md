@@ -15,8 +15,8 @@
 - content-index roundtrip behavior
 
 Current harness note:
-- the live file is currently a script-style probe with `main()`, not a pytest-collected module
-- grouped canonical acceptance behavior for this surface is tracked separately in `06C`, `06D`, and `06E`
+- the live file now exposes pytest-collected artifact/persistence assertions while still retaining a script-style `main()` entrypoint for manual probe usage
+- grouped canonical acceptance behavior for this surface is operational and tracked in `06C`, `06D`, and `06E`
 
 ## Minimum baseline-equivalence controls
 
