@@ -1,6 +1,6 @@
 {
-  "package_name": "multi_variant_visual_lane_control_pack_v40",
-  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a post-M4 next-lane plan, a standalone field-sensitivity map, and a frozen M5 execution packet boundary",
+  "package_name": "multi_variant_visual_lane_control_pack_v41",
+  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a standalone field-sensitivity map, a frozen exact M5 coexistence/visibility mechanism, and a frozen M5 execution packet boundary",
   "improvements_over_v6": [
     "added selector activation scope/lifetime policy",
     "added experiment isolation mechanism policy",
@@ -9,8 +9,8 @@
     "incorporated adversarial second-opinion critique without treating its code suggestions as settled truth"
   ],
   "remaining_open_items": [
-    "experiment runtime-root coexistence mechanism remains later-scope work",
-    "baseline-facing visibility controls for experiment runs remain later-scope work",
+    "exact M5 coexistence / baseline-facing visibility mechanism is now frozen but not yet implemented in live owner-path code",
+    "integrated admission of approved non-baseline runs remains later-scope beyond the current barrier lane",
     "Python acceptance path is pack-specified but not visibly repo-enforced in checked root workflow/hook/config surfaces",
     "Tier 2 performance sample breadth remains bounded by the declared-root handoff fallback sample",
     "bounded uncertainty remains in duplicated archive/worktree state and other non-audited/generated surfaces"
@@ -60,6 +60,7 @@
     "03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md",
     "03X_VISUAL_OUTPUT_SURFACE_CLOSURE_MATRIX.md",
     "03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md",
+    "03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md",
     "05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md",
     "05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md",
     "05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md",
@@ -247,5 +248,10 @@
     "added the exact M5 approve-as-is execution packet boundary",
     "froze the primary owner files, validation bundles, hidden-consumer inspection set, and widening rules for the M5 lane",
     "reduced next-lane ambiguity from broad prep prose to a concrete execution packet"
+  ],
+  "improvements_over_v40": [
+    "added the exact M5 baseline-visibility and runtime-root coexistence mechanism",
+    "closed the remaining mechanism-discovery gap by freezing the canonical visibility signal, backward-compatibility fallback, and barrier scope",
+    "shifted the next justified M5 step from mechanism discovery to bounded implementation under 05F"
   ]
 }

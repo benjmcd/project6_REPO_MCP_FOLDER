@@ -34,9 +34,9 @@
 13. `review_nrc_aps_runtime.get_allowlisted_roots()` explicitly includes:
     - `backend/app/storage_test_runtime/lc_e2e`
     - `backend/storage_test_runtime/lc_e2e`
-14. The same function appends `settings.storage_dir / "lc_e2e"` only when `settings.storage_dir` ends in `storage`.
-15. `review_nrc_aps_runtime.discover_review_roots()` scans those allowlisted bases for summary-backed directories, and `find_review_root_for_run(run_id)` resolves run IDs by loading those summaries.
-16. `backend/app/api/review_nrc_aps.py` imports `find_review_root_for_run` and uses run-scoped review-root resolution across its run-bound endpoints.
+14. The same discovery path also appends a normalized configured `settings.storage_dir` when present. If the configured root is named `storage` or `storage_test_runtime`, normalization appends `/lc_e2e`; if it is differently named, the resolved configured root is still allowlisted directly.
+15. `review_nrc_aps_runtime.discover_review_roots()` scans those allowlisted bases for summary-backed directories, and `find_runtime_binding_for_run(run_id)` / `find_review_root_for_run(run_id)` resolve run IDs from those discovered bindings.
+16. `review_nrc_aps_catalog._load_connector_run(binding)` is best-effort and may return `None`; summary-backed historical roots can still remain selector candidates without a `ConnectorRun` row.
 
 ### A.3 Test roots and verified tests
 
@@ -79,18 +79,18 @@ Current validation caveat:
 
 ### A.5 Review/catalog/API visibility surface
 
-26. `review_nrc_aps_catalog.discover_candidate_runs()` enumerates summary-backed review roots via `discover_review_roots()`, merges them with `ConnectorRun` rows, and builds the run selector list from them.
+26. `review_nrc_aps_catalog.discover_candidate_runs()` enumerates discovered runtime bindings, loads `ConnectorRun` rows when available, and still allows summary-backed candidates without a `ConnectorRun` row.
 27. `backend/app/api/review_nrc_aps.py:get_runs()` returns `discover_candidate_runs()` directly.
-28. `backend/app/api/review_nrc_aps.py:get_run_documents()` and `get_document_trace()` expose run-/target-scoped selector and trace data after resolving `find_review_root_for_run(run_id)`.
-29. `backend/app/api/review_nrc_aps.py:get_document_source()` streams source blobs after resolving the run-scoped review root and applying in-root path safety.
-30. `backend/app/api/review_nrc_aps.py:get_document_diagnostics()`, `get_document_normalized_text()`, `get_document_indexed_chunks()`, and `get_document_extracted_units()` expose run-bound derived data after resolving `find_review_root_for_run(run_id)` and delegating to document-trace payload composers.
-31. `backend/app/api/review_nrc_aps.py` also exposes run-bound overview/tree/node/file-detail/file-preview surfaces keyed by `run_id`.
+28. `backend/app/api/review_nrc_aps.py:get_run_documents()`, `get_document_trace()`, `get_document_source()`, `get_document_visual_artifact()`, `get_document_diagnostics()`, `get_document_normalized_text()`, `get_document_indexed_chunks()`, and `get_document_extracted_units()` all gate through `runtime_db_session_for_run(run_id)`, which first resolves a runtime binding by `run_id`.
+29. `backend/app/api/review_nrc_aps.py` run-bound overview/tree/node/file-detail/file-preview surfaces gate through `find_review_root_for_run(run_id)`.
+30. Default review/catalog/API discoverability is therefore driven by discovered runtime bindings, while run-bound report/export services separately resolve `ConnectorRun` by `run_id`.
+31. Baseline-facing direct `run_id` access cannot be treated as safe unless both the discovered runtime-binding path and the direct run-bound persistence path are controlled.
 
 ### A.6 Report/export run-bound persistence
 
 32. `nrc_aps_evidence_report.py` derives `run_id` from persisted source payloads, resolves `ConnectorRun` via `_candidate_run(db, run_id)`, and writes report refs/summaries back into `run.query_plan_json`.
 33. `nrc_aps_evidence_report_export.py` derives `run_id` from persisted source report payloads, resolves `ConnectorRun`, and writes export refs/summaries back into `run.query_plan_json`.
-34. `nrc_aps_evidence_report_export_package.py` resolves `owner_run_id`, rejects cross-run package composition in v1, resolves `ConnectorRun`, and writes package refs/summaries back into `run.query_plan_json`.
+34. `nrc_aps_evidence_report_export_package.py` resolves `owner_run_id`, rejects cross-run package composition in v1, resolves `ConnectorRun`, and writes package refs/summaries back into `run.query_plan_json`; `connectors_sciencebase.py` later merges these report-ref keys outward.
 
 ### A.7 Direct backend caller closure
 
@@ -209,6 +209,7 @@ These are planning inferences derived from verified facts, not repo facts by the
 13. OCR fallback and hybrid OCR remain baseline-locked outside the frozen visual-lane seam in the first integrated phase.
 14. Experiment isolation must continue to satisfy the already-frozen isolation/visibility constraints and must not be reduced to runtime-root separation alone.
 15. Any future selector key must be treated as a processing control and prevented from leaking into query payload surfaces.
+16. The strongest live candidate for baseline-facing visibility control is the already-persisted `ConnectorRun.request_config_json["visual_lane_mode"]` slot, with backward-compatible allowance for summary-backed historical runs that lack a `ConnectorRun` row.
 
 ---
 
@@ -223,6 +224,7 @@ Items that have been planning-closed or narrowed to explicit remaining scope.
 5. **Validation harness operability for baseline-only bootstrap:** CLOSED. The grouped T1-T8 bundles and the local performance gate are operational and recorded in the clean merged-main worktree.
 6. **Standalone review/report/export field-sensitivity map:** CLOSED as `03Y`. The field-level exposure inventory is now explicit, so the remaining later-scope work is the coexistence/visibility mechanism itself, not discovery of which baseline-facing fields matter.
 7. **Exact M5 execution packet boundary:** CLOSED as `05F`. The next lane now has a frozen owner-file set, validation boundary, hidden-consumer inspection set, and widening rules.
+8. **Exact M5 coexistence / visibility mechanism:** CLOSED as `03Z`. The next lane no longer needs to discover the control design; it needs to implement the frozen barrier behavior inside `05F`.
 
 ---
 
@@ -233,8 +235,8 @@ Items that remain genuinely open or bounded.
 1. **Tier 2 performance sample breadth:** The local performance gate was executed and passed, but the recorded artifact-aware Tier 2 comparison still uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget.
 2. **Broader residual consumer/visibility effects:** Residual effects beyond the already-verified live app-surface chain remain bounded but not zero. Mostly duplicated worktree/archive state and non-audited/generated surfaces.
 3. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.
-4. **Post-M4 experiment runtime-root coexistence mechanism:** Not yet frozen and not yet implemented in live code.
-5. **Post-M4 baseline-facing visibility controls for experiment runs:** Not yet frozen and not yet implemented across review/catalog/API/report/export surfaces.
+4. **Post-M4 M5 coexistence / visibility barrier implementation:** The exact mechanism is now frozen as `03Z`, but it is not yet implemented in live owner-path code.
+5. **Integrated admission of approved non-baseline runs:** Still later-scope. The current M5 barrier lane does not itself admit new non-baseline run creation through the connector/processing owner path by default.
 
 ---
 
@@ -242,10 +244,10 @@ Items that remain genuinely open or bounded.
 
 ### Recommended stop condition
 
-At the current evidence level, the next justified scope is a dedicated post-M4 lane for experiment runtime-root coexistence and baseline-facing visibility control.
+At the current evidence level, the next justified scope is a dedicated post-M4 M5 implementation lane under the frozen `03Z` + `05F` packet.
 Repo-native Python enforcement remains a valid parallel hardening lane, but it is not the primary next MVVLC milestone step.
 
 ### Current proceed position
 
-Proceeding is justified for controlled post-M4 planning and later-scope implementation on a fresh lane.
-Baseline-only bootstrap closure remains accepted; the remaining uncertainty is bounded, explicit, and later-scope rather than a blocker against merged M3/M4 closure.
+Proceeding is justified for bounded M5 implementation on a fresh lane using the frozen coexistence / visibility mechanism and execution packet.
+Baseline-only bootstrap closure remains accepted; the remaining uncertainty is bounded, explicit, and no longer blocks starting the barrier implementation lane.

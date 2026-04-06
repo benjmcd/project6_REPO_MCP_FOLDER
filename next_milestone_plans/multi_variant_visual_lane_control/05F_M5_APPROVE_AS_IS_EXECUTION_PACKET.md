@@ -4,8 +4,9 @@
 
 Freeze the concrete execution packet for the next MVVLC milestone after merged M3/M4 closure.
 
-This doc does **not** claim that the exact M5 coexistence mechanism is already implemented or fully frozen.
-It freezes the exact owner boundary, validation boundary, widening rules, and review expectations that the next lane must use.
+This doc does **not** claim that the exact M5 coexistence mechanism is already implemented in live code.
+`03Z` now freezes that mechanism itself.
+This doc freezes the exact owner boundary, validation boundary, widening rules, and review expectations for implementing the frozen mechanism.
 
 ---
 
@@ -14,10 +15,11 @@ It freezes the exact owner boundary, validation boundary, widening rules, and re
 - M3 baseline-only selector bootstrap is merged and accepted.
 - M4 acceptance closure is merged and recorded.
 - `03Y` closes the standalone field-sensitivity inventory.
+- `03Z` closes the exact coexistence / visibility mechanism design.
 - The next milestone is M5: controlled experiment runtime-root coexistence plus baseline-facing visibility control.
 
 What remains before M5 can be called approve-as-is is not another baseline closure pass.
-It is a bounded M5 lane that freezes and proves the exact coexistence / visibility mechanism under the packet below.
+It is a bounded M5 lane that implements and proves the frozen coexistence / visibility mechanism under the packet below.
 
 ---
 
@@ -47,6 +49,7 @@ The M5 lane must also respect the already-frozen control docs:
 - `03S_REVIEW_API_ENDPOINT_EXPOSURE_MATRIX.md`
 - `03T_REPORT_EXPORT_RUN_VISIBILITY_MATRIX.md`
 - `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md`
+- `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`
 
 ---
 
@@ -98,6 +101,21 @@ These must be inspected for compatibility, but should remain edit-free unless a 
 - `backend/app/services/nrc_aps_evidence_bundle.py`
 - `backend/app/schemas/review_nrc_aps.py`
 - `backend/app/schemas/api.py`
+
+### Exact scope exclusion
+
+The default M5 barrier lane does **not** widen into:
+
+- `backend/app/services/connectors_nrc_adams.py`
+- `backend/app/services/nrc_aps_artifact_ingestion.py`
+- `backend/app/services/nrc_aps_document_processing.py`
+
+Reason:
+- the canonical visibility signal already exists on persisted `ConnectorRun.request_config_json`
+- `03Z` freezes a barrier implementation, not upstream admission of new non-baseline integrated run creation
+- synthetic non-baseline run rows / runtime fixtures are sufficient to prove the barrier under the validation packet here
+
+If the lane later expands from barrier implementation into actual integrated admission of approved non-baseline runs, that is a separate widening event and must be recorded explicitly.
 
 ---
 
@@ -153,6 +171,7 @@ Allowed widening trigger classes are only:
 1. the chosen coexistence mechanism cannot be implemented without promoting `review_nrc_aps_document_trace.py`
 2. the chosen coexistence mechanism cannot preserve baseline runtime-DB behavior without promoting `review_nrc_aps_runtime_db.py`
 3. a supposedly inspect-only hidden consumer proves to be a real outward leak surface under execution evidence
+4. the lane is explicitly widened from barrier implementation into upstream admission of new non-baseline integrated run creation
 
 Every widening decision must be recorded explicitly in the final report as:
 
@@ -204,9 +223,9 @@ The next justified move is:
 
 1. create a fresh merged-main M5 implementation lane
 2. re-audit the canonical authority files above
-3. freeze the exact coexistence mechanism and baseline-facing visibility rule set inside that lane
+3. re-audit `03Z` and keep it only if live authority still matches
 4. implement only within the packet frozen here
 5. run the required validation bundles
 6. freeze that lane separately
 
-Until that happens, M5 is prepared but not implementation-started.
+The mechanism is now prepared and frozen; bounded implementation is the next justified step.

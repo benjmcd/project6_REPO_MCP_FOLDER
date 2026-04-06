@@ -14,6 +14,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation a
 - M4 baseline-only acceptance gate: T1-T8 and the local `06I` performance gate were executed and recorded for the merged baseline path (`05D`, `06C`, `06E`, `06I`)
 - Review/report/export field-sensitivity map: standalone later-scope exposure inventory is now frozen (`03Y`)
 - M5 execution packet boundary: exact owner/test/widening boundary is now frozen (`05F`)
+- M5 coexistence / visibility mechanism: exact baseline-facing classification and runtime-root coexistence design is now frozen (`03Z`)
 - Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
 - Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
@@ -23,14 +24,14 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation a
 
 - M3 baseline-only selector/bootstrap is implemented and accepted on merged `main`
 - M4 acceptance gate is passed for the baseline-only bootstrap path
-- M5 later-scope experiment coexistence / visibility work is the next active planning and implementation lane (`05E`, roadmap)
+- M5 later-scope coexistence / visibility mechanism is now planning-frozen, and bounded implementation of that mechanism is the next active lane (`03Z`, `05F`, roadmap)
 
-### Next lane to prepare
+### Next lane to execute
 
-- Freeze the exact runtime-root coexistence mechanism for experiments
-- Freeze the exact baseline-facing visibility controls for experiment runs
-- Execute that mechanism under the now-frozen field-sensitivity map (`03Y`) and execution packet (`05F`)
-- Then begin bounded M5 implementation on a fresh merged-main lane
+- Re-audit the live authority chain against the now-frozen mechanism (`03Z`)
+- Implement the frozen coexistence / visibility barrier inside the `05F` owner boundary
+- Prove that baseline-facing review/catalog/API/report/export surfaces hide experiment-marked runs without drifting baseline behavior
+- Re-run `06I` only if the touched surfaces justify it
 
 ### What is bounded residual
 
@@ -52,6 +53,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation a
 ### For implementation
 - `00C_IMPLEMENTATION_PREPARATION_AND_EXECUTION_PLAYBOOK.md`
 - `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
+- `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`
 - `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
 
 ### For "can we proceed?"
@@ -109,4 +111,4 @@ The v25 claim of "no remaining open items" was too strong. The evidence supports
 This remains a control pack.
 Do not convert candidate control ideas into code without explicit freeze.
 Do not reopen merged M3/M4 closure without live contradictory evidence.
-Do not treat merged M3/M4 closure as permission to start M5 without a separate freeze packet.
+Do not treat merged M3/M4 closure as permission to start M5 without the frozen `03Z` + `05F` packet.
