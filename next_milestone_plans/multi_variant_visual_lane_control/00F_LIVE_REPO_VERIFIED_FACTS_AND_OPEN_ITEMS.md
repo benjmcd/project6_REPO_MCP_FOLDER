@@ -2,11 +2,11 @@
 
 ## Section index
 
-- **Section A** — Verified live facts (sequentially numbered, no duplicates)
-- **Section B** — Inferred design implications
-- **Section C** — Closure-state determinations
-- **Section D** — Bounded residuals and open items
-- **Section E** — Proceed position
+- **Section A** - Verified live facts (sequentially numbered, no duplicates)
+- **Section B** - Inferred design implications
+- **Section C** - Closure-state determinations
+- **Section D** - Bounded residuals and next-lane open items
+- **Section E** - Proceed position
 
 ---
 
@@ -137,7 +137,7 @@ Current validation caveat:
 48. `processing_config_from_run_config(...)` forwards only an explicit whitelist of processing controls into `default_processing_config(...)`.
 49. `default_processing_config(...)` provides defaults by key update and does not itself normalize enum-like selector controls.
 50. `_normalize_request_config(...)` already uses safe-default fallback for several enum-like controls (`mode`, `wire_shape_mode`, `run_mode`, `report_verbosity`, `sync_mode`).
-51. `_process_pdf(...)` visual-preservation lane occupies live lines 687-718, which is the currently selected first owner-path consumption zone for `visual_lane_mode`.
+51. `_process_pdf(...)` visual-preservation lane now begins with local `visual_lane_mode` fail-closed normalization after page-source accounting and before `all_units.extend(page_units)`, which is the current first owner-path consumption zone for `visual_lane_mode`.
 52. `_normalize_request_config(...)`, `processing_config_from_run_config(...)`, and `default_processing_config(...)` together form a complete request->processing->owner path suitable for canonical selector-key propagation.
 
 ### A.14 Seam decomposition
@@ -216,21 +216,24 @@ These are planning inferences derived from verified facts, not repo facts by the
 
 Items that have been planning-closed or narrowed to explicit remaining scope.
 
-1. **Selector-key concept and insertion/consumption path:** CLOSED as `visual_lane_mode` -> normalize -> forward -> default -> first consume at the visual-preservation lane. Only seam-internal branch behavior remains as implementation work.
-2. **Seam boundary:** CLOSED by exact helper-contract freeze (`03W`). Only implementation within the frozen seam remains.
-3. **Acceptance command convention:** CLOSED. Conceptual convention is frozen. Shell-specific realizations for PowerShell, CMD, and POSIX are frozen in `06K`. Repo-native enforcement is not yet implemented.
-4. **Residual consumer/visibility closure beyond live app-surface chain:** CLOSED. Residual app-surface consumers are now explicitly enumerated across models, schemas, retrieval-plane, evidence-bundle, review, and report/export layers.
+1. **Baseline-only selector/bootstrap path:** CLOSED through M4. `visual_lane_mode` is normalized, forwarded, defaulted, fail-closed, and first-consumed at the frozen visual-preservation seam. T1-T8 and the local `06I` gate were executed for the merged baseline path. Later experiment coexistence/visibility work remains separate scope.
+2. **Seam boundary:** CLOSED by exact helper-contract freeze (`03W`) and retained for future later-scope work. Future experiment work remains bounded to the same seam and does not reopen OCR/hybrid zones.
+3. **Acceptance command convention:** CLOSED and live-executed in the clean merged-main worktree. Shell-specific realizations for PowerShell, CMD, and POSIX are frozen in `06K`. Repo-native enforcement is not yet implemented.
+4. **Residual consumer/visibility closure beyond live app-surface chain:** CLOSED for the merged baseline-only bootstrap path. Residual app-surface consumers are explicitly enumerated across models, schemas, retrieval-plane, evidence-bundle, review, and report/export layers.
+5. **Validation harness operability for baseline-only bootstrap:** CLOSED. The grouped T1-T8 bundles and the local performance gate are operational and recorded in the clean merged-main worktree.
+6. **Standalone review/report/export field-sensitivity map:** CLOSED as `03Y`. The field-level exposure inventory is now explicit, so the remaining later-scope work is the coexistence/visibility mechanism itself, not discovery of which baseline-facing fields matter.
 
 ---
 
-## D. Bounded residuals and open items
+## D. Bounded residuals and next-lane open items
 
 Items that remain genuinely open or bounded.
 
-1. **Local performance baseline/regression check:** Executed in this clean worktree under the frozen command convention. Tier 1 main-vs-candidate comparison passed without regression. A preferred real-ADAMS Tier 2 timed attempt exceeded practical session budget, so the declared-root handoff fallback sample was used for the recorded artifact-aware comparison and also passed without regression.
+1. **Tier 2 performance sample breadth:** The local performance gate was executed and passed, but the recorded artifact-aware Tier 2 comparison still uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget.
 2. **Broader residual consumer/visibility effects:** Residual effects beyond the already-verified live app-surface chain remain bounded but not zero. Mostly duplicated worktree/archive state and non-audited/generated surfaces.
-3. **Exact review/report/export field-sensitivity map:** Not yet produced as a standalone artifact.
-4. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.
+3. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.
+4. **Post-M4 experiment runtime-root coexistence mechanism:** Not yet frozen and not yet implemented in live code.
+5. **Post-M4 baseline-facing visibility controls for experiment runs:** Not yet frozen and not yet implemented across review/catalog/API/report/export surfaces.
 
 ---
 
@@ -238,12 +241,10 @@ Items that remain genuinely open or bounded.
 
 ### Recommended stop condition
 
-At the current evidence level, further narrowing is not recommended by default.
-The next justified scopes are either:
-- repo-native Python enforcement work, or
-- exhaustive archive/worktree/generated-surface audit.
+At the current evidence level, the next justified scope is a dedicated post-M4 lane for experiment runtime-root coexistence and baseline-facing visibility control.
+Repo-native Python enforcement remains a valid parallel hardening lane, but it is not the primary next MVVLC milestone step.
 
 ### Current proceed position
 
-Proceeding is justified for planning and controlled implementation.
-The residual uncertainty is bounded and explicit, but not zero.
+Proceeding is justified for controlled post-M4 planning and later-scope implementation on a fresh lane.
+Baseline-only bootstrap closure remains accepted; the remaining uncertainty is bounded, explicit, and later-scope rather than a blocker against merged M3/M4 closure.
