@@ -4,7 +4,7 @@
 
 This revision strengthens the matrix by explicitly recognizing diagnostics-persistence, review-root/runtime-data safety, activation semantics, and isolation semantics as first-class validation surfaces.
 
-Command text is still partly provisional because repo-local runner wrappers/config files have not yet been fully verified.
+The canonical repo-root `python -m pytest` posture is now live-verified for T1-T4, T7, and T8 in this clean worktree. Full bootstrap acceptance remains open because T5 and T6 are still failing, and the local performance gate from `06I` has not yet been executed.
 
 ---
 
@@ -114,10 +114,10 @@ This matrix has three distinct layers:
 |---|---|---|---|
 | T1 | FILES VERIFIED | Core visual-lane owner behavior | `pytest tests/test_nrc_aps_document_processing.py` |
 | T2 | FILES VERIFIED | Root artifact/ingestion behavior | `pytest tests/test_nrc_aps_artifact_ingestion.py tests/test_nrc_aps_artifact_ingestion_gate.py` |
-| T3 | PROVISIONAL | Root governance behavior | `pytest tests/test_nrc_aps_replay_gate.py tests/test_nrc_aps_promotion_gate.py tests/test_nrc_aps_promotion_tuning.py tests/test_nrc_aps_safeguard_gate.py tests/test_nrc_aps_safeguards.py tests/test_nrc_aps_sync_drift.py tests/test_nrc_aps_live_batch.py tests/test_nrc_aps_live_validation.py` |
-| T4 | PROVISIONAL | Root evidence/report/export behavior | `pytest tests/test_nrc_aps_evidence_bundle.py tests/test_nrc_aps_evidence_bundle_gate.py tests/test_nrc_aps_evidence_report.py tests/test_nrc_aps_evidence_report_gate.py tests/test_nrc_aps_evidence_report_export.py tests/test_nrc_aps_evidence_report_export_gate.py tests/test_nrc_aps_evidence_report_export_package.py tests/test_nrc_aps_evidence_report_export_package_gate.py tests/test_nrc_aps_evidence_citation_pack.py tests/test_nrc_aps_evidence_citation_pack_gate.py` |
-| T5 | PROVISIONAL | Root context/API/guardrail behavior | `pytest tests/test_nrc_aps_context_packet.py tests/test_nrc_aps_context_packet_gate.py tests/test_nrc_aps_context_dossier.py tests/test_nrc_aps_context_dossier_gate.py tests/test_api.py tests/test_import_guardrail.py` |
-| T6 | PROVISIONAL | Root corpus/E2E checks | `pytest tests/test_nrc_aps_document_corpus.py tests/test_run_nrc_aps_local_corpus_e2e.py` |
+| T3 | FILES VERIFIED | Root governance behavior | `pytest tests/test_nrc_aps_replay_gate.py tests/test_nrc_aps_promotion_gate.py tests/test_nrc_aps_promotion_tuning.py tests/test_nrc_aps_safeguard_gate.py tests/test_nrc_aps_safeguards.py tests/test_nrc_aps_sync_drift.py tests/test_nrc_aps_live_batch.py tests/test_nrc_aps_live_validation.py` |
+| T4 | FILES VERIFIED | Root evidence/report/export behavior | `pytest tests/test_nrc_aps_evidence_bundle.py tests/test_nrc_aps_evidence_bundle_gate.py tests/test_nrc_aps_evidence_report.py tests/test_nrc_aps_evidence_report_gate.py tests/test_nrc_aps_evidence_report_export.py tests/test_nrc_aps_evidence_report_export_gate.py tests/test_nrc_aps_evidence_report_export_package.py tests/test_nrc_aps_evidence_report_export_package_gate.py tests/test_nrc_aps_evidence_citation_pack.py tests/test_nrc_aps_evidence_citation_pack_gate.py` |
+| T5 | FILES VERIFIED | Root context/API/guardrail behavior | `pytest tests/test_nrc_aps_context_packet.py tests/test_nrc_aps_context_packet_gate.py tests/test_nrc_aps_context_dossier.py tests/test_nrc_aps_context_dossier_gate.py tests/test_api.py tests/test_import_guardrail.py` |
+| T6 | FILES VERIFIED | Root corpus/E2E checks | `pytest tests/test_nrc_aps_document_corpus.py tests/test_run_nrc_aps_local_corpus_e2e.py` |
 | T7 | FILES VERIFIED | Backend visual/artifact/config/diagnostics behavior | `pytest backend/tests/test_visual_artifact_pipeline.py backend/tests/test_nrc_aps_advanced_adapters.py backend/tests/test_nrc_aps_run_config.py backend/tests/test_diagnostics_ref_persistence.py backend/tests/test_nrc_aps_evidence_bundle_integration.py` |
 | T8 | FILES VERIFIED | Backend review/trace/runtime-root behavior | `pytest backend/tests/test_review_nrc_aps_api.py backend/tests/test_review_nrc_aps_document_trace_api.py backend/tests/test_review_nrc_aps_document_trace_service.py backend/tests/test_review_nrc_aps_document_trace_page.py backend/tests/test_review_nrc_aps_catalog.py backend/tests/test_review_nrc_aps_details.py backend/tests/test_review_nrc_aps_graph.py backend/tests/test_review_nrc_aps_tree.py backend/tests/test_review_nrc_aps_page.py` |
 
@@ -141,11 +141,13 @@ Additional acceptance expectations:
 ### Closed since earlier revisions
 - **Runner convention:** Frozen in `06K`. Repo root + `PYTHONPATH=backend` + `python -m pytest tests backend/tests`. Shell-specific realizations provided for PowerShell, CMD, and POSIX.
 - **Working directory:** Repo root, per `06K`.
+- **T3/T4 file inventory and grouped execution:** Live-verified under the canonical repo-root `pytest` posture.
+- **T7 grouped backend bundle:** `backend/tests/test_visual_artifact_pipeline.py` is now pytest-collectible, and `backend/tests/test_nrc_aps_advanced_adapters.py` no longer poisons grouped imports via `sys.modules["numpy"]`.
+- **T8 clean-worktree execution:** `backend/tests/review_nrc_aps_runtime_fixture.py` now aligns clean-worktree review/runtime validation with the shared audited runtime root without requiring manual shell-level `STORAGE_DIR`.
 - **Performance regression gate:** Defined in `06I`. Execution depends on applying the frozen command convention.
 
 ### Remaining
-- T3-T6 test file existence has not been individually confirmed against the live repo in this pass (marked PROVISIONAL above)
-- T7 is not yet a stable single grouped `pytest` invocation: `backend/tests/test_visual_artifact_pipeline.py` is currently a script-style probe with `main()` and zero pytest-collected items, while `backend/tests/test_nrc_aps_advanced_adapters.py` mutates `sys.modules["numpy"]` at import time and can poison later imports in the same grouped run
-- T8 clean-worktree execution currently requires explicit read-only `STORAGE_DIR` pointing at the shared audited runtime root under repo-root `backend/app/storage_test_runtime`, because this clean worktree does not carry its own `backend/app/storage_test_runtime/lc_e2e`
-- Under that shared audited runtime root, runtime `20260331_101919` is summary-marked passed but contains zero `aps_content_linkage`, `aps_content_document`, and `aps_content_chunk` rows, leaving one multi-runtime document-selector failure unrelated to `visual_lane_mode`
+- T5 grouped execution is currently failing on broader root API/state surfaces, including dataset-version lookup against an uninitialized DB path and connector submission tests that trip the active-run concurrency limit; these failures are outside the localized MVVLC selector path but still block full T1-T8 acceptance closure
+- T6 grouped execution is currently failing on broader corpus/E2E expectation surfaces, including document-class expectation drift in `tests/test_nrc_aps_document_corpus.py`; import-resolution and clean-worktree path issues were resolved, but output expectations still do not match current live behavior
+- Because T5/T6 are still failing, the `06I` performance gate has not been executed; output-stability preconditions are not yet satisfied
 - Repo-native CI enforcement of the Python acceptance path is not yet implemented (bounded residual, not a blocker for this matrix)

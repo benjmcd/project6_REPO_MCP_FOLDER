@@ -24,9 +24,8 @@ Why:
 Why:
 - directly exercises artifact existence, hashing, metadata, and roundtrip persistence.
 
-Current operational caveat:
-- the live file is currently a script-style probe with `main()`, not a pytest-collected module under the canonical acceptance command
-- treat artifact behavior as a verified surface whose harness still needs reconciliation, not as a cleanly executed grouped pytest gate
+Current operational state:
+- the live file now exposes pytest-collected artifact/persistence assertions and passes under the canonical grouped T7 bundle
 
 #### B3 -- Config-path behavior
 - `backend/tests/test_nrc_aps_run_config.py`
@@ -57,9 +56,9 @@ Why:
 - protects read-only runtime DB access against audited `lc_e2e` data
 - protects path safety and run-bound trace payload access on review surfaces
 
-Current operational caveat:
-- in this clean worktree, review/runtime validation requires explicit read-only `STORAGE_DIR` pointing at the shared audited runtime root
-- shared runtime `20260331_101919` is summary-marked passed but contains no `aps_content_*` rows, leaving one multi-runtime document-selector failure that appears fixture-quality rather than selector-path-related
+Current operational state:
+- clean-worktree review/runtime validation now aligns itself to the shared audited runtime root through `backend/tests/review_nrc_aps_runtime_fixture.py`
+- grouped T8 review/runtime execution passes under the canonical repo-root `pytest` posture without seeding new runtime data
 
 ### Category B — Planning-closed blockers (B7–B8)
 
