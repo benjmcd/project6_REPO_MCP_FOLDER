@@ -71,3 +71,5 @@ Experiment isolation must be judged against all of the above, not only against:
 - absence of public variant tagging
 
 If an experiment run is visible to these baseline-facing endpoints, then isolation is insufficient for the first integrated phase.
+
+For the exact outward review/document-trace fields exposed through these endpoints, see `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md`.

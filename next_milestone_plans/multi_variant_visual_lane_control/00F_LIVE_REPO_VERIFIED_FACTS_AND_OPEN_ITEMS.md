@@ -2,11 +2,11 @@
 
 ## Section index
 
-- **Section A** — Verified live facts (sequentially numbered, no duplicates)
-- **Section B** — Inferred design implications
-- **Section C** — Closure-state determinations
-- **Section D** — Bounded residuals and next-lane open items
-- **Section E** — Proceed position
+- **Section A** - Verified live facts (sequentially numbered, no duplicates)
+- **Section B** - Inferred design implications
+- **Section C** - Closure-state determinations
+- **Section D** - Bounded residuals and next-lane open items
+- **Section E** - Proceed position
 
 ---
 
@@ -221,6 +221,7 @@ Items that have been planning-closed or narrowed to explicit remaining scope.
 3. **Acceptance command convention:** CLOSED and live-executed in the clean merged-main worktree. Shell-specific realizations for PowerShell, CMD, and POSIX are frozen in `06K`. Repo-native enforcement is not yet implemented.
 4. **Residual consumer/visibility closure beyond live app-surface chain:** CLOSED for the merged baseline-only bootstrap path. Residual app-surface consumers are explicitly enumerated across models, schemas, retrieval-plane, evidence-bundle, review, and report/export layers.
 5. **Validation harness operability for baseline-only bootstrap:** CLOSED. The grouped T1-T8 bundles and the local performance gate are operational and recorded in the clean merged-main worktree.
+6. **Standalone review/report/export field-sensitivity map:** CLOSED as `03Y`. The field-level exposure inventory is now explicit, so the remaining later-scope work is the coexistence/visibility mechanism itself, not discovery of which baseline-facing fields matter.
 
 ---
 
@@ -230,10 +231,9 @@ Items that remain genuinely open or bounded.
 
 1. **Tier 2 performance sample breadth:** The local performance gate was executed and passed, but the recorded artifact-aware Tier 2 comparison still uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget.
 2. **Broader residual consumer/visibility effects:** Residual effects beyond the already-verified live app-surface chain remain bounded but not zero. Mostly duplicated worktree/archive state and non-audited/generated surfaces.
-3. **Exact review/report/export field-sensitivity map:** Not yet produced as a standalone post-M4 artifact.
-4. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.
-5. **Post-M4 experiment runtime-root coexistence mechanism:** Not yet frozen and not yet implemented in live code.
-6. **Post-M4 baseline-facing visibility controls for experiment runs:** Not yet frozen and not yet implemented across review/catalog/API/report/export surfaces.
+3. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.
+4. **Post-M4 experiment runtime-root coexistence mechanism:** Not yet frozen and not yet implemented in live code.
+5. **Post-M4 baseline-facing visibility controls for experiment runs:** Not yet frozen and not yet implemented across review/catalog/API/report/export surfaces.
 
 ---
 
