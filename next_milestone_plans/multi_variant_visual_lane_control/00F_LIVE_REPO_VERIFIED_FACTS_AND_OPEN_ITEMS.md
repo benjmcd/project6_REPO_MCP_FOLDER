@@ -227,7 +227,7 @@ Items that have been planning-closed or narrowed to explicit remaining scope.
 
 Items that remain genuinely open or bounded.
 
-1. **Local performance baseline/regression check:** The local gate is defined (`06I`), but its execution depends on the frozen command convention being applied. Not yet executed.
+1. **Local performance baseline/regression check:** Executed in this clean worktree under the frozen command convention. Tier 1 main-vs-candidate comparison passed without regression. A preferred real-ADAMS Tier 2 timed attempt exceeded practical session budget, so the declared-root handoff fallback sample was used for the recorded artifact-aware comparison and also passed without regression.
 2. **Broader residual consumer/visibility effects:** Residual effects beyond the already-verified live app-surface chain remain bounded but not zero. Mostly duplicated worktree/archive state and non-audited/generated surfaces.
 3. **Exact review/report/export field-sensitivity map:** Not yet produced as a standalone artifact.
 4. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.
