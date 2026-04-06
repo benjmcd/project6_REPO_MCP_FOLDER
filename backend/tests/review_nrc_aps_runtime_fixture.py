@@ -2,17 +2,35 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
 from sqlalchemy import create_engine, func
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.core.config import settings
 from app.models.models import ApsContentLinkage
 from app.services.review_nrc_aps_runtime_roots import candidate_review_runtime_roots
+from app.services.review_nrc_aps_runtime import (
+    resolve_runtime_database_path,
+    resolve_runtime_storage_dir,
+)
 
 
 TESTS_ROOT = Path(__file__).resolve().parent
+
+
+def _candidate_shared_runtime_parent() -> Path | None:
+    for ancestor in TESTS_ROOT.parents:
+        if ancestor.name != "worktrees":
+            continue
+        candidate = ancestor.parent / "backend" / "app" / "storage_test_runtime" / "lc_e2e"
+        try:
+            return candidate.resolve()
+        except OSError:
+            return None
+    return None
 
 
 def _resolve_runtime_parent() -> Path:
@@ -21,14 +39,37 @@ def _resolve_runtime_parent() -> Path:
         backend_root=TESTS_ROOT.parent,
         storage_dir=os.environ.get("STORAGE_DIR"),
     )
+
+    shared_candidate = _candidate_shared_runtime_parent()
+    if shared_candidate is not None:
+        candidates.append(shared_candidate)
+
+    deduped: list[Path] = []
+    seen: set[str] = set()
     for candidate in candidates:
+        try:
+            resolved = candidate.resolve()
+        except OSError:
+            continue
+        key = str(resolved)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(resolved)
+
+    for candidate in deduped:
         if candidate.exists():
             return candidate
 
-    return candidates[0]
+    return deduped[0]
 
 
 RUNTIME_PARENT = _resolve_runtime_parent()
+
+if not str(os.environ.get("STORAGE_DIR") or "").strip() and RUNTIME_PARENT.exists():
+    shared_storage_root = RUNTIME_PARENT.parent.resolve()
+    os.environ["STORAGE_DIR"] = str(shared_storage_root)
+    settings.storage_dir = str(shared_storage_root)
 
 
 @dataclass(frozen=True)
@@ -57,9 +98,9 @@ def discover_passed_runtimes() -> list[AuditedReviewRuntime]:
             continue
 
         run_id = str(summary.get("run_id") or "").strip()
-        database_path = Path(str(summary.get("database_path") or "")).resolve()
-        storage_dir = Path(str(summary.get("storage_dir") or "")).resolve()
-        if not run_id or not database_path.exists() or not storage_dir.exists():
+        database_path = resolve_runtime_database_path(runtime_dir, summary)
+        storage_dir = resolve_runtime_storage_dir(runtime_dir, summary)
+        if not run_id or database_path is None or storage_dir is None:
             continue
 
         runtimes.append(
@@ -77,6 +118,37 @@ def discover_passed_runtimes() -> list[AuditedReviewRuntime]:
 def latest_passed_runtime() -> AuditedReviewRuntime:
     runtimes = discover_passed_runtimes()
     assert runtimes, f"No passed local-corpus runtime found under {RUNTIME_PARENT}"
+    return runtimes[0]
+
+
+def _runtime_has_document_targets(runtime: AuditedReviewRuntime) -> bool:
+    database_uri = f"{runtime.db_path.resolve().as_uri()}?mode=ro"
+    try:
+        connection = sqlite3.connect(database_uri, uri=True)
+    except sqlite3.DatabaseError:
+        return False
+
+    try:
+        row = connection.execute(
+            "SELECT COUNT(*) FROM connector_run_target WHERE connector_run_id = ?",
+            (runtime.run_id,),
+        ).fetchone()
+    except sqlite3.DatabaseError:
+        return False
+    finally:
+        connection.close()
+
+    target_count = int(row[0] or 0) if row else 0
+    return target_count > 0
+
+
+def discover_document_trace_ready_runtimes() -> list[AuditedReviewRuntime]:
+    return [runtime for runtime in discover_passed_runtimes() if _runtime_has_document_targets(runtime)]
+
+
+def latest_document_trace_ready_runtime() -> AuditedReviewRuntime:
+    runtimes = discover_document_trace_ready_runtimes()
+    assert runtimes, f"No document-trace-ready local-corpus runtime found under {RUNTIME_PARENT}"
     return runtimes[0]
 
 
