@@ -6,13 +6,11 @@ import sys
 import os
 import tempfile
 
-# Mock heavy dependencies at the system level before any server-side imports
+# Mock optional heavy adapter dependencies before any server-side imports.
 mock_camelot = MagicMock()
 sys.modules['camelot'] = mock_camelot
 mock_paddle = MagicMock()
 sys.modules['paddleocr'] = mock_paddle
-mock_np = MagicMock()
-sys.modules['numpy'] = mock_np
 
 # Now import the services under test
 from app.services import nrc_aps_advanced_table_parser

@@ -605,6 +605,7 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
                 "report_verbosity",
                 "safeguard_policy",
                 "client_request_id",
+                "visual_lane_mode",
             }
             query_payload = {key: value for key, value in config.items() if key not in control_keys and value is not None}
         else:
@@ -644,6 +645,11 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
     sync_mode = str(config.get("sync_mode", "full_scan")).strip().lower() or "full_scan"
     if sync_mode not in APS_SYNC_MODES:
         sync_mode = "full_scan"
+    # Visual lane mode: fail-closed to baseline for absent/invalid/unapproved values
+    # For M3 baseline-only phase, only 'baseline' is allowed in integrated runtime
+    visual_lane_mode = str(config.get("visual_lane_mode", "baseline")).strip().lower() or "baseline"
+    if visual_lane_mode != "baseline":
+        visual_lane_mode = "baseline"
 
     allowed_hosts = [str(v).strip().lower() for v in config.get("allowed_hosts", []) if str(v).strip()]
     allowed_hosts = list(dict.fromkeys(APS_DEFAULT_ALLOWED_HOSTS + allowed_hosts))
@@ -705,6 +711,7 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
         "fetch_policy_mode": str(config.get("fetch_policy_mode", "strict_public_safe") or "strict_public_safe"),
         "report_verbosity": report_verbosity,
         "sync_mode": sync_mode,
+        "visual_lane_mode": visual_lane_mode,
         "incremental_overlap_seconds": max(0, _coerce_int(config.get("incremental_overlap_seconds", APS_DEFAULT_SYNC_OVERLAP_SECONDS), APS_DEFAULT_SYNC_OVERLAP_SECONDS)),
         "reconciliation_lookback_days": max(1, _coerce_int(config.get("reconciliation_lookback_days", APS_DEFAULT_RECONCILIATION_LOOKBACK_DAYS), APS_DEFAULT_RECONCILIATION_LOOKBACK_DAYS)),
         "max_rps": max(0.1, float(config.get("max_rps", limiter_cfg.get("max_rps", APS_DEFAULT_RATE_LIMIT_RPS)) or APS_DEFAULT_RATE_LIMIT_RPS)),

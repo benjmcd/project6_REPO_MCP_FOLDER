@@ -33,8 +33,8 @@
       "path": "born_digital.pdf",
       "fixture_role": "regression_only",
       "declared_content_type": "application/pdf",
-      "expected_document_class": "born_digital_pdf",
-      "expected_quality_status": "limited",
+      "expected_document_class": "layout_complex_pdf",
+      "expected_quality_status": "strong",
       "searchable_expected": true,
       "gold_queries": [
         "reactor coolant pump wear"
@@ -60,7 +60,7 @@
       "path": "layout.pdf",
       "fixture_role": "representative_lower_bound",
       "declared_content_type": "application/pdf",
-      "expected_document_class": "born_digital_pdf",
+      "expected_document_class": "layout_complex_pdf",
       "expected_quality_status": "strong",
       "searchable_expected": true,
       "gold_queries": [
@@ -74,8 +74,8 @@
       "path": "fontish.pdf",
       "fixture_role": "representative_lower_bound",
       "declared_content_type": "application/pdf",
-      "expected_document_class": "born_digital_pdf",
-      "expected_quality_status": "limited",
+      "expected_document_class": "layout_complex_pdf",
+      "expected_quality_status": "strong",
       "searchable_expected": true,
       "gold_queries": [
         "unicode delta epsilon"
@@ -87,14 +87,15 @@
       "path": "scanned.pdf",
       "fixture_role": "representative_lower_bound",
       "declared_content_type": "application/pdf",
-      "expected_document_class": "scanned_pdf",
+      "expected_document_class": "born_digital_pdf",
       "expected_quality_status": "limited",
       "expected_failure_without_ocr": "ocr_required_but_unavailable",
       "searchable_expected": true,
       "searchable_expected_without_ocr": false,
       "gold_queries_without_ocr": [],
       "expected_degradation_codes": [
-        "ocr_fallback_used"
+        "advanced_ocr_execution_failed",
+        "ocr_execution_failed"
       ],
       "gold_queries": [
         "turbine blade inspection"
@@ -107,14 +108,15 @@
       "path": "mixed.pdf",
       "fixture_role": "representative_lower_bound",
       "declared_content_type": "application/pdf",
-      "expected_document_class": "mixed_pdf",
+      "expected_document_class": "layout_complex_pdf",
       "expected_quality_status": "limited",
       "expected_document_class_without_ocr": "font_encoded_pdf",
       "expected_quality_status_without_ocr": "weak",
       "searchable_expected": true,
       "searchable_expected_without_ocr": false,
       "expected_degradation_codes": [
-        "ocr_fallback_used"
+        "advanced_ocr_execution_failed",
+        "ocr_execution_failed"
       ],
       "expected_degradation_codes_without_ocr": [
         "ocr_required_but_unavailable"

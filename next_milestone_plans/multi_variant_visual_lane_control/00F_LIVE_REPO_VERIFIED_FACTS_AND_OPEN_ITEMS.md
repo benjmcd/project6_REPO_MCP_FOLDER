@@ -51,16 +51,25 @@
 
 ### A.3a Root-live correction
 
-The focused workspace root does **not** contain:
+The focused workspace root now contains:
 - `review_nrc_aps_runtime_roots.py`
 - `candidate_review_runtime_roots(...)`
+- `review_nrc_aps_runtime_db.py`
 - `runtime_db_session_for_run(...)`
 - `backend/tests/test_review_nrc_aps_runtime_db.py`
 
-Current root-live review/runtime authority is instead:
+Current root-live review/runtime authority includes:
 - `backend/app/services/review_nrc_aps_runtime.py`
+- `backend/app/services/review_nrc_aps_runtime_roots.py`
+- `backend/app/services/review_nrc_aps_runtime_db.py`
 - run-bound review routes in `backend/app/api/review_nrc_aps.py`
+- runtime DB review tests in `backend/tests/test_review_nrc_aps_runtime_db.py`
 - document-trace review tests under `backend/tests/test_review_nrc_aps_document_trace_*.py`
+
+Current validation caveat:
+- this clean worktree does **not** carry its own `backend/app/storage_test_runtime/lc_e2e` fixture tree
+- clean-worktree review/runtime validation now auto-aligns read-only to the shared audited runtime root under the repo root through `backend/tests/review_nrc_aps_runtime_fixture.py`
+- grouped T8 review/runtime acceptance currently passes under the canonical repo-root `pytest` posture without seeding new runtime data
 
 ### A.4 Control-key and packaging surface
 
@@ -218,7 +227,7 @@ Items that have been planning-closed or narrowed to explicit remaining scope.
 
 Items that remain genuinely open or bounded.
 
-1. **Local performance baseline/regression check:** The local gate is defined (`06I`), but its execution depends on the frozen command convention being applied. Not yet executed.
+1. **Local performance baseline/regression check:** Executed in this clean worktree under the frozen command convention. Tier 1 main-vs-candidate comparison passed without regression. A preferred real-ADAMS Tier 2 timed attempt exceeded practical session budget, so the declared-root handoff fallback sample was used for the recorded artifact-aware comparison and also passed without regression.
 2. **Broader residual consumer/visibility effects:** Residual effects beyond the already-verified live app-surface chain remain bounded but not zero. Mostly duplicated worktree/archive state and non-audited/generated surfaces.
 3. **Exact review/report/export field-sensitivity map:** Not yet produced as a standalone artifact.
 4. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.

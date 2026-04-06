@@ -226,7 +226,7 @@ def test_persisted_failure_artifact_is_request_scoped(monkeypatch, tmp_path: Pat
 
         linkage = db.query(ApsContentLinkage).filter(ApsContentLinkage.run_id == "run-evidence-1").first()
         assert linkage is not None
-        linkage.selection_ref = None
+        linkage.content_units_ref = None
         db.commit()
 
         with pytest.raises(nrc_aps_evidence_bundle.EvidenceBundleError) as exc_info:

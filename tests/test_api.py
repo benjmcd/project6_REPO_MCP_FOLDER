@@ -2,8 +2,8 @@ import io
 import importlib
 import json
 import os
-import shutil
 import sys
+import uuid
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -16,30 +16,67 @@ ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / 'backend'
 sys.path.insert(0, str(BACKEND))
 
-DEFAULT_TEST_DB_PATH = ROOT / 'test_method_aware.db'
-DEFAULT_DATABASE_URL = 'sqlite:///./test_method_aware.db'
-TEST_DATABASE_URL = os.environ.get('DATABASE_URL') or DEFAULT_DATABASE_URL
+TEST_RUN_TOKEN = f"a{os.getpid()}{uuid.uuid4().hex[:4]}"
+DEFAULT_TEST_RUNTIME_ROOT = ROOT / '.t' / TEST_RUN_TOKEN
+DEFAULT_TEST_DB_PATH = DEFAULT_TEST_RUNTIME_ROOT / 'd.db'
+SHARED_TEST_RUNTIME_ROOT = (BACKEND / 'app' / 'storage_test_runtime').resolve()
+SHARED_TEST_DB_PATH = (BACKEND / 'test_method_aware.db').resolve()
+
+
+def _sqlite_url_for_path(path: Path) -> str:
+    return f"sqlite:///{path.resolve().as_posix()}"
+
+
+DEFAULT_DATABASE_URL = _sqlite_url_for_path(DEFAULT_TEST_DB_PATH)
 
 
 def _sqlite_file_path(database_url: str) -> Path | None:
     if not str(database_url).startswith('sqlite:///'):
         return None
-    raw = str(database_url)[10:]
-    if raw == ':memory:':
+    raw = str(database_url)[10:].strip()
+    if not raw or raw == '.' or raw == ':memory:' or raw.startswith('file:'):
         return None
     path = Path(raw)
     if not path.is_absolute():
-        path = (ROOT / path).resolve()
-    return path
+        path = (BACKEND / path).resolve()
+    return path.resolve()
 
 
-TEST_DB_PATH = _sqlite_file_path(TEST_DATABASE_URL) or DEFAULT_TEST_DB_PATH
-if TEST_DB_PATH.exists():
-    TEST_DB_PATH.unlink()
-TEST_STORAGE_DIR = Path(os.environ.get('STORAGE_DIR') or str(BACKEND / 'app' / 'storage_test_runtime'))
+def _normalize_test_database_url(database_url: str | None) -> tuple[str, Path | None]:
+    raw = str(database_url or '').strip()
+    if not raw:
+        return DEFAULT_DATABASE_URL, DEFAULT_TEST_DB_PATH.resolve()
+    if raw.startswith('sqlite:///'):
+        raw_path = raw[10:].strip()
+        if not raw_path or raw_path == '.':
+            return DEFAULT_DATABASE_URL, DEFAULT_TEST_DB_PATH.resolve()
+        if raw_path == ':memory:' or raw_path.startswith('file:'):
+            return raw, None
+    file_path = _sqlite_file_path(raw)
+    if file_path is None:
+        return raw, None
+    if file_path.resolve() == SHARED_TEST_DB_PATH:
+        return DEFAULT_DATABASE_URL, DEFAULT_TEST_DB_PATH.resolve()
+    return _sqlite_url_for_path(file_path), file_path
+
+
+def _normalize_test_storage_dir(storage_dir: str | None) -> Path:
+    raw = str(storage_dir or '').strip()
+    candidate = DEFAULT_TEST_RUNTIME_ROOT / 's' if not raw else Path(raw)
+    if not candidate.is_absolute():
+        candidate = BACKEND / candidate
+    resolved = candidate.resolve()
+    if resolved == SHARED_TEST_RUNTIME_ROOT:
+        return (DEFAULT_TEST_RUNTIME_ROOT / 's').resolve()
+    return resolved
+
+
+TEST_DATABASE_URL, TEST_DB_PATH = _normalize_test_database_url(os.environ.get('DATABASE_URL'))
+TEST_STORAGE_DIR = _normalize_test_storage_dir(os.environ.get('STORAGE_DIR'))
+if TEST_DB_PATH is not None:
+    TEST_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+TEST_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 NRC_FIXTURE_DIR = ROOT / 'tests' / 'fixtures' / 'nrc_aps_docs' / 'v1'
-if TEST_STORAGE_DIR.exists():
-    shutil.rmtree(TEST_STORAGE_DIR)
 
 os.environ['DATABASE_URL'] = TEST_DATABASE_URL
 os.environ['STORAGE_DIR'] = str(TEST_STORAGE_DIR)
@@ -53,6 +90,7 @@ for module_name in list(sys.modules):
 
 main_module = importlib.import_module("main")
 app = main_module.app
+from app.core.config import bootstrap_storage_tree  # noqa: E402
 from app.api.deps import get_db  # noqa: E402
 from app.db.session import Base  # noqa: E402
 
@@ -60,6 +98,7 @@ SQLALCHEMY_DATABASE_URL = TEST_DATABASE_URL
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={'check_same_thread': False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+bootstrap_storage_tree(TEST_STORAGE_DIR)
 Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
@@ -2582,7 +2621,7 @@ def test_nrc_evidence_bundle_routes_return_persisted_snapshot_page():
     )
     assert assembled.status_code == 200, assembled.text
     assembled_payload = assembled.json()
-    assert assembled_payload["schema_id"] == "aps.evidence_bundle.v1"
+    assert assembled_payload["schema_id"] == contract.APS_EVIDENCE_BUNDLE_SCHEMA_ID
     assert assembled_payload["persisted"] is True
     assert assembled_payload["mode"] == "query"
     assert assembled_payload["total_hits"] == 2
@@ -2621,6 +2660,7 @@ def test_nrc_evidence_bundle_routes_return_persisted_snapshot_page():
 def test_nrc_evidence_citation_pack_routes_return_persisted_page():
     from app.models import ApsContentChunk, ApsContentDocument, ApsContentLinkage, ConnectorRun, ConnectorRunTarget
     from app.services import nrc_aps_evidence_bundle_contract as contract
+    from app.services import nrc_aps_evidence_citation_pack_contract as citation_contract
 
     refs_dir = TEST_STORAGE_DIR / "connectors" / "reports" / "citation_api_refs"
     refs_dir.mkdir(parents=True, exist_ok=True)
@@ -2728,7 +2768,7 @@ def test_nrc_evidence_citation_pack_routes_return_persisted_page():
     )
     assert bundle.status_code == 200, bundle.text
     bundle_payload = bundle.json()
-    assert bundle_payload["schema_id"] == "aps.evidence_bundle.v1"
+    assert bundle_payload["schema_id"] == contract.APS_EVIDENCE_BUNDLE_SCHEMA_ID
 
     packed = client.post(
         "/api/v1/connectors/nrc-adams-aps/citation-packs",
@@ -2736,7 +2776,7 @@ def test_nrc_evidence_citation_pack_routes_return_persisted_page():
     )
     assert packed.status_code == 200, packed.text
     packed_payload = packed.json()
-    assert packed_payload["schema_id"] == "aps.evidence_citation_pack.v1"
+    assert packed_payload["schema_id"] == citation_contract.APS_EVIDENCE_CITATION_PACK_SCHEMA_ID
     assert packed_payload["persisted"] is True
     assert packed_payload["source_bundle"]["bundle_id"] == bundle_payload["bundle_id"]
     assert packed_payload["total_citations"] == 2
@@ -2767,6 +2807,8 @@ def test_nrc_evidence_citation_pack_routes_return_persisted_page():
 def test_nrc_evidence_report_routes_return_persisted_section_page():
     from app.models import ApsContentChunk, ApsContentDocument, ApsContentLinkage, ConnectorRun, ConnectorRunTarget
     from app.services import nrc_aps_evidence_bundle_contract as contract
+    from app.services import nrc_aps_evidence_citation_pack_contract as citation_contract
+    from app.services import nrc_aps_evidence_report_contract as report_contract
 
     refs_dir_a = TEST_STORAGE_DIR / "connectors" / "reports" / "report_api_refs_a"
     refs_dir_b = TEST_STORAGE_DIR / "connectors" / "reports" / "report_api_refs_b"
@@ -2953,7 +2995,7 @@ def test_nrc_evidence_report_routes_return_persisted_section_page():
     )
     assert packed.status_code == 200, packed.text
     packed_payload = packed.json()
-    assert packed_payload["schema_id"] == "aps.evidence_citation_pack.v1"
+    assert packed_payload["schema_id"] == citation_contract.APS_EVIDENCE_CITATION_PACK_SCHEMA_ID
 
     reported = client.post(
         "/api/v1/connectors/nrc-adams-aps/evidence-reports",
@@ -2961,7 +3003,7 @@ def test_nrc_evidence_report_routes_return_persisted_section_page():
     )
     assert reported.status_code == 200, reported.text
     report_payload = reported.json()
-    assert report_payload["schema_id"] == "aps.evidence_report.v1"
+    assert report_payload["schema_id"] == report_contract.APS_EVIDENCE_REPORT_SCHEMA_ID
     assert report_payload["persisted"] is True
     assert report_payload["source_citation_pack"]["citation_pack_id"] == packed_payload["citation_pack_id"]
     assert report_payload["total_sections"] == 2
@@ -4354,13 +4396,15 @@ def test_nrc_deterministic_challenge_review_packet_persist_and_report_refs(monke
     from app.services import nrc_aps_evidence_citation_pack
     from app.services import nrc_aps_evidence_bundle
 
-    reports_dir = Path(os.environ.get("STORAGE_DIR") or str(BACKEND / "app" / "storage_test_runtime")) / "connectors" / "reports"
+    reports_dir = TEST_STORAGE_DIR / "connectors" / "reports"
     reports_dir.mkdir(parents=True, exist_ok=True)
 
     db = TestingSessionLocal()
     try:
         run_id = "run-review-packet-api-e2e"
+        from test_nrc_aps_context_dossier import _patch_runtime_settings
         from test_nrc_aps_deterministic_insight_artifact import _persisted_context_dossier, _seed_report_index_rows
+        _patch_runtime_settings(monkeypatch, reports_dir)
         _seed_report_index_rows(db, reports_dir=reports_dir, run_id=run_id)
         seeded = _persisted_context_dossier(db, run_id=run_id)
 
