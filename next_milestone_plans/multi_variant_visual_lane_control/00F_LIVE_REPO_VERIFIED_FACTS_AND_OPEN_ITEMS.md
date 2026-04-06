@@ -51,16 +51,25 @@
 
 ### A.3a Root-live correction
 
-The focused workspace root does **not** contain:
+The focused workspace root now contains:
 - `review_nrc_aps_runtime_roots.py`
 - `candidate_review_runtime_roots(...)`
+- `review_nrc_aps_runtime_db.py`
 - `runtime_db_session_for_run(...)`
 - `backend/tests/test_review_nrc_aps_runtime_db.py`
 
-Current root-live review/runtime authority is instead:
+Current root-live review/runtime authority includes:
 - `backend/app/services/review_nrc_aps_runtime.py`
+- `backend/app/services/review_nrc_aps_runtime_roots.py`
+- `backend/app/services/review_nrc_aps_runtime_db.py`
 - run-bound review routes in `backend/app/api/review_nrc_aps.py`
+- runtime DB review tests in `backend/tests/test_review_nrc_aps_runtime_db.py`
 - document-trace review tests under `backend/tests/test_review_nrc_aps_document_trace_*.py`
+
+Current validation caveat:
+- this clean worktree does **not** carry its own `backend/app/storage_test_runtime/lc_e2e` fixture tree
+- review/runtime validation can be performed read-only by pointing `STORAGE_DIR` at the shared audited runtime root under the repo root
+- shared runtime `20260331_101919` is summary-marked passed but currently contains zero `aps_content_linkage`, `aps_content_document`, and `aps_content_chunk` rows, so one multi-runtime document-selector assertion can fail for fixture-quality reasons unrelated to `visual_lane_mode`
 
 ### A.4 Control-key and packaging surface
 

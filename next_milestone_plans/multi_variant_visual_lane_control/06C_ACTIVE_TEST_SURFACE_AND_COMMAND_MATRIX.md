@@ -102,7 +102,7 @@ Covers:
 This matrix has three distinct layers:
 
 - **Verified test files:** The individual test files listed in each bundle have been verified to exist in the live repo (Section 2 and 3 above).
-- **Command bundles:** The grouped `pytest` invocations below are operational groupings. They use the canonical acceptance convention frozen in `06K` (repo root, `PYTHONPATH=backend`, `python -m pytest`). The exact command form follows `06K`.
+- **Command bundles:** The grouped `pytest` invocations below are intended operational groupings. They use the canonical acceptance convention frozen in `06K` (repo root, `PYTHONPATH=backend`, `python -m pytest`). When a bundle has known collection/order/runtime caveats, carry them explicitly in Section 6 instead of treating the grouped invocation as already proven green.
 - **Acceptance gates:** T1 through T8 collectively form the hard acceptance gate for baseline-only selector bootstrap. All must pass before bootstrap can be accepted (Section 5 below).
 
 ### Status labels
@@ -144,5 +144,8 @@ Additional acceptance expectations:
 - **Performance regression gate:** Defined in `06I`. Execution depends on applying the frozen command convention.
 
 ### Remaining
-- T3–T6 test file existence has not been individually confirmed against the live repo in this pass (marked PROVISIONAL above)
+- T3-T6 test file existence has not been individually confirmed against the live repo in this pass (marked PROVISIONAL above)
+- T7 is not yet a stable single grouped `pytest` invocation: `backend/tests/test_visual_artifact_pipeline.py` is currently a script-style probe with `main()` and zero pytest-collected items, while `backend/tests/test_nrc_aps_advanced_adapters.py` mutates `sys.modules["numpy"]` at import time and can poison later imports in the same grouped run
+- T8 clean-worktree execution currently requires explicit read-only `STORAGE_DIR` pointing at the shared audited runtime root under repo-root `backend/app/storage_test_runtime`, because this clean worktree does not carry its own `backend/app/storage_test_runtime/lc_e2e`
+- Under that shared audited runtime root, runtime `20260331_101919` is summary-marked passed but contains zero `aps_content_linkage`, `aps_content_document`, and `aps_content_chunk` rows, leaving one multi-runtime document-selector failure unrelated to `visual_lane_mode`
 - Repo-native CI enforcement of the Python acceptance path is not yet implemented (bounded residual, not a blocker for this matrix)
