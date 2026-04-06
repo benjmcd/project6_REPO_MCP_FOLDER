@@ -1,6 +1,6 @@
 {
-  "package_name": "multi_variant_visual_lane_control_pack_v39",
-  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a post-M4 approval-ready next-lane plan, and a standalone field-sensitivity map",
+  "package_name": "multi_variant_visual_lane_control_pack_v40",
+  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a post-M4 next-lane plan, a standalone field-sensitivity map, and a frozen M5 execution packet boundary",
   "improvements_over_v6": [
     "added selector activation scope/lifetime policy",
     "added experiment isolation mechanism policy",
@@ -62,6 +62,7 @@
     "03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md",
     "05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md",
     "05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md",
+    "05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md",
     "06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md",
     "06D_CRITICAL_BLOCKER_VALIDATION_SET.md",
     "06E_BLOCKER_DECISION_TABLE.md",
@@ -241,5 +242,10 @@
     "added the standalone review/report/export field-sensitivity map",
     "closed the missing field-level exposure inventory gap for the post-M4 lane",
     "tightened next-lane prep so coexistence and visibility work can target explicit outward fields and persistence keys"
+  ],
+  "improvements_over_v39": [
+    "added the exact M5 approve-as-is execution packet boundary",
+    "froze the primary owner files, validation bundles, hidden-consumer inspection set, and widening rules for the M5 lane",
+    "reduced next-lane ambiguity from broad prep prose to a concrete execution packet"
   ]
 }
