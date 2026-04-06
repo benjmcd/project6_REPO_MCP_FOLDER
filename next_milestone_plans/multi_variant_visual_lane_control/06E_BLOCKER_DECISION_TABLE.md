@@ -8,10 +8,10 @@ Turn the remaining open items into explicit blocker decisions tied to live evide
 
 Each row carries one of these explicit statuses:
 
-- **TRUE CLOSURE** — Planning and evidence-level closure achieved. No further planning or implementation work required for this item.
-- **PLANNING-CLOSED** — Planning freeze is complete. Implementation work remains before this item can be marked implementation-closed.
-- **IMPLEMENTATION REQUIRED** — Specific implementation work is defined. The planning pack specifies what must be done, but the work itself is not yet done.
-- **BOUNDED RESIDUAL** — Uncertainty is acknowledged, bounded, and carried explicitly. Not a blocker, but not zero.
+- **TRUE CLOSURE** - Planning and evidence-level closure achieved. No further planning or implementation work required for this item.
+- **PLANNING-CLOSED** - Planning freeze is complete. Implementation work remains before this item can be marked implementation-closed.
+- **IMPLEMENTATION REQUIRED** - Specific implementation work is defined. The planning pack specifies what must be done, but the work itself is not yet done.
+- **BOUNDED RESIDUAL** - Uncertainty is acknowledged, bounded, and carried explicitly. Not a blocker, but not zero.
 
 ---
 
@@ -29,6 +29,7 @@ Each row carries one of these explicit statuses:
 | Control-key / query-payload leakage | TRUE CLOSURE | `connectors_nrc_adams._normalize_request_config(...)`; `backend/tests/test_nrc_aps_run_config.py` | Selector key remains a processing control and is excluded from lenient pass-through query payload construction |
 | Artifact equivalence | TRUE CLOSURE | `backend/tests/test_visual_artifact_pipeline.py`; grouped T7 backend bundle; `03J` | Artifact behavior is now guarded by a pytest-collectible surface inside the canonical grouped backend bundle, which passes in the clean worktree |
 | Run-scoped review-root / runtime DB access semantics | TRUE CLOSURE | `backend/tests/review_nrc_aps_runtime_fixture.py`; grouped T8 backend bundle; `backend/tests/test_review_nrc_aps_runtime_db.py`; `03L` | Clean-worktree review/runtime validation now resolves the shared audited runtime root read-only without seeding new data, and grouped review/runtime acceptance passes under the canonical command posture |
+| Review/report/export field-sensitivity inventory | TRUE CLOSURE | `03Y`; `review_nrc_aps.py`; `review_nrc_aps_document_trace.py`; `nrc_aps_evidence_report*.py`; `nrc_aps_content_index.py` | The standalone field-level exposure map now exists. Remaining work is the exact coexistence/visibility mechanism, not identifying which outward fields and persistence keys are sensitive |
 
 ### PLANNING-CLOSED
 
@@ -39,7 +40,7 @@ No current rows.
 | Blocker | Status | Live evidence anchor | What implementation must produce |
 |---|---|---|---|
 | Runtime-root coexistence mechanism | IMPLEMENTATION REQUIRED | `backend/app/services/review_nrc_aps_runtime.py`; `backend/app/services/review_nrc_aps_runtime_roots.py`; `backend/tests/test_review_nrc_aps_catalog.py`; `backend/tests/test_review_nrc_aps_details.py` | Behavior requirement is frozen, but exact coexistence mechanism for experiments is not. Must produce exact experiment root naming/placement plus discovery-exclusion rule for summary-backed review roots |
-| Review/catalog/report/API visibility | IMPLEMENTATION REQUIRED | `review_nrc_aps_catalog.discover_candidate_runs()`; `review_nrc_aps.py` run-bound endpoints; `nrc_aps_evidence_report*.py` run-bound persistence into `run.query_plan_json` | Separate runtime/artifact roots are insufficient if baseline-facing surfaces can still enumerate or expose experiment runs. Must produce exact visibility behavior for experiment runs across catalog/review/API/report/export surfaces |
+| Review/catalog/report/API visibility | IMPLEMENTATION REQUIRED | `review_nrc_aps_catalog.discover_candidate_runs()`; `review_nrc_aps.py` run-bound endpoints; `nrc_aps_evidence_report*.py` run-bound persistence into `run.query_plan_json`; `03Y` | Separate runtime/artifact roots are insufficient if baseline-facing surfaces can still enumerate or expose experiment runs. The exact outward field inventory is now explicit in `03Y`. Implementation must still produce exact visibility behavior for experiment runs across catalog/review/API/report/export surfaces |
 | Review API exposure surface | IMPLEMENTATION REQUIRED | attached-session API exposure corroboration; review API already known live surface | API endpoints may expose processing-derived state even when underlying storage/runtime separation looks isolated. Must produce exact endpoint classes that remain baseline-locked in first pass |
 | Diagnostics persistence semantics | IMPLEMENTATION REQUIRED | `backend/tests/test_diagnostics_ref_persistence.py`; `nrc_aps_content_index.py` diagnostics payload path | Behavior is baseline-locked, but selector proposals could contaminate serializer/linkage expectations. Must produce exact no-change rule for persistence surfaces during baseline bootstrap |
 | Broader T5/T6 acceptance gate | TRUE CLOSURE | `tests/test_api.py`; `tests/test_nrc_aps_document_corpus.py`; `tests/test_run_nrc_aps_local_corpus_e2e.py`; `06C`; `05D` | The broader root-side context/API/corpus bundles now pass under the canonical repo-root pytest posture. The earlier DB/runtime-isolation drift in `tests/test_api.py` and expectation drift in `tests/test_nrc_aps_document_corpus.py` were resolved in this clean worktree, so T1-T8 are no longer blocked at the T5/T6 layer |

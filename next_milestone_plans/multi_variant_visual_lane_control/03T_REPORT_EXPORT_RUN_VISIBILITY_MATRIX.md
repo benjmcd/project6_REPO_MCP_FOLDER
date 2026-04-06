@@ -38,3 +38,5 @@ No experiment is sufficiently isolated for the first integrated phase if it rema
 - resolve a baseline-visible `ConnectorRun`,
 - persist report/export/package refs or summaries into shared `run.query_plan_json`,
 - or become selectable/retrievable through baseline-facing run-bound report/export surfaces.
+
+For the exact shared persistence keys and summary fields that remain sensitivity-relevant, see `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md`.
