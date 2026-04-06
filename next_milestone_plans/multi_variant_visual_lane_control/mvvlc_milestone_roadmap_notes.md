@@ -45,6 +45,7 @@ If it conflicts with `00F`, `05E`, `06E`, `03Y`, or `README_INDEX`, those strong
 
 ### M5 - Current prep / next implementation milestone
 - `03Y` standalone field-sensitivity map is now frozen.
+- `05F` exact execution packet boundary is now frozen.
 - Still must freeze the exact experiment runtime-root coexistence mechanism.
 - Still must freeze the exact baseline-facing visibility rules across review/catalog/API/report/export surfaces.
 - Still must freeze the exact no-drift rules plus the narrow owner/validation packet.
@@ -61,7 +62,7 @@ If it conflicts with `00F`, `05E`, `06E`, `03Y`, or `README_INDEX`, those strong
 - M3 is complete for the baseline-only selector/bootstrap path.
 - M4 is complete for that same baseline-only path.
 - We are now between M4 closure and M5 implementation.
-- The immediate work is M5 freeze prep, not another M3/M4 closure pass.
+- The immediate work is the exact M5 mechanism freeze inside the now-frozen execution packet, not another M3/M4 closure pass.
 
 ## Key threshold
 
