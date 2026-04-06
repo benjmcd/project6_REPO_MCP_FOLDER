@@ -4,6 +4,12 @@
 
 Freeze the exact M5 coexistence / visibility mechanism before implementation.
 
+## Status note
+
+This frozen mechanism doc was executed by the bounded M5 barrier lane on the current clean branch.
+Use `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`, `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`, and `06E_BLOCKER_DECISION_TABLE.md` for the achieved-current-state judgment.
+Preserve the mechanism body below as the frozen design input that the lane implemented.
+
 This document answers the specific question left open by `03I`, `03N`, `03Q`, `03S`, `03T`, `03Y`, and `05F`:
 
 - what exact signal distinguishes baseline-visible runs from experiment-hidden runs
@@ -13,7 +19,7 @@ This document answers the specific question left open by `03I`, `03N`, `03Q`, `0
 
 ---
 
-## Verified live anchors this mechanism is built on
+## Verified live anchors this mechanism was built on at freeze time
 
 1. `review_nrc_aps_runtime_roots.candidate_review_runtime_roots(...)` always includes the default `storage_test_runtime/lc_e2e` bases and also appends a normalized configured `settings.storage_dir` when present.
 2. If the configured `settings.storage_dir` is named `storage` or `storage_test_runtime`, normalization appends `/lc_e2e`; if it is differently named, the resolved configured root is still allowlisted directly.

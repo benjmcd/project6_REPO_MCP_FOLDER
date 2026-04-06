@@ -4,6 +4,12 @@
 
 Freeze the concrete execution packet for the next MVVLC milestone after merged M3/M4 closure.
 
+## Status note
+
+This packet was executed by the bounded M5 barrier lane on the current clean branch.
+Use `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md` for the achieved owner set, validations, `06I` rerun, and no-drift judgment.
+Preserve the packet body below as the frozen execution-input boundary that the lane followed.
+
 This doc does **not** claim that the exact M5 coexistence mechanism is already implemented in live code.
 `03Z` now freezes that mechanism itself.
 This doc freezes the exact owner boundary, validation boundary, widening rules, and review expectations for implementing the frozen mechanism.

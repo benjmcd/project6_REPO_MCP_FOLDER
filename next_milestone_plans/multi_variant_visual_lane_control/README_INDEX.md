@@ -4,7 +4,7 @@
 
 This is the planning and control pack for the MVVLC program, still bounded to the PDF visual-lane seam.
 
-Merged `main` now contains the baseline-only selector/bootstrap implementation and the recorded M4 acceptance closure for that baseline path. The pack's current job is to preserve that closure, carry the bounded residuals honestly, and define the next later-scope lane explicitly.
+Merged `main` now contains the baseline-only selector/bootstrap implementation, the recorded M4 acceptance closure for that baseline path, and the bounded M5 coexistence / visibility barrier implementation recorded on the current clean branch. The pack's current job is to preserve those closures, carry the bounded residuals honestly, and define the next later-scope lane explicitly.
 
 ### What is closed
 
@@ -14,7 +14,8 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation a
 - M4 baseline-only acceptance gate: T1-T8 and the local `06I` performance gate were executed and recorded for the merged baseline path (`05D`, `06C`, `06E`, `06I`)
 - Review/report/export field-sensitivity map: standalone later-scope exposure inventory is now frozen (`03Y`)
 - M5 execution packet boundary: exact owner/test/widening boundary is now frozen (`05F`)
-- M5 coexistence / visibility mechanism: exact baseline-facing classification and runtime-root coexistence design is now frozen (`03Z`)
+- M5 coexistence / visibility mechanism: exact baseline-facing classification and runtime-root coexistence design is frozen and implemented on the current clean branch (`03Z`, `05G`)
+- M5 barrier implementation record and handoff: exact owner files, validations, `06I` rerun, and no-drift judgment are recorded (`05G`)
 - Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
 - Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
@@ -24,14 +25,15 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation a
 
 - M3 baseline-only selector/bootstrap is implemented and accepted on merged `main`
 - M4 acceptance gate is passed for the baseline-only bootstrap path
-- M5 later-scope coexistence / visibility mechanism is now planning-frozen, and bounded implementation of that mechanism is the next active lane (`03Z`, `05F`, roadmap)
+- M5 later-scope coexistence / visibility barrier is implemented and locally validated on the current clean branch under the frozen `03Z` + `05F` packet (`05G`, `06E`)
+- The next justified MVVLC milestone step is M6 planning/freeze for controlled admission / promotion, not more M5 mechanism implementation
 
 ### Next lane to execute
 
-- Re-audit the live authority chain against the now-frozen mechanism (`03Z`)
-- Implement the frozen coexistence / visibility barrier inside the `05F` owner boundary
-- Prove that baseline-facing review/catalog/API/report/export surfaces hide experiment-marked runs without drifting baseline behavior
-- Re-run `06I` only if the touched surfaces justify it
+- Freeze the exact controlled-admission / promotion rule for one approved non-baseline variant at a time
+- Freeze the exact owner-boundary widening, if any, into connector / processing path for admission work
+- Freeze the exact baseline-comparison and explicit-approval gate before any non-baseline integrated admission
+- Keep M5 barrier closure intact; do not treat it as permission for uncontrolled multi-variant integrated rollout
 
 ### What is bounded residual
 
@@ -55,6 +57,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation a
 - `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
 - `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`
 - `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
+- `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
 
 ### For "can we proceed?"
 - `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
@@ -111,4 +114,4 @@ The v25 claim of "no remaining open items" was too strong. The evidence supports
 This remains a control pack.
 Do not convert candidate control ideas into code without explicit freeze.
 Do not reopen merged M3/M4 closure without live contradictory evidence.
-Do not treat merged M3/M4 closure as permission to start M5 without the frozen `03Z` + `05F` packet.
+Do not treat achieved M5 barrier closure as permission to admit approved non-baseline integrated runs without a separate frozen M6 packet.

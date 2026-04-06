@@ -1,6 +1,6 @@
 {
-  "package_name": "multi_variant_visual_lane_control_pack_v41",
-  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a standalone field-sensitivity map, a frozen exact M5 coexistence/visibility mechanism, and a frozen M5 execution packet boundary",
+  "package_name": "multi_variant_visual_lane_control_pack_v42",
+  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a standalone field-sensitivity map, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen M5 execution packet boundary, and an M5 implementation/handoff record",
   "improvements_over_v6": [
     "added selector activation scope/lifetime policy",
     "added experiment isolation mechanism policy",
@@ -9,7 +9,6 @@
     "incorporated adversarial second-opinion critique without treating its code suggestions as settled truth"
   ],
   "remaining_open_items": [
-    "exact M5 coexistence / baseline-facing visibility mechanism is now frozen but not yet implemented in live owner-path code",
     "integrated admission of approved non-baseline runs remains later-scope beyond the current barrier lane",
     "Python acceptance path is pack-specified but not visibly repo-enforced in checked root workflow/hook/config surfaces",
     "Tier 2 performance sample breadth remains bounded by the declared-root handoff fallback sample",
@@ -64,6 +63,7 @@
     "05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md",
     "05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md",
     "05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md",
+    "05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md",
     "06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md",
     "06D_CRITICAL_BLOCKER_VALIDATION_SET.md",
     "06E_BLOCKER_DECISION_TABLE.md",
@@ -253,5 +253,10 @@
     "added the exact M5 baseline-visibility and runtime-root coexistence mechanism",
     "closed the remaining mechanism-discovery gap by freezing the canonical visibility signal, backward-compatibility fallback, and barrier scope",
     "shifted the next justified M5 step from mechanism discovery to bounded implementation under 05F"
+  ],
+  "improvements_over_v41": [
+    "added the M5 barrier implementation record and M6 handoff doc",
+    "updated the active control spine to reflect achieved M5 barrier closure on the current clean branch",
+    "shifted the next justified MVVLC step from M5 mechanism implementation to M6 planning/freeze"
   ]
 }

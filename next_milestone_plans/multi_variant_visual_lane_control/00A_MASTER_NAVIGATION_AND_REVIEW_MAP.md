@@ -66,6 +66,7 @@ Key docs:
 - `05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md`
 - `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
 - `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
+- `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
 
 ### `06*` - validation, acceptance, runner/perf, residual risk
 Use these to understand:
@@ -129,7 +130,7 @@ Read:
 4. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 5. `05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md`
 
-### Goal F - What exactly has to be true before the next lane is approve-as-is?
+### Goal F - What exact evidence justified treating the M5 barrier lane as approve-as-is?
 Read:
 1. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
 2. `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
@@ -140,7 +141,8 @@ Read:
 7. `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`
 8. `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
 9. `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
-10. `06E_BLOCKER_DECISION_TABLE.md`
+10. `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
+11. `06E_BLOCKER_DECISION_TABLE.md`
 
 ### Goal G - What is still uncertain, and how serious is it?
 Read:
@@ -191,7 +193,7 @@ Interpretation rule:
 
 ## 4. Minimal decision packet for a human reviewer
 
-If someone needs to decide whether we are ready to move from merged M4 closure into controlled M5 implementation, the minimum set is:
+If someone needs to decide whether we are ready to move from achieved M5 barrier closure into controlled M6 planning/freeze, the minimum set is:
 
 1. `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
 2. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
@@ -203,7 +205,8 @@ If someone needs to decide whether we are ready to move from merged M4 closure i
 8. `06E_BLOCKER_DECISION_TABLE.md`
 9. `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
 10. `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
-11. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+11. `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
+12. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
 That is the smallest review set that still preserves the critical reasoning.
 
@@ -226,7 +229,7 @@ Do not treat these as active control authority. See `00U` Section 5 for the full
 
 ## 6. Minimal implementation packet for actual work
 
-If post-M4 work starts, the implementation-critical subset is:
+If the next MVVLC lane starts after M5 barrier closure, the implementation-critical subset is:
 
 1. `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
 2. `03Q_REVIEW_CATALOG_REPORT_VISIBILITY_BLOCKER_POLICY.md`
@@ -238,12 +241,13 @@ If post-M4 work starts, the implementation-critical subset is:
 8. `03L_RUNTIME_DB_BINDING_AND_ISOLATION_POLICY.md`
 9. `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
 10. `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
-11. `03G_IMPLEMENTATION_SEAM_FREEZE_CHECKLIST.md`
-12. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
-13. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
-14. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+11. `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
+12. `03G_IMPLEMENTATION_SEAM_FREEZE_CHECKLIST.md`
+13. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
+14. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
+15. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
-This is the minimal packet for the next later-scope lane after merged M3/M4 closure.
+This is the minimal packet for the next later-scope lane after achieved M5 barrier closure.
 
 ---
 
@@ -260,6 +264,11 @@ This is the minimal packet for the next later-scope lane after merged M3/M4 clos
 - `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
 - `03Q_REVIEW_CATALOG_REPORT_VISIBILITY_BLOCKER_POLICY.md`
 - `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`
+
+### How was the M5 barrier actually implemented and validated?
+- `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
+- `06E_BLOCKER_DECISION_TABLE.md`
+- `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
 ### How would experiment runs leak into review/report surfaces?
 - `03S_REVIEW_API_ENDPOINT_EXPOSURE_MATRIX.md`
@@ -298,5 +307,6 @@ For future use, review in this order:
 ### Pass 3 - execution readiness
 - `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
 - `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
+- `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
 - `06E_BLOCKER_DECISION_TABLE.md`
 - `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`

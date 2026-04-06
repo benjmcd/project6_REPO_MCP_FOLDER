@@ -4,6 +4,12 @@
 
 Define what must be true before a new MVVLC implementation lane can honestly be reviewed as approve-as-is after merged M3/M4 baseline closure.
 
+## Status note
+
+This document is the frozen pre-M5 planning packet.
+Its required outputs were satisfied by the `03Y` + `03Z` + `05F` preparation packet and then executed/recorded in `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`.
+Use `README_INDEX.md`, `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`, and `06E_BLOCKER_DECISION_TABLE.md` for current milestone position.
+
 This doc is for the next later-scope lane only.
 It does not reopen the accepted M3/M4 baseline selector/bootstrap path.
 
