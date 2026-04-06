@@ -222,6 +222,7 @@ Items that have been planning-closed or narrowed to explicit remaining scope.
 4. **Residual consumer/visibility closure beyond live app-surface chain:** CLOSED for the merged baseline-only bootstrap path. Residual app-surface consumers are explicitly enumerated across models, schemas, retrieval-plane, evidence-bundle, review, and report/export layers.
 5. **Validation harness operability for baseline-only bootstrap:** CLOSED. The grouped T1-T8 bundles and the local performance gate are operational and recorded in the clean merged-main worktree.
 6. **Standalone review/report/export field-sensitivity map:** CLOSED as `03Y`. The field-level exposure inventory is now explicit, so the remaining later-scope work is the coexistence/visibility mechanism itself, not discovery of which baseline-facing fields matter.
+7. **Exact M5 execution packet boundary:** CLOSED as `05F`. The next lane now has a frozen owner-file set, validation boundary, hidden-consumer inspection set, and widening rules.
 
 ---
 

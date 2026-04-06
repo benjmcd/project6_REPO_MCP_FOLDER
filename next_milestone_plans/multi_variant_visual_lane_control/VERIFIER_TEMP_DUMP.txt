@@ -13,6 +13,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation a
 - M3 selector path: baseline-preserving seam consumption is implemented in the frozen owner path (`05D`, `06E`)
 - M4 baseline-only acceptance gate: T1-T8 and the local `06I` performance gate were executed and recorded for the merged baseline path (`05D`, `06C`, `06E`, `06I`)
 - Review/report/export field-sensitivity map: standalone later-scope exposure inventory is now frozen (`03Y`)
+- M5 execution packet boundary: exact owner/test/widening boundary is now frozen (`05F`)
 - Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
 - Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
@@ -26,10 +27,10 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation a
 
 ### Next lane to prepare
 
-- Runtime-root coexistence mechanism for experiments
-- Review/catalog/report/API/export visibility controls for experiment runs
-- Execution/freeze of the exact coexistence and visibility mechanism using the now-frozen field-sensitivity map (`03Y`)
-- An approval-ready M5 execution packet before any new integrated experiment work starts (`05E`)
+- Freeze the exact runtime-root coexistence mechanism for experiments
+- Freeze the exact baseline-facing visibility controls for experiment runs
+- Execute that mechanism under the now-frozen field-sensitivity map (`03Y`) and execution packet (`05F`)
+- Then begin bounded M5 implementation on a fresh merged-main lane
 
 ### What is bounded residual
 
@@ -51,6 +52,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation a
 ### For implementation
 - `00C_IMPLEMENTATION_PREPARATION_AND_EXECUTION_PLAYBOOK.md`
 - `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
+- `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
 
 ### For "can we proceed?"
 - `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
@@ -108,6 +110,7 @@ This remains a control pack.
 Do not convert candidate control ideas into code without explicit freeze.
 Do not reopen merged M3/M4 closure without live contradictory evidence.
 Do not treat merged M3/M4 closure as permission to start M5 without a separate freeze packet.
+
 # 00A Master Navigation and Review Map
 
 ## Purpose
@@ -174,6 +177,7 @@ Use these to understand:
 Key docs:
 - `05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md`
 - `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
+- `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
 
 ### `06*` - validation, acceptance, runner/perf, residual risk
 Use these to understand:
@@ -244,7 +248,8 @@ Read:
 5. `03T_REPORT_EXPORT_RUN_VISIBILITY_MATRIX.md`
 6. `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md`
 7. `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
-8. `06E_BLOCKER_DECISION_TABLE.md`
+8. `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
+9. `06E_BLOCKER_DECISION_TABLE.md`
 
 ### Goal G - What is still uncertain, and how serious is it?
 Read:
@@ -304,7 +309,8 @@ If someone needs to decide whether we are ready to move from merged M4 closure i
 6. `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md`
 7. `06E_BLOCKER_DECISION_TABLE.md`
 8. `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
-9. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+9. `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
+10. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
 That is the smallest review set that still preserves the critical reasoning.
 
@@ -337,10 +343,11 @@ If post-M4 work starts, the implementation-critical subset is:
 6. `03K_DIAGNOSTICS_REF_PERSISTENCE_POLICY.md`
 7. `03L_RUNTIME_DB_BINDING_AND_ISOLATION_POLICY.md`
 8. `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
-9. `03G_IMPLEMENTATION_SEAM_FREEZE_CHECKLIST.md`
-10. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
-11. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
-12. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+9. `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
+10. `03G_IMPLEMENTATION_SEAM_FREEZE_CHECKLIST.md`
+11. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
+12. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
+13. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
 This is the minimal packet for the next later-scope lane after merged M3/M4 closure.
 
@@ -363,6 +370,7 @@ This is the minimal packet for the next later-scope lane after merged M3/M4 clos
 - `03S_REVIEW_API_ENDPOINT_EXPOSURE_MATRIX.md`
 - `03T_REPORT_EXPORT_RUN_VISIBILITY_MATRIX.md`
 - `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md`
+- `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
 
 ### What does the pack still admit it does not know?
 - `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
@@ -392,8 +400,10 @@ For future use, review in this order:
 
 ### Pass 3 - execution readiness
 - `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
+- `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
 - `06E_BLOCKER_DECISION_TABLE.md`
 - `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+
 # 00B Review / Audit / Assessment Playbook
 
 ## Purpose
@@ -794,6 +804,7 @@ These are the fastest way to test whether even small assertions are:
 - properly scoped
 - tied to stronger governing docs
 - not being read too strongly
+
 # 00C Implementation Preparation and Execution Playbook
 
 ## Purpose
@@ -1241,6 +1252,7 @@ Before implementation begins, also confirm against:
 Purpose:
 - ensure that no implementation-critical rule is being followed only because it “sounds right”
 - ensure that each critical planning assertion has a governing doc and evidence basis
+
 # 00F Live Repo Verified Facts and Open Items
 
 ## Section index
@@ -1465,6 +1477,7 @@ Items that have been planning-closed or narrowed to explicit remaining scope.
 4. **Residual consumer/visibility closure beyond live app-surface chain:** CLOSED for the merged baseline-only bootstrap path. Residual app-surface consumers are explicitly enumerated across models, schemas, retrieval-plane, evidence-bundle, review, and report/export layers.
 5. **Validation harness operability for baseline-only bootstrap:** CLOSED. The grouped T1-T8 bundles and the local performance gate are operational and recorded in the clean merged-main worktree.
 6. **Standalone review/report/export field-sensitivity map:** CLOSED as `03Y`. The field-level exposure inventory is now explicit, so the remaining later-scope work is the coexistence/visibility mechanism itself, not discovery of which baseline-facing fields matter.
+7. **Exact M5 execution packet boundary:** CLOSED as `05F`. The next lane now has a frozen owner-file set, validation boundary, hidden-consumer inspection set, and widening rules.
 
 ---
 
@@ -1491,6 +1504,7 @@ Repo-native Python enforcement remains a valid parallel hardening lane, but it i
 
 Proceeding is justified for controlled post-M4 planning and later-scope implementation on a fresh lane.
 Baseline-only bootstrap closure remains accepted; the remaining uncertainty is bounded, explicit, and later-scope rather than a blocker against merged M3/M4 closure.
+
 # 03Y Review/Report/Export Field Sensitivity Map
 
 ## Purpose
@@ -1847,6 +1861,7 @@ For the next later-scope lane to be approve-as-is:
 4. any field that intentionally changes must be justified explicitly before implementation, not inferred during code review
 
 Until that is frozen, later-scope implementation is not approve-as-is.
+
 # 05E Post-M4 Approval-Ready Next-Lane Plan
 
 ## Purpose
@@ -1957,6 +1972,8 @@ The next lane must name:
 - the validation-only files expected to remain edit-free
 - the hidden-consumer files that must be inspected for compatibility only
 
+This output is now concretized by `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`.
+
 If that file set cannot be named narrowly in advance, stay in audit mode.
 
 ---
@@ -2024,6 +2041,220 @@ Stop instead of widening scope if the next lane appears to require:
 6. Run the affected grouped acceptance bundles plus any new isolation-specific tests.
 7. Re-run `06I` if the changed surfaces justify it.
 8. Freeze that lane separately from M3/M4 history.
+
+# 05F M5 Approve-As-Is Execution Packet
+
+## Purpose
+
+Freeze the concrete execution packet for the next MVVLC milestone after merged M3/M4 closure.
+
+This doc does **not** claim that the exact M5 coexistence mechanism is already implemented or fully frozen.
+It freezes the exact owner boundary, validation boundary, widening rules, and review expectations that the next lane must use.
+
+---
+
+## Current milestone position
+
+- M3 baseline-only selector bootstrap is merged and accepted.
+- M4 acceptance closure is merged and recorded.
+- `03Y` closes the standalone field-sensitivity inventory.
+- The next milestone is M5: controlled experiment runtime-root coexistence plus baseline-facing visibility control.
+
+What remains before M5 can be called approve-as-is is not another baseline closure pass.
+It is a bounded M5 lane that freezes and proves the exact coexistence / visibility mechanism under the packet below.
+
+---
+
+## Canonical live authority chain for the M5 lane
+
+The next lane must start from these live authority files:
+
+- `backend/app/services/review_nrc_aps_runtime_roots.py`
+- `backend/app/services/review_nrc_aps_runtime.py`
+- `backend/app/services/review_nrc_aps_runtime_db.py`
+- `backend/app/services/review_nrc_aps_catalog.py`
+- `backend/app/api/review_nrc_aps.py`
+- `backend/app/services/review_nrc_aps_document_trace.py`
+- `backend/app/services/nrc_aps_content_index.py`
+- `backend/app/services/nrc_aps_evidence_report.py`
+- `backend/app/services/nrc_aps_evidence_report_export.py`
+- `backend/app/services/nrc_aps_evidence_report_export_package.py`
+- `backend/app/services/connectors_sciencebase.py`
+
+The M5 lane must also respect the already-frozen control docs:
+
+- `03I_RUNTIME_ROOT_AND_RUN_NAMESPACE_POLICY.md`
+- `03K_DIAGNOSTICS_REF_PERSISTENCE_POLICY.md`
+- `03L_RUNTIME_DB_BINDING_AND_ISOLATION_POLICY.md`
+- `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
+- `03Q_REVIEW_CATALOG_REPORT_VISIBILITY_BLOCKER_POLICY.md`
+- `03S_REVIEW_API_ENDPOINT_EXPOSURE_MATRIX.md`
+- `03T_REPORT_EXPORT_RUN_VISIBILITY_MATRIX.md`
+- `03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md`
+
+---
+
+## Exact lane outcome required
+
+The next lane must make all of the following true:
+
+1. experiment runtime roots do not become baseline-discoverable through default review/runtime discovery
+2. experiment runs do not appear in baseline-facing run selectors
+3. baseline-facing review endpoints do not expose experiment run state by `run_id`
+4. baseline-facing report/export/package persistence does not make experiment outputs visible through shared `ConnectorRun.query_plan_json`
+5. baseline diagnostics/runtime DB semantics for accepted baseline runs remain unchanged
+6. baseline artifact/ref/hash/byte behavior remains unchanged where the lane does not explicitly reopen it
+
+If the implementation cannot make all six true, it is not approve-as-is.
+
+---
+
+## Exact owner-file boundary
+
+### Primary owner files expected to change
+
+These are the only files that should be assumed editable at the start of the M5 lane:
+
+- `backend/app/services/review_nrc_aps_runtime_roots.py`
+- `backend/app/services/review_nrc_aps_runtime.py`
+- `backend/app/services/review_nrc_aps_catalog.py`
+- `backend/app/api/review_nrc_aps.py`
+- `backend/app/services/nrc_aps_evidence_report.py`
+- `backend/app/services/nrc_aps_evidence_report_export.py`
+- `backend/app/services/nrc_aps_evidence_report_export_package.py`
+
+### Conditional owner promotion files
+
+These are **not** part of the default owner set.
+They may become editable only if the primary owner path proves insufficient and the widening is recorded explicitly:
+
+- `backend/app/services/review_nrc_aps_document_trace.py`
+- `backend/app/services/review_nrc_aps_runtime_db.py`
+
+### Inspect-only hidden-consumer files
+
+These must be inspected for compatibility, but should remain edit-free unless a repo-confirmed blocker forces widening:
+
+- `backend/app/services/nrc_aps_content_index.py`
+- `backend/app/services/connectors_sciencebase.py`
+- `backend/app/services/aps_retrieval_plane.py`
+- `backend/app/services/aps_retrieval_plane_read.py`
+- `backend/app/services/nrc_aps_evidence_bundle.py`
+- `backend/app/schemas/review_nrc_aps.py`
+- `backend/app/schemas/api.py`
+
+---
+
+## Exact validation boundary
+
+### Required backend review/runtime bundle
+
+- `backend/tests/test_review_nrc_aps_catalog.py`
+- `backend/tests/test_review_nrc_aps_api.py`
+- `backend/tests/test_review_nrc_aps_details.py`
+- `backend/tests/test_review_nrc_aps_tree.py`
+- `backend/tests/test_review_nrc_aps_graph.py`
+- `backend/tests/test_review_nrc_aps_document_trace_api.py`
+- `backend/tests/test_review_nrc_aps_document_trace_service.py`
+- `backend/tests/test_review_nrc_aps_document_trace_page.py`
+- `backend/tests/test_review_nrc_aps_runtime_db.py`
+- `backend/tests/test_diagnostics_ref_persistence.py`
+
+### Required root-side report/export bundle
+
+- `tests/test_nrc_aps_evidence_report.py`
+- `tests/test_nrc_aps_evidence_report_contract.py`
+- `tests/test_nrc_aps_evidence_report_gate.py`
+- `tests/test_nrc_aps_evidence_report_export.py`
+- `tests/test_nrc_aps_evidence_report_export_contract.py`
+- `tests/test_nrc_aps_evidence_report_export_gate.py`
+- `tests/test_nrc_aps_evidence_report_export_package.py`
+- `tests/test_nrc_aps_evidence_report_export_package_contract.py`
+- `tests/test_nrc_aps_evidence_report_export_package_gate.py`
+
+### Additional root-side context bundle
+
+- `tests/test_api.py`
+- `tests/test_nrc_aps_document_corpus.py`
+
+### Performance posture
+
+Run `06I` again only if the M5 lane changes:
+
+- runtime-root discovery cost
+- run-selector/query behavior
+- report/export/package owner-path runtime behavior
+- other touched surfaces that can materially affect artifact-aware runtime cost
+
+---
+
+## Exact widening rules
+
+The M5 lane must not widen casually.
+
+Allowed widening trigger classes are only:
+
+1. the chosen coexistence mechanism cannot be implemented without promoting `review_nrc_aps_document_trace.py`
+2. the chosen coexistence mechanism cannot preserve baseline runtime-DB behavior without promoting `review_nrc_aps_runtime_db.py`
+3. a supposedly inspect-only hidden consumer proves to be a real outward leak surface under execution evidence
+
+Every widening decision must be recorded explicitly in the final report as:
+
+- file widened into
+- reason class
+- why the primary owner set was insufficient
+- what new risk the widening introduced
+
+---
+
+## Exact no-drift assertions the lane must prove
+
+The M5 lane must prove all of the following:
+
+- baseline `get_runs()` behavior remains correct for baseline runs
+- baseline overview/tree/node/file-detail/file-preview surfaces remain correct for baseline runs
+- baseline document selector / trace / source / diagnostics / normalized-text / indexed-chunk / extracted-unit surfaces remain correct for baseline runs
+- baseline report/export/package persistence and retrieval remain correct for baseline runs
+- baseline diagnostics-ref persistence remains correct
+- baseline runtime DB read-only access and review-root resolution remain correct
+- experiment visibility is blocked or absent on baseline-facing surfaces by explicit design, not by accident
+
+---
+
+## Exact status language allowed at the end of the lane
+
+The next lane may be described as approve-as-is only if it provides:
+
+1. the exact coexistence mechanism
+2. the exact visibility rule set
+3. passing execution evidence for the required validation bundles
+4. explicit no-drift findings for diagnostics/runtime DB/report-export surfaces
+5. a refreshed `06I` result if the touched surfaces justify rerunning it
+
+Do not use softer overclaim language such as:
+
+- effectively complete
+- done pending minor validation
+- ready for promotion
+- functionally closed
+
+unless the formal evidence above actually exists.
+
+---
+
+## Immediate next action after this packet
+
+The next justified move is:
+
+1. create a fresh merged-main M5 implementation lane
+2. re-audit the canonical authority files above
+3. freeze the exact coexistence mechanism and baseline-facing visibility rule set inside that lane
+4. implement only within the packet frozen here
+5. run the required validation bundles
+6. freeze that lane separately
+
+Until that happens, M5 is prepared but not implementation-started.
+
 # 00T Strict Adequacy Audit and Proceed Decision
 
 ## Purpose
@@ -2119,6 +2350,7 @@ Proceed **only** under this interpretation:
 **Proceeding is justified.**
 Not because uncertainty is zero,
 but because the remaining uncertainty is now bounded, explicit, and non-blocking for the intended next phase.
+
 # 00U Assertion, Justification, and Evidentiary Standard
 
 ## Purpose
@@ -2375,6 +2607,7 @@ Any future pass that adds or modifies planning content should make sure:
 4. the boundary of the claim is explicit
 
 If not, the new doc or edit is not strict enough.
+
 # 06D Critical Blocker Validation Set
 
 ## Purpose
@@ -2466,6 +2699,7 @@ If any future selector/bootstrap proposal cannot state how it preserves **all of
 ### Status interpretation
 - **Category A (B1–B6):** Test-verified. Each has one or more verified test files that must pass under the canonical acceptance convention (see `06K`).
 - **Category B (B7–B8):** Planning-closed only. Each requires implementation-produced visibility controls or test coverage before it can be marked implementation-closed. Planning closure alone is not sufficient.
+
 # 06E Blocker Decision Table
 
 ## Purpose
@@ -2498,6 +2732,7 @@ Each row carries one of these explicit statuses:
 | Artifact equivalence | TRUE CLOSURE | `backend/tests/test_visual_artifact_pipeline.py`; grouped T7 backend bundle; `03J` | Artifact behavior is now guarded by a pytest-collectible surface inside the canonical grouped backend bundle, which passes in the clean worktree |
 | Run-scoped review-root / runtime DB access semantics | TRUE CLOSURE | `backend/tests/review_nrc_aps_runtime_fixture.py`; grouped T8 backend bundle; `backend/tests/test_review_nrc_aps_runtime_db.py`; `03L` | Clean-worktree review/runtime validation now resolves the shared audited runtime root read-only without seeding new data, and grouped review/runtime acceptance passes under the canonical command posture |
 | Review/report/export field-sensitivity inventory | TRUE CLOSURE | `03Y`; `review_nrc_aps.py`; `review_nrc_aps_document_trace.py`; `nrc_aps_evidence_report*.py`; `nrc_aps_content_index.py` | The standalone field-level exposure map now exists. Remaining work is the exact coexistence/visibility mechanism, not identifying which outward fields and persistence keys are sensitive |
+| Exact M5 execution packet boundary | TRUE CLOSURE | `05F`; live owner files in `review_nrc_aps_runtime*.py`, `review_nrc_aps_catalog.py`, `review_nrc_aps.py`, `nrc_aps_evidence_report*.py` | The next lane now has a frozen owner-file boundary, validation bundle boundary, hidden-consumer inspection set, and widening rule set. Remaining work is the exact coexistence/visibility mechanism inside that packet |
 
 ### PLANNING-CLOSED
 
@@ -2534,6 +2769,7 @@ It is closing individual rows in this table one by one, with explicit freeze out
 - **PLANNING-CLOSED** rows have frozen planning decisions but still need implementation to produce the specified outputs.
 - **IMPLEMENTATION REQUIRED** rows have defined requirements but the implementation work itself is not done. Do not treat the existence of this row as proof that the implementation exists.
 - **BOUNDED RESIDUAL** rows are explicitly carried uncertainty. They are not blockers and not invitations to widen scope.
+
 # 06F Runner Convention Evidence and Remaining Uncertainty
 
 ### Synchronization note
@@ -2665,6 +2901,7 @@ The sections above are retained as narrowing history only. They are not the curr
 
 The shell/platform-specific spelling item is now closed by `06K_SHELL_SPECIFIC_CANONICAL_ACCEPTANCE_COMMANDS.md`.
 No runner-convention uncertainty remains for the canonical acceptance path.
+
 # 06H Acceptance Command Convention Narrowing Report
 
 ### Synchronization note
@@ -2745,6 +2982,7 @@ The narrowing is now sufficient to freeze a canonical convention concept:
 - both active test trees
 
 After this narrowing revision, the remaining uncertainty was no longer conceptual and had been reduced to shell-specific expression, which is now closed by `06K`.
+
 # 06J Canonical Acceptance Command Convention
 
 ## Purpose
@@ -2820,6 +3058,7 @@ Do not freeze as canonical:
 
 ### Layer 3 — Repo-native enforcement
 **NOT YET IMPLEMENTED.** The convention is pack-specified and shell-realized but not visibly enforced via repo-native CI, hooks, or workflow mechanisms. This is a bounded residual tracked in `06L`, not a blocker for the convention itself.
+
 # 06K Shell-Specific Canonical Acceptance Commands
 
 ## Purpose

@@ -108,6 +108,8 @@ The next lane must name:
 - the validation-only files expected to remain edit-free
 - the hidden-consumer files that must be inspected for compatibility only
 
+This output is now concretized by `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`.
+
 If that file set cannot be named narrowly in advance, stay in audit mode.
 
 ---

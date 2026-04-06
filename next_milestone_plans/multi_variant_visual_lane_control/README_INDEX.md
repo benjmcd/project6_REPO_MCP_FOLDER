@@ -13,6 +13,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation a
 - M3 selector path: baseline-preserving seam consumption is implemented in the frozen owner path (`05D`, `06E`)
 - M4 baseline-only acceptance gate: T1-T8 and the local `06I` performance gate were executed and recorded for the merged baseline path (`05D`, `06C`, `06E`, `06I`)
 - Review/report/export field-sensitivity map: standalone later-scope exposure inventory is now frozen (`03Y`)
+- M5 execution packet boundary: exact owner/test/widening boundary is now frozen (`05F`)
 - Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
 - Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
@@ -26,10 +27,10 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation a
 
 ### Next lane to prepare
 
-- Runtime-root coexistence mechanism for experiments
-- Review/catalog/report/API/export visibility controls for experiment runs
-- Execution/freeze of the exact coexistence and visibility mechanism using the now-frozen field-sensitivity map (`03Y`)
-- An approval-ready M5 execution packet before any new integrated experiment work starts (`05E`)
+- Freeze the exact runtime-root coexistence mechanism for experiments
+- Freeze the exact baseline-facing visibility controls for experiment runs
+- Execute that mechanism under the now-frozen field-sensitivity map (`03Y`) and execution packet (`05F`)
+- Then begin bounded M5 implementation on a fresh merged-main lane
 
 ### What is bounded residual
 
@@ -51,6 +52,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation a
 ### For implementation
 - `00C_IMPLEMENTATION_PREPARATION_AND_EXECUTION_PLAYBOOK.md`
 - `05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md`
+- `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
 
 ### For "can we proceed?"
 - `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
