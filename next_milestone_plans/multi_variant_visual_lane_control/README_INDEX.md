@@ -4,7 +4,7 @@
 
 This is the planning and control pack for the MVVLC program, still bounded to the PDF visual-lane seam.
 
-Merged `main` now contains the baseline-only selector/bootstrap implementation, the recorded M4 acceptance closure for that baseline path, and the bounded M5 coexistence / visibility barrier implementation recorded on the current clean branch. The pack's current job is to preserve those closures, carry the bounded residuals honestly, and define the next later-scope lane explicitly.
+Merged `main` now contains the baseline-only selector/bootstrap implementation, the recorded M4 acceptance closure for that baseline path, and the bounded M5 coexistence / visibility barrier implementation. The pack's current job is to preserve those closures, carry the bounded residuals honestly, and define the next later-scope lane explicitly.
 
 ### What is closed
 
@@ -14,7 +14,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M4 baseline-only acceptance gate: T1-T8 and the local `06I` performance gate were executed and recorded for the merged baseline path (`05D`, `06C`, `06E`, `06I`)
 - Review/report/export field-sensitivity map: standalone later-scope exposure inventory is now frozen (`03Y`)
 - M5 execution packet boundary: exact owner/test/widening boundary is now frozen (`05F`)
-- M5 coexistence / visibility mechanism: exact baseline-facing classification and runtime-root coexistence design is frozen and implemented on the current clean branch (`03Z`, `05G`)
+- M5 coexistence / visibility mechanism: exact baseline-facing classification and runtime-root coexistence design is frozen and implemented on merged `main` (`03Z`, `05G`)
 - M5 barrier implementation record and handoff: exact owner files, validations, `06I` rerun, and no-drift judgment are recorded (`05G`)
 - Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
 - Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
@@ -25,21 +25,23 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 
 - M3 baseline-only selector/bootstrap is implemented and accepted on merged `main`
 - M4 acceptance gate is passed for the baseline-only bootstrap path
-- M5 later-scope coexistence / visibility barrier is implemented and locally validated on the current clean branch under the frozen `03Z` + `05F` packet (`05G`, `06E`)
-- The next justified MVVLC milestone step is M6 planning/freeze for controlled admission / promotion, not more M5 mechanism implementation
+- M5 later-scope coexistence / visibility barrier is implemented and locally validated on merged `main` under the frozen `03Z` + `05F` packet (`05G`, `06E`)
+- M6 planning/freeze packet is now frozen on the current clean branch as `03AA` + `05H`
+- The next justified MVVLC milestone step is bounded M6 admission implementation only after one approved target is explicitly named, not more M5 mechanism implementation
 
 ### Next lane to execute
 
-- Freeze the exact controlled-admission / promotion rule for one approved non-baseline variant at a time
-- Freeze the exact owner-boundary widening, if any, into connector / processing path for admission work
-- Freeze the exact baseline-comparison and explicit-approval gate before any non-baseline integrated admission
-- Keep M5 barrier closure intact; do not treat it as permission for uncontrolled multi-variant integrated rollout
+- Record one exact approved non-baseline selector value before any M6 code edits
+- Implement only the frozen M6 admission boundary under `03AA` + `05H`
+- Keep M5 barrier closure intact for all non-approved values
+- Do not treat the M6 packet as permission for uncontrolled multi-variant integrated rollout
 
 ### What is bounded residual
 
 - Repo-native Python acceptance-path enforcement (pack-specified, not CI-enforced)
 - Tier 2 performance capture breadth: the recorded artifact-aware comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture did not complete within practical session budget
 - Future drift outside audited authority surface
+- Exact approved M6 target is not yet named in the pack; implementation remains fail-closed until that record exists
 
 ---
 
@@ -58,6 +60,8 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`
 - `05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md`
 - `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
+- `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
+- `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
 
 ### For "can we proceed?"
 - `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
@@ -115,3 +119,4 @@ This remains a control pack.
 Do not convert candidate control ideas into code without explicit freeze.
 Do not reopen merged M3/M4 closure without live contradictory evidence.
 Do not treat achieved M5 barrier closure as permission to admit approved non-baseline integrated runs without a separate frozen M6 packet.
+Do not treat the frozen M6 packet as permission to start code before one exact approved target is explicitly named.
