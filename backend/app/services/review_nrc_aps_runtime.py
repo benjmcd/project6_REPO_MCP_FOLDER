@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +25,85 @@ class ReviewRuntimeBinding:
     summary: dict[str, Any]
     database_path: Path | None
     storage_dir: Path | None
+
+
+def _normalize_visual_lane_mode_for_visibility(value: Any) -> str:
+    normalized = str(value or "").strip().lower()
+    return normalized or "baseline"
+
+
+def request_config_is_baseline_visible(request_config: Any) -> bool:
+    if not isinstance(request_config, dict):
+        return True
+    return _normalize_visual_lane_mode_for_visibility(request_config.get("visual_lane_mode")) == "baseline"
+
+
+def connector_run_is_baseline_visible(run: Any) -> bool:
+    if run is None:
+        return True
+    return request_config_is_baseline_visible(getattr(run, "request_config_json", None))
+
+
+@lru_cache(maxsize=256)
+def _load_binding_request_config_json(database_path_str: str, run_id: str) -> dict[str, Any] | None:
+    database_path = Path(database_path_str).resolve()
+    if not database_path.exists() or not database_path.is_file():
+        return None
+
+    uri_path = f"file:{database_path.as_posix()}?mode=ro"
+    try:
+        connection = sqlite3.connect(uri_path, uri=True, check_same_thread=False)
+    except sqlite3.DatabaseError:
+        return None
+
+    try:
+        row = connection.execute(
+            """
+            SELECT request_config_json
+            FROM connector_run
+            WHERE connector_run_id = ?
+              AND connector_key = ?
+            LIMIT 1
+            """,
+            (run_id, "nrc_adams_aps"),
+        ).fetchone()
+    except sqlite3.DatabaseError:
+        return None
+    finally:
+        connection.close()
+
+    if row is None:
+        return None
+
+    raw_value = row[0]
+    if isinstance(raw_value, dict):
+        return dict(raw_value)
+    if raw_value in {None, ""}:
+        return {}
+    if isinstance(raw_value, bytes):
+        try:
+            raw_value = raw_value.decode("utf-8")
+        except UnicodeDecodeError:
+            return {}
+    if isinstance(raw_value, str):
+        try:
+            payload = json.loads(raw_value)
+        except json.JSONDecodeError:
+            return {}
+        return dict(payload) if isinstance(payload, dict) else {}
+    return {}
+
+
+def binding_is_baseline_visible(binding: ReviewRuntimeBinding) -> bool:
+    if binding.database_path is None:
+        return True
+    try:
+        request_config = _load_binding_request_config_json(str(binding.database_path.resolve()), binding.run_id)
+    except OSError:
+        return True
+    if request_config is None:
+        return True
+    return request_config_is_baseline_visible(request_config)
 
 
 def get_allowlisted_roots() -> list[Path]:
@@ -160,7 +241,11 @@ def discover_runtime_bindings() -> list[ReviewRuntimeBinding]:
         if existing is None or _binding_sort_key(candidate.summary) > _binding_sort_key(existing.summary):
             bindings_by_run_id[run_id] = candidate
 
-    return list(bindings_by_run_id.values())
+    visible_bindings: list[ReviewRuntimeBinding] = []
+    for binding in bindings_by_run_id.values():
+        if binding_is_baseline_visible(binding):
+            visible_bindings.append(binding)
+    return visible_bindings
 
 
 def find_review_root_for_run(run_id: str) -> Path | None:
