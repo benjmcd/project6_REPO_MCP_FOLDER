@@ -3,7 +3,7 @@
 ## Status note
 
 This roadmap is a high-level orientation artifact.
-If it conflicts with `00F`, `05E`, `06E`, `03Y`, or `README_INDEX`, those stronger docs govern.
+If it conflicts with `00F`, `05E`, `05F`, `06E`, `03Y`, `03Z`, or `README_INDEX`, those stronger docs govern.
 
 ## Milestone sequence
 
@@ -43,13 +43,13 @@ If it conflicts with `00F`, `05E`, `06E`, `03Y`, or `README_INDEX`, those strong
 - No accepted public/artifact/review/runtime drift was introduced on the merged baseline path.
 - Baseline discovery / persistence / DB behavior remained unchanged.
 
-### M5 - Current prep / next implementation milestone
+### M5 - Current implementation milestone
 - `03Y` standalone field-sensitivity map is now frozen.
 - `05F` exact execution packet boundary is now frozen.
-- Still must freeze the exact experiment runtime-root coexistence mechanism.
-- Still must freeze the exact baseline-facing visibility rules across review/catalog/API/report/export surfaces.
-- Still must freeze the exact no-drift rules plus the narrow owner/validation packet.
-- Only after that approval-ready freeze packet is complete should bounded M5 implementation begin on fresh merged `main`.
+- `03Z` exact runtime-root coexistence plus baseline-facing visibility mechanism is now frozen.
+- The next work is bounded implementation of that frozen barrier inside the `05F` owner boundary.
+- Baseline-facing review/catalog/API/report/export surfaces must hide experiment-marked runs by explicit design.
+- Upstream admission of approved non-baseline run creation remains later-scope and is not implied by this barrier lane.
 
 ### M6 - Admission / promotion (later future)
 - Explicit baseline comparison.
@@ -61,17 +61,18 @@ If it conflicts with `00F`, `05E`, `06E`, `03Y`, or `README_INDEX`, those strong
 
 - M3 is complete for the baseline-only selector/bootstrap path.
 - M4 is complete for that same baseline-only path.
-- We are now between M4 closure and M5 implementation.
-- The immediate work is the exact M5 mechanism freeze inside the now-frozen execution packet, not another M3/M4 closure pass.
+- We are now at the start of bounded M5 implementation.
+- The immediate work is executing the frozen `03Z` mechanism inside `05F`, not more mechanism-discovery or another M3/M4 closure pass.
 
 ## Key threshold
 
 The earliest justified point for separate integrated ingestion/processing work has now been reached in principle because M3 is implemented and M4 has passed.
 
 The remaining prerequisite for an approve-as-is M5 lane is:
-- a frozen experiment runtime-root coexistence mechanism
-- frozen baseline-facing visibility controls
-- frozen no-drift rules and implementation/validation packet
+- implementation of the frozen `03Z` coexistence / visibility mechanism
+- passing validation for the `05F` owner and blocker bundles
+- explicit no-drift proof for baseline review/runtime/report/export/diagnostics surfaces
+- a refreshed `06I` result if the touched surfaces justify rerunning it
 
 Bounded residuals that do not block M5 prep remain:
 - repo-native Python acceptance-path enforcement
