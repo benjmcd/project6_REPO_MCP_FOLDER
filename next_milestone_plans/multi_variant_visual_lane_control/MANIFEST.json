@@ -1,6 +1,6 @@
 {
-  "package_name": "multi_variant_visual_lane_control_pack_v49",
-  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, an achieved standalone M6A PageEvidence workbench lane, a pinned canonical Candidate A workbench report artifact, an exact M6B Candidate A target-record template, and workflow-layer alignment around the immediate 05K target-definition step",
+  "package_name": "multi_variant_visual_lane_control_pack_v50",
+  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, an achieved standalone M6A PageEvidence workbench lane, a pinned canonical Candidate A workbench report artifact, a frozen approved M6B Candidate A target record, and workflow-layer alignment around the immediate later direct-admission step",
   "improvements_over_v6": [
     "added selector activation scope/lifetime policy",
     "added experiment isolation mechanism policy",
@@ -9,8 +9,7 @@
     "incorporated adversarial second-opinion critique without treating its code suggestions as settled truth"
   ],
   "remaining_open_items": [
-    "no exact approved M6B target selector value is yet named in the pack, even though the exact target-record template now exists",
-    "integrated admission of approved non-baseline runs remains later-scope beyond the current barrier lane and the achieved M6A workbench lane",
+    "integrated admission of the approved Candidate A non-baseline value remains later-scope beyond the current barrier lane and the achieved M6A workbench lane",
     "Python acceptance path is pack-specified but not visibly repo-enforced in checked root workflow/hook/config surfaces",
     "Tier 2 performance sample breadth remains bounded by the declared-root handoff fallback sample",
     "bounded uncertainty remains in duplicated archive/worktree state and other non-audited/generated surfaces"
@@ -71,6 +70,7 @@
     "05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md",
     "05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md",
     "05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md",
+    "05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md",
     "06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md",
     "06D_CRITICAL_BLOCKER_VALIDATION_SET.md",
     "06E_BLOCKER_DECISION_TABLE.md",
@@ -300,5 +300,10 @@
     "pinned a canonical Candidate A PageEvidence workbench report artifact under tests/reports using repo-relative paths and a fixed timestamp",
     "tightened 05K so the durable workbench report artifact is a first-class provenance/evidence ref",
     "updated the front door and blocker synthesis to treat the workbench report as available input to the immediate 05K target-definition step"
+  ],
+  "improvements_over_v49": [
+    "added the frozen derivative Candidate A approved target record as 05L instead of overwriting the 05K template",
+    "closed the exact approved M6B target naming gap using the pinned workbench report plus fixture-manifest comparison basis",
+    "shifted the workflow, blocker, and front-door layer from immediate 05K target-definition to immediate later direct-admission execution under 03AA plus 05H"
   ]
 }

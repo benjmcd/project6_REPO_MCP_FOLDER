@@ -228,6 +228,7 @@ Items that have been planning-closed or narrowed to explicit remaining scope.
 9. **Exact M6 planning/freeze packet boundary:** CLOSED as planning input. `03AA` now freezes the direct admission/promotion mechanism, and `05H` now freezes the owner boundary, validation boundary, widening rules, and fail-closed stop conditions for the later direct-admission lane.
 10. **Exact M6A workbench planning/freeze packet boundary:** CLOSED as planning input. `03AB` freezes the dedicated PageEvidence / Option 2 workbench boundary, and `05I` freezes the owner boundary, validation packet, location strategy, widening rules, and fail-closed stop conditions for the immediate workbench lane.
 11. **Exact M6A workbench implementation:** CLOSED in the current clean worktree. The dedicated PageEvidence service, standalone runner, bounded validation bundle, no-drift findings, and pinned canonical Candidate A workbench report artifact are now recorded in `05J` without widening into the integrated owner path.
+12. **Exact approved M6B target naming:** CLOSED in the current clean worktree. `05L` now records one exact approved non-`baseline` selector value, its provenance, its comparison/evidence refs, its required invariants, and its explicit approval record without starting direct-admission code.
 
 ---
 
@@ -238,8 +239,7 @@ Items that remain genuinely open or bounded.
 1. **Tier 2 performance sample breadth:** The local performance gate was executed and passed, but the recorded artifact-aware Tier 2 comparison still uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget.
 2. **Broader residual consumer/visibility effects:** Residual effects beyond the already-verified live app-surface chain remain bounded but not zero. Mostly duplicated worktree/archive state and non-audited/generated surfaces.
 3. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.
-4. **Exact approved M6B target naming:** Still open. The pack now provides `05K` as the exact record template, and the pinned Candidate A workbench report artifact now exists, but it does not yet name one approved non-baseline selector value or fill the required approval/evidence fields.
-5. **Integrated admission of approved non-baseline runs:** Still later-scope. The achieved M5 barrier lane does not itself admit new non-baseline run creation through the connector/processing owner path by default, and the achieved M6A workbench lane does not change that.
+4. **Integrated admission of approved non-baseline runs:** Still later-scope. The achieved M5 barrier lane does not itself admit new non-baseline run creation through the connector/processing owner path by default, the achieved M6A workbench lane does not change that, and `05L` only authorizes the later direct-admission lane rather than implementing it.
 
 ---
 
@@ -247,10 +247,10 @@ Items that remain genuinely open or bounded.
 
 ### Recommended stop condition
 
-At the current evidence level, the next justified scope is filling `05K` for exact M6B Candidate A target-definition under the already-frozen `03AA` + `05H` packet family, not more M6A construction.
+At the current evidence level, the next justified scope is the later M6B direct-admission implementation lane under the already-frozen `03AA` + `05H` packet family using the approved target record in `05L`, not more M6A construction and not more target-definition work.
 Repo-native Python enforcement remains a valid parallel hardening lane, but it is not the primary next MVVLC milestone step.
 
 ### Current proceed position
 
-Proceeding is justified for later M6B target-definition and direct-admission preparation using the achieved M5 barrier closure, the achieved M6A workbench record and pinned canonical report artifact in `05J`, the exact target-record template in `05K`, and the frozen `03AA` + `05H` packet as the direct-admission control boundary.
-Baseline-only bootstrap closure, the later-scope M5 barrier closure, and the standalone M6A workbench lane remain accepted; the remaining uncertainty is bounded, explicit, and concentrated on one exact approved target record. Direct M6 admission still remains separately blocked until that record exists.
+Proceeding is justified for later M6B direct-admission implementation using the achieved M5 barrier closure, the achieved M6A workbench record and pinned canonical report artifact in `05J`, the frozen approved target record in `05L`, and the frozen `03AA` + `05H` packet as the direct-admission control boundary.
+Baseline-only bootstrap closure, the later-scope M5 barrier closure, the standalone M6A workbench lane, and the exact Candidate A approved-target freeze remain accepted; the remaining uncertainty is bounded, explicit, and concentrated on the later direct-admission implementation itself.
