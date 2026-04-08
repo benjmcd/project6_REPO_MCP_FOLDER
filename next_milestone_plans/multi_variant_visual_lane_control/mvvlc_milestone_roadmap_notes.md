@@ -80,6 +80,11 @@ If it conflicts with `00F`, `05E`, `05F`, `06E`, `03Y`, `03Z`, or `README_INDEX`
 - Candidate B/C remain non-admitted.
 - No default-promotion target-definition lane opens from this decision.
 
+### Post-M6B retained-default merged-main closure (achieved / current)
+- `05Q` records that the retained-default state from `05P` is now merged-main authority.
+- The primary MVVLC path is now in a stable hold state rather than waiting on another immediate decision lane.
+- Any future non-`baseline` default still requires an explicit amendment to `00D` plus a later exact target-definition lane.
+
 ## Current roadmap position
 
 - M3 is complete for the baseline-only selector/bootstrap path.
@@ -89,8 +94,8 @@ If it conflicts with `00F`, `05E`, `05F`, `06E`, `03Y`, `03Z`, or `README_INDEX`
 - M6B exact Candidate A target-definition is now complete in `05L`.
 - M6B direct admission of the one approved Candidate A value is now merged on `main`.
 - The exact post-admission/defaulting planning boundary is now frozen in `03AC` + `05O`.
-- The current-horizon retain-`baseline` decision is now frozen in `05P`.
-- No further MVVLC widening lane is justified by default from the current merged-main state.
+- The current-horizon retain-`baseline` decision is now merged-main authority through `05P` + `05Q`.
+- No further primary MVVLC implementation, promotion, or decision lane is justified by default from the current merged-main state.
 
 ## Key threshold
 
@@ -101,7 +106,7 @@ Merged `main` now contains the bounded direct-admission closure state:
 - prove the required no-drift validation bundles and `06I`
 - record any justified widening explicitly instead of inferring it
 
-Bounded residuals that do not block the current retained-default posture remain:
+Bounded residuals that do not block the current retained-default merged-main posture remain:
 - repo-native Python acceptance-path enforcement
 - Tier 2 performance sample breadth
 - broader non-audited duplicate/generated surfaces
