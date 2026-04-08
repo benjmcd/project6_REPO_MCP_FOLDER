@@ -73,6 +73,7 @@ Key docs:
 - `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
 - `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 - `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
+- `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
 
 ### `06*` - validation, acceptance, runner/perf, residual risk
 Use these to understand:
@@ -200,7 +201,7 @@ Interpretation rule:
 
 ## 4. Minimal decision packet for a human reviewer
 
-If someone needs to decide whether we are ready to move from achieved M6A workbench execution into later M6B target-definition and direct-admission planning, the minimum set is:
+If someone needs to decide whether we are ready to move from achieved M6A workbench execution into later M6B direct-admission planning, the minimum set is:
 
 1. `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
 2. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
@@ -216,8 +217,9 @@ If someone needs to decide whether we are ready to move from achieved M6A workbe
 12. `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
 13. `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 14. `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
-15. `06E_BLOCKER_DECISION_TABLE.md`
-16. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+15. `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
+16. `06E_BLOCKER_DECISION_TABLE.md`
+17. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
 That is the smallest review set that still preserves the critical reasoning.
 
@@ -240,7 +242,7 @@ Do not treat these as active control authority. See `00U` Section 5 for the full
 
 ## 6. Minimal implementation packet for actual work
 
-If the next MVVLC lane starts after achieved M6A workbench execution, the implementation-critical subset is:
+If the next MVVLC lane starts after achieved M6A workbench execution and approved-target freeze, the implementation-critical subset is:
 
 1. `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
 2. `03Q_REVIEW_CATALOG_REPORT_VISIBILITY_BLOCKER_POLICY.md`
@@ -257,12 +259,13 @@ If the next MVVLC lane starts after achieved M6A workbench execution, the implem
 13. `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
 14. `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 15. `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
-16. `03G_IMPLEMENTATION_SEAM_FREEZE_CHECKLIST.md`
-17. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
-18. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
-19. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+16. `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
+17. `03G_IMPLEMENTATION_SEAM_FREEZE_CHECKLIST.md`
+18. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
+19. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
+20. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
-This is the minimal packet for the next later-scope lane after achieved M6A workbench execution.
+This is the minimal packet for the next later-scope lane after achieved M6A workbench execution and approved-target freeze.
 
 ---
 
@@ -294,6 +297,7 @@ This is the minimal packet for the next later-scope lane after achieved M6A work
 - `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
 - `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
 - `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
+- `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
 - `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
 
 ### How would experiment runs leak into review/report surfaces?
@@ -337,6 +341,7 @@ For future use, review in this order:
 - `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
 - `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
 - `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
+- `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
 - `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 - `06E_BLOCKER_DECISION_TABLE.md`
 - `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`

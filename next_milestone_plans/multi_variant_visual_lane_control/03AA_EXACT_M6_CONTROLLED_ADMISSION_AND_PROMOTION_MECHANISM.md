@@ -195,9 +195,8 @@ This document does **not** authorize:
 
 ## Result
 
-The exact M6 admission / promotion mechanism is now frozen enough to proceed,
-but it is intentionally fail-closed on one point:
+The exact M6 admission / promotion mechanism is now frozen enough to proceed.
 
-the exact admitted non-baseline target must still be named explicitly before direct integrated-admission code begins.
+For the current Candidate A lane, the exact admitted non-`baseline` target has now been named explicitly in `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`.
 
-That is now an explicit stop condition, not a hidden assumption.
+Direct integrated-admission code still remains separately bounded to the later `05H` execution lane, and this mechanism remains fail-closed for any future value that is not explicitly named and approved the same way.

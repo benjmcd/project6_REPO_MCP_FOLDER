@@ -35,10 +35,10 @@ If you skip Stage 2 or Stage 3, implementation drift is likely.
 The pack now distinguishes:
 
 - **M6A**: achieved dedicated PageEvidence workbench construction under `03AB` + `05I`, recorded by `05J`
-- **M6B target-definition**: immediate next pre-code step under `03AA` + `05K`
-- **M6B direct admission**: later implementation of one approved selector value under `03AA` + `05H`
+- **M6B target-definition**: frozen derivative record `05L` built from template `05K`
+- **M6B direct admission**: immediate next implementation of one approved selector value under `03AA` + `05H`
 
-Do not use `05H` as the immediate implementation packet before `05K` is filled and explicitly approved. Treat `05J` as the evidence base and `05K` as the exact record shape for the current next lane.
+Do not use `05K` by itself as approval. Treat `05J` as the evidence base, `05K` as the governing template, and `05L` as the current exact approved-target record for the next lane.
 
 ---
 
@@ -109,17 +109,18 @@ Purpose:
 - keep Candidate A pre-admission until explicit later approval
 - preserve the later M6B packet as a separate fail-closed lane
 
-### Stage 3B - if the current lane is M6B target-definition / approval prep
+### Stage 3B - if the current lane is M6B direct-admission implementation after target-definition closure
 Read:
 1. `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
 2. `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
 3. `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 4. `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
+5. `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
 
 Purpose:
-- define one exact approved selector value before direct-admission code begins
-- tie that target to achieved workbench evidence rather than prose alone
-- preserve `05H` as a later direct-admission execution packet until `05K` is filled and explicitly approved
+- implement only the one exact approved selector value already frozen in `05L`
+- keep the admitted behavior delta narrow and evidence-backed rather than widening by inference
+- preserve `05H` as the current direct-admission execution packet while keeping every other non-approved value fail-closed
 
 ### Stage 4 — prepare the concrete validation surface
 Read:
@@ -250,6 +251,7 @@ For a full controlled implementation cycle, use:
 - `05I`
 - `05J`
 - `05K`
+- `05L`
 - `06C`
 - `06D`
 - `06E`
@@ -261,7 +263,7 @@ For a full controlled implementation cycle, use:
 - `00F`
 - `00T`
 
-For the current next lane, `05J` is the achieved evidence base, `05K` is the immediate target-definition record, and `05H` remains the later direct-admission execution packet.
+For the current next lane, `05J` is the achieved evidence base, `05K` is the governing template, `05L` is the frozen approved-target record, and `05H` is the immediate direct-admission execution packet.
 
 This is the most reliable working set for actual execution.
 

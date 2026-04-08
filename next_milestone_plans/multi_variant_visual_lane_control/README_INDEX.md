@@ -16,7 +16,8 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M5 execution packet boundary: exact owner/test/widening boundary is now frozen (`05F`)
 - M5 coexistence / visibility mechanism: exact baseline-facing classification and runtime-root coexistence design is frozen and implemented on merged `main` (`03Z`, `05G`)
 - M5 barrier implementation record and handoff: exact owner files, validations, `06I` rerun, and no-drift judgment are recorded (`05G`)
-- M6A dedicated PageEvidence workbench: standalone Candidate A workbench surface is implemented and locally validated without widening integrated runtime behavior, and one pinned canonical Candidate A report artifact now exists for later target-definition (`03AB`, `05I`, `05J`)
+- M6A dedicated PageEvidence workbench: standalone Candidate A workbench surface is implemented and locally validated without widening integrated runtime behavior, and one pinned canonical Candidate A report artifact now exists for the approved-target evidence base and later direct admission (`03AB`, `05I`, `05J`, `05L`)
+- M6B Candidate A target-definition: the exact approved target record is now frozen as a derivative of `05K` (`05L`)
 - Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
 - Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
@@ -29,25 +30,22 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M5 later-scope coexistence / visibility barrier is implemented and locally validated on merged `main` under the frozen `03Z` + `05F` packet (`05G`, `06E`)
 - M6 direct-admission packet is frozen on merged `main` as `03AA` + `05H`
 - M6A PageEvidence workbench is now implemented and locally validated on the current clean branch as recorded by `05J`, including a pinned canonical report artifact for later M6B evidence refs
-- The next justified MVVLC milestone step is exact M6B Candidate A target-definition and later direct admission under `03AA` + `05H`, not more M6A construction
+- M6B Candidate A exact target record is now frozen in `05L`
+- The next justified MVVLC milestone step is later direct admission of that one approved value under `03AA` + `05H`, not more M6A construction and not more target-definition work
 
 ### Next lane to execute
 
-- Record one exact approved Candidate A target for M6B:
-  - exact non-`baseline` selector value
-  - approval basis
-  - comparison/evidence refs
-- use the pinned Candidate A workbench report artifact recorded in `05J` as one of the concrete evidence refs
-- Use `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md` as the exact record shape for that target-definition step
-- Keep `03AA` + `05H` fail-closed until that target record exists
-- Only after that record exists, start the later direct-admission lane
+- Start the later M6B direct-admission lane under `03AA` + `05H`
+- Use `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md` as the exact approved-target contract
+- Keep every non-approved non-`baseline` value fail-closed and experiment-hidden
+- Do not reopen OCR-routing, policy tuning, or outward identity/schema scope in the first Candidate A admission lane
 
 ### What is bounded residual
 
 - Repo-native Python acceptance-path enforcement (pack-specified, not CI-enforced)
 - Tier 2 performance capture breadth: the recorded artifact-aware comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture did not complete within practical session budget
 - Future drift outside audited authority surface
-- Exact approved M6B target is not yet named in the pack; direct admission remains fail-closed until that record exists
+- Direct M6B admission of the approved Candidate A target is not yet implemented; `baseline` remains the only integrated admitted runtime mode until that later lane is executed
 
 ---
 
@@ -72,6 +70,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
 - `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 - `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
+- `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
 
 ### For "can we proceed?"
 - `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`

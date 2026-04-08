@@ -29,7 +29,7 @@ No inspect-only compatibility files required widening.
 1. A dedicated internal PageEvidence service exists.
 2. Candidate A can be executed through an isolated standalone runner.
 3. The workbench emits explicit JSON evidence reports to caller-owned output paths.
-4. One durable canonical Candidate A workbench report artifact is now pinned under `tests/reports/` for later M6B target-definition use.
+4. One durable canonical Candidate A workbench report artifact is now pinned under `tests/reports/` for the frozen `05L` approved-target record and any later retargeting that reuses this template/evidence path.
 5. Candidate A remains pre-admission:
    - no non-`baseline` selector value is admitted
    - integrated runtime behavior remains unchanged by default
@@ -129,7 +129,7 @@ Result:
 - pinned artifact ref: `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json`
 - exact fixture IDs are explicit rather than default-inferred
 - report paths are repo-relative, not machine-local absolute paths
-- generated timestamp is pinned so the artifact can be cited durably in `05K`
+- generated timestamp is pinned so the artifact can be cited durably in `05L` and in any later derivative record built from `05K`
 
 ---
 
@@ -178,9 +178,8 @@ The next justified MVVLC step is no longer M6A implementation.
 
 The next justified step is:
 
-1. define the exact M6B Candidate A target record
-2. name one exact non-`baseline` selector value
-3. attach the approval basis and comparison/evidence refs for that value
-4. then execute the later direct-admission lane under `03AA` + `05H`
+1. use the frozen Candidate A target record in `05L`
+2. start the later direct-admission lane under `03AA` + `05H`
+3. keep every other non-`baseline` value fail-closed until separately approved later
 
-Until that target record exists, direct admission remains fail-closed.
+Direct admission remains fail-closed for every non-approved value.
