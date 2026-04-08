@@ -71,6 +71,7 @@ Key docs:
 - `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
 - `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
 - `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
+- `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 
 ### `06*` - validation, acceptance, runner/perf, residual risk
 Use these to understand:
@@ -198,7 +199,7 @@ Interpretation rule:
 
 ## 4. Minimal decision packet for a human reviewer
 
-If someone needs to decide whether we are ready to move from achieved M5 barrier closure into bounded M6A workbench execution, the minimum set is:
+If someone needs to decide whether we are ready to move from achieved M6A workbench execution into later M6B target-definition and direct-admission planning, the minimum set is:
 
 1. `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
 2. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
@@ -212,8 +213,9 @@ If someone needs to decide whether we are ready to move from achieved M5 barrier
 10. `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
 11. `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
 12. `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
-13. `06E_BLOCKER_DECISION_TABLE.md`
-14. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+13. `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
+14. `06E_BLOCKER_DECISION_TABLE.md`
+15. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
 That is the smallest review set that still preserves the critical reasoning.
 
@@ -236,7 +238,7 @@ Do not treat these as active control authority. See `00U` Section 5 for the full
 
 ## 6. Minimal implementation packet for actual work
 
-If the next MVVLC lane starts after M5 barrier closure, the implementation-critical subset is:
+If the next MVVLC lane starts after achieved M6A workbench execution, the implementation-critical subset is:
 
 1. `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
 2. `03Q_REVIEW_CATALOG_REPORT_VISIBILITY_BLOCKER_POLICY.md`
@@ -251,12 +253,13 @@ If the next MVVLC lane starts after M5 barrier closure, the implementation-criti
 11. `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
 12. `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
 13. `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
-14. `03G_IMPLEMENTATION_SEAM_FREEZE_CHECKLIST.md`
-15. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
-16. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
-17. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+14. `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
+15. `03G_IMPLEMENTATION_SEAM_FREEZE_CHECKLIST.md`
+16. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
+17. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
+18. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
-This is the minimal packet for the next later-scope lane after achieved M5 barrier closure.
+This is the minimal packet for the next later-scope lane after achieved M6A workbench execution.
 
 ---
 
@@ -278,6 +281,11 @@ This is the minimal packet for the next later-scope lane after achieved M5 barri
 - `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
 - `06E_BLOCKER_DECISION_TABLE.md`
 - `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+
+### How was the M6A workbench actually implemented and validated?
+- `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
+- `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
+- `06E_BLOCKER_DECISION_TABLE.md`
 
 ### What exactly has to be true before one non-baseline value can be admitted?
 - `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
@@ -324,5 +332,6 @@ For future use, review in this order:
 - `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
 - `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
 - `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
+- `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 - `06E_BLOCKER_DECISION_TABLE.md`
 - `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
