@@ -37,6 +37,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
   - exact non-`baseline` selector value
   - approval basis
   - comparison/evidence refs
+- Use `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md` as the exact record shape for that target-definition step
 - Keep `03AA` + `05H` fail-closed until that target record exists
 - Only after that record exists, start the later direct-admission lane
 
@@ -69,6 +70,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - `03AB_EXACT_M6A_PAGE_EVIDENCE_WORKBENCH_AND_OPTION2_BOUNDARY.md`
 - `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
 - `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
+- `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
 
 ### For "can we proceed?"
 - `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`

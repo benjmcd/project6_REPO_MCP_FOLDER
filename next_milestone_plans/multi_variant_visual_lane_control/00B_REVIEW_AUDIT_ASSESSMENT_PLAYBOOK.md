@@ -142,16 +142,18 @@ Read:
 1. `05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md`
 2. `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
 3. `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
-4. `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md`
-5. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
-6. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
-7. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
-8. `06K_SHELL_SPECIFIC_CANONICAL_ACCEPTANCE_COMMANDS.md`
+4. `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
+5. `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
+6. `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md`
+7. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
+8. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+9. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
+10. `06K_SHELL_SPECIFIC_CANONICAL_ACCEPTANCE_COMMANDS.md`
 
 Goal:
 - determine whether the pack translates into a real validation path
 - assess whether implementation can be checked in practice
-- determine whether the immediate next lane is M6A workbench work or later M6B direct admission
+- determine whether the pack now closes the exact M6B target-definition gap between achieved M6A workbench evidence and later direct-admission code
 
 ### Pass 5 — challenge, narrowing, residuals
 Read:
@@ -199,7 +201,7 @@ Answer:
 2. Does it overclaim beyond verified evidence?
 3. Does it silently conflict with a controlling document?
 4. Is it still current, or has a later narrowing doc modified its force?
-5. If it uses general `M6` language, does it hide an important `M6A` versus `M6B` distinction?
+5. If it uses general `M6` language, does it hide an important `M6A`, `05K` target-definition, or later `M6B` direct-admission distinction?
 
 If you skip Step 3 or Step 5, the audit is not strict enough.
 

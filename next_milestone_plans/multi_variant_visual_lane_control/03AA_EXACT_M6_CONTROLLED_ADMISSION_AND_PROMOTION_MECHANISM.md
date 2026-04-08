@@ -89,6 +89,8 @@ And must record, in the lane report or equivalent freeze artifact:
 - the comparison-evidence refs used to justify the candidate,
 - and the explicit approval statement that this one value, and only this one value, is being admitted.
 
+`05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md` is the default exact record shape for this requirement.
+
 If that record does not exist, the M6 code lane must stop before editing.
 
 Integrated runtime rule after approval:

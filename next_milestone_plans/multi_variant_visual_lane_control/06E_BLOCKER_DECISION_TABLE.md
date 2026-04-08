@@ -45,14 +45,14 @@ Each row carries one of these explicit statuses:
 |---|---|---|---|
 | Bounded uncertainty / enforcement gap | BOUNDED RESIDUAL | `00L`; `06L`; `backend/app/schemas/review_nrc_aps.py` | The pack is strong but not equivalent to repo-native total closure. Acceptance/performance controls are specified by the pack (`06J`, `06K`, `06I`), but not visibly enforced via repo-native CI/hook mechanisms. At least one additional review-schema surface was found during re-audit. Carry explicitly instead of claiming zero remaining open items |
 | Tier 2 performance sample breadth | BOUNDED RESIDUAL | `06C`; `06E`; `06I`; `backend/tests/test_visual_artifact_pipeline.py` | The earlier T5/T6/T7/T8 harness defects are resolved and the full T1-T8 gate passes in this clean worktree. The remaining acceptance-side caveat is narrower: the recorded Tier 2 performance comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget |
-| Exact approved M6B target naming | BOUNDED RESIDUAL | `00D`; `03AA`; `05H`; `03AB`; `05I`; `05J` | The direct-admission packet is frozen and the M6A workbench is now implemented, but no one selector value has yet been explicitly approved and recorded with evidence refs. The immediate next lane is target-definition and later direct admission, not more workbench construction |
+| Exact approved M6B target naming | BOUNDED RESIDUAL | `00D`; `03AA`; `05H`; `05J`; `05K` | The direct-admission packet is frozen, the M6A workbench is implemented, and the exact record template now exists, but no one selector value has yet been explicitly approved and recorded with evidence refs. The immediate next lane is filling `05K` and later direct admission, not more workbench construction |
 
 ---
 
 ## Interpretation
 
 The pack is now strong enough that the next useful improvement is not more M5 barrier work and not more generic M6A construction.
-It is using the achieved M5 barrier closure, the achieved M6A workbench record in `05J`, and the frozen `03AA` + `05H` direct-admission packet as the next later-scope input.
+It is using the achieved M5 barrier closure, the achieved M6A workbench record in `05J`, the exact target-record template in `05K`, and the frozen `03AA` + `05H` direct-admission packet as the next later-scope input.
 
 ### How to read this table
 
