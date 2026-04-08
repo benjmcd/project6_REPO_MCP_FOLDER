@@ -26,8 +26,8 @@ This is a reasoning/traceability layer, not a replacement for the documents them
 | `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md` | proceed judgment | states why proceeding is justified and what is still bounded | `00F`, `06L` |
 | `03M_SELECTOR_ACTIVATION_SCOPE_AND_LIFETIME_POLICY.md` | selector activation control | constrains when/how selector behavior is allowed to matter | `03U`, `03V`, `03W` |
 | `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md` | isolation control model | prevents false assumptions about experiment isolation | `03Q`, `03S`, `03T`, `03L` |
-| `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md` | target-definition and later direct-admission control | constrains the one-target admission lane and the exact record that must exist before code | `05K`, `05H`, `03AB`, `05I`, `05J` |
-| `03AB_EXACT_M6A_PAGE_EVIDENCE_WORKBENCH_AND_OPTION2_BOUNDARY.md` | achieved workbench control | constrains the dedicated PageEvidence / Option 2 workbench lane that now serves as precursor evidence for later direct admission | `05I`, `05J`, `03AA`, `05K`, `05H` |
+| `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md` | target-definition and later direct-admission control | constrains the one-target admission lane and the exact record that must exist before code | `05K`, `05L`, `05H`, `03AB`, `05I`, `05J` |
+| `03AB_EXACT_M6A_PAGE_EVIDENCE_WORKBENCH_AND_OPTION2_BOUNDARY.md` | achieved workbench control | constrains the dedicated PageEvidence / Option 2 workbench lane that now serves as precursor evidence for later direct admission | `05I`, `05J`, `03AA`, `05K`, `05L`, `05H` |
 | `03U_CANONICAL_SELECTOR_CONFIG_KEY_AND_FAIL_CLOSED_POLICY.md` | selector identity and fail behavior | defines the selector key and its safe interpretation | `03V`, `03P` |
 | `03V_SELECTOR_KEY_INSERTION_AND_CONSUMPTION_MAP.md` | selector propagation path | defines where the key is normalized, forwarded, defaulted, and first consumed | `03U`, `03W` |
 | `03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md` | seam freeze | defines the exact implementation surface allowed to vary | `03V`, `05D`, `06D` |
@@ -60,10 +60,11 @@ Interpretation:
 | Document | Primary role | Governing basis | Use stage |
 |---|---|---|---|
 | `05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md` | implementation path sequencing | control spine + boundary docs | pre-implementation / active execution |
-| `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md` | later direct-admission execution packet | `03AA` + filled `05K` + achieved M5 barrier | later direct-admission execution |
+| `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md` | later direct-admission execution packet | `03AA` + `05L` + achieved M5 barrier | later direct-admission execution |
 | `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md` | achieved workbench execution packet | `03AB` + achieved M5 barrier | achieved M6A execution reference |
-| `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md` | achieved workbench implementation record | `03AB` + `05I` + completed M6A validation | immediate evidence base for later target-definition |
-| `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md` | immediate M6B target-definition record | `03AA` + `05J` + achieved M5 barrier | immediate pre-admission target-definition |
+| `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md` | achieved workbench implementation record | `03AB` + `05I` + completed M6A validation | immediate evidence base for the frozen approved-target record and later direct admission |
+| `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md` | governing target-record template | `03AA` + `05J` + achieved M5 barrier | exact shape for current and future approved-target records |
+| `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md` | frozen approved Candidate A target record | `03AA` + `05J` + `05K` + achieved M5 barrier | immediate bridge into later direct-admission execution |
 | `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md` | active test surface map | repo test evidence | validation preparation |
 | `06D_CRITICAL_BLOCKER_VALIDATION_SET.md` | required validation gates | `06E` + policy docs | pre-claim-complete validation |
 | `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md` | performance gate | repo-native fixture sources + local policy | validation/performance |
@@ -133,7 +134,7 @@ Interpretation:
   - direct endpoint/service evidence
   - run-bound persistence/exposure evidence
 
-### M6A achieved / M6B target-definition split
+### M6A achieved / M6B target-definition closure / later direct-admission split
 - `03AB` justified by:
   - achieved M5 barrier closure
   - live dedicated evaluation-surface patterns in promotion/tuning tools and services
@@ -149,6 +150,11 @@ Interpretation:
   - `03AA`
   - `05J`
   - the need to define one exact approved target before direct-admission code begins
+- `05L` justified by:
+  - `05K`
+  - the pinned canonical Candidate A report artifact in `05J`
+  - the fixture-manifest comparison basis used to keep Candidate A scoped as seam-local visual-preservation behavior rather than document-class replacement
+  - explicit user approval of the recommended Candidate A selector value, delta, and invariants
 
 ### Proceed judgment
 - `00T` justified by:
@@ -186,8 +192,9 @@ Use this matrix to identify:
 For the current milestone position:
 - `03AB` + `05I` define the achieved M6A workbench lane
 - `05J` is the achieved evidence record produced by that lane
-- `03AA` + `05K` are the immediate target-definition pair
-- `03AA` + `05H` remain the later direct-admission execution pair
+- `03AA` + `05K` define the governing target-record shape
+- `05L` is the achieved approved-target record for Candidate A
+- `03AA` + `05H` are now the immediate later direct-admission execution pair
 
 ### If you are challenging adequacy
 Use this matrix to ask:

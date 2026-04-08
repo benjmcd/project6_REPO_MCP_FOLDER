@@ -18,7 +18,10 @@ This template is governed by:
 
 ## Status note
 
-The pack is intentionally fail-closed until one exact non-`baseline` selector value is recorded here with explicit approval and evidence refs.
+This template remains part of the fail-closed admission mechanism until one exact non-`baseline` selector value is recorded in a frozen derivative record with explicit approval and evidence refs.
+
+For the current Candidate A lane, that closure is already satisfied by `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`.
+This template remains the governing shape for that derivative record and for any future retargeting or later candidate.
 
 If any required field below cannot be filled with concrete repo-backed evidence, do not start M6B code.
 

@@ -15,7 +15,8 @@ This packet is built on:
 This packet does **not** itself approve a non-baseline selector value.
 It freezes the owner boundary, validation boundary, widening rules, and stop conditions for the M6 lane.
 
-If the lane cannot name exactly one approved target under `03AA`, it must stop before code edits.
+For the current Candidate A lane, `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md` supplies the exact approved target required by `03AA`.
+If a later lane cannot name exactly one approved target under `03AA`, it must stop before code edits.
 
 ---
 
@@ -29,7 +30,7 @@ If the lane cannot name exactly one approved target under `03AA`, it must stop b
 What remains before direct M6 admission can be called approve-as-is is not more M5 barrier work.
 It is a bounded direct-admission lane that:
 
-1. records the exact approved target,
+1. uses the exact approved target already frozen in `05L`,
 2. implements only the narrow owner changes required to admit that one value,
 3. preserves the M5 barrier for every other non-approved value,
 4. and proves no-drift on the already-achieved review/report/export/runtime surfaces.
@@ -81,6 +82,7 @@ The M6 lane must stop before editing if any of the following is true:
 If a stop condition is encountered, report it explicitly instead of widening by inference.
 
 `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md` is the default exact record shape for satisfying stop conditions 1 through 3.
+For the current Candidate A lane, `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md` is the frozen derivative record satisfying those stop conditions.
 
 ---
 
@@ -277,7 +279,7 @@ The next justified move is:
 
 1. if the chosen architecture is a dedicated pre-admission workbench, freeze and execute that workbench lane first under `03AB` + `05I`
 2. otherwise keep working on a fresh merged-main direct-admission lane
-3. record the exact approved target and evidence refs before direct-admission code edits
+3. carry forward the frozen exact approved target and evidence refs from `05L` before direct-admission code edits
 4. re-audit the canonical authority files above
 5. implement only within the packet frozen here
 6. run the required validation bundles
