@@ -1,6 +1,6 @@
 {
-  "package_name": "multi_variant_visual_lane_control_pack_v54",
-  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, an achieved standalone M6A PageEvidence workbench lane, a pinned canonical Candidate A workbench report artifact, a frozen approved M6B Candidate A target record, an achieved M6B Candidate A admission implementation record, merged-main closure/handoff alignment, and a frozen exact post-admission/defaulting planning boundary and decision packet that now explicitly carries downstream document-trace, retrieval/evidence, and citation-pack surface constraints",
+  "package_name": "multi_variant_visual_lane_control_pack_v55",
+  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, an achieved standalone M6A PageEvidence workbench lane, a pinned canonical Candidate A workbench report artifact, a frozen approved M6B Candidate A target record, an achieved M6B Candidate A admission implementation record, merged-main closure/handoff alignment, a frozen exact post-admission/defaulting planning boundary and decision packet, and an explicit current-horizon retain-baseline-default decision",
   "improvements_over_v6": [
     "added selector activation scope/lifetime policy",
     "added experiment isolation mechanism policy",
@@ -14,11 +14,16 @@
     "made retrieval-plane, evidence-bundle, and citation-pack contract surfaces explicit within the later defaulting boundary",
     "clarified that later defaulting work must re-audit those downstream module and endpoint classes rather than inferring narrower impact"
   ],
+  "improvements_over_v54": [
+    "added the explicit current-horizon retain-baseline-default decision record",
+    "reconciled the front-door, workflow, blocker, and roadmap layers so the retained-default decision is treated as achieved rather than pending",
+    "made clear that any future default promotion still requires a separate explicit program-decision amendment and later target-definition lane"
+  ],
   "remaining_open_items": [
     "Python acceptance path is pack-specified but not visibly repo-enforced in checked root workflow/hook/config surfaces",
     "Tier 2 performance sample breadth remains bounded by the declared-root handoff fallback sample",
     "bounded uncertainty remains in duplicated archive/worktree state and other non-audited/generated surfaces",
-    "broader post-admission/defaulting decision work and any later implementation remain separate future work beyond the frozen planning boundary"
+    "future program-decision amendment, default-promotion target-definition, and any later implementation remain separate future work beyond the retained current-horizon default posture"
   ],
   "contains": [
     "00A_MASTER_NAVIGATION_AND_REVIEW_MAP.md",
@@ -81,6 +86,7 @@
     "05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md",
     "05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md",
     "05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md",
+    "05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md",
     "06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md",
     "06D_CRITICAL_BLOCKER_VALIDATION_SET.md",
     "06E_BLOCKER_DECISION_TABLE.md",

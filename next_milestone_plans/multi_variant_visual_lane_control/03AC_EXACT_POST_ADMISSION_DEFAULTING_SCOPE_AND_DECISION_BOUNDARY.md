@@ -23,6 +23,10 @@ What remains later-scope is broader post-admission/defaulting work.
 This document freezes how that later-scope planning must be bounded before any new default-promotion or additional-candidate code is considered.
 It also preserves the fact that `00D` still treats `baseline` as the default program rule unless that rule is explicitly revisited in a later record.
 
+That current-horizon retained-default outcome has since been frozen explicitly in:
+
+- `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
+
 ---
 
 ## Governing basis
@@ -182,7 +186,7 @@ Stop and open a different explicit freeze if any proposal requires:
 
 ## Boundary output
 
-After this planning freeze, the next justified move is one of only three things:
+At the time this planning boundary was frozen, the next justified move was one of only three things:
 
 1. freeze an explicit retain-`baseline`-as-default decision
 2. freeze an explicit program-decision-amendment plus exact Candidate A default-promotion target-definition lane

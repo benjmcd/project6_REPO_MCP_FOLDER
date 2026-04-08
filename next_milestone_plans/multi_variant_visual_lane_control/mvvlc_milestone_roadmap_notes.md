@@ -74,6 +74,12 @@ If it conflicts with `00F`, `05E`, `05F`, `06E`, `03Y`, `03Z`, or `README_INDEX`
 - No default-promotion code is implied.
 - No Candidate B/C admission, OCR/media widening, policy retuning, or new dependency work is implied.
 
+### Post-M6B current-horizon decision (achieved / current)
+- `05P` freezes the explicit current-horizon decision to retain `baseline` as the default.
+- Candidate A remains admitted but non-default.
+- Candidate B/C remain non-admitted.
+- No default-promotion target-definition lane opens from this decision.
+
 ## Current roadmap position
 
 - M3 is complete for the baseline-only selector/bootstrap path.
@@ -83,7 +89,8 @@ If it conflicts with `00F`, `05E`, `05F`, `06E`, `03Y`, `03Z`, or `README_INDEX`
 - M6B exact Candidate A target-definition is now complete in `05L`.
 - M6B direct admission of the one approved Candidate A value is now merged on `main`.
 - The exact post-admission/defaulting planning boundary is now frozen in `03AC` + `05O`.
-- The immediate operational next move is explicit decision work under that planning packet: retain `baseline` as default, open a later explicit program-decision amendment plus Candidate A default-promotion target-definition lane, or explicitly defer broader work.
+- The current-horizon retain-`baseline` decision is now frozen in `05P`.
+- No further MVVLC widening lane is justified by default from the current merged-main state.
 
 ## Key threshold
 
@@ -94,8 +101,8 @@ Merged `main` now contains the bounded direct-admission closure state:
 - prove the required no-drift validation bundles and `06I`
 - record any justified widening explicitly instead of inferring it
 
-Bounded residuals that do not block M6 planning remain:
+Bounded residuals that do not block the current retained-default posture remain:
 - repo-native Python acceptance-path enforcement
 - Tier 2 performance sample breadth
 - broader non-audited duplicate/generated surfaces
-- later post-admission/defaulting decision and any additional-candidate scope beyond the frozen planning boundary
+- any future program-decision amendment, default-promotion target-definition, or additional-candidate scope beyond the retained-default decision

@@ -69,6 +69,7 @@ Interpretation:
 | `05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md` | achieved direct-admission implementation record | `03AA` + `05H` + `05L` + completed M6B validation | implementation-lane record for the admitted Candidate A lane that later merged |
 | `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md` | merged-main closure and next-scope handoff record | `05M` + merged PR `#21` + `06E` | reconciles the active pack to merged-main M6B closure and hands the pack forward into the now-frozen post-admission/defaulting planning phase |
 | `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md` | exact post-admission/defaulting planning packet | `03AC` + `05N` + `06E` | turns the next step from vague future scope into one bounded planning packet with explicit allowed outcomes, stop conditions, and downstream module/endpoint classes that must be reconsidered before any later widening |
+| `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md` | exact current-horizon default decision record | `00D` + `03AC` + `05O` + `05M` + `05N` + `06E` | records that the current horizon explicitly retains `baseline` as the default and prevents later default-promotion or additional-candidate work from being inferred without a new explicit amendment |
 | `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md` | active test surface map | repo test evidence | validation preparation |
 | `06D_CRITICAL_BLOCKER_VALIDATION_SET.md` | required validation gates | `06E` + policy docs | pre-claim-complete validation |
 | `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md` | performance gate | repo-native fixture sources + local policy | validation/performance |
@@ -219,7 +220,8 @@ For the current milestone position:
 - `05M` is now the achieved implementation record for the admitted Candidate A lane that merged into `main`
 - `05N` is now the merged-main closure/handoff record for that achieved lane
 - `03AC` + `05O` now freeze the exact post-admission/defaulting planning boundary and decision packet
-- the next justified MVVLC move is explicit post-admission/defaulting decision work under `03AC` + `05O`, not another M6B implementation lane by inference
+- `05P` now freezes the current-horizon retain-`baseline` decision under that packet
+- no further MVVLC implementation or default-promotion lane is justified by inference from the retained-default state
 
 ### If you are challenging adequacy
 Use this matrix to ask:
