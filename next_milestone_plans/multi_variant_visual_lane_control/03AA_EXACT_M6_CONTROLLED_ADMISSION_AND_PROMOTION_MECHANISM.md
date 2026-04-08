@@ -8,6 +8,8 @@ Freeze the exact M6 controlled-admission / promotion mechanism before implementa
 
 This is a planning/freeze input for the bounded M6 lane.
 
+If the chosen candidate architecture uses a dedicated pre-admission workbench surface, that workbench must be frozen separately and does not itself count as integrated admission.
+
 It does **not** itself approve any specific non-baseline selector value.
 Instead, it freezes:
 
@@ -194,6 +196,6 @@ This document does **not** authorize:
 The exact M6 admission / promotion mechanism is now frozen enough to proceed,
 but it is intentionally fail-closed on one point:
 
-the exact admitted non-baseline target must still be named explicitly before code begins.
+the exact admitted non-baseline target must still be named explicitly before direct integrated-admission code begins.
 
 That is now an explicit stop condition, not a hidden assumption.
