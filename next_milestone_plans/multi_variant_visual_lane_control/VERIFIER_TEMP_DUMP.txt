@@ -4,7 +4,7 @@
 
 This is the planning and control pack for the MVVLC program, still bounded to the PDF visual-lane seam.
 
-Merged `main` now contains the baseline-only selector/bootstrap implementation, the recorded M4 acceptance closure for that baseline path, the bounded M5 coexistence / visibility barrier implementation, the frozen M6 direct-admission packet, the achieved M6A workbench record, the frozen M6B approved-target record, and the merged M6B Candidate A direct-admission implementation recorded by `05M`. The pack also records merged-main closure and next-scope handoff in `05N`, and now freezes the exact post-admission/defaulting planning boundary and decision packet in `03AC` and `05O`.
+Merged `main` now contains the baseline-only selector/bootstrap implementation, the recorded M4 acceptance closure for that baseline path, the bounded M5 coexistence / visibility barrier implementation, the frozen M6 direct-admission packet, the achieved M6A workbench record, the frozen M6B approved-target record, and the merged M6B Candidate A direct-admission implementation recorded by `05M`. The pack also records merged-main closure and next-scope handoff in `05N`, freezes the exact post-admission/defaulting planning boundary and decision packet in `03AC` and `05O`, and now freezes the current-horizon retain-`baseline`-default decision in `05P`.
 
 ### What is closed
 
@@ -20,6 +20,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M6B Candidate A target-definition: the exact approved target record is now frozen as a derivative of `05K` (`05L`)
 - M6B Candidate A direct admission: the one approved non-`baseline` value is now admitted on merged `main`, with the achieved implementation recorded by `05M` and the merged-main closure/handoff recorded by `05N`
 - Post-admission/defaulting planning boundary: exact later-scope decision boundary and planning packet are now frozen (`03AC`, `05O`)
+- Post-admission/defaulting current-horizon decision: `baseline` is now explicitly retained as the default in `05P`
 - Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
 - Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
@@ -35,20 +36,22 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M6B Candidate A exact target record is now frozen in `05L`
 - M6B Candidate A direct admission is now merged on `main`, with implementation captured in `05M` and merged-main closure/handoff captured in `05N`
 - The exact post-admission/defaulting planning boundary is now frozen in `03AC` + `05O`
-- No further MVVLC implementation lane should start by inference from merged M6B closure or from the achieved planning freeze alone
+- The current-horizon retain-`baseline`-default decision is now frozen in `05P`
+- No further MVVLC implementation lane should start by inference from merged M6B closure, from the achieved planning freeze alone, or from the retained-default decision itself
 
 ### Immediate next move
 
-- Use `03AC` + `05O` to decide explicitly whether to retain `baseline` as the default or to open a later explicit program-decision-amendment plus Candidate A default-promotion target-definition lane
+- No primary MVVLC implementation or promotion lane is justified for the current horizon
+- Keep the retained `baseline`-default state from `05P` in place unless a later explicit program-decision amendment is separately frozen
 - Keep Candidate B/C admission, OCR/media widening, policy retuning, and outward identity/schema changes out of scope unless separately frozen
-- Do not infer implementation from merged M6B closure or from the achieved planning freeze alone
+- Treat repo-native Python enforcement hardening as a valid parallel lane, not as a hidden dependency of MVVLC widening
 
 ### What is bounded residual
 
 - Repo-native Python acceptance-path enforcement (pack-specified, not CI-enforced)
 - Tier 2 performance capture breadth: the recorded artifact-aware comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture did not complete within practical session budget
 - Future drift outside audited authority surface
-- Broader post-admission/defaulting decision and any later implementation remain separate future scope; merged `main` admits only the one approved Candidate A value and does not promote it to default
+- Future program-decision amendment, default-promotion target-definition, and any additional-candidate implementation remain separate future scope; merged `main` admits only the one approved Candidate A value and `05P` explicitly keeps it non-default
 
 ---
 
@@ -78,6 +81,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
 - `03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md`
 - `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
+- `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
 
 ### For "can we proceed?"
 - `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
@@ -139,6 +143,10 @@ Do not treat the frozen M6 packet as permission to start code before one exact a
 Do not treat the frozen M6A workbench packet as permission to admit Candidate A directly into integrated runtime.
 Do not treat the achieved `05M` M6B implementation record or the merged-main closure/handoff in `05N` as permission to widen into broader post-admission/defaulting or additional-candidate scope without a separate freeze.
 Do not treat the achieved `03AC` + `05O` post-admission/defaulting planning freeze as permission to start default-promotion or additional-candidate code without another explicit record.
+Do not treat the retained-default decision in `05P` as permission to skip a later explicit program-decision amendment if someone wants a non-`baseline` default in the future.
+
+
+====================
 
 # 00A Master Navigation and Review Map
 
@@ -220,6 +228,7 @@ Key docs:
 - `05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md`
 - `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
 - `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
+- `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
 
 ### `06*` - validation, acceptance, runner/perf, residual risk
 Use these to understand:
@@ -347,7 +356,7 @@ Interpretation rule:
 
 ## 4. Minimal decision packet for a human reviewer
 
-If someone needs to decide whether merged-main M6B Candidate A closure is adequately reconciled and what separate post-admission/defaulting decision space is justified, the minimum set is:
+If someone needs to decide whether merged-main M6B Candidate A closure is adequately reconciled and what current-horizon post-admission/defaulting decision is justified, the minimum set is:
 
 1. `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
 2. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
@@ -368,8 +377,9 @@ If someone needs to decide whether merged-main M6B Candidate A closure is adequa
 17. `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
 18. `03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md`
 19. `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
-20. `06E_BLOCKER_DECISION_TABLE.md`
-21. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+20. `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
+21. `06E_BLOCKER_DECISION_TABLE.md`
+22. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
 That is the smallest review set that still preserves the critical reasoning.
 
@@ -521,6 +531,9 @@ For future use, review in this order:
 - `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
 - `06E_BLOCKER_DECISION_TABLE.md`
 - `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+
+
+====================
 
 # 00F Live Repo Verified Facts and Open Items
 
@@ -768,6 +781,7 @@ Items that have been planning-closed or narrowed to explicit remaining scope.
 13. **Exact M6B direct-admission implementation:** CLOSED on merged `main`. The one approved Candidate A value is now admitted through the integrated owner path, the required `05H` validation bundles passed, `06I` was rerun and passed, no conditional owner-file widening was required, and the achieved implementation remains recorded in `05M`.
 14. **Exact M6B merged-main closure and handoff:** CLOSED in this reconciliation lane. `05N` now records that PR `#21` merged the achieved M6B lane into `main` on April 8, 2026 and that any broader post-admission/defaulting work requires a separate explicit freeze.
 15. **Exact post-admission/defaulting planning freeze boundary:** CLOSED in this lane. `03AC` and `05O` now freeze the exact later-scope planning boundary, decision questions, owner surfaces to consider, dependency posture, prohibited widenings, and allowed next outcomes without authorizing new code by inference.
+16. **Exact current-horizon retain-`baseline`-default decision:** CLOSED in this lane. `05P` now records that the current `00D` baseline-default rule remains in force for the current horizon, that Candidate A remains admitted but non-default, and that no default-promotion or additional-candidate lane opens without a separate explicit program-decision amendment.
 
 ---
 
@@ -778,7 +792,7 @@ Items that remain genuinely open or bounded.
 1. **Tier 2 performance sample breadth:** The local performance gate was executed and passed, but the recorded artifact-aware Tier 2 comparison still uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget.
 2. **Broader residual consumer/visibility effects:** Residual effects beyond the already-verified live app-surface chain remain bounded but not zero. Mostly duplicated worktree/archive state and non-audited/generated surfaces.
 3. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.
-4. **Broader post-admission/defaulting scope:** Still later-scope. Merged `main` now admits only the one approved Candidate A value through the integrated owner path, but it does not promote Candidate A to the default, admit Candidate B/C, reopen OCR-routing/media scope, or implicitly authorize any further variant work without a separate explicit decision record under the frozen `03AC` + `05O` boundary.
+4. **Broader future default-promotion / additional-candidate scope:** Still later-scope. `05P` now explicitly retains `baseline` as the default for the current horizon, but any future attempt to amend that rule, promote Candidate A to default, admit Candidate B/C, reopen OCR-routing/media scope, or authorize further variant work still requires a separate explicit decision record beyond `03AC` + `05O` + `05P`.
 
 ---
 
@@ -786,13 +800,16 @@ Items that remain genuinely open or bounded.
 
 ### Recommended stop condition
 
-At the current evidence level, the next justified operational move is no longer more M6B implementation work, no longer review/merge of the achieved Candidate A lane, and no longer opening the post-admission/defaulting planning freeze itself. It is to use the now-frozen `03AC` + `05O` packet to decide explicitly whether to retain `baseline` as the default, open a later explicit program-decision amendment plus Candidate A default-promotion target-definition lane, or explicitly defer broader work while keeping widening out of scope.
-Repo-native Python enforcement remains a valid parallel hardening lane, but it is not the primary next MVVLC milestone step.
+At the current evidence level, the next justified operational move is no longer more M6B implementation work, no longer review/merge of the achieved Candidate A lane, no longer opening the post-admission/defaulting planning freeze itself, and no longer deciding whether to retain `baseline` as the default for the current horizon. That decision is now frozen explicitly in `05P`.
+Repo-native Python enforcement remains a valid parallel hardening lane. Any future MVVLC widening would first require a separate explicit program-decision amendment and later target-definition record rather than a new implementation lane by inference.
 
 ### Current proceed position
 
-Proceeding is justified for explicit post-admission/defaulting decision work using the achieved M5 barrier closure, the achieved M6A workbench record and pinned canonical report artifact in `05J`, the frozen approved target record in `05L`, the achieved M6B implementation record in `05M`, the merged-main closure/handoff in `05N`, the now-frozen `03AC` + `05O` planning packet, and the frozen `03AA` + `05H` packet as the already-completed admission boundary.
-Baseline-only bootstrap closure, the later-scope M5 barrier closure, the standalone M6A workbench lane, the exact Candidate A approved-target freeze, the merged-main M6B implementation, and the merged-main closure/handoff remain accepted; the remaining uncertainty is bounded, explicit, and concentrated on post-admission future scope rather than on the current admitted Candidate A lane itself.
+Proceeding is justified with the current retained-default closure state: the achieved M5 barrier closure, the achieved M6A workbench record and pinned canonical report artifact in `05J`, the frozen approved target record in `05L`, the achieved M6B implementation record in `05M`, the merged-main closure/handoff in `05N`, the frozen `03AC` + `05O` planning packet, the retained-default decision in `05P`, and the frozen `03AA` + `05H` packet as the already-completed admission boundary.
+Baseline-only bootstrap closure, the later-scope M5 barrier closure, the standalone M6A workbench lane, the exact Candidate A approved-target freeze, the merged-main M6B implementation, the merged-main closure/handoff, and the current-horizon retain-`baseline` decision remain accepted; the remaining uncertainty is bounded, explicit, and concentrated on any future attempt to reopen broader post-admission scope rather than on the current admitted Candidate A lane itself.
+
+
+====================
 
 # 06E Blocker Decision Table
 
@@ -833,6 +850,7 @@ Each row carries one of these explicit statuses:
 | Exact M6B Candidate A direct-admission implementation | TRUE CLOSURE | `05M`; `connectors_nrc_adams.py`; `nrc_aps_document_processing.py`; `review_nrc_aps_runtime.py`; `backend/tests/test_nrc_aps_run_config.py`; `backend/tests/test_review_nrc_aps_api.py`; `tests/test_nrc_aps_document_processing.py`; `06I` | The one approved Candidate A value is admitted through the integrated owner path on merged `main`, the required `05H` validation bundles passed, `06I` was rerun and passed, no conditional owner files required widening, and every other non-approved non-`baseline` value remains fail-closed and experiment-hidden |
 | Exact M6B merged-main closure and next-scope handoff | TRUE CLOSURE | `05N`; PR `#21` merge `df44e07b39198af36a9c6d854421a630c75e4049`; `README_INDEX.md`; `00F` | The achieved M6B lane is no longer only a branch-local implementation record. It is merged-main authority, and `05N` correctly handed the pack off into a separate explicit post-admission/defaulting planning freeze rather than more M6B implementation or implicit widening |
 | Exact post-admission/defaulting planning freeze boundary | TRUE CLOSURE | `03AC`; `05O`; `README_INDEX.md`; `00F`; `05N` | The later-scope planning phase after merged M6B closure is now bounded explicitly. The exact decision questions, owner surfaces to consider, dependency posture, prohibited widenings, and allowed next outcomes are frozen without authorizing default-promotion or additional-candidate code by inference |
+| Exact retain-`baseline` current-horizon post-admission decision | TRUE CLOSURE | `00D`; `03AC`; `05O`; `05P`; `README_INDEX.md`; `00F` | The current-horizon decision space from the frozen post-admission/defaulting packet is now resolved explicitly: `baseline` remains default, Candidate A remains admitted but non-default, Candidate B/C remain non-admitted, and no default-promotion target-definition or widening lane opens by implication |
 | Runtime-root coexistence mechanism | TRUE CLOSURE | `03Z`; `05G`; `backend/app/services/review_nrc_aps_runtime.py`; `backend/app/services/review_nrc_aps_runtime_roots.py`; `backend/tests/test_review_nrc_aps_api.py` | Baseline default discovery now rejects arbitrary differently named configured roots and filters discovered runtime bindings by canonical baseline-visible run metadata |
 | Review/catalog/report/API visibility | TRUE CLOSURE | `03Z`; `03Y`; `05G`; `review_nrc_aps_catalog.discover_candidate_runs()`; `review_nrc_aps.py` run-bound endpoints; `nrc_aps_evidence_report*.py` | Baseline-facing selector and direct run-bound review surfaces treat experiment-hidden runs as absent, and shared report/export/package persistence now fails closed for experiment-hidden runs |
 | Diagnostics persistence semantics | TRUE CLOSURE | `03Z`; `05G`; `backend/tests/test_diagnostics_ref_persistence.py`; `nrc_aps_content_index.py` diagnostics payload path | The M5 barrier implementation preserves diagnostics-ref persistence and read-only runtime DB semantics for baseline-visible runs while blocking experiment-hidden outward visibility |
@@ -845,14 +863,14 @@ Each row carries one of these explicit statuses:
 |---|---|---|---|
 | Bounded uncertainty / enforcement gap | BOUNDED RESIDUAL | `00L`; `06L`; `backend/app/schemas/review_nrc_aps.py` | The pack is strong but not equivalent to repo-native total closure. Acceptance/performance controls are specified by the pack (`06J`, `06K`, `06I`), but not visibly enforced via repo-native CI/hook mechanisms. At least one additional review-schema surface was found during re-audit. Carry explicitly instead of claiming zero remaining open items |
 | Tier 2 performance sample breadth | BOUNDED RESIDUAL | `06C`; `06E`; `06I`; `backend/tests/test_visual_artifact_pipeline.py` | The earlier T5/T6/T7/T8 harness defects are resolved and the full T1-T8 gate passes in this clean worktree. The remaining acceptance-side caveat is narrower: the recorded Tier 2 performance comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget |
-| Broader post-admission/defaulting scope | BOUNDED RESIDUAL | `00D`; `03AA`; `03AC`; `05L`; `05M`; `05N`; `05O`; `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json` | Merged `main` now admits the one approved Candidate A value, and the exact planning boundary for later defaulting work is frozen, but no decision has yet been made to retain `baseline` indefinitely, reopen the current `00D` baseline-default rule explicitly, promote Candidate A to default, admit Candidate B/C, reopen OCR-routing/media scope, or authorize any later code without another explicit record |
+| Broader future default-promotion / additional-candidate scope | BOUNDED RESIDUAL | `00D`; `03AA`; `03AC`; `05L`; `05M`; `05N`; `05O`; `05P`; `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json` | `05P` now resolves the current-horizon decision by retaining `baseline` as default, but any future attempt to amend the current `00D` baseline-default rule, promote Candidate A to default, admit Candidate B/C, reopen OCR-routing/media scope, or authorize later code still requires another explicit record rather than inference from the retained-default state |
 
 ---
 
 ## Interpretation
 
-The pack is now strong enough that the next useful improvement is not more M5 barrier work, not more generic M6A construction, not more Candidate A target-definition work, not more unbounded M6B implementation drift, and not another pass of “review/merge the current branch” for M6B.
-It is using the achieved M5 barrier closure, the achieved M6A workbench record and pinned report artifact in `05J`, the frozen approved target record in `05L`, the frozen `03AA` + `05H` direct-admission packet, the achieved `05M` implementation record, the merged-main closure/handoff in `05N`, and the frozen `03AC` + `05O` post-admission/defaulting planning packet as the current closure state.
+The pack is now strong enough that the next useful improvement is not more M5 barrier work, not more generic M6A construction, not more Candidate A target-definition work, not more unbounded M6B implementation drift, not another pass of "review/merge the current branch" for M6B, and not another pass of deciding whether to retain `baseline` as the default for the current horizon.
+It is using the achieved M5 barrier closure, the achieved M6A workbench record and pinned report artifact in `05J`, the frozen approved target record in `05L`, the frozen `03AA` + `05H` direct-admission packet, the achieved `05M` implementation record, the merged-main closure/handoff in `05N`, the frozen `03AC` + `05O` post-admission/defaulting planning packet, and the retained-default decision in `05P` as the current closure state.
 
 ### How to read this table
 

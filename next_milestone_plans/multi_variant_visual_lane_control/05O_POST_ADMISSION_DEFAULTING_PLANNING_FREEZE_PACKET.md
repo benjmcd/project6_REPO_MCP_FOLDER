@@ -19,6 +19,10 @@ Merged `main` already contains the admitted Candidate A state recorded by:
 So the current question is no longer whether Candidate A can be admitted.
 The current question is how later post-admission/defaulting scope should be decided without widening by inference.
 
+That current-horizon decision has since been frozen explicitly in:
+
+- `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
+
 ---
 
 ## Current state entering this planning packet
@@ -159,7 +163,7 @@ No later default-promotion target-definition should be opened unless the plannin
 
 ## Next-step rule
 
-After this packet is frozen, the next justified move is not generic implementation.
+At the time this packet was frozen, the next justified move was not generic implementation.
 
 It is either:
 

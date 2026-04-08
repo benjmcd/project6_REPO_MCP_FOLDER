@@ -80,4 +80,8 @@ That next planning step has since been frozen explicitly in:
 - `03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md`
 - `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
 
-This document remains the merged-main closure and handoff record for M6B, but it should no longer be read in isolation as if the post-admission/defaulting planning freeze is still only future work.
+That later planning phase has since been resolved for the current horizon by:
+
+- `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
+
+This document remains the merged-main closure and handoff record for M6B, but it should no longer be read in isolation as if the post-admission/defaulting planning freeze or the current-horizon retain-default decision are still only future work.

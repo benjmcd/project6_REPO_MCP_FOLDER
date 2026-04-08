@@ -4,7 +4,7 @@
 
 This is the planning and control pack for the MVVLC program, still bounded to the PDF visual-lane seam.
 
-Merged `main` now contains the baseline-only selector/bootstrap implementation, the recorded M4 acceptance closure for that baseline path, the bounded M5 coexistence / visibility barrier implementation, the frozen M6 direct-admission packet, the achieved M6A workbench record, the frozen M6B approved-target record, and the merged M6B Candidate A direct-admission implementation recorded by `05M`. The pack also records merged-main closure and next-scope handoff in `05N`, and now freezes the exact post-admission/defaulting planning boundary and decision packet in `03AC` and `05O`.
+Merged `main` now contains the baseline-only selector/bootstrap implementation, the recorded M4 acceptance closure for that baseline path, the bounded M5 coexistence / visibility barrier implementation, the frozen M6 direct-admission packet, the achieved M6A workbench record, the frozen M6B approved-target record, and the merged M6B Candidate A direct-admission implementation recorded by `05M`. The pack also records merged-main closure and next-scope handoff in `05N`, freezes the exact post-admission/defaulting planning boundary and decision packet in `03AC` and `05O`, and now freezes the current-horizon retain-`baseline`-default decision in `05P`.
 
 ### What is closed
 
@@ -20,6 +20,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M6B Candidate A target-definition: the exact approved target record is now frozen as a derivative of `05K` (`05L`)
 - M6B Candidate A direct admission: the one approved non-`baseline` value is now admitted on merged `main`, with the achieved implementation recorded by `05M` and the merged-main closure/handoff recorded by `05N`
 - Post-admission/defaulting planning boundary: exact later-scope decision boundary and planning packet are now frozen (`03AC`, `05O`)
+- Post-admission/defaulting current-horizon decision: `baseline` is now explicitly retained as the default in `05P`
 - Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
 - Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
@@ -35,20 +36,22 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M6B Candidate A exact target record is now frozen in `05L`
 - M6B Candidate A direct admission is now merged on `main`, with implementation captured in `05M` and merged-main closure/handoff captured in `05N`
 - The exact post-admission/defaulting planning boundary is now frozen in `03AC` + `05O`
-- No further MVVLC implementation lane should start by inference from merged M6B closure or from the achieved planning freeze alone
+- The current-horizon retain-`baseline`-default decision is now frozen in `05P`
+- No further MVVLC implementation lane should start by inference from merged M6B closure, from the achieved planning freeze alone, or from the retained-default decision itself
 
 ### Immediate next move
 
-- Use `03AC` + `05O` to decide explicitly whether to retain `baseline` as the default or to open a later explicit program-decision-amendment plus Candidate A default-promotion target-definition lane
+- No primary MVVLC implementation or promotion lane is justified for the current horizon
+- Keep the retained `baseline`-default state from `05P` in place unless a later explicit program-decision amendment is separately frozen
 - Keep Candidate B/C admission, OCR/media widening, policy retuning, and outward identity/schema changes out of scope unless separately frozen
-- Do not infer implementation from merged M6B closure or from the achieved planning freeze alone
+- Treat repo-native Python enforcement hardening as a valid parallel lane, not as a hidden dependency of MVVLC widening
 
 ### What is bounded residual
 
 - Repo-native Python acceptance-path enforcement (pack-specified, not CI-enforced)
 - Tier 2 performance capture breadth: the recorded artifact-aware comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture did not complete within practical session budget
 - Future drift outside audited authority surface
-- Broader post-admission/defaulting decision and any later implementation remain separate future scope; merged `main` admits only the one approved Candidate A value and does not promote it to default
+- Future program-decision amendment, default-promotion target-definition, and any additional-candidate implementation remain separate future scope; merged `main` admits only the one approved Candidate A value and `05P` explicitly keeps it non-default
 
 ---
 
@@ -78,6 +81,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
 - `03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md`
 - `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
+- `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
 
 ### For "can we proceed?"
 - `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
@@ -139,3 +143,4 @@ Do not treat the frozen M6 packet as permission to start code before one exact a
 Do not treat the frozen M6A workbench packet as permission to admit Candidate A directly into integrated runtime.
 Do not treat the achieved `05M` M6B implementation record or the merged-main closure/handoff in `05N` as permission to widen into broader post-admission/defaulting or additional-candidate scope without a separate freeze.
 Do not treat the achieved `03AC` + `05O` post-admission/defaulting planning freeze as permission to start default-promotion or additional-candidate code without another explicit record.
+Do not treat the retained-default decision in `05P` as permission to skip a later explicit program-decision amendment if someone wants a non-`baseline` default in the future.

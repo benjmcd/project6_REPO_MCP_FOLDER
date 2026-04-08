@@ -39,8 +39,9 @@ The pack now distinguishes:
 - **M6B direct admission**: achieved implementation of one approved selector value under `03AA` + `05H`, recorded by `05M`
 - **M6B merged-main closure/handoff**: merged-main closure and next-scope handoff recorded by `05N`
 - **Post-admission/defaulting planning freeze**: exact later-scope planning boundary and decision packet now frozen in `03AC` + `05O`
+- **Current-horizon post-admission/defaulting decision**: `baseline` explicitly retained as default in `05P`
 
-Do not use `05K` by itself as approval. Treat `05J` as the evidence base, `05K` as the governing template, `05L` as the exact approved-target record, `05M` as the achieved implementation record for the lane that merged, and `05N` as the merged-main closure/handoff. Treat `03AC` + `05O` as the planning-only boundary for broader post-admission/defaulting questions. Do not treat `05M`, `05N`, `03AC`, or `05O` as permission to widen directly into code.
+Do not use `05K` by itself as approval. Treat `05J` as the evidence base, `05K` as the governing template, `05L` as the exact approved-target record, `05M` as the achieved implementation record for the lane that merged, and `05N` as the merged-main closure/handoff. Treat `03AC` + `05O` as the planning-only boundary for broader post-admission/defaulting questions, and `05P` as the current-horizon decision that keeps `baseline` as default. Do not treat `05M`, `05N`, `03AC`, `05O`, or `05P` as permission to widen directly into code.
 
 ---
 

@@ -78,6 +78,7 @@ Key docs:
 - `05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md`
 - `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
 - `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
+- `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
 
 ### `06*` - validation, acceptance, runner/perf, residual risk
 Use these to understand:
@@ -205,7 +206,7 @@ Interpretation rule:
 
 ## 4. Minimal decision packet for a human reviewer
 
-If someone needs to decide whether merged-main M6B Candidate A closure is adequately reconciled and what separate post-admission/defaulting decision space is justified, the minimum set is:
+If someone needs to decide whether merged-main M6B Candidate A closure is adequately reconciled and what current-horizon post-admission/defaulting decision is justified, the minimum set is:
 
 1. `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
 2. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
@@ -226,8 +227,9 @@ If someone needs to decide whether merged-main M6B Candidate A closure is adequa
 17. `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
 18. `03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md`
 19. `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
-20. `06E_BLOCKER_DECISION_TABLE.md`
-21. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+20. `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
+21. `06E_BLOCKER_DECISION_TABLE.md`
+22. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
 That is the smallest review set that still preserves the critical reasoning.
 
