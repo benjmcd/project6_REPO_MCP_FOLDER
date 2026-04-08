@@ -121,6 +121,15 @@ def _normalize_output_path(target_path: Path, *, path_mode: str) -> str:
         raise ValueError(f"repo_relative_path_unavailable:{resolved}") from exc
 
 
+def _best_effort_failure_output_path(target_path: Path, *, path_mode: str) -> str:
+    if not target_path.exists():
+        return str(target_path)
+    try:
+        return _normalize_output_path(target_path, path_mode=path_mode)
+    except ValueError:
+        return str(target_path.resolve())
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run isolated PageEvidence workbench analysis for Candidate A.")
     parser.add_argument("--report", required=True, help="Path to the output JSON report.")
@@ -146,7 +155,6 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     report_path = Path(args.report).resolve()
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    generated_at_utc = _normalize_generated_at_utc(args.generated_at_utc)
 
     config = default_page_evidence_config(
         {
@@ -156,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     try:
+        generated_at_utc = _normalize_generated_at_utc(args.generated_at_utc)
         explicit_targets = _resolve_explicit_targets(list(args.input_pdf))
         targets = _resolve_fixture_targets(
             list(args.fixture_id),
@@ -163,6 +172,10 @@ def main(argv: list[str] | None = None) -> int:
         )
         targets.extend(explicit_targets)
     except ValueError as exc:
+        try:
+            generated_at_utc = _normalize_generated_at_utc(args.generated_at_utc)
+        except ValueError:
+            generated_at_utc = _utc_iso()
         payload = {
             "schema_id": WORKBENCH_REPORT_SCHEMA_ID,
             "generated_at_utc": generated_at_utc,
@@ -198,9 +211,7 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "source_kind": target["source_kind"],
                     "fixture_id": target["fixture_id"],
-                    "path": _normalize_output_path(target_path, path_mode=args.path_mode)
-                    if target_path.exists()
-                    else str(target_path),
+                    "path": _best_effort_failure_output_path(target_path, path_mode=args.path_mode),
                     "failure_reason": str(exc),
                 }
             )

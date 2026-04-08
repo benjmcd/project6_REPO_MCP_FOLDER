@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -98,3 +99,42 @@ def test_workbench_runner_supports_canonical_repo_relative_report_output(tmp_pat
     payload = json.loads(report_path.read_text(encoding="utf-8"))
     assert payload["generated_at_utc"] == "2026-04-07T00:00:00Z"
     assert payload["documents"][0]["path"] == "tests/fixtures/nrc_aps_docs/v1/scanned.pdf"
+
+
+def test_workbench_runner_fails_closed_on_invalid_generated_at_utc(tmp_path: Path) -> None:
+    report_path = tmp_path / "invalid_generated_at_report.json"
+    completed = _run_workbench(
+        "--report",
+        str(report_path),
+        "--fixture-id",
+        "scanned",
+        "--generated-at-utc",
+        "not-a-timestamp",
+    )
+
+    assert completed.returncode == 2
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    assert payload["passed"] is False
+    assert payload["failure_reason"] == "invalid_generated_at_utc:not-a-timestamp"
+    assert payload["schema_id"] == "aps.page_evidence_workbench_report.v1"
+    assert payload["generated_at_utc"]
+
+
+def test_workbench_runner_fails_closed_for_external_repo_relative_input_path(tmp_path: Path) -> None:
+    report_path = tmp_path / "external_repo_relative_report.json"
+    external_pdf = tmp_path / "outside_repo_scanned.pdf"
+    shutil.copyfile(FIXTURE_DIR / "scanned.pdf", external_pdf)
+    completed = _run_workbench(
+        "--report",
+        str(report_path),
+        "--input-pdf",
+        str(external_pdf),
+        "--path-mode",
+        "repo_relative",
+    )
+
+    assert completed.returncode == 1, completed.stderr
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    assert payload["passed"] is False
+    assert payload["documents"][0]["failure_reason"].startswith("repo_relative_path_unavailable:")
+    assert payload["documents"][0]["path"] == str(external_pdf.resolve())
