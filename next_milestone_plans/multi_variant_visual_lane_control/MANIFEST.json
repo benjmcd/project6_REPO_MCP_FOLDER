@@ -1,6 +1,6 @@
 {
-  "package_name": "multi_variant_visual_lane_control_pack_v45",
-  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, and a frozen immediate M6A PageEvidence workbench packet",
+  "package_name": "multi_variant_visual_lane_control_pack_v46",
+  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, and an achieved standalone M6A PageEvidence workbench lane",
   "improvements_over_v6": [
     "added selector activation scope/lifetime policy",
     "added experiment isolation mechanism policy",
@@ -10,8 +10,7 @@
   ],
   "remaining_open_items": [
     "no exact approved M6B target selector value is yet named in the pack",
-    "integrated admission of approved non-baseline runs remains later-scope beyond the current barrier lane and the new M6A workbench lane",
-    "the M6A PageEvidence workbench is planned but not yet implemented",
+    "integrated admission of approved non-baseline runs remains later-scope beyond the current barrier lane and the achieved M6A workbench lane",
     "Python acceptance path is pack-specified but not visibly repo-enforced in checked root workflow/hook/config surfaces",
     "Tier 2 performance sample breadth remains bounded by the declared-root handoff fallback sample",
     "bounded uncertainty remains in duplicated archive/worktree state and other non-audited/generated surfaces"
@@ -70,6 +69,7 @@
     "05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md",
     "05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md",
     "05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md",
+    "05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md",
     "06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md",
     "06D_CRITICAL_BLOCKER_VALIDATION_SET.md",
     "06E_BLOCKER_DECISION_TABLE.md",
@@ -279,5 +279,10 @@
     "aligned the traceability, implementation, and review playbooks with the new M6A versus M6B split",
     "removed the remaining workflow-layer ambiguity about whether direct M6 admission or the PageEvidence workbench is the immediate next lane",
     "kept the front-door and reasoning layers consistent for Candidate A workbench-first execution"
+  ],
+  "improvements_over_v45": [
+    "added the M6A PageEvidence workbench implementation record",
+    "updated the active front door, blocker table, and roadmap to treat M6A as achieved rather than merely frozen",
+    "shifted the immediate next justified MVVLC step from workbench construction to exact M6B target-definition and later direct admission"
   ]
 }
