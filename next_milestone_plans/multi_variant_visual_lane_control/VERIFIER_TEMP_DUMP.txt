@@ -16,7 +16,8 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M5 execution packet boundary: exact owner/test/widening boundary is now frozen (`05F`)
 - M5 coexistence / visibility mechanism: exact baseline-facing classification and runtime-root coexistence design is frozen and implemented on merged `main` (`03Z`, `05G`)
 - M5 barrier implementation record and handoff: exact owner files, validations, `06I` rerun, and no-drift judgment are recorded (`05G`)
-- M6A dedicated PageEvidence workbench: standalone Candidate A workbench surface is implemented and locally validated without widening integrated runtime behavior, and one pinned canonical Candidate A report artifact now exists for later target-definition (`03AB`, `05I`, `05J`)
+- M6A dedicated PageEvidence workbench: standalone Candidate A workbench surface is implemented and locally validated without widening integrated runtime behavior, and one pinned canonical Candidate A report artifact now exists for the approved-target evidence base and later direct admission (`03AB`, `05I`, `05J`, `05L`)
+- M6B Candidate A target-definition: the exact approved target record is now frozen as a derivative of `05K` (`05L`)
 - Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
 - Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
@@ -29,25 +30,22 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M5 later-scope coexistence / visibility barrier is implemented and locally validated on merged `main` under the frozen `03Z` + `05F` packet (`05G`, `06E`)
 - M6 direct-admission packet is frozen on merged `main` as `03AA` + `05H`
 - M6A PageEvidence workbench is now implemented and locally validated on the current clean branch as recorded by `05J`, including a pinned canonical report artifact for later M6B evidence refs
-- The next justified MVVLC milestone step is exact M6B Candidate A target-definition and later direct admission under `03AA` + `05H`, not more M6A construction
+- M6B Candidate A exact target record is now frozen in `05L`
+- The next justified MVVLC milestone step is later direct admission of that one approved value under `03AA` + `05H`, not more M6A construction and not more target-definition work
 
 ### Next lane to execute
 
-- Record one exact approved Candidate A target for M6B:
-  - exact non-`baseline` selector value
-  - approval basis
-  - comparison/evidence refs
-- use the pinned Candidate A workbench report artifact recorded in `05J` as one of the concrete evidence refs
-- Use `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md` as the exact record shape for that target-definition step
-- Keep `03AA` + `05H` fail-closed until that target record exists
-- Only after that record exists, start the later direct-admission lane
+- Start the later M6B direct-admission lane under `03AA` + `05H`
+- Use `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md` as the exact approved-target contract
+- Keep every non-approved non-`baseline` value fail-closed and experiment-hidden
+- Do not reopen OCR-routing, policy tuning, or outward identity/schema scope in the first Candidate A admission lane
 
 ### What is bounded residual
 
 - Repo-native Python acceptance-path enforcement (pack-specified, not CI-enforced)
 - Tier 2 performance capture breadth: the recorded artifact-aware comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture did not complete within practical session budget
 - Future drift outside audited authority surface
-- Exact approved M6B target is not yet named in the pack; direct admission remains fail-closed until that record exists
+- Direct M6B admission of the approved Candidate A target is not yet implemented; `baseline` remains the only integrated admitted runtime mode until that later lane is executed
 
 ---
 
@@ -72,6 +70,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
 - `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 - `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
+- `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
 
 ### For "can we proceed?"
 - `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
@@ -208,6 +207,7 @@ Key docs:
 - `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
 - `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 - `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
+- `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
 
 ### `06*` - validation, acceptance, runner/perf, residual risk
 Use these to understand:
@@ -335,7 +335,7 @@ Interpretation rule:
 
 ## 4. Minimal decision packet for a human reviewer
 
-If someone needs to decide whether we are ready to move from achieved M6A workbench execution into later M6B target-definition and direct-admission planning, the minimum set is:
+If someone needs to decide whether we are ready to move from achieved M6A workbench execution into later M6B direct-admission planning, the minimum set is:
 
 1. `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
 2. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
@@ -351,8 +351,9 @@ If someone needs to decide whether we are ready to move from achieved M6A workbe
 12. `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
 13. `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 14. `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
-15. `06E_BLOCKER_DECISION_TABLE.md`
-16. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+15. `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
+16. `06E_BLOCKER_DECISION_TABLE.md`
+17. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
 That is the smallest review set that still preserves the critical reasoning.
 
@@ -375,7 +376,7 @@ Do not treat these as active control authority. See `00U` Section 5 for the full
 
 ## 6. Minimal implementation packet for actual work
 
-If the next MVVLC lane starts after achieved M6A workbench execution, the implementation-critical subset is:
+If the next MVVLC lane starts after achieved M6A workbench execution and approved-target freeze, the implementation-critical subset is:
 
 1. `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md`
 2. `03Q_REVIEW_CATALOG_REPORT_VISIBILITY_BLOCKER_POLICY.md`
@@ -392,12 +393,13 @@ If the next MVVLC lane starts after achieved M6A workbench execution, the implem
 13. `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
 14. `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 15. `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
-16. `03G_IMPLEMENTATION_SEAM_FREEZE_CHECKLIST.md`
-17. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
-18. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
-19. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+16. `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
+17. `03G_IMPLEMENTATION_SEAM_FREEZE_CHECKLIST.md`
+18. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
+19. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
+20. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
-This is the minimal packet for the next later-scope lane after achieved M6A workbench execution.
+This is the minimal packet for the next later-scope lane after achieved M6A workbench execution and approved-target freeze.
 
 ---
 
@@ -429,6 +431,7 @@ This is the minimal packet for the next later-scope lane after achieved M6A work
 - `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
 - `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
 - `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
+- `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
 - `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
 
 ### How would experiment runs leak into review/report surfaces?
@@ -472,6 +475,7 @@ For future use, review in this order:
 - `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
 - `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
 - `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
+- `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
 - `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 - `06E_BLOCKER_DECISION_TABLE.md`
 - `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
@@ -707,6 +711,7 @@ Items that have been planning-closed or narrowed to explicit remaining scope.
 9. **Exact M6 planning/freeze packet boundary:** CLOSED as planning input. `03AA` now freezes the direct admission/promotion mechanism, and `05H` now freezes the owner boundary, validation boundary, widening rules, and fail-closed stop conditions for the later direct-admission lane.
 10. **Exact M6A workbench planning/freeze packet boundary:** CLOSED as planning input. `03AB` freezes the dedicated PageEvidence / Option 2 workbench boundary, and `05I` freezes the owner boundary, validation packet, location strategy, widening rules, and fail-closed stop conditions for the immediate workbench lane.
 11. **Exact M6A workbench implementation:** CLOSED in the current clean worktree. The dedicated PageEvidence service, standalone runner, bounded validation bundle, no-drift findings, and pinned canonical Candidate A workbench report artifact are now recorded in `05J` without widening into the integrated owner path.
+12. **Exact approved M6B target naming:** CLOSED in the current clean worktree. `05L` now records one exact approved non-`baseline` selector value, its provenance, its comparison/evidence refs, its required invariants, and its explicit approval record without starting direct-admission code.
 
 ---
 
@@ -717,8 +722,7 @@ Items that remain genuinely open or bounded.
 1. **Tier 2 performance sample breadth:** The local performance gate was executed and passed, but the recorded artifact-aware Tier 2 comparison still uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget.
 2. **Broader residual consumer/visibility effects:** Residual effects beyond the already-verified live app-surface chain remain bounded but not zero. Mostly duplicated worktree/archive state and non-audited/generated surfaces.
 3. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.
-4. **Exact approved M6B target naming:** Still open. The pack now provides `05K` as the exact record template, and the pinned Candidate A workbench report artifact now exists, but it does not yet name one approved non-baseline selector value or fill the required approval/evidence fields.
-5. **Integrated admission of approved non-baseline runs:** Still later-scope. The achieved M5 barrier lane does not itself admit new non-baseline run creation through the connector/processing owner path by default, and the achieved M6A workbench lane does not change that.
+4. **Integrated admission of approved non-baseline runs:** Still later-scope. The achieved M5 barrier lane does not itself admit new non-baseline run creation through the connector/processing owner path by default, the achieved M6A workbench lane does not change that, and `05L` only authorizes the later direct-admission lane rather than implementing it.
 
 ---
 
@@ -726,13 +730,13 @@ Items that remain genuinely open or bounded.
 
 ### Recommended stop condition
 
-At the current evidence level, the next justified scope is filling `05K` for exact M6B Candidate A target-definition under the already-frozen `03AA` + `05H` packet family, not more M6A construction.
+At the current evidence level, the next justified scope is the later M6B direct-admission implementation lane under the already-frozen `03AA` + `05H` packet family using the approved target record in `05L`, not more M6A construction and not more target-definition work.
 Repo-native Python enforcement remains a valid parallel hardening lane, but it is not the primary next MVVLC milestone step.
 
 ### Current proceed position
 
-Proceeding is justified for later M6B target-definition and direct-admission preparation using the achieved M5 barrier closure, the achieved M6A workbench record and pinned canonical report artifact in `05J`, the exact target-record template in `05K`, and the frozen `03AA` + `05H` packet as the direct-admission control boundary.
-Baseline-only bootstrap closure, the later-scope M5 barrier closure, and the standalone M6A workbench lane remain accepted; the remaining uncertainty is bounded, explicit, and concentrated on one exact approved target record. Direct M6 admission still remains separately blocked until that record exists.
+Proceeding is justified for later M6B direct-admission implementation using the achieved M5 barrier closure, the achieved M6A workbench record and pinned canonical report artifact in `05J`, the frozen approved target record in `05L`, and the frozen `03AA` + `05H` packet as the direct-admission control boundary.
+Baseline-only bootstrap closure, the later-scope M5 barrier closure, the standalone M6A workbench lane, and the exact Candidate A approved-target freeze remain accepted; the remaining uncertainty is bounded, explicit, and concentrated on the later direct-admission implementation itself.
 
 
 # 03Y Review/Report/Export Field Sensitivity Map
@@ -1489,12 +1493,11 @@ This document does **not** authorize:
 
 ## Result
 
-The exact M6 admission / promotion mechanism is now frozen enough to proceed,
-but it is intentionally fail-closed on one point:
+The exact M6 admission / promotion mechanism is now frozen enough to proceed.
 
-the exact admitted non-baseline target must still be named explicitly before direct integrated-admission code begins.
+For the current Candidate A lane, the exact admitted non-`baseline` target has now been named explicitly in `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`.
 
-That is now an explicit stop condition, not a hidden assumption.
+Direct integrated-admission code still remains separately bounded to the later `05H` execution lane, and this mechanism remains fail-closed for any future value that is not explicitly named and approved the same way.
 
 
 # 03AB Exact M6A PageEvidence Workbench and Option 2 Boundary
@@ -2310,7 +2313,8 @@ This packet is built on:
 This packet does **not** itself approve a non-baseline selector value.
 It freezes the owner boundary, validation boundary, widening rules, and stop conditions for the M6 lane.
 
-If the lane cannot name exactly one approved target under `03AA`, it must stop before code edits.
+For the current Candidate A lane, `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md` supplies the exact approved target required by `03AA`.
+If a later lane cannot name exactly one approved target under `03AA`, it must stop before code edits.
 
 ---
 
@@ -2324,7 +2328,7 @@ If the lane cannot name exactly one approved target under `03AA`, it must stop b
 What remains before direct M6 admission can be called approve-as-is is not more M5 barrier work.
 It is a bounded direct-admission lane that:
 
-1. records the exact approved target,
+1. uses the exact approved target already frozen in `05L`,
 2. implements only the narrow owner changes required to admit that one value,
 3. preserves the M5 barrier for every other non-approved value,
 4. and proves no-drift on the already-achieved review/report/export/runtime surfaces.
@@ -2376,6 +2380,7 @@ The M6 lane must stop before editing if any of the following is true:
 If a stop condition is encountered, report it explicitly instead of widening by inference.
 
 `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md` is the default exact record shape for satisfying stop conditions 1 through 3.
+For the current Candidate A lane, `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md` is the frozen derivative record satisfying those stop conditions.
 
 ---
 
@@ -2572,7 +2577,7 @@ The next justified move is:
 
 1. if the chosen architecture is a dedicated pre-admission workbench, freeze and execute that workbench lane first under `03AB` + `05I`
 2. otherwise keep working on a fresh merged-main direct-admission lane
-3. record the exact approved target and evidence refs before direct-admission code edits
+3. carry forward the frozen exact approved target and evidence refs from `05L` before direct-admission code edits
 4. re-audit the canonical authority files above
 5. implement only within the packet frozen here
 6. run the required validation bundles
@@ -2873,7 +2878,7 @@ No inspect-only compatibility files required widening.
 1. A dedicated internal PageEvidence service exists.
 2. Candidate A can be executed through an isolated standalone runner.
 3. The workbench emits explicit JSON evidence reports to caller-owned output paths.
-4. One durable canonical Candidate A workbench report artifact is now pinned under `tests/reports/` for later M6B target-definition use.
+4. One durable canonical Candidate A workbench report artifact is now pinned under `tests/reports/` for the frozen `05L` approved-target record and any later retargeting that reuses this template/evidence path.
 5. Candidate A remains pre-admission:
    - no non-`baseline` selector value is admitted
    - integrated runtime behavior remains unchanged by default
@@ -2973,7 +2978,7 @@ Result:
 - pinned artifact ref: `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json`
 - exact fixture IDs are explicit rather than default-inferred
 - report paths are repo-relative, not machine-local absolute paths
-- generated timestamp is pinned so the artifact can be cited durably in `05K`
+- generated timestamp is pinned so the artifact can be cited durably in `05L` and in any later derivative record built from `05K`
 
 ---
 
@@ -3022,12 +3027,11 @@ The next justified MVVLC step is no longer M6A implementation.
 
 The next justified step is:
 
-1. define the exact M6B Candidate A target record
-2. name one exact non-`baseline` selector value
-3. attach the approval basis and comparison/evidence refs for that value
-4. then execute the later direct-admission lane under `03AA` + `05H`
+1. use the frozen Candidate A target record in `05L`
+2. start the later direct-admission lane under `03AA` + `05H`
+3. keep every other non-`baseline` value fail-closed until separately approved later
 
-Until that target record exists, direct admission remains fail-closed.
+Direct admission remains fail-closed for every non-approved value.
 
 
 # 05K M6B Candidate A Target Record Template
@@ -3050,7 +3054,10 @@ This template is governed by:
 
 ## Status note
 
-The pack is intentionally fail-closed until one exact non-`baseline` selector value is recorded here with explicit approval and evidence refs.
+This template remains part of the fail-closed admission mechanism until one exact non-`baseline` selector value is recorded in a frozen derivative record with explicit approval and evidence refs.
+
+For the current Candidate A lane, that closure is already satisfied by `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`.
+This template remains the governing shape for that derivative record and for any future retargeting or later candidate.
 
 If any required field below cannot be filled with concrete repo-backed evidence, do not start M6B code.
 
@@ -3274,6 +3281,141 @@ approved_admission_target:
 The real record must fill the entire template, not only the selector field.
 
 
+# 05L M6B Candidate A Approved Target Record
+
+## Purpose
+
+Freeze the exact approved Candidate A target record required by `03AA` and `05H` before any direct M6B admission code begins.
+
+This document is the frozen derivative record contemplated by `05K`.
+It closes the exact target-definition gap.
+It does **not** itself change integrated runtime behavior.
+
+Governed by:
+
+- `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
+- `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
+- `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
+- `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
+
+---
+
+## Status note
+
+Candidate A is now explicitly named and approved for the later M6B direct-admission lane under the narrow scope recorded below.
+
+All other non-`baseline` values remain fail-closed unless separately approved later.
+
+---
+
+## Exact approved target record
+
+```yaml
+approved_admission_target:
+  selector_value: "candidate_a_page_evidence_v1"
+  candidate_id: "candidate_a"
+  candidate_label: "Candidate A"
+  admission_scope: "direct_m6b_admission"
+  target_status: "approved_for_direct_admission"
+
+provenance:
+  source_workbench_branch: "codex/mvvlc-candidate-a-evidence-next"
+  source_workbench_commit: "2188baf9"
+  source_workbench_record_ref: "next_milestone_plans/multi_variant_visual_lane_control/05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md"
+  source_workbench_report_ref: "tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json"
+  source_runner_ref: "tools/run_nrc_aps_page_evidence_workbench.py"
+  source_service_ref: "backend/app/services/nrc_aps_page_evidence.py"
+
+approved_behavior_delta:
+  summary: "Candidate A may change only seam-local PDF visual significance and preservation decisions by using deterministic PageEvidence geometry/text signals inside the already-frozen visual-preservation seam for the one admitted selector value."
+  exact_changes:
+    - "Candidate A may preserve and execute the exact selector value `candidate_a_page_evidence_v1` through the integrated owner path instead of fail-closing it to `baseline`."
+    - "Candidate A may use PageEvidence-derived deterministic per-page signals to decide seam-local visual-preservation eligibility and visual-ref emission behavior inside the frozen PDF visual lane."
+  exact_non_goals:
+    - "No document-class replacement, no whole-document classification redesign, and no change to baseline-facing document_class semantics."
+    - "No OCR-routing change, no OCR or hybrid OCR reopening, no media-scope expansion, and no new outward review/API/report/export identity fields."
+  exact_boundaries_of_change:
+    - "Integrated PDF visual-lane seam only, first consumed inside the already-frozen `_process_pdf(...)` owner path."
+    - "The one admitted selector value only; every other non-`baseline` value remains fail-closed and experiment-hidden unless separately approved later."
+
+required_invariants:
+  baseline_remains_default: true
+  unapproved_values_fail_closed: true
+  no_new_outward_variant_identity_fields: true
+  no_ocr_hybrid_media_scope_reopen: true
+  no_report_export_schema_widening: true
+  no_runtime_root_allowlist_redesign: true
+
+evidence_refs:
+  canonical_workbench_report_refs:
+    - "tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json"
+  workbench_validation_refs:
+    - "next_milestone_plans/multi_variant_visual_lane_control/05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md"
+    - "backend/tests/test_nrc_aps_page_evidence.py"
+    - "tests/test_nrc_aps_page_evidence_workbench.py"
+  comparison_refs:
+    - "tests/fixtures/nrc_aps_docs/v1/manifest.json"
+    - "tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json"
+  promotion_gate_refs:
+    - "tests/test_nrc_aps_promotion_gate.py"
+    - "tests/reports/nrc_aps_promotion_validation_report.json"
+  promotion_tuning_refs:
+    - "not_applicable_no_policy_tuning_used_for_candidate_a_first_admission"
+  supporting_repo_docs:
+    - "00D_MULTI_VARIANT_PROGRAM_DECISION.md"
+    - "03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md"
+    - "03Y_REVIEW_REPORT_EXPORT_FIELD_SENSITIVITY_MAP.md"
+    - "03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md"
+    - "05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md"
+    - "05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md"
+    - "05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md"
+
+visibility_and_exposure_expectations:
+  integrated_runtime_visibility: "The integrated owner path may recognize and preserve `candidate_a_page_evidence_v1` as the one admitted non-`baseline` value through the PDF visual-lane seam."
+  baseline_facing_visibility: "Baseline remains the default for missing, invalid, unsupported, or unapproved values, and no new outward public-facing variant label or identity field is introduced."
+  review_runtime_report_export_expectations:
+    - "Review/catalog/API/report/export/package surfaces remain free of new outward variant-identity fields."
+    - "M5 barrier behavior remains intact for every non-approved value, and baseline-facing visibility rules remain unchanged for absent, invalid, or unapproved selector values."
+    - "Diagnostics-ref persistence, runtime DB binding, and baseline review-root resolution remain governed by the already-frozen M5/M6 no-drift rules."
+
+approval_record:
+  approval_statement: "The selector value `candidate_a_page_evidence_v1` is approved as the only non-`baseline` `visual_lane_mode` value for the later M6B Candidate A direct-admission lane. This approval is limited to seam-local PDF visual significance and preservation behavior derived from the M6A PageEvidence workbench evidence. All other non-`baseline` selector values remain fail-closed to `baseline` and remain experiment-hidden unless separately approved later."
+  approval_basis_summary: "Candidate A is approved first because the achieved M6A workbench provides deterministic PageEvidence signals across the representative fixture set and a pinned canonical report artifact, while the fixture-manifest comparison also shows Candidate A should be admitted narrowly as a seam-local visual-preservation mechanism rather than as a document-class replacement. For that reason the first admission excludes OCR-routing changes, policy tuning, outward identity expansion, and broader classification redesign."
+  approved_by: "repository owner (explicit user approval in Codex session)"
+  approval_date_utc: "2026-04-08T06:44:36Z"
+
+admission_acceptance_bar:
+  required_validation_bundles:
+    - "05H required owner-path bundle"
+    - "05H required governance bundle"
+    - "05H required M5 no-drift backend bundle"
+    - "05H required root-side report/export/context bundle"
+    - "06I local performance baseline/regression check"
+  must_be_true_after_m6b:
+    - "The exact selector value `candidate_a_page_evidence_v1` survives normalization, forwarding, and seam consumption as the one admitted non-`baseline` value."
+    - "Baseline remains the default for absent, invalid, unsupported, or unapproved values, and all other non-`baseline` values remain fail-closed and experiment-hidden."
+    - "Candidate A changes only seam-local PDF visual significance and preservation behavior; it does not reopen OCR-routing, media-scope behavior, or outward identity/schema surfaces."
+    - "Review/runtime/report/export/package behavior, diagnostics-ref persistence, runtime DB binding, and baseline review-root resolution remain correct."
+    - "The achieved M5 coexistence and visibility barrier remains intact for all non-approved values."
+
+stop_if_any_field_unfilled: true
+```
+
+---
+
+## Interpretation
+
+This record intentionally approves less than the raw PageEvidence workbench could imply.
+
+The pinned workbench report shows that Candidate A produces useful deterministic visual-page signals across the representative fixture set, but it also shows that those signals do not map cleanly onto the repo's broader document-class semantics for every fixture. That is why this approval is limited to seam-local PDF visual-preservation behavior rather than promoted as a general document-class or OCR-routing replacement.
+
+---
+
+## Next step
+
+The next justified MVVLC step is the later M6B direct-admission implementation lane under `03AA` + `05H`, using this record as the exact approved target contract.
+
+
 # 06E Blocker Decision Table
 
 ## Purpose
@@ -3308,7 +3450,8 @@ Each row carries one of these explicit statuses:
 | Exact M5 coexistence / visibility mechanism | TRUE CLOSURE | `03Z`; `05G`; `review_nrc_aps_runtime_roots.py`; `review_nrc_aps_runtime.py`; `nrc_aps_evidence_report*.py` | The exact canonical visibility signal, backward-compatibility fallback, path-level coexistence rule, and baseline-facing persistence rule are now frozen and implemented on merged `main` |
 | Exact M6 admission/promotion packet boundary | TRUE CLOSURE | `03AA`; `05H`; `connectors_nrc_adams.py`; `nrc_aps_artifact_ingestion.py`; `nrc_aps_document_processing.py`; `review_nrc_aps_runtime.py`; `nrc_aps_promotion_gate.py`; `nrc_aps_promotion_tuning.py` | The exact M6 mechanism, owner boundary, validation packet, widening rules, and fail-closed stop conditions are now frozen. The packet remains intentionally blocked on one explicit approved target, rather than silently inferring it |
 | Exact M6A PageEvidence workbench packet boundary | TRUE CLOSURE | `03AB`; `05I`; `nrc_aps_document_processing.py`; `nrc_aps_promotion_gate.py`; `nrc_aps_promotion_tuning.py`; `tools/run_nrc_aps_document_processing_proof.py`; repo-native `tools/nrc_aps_promotion_*.py` pattern | The exact dedicated PageEvidence / Option 2 workbench boundary, location strategy, owner boundary, validation packet, widening rules, and fail-closed stop conditions are frozen and were sufficient for the bounded workbench lane with no default-owner widening |
-| Exact M6A PageEvidence workbench implementation | TRUE CLOSURE | `05J`; `backend/app/services/nrc_aps_page_evidence.py`; `tools/run_nrc_aps_page_evidence_workbench.py`; `backend/tests/test_nrc_aps_page_evidence.py`; `tests/test_nrc_aps_page_evidence_workbench.py`; `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json` | A dedicated standalone Candidate A workbench now exists, passes the required M6A workbench bundle, exposes a pinned canonical workbench report artifact for later target-definition, preserves the baseline owner path unchanged by default, and leaves direct admission fail-closed |
+| Exact M6A PageEvidence workbench implementation | TRUE CLOSURE | `05J`; `backend/app/services/nrc_aps_page_evidence.py`; `tools/run_nrc_aps_page_evidence_workbench.py`; `backend/tests/test_nrc_aps_page_evidence.py`; `tests/test_nrc_aps_page_evidence_workbench.py`; `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json` | A dedicated standalone Candidate A workbench now exists, passes the required M6A workbench bundle, exposes a pinned canonical workbench report artifact for the approved-target evidence base and later direct admission, preserves the baseline owner path unchanged by default, and leaves direct admission fail-closed |
+| Exact approved M6B target naming | TRUE CLOSURE | `05K`; `05L`; `05J`; `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json`; `tests/fixtures/nrc_aps_docs/v1/manifest.json` | One exact approved non-`baseline` selector value is now frozen for Candidate A with explicit provenance, exact behavior delta, invariants, comparison/evidence refs, and approval language. The remaining work is later direct-admission implementation, not target-definition |
 | Runtime-root coexistence mechanism | TRUE CLOSURE | `03Z`; `05G`; `backend/app/services/review_nrc_aps_runtime.py`; `backend/app/services/review_nrc_aps_runtime_roots.py`; `backend/tests/test_review_nrc_aps_api.py` | Baseline default discovery now rejects arbitrary differently named configured roots and filters discovered runtime bindings by canonical baseline-visible run metadata |
 | Review/catalog/report/API visibility | TRUE CLOSURE | `03Z`; `03Y`; `05G`; `review_nrc_aps_catalog.discover_candidate_runs()`; `review_nrc_aps.py` run-bound endpoints; `nrc_aps_evidence_report*.py` | Baseline-facing selector and direct run-bound review surfaces treat experiment-hidden runs as absent, and shared report/export/package persistence now fails closed for experiment-hidden runs |
 | Diagnostics persistence semantics | TRUE CLOSURE | `03Z`; `05G`; `backend/tests/test_diagnostics_ref_persistence.py`; `nrc_aps_content_index.py` diagnostics payload path | The M5 barrier implementation preserves diagnostics-ref persistence and read-only runtime DB semantics for baseline-visible runs while blocking experiment-hidden outward visibility |
@@ -3321,14 +3464,14 @@ Each row carries one of these explicit statuses:
 |---|---|---|---|
 | Bounded uncertainty / enforcement gap | BOUNDED RESIDUAL | `00L`; `06L`; `backend/app/schemas/review_nrc_aps.py` | The pack is strong but not equivalent to repo-native total closure. Acceptance/performance controls are specified by the pack (`06J`, `06K`, `06I`), but not visibly enforced via repo-native CI/hook mechanisms. At least one additional review-schema surface was found during re-audit. Carry explicitly instead of claiming zero remaining open items |
 | Tier 2 performance sample breadth | BOUNDED RESIDUAL | `06C`; `06E`; `06I`; `backend/tests/test_visual_artifact_pipeline.py` | The earlier T5/T6/T7/T8 harness defects are resolved and the full T1-T8 gate passes in this clean worktree. The remaining acceptance-side caveat is narrower: the recorded Tier 2 performance comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget |
-| Exact approved M6B target naming | BOUNDED RESIDUAL | `00D`; `03AA`; `05H`; `05J`; `05K`; `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json` | The direct-admission packet is frozen, the M6A workbench is implemented, the pinned Candidate A workbench report artifact now exists, and the exact record template now exists, but no one selector value has yet been explicitly approved and recorded with evidence refs. The immediate next lane is filling `05K` and later direct admission, not more workbench construction |
+| Integrated admission of approved Candidate A | BOUNDED RESIDUAL | `00D`; `03AA`; `05H`; `05L`; `05J`; `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json` | The direct-admission packet is frozen, Candidate A is now named explicitly in `05L`, and the workbench evidence is pinned, but the owner-path implementation that admits that one approved value through integrated runtime has not yet been executed. The immediate next lane is later direct admission under `03AA` + `05H` |
 
 ---
 
 ## Interpretation
 
-The pack is now strong enough that the next useful improvement is not more M5 barrier work and not more generic M6A construction.
-It is using the achieved M5 barrier closure, the achieved M6A workbench record and pinned report artifact in `05J`, the exact target-record template in `05K`, and the frozen `03AA` + `05H` direct-admission packet as the next later-scope input.
+The pack is now strong enough that the next useful improvement is not more M5 barrier work, not more generic M6A construction, and not more Candidate A target-definition work.
+It is using the achieved M5 barrier closure, the achieved M6A workbench record and pinned report artifact in `05J`, the frozen approved target record in `05L`, and the frozen `03AA` + `05H` direct-admission packet as the next later-scope input.
 
 ### How to read this table
 

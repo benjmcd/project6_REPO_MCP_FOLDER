@@ -58,12 +58,13 @@ If it conflicts with `00F`, `05E`, `05F`, `06E`, `03Y`, `03Z`, or `README_INDEX`
 - Candidate A remains pre-admission.
 - The workbench now produces isolated evidence and tuning outputs without widening integrated runtime behavior.
 
-### M6B - Admission / promotion (planning packet frozen; next, after target naming)
+### M6B - Admission / promotion (target frozen; direct admission next)
 - `03AA` freezes the exact controlled-admission / promotion mechanism.
 - `05H` freezes the exact owner boundary, widening rules, validation packet, and fail-closed stop conditions.
 - `05K` now provides the exact record shape that must be filled before direct-admission code begins.
-- No specific non-baseline selector value is approved by default.
-- Exactly one approved non-baseline value must be named explicitly before direct integrated-admission code begins.
+- `05L` now freezes the exact approved Candidate A target record derived from `05K`.
+- The approved first non-`baseline` selector value is `candidate_a_page_evidence_v1`.
+- Direct integrated-admission implementation is now the next later-scope step under `03AA` + `05H`.
 - No simultaneous baseline + A + B + C integrated rollout.
 
 ## Current roadmap position
@@ -72,17 +73,18 @@ If it conflicts with `00F`, `05E`, `05F`, `06E`, `03Y`, `03Z`, or `README_INDEX`
 - M4 is complete for that same baseline-only path.
 - M5 coexistence / visibility barrier is implemented and recorded on merged `main`.
 - M6A standalone PageEvidence workbench implementation is complete in the current clean lane.
-- The immediate next work is filling `05K` for exact M6B Candidate A target-definition and then later direct admission under the already-frozen packet.
-- Direct M6B admission remains separately fail-closed until one exact approved target is explicitly named.
+- M6B exact Candidate A target-definition is now complete in `05L`.
+- The immediate next work is the later direct-admission implementation lane under the already-frozen `03AA` + `05H` packet.
+- Direct M6B admission remains fail-closed for every value except the one explicitly approved target once that implementation lane starts.
 
 ## Key threshold
 
 The earliest justified point for later-scope experiment construction has now been reached because M3 is implemented, M4 has passed, the M5 barrier lane is closed on merged `main`, and the standalone M6A workbench now exists.
 
-The remaining prerequisite before starting direct later-scope admission work is:
-- name one exact approved non-baseline selector value explicitly
-- then record explicit approval and baseline-comparison evidence for that one value
-- then implement within the frozen `03AA` + `05H` packet or record any justified widening explicitly
+The remaining prerequisite before completing direct later-scope admission work is:
+- implement only the one approved selector value within the frozen `03AA` + `05H` packet
+- prove the required no-drift validation bundles and `06I`
+- record any justified widening explicitly instead of inferring it
 
 Bounded residuals that do not block M6 planning remain:
 - repo-native Python acceptance-path enforcement
