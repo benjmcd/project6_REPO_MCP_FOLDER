@@ -61,6 +61,7 @@ If it conflicts with `00F`, `05E`, `05F`, `06E`, `03Y`, `03Z`, or `README_INDEX`
 ### M6B - Admission / promotion (planning packet frozen; next, after target naming)
 - `03AA` freezes the exact controlled-admission / promotion mechanism.
 - `05H` freezes the exact owner boundary, widening rules, validation packet, and fail-closed stop conditions.
+- `05K` now provides the exact record shape that must be filled before direct-admission code begins.
 - No specific non-baseline selector value is approved by default.
 - Exactly one approved non-baseline value must be named explicitly before direct integrated-admission code begins.
 - No simultaneous baseline + A + B + C integrated rollout.
@@ -71,7 +72,7 @@ If it conflicts with `00F`, `05E`, `05F`, `06E`, `03Y`, `03Z`, or `README_INDEX`
 - M4 is complete for that same baseline-only path.
 - M5 coexistence / visibility barrier is implemented and recorded on merged `main`.
 - M6A standalone PageEvidence workbench implementation is complete in the current clean lane.
-- The immediate next work is exact M6B Candidate A target-definition and later direct admission under the already-frozen packet.
+- The immediate next work is filling `05K` for exact M6B Candidate A target-definition and then later direct admission under the already-frozen packet.
 - Direct M6B admission remains separately fail-closed until one exact approved target is explicitly named.
 
 ## Key threshold
