@@ -38,8 +38,9 @@ The pack now distinguishes:
 - **M6B target-definition**: frozen derivative record `05L` built from template `05K`
 - **M6B direct admission**: achieved implementation of one approved selector value under `03AA` + `05H`, recorded by `05M`
 - **M6B merged-main closure/handoff**: merged-main closure and next-scope handoff recorded by `05N`
+- **Post-admission/defaulting planning freeze**: exact later-scope planning boundary and decision packet now frozen in `03AC` + `05O`
 
-Do not use `05K` by itself as approval. Treat `05J` as the evidence base, `05K` as the governing template, `05L` as the exact approved-target record, `05M` as the achieved implementation record for the lane that merged, and `05N` as the merged-main closure/handoff. Do not treat `05M` or `05N` as permission to widen into broader post-admission/defaulting scope.
+Do not use `05K` by itself as approval. Treat `05J` as the evidence base, `05K` as the governing template, `05L` as the exact approved-target record, `05M` as the achieved implementation record for the lane that merged, and `05N` as the merged-main closure/handoff. Treat `03AC` + `05O` as the planning-only boundary for broader post-admission/defaulting questions. Do not treat `05M`, `05N`, `03AC`, or `05O` as permission to widen directly into code.
 
 ---
 
@@ -265,7 +266,7 @@ For a full controlled implementation cycle, use:
 - `00F`
 - `00T`
 
-For the current next lane, `05J` is the achieved evidence base, `05K` is the governing template, `05L` is the frozen approved-target record, and `05H` is the immediate direct-admission execution packet.
+For the current merged-main state, `05J` is the achieved evidence base, `05K` is the governing template, `05L` is the frozen approved-target record, `05M` is the achieved admission implementation record, `05N` is the merged-main closure/handoff, and `03AC` + `05O` are the bounded planning-only packet for any later post-admission/defaulting decision work.
 
 This is the most reliable working set for actual execution.
 

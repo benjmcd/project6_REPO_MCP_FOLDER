@@ -54,6 +54,7 @@ Most important in this family:
 - `03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md`
 - `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
 - `03AB_EXACT_M6A_PAGE_EVIDENCE_WORKBENCH_AND_OPTION2_BOUNDARY.md`
+- `03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md`
 - `03U_CANONICAL_SELECTOR_CONFIG_KEY_AND_FAIL_CLOSED_POLICY.md`
 - `03V_SELECTOR_KEY_INSERTION_AND_CONSUMPTION_MAP.md`
 - `03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md`
@@ -76,6 +77,7 @@ Key docs:
 - `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
 - `05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md`
 - `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
+- `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
 
 ### `06*` - validation, acceptance, runner/perf, residual risk
 Use these to understand:
@@ -203,7 +205,7 @@ Interpretation rule:
 
 ## 4. Minimal decision packet for a human reviewer
 
-If someone needs to decide whether merged-main M6B Candidate A closure is adequately reconciled and what separate next planning lane is justified, the minimum set is:
+If someone needs to decide whether merged-main M6B Candidate A closure is adequately reconciled and what separate post-admission/defaulting decision space is justified, the minimum set is:
 
 1. `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
 2. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
@@ -222,8 +224,10 @@ If someone needs to decide whether merged-main M6B Candidate A closure is adequa
 15. `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
 16. `05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md`
 17. `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
-18. `06E_BLOCKER_DECISION_TABLE.md`
-19. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+18. `03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md`
+19. `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
+20. `06E_BLOCKER_DECISION_TABLE.md`
+21. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
 That is the smallest review set that still preserves the critical reasoning.
 
@@ -311,6 +315,14 @@ This is the minimal packet for understanding and re-auditing the achieved M6B ad
 - `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
 - `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
 - `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
+- `03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md`
+- `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
+- `06E_BLOCKER_DECISION_TABLE.md`
+
+### How is post-admission/defaulting scope bounded before any later code?
+- `03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md`
+- `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
+- `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
 - `06E_BLOCKER_DECISION_TABLE.md`
 
 ### What exactly has to be true before one non-baseline value can be admitted?
