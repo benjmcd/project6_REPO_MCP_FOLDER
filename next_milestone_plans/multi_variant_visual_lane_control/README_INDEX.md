@@ -4,7 +4,7 @@
 
 This is the planning and control pack for the MVVLC program, still bounded to the PDF visual-lane seam.
 
-Merged `main` now contains the baseline-only selector/bootstrap implementation, the recorded M4 acceptance closure for that baseline path, the bounded M5 coexistence / visibility barrier implementation, the frozen M6 direct-admission packet, the achieved M6A workbench record, and the frozen M6B approved-target record. The current clean worktree now also carries the achieved M6B Candidate A direct-admission implementation and local validation recorded by `05M`.
+Merged `main` now contains the baseline-only selector/bootstrap implementation, the recorded M4 acceptance closure for that baseline path, the bounded M5 coexistence / visibility barrier implementation, the frozen M6 direct-admission packet, the achieved M6A workbench record, the frozen M6B approved-target record, and the merged M6B Candidate A direct-admission implementation recorded by `05M`. The pack now also records that merged-main closure and next-scope handoff in `05N`, so the active layer no longer reads as if the M6B branch still needs review or merge.
 
 ### What is closed
 
@@ -18,7 +18,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M5 barrier implementation record and handoff: exact owner files, validations, `06I` rerun, and no-drift judgment are recorded (`05G`)
 - M6A dedicated PageEvidence workbench: standalone Candidate A workbench surface is implemented and locally validated without widening integrated runtime behavior, and one pinned canonical Candidate A report artifact now exists for the approved-target evidence base and later direct admission (`03AB`, `05I`, `05J`, `05L`)
 - M6B Candidate A target-definition: the exact approved target record is now frozen as a derivative of `05K` (`05L`)
-- M6B Candidate A direct admission: the one approved non-`baseline` value is now admitted and locally validated in the current clean worktree (`03AA`, `05H`, `05L`, `05M`)
+- M6B Candidate A direct admission: the one approved non-`baseline` value is now admitted on merged `main`, with the achieved implementation recorded by `05M` and the merged-main closure/handoff recorded by `05N`
 - Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
 - Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
@@ -30,23 +30,23 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M4 acceptance gate is passed for the baseline-only bootstrap path
 - M5 later-scope coexistence / visibility barrier is implemented and locally validated on merged `main` under the frozen `03Z` + `05F` packet (`05G`, `06E`)
 - M6 direct-admission packet is frozen on merged `main` as `03AA` + `05H`
-- M6A PageEvidence workbench is now implemented and locally validated on the current clean branch as recorded by `05J`, including a pinned canonical report artifact for later M6B evidence refs
+- M6A PageEvidence workbench is implemented on merged `main` as recorded by `05J`, including a pinned canonical report artifact for the later M6B evidence refs
 - M6B Candidate A exact target record is now frozen in `05L`
-- M6B Candidate A direct admission is now implemented and locally validated on the current clean branch as recorded by `05M`
-- No further MVVLC implementation lane should start before this achieved M6B branch is reviewed and either merged or rejected explicitly
+- M6B Candidate A direct admission is now merged on `main`, with implementation captured in `05M` and merged-main closure/handoff captured in `05N`
+- No further MVVLC implementation lane should start by inference from that merged M6B closure alone
 
 ### Immediate next move
 
-- Review and freeze the achieved M6B Candidate A admission lane recorded by `05M`
-- Merge the current clean branch only if the recorded owner-path, no-drift, and `06I` results remain accepted
-- Do not start a broader post-admission/defaulting or later-candidate lane by inference from `05M`; that remains separate future scope
+- Open a fresh merged-`main` explicit post-admission/defaulting planning freeze
+- Use `00D`, `03AA`, `05L`, `05M`, `05N`, and `06E` as the governing merged-main closure packet for that planning step
+- Do not infer default-promotion, additional-candidate admission, OCR/media widening, or policy retuning from the achieved M6B closure alone
 
 ### What is bounded residual
 
 - Repo-native Python acceptance-path enforcement (pack-specified, not CI-enforced)
 - Tier 2 performance capture breadth: the recorded artifact-aware comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture did not complete within practical session budget
 - Future drift outside audited authority surface
-- Broader post-admission/defaulting and later-candidate work remains separate future scope; the current clean branch admits only the one approved Candidate A value and does not promote it to default
+- Broader post-admission/defaulting and later-candidate work remains separate future scope; merged `main` admits only the one approved Candidate A value and does not promote it to default
 
 ---
 
@@ -73,6 +73,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
 - `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
 - `05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md`
+- `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
 
 ### For "can we proceed?"
 - `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
@@ -132,4 +133,4 @@ Do not reopen merged M3/M4 closure without live contradictory evidence.
 Do not treat achieved M5 barrier closure as permission to admit approved non-baseline integrated runs without a separate frozen M6 packet.
 Do not treat the frozen M6 packet as permission to start code before one exact approved target is explicitly named.
 Do not treat the frozen M6A workbench packet as permission to admit Candidate A directly into integrated runtime.
-Do not treat the achieved `05M` M6B implementation record as permission to widen into broader post-admission/defaulting or additional-candidate scope without a separate freeze.
+Do not treat the achieved `05M` M6B implementation record or the merged-main closure/handoff in `05N` as permission to widen into broader post-admission/defaulting or additional-candidate scope without a separate freeze.

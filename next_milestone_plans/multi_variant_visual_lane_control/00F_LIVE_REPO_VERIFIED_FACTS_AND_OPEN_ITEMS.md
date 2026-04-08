@@ -239,9 +239,10 @@ Items that have been planning-closed or narrowed to explicit remaining scope.
 8. **Exact M5 coexistence / visibility mechanism:** CLOSED by freeze-and-implementation. `03Z` froze the mechanism, and merged `main` now implements the baseline-facing root-placement, runtime-binding visibility filter, and run-bound report/export/package persistence guards recorded in `05G`.
 9. **Exact M6 planning/freeze packet boundary:** CLOSED as planning input. `03AA` now freezes the direct admission/promotion mechanism, and `05H` now freezes the owner boundary, validation boundary, widening rules, and fail-closed stop conditions for the later direct-admission lane.
 10. **Exact M6A workbench planning/freeze packet boundary:** CLOSED as planning input. `03AB` freezes the dedicated PageEvidence / Option 2 workbench boundary, and `05I` freezes the owner boundary, validation packet, location strategy, widening rules, and fail-closed stop conditions for the immediate workbench lane.
-11. **Exact M6A workbench implementation:** CLOSED in the current clean worktree. The dedicated PageEvidence service, standalone runner, bounded validation bundle, no-drift findings, and pinned canonical Candidate A workbench report artifact are now recorded in `05J` without widening into the integrated owner path.
-12. **Exact approved M6B target naming:** CLOSED in the current clean worktree. `05L` now records one exact approved non-`baseline` selector value, its provenance, its comparison/evidence refs, its required invariants, and its explicit approval record without starting direct-admission code.
-13. **Exact M6B direct-admission implementation:** CLOSED in the current clean worktree. The one approved Candidate A value is now admitted through the integrated owner path, the required `05H` validation bundles pass, `06I` is rerun and passes, no conditional owner-file widening was required, and the achieved lane is now recorded in `05M`.
+11. **Exact M6A workbench implementation:** CLOSED on merged `main`. The dedicated PageEvidence service, standalone runner, bounded validation bundle, no-drift findings, and pinned canonical Candidate A workbench report artifact are now recorded in `05J` without widening into the integrated owner path.
+12. **Exact approved M6B target naming:** CLOSED on merged `main`. `05L` records one exact approved non-`baseline` selector value, its provenance, its comparison/evidence refs, its required invariants, and its explicit approval record without widening direct-admission scope.
+13. **Exact M6B direct-admission implementation:** CLOSED on merged `main`. The one approved Candidate A value is now admitted through the integrated owner path, the required `05H` validation bundles passed, `06I` was rerun and passed, no conditional owner-file widening was required, and the achieved implementation remains recorded in `05M`.
+14. **Exact M6B merged-main closure and handoff:** CLOSED in this reconciliation lane. `05N` now records that PR `#21` merged the achieved M6B lane into `main` on April 8, 2026 and that any broader post-admission/defaulting work requires a separate explicit freeze.
 
 ---
 
@@ -252,7 +253,7 @@ Items that remain genuinely open or bounded.
 1. **Tier 2 performance sample breadth:** The local performance gate was executed and passed, but the recorded artifact-aware Tier 2 comparison still uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget.
 2. **Broader residual consumer/visibility effects:** Residual effects beyond the already-verified live app-surface chain remain bounded but not zero. Mostly duplicated worktree/archive state and non-audited/generated surfaces.
 3. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.
-4. **Broader post-admission/defaulting scope:** Still later-scope. The achieved current-worktree M6B lane admits only the one approved Candidate A value through the integrated owner path, but it does not promote Candidate A to the default, admit Candidate B/C, reopen OCR-routing/media scope, or implicitly authorize any further variant work without a separate explicit freeze.
+4. **Broader post-admission/defaulting scope:** Still later-scope. Merged `main` now admits only the one approved Candidate A value through the integrated owner path, but it does not promote Candidate A to the default, admit Candidate B/C, reopen OCR-routing/media scope, or implicitly authorize any further variant work without a separate explicit freeze.
 
 ---
 
@@ -260,10 +261,10 @@ Items that remain genuinely open or bounded.
 
 ### Recommended stop condition
 
-At the current evidence level, the next justified operational move is no longer more M6B implementation work. It is to freeze, review, and merge the achieved current-worktree M6B lane recorded in `05M`, while keeping any broader post-admission/defaulting or later-candidate work as separate future scope.
+At the current evidence level, the next justified operational move is no longer more M6B implementation work and no longer review/merge of the achieved Candidate A lane. It is to open a separate explicit post-admission/defaulting planning freeze using the merged-main closure now recorded in `05N`, while keeping any broader widening out of scope unless that new freeze explicitly authorizes it.
 Repo-native Python enforcement remains a valid parallel hardening lane, but it is not the primary next MVVLC milestone step.
 
 ### Current proceed position
 
-Proceeding is justified for freeze/review/merge of the achieved current-worktree M6B direct-admission lane using the achieved M5 barrier closure, the achieved M6A workbench record and pinned canonical report artifact in `05J`, the frozen approved target record in `05L`, the frozen `03AA` + `05H` packet, and the achieved M6B implementation record in `05M`.
-Baseline-only bootstrap closure, the later-scope M5 barrier closure, the standalone M6A workbench lane, the exact Candidate A approved-target freeze, and the achieved current-worktree M6B implementation remain accepted; the remaining uncertainty is bounded, explicit, and concentrated on post-admission future scope rather than on the current admitted Candidate A lane itself.
+Proceeding is justified for a separate explicit post-admission/defaulting planning freeze using the achieved M5 barrier closure, the achieved M6A workbench record and pinned canonical report artifact in `05J`, the frozen approved target record in `05L`, the achieved M6B implementation record in `05M`, the merged-main closure/handoff in `05N`, and the frozen `03AA` + `05H` packet as the already-completed admission boundary.
+Baseline-only bootstrap closure, the later-scope M5 barrier closure, the standalone M6A workbench lane, the exact Candidate A approved-target freeze, the merged-main M6B implementation, and the merged-main closure/handoff remain accepted; the remaining uncertainty is bounded, explicit, and concentrated on post-admission future scope rather than on the current admitted Candidate A lane itself.
