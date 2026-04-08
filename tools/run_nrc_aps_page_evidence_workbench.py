@@ -27,6 +27,19 @@ def _utc_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _normalize_generated_at_utc(value: str | None) -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return _utc_iso()
+    try:
+        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"invalid_generated_at_utc:{raw}") from exc
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
 def _stable_json(payload: dict[str, Any]) -> str:
     return json.dumps(payload, indent=2, sort_keys=True) + "\n"
 
@@ -96,6 +109,27 @@ def _resolve_explicit_targets(paths: list[str]) -> list[dict[str, Any]]:
     return targets
 
 
+def _normalize_output_path(target_path: Path, *, path_mode: str) -> str:
+    resolved = target_path.resolve()
+    if path_mode == "absolute":
+        return str(resolved)
+    if path_mode != "repo_relative":
+        raise ValueError(f"unsupported_path_mode:{path_mode}")
+    try:
+        return resolved.relative_to(ROOT.resolve()).as_posix()
+    except ValueError as exc:
+        raise ValueError(f"repo_relative_path_unavailable:{resolved}") from exc
+
+
+def _best_effort_failure_output_path(target_path: Path, *, path_mode: str) -> str:
+    if not target_path.exists():
+        return str(target_path)
+    try:
+        return _normalize_output_path(target_path, path_mode=path_mode)
+    except ValueError:
+        return str(target_path.resolve())
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run isolated PageEvidence workbench analysis for Candidate A.")
     parser.add_argument("--report", required=True, help="Path to the output JSON report.")
@@ -103,6 +137,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--input-pdf", action="append", default=[], help="Explicit PDF path to analyze.")
     parser.add_argument("--text-word-threshold", type=int, default=20)
     parser.add_argument("--visual-coverage-threshold", type=float, default=0.15)
+    parser.add_argument(
+        "--path-mode",
+        choices=("absolute", "repo_relative"),
+        default="absolute",
+        help="How document paths should be written into the JSON report.",
+    )
+    parser.add_argument(
+        "--generated-at-utc",
+        default="",
+        help="Optional ISO8601 UTC timestamp override for durable report generation.",
+    )
     return parser
 
 
@@ -119,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     try:
+        generated_at_utc = _normalize_generated_at_utc(args.generated_at_utc)
         explicit_targets = _resolve_explicit_targets(list(args.input_pdf))
         targets = _resolve_fixture_targets(
             list(args.fixture_id),
@@ -126,9 +172,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         targets.extend(explicit_targets)
     except ValueError as exc:
+        try:
+            generated_at_utc = _normalize_generated_at_utc(args.generated_at_utc)
+        except ValueError:
+            generated_at_utc = _utc_iso()
         payload = {
             "schema_id": WORKBENCH_REPORT_SCHEMA_ID,
-            "generated_at_utc": _utc_iso(),
+            "generated_at_utc": generated_at_utc,
             "candidate_stage": "pre_admission",
             "passed": False,
             "config": dict(config),
@@ -150,7 +200,7 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "source_kind": target["source_kind"],
                     "fixture_id": target["fixture_id"],
-                    "path": str(target_path),
+                    "path": _normalize_output_path(target_path, path_mode=args.path_mode),
                     "analysis": analysis,
                 }
             )
@@ -161,14 +211,14 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "source_kind": target["source_kind"],
                     "fixture_id": target["fixture_id"],
-                    "path": str(target_path),
+                    "path": _best_effort_failure_output_path(target_path, path_mode=args.path_mode),
                     "failure_reason": str(exc),
                 }
             )
 
     payload = {
         "schema_id": WORKBENCH_REPORT_SCHEMA_ID,
-        "generated_at_utc": _utc_iso(),
+        "generated_at_utc": generated_at_utc,
         "candidate_stage": "pre_admission",
         "passed": passed,
         "config": dict(config),

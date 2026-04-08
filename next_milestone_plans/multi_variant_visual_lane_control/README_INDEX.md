@@ -16,7 +16,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M5 execution packet boundary: exact owner/test/widening boundary is now frozen (`05F`)
 - M5 coexistence / visibility mechanism: exact baseline-facing classification and runtime-root coexistence design is frozen and implemented on merged `main` (`03Z`, `05G`)
 - M5 barrier implementation record and handoff: exact owner files, validations, `06I` rerun, and no-drift judgment are recorded (`05G`)
-- M6A dedicated PageEvidence workbench: standalone Candidate A workbench surface is implemented and locally validated without widening integrated runtime behavior (`03AB`, `05I`, `05J`)
+- M6A dedicated PageEvidence workbench: standalone Candidate A workbench surface is implemented and locally validated without widening integrated runtime behavior, and one pinned canonical Candidate A report artifact now exists for later target-definition (`03AB`, `05I`, `05J`)
 - Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
 - Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
@@ -28,7 +28,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M4 acceptance gate is passed for the baseline-only bootstrap path
 - M5 later-scope coexistence / visibility barrier is implemented and locally validated on merged `main` under the frozen `03Z` + `05F` packet (`05G`, `06E`)
 - M6 direct-admission packet is frozen on merged `main` as `03AA` + `05H`
-- M6A PageEvidence workbench is now implemented and locally validated on the current clean branch as recorded by `05J`
+- M6A PageEvidence workbench is now implemented and locally validated on the current clean branch as recorded by `05J`, including a pinned canonical report artifact for later M6B evidence refs
 - The next justified MVVLC milestone step is exact M6B Candidate A target-definition and later direct admission under `03AA` + `05H`, not more M6A construction
 
 ### Next lane to execute
@@ -37,6 +37,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
   - exact non-`baseline` selector value
   - approval basis
   - comparison/evidence refs
+- use the pinned Candidate A workbench report artifact recorded in `05J` as one of the concrete evidence refs
 - Use `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md` as the exact record shape for that target-definition step
 - Keep `03AA` + `05H` fail-closed until that target record exists
 - Only after that record exists, start the later direct-admission lane
