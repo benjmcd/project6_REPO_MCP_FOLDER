@@ -185,4 +185,5 @@ At the time this workbench record was frozen, the next justified step was:
 Direct admission remains fail-closed for every non-approved value.
 
 That later direct-admission step has since been achieved in the current clean M6B worktree and recorded in `05M`.
-So this document should now be read as the achieved M6A evidence base that fed `05L` and then `05M`, not as a claim that M6B has not yet been implemented anywhere.
+Merged-main closure and the next-scope handoff are now recorded in `05N`.
+So this document should now be read as the achieved M6A evidence base that fed `05L`, then `05M`, and then `05N`, not as a claim that M6B has not yet been implemented anywhere.

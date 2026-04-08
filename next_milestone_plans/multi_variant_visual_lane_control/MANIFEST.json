@@ -1,6 +1,6 @@
 {
-  "package_name": "multi_variant_visual_lane_control_pack_v51",
-  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, an achieved standalone M6A PageEvidence workbench lane, a pinned canonical Candidate A workbench report artifact, a frozen approved M6B Candidate A target record, an achieved current-clean-worktree M6B Candidate A admission implementation record, and workflow-layer alignment around freeze/review of the achieved M6B lane",
+  "package_name": "multi_variant_visual_lane_control_pack_v52",
+  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, an achieved standalone M6A PageEvidence workbench lane, a pinned canonical Candidate A workbench report artifact, a frozen approved M6B Candidate A target record, an achieved M6B Candidate A admission implementation record, and merged-main closure/handoff alignment around the next separate post-admission/defaulting planning freeze",
   "improvements_over_v6": [
     "added selector activation scope/lifetime policy",
     "added experiment isolation mechanism policy",
@@ -12,7 +12,7 @@
     "Python acceptance path is pack-specified but not visibly repo-enforced in checked root workflow/hook/config surfaces",
     "Tier 2 performance sample breadth remains bounded by the declared-root handoff fallback sample",
     "bounded uncertainty remains in duplicated archive/worktree state and other non-audited/generated surfaces",
-    "broader post-admission/defaulting and additional-candidate scope remains separate future work beyond the achieved current-clean-worktree M6B lane"
+    "broader post-admission/defaulting and additional-candidate scope remains separate future work beyond the merged-main M6B Candidate A lane"
   ],
   "contains": [
     "00A_MASTER_NAVIGATION_AND_REVIEW_MAP.md",
@@ -72,6 +72,7 @@
     "05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md",
     "05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md",
     "05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md",
+    "05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md",
     "06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md",
     "06D_CRITICAL_BLOCKER_VALIDATION_SET.md",
     "06E_BLOCKER_DECISION_TABLE.md",
@@ -306,5 +307,10 @@
     "added the frozen derivative Candidate A approved target record as 05L instead of overwriting the 05K template",
     "closed the exact approved M6B target naming gap using the pinned workbench report plus fixture-manifest comparison basis",
     "shifted the workflow, blocker, and front-door layer from immediate 05K target-definition to immediate later direct-admission execution under 03AA plus 05H"
+  ],
+  "improvements_over_v51": [
+    "added the merged-main M6B closure and post-admission handoff record as 05N",
+    "reconciled the active front-door and workflow layer from pre-merge branch-review language to merged-main closure state",
+    "shifted the next justified MVVLC move from M6B review/merge to a separate explicit post-admission/defaulting planning freeze"
   ]
 }
