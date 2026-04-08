@@ -36,9 +36,9 @@ The pack now distinguishes:
 
 - **M6A**: achieved dedicated PageEvidence workbench construction under `03AB` + `05I`, recorded by `05J`
 - **M6B target-definition**: frozen derivative record `05L` built from template `05K`
-- **M6B direct admission**: immediate next implementation of one approved selector value under `03AA` + `05H`
+- **M6B direct admission**: achieved current clean-worktree implementation of one approved selector value under `03AA` + `05H`, recorded by `05M`
 
-Do not use `05K` by itself as approval. Treat `05J` as the evidence base, `05K` as the governing template, and `05L` as the current exact approved-target record for the next lane.
+Do not use `05K` by itself as approval. Treat `05J` as the evidence base, `05K` as the governing template, `05L` as the exact approved-target record, and `05M` as the achieved implementation record for the current clean worktree. Do not treat `05M` as permission to widen into broader post-admission/defaulting scope.
 
 ---
 
@@ -121,6 +121,7 @@ Purpose:
 - implement only the one exact approved selector value already frozen in `05L`
 - keep the admitted behavior delta narrow and evidence-backed rather than widening by inference
 - preserve `05H` as the current direct-admission execution packet while keeping every other non-approved value fail-closed
+- after validation, freeze a separate achieved-lane implementation record rather than treating raw code edits as the lane closure
 
 ### Stage 4 — prepare the concrete validation surface
 Read:

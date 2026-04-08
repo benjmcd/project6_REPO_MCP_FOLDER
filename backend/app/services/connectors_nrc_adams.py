@@ -73,6 +73,7 @@ APS_DEFAULT_DIALECT_PROBE_ORDER = ("shape_a", "guide_native", "shape_b")
 APS_KNOWN_BAD_FORCED_DIALECTS = {"guide_native", "shape_b"}
 APS_SYNC_WATERMARK_FIELD = "DateAddedTimestamp"
 APS_SYNC_MODES = {"full_scan", "incremental", "reconciliation"}
+_APS_ADMITTED_VISUAL_LANE_MODES: frozenset[str] = frozenset({"baseline", "candidate_a_page_evidence_v1"})
 APS_SYNC_BASELINE_ELIGIBLE_STATUSES = {"completed", "completed_with_errors"}
 APS_DEFAULT_SYNC_OVERLAP_SECONDS = 259200
 APS_DEFAULT_RECONCILIATION_LOOKBACK_DAYS = 30
@@ -646,9 +647,8 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
     if sync_mode not in APS_SYNC_MODES:
         sync_mode = "full_scan"
     # Visual lane mode: fail-closed to baseline for absent/invalid/unapproved values
-    # For M3 baseline-only phase, only 'baseline' is allowed in integrated runtime
     visual_lane_mode = str(config.get("visual_lane_mode", "baseline")).strip().lower() or "baseline"
-    if visual_lane_mode != "baseline":
+    if visual_lane_mode not in _APS_ADMITTED_VISUAL_LANE_MODES:
         visual_lane_mode = "baseline"
 
     allowed_hosts = [str(v).strip().lower() for v in config.get("allowed_hosts", []) if str(v).strip()]
