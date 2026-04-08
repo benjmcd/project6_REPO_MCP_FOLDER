@@ -16,6 +16,7 @@ from app.services.review_nrc_aps_runtime_roots import candidate_review_runtime_r
 
 GOLDEN_RUN_ID = "d6be0fff-bbd7-468a-9b00-7103d5995494"
 PIPELINE_ID = "nrc_aps_review_v1"
+_BASELINE_VISIBLE_VISUAL_LANE_MODES: frozenset[str] = frozenset({"baseline", "candidate_a_page_evidence_v1"})
 
 
 @dataclass(frozen=True)
@@ -35,7 +36,7 @@ def _normalize_visual_lane_mode_for_visibility(value: Any) -> str:
 def request_config_is_baseline_visible(request_config: Any) -> bool:
     if not isinstance(request_config, dict):
         return True
-    return _normalize_visual_lane_mode_for_visibility(request_config.get("visual_lane_mode")) == "baseline"
+    return _normalize_visual_lane_mode_for_visibility(request_config.get("visual_lane_mode")) in _BASELINE_VISIBLE_VISUAL_LANE_MODES
 
 
 def connector_run_is_baseline_visible(run: Any) -> bool:

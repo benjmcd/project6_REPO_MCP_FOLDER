@@ -91,12 +91,38 @@ class TestNrcApsRunConfig(unittest.TestCase):
         self.assertEqual(config["visual_lane_mode"], "baseline")
 
     def test_visual_lane_mode_fail_closed_for_unsupported_variant(self):
-        """Non-baseline values must fail closed to baseline in baseline-only phase."""
+        """Unapproved non-baseline values must fail closed to baseline."""
         config = connectors_nrc_adams._normalize_request_config(
             {
                 "mode": "strict_builder",
                 "wire_shape_mode": "shape_a",
                 "visual_lane_mode": "experimental_a",
+            },
+            "local-proof",
+        )
+
+        self.assertEqual(config["visual_lane_mode"], "baseline")
+
+    def test_visual_lane_mode_preserves_candidate_a_page_evidence_v1(self):
+        """Approved candidate_a_page_evidence_v1 must survive normalization."""
+        config = connectors_nrc_adams._normalize_request_config(
+            {
+                "mode": "strict_builder",
+                "wire_shape_mode": "shape_a",
+                "visual_lane_mode": "candidate_a_page_evidence_v1",
+            },
+            "local-proof",
+        )
+
+        self.assertEqual(config["visual_lane_mode"], "candidate_a_page_evidence_v1")
+
+    def test_visual_lane_mode_fail_closed_for_candidate_a_near_miss(self):
+        """Similar-but-not-exact values must fail closed to baseline."""
+        config = connectors_nrc_adams._normalize_request_config(
+            {
+                "mode": "strict_builder",
+                "wire_shape_mode": "shape_a",
+                "visual_lane_mode": "candidate_a_page_evidence_v2",
             },
             "local-proof",
         )

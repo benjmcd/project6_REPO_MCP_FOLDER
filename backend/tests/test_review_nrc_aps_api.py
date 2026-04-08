@@ -272,3 +272,34 @@ def test_api_documents_404_for_experiment_hidden_runtime(tmp_path, monkeypatch):
     response = client.get(f"/api/v1/review/nrc-aps/runs/{hidden_run_id}/documents")
 
     assert response.status_code == 404
+
+
+def test_api_runs_admit_candidate_a_page_evidence_v1_as_visible(tmp_path, monkeypatch):
+    """candidate_a_page_evidence_v1 is the one admitted non-baseline value
+    and must be baseline-visible (not experiment-hidden)."""
+    storage_root = tmp_path / "storage_test_runtime"
+    admitted_run_id = "00000000-0000-0000-0000-00000000a504"
+    unapproved_run_id = "00000000-0000-0000-0000-00000000a505"
+    _create_temp_review_runtime(
+        storage_root,
+        runtime_name="admitted_runtime",
+        run_id=admitted_run_id,
+        visual_lane_mode="candidate_a_page_evidence_v1",
+        include_connector_run_row=True,
+    )
+    _create_temp_review_runtime(
+        storage_root,
+        runtime_name="unapproved_runtime",
+        run_id=unapproved_run_id,
+        visual_lane_mode="variant_a",
+        include_connector_run_row=True,
+    )
+
+    monkeypatch.setattr("app.services.review_nrc_aps_runtime.settings.storage_dir", str(storage_root))
+    response = client.get("/api/v1/review/nrc-aps/runs")
+
+    assert response.status_code == 200
+    data = response.json()
+    returned_run_ids = {item["run_id"] for item in data["runs"]}
+    assert admitted_run_id in returned_run_ids
+    assert unapproved_run_id not in returned_run_ids

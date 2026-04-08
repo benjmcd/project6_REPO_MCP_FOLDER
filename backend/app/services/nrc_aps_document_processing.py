@@ -48,6 +48,8 @@ APS_ZIP_MAX_MEMBER_COUNT = 200
 APS_VISUAL_CLASS_DIAGRAM = "diagram_or_visual"
 APS_VISUAL_CLASS_TEXT_HEAVY = "text_heavy_or_empty"
 
+_ADMITTED_VISUAL_LANE_MODES: frozenset[str] = frozenset({"baseline", "candidate_a_page_evidence_v1"})
+
 # Minimum drawing-command count to consider a page visually significant
 _VISUAL_DRAWING_THRESHOLD = 20
 
@@ -85,7 +87,7 @@ def _classify_visual_page(
 
 def _normalize_visual_lane_mode(value: Any) -> str:
     visual_lane_mode = str(value or "baseline").strip().lower() or "baseline"
-    if visual_lane_mode != "baseline":
+    if visual_lane_mode not in _ADMITTED_VISUAL_LANE_MODES:
         return "baseline"
     return visual_lane_mode
 
@@ -160,6 +162,68 @@ def _run_baseline_visual_lane(
     config: dict[str, Any],
 ) -> tuple[str, dict[str, Any] | None, list[str]]:
     has_visual = _has_significant_visual_content(page)
+    visual_page_class = _classify_visual_page(
+        native_quality_status=pre_branch_native_quality_status,
+        has_visual=has_visual,
+    )
+    visual_ref: dict[str, Any] | None = None
+    visual_degradation_codes: list[str] = []
+    if visual_page_class == APS_VISUAL_CLASS_DIAGRAM:
+        try:
+            ref = _capture_visual_page_ref(page, page_number, visual_page_class)
+            _art_dir = str(config.get("artifact_storage_dir") or "").strip()
+            if _art_dir:
+                try:
+                    artifact = _write_visual_page_artifact(
+                        artifact_storage_dir=_art_dir,
+                        page=page,
+                        page_number=page_number,
+                        config=config,
+                    )
+                    ref.update(artifact)
+                except Exception:  # noqa: BLE001
+                    ref["status"] = "visual_capture_failed"
+                    visual_degradation_codes.append("visual_artifact_failed")
+            visual_ref = ref
+        except Exception:  # noqa: BLE001
+            visual_ref = {
+                "page_number": page_number,
+                "visual_page_class": visual_page_class,
+                "status": "visual_capture_failed",
+            }
+            visual_degradation_codes.append("visual_capture_failed")
+    return visual_page_class, visual_ref, visual_degradation_codes
+
+
+def _run_candidate_a_visual_lane(
+    *,
+    page: Any,
+    page_number: int,
+    pre_branch_native_quality_status: str,
+    config: dict[str, Any],
+) -> tuple[str, dict[str, Any] | None, list[str]]:
+    """Candidate A visual lane: uses PageEvidence geometry/coverage signals
+    instead of baseline's pixel-threshold heuristic for the has_visual decision.
+    Classification and preservation path remain baseline."""
+    try:
+        from app.services import nrc_aps_page_evidence
+        evidence = nrc_aps_page_evidence.analyze_pdf_page_evidence(
+            page=page,
+            page_number=page_number,
+        )
+        has_visual = (
+            bool(evidence.get("image_count") or evidence.get("drawing_count"))
+            or float(evidence.get("combined_visual_coverage_ratio", 0))
+            >= float(evidence.get("visual_coverage_threshold", 0.15))
+        )
+    except Exception:  # noqa: BLE001
+        return _run_baseline_visual_lane(
+            page=page,
+            page_number=page_number,
+            pre_branch_native_quality_status=pre_branch_native_quality_status,
+            config=config,
+        )
+
     visual_page_class = _classify_visual_page(
         native_quality_status=pre_branch_native_quality_status,
         has_visual=has_visual,
@@ -738,7 +802,14 @@ def _process_pdf(
             visual_page_class = APS_VISUAL_CLASS_TEXT_HEAVY
             visual_ref: dict[str, Any] | None = None
             visual_lane_degradation_codes: list[str] = []
-            if visual_lane_mode == "baseline":
+            if visual_lane_mode == "candidate_a_page_evidence_v1":
+                visual_page_class, visual_ref, visual_lane_degradation_codes = _run_candidate_a_visual_lane(
+                    page=page,
+                    page_number=page_number,
+                    pre_branch_native_quality_status=pre_branch_native_quality_status,
+                    config=config,
+                )
+            elif visual_lane_mode == "baseline":
                 visual_page_class, visual_ref, visual_lane_degradation_codes = _run_baseline_visual_lane(
                     page=page,
                     page_number=page_number,

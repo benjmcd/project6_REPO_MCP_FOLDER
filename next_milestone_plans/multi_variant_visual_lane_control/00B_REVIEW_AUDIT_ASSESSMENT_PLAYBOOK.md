@@ -145,16 +145,17 @@ Read:
 4. `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 5. `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
 6. `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
-7. `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md`
-8. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
-9. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
-10. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
-11. `06K_SHELL_SPECIFIC_CANONICAL_ACCEPTANCE_COMMANDS.md`
+7. `05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md`
+8. `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md`
+9. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
+10. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+11. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
+12. `06K_SHELL_SPECIFIC_CANONICAL_ACCEPTANCE_COMMANDS.md`
 
 Goal:
 - determine whether the pack translates into a real validation path
 - assess whether implementation can be checked in practice
-- determine whether the pack now closes the exact M6B target-definition gap with a real approved-target record and is ready for the later direct-admission code lane
+- determine whether the pack now closes the exact M6B implementation gap with a real achieved-lane record and is ready for freeze/review/merge of the current clean branch
 
 ### Pass 5 — challenge, narrowing, residuals
 Read:
