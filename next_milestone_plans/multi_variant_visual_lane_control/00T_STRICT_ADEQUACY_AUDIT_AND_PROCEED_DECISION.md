@@ -85,7 +85,7 @@ It is mostly:
 - duplicated/non-audited residual state
 - future drift risk
 
-Those are real, but they do not justify stalling the whole effort at the planning layer or blocking the next separate post-admission/defaulting planning freeze.
+Those are real, but they do not justify stalling the whole effort at the planning layer or blocking the current explicit post-admission/defaulting decision phase under `03AC` + `05O`.
 
 ## Proceed rule
 
@@ -94,7 +94,8 @@ Proceed **only** under this interpretation:
 - treat the pack as a strict planning/control baseline
 - do not silently upgrade bounded residuals into "solved"
 - treat `05M`, `05N`, and the TRUE CLOSURE rows in `06E` as the implemented-state and merged-main closure proof for the already-finished M6B Candidate A lane
-- if a new lane begins, use the pack's frozen boundaries and validation rules rather than inferring broader scope from the completed M6B lane
+- treat `03AC` + `05O` as the frozen planning-only boundary for broader post-admission/defaulting questions
+- if a new lane begins, use the pack's frozen boundaries and validation rules rather than inferring broader scope from the completed M6B lane or the achieved planning freeze
 - do not infer broader post-admission/defaulting or additional-candidate scope from merged M6B closure alone
 - if repo-native enforcement is desired, that becomes a new explicit work item rather than an assumed property
 
@@ -102,4 +103,4 @@ Proceed **only** under this interpretation:
 
 **Proceeding is justified.**
 Not because uncertainty is zero,
-but because the remaining uncertainty is now bounded, explicit, and non-blocking for the intended next phase: a separate explicit post-admission/defaulting planning freeze.
+but because the remaining uncertainty is now bounded, explicit, and non-blocking for the intended next phase: explicit post-admission/defaulting decision work under `03AC` + `05O`.
