@@ -79,6 +79,7 @@ Key docs:
 - `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
 - `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
 - `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
+- `05Q_POST_ADMISSION_RETAIN_BASELINE_MERGED_MAIN_CLOSURE_AND_HANDOFF.md`
 
 ### `06*` - validation, acceptance, runner/perf, residual risk
 Use these to understand:
@@ -206,7 +207,7 @@ Interpretation rule:
 
 ## 4. Minimal decision packet for a human reviewer
 
-If someone needs to decide whether merged-main M6B Candidate A closure is adequately reconciled and what current-horizon post-admission/defaulting decision is justified, the minimum set is:
+If someone needs to decide whether the merged-main retained-default closure state is adequately reconciled and what, if anything, is still justified beyond it, the minimum set is:
 
 1. `00D_MULTI_VARIANT_PROGRAM_DECISION.md`
 2. `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`
@@ -228,8 +229,9 @@ If someone needs to decide whether merged-main M6B Candidate A closure is adequa
 18. `03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md`
 19. `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
 20. `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
-21. `06E_BLOCKER_DECISION_TABLE.md`
-22. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+21. `05Q_POST_ADMISSION_RETAIN_BASELINE_MERGED_MAIN_CLOSURE_AND_HANDOFF.md`
+22. `06E_BLOCKER_DECISION_TABLE.md`
+23. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
 That is the smallest review set that still preserves the critical reasoning.
 
@@ -319,6 +321,8 @@ This is the minimal packet for understanding and re-auditing the achieved M6B ad
 - `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
 - `03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md`
 - `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
+- `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
+- `05Q_POST_ADMISSION_RETAIN_BASELINE_MERGED_MAIN_CLOSURE_AND_HANDOFF.md`
 - `06E_BLOCKER_DECISION_TABLE.md`
 
 ### How is post-admission/defaulting scope bounded before any later code?

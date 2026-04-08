@@ -70,6 +70,7 @@ Interpretation:
 | `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md` | merged-main closure and next-scope handoff record | `05M` + merged PR `#21` + `06E` | reconciles the active pack to merged-main M6B closure and hands the pack forward into the now-frozen post-admission/defaulting planning phase |
 | `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md` | exact post-admission/defaulting planning packet | `03AC` + `05N` + `06E` | turns the next step from vague future scope into one bounded planning packet with explicit allowed outcomes, stop conditions, and downstream module/endpoint classes that must be reconsidered before any later widening |
 | `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md` | exact current-horizon default decision record | `00D` + `03AC` + `05O` + `05M` + `05N` + `06E` | records that the current horizon explicitly retains `baseline` as the default and prevents later default-promotion or additional-candidate work from being inferred without a new explicit amendment |
+| `05Q_POST_ADMISSION_RETAIN_BASELINE_MERGED_MAIN_CLOSURE_AND_HANDOFF.md` | retained-default merged-main closure/handoff record | `05P` + merged PR `#24` + `06E` | reconciles the active pack from "latest frozen retained-default decision" to merged-main retained-default closure and stable-hold handoff, so no further primary MVVLC decision or implementation lane is implied |
 | `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md` | active test surface map | repo test evidence | validation preparation |
 | `06D_CRITICAL_BLOCKER_VALIDATION_SET.md` | required validation gates | `06E` + policy docs | pre-claim-complete validation |
 | `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md` | performance gate | repo-native fixture sources + local policy | validation/performance |
@@ -177,6 +178,10 @@ Interpretation:
   - `03AC`
   - the need to convert the post-admission/defaulting phase from a general note into a concrete decision packet
   - the need to constrain later outcomes to explicit no-code decisions before any future target-definition or implementation lane begins
+- `05Q` justified by:
+  - PR `#24` merged the retained-default decision into `main`
+  - the need to reconcile the active pack from pre-merge decision language to merged-main retained-default closure
+  - the need to state explicitly that the primary MVVLC path is now in a stable hold state rather than waiting on another immediate decision lane
 
 ### Proceed judgment
 - `00T` justified by:
@@ -221,7 +226,8 @@ For the current milestone position:
 - `05N` is now the merged-main closure/handoff record for that achieved lane
 - `03AC` + `05O` now freeze the exact post-admission/defaulting planning boundary and decision packet
 - `05P` now freezes the current-horizon retain-`baseline` decision under that packet
-- no further MVVLC implementation or default-promotion lane is justified by inference from the retained-default state
+- `05Q` now closes that retained-default state on merged `main` and hands it off as stable current authority
+- no further MVVLC implementation, promotion, or decision lane is justified by inference from the retained-default merged-main state
 
 ### If you are challenging adequacy
 Use this matrix to ask:

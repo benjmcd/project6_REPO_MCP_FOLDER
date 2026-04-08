@@ -24,6 +24,7 @@ Those later questions are now closed elsewhere in the pack:
 
 - `05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md`
 - `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
+- `05Q_POST_ADMISSION_RETAIN_BASELINE_MERGED_MAIN_CLOSURE_AND_HANDOFF.md`
 - the TRUE CLOSURE rows in `06E_BLOCKER_DECISION_TABLE.md`
 
 Planning adequacy, implementation proof, and merged-main closure are related but distinct questions.
@@ -85,7 +86,7 @@ It is mostly:
 - duplicated/non-audited residual state
 - future drift risk
 
-Those are real, but they did not justify stalling the whole effort at the planning layer or blocking the explicit post-admission/defaulting decision phase under `03AC` + `05O`, which has now been resolved for the current horizon by `05P`.
+Those are real, but they did not justify stalling the whole effort at the planning layer or blocking the explicit post-admission/defaulting decision phase under `03AC` + `05O`, which has now been resolved for the current horizon by `05P` and closed on merged `main` by `05Q`.
 
 ## Proceed rule
 
@@ -94,7 +95,7 @@ Proceed **only** under this interpretation:
 - treat the pack as a strict planning/control baseline
 - do not silently upgrade bounded residuals into "solved"
 - treat `05M`, `05N`, and the TRUE CLOSURE rows in `06E` as the implemented-state and merged-main closure proof for the already-finished M6B Candidate A lane
-- treat `03AC` + `05O` as the frozen planning-only boundary for broader post-admission/defaulting questions, and `05P` as the frozen current-horizon retain-default outcome under that boundary
+- treat `03AC` + `05O` as the frozen planning-only boundary for broader post-admission/defaulting questions, `05P` as the frozen current-horizon retain-default outcome under that boundary, and `05Q` as the merged-main closure/handoff of that retained-default state
 - if a new lane begins, use the pack's frozen boundaries and validation rules rather than inferring broader scope from the completed M6B lane or the achieved planning freeze
 - if a new lane begins, do not skip an explicit program-decision amendment just because `05P` retained the current default posture
 - do not infer broader post-admission/defaulting or additional-candidate scope from merged M6B closure alone
@@ -104,4 +105,4 @@ Proceed **only** under this interpretation:
 
 **Proceeding is justified.**
 Not because uncertainty is zero,
-but because the remaining uncertainty is now bounded, explicit, and non-blocking for the current retained-default closure state under `05P` and for any later separately frozen future work.
+but because the remaining uncertainty is now bounded, explicit, and non-blocking for the current retained-default merged-main closure state under `05P` + `05Q` and for any later separately frozen future work.

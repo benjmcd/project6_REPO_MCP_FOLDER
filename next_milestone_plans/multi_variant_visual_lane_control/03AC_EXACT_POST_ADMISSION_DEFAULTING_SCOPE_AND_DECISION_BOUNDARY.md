@@ -27,6 +27,10 @@ That current-horizon retained-default outcome has since been frozen explicitly i
 
 - `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
 
+That retained-default state has since been closed on merged `main` in:
+
+- `05Q_POST_ADMISSION_RETAIN_BASELINE_MERGED_MAIN_CLOSURE_AND_HANDOFF.md`
+
 ---
 
 ## Governing basis
