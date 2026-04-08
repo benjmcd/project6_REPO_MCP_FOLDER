@@ -18,7 +18,15 @@ That means:
 - but it should not be described as universally exhaustive or absolutely closed.
 
 ### Important distinction
-This document assesses **planning adequacy** — whether the control pack is strict enough to serve as an implementation baseline. It does **not** claim that implementation is already done, that all specified controls already exist in the live repo, or that the blocker table rows marked IMPLEMENTATION REQUIRED (see `06E`) are satisfied. Planning adequacy and implemented-state proof are separate questions.
+This document assesses **planning adequacy** - whether the control pack is strict enough to serve as an implementation baseline.
+By itself it is not the implementation-proof artifact and it is not the merged-main closure artifact.
+Those later questions are now closed elsewhere in the pack:
+
+- `05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md`
+- `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
+- the TRUE CLOSURE rows in `06E_BLOCKER_DECISION_TABLE.md`
+
+Planning adequacy, implementation proof, and merged-main closure are related but distinct questions.
 
 ## What is strong enough to rely on
 
@@ -77,19 +85,21 @@ It is mostly:
 - duplicated/non-audited residual state
 - future drift risk
 
-Those are real, but they do not justify stalling the whole effort at the planning layer.
+Those are real, but they do not justify stalling the whole effort at the planning layer or blocking the next separate post-admission/defaulting planning freeze.
 
 ## Proceed rule
 
 Proceed **only** under this interpretation:
 
 - treat the pack as a strict planning/control baseline
-- do not silently upgrade bounded residuals into “solved”
-- if implementation begins, use the pack’s frozen boundaries and validation rules
+- do not silently upgrade bounded residuals into "solved"
+- treat `05M`, `05N`, and the TRUE CLOSURE rows in `06E` as the implemented-state and merged-main closure proof for the already-finished M6B Candidate A lane
+- if a new lane begins, use the pack's frozen boundaries and validation rules rather than inferring broader scope from the completed M6B lane
+- do not infer broader post-admission/defaulting or additional-candidate scope from merged M6B closure alone
 - if repo-native enforcement is desired, that becomes a new explicit work item rather than an assumed property
 
 ## Final decision
 
 **Proceeding is justified.**
 Not because uncertainty is zero,
-but because the remaining uncertainty is now bounded, explicit, and non-blocking for the intended next phase.
+but because the remaining uncertainty is now bounded, explicit, and non-blocking for the intended next phase: a separate explicit post-admission/defaulting planning freeze.
