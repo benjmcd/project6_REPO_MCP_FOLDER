@@ -132,6 +132,7 @@ Do not treat achieved M5 barrier closure as permission to admit approved non-bas
 Do not treat the frozen M6 packet as permission to start code before one exact approved target is explicitly named.
 Do not treat the frozen M6A workbench packet as permission to admit Candidate A directly into integrated runtime.
 
+
 # 00A Master Navigation and Review Map
 
 ## Purpose
