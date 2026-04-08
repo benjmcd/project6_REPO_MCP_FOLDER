@@ -175,6 +175,14 @@ class TestNormalizeVisualLaneMode:
         result = nrc_aps_document_processing._normalize_visual_lane_mode("experimental_a")
         assert result == "baseline"
 
+    def test_preserves_candidate_a_page_evidence_v1(self):
+        result = nrc_aps_document_processing._normalize_visual_lane_mode("candidate_a_page_evidence_v1")
+        assert result == "candidate_a_page_evidence_v1"
+
+    def test_fail_closed_for_candidate_a_near_miss(self):
+        result = nrc_aps_document_processing._normalize_visual_lane_mode("candidate_a_page_evidence_v2")
+        assert result == "baseline"
+
 
 class TestVisualLaneIntegration:
     """Integration tests through process_document for the visual lane."""
@@ -364,3 +372,165 @@ class TestVisualLaneIntegration:
                 content=_fixture_bytes("scanned.pdf"),
                 declared_content_type="application/pdf",
             )
+
+    def test_candidate_a_visual_lane_mode_routes_through_candidate_a_handler(self, monkeypatch):
+        """candidate_a_page_evidence_v1 must route through the Candidate A handler."""
+        seen_candidate_a_calls: list[dict[str, object]] = []
+        seen_baseline_calls: list[dict[str, object]] = []
+
+        def _tracking_candidate_a_lane(**kwargs):
+            seen_candidate_a_calls.append(kwargs)
+            return (
+                nrc_aps_document_processing.APS_VISUAL_CLASS_TEXT_HEAVY,
+                None,
+                [],
+            )
+
+        def _tracking_baseline_lane(**kwargs):
+            seen_baseline_calls.append(kwargs)
+            return (
+                nrc_aps_document_processing.APS_VISUAL_CLASS_TEXT_HEAVY,
+                None,
+                [],
+            )
+
+        monkeypatch.setattr(
+            nrc_aps_document_processing,
+            "_run_candidate_a_visual_lane",
+            _tracking_candidate_a_lane,
+        )
+        monkeypatch.setattr(
+            nrc_aps_document_processing,
+            "_run_baseline_visual_lane",
+            _tracking_baseline_lane,
+        )
+
+        result = nrc_aps_document_processing.process_document(
+            content=_fixture_bytes("born_digital.pdf"),
+            declared_content_type="application/pdf",
+            config={"visual_lane_mode": "candidate_a_page_evidence_v1"},
+        )
+
+        assert len(seen_candidate_a_calls) == 1
+        assert len(seen_baseline_calls) == 0
+        assert result["visual_page_refs"] == []
+        assert result["page_summaries"][0]["visual_page_class"] == "text_heavy_or_empty"
+
+    def test_unapproved_value_still_routes_to_baseline_not_candidate_a(self, monkeypatch):
+        """Unapproved values that fail-close to baseline must not hit Candidate A."""
+        seen_candidate_a_calls: list[dict[str, object]] = []
+        seen_baseline_calls: list[dict[str, object]] = []
+
+        def _tracking_candidate_a_lane(**kwargs):
+            seen_candidate_a_calls.append(kwargs)
+            return (
+                nrc_aps_document_processing.APS_VISUAL_CLASS_TEXT_HEAVY,
+                None,
+                [],
+            )
+
+        def _tracking_baseline_lane(**kwargs):
+            seen_baseline_calls.append(kwargs)
+            return (
+                nrc_aps_document_processing.APS_VISUAL_CLASS_TEXT_HEAVY,
+                None,
+                [],
+            )
+
+        monkeypatch.setattr(
+            nrc_aps_document_processing,
+            "_run_candidate_a_visual_lane",
+            _tracking_candidate_a_lane,
+        )
+        monkeypatch.setattr(
+            nrc_aps_document_processing,
+            "_run_baseline_visual_lane",
+            _tracking_baseline_lane,
+        )
+
+        result = nrc_aps_document_processing.process_document(
+            content=_fixture_bytes("born_digital.pdf"),
+            declared_content_type="application/pdf",
+            config={"visual_lane_mode": "experimental_a"},
+        )
+
+        assert len(seen_candidate_a_calls) == 0
+        assert len(seen_baseline_calls) == 1
+
+    def test_candidate_a_born_digital_produces_text_heavy(self):
+        """Born-digital PDF under Candidate A → text_heavy, same as baseline."""
+        result = nrc_aps_document_processing.process_document(
+            content=_fixture_bytes("born_digital.pdf"),
+            declared_content_type="application/pdf",
+            config={"visual_lane_mode": "candidate_a_page_evidence_v1"},
+        )
+        assert result["visual_page_refs"] == []
+        assert result["page_summaries"][0]["visual_page_class"] == "text_heavy_or_empty"
+
+    def test_candidate_a_preserves_expected_visual_page_for_ml17123a319(self, monkeypatch):
+        """Candidate A may preserve the approved additional visual page on ML17123A319."""
+        monkeypatch.setattr(nrc_aps_document_processing.nrc_aps_ocr, "tesseract_available", lambda: False)
+        monkeypatch.setattr(nrc_aps_document_processing.nrc_aps_advanced_ocr, "run_advanced_ocr", lambda **kw: None)
+
+        baseline_result = nrc_aps_document_processing.process_document(
+            content=_fixture_bytes("ML17123A319.pdf"),
+            declared_content_type="application/pdf",
+            config={"visual_lane_mode": "baseline"},
+        )
+        candidate_result = nrc_aps_document_processing.process_document(
+            content=_fixture_bytes("ML17123A319.pdf"),
+            declared_content_type="application/pdf",
+            config={"visual_lane_mode": "candidate_a_page_evidence_v1"},
+        )
+
+        assert baseline_result["visual_page_refs"] == []
+        assert [
+            summary["page_number"]
+            for summary in baseline_result["page_summaries"]
+            if summary["visual_page_class"] == "diagram_or_visual"
+        ] == []
+        assert "ocr_required_but_unavailable" in baseline_result["degradation_codes"]
+
+        candidate_preserved_refs = [
+            ref for ref in candidate_result["visual_page_refs"] if ref["status"] == "preserved"
+        ]
+        assert len(candidate_preserved_refs) == 1
+        assert candidate_preserved_refs[0]["page_number"] == 2
+        assert [
+            summary["page_number"]
+            for summary in candidate_result["page_summaries"]
+            if summary["visual_page_class"] == "diagram_or_visual"
+        ] == [2]
+        assert "ocr_required_but_unavailable" in candidate_result["degradation_codes"]
+
+    def test_candidate_a_evidence_failure_falls_back_to_baseline(self, monkeypatch):
+        """If PageEvidence fails, Candidate A must fall back to baseline handler."""
+        seen_baseline_calls: list[dict[str, object]] = []
+        original_baseline = nrc_aps_document_processing._run_baseline_visual_lane
+
+        def _tracking_baseline_lane(**kwargs):
+            seen_baseline_calls.append(kwargs)
+            return original_baseline(**kwargs)
+
+        monkeypatch.setattr(
+            nrc_aps_document_processing,
+            "_run_baseline_visual_lane",
+            _tracking_baseline_lane,
+        )
+
+        # Force PageEvidence to raise
+        import app.services.nrc_aps_page_evidence as pe_mod
+        monkeypatch.setattr(
+            pe_mod,
+            "analyze_pdf_page_evidence",
+            lambda **kw: (_ for _ in ()).throw(RuntimeError("simulated evidence failure")),
+        )
+
+        result = nrc_aps_document_processing.process_document(
+            content=_fixture_bytes("born_digital.pdf"),
+            declared_content_type="application/pdf",
+            config={"visual_lane_mode": "candidate_a_page_evidence_v1"},
+        )
+
+        assert len(seen_baseline_calls) == 1
+        assert result["page_summaries"][0]["visual_page_class"] == "text_heavy_or_empty"

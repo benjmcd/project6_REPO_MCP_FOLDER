@@ -4,7 +4,7 @@
 
 This is the planning and control pack for the MVVLC program, still bounded to the PDF visual-lane seam.
 
-Merged `main` now contains the baseline-only selector/bootstrap implementation, the recorded M4 acceptance closure for that baseline path, and the bounded M5 coexistence / visibility barrier implementation. The pack's current job is to preserve those closures, carry the bounded residuals honestly, and define the next later-scope lane explicitly.
+Merged `main` now contains the baseline-only selector/bootstrap implementation, the recorded M4 acceptance closure for that baseline path, the bounded M5 coexistence / visibility barrier implementation, the frozen M6 direct-admission packet, the achieved M6A workbench record, and the frozen M6B approved-target record. The current clean worktree now also carries the achieved M6B Candidate A direct-admission implementation and local validation recorded by `05M`.
 
 ### What is closed
 
@@ -18,6 +18,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M5 barrier implementation record and handoff: exact owner files, validations, `06I` rerun, and no-drift judgment are recorded (`05G`)
 - M6A dedicated PageEvidence workbench: standalone Candidate A workbench surface is implemented and locally validated without widening integrated runtime behavior, and one pinned canonical Candidate A report artifact now exists for the approved-target evidence base and later direct admission (`03AB`, `05I`, `05J`, `05L`)
 - M6B Candidate A target-definition: the exact approved target record is now frozen as a derivative of `05K` (`05L`)
+- M6B Candidate A direct admission: the one approved non-`baseline` value is now admitted and locally validated in the current clean worktree (`03AA`, `05H`, `05L`, `05M`)
 - Artifact equivalence acceptance surface: operational and green under the canonical grouped T7 bundle (`03J`, `06C`, `06D`, `06E`)
 - Review/runtime acceptance surface: operational and green under the canonical grouped T8 bundle (`03L`, `06C`, `06D`, `06E`)
 - Acceptance command convention: conceptual + shell-specific realizations for PowerShell, CMD, POSIX (`06J`, `06K`)
@@ -31,21 +32,21 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M6 direct-admission packet is frozen on merged `main` as `03AA` + `05H`
 - M6A PageEvidence workbench is now implemented and locally validated on the current clean branch as recorded by `05J`, including a pinned canonical report artifact for later M6B evidence refs
 - M6B Candidate A exact target record is now frozen in `05L`
-- The next justified MVVLC milestone step is later direct admission of that one approved value under `03AA` + `05H`, not more M6A construction and not more target-definition work
+- M6B Candidate A direct admission is now implemented and locally validated on the current clean branch as recorded by `05M`
+- No further MVVLC implementation lane should start before this achieved M6B branch is reviewed and either merged or rejected explicitly
 
-### Next lane to execute
+### Immediate next move
 
-- Start the later M6B direct-admission lane under `03AA` + `05H`
-- Use `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md` as the exact approved-target contract
-- Keep every non-approved non-`baseline` value fail-closed and experiment-hidden
-- Do not reopen OCR-routing, policy tuning, or outward identity/schema scope in the first Candidate A admission lane
+- Review and freeze the achieved M6B Candidate A admission lane recorded by `05M`
+- Merge the current clean branch only if the recorded owner-path, no-drift, and `06I` results remain accepted
+- Do not start a broader post-admission/defaulting or later-candidate lane by inference from `05M`; that remains separate future scope
 
 ### What is bounded residual
 
 - Repo-native Python acceptance-path enforcement (pack-specified, not CI-enforced)
 - Tier 2 performance capture breadth: the recorded artifact-aware comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture did not complete within practical session budget
 - Future drift outside audited authority surface
-- Direct M6B admission of the approved Candidate A target is not yet implemented; `baseline` remains the only integrated admitted runtime mode until that later lane is executed
+- Broader post-admission/defaulting and later-candidate work remains separate future scope; the current clean branch admits only the one approved Candidate A value and does not promote it to default
 
 ---
 
@@ -71,6 +72,7 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
 - `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
 - `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
+- `05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md`
 
 ### For "can we proceed?"
 - `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
@@ -130,3 +132,4 @@ Do not reopen merged M3/M4 closure without live contradictory evidence.
 Do not treat achieved M5 barrier closure as permission to admit approved non-baseline integrated runs without a separate frozen M6 packet.
 Do not treat the frozen M6 packet as permission to start code before one exact approved target is explicitly named.
 Do not treat the frozen M6A workbench packet as permission to admit Candidate A directly into integrated runtime.
+Do not treat the achieved `05M` M6B implementation record as permission to widen into broader post-admission/defaulting or additional-candidate scope without a separate freeze.
