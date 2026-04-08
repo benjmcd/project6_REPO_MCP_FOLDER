@@ -26,8 +26,8 @@ If the lane cannot name exactly one approved target under `03AA`, it must stop b
 - M5 coexistence / visibility barrier is merged and recorded.
 - The next milestone is M6: controlled admission / promotion of one explicitly approved non-baseline variant at a time.
 
-What remains before M6 can be called approve-as-is is not more M5 barrier work.
-It is a bounded M6 lane that:
+What remains before direct M6 admission can be called approve-as-is is not more M5 barrier work.
+It is a bounded direct-admission lane that:
 
 1. records the exact approved target,
 2. implements only the narrow owner changes required to admit that one value,
@@ -273,12 +273,13 @@ unless the formal evidence above actually exists.
 
 The next justified move is:
 
-1. keep working on a fresh merged-main M6 lane
-2. record the exact approved target and evidence refs before code edits
-3. re-audit the canonical authority files above
-4. implement only within the packet frozen here
-5. run the required validation bundles
-6. freeze that lane separately
+1. if the chosen architecture is a dedicated pre-admission workbench, freeze and execute that workbench lane first under `03AB` + `05I`
+2. otherwise keep working on a fresh merged-main direct-admission lane
+3. record the exact approved target and evidence refs before direct-admission code edits
+4. re-audit the canonical authority files above
+5. implement only within the packet frozen here
+6. run the required validation bundles
+7. freeze that lane separately
 
-The M6 lane is now prepared enough to proceed,
-but it remains intentionally fail-closed until one approved target is explicitly named.
+The direct-admission M6 lane remains prepared enough to proceed later,
+but it is intentionally fail-closed until one approved target is explicitly named and any separate pre-admission workbench choice is resolved.

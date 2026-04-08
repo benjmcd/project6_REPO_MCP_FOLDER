@@ -26,22 +26,23 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - M3 baseline-only selector/bootstrap is implemented and accepted on merged `main`
 - M4 acceptance gate is passed for the baseline-only bootstrap path
 - M5 later-scope coexistence / visibility barrier is implemented and locally validated on merged `main` under the frozen `03Z` + `05F` packet (`05G`, `06E`)
-- M6 planning/freeze packet is now frozen on the current clean branch as `03AA` + `05H`
-- The next justified MVVLC milestone step is bounded M6 admission implementation only after one approved target is explicitly named, not more M5 mechanism implementation
+- M6 direct-admission packet is frozen on merged `main` as `03AA` + `05H`
+- M6A PageEvidence workbench packet is now frozen on the current clean branch as `03AB` + `05I`
+- The next justified MVVLC milestone step is bounded M6A workbench implementation for Candidate A, not direct integrated admission yet
 
 ### Next lane to execute
 
-- Record one exact approved non-baseline selector value before any M6 code edits
-- Implement only the frozen M6 admission boundary under `03AA` + `05H`
-- Keep M5 barrier closure intact for all non-approved values
-- Do not treat the M6 packet as permission for uncontrolled multi-variant integrated rollout
+- Implement the dedicated PageEvidence workbench boundary under `03AB` + `05I`
+- Keep integrated runtime behavior unchanged by default during M6A
+- Capture Candidate A evidence and target-definition inputs without admitting it
+- Keep `03AA` + `05H` fail-closed for later direct admission
 
 ### What is bounded residual
 
 - Repo-native Python acceptance-path enforcement (pack-specified, not CI-enforced)
 - Tier 2 performance capture breadth: the recorded artifact-aware comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture did not complete within practical session budget
 - Future drift outside audited authority surface
-- Exact approved M6 target is not yet named in the pack; implementation remains fail-closed until that record exists
+- Exact approved M6B target is not yet named in the pack; direct admission remains fail-closed until that record exists
 
 ---
 
@@ -62,6 +63,8 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 - `05G_M5_BARRIER_IMPLEMENTATION_RECORD_AND_M6_HANDOFF.md`
 - `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
 - `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
+- `03AB_EXACT_M6A_PAGE_EVIDENCE_WORKBENCH_AND_OPTION2_BOUNDARY.md`
+- `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
 
 ### For "can we proceed?"
 - `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md`
@@ -120,3 +123,4 @@ Do not convert candidate control ideas into code without explicit freeze.
 Do not reopen merged M3/M4 closure without live contradictory evidence.
 Do not treat achieved M5 barrier closure as permission to admit approved non-baseline integrated runs without a separate frozen M6 packet.
 Do not treat the frozen M6 packet as permission to start code before one exact approved target is explicitly named.
+Do not treat the frozen M6A workbench packet as permission to admit Candidate A directly into integrated runtime.
