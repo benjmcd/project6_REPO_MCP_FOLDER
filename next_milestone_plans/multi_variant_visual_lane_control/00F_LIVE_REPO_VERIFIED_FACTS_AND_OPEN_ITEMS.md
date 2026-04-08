@@ -238,7 +238,7 @@ Items that remain genuinely open or bounded.
 1. **Tier 2 performance sample breadth:** The local performance gate was executed and passed, but the recorded artifact-aware Tier 2 comparison still uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget.
 2. **Broader residual consumer/visibility effects:** Residual effects beyond the already-verified live app-surface chain remain bounded but not zero. Mostly duplicated worktree/archive state and non-audited/generated surfaces.
 3. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.
-4. **Exact approved M6B target naming:** Still open. The pack freezes the direct-admission mechanism and execution packet, but it does not yet name one approved non-baseline selector value plus its explicit approval record and evidence refs.
+4. **Exact approved M6B target naming:** Still open. The pack now provides `05K` as the exact record template, but it does not yet name one approved non-baseline selector value or fill the required approval/evidence fields.
 5. **Integrated admission of approved non-baseline runs:** Still later-scope. The achieved M5 barrier lane does not itself admit new non-baseline run creation through the connector/processing owner path by default, and the achieved M6A workbench lane does not change that.
 
 ---
@@ -247,10 +247,10 @@ Items that remain genuinely open or bounded.
 
 ### Recommended stop condition
 
-At the current evidence level, the next justified scope is exact M6B Candidate A target-definition under the already-frozen `03AA` + `05H` packet family, not more M6A construction.
+At the current evidence level, the next justified scope is filling `05K` for exact M6B Candidate A target-definition under the already-frozen `03AA` + `05H` packet family, not more M6A construction.
 Repo-native Python enforcement remains a valid parallel hardening lane, but it is not the primary next MVVLC milestone step.
 
 ### Current proceed position
 
-Proceeding is justified for later M6B target-definition and direct-admission preparation using the achieved M5 barrier closure, the achieved M6A workbench record in `05J`, and the frozen `03AA` + `05H` packet as the direct-admission control boundary.
+Proceeding is justified for later M6B target-definition and direct-admission preparation using the achieved M5 barrier closure, the achieved M6A workbench record in `05J`, the exact target-record template in `05K`, and the frozen `03AA` + `05H` packet as the direct-admission control boundary.
 Baseline-only bootstrap closure, the later-scope M5 barrier closure, and the standalone M6A workbench lane remain accepted; the remaining uncertainty is bounded, explicit, and concentrated on one exact approved target record. Direct M6 admission still remains separately blocked until that record exists.

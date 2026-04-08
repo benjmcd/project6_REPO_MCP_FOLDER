@@ -80,6 +80,8 @@ The M6 lane must stop before editing if any of the following is true:
 
 If a stop condition is encountered, report it explicitly instead of widening by inference.
 
+`05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md` is the default exact record shape for satisfying stop conditions 1 through 3.
+
 ---
 
 ## Exact lane outcome required
