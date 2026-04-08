@@ -34,10 +34,11 @@ If you skip Stage 2 or Stage 3, implementation drift is likely.
 ### Current milestone note
 The pack now distinguishes:
 
-- **M6A**: dedicated PageEvidence workbench construction under `03AB` + `05I`
-- **M6B**: later direct admission of one approved selector value under `03AA` + `05H`
+- **M6A**: achieved dedicated PageEvidence workbench construction under `03AB` + `05I`, recorded by `05J`
+- **M6B target-definition**: immediate next pre-code step under `03AA` + `05K`
+- **M6B direct admission**: later implementation of one approved selector value under `03AA` + `05H`
 
-Do not use the M6B packet as the immediate implementation packet if the chosen path is the dedicated workbench-first Option 2 path.
+Do not use `05H` as the immediate implementation packet before `05K` is filled and explicitly approved. Treat `05J` as the evidence base and `05K` as the exact record shape for the current next lane.
 
 ---
 
@@ -107,6 +108,18 @@ Purpose:
 - distinguish workbench construction from direct admission
 - keep Candidate A pre-admission until explicit later approval
 - preserve the later M6B packet as a separate fail-closed lane
+
+### Stage 3B - if the current lane is M6B target-definition / approval prep
+Read:
+1. `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
+2. `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
+3. `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md`
+4. `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md`
+
+Purpose:
+- define one exact approved selector value before direct-admission code begins
+- tie that target to achieved workbench evidence rather than prose alone
+- preserve `05H` as a later direct-admission execution packet until `05K` is filled and explicitly approved
 
 ### Stage 4 — prepare the concrete validation surface
 Read:
@@ -235,6 +248,8 @@ For a full controlled implementation cycle, use:
 - `05D`
 - `05H`
 - `05I`
+- `05J`
+- `05K`
 - `06C`
 - `06D`
 - `06E`
@@ -246,7 +261,7 @@ For a full controlled implementation cycle, use:
 - `00F`
 - `00T`
 
-For the current next lane, `05I` is the immediate execution packet and `05H` remains the later direct-admission packet.
+For the current next lane, `05J` is the achieved evidence base, `05K` is the immediate target-definition record, and `05H` remains the later direct-admission execution packet.
 
 This is the most reliable working set for actual execution.
 
