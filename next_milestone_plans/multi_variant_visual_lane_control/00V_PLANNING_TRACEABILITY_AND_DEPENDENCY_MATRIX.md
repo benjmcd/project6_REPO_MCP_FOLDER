@@ -26,6 +26,8 @@ This is a reasoning/traceability layer, not a replacement for the documents them
 | `00T_STRICT_ADEQUACY_AUDIT_AND_PROCEED_DECISION.md` | proceed judgment | states why proceeding is justified and what is still bounded | `00F`, `06L` |
 | `03M_SELECTOR_ACTIVATION_SCOPE_AND_LIFETIME_POLICY.md` | selector activation control | constrains when/how selector behavior is allowed to matter | `03U`, `03V`, `03W` |
 | `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md` | isolation control model | prevents false assumptions about experiment isolation | `03Q`, `03S`, `03T`, `03L` |
+| `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md` | later direct-admission control | constrains the later one-target admission lane | `05H`, `03AB`, `05I` |
+| `03AB_EXACT_M6A_PAGE_EVIDENCE_WORKBENCH_AND_OPTION2_BOUNDARY.md` | immediate workbench control | constrains the dedicated PageEvidence / Option 2 workbench lane | `05I`, `03AA`, `05H` |
 | `03U_CANONICAL_SELECTOR_CONFIG_KEY_AND_FAIL_CLOSED_POLICY.md` | selector identity and fail behavior | defines the selector key and its safe interpretation | `03V`, `03P` |
 | `03V_SELECTOR_KEY_INSERTION_AND_CONSUMPTION_MAP.md` | selector propagation path | defines where the key is normalized, forwarded, defaulted, and first consumed | `03U`, `03W` |
 | `03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md` | seam freeze | defines the exact implementation surface allowed to vary | `03V`, `05D`, `06D` |
@@ -58,6 +60,8 @@ Interpretation:
 | Document | Primary role | Governing basis | Use stage |
 |---|---|---|---|
 | `05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md` | implementation path sequencing | control spine + boundary docs | pre-implementation / active execution |
+| `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md` | later direct-admission execution packet | `03AA` + achieved M5 barrier | later direct-admission execution |
+| `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md` | immediate workbench execution packet | `03AB` + achieved M5 barrier | immediate M6A execution |
 | `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md` | active test surface map | repo test evidence | validation preparation |
 | `06D_CRITICAL_BLOCKER_VALIDATION_SET.md` | required validation gates | `06E` + policy docs | pre-claim-complete validation |
 | `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md` | performance gate | repo-native fixture sources + local policy | validation/performance |
@@ -127,6 +131,16 @@ Interpretation:
   - direct endpoint/service evidence
   - run-bound persistence/exposure evidence
 
+### M6A vs later admission split
+- `03AB` justified by:
+  - achieved M5 barrier closure
+  - live dedicated evaluation-surface patterns in promotion/tuning tools and services
+  - the explicit Option 2, Candidate A first decision
+- `05I` justified by:
+  - `03AB`
+  - the need to keep workbench construction separate from direct integrated admission
+  - the existing fresh-worktree execution pattern already used by MVVLC lanes
+
 ### Proceed judgment
 - `00T` justified by:
   - `00F`
@@ -159,6 +173,10 @@ Use this matrix to identify:
 - which docs are mandatory before edits
 - which docs only matter at validation time
 - which docs are residual/narrowing docs rather than implementation control docs
+
+For the current milestone position:
+- `03AB` + `05I` are the immediate implementation-control pair
+- `03AA` + `05H` remain the later direct-admission pair
 
 ### If you are challenging adequacy
 Use this matrix to ask:
