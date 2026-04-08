@@ -68,6 +68,12 @@ If it conflicts with `00F`, `05E`, `05F`, `06E`, `03Y`, `03Z`, or `README_INDEX`
 - `05N` records the merged-main closure and the next-scope handoff.
 - No simultaneous baseline + A + B + C integrated rollout.
 
+### Post-M6B planning freeze (achieved / current)
+- `03AC` freezes the exact post-admission/defaulting scope and decision boundary.
+- `05O` freezes the exact planning packet for later defaulting/defer/retain-default decision work.
+- No default-promotion code is implied.
+- No Candidate B/C admission, OCR/media widening, policy retuning, or new dependency work is implied.
+
 ## Current roadmap position
 
 - M3 is complete for the baseline-only selector/bootstrap path.
@@ -76,7 +82,8 @@ If it conflicts with `00F`, `05E`, `05F`, `06E`, `03Y`, `03Z`, or `README_INDEX`
 - M6A standalone PageEvidence workbench implementation is complete on merged `main`.
 - M6B exact Candidate A target-definition is now complete in `05L`.
 - M6B direct admission of the one approved Candidate A value is now merged on `main`.
-- The immediate operational next move is a separate explicit post-admission/defaulting planning freeze, not more M6B mechanism work.
+- The exact post-admission/defaulting planning boundary is now frozen in `03AC` + `05O`.
+- The immediate operational next move is explicit decision work under that planning packet: retain `baseline` as default, open a later explicit program-decision amendment plus Candidate A default-promotion target-definition lane, or explicitly defer broader work.
 
 ## Key threshold
 
@@ -91,4 +98,4 @@ Bounded residuals that do not block M6 planning remain:
 - repo-native Python acceptance-path enforcement
 - Tier 2 performance sample breadth
 - broader non-audited duplicate/generated surfaces
-- later post-admission/defaulting and additional-candidate scope
+- later post-admission/defaulting decision and any additional-candidate scope beyond the frozen planning boundary

@@ -63,7 +63,7 @@ This reconciliation step only updates the pack so its active workflow/front-door
 
 The next justified MVVLC move is no longer M6B implementation work and no longer review/merge of the achieved Candidate A admission lane.
 
-It is:
+At the time this handoff was frozen, the next justified MVVLC move was:
 
 1. open a fresh merged-`main` explicit post-admission/defaulting planning freeze
 2. decide, explicitly rather than by inference:
@@ -74,3 +74,10 @@ It is:
 3. keep OCR-routing, media scope, and additional-candidate work out of scope unless separately frozen
 
 Repo-native Python acceptance-path enforcement remains a valid parallel hardening lane, but it is not the primary next MVVLC milestone step.
+
+That next planning step has since been frozen explicitly in:
+
+- `03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md`
+- `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
+
+This document remains the merged-main closure and handoff record for M6B, but it should no longer be read in isolation as if the post-admission/defaulting planning freeze is still only future work.
