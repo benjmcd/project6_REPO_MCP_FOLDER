@@ -70,15 +70,36 @@ Read together:
 
 - `backend/app/services/review_nrc_aps_catalog.py`
 - `backend/app/api/review_nrc_aps.py`
+- `backend/app/services/review_nrc_aps_overview.py`
+- `backend/app/services/review_nrc_aps_details.py`
+- `backend/app/services/review_nrc_aps_tree.py`
+- `backend/app/services/review_nrc_aps_graph.py`
+- `backend/app/services/review_nrc_aps_document_trace.py`
 - `backend/app/services/nrc_aps_evidence_report.py`
 - `backend/app/services/nrc_aps_evidence_report_export.py`
 - `backend/app/services/nrc_aps_evidence_report_export_package.py`
+
+### Frozen persistence and contract surfaces to re-check if any later proposal touches shared downstream representation
+
+- `backend/app/services/nrc_aps_content_index.py`
+- `backend/app/services/aps_retrieval_plane.py`
+- `backend/app/services/aps_retrieval_plane_contract.py`
+- `backend/app/services/aps_retrieval_plane_read.py`
+- `backend/app/services/nrc_aps_evidence_bundle.py`
+- `backend/app/services/nrc_aps_evidence_bundle_contract.py`
+- `backend/app/services/nrc_aps_evidence_citation_pack.py`
+- `backend/app/services/nrc_aps_evidence_citation_pack_contract.py`
+- `backend/app/schemas/review_nrc_aps.py`
+- `backend/app/schemas/api.py`
+- `backend/app/models/models.py`
 
 ### Existing externalized route classes
 
 - run submission through `POST /connectors/nrc-adams-aps/runs`
 - review run selection through `GET /review/nrc-aps` and `GET /runs`
-- run-bound review endpoints under `/runs/{run_id}/...`
+- review/document-trace entry through `GET /review/nrc-aps/document-trace`
+- run-bound review and document endpoints under `/runs/{run_id}/...`
+- NRC APS evidence-bundle/citation-pack endpoints
 - NRC APS evidence-report/export/package endpoints
 
 ### Frozen dependency posture

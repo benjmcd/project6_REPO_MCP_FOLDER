@@ -140,7 +140,6 @@ Do not treat the frozen M6A workbench packet as permission to admit Candidate A 
 Do not treat the achieved `05M` M6B implementation record or the merged-main closure/handoff in `05N` as permission to widen into broader post-admission/defaulting or additional-candidate scope without a separate freeze.
 Do not treat the achieved `03AC` + `05O` post-admission/defaulting planning freeze as permission to start default-promotion or additional-candidate code without another explicit record.
 
-
 # 00A Master Navigation and Review Map
 
 ## Purpose
