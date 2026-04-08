@@ -40,8 +40,9 @@ The pack now distinguishes:
 - **M6B merged-main closure/handoff**: merged-main closure and next-scope handoff recorded by `05N`
 - **Post-admission/defaulting planning freeze**: exact later-scope planning boundary and decision packet now frozen in `03AC` + `05O`
 - **Current-horizon post-admission/defaulting decision**: `baseline` explicitly retained as default in `05P`
+- **Retained-default merged-main closure/handoff**: merged-main closure and stable-hold handoff for the retained-default state recorded by `05Q`
 
-Do not use `05K` by itself as approval. Treat `05J` as the evidence base, `05K` as the governing template, `05L` as the exact approved-target record, `05M` as the achieved implementation record for the lane that merged, and `05N` as the merged-main closure/handoff. Treat `03AC` + `05O` as the planning-only boundary for broader post-admission/defaulting questions, and `05P` as the current-horizon decision that keeps `baseline` as default. Do not treat `05M`, `05N`, `03AC`, `05O`, or `05P` as permission to widen directly into code.
+Do not use `05K` by itself as approval. Treat `05J` as the evidence base, `05K` as the governing template, `05L` as the exact approved-target record, `05M` as the achieved implementation record for the lane that merged, and `05N` as the merged-main closure/handoff. Treat `03AC` + `05O` as the planning-only boundary for broader post-admission/defaulting questions, `05P` as the current-horizon decision that keeps `baseline` as default, and `05Q` as the merged-main closure/handoff that leaves the primary MVVLC path in a hold state. Do not treat `05M`, `05N`, `03AC`, `05O`, `05P`, or `05Q` as permission to widen directly into code.
 
 ---
 
@@ -267,7 +268,7 @@ For a full controlled implementation cycle, use:
 - `00F`
 - `00T`
 
-For the current merged-main state, `05J` is the achieved evidence base, `05K` is the governing template, `05L` is the frozen approved-target record, `05M` is the achieved admission implementation record, `05N` is the merged-main closure/handoff, and `03AC` + `05O` are the bounded planning-only packet for any later post-admission/defaulting decision work.
+For the current merged-main state, `05J` is the achieved evidence base, `05K` is the governing template, `05L` is the frozen approved-target record, `05M` is the achieved admission implementation record, `05N` is the merged-main closure/handoff for Candidate A admission, `03AC` + `05O` are the bounded planning-only packet for later post-admission/defaulting decision work, `05P` is the retained-default decision, and `05Q` is the merged-main closure/handoff for that retained-default state.
 
 This is the most reliable working set for actual execution.
 

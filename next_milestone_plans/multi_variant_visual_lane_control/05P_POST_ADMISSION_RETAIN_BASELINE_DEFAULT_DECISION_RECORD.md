@@ -6,6 +6,10 @@ Freeze the exact current-horizon decision that follows the merged M6B Candidate 
 
 This is a decision record, not an implementation packet and not a program-decision amendment.
 
+Merged `main` now contains this decision as authority, and its merged-main closure/handoff is recorded in:
+
+- `05Q_POST_ADMISSION_RETAIN_BASELINE_MERGED_MAIN_CLOSURE_AND_HANDOFF.md`
+
 ---
 
 ## Governing basis
@@ -85,6 +89,8 @@ No later implementation lane should start from this record alone.
 
 ## Current next-step posture
 
+At the time this decision record was frozen, the following was the correct next-step posture:
+
 For the primary MVVLC milestone path, there is no additional implementation move justified by this record.
 
 The only justified future moves are:
@@ -94,3 +100,4 @@ The only justified future moves are:
 3. pursue repo-native enforcement hardening as a separate parallel lane
 
 This record closes the current-horizon post-admission/defaulting decision question without reopening scope.
+That retained-default state has since been merged and handed off explicitly by `05Q`.
