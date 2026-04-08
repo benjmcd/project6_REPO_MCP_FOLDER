@@ -83,5 +83,6 @@ That next planning step has since been frozen explicitly in:
 That later planning phase has since been resolved for the current horizon by:
 
 - `05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
+- `05Q_POST_ADMISSION_RETAIN_BASELINE_MERGED_MAIN_CLOSURE_AND_HANDOFF.md`
 
-This document remains the merged-main closure and handoff record for M6B, but it should no longer be read in isolation as if the post-admission/defaulting planning freeze or the current-horizon retain-default decision are still only future work.
+This document remains the merged-main closure and handoff record for M6B, but it should no longer be read in isolation as if the post-admission/defaulting planning freeze, the current-horizon retain-default decision, or the retained-default merged-main closure are still only future work.
