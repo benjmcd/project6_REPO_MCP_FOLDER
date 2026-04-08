@@ -2,7 +2,8 @@
 
 ## Purpose
 
-Record the achieved M6B Candidate A direct-admission lane so the active pack can treat the current clean worktree as implemented and locally validated without overstating merged-`main` closure.
+Record the achieved M6B Candidate A direct-admission lane that was implemented in a clean worktree and later merged into `main`.
+Use this document as the implementation record for the lane that merged, and use `05N` for the merged-main closure and next-scope handoff.
 
 This document is an implementation record, not a new control packet.
 The governing admission boundary remains `03AA` + `05H`, and the exact approved target remains `05L`.
@@ -11,7 +12,7 @@ The governing admission boundary remains `03AA` + `05H`, and the exact approved 
 
 ## Outcome
 
-The bounded M6B lane is implemented in the current clean worktree within the default owner boundary frozen by `05H`.
+The bounded M6B lane was implemented in a clean worktree within the default owner boundary frozen by `05H`.
 
 Implemented owner files:
 
@@ -86,7 +87,7 @@ No conditional owner files required widening.
 
 ## Validation executed
 
-All validation below was run from the current clean M6B worktree with `PYTHONPATH=backend`.
+All validation below was run from the clean M6B implementation worktree with `PYTHONPATH=backend`.
 
 ### Required owner-path bundle
 
@@ -239,7 +240,7 @@ This lane does **not**:
 
 ## M6B judgment
 
-M6B Candidate A direct admission is now approve-as-is in the current clean worktree.
+At the time this record was frozen, M6B Candidate A direct admission was approve-as-is in the clean implementation worktree.
 
 That means:
 
@@ -250,18 +251,17 @@ That means:
 
 This does **not** mean:
 
-- merged `main` already contains the achieved M6B lane
 - Candidate A is now the default
 - broader promotion/defaulting or later candidate admission is implicitly approved
+
+That clean-worktree approval step has since been merged into `main` on April 8, 2026 via PR `#21` at commit `df44e07b39198af36a9c6d854421a630c75e4049`.
+Use `05N` for the merged-main closure and post-admission handoff judgment.
 
 ---
 
 ## Next justified move
 
-The next justified operational move is no longer more M6B implementation work.
+At the time this record was frozen, the next justified operational move was to freeze, review, and merge this achieved M6B lane.
 
-It is:
-
-1. freeze and review this achieved M6B lane
-2. merge it if the recorded validation and no-drift findings hold
-3. treat any later post-admission promotion/defaulting, deprecation, or additional candidate work as separate scope requiring a new explicit freeze rather than inference from this lane
+That merge step has since occurred.
+The next-scope handoff is now recorded in `05N`, and any later post-admission promotion/defaulting, deprecation, or additional candidate work still requires a new explicit freeze rather than inference from this lane.
