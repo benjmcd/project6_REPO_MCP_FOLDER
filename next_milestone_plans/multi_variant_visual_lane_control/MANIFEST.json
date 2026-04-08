@@ -1,6 +1,6 @@
 {
-  "package_name": "multi_variant_visual_lane_control_pack_v52",
-  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, an achieved standalone M6A PageEvidence workbench lane, a pinned canonical Candidate A workbench report artifact, a frozen approved M6B Candidate A target record, an achieved M6B Candidate A admission implementation record, and merged-main closure/handoff alignment around the next separate post-admission/defaulting planning freeze",
+  "package_name": "multi_variant_visual_lane_control_pack_v53",
+  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, an achieved standalone M6A PageEvidence workbench lane, a pinned canonical Candidate A workbench report artifact, a frozen approved M6B Candidate A target record, an achieved M6B Candidate A admission implementation record, merged-main closure/handoff alignment, and a frozen exact post-admission/defaulting planning boundary and decision packet",
   "improvements_over_v6": [
     "added selector activation scope/lifetime policy",
     "added experiment isolation mechanism policy",
@@ -12,7 +12,7 @@
     "Python acceptance path is pack-specified but not visibly repo-enforced in checked root workflow/hook/config surfaces",
     "Tier 2 performance sample breadth remains bounded by the declared-root handoff fallback sample",
     "bounded uncertainty remains in duplicated archive/worktree state and other non-audited/generated surfaces",
-    "broader post-admission/defaulting and additional-candidate scope remains separate future work beyond the merged-main M6B Candidate A lane"
+    "broader post-admission/defaulting decision work and any later implementation remain separate future work beyond the frozen planning boundary"
   ],
   "contains": [
     "00A_MASTER_NAVIGATION_AND_REVIEW_MAP.md",
@@ -62,6 +62,7 @@
     "03Z_EXACT_M5_BASELINE_VISIBILITY_AND_RUNTIME_ROOT_COEXISTENCE_MECHANISM.md",
     "03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md",
     "03AB_EXACT_M6A_PAGE_EVIDENCE_WORKBENCH_AND_OPTION2_BOUNDARY.md",
+    "03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md",
     "05D_SELECTOR_BOOTSTRAP_BASELINE_ONLY_PLAN.md",
     "05E_POST_M4_APPROVAL_READY_NEXT_LANE_PLAN.md",
     "05F_M5_APPROVE_AS_IS_EXECUTION_PACKET.md",
@@ -73,6 +74,7 @@
     "05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md",
     "05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md",
     "05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md",
+    "05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md",
     "06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md",
     "06D_CRITICAL_BLOCKER_VALIDATION_SET.md",
     "06E_BLOCKER_DECISION_TABLE.md",
@@ -312,5 +314,10 @@
     "added the merged-main M6B closure and post-admission handoff record as 05N",
     "reconciled the active front-door and workflow layer from pre-merge branch-review language to merged-main closure state",
     "shifted the next justified MVVLC move from M6B review/merge to a separate explicit post-admission/defaulting planning freeze"
+  ],
+  "improvements_over_v52": [
+    "added the exact post-admission/defaulting scope and decision boundary as 03AC",
+    "added the exact post-admission/defaulting planning freeze packet as 05O",
+    "shifted the active pack from opening the planning freeze to using the frozen planning packet for explicit later-scope decision work"
   ]
 }

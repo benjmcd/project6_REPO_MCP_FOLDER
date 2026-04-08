@@ -147,16 +147,18 @@ Read:
 6. `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
 7. `05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md`
 8. `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md`
-9. `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md`
-10. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
-11. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
-12. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
-13. `06K_SHELL_SPECIFIC_CANONICAL_ACCEPTANCE_COMMANDS.md`
+9. `03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md`
+10. `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md`
+11. `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md`
+12. `06D_CRITICAL_BLOCKER_VALIDATION_SET.md`
+13. `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
+14. `06J_CANONICAL_ACCEPTANCE_COMMAND_CONVENTION.md`
+15. `06K_SHELL_SPECIFIC_CANONICAL_ACCEPTANCE_COMMANDS.md`
 
 Goal:
 - determine whether the pack translates into a real validation path
 - assess whether implementation can be checked in practice
-- determine whether the pack now closes the exact M6B implementation gap with a real achieved-lane record plus merged-main closure/handoff and points to the correct separate next planning lane
+- determine whether the pack now closes the exact M6B implementation gap with a real achieved-lane record plus merged-main closure/handoff and points to the correct bounded post-admission/defaulting decision packet
 
 ### Pass 5 — challenge, narrowing, residuals
 Read:
@@ -204,7 +206,7 @@ Answer:
 2. Does it overclaim beyond verified evidence?
 3. Does it silently conflict with a controlling document?
 4. Is it still current, or has a later narrowing doc modified its force?
-5. If it uses general `M6` language, does it hide an important `M6A`, `05L` approved-target, or later `M6B` direct-admission distinction?
+5. If it uses general `M6` language, does it hide an important `M6A`, `05L` approved-target, later `M6B` direct-admission, or `03AC` + `05O` post-admission/defaulting distinction?
 
 If you skip Step 3 or Step 5, the audit is not strict enough.
 

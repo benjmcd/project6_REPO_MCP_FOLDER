@@ -28,6 +28,7 @@ This is a reasoning/traceability layer, not a replacement for the documents them
 | `03N_EXPERIMENT_ISOLATION_MECHANISM_POLICY.md` | isolation control model | prevents false assumptions about experiment isolation | `03Q`, `03S`, `03T`, `03L` |
 | `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md` | target-definition and later direct-admission control | constrains the one-target admission lane and the exact record that must exist before code | `05K`, `05L`, `05H`, `03AB`, `05I`, `05J` |
 | `03AB_EXACT_M6A_PAGE_EVIDENCE_WORKBENCH_AND_OPTION2_BOUNDARY.md` | achieved workbench control | constrains the dedicated PageEvidence / Option 2 workbench lane that now serves as precursor evidence for later direct admission | `05I`, `05J`, `03AA`, `05K`, `05L`, `05H` |
+| `03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md` | post-admission/defaulting planning boundary | constrains the later-scope planning phase after merged M6B closure and prevents default-promotion or wider variant work from starting by inference | `05O`, `05N`, `06E`, `00D`, `00F` |
 | `03U_CANONICAL_SELECTOR_CONFIG_KEY_AND_FAIL_CLOSED_POLICY.md` | selector identity and fail behavior | defines the selector key and its safe interpretation | `03V`, `03P` |
 | `03V_SELECTOR_KEY_INSERTION_AND_CONSUMPTION_MAP.md` | selector propagation path | defines where the key is normalized, forwarded, defaulted, and first consumed | `03U`, `03W` |
 | `03W_EXACT_PROCESS_PDF_SEAM_FREEZE_SPECIFICATION.md` | seam freeze | defines the exact implementation surface allowed to vary | `03V`, `05D`, `06D` |
@@ -66,7 +67,8 @@ Interpretation:
 | `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md` | governing target-record template | `03AA` + `05J` + achieved M5 barrier | exact shape for current and future approved-target records |
 | `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md` | frozen approved Candidate A target record | `03AA` + `05J` + `05K` + achieved M5 barrier | immediate bridge into later direct-admission execution |
 | `05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md` | achieved direct-admission implementation record | `03AA` + `05H` + `05L` + completed M6B validation | implementation-lane record for the admitted Candidate A lane that later merged |
-| `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md` | merged-main closure and next-scope handoff record | `05M` + merged PR `#21` + `06E` | reconciles the active pack to merged-main M6B closure and points to the next separate planning freeze |
+| `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md` | merged-main closure and next-scope handoff record | `05M` + merged PR `#21` + `06E` | reconciles the active pack to merged-main M6B closure and hands the pack forward into the now-frozen post-admission/defaulting planning phase |
+| `05O_POST_ADMISSION_DEFAULTING_PLANNING_FREEZE_PACKET.md` | exact post-admission/defaulting planning packet | `03AC` + `05N` + `06E` | turns the next step from vague future scope into one bounded planning packet with explicit allowed outcomes and stop conditions |
 | `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md` | active test surface map | repo test evidence | validation preparation |
 | `06D_CRITICAL_BLOCKER_VALIDATION_SET.md` | required validation gates | `06E` + policy docs | pre-claim-complete validation |
 | `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md` | performance gate | repo-native fixture sources + local policy | validation/performance |
@@ -166,6 +168,14 @@ Interpretation:
   - PR `#21` merged the achieved M6B lane into `main`
   - the need to reconcile the active pack from pre-merge branch review language to merged-main closure
   - the need to name the next separate post-admission/defaulting planning freeze explicitly instead of leaving it implied
+- `03AC` justified by:
+  - merged `main` already admits Candidate A but still leaves broader defaulting/deferred scope unresolved
+  - the need to enumerate exactly which modules, endpoints, dependencies, and widening classes belong to later-scope planning versus separate freezes
+  - the need to keep later-scope questions bounded without treating merged M6B closure as implicit permission
+- `05O` justified by:
+  - `03AC`
+  - the need to convert the post-admission/defaulting phase from a general note into a concrete decision packet
+  - the need to constrain later outcomes to explicit no-code decisions before any future target-definition or implementation lane begins
 
 ### Proceed judgment
 - `00T` justified by:
@@ -208,7 +218,8 @@ For the current milestone position:
 - `03AA` + `05H` are the governing direct-admission execution pair
 - `05M` is now the achieved implementation record for the admitted Candidate A lane that merged into `main`
 - `05N` is now the merged-main closure/handoff record for that achieved lane
-- the next justified MVVLC move is a separate explicit post-admission/defaulting planning freeze, not another M6B implementation lane by inference
+- `03AC` + `05O` now freeze the exact post-admission/defaulting planning boundary and decision packet
+- the next justified MVVLC move is explicit post-admission/defaulting decision work under `03AC` + `05O`, not another M6B implementation lane by inference
 
 ### If you are challenging adequacy
 Use this matrix to ask:
