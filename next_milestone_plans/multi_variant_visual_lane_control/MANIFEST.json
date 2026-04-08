@@ -1,12 +1,18 @@
 {
-  "package_name": "multi_variant_visual_lane_control_pack_v53",
-  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, an achieved standalone M6A PageEvidence workbench lane, a pinned canonical Candidate A workbench report artifact, a frozen approved M6B Candidate A target record, an achieved M6B Candidate A admission implementation record, merged-main closure/handoff alignment, and a frozen exact post-admission/defaulting planning boundary and decision packet",
+  "package_name": "multi_variant_visual_lane_control_pack_v54",
+  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, an achieved standalone M6A PageEvidence workbench lane, a pinned canonical Candidate A workbench report artifact, a frozen approved M6B Candidate A target record, an achieved M6B Candidate A admission implementation record, merged-main closure/handoff alignment, and a frozen exact post-admission/defaulting planning boundary and decision packet that now explicitly carries downstream document-trace, retrieval/evidence, and citation-pack surface constraints",
   "improvements_over_v6": [
     "added selector activation scope/lifetime policy",
     "added experiment isolation mechanism policy",
     "added critical blocker validation set",
     "elevated OCR-vs-visual boundary ambiguity into a first-class freeze item",
     "incorporated adversarial second-opinion critique without treating its code suggestions as settled truth"
+  ],
+  "improvements_over_v53": [
+    "tightened the post-admission/defaulting planning packet to explicitly carry review-document-trace downstream surfaces",
+    "made the run-bound review projection family explicit instead of leaving overview/tree/details/graph modules implicit behind endpoint wording",
+    "made retrieval-plane, evidence-bundle, and citation-pack contract surfaces explicit within the later defaulting boundary",
+    "clarified that later defaulting work must re-audit those downstream module and endpoint classes rather than inferring narrower impact"
   ],
   "remaining_open_items": [
     "Python acceptance path is pack-specified but not visibly repo-enforced in checked root workflow/hook/config surfaces",

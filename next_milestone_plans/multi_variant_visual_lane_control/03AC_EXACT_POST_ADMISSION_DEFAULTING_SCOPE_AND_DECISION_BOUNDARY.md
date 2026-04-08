@@ -43,12 +43,14 @@ It also preserves the fact that `00D` still treats `baseline` as the default pro
 2. `backend/app/services/nrc_aps_artifact_ingestion.py` still forwards `visual_lane_mode` and required no widening for the merged M6B lane.
 3. `backend/app/services/nrc_aps_document_processing.py` now preserves exactly `baseline` and `candidate_a_page_evidence_v1`, and contains the admitted Candidate A seam-local path.
 4. `backend/app/services/review_nrc_aps_runtime.py` now treats exactly `baseline` and `candidate_a_page_evidence_v1` as baseline-visible.
-5. Review/catalog/API/report/export/package surfaces remain governed by the already-frozen M5 and M6 no-drift rules; the merged M6B lane did not widen those outward surfaces.
+5. Review/catalog/API/document-trace/retrieval/evidence-bundle/report/export/package surfaces remain governed by the already-frozen M5 and M6 no-drift rules; the merged M6B lane did not widen those outward surfaces.
 6. The active run-submission and run-review entry surfaces remain the same:
    - `POST /connectors/nrc-adams-aps/runs`
    - `GET /review/nrc-aps`
+   - `GET /review/nrc-aps/document-trace`
    - `GET /runs`
-   - existing run-bound `/runs/{run_id}/...` review endpoints
+   - existing run-bound `/runs/{run_id}/...` review and document-trace endpoints
+   - existing NRC APS evidence-bundle/citation-pack endpoints
    - existing NRC APS evidence-report/export/package endpoints
 7. The admitted Candidate A mechanism already reuses the existing deterministic PageEvidence service and workbench evidence:
    - `backend/app/services/nrc_aps_page_evidence.py`
@@ -101,6 +103,11 @@ Only if a repo-confirmed blocker proves the default owner set is insufficient:
 
 - `backend/app/services/review_nrc_aps_catalog.py`
 - `backend/app/api/review_nrc_aps.py`
+- `backend/app/services/review_nrc_aps_overview.py`
+- `backend/app/services/review_nrc_aps_details.py`
+- `backend/app/services/review_nrc_aps_tree.py`
+- `backend/app/services/review_nrc_aps_graph.py`
+- `backend/app/services/review_nrc_aps_document_trace.py`
 - `backend/app/services/nrc_aps_evidence_report.py`
 - `backend/app/services/nrc_aps_evidence_report_export.py`
 - `backend/app/services/nrc_aps_evidence_report_export_package.py`
@@ -114,6 +121,13 @@ Remain out of scope unless a later explicit freeze proves otherwise:
 - `backend/app/services/review_nrc_aps_runtime_roots.py`
 - `backend/app/services/review_nrc_aps_runtime_db.py`
 - `backend/app/services/nrc_aps_content_index.py`
+- `backend/app/services/aps_retrieval_plane.py`
+- `backend/app/services/aps_retrieval_plane_contract.py`
+- `backend/app/services/aps_retrieval_plane_read.py`
+- `backend/app/services/nrc_aps_evidence_bundle.py`
+- `backend/app/services/nrc_aps_evidence_bundle_contract.py`
+- `backend/app/services/nrc_aps_evidence_citation_pack.py`
+- `backend/app/services/nrc_aps_evidence_citation_pack_contract.py`
 - `backend/app/schemas/review_nrc_aps.py`
 - `backend/app/schemas/api.py`
 - `backend/app/models/models.py`
@@ -141,9 +155,11 @@ If a future defaulting proposal requires a new dependency or library class, that
 This planning phase must treat the following as frozen outward-surface classes:
 
 - run submission through `POST /connectors/nrc-adams-aps/runs`
-- review run selection and run-bound review endpoints
+- review run selection through `GET /review/nrc-aps` and `GET /runs`
+- review/document-trace endpoints through `GET /review/nrc-aps/document-trace` and existing run-bound `/runs/{run_id}/...` document endpoints
+- evidence-bundle and citation-pack endpoints and persistence paths
 - evidence-report/export/package endpoints and persistence paths
-- existing retrieval/evidence/document-trace surfaces
+- existing retrieval/evidence/document-trace persistence and contract surfaces
 
 The allowed question is whether the admitted non-`baseline` value ever becomes the default selector behavior.
 The disallowed move is changing endpoint shapes, adding outward variant identity, or redefining surface contracts by inference.

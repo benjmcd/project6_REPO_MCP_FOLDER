@@ -140,7 +140,6 @@ Do not treat the frozen M6A workbench packet as permission to admit Candidate A 
 Do not treat the achieved `05M` M6B implementation record or the merged-main closure/handoff in `05N` as permission to widen into broader post-admission/defaulting or additional-candidate scope without a separate freeze.
 Do not treat the achieved `03AC` + `05O` post-admission/defaulting planning freeze as permission to start default-promotion or additional-candidate code without another explicit record.
 
-
 # 00A Master Navigation and Review Map
 
 ## Purpose
@@ -523,7 +522,6 @@ For future use, review in this order:
 - `06E_BLOCKER_DECISION_TABLE.md`
 - `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md`
 
-
 # 00F Live Repo Verified Facts and Open Items
 
 ## Section index
@@ -795,7 +793,6 @@ Repo-native Python enforcement remains a valid parallel hardening lane, but it i
 
 Proceeding is justified for explicit post-admission/defaulting decision work using the achieved M5 barrier closure, the achieved M6A workbench record and pinned canonical report artifact in `05J`, the frozen approved target record in `05L`, the achieved M6B implementation record in `05M`, the merged-main closure/handoff in `05N`, the now-frozen `03AC` + `05O` planning packet, and the frozen `03AA` + `05H` packet as the already-completed admission boundary.
 Baseline-only bootstrap closure, the later-scope M5 barrier closure, the standalone M6A workbench lane, the exact Candidate A approved-target freeze, the merged-main M6B implementation, and the merged-main closure/handoff remain accepted; the remaining uncertainty is bounded, explicit, and concentrated on post-admission future scope rather than on the current admitted Candidate A lane itself.
-
 
 # 06E Blocker Decision Table
 
