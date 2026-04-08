@@ -29,7 +29,8 @@ No inspect-only compatibility files required widening.
 1. A dedicated internal PageEvidence service exists.
 2. Candidate A can be executed through an isolated standalone runner.
 3. The workbench emits explicit JSON evidence reports to caller-owned output paths.
-4. Candidate A remains pre-admission:
+4. One durable canonical Candidate A workbench report artifact is now pinned under `tests/reports/` for later M6B target-definition use.
+5. Candidate A remains pre-admission:
    - no non-`baseline` selector value is admitted
    - integrated runtime behavior remains unchanged by default
    - no review/runtime/report/export identity surfaces were widened
@@ -64,6 +65,9 @@ No inspect-only compatibility files required widening.
 - explicit fixture-ID execution against the repo-native NRC APS fixture manifest
 - explicit PDF-path execution for isolated local analysis
 - caller-owned report output via `--report`
+- canonical durable-report support via:
+  - `--path-mode repo_relative`
+  - `--generated-at-utc`
 - threshold tuning via:
   - `--text-word-threshold`
   - `--visual-coverage-threshold`
@@ -85,7 +89,7 @@ $env:PYTHONPATH='backend'; python -m pytest backend/tests/test_nrc_aps_page_evid
 
 Result:
 
-- `9 passed`
+- `10 passed`
 
 ### Required baseline-compatibility bundle
 
@@ -111,6 +115,22 @@ Result:
 
 - exit code `0`
 
+### Pinned canonical Candidate A report artifact
+
+Command:
+
+```powershell
+$env:PYTHONPATH='backend'; python tools/run_nrc_aps_page_evidence_workbench.py --report tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json --fixture-id ml17123a319 --fixture-id layout --fixture-id fontish --fixture-id scanned --fixture-id mixed --path-mode repo_relative --generated-at-utc 2026-04-07T00:00:00Z
+```
+
+Result:
+
+- exit code `0`
+- pinned artifact ref: `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json`
+- exact fixture IDs are explicit rather than default-inferred
+- report paths are repo-relative, not machine-local absolute paths
+- generated timestamp is pinned so the artifact can be cited durably in `05K`
+
 ---
 
 ## No-drift determination
@@ -122,7 +142,7 @@ The lane satisfies the `05I` no-drift assertions:
 - no new outward review/API/report/export identity fields were introduced
 - no review/runtime/report/export/package visibility rules were widened
 - no shared runtime roots were seeded or contaminated by validation
-- workbench outputs remain isolated to caller-owned or temp paths
+- workbench outputs remain isolated to caller-owned or temp paths except for the one explicitly pinned canonical report artifact under `tests/reports/`
 
 No changes were made to:
 

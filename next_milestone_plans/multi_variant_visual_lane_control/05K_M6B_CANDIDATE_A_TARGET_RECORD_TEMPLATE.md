@@ -54,6 +54,7 @@ provenance:
   source_workbench_branch: "<branch name>"
   source_workbench_commit: "<commit sha>"
   source_workbench_record_ref: "<doc path or artifact ref>"
+  source_workbench_report_ref: "<exact durable canonical workbench report ref>"
   source_runner_ref: "<tool path>"
   source_service_ref: "<service path>"
 
@@ -78,6 +79,8 @@ required_invariants:
   no_runtime_root_allowlist_redesign: true
 
 evidence_refs:
+  canonical_workbench_report_refs:
+    - "<exact durable workbench report json ref>"
   workbench_validation_refs:
     - "<test/doc/artifact ref>"
   comparison_refs:
@@ -146,6 +149,7 @@ At minimum it must identify:
 - the workbench branch
 - the exact commit
 - the M6A implementation record or equivalent frozen artifact
+- the exact durable canonical workbench report artifact being promoted as evidence
 - the actual runner and service refs used to produce the candidate evidence
 
 ### `approved_behavior_delta`
@@ -181,6 +185,9 @@ Acceptable refs include:
 - exact batch-manifest paths
 - exact commit SHAs
 
+At least one exact durable canonical workbench report JSON ref is required for Candidate A.
+Do not rely only on tests and prose if a pinned workbench report artifact exists.
+
 Unacceptable refs include:
 
 - "see earlier discussion"
@@ -207,7 +214,7 @@ It must name the validation bundles and the exact post-admission truths the lane
 Before starting M6B code, confirm all of the following are answered:
 
 1. What exact selector string will represent Candidate A?
-2. Which exact workbench commit and artifacts justify Candidate A?
+2. Which exact workbench commit and durable canonical report artifact justify Candidate A?
 3. What exact behavior is allowed to differ from baseline?
 4. What exact behavior must remain unchanged?
 5. What exact evidence proves Candidate A is the one approved first?
