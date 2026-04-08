@@ -65,7 +65,8 @@ Interpretation:
 | `05J_M6A_PAGE_EVIDENCE_WORKBENCH_IMPLEMENTATION_RECORD.md` | achieved workbench implementation record | `03AB` + `05I` + completed M6A validation | immediate evidence base for the frozen approved-target record and later direct admission |
 | `05K_M6B_CANDIDATE_A_TARGET_RECORD_TEMPLATE.md` | governing target-record template | `03AA` + `05J` + achieved M5 barrier | exact shape for current and future approved-target records |
 | `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md` | frozen approved Candidate A target record | `03AA` + `05J` + `05K` + achieved M5 barrier | immediate bridge into later direct-admission execution |
-| `05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md` | achieved direct-admission implementation record | `03AA` + `05H` + `05L` + completed M6B validation | current clean-worktree closure record for the admitted Candidate A lane |
+| `05M_M6B_CANDIDATE_A_ADMISSION_IMPLEMENTATION_RECORD.md` | achieved direct-admission implementation record | `03AA` + `05H` + `05L` + completed M6B validation | implementation-lane record for the admitted Candidate A lane that later merged |
+| `05N_M6B_MERGED_MAIN_CLOSURE_AND_POST_ADMISSION_HANDOFF.md` | merged-main closure and next-scope handoff record | `05M` + merged PR `#21` + `06E` | reconciles the active pack to merged-main M6B closure and points to the next separate planning freeze |
 | `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md` | active test surface map | repo test evidence | validation preparation |
 | `06D_CRITICAL_BLOCKER_VALIDATION_SET.md` | required validation gates | `06E` + policy docs | pre-claim-complete validation |
 | `06I_LOCAL_PERFORMANCE_BASELINE_AND_REGRESSION_CHECK_SPECIFICATION.md` | performance gate | repo-native fixture sources + local policy | validation/performance |
@@ -161,6 +162,10 @@ Interpretation:
   - full `05H` validation-bundle execution
   - rerun `06I` evidence within the frozen thresholds
   - the need to record the achieved lane explicitly rather than treating raw code diffs as closure by implication
+- `05N` justified by:
+  - PR `#21` merged the achieved M6B lane into `main`
+  - the need to reconcile the active pack from pre-merge branch review language to merged-main closure
+  - the need to name the next separate post-admission/defaulting planning freeze explicitly instead of leaving it implied
 
 ### Proceed judgment
 - `00T` justified by:
@@ -201,8 +206,9 @@ For the current milestone position:
 - `03AA` + `05K` define the governing target-record shape
 - `05L` is the achieved approved-target record for Candidate A
 - `03AA` + `05H` are the governing direct-admission execution pair
-- `05M` is now the achieved current-clean-worktree implementation record for the admitted Candidate A lane
-- no further MVVLC implementation lane should start before the achieved M6B branch is reviewed and explicitly merged or rejected
+- `05M` is now the achieved implementation record for the admitted Candidate A lane that merged into `main`
+- `05N` is now the merged-main closure/handoff record for that achieved lane
+- the next justified MVVLC move is a separate explicit post-admission/defaulting planning freeze, not another M6B implementation lane by inference
 
 ### If you are challenging adequacy
 Use this matrix to ask:

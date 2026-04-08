@@ -36,9 +36,10 @@ The pack now distinguishes:
 
 - **M6A**: achieved dedicated PageEvidence workbench construction under `03AB` + `05I`, recorded by `05J`
 - **M6B target-definition**: frozen derivative record `05L` built from template `05K`
-- **M6B direct admission**: achieved current clean-worktree implementation of one approved selector value under `03AA` + `05H`, recorded by `05M`
+- **M6B direct admission**: achieved implementation of one approved selector value under `03AA` + `05H`, recorded by `05M`
+- **M6B merged-main closure/handoff**: merged-main closure and next-scope handoff recorded by `05N`
 
-Do not use `05K` by itself as approval. Treat `05J` as the evidence base, `05K` as the governing template, `05L` as the exact approved-target record, and `05M` as the achieved implementation record for the current clean worktree. Do not treat `05M` as permission to widen into broader post-admission/defaulting scope.
+Do not use `05K` by itself as approval. Treat `05J` as the evidence base, `05K` as the governing template, `05L` as the exact approved-target record, `05M` as the achieved implementation record for the lane that merged, and `05N` as the merged-main closure/handoff. Do not treat `05M` or `05N` as permission to widen into broader post-admission/defaulting scope.
 
 ---
 
