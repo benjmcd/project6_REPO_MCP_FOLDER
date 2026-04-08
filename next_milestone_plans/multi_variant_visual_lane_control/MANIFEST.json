@@ -1,6 +1,6 @@
 {
-  "package_name": "multi_variant_visual_lane_control_pack_v48",
-  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, an achieved standalone M6A PageEvidence workbench lane, an exact M6B Candidate A target-record template, and workflow-layer alignment around the immediate 05K target-definition step",
+  "package_name": "multi_variant_visual_lane_control_pack_v49",
+  "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, an achieved standalone M6A PageEvidence workbench lane, a pinned canonical Candidate A workbench report artifact, an exact M6B Candidate A target-record template, and workflow-layer alignment around the immediate 05K target-definition step",
   "improvements_over_v6": [
     "added selector activation scope/lifetime policy",
     "added experiment isolation mechanism policy",
@@ -295,5 +295,10 @@
     "aligned the workflow and traceability layer with the achieved M6A workbench state and the immediate 05K target-definition step",
     "added explicit 05J evidence-record dependency wherever the next lane needs repo-native Candidate A evidence",
     "removed the remaining workflow-layer ambiguity that still implied 05I was the immediate execution packet"
+  ],
+  "improvements_over_v48": [
+    "pinned a canonical Candidate A PageEvidence workbench report artifact under tests/reports using repo-relative paths and a fixed timestamp",
+    "tightened 05K so the durable workbench report artifact is a first-class provenance/evidence ref",
+    "updated the front door and blocker synthesis to treat the workbench report as available input to the immediate 05K target-definition step"
   ]
 }
