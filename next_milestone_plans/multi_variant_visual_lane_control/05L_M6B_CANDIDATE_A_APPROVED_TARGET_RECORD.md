@@ -130,4 +130,7 @@ The pinned workbench report shows that Candidate A produces useful deterministic
 
 ## Next step
 
-The next justified MVVLC step is the later M6B direct-admission implementation lane under `03AA` + `05H`, using this record as the exact approved target contract.
+At the time this approved-target record was frozen, the next justified MVVLC step was the later M6B direct-admission implementation lane under `03AA` + `05H`, using this record as the exact approved target contract.
+
+That later direct-admission step has since been achieved in the current clean worktree and recorded in `05M`.
+This document remains the exact approved target contract for that achieved lane, but it should no longer be read in isolation as meaning the M6B implementation has not yet happened anywhere.
