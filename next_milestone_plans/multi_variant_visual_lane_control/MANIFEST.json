@@ -1,5 +1,5 @@
 {
-  "package_name": "multi_variant_visual_lane_control_pack_v44",
+  "package_name": "multi_variant_visual_lane_control_pack_v45",
   "purpose": "Control-doc pack with merged M3/M4 closure recorded, a frozen-and-implemented exact M5 coexistence/visibility mechanism, a frozen later direct-admission M6 packet, and a frozen immediate M6A PageEvidence workbench packet",
   "improvements_over_v6": [
     "added selector activation scope/lifetime policy",
@@ -274,5 +274,10 @@
     "added the exact M6A PageEvidence workbench and Option 2 boundary",
     "added the exact M6A PageEvidence workbench execution packet",
     "shifted the immediate next justified MVVLC step from direct M6 admission to a dedicated Candidate A workbench lane while keeping direct admission fail-closed"
+  ],
+  "improvements_over_v44": [
+    "aligned the traceability, implementation, and review playbooks with the new M6A versus M6B split",
+    "removed the remaining workflow-layer ambiguity about whether direct M6 admission or the PageEvidence workbench is the immediate next lane",
+    "kept the front-door and reasoning layers consistent for Candidate A workbench-first execution"
   ]
 }

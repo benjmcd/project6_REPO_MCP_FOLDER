@@ -31,6 +31,14 @@ The correct implementation sequence is:
 
 If you skip Stage 2 or Stage 3, implementation drift is likely.
 
+### Current milestone note
+The pack now distinguishes:
+
+- **M6A**: dedicated PageEvidence workbench construction under `03AB` + `05I`
+- **M6B**: later direct admission of one approved selector value under `03AA` + `05H`
+
+Do not use the M6B packet as the immediate implementation packet if the chosen path is the dedicated workbench-first Option 2 path.
+
 ---
 
 ## 2. Correct implementation-preparation order
@@ -87,6 +95,18 @@ Purpose:
 - convert policy into execution order
 - know what to verify before and after edits
 - know what counts as implementation completion vs partial progress
+
+### Stage 3A - if the current lane is M6A workbench work
+Read:
+1. `03AB_EXACT_M6A_PAGE_EVIDENCE_WORKBENCH_AND_OPTION2_BOUNDARY.md`
+2. `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
+3. `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
+4. `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
+
+Purpose:
+- distinguish workbench construction from direct admission
+- keep Candidate A pre-admission until explicit later approval
+- preserve the later M6B packet as a separate fail-closed lane
 
 ### Stage 4 — prepare the concrete validation surface
 Read:
@@ -182,6 +202,12 @@ If implementation begins without these eleven, the setup is too loose.
 
 Note: `03G` and `06D` are required because Stage 3 of the implementation workflow depends on them for execution-order conversion and blocker verification. Omitting them from the minimal packet would create an inconsistency with the staged workflow above.
 
+If the current lane is the dedicated PageEvidence workbench lane, additionally require:
+12. `03AB_EXACT_M6A_PAGE_EVIDENCE_WORKBENCH_AND_OPTION2_BOUNDARY.md`
+13. `05I_M6A_PAGE_EVIDENCE_WORKBENCH_EXECUTION_PACKET.md`
+14. `03AA_EXACT_M6_CONTROLLED_ADMISSION_AND_PROMOTION_MECHANISM.md`
+15. `05H_M6_APPROVE_AS_IS_EXECUTION_PACKET.md`
+
 ---
 
 ## 5. Full implementation packet
@@ -207,6 +233,8 @@ For a full controlled implementation cycle, use:
 
 ### Execution and validation
 - `05D`
+- `05H`
+- `05I`
 - `06C`
 - `06D`
 - `06E`
@@ -217,6 +245,8 @@ For a full controlled implementation cycle, use:
 ### Current authority / residual state
 - `00F`
 - `00T`
+
+For the current next lane, `05I` is the immediate execution packet and `05H` remains the later direct-admission packet.
 
 This is the most reliable working set for actual execution.
 
