@@ -79,3 +79,22 @@ def test_workbench_runner_fails_closed_on_unknown_fixture(tmp_path: Path) -> Non
     payload = json.loads(report_path.read_text(encoding="utf-8"))
     assert payload["passed"] is False
     assert payload["failure_reason"] == "unknown_fixture_id:does_not_exist"
+
+
+def test_workbench_runner_supports_canonical_repo_relative_report_output(tmp_path: Path) -> None:
+    report_path = tmp_path / "canonical_report.json"
+    completed = _run_workbench(
+        "--report",
+        str(report_path),
+        "--fixture-id",
+        "scanned",
+        "--generated-at-utc",
+        "2026-04-07T00:00:00Z",
+        "--path-mode",
+        "repo_relative",
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    assert payload["generated_at_utc"] == "2026-04-07T00:00:00Z"
+    assert payload["documents"][0]["path"] == "tests/fixtures/nrc_aps_docs/v1/scanned.pdf"
