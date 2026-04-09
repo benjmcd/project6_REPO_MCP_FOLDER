@@ -1,0 +1,201 @@
+# PageEvidence Module, Component, Dependency, and Touchpoint Inventory
+
+## Purpose
+
+Provide an explicit implementation-oriented inventory of the modules, components, dependencies, data touchpoints, and connection surfaces relevant to a PageEvidence strengthening lane.
+
+This document exists so the strengthening lane does not remain architecturally vague. It is the pack's concrete map of:
+
+- what code is central
+- what code is adjacent
+- what libraries/dependencies are part of the intended lane
+- what contracts and data fields are touched
+- and what connections/endpoints should remain untouched by default
+
+---
+
+## Pack implementation posture
+
+Within this separate pack, the prepared implementation posture is:
+
+- Lane Class A only
+- Passes 1-4 only
+- small fixed Pass 3 field set only
+- no production touch to `nrc_aps_document_processing.py` in Pass 1
+- optional analysis-only scratch copy of `nrc_aps_document_processing.py` allowed outside `backend`, provided it is non-authoritative and non-runtime
+
+## Core service / runner modules
+
+### Primary owner surfaces
+
+1. `backend/app/services/nrc_aps_page_evidence.py`
+   - current owner of shared evidence extraction
+   - currently also contains projected-class logic and candidate coupling
+2. `tools/run_nrc_aps_page_evidence_workbench.py`
+   - current standalone runner / report writer
+3. `backend/tests/test_nrc_aps_page_evidence.py`
+   - core service behavior tests
+4. `tests/test_nrc_aps_page_evidence_workbench.py`
+   - runner/report behavior tests
+
+### Conditional seam-adjacent surfaces
+
+5. `backend/app/services/nrc_aps_document_processing.py`
+   - integrated seam that currently consumes Candidate A behavior
+6. `tests/test_nrc_aps_document_processing.py`
+   - seam-adjacent regression surface
+
+---
+
+## Recommended component split
+
+### Component 1 — shared evidence extraction
+
+Responsibilities:
+- deterministic PyMuPDF-derived page evidence
+- page/region evidence field construction
+- evidence normalization / validation
+- no candidate-policy truth claims as conceptual center
+
+### Component 2 — candidate projection
+
+Responsibilities:
+- Candidate A projection logic
+- candidate-specific thresholds / projection rules
+- projection-only derived fields
+
+### Component 3 — workbench / evaluation orchestration
+
+Responsibilities:
+- fixture/path resolution
+- artifact/report generation
+- stable timestamp/path handling
+- disagreement/evaluation summaries
+
+### Component 4 — compatibility / regression checks
+
+Responsibilities:
+- service tests
+- runner tests
+- seam-adjacent regression checks
+- hidden-consumer verification summaries
+
+---
+
+## Dependency inventory
+
+### In-scope default dependencies
+
+- Python stdlib
+- `PyMuPDF` / `fitz` already present in the repo
+
+### Explicitly out-of-scope new dependencies for this lane
+
+- `shapely`
+- `opencv` / `opencv-python-headless`
+- OCR/layout-model packages
+- any new ML/vision model dependency
+
+### Rationale
+
+This lane is intended to improve architecture, calibration, and evidence richness within the existing lightweight posture. Introducing geometry/model dependencies would convert the lane into a materially different dependency-adoption decision.
+
+---
+
+## Data / contract touchpoints
+
+### Core PageEvidence artifact touchpoints
+
+Current/likely touchpoints include:
+- core page-evidence schema id/version handling
+- page-level evidence fields
+- projected-class-like derived fields
+- candidate identity in artifact metadata
+
+### Workbench artifact touchpoints
+
+Current/likely touchpoints include:
+- workbench report schema id/version
+- report-level metadata (`generated_at_utc`, `candidate_stage`, config)
+- per-document analysis blocks
+- pinned historical workbench artifact compatibility
+
+### Downstream touchpoints that must remain explicitly checked
+
+- diagnostics payloads / refs
+- content indexing / stored refs
+- retrieval-plane serializers/deserializers
+- evidence bundles
+- review schemas / review service expectations
+- report/export/package persistence surfaces
+
+---
+
+## Connection / flow map
+
+### Current main flow
+
+1. workbench runner -> PageEvidence service -> workbench artifact
+2. integrated Candidate A seam -> PageEvidence-derived behavior inside `nrc_aps_document_processing.py`
+
+### What should remain untouched by default
+
+- connector request normalization surfaces
+- artifact-ingestion ownership boundaries
+- review/runtime visibility classification
+- report/export/package persistence semantics
+
+Unless a widening trigger is explicitly satisfied, the strengthening lane should not alter those connection surfaces.
+
+---
+
+## Endpoint / interface interpretation note
+
+This repo does not expose PageEvidence through a dedicated public API endpoint. The relevant “endpoints/connections” for this lane are therefore:
+
+- internal service-call seams
+- runner/report artifact boundaries
+- hidden-consumer contract surfaces
+- integrated visual-lane consumption inside document processing
+
+The planning pack should continue to use this repo-native notion of touchpoint/interface rather than inventing external endpoint scope that does not exist.
+
+---
+
+## Default change envelope
+
+### Safe-by-default changes
+
+- extraction/projection separation
+- additive internal evidence fields
+- candidate-id decoupling from core evidence
+- cleanup/resource hygiene
+- stronger disagreement reports
+
+### Escalation-required changes
+
+- changes to admitted Candidate A runtime behavior
+- schema-breaking artifact changes
+- new dependency adoption
+- broad hidden-consumer widening
+- new candidate-selector activation or registry work
+
+---
+
+## Result
+
+The strengthening lane now has an explicit implementation-oriented map of modules, components, dependencies, and touchpoints, reducing ambiguity and making simpler, less fragile implementation more likely.
+
+
+## Internal evidence-field governance
+
+If new internal evidence fields are added, they must be frozen by the field-definition register before or alongside implementation.
+
+Each new field should have:
+
+- exact meaning
+- unit / range
+- derivation rule
+- nullability / missing-data rule
+- whether it is substrate-only or candidate-policy-facing
+- compatibility expectation for artifacts and tests
