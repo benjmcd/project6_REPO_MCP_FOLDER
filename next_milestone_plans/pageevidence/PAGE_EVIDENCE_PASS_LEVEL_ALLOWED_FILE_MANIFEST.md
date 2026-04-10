@@ -25,22 +25,19 @@ If a real repo edit to `nrc_aps_document_processing.py` becomes necessary, treat
 
 ---
 
-## Pass 1 — cleanup and structural separation
+## Pass 1 — cleanup and lifecycle hardening
 
 ### Goal
 
 - explicit cleanup/resource-lifecycle hardening
-- split shared evidence extraction from candidate-policy projection
-- preserve current admitted Candidate A behavior materially
+- no artifact meaning change
+- no admitted behavior drift
 
 ### Default allowed modified files
 
 - `backend/app/services/nrc_aps_page_evidence.py`
 - `backend/tests/test_nrc_aps_page_evidence.py`
 
-### Default allowed new files
-
-- one projection/helper file under `backend/app/services/` if required to keep the split clean
 
 ### Must remain untouched by default
 
@@ -54,24 +51,29 @@ If comparison against `nrc_aps_document_processing.py` is operationally useful d
 
 ### Escalation trigger
 
-If structural separation cannot be achieved without changing integrated seam behavior or runner semantics materially, stop and re-evaluate the lane class.
+If cleanup/lifecycle hardening cannot remain behavior-preserving and artifact-preserving, stop and re-evaluate the lane class.
 
 ---
 
-## Pass 2 — runner/report adaptation
+## Pass 2 — evidence / projection separation with compatibility bridge
 
 ### Goal
 
-- adapt workbench/report generation to the separated evidence/projection structure
-- preserve pinned artifact meaning or apply compatibility bridge explicitly
+- separate shared evidence extraction from candidate projection
+- preserve current admitted Candidate A behavior
+- add compatibility bridge only if required
+- adapt runner/report handling only as required by the separation
 
 ### Default allowed modified files
 
+- `backend/app/services/nrc_aps_page_evidence.py`
 - `tools/run_nrc_aps_page_evidence_workbench.py`
+- `backend/tests/test_nrc_aps_page_evidence.py`
 - `tests/test_nrc_aps_page_evidence_workbench.py`
 
 ### Default allowed new files
 
+- one projection/helper file under `backend/app/services/` if required to keep the split clean
 - one evaluation/disagreement helper under `tools/` if required by the frozen evaluation matrix
 
 ### Must remain untouched by default
@@ -81,7 +83,7 @@ If structural separation cannot be achieved without changing integrated seam beh
 
 ### Escalation trigger
 
-If artifact compatibility cannot be preserved without touching a hidden-consumer surface or the integrated seam, stop and re-evaluate rather than widening casually.
+If evidence/projection separation or any required compatibility bridge cannot be preserved without touching the integrated seam or hidden-consumer surfaces materially, stop and re-evaluate rather than widening casually.
 
 ---
 
