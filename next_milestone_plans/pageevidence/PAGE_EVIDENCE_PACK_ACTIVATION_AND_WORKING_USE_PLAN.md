@@ -21,6 +21,26 @@ Do not rely on memory or earlier summaries alone.
 
 ---
 
+## Meaning of active use
+
+Within this pack, **active use** means:
+
+- using the pack as the controlling interpretation surface for docs refinement
+- using it for live-truth re-establishment
+- using it for bounded Lane Class A planning
+- using it for later Lane Class A implementation guidance only after activation succeeds
+
+It does **not** mean:
+
+- implementation is already complete
+- Lane Class B is open
+- broader widening is implicitly approved
+
+The execution packet remains the primary operational rule set.
+The operator sheet remains a compressed secondary quick reference only.
+
+---
+
 ## Canonical live truth surfaces to re-read
 
 At minimum, re-read:

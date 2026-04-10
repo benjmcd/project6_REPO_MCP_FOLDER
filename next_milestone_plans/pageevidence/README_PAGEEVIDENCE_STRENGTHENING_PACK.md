@@ -44,6 +44,34 @@ Within this standalone lane:
 - live repo code, fixtures, pinned artifacts, and real downstream-consumer behavior outrank pack interpretation if conflict appears
 - this pack is the active planning/control surface for the PageEvidence lane
 
+## Pack-use rule
+
+Within this lane, **active use** of this pack means:
+
+- docs refinement inside this folder
+- live-truth re-establishment before implementation work
+- bounded Lane Class A implementation planning
+- later Lane Class A implementation guidance only after the activation flow succeeds
+
+Active use does **not** mean:
+
+- implementation is already complete
+- Lane Class B is authorized
+- broader runtime, schema, OCR/media, or generic candidate widening is authorized by implication
+
+## Doc-role and precedence rule
+
+Within this pack, use the docs in the following precedence order:
+
+1. `README_PAGEEVIDENCE_STRENGTHENING_PACK.md` as the front door and reading-order map
+2. `PAGE_EVIDENCE_STRENGTHENING_EXECUTION_PACKET.md` as the primary operational control doc
+3. lane-boundary, selector, equivalence, blast-radius, compatibility, and manifest docs as binding constraint docs
+4. activation docs as activation/verification hygiene docs
+5. `PAGE_EVIDENCE_OPERATOR_EXECUTION_SHEET.md` as a compressed secondary quick-reference only
+6. `pageevidence_v10_codex_handoff.md` and `pageevidence_strengthening_pack_v10.zip` as contextual history only
+
+If two docs appear to overlap, prefer the narrower doc that was written for that exact function rather than blending them loosely.
+
 ## Files in this pack
 
 ### Core planning/control docs
@@ -120,3 +148,15 @@ Before code work starts, the next step is:
 
 - re-establish live repo truth directly from code, fixtures, pinned artifacts, and downstream-consumer surfaces
 - then run the pack activation/use flow in this folder
+
+## Documentation stop rule
+
+After this closure-rule set is in place, do **not** add new docs or broaden the pack unless one of the following happens:
+
+1. live repo truth changes materially
+2. Lane Class B is explicitly opened
+3. hidden-consumer reality changes materially
+4. implementation planning exposes a contradiction the current pack cannot resolve cleanly
+5. pack overlap becomes large enough that merge/reduction is justified
+
+If none of those triggers is present, prefer tightening existing docs over adding new ones.
