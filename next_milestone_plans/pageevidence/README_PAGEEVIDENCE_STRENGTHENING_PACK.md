@@ -43,7 +43,6 @@ Within this standalone lane:
 
 - live repo code, fixtures, pinned artifacts, and real downstream-consumer behavior outrank pack interpretation if conflict appears
 - this pack is the active planning/control surface for the PageEvidence lane
-- other planning packs may provide background context, but they do not govern this pack unless you explicitly decide otherwise later
 
 ## Files in this pack
 
