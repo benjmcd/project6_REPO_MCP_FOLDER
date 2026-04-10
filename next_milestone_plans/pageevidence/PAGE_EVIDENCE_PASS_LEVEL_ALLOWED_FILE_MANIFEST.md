@@ -6,6 +6,13 @@ Freeze the default allowed-file boundary for each strengthening pass so implemen
 
 This manifest supplements the broader owner boundaries in the execution packet by making the per-pass allowed scope explicit.
 
+Current branch interpretation note:
+
+- this manifest remains a prepared pass-boundary reference
+- it does **not** by itself authorize opening Pass 2-4 on the current branch
+- the current branch is in Stop-and-hold posture after Pass 1 closure
+- any future implementation work must begin from a new explicitly frozen objective before later pass boundaries are activated again
+
 ---
 
 ## General rule for `nrc_aps_document_processing.py`

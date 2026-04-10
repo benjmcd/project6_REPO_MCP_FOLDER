@@ -20,8 +20,10 @@ Current branch status note:
 - Pass 1 is complete on this branch
 - Pass 1 closure gate is cleared on this branch
 - representative-fixture equivalence, hidden-consumer downstream validation, and route/API/report/export/package closure checks are green on this branch
-- Pass 2 remains deferred / not started on this branch
-- Pass 2 may now be considered from a stronger proof base, but it is not started by this roadmap status note
+- fresh Pass 2 truth re-establishment on this branch found no residual Lane Class A helper-extraction or compatibility-bridge obligation
+- Pass 2 is therefore not needed for the current branch state and remains not started
+- the correct next move from this branch is Stop and hold, not convenience Pass 2 work
+- any future implementation work must begin from a new explicitly frozen objective
 
 ---
 
@@ -170,6 +172,10 @@ If no:
 Question:
 - If Pass 1 was not sufficient, can any remaining compatibility bridge or helper extraction be done without touching the admitted Candidate A behavior?
 
+If Pass 1 was sufficient:
+- do **not** open Pass 2
+- stop and hold instead
+
 If yes:
 - remain Lane Class A
 If no:
@@ -198,6 +204,7 @@ After a successful Lane Class A pass, only the following next moves are justifie
 1. **Stop and hold**
    - strengthened substrate in place
    - no further PageEvidence action for current horizon
+   - this is the current branch outcome when fresh truth re-establishment finds no residual Pass 2 insufficiency
 
 2. **Open a bounded future Lane Class B recalibration**
    - only by separate explicit freeze
