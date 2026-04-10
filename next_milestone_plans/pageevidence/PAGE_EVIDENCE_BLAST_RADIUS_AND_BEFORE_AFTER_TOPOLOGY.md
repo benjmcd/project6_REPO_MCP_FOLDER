@@ -42,7 +42,7 @@ If it does, the strictest applicable controls govern the whole change set unless
 
 ---
 
-## Current branch and comparison-baseline topology
+## Current merged-main and comparison-baseline topology
 
 ### Before-state A — pre-Pass1 comparison baseline
 
@@ -56,15 +56,15 @@ The pre-Pass1 baseline topology was:
 
 This before-state remains the source-of-truth comparison anchor for representative-equivalence, runner-equivalence, and no-drift judgments.
 
-### Current realized branch topology
+### Current realized merged-main topology
 
-On the current branch:
+On merged `main`:
 
 1. `nrc_aps_page_evidence.py` now separates shared evidence extraction from Candidate A projection inside the same owner file.
 2. `run_nrc_aps_page_evidence_workbench.py` still consumes the stable service output shape without a helper-extraction or report-compatibility bridge.
 3. `nrc_aps_document_processing.py` remains untouched and still consumes the PageEvidence service through the admitted seam-local helper.
-4. Hidden-consumer validation and route/API/report/export/package closure checks are already green for this branch state.
-5. This realized branch topology is the live truth for deciding whether any later pass is still needed.
+4. Hidden-consumer validation and route/API/report/export/package closure checks are already green for this merged-main state.
+5. This realized merged-main topology is the live truth for deciding whether any later pass is still needed.
 
 ---
 

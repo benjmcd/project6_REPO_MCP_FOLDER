@@ -1,26 +1,27 @@
-# PageEvidence Pack Activation, Insertion, And Post-Insertion Verification Checklist
+# PageEvidence Pack Adoption Record And Future Reconciliation Checklist
 
 ## Purpose
 
-Provide the concrete checklist for moving from local standalone pack use to formal insertion/adoption and for verifying the result afterward.
+Provide the concrete checklist that recorded formal repo-native adoption of this PageEvidence pack and that can be reused for future reconciliation or re-verification checks on merged `main`.
 
-This filename is retained for continuity while the pack remains standalone.
+This filename is retained for continuity after adoption.
 This document is operational and non-normative.
 Normative rules remain governed by the active control docs listed in the README doc classification table.
 Treat that table as the complete rule-source map for this pack.
 
 ---
 
-## Local standalone-use note
+## Current adopted-state note
 
-- ordinalization is not required for local standalone refinement/use of the pack
-- ordinalization/adoption is required before treating the pack as repo-native active control authority
+- the pack is already adopted repo-native lane-local control/handoff material on merged `main`
+- the retained-default MVVLC control spine remains the higher active authority surface
+- the pre-adoption and adoption sections below now serve as the historical adoption record and as a future reconciliation checklist, not as a signal that adoption is still pending
 
 ---
 
-## Pre-insertion planning checklist
+## Historical pre-adoption planning checklist / future reconciliation checklist
 
-Complete all items before treating the pack as ready for repo-native insertion/adoption:
+These items were completed for adoption and should be rechecked if future reconciliation is needed:
 
 1. Re-check the live repo truth surfaces listed in the working-use plan.
 2. Confirm the pack still reflects the intended Lane Class A vs Lane Class B boundary.
@@ -39,9 +40,9 @@ Complete all items before treating the pack as ready for repo-native insertion/a
 
 ---
 
-## Insertion / adoption checklist
+## Historical adoption checklist
 
-Complete these items during the formal insertion/adoption step:
+These items were completed during formal adoption and should be reused only if later reconciliation or reclassification is needed:
 
 1. Apply the approved final filename / ordinal mapping only to the docs being adopted.
 2. Update `next_milestone_plans/multi_variant_visual_lane_control/README_INDEX.md` and any adopted repo-native navigation/front-door surfaces for the adopted set.
@@ -52,9 +53,9 @@ Complete these items during the formal insertion/adoption step:
 
 ---
 
-## Post-insertion verification checklist
+## Post-adoption verification checklist
 
-Complete all items after insertion/adoption is applied:
+These items remain the post-adoption verification standard for this adopted pack:
 
 1. Verify all adopted links and references resolve.
 2. Verify no stale filenames, ordinal references, or standalone-only wording remain where adopted names should now be used.
@@ -63,10 +64,11 @@ Complete all items after insertion/adoption is applied:
 5. Verify no doc now implies broader runtime, OCR/media, or schema widening.
 6. Verify no duplicate active-control-doc sprawl or parallel-rule source has been introduced.
 7. Verify the same-selector-only-if-equivalent rule, representative-fixture rule, and Lane Class A boundaries remain unchanged.
-8. Record any unresolved contradiction explicitly rather than smoothing it over.
+8. Verify the adopted pack still communicates Pass 1 complete, Pass 2 not needed, stop and hold, and future new-freeze requirements clearly.
+9. Record any unresolved contradiction explicitly rather than smoothing it over.
 
 ---
 
 ## Result
 
-The pack is ready for disciplined repo-native use only when the pre-insertion, insertion, and post-insertion sections are all clean.
+The adopted pack remains disciplined repo-native lane-local control/handoff material only while the historical adoption record stays coherent, the post-adoption verification section stays clean, and the stop-and-hold posture remains explicit.

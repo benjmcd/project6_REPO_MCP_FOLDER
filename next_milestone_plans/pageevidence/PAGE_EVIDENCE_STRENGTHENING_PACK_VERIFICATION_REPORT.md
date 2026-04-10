@@ -2,10 +2,11 @@
 
 ## Purpose
 
-Record what was directly verified for this standalone PageEvidence planning/control pack, what passed, and what remains outside the scope of pack-only verification.
+Record what was directly verified for this PageEvidence planning/control pack during the pre-adoption pack-integrity pass, what passed, and what remained outside the scope of pack-only verification at that time.
 
-This report checks pack integrity, internal consistency, and pack/live-repo alignment assumptions for a prepared standalone pack.
-It does not adopt the pack into repo-native active control authority, and it does not claim production implementation or post-implementation runtime correctness.
+This report checks pack integrity, internal consistency, and pack/live-repo alignment assumptions for the then-pre-adoption working copy of the pack.
+It did not itself adopt the pack into repo-native active control authority, and it did not claim production implementation or post-implementation runtime correctness.
+Repo-native adoption occurred later through separate closure/adoption doc work on merged `main`.
 
 ---
 
@@ -20,7 +21,7 @@ At verification time, the folder contained:
 
 Interpretation note:
 
-- the markdown docs are the current standalone working copy for this pack
+- the markdown docs were the then-current working copy for this pack before repo-native adoption
 - the roadmap PNG is a maintained derived planning artifact, updated alongside this roadmap
 - the handoff doc is subordinate to live repo truth if conflict appears
 
@@ -40,15 +41,15 @@ Verified that pack-local markdown references to other pack-local markdown files 
 
 Status: PASS
 
-### 3. Standalone-pack authority wording check
+### 3. Pre-adoption pack authority wording check
 
-Verified and tightened the pack so it now states clearly that:
+Verified and tightened the pack at that time so it stated clearly that:
 
-- it is a standalone PageEvidence planning/control pack
-- it does not depend on unifying with another planning pack in order to be usable
-- live repo code, fixtures, artifacts, downstream behavior, and live repo active control docs remain the higher authority until formal adoption/insertion occurs
+- it was a standalone PageEvidence planning/control pack
+- it did not depend on unifying with another planning pack in order to be usable
+- live repo code, fixtures, artifacts, downstream behavior, and live repo active control docs remained the higher authority until formal adoption/insertion occurred
 
-Status: PASS after correction
+Status: PASS after correction at the time of the pre-adoption integrity pass
 
 ### 4. Live-repo alignment spot check
 
@@ -76,7 +77,7 @@ Status: PASS after concrete downstream-surface tightening
 Verified and tightened the following pack-hygiene issues:
 
 - README now reflects the actual folder inventory
-- activation docs now distinguish local standalone use from insertion/adoption
+- activation docs now distinguish pre-adoption use from adoption/insertion
 - version/addendum debris in the verification framing has been reduced
 - residual broken execution-packet wording and malformed pass/phase labels were corrected
 - pack-use meaning, doc-role classification, insertion/adoption discipline, and the documentation stop rule are now explicit
@@ -94,7 +95,7 @@ Status: PASS after correction
 
 This report does not prove:
 
-- that the pack has already been adopted into repo-native active control authority
+- that this verification pass itself constituted repo-native adoption into active control authority
 - that code changes implied by the pack have been implemented
 - that live repo tests were executed after future code changes
 - that all hidden-consumer readers remain green after future implementation
@@ -106,11 +107,11 @@ Those require a later implementation and validation pass.
 
 ## Proceed judgment
 
-The pack is verified enough to be treated as a strong standalone PageEvidence planning/control artifact for local refinement, insertion/adoption preparation, and Lane Class A implementation planning.
+At the time of this pre-adoption integrity pass, the pack was verified enough to be treated as a strong PageEvidence planning/control artifact for local refinement, adoption/insertion preparation, and Lane Class A implementation planning.
 
-It is not evidence that:
+This report was not evidence that:
 
-- repo-native adoption/insertion has already occurred
+- repo-native adoption/insertion had already occurred at that time
 - implementation is already complete
 - Lane Class B is authorized
 - no-drift has been proven in code

@@ -24,9 +24,9 @@ Within this separate pack, the prepared implementation posture is:
 - no production touch to `nrc_aps_document_processing.py` in Pass 1
 - optional analysis-only scratch copy of `nrc_aps_document_processing.py` allowed outside `backend`, provided it is non-authoritative and non-runtime
 
-Current branch adequacy note:
+Current merged-main adequacy note:
 
-- Pass 1 is already complete and closure-validated on this branch
+- Pass 1 is already complete and closure-validated on merged `main`
 - fresh truth re-establishment found no residual Pass 2 helper-extraction or compatibility-bridge obligation
 - further work should therefore begin only from a newly proven insufficiency, not from stale assumptions about unfinished separation
 
@@ -54,7 +54,7 @@ Current branch adequacy note:
 
 ## Pass-scoped owner interpretation
 
-### Pass 1 realized owner set on this branch
+### Pass 1 realized owner set on merged `main`
 
 - `backend/app/services/nrc_aps_page_evidence.py`
 - `backend/tests/test_nrc_aps_page_evidence.py`

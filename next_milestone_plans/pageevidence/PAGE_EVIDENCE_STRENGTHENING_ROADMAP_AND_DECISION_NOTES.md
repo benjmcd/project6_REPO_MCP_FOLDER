@@ -6,23 +6,23 @@ Provide one consolidated roadmap for the PageEvidence strengthening effort so th
 
 This roadmap is subordinate to the execution packet and selector-semantics policy.
 It does not widen scope beyond what those docs allow.
-It governs the prepared standalone Lane Class A pack only.
-It does not by itself supersede the live repo's retained-`baseline` stable-hold posture and becomes repo-native control only upon formal adoption/insertion.
+It governs the adopted repo-native Lane Class A hold-state pack on merged `main`.
+It remains subordinate to the live repo's retained-`baseline` stable-hold posture rooted in the MVVLC control spine.
 
 Derived planning artifact note:
 
 - `pageevidence_roadmap.png` is a maintained, derived planning artifact for this roadmap
 - if the PNG and this markdown roadmap diverge, this markdown file wins and the PNG should be regenerated from it before further use
 
-Current branch status note:
+Current merged-main status note:
 
 - Lane Class A remains the only prepared lane in this pack
-- Pass 1 is complete on this branch
-- Pass 1 closure gate is cleared on this branch
-- representative-fixture equivalence, hidden-consumer downstream validation, and route/API/report/export/package closure checks are green on this branch
-- fresh Pass 2 truth re-establishment on this branch found no residual Lane Class A helper-extraction or compatibility-bridge obligation
-- Pass 2 is therefore not needed for the current branch state and remains not started
-- the correct next move from this branch is Stop and hold, not convenience Pass 2 work
+- Pass 1 is complete on merged `main`
+- Pass 1 closure gate is cleared on merged `main`
+- representative-fixture equivalence, hidden-consumer downstream validation, and route/API/report/export/package closure checks are green on merged `main`
+- fresh Pass 2 truth re-establishment on merged `main` found no residual Lane Class A helper-extraction or compatibility-bridge obligation
+- Pass 2 is therefore not needed for the current merged-main state and remains not started
+- the correct next move from merged `main` is Stop and hold, not convenience Pass 2 work
 - any future implementation work must begin from a new explicitly frozen objective
 
 ---
@@ -204,7 +204,7 @@ After a successful Lane Class A pass, only the following next moves are justifie
 1. **Stop and hold**
    - strengthened substrate in place
    - no further PageEvidence action for current horizon
-   - this is the current branch outcome when fresh truth re-establishment finds no residual Pass 2 insufficiency
+   - this is the current merged-main outcome when fresh truth re-establishment finds no residual Pass 2 insufficiency
 
 2. **Open a bounded future Lane Class B recalibration**
    - only by separate explicit freeze
@@ -258,4 +258,4 @@ Recommended rollback anchors:
 
 ## Result
 
-This roadmap now gives the prepared standalone pack a single explicit execution narrative: re-establish live truth first, remain Lane Class A only, prepare Passes 1-4 only, keep representative-fixture equivalence binding, allow regression-only drift only by written justification, and defer Lane Class B until separately frozen.
+This roadmap now gives the adopted repo-native lane-local hold-state pack a single explicit execution narrative: re-establish live truth first, remain Lane Class A only, prepare Passes 1-4 only, keep representative-fixture equivalence binding, allow regression-only drift only by written justification, defer Lane Class B until separately frozen, and stop and hold unless a new explicitly frozen objective is opened later.
