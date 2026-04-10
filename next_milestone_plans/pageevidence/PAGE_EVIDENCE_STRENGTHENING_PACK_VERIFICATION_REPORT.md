@@ -4,7 +4,8 @@
 
 Record what was directly verified for this standalone PageEvidence planning/control pack, what passed, and what remains outside the scope of pack-only verification.
 
-This report verifies the pack as the current repo-local documentation/control artifact for the PageEvidence lane. It does not claim production implementation or post-implementation runtime correctness.
+This report checks pack integrity, internal consistency, and pack/live-repo alignment assumptions for a prepared standalone pack.
+It does not adopt the pack into repo-native active control authority, and it does not claim production implementation or post-implementation runtime correctness.
 
 ---
 
@@ -15,14 +16,12 @@ At verification time, the folder contained:
 - the expected planning/control docs
 - the operational companion docs
 - the v10 handoff doc
-- the archived v10 zip bundle
-- the derived roadmap PNG visual aid
+- the maintained roadmap PNG planning artifact
 
 Interpretation note:
 
-- the markdown docs are the active repo-local working copy for this pack
-- the zip bundle is archival source material only
-- the roadmap PNG is a derived visual aid only
+- the markdown docs are the current standalone working copy for this pack
+- the roadmap PNG is a maintained derived planning artifact, updated alongside this roadmap
 - the handoff doc is subordinate to live repo truth if conflict appears
 
 ---
@@ -31,7 +30,7 @@ Interpretation note:
 
 ### 1. Pack inventory check
 
-Verified that the folder contains the expected PageEvidence planning/control docs, operational companion docs, handoff doc, archive bundle, and derived roadmap PNG.
+Verified that the folder contains the expected PageEvidence planning/control docs, operational companion docs, handoff doc, maintained roadmap PNG artifact, and no stale required archive entries.
 
 Status: PASS
 
@@ -47,7 +46,7 @@ Verified and tightened the pack so it now states clearly that:
 
 - it is a standalone PageEvidence planning/control pack
 - it does not depend on unifying with another planning pack in order to be usable
-- live repo code, fixtures, artifacts, and downstream behavior remain the factual truth surfaces if conflict appears
+- live repo code, fixtures, artifacts, downstream behavior, and live repo active control docs remain the higher authority until formal adoption/insertion occurs
 
 Status: PASS after correction
 
@@ -68,6 +67,7 @@ Latest readiness-pass note:
 - document-trace / visual-artifact reading is a real downstream consumer
 - evidence-bundle contract shaping is a real downstream consumer
 - report/export/package dependence remains indirect through indexed or bundled payloads, not direct PageEvidence artifact ownership
+- the pinned workbench artifact is a historical workbench/before-state compatibility surface, not the controlling definition of admitted integrated Candidate A behavior
 
 Status: PASS after concrete downstream-surface tightening
 
@@ -76,12 +76,15 @@ Status: PASS after concrete downstream-surface tightening
 Verified and tightened the following pack-hygiene issues:
 
 - README now reflects the actual folder inventory
-- activation docs now match the standalone-pack posture
+- activation docs now distinguish local standalone use from insertion/adoption
 - version/addendum debris in the verification framing has been reduced
 - residual broken execution-packet wording and malformed pass/phase labels were corrected
-- pack-use meaning, doc-role precedence, and the documentation stop rule are now explicit
+- pack-use meaning, doc-role classification, insertion/adoption discipline, and the documentation stop rule are now explicit
 - operator-sheet pass summaries now match the canonical roadmap and pass choreography
 - pass-level manifest and handoff pass sequencing now match the canonical roadmap and pass choreography
+- uncertainty no longer defaults to Lane Class A by convenience
+- Pass 2 no longer carries default authorization for evaluation-helper creation
+- validation guidance now warns that review/runtime trace/API checks may require isolated invocation when shared runtime-root state could make mixed bundles misleading
 
 Status: PASS after correction
 
@@ -91,6 +94,7 @@ Status: PASS after correction
 
 This report does not prove:
 
+- that the pack has already been adopted into repo-native active control authority
 - that code changes implied by the pack have been implemented
 - that live repo tests were executed after future code changes
 - that all hidden-consumer readers remain green after future implementation
@@ -102,10 +106,11 @@ Those require a later implementation and validation pass.
 
 ## Proceed judgment
 
-The pack is verified enough to be treated as a strong standalone PageEvidence planning/control artifact and to guide Lane Class A implementation planning.
+The pack is verified enough to be treated as a strong standalone PageEvidence planning/control artifact for local refinement, insertion/adoption preparation, and Lane Class A implementation planning.
 
 It is not evidence that:
 
+- repo-native adoption/insertion has already occurred
 - implementation is already complete
 - Lane Class B is authorized
 - no-drift has been proven in code

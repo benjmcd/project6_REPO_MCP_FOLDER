@@ -25,11 +25,12 @@ If a real repo edit to `nrc_aps_document_processing.py` becomes necessary, treat
 
 ---
 
-## Pass 1 — cleanup and lifecycle hardening
+## Pass 1 — lifecycle hardening and in-file extraction/projection separation
 
 ### Goal
 
 - explicit cleanup/resource-lifecycle hardening
+- separate shared evidence extraction from candidate projection inside the existing PageEvidence service if that can be done without widening file ownership
 - no artifact meaning change
 - no admitted behavior drift
 
@@ -51,15 +52,15 @@ If comparison against `nrc_aps_document_processing.py` is operationally useful d
 
 ### Escalation trigger
 
-If cleanup/lifecycle hardening cannot remain behavior-preserving and artifact-preserving, stop and re-evaluate the lane class.
+If cleanup/lifecycle hardening plus in-file extraction/projection separation cannot remain behavior-preserving, artifact-preserving, and confined to the current Pass 1 owner set, stop and re-evaluate rather than widening casually.
 
 ---
 
-## Pass 2 — evidence / projection separation with compatibility bridge
+## Pass 2 — compatibility bridge / helper extraction if Pass 1 proves insufficient
 
 ### Goal
 
-- separate shared evidence extraction from candidate projection
+- complete evidence/projection separation only if Pass 1 cannot keep the split clean enough inside the existing service file
 - preserve current admitted Candidate A behavior
 - add compatibility bridge only if required
 - adapt runner/report handling only as required by the separation
@@ -74,7 +75,7 @@ If cleanup/lifecycle hardening cannot remain behavior-preserving and artifact-pr
 ### Default allowed new files
 
 - one projection/helper file under `backend/app/services/` if required to keep the split clean
-- one evaluation/disagreement helper under `tools/` if required by the frozen evaluation matrix
+- no evaluation/disagreement helper is default-authorized in Pass 2; that belongs to Pass 4 unless a written pass-boundary justification proves it is needed only for frozen runner/report compatibility
 
 ### Must remain untouched by default
 
@@ -136,7 +137,10 @@ If the new fields change admitted projection outcomes on representative fixtures
 
 - `tools/run_nrc_aps_page_evidence_workbench.py`
 - `tests/test_nrc_aps_page_evidence_workbench.py`
-- one evaluation/disagreement helper if already allowed or newly justified under the execution packet
+
+### Default allowed new files
+
+- one evaluation/disagreement helper under `tools/` if required by the frozen evaluation matrix
 
 ### Must remain untouched by default
 
