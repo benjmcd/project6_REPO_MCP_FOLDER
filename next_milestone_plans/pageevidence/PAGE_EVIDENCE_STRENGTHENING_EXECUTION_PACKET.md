@@ -145,8 +145,9 @@ using:
 
 If the proposed work touches `nrc_aps_document_processing.py`, the lane must explicitly determine whether the change is production-relevant. For this pack, the default answer is **do not touch it in Pass 1**, and only treat later production touch as escalation. If an analysis copy is useful, keep it outside `backend`, non-authoritative, and non-runtime.
 
+If the lane classification is unclear at this point, stop and determine whether the proposed work is:
 
-- strict-equivalence substrate refactor
+- a strict-equivalence substrate refactor
 - or admitted Candidate A behavior drift
 
 before implementation proceeds.
@@ -161,8 +162,6 @@ Within this packet:
 - **Step classes** govern the blast-radius and control posture of individual implementation steps (`Step Class R / Step Class P / Step Class C / Step Class H`)
 
 If a lane contains more than one step class, the strictest applicable controls govern unless the work is cleanly split into separate passes/commits.
-
-
 
 ### Required lane-class and equivalence references
 

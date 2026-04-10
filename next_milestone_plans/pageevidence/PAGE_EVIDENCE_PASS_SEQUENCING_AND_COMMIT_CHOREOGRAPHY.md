@@ -77,7 +77,7 @@ Preferred commit properties:
 - evaluation-only where possible
 - Step Classes `R` / `C`
 
-### Pass 5 ? behavior recalibration (not prepared in this pack)
+### Pass 5 - behavior recalibration (not prepared in this pack)
 
 Status:
 - out of scope for the current pack posture
