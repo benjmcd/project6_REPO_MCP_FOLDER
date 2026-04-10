@@ -6,6 +6,8 @@ This is the planning and control pack for the MVVLC program, still bounded to th
 
 Merged `main` now contains the baseline-only selector/bootstrap implementation, the recorded M4 acceptance closure for that baseline path, the bounded M5 coexistence / visibility barrier implementation, the frozen M6 direct-admission packet, the achieved M6A workbench record, the frozen M6B approved-target record, and the merged M6B Candidate A direct-admission implementation recorded by `05M`. The pack also records merged-main closure and next-scope handoff in `05N`, freezes the exact post-admission/defaulting planning boundary and decision packet in `03AC` and `05O`, freezes the current-horizon retain-`baseline`-default decision in `05P`, and now records that retained-default state as merged-main closure and handoff in `05Q`.
 
+Merged `main` also now contains the adopted PageEvidence Lane Class A strengthening pack under `../pageevidence/`. That pack is a subordinate repo-native lane-local hold-state/control surface. It records that Pass 1 is complete, Pass 2 is not needed on the merged-main state, the correct current posture is stop and hold, and any future PageEvidence work requires a new explicitly frozen objective.
+
 ### What is closed
 
 - Selector config key: `visual_lane_mode`, normalized, forwarded, defaulted, fail-closed to `baseline` (`03U`, `03V`)
@@ -64,6 +66,9 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 
 ### For review / audit
 - `00B_REVIEW_AUDIT_ASSESSMENT_PLAYBOOK.md`
+
+### Related subordinate lane-local packs
+- `../pageevidence/README_PAGEEVIDENCE_STRENGTHENING_PACK.md` - adopted PageEvidence Lane Class A hold-state/control pack on merged `main`
 
 ### For implementation
 - `00C_IMPLEMENTATION_PREPARATION_AND_EXECUTION_PLAYBOOK.md`

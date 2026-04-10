@@ -43,6 +43,7 @@ On merged `main`:
 4. Candidate B and Candidate C remain non-admitted.
 5. OCR-routing, media scope, policy tuning, threshold retuning, and outward variant-identity expansion remain locked.
 6. No primary MVVLC implementation, promotion, or decision lane is opened by implication from this merged state.
+7. The adopted PageEvidence pack under `next_milestone_plans/pageevidence/` is a subordinate lane-local hold-state/control surface only; it does not reopen a primary MVVLC lane, and any future PageEvidence work still requires a new explicit freeze.
 
 ---
 
@@ -57,6 +58,7 @@ This closure/handoff does **not** authorize:
 5. new libraries, packages, schema surfaces, model changes, or migrations
 6. outward variant-identity field expansion
 7. any new MVVLC implementation or decision lane by implication
+8. reopening PageEvidence implementation or Pass 2 by inertia from the adopted subordinate pack
 
 ---
 

@@ -2,11 +2,11 @@
 
 ## Purpose
 
-This folder is a prepared standalone PageEvidence strengthening pack for Lane Class A work under:
+This folder is the adopted repo-native PageEvidence strengthening pack for the closed Lane Class A hold-state under:
 
 - `next_milestone_plans/pageevidence`
 
-Its job is to constrain and prepare PageEvidence strengthening work without widening into unrelated runtime, schema, OCR/media, or generic multi-candidate scope.
+Its job is to constrain, record, and hand off the closed PageEvidence strengthening lane without widening into unrelated runtime, schema, OCR/media, or generic multi-candidate scope.
 
 ## Current posture
 
@@ -17,26 +17,23 @@ The pack is built around the current live runtime facts that matter:
 - `backend/app/services/nrc_aps_page_evidence.py` now separates shared evidence extraction from Candidate A projection inside the existing owner file; no separate projection/helper module is currently required
 - hidden-consumer downstream surfaces remain real and must be treated as compatibility surfaces
 - the current pinned Candidate A workbench artifact remains historically authoritative for workbench/report compatibility and before-state reference unless later explicitly superseded, but it does not override live admitted integrated Candidate A behavior in the owner path
-- the current branch already cleared Pass 1 closure, and fresh truth re-establishment found no residual Pass 2 helper-extraction or compatibility-bridge obligation
+- merged `main` already cleared Pass 1 closure, and fresh truth re-establishment found no residual Pass 2 helper-extraction or compatibility-bridge obligation
 - any future implementation work must begin from a new explicitly frozen objective rather than reopening Pass 2 by momentum
 
-This pack does **not** by itself supersede the live repo's retained-`baseline` stable-hold control posture.
+This pack is now a subordinate repo-native lane-local control/handoff surface on merged `main`.
+It does **not** supersede the live repo's retained-`baseline` stable-hold control posture rooted in the MVVLC control spine.
 
-Local standalone refinement/use may proceed without ordinalization.
-Ordinalization/adoption is required before treating these docs as repo-native active control authority.
-
-## Authority hierarchy
-
-Until formal adoption/insertion occurs:
+## Repo-native authority hierarchy on merged `main`
 
 1. live repo code, fixtures, pinned artifacts, and real downstream-consumer behavior
-2. live repo active control docs
-3. this prepared standalone pack
+2. live repo active control docs rooted at the retained-default MVVLC control spine, especially `03AC`, `05O`, `05P`, and `05Q`
+3. this adopted PageEvidence pack as a subordinate repo-native lane-local control/handoff surface
 4. archive/context artifacts in this folder
 
-## Current repo-native insertion targets
+## Repo-native adoption result
 
-If this pack is later adopted into the live repo control structure on this branch, the insertion pass must reconcile against the current repo-native control spine rooted at:
+This pack is now adopted into the live repo control structure on merged `main`.
+That adoption was reconciled against the current repo-native control spine rooted at:
 
 - `next_milestone_plans/multi_variant_visual_lane_control/README_INDEX.md` for front-door/navigation placement
 - `next_milestone_plans/multi_variant_visual_lane_control/03AC_EXACT_POST_ADMISSION_DEFAULTING_SCOPE_AND_DECISION_BOUNDARY.md` for the exact post-admission/defaulting boundary
@@ -44,12 +41,12 @@ If this pack is later adopted into the live repo control structure on this branc
 - `next_milestone_plans/multi_variant_visual_lane_control/05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md` for the merged-main retained-`baseline` default decision
 - `next_milestone_plans/multi_variant_visual_lane_control/05Q_POST_ADMISSION_RETAIN_BASELINE_MERGED_MAIN_CLOSURE_AND_HANDOFF.md` for the current merged-main closure/handoff posture
 
-This repo-native insertion requirement does **not** make the MVVLC pack the conceptual owner of this standalone PageEvidence pack before adoption.
-It means only that formal adoption must integrate with the live repo control surfaces that currently govern the retained-`baseline` stable-hold state.
+The result is a subordinate repo-native lane-local hold-state pack for PageEvidence.
+It records that Pass 1 is complete, Pass 2 is not needed on the merged-main branch state, the correct posture is stop and hold, and any future PageEvidence work must begin from a new explicitly frozen objective.
 
 ## One-line use rule
 
-Use this folder for local standalone refinement and pre-adoption Lane Class A planning; do not treat it as repo-native active control authority until insertion/adoption succeeds.
+Use this folder as the adopted repo-native PageEvidence lane-local hold-state/control pack on merged `main`; do not treat it as permission to reopen implementation, and require a new explicitly frozen objective before any future PageEvidence work.
 
 ## Pack posture
 
@@ -70,60 +67,62 @@ The decisions frozen into this pack are:
 ### Active control docs
 
 These are normative docs.
-They are prepared for adoption, but remain below live repo authority until insertion/adoption succeeds.
+They are adopted repo-native lane-local control docs for the closed PageEvidence Lane Class A hold-state.
+They remain subordinate to the live MVVLC retained-default control spine.
 
-| document | role | authority tier | intended use | should be ordinalized/adopted? |
+| document | role | authority tier | intended use | adopted status |
 | --- | --- | --- | --- | --- |
-| `EXACT_PAGE_EVIDENCE_SHARED_EVIDENCE_AND_PROJECTION_SEPARATION_BOUNDARY.md` | lane boundary | prepared standalone normative | freeze separation boundary and non-goals | yes |
-| `PAGE_EVIDENCE_STRENGTHENING_EXECUTION_PACKET.md` | execution control | prepared standalone normative | govern prepared Lane Class A execution posture | yes |
-| `PAGE_EVIDENCE_SELECTOR_SEMANTICS_AND_BEHAVIOR_DRIFT_POLICY.md` | selector semantics | prepared standalone normative | control same-selector/no-drift handling | yes |
-| `PAGE_EVIDENCE_LANE_A_EQUIVALENCE_AND_NO_DRIFT_GATE.md` | equivalence gate | prepared standalone normative | govern Lane Class A no-drift proof | yes |
-| `PAGE_EVIDENCE_REPRESENTATIVE_FIXTURE_LOCK_AND_CANONICAL_SUBSET_NOTE.md` | representative-fixture policy | prepared standalone normative | freeze binding subset and fixture rule | yes |
-| `PAGE_EVIDENCE_SCHEMA_AND_ARTIFACT_COMPATIBILITY_POLICY.md` | compatibility policy | prepared standalone normative | govern schema/artifact meaning and compatibility | yes |
-| `PAGE_EVIDENCE_EVALUATION_AND_DISAGREEMENT_MATRIX.md` | evaluation control | prepared standalone normative | define disagreement/evaluation coverage expectations | yes |
-| `PAGE_EVIDENCE_HIDDEN_CONSUMER_COMPATIBILITY_CHECKLIST.md` | hidden-consumer control | prepared standalone normative | define required downstream compatibility checks | yes |
-| `PAGE_EVIDENCE_BLAST_RADIUS_AND_BEFORE_AFTER_TOPOLOGY.md` | blast-radius control | prepared standalone normative | govern connection-surface and topology classification | yes |
-| `PAGE_EVIDENCE_INTERNAL_FIELD_DEFINITION_REGISTER.md` | field register | prepared standalone normative | freeze authorized internal field set and derivation constraints | yes |
-| `PAGE_EVIDENCE_PASS_SEQUENCING_AND_COMMIT_CHOREOGRAPHY.md` | pass choreography | prepared standalone normative | freeze pass order and rollback-friendly sequencing | yes |
-| `PAGE_EVIDENCE_STRENGTHENING_ROADMAP_AND_DECISION_NOTES.md` | roadmap and gate notes | prepared standalone normative | give the prepared Lane Class A roadmap narrative | yes |
-| `PAGE_EVIDENCE_PASS_LEVEL_ALLOWED_FILE_MANIFEST.md` | file boundary control | prepared standalone normative | freeze per-pass editable-file envelope | yes |
-| `PAGE_EVIDENCE_ROLLBACK_AND_CHANGE_CONTROL_GUARDRAILS.md` | rollback control | prepared standalone normative | govern rollback/change-control expectations | yes |
+| `EXACT_PAGE_EVIDENCE_SHARED_EVIDENCE_AND_PROJECTION_SEPARATION_BOUNDARY.md` | lane boundary | repo-native adopted normative (lane-local) | freeze separation boundary and non-goals | adopted |
+| `PAGE_EVIDENCE_STRENGTHENING_EXECUTION_PACKET.md` | execution control | repo-native adopted normative (lane-local) | govern adopted Lane Class A hold-state execution posture | adopted |
+| `PAGE_EVIDENCE_SELECTOR_SEMANTICS_AND_BEHAVIOR_DRIFT_POLICY.md` | selector semantics | repo-native adopted normative (lane-local) | control same-selector/no-drift handling | adopted |
+| `PAGE_EVIDENCE_LANE_A_EQUIVALENCE_AND_NO_DRIFT_GATE.md` | equivalence gate | repo-native adopted normative (lane-local) | govern Lane Class A no-drift proof | adopted |
+| `PAGE_EVIDENCE_REPRESENTATIVE_FIXTURE_LOCK_AND_CANONICAL_SUBSET_NOTE.md` | representative-fixture policy | repo-native adopted normative (lane-local) | freeze binding subset and fixture rule | adopted |
+| `PAGE_EVIDENCE_SCHEMA_AND_ARTIFACT_COMPATIBILITY_POLICY.md` | compatibility policy | repo-native adopted normative (lane-local) | govern schema/artifact meaning and compatibility | adopted |
+| `PAGE_EVIDENCE_EVALUATION_AND_DISAGREEMENT_MATRIX.md` | evaluation control | repo-native adopted normative (lane-local) | define disagreement/evaluation coverage expectations | adopted |
+| `PAGE_EVIDENCE_HIDDEN_CONSUMER_COMPATIBILITY_CHECKLIST.md` | hidden-consumer control | repo-native adopted normative (lane-local) | define required downstream compatibility checks | adopted |
+| `PAGE_EVIDENCE_BLAST_RADIUS_AND_BEFORE_AFTER_TOPOLOGY.md` | blast-radius control | repo-native adopted normative (lane-local) | govern connection-surface and topology classification | adopted |
+| `PAGE_EVIDENCE_INTERNAL_FIELD_DEFINITION_REGISTER.md` | field register | repo-native adopted normative (lane-local) | freeze authorized internal field set and derivation constraints | adopted |
+| `PAGE_EVIDENCE_PASS_SEQUENCING_AND_COMMIT_CHOREOGRAPHY.md` | pass choreography | repo-native adopted normative (lane-local) | freeze pass order and rollback-friendly sequencing | adopted |
+| `PAGE_EVIDENCE_STRENGTHENING_ROADMAP_AND_DECISION_NOTES.md` | roadmap and gate notes | repo-native adopted normative (lane-local) | give the adopted Lane Class A hold-state roadmap narrative | adopted |
+| `PAGE_EVIDENCE_PASS_LEVEL_ALLOWED_FILE_MANIFEST.md` | file boundary control | repo-native adopted normative (lane-local) | freeze per-pass editable-file envelope | adopted |
+| `PAGE_EVIDENCE_ROLLBACK_AND_CHANGE_CONTROL_GUARDRAILS.md` | rollback control | repo-native adopted normative (lane-local) | govern rollback/change-control expectations | adopted |
 
 ### Operational companion docs
 
 These docs are non-normative.
+They are adopted repo-native operational companions for this lane-local hold-state pack.
 They may summarize or operationalize normative rules, but they must not create new ones.
 
-| document | role | authority tier | intended use | should be ordinalized/adopted? |
+| document | role | authority tier | intended use | adopted status |
 | --- | --- | --- | --- | --- |
-| `README_PAGEEVIDENCE_STRENGTHENING_PACK.md` | front door | operational companion | orient readers and classify docs by role | yes |
-| `PAGE_EVIDENCE_PACK_ACTIVATION_AND_WORKING_USE_PLAN.md` | session procedure | operational companion | narrative working sequence for local use and adoption prep | yes |
-| `PAGE_EVIDENCE_PACK_ACTIVATION_AND_VERIFICATION_CHECKLIST.md` | insertion checklist | operational companion | pre-insertion and post-insertion verification checklist | yes |
-| `PAGE_EVIDENCE_OPERATOR_EXECUTION_SHEET.md` | quick reference | operational companion | compressed operator summary of normative rules | yes |
-| `PAGE_EVIDENCE_FILE_TO_TEST_TO_BUNDLE_TRACEABILITY_MATRIX.md` | validation map | operational companion | map files to tests/bundles for execution hygiene | provisional |
-| `PAGE_EVIDENCE_MODULE_COMPONENT_DEPENDENCY_AND_TOUCHPOINT_INVENTORY.md` | architecture inventory | operational companion | summarize components, dependencies, and touchpoints | provisional |
-| `PAGE_EVIDENCE_ASSUMPTION_REGISTER.md` | assumption log | operational companion | track assumptions and failure modes explicitly | provisional |
-| `PAGE_EVIDENCE_SCHEMA_AND_ARTIFACT_BEFORE_AFTER_PAYLOAD_EXAMPLES.md` | payload examples | operational companion | illustrate payload shape without creating rules | provisional |
-| `pageevidence_roadmap.png` | visual planning artifact | operational companion | maintained derived representation of `PAGE_EVIDENCE_STRENGTHENING_ROADMAP_AND_DECISION_NOTES.md`; update together | no |
-| `PAGE_EVIDENCE_STRENGTHENING_IMPLEMENTATION_RECORD_TEMPLATE.md` | implementation record template | operational companion | standardize later implementation notes if adoption occurs | provisional |
-| `PAGE_EVIDENCE_STRENGTHENING_PACK_VERIFICATION_REPORT.md` | pack integrity record | operational companion | record pack-only verification and limits | provisional |
+| `README_PAGEEVIDENCE_STRENGTHENING_PACK.md` | front door | repo-native adopted operational companion | orient readers and classify docs by role | adopted |
+| `PAGE_EVIDENCE_PACK_ACTIVATION_AND_WORKING_USE_PLAN.md` | session procedure | repo-native adopted operational companion | narrative working sequence for hold-state use and future-lane gating | adopted |
+| `PAGE_EVIDENCE_PACK_ACTIVATION_AND_VERIFICATION_CHECKLIST.md` | adoption record/checklist | repo-native adopted operational companion | record adoption/reconciliation checks and future re-verification steps | adopted |
+| `PAGE_EVIDENCE_OPERATOR_EXECUTION_SHEET.md` | quick reference | repo-native adopted operational companion | compressed operator summary of normative rules | adopted |
+| `PAGE_EVIDENCE_FILE_TO_TEST_TO_BUNDLE_TRACEABILITY_MATRIX.md` | validation map | repo-native adopted operational companion | map files to tests/bundles for execution hygiene | adopted (provisional companion) |
+| `PAGE_EVIDENCE_MODULE_COMPONENT_DEPENDENCY_AND_TOUCHPOINT_INVENTORY.md` | architecture inventory | repo-native adopted operational companion | summarize components, dependencies, and touchpoints | adopted (provisional companion) |
+| `PAGE_EVIDENCE_ASSUMPTION_REGISTER.md` | assumption log | repo-native adopted operational companion | track assumptions and failure modes explicitly | adopted (provisional companion) |
+| `PAGE_EVIDENCE_SCHEMA_AND_ARTIFACT_BEFORE_AFTER_PAYLOAD_EXAMPLES.md` | payload examples | repo-native adopted operational companion | illustrate payload shape without creating rules | adopted (provisional companion) |
+| `pageevidence_roadmap.png` | visual planning artifact | repo-native adopted operational companion | maintained derived representation of `PAGE_EVIDENCE_STRENGTHENING_ROADMAP_AND_DECISION_NOTES.md`; update together | adopted (derived artifact) |
+| `PAGE_EVIDENCE_STRENGTHENING_IMPLEMENTATION_RECORD_TEMPLATE.md` | implementation record template | repo-native adopted operational companion | standardize later implementation notes if a new explicit freeze reopens work | adopted (template) |
+| `PAGE_EVIDENCE_STRENGTHENING_PACK_VERIFICATION_REPORT.md` | pack integrity record | repo-native adopted operational companion | preserve pre-adoption pack-integrity evidence and limits | adopted (historical companion) |
 
 ### Archive / context docs
 
 These are non-authoritative context artifacts.
 
-| document | role | authority tier | intended use | should be ordinalized/adopted? |
+| document | role | authority tier | intended use | adopted status |
 | --- | --- | --- | --- | --- |
-| `pageevidence_v10_codex_handoff.md` | handoff history | archive/context | continuation aid and historical context only | no |
+| `pageevidence_v10_codex_handoff.md` | handoff history | archive/context | continuation aid and historical context only | not adopted (archive/context) |
 
 Rule:
 
-- if a rule exists only in an operational companion doc, move that rule into an active control doc before adoption/insertion
+- if a rule exists only in an operational companion doc, move that rule into an active control doc before relying on it as durable control guidance
 - operational docs should point back to this classification table rather than carrying competing partial authority maps
-- current-branch status notes should distinguish between:
+- current-state status notes should distinguish between:
   - historical comparison baseline
-  - current realized branch state
-  - future pack-prepared but not yet justified work
+  - current realized merged-main state
+  - future work that requires a new explicit freeze
 
 ## Recommended reading order
 

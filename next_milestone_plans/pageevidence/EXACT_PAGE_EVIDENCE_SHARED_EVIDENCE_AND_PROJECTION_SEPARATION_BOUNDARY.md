@@ -45,7 +45,7 @@ This strengthening boundary must therefore be read as:
 2. Candidate A already exists as the only admitted non-`baseline` selector value through the narrow integrated visual-lane seam.
 3. `baseline` remains the default for the current horizon.
 4. The pre-Pass1 comparison baseline at `4e89592043867726756aad16805529ae23c8fb6f` used a fully fused PageEvidence service.
-5. The current branch now separates raw evidence extraction from projected visual-page classification inside `backend/app/services/nrc_aps_page_evidence.py`, but does not yet require a separate helper module or runner/report compatibility bridge.
+5. The current merged-main state now separates raw evidence extraction from projected visual-page classification inside `backend/app/services/nrc_aps_page_evidence.py`, but does not yet require a separate helper module or runner/report compatibility bridge.
 6. The current projected class logic is still permissive enough that dense-text pages with nonzero drawing/image counts may still be projected as visual.
 7. The outward binary visual contract remains part of the live baseline-facing surface and must not be widened casually.
 
@@ -66,9 +66,9 @@ The strengthening lane exists to make all of the following true:
 4. Internal evidence richness may increase without outward schema or identity widening.
 5. Evaluation discipline becomes stronger through disagreement analysis and calibration-oriented summaries.
 
-Current branch adequacy note:
+Current merged-main adequacy note:
 
-- the current branch already satisfies items 1-3 inside the existing owner file and runner surface
+- the current merged-main state already satisfies items 1-3 inside the existing owner file and runner surface
 - future work should therefore start from a fresh insufficiency finding, not from the stale assumption that separation is still undone
 
 ---

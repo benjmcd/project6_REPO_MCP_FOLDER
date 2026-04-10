@@ -17,7 +17,7 @@ This packet turns the strengthening direction into a bounded executable plan wit
 - the PageEvidence workbench already exists
 - Candidate A already exists as the current admitted non-`baseline` runtime lane
 - `baseline` remains the current default runtime mode
-- this folder is a prepared standalone Lane Class A strengthening pack for this lane; it does not become repo-native active control authority until formal adoption/insertion occurs
+- this folder is now an adopted repo-native Lane Class A hold-state/control pack on merged `main`, subordinate to the retained-default MVVLC control spine
 
 This packet prepares a bounded Lane Class A PageEvidence strengthening lane focused on substrate quality and projection separation. It is justified only if it:
 
@@ -26,11 +26,11 @@ This packet prepares a bounded Lane Class A PageEvidence strengthening lane focu
 3. preserves current baseline-default runtime posture
 4. avoids broad outward widening
 
-Current branch status note:
+Current merged-main status note:
 
-- Pass 1 separation/lifecycle hardening is already implemented and closure-validated on this branch
+- Pass 1 separation/lifecycle hardening is already implemented and closure-validated on merged `main`
 - fresh Pass 2 truth re-establishment found no residual helper-extraction or compatibility-bridge obligation
-- the correct current-branch action is therefore Stop and hold unless a new insufficiency is proven later
+- the correct current merged-main action is therefore Stop and hold unless a new insufficiency is proven later
 - any future implementation work must begin from a new explicitly frozen objective rather than reopening Pass 2 by momentum
 
 ---
@@ -53,10 +53,10 @@ This execution packet is frozen to the following pack-local decisions:
 
 ## Authority note
 
-Within this lane, live repo code, fixtures, pinned artifacts, real downstream-consumer behavior, and live repo active control docs outrank this prepared pack until formal adoption/insertion occurs.
+Within this lane, live repo code, fixtures, pinned artifacts, real downstream-consumer behavior, and live repo active control docs rooted at the retained-default MVVLC chain outrank this adopted pack.
 
-Local standalone refinement/use does not require ordinalization.
-Ordinalization/adoption is required before treating these docs as repo-native active control authority.
+This adopted pack is a repo-native lane-local control/handoff surface on merged `main`, not standalone-preparation material.
+It does not authorize reopening Pass 2 or any new implementation without a new explicitly frozen objective.
 
 ## Canonical live truth surfaces for this lane
 
@@ -222,7 +222,7 @@ Pass 2 is **not** justified merely because:
 - the runner could be reorganized without a repo-confirmed need
 - a fresh worktree exists and could carry more refactor work conveniently
 
-If fresh truth re-establishment on the current branch finds no residual insufficiency, the correct action is Stop and hold rather than reopening implementation.
+If fresh truth re-establishment on merged `main` finds no residual insufficiency, the correct action is Stop and hold rather than reopening implementation.
 
 ---
 
@@ -449,4 +449,4 @@ For a pre-implementation branch, the next justified move is:
 5. freeze the lane separately in a final implementation record
 6. only then decide whether any later broader PageEvidence or candidate-neutral substrate work is justified
 
-If the current branch already completed those steps and fresh Gate C truth re-establishment finds no residual insufficiency, stop and hold instead of reopening steps 2-5.
+If merged `main` already completed those steps and fresh Gate C truth re-establishment finds no residual insufficiency, stop and hold instead of reopening steps 2-5.
