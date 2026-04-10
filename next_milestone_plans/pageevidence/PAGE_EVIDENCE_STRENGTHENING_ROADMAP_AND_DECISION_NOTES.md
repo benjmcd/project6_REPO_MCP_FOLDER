@@ -6,11 +6,19 @@ Provide one consolidated roadmap for the PageEvidence strengthening effort so th
 
 This roadmap is subordinate to the execution packet and selector-semantics policy.
 It does not widen scope beyond what those docs allow.
+It governs the prepared standalone Lane Class A pack only.
+It does not by itself supersede the live repo's retained-`baseline` stable-hold posture and becomes repo-native control only upon formal adoption/insertion.
 
-Derived visual note:
+Derived planning artifact note:
 
-- `pageevidence_roadmap.png` is a derived visual aid only
-- if the PNG and this markdown roadmap ever diverge, this markdown file wins
+- `pageevidence_roadmap.png` is a maintained, derived planning artifact for this roadmap
+- if the PNG and this markdown roadmap diverge, this markdown file wins and the PNG should be regenerated from it before further use
+
+Current branch status note:
+
+- Lane Class A remains the only prepared lane in this pack
+- Pass 1 is complete on this branch
+- Pass 2 remains deferred / not started on this branch
 
 ---
 
@@ -24,8 +32,8 @@ This roadmap is frozen to the following pack-local decisions:
 4. **Regression-only drift may occur only with written justification**
 5. **A threshold/percentage-based materiality rule is possible later, but not part of the current lane**
 6. **Passes 1-4 are the only prepared passes in this pack**
-7. **The first lane should avoid touching `nrc_aps_document_processing.py`; analysis against a non-authoritative scratch copy is acceptable if useful, but production-file edits remain escalation-only**
-8. **Strengthened artifacts coexist with the current pinned Candidate A artifact; the old artifact remains historically authoritative unless later explicitly superseded**
+7. **The first lane must not touch `nrc_aps_document_processing.py` in Pass 1; analysis against a non-authoritative scratch copy is acceptable if useful, but production-file edits remain escalation-only**
+8. **Strengthened artifacts coexist with the current pinned Candidate A artifact; the old artifact remains historically authoritative for workbench/report compatibility and before-state reference unless later explicitly superseded, but it does not override live admitted integrated Candidate A behavior in the owner path**
 
 ---
 
@@ -57,7 +65,8 @@ Current pack recommendation:
 - **Not prepared in this pack**
 - only later scope by separate explicit freeze
 
-If uncertainty exists, default to **Lane Class A**.
+If uncertainty exists, do **not** default-classify the work as Lane Class A by convenience.
+Remain in audit / truth re-establishment mode until the lane class is justified explicitly.
 
 ---
 
@@ -95,12 +104,13 @@ Default subpasses:
 #### Pass 1
 - cleanup and lifecycle hardening
 - explicit `fitz` close / cleanup semantics
+- narrow extraction/projection separation inside the existing PageEvidence service when that can be done without widening file ownership
 - no artifact meaning change
 - no admitted behavior drift
 - no production touch to `nrc_aps_document_processing.py`
 
 #### Pass 2
-- shared evidence / candidate projection separation
+- compatibility bridge or helper extraction only if Pass 1 cannot keep the split clean enough inside the existing owner set
 - compatibility bridge if required
 - preserve current admitted Candidate A behavior
 - no production touch to `nrc_aps_document_processing.py` unless a separate escalation is approved
@@ -155,7 +165,7 @@ If no:
 
 ### Gate C — before Pass 2
 Question:
-- Can evidence/projection separation be done without touching the admitted Candidate A behavior?
+- If Pass 1 was not sufficient, can any remaining compatibility bridge or helper extraction be done without touching the admitted Candidate A behavior?
 
 If yes:
 - remain Lane Class A
@@ -230,12 +240,12 @@ Lane Class B validation is out of current scope.
 Recommended rollback anchors:
 
 1. post-truth-re-establishment, pre-code
-2. post-cleanup, pre-separation
-3. post-separation, pre-field-enrichment
+2. post-Pass-1 local separation, pre-any Pass 2 helper widening
+3. post-separation/bridge completion, pre-field-enrichment
 4. post-field-enrichment, pre-evaluation expansion
 
 ---
 
 ## Result
 
-This roadmap now gives the lane a single explicit execution narrative: re-establish live truth first, remain Lane Class A only, prepare Passes 1-4 only, keep representative-fixture equivalence binding, allow regression-only drift only by written justification, and defer Lane Class B until separately frozen.
+This roadmap now gives the prepared standalone pack a single explicit execution narrative: re-establish live truth first, remain Lane Class A only, prepare Passes 1-4 only, keep representative-fixture equivalence binding, allow regression-only drift only by written justification, and defer Lane Class B until separately frozen.

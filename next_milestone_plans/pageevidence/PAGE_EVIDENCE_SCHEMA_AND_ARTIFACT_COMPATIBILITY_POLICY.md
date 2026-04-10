@@ -101,6 +101,7 @@ If candidate identity remains in the core schema for compatibility, the implemen
 ## Workbench artifact rule
 
 The pinned repo-native workbench artifact must be treated as a durable compatibility surface.
+Its authority is about workbench/report compatibility and historical before-state evidence; it does not redefine the current admitted integrated Candidate A behavior in the owner path.
 
 The strengthening lane must choose one of the following:
 

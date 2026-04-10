@@ -94,7 +94,7 @@ def _drawing_area(page: fitz.Page) -> float:
     return area
 
 
-def _project_visual_page_class(record: dict[str, Any], config: dict[str, Any]) -> str:
+def _project_candidate_a_visual_page_class(record: dict[str, Any], config: dict[str, Any]) -> str:
     has_visual_signal = bool(record["image_count"] or record["drawing_count"])
     has_visual_signal = has_visual_signal or float(record["combined_visual_coverage_ratio"]) >= float(
         config["visual_coverage_threshold"]
@@ -107,7 +107,7 @@ def _project_visual_page_class(record: dict[str, Any], config: dict[str, Any]) -
     return APS_VISUAL_CLASS_TEXT_HEAVY
 
 
-def analyze_pdf_page_evidence(
+def extract_page_evidence_record(
     *,
     page: fitz.Page,
     page_number: int,
@@ -151,8 +151,51 @@ def analyze_pdf_page_evidence(
         "text_word_threshold": int(normalized_config["text_word_threshold"]),
         "visual_coverage_threshold": float(normalized_config["visual_coverage_threshold"]),
     }
-    record["projected_visual_page_class"] = _project_visual_page_class(record, normalized_config)
     return record
+
+
+def project_candidate_a_page_evidence(
+    record: dict[str, Any],
+    *,
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    normalized_config = normalize_page_evidence_config(
+        config
+        if config is not None
+        else {
+            "text_word_threshold": record.get("text_word_threshold", 20),
+            "visual_coverage_threshold": record.get("visual_coverage_threshold", 0.15),
+        }
+    )
+    projected = dict(record)
+    projected["projected_visual_page_class"] = _project_candidate_a_visual_page_class(projected, normalized_config)
+    return projected
+
+
+def _summarize_projected_pages(pages: list[dict[str, Any]]) -> dict[str, Any]:
+    projected_visual_pages = sum(
+        1 for record in pages if record["projected_visual_page_class"] == APS_VISUAL_CLASS_DIAGRAM
+    )
+    return {
+        "projected_visual_page_count": int(projected_visual_pages),
+        "projected_text_heavy_page_count": int(len(pages) - projected_visual_pages),
+        "contains_visual_projection": projected_visual_pages > 0,
+    }
+
+
+def analyze_pdf_page_evidence(
+    *,
+    page: fitz.Page,
+    page_number: int,
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    normalized_config = normalize_page_evidence_config(config)
+    record = extract_page_evidence_record(
+        page=page,
+        page_number=page_number,
+        config=normalized_config,
+    )
+    return project_candidate_a_page_evidence(record, config=normalized_config)
 
 
 def analyze_pdf_bytes(
@@ -167,34 +210,30 @@ def analyze_pdf_bytes(
     except Exception as exc:  # noqa: BLE001
         raise ValueError("pdf_open_failed") from exc
 
-    pages: list[dict[str, Any]] = []
-    for index in range(document.page_count):
-        page = document[index]
-        pages.append(
-            analyze_pdf_page_evidence(
+    try:
+        page_count = int(document.page_count)
+        pages: list[dict[str, Any]] = []
+        for index in range(page_count):
+            page = document[index]
+            extracted = extract_page_evidence_record(
                 page=page,
                 page_number=index + 1,
                 config=normalized_config,
             )
-        )
+            pages.append(project_candidate_a_page_evidence(extracted, config=normalized_config))
 
-    projected_visual_pages = sum(
-        1 for record in pages if record["projected_visual_page_class"] == APS_VISUAL_CLASS_DIAGRAM
-    )
-    return {
-        "schema_id": PAGE_EVIDENCE_SCHEMA_ID,
-        "candidate_id": WORKBENCH_CANDIDATE_ID,
-        "source_name": str(source_name),
-        "source_sha256": _stable_json_hash(content),
-        "page_count": int(document.page_count),
-        "config": dict(normalized_config),
-        "pages": pages,
-        "summary": {
-            "projected_visual_page_count": int(projected_visual_pages),
-            "projected_text_heavy_page_count": int(document.page_count - projected_visual_pages),
-            "contains_visual_projection": projected_visual_pages > 0,
-        },
-    }
+        return {
+            "schema_id": PAGE_EVIDENCE_SCHEMA_ID,
+            "candidate_id": WORKBENCH_CANDIDATE_ID,
+            "source_name": str(source_name),
+            "source_sha256": _stable_json_hash(content),
+            "page_count": page_count,
+            "config": dict(normalized_config),
+            "pages": pages,
+            "summary": _summarize_projected_pages(pages),
+        }
+    finally:
+        document.close()
 
 
 def analyze_pdf_path(path: str | Path, *, config: dict[str, Any] | None = None) -> dict[str, Any]:

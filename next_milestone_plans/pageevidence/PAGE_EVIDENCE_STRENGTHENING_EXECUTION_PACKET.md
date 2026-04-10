@@ -17,7 +17,7 @@ This packet turns the strengthening direction into a bounded executable plan wit
 - the PageEvidence workbench already exists
 - Candidate A already exists as the current admitted non-`baseline` runtime lane
 - `baseline` remains the current default runtime mode
-- this pack is the active planning/control surface for the current PageEvidence strengthening lane
+- this folder is a prepared standalone Lane Class A strengthening pack for this lane; it does not become repo-native active control authority until formal adoption/insertion occurs
 
 This packet prepares a bounded Lane Class A PageEvidence strengthening lane focused on substrate quality and projection separation. It is justified only if it:
 
@@ -41,14 +41,15 @@ This execution packet is frozen to the following pack-local decisions:
   - no integrated behavior drift
 - **Small fixed set of pre-approved new internal evidence fields in Pass 3 only**
 - **No production touch to `nrc_aps_document_processing.py` in Pass 1; analysis-only scratch copy allowed outside `backend` if useful**
-- **Strengthened artifacts coexist with the current pinned Candidate A artifact; the old artifact remains historically authoritative unless later explicitly superseded**
+- **Strengthened artifacts coexist with the current pinned Candidate A artifact; the old artifact remains historically authoritative for workbench/report compatibility and before-state reference unless later explicitly superseded, but it does not override live admitted integrated Candidate A behavior in the owner path**
 - **Passes 1-4 are the only prepared passes in this pack**
 
 ## Authority note
 
-Within this lane, live repo code, fixtures, pinned artifacts, and real downstream-consumer behavior outrank planning interpretation if conflict appears.
+Within this lane, live repo code, fixtures, pinned artifacts, real downstream-consumer behavior, and live repo active control docs outrank this prepared pack until formal adoption/insertion occurs.
 
-This pack is the active planning/control layer for the PageEvidence strengthening lane.
+Local standalone refinement/use does not require ordinalization.
+Ordinalization/adoption is required before treating these docs as repo-native active control authority.
 
 ## Canonical live truth surfaces for this lane
 
@@ -309,6 +310,7 @@ If the lane is Class B, the selector-semantics / behavior-drift policy becomes m
 ### Required disagreement / evaluation bundle
 
 - a repo-native evaluation/disagreement test or report generation path frozen by the companion evaluation-spec doc
+- if hidden-consumer validation includes review/runtime trace/API surfaces, run that subset in an isolated invocation when shared process-level runtime-root state (for example `STORAGE_DIR`) could make a mixed bundle misleading
 
 If the lane is classified as behavior-changing, the disagreement/evaluation bundle must compare:
 
@@ -357,7 +359,7 @@ If representative fixtures or accepted admitted-behavior anchors change material
 The lane may add a narrow number of new files only if they remain inside the frozen strengthening boundary. Default-allowed new file classes are:
 
 - one shared projection-helper module
-- one evaluation/disagreement helper module or report builder
+- one evaluation/disagreement helper module or report builder in Pass 4 by default; earlier introduction requires written pass-boundary justification
 - additive tests supporting the frozen validation matrix
 
 Disallowed by default:

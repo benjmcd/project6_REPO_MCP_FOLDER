@@ -4,8 +4,12 @@
 
 Compress the strengthening pack into one short operator-facing execution sheet so the implementation lane can be run with minimal interpretation burden.
 
+This document is operational and non-normative.
+It summarizes rules that are governed by the active control docs listed in the README doc classification table.
+Use that table as the complete normative source map for this pack.
+
 Use this sheet together with the full pack, not instead of it.
-If conflict appears, the execution packet and the Lane Class A equivalence gate outrank this sheet.
+If conflict appears, the README classification table and the active control docs it lists outrank this sheet.
 
 ---
 
@@ -18,8 +22,8 @@ If conflict appears, the execution packet and the Lane Class A equivalence gate 
 
 ## Pack-prepared passes
 
-- Pass 1: cleanup + explicit close/cleanup semantics
-- Pass 2: evidence/projection separation + runner/report adaptation + compatibility bridge if required
+- Pass 1: cleanup + explicit close/cleanup semantics + in-file extraction/projection separation if it stays inside the existing owner set
+- Pass 2: compatibility bridge / helper extraction + runner/report adaptation only if Pass 1 proved insufficient
 - Pass 3: fixed internal evidence-field additions only
 - Pass 4: disagreement/evaluation expansion
 
@@ -77,7 +81,7 @@ Do not add other internal fields in Lane Class A without a documented expansion 
 ## Artifact rule
 
 - Strengthened artifacts coexist with the current pinned Candidate A artifact.
-- The current pinned Candidate A artifact remains historically authoritative unless later explicitly superseded.
+- The current pinned Candidate A artifact remains historically authoritative for workbench/report compatibility and before-state reference unless later explicitly superseded; it is not the controlling definition of current admitted integrated Candidate A behavior.
 
 ---
 
@@ -103,6 +107,7 @@ At minimum after edits:
 - Lane Class A equivalence/no-drift checks
 - disagreement/evaluation outputs
 - hidden-consumer compatibility review
+- run review/runtime trace/API validation in an isolated invocation when shared process-level runtime-root state (for example `STORAGE_DIR`) could make mixed bundles misleading
 
 ---
 
@@ -113,3 +118,5 @@ Prefer the smallest change that:
 - preserves admitted Candidate A behavior
 - preserves outward contract behavior
 - and remains reversible
+
+This sheet creates no new rules beyond the normative docs it summarizes.

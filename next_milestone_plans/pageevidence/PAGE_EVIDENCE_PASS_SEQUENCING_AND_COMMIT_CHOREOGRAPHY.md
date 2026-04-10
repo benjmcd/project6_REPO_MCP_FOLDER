@@ -22,10 +22,11 @@ Within this separate pack, the prepared sequencing posture is:
 
 ## Recommended pass order
 
-### Pass 1 — cleanup and lifecycle hardening
+### Pass 1 — lifecycle hardening and in-file extraction/projection separation
 
 Goals:
 - explicit `fitz` document close / cleanup semantics
+- separate shared evidence extraction from candidate projection inside the existing service file when that can remain fully behavior-preserving
 - no behavior drift
 - no artifact meaning change
 - no production touch to `nrc_aps_document_processing.py`
@@ -33,12 +34,12 @@ Goals:
 Preferred commit properties:
 - isolated
 - trivially revertible
-- Step Class `R` only
+- Step Class `R` only when the split can stay inside the existing owner files with no outward compatibility work
 
-### Pass 2 — evidence / projection separation with compatibility bridge
+### Pass 2 — compatibility bridge / helper extraction if Pass 1 proves insufficient
 
 Goals:
-- separate shared evidence extraction from candidate projection
+- complete evidence/projection separation only if Pass 1 cannot keep the split clean enough inside the existing service file
 - preserve current admitted Candidate A behavior
 - add temporary compatibility bridge only if required
 - still no production touch to `nrc_aps_document_processing.py` unless escalation is explicitly approved

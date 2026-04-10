@@ -3,6 +3,8 @@
 ## Purpose
 
 This document hands off continued work on the standalone PageEvidence planning/control pack.
+It is contextual and non-authoritative.
+If it differs from the current pack docs or live repo truth, the current pack docs and live repo truth win.
 
 It summarizes:
 
@@ -36,19 +38,21 @@ PageEvidence work must be treated as a bounded strengthening lane, not as permis
 
 ## 2. What this pack is actually for
 
-This pack is the current planning/control layer for strengthening PageEvidence under a narrow, disciplined posture.
+This pack is a prepared standalone planning/control pack for strengthening PageEvidence under a narrow, disciplined posture.
 
 Its core idea is:
 
 > PageEvidence should be treated as a shared deterministic evidence extractor, not as the conceptual owner of candidate-policy classification.
 
 The pack is meant to separate those concerns without broadening scope.
+Until formal adoption/insertion occurs, live repo code and live repo active control docs remain higher authority.
 
 ---
 
-## 3. Frozen decisions already made in the pack
+## 3. Frozen decisions reflected in the pack at handoff time
 
-Unless explicitly reopened later, treat the following as binding pack decisions:
+At handoff time, the pack reflected the following decisions.
+Use the current pack docs for binding wording rather than this historical summary:
 
 ### Lane posture
 
@@ -91,7 +95,7 @@ Allowed fixed Pass 3 field set:
 ### Artifact posture
 
 - strengthened artifacts coexist with the current pinned Candidate A artifact
-- the current pinned artifact remains historically authoritative unless later explicitly superseded
+- the current pinned artifact remains historically authoritative for workbench/report compatibility and before-state reference unless later explicitly superseded, but it does not override live admitted integrated Candidate A behavior in the owner path
 
 ### Roadmap posture
 
@@ -281,7 +285,7 @@ After Passes 1-4, decide whether:
 
 ## 10. Best concise statement for Codex
 
-> Treat the v10 pack as the active standalone PageEvidence planning/control layer. Re-verify the live source-of-truth files before implementation planning, then execute Passes 1-4 only under Lane A while preserving representative-fixture equivalence and avoiding any material Candidate A behavior drift or broader runtime/program widening.
+> Treat the v10 pack as a prepared standalone PageEvidence planning/control layer for local refinement and pre-adoption Lane Class A planning. Re-verify the live source-of-truth files before implementation planning, then execute Passes 1-4 only under Lane A while preserving representative-fixture equivalence and avoiding any material Candidate A behavior drift or broader runtime/program widening.
 
 ---
 
@@ -291,7 +295,7 @@ After Passes 1-4, decide whether:
 
 - constraining a disciplined Lane A implementation lane
 - reducing interpretive ambiguity during execution
-- serving as the active planning/control pack for this current repo lane
+- serving as a strong standalone pre-adoption planning/control pack for this repo lane
 
 ### What it is not yet good enough for by itself
 
@@ -306,6 +310,6 @@ The planning work is strong enough to proceed into disciplined Lane Class A plan
 For any fresh implementation run:
 
 1. re-verify live code/artifact/downstream truth surfaces
-2. use this pack as the control surface for Lane A
+2. use this pack as the local standalone control surface for Lane A, with repo-native authority requiring formal adoption/insertion
 3. validate hard
 4. stop before any Lane B drift unless separately frozen
