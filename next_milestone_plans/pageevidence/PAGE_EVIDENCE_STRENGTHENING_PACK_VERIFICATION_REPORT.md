@@ -60,7 +60,14 @@ Rechecked the live repo truth surfaces relevant to this pack:
 - representative fixture manifest
 - hidden-consumer downstream surfaces relevant to `visual_page_refs` and PageEvidence artifacts
 
-Status: PASS for conceptual alignment
+Latest readiness-pass note:
+
+- retrieval-plane contract/canonicalizer ownership is real and explicit
+- document-trace / visual-artifact reading is a real downstream consumer
+- evidence-bundle contract shaping is a real downstream consumer
+- report/export/package dependence remains indirect through indexed or bundled payloads, not direct PageEvidence artifact ownership
+
+Status: PASS after concrete downstream-surface tightening
 
 ### 5. Pack hygiene check
 
