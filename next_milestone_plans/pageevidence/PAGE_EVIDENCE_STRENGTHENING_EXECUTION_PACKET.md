@@ -244,7 +244,13 @@ These must be inspected for compatibility, but should remain edit-free unless a 
 - `backend/app/services/nrc_aps_artifact_ingestion.py`
 - `backend/app/services/review_nrc_aps_runtime.py`
 - `backend/app/services/nrc_aps_content_index.py`
-- retrieval / evidence bundle / review / report/export files touched by `visual_page_refs`
+- `backend/app/services/aps_retrieval_plane_read.py`
+- `backend/app/services/aps_retrieval_plane_contract.py`
+- `backend/app/services/nrc_aps_evidence_bundle.py`
+- `backend/app/services/nrc_aps_evidence_bundle_contract.py`
+- `backend/app/services/review_nrc_aps_document_trace.py`
+- `backend/app/api/review_nrc_aps.py`
+- report/export/package files that depend directly or indirectly on indexed or bundled PageEvidence-related payloads
 
 ### Exact scope exclusion
 
