@@ -60,10 +60,12 @@ Questions:
 
 - [ ] `backend/app/services/aps_retrieval_plane.py`
 - [ ] `backend/app/services/aps_retrieval_plane_read.py`
-- [ ] retrieval contracts/canonicalizers involving visual-page-related fields
+- [ ] `backend/app/services/aps_retrieval_plane_contract.py`
+- [ ] retrieval contracts/canonicalizers involving `visual_page_refs` or related persisted payload fields
 
 Questions:
 - Do retrieval-row constructors/deserializers assume existing shape or meaning?
+- Do retrieval canonicalizers assume a stable serialized form for `visual_page_refs`?
 - Is additive-only change sufficient?
 
 ### 4. Evidence bundle surfaces
@@ -78,11 +80,13 @@ Questions:
 ### 5. Review/runtime surfaces
 
 - [ ] `backend/app/services/review_nrc_aps_runtime.py`
+- [ ] `backend/app/services/review_nrc_aps_document_trace.py`
+- [ ] `backend/app/api/review_nrc_aps.py`
 - [ ] review service / API consumers of visual-page-related fields
-- [ ] document trace related surfaces, if relevant
 
 Questions:
 - Does strengthening PageEvidence alter any review-visible field meaning?
+- Do document-trace or visual-artifact readers assume the current `visual_page_refs` structure or persisted artifact refs?
 - Is the current retained-default visibility posture unaffected?
 
 ### 6. Report / export / package surfaces
@@ -92,7 +96,7 @@ Questions:
 - [ ] `backend/app/services/nrc_aps_evidence_report_export_package.py`
 
 Questions:
-- Do these surfaces read, persist, or indirectly depend on strengthened artifact shapes?
+- Do these surfaces read, persist, or indirectly depend on strengthened artifact shapes through indexed/bundled payloads?
 - Does the lane require compatibility handling for persisted report refs or package composition?
 
 ### 7. Workbench artifact readers / validators

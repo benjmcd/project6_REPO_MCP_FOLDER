@@ -122,12 +122,12 @@ Current/likely touchpoints include:
 
 ### Downstream touchpoints that must remain explicitly checked
 
-- diagnostics payloads / refs
-- content indexing / stored refs
-- retrieval-plane serializers/deserializers
-- evidence bundles
-- review schemas / review service expectations
-- report/export/package persistence surfaces
+- diagnostics payloads / refs written by artifact-ingestion and consumed downstream
+- content indexing / stored refs, including persisted `visual_page_refs_json`
+- retrieval-plane serializers/deserializers and retrieval canonicalizers
+- evidence bundles and bundle-contract shaping
+- review schemas, review service expectations, and document-trace / visual-artifact readers
+- report/export/package persistence surfaces that depend indirectly on indexed or bundled payloads
 
 ---
 
