@@ -298,9 +298,9 @@ After Passes 1-4, decide whether:
 
 ### Bottom line
 
-The planning work is strong enough to proceed.
+The planning work is strong enough to proceed into disciplined Lane Class A planning.
 
-The next meaningful work is:
+For any fresh implementation run:
 
 1. re-verify live code/artifact/downstream truth surfaces
 2. use this pack as the control surface for Lane A

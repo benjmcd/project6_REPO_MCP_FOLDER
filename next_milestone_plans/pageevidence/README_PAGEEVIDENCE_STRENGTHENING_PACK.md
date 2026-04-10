@@ -140,11 +140,11 @@ Interpretation note:
 
 > Strengthen PageEvidence by reconstituting it as a shared deterministic evidence extractor, with candidate-policy projection separated from the core extraction layer, while preserving the current baseline-default runtime posture, avoiding outward contract widening, and improving calibration and disagreement visibility for the admitted Candidate A path.
 
-## Immediate next step
+## Implementation precondition
 
 This pack is already strong enough to guide implementation planning.
 
-Before code work starts, the next step is:
+Before any fresh implementation run starts:
 
 - re-establish live repo truth directly from code, fixtures, pinned artifacts, and downstream-consumer surfaces
 - then run the pack activation/use flow in this folder
