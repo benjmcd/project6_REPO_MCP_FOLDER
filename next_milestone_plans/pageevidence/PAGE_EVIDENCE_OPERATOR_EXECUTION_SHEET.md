@@ -5,6 +5,7 @@
 Compress the strengthening pack into one short operator-facing execution sheet so the implementation lane can be run with minimal interpretation burden.
 
 Use this sheet together with the full pack, not instead of it.
+If conflict appears, the execution packet and the Lane Class A equivalence gate outrank this sheet.
 
 ---
 
@@ -53,6 +54,7 @@ See the representative fixture lock note for the canonical subset.
 
 - Keep the same selector only if representative behavior remains materially equivalent.
 - If material behavior drift appears, stop and escalate into amendment/new-version handling rather than widening by inference.
+- Lane Class A may improve structure, separability, observability, and compatibility, but it may not silently change admitted Candidate A behavior on representative fixtures.
 
 ---
 

@@ -268,7 +268,9 @@ That means:
 - the lane may strengthen the substrate
 - the lane may separate extraction from projection
 - the lane may add only the fixed pre-approved internal fields in Pass 3
+- the lane may improve structure, projection separability, observability, compatibility discipline, and internal evidence richness within the frozen field set
 - the lane may not materially change admitted Candidate A behavior
+- the lane may not silently change admitted Candidate A behavior on representative fixtures
 - the lane may not silently drift into Lane Class B
 
 If representative-fixture drift or production-relevant seam drift appears, stop and treat that as an escalation point rather than continuing under Lane Class A language.
@@ -413,7 +415,7 @@ The next justified move is:
 
 1. work in a fresh strengthening lane/worktree
 2. implement separation of evidence extraction from projection logic
-3. improve Candidate A projection quality and internal evidence richness only within the pack frozen here
+3. improve projection separability, calibration/disagreement visibility, and internal evidence richness only within the pack frozen here while preserving admitted Candidate A behavior materially on representative fixtures
 4. validate through substrate/projection/disagreement bundles
 5. freeze the lane separately in a final implementation record
 6. only then decide whether any later broader PageEvidence or candidate-neutral substrate work is justified

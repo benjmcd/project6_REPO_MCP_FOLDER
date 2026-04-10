@@ -70,6 +70,7 @@ Verified and tightened the following pack-hygiene issues:
 - activation docs now match the standalone-pack posture
 - version/addendum debris in the verification framing has been reduced
 - residual broken execution-packet wording and malformed pass/phase labels were corrected
+- pack-use meaning, doc-role precedence, and the documentation stop rule are now explicit
 
 Status: PASS after correction
 
