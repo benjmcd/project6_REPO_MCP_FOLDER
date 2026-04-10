@@ -27,6 +27,9 @@ If conflict appears, the README classification table and the active control docs
 - Pass 3: fixed internal evidence-field additions only
 - Pass 4: disagreement/evaluation expansion
 
+If Pass 1 closure is already green and fresh truth re-establishment finds no residual insufficiency, do **not** open Pass 2; stop and hold instead.
+Any future implementation work must begin from a new explicitly frozen objective rather than continuing from this sheet by momentum.
+
 Do **not** start Lane Class B work under this sheet.
 
 ---

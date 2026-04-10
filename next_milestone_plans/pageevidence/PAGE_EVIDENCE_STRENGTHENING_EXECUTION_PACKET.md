@@ -26,6 +26,13 @@ This packet prepares a bounded Lane Class A PageEvidence strengthening lane focu
 3. preserves current baseline-default runtime posture
 4. avoids broad outward widening
 
+Current branch status note:
+
+- Pass 1 separation/lifecycle hardening is already implemented and closure-validated on this branch
+- fresh Pass 2 truth re-establishment found no residual helper-extraction or compatibility-bridge obligation
+- the correct current-branch action is therefore Stop and hold unless a new insufficiency is proven later
+- any future implementation work must begin from a new explicitly frozen objective rather than reopening Pass 2 by momentum
+
 ---
 
 ## Pack-prepared lane posture
@@ -202,6 +209,20 @@ The lane must make all of the following true:
 8. no hidden-consumer drift is introduced in retrieval/review/report/export surfaces
 
 If the implementation cannot make all eight true, it is not approve-as-is for this lane.
+
+## Exact Pass 2 necessity rule
+
+Pass 2 is conditional, not automatic.
+
+It exists only if Pass 1 left unresolved separation/compatibility work that cannot stay clean inside the existing owner set.
+
+Pass 2 is **not** justified merely because:
+
+- a separate helper file might look cleaner in the abstract
+- the runner could be reorganized without a repo-confirmed need
+- a fresh worktree exists and could carry more refactor work conveniently
+
+If fresh truth re-establishment on the current branch finds no residual insufficiency, the correct action is Stop and hold rather than reopening implementation.
 
 ---
 
@@ -419,7 +440,7 @@ unless a later explicit broader program freeze actually exists.
 
 ## Immediate next action after this packet
 
-The next justified move is:
+For a pre-implementation branch, the next justified move is:
 
 1. work in a fresh strengthening lane/worktree
 2. implement separation of evidence extraction from projection logic
@@ -427,3 +448,5 @@ The next justified move is:
 4. validate through substrate/projection/disagreement bundles
 5. freeze the lane separately in a final implementation record
 6. only then decide whether any later broader PageEvidence or candidate-neutral substrate work is justified
+
+If the current branch already completed those steps and fresh Gate C truth re-establishment finds no residual insufficiency, stop and hold instead of reopening steps 2-5.

@@ -44,6 +44,9 @@ Goals:
 - add temporary compatibility bridge only if required
 - still no production touch to `nrc_aps_document_processing.py` unless escalation is explicitly approved
 
+Skip this pass entirely if Pass 1 already achieved the split cleanly and the required Lane Class A validation remains green.
+If later work is proposed after that hold state, it must begin from a new explicitly frozen objective rather than from this prepared sequencing note alone.
+
 Preferred commit properties:
 - isolated from behavior recalibration
 - may span Step Classes `R` and `C`

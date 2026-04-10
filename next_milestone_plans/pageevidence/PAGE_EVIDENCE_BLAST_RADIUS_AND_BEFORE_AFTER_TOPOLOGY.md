@@ -42,19 +42,29 @@ If it does, the strictest applicable controls govern the whole change set unless
 
 ---
 
-## Current before-state topology
+## Current branch and comparison-baseline topology
 
-### Before-state A — current live reality
+### Before-state A — pre-Pass1 comparison baseline
 
-The current repo topology is:
+The pre-Pass1 baseline topology was:
 
-1. `nrc_aps_page_evidence.py` contains shared evidence extraction, candidate identity, and projected class logic in one place.
+1. At baseline commit `4e89592043867726756aad16805529ae23c8fb6f`, `nrc_aps_page_evidence.py` contained shared evidence extraction, candidate identity, and projected class logic in one place.
 2. `run_nrc_aps_page_evidence_workbench.py` consumes that fused service output and emits a workbench artifact.
 3. `nrc_aps_document_processing.py` contains the admitted Candidate A seam-local helper and consumes PageEvidence-derived signals inside the integrated PDF visual lane.
 4. Hidden-consumer surfaces downstream of processing already exist across content index, models/schemas, retrieval, evidence bundles, review, and report/export chains.
 5. Candidate A is already admitted; `baseline` remains the default for the current horizon.
 
-This before-state must be treated as the source-of-truth topology for all blast-radius judgments.
+This before-state remains the source-of-truth comparison anchor for representative-equivalence, runner-equivalence, and no-drift judgments.
+
+### Current realized branch topology
+
+On the current branch:
+
+1. `nrc_aps_page_evidence.py` now separates shared evidence extraction from Candidate A projection inside the same owner file.
+2. `run_nrc_aps_page_evidence_workbench.py` still consumes the stable service output shape without a helper-extraction or report-compatibility bridge.
+3. `nrc_aps_document_processing.py` remains untouched and still consumes the PageEvidence service through the admitted seam-local helper.
+4. Hidden-consumer validation and route/API/report/export/package closure checks are already green for this branch state.
+5. This realized branch topology is the live truth for deciding whether any later pass is still needed.
 
 ---
 
@@ -296,6 +306,72 @@ Relevant surfaces include at minimum:
 
 - complete hidden-consumer compatibility checklist
 - explicit statement of unaffected / compatible / bridged / blocked status
+
+---
+
+## Pass-scoped default blast-radius expectations
+
+### Pass 1 — lifecycle hardening and in-file separation
+
+Default direct owners:
+
+- `backend/app/services/nrc_aps_page_evidence.py`
+- `backend/tests/test_nrc_aps_page_evidence.py`
+
+Default indirect surfaces that still require proof:
+
+- workbench runner compatibility
+- representative-fixture equivalence
+- targeted integrated Candidate A seam sanity
+
+### Pass 2 — helper extraction / compatibility bridge only if Pass 1 proved insufficient
+
+Default direct owners only if activated:
+
+- `backend/app/services/nrc_aps_page_evidence.py`
+- `tools/run_nrc_aps_page_evidence_workbench.py`
+- `tests/test_nrc_aps_page_evidence_workbench.py`
+- one narrow helper file under `backend/app/services/` if needed
+
+Default indirect surfaces that become active if Pass 2 is truly needed:
+
+- pinned artifact comparability
+- runner/report compatibility meaning
+- possible pressure against the protected integrated seam
+
+Stop rule:
+
+- if these surfaces are not actually implicated by a repo-confirmed insufficiency, do **not** open Pass 2
+
+### Pass 3 — internal evidence-field enrichment only
+
+Default direct owners:
+
+- `backend/app/services/nrc_aps_page_evidence.py`
+- `backend/tests/test_nrc_aps_page_evidence.py`
+
+Default indirect surfaces:
+
+- artifact compatibility expectations
+- hidden-consumer inspect-only review for accidental outward meaning drift
+
+### Pass 4 — disagreement / evaluation expansion
+
+Default direct owners:
+
+- `tools/run_nrc_aps_page_evidence_workbench.py`
+- `tests/test_nrc_aps_page_evidence_workbench.py`
+- one narrow evaluation/disagreement helper under `tools/` if needed
+
+Default indirect surfaces:
+
+- pinned artifact comparability
+- reviewer interpretation of disagreement/report outputs
+
+Interpretation rule:
+
+- every pass must account for both the files it edits and the connection surfaces it activates
+- a later pass that activates no new surfaces should normally be skipped
 
 ---
 

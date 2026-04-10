@@ -14,9 +14,11 @@ The pack is built around the current live runtime facts that matter:
 
 - `baseline` remains the current default runtime mode
 - `candidate_a_page_evidence_v1` remains the current admitted non-`baseline` value
-- `backend/app/services/nrc_aps_page_evidence.py` still fuses shared evidence extraction, candidate identity, and projected-class logic
+- `backend/app/services/nrc_aps_page_evidence.py` now separates shared evidence extraction from Candidate A projection inside the existing owner file; no separate projection/helper module is currently required
 - hidden-consumer downstream surfaces remain real and must be treated as compatibility surfaces
 - the current pinned Candidate A workbench artifact remains historically authoritative for workbench/report compatibility and before-state reference unless later explicitly superseded, but it does not override live admitted integrated Candidate A behavior in the owner path
+- the current branch already cleared Pass 1 closure, and fresh truth re-establishment found no residual Pass 2 helper-extraction or compatibility-bridge obligation
+- any future implementation work must begin from a new explicitly frozen objective rather than reopening Pass 2 by momentum
 
 This pack does **not** by itself supersede the live repo's retained-`baseline` stable-hold control posture.
 
@@ -118,6 +120,10 @@ Rule:
 
 - if a rule exists only in an operational companion doc, move that rule into an active control doc before adoption/insertion
 - operational docs should point back to this classification table rather than carrying competing partial authority maps
+- current-branch status notes should distinguish between:
+  - historical comparison baseline
+  - current realized branch state
+  - future pack-prepared but not yet justified work
 
 ## Recommended reading order
 

@@ -24,13 +24,20 @@ Within this separate pack, the prepared implementation posture is:
 - no production touch to `nrc_aps_document_processing.py` in Pass 1
 - optional analysis-only scratch copy of `nrc_aps_document_processing.py` allowed outside `backend`, provided it is non-authoritative and non-runtime
 
+Current branch adequacy note:
+
+- Pass 1 is already complete and closure-validated on this branch
+- fresh truth re-establishment found no residual Pass 2 helper-extraction or compatibility-bridge obligation
+- further work should therefore begin only from a newly proven insufficiency, not from stale assumptions about unfinished separation
+
 ## Core service / runner modules
 
 ### Primary owner surfaces
 
 1. `backend/app/services/nrc_aps_page_evidence.py`
    - current owner of shared evidence extraction
-   - currently also contains projected-class logic and candidate coupling
+   - now also contains an in-file Candidate A projection layer via the Pass 1 split
+   - no separate projection/helper module is currently required
 2. `tools/run_nrc_aps_page_evidence_workbench.py`
    - current standalone runner / report writer
 3. `backend/tests/test_nrc_aps_page_evidence.py`
@@ -44,6 +51,31 @@ Within this separate pack, the prepared implementation posture is:
    - integrated seam that currently consumes Candidate A behavior
 6. `tests/test_nrc_aps_document_processing.py`
    - seam-adjacent regression surface
+
+## Pass-scoped owner interpretation
+
+### Pass 1 realized owner set on this branch
+
+- `backend/app/services/nrc_aps_page_evidence.py`
+- `backend/tests/test_nrc_aps_page_evidence.py`
+
+### Pass 2 owner set only if a real insufficiency is proven later
+
+- `backend/app/services/nrc_aps_page_evidence.py`
+- `tools/run_nrc_aps_page_evidence_workbench.py`
+- `tests/test_nrc_aps_page_evidence_workbench.py`
+- one narrow helper file under `backend/app/services/` if needed
+
+### Pass 3 default owner set
+
+- `backend/app/services/nrc_aps_page_evidence.py`
+- `backend/tests/test_nrc_aps_page_evidence.py`
+
+### Pass 4 default owner set
+
+- `tools/run_nrc_aps_page_evidence_workbench.py`
+- `tests/test_nrc_aps_page_evidence_workbench.py`
+- one narrow evaluation/disagreement helper under `tools/` if needed
 
 ---
 
