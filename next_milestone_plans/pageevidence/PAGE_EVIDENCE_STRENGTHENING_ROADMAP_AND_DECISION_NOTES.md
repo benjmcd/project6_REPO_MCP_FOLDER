@@ -18,7 +18,10 @@ Current branch status note:
 
 - Lane Class A remains the only prepared lane in this pack
 - Pass 1 is complete on this branch
+- Pass 1 closure gate is cleared on this branch
+- representative-fixture equivalence, hidden-consumer downstream validation, and route/API/report/export/package closure checks are green on this branch
 - Pass 2 remains deferred / not started on this branch
+- Pass 2 may now be considered from a stronger proof base, but it is not started by this roadmap status note
 
 ---
 
