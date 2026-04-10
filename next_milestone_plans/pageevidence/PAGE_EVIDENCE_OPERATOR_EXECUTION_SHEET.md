@@ -30,9 +30,7 @@ Do **not** start Lane Class B work under this sheet.
 ## Pass 1 default editable files
 
 - `backend/app/services/nrc_aps_page_evidence.py`
-- `tools/run_nrc_aps_page_evidence_workbench.py`
 - `backend/tests/test_nrc_aps_page_evidence.py`
-- `tests/test_nrc_aps_page_evidence_workbench.py`
 
 ### Pass 1 production no-touch rule
 
@@ -59,9 +57,9 @@ See the representative fixture lock note for the canonical subset.
 
 ---
 
-## Fixed pass-3 field set
+## Fixed Pass 3 field set
 
-Allowed first-pass internal evidence additions:
+Allowed Pass 3 internal evidence additions:
 
 - `largest_image_bbox_ratio`
 - `largest_drawing_bbox_ratio`

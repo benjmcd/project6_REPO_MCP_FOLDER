@@ -70,9 +70,9 @@ Interpretation:
 - regression-only fixtures may drift only with written justification
 - threshold/percentage-based materiality remains deferred
 
-### First-pass field authorization
+### Pass 3 field authorization
 
-Allowed fixed first-pass field set:
+Allowed fixed Pass 3 field set:
 
 - `largest_image_bbox_ratio`
 - `largest_drawing_bbox_ratio`
@@ -82,7 +82,9 @@ Allowed fixed first-pass field set:
 
 ### `nrc_aps_document_processing.py` posture
 
-- do not touch the production file in Pass 1 unless forced by a narrowly justified compatibility bridge
+- do not touch the production file in Pass 1
+- do not assume it is editable in Pass 2-4 by default
+- if a later pass proves a compatibility bridge or other production touch is necessary, treat that as explicit escalation rather than default pass scope
 - analysis-only scratch copies may exist only outside `backend/`
 - no committed duplicate production path
 
@@ -240,12 +242,13 @@ Prepared passes under current pack decisions:
 
 #### Pass 1
 - cleanup / explicit close semantics
-- evidence/projection separation setup
-- no production touch to `nrc_aps_document_processing.py` unless forced
+- no artifact meaning change
+- no production touch to `nrc_aps_document_processing.py`
 
 #### Pass 2
+- evidence/projection separation
 - runner/report adaptation
-- compatibility bridge work
+- compatibility bridge if required
 
 #### Pass 3
 - only the fixed pre-approved field set
