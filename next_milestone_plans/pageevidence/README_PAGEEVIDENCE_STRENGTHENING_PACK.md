@@ -108,11 +108,13 @@ If two docs appear to overlap, prefer the narrower doc that was written for that
 ### Support artifact
 
 26. `pageevidence_strengthening_pack_v10.zip`
+27. `pageevidence_roadmap.png`
 
 Interpretation note:
 
 - the handoff doc is a pack-local continuation aid, not higher authority than live repo truth
 - the zip file is archival source material, not the active working authority copy
+- the roadmap PNG is a derived visual aid only; the markdown roadmap notes remain authoritative if they ever differ
 
 ## Recommended reading / use order
 
