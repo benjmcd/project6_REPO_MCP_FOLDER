@@ -7,6 +7,11 @@ Provide one consolidated roadmap for the PageEvidence strengthening effort so th
 This roadmap is subordinate to the execution packet and selector-semantics policy.
 It does not widen scope beyond what those docs allow.
 
+Derived visual note:
+
+- `pageevidence_roadmap.png` is a derived visual aid only
+- if the PNG and this markdown roadmap ever diverge, this markdown file wins
+
 ---
 
 ## Pack-prepared roadmap posture

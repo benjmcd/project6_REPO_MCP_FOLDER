@@ -16,11 +16,13 @@ At verification time, the folder contained:
 - the operational companion docs
 - the v10 handoff doc
 - the archived v10 zip bundle
+- the derived roadmap PNG visual aid
 
 Interpretation note:
 
 - the markdown docs are the active repo-local working copy for this pack
 - the zip bundle is archival source material only
+- the roadmap PNG is a derived visual aid only
 - the handoff doc is subordinate to live repo truth if conflict appears
 
 ---
@@ -29,7 +31,7 @@ Interpretation note:
 
 ### 1. Pack inventory check
 
-Verified that the folder contains the expected PageEvidence planning/control docs, operational companion docs, handoff doc, and archive bundle.
+Verified that the folder contains the expected PageEvidence planning/control docs, operational companion docs, handoff doc, archive bundle, and derived roadmap PNG.
 
 Status: PASS
 
