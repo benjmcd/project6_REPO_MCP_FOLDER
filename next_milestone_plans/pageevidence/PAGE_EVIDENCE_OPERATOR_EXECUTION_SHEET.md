@@ -18,8 +18,8 @@ If conflict appears, the execution packet and the Lane Class A equivalence gate 
 
 ## Pack-prepared passes
 
-- Pass 1: cleanup + explicit close/cleanup semantics + evidence/projection separation setup
-- Pass 2: runner/report adaptation + compatibility bridge
+- Pass 1: cleanup + explicit close/cleanup semantics
+- Pass 2: evidence/projection separation + runner/report adaptation + compatibility bridge if required
 - Pass 3: fixed internal evidence-field additions only
 - Pass 4: disagreement/evaluation expansion
 
@@ -36,7 +36,8 @@ Do **not** start Lane Class B work under this sheet.
 
 ### Pass 1 production no-touch rule
 
-- Do **not** edit `backend/app/services/nrc_aps_document_processing.py` in Pass 1 unless a narrowly justified compatibility bridge is proven necessary.
+- Do **not** edit `backend/app/services/nrc_aps_document_processing.py` in Pass 1.
+- If a later pass proves a compatibility bridge or other production touch is necessary, treat that as an explicit escalation rather than a Pass 1 convenience.
 - If analysis requires a scratch copy of `nrc_aps_document_processing.py`, it must live outside `backend/`, remain clearly marked non-production, and must not become a committed duplicate production path.
 
 ---
