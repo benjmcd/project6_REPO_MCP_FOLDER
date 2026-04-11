@@ -93,6 +93,35 @@ def test_project_candidate_a_page_evidence_does_not_mutate_shared_record() -> No
     assert projected["image_count"] == record["image_count"]
 
 
+def test_extract_pdf_document_evidence_bytes_keeps_document_candidate_neutral() -> None:
+    result = nrc_aps_page_evidence.extract_pdf_document_evidence_bytes(
+        content=_fixture_bytes("scanned.pdf"),
+        source_name="scanned.pdf",
+    )
+
+    assert result["schema_id"] == "aps.page_evidence.v1"
+    assert "candidate_id" not in result
+    assert "summary" not in result
+    assert result["page_count"] == 1
+    assert "projected_visual_page_class" not in result["pages"][0]
+
+
+def test_project_candidate_a_document_evidence_does_not_mutate_shared_document() -> None:
+    shared = nrc_aps_page_evidence.extract_pdf_document_evidence_bytes(
+        content=_fixture_bytes("scanned.pdf"),
+        source_name="scanned.pdf",
+    )
+
+    projected = nrc_aps_page_evidence.project_candidate_a_document_evidence(shared)
+
+    assert "candidate_id" not in shared
+    assert "summary" not in shared
+    assert "projected_visual_page_class" not in shared["pages"][0]
+    assert projected["candidate_id"] == "candidate_a_page_evidence"
+    assert projected["summary"]["contains_visual_projection"] is True
+    assert projected["pages"][0]["projected_visual_page_class"] == "diagram_or_visual"
+
+
 class _FakePage:
     rect = SimpleNamespace(width=612.0, height=792.0)
 
