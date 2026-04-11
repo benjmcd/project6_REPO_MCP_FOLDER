@@ -10,8 +10,8 @@
     {
       "category": "durable_report",
       "path": "tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json",
-      "sha256": "ddaf8756e4396dfd4e729c1d12b69a44b5d3f13f0d16eaf9ee7c35e61286631a",
-      "size_bytes": 346711
+      "sha256": "9fa4949f1d68efa9d192e73bddf435d9b96b7e5bb4e1ee6963cca542cda87ddf",
+      "size_bytes": 342615
     },
     {
       "category": "durable_report",
@@ -56,6 +56,11 @@
       "source": "images/imageFile1.png"
     }
   ],
+  "label_sidecar_manifest_hash_status": {
+    "current_manifest_sha256": "d6554dca48dffefcdca89f486e1a60559f53e999c7e0662907e97ae8713645d1",
+    "recorded_manifest_sha256": "95deb6290640739eca1255988aafdb8e5f93f3739095e982df40532352446f2f",
+    "status": "sidecar_internal_manifest_sha256_stale_but_fixture_scope_matches_live_manifest"
+  },
   "outputs_outside_approved_roots": [],
   "raw_file_inventory": [
     {
