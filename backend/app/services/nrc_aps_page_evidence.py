@@ -183,6 +183,66 @@ def _summarize_projected_pages(pages: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def extract_pdf_document_evidence_bytes(
+    *,
+    content: bytes,
+    source_name: str,
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    normalized_config = normalize_page_evidence_config(config)
+    try:
+        document = fitz.open(stream=content, filetype="pdf")
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError("pdf_open_failed") from exc
+
+    try:
+        page_count = int(document.page_count)
+        pages: list[dict[str, Any]] = []
+        for index in range(page_count):
+            page = document[index]
+            pages.append(
+                extract_page_evidence_record(
+                    page=page,
+                    page_number=index + 1,
+                    config=normalized_config,
+                )
+            )
+
+        return {
+            "schema_id": PAGE_EVIDENCE_SCHEMA_ID,
+            "source_name": str(source_name),
+            "source_sha256": _stable_json_hash(content),
+            "page_count": page_count,
+            "config": dict(normalized_config),
+            "pages": pages,
+        }
+    finally:
+        document.close()
+
+
+def project_candidate_a_document_evidence(
+    document_evidence: dict[str, Any],
+    *,
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    normalized_config = normalize_page_evidence_config(
+        config
+        if config is not None
+        else document_evidence.get("config")
+    )
+    pages = [
+        project_candidate_a_page_evidence(record, config=normalized_config)
+        for record in list(document_evidence.get("pages") or [])
+    ]
+    return {
+        **dict(document_evidence),
+        "candidate_id": WORKBENCH_CANDIDATE_ID,
+        "config": dict(normalized_config),
+        "pages": pages,
+        "summary": _summarize_projected_pages(pages),
+    }
+
+
 def analyze_pdf_page_evidence(
     *,
     page: fitz.Page,
@@ -204,36 +264,12 @@ def analyze_pdf_bytes(
     source_name: str,
     config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    normalized_config = normalize_page_evidence_config(config)
-    try:
-        document = fitz.open(stream=content, filetype="pdf")
-    except Exception as exc:  # noqa: BLE001
-        raise ValueError("pdf_open_failed") from exc
-
-    try:
-        page_count = int(document.page_count)
-        pages: list[dict[str, Any]] = []
-        for index in range(page_count):
-            page = document[index]
-            extracted = extract_page_evidence_record(
-                page=page,
-                page_number=index + 1,
-                config=normalized_config,
-            )
-            pages.append(project_candidate_a_page_evidence(extracted, config=normalized_config))
-
-        return {
-            "schema_id": PAGE_EVIDENCE_SCHEMA_ID,
-            "candidate_id": WORKBENCH_CANDIDATE_ID,
-            "source_name": str(source_name),
-            "source_sha256": _stable_json_hash(content),
-            "page_count": page_count,
-            "config": dict(normalized_config),
-            "pages": pages,
-            "summary": _summarize_projected_pages(pages),
-        }
-    finally:
-        document.close()
+    shared_evidence = extract_pdf_document_evidence_bytes(
+        content=content,
+        source_name=source_name,
+        config=config,
+    )
+    return project_candidate_a_document_evidence(shared_evidence, config=config)
 
 
 def analyze_pdf_path(path: str | Path, *, config: dict[str, Any] | None = None) -> dict[str, Any]:
