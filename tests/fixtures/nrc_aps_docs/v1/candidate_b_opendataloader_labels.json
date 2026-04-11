@@ -3,7 +3,7 @@
   "frozen_at_utc": "2026-04-10T00:00:00Z",
   "purpose": "First-run label sidecar for the Candidate B OpenDataLoader workbench. Freeze before any Candidate B execution.",
   "manifest_ref": "tests/fixtures/nrc_aps_docs/v1/manifest.json",
-  "manifest_sha256": "95deb6290640739eca1255988aafdb8e5f93f3739095e982df40532352446f2f",
+  "manifest_sha256": "d6554dca48dffefcdca89f486e1a60559f53e999c7e0662907e97ae8713645d1",
   "first_run_scope": {
     "scope_rule": "representative_lower_bound_pdfs_only",
     "included_fixture_ids": [
