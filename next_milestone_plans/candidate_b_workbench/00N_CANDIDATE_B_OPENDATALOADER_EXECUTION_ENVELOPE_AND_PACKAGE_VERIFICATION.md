@@ -47,19 +47,25 @@ If the reported version is not `2.0.0`, stop and update the docs before continui
 
 ## C. Current workspace preflight snapshot for this pass
 
-No package install or Candidate B execution was performed in this pass.
+No Candidate B execution was performed in this pass.
 The direct local preflight checks returned:
 - `py -3.12 --version` -> `Python 3.12.10`
 - `java -version` -> command not resolved on `PATH`
-- `py -3.12 -m pip show opendataloader-pdf` -> package not installed
+- `JAVA_HOME` -> empty
+- common local install roots and JavaSoft registry keys -> no discoverable `java.exe`
+- isolated worktree-local venv created at `.candidate_b_preflight_venv`
+- `.\.candidate_b_preflight_venv\Scripts\python.exe -m pip install --require-hashes -r tests/requirements_nrc_aps_candidate_b_opendataloader.txt` -> success
+- isolated `pip show opendataloader-pdf` -> `Version: 2.0.0`
+- isolated installed module root -> `.candidate_b_preflight_venv\Lib\site-packages\opendataloader_pdf`
+- isolated wrapper/API verification -> `__all__ == ["run", "convert", "run_jar"]`, `run()` deprecated, `convert(...)` signature matches the frozen contract
 
 Interpretation:
 - the Python side of the execution envelope is present
-- Java readiness is **not** proven on this machine
-- the exact ODL package is **not** installed locally yet
+- Java readiness is **not** proven on this machine and the approved execution envelope is therefore **not ready**
+- the exact ODL package is now installed only inside the isolated preflight venv, not as a repo-runtime dependency
 
 So the execution envelope is frozen,
-but this machine is not yet ready for a real Candidate B run until Java resolution and package installation are completed.
+but this machine is not yet ready for a real Candidate B run until Java 11+ is resolvable on `PATH`.
 
 ---
 
