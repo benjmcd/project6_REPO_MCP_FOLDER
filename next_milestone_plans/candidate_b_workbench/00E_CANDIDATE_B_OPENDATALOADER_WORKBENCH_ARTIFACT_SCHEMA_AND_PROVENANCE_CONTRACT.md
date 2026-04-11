@@ -29,8 +29,8 @@ Recommended but optional in v1:
 
 ## C. Path and hash rules
 
-Every durable Candidate B artifact must record:
-- its own SHA256
+Every durable Candidate B artifact set must record:
+- authoritative SHA256 inventory for each durable report in the retention manifest
 - the raw-output root path used for the run
 - the corpus manifest SHA256
 - the labels/sidecar SHA256 when present
@@ -39,6 +39,11 @@ The retention manifest must also record a file inventory with hashes for:
 - each raw JSON output
 - each raw Markdown output
 - each extracted image file
+
+Execution finding from the first actual Candidate B run:
+- inline JSON self-hashing is self-referential and was not used as the authority pattern
+- the retention manifest is now the authoritative durable-report hash surface
+- if batch-shared external image output reuses the same relative image path across multiple documents, that collision must be recorded explicitly as a provenance weakness rather than silently treated as per-document image evidence
 
 ---
 
