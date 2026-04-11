@@ -64,13 +64,15 @@ Pin rule:
 
 Directly verified nuance for this pass:
 - the exact 2.0.0 wheel metadata does **not** carry a populated `License` field
-- the exact 2.0.0 wheel inspected in this pass does not expose an embedded license file
+- the exact 2.0.0 wheel inspected in the planning pass did not expose an embedded license file
+- the isolated preflight install for `opendataloader-pdf==2.0.0` exposes `License-Expression: Apache-2.0` in the installed distribution metadata
 - the exact 2.0.0 PyPI release description states that pre-2.0 remains MPL-2.0 and 2.0+ moves to Apache-2.0
 - the project homepage declared by PyPI points to the GitHub repository that also presents the project as Apache-2.0 licensed
 
 Therefore the working legal posture for Candidate B v1 is:
+- the exact pinned installed distribution used for isolated workbench preflight now directly presents `Apache-2.0` through `License-Expression`
 - workbench-only exploration may target the v2 Apache-2.0 branch
-- broader adoption should still re-check the upstream repo/tag license surface at implementation time because the wheel metadata itself is not self-describing on license
+- broader adoption should still re-check the upstream repo/tag license surface at implementation time because the legacy `License` field in the wheel metadata remains unpopulated
 
 ---
 
