@@ -66,6 +66,8 @@ Before the first Candidate B run:
 ## Phase 3 - Candidate B proof run
 
 Run Candidate B only through the approved tests/report-side surfaces.
+If a full-corpus batch would reuse external image filenames across documents,
+split only at whole-document boundaries so per-document image provenance stays reviewable.
 Generate at minimum:
 - proof report
 - compare report

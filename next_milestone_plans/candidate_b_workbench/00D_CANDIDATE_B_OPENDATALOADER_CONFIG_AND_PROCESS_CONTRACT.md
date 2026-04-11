@@ -103,6 +103,7 @@ Approved process model:
 
 ### Controlled batch-split fallback
 If one full-corpus batch fails for timeout/memory reasons,
+or if batch-shared external image filenames make per-document image provenance ambiguous,
 a split is allowed only at whole-document boundaries.
 The split plan must be recorded in the provenance block as:
 - batch count
@@ -110,6 +111,8 @@ The split plan must be recorded in the provenance block as:
 - reason for the split
 
 Per-page cherry-picking is forbidden in v1.
+The second-iteration provenance-isolation case may split to one document per batch,
+but it may not change the frozen fixture cohort or reopen Candidate A comparison.
 
 ---
 
