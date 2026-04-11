@@ -2,76 +2,66 @@
 
 ## Purpose
 
-List only the genuinely remaining open items after planning adoption reconciliation and the implementation-entry preflight/envelope freeze.
+Record the exact remaining nonblocking caveats after the adopted Candidate B second-iteration workbench baseline and freeze the current stop-and-hold posture.
 
-Many earlier ambiguities are now closed.
-What remains open now is narrower, explicit, and separated from what this pass already froze.
+This file is now a closure/handoff note.
+It is not an implementation-entry gate list anymore.
 
 ---
 
-## Resolved in this pass - docs destination
+## Current shared-main baseline
 
 Resolved posture:
-- keep the pack in `next_milestone_plans/candidate_b_workbench/`
-- treat that path as branch-local, non-authoritative planning/workbench storage
-- do not relocate the pack into `docs/nrc_adams/...` in v1
+- the adopted Candidate B second-iteration workbench baseline is now the active shared-main Candidate B state
+- Candidate B remains workbench-only, non-admitted, non-runtime, and non-selector-active
+- baseline comparison remains the only mandatory comparison posture for the frozen objective
+- secondary Candidate A comparison remains `NO`
+- no third iteration starts by implication from the current shared-main state
 
 ---
 
-## Resolved in this pass - secondary Candidate A comparison decision
+## Remaining nonblocking caveat 1 - footer-node emission on `ml17123a319`
 
-Resolved posture:
-- first-pass secondary Candidate A comparison = `NO`
-- baseline comparison remains mandatory
-- any later Candidate A comparison requires a separate explicit freeze
-
----
-
-## Resolved in this pass - exact first-run sidecar labels
-
-Resolved posture:
-- the exact first-run label sidecar is now frozen at `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
-- the frozen first-run fixture scope is `ml17123a319`, `layout`, `fontish`, `scanned`, and `mixed`
-- do not backfill labels after seeing results
-
----
-
-## Resolved in this pass - package/source/hash posture
-
-Resolved posture:
-- exact package source for this pass is the `opendataloader-pdf==2.0.0` PyPI release plus its published wheel
-- exact published wheel SHA256 is `18093fa87a3089abdba14043c187f85c6a4af48c4597710de32d90e95666313e`
-- `tests/requirements_nrc_aps_candidate_b_opendataloader.txt` is the frozen sidecar requirements surface for later install
-- implementation-day revalidation of the release line remains required, but that is now a known future burden rather than a planning ambiguity
-
----
-
-## Remaining open item 1 - local Java readiness
-
-### What remains open
-The current machine still does not prove Java 11+ readiness on `PATH`.
+### What remains true
+The adopted second-iteration proof report still records footer-node emission for `ml17123a319` even with `include_header_footer=False`.
 
 ### Hard rule
-Do not run Candidate B until Java resolution is proven.
+Treat this as an explicit package-behavior limitation/control-noise finding.
+Do not describe Candidate B as footer-clean or runtime-ready.
 
 ---
 
-## Remaining open item 2 - post-proof helper-script decision
+## Remaining nonblocking caveat 2 - installed-package wheel-hash reproving
 
-### What remains open
-Whether a later repo-native helper script or `project6.ps1` action should ever be added after the first proof pass.
+### What remains true
+The adopted second-iteration proof report still records:
+- `odl_package_sha256_expected = 18093fa87a3089abdba14043c187f85c6a4af48c4597710de32d90e95666313e`
+- `odl_package_sha256_verified = null`
+- `odl_package_sha256_verification_reason = installed_package_directory_not_reconstructable_to_pinned_wheel_hash`
 
 ### Hard rule
-No helper-script addition in v1.
-That is a post-proof governance question only.
+Treat the pinned wheel hash as the planning/install anchor only.
+Do not overclaim installed-package reproving from the shared-main baseline.
 
 ---
 
-## Remaining open item 3 - commit posture for any derived sample outputs
+## Stop-and-hold rule
 
-### What remains open
-Whether a very small redacted sample of raw ODL output should ever be committed for reviewer convenience.
+Current operator posture:
+- keep the adopted second-iteration Candidate B state as the current workbench-only comparator baseline
+- do not start a third iteration by default
+- do not admit, integrate, or selector-activate Candidate B by implication
+- any future Candidate B work must begin from a new explicitly frozen objective
 
-### Hard rule
-Default answer is no.
-Any committed sample output requires a separate explicit decision after the first proof run.
+---
+
+## Explicit non-next-steps
+
+This record does not authorize:
+- a third Candidate B iteration
+- runtime integration
+- selector admission
+- hidden-consumer widening
+- review/report/export schema widening
+- backend dependency normalization
+- helper-script or generic framework work

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This folder is the frozen planning and control pack for a new Candidate B objective that is:
+This folder is the frozen planning, control, and handoff pack for the current Candidate B objective state, which remains:
 - workbench-only
 - comparison-oriented
 - non-admitted
@@ -17,6 +17,25 @@ This pack is subordinate to the merged-main authority stack rooted in:
 - the adopted PageEvidence hold-state pack under `next_milestone_plans/pageevidence/`
 
 It does not reopen the closed PageEvidence Lane Class A work.
+
+## Current shared-main stop-and-hold posture
+
+The adopted Candidate B second-iteration workbench baseline is now the active Candidate B state on shared `main`.
+
+Authoritative shared-main evidence:
+- `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
+- `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
+- `tests/reports/nrc_aps_candidate_b_opendataloader_retention_manifest.json`
+
+Current operator posture:
+- Candidate B remains a workbench-only comparator baseline.
+- Candidate B is not runtime-ready, admitted, defaulted, or selector-active.
+- do not start a third iteration by default.
+- any future Candidate B work must begin from a new explicitly frozen objective.
+
+Current nonblocking caveats:
+- footer-node emission still persists for `ml17123a319`
+- the pinned ODL wheel hash is still not re-proven from the installed package directory, so the proof report still records `odl_package_sha256_verified = null` with a verification reason
 
 ## Current merged baseline
 
@@ -98,9 +117,9 @@ This pack records that posture as a proposed workbench envelope only.
 It is not promoted here to repo-runtime truth.
 A later implementation pass must revalidate package version, package hash, license posture, Java availability, and wrapper API/signature before code begins.
 
-## Validation burden for any future implementation pass
+## Validation burden if a future objective is explicitly reopened
 
-A future Candidate B implementation pass must at minimum:
+Any future Candidate B implementation pass must begin under a new explicit freeze and must at minimum:
 1. re-establish merged-main truth again before code
 2. prove the existing lower-layer baseline still passes before Candidate B work
 3. preserve the protected owner path and admitted Candidate A behavior
@@ -138,4 +157,4 @@ Any of those requires a new explicit freeze.
 
 ## One-line use rule
 
-Use this pack only to open or review a bounded Candidate B OpenDataLoader workbench-comparison lane; do not treat it as permission to integrate Candidate B or to reopen the closed PageEvidence lane.
+Use this pack only to understand, audit, or hand off the current Candidate B workbench baseline; do not treat it as permission to start a third iteration, integrate Candidate B, or reopen the closed PageEvidence lane.
