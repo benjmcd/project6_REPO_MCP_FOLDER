@@ -1,11 +1,8 @@
-# 00N — Candidate B OpenDataLoader Execution Envelope and Package Verification
+# 00N - Candidate B OpenDataLoader Execution Envelope and Package Verification
 
 ## Purpose
 
-Freeze the planned execution-day envelope for Candidate B v1 so that implementation does not improvise around environment or package state.
-
-This doc records the required preflight posture for a future implementation pass.
-It does not claim that package, Java, or wrapper-signature verification has already been completed in this planning pass.
+Freeze the exact execution-day envelope for Candidate B v1 so that implementation does not improvise around environment or package state.
 
 ---
 
@@ -24,11 +21,11 @@ No other envelope is approved in v1.
 ## B. Required package verification posture
 
 ### Preferred reproducible posture
-Use a dedicated workbench requirements sidecar with the exact planned pin and planned hash, then revalidate both on implementation day.
+Use a dedicated workbench requirements sidecar with the exact pin and verified hash.
 
 Example contents:
 ```text
-opendataloader-pdf==2.0.0     --hash=sha256:18093fa87a3089abdba14043c187f85c6a4af48c4597710de32d90e95666313e
+opendataloader-pdf==2.0.0 --hash=sha256:18093fa87a3089abdba14043c187f85c6a4af48c4597710de32d90e95666313e
 ```
 
 Install with:
@@ -48,7 +45,25 @@ If the reported version is not `2.0.0`, stop and update the docs before continui
 
 ---
 
-## C. Required environment capture fields
+## C. Current workspace preflight snapshot for this pass
+
+No package install or Candidate B execution was performed in this pass.
+The direct local preflight checks returned:
+- `py -3.12 --version` -> `Python 3.12.10`
+- `java -version` -> command not resolved on `PATH`
+- `py -3.12 -m pip show opendataloader-pdf` -> package not installed
+
+Interpretation:
+- the Python side of the execution envelope is present
+- Java readiness is **not** proven on this machine
+- the exact ODL package is **not** installed locally yet
+
+So the execution envelope is frozen,
+but this machine is not yet ready for a real Candidate B run until Java resolution and package installation are completed.
+
+---
+
+## D. Required environment capture fields
 
 Capture at minimum:
 - Python version
@@ -63,7 +78,7 @@ Capture at minimum:
 
 ---
 
-## D. Batch and resource posture
+## E. Batch and resource posture
 
 Candidate B v1 should use one corpus-level batch when feasible.
 If splitting is required due to timeout or memory pressure:
@@ -75,7 +90,7 @@ No per-page or regime-selective split is allowed in v1.
 
 ---
 
-## E. Temporary and output directory posture
+## F. Temporary and output directory posture
 
 All temporary or durable ODL outputs must remain under the approved Candidate B workbench roots.
 The default ODL behavior of writing beside the input file must be overridden.
@@ -85,7 +100,7 @@ Approved durable raw-output root:
 
 ---
 
-## F. Exact stop conditions
+## G. Exact stop conditions
 
 Stop immediately if any of the following is true:
 - `py -3.12` is not available
@@ -96,7 +111,7 @@ Stop immediately if any of the following is true:
 
 ---
 
-## G. Why this doc exists
+## H. Why this doc exists
 
 Without an explicit execution envelope,
 Candidate B proof results are too easy to misattribute.

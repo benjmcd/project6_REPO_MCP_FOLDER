@@ -1,23 +1,30 @@
-﻿# 00B - Candidate B OpenDataLoader Repo Surface Map and Touch Policy
+# 00B - Candidate B OpenDataLoader Repo Surface Map and Touch Policy
 
 ## Purpose
 
-Freeze exactly which repo surfaces Candidate B may read, reference, add new workbench files under, or must not touch.
+Freeze exactly which repo surfaces Candidate B v1 may:
+- read,
+- reference,
+- add new workbench files under,
+- or must not touch.
 
-This frozen objective is grounded in the current merged baseline, not in older pre-merge repo assumptions.
+This v5 version is grounded in the live repo root README, the visible repo tree,
+the visible `backend/app/services` tree, and opened lower-layer files/tests.
+
+---
 
 ## A. Highest-authority reference surfaces (read-only)
 
-Candidate B planning is subordinate to these merged-main authority surfaces:
-- `next_milestone_plans/multi_variant_visual_lane_control/README_INDEX.md`
-- `next_milestone_plans/multi_variant_visual_lane_control/05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
-- `next_milestone_plans/multi_variant_visual_lane_control/05Q_POST_ADMISSION_RETAIN_BASELINE_MERGED_MAIN_CLOSURE_AND_HANDOFF.md`
-- `next_milestone_plans/pageevidence/README_PAGEEVIDENCE_STRENGTHENING_PACK.md`
-- `next_milestone_plans/pageevidence/PAGE_EVIDENCE_STRENGTHENING_ROADMAP_AND_DECISION_NOTES.md`
-- `README.md`
+These are named by the live root README as authoritative status/navigation surfaces.
+They are read-only in Candidate B v1:
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 - `docs/nrc_adams/nrc_aps_authority_matrix.md`
 - `docs/nrc_adams/nrc_aps_reader_path.md`
+- the linked PostgreSQL status handoff surface named by the root README
+
+Candidate B planning docs must align to these if and when they are opened directly in a later pass.
+
+---
 
 ## B. Repo-root proof and execution anchor surfaces (read-only)
 
@@ -25,13 +32,15 @@ These are repo-truth anchors for Candidate B planning and verification:
 - `README.md`
 - `REPO_INDEX.md`
 - `project6.ps1`
-- `backend/requirements.txt`
+- `backend/requirements.txt` (reference-only in v1)
 
-Candidate B may reference those surfaces but must not modify them.
+Candidate B v1 may reference these surfaces but must not modify them.
 
-## C. Existing baseline proof harness and comparison anchors (read-only)
+---
 
-Mandatory baseline comparison anchors:
+## C. Existing lower-layer proof harness (read-only inputs)
+
+Candidate B v1 must treat these as the primary comparison harness:
 - `tests/fixtures/nrc_aps_docs/v1/manifest.json`
 - `tests/support_nrc_aps_doc_corpus.py`
 - `tests/test_nrc_aps_document_corpus.py`
@@ -40,31 +49,29 @@ Mandatory baseline comparison anchors:
 - `tests/reports/nrc_aps_artifact_ingestion_validation_report.json`
 - `tests/reports/nrc_aps_content_index_validation_report.json`
 
-Current admitted Candidate A reference anchors:
-- `backend/app/services/nrc_aps_page_evidence.py`
-- `tools/run_nrc_aps_page_evidence_workbench.py`
-- `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json`
-- `next_milestone_plans/multi_variant_visual_lane_control/05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
-- `next_milestone_plans/multi_variant_visual_lane_control/05Q_POST_ADMISSION_RETAIN_BASELINE_MERGED_MAIN_CLOSURE_AND_HANDOFF.md`
+These are input/baseline truth surfaces, not edit targets in Candidate B v1.
 
-These are comparison anchors, not edit targets.
+---
 
 ## D. Frozen owner-path service surfaces (read-only)
 
-These surfaces are protected in Candidate B:
+These are specifically frozen in Candidate B v1:
 - `backend/app/services/connectors_nrc_adams.py`
 - `backend/app/services/nrc_aps_artifact_ingestion.py`
 - `backend/app/services/nrc_aps_document_processing.py`
 - `backend/app/services/nrc_aps_media_detection.py`
 - `backend/app/services/nrc_aps_ocr.py`
 - `backend/app/services/nrc_aps_settings.py`
-- `backend/app/services/nrc_aps_page_evidence.py`
 
-Candidate B must not modify the current owner path, OCR routing, media detection, run-config processing, or admitted Candidate A evidence path.
+Interpretation:
+Candidate B v1 must not modify the current owner path, OCR routing, media detection, or run-config processing.
+
+---
 
 ## E. Frozen outward-service families (read-only)
 
-Candidate B must not touch the following outward families:
+Because the visible service tree shows these outward families already exist,
+Candidate B v1 must not touch them:
 
 ### Retrieval / connector / indexing
 - `aps_retrieval_plane*.py`
@@ -100,63 +107,72 @@ Candidate B must not touch the following outward families:
 - `review_nrc_aps_runtime_roots.py`
 - `review_nrc_aps_tree.py`
 
-## F. Allowed new workbench-only surfaces in this objective
+Candidate B v1 must not alter any of those surfaces.
 
-Planning and control docs in this folder are allowed.
-A later implementation pass may add only the following new workbench surfaces or direct analogues under the same folders:
+---
+
+## F. Allowed new workbench-only surfaces in v1
+
+Candidate B v1 may add only the following new files or direct analogues under the same folders:
 
 ### Tests/support
 - `tests/support_nrc_aps_candidate_b_opendataloader.py`
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
 - `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
 
-### Corpus sidecars
+### Corpus sidecar labels / manifests
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
-- optional `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_manifest.json`
+- `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_manifest.json` (only if a sidecar manifest is truly needed; do not mutate the existing base manifest in v1)
 
 ### Workbench reports and raw outputs
 - `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
 - `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
-- `tests/reports/nrc_aps_candidate_b_opendataloader_retention_manifest.json`
 - `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
 
-### Dependency sidecar
-- `tests/requirements_nrc_aps_candidate_b_opendataloader.txt`
+### Branch-local planning pack only
+- `next_milestone_plans/candidate_b_workbench/...`
 
-## G. Explicitly forbidden new surfaces
+Do not fan out parallel handoff copies in v1.
 
-Candidate B must not add:
+---
+
+## G. Explicitly forbidden new surfaces in v1
+
+Candidate B v1 must not add:
 - any new `backend/app/services/...` module
 - any new API route
 - any new connector selector or runtime mode
 - any new review/runtime page
-- any new DB model, schema, or migration
+- any new DB model / schema / migration
 - any new persisted run-detail ref family
 - any new `project6.ps1` action
-- any new runtime-visible `tools/` runner by default
-- any generic candidate registry or framework surface
+- any Docker / CI / frontend / deployment changes
+
+---
 
 ## H. Touch policy summary
 
-Read-only reference surfaces:
-- merged-main authority docs
-- root README and status docs
+### Read-only reference surfaces
+- authority docs
+- root README / REPO_INDEX / project6.ps1
+- backend owner path
 - current lower-layer proof harness
-- current admitted Candidate A baseline surfaces
+- current proof reports
 
-Allowed future new surfaces:
-- this planning pack
+### Allowed new surfaces
 - tests/support
 - tests/test...
 - tests/reports...
-- optional corpus sidecars
-- tests-side dependency sidecar
+- optional corpus sidecar labels/manifest
+- the existing branch-local Candidate B planning pack only
 
-Forbidden surfaces:
+### Forbidden surfaces
 - service layer
-- selector and owner-path semantics
 - endpoint/API layer
 - review/runtime surfaces
 - DB/persistence/schema/migration surfaces
-- operator-script surfaces
-- generic framework surfaces
+- operator script surfaces
+
+This is the exact v1 control boundary.
+
+---

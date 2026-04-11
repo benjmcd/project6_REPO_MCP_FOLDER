@@ -1,73 +1,77 @@
-﻿# 06R - Candidate B OpenDataLoader Remaining Open Items and Decision Gates
+# 06R - Candidate B OpenDataLoader Remaining Open Items and Decision Gates
 
 ## Purpose
 
-List only the genuinely remaining open items after reconciling the Candidate B pack against the current merged baseline.
+List only the genuinely remaining open items after planning adoption reconciliation and the implementation-entry preflight/envelope freeze.
 
-## Resolved by this reconciliation pass
+Many earlier ambiguities are now closed.
+What remains open now is narrower, explicit, and separated from what this pass already froze.
 
-The following earlier ambiguities are now closed:
-- Candidate B is now explicitly defined relative to merged `main`, not older lower-layer-only repo state.
-- the docs destination is now fixed to `next_milestone_plans/candidate_b_workbench/` for this frozen planning objective.
-- exact secondary Candidate A comparison anchors are now frozen in `04B`.
-- Candidate B is now explicitly subordinate to the MVVLC control spine and the adopted PageEvidence hold-state pack.
-- Candidate B is now explicitly prevented from reopening the closed PageEvidence lane by implication.
+---
 
-## Remaining open item 1 - implementation-day package and API revalidation
+## Resolved in this pass - docs destination
 
-What remains open:
-- whether the planned OpenDataLoader version, hash, license posture, and wrapper API/signature still match this pack when implementation day arrives
+Resolved posture:
+- keep the pack in `next_milestone_plans/candidate_b_workbench/`
+- treat that path as branch-local, non-authoritative planning/workbench storage
+- do not relocate the pack into `docs/nrc_adams/...` in v1
 
-Hard rule:
-- if any of those differ, amend the pack before implementation proceeds
+---
 
-## Remaining open item 2 - Java availability in the actual workbench environment
+## Resolved in this pass - secondary Candidate A comparison decision
 
-What remains open:
-- whether the implementation machine actually has Java 11+ available for the planned OpenDataLoader posture
+Resolved posture:
+- first-pass secondary Candidate A comparison = `NO`
+- baseline comparison remains mandatory
+- any later Candidate A comparison requires a separate explicit freeze
 
-Hard rule:
-- if Java is unavailable and no equally bounded alternative exists, stop rather than improvising a broader substrate path
+---
 
-## Remaining open item 3 - exact sidecar label contents
+## Resolved in this pass - exact first-run sidecar labels
 
-What remains open:
-- the exact page or document labels for the first Candidate B run
-
-Hard rule:
+Resolved posture:
+- the exact first-run label sidecar is now frozen at `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
+- the frozen first-run fixture scope is `ml17123a319`, `layout`, `fontish`, `scanned`, and `mixed`
 - do not backfill labels after seeing results
 
-## Remaining open item 4 - whether the first run needs the optional Candidate A comparison
+---
 
-What remains open:
-- whether the first Candidate B run should compare only against the mandatory baseline or also against the optional frozen Candidate A anchors
+## Resolved in this pass - package/source/hash posture
 
-Hard rule:
-- baseline comparison is mandatory
-- Candidate A comparison remains optional and must use the exact anchors from `04B`
+Resolved posture:
+- exact package source for this pass is the `opendataloader-pdf==2.0.0` PyPI release plus its published wheel
+- exact published wheel SHA256 is `18093fa87a3089abdba14043c187f85c6a4af48c4597710de32d90e95666313e`
+- `tests/requirements_nrc_aps_candidate_b_opendataloader.txt` is the frozen sidecar requirements surface for later install
+- implementation-day revalidation of the release line remains required, but that is now a known future burden rather than a planning ambiguity
 
-## Remaining open item 5 - whether a helper or runner is justified after first proof
+---
 
-What remains open:
-- whether a later tests-side helper or runner is justified after the first proof run
+## Remaining open item 1 - local Java readiness
 
-Hard rule:
-- no helper, `tools/` runner, or `project6.ps1` action is justified by default in the initial implementation lane
+### What remains open
+The current machine still does not prove Java 11+ readiness on `PATH`.
 
-## Remaining open item 6 - commit posture for derived sample outputs
+### Hard rule
+Do not run Candidate B until Java resolution is proven.
 
-What remains open:
-- whether any tiny derived sample of raw Candidate B output should ever be committed for review convenience
+---
 
-Hard rule:
-- default answer is no
-- any committed sample output requires a separate explicit decision after the first proof run
+## Remaining open item 2 - post-proof helper-script decision
 
-## Remaining open item 7 - future adoption into merged-main control docs
+### What remains open
+Whether a later repo-native helper script or `project6.ps1` action should ever be added after the first proof pass.
 
-What remains open:
-- whether any later Candidate B materials should ever be adopted into the merged-main control spine
+### Hard rule
+No helper-script addition in v1.
+That is a post-proof governance question only.
 
-Hard rule:
-- no adoption is part of this objective
-- any later adoption requires a separate explicit doc-only objective after proof exists
+---
+
+## Remaining open item 3 - commit posture for any derived sample outputs
+
+### What remains open
+Whether a very small redacted sample of raw ODL output should ever be committed for reviewer convenience.
+
+### Hard rule
+Default answer is no.
+Any committed sample output requires a separate explicit decision after the first proof run.

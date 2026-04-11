@@ -1,58 +1,68 @@
-﻿# 04B - Candidate B OpenDataLoader Baseline and Candidate A Crosswalk
+# 04B - Candidate B OpenDataLoader Baseline and Candidate A Crosswalk
 
 ## Purpose
 
-Define what Candidate B must compare against now and what remains optional.
+Define what Candidate B must compare against now,
+and what remains a deferred secondary comparison.
 
-## A. Primary mandatory comparison in this objective
+---
 
-The primary mandatory comparison target is the current live lower-layer baseline truth:
+## A. Primary mandatory comparison in v1
+
+The primary mandatory comparison target is the **current live lower-layer baseline truth**:
 - current `nrc_aps_document_processing.process_document(...)` outputs
 - current lower-layer proof corpus
-- current lower-layer tests and invariants
+- current lower-layer tests/invariants
 
-This comparison is mandatory because it is directly repo-grounded and reflects the current default runtime baseline.
+This comparison is mandatory because it is directly repo-grounded.
 
-## B. Secondary Candidate A comparison in this objective
+---
 
-Secondary comparison against Candidate A is optional, but if it is used it must use the exact frozen anchors below.
+## B. Secondary Candidate A comparison in v1
 
-### Frozen Candidate A comparison anchors
-- pinned workbench artifact:
-  - `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json`
-  - SHA256: `2A999C1CC2452FDFD539349B9D324241CE2D35B04864CAFA854EB0DEB77E5959`
-- current Candidate A service baseline:
-  - `backend/app/services/nrc_aps_page_evidence.py`
-  - SHA256: `F0E8B7FF2FCC917FE834B61E39ADC1645012B16EBB0EC0E189454462FDCD1D8A`
-- current Candidate A runner baseline:
-  - `tools/run_nrc_aps_page_evidence_workbench.py`
-  - SHA256: `DDC9F457ECDB70A7E74F46ACEBBE5A3F474A573C31124E5C85BD20D70361FBA8`
-- current admitted-candidate authority docs:
-  - `05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
-  - `05Q_POST_ADMISSION_RETAIN_BASELINE_MERGED_MAIN_CLOSURE_AND_HANDOFF.md`
-  - `next_milestone_plans/pageevidence/README_PAGEEVIDENCE_STRENGTHENING_PACK.md`
+For the first Candidate B implementation-entry pass, the explicit decision is:
+- secondary Candidate A comparison = `NO`
 
-Hard rules:
-- do not regenerate the pinned Candidate A artifact inside this objective
-- do not guess Candidate A comparison anchors from memory or filename patterns
-- if a future implementation wants a different Candidate A reference set, freeze it explicitly before using it
+Reason:
+- baseline comparison is the mandatory repo-truth target
+- Candidate A is already an admitted merged-main lane with its own closed hold-state
+- reopening that lane as part of first-run Candidate B setup would create avoidable runtime-adjacent drift
 
-## C. Win and divergence taxonomy
+Interpretation:
+- baseline comparison = mandatory
+- Candidate A comparison = optional only in a later separately frozen pass
+
+If a later pass explicitly reopens the optional comparison,
+it must freeze exact refs/hashes first.
+No guessed Candidate A comparison from memory or file-name guesswork is allowed.
+
+---
+
+## C. Win / divergence / limitation taxonomy
 
 ### `program_relevant_gain`
-Candidate B reveals structural or layout evidence that is genuinely useful relative to current baseline outputs.
+Candidate B reveals semantic/layout evidence that is genuinely useful relative to current lower-layer outputs.
 
 ### `expected_semantic_divergence`
-Candidate B differs because OpenDataLoader exposes richer semantics that the current repo does not model directly.
-This is not a win by itself.
+Candidate B emits different semantic structure, but the difference is expected and not clearly useful.
 
-### `protected-baseline divergence`
-Candidate B appears different on preserve-lane, OCR-control, or outward-contract classes that remain owned by the current merged baseline.
-This does not justify broadening scope.
+### `owner_path_not_competing`
+The page/doc is currently governed by the live owner path (for example visual-preservation or OCR strictness), and Candidate B is not competing on that axis.
 
-## D. Comparison rule summary
+### `known_limitation_control`
+The page/doc falls into a known ODL limitation/control class (especially vector-heavy pages in local non-hybrid mode).
 
-- baseline comparison is mandatory
-- Candidate A comparison is optional
-- any Candidate A comparison must use the exact frozen refs above
-- neither comparison authorizes runtime integration or admission
+### `regression_or_false_claim`
+Candidate B loses useful structure, creates misleading claims, or tries to claim value outside its allowed axis.
+
+---
+
+## D. Candidate B may never claim
+- that it replaces `visual_page_refs`
+- that it supersedes the current visual-preservation lane
+- that it resolves OCR strictness
+- that it owns connector/report/runtime behavior
+
+Those claims are out of scope in v1.
+
+---
