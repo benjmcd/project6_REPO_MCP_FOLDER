@@ -1,42 +1,47 @@
-﻿# 00K - Candidate B OpenDataLoader Root Authority Crosswalk and Pack Status
+# 00K - Candidate B OpenDataLoader Root Authority Crosswalk and Docs Adoption Plan
 
 ## Purpose
 
-Define how this Candidate B pack relates to the current repo authority structure.
+Define how the Candidate B planning pack relates to the live repo's authority structure after truth re-establishment against current `main`.
 
-## A. Current authority hierarchy
+---
 
-1. live repo code, fixtures, pinned artifacts, and real runtime behavior on merged `main`
-2. active merged-main control docs rooted in the MVVLC control spine, especially `README_INDEX`, `05P`, and `05Q`
-3. the adopted PageEvidence hold-state pack as a subordinate merged-main lane-local control surface
-4. this Candidate B workbench pack
-5. older handoff or archive/context artifacts
+## A. Root authority truth currently visible
 
-This Candidate B pack must remain subordinate to items 1-3.
+The live root `README.md` names the authoritative NRC APS status/navigation docs.
+The merged-main MVVLC control spine also now includes the retained-default closure docs and the adopted subordinate PageEvidence hold-state pack.
 
-## B. Current pack status
+Candidate B planning docs must remain subordinate to those higher-authority surfaces.
 
-This pack is now frozen as planning and control material under:
+---
+
+## B. Reconciled location and adoption posture for Candidate B docs
+
+### Current pack location
+The current Candidate B pack lives at:
 - `next_milestone_plans/candidate_b_workbench/`
 
-It is:
-- repo-present planning material on a main-based branch
-- non-adopted as merged-main authority
-- subordinate to the current control spine
-- intended to govern a future workbench-only Candidate B objective, not current runtime behavior
+That is the reconciled non-authoritative planning/workbench location for this pass.
+Do not silently relocate it to `docs/nrc_adams/...`, `handoff/...`, or any other peer-authority surface during Candidate B v1 planning adoption.
 
-## C. What this pack is not
+### v1 status
+Candidate B docs remain:
+- branch-local planning/workbench material
+- not merged-main authority
+- subordinate to the current authority docs named by the root README plus the merged-main MVVLC closure spine
+- subject to separate repo-native adoption only if a later explicit decision says they should be
 
-This pack is not:
-- merged-main authority over MVVLC or PageEvidence
-- an admission record
-- a runtime implementation packet by itself
-- permission to reopen PageEvidence work
+### Not approved in v1
+Do not place the full Candidate B pack directly under the current authoritative `docs/nrc_adams/...` surfaces as though it were already merged truth.
 
-## D. Future adoption rule
+---
 
-No repo-native adoption into the merged-main control spine is bundled into this objective.
-Any later adoption or insertion would require:
-1. successful workbench proof under this pack
-2. a separate explicit decision to adopt selected Candidate B materials
-3. a separate doc-only adoption pass on top of the then-current merged baseline
+## C. Adoption rule after proof
+
+Only after the first Candidate B proof lane is complete may selected materials be promoted anywhere beyond `next_milestone_plans/candidate_b_workbench/`,
+and only if a separate decision says they should be.
+
+That promotion is a later governance step.
+It is not bundled into v1.
+
+---

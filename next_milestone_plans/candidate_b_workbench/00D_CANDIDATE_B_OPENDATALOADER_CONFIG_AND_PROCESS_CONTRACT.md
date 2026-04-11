@@ -1,10 +1,8 @@
-# 00D — Candidate B OpenDataLoader Config and Process Contract
+# 00D - Candidate B OpenDataLoader Config and Process Contract
 
 ## Purpose
 
-Freeze the planned OpenDataLoader invocation/config/process contract for Candidate B v1.
-
-This doc is a workbench-planning contract, not proof that the current package API has already been revalidated on implementation day.
+Freeze the exact OpenDataLoader invocation/config/process contract for Candidate B v1.
 
 Candidate B v1 is a **local Python-wrapper workbench comparator**.
 It is not a CLI-subprocess lane, not a Node lane, not a Java/JAR lane, and not a hybrid lane.
@@ -21,13 +19,48 @@ Candidate B v1 must call OpenDataLoader via the Python wrapper only:
 - `import opendataloader_pdf`
 - `opendataloader_pdf.convert(...)`
 
-No other invocation form is permitted in v1.
+Directly verified export/API posture from the exact `opendataloader-pdf==2.0.0` wheel inspected in this pass:
+- `opendataloader_pdf.__all__ == ["run", "convert", "run_jar"]`
+- `run(...)` is explicitly deprecated backward-compatibility surface only
+- `run_jar(...)` exists but is not an approved v1 invocation path
+- Candidate B v1 must use `convert(...)` only
 
-If the wrapper signature or option names differ at implementation time, stop and amend the pack before code proceeds.
+Exact `convert(...)` signature posture verified from the wheel:
+```python
+convert(
+    input_path,
+    output_dir=None,
+    password=None,
+    format=None,
+    quiet=False,
+    content_safety_off=None,
+    sanitize=False,
+    keep_line_breaks=False,
+    replace_invalid_chars=None,
+    use_struct_tree=False,
+    table_method=None,
+    reading_order=None,
+    markdown_page_separator=None,
+    text_page_separator=None,
+    html_page_separator=None,
+    image_output=None,
+    image_format=None,
+    image_dir=None,
+    pages=None,
+    include_header_footer=False,
+    hybrid=None,
+    hybrid_mode=None,
+    hybrid_url=None,
+    hybrid_timeout=None,
+    hybrid_fallback=True,
+) -> None
+```
+
+No other invocation form is permitted in v1.
 
 ---
 
-## B. Planned v1 config
+## B. Exact v1 config
 
 Candidate B v1 must use exactly this logical config posture:
 
@@ -59,7 +92,7 @@ This is the only approved first-pass config.
 
 ## C. Process model
 
-Because OpenDataLoader’s Python path spawns the Java engine,
+Because OpenDataLoader's Python path spawns the Java engine,
 Candidate B v1 must prefer **batched multi-file conversion** rather than one process per file where practical.
 
 Approved process model:

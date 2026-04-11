@@ -1,14 +1,12 @@
-﻿# 00J - Candidate B OpenDataLoader File Touch Matrix and Escalation Rules
+# 00J - Candidate B OpenDataLoader File Touch Matrix and Escalation Rules
 
 ## Purpose
 
-Translate the Candidate B boundary into explicit file-level rules.
+Translate the v5 boundary into explicit file-level rules.
 
-## A. Allowed planning files now
+---
 
-- files under `next_milestone_plans/candidate_b_workbench/`
-
-## B. Allowed future new files in a later implementation pass
+## A. Allowed new files in v1
 
 ### Tests/support
 - `tests/support_nrc_aps_candidate_b_opendataloader.py`
@@ -24,31 +22,54 @@ Translate the Candidate B boundary into explicit file-level rules.
 ### Reports/raw outputs
 - `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
 - `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
-- `tests/reports/nrc_aps_candidate_b_opendataloader_retention_manifest.json`
 - `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
 
-### Dependency sidecar
+### Dependency sidecar (if adopted)
 - `tests/requirements_nrc_aps_candidate_b_opendataloader.txt`
 
-## C. Read-only files in this objective
+### Branch-local planning pack only
+- `next_milestone_plans/candidate_b_workbench/...`
+
+---
+
+## B. Read-only files in v1
 
 - `README.md`
 - `REPO_INDEX.md`
 - `project6.ps1`
 - `backend/requirements.txt`
-- `backend/app/services/nrc_aps_document_processing.py`
-- `backend/app/services/nrc_aps_page_evidence.py`
-- `tools/run_nrc_aps_page_evidence_workbench.py`
-- `tests/fixtures/nrc_aps_docs/v1/manifest.json`
-- `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json`
+- current authority docs under `docs/nrc_adams/...`
+- existing proof harness files under `tests/fixtures/...`, `tests/support...`, `tests/test...`
+- existing `tests/reports/...` baseline reports
+- all current service-layer owner-path/outward-surface files
 
-## D. Escalate immediately if implementation would require
+---
 
-- touching any `backend/app/services/...` owner-path file
-- adding any runtime selector or runtime-visible Candidate B path
-- modifying `project6.ps1`
-- modifying `backend/requirements.txt`
-- creating API, review, report, export, schema, or persistence surfaces
-- adding a generic candidate framework to make Candidate B work
+## C. Forbidden-touch files/directories in v1
 
-Those are out of scope for this objective and require a new explicit freeze.
+- anything under `backend/app/api/`
+- anything under `backend/app/db/`
+- anything under `backend/app/models/`
+- anything under `backend/app/schemas/`
+- any current file under `backend/app/services/`
+- any migrations
+- any frontend/e2e/Docker/CI files
+- any current review/runtime service file
+- `project6.ps1`
+
+---
+
+## D. Escalation rules
+
+Escalate and stop if Candidate B v1 appears to require:
+1. editing a current service file
+2. adding a new service module
+3. modifying a runtime dependency surface
+4. adding a new endpoint or run-detail ref
+5. changing corpus/base manifest semantics rather than adding a sidecar
+6. enabling hybrid/docling or other backend-assisted widening
+7. creating parallel handoff copies outside `next_milestone_plans/candidate_b_workbench/...`
+
+Those are not v1 decisions.
+
+---

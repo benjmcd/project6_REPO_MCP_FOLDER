@@ -1,0 +1,108 @@
+{
+  "schema_id": "aps.candidate_b_opendataloader_labels.v1",
+  "frozen_at_utc": "2026-04-10T00:00:00Z",
+  "purpose": "First-run label sidecar for the Candidate B OpenDataLoader workbench. Freeze before any Candidate B execution.",
+  "manifest_ref": "tests/fixtures/nrc_aps_docs/v1/manifest.json",
+  "manifest_sha256": "95deb6290640739eca1255988aafdb8e5f93f3739095e982df40532352446f2f",
+  "first_run_scope": {
+    "scope_rule": "representative_lower_bound_pdfs_only",
+    "included_fixture_ids": [
+      "ml17123a319",
+      "layout",
+      "fontish",
+      "scanned",
+      "mixed"
+    ],
+    "candidate_a_secondary_comparison": false,
+    "notes": [
+      "Matches the representative lower-bound PDF cohort frozen by the base manifest.",
+      "Matches the historically authoritative pinned Candidate A workbench artifact fixture set.",
+      "Excludes non-PDF fixtures and regression-only/failure fixtures from the first Candidate B run."
+    ]
+  },
+  "entries": [
+    {
+      "fixture_id": "ml17123a319",
+      "document_ref": "tests/fixtures/nrc_aps_docs/v1/ML17123A319.pdf",
+      "document_sha256": "a7f28a01ed83168ee1d8fcdf25f4f57aa6636283d1791000d9ec1b6ec5675605",
+      "page_scope": "all",
+      "regime_labels": [
+        "ordinary_text_control",
+        "header_footer_noise_control"
+      ],
+      "expected_gain_claims": [],
+      "expected_non_equivalences": [
+        "visual_page_refs_not_equivalent",
+        "runtime_selector_and_owner_path_changes_forbidden"
+      ],
+      "review_notes": "Neutral/control anchor. Candidate B may surface richer structure, but that alone is not a win claim."
+    },
+    {
+      "fixture_id": "layout",
+      "document_ref": "tests/fixtures/nrc_aps_docs/v1/layout.pdf",
+      "document_sha256": "3e8c41238dc14bcd6e757050bcf16fc78c8ad85439b325640865edd76bebf190",
+      "page_scope": "all",
+      "regime_labels": [
+        "multi_column_expected_gain",
+        "table_list_heading_expected_gain"
+      ],
+      "expected_gain_claims": [
+        "reading_order_structure",
+        "heading_list_table_segmentation"
+      ],
+      "expected_non_equivalences": [
+        "visual_page_refs_not_equivalent",
+        "owner_path_visual_preservation_not_competed"
+      ],
+      "review_notes": "Expected-gain fixture for structure recovery only."
+    },
+    {
+      "fixture_id": "fontish",
+      "document_ref": "tests/fixtures/nrc_aps_docs/v1/fontish.pdf",
+      "document_sha256": "9282bf3a1707006c54f35cfde4f52f316c7af2948d89c8d687623242fd486f65",
+      "page_scope": "all",
+      "regime_labels": [
+        "hidden_text_noise_expected_gain"
+      ],
+      "expected_gain_claims": [
+        "hidden_text_noise_visibility"
+      ],
+      "expected_non_equivalences": [
+        "visual_page_refs_not_equivalent",
+        "ocr_owner_path_not_competed"
+      ],
+      "review_notes": "Expected-gain fixture for hidden-text and font-noise clarity only."
+    },
+    {
+      "fixture_id": "scanned",
+      "document_ref": "tests/fixtures/nrc_aps_docs/v1/scanned.pdf",
+      "document_sha256": "90f38233fa936c279283ccbb3e4eb464e825d3ce3e68cc8709197e178f1e00b0",
+      "page_scope": "all",
+      "regime_labels": [
+        "scanned_ocr_control"
+      ],
+      "expected_gain_claims": [],
+      "expected_non_equivalences": [
+        "ocr_required_but_unavailable_owner_path",
+        "visual_page_refs_not_equivalent"
+      ],
+      "review_notes": "OCR control only. Candidate B may observe structure but may not claim to replace OCR strictness."
+    },
+    {
+      "fixture_id": "mixed",
+      "document_ref": "tests/fixtures/nrc_aps_docs/v1/mixed.pdf",
+      "document_sha256": "5a32e016aa6dee5c70cea4921883055fea1dae5a44544ee8565c064be3b8afc8",
+      "page_scope": "all",
+      "regime_labels": [
+        "mixed_visual_semantic_control",
+        "scanned_ocr_control"
+      ],
+      "expected_gain_claims": [],
+      "expected_non_equivalences": [
+        "ocr_required_but_unavailable_owner_path",
+        "visual_page_refs_not_equivalent"
+      ],
+      "review_notes": "Mixed native/image control. Treat OCR-dependent portions as owner-path territory."
+    }
+  ]
+}
