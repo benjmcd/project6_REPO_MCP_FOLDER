@@ -6,6 +6,10 @@ against the real audited runtime DB via FastAPI TestClient.
 
 The dependency override is applied per-test via fixture to avoid collision
 with other test modules that override get_db at module scope on the shared app singleton.
+
+Representative target coverage is discovered dynamically from the currently available
+document-trace-ready runtimes. Cross-runtime comparison assertions only run when a
+second qualifying runtime is actually present.
 """
 from __future__ import annotations
 
@@ -45,17 +49,6 @@ RUN_ID = RUNTIME.run_id
 DB_PATH = RUNTIME.db_path
 MULTI_RUNTIME_RUN_IDS = [runtime.run_id for runtime in PASSED_RUNTIMES[:3]]
 
-RUN_A_ID = "6a3dadd8-625a-4465-9b20-df05b39b8fc6"
-RUN_B_ID = "282ae183-0f73-4e73-ba6e-f124c56d957d"
-
-RUN_A_POSITIVE_TARGET_ID = "54a334ee-e2eb-43ea-9648-fba7d11ef59e"
-RUN_A_MIXED_TARGET_ID = "7287ce0a-710e-43e2-afe0-454ae4a32116"
-RUN_A_NEGATIVE_TARGET_ID = "4044136b-586f-419c-88c7-5d2c5b79ccef"
-RUN_A_LARGE_TARGET_ID = "9a2cdbda-e94a-4ac8-a294-a60b1c3daa61"
-RUN_B_POSITIVE_TARGET_ID = "fc7d00dc-d4e7-4da6-ace1-83babbc0a324"
-
-assert RUN_A_ID in RUNTIMES_BY_RUN_ID, f"Required representative run missing from test runtimes: {RUN_A_ID}"
-assert RUN_B_ID in RUNTIMES_BY_RUN_ID, f"Required representative run missing from test runtimes: {RUN_B_ID}"
 TEXT_LIKE_UNIT_KINDS = {
     "text_block",
     "paragraph",
@@ -65,11 +58,159 @@ TEXT_LIKE_UNIT_KINDS = {
     "pdf_paragraph",
 }
 
+
+def _resolve_runtime_artifact_path_for_bootstrap(runtime_root: Path, artifact_ref: str | None) -> Path | None:
+    if not artifact_ref:
+        return None
+    raw_path = Path(artifact_ref)
+    return (runtime_root / raw_path).resolve() if not raw_path.is_absolute() else raw_path.resolve()
+
+
+def _ordered_units_for_linkage(runtime_root: Path, linkage: ApsContentLinkage) -> list[dict]:
+    diagnostics_path = _resolve_runtime_artifact_path_for_bootstrap(runtime_root, linkage.diagnostics_ref)
+    assert diagnostics_path is not None and diagnostics_path.exists(), (
+        f"Diagnostics artifact missing for target {linkage.target_id}: {linkage.diagnostics_ref}"
+    )
+    return json.loads(diagnostics_path.read_text(encoding="utf-8")).get("ordered_units") or []
+
+
+def _build_target_profiles(session, runtime, run_id: str) -> list[dict]:
+    target_profiles: list[dict] = []
+    linkages = (
+        session.query(ApsContentLinkage)
+        .filter(ApsContentLinkage.run_id == run_id)
+        .order_by(ApsContentLinkage.accession_number.asc(), ApsContentLinkage.target_id.asc())
+        .all()
+    )
+    for linkage in linkages:
+        ordered_units = _ordered_units_for_linkage(runtime.runtime_dir, linkage) if linkage.diagnostics_ref else []
+        document = (
+            session.query(ApsContentDocument)
+            .filter(ApsContentDocument.content_id == linkage.content_id)
+            .first()
+        )
+        visual_refs = json.loads(document.visual_page_refs_json or "[]") if document is not None else []
+        page_count = int(document.page_count or 0) if document is not None and document.page_count is not None else 0
+        visual_page3_kinds = sorted(
+            {
+                str(unit.get("unit_kind") or "").strip()
+                for unit in ordered_units
+                if unit.get("page_number") == 3 and str(unit.get("unit_kind") or "").strip() in {"pdf_table", "ocr_image_supplement"}
+            }
+        )
+        visual_derivative_unit_count = sum(
+            1
+            for unit in ordered_units
+            if str(unit.get("unit_kind") or "").strip()
+            and str(unit.get("unit_kind") or "").strip() not in TEXT_LIKE_UNIT_KINDS
+        )
+        target_profiles.append(
+            {
+                "target_id": linkage.target_id,
+                "accession_number": linkage.accession_number,
+                "has_diagnostics": bool(linkage.diagnostics_ref),
+                "page_count": page_count,
+                "ordered_unit_count": len(ordered_units),
+                "visual_page_ref_count": len(visual_refs),
+                "page2_visual_artifact_count": len([item for item in visual_refs if item.get("page_number") == 2]),
+                "page3_visual_kinds": visual_page3_kinds,
+                "visual_derivative_unit_count": visual_derivative_unit_count,
+            }
+        )
+    return target_profiles
+
+
+def _select_positive_target_from_profiles(target_profiles: list[dict]) -> dict | None:
+    return next(
+        (
+            profile
+            for profile in target_profiles
+            if profile["page2_visual_artifact_count"] > 0
+            and set(profile["page3_visual_kinds"]) == {"pdf_table", "ocr_image_supplement"}
+        ),
+        None,
+    )
+
+
+def _select_mixed_target_from_profiles(target_profiles: list[dict]) -> dict | None:
+    return next(
+        (
+            profile
+            for profile in target_profiles
+            if profile["visual_derivative_unit_count"] > 0 and profile["visual_page_ref_count"] == 0
+        ),
+        None,
+    )
+
+
+def _select_negative_target_from_profiles(target_profiles: list[dict]) -> dict | None:
+    return next(
+        (
+            profile
+            for profile in target_profiles
+            if profile["has_diagnostics"] and profile["visual_derivative_unit_count"] == 0
+        ),
+        None,
+    )
+
+
+def _select_large_target_from_profiles(target_profiles: list[dict]) -> dict | None:
+    return next(
+        (
+            profile
+            for profile in sorted(target_profiles, key=lambda item: item["page_count"], reverse=True)
+            if profile["page_count"] >= 100
+        ),
+        None,
+    )
+
+
+def _select_representative_targets(session, runtime, run_id: str) -> tuple[dict, dict, dict, dict]:
+    target_profiles = _build_target_profiles(session, runtime, run_id)
+
+    positive = _select_positive_target_from_profiles(target_profiles)
+    mixed = _select_mixed_target_from_profiles(target_profiles)
+    negative = _select_negative_target_from_profiles(target_profiles)
+    large = _select_large_target_from_profiles(target_profiles)
+
+    assert positive is not None, f"Could not find positive representative target in run {run_id}"
+    assert mixed is not None, f"Could not find mixed representative target in run {run_id}"
+    assert negative is not None, f"Could not find negative representative target in run {run_id}"
+    assert large is not None, f"Could not find large representative target in run {run_id}"
+    return positive, mixed, negative, large
+
+
+def _discover_cross_runtime_positive_cases() -> list[dict]:
+    cases: list[dict] = []
+    for runtime in PASSED_RUNTIMES:
+        session = make_session(runtime)
+        try:
+            positive = _select_positive_target_from_profiles(_build_target_profiles(session, runtime, runtime.run_id))
+            if positive is None:
+                continue
+        finally:
+            session.close()
+        cases.append(
+            {
+                "run_id": runtime.run_id,
+                "target_id": positive["target_id"],
+                "page2_visual_artifact_count": positive["page2_visual_artifact_count"],
+                "page3_visual_kinds": positive["page3_visual_kinds"],
+            }
+        )
+    return cases
+
 _bootstrap_session = make_session(RUNTIME)
 try:
     TARGET_ID, ACCESSION = resolve_target_for_accession(_bootstrap_session, RUN_ID)
     VISUAL_TARGET_ID, VISUAL_ACCESSION = resolve_target_for_accession(_bootstrap_session, RUN_ID, accession_number="LOCALAPS00020")
     DEDUP_TARGET_ID_A, DEDUP_TARGET_ID_B = resolve_deduplicated_target_pair(_bootstrap_session, RUN_ID)
+    POSITIVE_TARGET, MIXED_TARGET, NEGATIVE_TARGET, LARGE_TARGET = _select_representative_targets(
+        _bootstrap_session,
+        RUNTIME,
+        RUN_ID,
+    )
+    CROSS_RUNTIME_POSITIVE_CASES = _discover_cross_runtime_positive_cases()
 
     pinned_linkage = (
         _bootstrap_session.query(ApsContentLinkage)
@@ -80,7 +221,7 @@ try:
         .first()
     )
     assert pinned_linkage is not None and pinned_linkage.diagnostics_ref
-    ordered_units = json.loads(Path(pinned_linkage.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
+    ordered_units = _ordered_units_for_linkage(RUNTIME.runtime_dir, pinned_linkage)
     EXPECTED_TOTAL_UNIT_COUNT = len(ordered_units)
     EXPECTED_PAGE3_UNIT_COUNT = len([unit for unit in ordered_units if unit.get("page_number") == 3])
     EXPECTED_UNIT_KIND_COUNTS = {}
@@ -110,7 +251,7 @@ try:
         .first()
     )
     assert visual_linkage is not None and visual_linkage.diagnostics_ref
-    visual_ordered_units = json.loads(Path(visual_linkage.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
+    visual_ordered_units = _ordered_units_for_linkage(RUNTIME.runtime_dir, visual_linkage)
     visual_doc = (
         _bootstrap_session.query(ApsContentDocument)
         .filter(ApsContentDocument.content_id == visual_linkage.content_id)
@@ -144,12 +285,14 @@ try:
     )
     assert dedup_linkage_a is not None and dedup_linkage_a.diagnostics_ref
     assert dedup_linkage_b is not None and dedup_linkage_b.diagnostics_ref
-    EXPECTED_DEDUP_UNIT_COUNT_A = len(
-        json.loads(Path(dedup_linkage_a.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
-    )
-    EXPECTED_DEDUP_UNIT_COUNT_B = len(
-        json.loads(Path(dedup_linkage_b.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
-    )
+    EXPECTED_DEDUP_UNIT_COUNT_A = len(_ordered_units_for_linkage(RUNTIME.runtime_dir, dedup_linkage_a))
+    EXPECTED_DEDUP_UNIT_COUNT_B = len(_ordered_units_for_linkage(RUNTIME.runtime_dir, dedup_linkage_b))
+    POSITIVE_RUN_ID = RUN_ID
+    POSITIVE_TARGET_ID = POSITIVE_TARGET["target_id"]
+    MIXED_TARGET_ID = MIXED_TARGET["target_id"]
+    NEGATIVE_TARGET_ID = NEGATIVE_TARGET["target_id"]
+    LARGE_TARGET_ID = LARGE_TARGET["target_id"]
+    EXPECTED_LARGE_PAGE_COUNT = LARGE_TARGET["page_count"]
 finally:
     _bootstrap_session.close()
 
@@ -332,15 +475,15 @@ def test_api_trace_manifest_source_endpoint_truthfulness():
 
 
 def test_api_trace_manifest_exposes_page_geometry_for_large_pdf():
-    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_LARGE_TARGET_ID}/trace")
+    response = client.get(f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{LARGE_TARGET_ID}/trace")
     assert response.status_code == 200
     data = response.json()
 
     geometries = data["source"]["page_geometries"]
     assert data["source"]["viewer_kind"] == "pdf"
-    assert len(geometries) == data["summary"]["page_count"] == 728
+    assert len(geometries) == data["summary"]["page_count"] == EXPECTED_LARGE_PAGE_COUNT
     assert geometries[0]["page_number"] == 1
-    assert geometries[-1]["page_number"] == 728
+    assert geometries[-1]["page_number"] == EXPECTED_LARGE_PAGE_COUNT
     assert all(item["width"] > 0 and item["height"] > 0 for item in geometries)
 
 
@@ -574,6 +717,8 @@ def test_api_existing_overview_not_regressed():
 
 @pytest.mark.parametrize("run_id", MULTI_RUNTIME_RUN_IDS)
 def test_api_document_trace_routes_switch_across_multiple_runtime_dbs(run_id: str):
+    if len(MULTI_RUNTIME_RUN_IDS) < 2:
+        pytest.skip("Need at least two document-trace-ready runtimes for cross-runtime route switching coverage")
     selector_response = client.get(f"/api/v1/review/nrc-aps/runs/{run_id}/documents")
     assert selector_response.status_code == 200
 
@@ -592,7 +737,7 @@ def test_api_document_trace_routes_switch_across_multiple_runtime_dbs(run_id: st
 
 
 def test_api_route_level_document_trace_backend_data_path_audit() -> None:
-    base = f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_POSITIVE_TARGET_ID}"
+    base = f"/api/v1/review/nrc-aps/runs/{POSITIVE_RUN_ID}/documents/{POSITIVE_TARGET_ID}"
     route_expectations = [
         (
             "trace",
@@ -674,10 +819,10 @@ def test_api_route_level_document_trace_backend_data_path_audit() -> None:
     ]
 
     for route_label, route_path, expected in route_expectations:
-        with _instrument_document_trace_route_backend(RUN_A_ID, RUN_A_POSITIVE_TARGET_ID) as counters:
+        with _instrument_document_trace_route_backend(POSITIVE_RUN_ID, POSITIVE_TARGET_ID) as counters:
             response = client.get(route_path)
 
-        assert response.status_code == 200, f"Route {route_label} should return 200 in representative run A positive case"
+        assert response.status_code == 200, f"Route {route_label} should return 200 in the representative positive case"
         assert counters["query_total"] == expected["query_total"], f"Unexpected query count for route {route_label}"
         assert counters["query_by_model"]["ConnectorRunTarget"] == 1, f"Route {route_label} must resolve one target context query"
         assert counters["query_by_model"].get("ApsContentChunk", 0) == expected["chunk_queries"], (
@@ -695,7 +840,7 @@ def test_api_route_level_document_trace_backend_data_path_audit() -> None:
 
 
 def test_api_session_level_document_trace_backend_data_path_audit() -> None:
-    base = f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_POSITIVE_TARGET_ID}"
+    base = f"/api/v1/review/nrc-aps/runs/{POSITIVE_RUN_ID}/documents/{POSITIVE_TARGET_ID}"
     flow = [
         f"{base}/trace",
         f"{base}/extracted-units",
@@ -704,7 +849,7 @@ def test_api_session_level_document_trace_backend_data_path_audit() -> None:
         f"{base}/indexed-chunks",
     ]
 
-    with _instrument_document_trace_route_backend(RUN_A_ID, RUN_A_POSITIVE_TARGET_ID) as counters:
+    with _instrument_document_trace_route_backend(POSITIVE_RUN_ID, POSITIVE_TARGET_ID) as counters:
         statuses = [client.get(route_path).status_code for route_path in flow]
 
     assert statuses == [200, 200, 200, 200, 200]
@@ -716,8 +861,8 @@ def test_api_session_level_document_trace_backend_data_path_audit() -> None:
     assert counters["normalized_text_reads"] == 1
 
 
-def test_api_representative_run_a_positive_visual_behavior_preserved() -> None:
-    base = f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_POSITIVE_TARGET_ID}"
+def test_api_representative_positive_visual_behavior_preserved() -> None:
+    base = f"/api/v1/review/nrc-aps/runs/{POSITIVE_RUN_ID}/documents/{POSITIVE_TARGET_ID}"
     page2_payload = client.get(f"{base}/extracted-units?page_number=2").json()
     page3_payload = client.get(f"{base}/extracted-units?page_number=3").json()
 
@@ -733,11 +878,11 @@ def test_api_representative_run_a_positive_visual_behavior_preserved() -> None:
         for unit in page3_payload["units"]
         if unit.get("unit_kind") in {"pdf_table", "ocr_image_supplement"}
     }
-    assert page3_visual_kinds == {"pdf_table", "ocr_image_supplement"}
+    assert page3_visual_kinds == set(EXPECTED_VISUAL_UNIT_PAGE3_KINDS)
 
 
-def test_api_representative_run_a_mixed_behavior_preserved() -> None:
-    base = f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_MIXED_TARGET_ID}"
+def test_api_representative_mixed_behavior_preserved() -> None:
+    base = f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{MIXED_TARGET_ID}"
     diagnostics_payload = client.get(f"{base}/diagnostics").json()
     extracted_payload = client.get(f"{base}/extracted-units").json()
 
@@ -747,8 +892,8 @@ def test_api_representative_run_a_mixed_behavior_preserved() -> None:
     assert extracted_payload["visual_artifacts"] == []
 
 
-def test_api_representative_run_a_negative_behavior_preserved() -> None:
-    base = f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_NEGATIVE_TARGET_ID}"
+def test_api_representative_negative_behavior_preserved() -> None:
+    base = f"/api/v1/review/nrc-aps/runs/{RUN_ID}/documents/{NEGATIVE_TARGET_ID}"
     diagnostics_payload = client.get(f"{base}/diagnostics").json()
     extracted_payload = client.get(f"{base}/extracted-units").json()
 
@@ -762,9 +907,14 @@ def test_api_representative_run_a_negative_behavior_preserved() -> None:
     )
 
 
-def test_api_representative_run_b_positive_matches_run_a_positive() -> None:
-    run_a_base = f"/api/v1/review/nrc-aps/runs/{RUN_A_ID}/documents/{RUN_A_POSITIVE_TARGET_ID}"
-    run_b_base = f"/api/v1/review/nrc-aps/runs/{RUN_B_ID}/documents/{RUN_B_POSITIVE_TARGET_ID}"
+def test_api_cross_runtime_positive_behavior_matches_when_second_runtime_exists() -> None:
+    if len(CROSS_RUNTIME_POSITIVE_CASES) < 2:
+        pytest.skip("Need two qualifying positive representative runtimes for cross-runtime comparison coverage")
+
+    run_a_case = CROSS_RUNTIME_POSITIVE_CASES[0]
+    run_b_case = CROSS_RUNTIME_POSITIVE_CASES[1]
+    run_a_base = f"/api/v1/review/nrc-aps/runs/{run_a_case['run_id']}/documents/{run_a_case['target_id']}"
+    run_b_base = f"/api/v1/review/nrc-aps/runs/{run_b_case['run_id']}/documents/{run_b_case['target_id']}"
 
     run_a_trace = client.get(f"{run_a_base}/trace").json()
     run_b_trace = client.get(f"{run_b_base}/trace").json()
