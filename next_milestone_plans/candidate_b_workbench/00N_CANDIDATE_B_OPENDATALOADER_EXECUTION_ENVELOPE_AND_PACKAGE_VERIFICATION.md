@@ -50,9 +50,12 @@ If the reported version is not `2.0.0`, stop and update the docs before continui
 No Candidate B execution was performed in this pass.
 The direct local preflight checks returned:
 - `py -3.12 --version` -> `Python 3.12.10`
-- `java -version` -> command not resolved on `PATH`
-- `JAVA_HOME` -> empty
-- common local install roots and JavaSoft registry keys -> no discoverable `java.exe`
+- default shell state: `java -version` unresolved on `PATH`, `JAVA_HOME` empty
+- discoverable local install found at `C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot\bin\java.exe`
+- session-local env fix used for confirmation:
+  - `$env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot'`
+  - `$env:PATH="$env:JAVA_HOME\bin;$env:PATH"`
+- `java -version` after the session-local fix -> Temurin OpenJDK `17.0.18+8`
 - isolated worktree-local venv created at `.candidate_b_preflight_venv`
 - `.\.candidate_b_preflight_venv\Scripts\python.exe -m pip install --require-hashes -r tests/requirements_nrc_aps_candidate_b_opendataloader.txt` -> success
 - isolated `pip show opendataloader-pdf` -> `Version: 2.0.0`
@@ -61,11 +64,12 @@ The direct local preflight checks returned:
 
 Interpretation:
 - the Python side of the execution envelope is present
-- Java readiness is **not** proven on this machine and the approved execution envelope is therefore **not ready**
+- Java 11+ is present on this machine but not on the default shell `PATH`
+- the approved execution envelope is ready once the documented session-local `JAVA_HOME` / `PATH` fix is applied
 - the exact ODL package is now installed only inside the isolated preflight venv, not as a repo-runtime dependency
 
 So the execution envelope is frozen,
-but this machine is not yet ready for a real Candidate B run until Java 11+ is resolvable on `PATH`.
+and this machine is ready for a real Candidate B run only under the documented session-local Java env fix plus the isolated preflight venv.
 
 ---
 
