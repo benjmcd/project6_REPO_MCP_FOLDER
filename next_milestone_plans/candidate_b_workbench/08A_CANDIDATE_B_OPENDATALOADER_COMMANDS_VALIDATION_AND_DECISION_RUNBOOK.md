@@ -31,10 +31,14 @@ java -version
 
 ### Confirm the existing lower-layer proof lane still passes
 ```powershell
-.\project6.ps1 -Action prove-nrc-aps-document-processing
+.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr
 ```
 
-If this baseline proof fails, stop.
+Execution finding from the first actual Candidate B run:
+- the default non-`RequireOcr` lower-layer proof posture now fails in a Tesseract-capable workspace because the proof runner forces `NRC_APS_CORPUS_OCR_MODE=disabled`
+- the OCR-required proof lane is the live baseline-truth anchor for this workbench lane
+
+If this OCR-required baseline proof fails, stop.
 Do not open Candidate B work.
 
 ## Phase 1 - Candidate B dependency preflight

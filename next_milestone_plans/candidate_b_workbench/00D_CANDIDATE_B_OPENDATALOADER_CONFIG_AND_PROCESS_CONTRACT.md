@@ -153,6 +153,11 @@ Those widen disk footprint without helping the primary comparison question.
 Extracted images are allowed only under the approved run-scoped image directory.
 They are comparison-support artifacts, not runtime outputs.
 
+Execution finding from the first actual Candidate B run:
+- under `opendataloader-pdf==2.0.0`, `include_header_footer=False` did not prevent footer nodes from appearing in raw JSON for `ML17123A319.pdf`
+- later Candidate B summaries must therefore treat header/footer-node presence as package behavior evidence, not as proof that the config flag was ignored by the implementer
+- those nodes must remain non-authoritative comparison support only unless a later explicit config correction is separately frozen
+
 ---
 
 ## G. Why this config is the right one
