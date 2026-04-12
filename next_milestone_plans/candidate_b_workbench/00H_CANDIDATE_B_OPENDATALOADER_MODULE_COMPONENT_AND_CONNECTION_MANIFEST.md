@@ -98,7 +98,7 @@ Responsibilities:
 ### 2b. Future compare-surface helpers (bounded follow-on lane only)
 - `tools/run_nrc_aps_candidate_b_compare.py`
 - `tools/run_nrc_aps_candidate_b_baseline.py`
-- one repo-native `project6.ps1` compare action
+- one repo-native `project6.ps1` compare action named `compare-nrc-aps-candidate-b`
 
 Responsibilities:
 - make the workbench compare flow repo-native
@@ -106,9 +106,9 @@ Responsibilities:
 - preserve isolated runtime and run-scoped output posture
 - remain outside service/API/review integration
 
-### 3. Optional corpus sidecar labels
+### 3. Existing corpus labels sidecar
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
-- optional sidecar manifest if truly required
+- no new Candidate B sidecar manifest in the first compare-surface pass
 
 Responsibilities:
 - record page/document buckets for Candidate B value/control analysis
@@ -130,7 +130,7 @@ Responsibilities:
 same corpus -> Candidate B support module -> `sys.executable -m opendataloader_pdf` -> raw ODL outputs -> derived Candidate B summaries -> compare against current lower-layer outputs -> Candidate B proof/compare reports
 
 ### Future polished compare-surface connection model
-`project6.ps1` compare action -> Candidate B compare runner -> fresh lower-layer proof + fresh baseline-summary generation -> Candidate B support module -> isolated raw outputs + proof/compare/retention artifacts
+`project6.ps1 -Action compare-nrc-aps-candidate-b` -> Candidate B compare runner (`--run-root`, `--plan-only`) -> fresh lower-layer proof with explicit run-local runtime roots + fresh baseline-summary generation -> Candidate B support module -> isolated raw outputs + proof/compare/retention artifacts
 
 ### Explicitly forbidden connection model in v1
 OpenDataLoader -> backend service runtime -> connector endpoints -> persisted outward artifact families

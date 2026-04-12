@@ -116,3 +116,17 @@ Candidate B still lacks:
 ### Hard rule
 Do not describe the current committed surface as a first-class compare workflow yet.
 Use `05T` and `08E` as the implementation-preparation docs for that lane.
+
+---
+
+## Resolved in this pass - compare-lane contract freeze
+
+Resolved posture:
+- exact action name = `compare-nrc-aps-candidate-b`
+- exact compare-runner public flags = optional `--run-root` and optional `--plan-only` only
+- exact baseline-tool public flags = required `--runtime-root`, `--proof-report`, and `--out`
+- exact default output root = `tests/reports/cb-compare-<run_id>/`
+- exact durable top-level outputs = `baseline-summary.json`, `proof.json`, `compare.json`, `retain.json`
+- exact baseline proof posture = explicit `baseline-before/runtime` and `baseline-after/runtime` roots with `--require-ocr`
+- protected-diff serialization is out of scope for the first pass
+- no new Candidate B sidecar manifest is authorized in the first pass

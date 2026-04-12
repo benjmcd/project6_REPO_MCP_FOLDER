@@ -126,6 +126,10 @@ Those docs assume:
 - no backend service changes
 - no runtime admission or selector changes
 - only repo-native compare-runner ergonomics, fresh baseline-summary generation, isolated outputs, and validate-only compare tests
+- exact action name `compare-nrc-aps-candidate-b`
+- exact compare-runner flag `--plan-only`
+- exact run-root default under `tests/reports/cb-compare-<run_id>/`
+- no protected-diff serialization or raw-output commit widening in the first pass
 
 ---
 

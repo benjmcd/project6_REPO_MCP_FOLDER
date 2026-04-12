@@ -37,7 +37,7 @@ These are repo-truth anchors for Candidate B planning and verification:
 Candidate B v1 may reference these surfaces but must not modify them.
 
 Bounded follow-on compare-surface note:
-- the separate compare-surface hardening lane may add one new `project6.ps1` action and repo-native helper tools under `tools/`
+- the separate compare-surface hardening lane may add one new `project6.ps1` action named `compare-nrc-aps-candidate-b` and repo-native helper tools under `tools/`
 - that is not part of the currently committed v1 workbench posture
 - do not treat this note as permission to widen into runtime/service/API work
 
@@ -123,7 +123,7 @@ Candidate B v1 may add only the following new files or direct analogues under th
 ### Tests/support
 - `tests/support_nrc_aps_candidate_b_opendataloader.py`
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
-- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py` (future optional compare surface; not present in current committed `main`)
+- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py` (future compare surface required by the compare-surface lane; not present in current committed `main`)
 
 ### Repo-native compare-surface helpers (future bounded lane only)
 - `tools/run_nrc_aps_candidate_b_compare.py`
@@ -131,7 +131,7 @@ Candidate B v1 may add only the following new files or direct analogues under th
 
 ### Corpus sidecar labels / manifests
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
-- `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_manifest.json` (only if a sidecar manifest is truly needed; do not mutate the existing base manifest in v1)
+- do not add a new `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_manifest.json` in the first compare-surface pass; use the existing base manifest plus the frozen labels sidecar only
 
 ### Workbench reports and raw outputs
 - `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
@@ -175,7 +175,7 @@ Bounded follow-on compare-surface exception:
 - tests/support
 - tests/test...
 - tests/reports...
-- optional corpus sidecar labels/manifest
+- the existing corpus labels sidecar only; no new sidecar manifest in the first compare-surface pass
 - the existing Candidate B planning/workbench pack only
 
 ### Forbidden surfaces
