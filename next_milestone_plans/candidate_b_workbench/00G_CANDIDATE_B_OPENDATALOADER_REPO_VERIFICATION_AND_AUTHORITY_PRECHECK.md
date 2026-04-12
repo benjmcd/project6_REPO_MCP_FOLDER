@@ -64,16 +64,16 @@ Stop Candidate B v1 planning or implementation immediately if any of the followi
 
 ---
 
-## D. Connector authorization note
+## D. Repo-native confirmation note
 
-The GitHub connector is not currently authorized for this repo in this session.
-Therefore this pack is grounded in:
-- live public repo pages
-- visible repo tree
-- opened lower-layer file pages
-- root README statements
+Session tooling availability can vary.
+This pack must therefore stay grounded in repo-native confirmation methods that are actually available in the implementation session, such as:
+- local git history and tree inspection
+- opened on-disk source files
+- repo connector results when available
+- root README statements plus the cited authority docs
 
-Before merge/adoption, an implementer with repo access should still do one final repo-native confirmation pass.
+Before implementation, do one final repo-native confirmation pass against current `main`.
 That pass is a confirmation step, not a license to redesign the pack ad hoc.
 
 
