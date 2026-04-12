@@ -298,11 +298,13 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     exit_code = 1
+    preflight_passed = False
     try:
         docs, preflight, findings = run_preflight(runtime_root)
         summary["preflight"] = preflight
         summary["corpus_pdf_count"] = len(docs)
         summary["observed_non_blocking_findings"] = findings
+        preflight_passed = True
         runtime_root.mkdir(parents=True, exist_ok=True)
 
         fake_client = LocalCorpusNrcClient(docs)
@@ -328,15 +330,16 @@ def main(argv: list[str] | None = None) -> int:
             "traceback": traceback.format_exc(),
         }
     finally:
-        if local_corpus_e2e._ALEMBIC_STUB_INSTALLED and not any(
-            str(item.get("code") or "") == ALEMBIC_STUB_FINDING["code"]
-            for item in summary["observed_non_blocking_findings"]
-            if isinstance(item, dict)
-        ):
-            summary["observed_non_blocking_findings"].append(dict(ALEMBIC_STUB_FINDING))
-        summary["generated_at_utc"] = utc_now()
-        write_json(summary_path, summary)
-        print(str(summary_path))
+        if preflight_passed:
+            if local_corpus_e2e._ALEMBIC_STUB_INSTALLED and not any(
+                str(item.get("code") or "") == ALEMBIC_STUB_FINDING["code"]
+                for item in summary["observed_non_blocking_findings"]
+                if isinstance(item, dict)
+            ):
+                summary["observed_non_blocking_findings"].append(dict(ALEMBIC_STUB_FINDING))
+            summary["generated_at_utc"] = utc_now()
+            write_json(summary_path, summary)
+            print(str(summary_path))
 
     return exit_code
 

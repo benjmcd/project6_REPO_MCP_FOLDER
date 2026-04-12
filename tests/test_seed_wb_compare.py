@@ -86,3 +86,27 @@ def test_main_writes_summary_for_candidate_a_seed(tmp_path: Path, monkeypatch) -
     assert summary["run_id"] == "seed-run-001"
     assert summary["visual_lane_mode"] == "candidate_a_page_evidence_v1"
     assert summary["corpus_fixture_ids"] == list(seed_wb_compare.FROZEN_FIXTURE_IDS)
+
+
+def test_main_skips_summary_write_when_preflight_rejects_runtime_root(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    runtime_root = tmp_path / "occupied-runtime"
+    runtime_root.mkdir()
+    sentinel = runtime_root / "sentinel.txt"
+    sentinel.write_text("keep", encoding="utf-8")
+
+    monkeypatch.setattr(seed_wb_compare, "_resolve_runtime_root", lambda raw: runtime_root)
+    monkeypatch.setattr(
+        seed_wb_compare,
+        "run_preflight",
+        lambda candidate: (_ for _ in ()).throw(RuntimeError("runtime_root must be empty")),
+    )
+
+    exit_code = seed_wb_compare.main(["--runtime-root", str(runtime_root), "--visual-lane-mode", "baseline"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert captured.out == ""
+    assert sentinel.read_text(encoding="utf-8") == "keep"
+    assert not (runtime_root / "local_corpus_e2e_summary.json").exists()
