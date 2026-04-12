@@ -61,7 +61,7 @@ Do not describe direct-wrapper invocation as a current committed `main` fact unl
 
 ### What remains open
 The compare-surface lane adds `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`,
-but the explicit isolated proof run still has not been recorded from a prepared environment on this lane.
+and an explicit isolated proof run has now been recorded locally from a prepared environment on this lane.
 
 ### Hard rule
 Do not overstate validate-only green status as if it proves the full artifact-generating compare path has already been exercised.
@@ -102,20 +102,20 @@ Any committed sample output requires a separate explicit decision after the firs
 
 ---
 
-## Remaining open item 6 - explicit isolated compare proof run
+## Remaining open item 6 - compare proof evidence disposition
 
 ### What remains open
-The compare surface is implemented on this lane, including:
+The compare surface is implemented on this lane, and one explicit isolated proof run has now been completed locally, including:
 
 - a repo-native `project6.ps1` compare action
 - a dedicated compare runner
 - a fresh baseline-summary source for normal reruns
 - a dedicated validate-only compare pytest file
 
-What still remains open is the first explicit isolated proof run in an environment where `opendataloader-pdf` is installed for the intended Python 3.12 interpreter.
+The remaining open decision is whether the completed proof artifacts remain local-only evidence or are preserved in tracked history.
 
 ### Hard rule
-Do not describe the compare surface as fully proven end-to-end until that explicit isolated proof run is captured and reviewed.
+Do not describe the compare surface as preserved or historically adopted until that artifact-disposition decision is made.
 
 ---
 

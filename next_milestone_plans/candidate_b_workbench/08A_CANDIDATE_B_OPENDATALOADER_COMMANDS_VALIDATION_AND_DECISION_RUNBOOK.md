@@ -11,6 +11,7 @@ Current ergonomics note:
 - the compare-surface lane now provides a first-class repo-native Candidate B compare command
 - this runbook now separates validate-only command wiring from the explicit isolated proof run
 - do not treat validate-only green status alone as proof that the full artifact-generating compare path has already been exercised
+- a clean-`main` local proof run has now been completed; read its outcome as local-only evidence unless separately preserved
 
 ---
 
@@ -94,6 +95,12 @@ Current committed artifact posture:
 ```powershell
 .\project6.ps1 -Action compare-nrc-aps-candidate-b --run-root .\tests\reports\cb-compare-<run_id>
 ```
+
+Latest local proof outcome:
+- non-interference passed
+- outputs outside approved roots = `[]`
+- decision = `workbench_useful_with_explicit_footer_limitation`
+- known limitation remained explicit on fixture `ml17123a319`
 
 If the command fails with `odl_package_not_installed`, stop and prepare the intended Python 3.12 environment first.
 
