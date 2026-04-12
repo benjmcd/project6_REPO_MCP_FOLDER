@@ -60,12 +60,11 @@ Do not describe direct-wrapper invocation as a current committed `main` fact unl
 ## Remaining open item 2 - dedicated compare pytest surface
 
 ### What remains open
-`main` contains `tests/test_nrc_aps_candidate_b_opendataloader.py`,
-but it does not contain a separate `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`.
+The compare-surface lane adds `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`,
+but the explicit isolated proof run still has not been recorded from a prepared environment on this lane.
 
 ### Hard rule
-Do not tell operators to run a compare pytest that does not exist.
-Any new compare pytest surface requires a separate bounded change.
+Do not overstate validate-only green status as if it proves the full artifact-generating compare path has already been exercised.
 
 ---
 
@@ -103,19 +102,20 @@ Any committed sample output requires a separate explicit decision after the firs
 
 ---
 
-## Remaining open item 6 - polished compare-surface ergonomics
+## Remaining open item 6 - explicit isolated compare proof run
 
 ### What remains open
-Candidate B still lacks:
+The compare surface is implemented on this lane, including:
 
 - a repo-native `project6.ps1` compare action
 - a dedicated compare runner
 - a fresh baseline-summary source for normal reruns
 - a dedicated validate-only compare pytest file
 
+What still remains open is the first explicit isolated proof run in an environment where `opendataloader-pdf` is installed for the intended Python 3.12 interpreter.
+
 ### Hard rule
-Do not describe the current committed surface as a first-class compare workflow yet.
-Use `05T` and `08E` as the implementation-preparation docs for that lane.
+Do not describe the compare surface as fully proven end-to-end until that explicit isolated proof run is captured and reviewed.
 
 ---
 

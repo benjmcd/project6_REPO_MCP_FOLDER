@@ -19,13 +19,18 @@ Use these files as authority before editing:
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
 - committed Candidate B reports under `tests/reports/`
 
-Current repo-confirmed gap:
+Repo-confirmed gap before this lane:
 
 - the lower-layer proof lane already has a repo-native entrypoint
 - Candidate B already has an executable workbench harness
-- Candidate B does not yet have a repo-native compare action
-- Candidate B still depends on a prior compare artifact input instead of generating a fresh compare-ready baseline summary
-- Candidate B does not yet have a dedicated compare pytest surface
+- Candidate B lacked a repo-native compare action
+- Candidate B depended on a prior compare artifact input instead of generating a fresh compare-ready baseline summary
+- Candidate B lacked a dedicated compare pytest surface
+
+Current lane status:
+
+- this implementation lane closes the compare-action, baseline-summary, and compare-pytest gaps above
+- the remaining post-implementation burden is one explicit isolated proof run in a prepared environment
 
 ---
 

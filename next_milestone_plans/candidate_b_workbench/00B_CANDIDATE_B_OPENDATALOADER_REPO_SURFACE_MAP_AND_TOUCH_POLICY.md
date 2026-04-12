@@ -123,9 +123,9 @@ Candidate B v1 may add only the following new files or direct analogues under th
 ### Tests/support
 - `tests/support_nrc_aps_candidate_b_opendataloader.py`
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
-- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py` (future compare surface required by the compare-surface lane; not present in current committed `main`)
+- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
 
-### Repo-native compare-surface helpers (future bounded lane only)
+### Repo-native compare-surface helpers
 - `tools/run_nrc_aps_candidate_b_compare.py`
 - `tools/run_nrc_aps_candidate_b_baseline.py`
 
