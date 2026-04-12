@@ -17,9 +17,9 @@ and resolve the retention policy instead of leaving it implicit.
 - `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
 - `tests/reports/nrc_aps_candidate_b_opendataloader_retention_manifest.json`
 
-### Optional labels/sidecars
+### Existing labels sidecar
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
-- optional sidecar manifest in the same folder
+- no new Candidate B sidecar manifest in the first compare-surface pass
 
 ---
 

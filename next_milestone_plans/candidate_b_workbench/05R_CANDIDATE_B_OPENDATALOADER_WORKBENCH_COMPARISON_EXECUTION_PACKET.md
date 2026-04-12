@@ -34,7 +34,7 @@ Approved new files in v1 include only:
 - `tests/requirements_nrc_aps_candidate_b_opendataloader.txt`
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
-- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py` (future optional compare surface; not present in current committed `main`)
+- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py` (future compare surface required by the compare-surface lane; not present in current committed `main`)
 - durable Candidate B reports under `tests/reports/`
 - raw Candidate B outputs under the run-scoped Candidate B raw root
 - adopted docs under the chosen non-authoritative docs destination
@@ -80,6 +80,7 @@ and makes the implementation prove non-interference instead of merely asserting 
 
 For the polished compare-surface lane, the main missing ergonomic pieces are:
 
-- a repo-native `project6.ps1` action
+- the exact repo-native `project6.ps1 -Action compare-nrc-aps-candidate-b` entrypoint
 - a dedicated compare runner
 - a fresh baseline-summary generator so normal use no longer depends on a historical compare artifact path
+- the exact `--plan-only` validate-only path for command wiring without artifact generation
