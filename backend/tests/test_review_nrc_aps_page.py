@@ -25,6 +25,7 @@ def test_page_loads():
     assert ">Light<" in response.text
     assert ">Dark<" in response.text
     assert 'aria-label="Close details"' in response.text
+    assert 'href="/review/nrc-aps/workbench-compare"' in response.text
     assert 'href="/review/analyst-insight"' in response.text
 
 
@@ -33,6 +34,15 @@ def test_page_has_run_identity_container():
     assert response.status_code == 200
     assert 'id="current-run-info"' in response.text
     assert 'run-identity-bar' in response.text
+
+
+def test_page_places_workbench_compare_nav_before_document_trace() -> None:
+    response = client.get("/review/nrc-aps")
+    assert response.status_code == 200
+    html = response.text
+    assert 'id="launch-workbench-compare"' in html
+    assert 'id="launch-document-trace"' in html
+    assert html.index('id="launch-workbench-compare"') < html.index('id="launch-document-trace"')
 
 
 def test_review_js_has_identity_aware_overlay_messages():

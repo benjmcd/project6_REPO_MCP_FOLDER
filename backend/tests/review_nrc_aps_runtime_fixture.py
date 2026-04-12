@@ -33,7 +33,7 @@ def _candidate_shared_runtime_parent() -> Path | None:
     return None
 
 
-def _resolve_runtime_parent() -> Path:
+def _resolve_runtime_parents() -> list[Path]:
     candidates = candidate_review_runtime_roots(
         app_root=TESTS_ROOT.parent / "app",
         backend_root=TESTS_ROOT.parent,
@@ -57,19 +57,16 @@ def _resolve_runtime_parent() -> Path:
         seen.add(key)
         deduped.append(resolved)
 
-    for candidate in deduped:
-        if candidate.exists():
-            return candidate
-
-    return deduped[0]
+    return deduped
 
 
-RUNTIME_PARENT = _resolve_runtime_parent()
+RUNTIME_PARENTS = _resolve_runtime_parents()
+RUNTIME_PARENT = next((candidate for candidate in RUNTIME_PARENTS if candidate.exists()), RUNTIME_PARENTS[0])
 
 if not str(os.environ.get("STORAGE_DIR") or "").strip() and RUNTIME_PARENT.exists():
-    shared_storage_root = RUNTIME_PARENT.parent.resolve()
-    os.environ["STORAGE_DIR"] = str(shared_storage_root)
-    settings.storage_dir = str(shared_storage_root)
+    default_storage_root = RUNTIME_PARENT.parent.resolve()
+    os.environ["STORAGE_DIR"] = str(default_storage_root)
+    settings.storage_dir = str(default_storage_root)
 
 
 @dataclass(frozen=True)
@@ -81,44 +78,83 @@ class AuditedReviewRuntime:
     storage_dir: Path
 
 
+def _runtime_has_accession_prefix(runtime: AuditedReviewRuntime, prefix: str) -> bool:
+    database_uri = f"{runtime.db_path.resolve().as_uri()}?mode=ro"
+    try:
+        connection = sqlite3.connect(database_uri, uri=True)
+    except sqlite3.DatabaseError:
+        return False
+
+    try:
+        row = connection.execute(
+            """
+            SELECT 1
+            FROM aps_content_linkage
+            WHERE run_id = ? AND accession_number LIKE ?
+            LIMIT 1
+            """,
+            (runtime.run_id, f"{prefix}%"),
+        ).fetchone()
+    except sqlite3.DatabaseError:
+        return False
+    finally:
+        connection.close()
+
+    return row is not None
+
+
 def discover_passed_runtimes() -> list[AuditedReviewRuntime]:
     runtimes: list[AuditedReviewRuntime] = []
-    if not RUNTIME_PARENT.exists():
+    runtime_parents = [candidate for candidate in RUNTIME_PARENTS if candidate.exists()]
+    if not runtime_parents:
         return runtimes
 
-    for runtime_dir in sorted((p for p in RUNTIME_PARENT.iterdir() if p.is_dir()), key=lambda p: p.name, reverse=True):
-        summary_path = runtime_dir / "local_corpus_e2e_summary.json"
-        if not summary_path.exists():
-            continue
-        try:
-            summary = json.loads(summary_path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            continue
-        if summary.get("passed") is not True:
-            continue
+    seen_runtime_dirs: set[str] = set()
+    for runtime_parent in runtime_parents:
+        for runtime_dir in sorted((p for p in runtime_parent.iterdir() if p.is_dir()), key=lambda p: p.name, reverse=True):
+            resolved_runtime_dir = runtime_dir.resolve()
+            runtime_key = str(resolved_runtime_dir)
+            if runtime_key in seen_runtime_dirs:
+                continue
+            seen_runtime_dirs.add(runtime_key)
 
-        run_id = str(summary.get("run_id") or "").strip()
-        database_path = resolve_runtime_database_path(runtime_dir, summary)
-        storage_dir = resolve_runtime_storage_dir(runtime_dir, summary)
-        if not run_id or database_path is None or storage_dir is None:
-            continue
+            summary_path = runtime_dir / "local_corpus_e2e_summary.json"
+            if not summary_path.exists():
+                continue
+            try:
+                summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                continue
+            if summary.get("passed") is not True:
+                continue
 
-        runtimes.append(
-            AuditedReviewRuntime(
-                runtime_dir=runtime_dir.resolve(),
-                summary=summary,
-                run_id=run_id,
-                db_path=database_path,
-                storage_dir=storage_dir,
+            run_id = str(summary.get("run_id") or "").strip()
+            database_path = resolve_runtime_database_path(runtime_dir, summary)
+            storage_dir = resolve_runtime_storage_dir(runtime_dir, summary)
+            if not run_id or database_path is None or storage_dir is None:
+                continue
+
+            runtimes.append(
+                AuditedReviewRuntime(
+                    runtime_dir=resolved_runtime_dir,
+                    summary=summary,
+                    run_id=run_id,
+                    db_path=database_path,
+                    storage_dir=storage_dir,
+                )
             )
-        )
-    return runtimes
+    preferred_runtimes = [runtime for runtime in runtimes if _runtime_has_accession_prefix(runtime, "LOCALAPS")]
+    return preferred_runtimes or runtimes
 
 
 def latest_passed_runtime() -> AuditedReviewRuntime:
     runtimes = discover_passed_runtimes()
     assert runtimes, f"No passed local-corpus runtime found under {RUNTIME_PARENT}"
-    return runtimes[0]
+    selected_runtime = runtimes[0]
+    selected_storage_root = selected_runtime.runtime_dir.parent.resolve()
+    os.environ["STORAGE_DIR"] = str(selected_storage_root)
+    settings.storage_dir = str(selected_storage_root)
+    return selected_runtime
 
 
 def _runtime_has_document_targets(runtime: AuditedReviewRuntime) -> bool:
@@ -149,7 +185,11 @@ def discover_document_trace_ready_runtimes() -> list[AuditedReviewRuntime]:
 def latest_document_trace_ready_runtime() -> AuditedReviewRuntime:
     runtimes = discover_document_trace_ready_runtimes()
     assert runtimes, f"No document-trace-ready local-corpus runtime found under {RUNTIME_PARENT}"
-    return runtimes[0]
+    selected_runtime = runtimes[0]
+    selected_storage_root = selected_runtime.runtime_dir.parent.resolve()
+    os.environ["STORAGE_DIR"] = str(selected_storage_root)
+    settings.storage_dir = str(selected_storage_root)
+    return selected_runtime
 
 
 def make_session(runtime: AuditedReviewRuntime) -> Session:
