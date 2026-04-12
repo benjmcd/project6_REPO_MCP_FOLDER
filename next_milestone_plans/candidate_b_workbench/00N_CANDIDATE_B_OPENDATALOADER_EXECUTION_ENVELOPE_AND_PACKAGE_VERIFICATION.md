@@ -99,7 +99,8 @@ All temporary or durable ODL outputs must remain under the approved Candidate B 
 The default ODL behavior of writing beside the input file must be overridden.
 
 Approved durable raw-output root:
-- `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
+- historical committed raw-output root: `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
+- compare-surface default raw-output root: `tests/reports/cb-compare-<run_id>/raw/...`
 
 ---
 

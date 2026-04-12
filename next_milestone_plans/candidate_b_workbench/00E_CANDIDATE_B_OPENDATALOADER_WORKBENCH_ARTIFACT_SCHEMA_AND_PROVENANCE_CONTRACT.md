@@ -10,11 +10,18 @@ v6 strengthens provenance by requiring package-hash and execution-envelope captu
 
 ## A. Required primary artifacts
 
-Candidate B v1 must produce at least:
-- `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
-- `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
-- `tests/reports/nrc_aps_candidate_b_opendataloader_retention_manifest.json`
-- raw ODL outputs under `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
+Candidate B has two valid artifact families:
+- historical committed workbench artifacts:
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_retention_manifest.json`
+  - raw ODL outputs under `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
+- compare-surface fresh-run artifacts:
+  - `tests/reports/cb-compare-<run_id>/baseline-summary.json`
+  - `tests/reports/cb-compare-<run_id>/proof.json`
+  - `tests/reports/cb-compare-<run_id>/compare.json`
+  - `tests/reports/cb-compare-<run_id>/retain.json`
+  - raw ODL outputs under `tests/reports/cb-compare-<run_id>/raw/...`
 
 ---
 

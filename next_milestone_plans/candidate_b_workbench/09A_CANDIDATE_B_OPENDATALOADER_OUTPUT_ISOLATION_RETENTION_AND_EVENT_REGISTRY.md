@@ -10,12 +10,21 @@ and resolve the retention policy instead of leaving it implicit.
 ## A. Approved output roots
 
 ### Raw OpenDataLoader outputs
-- `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
+- historical committed raw-output root:
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
+- compare-surface run-scoped raw-output root:
+  - `tests/reports/cb-compare-<run_id>/raw/...`
 
 ### Durable Candidate B reports
-- `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
-- `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
-- `tests/reports/nrc_aps_candidate_b_opendataloader_retention_manifest.json`
+- historical committed artifacts:
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_retention_manifest.json`
+- compare-surface run-scoped artifacts:
+  - `tests/reports/cb-compare-<run_id>/baseline-summary.json`
+  - `tests/reports/cb-compare-<run_id>/proof.json`
+  - `tests/reports/cb-compare-<run_id>/compare.json`
+  - `tests/reports/cb-compare-<run_id>/retain.json`
 
 ### Existing labels sidecar
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`

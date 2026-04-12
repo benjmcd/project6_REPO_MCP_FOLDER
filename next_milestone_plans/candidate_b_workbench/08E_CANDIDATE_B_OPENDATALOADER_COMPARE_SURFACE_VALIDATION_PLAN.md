@@ -95,7 +95,7 @@ Artifact-generating evidence:
 
 Fail the lane if any of the following occurs:
 
-- the compare runner still needs a historical compare artifact path for normal use
+- the compare runner regresses to requiring a historical compare artifact path for normal use
 - the default execution path overwrites the committed historical Candidate B artifacts
 - Candidate B writes outside the approved run root
 - the before/after lower-layer proof does not remain green
