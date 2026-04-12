@@ -24,8 +24,15 @@ Live authority surfaces for this blueprint:
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\index.html`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\review.css`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\review.js`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260328_150207\`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260328_150207\lc.db`
+- historical runtime example used when this blueprint was written:
+  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260328_150207\`
+  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260328_150207\lc.db`
+
+Current repo-state note:
+
+- that `20260328_150207` runtime is not present in the current root checkout
+- current root-local validate-only review/document-trace work is anchored instead to the adopted `20260327_062011` runtime under `backend\app\storage_test_runtime\lc_e2e\20260327_062011`
+- unless explicitly revalidated, later references in this blueprint to the `20260328_150207` audited runtime remain historical/example-specific rather than current local fixture authority
 
 Repo-confirmed facts that shape this blueprint:
 
@@ -37,7 +44,7 @@ Repo-confirmed facts that shape this blueprint:
 - the durable source contract for this feature is `blob_ref`
 - fine-grained extracted units should come from diagnostics `ordered_units`
 - chunk/index data should come from `aps_content_chunk`
-- retrieval is not available in the audited runtime and cannot be required
+- retrieval was not available in the historical runtime example used for this blueprint and therefore cannot be required
 
 ## 3. Implementation Principles
 
@@ -448,7 +455,7 @@ Implementation expectation:
 ### 14.1 Audit Phase
 
 - confirm the live authority files above
-- confirm the document-trace runtime assumptions against the current audited runtime
+- confirm the document-trace runtime assumptions against a current local document-trace-ready runtime, or explicitly fall back to historical-example-only reasoning if none exists
 - confirm there is no existing reusable PDF/document viewer pattern in the live review surface
 
 ### 14.2 Backend Contract Phase
@@ -495,7 +502,7 @@ Implementation expectation:
 ### 14.8 Re-Audit And Closeout Phase
 
 - rerun focused tests
-- perform live manual QA against the audited runtime
+- perform live manual QA against a current local document-trace-ready runtime when one exists; otherwise treat historical runtime references as non-operational examples only
 - verify no regression of the main review page
 - commit in narrow logical units
 

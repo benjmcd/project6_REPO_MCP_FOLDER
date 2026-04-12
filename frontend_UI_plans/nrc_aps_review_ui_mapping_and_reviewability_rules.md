@@ -18,8 +18,14 @@ Live authority for these rules:
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\models\models.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\api\router.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\core\config.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\storage\connectors\reports\`
+- adopted root-local golden runtime fixture used to ground these rules:
+  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
+  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\storage\connectors\reports\`
+
+Current repo-state note:
+
+- the root-local branch now carries the adopted `20260327_062011` runtime in the current root checkout
+- unless explicitly revalidated otherwise, later references in this document to the golden run mean that adopted root-local runtime
 
 Repo-confirmed facts already established:
 
@@ -210,7 +216,7 @@ V1 branch anchors are frozen to:
 - `selected_branch_rows[0]` -> Branch A
 - `selected_branch_rows[1]` -> Branch B
 
-For the verified golden run, those anchors are:
+For the adopted root-local golden run example, those anchors are:
 
 - Branch A:
   - accession: `LOCALAPS00010`
@@ -282,7 +288,7 @@ If `run_detail.report_refs` advertises files that are not present on disk:
 
 ### 12.2 Known Verified Mismatch In The Golden Run
 
-For the verified run `d6be0fff-bbd7-468a-9b00-7103d5995494`, the planning set should treat these as known mismatches:
+For the historical golden run example `d6be0fff-bbd7-468a-9b00-7103d5995494`, the planning set should treat these as known mismatches:
 
 - advertised `artifact_dedup_report` missing on disk
 - advertised `checkpoint_history` missing on disk

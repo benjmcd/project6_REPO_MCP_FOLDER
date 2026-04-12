@@ -25,6 +25,19 @@ All document-trace API routes in v1 should be:
 - read-only
 - bounded to review-safe runtime roots
 
+Current live-implementation note:
+
+- the current root implementation ships these document-trace routes:
+  - `GET /api/v1/review/nrc-aps/runs/{run_id}/documents`
+  - `GET /api/v1/review/nrc-aps/runs/{run_id}/documents/{target_id}/trace`
+  - `GET /api/v1/review/nrc-aps/runs/{run_id}/documents/{target_id}/source`
+  - `GET /api/v1/review/nrc-aps/runs/{run_id}/documents/{target_id}/diagnostics`
+  - `GET /api/v1/review/nrc-aps/runs/{run_id}/documents/{target_id}/normalized-text`
+  - `GET /api/v1/review/nrc-aps/runs/{run_id}/documents/{target_id}/indexed-chunks`
+  - `GET /api/v1/review/nrc-aps/runs/{run_id}/documents/{target_id}/extracted-units`
+- the current live manifest also carries a `downstream_usage` tab placeholder with no endpoint when `has_downstream_usage` is false
+- this means the retained `downstream-usage` endpoint below is still a planned contract surface, not a shipped root API route in the current repo state
+
 ## 3. Identity Model
 
 The canonical document-trace identity is:
@@ -295,13 +308,18 @@ Response model:
 }
 ```
 
-### 4.8 Downstream Usage
+### 4.8 Retained Planned Downstream Usage Endpoint
 
 `GET /api/v1/review/nrc-aps/runs/{run_id}/documents/{target_id}/downstream-usage`
 
 Purpose:
 
 - expose attributable downstream usage when it exists
+
+Current shipped-state note:
+
+- this endpoint is not implemented in the current root review API
+- current live behavior is limited to an unavailable `downstream_usage` manifest tab with no endpoint
 
 Response model:
 
@@ -365,4 +383,3 @@ There should be no required retrieval tab in the contract because the audited ru
 - no dependency on local corpus file paths
 - no guarantee that downstream usage exists for every document
 - no guarantee of exact region-level synchronization
-
