@@ -13,16 +13,16 @@ Translate the v5 boundary into explicit file-level rules.
 
 ### Tests
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
-- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py` (future optional compare surface; not present in current committed `main`)
+- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py` (future compare surface required by the compare-surface lane; not present in current committed `main`)
 
 ### Repo-native compare-surface helpers (future bounded lane only)
 - `tools/run_nrc_aps_candidate_b_compare.py`
 - `tools/run_nrc_aps_candidate_b_baseline.py`
-- one bounded `project6.ps1` compare action
+- one bounded `project6.ps1` compare action named `compare-nrc-aps-candidate-b`
 
 ### Corpus sidecars
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
-- optional `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_manifest.json`
+- no new `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_manifest.json` in the first compare-surface pass
 
 ### Reports/raw outputs
 - `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`

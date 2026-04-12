@@ -67,7 +67,7 @@ Candidate B v1 is strictly a tests/report workbench lane.
 Candidate B v1 may persist only:
 - tests-side report JSON
 - tests-side raw OpenDataLoader outputs
-- optional tests-side sidecar labels/manifest files
+- the existing tests-side labels sidecar only; no new Candidate B sidecar manifest in the first compare-surface pass
 - non-authoritative planning docs
 
 It may not persist new rows or refs into the live runtime artifact namespaces.
