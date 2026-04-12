@@ -15,6 +15,11 @@ Translate the v5 boundary into explicit file-level rules.
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
 - `tests/test_nrc_aps_candidate_b_opendataloader_compare.py` (future optional compare surface; not present in current committed `main`)
 
+### Repo-native compare-surface helpers (future bounded lane only)
+- `tools/run_nrc_aps_candidate_b_compare.py`
+- `tools/run_nrc_aps_candidate_b_baseline.py`
+- one bounded `project6.ps1` compare action
+
 ### Corpus sidecars
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
 - optional `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_manifest.json`
@@ -43,6 +48,10 @@ Translate the v5 boundary into explicit file-level rules.
 - existing `tests/reports/...` baseline reports
 - all current service-layer owner-path/outward-surface files
 
+Bounded follow-on compare-surface note:
+- the separate compare-surface lane may touch `project6.ps1` only to add one repo-native compare action
+- outside that lane, `project6.ps1` remains read-only here
+
 ---
 
 ## C. Forbidden-touch files/directories in v1
@@ -55,7 +64,7 @@ Translate the v5 boundary into explicit file-level rules.
 - any migrations
 - any frontend/e2e/Docker/CI files
 - any current review/runtime service file
-- `project6.ps1`
+- `project6.ps1` except for the one bounded compare-surface action described above
 
 ---
 
