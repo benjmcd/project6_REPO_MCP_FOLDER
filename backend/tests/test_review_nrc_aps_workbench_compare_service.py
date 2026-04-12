@@ -244,8 +244,10 @@ def test_compose_workbench_compare_payloads_align_selected_fixture(compare_runti
     checkout_root = compare_runtime_fixture["checkout_root"]
     bundle_id = compare_runtime_fixture["bundle_id"]
     fixture_id = compare_runtime_fixture["fixture_id"]
+    selector = compare_runtime_fixture["selector"]
 
     monkeypatch.setattr(compare_service, "discover_runtime_bindings", lambda: [baseline_binding, candidate_a_binding])
+    monkeypatch.setattr(compare_service, "discover_candidate_runs", lambda: selector)
 
     targets = compare_service.compose_workbench_compare_targets(
         baseline_run_id=baseline_binding.run_id,
@@ -303,3 +305,24 @@ def test_candidate_b_bundle_id_validation_fails_closed(compare_runtime_fixture: 
 
     with pytest.raises(ValueError, match="candidate_b_bundle_unavailable"):
         compare_service.resolve_candidate_b_bundle_root("archive/20260412-cb-proof/not-real", checkout_root=checkout_root)
+
+
+def test_compose_workbench_compare_targets_rejects_non_reviewable_run(compare_runtime_fixture: dict[str, object], monkeypatch: pytest.MonkeyPatch) -> None:
+    baseline_binding = compare_runtime_fixture["baseline_binding"]
+    candidate_a_binding = compare_runtime_fixture["candidate_a_binding"]
+    checkout_root = compare_runtime_fixture["checkout_root"]
+    bundle_id = compare_runtime_fixture["bundle_id"]
+
+    selector = compare_runtime_fixture["selector"].model_copy(deep=True)
+    selector.runs[0].reviewable = False
+
+    monkeypatch.setattr(compare_service, "discover_runtime_bindings", lambda: [baseline_binding, candidate_a_binding])
+    monkeypatch.setattr(compare_service, "discover_candidate_runs", lambda: selector)
+
+    with pytest.raises(ValueError, match="invalid_baseline_run"):
+        compare_service.compose_workbench_compare_targets(
+            baseline_run_id=baseline_binding.run_id,
+            candidate_a_run_id=candidate_a_binding.run_id,
+            candidate_b_bundle_id=bundle_id,
+            checkout_root=checkout_root,
+        )

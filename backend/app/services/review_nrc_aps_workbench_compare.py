@@ -208,10 +208,13 @@ def _variant_sort_key(item: NrcApsWorkbenchCompareRunSourceItemOut) -> tuple[str
     return (item.completed_at or "", item.run_id)
 
 
+def _selector_by_run_id() -> dict[str, Any]:
+    return {item.run_id: item for item in discover_candidate_runs().runs}
+
+
 def discover_workbench_compare_sources(checkout_root: Path | None = None) -> NrcApsWorkbenchCompareSourcesOut:
     root = (checkout_root or _checkout_root()).resolve()
-    selector = discover_candidate_runs()
-    selector_by_run_id = {item.run_id: item for item in selector.runs}
+    selector_by_run_id = _selector_by_run_id()
 
     baseline_runs: list[NrcApsWorkbenchCompareRunSourceItemOut] = []
     candidate_a_runs: list[NrcApsWorkbenchCompareRunSourceItemOut] = []
@@ -267,6 +270,9 @@ def discover_workbench_compare_sources(checkout_root: Path | None = None) -> Nrc
 
 
 def _require_binding(run_id: str, *, expected_variant: str) -> ReviewRuntimeBinding:
+    selector_item = _selector_by_run_id().get(run_id)
+    if selector_item is None or not selector_item.reviewable:
+        raise ValueError(f"invalid_{expected_variant}_run")
     for binding in discover_runtime_bindings():
         if binding.run_id != run_id:
             continue

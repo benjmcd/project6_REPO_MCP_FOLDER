@@ -199,6 +199,23 @@ def test_workbench_compare_targets_route_maps_invalid_bundle_to_400(mock_targets
 
 
 @patch("app.api.review_nrc_aps.compose_workbench_compare_targets")
+def test_workbench_compare_targets_route_maps_invalid_baseline_run_to_400(mock_targets) -> None:
+    mock_targets.side_effect = ValueError("invalid_baseline_run")
+
+    response = client.get(
+        "/api/v1/review/nrc-aps/workbench-compare/targets",
+        params={
+            "baseline_run_id": "baseline-run-001",
+            "candidate_a_run_id": "candidate-a-run-001",
+            "candidate_b_bundle_id": "archive/20260412-cb-proof/cb-proof-test",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "invalid_baseline_run"
+
+
+@patch("app.api.review_nrc_aps.compose_workbench_compare_targets")
 def test_workbench_compare_targets_route_returns_payload(mock_targets) -> None:
     mock_targets.return_value = _targets_payload()
 
