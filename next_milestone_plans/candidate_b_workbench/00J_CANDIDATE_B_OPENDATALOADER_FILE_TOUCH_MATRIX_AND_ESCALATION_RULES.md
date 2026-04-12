@@ -13,9 +13,9 @@ Translate the v5 boundary into explicit file-level rules.
 
 ### Tests
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
-- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py` (future compare surface required by the compare-surface lane; not present in current committed `main`)
+- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
 
-### Repo-native compare-surface helpers (future bounded lane only)
+### Repo-native compare-surface helpers
 - `tools/run_nrc_aps_candidate_b_compare.py`
 - `tools/run_nrc_aps_candidate_b_baseline.py`
 - one bounded `project6.ps1` compare action named `compare-nrc-aps-candidate-b`
