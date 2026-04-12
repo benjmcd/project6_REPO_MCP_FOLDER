@@ -26,6 +26,7 @@ Add a dedicated service test surface covering at minimum:
 
 - baseline run classification
 - Candidate A run classification
+- blank or missing `visual_lane_mode` normalizes to `baseline`
 - Candidate B bundle discovery from allowlisted roots only
 - strict `fixture_id` mapping from review-run source file name to corpus manifest
 - omission of unmappable rows
@@ -45,9 +46,13 @@ Add API tests covering at minimum:
 - `sources` returns an empty `baseline_runs` list without error when the current checkout has no eligible baseline runs
 - `sources` returns an empty `candidate_a_runs` list without error when the current checkout has no eligible Candidate A runs
 - `sources` returns an empty `candidate_b_bundles` list without error when the current checkout has no allowlisted bundle roots
+- `sources` returns an empty `candidate_b_bundles` list without error in a git worktree where `archive/*/cb-proof-*` is absent
 - `targets` rejects invalid source combinations
+- `targets` rejects crafted `candidate_b_bundle_id` values containing traversal or non-discovered bundle roots
 - `manifest` rejects invalid or unmappable `fixture_id`
+- `manifest` rejects crafted `candidate_b_bundle_id` values containing traversal or non-discovered bundle roots
 - `tabs/{tab_id}` rejects unsupported tabs
+- `tabs/{tab_id}` rejects crafted `candidate_b_bundle_id` values containing traversal or non-discovered bundle roots
 - tab payload includes all three required columns even when one column is unavailable
 
 ### 3.3 Page test
@@ -82,6 +87,13 @@ The workbench compare validation lane must:
 - mutate no review runtime state
 
 The compare page may read already-existing local archived bundles, but test and page validation must not invoke a new Candidate B compare run.
+
+Existing review and document-trace regression suites must continue to pass after implementation, including:
+
+- `backend/tests/test_review_nrc_aps_api.py`
+- `backend/tests/test_review_nrc_aps_document_trace_api.py`
+- `backend/tests/test_review_nrc_aps_document_trace_service.py`
+- `backend/tests/test_review_nrc_aps_document_trace_page.py`
 
 ## 6. Known Risk Checks
 
