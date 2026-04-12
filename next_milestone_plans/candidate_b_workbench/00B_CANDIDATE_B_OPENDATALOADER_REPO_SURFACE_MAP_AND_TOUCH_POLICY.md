@@ -118,7 +118,7 @@ Candidate B v1 may add only the following new files or direct analogues under th
 ### Tests/support
 - `tests/support_nrc_aps_candidate_b_opendataloader.py`
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
-- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
+- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py` (future optional compare surface; not present in current committed `main`)
 
 ### Corpus sidecar labels / manifests
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`

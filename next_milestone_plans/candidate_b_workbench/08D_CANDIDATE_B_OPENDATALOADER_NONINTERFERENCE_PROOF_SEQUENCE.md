@@ -37,10 +37,15 @@ Confirm:
 The proof record must capture at least:
 - baseline proof status before Candidate B
 - baseline proof status after Candidate B
-- touched-file inventory
 - raw-output root inventory
+- output-root allowlist result
 - interference result (`passed` / `failed`)
 - failure details if failed
+
+Current committed `main` note:
+- the committed support module defines `git_protected_diff()`
+- the committed v2 proof/compare/retention artifacts do **not** serialize a touched-file inventory today
+- treat touched-file inventory as a future hardening target, not a claim about the current committed artifacts
 
 ---
 
