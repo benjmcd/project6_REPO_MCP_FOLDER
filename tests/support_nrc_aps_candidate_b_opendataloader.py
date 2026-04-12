@@ -714,7 +714,7 @@ def raw_file_inventory(raw_root: Path) -> list[dict[str, Any]]:
         suffix = path.suffix.lower()
         category = "candidate_b_raw_file"
         relative = repo_rel(path)
-        if "baseline_" in relative and suffix == ".json":
+        if ("baseline_" in relative or "baseline-" in relative) and suffix == ".json":
             category = "baseline_proof_artifact"
         elif suffix == ".json":
             category = "candidate_b_raw_json"
@@ -774,14 +774,40 @@ def approved_output_prefixes(
     proof_report_path: Path,
     compare_report_path: Path,
     retention_manifest_path: Path,
+    run_root: Path | None = None,
 ) -> list[str]:
     raw_root_prefix = repo_rel(raw_root).rstrip("/") + "/"
-    return [
+    prefixes = [
         raw_root_prefix,
         repo_rel(proof_report_path),
         repo_rel(compare_report_path),
         repo_rel(retention_manifest_path),
     ]
+    if run_root is not None and run_root.resolve() != raw_root.resolve():
+        prefixes.extend([
+            repo_rel(run_root / "baseline-summary.json"),
+            repo_rel(run_root / "baseline-before").rstrip("/") + "/",
+            repo_rel(run_root / "baseline-after").rstrip("/") + "/",
+        ])
+    return prefixes
+
+
+def compare_surface_auxiliary_inventory(*, run_root: Path | None, raw_root: Path) -> list[dict[str, Any]]:
+    if run_root is None or run_root.resolve() == raw_root.resolve():
+        return []
+    inventory: list[dict[str, Any]] = []
+    baseline_summary_path = run_root / "baseline-summary.json"
+    if baseline_summary_path.exists():
+        inventory.append({
+            "category": "baseline_summary",
+            "path": repo_rel(baseline_summary_path),
+            "sha256": sha256_path(baseline_summary_path),
+            "size_bytes": baseline_summary_path.stat().st_size,
+        })
+    for baseline_dir in [run_root / "baseline-before", run_root / "baseline-after"]:
+        if baseline_dir.exists():
+            inventory.extend(raw_file_inventory(baseline_dir))
+    return inventory
 
 
 def prepare_workbench_context() -> dict[str, Any]:
@@ -984,6 +1010,7 @@ def write_candidate_b_reports(
     baseline_source_ref: str | None,
     baseline_source_kind: str,
     execution_seconds: float,
+    run_root: Path | None = None,
 ) -> None:
     label_hash_status = workbench_context["label_hash_status"]
     manifest_sha = workbench_context["manifest_sha"]
@@ -1172,8 +1199,14 @@ def write_candidate_b_reports(
     write_json(compare_report_path, compare_report)
 
     durable_inventory = durable_report_inventory([proof_report_path, compare_report_path])
+    baseline_output_inventory = compare_surface_auxiliary_inventory(run_root=run_root, raw_root=raw_root)
     raw_inventory = raw_file_inventory(raw_root)
-    written_paths = [entry["path"] for entry in durable_inventory] + [entry["path"] for entry in raw_inventory]
+    written_paths = (
+        [entry["path"] for entry in durable_inventory]
+        + [entry["path"] for entry in baseline_output_inventory]
+        + [entry["path"] for entry in raw_inventory]
+        + [repo_rel(retention_manifest_path)]
+    )
     retention_manifest = {
         "schema_id": "aps.candidate_b_opendataloader.retention_manifest.v2",
         "run_id": run_id,
@@ -1186,9 +1219,11 @@ def write_candidate_b_reports(
             proof_report_path=proof_report_path,
             compare_report_path=compare_report_path,
             retention_manifest_path=retention_manifest_path,
+            run_root=run_root,
         ),
         "durable_report_hash_authority": repo_rel(retention_manifest_path),
         "durable_report_inventory": durable_inventory,
+        "baseline_output_inventory": baseline_output_inventory,
         "raw_file_inventory": raw_inventory,
         "execution_events": proof_report["execution_events"],
         "image_source_collisions": image_collisions,
@@ -1200,6 +1235,7 @@ def write_candidate_b_reports(
                 proof_report_path=proof_report_path,
                 compare_report_path=compare_report_path,
                 retention_manifest_path=retention_manifest_path,
+                run_root=run_root,
             ),
         ),
         "raw_outputs_committed": False,
