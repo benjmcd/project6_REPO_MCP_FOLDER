@@ -215,6 +215,7 @@ Document Trace:
 Workbench Compare:
 
 - [http://127.0.0.1:8011/review/nrc-aps/workbench-compare](http://127.0.0.1:8011/review/nrc-aps/workbench-compare)
+- from `/review/nrc-aps`, the header should also expose `Workbench Compare` immediately before `Document Trace`
 
 Direct run link:
 
@@ -280,6 +281,7 @@ On `/review/nrc-aps`, verify:
 On `/review/nrc-aps/workbench-compare`, verify:
 
 - the page shell loads without a blank screen
+- the review-page header link to `Workbench Compare` is present and ordered immediately before `Document Trace`
 - unavailable-state copy renders cleanly when same-checkout compare sources are absent
 - no raw local filesystem paths are displayed in the browser UI
 - use the dedicated compare validation plan instead of improvising a demo-corpus prep flow
