@@ -138,7 +138,7 @@ Candidate B v1 may add only the following new files or direct analogues under th
 - `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
 - `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
 
-### Branch-local planning pack only
+### Candidate B planning/workbench pack
 - `next_milestone_plans/candidate_b_workbench/...`
 
 Do not fan out parallel handoff copies in v1.
@@ -176,7 +176,7 @@ Bounded follow-on compare-surface exception:
 - tests/test...
 - tests/reports...
 - optional corpus sidecar labels/manifest
-- the existing branch-local Candidate B planning pack only
+- the existing Candidate B planning/workbench pack only
 
 ### Forbidden surfaces
 - service layer

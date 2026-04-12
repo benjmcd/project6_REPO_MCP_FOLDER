@@ -33,7 +33,7 @@ v6 adds explicit stop conditions for execution-envelope drift and output-surface
 - writes outside the approved output roots
 - service-layer file edits
 - backend dependency-surface edits
-- `project6.ps1` edits
+- unapproved `project6.ps1` edits outside the one bounded compare-surface lane
 - changes to current lower-layer truth files in v1
 
 ---

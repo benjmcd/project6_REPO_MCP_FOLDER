@@ -32,7 +32,7 @@ Translate the v5 boundary into explicit file-level rules.
 ### Dependency sidecar (if adopted)
 - `tests/requirements_nrc_aps_candidate_b_opendataloader.txt`
 
-### Branch-local planning pack only
+### Candidate B planning/workbench pack
 - `next_milestone_plans/candidate_b_workbench/...`
 
 ---

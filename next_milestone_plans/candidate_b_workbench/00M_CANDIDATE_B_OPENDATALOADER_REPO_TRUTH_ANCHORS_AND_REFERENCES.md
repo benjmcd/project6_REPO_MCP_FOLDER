@@ -17,14 +17,14 @@ Current `main` includes the active MVVLC front door and merged closure spine:
 - `next_milestone_plans/multi_variant_visual_lane_control/05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
 - `next_milestone_plans/multi_variant_visual_lane_control/05Q_POST_ADMISSION_RETAIN_BASELINE_MERGED_MAIN_CLOSURE_AND_HANDOFF.md`
 
-These are higher authority than any branch-local Candidate B planning note.
+These are higher authority than any Candidate B planning note in this pack.
 
 ### B. Current merged-main MVVLC/PageEvidence posture
 Verified from current merged-main control docs:
 - `baseline` remains the default runtime mode
 - `candidate_a_page_evidence_v1` remains the only admitted non-`baseline` value
 - Candidate B and Candidate C remain non-admitted
-- the adopted PageEvidence hold-state pack exists in the stronger merged-main worktree copy; do not confuse it with the visible root-local planning copy under `next_milestone_plans/pageevidence/`
+- the PageEvidence planning/hold-state pack exists on current `main` under `next_milestone_plans/pageevidence/`; do not confuse its planning status with runtime/service authority
 - PageEvidence Pass 1 is complete, Pass 2 is not needed on current merged `main`, and any future PageEvidence work requires a new explicit freeze
 
 Candidate B must not reopen or imply more than that.
@@ -141,10 +141,10 @@ Verified from the live file page:
 Candidate B must preserve those invariants.
 
 ### N. Candidate B pack location truth
-`git ls-tree -r --name-only main -- next_milestone_plans/candidate_b_workbench` returned no files in this pass.
+`git ls-tree -r --name-only main -- next_milestone_plans/candidate_b_workbench` returns committed files in this pass.
 
-So the current Candidate B pack is branch-local only.
-It is not already on `main`.
+So the current Candidate B pack is committed on `main` as planning/workbench material.
+It is not runtime/service authority.
 
 ---
 

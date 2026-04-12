@@ -13,7 +13,7 @@ What remains open now is narrower, explicit, and separated from what this pass a
 
 Resolved posture:
 - keep the pack in `next_milestone_plans/candidate_b_workbench/`
-- treat that path as branch-local, non-authoritative planning/workbench storage
+- treat that path as committed, non-authoritative planning/workbench storage on `main`
 - do not relocate the pack into `docs/nrc_adams/...` in v1
 
 ---

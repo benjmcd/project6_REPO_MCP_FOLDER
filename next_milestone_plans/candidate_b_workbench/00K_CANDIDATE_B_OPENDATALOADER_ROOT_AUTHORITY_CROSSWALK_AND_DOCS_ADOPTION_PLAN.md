@@ -9,13 +9,13 @@ Define how the Candidate B planning pack relates to the live repo's authority st
 ## A. Root authority truth currently visible
 
 The live root `README.md` names the authoritative NRC APS status/navigation docs.
-The merged-main MVVLC control spine also now includes the retained-default closure docs and an adopted subordinate PageEvidence hold-state pack in the stronger merged-main worktree copy.
+The merged-main MVVLC control spine also includes the retained-default closure docs, and current `main` contains the subordinate PageEvidence planning/hold-state pack under `next_milestone_plans/pageevidence/`.
 
 Candidate B planning docs must remain subordinate to those higher-authority surfaces.
 
-Root-local branch note:
-- this Candidate B directory is the root-local planning branch copy
-- the visible root `next_milestone_plans/pageevidence/` directory is also a root-local planning copy, not the adopted merged-main PageEvidence hold-state authority surface
+Current-main note:
+- this Candidate B directory is committed planning/workbench material on `main`
+- the visible root `next_milestone_plans/pageevidence/` directory is also committed planning/hold-state material on `main`
 
 ---
 
@@ -25,13 +25,13 @@ Root-local branch note:
 The current Candidate B pack lives at:
 - `next_milestone_plans/candidate_b_workbench/`
 
-That is the reconciled non-authoritative planning/workbench location for this pass.
+That is the reconciled committed planning/workbench location for this pass.
 Do not silently relocate it to `docs/nrc_adams/...`, `handoff/...`, or any other peer-authority surface during Candidate B v1 planning adoption.
 
 ### v1 status
 Candidate B docs remain:
-- branch-local planning/workbench material
-- not merged-main authority
+- committed planning/workbench material on `main`
+- not runtime/service authority
 - subordinate to the current authority docs named by the root README plus the merged-main MVVLC closure spine
 - subject to separate repo-native adoption only if a later explicit decision says they should be
 

@@ -2,8 +2,8 @@
 
 ## Purpose
 
-This folder is the root-local planning branch copy of the Candidate B OpenDataLoader pack.
-It is not the adopted merged-main hold-state authority copy.
+This folder is the committed planning/workbench pack for Candidate B OpenDataLoader on current `main`.
+It is not runtime/service authority and does not imply Candidate B admission.
 
 v6 exists because v5 was repo-grounded but still left too much execution-day inference.
 The remaining weakness was not macro-scope. It was determinism.
@@ -33,10 +33,10 @@ v6 therefore hardens five specific areas:
 - No service/API/review/evidence/context/export surface is modified in Candidate B v1.
 - Candidate B v1 is still a **tests/report comparator over the existing lower-layer proof harness**.
 
-Branch-local authority note:
-- use this root copy as planning material for the separate root-local planning branch
-- do not confuse it with the stronger adopted Candidate B pack carried in the merged-main worktree
-- do not treat its execution-contract statements as proof that the current root checkout or current merged-main worktree locally reproduce the same workbench artifacts
+Authority note:
+- use this root copy as committed planning/workbench material on `main`
+- do not treat its execution-contract statements as proof that a given local checkout already reproduces the historical Candidate B workbench artifacts
+- do not confuse planning/workbench status with runtime/service authority
 
 Current committed `main` note:
 - `main` contains the Candidate B support module, one helper-focused unit test, and committed proof/compare/retention artifacts
