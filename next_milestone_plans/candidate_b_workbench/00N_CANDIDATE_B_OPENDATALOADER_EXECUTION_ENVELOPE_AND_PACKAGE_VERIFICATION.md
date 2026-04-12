@@ -51,8 +51,9 @@ The committed Candidate B reports on `main` capture a historical workbench run, 
 
 What those committed artifacts prove:
 - the historical workbench run used `opendataloader-pdf==2.0.0`
-- the reports captured `odl_package_sha256_expected`
-- the reports explicitly recorded `odl_package_sha256_verified: null` with a reason
+- the committed proof and compare artifacts both captured `odl_package_sha256_expected`
+- the committed proof report explicitly recorded `odl_package_sha256_verified: null` with a reason
+- the committed compare report recorded `odl_package_sha256_verified: null` without the paired reason field
 - the reports captured Java/Python execution-envelope fields for that historical run
 
 What they do **not** prove:
