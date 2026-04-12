@@ -50,7 +50,7 @@ Current committed `main` note:
 ### 1. Version and package truth are now frozen more tightly
 - v6 keeps the currently verified PyPI v2 release pin: `opendataloader-pdf==2.0.0`
 - v6 freezes the exact published wheel SHA256 for that release into the sidecar pin
-- current committed proof/compare artifacts still record `odl_package_sha256_verified: null` with an explicit reason
+- current committed proof/compare artifacts both record `odl_package_sha256_verified: null`, but only the proof report carries the explicit verification-reason field
 - v6 adds implementation-day package revalidation rules so package drift cannot happen silently
 
 ### 2. The execution envelope is now explicit

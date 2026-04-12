@@ -59,8 +59,9 @@ Pin rule:
 - if the adopted version changes, the docs must be updated **before** code is merged
 
 Current committed artifact note:
-- the committed proof/compare artifacts on `main` record `odl_package_sha256_expected`
-- those same artifacts intentionally record `odl_package_sha256_verified: null` with a reason because the installed site-packages tree is not reconstructed back to the pinned wheel hash
+- the committed proof and compare artifacts on `main` both record `odl_package_sha256_expected`
+- the committed proof report records `odl_package_sha256_verified: null` together with an explicit verification-reason field
+- the committed compare report records `odl_package_sha256_verified: null` but does not carry the verification-reason field
 
 ---
 
