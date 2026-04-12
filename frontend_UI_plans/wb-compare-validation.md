@@ -42,6 +42,8 @@ Add a dedicated service test surface covering at minimum:
 Add API tests covering at minimum:
 
 - `sources` returns only allowed source classes
+- `sources` returns an empty `baseline_runs` list without error when the current checkout has no eligible baseline runs
+- `sources` returns an empty `candidate_a_runs` list without error when the current checkout has no eligible Candidate A runs
 - `sources` returns an empty `candidate_b_bundles` list without error when the current checkout has no allowlisted bundle roots
 - `targets` rejects invalid source combinations
 - `manifest` rejects invalid or unmappable `fixture_id`
@@ -60,14 +62,15 @@ Add a page-route test covering at minimum:
 After automated tests are green, verify manually:
 
 1. the page loads with no Candidate B bundle selected and surfaces a clear unavailable state
-2. selecting valid baseline + Candidate A + Candidate B sources yields a non-empty target list
-3. selecting incompatible sources yields an explicit empty-state explanation
-4. the shared source header shows the expected fixture/document identity
-5. each compare tab renders three columns
-6. Candidate B limitation badges remain visible, including footer-related warnings when present
-7. direct, derived-only, non-equivalent, and missing states are visually distinct
-8. deep links open the correct baseline and Candidate A document-trace routes
-9. no network call attempts to pass arbitrary filesystem paths from the browser
+2. the page also surfaces clear unavailable states when no eligible baseline runs or no eligible Candidate A runs exist
+3. selecting valid baseline + Candidate A + Candidate B sources yields a non-empty target list
+4. selecting incompatible sources yields an explicit empty-state explanation
+5. the shared source header shows the expected fixture/document identity
+6. each compare tab renders three columns
+7. Candidate B limitation badges remain visible, including footer-related warnings when present
+8. direct, derived-only, non-equivalent, and missing states are visually distinct
+9. deep links open the correct baseline and Candidate A document-trace routes
+10. no network call attempts to pass arbitrary filesystem paths from the browser
 
 ## 5. Validate-Only Rules
 

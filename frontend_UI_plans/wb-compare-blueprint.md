@@ -173,6 +173,8 @@ The sources endpoint should:
 4. discover allowlisted Candidate B bundles
 5. return only clean, selectable sources
 
+If any source class is empty, the endpoint still returns successfully with an empty list for that class.
+
 ### 6.2 Targets step
 
 The targets endpoint should:
@@ -193,6 +195,8 @@ The manifest endpoint should:
 3. build the shared identity summary
 4. build deep links into baseline and Candidate A document trace
 5. advertise tab availability
+
+The manifest must not invent default selections when one required source class is empty.
 
 ### 6.4 Tab step
 
