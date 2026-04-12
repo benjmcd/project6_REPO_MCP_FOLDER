@@ -36,6 +36,7 @@ Return the selectable source sets for:
 - variant classification for review runs must come from runtime request config / visual lane mode, not UI guesswork
 - Candidate B bundle discovery must be limited to allowlisted local roots
 - no endpoint may accept an arbitrary filesystem path from the client
+- absence of Candidate B bundles in the current checkout is a valid state, not a backend error
 
 ### 3.4 Candidate B bundle discovery roots
 
@@ -43,6 +44,10 @@ The first implementation pass should discover bundles only from allowlisted loca
 
 - `archive/*/cb-proof-*`
 - `tests/reports/cb-compare-*`
+
+Those roots are relative to the current checkout root only.
+The service must not scan sibling worktrees, user-profile directories, or arbitrary machine paths.
+If none of those roots exist in the current checkout, the endpoint must return an empty `candidate_b_bundles[]` set without error.
 
 A bundle is selectable only if all required files are present:
 
