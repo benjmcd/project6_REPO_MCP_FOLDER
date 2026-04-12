@@ -154,7 +154,8 @@ For v1, `candidate_b_bundle_id` should be serialized in URL-safe POSIX-style rel
 - Candidate B local archived bundles must be treated as optional operator evidence, not guaranteed mainline data
 - a fresh isolated implementation or test worktree may legitimately have no Candidate B bundle roots at all
 - a fresh isolated implementation or test worktree may also legitimately have no eligible baseline runs or no eligible Candidate A runs
-- the existing review page and document-trace page must remain behaviorally unchanged except for optional future navigation additions outside this spec
+- the existing document-trace page must remain behaviorally unchanged
+- the existing review page may add only the narrow header navigation affordance into `Workbench Compare`; no other review-page behavior change is in scope
 - deep links back into document trace must remain limited to `run_id`, `target_id`, and optional `tab`
 
 ## 9. Compare Identity Model
