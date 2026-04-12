@@ -36,6 +36,11 @@ These are repo-truth anchors for Candidate B planning and verification:
 
 Candidate B v1 may reference these surfaces but must not modify them.
 
+Bounded follow-on compare-surface note:
+- the separate compare-surface hardening lane may add one new `project6.ps1` action and repo-native helper tools under `tools/`
+- that is not part of the currently committed v1 workbench posture
+- do not treat this note as permission to widen into runtime/service/API work
+
 ---
 
 ## C. Existing lower-layer proof harness (read-only inputs)
@@ -120,6 +125,10 @@ Candidate B v1 may add only the following new files or direct analogues under th
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
 - `tests/test_nrc_aps_candidate_b_opendataloader_compare.py` (future optional compare surface; not present in current committed `main`)
 
+### Repo-native compare-surface helpers (future bounded lane only)
+- `tools/run_nrc_aps_candidate_b_compare.py`
+- `tools/run_nrc_aps_candidate_b_baseline.py`
+
 ### Corpus sidecar labels / manifests
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_manifest.json` (only if a sidecar manifest is truly needed; do not mutate the existing base manifest in v1)
@@ -145,8 +154,11 @@ Candidate B v1 must not add:
 - any new review/runtime page
 - any new DB model / schema / migration
 - any new persisted run-detail ref family
-- any new `project6.ps1` action
 - any Docker / CI / frontend / deployment changes
+
+Bounded follow-on compare-surface exception:
+- one repo-native `project6.ps1` compare action is allowed only in the separate compare-surface lane
+- that exception does not permit changes to any API, review UI, runtime selector, or backend service surface
 
 ---
 
@@ -171,7 +183,7 @@ Candidate B v1 must not add:
 - endpoint/API layer
 - review/runtime surfaces
 - DB/persistence/schema/migration surfaces
-- operator script surfaces
+- operator script surfaces except for the one bounded compare-surface action described above
 
 This is the exact v1 control boundary.
 
