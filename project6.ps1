@@ -1,6 +1,6 @@
-[CmdletBinding()]
+[CmdletBinding(PositionalBinding = $false)]
 param(
-    [ValidateSet("setup", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "validate-nrc-aps-promotion", "validate-nrc-aps-retrieval-cutover", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
+    [ValidateSet("setup", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "validate-nrc-aps-promotion", "validate-nrc-aps-retrieval-cutover", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "compare-nrc-aps-candidate-b", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
     [string]$Action = "status",
     [string]$BaseUrl = "http://127.0.0.1:8000",
     [int]$ConsecutiveRuns = 3,
@@ -20,7 +20,9 @@ param(
     [switch]$AbortBatchOnCycleFailure,
     [switch]$RequireOcr,
     [switch]$RequireTunedPromotionPass,
-    [switch]$Reload
+    [switch]$Reload,
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$ActionArgs = @()
 )
 
 Set-StrictMode -Version Latest
@@ -76,6 +78,7 @@ $NrcApsPromotionValidationReportPath = Join-Path $RepoRoot "tests\reports\nrc_ap
 $NrcApsPromotionComparisonReportPath = Join-Path $RepoRoot "tests\reports\nrc_aps_promotion_policy_compare_v1.json"
 $NrcApsDocumentProcessingProofPath = Join-Path $RepoRoot "tools\run_nrc_aps_document_processing_proof.py"
 $NrcApsDocumentProcessingProofReportPath = Join-Path $RepoRoot "tests\reports\nrc_aps_document_processing_proof_report.json"
+$NrcApsCandidateBComparePath = Join-Path $RepoRoot "tools\run_nrc_aps_candidate_b_compare.py"
 $AttachedEvalPath = Join-Path $RepoRoot "tools\run_attached_dataset_eval.py"
 $SQLiteToPostgresMigrationPath = Join-Path $RepoRoot "tools\migrate_sqlite_to_postgres.py"
 
@@ -650,6 +653,13 @@ switch ($Action) {
         Invoke-WithTier $Tier3DatabaseUrl $Tier3StorageDir {
             Invoke-Py -Arguments $args -WorkingDirectory $BackendDirAbs
         }
+    }
+    "compare-nrc-aps-candidate-b" {
+        if (-not (Test-Path $NrcApsCandidateBComparePath)) {
+            throw "NRC APS Candidate B compare runner not found: $NrcApsCandidateBComparePath"
+        }
+        $args = @($NrcApsCandidateBComparePath) + $ActionArgs
+        Invoke-Py -Arguments $args
     }
     "gate-nrc-aps" {
         if (-not (Test-Path $NrcApsReplayGatePath)) {

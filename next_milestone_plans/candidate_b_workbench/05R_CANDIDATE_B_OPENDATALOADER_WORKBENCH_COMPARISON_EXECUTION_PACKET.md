@@ -34,7 +34,7 @@ Approved new files in v1 include only:
 - `tests/requirements_nrc_aps_candidate_b_opendataloader.txt`
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
-- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py` (future compare surface required by the compare-surface lane; not present in current committed `main`)
+- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
 - durable Candidate B reports under `tests/reports/`
 - raw Candidate B outputs under the run-scoped Candidate B raw root
 - adopted docs under the chosen non-authoritative docs destination
@@ -49,10 +49,10 @@ Still forbidden in v1:
 - outward NRC APS endpoint/report/export/context/deterministic artifact surfaces
 - any runtime artifact namespace used by existing NRC APS flows
 
-Bounded follow-on exception:
+Bounded compare-surface exception:
 
-- `project6.ps1` remains untouched for the currently committed v1 workbench posture
-- the separate compare-surface hardening lane in `05T` may add one repo-native Candidate B compare action only
+- `project6.ps1` remains untouched for the base historical v1 workbench posture
+- the compare-surface lane may add one repo-native Candidate B compare action only
 
 ---
 
@@ -78,9 +78,13 @@ It binds Candidate B to the repo's existing lower-layer proof harness,
 keeps all changes reversible,
 and makes the implementation prove non-interference instead of merely asserting it.
 
-For the polished compare-surface lane, the main missing ergonomic pieces are:
+For the polished compare-surface lane, the implemented ergonomic pieces are:
 
 - the exact repo-native `project6.ps1 -Action compare-nrc-aps-candidate-b` entrypoint
 - a dedicated compare runner
 - a fresh baseline-summary generator so normal use no longer depends on a historical compare artifact path
 - the exact `--plan-only` validate-only path for command wiring without artifact generation
+
+Remaining execution burden:
+
+- one explicit isolated proof run in a prepared environment after `opendataloader-pdf` is installed for the intended Python 3.12 interpreter
