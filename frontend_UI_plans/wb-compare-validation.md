@@ -80,7 +80,7 @@ After automated tests are green, verify manually:
 4. the page also surfaces clear unavailable states when no eligible baseline runs or no eligible Candidate A runs exist
 5. selecting valid baseline + Candidate A + Candidate B sources yields a non-empty target list
 6. selecting incompatible sources yields an explicit empty-state explanation
-7. the shared source header shows the expected fixture/document identity
+7. the shared source header shows the expected fixture/document identity with readable label/value separation
 8. each compare tab renders three columns
 9. Candidate B limitation badges remain visible, including footer-related warnings when present
 10. direct, derived-only, non-equivalent, and missing states are visually distinct

@@ -53,6 +53,19 @@ def test_workbench_compare_static_assets_are_served() -> None:
     assert js_response.status_code == 200
 
 
+def test_workbench_compare_css_styles_identity_summary_metadata() -> None:
+    css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "workbench_compare.css"
+    css_content = css_path.read_text(encoding="utf-8")
+
+    assert ".back-link" in css_content
+    assert ".tabs-header" in css_content
+    assert ".tab-btn" in css_content
+    assert ".placeholder" in css_content
+    assert ".identity-summary" in css_content
+    assert ".identity-summary .meta-item" in css_content
+    assert ".identity-summary .meta-label" in css_content
+
+
 def test_workbench_compare_js_uses_only_compare_schema_fields() -> None:
     js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "workbench_compare.js"
     js_content = js_path.read_text(encoding="utf-8")

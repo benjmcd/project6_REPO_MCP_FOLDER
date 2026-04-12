@@ -282,6 +282,7 @@ On `/review/nrc-aps/workbench-compare`, verify:
 
 - the page shell loads without a blank screen
 - the review-page header link to `Workbench Compare` is present and ordered immediately before `Document Trace`
+- the shared fixture/document identity summary renders as readable labeled metadata, not jammed label/value text
 - unavailable-state copy renders cleanly when same-checkout compare sources are absent
 - no raw local filesystem paths are displayed in the browser UI
 - use the dedicated compare validation plan instead of improvising a demo-corpus prep flow
