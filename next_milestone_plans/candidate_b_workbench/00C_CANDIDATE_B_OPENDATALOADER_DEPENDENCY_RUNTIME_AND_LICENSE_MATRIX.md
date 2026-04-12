@@ -5,7 +5,7 @@
 Freeze the exact dependency/runtime/legal posture for Candidate B v1.
 
 v6 strengthens v5 in two ways:
-- the package pin now includes the currently verified wheel SHA256
+- the package pin now includes the exact published wheel SHA256 frozen into the sidecar pin
 - the dependency posture now chooses one preferred workbench-only delivery form instead of leaving it equally ambiguous
 
 ---
@@ -54,9 +54,14 @@ Directly verified published wheel:
 
 Pin rule:
 - v1 docs pin `opendataloader-pdf==2.0.0`
-- preferred workbench requirements sidecar uses that exact pin plus the verified hash
+- preferred workbench requirements sidecar uses that exact pin plus the published wheel hash
 - implementation preflight must still revalidate whether the published release line changed before code is opened
 - if the adopted version changes, the docs must be updated **before** code is merged
+
+Current committed artifact note:
+- the committed proof and compare artifacts on `main` both record `odl_package_sha256_expected`
+- the committed proof report records `odl_package_sha256_verified: null` together with an explicit verification-reason field
+- the committed compare report records `odl_package_sha256_verified: null` but does not carry the verification-reason field
 
 ---
 

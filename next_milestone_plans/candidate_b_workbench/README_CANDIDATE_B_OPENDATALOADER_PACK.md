@@ -38,20 +38,27 @@ Branch-local authority note:
 - do not confuse it with the stronger adopted Candidate B pack carried in the merged-main worktree
 - do not treat its execution-contract statements as proof that the current root checkout or current merged-main worktree locally reproduce the same workbench artifacts
 
+Current committed `main` note:
+- `main` contains the Candidate B support module, one helper-focused unit test, and committed proof/compare/retention artifacts
+- `main` does not contain a dedicated `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
+- the committed proof/compare artifacts are historical workbench outputs with sibling-worktree provenance and should not be read as clean-`main` rerun proof
+
 ---
 
 ## What v6 changes decisively
 
 ### 1. Version and package truth are now frozen more tightly
 - v6 keeps the currently verified PyPI v2 release pin: `opendataloader-pdf==2.0.0`
-- v6 adds the exact verified wheel SHA256 for that release
+- v6 freezes the exact published wheel SHA256 for that release into the sidecar pin
+- current committed proof/compare artifacts both record `odl_package_sha256_verified: null`, but only the proof report carries the explicit verification-reason field
 - v6 adds implementation-day package revalidation rules so package drift cannot happen silently
 
 ### 2. The execution envelope is now explicit
-- Python-wrapper only
+- Python-launched workbench invocation only
+- current committed support on `main` launches `sys.executable -m opendataloader_pdf`
 - Windows PowerShell + `py -3.12` + Java 11+
-- batch-first conversion model
-- exact package/version/hash capture
+- current committed reports capture a per-document batch plan with an explicit split reason
+- exact package/version/hash-posture capture
 - exact stop rules for Java/Python/package mismatch
 
 ### 3. The compare layer is now less interpretive

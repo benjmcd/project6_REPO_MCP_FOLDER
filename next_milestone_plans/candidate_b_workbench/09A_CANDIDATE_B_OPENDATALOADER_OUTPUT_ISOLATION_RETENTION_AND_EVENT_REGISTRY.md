@@ -68,7 +68,7 @@ A retention manifest must record the inventory and hashes.
 After the review window closes, choose one of these:
 - keep local raw outputs outside version control
 - archive externally by hash/reference
-- delete raw outputs after confirming the retention manifest is complete
+- move local raw outputs into the repo archive area after confirming the retention manifest is complete
 
 ### Separate approval required
 Any decision to commit raw ODL JSON/Markdown/image outputs into the repo requires a separate explicit decision.

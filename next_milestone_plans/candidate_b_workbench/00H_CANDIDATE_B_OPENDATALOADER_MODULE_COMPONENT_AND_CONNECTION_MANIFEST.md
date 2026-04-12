@@ -89,12 +89,11 @@ Responsibilities:
 
 ### 2. Workbench tests
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
-- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
 
 Responsibilities:
-- prove ODL invocation + raw-output generation
-- prove comparison artifact construction
-- prove limitation controls / no-overclaim behavior
+- current committed `main` unit test coverage is helper-focused only
+- it proves footer-page tracking, image-source collision detection, and multi-column signal detection
+- a separate compare-report pytest surface is not present in the current committed tree
 
 ### 3. Optional corpus sidecar labels
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
@@ -117,7 +116,7 @@ Responsibilities:
 `project6.ps1` / pytest / support files -> lower-layer proof corpus -> `nrc_aps_document_processing.process_document()` -> lower-layer proof reports
 
 ### Candidate B v1 connection model
-same corpus -> Candidate B support module -> `opendataloader_pdf.convert(...)` -> raw ODL outputs -> derived Candidate B summaries -> compare against current lower-layer outputs -> Candidate B proof/compare reports
+same corpus -> Candidate B support module -> `sys.executable -m opendataloader_pdf` -> raw ODL outputs -> derived Candidate B summaries -> compare against current lower-layer outputs -> Candidate B proof/compare reports
 
 ### Explicitly forbidden connection model in v1
 OpenDataLoader -> backend service runtime -> connector endpoints -> persisted outward artifact families

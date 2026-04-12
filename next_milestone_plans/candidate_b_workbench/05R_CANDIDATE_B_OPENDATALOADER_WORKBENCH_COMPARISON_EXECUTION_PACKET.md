@@ -29,7 +29,7 @@ Approved new files in v1 include only:
 - `tests/requirements_nrc_aps_candidate_b_opendataloader.txt`
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
-- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
+- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py` (future optional compare surface; not present in current committed `main`)
 - durable Candidate B reports under `tests/reports/`
 - raw Candidate B outputs under the run-scoped Candidate B raw root
 - adopted docs under the chosen non-authoritative docs destination
