@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document is the operational reference for bringing up the NRC APS review UI and the separate Document Trace UI against an explicit local runtime on a chosen port.
+This document is the operational reference for bringing up the NRC APS review UI, the separate Document Trace UI, and the separate Workbench Compare UI against an explicit local runtime on a chosen port.
 
 Use this when you need to:
 
@@ -10,6 +10,7 @@ Use this when you need to:
 - avoid accidental fallback to `backend/.env`
 - open the review UI in a browser
 - open the Document Trace UI for a specific run
+- open the Workbench Compare UI after same-checkout compare-source prep
 - switch between discovered summary-backed review runtimes from the UI without restarting the backend
 - confirm the basic frontend/API path is working before deeper validation
 
@@ -25,6 +26,8 @@ The live implementation authority for the UI routes and startup surface is:
 - [backend/app/review_ui/static/review.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/review.js)
 - [backend/app/review_ui/static/document_trace.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/document_trace.html)
 - [backend/app/review_ui/static/document_trace.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/document_trace.js)
+- [backend/app/review_ui/static/workbench_compare.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.html)
+- [backend/app/review_ui/static/workbench_compare.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.js)
 - [project6.ps1](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/project6.ps1)
 
 This file is an operational reference layered on top of those sources.
@@ -35,10 +38,17 @@ The backend serves these UI entrypoints:
 
 - `/review/nrc-aps`
 - `/review/nrc-aps/document-trace`
+- `/review/nrc-aps/workbench-compare`
 
 The backend also serves the review UI static assets under:
 
 - `/review/nrc-aps/static`
+
+Workbench-compare scope note:
+
+- this guide covers route reachability and shell bring-up for `/review/nrc-aps/workbench-compare`
+- populated compare validation requires same-checkout prep for baseline, Candidate A, and Candidate B sources
+- use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated prep and populated compare validation flow
 
 ## Preconditions
 
@@ -143,6 +153,10 @@ Document Trace UI:
 
 - [http://127.0.0.1:8098/review/nrc-aps/document-trace](http://127.0.0.1:8098/review/nrc-aps/document-trace)
 
+Workbench Compare UI:
+
+- [http://127.0.0.1:8098/review/nrc-aps/workbench-compare](http://127.0.0.1:8098/review/nrc-aps/workbench-compare)
+
 If you want to open Document Trace directly for a specific run:
 
 - `http://127.0.0.1:8098/review/nrc-aps/document-trace?run_id=<RUN_ID>`
@@ -168,6 +182,13 @@ On `/review/nrc-aps/document-trace`:
   - Normalized Text
   - Indexed Chunks
   - Diagnostics
+
+On `/review/nrc-aps/workbench-compare`:
+
+- the page loads without a blank screen
+- the shell renders even if same-checkout compare sources are absent
+- no raw local filesystem paths are displayed in the UI
+- use the dedicated compare validation plan for populated compare testing
 
 ## Step 6: Minimal API Cross-Checks
 

@@ -8,6 +8,7 @@ This document is the current operational reference for:
 - binding the server to an explicit runtime database and storage root
 - validating `/review/nrc-aps`
 - validating `/review/nrc-aps/document-trace`
+- validating `/review/nrc-aps/workbench-compare` shell reachability after same-checkout compare prep
 - validating runtime switching without restarting the backend
 - validating bbox overlays across multiple runs, documents, and pages
 
@@ -22,6 +23,7 @@ Use this guide when you need to:
 - verify the server is pointed at the intended runtime instead of silently falling back
 - confirm that the review UI can switch across runs without restart
 - confirm that Document Trace works for more than one run
+- confirm that the workbench-compare page shell loads on the intended checkout/backend
 - confirm bbox overlays render across more than one document and page
 
 ## Canonical Source Of Truth
@@ -40,12 +42,17 @@ Primary authority files:
 - [backend/app/review_ui/static/document_trace.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/document_trace.html)
 - [backend/app/review_ui/static/document_trace.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/document_trace.js)
 - [backend/app/review_ui/static/document_trace.css](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/document_trace.css)
+- [backend/app/review_ui/static/workbench_compare.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.html)
+- [backend/app/review_ui/static/workbench_compare.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.js)
+- [backend/app/review_ui/static/workbench_compare.css](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.css)
+- [backend/app/services/review_nrc_aps_workbench_compare.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_workbench_compare.py)
 
 Related supporting docs:
 
 - [frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md)
 - [frontend_UI_plans/nrc_aps_review_ui_validation_plan.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_review_ui_validation_plan.md)
 - [frontend_UI_plans/nrc_aps_document_trace_ui_validation_plan.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_document_trace_ui_validation_plan.md)
+- [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md)
 - [frontend_UI_plans/bbox_overlay_execution_plan.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/bbox_overlay_execution_plan.md)
 
 Important note:
@@ -63,6 +70,7 @@ This guide validates all of the following together:
 - review UI run switching
 - Document Trace load
 - Document Trace run switching
+- workbench-compare page shell reachability
 - source PDF loading
 - tab loading for diagnostics, normalized text, indexed chunks, and extracted units
 - source-to-units and units-to-source interaction sanity
@@ -79,6 +87,12 @@ It does not attempt to validate:
 - seeding
 - donor worktrees
 - experimental frontend variants unless you explicitly point the backend there
+
+Important workbench-compare note:
+
+- populated workbench-compare validation requires same-checkout prep for baseline, Candidate A, and Candidate B sources
+- this guide checks route/shell reachability only; it does not define the compare prep flow
+- use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated same-corpus compare prep and populated operator-validation sequence
 
 ## Preconditions
 
@@ -198,6 +212,10 @@ Document Trace:
 
 - [http://127.0.0.1:8011/review/nrc-aps/document-trace](http://127.0.0.1:8011/review/nrc-aps/document-trace)
 
+Workbench Compare:
+
+- [http://127.0.0.1:8011/review/nrc-aps/workbench-compare](http://127.0.0.1:8011/review/nrc-aps/workbench-compare)
+
 Direct run link:
 
 - `http://127.0.0.1:8011/review/nrc-aps/document-trace?run_id=<RUN_ID>`
@@ -258,6 +276,13 @@ On `/review/nrc-aps`, verify:
 - `Document Trace` launches the selected `run_id`
 - no blocking console errors
 - no critical failed network requests
+
+On `/review/nrc-aps/workbench-compare`, verify:
+
+- the page shell loads without a blank screen
+- unavailable-state copy renders cleanly when same-checkout compare sources are absent
+- no raw local filesystem paths are displayed in the browser UI
+- use the dedicated compare validation plan instead of improvising a demo-corpus prep flow
 - theme switch remains usable if exercised
 
 If 3 or more reviewable runs are available:
