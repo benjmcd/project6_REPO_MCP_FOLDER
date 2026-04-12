@@ -59,6 +59,7 @@ The first implementation pass should discover bundles only from allowlisted loca
 Those roots are relative to the current checkout root only.
 The service must not scan sibling worktrees, user-profile directories, or arbitrary machine paths.
 If none of those roots exist in the current checkout, the endpoint must return an empty `candidate_b_bundles[]` set without error.
+In git worktrees, the `archive/*/cb-proof-*` root may legitimately be absent even when the main checkout has archived bundles; that still counts as a valid empty-bundle state.
 
 A bundle is selectable only if all required files are present:
 
@@ -66,6 +67,24 @@ A bundle is selectable only if all required files are present:
 - `compare.json`
 - `proof.json`
 - `retain.json`
+
+The compare service must treat discovered bundle roots as an allowlist, not just a broad checkout-root container.
+For every request that receives `candidate_b_bundle_id`, the service must:
+
+- resolve the candidate path against the current checkout root
+- normalize it to an absolute path
+- require an exact identity match against one discovered allowlisted bundle root
+- reject the request if the resolved path is not an exact discovered bundle root
+
+Do not treat a previously returned `bundle_id` as implicitly trusted just because the `sources` endpoint emitted it earlier.
+After bundle-root revalidation, compare endpoints may only read these fixed files from the validated root:
+
+- `baseline-summary.json`
+- `compare.json`
+- `proof.json`
+- `retain.json`
+
+Do not accept client-controlled subpaths beneath the bundle root.
 
 ### 3.5 Source item shape
 
@@ -87,7 +106,6 @@ Candidate B bundle item minimum fields:
 
 - `bundle_id`
 - `display_label`
-- `bundle_root`
 - `generated_at_utc`
 - `decision_recommendation`
 - `local_only`
@@ -111,6 +129,8 @@ Required query params:
 
 Return only the compare targets that can be strictly aligned across the three selected sources.
 
+Every `targets` request must revalidate `candidate_b_bundle_id` against the discovered allowlisted bundle roots for the current checkout before opening any bundle file.
+
 ### 4.3 Compare key
 
 The compare key is:
@@ -129,6 +149,7 @@ Baseline/Candidate A side:
 - resolve source-file identity from trace metadata
 - map that source-file identity to a corpus-manifest entry basename
 - if the run row cannot be mapped to a single manifest entry, exclude it
+- if multiple manifest entries share the same case-insensitive basename, treat that mapping as ambiguous and exclude it
 
 ### 4.5 Target item minimum fields
 
@@ -155,6 +176,8 @@ Required query params:
 ### 5.2 Purpose
 
 Return the shared identity and tab availability model for one selected compare target.
+
+Every `manifest` request must revalidate `candidate_b_bundle_id` against the discovered allowlisted bundle roots for the current checkout before opening any bundle file.
 
 ### 5.3 Manifest minimum fields
 
@@ -197,6 +220,8 @@ For v1, each deep link must use the existing document-trace query-string contrac
 
 - `/review/nrc-aps/document-trace?run_id=<run_id>&target_id=<target_id>`
 
+No compare-specific query parameters may be forwarded into the document-trace deep link contract unless a later document-trace planning pass explicitly reopens that page contract.
+
 ## 6. Compare Tab Contract
 
 ### 6.1 Endpoint
@@ -214,6 +239,7 @@ Required query params:
 Return one aligned compare tab payload that already contains all three variant columns.
 
 The frontend must not fan out into three unrelated variant endpoints for the same tab and invent alignment client-side.
+Every `tabs/{tab_id}` request must revalidate `candidate_b_bundle_id` against the discovered allowlisted bundle roots for the current checkout before opening any bundle file.
 
 ### 6.3 Common payload shape
 
@@ -293,6 +319,7 @@ Must include:
 - if the selected baseline run is not classified as `baseline`, reject it
 - if the selected Candidate A run is not classified as `candidate_a_page_evidence_v1`, reject it
 - if the selected Candidate B bundle lacks any required top-level artifact, reject it
+- if the selected Candidate B bundle does not revalidate to an exact discovered allowlisted bundle root, reject it
 - if `fixture_id` cannot be resolved across all three selected sources, omit it from the target list
 - if a tab lacks valid data for a column, return `available = false` with a concrete warning rather than fabricating an empty aligned record
 
