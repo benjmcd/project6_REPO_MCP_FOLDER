@@ -91,18 +91,18 @@ Responsibilities:
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
 
 Responsibilities:
-- current committed `main` unit test coverage is helper-focused only
+- current committed `main` helper test coverage is helper-focused
 - it proves footer-page tracking, image-source collision detection, and multi-column signal detection
-- a separate compare-report pytest surface is not present in the current committed tree
+- compare-surface validation now also includes `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
 
-### 2b. Future compare-surface helpers (bounded follow-on lane only)
+### 2b. Compare-surface helpers
 - `tools/run_nrc_aps_candidate_b_compare.py`
 - `tools/run_nrc_aps_candidate_b_baseline.py`
 - one repo-native `project6.ps1` compare action named `compare-nrc-aps-candidate-b`
 
 Responsibilities:
 - make the workbench compare flow repo-native
-- generate a fresh baseline-summary input instead of depending on a historical compare artifact path
+- generate a fresh baseline-summary input instead of depending on a historical compare artifact path for normal use
 - preserve isolated runtime and run-scoped output posture
 - remain outside service/API/review integration
 
@@ -115,9 +115,17 @@ Responsibilities:
 - do not mutate the base manifest in v1
 
 ### 4. Candidate B reports/raw outputs
-- `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
-- `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
-- `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
+- historical committed artifacts:
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_retention_manifest.json`
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
+- compare-surface run-scoped outputs:
+  - `tests/reports/cb-compare-<run_id>/baseline-summary.json`
+  - `tests/reports/cb-compare-<run_id>/proof.json`
+  - `tests/reports/cb-compare-<run_id>/compare.json`
+  - `tests/reports/cb-compare-<run_id>/retain.json`
+  - `tests/reports/cb-compare-<run_id>/raw/...`
 
 ---
 

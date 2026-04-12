@@ -40,8 +40,14 @@ Authority note:
 
 Current committed `main` note:
 - `main` contains the Candidate B support module, one helper-focused unit test, and committed proof/compare/retention artifacts
-- `main` does not contain a dedicated `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
 - the committed proof/compare artifacts are historical workbench outputs with sibling-worktree provenance and should not be read as clean-`main` rerun proof
+
+Current compare-surface implementation note:
+- this lane adds `project6.ps1 -Action compare-nrc-aps-candidate-b`
+- this lane adds `tools/run_nrc_aps_candidate_b_compare.py`
+- this lane adds `tools/run_nrc_aps_candidate_b_baseline.py`
+- this lane adds `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
+- the compare surface is validate-only green on this lane, but the first explicit isolated proof run remains environment-blocked until `opendataloader-pdf` is installed in the intended Python 3.12 environment
 
 ---
 
