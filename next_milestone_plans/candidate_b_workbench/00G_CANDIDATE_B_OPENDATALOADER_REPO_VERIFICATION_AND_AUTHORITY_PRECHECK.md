@@ -1,25 +1,19 @@
-﻿# 00G - Candidate B OpenDataLoader Repo Verification and Authority Precheck
+
+# 00G — Candidate B OpenDataLoader Repo Verification and Authority Precheck
 
 ## Purpose
 
-Prevent Candidate B work from drifting away from current merged-main truth.
+Prevent implementation from drifting away from the current repo truth.
 
-This precheck is mandatory before any Candidate B implementation work.
+This precheck is mandatory before any Candidate B v1 code/doc adoption work.
+
+---
 
 ## A. Required on-disk confirmations
 
-The implementer must directly confirm the on-disk presence of all of the following.
+The implementer must directly confirm the on-disk presence of all of the following:
 
-### Merged-main control spine
-- `next_milestone_plans/multi_variant_visual_lane_control/README_INDEX.md`
-- `next_milestone_plans/multi_variant_visual_lane_control/05P_POST_ADMISSION_RETAIN_BASELINE_DEFAULT_DECISION_RECORD.md`
-- `next_milestone_plans/multi_variant_visual_lane_control/05Q_POST_ADMISSION_RETAIN_BASELINE_MERGED_MAIN_CLOSURE_AND_HANDOFF.md`
-
-### Adopted PageEvidence hold-state pack
-- `next_milestone_plans/pageevidence/README_PAGEEVIDENCE_STRENGTHENING_PACK.md`
-- `next_milestone_plans/pageevidence/PAGE_EVIDENCE_STRENGTHENING_ROADMAP_AND_DECISION_NOTES.md`
-
-### Root and status anchors
+### Root / authority anchors
 - `README.md`
 - `REPO_INDEX.md`
 - `project6.ps1`
@@ -28,20 +22,13 @@ The implementer must directly confirm the on-disk presence of all of the followi
 - `docs/nrc_adams/nrc_aps_authority_matrix.md`
 - `docs/nrc_adams/nrc_aps_reader_path.md`
 
-### Current baseline proof harness
+### Lower-layer proof harness
 - `tests/fixtures/nrc_aps_docs/v1/manifest.json`
 - `tests/support_nrc_aps_doc_corpus.py`
 - `tests/test_nrc_aps_document_corpus.py`
 - `tests/test_nrc_aps_document_processing.py`
-- `tests/reports/nrc_aps_document_processing_proof_report.json`
 
-### Current admitted Candidate A anchors
-- `backend/app/services/nrc_aps_page_evidence.py`
-- `tools/run_nrc_aps_page_evidence_workbench.py`
-- `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json`
-- `next_milestone_plans/multi_variant_visual_lane_control/05L_M6B_CANDIDATE_A_APPROVED_TARGET_RECORD.md`
-
-### Protected owner-path files
+### Frozen owner-path files
 - `backend/app/services/connectors_nrc_adams.py`
 - `backend/app/services/nrc_aps_artifact_ingestion.py`
 - `backend/app/services/nrc_aps_document_processing.py`
@@ -49,22 +36,45 @@ The implementer must directly confirm the on-disk presence of all of the followi
 - `backend/app/services/nrc_aps_ocr.py`
 - `backend/app/services/nrc_aps_settings.py`
 
-If any of those are missing, moved, or materially changed, Candidate B planning must be amended before code begins.
+If any of those are missing or moved, Candidate B planning must be amended before code begins.
 
-## B. Required truth confirmations
+---
 
-Confirm all of the following are still true before implementation:
-- `baseline` remains default
-- `candidate_a_page_evidence_v1` remains the only admitted non-`baseline` value
-- the PageEvidence lane remains closed and Pass 2 remains not needed
-- Candidate B remains non-admitted and non-runtime-visible
-- no new repo-native authority doc has opened Candidate B work implicitly
+## B. Required semantic confirmations
 
-## C. Required dependency prechecks
+The implementer must confirm all of the following directly from the live files:
 
-Before any Candidate B code:
-- confirm the current Python interpreter is `py -3.12`
-- confirm Java availability if the implementation still depends on it
-- confirm the OpenDataLoader package pin, hash, license posture, and wrapper API/signature still match this pack
+1. the root README still states that the upper NRC APS layers are frozen and the lower document-processing layer is reopened additively
+2. the root README still names the manifest-driven lower-layer proof harness
+3. `nrc_aps_document_processing.py` still exposes the current visual-lane/output semantics Candidate B is supposed to compare against
+4. `nrc_aps_artifact_ingestion.py` still couples lower-layer processed outputs into artifact ingestion
+5. `tests/test_nrc_aps_document_processing.py` still enforces the current OCR/visual-lane invariants
 
-If any dependency precheck fails, stop and amend the pack before code begins.
+---
+
+## C. Stop conditions
+
+Stop Candidate B v1 planning or implementation immediately if any of the following are true:
+
+1. the lower-layer proof harness has materially changed and this pack no longer matches it
+2. the owner-path lower-layer files have already been replaced by a different architecture
+3. the repo now authorizes a different higher-authority Candidate B plan
+4. the current lower-layer tests no longer enforce the invariants this pack depends on
+5. the repo owner has already moved Candidate B into a runtime lane separately
+
+---
+
+## D. Connector authorization note
+
+The GitHub connector is not currently authorized for this repo in this session.
+Therefore this pack is grounded in:
+- live public repo pages
+- visible repo tree
+- opened lower-layer file pages
+- root README statements
+
+Before merge/adoption, an implementer with repo access should still do one final repo-native confirmation pass.
+That pass is a confirmation step, not a license to redesign the pack ad hoc.
+
+
+---
