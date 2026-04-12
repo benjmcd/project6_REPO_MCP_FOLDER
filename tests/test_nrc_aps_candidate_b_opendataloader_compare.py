@@ -17,7 +17,14 @@ if str(BACKEND) not in sys.path:
 if str(TESTS_DIR) not in sys.path:
     sys.path.insert(0, str(TESTS_DIR))
 
-from support_nrc_aps_candidate_b_opendataloader import load_baseline_source, run_cli  # noqa: E402
+from support_nrc_aps_candidate_b_opendataloader import (  # noqa: E402
+    approved_output_prefixes,
+    compare_surface_auxiliary_inventory,
+    load_baseline_source,
+    outputs_outside_allowed_paths,
+    repo_rel,
+    run_cli,
+)
 from tools import run_nrc_aps_candidate_b_baseline as baseline_tool  # noqa: E402
 from tools import run_nrc_aps_candidate_b_compare as compare_tool  # noqa: E402
 
@@ -144,6 +151,47 @@ def test_compare_runner_build_plan_uses_frozen_paths(tmp_path: Path) -> None:
     assert Path(plan["compare_report_path"]).name == "compare.json"
     assert Path(plan["retention_manifest_path"]).name == "retain.json"
     assert Path(plan["raw_root"]).name == "raw"
+
+
+def test_compare_surface_output_boundary_covers_baseline_artifacts(tmp_path: Path) -> None:
+    run_root = tmp_path / "cb-run"
+    plan = compare_tool.build_run_plan(run_root=run_root, run_id="cb-fixed")
+    baseline_before_dir = Path(plan["baseline_before_dir"])
+    baseline_after_dir = Path(plan["baseline_after_dir"])
+    baseline_before_runtime_root = Path(plan["baseline_before_runtime_root"])
+    baseline_after_runtime_root = Path(plan["baseline_after_runtime_root"])
+    baseline_before_runtime_root.mkdir(parents=True, exist_ok=True)
+    baseline_after_runtime_root.mkdir(parents=True, exist_ok=True)
+    baseline_summary_path = Path(plan["baseline_summary_path"])
+    baseline_summary_path.write_text(
+        json.dumps({"schema_id": "aps.candidate_b_baseline_summary.v1", "documents": []}),
+        encoding="utf-8",
+    )
+    (Path(plan["baseline_before_proof_report"])).write_text(json.dumps({"passed": True}), encoding="utf-8")
+    (Path(plan["baseline_after_proof_report"])).write_text(json.dumps({"passed": True}), encoding="utf-8")
+    (baseline_before_runtime_root / "runtime.db").write_text("x", encoding="utf-8")
+    (baseline_after_runtime_root / "runtime.db").write_text("y", encoding="utf-8")
+
+    approved = approved_output_prefixes(
+        raw_root=Path(plan["raw_root"]),
+        proof_report_path=Path(plan["proof_report_path"]),
+        compare_report_path=Path(plan["compare_report_path"]),
+        retention_manifest_path=Path(plan["retention_manifest_path"]),
+        run_root=Path(plan["run_root"]),
+    )
+    baseline_inventory = compare_surface_auxiliary_inventory(
+        run_root=Path(plan["run_root"]),
+        raw_root=Path(plan["raw_root"]),
+    )
+
+    assert [entry["path"] for entry in baseline_inventory]
+    assert outputs_outside_allowed_paths(
+        [entry["path"] for entry in baseline_inventory] + [repo_rel(Path(plan["retention_manifest_path"]))],
+        approved_prefixes=approved,
+    ) == []
+    assert repo_rel(baseline_before_dir).rstrip("/") + "/" in approved
+    assert repo_rel(baseline_after_dir).rstrip("/") + "/" in approved
+    assert repo_rel(baseline_summary_path) in approved
 
 
 def test_baseline_tool_returns_clean_error_for_invalid_proof(

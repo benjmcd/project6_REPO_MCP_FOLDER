@@ -161,6 +161,7 @@ def main(argv: list[str] | None = None) -> int:
             baseline_source_ref=repo_rel(Path(plan["baseline_summary_path"])),
             baseline_source_kind="baseline_summary",
             execution_seconds=time.perf_counter() - started,
+            run_root=Path(plan["run_root"]),
         )
         return 0
     except RuntimeError as exc:
