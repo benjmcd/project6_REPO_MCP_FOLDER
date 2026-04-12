@@ -132,9 +132,9 @@ Implication at that time:
 
 Later correction:
 
-- the root-local branch now carries the adopted `backend/app/storage_test_runtime/lc_e2e/20260327_062011` runtime and passes the grouped T8 review/runtime bundle
-- `worktrees/pageevidence-main-merge` now also passes its full review/runtime T8 bundle against that adopted root-local runtime
-- `worktrees/nrc-aps-runtime-next` now also passes its full review/runtime T8 bundle against that adopted root-local runtime, so the earlier dirty-state claim is preserved here as historical audit evidence only
+- later workspace-local reruns on the root-local branch used an adopted `backend/app/storage_test_runtime/lc_e2e/20260327_062011` runtime and produced a green grouped T8 review/runtime result
+- `worktrees/pageevidence-main-merge` later also passed its full review/runtime T8 bundle against that same workspace-local runtime
+- `worktrees/nrc-aps-runtime-next` later also passed its full review/runtime T8 bundle against that same workspace-local runtime, so the earlier dirty-state claim is preserved here as historical audit evidence only; the committed `main` tree does not itself carry that runtime directory
 
 ## Root `pageevidence` and `candidate_b_workbench` directories
 
