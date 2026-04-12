@@ -33,10 +33,25 @@ def _normalize_visual_lane_mode_for_visibility(value: Any) -> str:
     return normalized or "baseline"
 
 
+def classify_visual_lane_mode(value: Any) -> str | None:
+    normalized = _normalize_visual_lane_mode_for_visibility(value)
+    if normalized == "candidate_a_page_evidence_v1":
+        return "candidate_a_page_evidence_v1"
+    if normalized == "baseline":
+        return "baseline"
+    return None
+
+
 def request_config_is_baseline_visible(request_config: Any) -> bool:
     if not isinstance(request_config, dict):
         return True
     return _normalize_visual_lane_mode_for_visibility(request_config.get("visual_lane_mode")) in _BASELINE_VISIBLE_VISUAL_LANE_MODES
+
+
+def classify_request_config_variant(request_config: Any) -> str | None:
+    if not isinstance(request_config, dict):
+        return "baseline"
+    return classify_visual_lane_mode(request_config.get("visual_lane_mode"))
 
 
 def connector_run_is_baseline_visible(run: Any) -> bool:
@@ -105,6 +120,18 @@ def binding_is_baseline_visible(binding: ReviewRuntimeBinding) -> bool:
     if request_config is None:
         return True
     return request_config_is_baseline_visible(request_config)
+
+
+def classify_runtime_binding_variant(binding: ReviewRuntimeBinding) -> str | None:
+    if binding.database_path is None:
+        return "baseline"
+    try:
+        request_config = _load_binding_request_config_json(str(binding.database_path.resolve()), binding.run_id)
+    except OSError:
+        return "baseline"
+    if request_config is None:
+        return "baseline"
+    return classify_request_config_variant(request_config)
 
 
 def get_allowlisted_roots() -> list[Path]:
