@@ -1,11 +1,29 @@
-﻿{
-  "pack_id": "candidate_b_opendataloader_workbench_objective_v1",
-  "version": "v6_reconciled_main_freeze",
-  "title": "Candidate B OpenDataLoader Workbench-Only Objective Pack",
-  "status": "frozen planning pack; workbench-only candidate objective; non-admitted; non-integrated",
-  "objective_name": "candidate_b_opendataloader_workbench_v1",
-  "objective_class": "workbench-only candidate objective",
-  "source_baseline_commit": "88d7e0f0",
+{
+  "pack_id": "candidate_b_opendataloader_planning_pack_v6",
+  "version": "v6",
+  "title": "Candidate B OpenDataLoader Planning Pack (Execution-Determinism Hardening)",
+  "status": "docs-only planning pack; workbench-only comparator; non-integrated",
+  "source_pack": "candidate_b_opendataloader_planning_pack_combined_v5.md",
+  "new_docs": [
+    "00N_CANDIDATE_B_OPENDATALOADER_EXECUTION_ENVELOPE_AND_PACKAGE_VERIFICATION.md",
+    "04C_CANDIDATE_B_OPENDATALOADER_OUTPUT_CROSSWALK_AND_NON_EQUIVALENCE_MAP.md",
+    "08D_CANDIDATE_B_OPENDATALOADER_NONINTERFERENCE_PROOF_SEQUENCE.md"
+  ],
+  "strengthened_docs": [
+    "README_CANDIDATE_B_OPENDATALOADER_PACK.md",
+    "00A_CANDIDATE_B_OPENDATALOADER_HANDOFF_AND_DECISION_MAP.md",
+    "00C_CANDIDATE_B_OPENDATALOADER_DEPENDENCY_RUNTIME_AND_LICENSE_MATRIX.md",
+    "00D_CANDIDATE_B_OPENDATALOADER_CONFIG_AND_PROCESS_CONTRACT.md",
+    "00E_CANDIDATE_B_OPENDATALOADER_WORKBENCH_ARTIFACT_SCHEMA_AND_PROVENANCE_CONTRACT.md",
+    "00F_CANDIDATE_B_OPENDATALOADER_FAILURE_MODES_VALIDATION_AND_OBSERVABILITY.md",
+    "04A_CANDIDATE_B_OPENDATALOADER_FIELD_REGISTRY_AND_COMPARISON_SEMANTICS.md",
+    "05R_CANDIDATE_B_OPENDATALOADER_WORKBENCH_COMPARISON_EXECUTION_PACKET.md",
+    "06A_CANDIDATE_B_OPENDATALOADER_CORPUS_MANIFEST_AND_LABELING_GUIDE.md",
+    "06R_CANDIDATE_B_OPENDATALOADER_REMAINING_OPEN_ITEMS_AND_DECISION_GATES.md",
+    "08A_CANDIDATE_B_OPENDATALOADER_COMMANDS_VALIDATION_AND_DECISION_RUNBOOK.md",
+    "08C_CANDIDATE_B_OPENDATALOADER_TEST_MATRIX_AND_TRIAGE_PROTOCOL.md",
+    "09A_CANDIDATE_B_OPENDATALOADER_OUTPUT_ISOLATION_RETENTION_AND_EVENT_REGISTRY.md"
+  ],
   "files": [
     "00A_CANDIDATE_B_OPENDATALOADER_HANDOFF_AND_DECISION_MAP.md",
     "00B_CANDIDATE_B_OPENDATALOADER_REPO_SURFACE_MAP_AND_TOUCH_POLICY.md",
