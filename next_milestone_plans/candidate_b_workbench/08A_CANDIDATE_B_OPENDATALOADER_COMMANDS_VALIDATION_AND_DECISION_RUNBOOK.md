@@ -1,27 +1,14 @@
-﻿# 08A - Candidate B OpenDataLoader Commands, Validation, and Decision Runbook
+# 08A — Candidate B OpenDataLoader Commands, Validation, and Decision Runbook
 
 ## Purpose
 
-Provide the exact validation and command order for a future Candidate B workbench implementation pass.
+Provide the exact command and validation order for Candidate B v1.
 
-This runbook is grounded in the current merged baseline and is intentionally stricter than the older lower-layer-only framing.
+This runbook is intentionally grounded in the current repo proof lane and current repo runtime assumptions.
 
-## Phase 0 - repo and authority preflight
+---
 
-### Confirm current merged baseline posture
-```powershell
-git status --short --branch
-git log --oneline --decorate -n 5
-```
-
-Reconfirm on disk:
-- `05P` and `05Q`
-- adopted PageEvidence README and roadmap
-- `backend/app/services/nrc_aps_document_processing.py`
-- `backend/app/services/nrc_aps_page_evidence.py`
-- `tools/run_nrc_aps_page_evidence_workbench.py`
-- `tests/fixtures/nrc_aps_docs/v1/manifest.json`
-- `tests/reports/mvvlc_candidate_a_page_evidence_workbench_report_v1.json`
+## Phase 0 — repo/runtime preflight
 
 ### Confirm repo runtime
 ```powershell
@@ -29,19 +16,22 @@ py -3.12 --version
 java -version
 ```
 
-### Confirm the existing lower-layer proof lane still passes
+### Optional baseline setup if the local env is not already prepared
 ```powershell
-.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr
+.\project6.ps1 -Action setup
 ```
 
-Execution finding from the first actual Candidate B run:
-- the default non-`RequireOcr` lower-layer proof posture now fails in a Tesseract-capable workspace because the proof runner forces `NRC_APS_CORPUS_OCR_MODE=disabled`
-- the OCR-required proof lane is the live baseline-truth anchor for this workbench lane
+### Confirm the existing lower-layer proof lane still passes
+```powershell
+.\project6.ps1 -Action prove-nrc-aps-document-processing
+```
 
-If this OCR-required baseline proof fails, stop.
+If this existing proof lane fails, stop.
 Do not open Candidate B work.
 
-## Phase 1 - Candidate B dependency preflight
+---
+
+## Phase 1 — Candidate B dependency preflight
 
 ### Preferred reproducible install
 ```powershell
@@ -49,45 +39,100 @@ py -3.12 -m pip install --require-hashes -r tests/requirements_nrc_aps_candidate
 py -3.12 -m pip show opendataloader-pdf
 ```
 
-### Required API and signature capture
+### Fallback local preflight only if the hashed sidecar is not yet present
 ```powershell
-py -3.12 -c "import inspect, opendataloader_pdf; print(getattr(opendataloader_pdf, '__version__', 'unknown')); print(inspect.signature(opendataloader_pdf.convert))"
+py -3.12 -m pip install opendataloader-pdf==2.0.0
+py -3.12 -m pip show opendataloader-pdf
 ```
 
-If the package version, license posture, hash, or wrapper signature does not match the pack, stop and amend the docs before implementation continues.
+### Record execution-envelope facts for the proof report
+```powershell
+py -3.12 --version
+java -version
+py -3.12 -m pip show opendataloader-pdf
+```
 
-## Phase 2 - labels and baseline anchors
+If the package version is not `2.0.0`, stop and update docs first.
 
-Before the first Candidate B run:
-- freeze any labels sidecar contents
-- record the manifest hash
-- if optional Candidate A comparison will be used, record the exact frozen refs from `04B`
+---
 
-## Phase 3 - Candidate B proof run
+## Phase 2 — freeze labels before running Candidate B
 
-Run Candidate B only through the approved tests/report-side surfaces.
-If a full-corpus batch would reuse external image filenames across documents,
-split only at whole-document boundaries so per-document image provenance stays reviewable.
-Generate at minimum:
-- proof report
-- compare report
-- retention manifest
-- raw outputs under the approved Candidate B raw root
+Before any proof run:
+- create or confirm `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
+- record regime labels before outcomes are seen
+- confirm no label backfill will occur after the run
 
-## Phase 4 - non-interference proof
+---
 
-After the Candidate B run:
-- confirm touched files stayed inside the approved allowlist
-- confirm outputs stayed inside the approved output roots
-- rerun the baseline proof unchanged
-- compare before and after baseline posture
+## Phase 3 — Candidate B proof tests
 
-## Phase 5 - decision
+```powershell
+py -3.12 -m pytest tests/test_nrc_aps_candidate_b_opendataloader.py -q
+py -3.12 -m pytest tests/test_nrc_aps_candidate_b_opendataloader_compare.py -q
+```
 
-The only allowed decision outcomes are:
-- proceed as documented workbench-only
-- iterate the pack and retry later
-- reject or defer Candidate B
-- escalate to a new explicit objective
+Those tests are responsible for:
+- resolving the existing corpus
+- running ODL with the frozen config
+- building raw outputs
+- writing the proof report
+- writing the compare report
+- writing the retention manifest
 
-A Candidate B run is not allowed to self-promote into runtime integration, selector admission, or broader framework work.
+---
+
+## Phase 4 — review produced artifacts
+
+Required durable outputs:
+- `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
+- `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
+- `tests/reports/nrc_aps_candidate_b_opendataloader_retention_manifest.json`
+- raw outputs under `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
+
+Review questions:
+1. did current lower-layer invariants remain intact?
+2. are claimed gains tied to allowed value classes?
+3. are vector/scanned controls labeled as controls rather than wins?
+4. did Candidate B avoid any runtime/service drift?
+5. did Candidate B require hybrid/docling or other widening to look useful?
+6. were outputs confined to the approved roots only?
+
+---
+
+## Phase 5 — non-interference rerun
+
+Run the sequence defined in `08D`.
+At minimum, this includes:
+```powershell
+.\project6.ps1 -Action prove-nrc-aps-document-processing
+```
+
+If the baseline proof does not remain passing after Candidate B work,
+Candidate B is rejected or deferred.
+
+---
+
+## Phase 6 — decision
+
+### `proceed_as_documented_workbench`
+Use only if:
+- proof artifacts exist
+- current lower-layer invariants remain intact
+- value claims are narrow and honest
+- no widening was required
+- no interference was detected
+
+### `iterate_docs_only`
+Use if:
+- proof exists
+- but labeling/taxonomy/report wording needs tightening
+- and no scope violation occurred
+
+### `reject_or_defer`
+Use if:
+- hybrid/widening was required
+- vector/control classes were mishandled
+- current lower-layer invariants were weakened
+- any forbidden surface was touched
+- or the execution envelope was not reproducible

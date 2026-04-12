@@ -24,7 +24,7 @@ Verified from current merged-main control docs:
 - `baseline` remains the default runtime mode
 - `candidate_a_page_evidence_v1` remains the only admitted non-`baseline` value
 - Candidate B and Candidate C remain non-admitted
-- the adopted PageEvidence pack under `next_milestone_plans/pageevidence/` is subordinate lane-local hold-state only
+- the adopted PageEvidence hold-state pack exists in the stronger merged-main worktree copy; do not confuse it with the visible root-local planning copy under `next_milestone_plans/pageevidence/`
 - PageEvidence Pass 1 is complete, Pass 2 is not needed on current merged `main`, and any future PageEvidence work requires a new explicit freeze
 
 Candidate B must not reopen or imply more than that.
