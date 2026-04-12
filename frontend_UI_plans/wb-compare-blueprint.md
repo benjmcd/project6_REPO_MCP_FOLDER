@@ -238,7 +238,7 @@ Do not use this lane to:
 
 ## 8. Expected Follow-Through After Implementation
 
-After code lands, the minimum doc sync should be:
+The minimum doc sync for this lane is:
 
 - `frontend_UI_plans/README.md`
 - this workbench-compare planning set

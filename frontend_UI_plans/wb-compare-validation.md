@@ -4,7 +4,7 @@
 
 Define the validate-only and operator verification work required for the workbench compare workspace.
 
-This plan is only for the future compare page/API lane.
+This plan is the validation reference for the compare page/API lane.
 It must not trigger new Candidate B runs or seed runtime artifacts during normal validation.
 
 ## 2. Canonical Validation Sources
