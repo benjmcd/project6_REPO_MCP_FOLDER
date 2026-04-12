@@ -21,10 +21,17 @@ def _iso(value: object) -> str | None:
     return str(value)
 
 
-def _sortable_dt(value: object) -> tuple[datetime, str]:
+def _normalized_dt(value: object) -> datetime | None:
     parsed = parse_iso_datetime(value)
     if parsed is None:
-        return datetime.min, str(value or "")
+        return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+
+
+def _sortable_dt(value: object) -> tuple[datetime, str]:
+    parsed = _normalized_dt(value)
+    if parsed is None:
+        return datetime.min.replace(tzinfo=timezone.utc), str(value or "")
     return parsed, str(value or "")
 
 
@@ -124,7 +131,7 @@ def discover_candidate_runs(_db: object | None = None) -> NrcApsReviewRunSelecto
         )
         out_runs.append(item)
         if item.reviewable and item.completed_at:
-            completed_dt = parse_iso_datetime(item.completed_at)
+            completed_dt = _normalized_dt(item.completed_at)
             if completed_dt and (latest_completed_value is None or completed_dt > latest_completed_value[0]):
                 latest_completed_value = (completed_dt, item.run_id)
 
