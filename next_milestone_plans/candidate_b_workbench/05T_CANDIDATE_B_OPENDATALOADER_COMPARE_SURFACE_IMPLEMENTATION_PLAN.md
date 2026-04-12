@@ -30,7 +30,8 @@ Repo-confirmed gap before this lane:
 Current lane status:
 
 - this implementation lane closes the compare-action, baseline-summary, and compare-pytest gaps above
-- the remaining post-implementation burden is one explicit isolated proof run in a prepared environment
+- the post-implementation proof-run burden has been satisfied locally on clean `main`
+- the remaining post-implementation question is evidence disposition, not missing compare-surface code
 
 ---
 
