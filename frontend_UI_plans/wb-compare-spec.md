@@ -44,6 +44,7 @@ Current local operator-evidence note:
 - the first explicit Candidate B proof bundle is archived locally under `archive\20260412-cb-proof\`
 - that archive is useful as an example bundle shape for this workspace
 - it is not canonical runtime authority and must not be presented as if it were a tracked mainline artifact set
+- that archive is not guaranteed to exist in every fresh worktree checkout, so zero discovered Candidate B bundles must be treated as a normal fail-closed state rather than an implementation error
 
 ## 3. Current Repo-State Constraints
 
@@ -143,6 +144,7 @@ The page shell should use query parameters for deep-linkable state:
 - if a selected baseline or Candidate A run cannot be mapped to a shared `fixture_id`, that target must be excluded rather than guessed
 - Candidate B fields marked `derived only` or `non-equivalent` by the committed Candidate B crosswalk must remain marked that way in the UI
 - Candidate B local archived bundles must be treated as optional operator evidence, not guaranteed mainline data
+- a fresh isolated implementation or test worktree may legitimately have no Candidate B bundle roots at all
 - the existing review page and document-trace page must remain behaviorally unchanged except for optional future navigation additions outside this spec
 
 ## 9. Compare Identity Model

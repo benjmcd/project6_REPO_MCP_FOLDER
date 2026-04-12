@@ -158,6 +158,7 @@ The compare workspace must:
 
 - work when no Candidate B bundles are present by surfacing a clear unavailable state
 - not assume a committed or tracked bundle root exists
+- not assume a local archived proof bundle exists in every fresh implementation worktree
 - not permit arbitrary bundle-path entry from the browser
 
 ## 6. Data-Flow Breakdown

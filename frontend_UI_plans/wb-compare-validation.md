@@ -42,6 +42,7 @@ Add a dedicated service test surface covering at minimum:
 Add API tests covering at minimum:
 
 - `sources` returns only allowed source classes
+- `sources` returns an empty `candidate_b_bundles` list without error when the current checkout has no allowlisted bundle roots
 - `targets` rejects invalid source combinations
 - `manifest` rejects invalid or unmappable `fixture_id`
 - `tabs/{tab_id}` rejects unsupported tabs
