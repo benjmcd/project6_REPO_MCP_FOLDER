@@ -11,6 +11,7 @@ The retained files here are the UI-facing planning references for:
 - node/artifact mapping and reviewability rules
 - validation expectations for the review surface
 - the separate document-trace workspace for run-scoped source-to-extraction inspection
+- the separate workbench-compare workspace for same-corpus baseline, Candidate A, and Candidate B comparison
 
 These files remain useful as design and maintenance references even though the separate Jules/Antigravity bake-off packet is no longer part of the active repo surface.
 
@@ -53,6 +54,7 @@ Important implementation-scope note:
 
 - the live document-trace implementation currently ships the page shell, document selector, trace manifest, source stream, diagnostics, normalized-text, indexed-chunks, and extracted-units surfaces
 - the retained planning docs still describe a broader downstream-usage concept, but current live root implementation only carries that as an unavailable manifest tab placeholder, not as a shipped API route
+- the workbench-compare planning docs in this folder are for a separate future compare page and compare API family; they do not revise the current single-run contract of the shipped review page or document-trace page
 
 ## Retained Documents
 
@@ -84,6 +86,22 @@ Important implementation-scope note:
   - validation requirements for document-trace behavior, safety, and regression control
 - `nrc_aps_document_trace_ui_phase_partition_plan.md`
   - bounded Antigravity-oriented implementation phase partition for document trace
+- `bbox_overlay_execution_plan.md`
+  - bounded execution plan for the document-trace bbox overlay addendum
+- `bbox_overlay_implementation_prompt.txt`
+  - implementation-pass prompt for the bbox overlay addendum
+- `wb-compare-spec.md`
+  - product specification for a separate workbench compare workspace across baseline, Candidate A, and Candidate B
+- `wb-compare-contract.md`
+  - additive backend compare API and compare-model contract for the workbench workspace
+- `wb-compare-blueprint.md`
+  - repo-fit module, route, and implementation blueprint for the workbench compare lane
+- `wb-compare-validation.md`
+  - validate-only test and operator verification plan for the workbench compare workspace
+- `nrc_aps_review_ui_startup_and_smoke_test.md`
+  - operator startup and smoke-test guide for the review UI and document-trace surfaces
+- `nrc_aps_frontend_ui_operator_validation_guide.md`
+  - practical end-to-end validation guide for the current review UI and document-trace surfaces
 - `nrc_aps_runtime_db_reconceptualization_and_next_steps.md`
   - current-state reconceptualization of the NRC APS runtime DB model and the recommended next implementation order
 
