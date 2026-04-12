@@ -11,7 +11,7 @@ Current ergonomics note:
 - the compare-surface lane now provides a first-class repo-native Candidate B compare command
 - this runbook now separates validate-only command wiring from the explicit isolated proof run
 - do not treat validate-only green status alone as proof that the full artifact-generating compare path has already been exercised
-- a clean-`main` local proof run has now been completed; read its outcome as local-only evidence unless separately preserved
+- a clean-`main` local proof run has now been completed; read its outcome as local archived operator evidence, not tracked history
 
 ---
 
