@@ -18,16 +18,41 @@ These files remain useful as design and maintenance references even though the s
 
 For the live UI and API behavior, the canonical implementation source of truth is in the root repo backend surface:
 
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\main.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\api\review_nrc_aps.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\schemas\review_nrc_aps.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_catalog.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_runtime.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_document_trace.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\index.html`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\review.css`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\review.js`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\document_trace.html`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\document_trace.css`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\document_trace.js`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\vendor\`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_graph.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_overview.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_tree.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_details.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_api.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_api.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_service.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_page.py`
 
 The files in this folder are reference material, not the live implementation surface.
+
+Important runtime-fixture note:
+
+- Several retained docs in this folder cite March 2026 `lc_e2e` runtime examples under `backend\app\storage_test_runtime\lc_e2e\...`.
+- The root-local branch now carries an adopted review/runtime fixture at `backend\app\storage_test_runtime\lc_e2e\20260327_062011`.
+- That adopted runtime now backs the validate-only root T8 review/document-trace bundle.
+- Historical runtime references in this folder remain historical unless a given doc explicitly says it was revalidated against the adopted root-local runtime.
+
+Important implementation-scope note:
+
+- the live document-trace implementation currently ships the page shell, document selector, trace manifest, source stream, diagnostics, normalized-text, indexed-chunks, and extracted-units surfaces
+- the retained planning docs still describe a broader downstream-usage concept, but current live root implementation only carries that as an unavailable manifest tab placeholder, not as a shipped API route
 
 ## Retained Documents
 
