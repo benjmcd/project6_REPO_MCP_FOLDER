@@ -127,7 +127,8 @@ For v1, `candidate_b_bundle_id` should be serialized in URL-safe POSIX-style rel
 - deep links from each column into the existing document-trace page
 - read-only API routes and read-only UI behavior
 - explicit unavailable states when any required source class is absent in the current checkout
-- first-pass direct URL access to the compare page without adding new review-page or document-trace-page navigation
+- review-page header navigation affordance into the compare page
+- no new navigation added inside the document-trace page itself
 
 ## 7. Out Of Scope For V1
 
@@ -217,8 +218,8 @@ The page should use a stable three-zone structure:
   - three-column compare grid
 
 The grid is variant-centric, not source-viewer-centric.
-In the first implementation pass, operators reach this page by direct URL.
-Navigation affordances from the review page or document-trace page may be added only in a later, separately scoped pass.
+In the landed implementation, operators may reach this page either by direct URL or by the review-page header navigation affordance.
+The compare lane still does not add new navigation inside the document-trace page itself.
 
 Reason:
 
