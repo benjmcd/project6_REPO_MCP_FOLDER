@@ -56,6 +56,15 @@ The review UI should be delivered as backend-served static assets.
 - `backend\app\review_ui\static\vendor\svg-pan-zoom.min.js`
 - `backend\app\review_ui\static\vendor\THIRD_PARTY_NOTICES.md`
 
+Current live additive document-trace asset set:
+
+- `backend\app\review_ui\static\document_trace.html`
+- `backend\app\review_ui\static\document_trace.css`
+- `backend\app\review_ui\static\document_trace.js`
+- `backend\app\review_ui\static\vendor\pdfjs\pdf.min.mjs`
+- `backend\app\review_ui\static\vendor\pdfjs\pdf.worker.min.mjs`
+- `backend\app\review_ui\static\vendor\pdfjs\NOTICE.md`
+
 ### 4.2 HTML Strategy
 
 V1 should use a simple static HTML shell.
