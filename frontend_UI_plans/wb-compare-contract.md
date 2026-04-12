@@ -112,6 +112,8 @@ Candidate B bundle item minimum fields:
 
 For v1, `bundle_id` should be the checkout-relative bundle-root path.
 Do not use absolute machine paths as the public bundle identifier.
+Serialize `bundle_id` in POSIX-style relative-path form with forward slashes, even on Windows.
+The backend may normalize incoming separators before validation, but the emitted public contract should use one canonical path form.
 
 ## 4. Compare Target Identity Contract
 

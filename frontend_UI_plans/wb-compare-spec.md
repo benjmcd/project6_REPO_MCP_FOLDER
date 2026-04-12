@@ -100,6 +100,7 @@ The page shell should use query parameters for deep-linkable state:
 
 Those query parameters are page-local to `/review/nrc-aps/workbench-compare`.
 They do not extend or modify the existing document-trace query-string contract.
+For v1, `candidate_b_bundle_id` should be serialized in URL-safe POSIX-style relative-path form rather than Windows backslash form.
 
 ## 6. In Scope For V1
 

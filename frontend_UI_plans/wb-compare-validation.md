@@ -47,6 +47,7 @@ Add API tests covering at minimum:
 - `sources` returns an empty `candidate_a_runs` list without error when the current checkout has no eligible Candidate A runs
 - `sources` returns an empty `candidate_b_bundles` list without error when the current checkout has no allowlisted bundle roots
 - `sources` returns an empty `candidate_b_bundles` list without error in a git worktree where `archive/*/cb-proof-*` is absent
+- `sources` emits `candidate_b_bundle_id` values in canonical POSIX-style relative-path form
 - `targets` rejects invalid source combinations
 - `targets` rejects crafted `candidate_b_bundle_id` values containing traversal or non-discovered bundle roots
 - `manifest` rejects invalid or unmappable `fixture_id`
