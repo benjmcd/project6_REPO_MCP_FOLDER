@@ -1,66 +1,70 @@
-﻿# 05R - Candidate B OpenDataLoader Workbench Comparison Execution Packet
+# 05R — Candidate B OpenDataLoader Workbench Comparison Execution Packet
 
 ## Purpose
 
-Turn this frozen planning pack into an execution-ready workbench packet with minimal implementer inference.
+Turn the v6 planning pack into an execution-ready workbench packet with minimal implementer inference.
 
-This packet does not authorize current implementation by itself.
-It defines the narrowest allowed future implementation lane if one is separately opened.
+---
 
 ## A. What this packet is for
 
-This packet authorizes only the following future workbench-side implementation classes:
+This packet authorizes only:
 - tests/report-side Candidate B implementation
 - workbench dependency sidecar creation
 - corpus-label sidecar creation
-- proof, compare, and retention-manifest artifact generation
+- proof/compare/retention-manifest artifact generation
 
-It does not authorize:
+It does **not** authorize:
 - service-layer integration
 - runtime selector work
-- endpoint, report, or persistence widening
+- endpoint/report/persistence widening
 - `backend/requirements.txt` changes
-- helper-script or `project6.ps1` widening by default
-- generic candidate framework work
+- hybrid/docling additions
 
-## B. Approved new files for a later implementation pass
+---
 
-Approved new files include only:
+## B. Approved new files
+
+Approved new files in v1 include only:
 - `tests/requirements_nrc_aps_candidate_b_opendataloader.txt`
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
-- optional `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_manifest.json`
-- `tests/support_nrc_aps_candidate_b_opendataloader.py`
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
 - `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
 - durable Candidate B reports under `tests/reports/`
 - raw Candidate B outputs under the run-scoped Candidate B raw root
+- adopted docs under the chosen non-authoritative docs destination
+
+---
 
 ## C. Explicitly forbidden implementation targets
 
-Still forbidden:
+Still forbidden in v1:
 - `backend/app/services/...`
 - `backend/requirements.txt`
 - `project6.ps1`
-- `tools/` additions by default
-- outward NRC APS endpoint, report, export, context, or deterministic artifact surfaces
+- outward NRC APS endpoint/report/export/context/deterministic artifact surfaces
 - any runtime artifact namespace used by existing NRC APS flows
 
-## D. Exact future implementation sequence
+---
 
-1. confirm clean main-based repo truth surfaces required by `00G`
-2. confirm Candidate B is still non-admitted under `05P` and `05Q`
-3. confirm the closed PageEvidence lane still remains hold-state only
-4. confirm exact Candidate A optional comparison anchors from `04B`
-5. revalidate OpenDataLoader package version, hash, license, Java availability, and wrapper API/signature
-6. run the existing baseline lower-layer proof unchanged
-7. freeze labels sidecar contents before running Candidate B
-8. implement Candidate B only through approved tests/report workbench surfaces
-9. generate proof, compare, and retention-manifest artifacts
-10. run the non-interference sequence defined in `08D`
-11. decide using workbench-only decision categories only
+## D. Exact implementation sequence
 
-At no point may the implementer jump directly from proof to runtime integration.
+1. confirm on-disk repo truth surfaces required by `00G`
+2. create the hashed workbench requirements sidecar
+3. create/freeze the labels sidecar before running Candidate B
+4. capture the execution envelope required by `00N`
+5. run the existing baseline lower-layer proof unchanged
+6. implement the Candidate B tests/report workbench only
+7. generate proof, compare, and retention-manifest artifacts
+8. run the non-interference sequence defined in `08D`
+9. decide using the v6 decision categories only
 
-## E. Why this packet is correct
+At no point may the implementer jump directly from proof to integration.
 
-It binds Candidate B to the current merged baseline, keeps all changes reversible, and makes implementation prove non-interference instead of merely asserting it.
+---
+
+## E. Why this execution packet is correct
+
+It binds Candidate B to the repo’s existing lower-layer proof harness,
+keeps all changes reversible,
+and makes the implementation prove non-interference instead of merely asserting it.

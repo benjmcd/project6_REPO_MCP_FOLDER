@@ -9,9 +9,13 @@ Define how the Candidate B planning pack relates to the live repo's authority st
 ## A. Root authority truth currently visible
 
 The live root `README.md` names the authoritative NRC APS status/navigation docs.
-The merged-main MVVLC control spine also now includes the retained-default closure docs and the adopted subordinate PageEvidence hold-state pack.
+The merged-main MVVLC control spine also now includes the retained-default closure docs and an adopted subordinate PageEvidence hold-state pack in the stronger merged-main worktree copy.
 
 Candidate B planning docs must remain subordinate to those higher-authority surfaces.
+
+Root-local branch note:
+- this Candidate B directory is the root-local planning branch copy
+- the visible root `next_milestone_plans/pageevidence/` directory is also a root-local planning copy, not the adopted merged-main PageEvidence hold-state authority surface
 
 ---
 

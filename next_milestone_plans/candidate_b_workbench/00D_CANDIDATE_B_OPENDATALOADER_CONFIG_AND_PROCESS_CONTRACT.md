@@ -103,7 +103,6 @@ Approved process model:
 
 ### Controlled batch-split fallback
 If one full-corpus batch fails for timeout/memory reasons,
-or if batch-shared external image filenames make per-document image provenance ambiguous,
 a split is allowed only at whole-document boundaries.
 The split plan must be recorded in the provenance block as:
 - batch count
@@ -111,8 +110,6 @@ The split plan must be recorded in the provenance block as:
 - reason for the split
 
 Per-page cherry-picking is forbidden in v1.
-The second-iteration provenance-isolation case may split to one document per batch,
-but it may not change the frozen fixture cohort or reopen Candidate A comparison.
 
 ---
 
@@ -155,11 +152,6 @@ Those widen disk footprint without helping the primary comparison question.
 
 Extracted images are allowed only under the approved run-scoped image directory.
 They are comparison-support artifacts, not runtime outputs.
-
-Execution finding from the first actual Candidate B run:
-- under `opendataloader-pdf==2.0.0`, `include_header_footer=False` did not prevent footer nodes from appearing in raw JSON for `ML17123A319.pdf`
-- later Candidate B summaries must therefore treat header/footer-node presence as package behavior evidence, not as proof that the config flag was ignored by the implementer
-- those nodes must remain non-authoritative comparison support only unless a later explicit config correction is separately frozen
 
 ---
 
