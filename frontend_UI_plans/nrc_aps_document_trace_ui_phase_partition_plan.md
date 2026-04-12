@@ -50,7 +50,7 @@ No phase should begin until the previous phase has:
 
 ### Goal
 
-Freeze the live authority files, audited runtime, and exact initial target behavior before changing code.
+Freeze the live authority files, current runtime-fixture posture, and exact initial target behavior before changing code.
 
 ### Scope
 
@@ -58,7 +58,7 @@ Allowed activity:
 
 - read current implementation files
 - verify route and static asset serving path
-- verify audited runtime assumptions
+- verify runtime assumptions and whether a current local document-trace-ready runtime actually exists
 - verify the latest document-trace planning docs are the working authority
 
 ### Primary files to inspect
@@ -71,7 +71,7 @@ Allowed activity:
 - `backend\app\review_ui\static\index.html`
 - `backend\app\review_ui\static\review.css`
 - `backend\app\review_ui\static\review.js`
-- audited runtime under `backend\app\storage_test_runtime\lc_e2e\20260328_150207\`
+- adopted root-local review/document-trace runtime under `backend\app\storage_test_runtime\lc_e2e\20260327_062011\`
 
 ### Must confirm before Phase 1
 
@@ -84,7 +84,7 @@ Allowed activity:
 
 ### Gate
 
-Proceed only if the audited repo state still matches the planning assumptions materially.
+Proceed only if the current repo state still matches the planning assumptions materially, or if the docs have been reconciled to a clearly historical runtime-example posture first.
 
 ## 6. Phase 1: Backend Trace Manifest And Selector Contract
 
@@ -419,4 +419,3 @@ For Antigravity execution, each working session should declare:
 - what is explicitly out of scope in that session
 
 That keeps the implementation bounded and prevents the IDE workflow from collapsing multiple phases into one unreviewable pass.
-

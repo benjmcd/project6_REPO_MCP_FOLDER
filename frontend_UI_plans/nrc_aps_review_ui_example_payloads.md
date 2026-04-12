@@ -2,15 +2,16 @@
 
 ## 1. Purpose
 
-This document provides concrete example payloads for the planned review UI endpoints using the verified golden run:
+This document provides concrete example payloads for the planned review UI endpoints using the adopted root-local golden run example:
 
 - `run_id = d6be0fff-bbd7-468a-9b00-7103d5995494`
 
 These examples are intended to eliminate guesswork during implementation and testing.
+They are reference payloads derived from the current adopted root-local fixture; if that fixture changes later, refresh these examples from the new adopted runtime.
 
 ## 2. Canonical Source Of Truth
 
-These examples are derived from:
+These examples are derived from the adopted `20260327_062011` root-local golden runtime fixture:
 
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
 - runtime artifacts under:

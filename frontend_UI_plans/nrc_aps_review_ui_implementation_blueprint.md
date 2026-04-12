@@ -22,8 +22,15 @@ Live authority surfaces for this blueprint:
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\core\config.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\models\models.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\schemas\api.py`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\`
+- adopted root-local golden runtime fixture used for current validation and implementation anchoring:
+  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
+  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\`
+
+Current repo-state note:
+
+- the root-local branch now carries the adopted `20260327_062011` runtime in the current root checkout
+- the root grouped review/runtime T8 bundle was revalidated green against that adopted runtime in this pass
+- unless explicitly revalidated otherwise, later references in this blueprint to the golden runtime mean that adopted root-local runtime
 
 Repo-confirmed facts that shape this blueprint:
 
@@ -326,7 +333,7 @@ The first slice should not:
 5. add review UI shell and static assets
 6. wire `backend\main.py` and `backend\app\api\router.py`
 7. add focused tests
-8. verify against the golden runtime fixture
+8. verify against a current local review runtime fixture, or explicitly treat the golden runtime as historical reference only if no current fixture exists
 
 ## 14. Completion Standard
 
