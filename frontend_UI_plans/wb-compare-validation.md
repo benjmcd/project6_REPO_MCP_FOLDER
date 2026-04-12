@@ -15,6 +15,8 @@ Use these files as authority when implementing and validating:
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_api.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_service.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_page.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\seed_wb_compare.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_seed_wb_compare.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_nrc_aps_candidate_b_opendataloader_compare.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\archive\20260412-cb-proof\README.md`
 
@@ -67,6 +69,10 @@ Add a page-route test covering at minimum:
 
 After automated tests are green, verify manually:
 
+0. populate the same checkout with same-corpus compare sources:
+   - baseline and Candidate A review roots must be seeded with `tools/seed_wb_compare.py`, not `tools/run_nrc_aps_local_corpus_e2e.py`
+   - the seeded review roots must use the fixed five-fixture PDF set shared with the Candidate B workbench bundle
+   - any Candidate B bundle used for validation must be discovered from the same checkout root as the compare page
 1. the page loads with no Candidate B bundle selected and surfaces a clear unavailable state
 2. the page also surfaces clear unavailable states when no eligible baseline runs or no eligible Candidate A runs exist
 3. selecting valid baseline + Candidate A + Candidate B sources yields a non-empty target list
@@ -88,6 +94,7 @@ The workbench compare validation lane must:
 - mutate no review runtime state
 
 The compare page may read already-existing local archived bundles, but test and page validation must not invoke a new Candidate B compare run.
+The separate same-corpus prep step may seed baseline and Candidate A review roots for operator validation, but that prep step is outside validate-only test execution and must use the dedicated fixture-corpus seed tool rather than the 69-document local-corpus demo runner.
 
 Existing review and document-trace regression suites must continue to pass after implementation, including:
 
