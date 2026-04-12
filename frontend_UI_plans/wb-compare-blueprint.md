@@ -37,6 +37,9 @@ Add one additive page shell route:
 
 - `/review/nrc-aps/workbench-compare`
 
+Reuse the existing `/review/nrc-aps/static` mount in `backend/main.py`.
+Do not add a second static mount for this page.
+
 ### 4.2 API surface
 
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\api\review_nrc_aps.py`
@@ -47,6 +50,9 @@ Add four additive compare routes:
 - `/workbench-compare/targets`
 - `/workbench-compare/targets/{fixture_id}/manifest`
 - `/workbench-compare/targets/{fixture_id}/tabs/{tab_id}`
+
+Do not modify `backend/app/api/router.py` for this lane.
+The existing `review_nrc_aps.router` mount already serves any additive routes added to `review_nrc_aps.py` under `/api/v1/review/nrc-aps/...`.
 
 ### 4.3 Schemas
 
@@ -65,6 +71,7 @@ Expected responsibilities:
 - discover compare sources
 - classify baseline vs Candidate A runs
 - discover allowlisted Candidate B bundles
+- resolve a validated Candidate B bundle root from `candidate_b_bundle_id`
 - map review-run targets to corpus `fixture_id`
 - intersect targets across the selected sources
 - compose compare manifest and compare tabs
@@ -77,6 +84,15 @@ Only if needed for:
 
 - a public run-variant classification helper
 - allowlisted local Candidate B bundle root discovery
+
+Checkout-root note:
+
+- the compare service must resolve the repo checkout root from `backend/app/services/` before scanning bundle roots
+- use the same `Path(__file__).resolve()` style already used in the runtime/root helpers
+- do not infer bundle roots from the current process cwd
+- revalidate bundle ids by exact match to discovered roots, not just checkout-root containment
+
+The existing path-safety helper pattern in `review_nrc_aps_document_trace.py` is not sufficient on its own for Candidate B bundle validation because it enforces single-root containment, not discovered-root identity.
 
 Do not widen `review_nrc_aps_document_trace.py` into the compare owner.
 
@@ -218,6 +234,7 @@ Do not use this lane to:
 - expose this page to arbitrary repos or corpora
 - add export/download workflows
 - add browser-side diff editing or annotation
+- change `backend/app/api/router.py`
 
 ## 8. Expected Follow-Through After Implementation
 

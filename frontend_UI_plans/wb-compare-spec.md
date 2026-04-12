@@ -98,6 +98,10 @@ The page shell should use query parameters for deep-linkable state:
 - `fixture_id`
 - optional `tab`
 
+Those query parameters are page-local to `/review/nrc-aps/workbench-compare`.
+They do not extend or modify the existing document-trace query-string contract.
+For v1, `candidate_b_bundle_id` should be serialized in URL-safe POSIX-style relative-path form rather than Windows backslash form.
+
 ## 6. In Scope For V1
 
 - NRC APS only
@@ -123,6 +127,7 @@ The page shell should use query parameters for deep-linkable state:
 - deep links from each column into the existing document-trace page
 - read-only API routes and read-only UI behavior
 - explicit unavailable states when any required source class is absent in the current checkout
+- first-pass direct URL access to the compare page without adding new review-page or document-trace-page navigation
 
 ## 7. Out Of Scope For V1
 
@@ -149,6 +154,7 @@ The page shell should use query parameters for deep-linkable state:
 - a fresh isolated implementation or test worktree may legitimately have no Candidate B bundle roots at all
 - a fresh isolated implementation or test worktree may also legitimately have no eligible baseline runs or no eligible Candidate A runs
 - the existing review page and document-trace page must remain behaviorally unchanged except for optional future navigation additions outside this spec
+- deep links back into document trace must remain limited to `run_id`, `target_id`, and optional `tab`
 
 ## 9. Compare Identity Model
 
@@ -188,6 +194,10 @@ Expected match order:
 2. if that is absent, no v1 fallback guesswork
 
 This is intentionally strict. A missed compare target is better than a false match.
+If multiple manifest entries share the same case-insensitive basename, the mapping is ambiguous and the fixture must be excluded.
+
+The effective three-way target set for v1 is constrained by Candidate B bundle coverage, not by the full corpus manifest.
+If a selected Candidate B bundle covers only a subset of corpus fixtures, only that surviving subset may appear in the compare target list.
 
 ## 10. Workspace Layout
 
@@ -207,6 +217,8 @@ The page should use a stable three-zone structure:
   - three-column compare grid
 
 The grid is variant-centric, not source-viewer-centric.
+In the first implementation pass, operators reach this page by direct URL.
+Navigation affordances from the review page or document-trace page may be added only in a later, separately scoped pass.
 
 Reason:
 
