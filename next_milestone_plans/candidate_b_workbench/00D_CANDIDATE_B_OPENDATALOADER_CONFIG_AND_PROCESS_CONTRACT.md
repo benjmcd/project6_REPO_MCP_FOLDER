@@ -4,8 +4,8 @@
 
 Freeze the exact OpenDataLoader invocation/config/process contract for Candidate B v1.
 
-Candidate B v1 is a **local Python-wrapper workbench comparator**.
-It is not a CLI-subprocess lane, not a Node lane, not a Java/JAR lane, and not a hybrid lane.
+Candidate B v1 is a **local Python-launched workbench comparator**.
+It is not a backend/service integration lane, not a Node lane, not a direct Java/JAR lane, and not a hybrid lane.
 
 v6 strengthens this doc by freezing more of the sensitive option surface,
 adding batch-split rules,
@@ -15,15 +15,20 @@ and making output/image handling less implicit.
 
 ## A. Invocation method
 
-Candidate B v1 must call OpenDataLoader via the Python wrapper only:
-- `import opendataloader_pdf`
-- `opendataloader_pdf.convert(...)`
+Current committed `main` workbench support launches OpenDataLoader through Python as:
+- `sys.executable -m opendataloader_pdf <fixture_path> ...`
+
+That means the approved current workbench boundary is:
+- Python-launched module invocation only
+- no direct `java -jar ...`
+- no Node.js binding
+- no hybrid backend widening
 
 Directly verified export/API posture from the exact `opendataloader-pdf==2.0.0` wheel inspected in this pass:
 - `opendataloader_pdf.__all__ == ["run", "convert", "run_jar"]`
 - `run(...)` is explicitly deprecated backward-compatibility surface only
 - `run_jar(...)` exists but is not an approved v1 invocation path
-- Candidate B v1 must use `convert(...)` only
+- direct `convert(...)` remains a tighter future hardening target, not a statement of the current committed `main` support implementation
 
 Exact `convert(...)` signature posture verified from the wheel:
 ```python
@@ -64,7 +69,7 @@ No other invocation form is permitted in v1.
 
 Candidate B v1 must use exactly this logical config posture:
 
-- `input_path=[<manifest-derived list of PDFs>]`
+- `input_path=<one manifest-derived PDF per Python-launched subprocess>`
 - `output_dir="tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>"`
 - `format="json,markdown"`
 - `quiet=False`
@@ -73,7 +78,7 @@ Candidate B v1 must use exactly this logical config posture:
 - `table_method="default"`
 - `image_output="external"`
 - `image_format="png"`
-- `image_dir="tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/images"`
+- `image_dir="images/<fixture_id>"`
 - `include_header_footer=False`
 - `keep_line_breaks=False`
 - `replace_invalid_chars=" "`
@@ -92,22 +97,18 @@ This is the only approved first-pass config.
 
 ## C. Process model
 
-Because OpenDataLoader's Python path spawns the Java engine,
-Candidate B v1 must prefer **batched multi-file conversion** rather than one process per file where practical.
+Because the committed workbench run keeps external image provenance isolated per document,
+the current `main` implementation uses **one Python-launched subprocess per fixture**.
 
-Approved process model:
-1. resolve the document list from the existing manifest-driven corpus
-2. pass the whole list into one workbench conversion run when feasible
+Approved current committed process model:
+1. resolve the frozen document list from the existing manifest-driven corpus
+2. run one Python-launched ODL subprocess per fixture
 3. store all raw outputs under a single run-scoped output root
-4. derive comparison summaries from those raw outputs afterward
+4. record the per-document batch plan and split reason in the provenance block
+5. derive comparison summaries from those raw outputs afterward
 
-### Controlled batch-split fallback
-If one full-corpus batch fails for timeout/memory reasons,
-a split is allowed only at whole-document boundaries.
-The split plan must be recorded in the provenance block as:
-- batch count
-- file membership per batch
-- reason for the split
+Current committed split reason:
+- `per_document_external_image_provenance_isolation`
 
 Per-page cherry-picking is forbidden in v1.
 

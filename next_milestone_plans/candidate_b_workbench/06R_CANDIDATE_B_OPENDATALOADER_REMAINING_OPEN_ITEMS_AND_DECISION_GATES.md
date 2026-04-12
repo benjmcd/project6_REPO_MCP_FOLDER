@@ -46,28 +46,53 @@ Resolved posture:
 
 ---
 
-## Remaining open item 1 - local Java readiness
+## Remaining open item 1 - invocation tightening vs committed implementation
 
 ### What remains open
-The current machine still does not prove Java 11+ readiness on `PATH`.
+The current committed workbench support on `main` launches `sys.executable -m opendataloader_pdf`.
+It does not yet use a direct `opendataloader_pdf.convert(...)` call.
 
 ### Hard rule
-Do not run Candidate B until Java resolution is proven.
+Do not describe direct-wrapper invocation as a current committed `main` fact unless the support module changes.
 
 ---
 
-## Remaining open item 2 - post-proof helper-script decision
+## Remaining open item 2 - dedicated compare pytest surface
 
 ### What remains open
-Whether a later repo-native helper script or `project6.ps1` action should ever be added after the first proof pass.
+`main` contains `tests/test_nrc_aps_candidate_b_opendataloader.py`,
+but it does not contain a separate `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`.
 
 ### Hard rule
-No helper-script addition in v1.
-That is a post-proof governance question only.
+Do not tell operators to run a compare pytest that does not exist.
+Any new compare pytest surface requires a separate bounded change.
 
 ---
 
-## Remaining open item 3 - commit posture for any derived sample outputs
+## Remaining open item 3 - non-interference proof serialization depth
+
+### What remains open
+The committed support module defines `git_protected_diff()`,
+but the committed proof/compare/retention artifacts do not serialize a touched-file inventory.
+
+### Hard rule
+Do not overstate the current committed artifacts as if they already include protected-diff inventory.
+Treat that as a future hardening opportunity only.
+
+---
+
+## Remaining open item 4 - historical report provenance normalization
+
+### What remains open
+The committed proof/compare artifacts carry sibling-worktree provenance fields such as worktree-specific `repo_root` values and prior-iteration report references.
+
+### Hard rule
+Treat those artifacts as historical workbench evidence,
+not as clean-`main` rerun proof.
+
+---
+
+## Remaining open item 5 - commit posture for any derived sample outputs
 
 ### What remains open
 Whether a very small redacted sample of raw ODL output should ever be committed for reviewer convenience.

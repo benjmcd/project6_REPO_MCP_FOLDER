@@ -12,7 +12,7 @@ Candidate B v1 must run under:
 - Windows PowerShell
 - `py -3.12`
 - Java 11+ available on `PATH`
-- Python-wrapper OpenDataLoader invocation only
+- Python-launched OpenDataLoader invocation only
 
 No other envelope is approved in v1.
 
@@ -45,31 +45,20 @@ If the reported version is not `2.0.0`, stop and update the docs before continui
 
 ---
 
-## C. Current workspace preflight snapshot for this pass
+## C. Current committed artifact note
 
-No Candidate B execution was performed in this pass.
-The direct local preflight checks returned:
-- `py -3.12 --version` -> `Python 3.12.10`
-- default shell state: `java -version` unresolved on `PATH`, `JAVA_HOME` empty
-- discoverable local install found at `C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot\bin\java.exe`
-- session-local env fix used for confirmation:
-  - `$env:JAVA_HOME='C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot'`
-  - `$env:PATH="$env:JAVA_HOME\bin;$env:PATH"`
-- `java -version` after the session-local fix -> Temurin OpenJDK `17.0.18+8`
-- isolated worktree-local venv created at `.candidate_b_preflight_venv`
-- `.\.candidate_b_preflight_venv\Scripts\python.exe -m pip install --require-hashes -r tests/requirements_nrc_aps_candidate_b_opendataloader.txt` -> success
-- isolated `pip show opendataloader-pdf` -> `Version: 2.0.0`
-- isolated installed module root -> `.candidate_b_preflight_venv\Lib\site-packages\opendataloader_pdf`
-- isolated wrapper/API verification -> `__all__ == ["run", "convert", "run_jar"]`, `run()` deprecated, `convert(...)` signature matches the frozen contract
+The committed Candidate B reports on `main` capture a historical workbench run, not a portable machine snapshot for every future environment.
 
-Interpretation:
-- the Python side of the execution envelope is present
-- Java 11+ is present on this machine but not on the default shell `PATH`
-- the approved execution envelope is ready once the documented session-local `JAVA_HOME` / `PATH` fix is applied
-- the exact ODL package is now installed only inside the isolated preflight venv, not as a repo-runtime dependency
+What those committed artifacts prove:
+- the historical workbench run used `opendataloader-pdf==2.0.0`
+- the reports captured `odl_package_sha256_expected`
+- the reports explicitly recorded `odl_package_sha256_verified: null` with a reason
+- the reports captured Java/Python execution-envelope fields for that historical run
 
-So the execution envelope is frozen,
-and this machine is ready for a real Candidate B run only under the documented session-local Java env fix plus the isolated preflight venv.
+What they do **not** prove:
+- that every future machine already has Java 11+ on `PATH`
+- that current `main` can be treated as already rerun locally without a fresh preflight
+- that the installed package directory was reconstructed back to the pinned wheel hash
 
 ---
 
@@ -90,11 +79,14 @@ Capture at minimum:
 
 ## E. Batch and resource posture
 
-Candidate B v1 should use one corpus-level batch when feasible.
-If splitting is required due to timeout or memory pressure:
-- split only at whole-document boundaries
-- record batch membership and reason
-- keep the config identical across batches
+Current committed `main` implementation uses one whole-document batch per fixture.
+That split is recorded in the provenance block with:
+- batch membership
+- batch count
+- split reason
+
+Current committed split reason:
+- `per_document_external_image_provenance_isolation`
 
 No per-page or regime-selective split is allowed in v1.
 
@@ -117,7 +109,7 @@ Stop immediately if any of the following is true:
 - Java is not available on `PATH`
 - the installed ODL package version differs from the frozen pin
 - the working output root is not the approved run-scoped Candidate B root
-- the invocation path is CLI/JAR/Node instead of the Python wrapper
+- the invocation path widens beyond the current approved Python-launched workbench contract
 
 ---
 
