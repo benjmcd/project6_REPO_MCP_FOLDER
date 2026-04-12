@@ -34,7 +34,7 @@ Candidate B v1 may emit only:
 - raw OpenDataLoader JSON/Markdown/image outputs under a run-scoped tests-side raw-output root
 - a Candidate B proof report
 - a Candidate B compare report
-- optional labels/manifest sidecars under the corpus fixture folder
+- the existing labels sidecar under the corpus fixture folder; no new Candidate B sidecar manifest in the first compare-surface pass
 
 ---
 

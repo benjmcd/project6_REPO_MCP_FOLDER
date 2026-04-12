@@ -21,15 +21,17 @@ Required coverage:
 - fail-closed behavior on missing Java, missing package, or missing baseline summary
 - run-root/output-root planning
 - support-harness unit coverage that remains artifact-free
+- mutual-exclusion validation for `--baseline-summary` vs `--first-run-compare-report`
 
 Recommended tests:
 
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
 - `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
 
-Optional validate-only dry-run support:
+Exact validate-only command-wiring support:
 
-- add `--dry-run` or `--plan-only` to the compare runner so command wiring and output planning can be tested without generating reports
+- add `--plan-only` to the compare runner so command wiring and output planning can be tested without generating reports
+- do not add a `--dry-run` alias in the first pass
 
 ### Phase B - explicit isolated proof run
 
@@ -42,6 +44,7 @@ Required posture:
 - isolated runtime root
 - isolated run-scoped output root
 - no overwrite of committed historical Candidate B report files
+- explicit run-local proof runtimes under `<run-root>/baseline-before/runtime` and `<run-root>/baseline-after/runtime`
 
 Required proof sequence:
 
@@ -60,11 +63,13 @@ The compare surface is implementation-complete only if all of the following are 
 - the new `project6.ps1` action launches successfully
 - the compare runner no longer depends on a manually supplied historical compare artifact as its normal baseline source
 - the compare runner writes into a run-scoped output root by default
+- the compare runner uses `--plan-only` for validate-only command wiring
 - the baseline proof passes before Candidate B
 - the baseline proof passes after Candidate B
 - proof, compare, retention, and baseline-summary artifacts are all present
 - no outputs appear outside the approved Candidate B run root
 - compare conclusions remain workbench-only and do not imply runtime admission
+- the first pass does not introduce protected-diff serialization or raw-output commit behavior
 
 ---
 
@@ -74,7 +79,7 @@ Validate-only evidence:
 
 - green compare-surface pytest file
 - green existing helper-focused pytest file
-- green command-wiring or dry-run validation
+- green command-wiring `--plan-only` validation
 
 Artifact-generating evidence:
 
@@ -96,6 +101,8 @@ Fail the lane if any of the following occurs:
 - the before/after lower-layer proof does not remain green
 - the implementation touches forbidden service/API/UI surfaces
 - the compare flow quietly degrades to historical-artifact review without producing a fresh baseline summary
+- the runner accepts both baseline-input modes at once
+- the runner introduces a `--dry-run` alias instead of the frozen `--plan-only` contract
 
 ---
 
