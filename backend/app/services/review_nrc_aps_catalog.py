@@ -22,6 +22,18 @@ def _iso(value: object) -> str | None:
     return str(value)
 
 
+def _normalized_completed_at(value: object) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+
+
 def _summary_counters(summary: dict) -> NrcApsReviewRunSummaryCountersOut:
     run_detail = summary.get("run_detail") or {}
     return NrcApsReviewRunSummaryCountersOut(
@@ -78,8 +90,8 @@ def discover_candidate_runs(db: Session) -> NrcApsReviewRunSelectorOut:
             summary_counters=counters,
         )
         out_runs.append(item)
-        if item.reviewable and run.completed_at:
-            completed_at = run.completed_at
+        completed_at = _normalized_completed_at(run.completed_at)
+        if item.reviewable and completed_at is not None:
             if latest_completed_value is None or completed_at > latest_completed_value[0]:
                 latest_completed_value = (completed_at, item.run_id)
 
@@ -102,8 +114,8 @@ def discover_candidate_runs(db: Session) -> NrcApsReviewRunSelectorOut:
             summary_counters=counters,
         )
         out_runs.append(item)
-        if item.reviewable and completed_at:
-            completed_dt = datetime.fromisoformat(str(completed_at).replace("Z", "+00:00"))
+        completed_dt = _normalized_completed_at(completed_at)
+        if item.reviewable and completed_dt is not None:
             if latest_completed_value is None or completed_dt > latest_completed_value[0]:
                 latest_completed_value = (completed_dt, item.run_id)
 

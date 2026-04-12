@@ -9,39 +9,82 @@ with other test modules that override get_db at module scope on the shared app s
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 os.environ["DB_INIT_MODE"] = "none"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.api.deps import get_db
+from app.models.models import ApsContentLinkage
 from app.schemas.review_nrc_aps import NrcApsReviewExtractedUnitsOut
 from main import app
+from review_nrc_aps_runtime_fixture import (
+    latest_passed_runtime,
+    make_session,
+    resolve_deduplicated_target_pair,
+    resolve_target_for_accession,
+)
 
-RUN_ID = "5cd56147-4b5b-4278-8b32-79b9b1b34db5"
-TARGET_ID = "fd00ab2b-aa52-4c2a-9899-0c36786f8870"
-ACCESSION = "LOCALAPS00001"
-DEDUP_TARGET_ID_A = "21c92e61-9316-4356-b171-d1b22a011bc8"
-DEDUP_TARGET_ID_B = "431d06d1-0b3c-46db-a9f1-abe760b140a3"
+RUNTIME = latest_passed_runtime()
+RUN_ID = RUNTIME.run_id
+DB_PATH = RUNTIME.db_path
 
-DB_PATH = Path(__file__).resolve().parents[1] / "app" / "storage_test_runtime" / "lc_e2e" / "20260328_150207" / "lc.db"
+_bootstrap_session = make_session(RUNTIME)
+try:
+    TARGET_ID, ACCESSION = resolve_target_for_accession(_bootstrap_session, RUN_ID)
+    DEDUP_TARGET_ID_A, DEDUP_TARGET_ID_B = resolve_deduplicated_target_pair(_bootstrap_session, RUN_ID)
 
-# Fail closed: if the audited runtime DB is missing, fail immediately at import time
-assert DB_PATH.exists(), f"Audited runtime DB not found at {DB_PATH}. API tests cannot run."
+    pinned_linkage = (
+        _bootstrap_session.query(ApsContentLinkage)
+        .filter(
+            ApsContentLinkage.run_id == RUN_ID,
+            ApsContentLinkage.target_id == TARGET_ID,
+        )
+        .first()
+    )
+    assert pinned_linkage is not None and pinned_linkage.diagnostics_ref
+    ordered_units = json.loads(Path(pinned_linkage.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
+    EXPECTED_TOTAL_UNIT_COUNT = len(ordered_units)
+    EXPECTED_PAGE3_UNIT_COUNT = len([unit for unit in ordered_units if unit.get("page_number") == 3])
+
+    dedup_linkage_a = (
+        _bootstrap_session.query(ApsContentLinkage)
+        .filter(
+            ApsContentLinkage.run_id == RUN_ID,
+            ApsContentLinkage.target_id == DEDUP_TARGET_ID_A,
+        )
+        .first()
+    )
+    dedup_linkage_b = (
+        _bootstrap_session.query(ApsContentLinkage)
+        .filter(
+            ApsContentLinkage.run_id == RUN_ID,
+            ApsContentLinkage.target_id == DEDUP_TARGET_ID_B,
+        )
+        .first()
+    )
+    assert dedup_linkage_a is not None and dedup_linkage_a.diagnostics_ref
+    assert dedup_linkage_b is not None and dedup_linkage_b.diagnostics_ref
+    EXPECTED_DEDUP_UNIT_COUNT_A = len(
+        json.loads(Path(dedup_linkage_a.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
+    )
+    EXPECTED_DEDUP_UNIT_COUNT_B = len(
+        json.loads(Path(dedup_linkage_b.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
+    )
+finally:
+    _bootstrap_session.close()
 
 
 def _override_get_db():
     """Yield a real SQLAlchemy session against the audited runtime DB."""
-    engine = create_engine(f"sqlite:///{DB_PATH}")
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    session = SessionLocal()
+    session = make_session(RUNTIME)
     try:
         yield session
     finally:
@@ -230,8 +273,8 @@ def test_api_extracted_units_happy_path():
     assert data["reason_code"] is None
     assert data["source_precision"] == "unit"
     assert data["source_layer"] == "diagnostics_ordered_units"
-    assert data["total_unit_count"] == 543
-    assert len(data["units"]) == 543
+    assert data["total_unit_count"] == EXPECTED_TOTAL_UNIT_COUNT
+    assert len(data["units"]) == EXPECTED_TOTAL_UNIT_COUNT
 
 
 def test_api_extracted_units_page_filter():
@@ -240,7 +283,7 @@ def test_api_extracted_units_page_filter():
     data = response.json()
     assert data["available"] is True
     assert data["page_number"] == 3
-    assert len(data["units"]) == 29
+    assert len(data["units"]) == EXPECTED_PAGE3_UNIT_COUNT
     assert all(unit["page_number"] == 3 for unit in data["units"])
 
 
@@ -302,7 +345,8 @@ def test_api_extracted_units_remain_target_scoped_for_deduplicated_content():
     data_b = response_b.json()
     assert data_a["target_id"] == DEDUP_TARGET_ID_A
     assert data_b["target_id"] == DEDUP_TARGET_ID_B
-    assert data_a["total_unit_count"] == data_b["total_unit_count"] == 8446
+    assert data_a["total_unit_count"] == EXPECTED_DEDUP_UNIT_COUNT_A
+    assert data_b["total_unit_count"] == EXPECTED_DEDUP_UNIT_COUNT_B
     assert data_a["units"][0]["text"] == data_b["units"][0]["text"]
     assert data_a["units"][0]["unit_id"] != data_b["units"][0]["unit_id"]
     

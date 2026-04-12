@@ -9,12 +9,15 @@ from fastapi.testclient import TestClient
 
 os.environ["DB_INIT_MODE"] = "none"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.api.deps import get_db
 from main import app
+from review_nrc_aps_runtime_fixture import latest_passed_runtime
 
 
-RUN_ID = "d6be0fff-bbd7-468a-9b00-7103d5995494"
+RUNTIME = latest_passed_runtime()
+RUN_ID = RUNTIME.run_id
 
 
 def override_get_db():

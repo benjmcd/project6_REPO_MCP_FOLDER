@@ -3,10 +3,16 @@ from __future__ import annotations
 import sys
 from unittest.mock import MagicMock
 from pathlib import Path
+from datetime import datetime, timezone
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.services.review_nrc_aps_catalog import discover_candidate_runs
+from review_nrc_aps_runtime_fixture import latest_passed_runtime
+
+
+RUNTIME = latest_passed_runtime()
 
 def test_discover_candidate_runs():
     db = MagicMock()
@@ -15,7 +21,7 @@ def test_discover_candidate_runs():
     # Even if DB is empty, the golden run fixture should be found via summary-backed root scan
     assert out.runs, "Should find at least one run"
     # 1. Core invariant: The golden fixture exists and its properties are computed correctly
-    golden_run = next((r for r in out.runs if r.run_id == "d6be0fff-bbd7-468a-9b00-7103d5995494"), None)
+    golden_run = next((r for r in out.runs if r.run_id == RUNTIME.run_id), None)
     assert golden_run is not None, "Golden run fixture should be found"
     assert golden_run.reviewable is True
     assert golden_run.disabled_reason_code is None
@@ -25,10 +31,10 @@ def test_discover_candidate_runs():
     default_run = next((r for r in out.runs if r.run_id == out.default_run_id), None)
     assert default_run is not None, "default_run_id must exist in the returned runs list"
     assert default_run.reviewable is True, "default_run_id must be a reviewable candidate"
-    
-    from datetime import datetime
+
     def parse_dt(dt_str: str) -> datetime:
-        return datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
     
     default_dt = parse_dt(default_run.completed_at)
     for r in out.runs:

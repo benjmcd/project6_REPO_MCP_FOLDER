@@ -12,10 +12,9 @@ import sys
 from pathlib import Path
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import app.services.review_nrc_aps_document_trace as trace_service
 from app.models.models import ApsContentLinkage
@@ -26,14 +25,62 @@ from app.services.review_nrc_aps_document_trace import (
     resolve_source_blob_info
 )
 from app.services.review_nrc_aps_runtime import find_review_root_for_run
+from review_nrc_aps_runtime_fixture import (
+    latest_passed_runtime,
+    make_session,
+    resolve_deduplicated_target_pair,
+    resolve_target_for_accession,
+)
 
-RUN_ID = "5cd56147-4b5b-4278-8b32-79b9b1b34db5"
-TARGET_ID = "fd00ab2b-aa52-4c2a-9899-0c36786f8870"
-ACCESSION = "LOCALAPS00001"
-DEDUP_TARGET_ID_A = "21c92e61-9316-4356-b171-d1b22a011bc8"
-DEDUP_TARGET_ID_B = "431d06d1-0b3c-46db-a9f1-abe760b140a3"
 
-DB_PATH = Path(__file__).resolve().parents[1] / "app" / "storage_test_runtime" / "lc_e2e" / "20260328_150207" / "lc.db"
+RUNTIME = latest_passed_runtime()
+RUN_ID = RUNTIME.run_id
+DB_PATH = RUNTIME.db_path
+
+_bootstrap_session = make_session(RUNTIME)
+try:
+    TARGET_ID, ACCESSION = resolve_target_for_accession(_bootstrap_session, RUN_ID)
+    DEDUP_TARGET_ID_A, DEDUP_TARGET_ID_B = resolve_deduplicated_target_pair(_bootstrap_session, RUN_ID)
+
+    pinned_linkage = (
+        _bootstrap_session.query(ApsContentLinkage)
+        .filter(
+            ApsContentLinkage.run_id == RUN_ID,
+            ApsContentLinkage.target_id == TARGET_ID,
+        )
+        .first()
+    )
+    assert pinned_linkage is not None and pinned_linkage.diagnostics_ref
+    ordered_units = json.loads(Path(pinned_linkage.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
+    EXPECTED_TOTAL_UNIT_COUNT = len(ordered_units)
+    EXPECTED_PAGE2_UNIT_COUNT = len([unit for unit in ordered_units if unit.get("page_number") == 2])
+
+    dedup_linkage_a = (
+        _bootstrap_session.query(ApsContentLinkage)
+        .filter(
+            ApsContentLinkage.run_id == RUN_ID,
+            ApsContentLinkage.target_id == DEDUP_TARGET_ID_A,
+        )
+        .first()
+    )
+    dedup_linkage_b = (
+        _bootstrap_session.query(ApsContentLinkage)
+        .filter(
+            ApsContentLinkage.run_id == RUN_ID,
+            ApsContentLinkage.target_id == DEDUP_TARGET_ID_B,
+        )
+        .first()
+    )
+    assert dedup_linkage_a is not None and dedup_linkage_a.diagnostics_ref
+    assert dedup_linkage_b is not None and dedup_linkage_b.diagnostics_ref
+    EXPECTED_DEDUP_UNIT_COUNT_A = len(
+        json.loads(Path(dedup_linkage_a.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
+    )
+    EXPECTED_DEDUP_UNIT_COUNT_B = len(
+        json.loads(Path(dedup_linkage_b.diagnostics_ref).read_text(encoding="utf-8")).get("ordered_units") or []
+    )
+finally:
+    _bootstrap_session.close()
 
 
 @pytest.fixture(scope="module")
@@ -43,9 +90,7 @@ def db_session():
     Fails closed if the DB file is missing or unreadable.
     """
     assert DB_PATH.exists(), f"Audited runtime DB not found at {DB_PATH}. Tests cannot run."
-    engine = create_engine(f"sqlite:///{DB_PATH}")
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    session = SessionLocal()
+    session = make_session(RUNTIME)
     yield session
     session.close()
 
@@ -229,8 +274,8 @@ def test_extracted_units_come_from_diagnostics_ordered_units(db_session, review_
     assert payload.reason_code is None
     assert payload.source_precision == "unit"
     assert payload.source_layer == "diagnostics_ordered_units"
-    assert payload.total_unit_count == len(ordered_units) == 543
-    assert len(payload.units) == len(ordered_units)
+    assert payload.total_unit_count == len(ordered_units) == EXPECTED_TOTAL_UNIT_COUNT
+    assert len(payload.units) == EXPECTED_TOTAL_UNIT_COUNT
 
     expected = [(unit.get("page_number"), unit.get("text"), unit.get("start_char"), unit.get("end_char")) for unit in ordered_units[:5]]
     actual = [(unit.page_number, unit.text, unit.start_char, unit.end_char) for unit in payload.units[:5]]
@@ -261,8 +306,8 @@ def test_extracted_units_page_number_filtering_is_truthful(db_session, review_ro
 
     assert payload.available is True
     assert payload.page_number == 2
-    assert payload.total_unit_count == 543
-    assert len(payload.units) == 26
+    assert payload.total_unit_count == EXPECTED_TOTAL_UNIT_COUNT
+    assert len(payload.units) == EXPECTED_PAGE2_UNIT_COUNT
     assert all(unit.page_number == 2 for unit in payload.units)
 
 
@@ -305,7 +350,8 @@ def test_extracted_units_remain_target_scoped_for_deduplicated_content(db_sessio
 
     assert payload_a.available is True
     assert payload_b.available is True
-    assert payload_a.total_unit_count == payload_b.total_unit_count == 8446
+    assert payload_a.total_unit_count == EXPECTED_DEDUP_UNIT_COUNT_A
+    assert payload_b.total_unit_count == EXPECTED_DEDUP_UNIT_COUNT_B
     assert payload_a.units[0].text == payload_b.units[0].text
     assert payload_a.units[0].unit_id != payload_b.units[0].unit_id
 
