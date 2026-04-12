@@ -13,7 +13,7 @@ Translate the v5 boundary into explicit file-level rules.
 
 ### Tests
 - `tests/test_nrc_aps_candidate_b_opendataloader.py`
-- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
+- `tests/test_nrc_aps_candidate_b_opendataloader_compare.py` (future optional compare surface; not present in current committed `main`)
 
 ### Corpus sidecars
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
