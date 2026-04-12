@@ -60,6 +60,12 @@ def review_nrc_aps_document_trace_page() -> HTMLResponse:
     return HTMLResponse(content=trace_file.read_text(encoding="utf-8"))
 
 
+@app.get('/review/nrc-aps/workbench-compare', response_class=HTMLResponse)
+def review_nrc_aps_workbench_compare_page() -> HTMLResponse:
+    compare_file = review_ui_static_dir / "workbench_compare.html"
+    return HTMLResponse(content=compare_file.read_text(encoding="utf-8"))
+
+
 @app.get('/review/analyst-insight', response_class=HTMLResponse)
 def analyst_insight_page() -> HTMLResponse:
     page_file = review_ui_static_dir / "analyst_insight.html"

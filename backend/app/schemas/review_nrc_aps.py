@@ -354,3 +354,121 @@ class NrcApsReviewDownstreamUsageOut(BaseModel):
     usage: list[NrcApsReviewDownstreamUsageItemOut] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
 
+
+class NrcApsWorkbenchCompareRunSourceItemOut(BaseModel):
+    run_id: str
+    display_label: str
+    completed_at: str | None = None
+    variant_kind: str
+
+
+class NrcApsWorkbenchCompareBundleSourceItemOut(BaseModel):
+    bundle_id: str
+    display_label: str
+    generated_at_utc: str | None = None
+    decision_recommendation: str | None = None
+    local_only: bool = True
+
+
+class NrcApsWorkbenchCompareSourcesOut(BaseModel):
+    default_baseline_run_id: str | None = None
+    default_candidate_a_run_id: str | None = None
+    default_candidate_b_bundle_id: str | None = None
+    baseline_runs: list[NrcApsWorkbenchCompareRunSourceItemOut] = Field(default_factory=list)
+    candidate_a_runs: list[NrcApsWorkbenchCompareRunSourceItemOut] = Field(default_factory=list)
+    candidate_b_bundles: list[NrcApsWorkbenchCompareBundleSourceItemOut] = Field(default_factory=list)
+
+
+class NrcApsWorkbenchCompareTargetItemOut(BaseModel):
+    fixture_id: str
+    display_label: str
+    source_file_name: str | None = None
+    baseline_target_id: str
+    candidate_a_target_id: str
+    candidate_b_available: bool = True
+    comparability_state: str = "aligned"
+
+
+class NrcApsWorkbenchCompareTargetsOut(BaseModel):
+    baseline_run_id: str
+    candidate_a_run_id: str
+    candidate_b_bundle_id: str
+    default_fixture_id: str | None = None
+    targets: list[NrcApsWorkbenchCompareTargetItemOut] = Field(default_factory=list)
+
+
+class NrcApsWorkbenchCompareSourceIdentityOut(BaseModel):
+    fixture_id: str
+    document_title: str | None = None
+    document_type: str | None = None
+    source_file_name: str | None = None
+    accession_number: str | None = None
+    document_ref: str | None = None
+    document_sha256: str | None = None
+
+
+class NrcApsWorkbenchCompareRunBindingOut(BaseModel):
+    run_id: str
+    target_id: str
+    content_id: str | None = None
+
+
+class NrcApsWorkbenchCompareBundleBindingOut(BaseModel):
+    bundle_id: str
+    candidate_b_run_id: str | None = None
+
+
+class NrcApsWorkbenchCompareVariantBindingsOut(BaseModel):
+    baseline: NrcApsWorkbenchCompareRunBindingOut
+    candidate_a: NrcApsWorkbenchCompareRunBindingOut
+    candidate_b: NrcApsWorkbenchCompareBundleBindingOut
+
+
+class NrcApsWorkbenchCompareBadgeOut(BaseModel):
+    key: str
+    label: str
+    value: str
+    severity: str = "info"
+
+
+class NrcApsWorkbenchCompareTabDefOut(BaseModel):
+    tab_id: str
+    label: str
+    available: bool = True
+
+
+class NrcApsWorkbenchCompareDeepLinksOut(BaseModel):
+    baseline_trace: str | None = None
+    candidate_a_trace: str | None = None
+
+
+class NrcApsWorkbenchCompareManifestOut(BaseModel):
+    fixture_id: str
+    source_identity: NrcApsWorkbenchCompareSourceIdentityOut
+    variant_bindings: NrcApsWorkbenchCompareVariantBindingsOut
+    summary_badges: list[NrcApsWorkbenchCompareBadgeOut] = Field(default_factory=list)
+    tabs: list[NrcApsWorkbenchCompareTabDefOut] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+    deep_links: NrcApsWorkbenchCompareDeepLinksOut
+
+
+class NrcApsWorkbenchCompareColumnOut(BaseModel):
+    variant_id: str
+    available: bool
+    comparability_class: str
+    label: str
+    data: dict[str, Any] = Field(default_factory=dict)
+    warnings: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+    deep_link: str | None = None
+
+
+class NrcApsWorkbenchCompareTabOut(BaseModel):
+    fixture_id: str
+    tab_id: str
+    columns: dict[str, NrcApsWorkbenchCompareColumnOut] = Field(default_factory=dict)
+    comparability_legend: dict[str, str] = Field(default_factory=dict)
+    warnings: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+
