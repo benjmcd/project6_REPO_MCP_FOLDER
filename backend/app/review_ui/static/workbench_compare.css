@@ -4,6 +4,17 @@
     gap: 16px;
 }
 
+.back-link {
+    text-decoration: none;
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
 .compare-header-controls {
     row-gap: 10px;
 }
@@ -52,10 +63,48 @@
     font-size: 1rem;
 }
 
+.identity-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px 16px;
+}
+
+.identity-summary .meta-item,
+.trace-link-cluster .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.identity-summary .meta-item {
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--layout-section-bg);
+}
+
+.identity-summary .meta-label,
+.trace-link-cluster .meta-label {
+    color: var(--muted-text);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.identity-summary .meta-item span:last-child,
+.trace-link-cluster .meta-item span:last-child {
+    color: var(--text-color);
+    line-height: 1.45;
+    word-break: break-word;
+}
+
 .trace-link-cluster {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    align-items: flex-start;
 }
 
 .trace-link-cluster a {
@@ -66,6 +115,51 @@
 
 .trace-link-cluster a:hover {
     text-decoration: underline;
+}
+
+.tabs-header {
+    display: flex;
+    background: var(--pane-header-bg);
+    border-bottom: 1px solid var(--border-color);
+    overflow-x: auto;
+}
+
+.tab-btn {
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted-text);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+}
+
+.tab-btn:hover:not(:disabled) {
+    color: var(--text-color);
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.tab-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--muted-text);
+    font-size: 0.9rem;
+    text-align: center;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
 }
 
 .badge-strip {
@@ -324,5 +418,11 @@
     #target-selector {
         min-width: 0;
         width: 100%;
+    }
+}
+
+@media (max-width: 720px) {
+    .identity-summary {
+        grid-template-columns: 1fr;
     }
 }
