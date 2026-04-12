@@ -26,14 +26,17 @@ Freeze the exact import/invocation boundary for Candidate B v1.
 ## B. Invocation boundary
 
 Approved:
-- direct Python-wrapper call: `opendataloader_pdf.convert(...)`
+- Python-launched module invocation: `sys.executable -m opendataloader_pdf ...`
 
 Forbidden in v1:
-- shelling out to `opendataloader-pdf` CLI
 - invoking `java -jar ...`
 - using Node.js bindings
 - using a hybrid backend
 - writing wrapper code under `backend/app/services/...`
+
+Current committed `main` note:
+- the workbench support module currently launches the package module via Python rather than calling `opendataloader_pdf.convert(...)` directly
+- direct wrapper invocation remains a possible future tightening step, not a fact about the committed `main` implementation
 
 ---
 
