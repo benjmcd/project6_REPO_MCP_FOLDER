@@ -88,4 +88,4 @@ For the polished compare-surface lane, the implemented ergonomic pieces are:
 Remaining execution burden:
 
 - satisfied locally: one explicit isolated proof run was completed on clean `main` in a prepared Python 3.12 environment with `opendataloader-pdf==2.0.0`
-- remaining closeout question: whether that run's artifacts stay local-only or are preserved as tracked evidence
+- closed disposition: that run's artifacts remain local archived operator evidence and are not preserved as tracked history
