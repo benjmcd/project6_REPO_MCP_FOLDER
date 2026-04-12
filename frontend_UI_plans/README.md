@@ -47,6 +47,8 @@ For the live UI and API behavior, the canonical implementation source of truth i
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_workbench_compare_api.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_workbench_compare_service.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_workbench_compare_page.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\seed_wb_compare.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_seed_wb_compare.py`
 
 The files in this folder are reference material, not the live implementation surface.
 
@@ -106,9 +108,9 @@ Important implementation-scope note:
 - `wb-compare-validation.md`
   - validate-only test and operator verification plan for the workbench compare workspace
 - `nrc_aps_review_ui_startup_and_smoke_test.md`
-  - operator startup and smoke-test guide for the review UI and document-trace surfaces
+  - operator startup and smoke-test guide for the review UI, document-trace, and workbench-compare surfaces
 - `nrc_aps_frontend_ui_operator_validation_guide.md`
-  - practical end-to-end validation guide for the current review UI and document-trace surfaces
+  - practical end-to-end validation guide for the current review UI, document-trace, and workbench-compare surfaces
 - `nrc_aps_runtime_db_reconceptualization_and_next_steps.md`
   - current-state reconceptualization of the NRC APS runtime DB model and the recommended next implementation order
 
