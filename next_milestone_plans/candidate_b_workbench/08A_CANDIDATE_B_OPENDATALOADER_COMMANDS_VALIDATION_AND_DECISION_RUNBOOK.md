@@ -6,6 +6,12 @@ Provide the exact command and validation order for Candidate B v1.
 
 This runbook is intentionally grounded in the current repo proof lane and current repo runtime assumptions.
 
+Current ergonomics note:
+
+- this doc still describes the present manual-first workbench posture
+- the next bounded hardening lane for a polished compare surface is captured separately in `05T` and `08E`
+- do not treat this runbook alone as proof that a first-class repo-native Candidate B compare command already exists
+
 ---
 
 ## Phase 0 — repo/runtime preflight

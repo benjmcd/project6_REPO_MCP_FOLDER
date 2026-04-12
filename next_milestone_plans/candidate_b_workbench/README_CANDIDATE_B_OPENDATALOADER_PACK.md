@@ -106,8 +106,26 @@ Current committed `main` note:
 - `06A` corpus manifest and labeling guide
 - `06R` remaining open items and decision gates
 - `08A` commands / validation / decision runbook
+- `08E` compare-surface validation plan
 - `08C` test matrix and triage protocol
 - `09A` output isolation / retention / event registry
+
+## Next bounded implementation lane
+
+The next justified Candidate B implementation lane is not runtime integration.
+It is a polished compare surface for the existing workbench-only path.
+
+That lane is scoped in:
+
+- `05T_CANDIDATE_B_OPENDATALOADER_COMPARE_SURFACE_IMPLEMENTATION_PLAN.md`
+- `08E_CANDIDATE_B_OPENDATALOADER_COMPARE_SURFACE_VALIDATION_PLAN.md`
+
+Those docs assume:
+
+- no API or review UI changes
+- no backend service changes
+- no runtime admission or selector changes
+- only repo-native compare-runner ergonomics, fresh baseline-summary generation, isolated outputs, and validate-only compare tests
 
 ---
 
@@ -123,10 +141,12 @@ Current committed `main` note:
 8. `04A_CANDIDATE_B_OPENDATALOADER_FIELD_REGISTRY_AND_COMPARISON_SEMANTICS.md`
 9. `04C_CANDIDATE_B_OPENDATALOADER_OUTPUT_CROSSWALK_AND_NON_EQUIVALENCE_MAP.md`
 10. `05R_CANDIDATE_B_OPENDATALOADER_WORKBENCH_COMPARISON_EXECUTION_PACKET.md`
-11. `06A_CANDIDATE_B_OPENDATALOADER_CORPUS_MANIFEST_AND_LABELING_GUIDE.md`
-12. `08A_CANDIDATE_B_OPENDATALOADER_COMMANDS_VALIDATION_AND_DECISION_RUNBOOK.md`
-13. `08D_CANDIDATE_B_OPENDATALOADER_NONINTERFERENCE_PROOF_SEQUENCE.md`
-14. `06R_CANDIDATE_B_OPENDATALOADER_REMAINING_OPEN_ITEMS_AND_DECISION_GATES.md`
+11. `05T_CANDIDATE_B_OPENDATALOADER_COMPARE_SURFACE_IMPLEMENTATION_PLAN.md`
+12. `06A_CANDIDATE_B_OPENDATALOADER_CORPUS_MANIFEST_AND_LABELING_GUIDE.md`
+13. `08A_CANDIDATE_B_OPENDATALOADER_COMMANDS_VALIDATION_AND_DECISION_RUNBOOK.md`
+14. `08D_CANDIDATE_B_OPENDATALOADER_NONINTERFERENCE_PROOF_SEQUENCE.md`
+15. `08E_CANDIDATE_B_OPENDATALOADER_COMPARE_SURFACE_VALIDATION_PLAN.md`
+16. `06R_CANDIDATE_B_OPENDATALOADER_REMAINING_OPEN_ITEMS_AND_DECISION_GATES.md`
 
 ---
 

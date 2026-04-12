@@ -100,3 +100,19 @@ Whether a very small redacted sample of raw ODL output should ever be committed 
 ### Hard rule
 Default answer is no.
 Any committed sample output requires a separate explicit decision after the first proof run.
+
+---
+
+## Remaining open item 6 - polished compare-surface ergonomics
+
+### What remains open
+Candidate B still lacks:
+
+- a repo-native `project6.ps1` compare action
+- a dedicated compare runner
+- a fresh baseline-summary source for normal reruns
+- a dedicated validate-only compare pytest file
+
+### Hard rule
+Do not describe the current committed surface as a first-class compare workflow yet.
+Use `05T` and `08E` as the implementation-preparation docs for that lane.

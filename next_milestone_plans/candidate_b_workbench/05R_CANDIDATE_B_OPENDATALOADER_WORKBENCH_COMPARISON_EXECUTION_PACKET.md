@@ -4,6 +4,11 @@
 
 Turn the v6 planning pack into an execution-ready workbench packet with minimal implementer inference.
 
+For the next bounded compare-surface hardening lane, pair this packet with:
+
+- `05T_CANDIDATE_B_OPENDATALOADER_COMPARE_SURFACE_IMPLEMENTATION_PLAN.md`
+- `08E_CANDIDATE_B_OPENDATALOADER_COMPARE_SURFACE_VALIDATION_PLAN.md`
+
 ---
 
 ## A. What this packet is for
@@ -41,9 +46,13 @@ Approved new files in v1 include only:
 Still forbidden in v1:
 - `backend/app/services/...`
 - `backend/requirements.txt`
-- `project6.ps1`
 - outward NRC APS endpoint/report/export/context/deterministic artifact surfaces
 - any runtime artifact namespace used by existing NRC APS flows
+
+Bounded follow-on exception:
+
+- `project6.ps1` remains untouched for the currently committed v1 workbench posture
+- the separate compare-surface hardening lane in `05T` may add one repo-native Candidate B compare action only
 
 ---
 
@@ -65,6 +74,12 @@ At no point may the implementer jump directly from proof to integration.
 
 ## E. Why this execution packet is correct
 
-It binds Candidate B to the repo’s existing lower-layer proof harness,
+It binds Candidate B to the repo's existing lower-layer proof harness,
 keeps all changes reversible,
 and makes the implementation prove non-interference instead of merely asserting it.
+
+For the polished compare-surface lane, the main missing ergonomic pieces are:
+
+- a repo-native `project6.ps1` action
+- a dedicated compare runner
+- a fresh baseline-summary generator so normal use no longer depends on a historical compare artifact path
