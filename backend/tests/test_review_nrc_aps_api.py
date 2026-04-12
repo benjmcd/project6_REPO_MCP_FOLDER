@@ -16,10 +16,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from app.api.deps import get_db
 from app.services.review_nrc_aps_runtime_roots import candidate_review_runtime_roots
 from main import app
-from review_nrc_aps_runtime_fixture import discover_passed_runtimes
+from review_nrc_aps_runtime_fixture import discover_passed_runtimes, latest_passed_runtime
 
 
-RUN_ID = "d6be0fff-bbd7-468a-9b00-7103d5995494"
+RUNTIME = latest_passed_runtime()
+RUN_ID = RUNTIME.run_id
 MULTI_RUNTIME_RUN_IDS = {runtime.run_id for runtime in discover_passed_runtimes()[:3]}
 
 

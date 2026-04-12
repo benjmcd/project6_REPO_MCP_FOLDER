@@ -4,18 +4,23 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.services.review_nrc_aps_details import get_node_details, get_file_details, get_file_preview
 from app.services.review_nrc_aps_runtime import find_review_root_for_run
 from app.services.review_nrc_aps_graph import build_run_projection, build_file_to_node_map
 from app.services.review_nrc_aps_tree import build_strict_filesystem_tree
+from review_nrc_aps_runtime_fixture import latest_passed_runtime
+
+
+RUNTIME = latest_passed_runtime()
+RUN_ID = RUNTIME.run_id
 
 def test_get_node_details():
-    run_id = "d6be0fff-bbd7-468a-9b00-7103d5995494"
-    root = find_review_root_for_run(run_id)
+    root = find_review_root_for_run(RUN_ID)
     assert root is not None
 
-    details = get_node_details(run_id, root, "source_corpus")
+    details = get_node_details(RUN_ID, root, "source_corpus")
     assert details.node_id == "source_corpus"
     assert details.label == "Source corpus"
     assert details.stage_family == "source"
@@ -23,13 +28,12 @@ def test_get_node_details():
     assert "corpus_pdf_count" in details.structured_summary
 
 def test_get_file_details():
-    run_id = "d6be0fff-bbd7-468a-9b00-7103d5995494"
-    root = find_review_root_for_run(run_id)
-    tree = build_strict_filesystem_tree(run_id, root, build_file_to_node_map(build_run_projection(run_id, root)))
+    root = find_review_root_for_run(RUN_ID)
+    tree = build_strict_filesystem_tree(RUN_ID, root, build_file_to_node_map(build_run_projection(RUN_ID, root)))
     summary_node = next(c for c in tree.root.children if c.name == "local_corpus_e2e_summary.json")
 
     file_path = root / summary_node.path
-    details = get_file_details(run_id, root, summary_node.tree_id, file_path)
+    details = get_file_details(RUN_ID, root, summary_node.tree_id, file_path)
 
     assert details.name == "local_corpus_e2e_summary.json"
     assert details.is_dir is False
@@ -40,13 +44,12 @@ def test_get_file_details():
 
 
 def test_get_file_preview():
-    run_id = "d6be0fff-bbd7-468a-9b00-7103d5995494"
-    root = find_review_root_for_run(run_id)
-    tree = build_strict_filesystem_tree(run_id, root, build_file_to_node_map(build_run_projection(run_id, root)))
+    root = find_review_root_for_run(RUN_ID)
+    tree = build_strict_filesystem_tree(RUN_ID, root, build_file_to_node_map(build_run_projection(RUN_ID, root)))
     summary_node = next(c for c in tree.root.children if c.name == "local_corpus_e2e_summary.json")
 
     file_path = root / summary_node.path
-    preview = get_file_preview(run_id, root, summary_node.tree_id, file_path)
+    preview = get_file_preview(RUN_ID, root, summary_node.tree_id, file_path)
 
     assert preview.preview_kind == "json"
     assert preview.language == "json"

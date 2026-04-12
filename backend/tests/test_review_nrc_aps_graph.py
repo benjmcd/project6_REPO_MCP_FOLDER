@@ -4,14 +4,19 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.services.review_nrc_aps_graph import build_canonical_graph, build_pipeline_projection, build_run_projection
 from app.services.review_nrc_aps_runtime import find_review_root_for_run
+from review_nrc_aps_runtime_fixture import latest_passed_runtime
 
 
-RUN_ID = "d6be0fff-bbd7-468a-9b00-7103d5995494"
-BRANCH_A_TARGET = "14ccc411-c68e-46f2-9e30-0df7f0b83e70"
-BRANCH_B_TARGET = "f6b07ecf-dbf6-4faa-ab0e-f0144d8c7991"
+RUNTIME = latest_passed_runtime()
+RUN_ID = RUNTIME.run_id
+SELECTED_BRANCH_ROWS = RUNTIME.summary.get("selected_branch_rows") or []
+assert len(SELECTED_BRANCH_ROWS) >= 2, "Expected at least two selected branch anchors in the adopted review runtime"
+BRANCH_A_TARGET = str(SELECTED_BRANCH_ROWS[0].get("target_id"))
+BRANCH_B_TARGET = str(SELECTED_BRANCH_ROWS[1].get("target_id"))
 
 
 def _root():
