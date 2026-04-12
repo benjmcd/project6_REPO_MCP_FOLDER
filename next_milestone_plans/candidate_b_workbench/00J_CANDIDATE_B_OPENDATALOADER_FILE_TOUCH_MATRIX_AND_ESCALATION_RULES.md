@@ -25,9 +25,17 @@ Translate the v5 boundary into explicit file-level rules.
 - no new `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_manifest.json` in the first compare-surface pass
 
 ### Reports/raw outputs
-- `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
-- `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
-- `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
+- historical committed artifacts:
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_retention_manifest.json`
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
+- compare-surface run-scoped outputs:
+  - `tests/reports/cb-compare-<run_id>/baseline-summary.json`
+  - `tests/reports/cb-compare-<run_id>/proof.json`
+  - `tests/reports/cb-compare-<run_id>/compare.json`
+  - `tests/reports/cb-compare-<run_id>/retain.json`
+  - `tests/reports/cb-compare-<run_id>/raw/...`
 
 ### Dependency sidecar (if adopted)
 - `tests/requirements_nrc_aps_candidate_b_opendataloader.txt`

@@ -36,9 +36,9 @@ These are repo-truth anchors for Candidate B planning and verification:
 
 Candidate B v1 may reference these surfaces but must not modify them.
 
-Bounded follow-on compare-surface note:
-- the separate compare-surface hardening lane may add one new `project6.ps1` action named `compare-nrc-aps-candidate-b` and repo-native helper tools under `tools/`
-- that is not part of the currently committed v1 workbench posture
+Bounded compare-surface note:
+- the compare-surface lane now adds one new `project6.ps1` action named `compare-nrc-aps-candidate-b` and repo-native helper tools under `tools/`
+- that remains workbench-only and does not widen Candidate B into runtime/service/API posture
 - do not treat this note as permission to widen into runtime/service/API work
 
 ---
@@ -134,9 +134,16 @@ Candidate B v1 may add only the following new files or direct analogues under th
 - do not add a new `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_manifest.json` in the first compare-surface pass; use the existing base manifest plus the frozen labels sidecar only
 
 ### Workbench reports and raw outputs
-- `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
-- `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
-- `tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/...`
+- historical committed artifacts:
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json`
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json`
+  - `tests/reports/nrc_aps_candidate_b_opendataloader_retention_manifest.json`
+- compare-surface run-scoped outputs:
+  - `tests/reports/cb-compare-<run_id>/baseline-summary.json`
+  - `tests/reports/cb-compare-<run_id>/proof.json`
+  - `tests/reports/cb-compare-<run_id>/compare.json`
+  - `tests/reports/cb-compare-<run_id>/retain.json`
+  - `tests/reports/cb-compare-<run_id>/raw/...`
 
 ### Candidate B planning/workbench pack
 - `next_milestone_plans/candidate_b_workbench/...`

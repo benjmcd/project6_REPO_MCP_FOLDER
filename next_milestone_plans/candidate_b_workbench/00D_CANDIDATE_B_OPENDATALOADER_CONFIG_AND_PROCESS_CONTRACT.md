@@ -70,7 +70,8 @@ No other invocation form is permitted in v1.
 Candidate B v1 must use exactly this logical config posture:
 
 - `input_path=<one manifest-derived PDF per Python-launched subprocess>`
-- `output_dir="tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>"`
+- historical workbench posture used `output_dir="tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>"`
+- compare-surface default now uses `output_dir="tests/reports/cb-compare-<run_id>/raw"`
 - `format="json,markdown"`
 - `quiet=False`
 - `use_struct_tree=True`
