@@ -108,9 +108,9 @@ Important implementation-scope note:
 - `wb-compare-validation.md`
   - validate-only test and operator verification plan for the workbench compare workspace
 - `nrc_aps_review_ui_startup_and_smoke_test.md`
-  - operator startup and smoke-test guide for the review UI and document-trace surfaces
+  - operator startup and smoke-test guide for the review UI, document-trace, and workbench-compare surfaces
 - `nrc_aps_frontend_ui_operator_validation_guide.md`
-  - practical end-to-end validation guide for the current review UI and document-trace surfaces
+  - practical end-to-end validation guide for the current review UI, document-trace, and workbench-compare surfaces
 - `nrc_aps_runtime_db_reconceptualization_and_next_steps.md`
   - current-state reconceptualization of the NRC APS runtime DB model and the recommended next implementation order
 
