@@ -112,10 +112,10 @@ The compare surface is implemented on this lane, and one explicit isolated proof
 - a fresh baseline-summary source for normal reruns
 - a dedicated validate-only compare pytest file
 
-The remaining open decision is whether the completed proof artifacts remain local-only evidence or are preserved in tracked history.
+The artifact-disposition decision is now closed: the completed proof artifacts remain local-only operator evidence and are not preserved in tracked history.
 
 ### Hard rule
-Do not describe the compare surface as preserved or historically adopted until that artifact-disposition decision is made.
+Do not describe the compare surface artifacts as preserved in tracked history or as canonical repo evidence. Treat them only as local archived operator evidence.
 
 ---
 
