@@ -21,6 +21,7 @@ RAW_OUTPUT_PARENT = REPORTS_DIR / "nrc_aps_candidate_b_opendataloader_raw"
 PROOF_REPORT_PATH = REPORTS_DIR / "nrc_aps_candidate_b_opendataloader_proof_report.json"
 COMPARE_REPORT_PATH = REPORTS_DIR / "nrc_aps_candidate_b_opendataloader_compare_report.json"
 RETENTION_MANIFEST_PATH = REPORTS_DIR / "nrc_aps_candidate_b_opendataloader_retention_manifest.json"
+BASELINE_SUMMARY_SCHEMA_ID = "aps.candidate_b_baseline_summary.v1"
 CORPUS_DIR = TESTS_DIR / "fixtures" / "nrc_aps_docs" / "v1"
 MANIFEST_PATH = CORPUS_DIR / "manifest.json"
 LABELS_PATH = CORPUS_DIR / "candidate_b_opendataloader_labels.json"
@@ -171,6 +172,57 @@ def first_run_baseline_map(first_run_compare: dict[str, Any]) -> dict[str, dict[
     return out
 
 
+def load_baseline_summary(path: Path) -> dict[str, Any]:
+    payload = read_json(path)
+    if not isinstance(payload, dict):
+        raise RuntimeError("invalid_baseline_summary_payload")
+    if str(payload.get("schema_id") or "").strip() != BASELINE_SUMMARY_SCHEMA_ID:
+        raise RuntimeError("invalid_baseline_summary_schema")
+    documents = payload.get("documents")
+    if not isinstance(documents, list):
+        raise RuntimeError("invalid_baseline_summary_documents")
+    return payload
+
+
+def baseline_summary_map(baseline_summary: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    docs = baseline_summary.get("documents")
+    if not isinstance(docs, list):
+        raise RuntimeError("invalid_baseline_summary_documents")
+    out: dict[str, dict[str, Any]] = {}
+    for entry in docs:
+        if not isinstance(entry, dict):
+            continue
+        fixture_id = str(entry.get("fixture_id") or "").strip()
+        baseline = entry.get("baseline")
+        if fixture_id and isinstance(baseline, dict):
+            out[fixture_id] = baseline
+    return out
+
+
+def load_baseline_source(
+    *,
+    baseline_summary_path: Path | None,
+    first_run_compare_path: Path | None,
+) -> tuple[dict[str, dict[str, Any]], str | None, str]:
+    has_baseline_summary = baseline_summary_path is not None
+    has_first_run_compare = first_run_compare_path is not None
+    if has_baseline_summary == has_first_run_compare:
+        raise RuntimeError("baseline_source_contract_violation")
+    if has_baseline_summary:
+        baseline_summary = load_baseline_summary(baseline_summary_path)
+        return (
+            baseline_summary_map(baseline_summary),
+            repo_rel(baseline_summary_path),
+            "baseline_summary",
+        )
+    first_run_compare = load_first_run_compare(first_run_compare_path)
+    return (
+        first_run_baseline_map(first_run_compare),
+        repo_rel(first_run_compare_path),
+        "first_run_compare_report",
+    )
+
+
 def live_manifest_sha256() -> str:
     return sha256_path(MANIFEST_PATH)
 
@@ -283,7 +335,10 @@ def build_java_preflight() -> dict[str, Any]:
 
 def build_python_metadata() -> dict[str, Any]:
     expected_hash = parse_expected_hash()
-    distribution = importlib.metadata.distribution("opendataloader-pdf")
+    try:
+        distribution = importlib.metadata.distribution("opendataloader-pdf")
+    except importlib.metadata.PackageNotFoundError as exc:
+        raise RuntimeError("odl_package_not_installed") from exc
     return {
         "python_version": sys.version.replace("\n", " "),
         "python_executable": sys.executable,
@@ -683,6 +738,10 @@ def outputs_outside_approved_roots(paths: Iterable[str]) -> list[str]:
         "tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json",
         "tests/reports/nrc_aps_candidate_b_opendataloader_retention_manifest.json",
     ]
+    return outputs_outside_allowed_paths(paths, approved_prefixes=approved_prefixes)
+
+
+def outputs_outside_allowed_paths(paths: Iterable[str], *, approved_prefixes: list[str]) -> list[str]:
     out: list[str] = []
     for path in paths:
         normalized = path.replace("\\", "/")
@@ -705,51 +764,57 @@ def build_batch_plan(fixture_ids: list[str]) -> dict[str, Any]:
     }
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run Candidate B second-iteration workbench proof.")
-    parser.add_argument("--first-run-compare-report", required=True)
-    parser.add_argument("--proof-report", default=str(PROOF_REPORT_PATH))
-    parser.add_argument("--compare-report", default=str(COMPARE_REPORT_PATH))
-    parser.add_argument("--retention-manifest", default=str(RETENTION_MANIFEST_PATH))
-    args = parser.parse_args(argv)
+def default_raw_root(run_id: str) -> Path:
+    return RAW_OUTPUT_PARENT / run_id
 
-    started = time.perf_counter()
-    proof_report_path = Path(args.proof_report)
-    compare_report_path = Path(args.compare_report)
-    retention_manifest_path = Path(args.retention_manifest)
-    first_run_compare_path = Path(args.first_run_compare_report)
 
+def approved_output_prefixes(
+    *,
+    raw_root: Path,
+    proof_report_path: Path,
+    compare_report_path: Path,
+    retention_manifest_path: Path,
+) -> list[str]:
+    raw_root_prefix = repo_rel(raw_root).rstrip("/") + "/"
+    return [
+        raw_root_prefix,
+        repo_rel(proof_report_path),
+        repo_rel(compare_report_path),
+        repo_rel(retention_manifest_path),
+    ]
+
+
+def prepare_workbench_context() -> dict[str, Any]:
     manifest = load_manifest()
     labels = load_labels()
     manifest_sha = live_manifest_sha256()
     label_hash_status = validate_labels_sidecar(labels, manifest_sha)
     label_entry_by_fixture = labels_entry_map(labels)
     manifest_entry_by_fixture = manifest_entry_map(manifest)
-    first_run_compare = load_first_run_compare(first_run_compare_path)
-    first_run_baseline_by_fixture = first_run_baseline_map(first_run_compare)
-
     fixture_entries: list[dict[str, Any]] = []
     for fixture_id in FROZEN_FIXTURE_IDS:
         manifest_entry = manifest_entry_by_fixture.get(fixture_id)
         if manifest_entry is None:
             raise RuntimeError(f"manifest_fixture_missing:{fixture_id}")
         fixture_entries.append(manifest_entry)
+    return {
+        "batch_plan": build_batch_plan(FROZEN_FIXTURE_IDS),
+        "fixture_entries": fixture_entries,
+        "java_preflight": build_java_preflight(),
+        "label_entry_by_fixture": label_entry_by_fixture,
+        "label_hash_status": label_hash_status,
+        "manifest_sha": manifest_sha,
+        "python_metadata": build_python_metadata(),
+    }
 
-    java_preflight = build_java_preflight()
-    python_metadata = build_python_metadata()
-    run_id = build_run_id()
-    raw_root = RAW_OUTPUT_PARENT / run_id
-    raw_root.mkdir(parents=True, exist_ok=True)
 
-    batch_plan = build_batch_plan(FROZEN_FIXTURE_IDS)
-    execution_events: list[dict[str, Any]] = []
-    baseline_before_command, baseline_before_report = run_baseline_proof(label="baseline_before_require_ocr", run_root=raw_root)
-    execution_events.append({
-        "event": "baseline_before_require_ocr_passed",
-        "passed": True,
-        "report_ref": baseline_before_command["report_ref"],
-    })
-
+def collect_candidate_b_findings(
+    *,
+    fixture_entries: list[dict[str, Any]],
+    label_entry_by_fixture: dict[str, dict[str, Any]],
+    baseline_by_fixture: dict[str, dict[str, Any]],
+    raw_root: Path,
+) -> dict[str, Any]:
     documents: list[dict[str, Any]] = []
     failed_documents: list[dict[str, Any]] = []
     element_counts_total: Counter[str] = Counter()
@@ -764,11 +829,12 @@ def main(argv: list[str] | None = None) -> int:
     page_count_mismatches: list[dict[str, Any]] = []
     page_count_matches = 0
     candidate_convert_elapsed = 0.0
+    execution_events: list[dict[str, Any]] = []
 
     for fixture_entry in fixture_entries:
         fixture_id = str(fixture_entry.get("fixture_id") or "").strip()
         label_entry = label_entry_by_fixture.get(fixture_id)
-        baseline_summary = first_run_baseline_by_fixture.get(fixture_id)
+        baseline_summary = baseline_by_fixture.get(fixture_id)
         if label_entry is None or baseline_summary is None:
             raise RuntimeError(f"missing_reference_data:{fixture_id}")
         for regime_label in list(label_entry.get("regime_labels") or []):
@@ -883,14 +949,50 @@ def main(argv: list[str] | None = None) -> int:
             "raw_markdown_ref": candidate_summary["raw_markdown_ref"],
         })
 
-    baseline_after_command, baseline_after_report = run_baseline_proof(label="baseline_after_require_ocr", run_root=raw_root)
-    execution_events.append({
-        "event": "baseline_after_require_ocr_passed",
-        "passed": True,
-        "report_ref": baseline_after_command["report_ref"],
-    })
+    return {
+        "candidate_convert_elapsed_seconds": candidate_convert_elapsed,
+        "control_limitations": control_limitations,
+        "documents": documents,
+        "element_counts_total": element_counts_total,
+        "execution_events": execution_events,
+        "failed_documents": failed_documents,
+        "hidden_text_signals": hidden_text_signals,
+        "image_sources_by_fixture": image_sources_by_fixture,
+        "limitation_counts": limitation_counts,
+        "page_count_matches": page_count_matches,
+        "page_count_mismatches": page_count_mismatches,
+        "regime_counts": regime_counts,
+        "scanned_control_pages": scanned_control_pages,
+        "structural_gain_signals": structural_gain_signals,
+        "text_presence_deltas": text_presence_deltas,
+    }
 
-    image_collisions = find_image_source_collisions(image_sources_by_fixture)
+
+def write_candidate_b_reports(
+    *,
+    run_id: str,
+    proof_report_path: Path,
+    compare_report_path: Path,
+    retention_manifest_path: Path,
+    raw_root: Path,
+    workbench_context: dict[str, Any],
+    analysis: dict[str, Any],
+    baseline_before_command: dict[str, Any],
+    baseline_before_report: dict[str, Any],
+    baseline_after_command: dict[str, Any],
+    baseline_after_report: dict[str, Any],
+    baseline_source_ref: str | None,
+    baseline_source_kind: str,
+    execution_seconds: float,
+) -> None:
+    label_hash_status = workbench_context["label_hash_status"]
+    manifest_sha = workbench_context["manifest_sha"]
+    python_metadata = workbench_context["python_metadata"]
+    java_preflight = workbench_context["java_preflight"]
+    batch_plan = workbench_context["batch_plan"]
+    documents = analysis["documents"]
+    failed_documents = analysis["failed_documents"]
+    image_collisions = find_image_source_collisions(analysis["image_sources_by_fixture"])
     footer_warning_fixtures = sorted(
         doc["fixture_id"]
         for doc in documents
@@ -898,7 +1000,6 @@ def main(argv: list[str] | None = None) -> int:
     )
     interference_check_passed = bool(baseline_before_report.get("passed")) and bool(baseline_after_report.get("passed"))
     interference_check_status = "passed" if interference_check_passed else "failed"
-    execution_seconds = time.perf_counter() - started
 
     proof_report = {
         "schema_id": "aps.candidate_b_opendataloader.proof_report.v2",
@@ -942,6 +1043,8 @@ def main(argv: list[str] | None = None) -> int:
         "baseline_before_initial_default_reference": None,
         "baseline_before_reference": baseline_before_command["report_ref"],
         "baseline_after_reference": baseline_after_command["report_ref"],
+        "baseline_source_kind": baseline_source_kind,
+        "baseline_summary_ref": baseline_source_ref if baseline_source_kind == "baseline_summary" else None,
         "documents_attempted": len(FROZEN_FIXTURE_IDS),
         "documents_succeeded": len(FROZEN_FIXTURE_IDS) - len(failed_documents),
         "documents_failed": len(failed_documents),
@@ -956,24 +1059,36 @@ def main(argv: list[str] | None = None) -> int:
         "struct_tree_unknown_count": sum(
             1 for doc in documents if doc.get("candidate_b", {}).get("struct_tree_state") == "struct_tree_unknown"
         ),
-        "element_counts_by_type": stable_counter(element_counts_total),
-        "hidden_text_document_count": sum(1 for item in hidden_text_signals if item["hidden_text_present"]),
-        "regime_counts": stable_counter(regime_counts),
-        "limitation_counts": stable_counter(limitation_counts),
+        "element_counts_by_type": stable_counter(analysis["element_counts_total"]),
+        "hidden_text_document_count": sum(1 for item in analysis["hidden_text_signals"] if item["hidden_text_present"]),
+        "regime_counts": stable_counter(analysis["regime_counts"]),
+        "limitation_counts": stable_counter(analysis["limitation_counts"]),
         "safety_filter_state": "default_on",
         "execution_seconds": execution_seconds,
         "interference_check_passed": interference_check_passed,
         "interference_check_status": interference_check_status,
-        "execution_events": execution_events,
+        "execution_events": [
+            {
+                "event": "baseline_before_require_ocr_passed",
+                "passed": True,
+                "report_ref": baseline_before_command["report_ref"],
+            },
+            *analysis["execution_events"],
+            {
+                "event": "baseline_after_require_ocr_passed",
+                "passed": True,
+                "report_ref": baseline_after_command["report_ref"],
+            },
+        ],
         "warnings": {
             "header_footer_emitted_despite_config": footer_warning_fixtures,
             "image_source_collisions": image_collisions,
             "labels_sidecar_manifest_hash_status": label_hash_status,
         },
-        "durable_report_hash_authority": repo_rel(RETENTION_MANIFEST_PATH),
+        "durable_report_hash_authority": repo_rel(retention_manifest_path),
         "baseline_before_command": baseline_before_command,
         "baseline_after_command": baseline_after_command,
-        "candidate_b_convert_elapsed_seconds": candidate_convert_elapsed,
+        "candidate_b_convert_elapsed_seconds": analysis["candidate_convert_elapsed_seconds"],
     }
     write_json(proof_report_path, proof_report)
 
@@ -1006,22 +1121,24 @@ def main(argv: list[str] | None = None) -> int:
         "labels_sha256": sha256_path(LABELS_PATH),
         "raw_output_root": repo_rel(raw_root),
         "baseline_reference": baseline_before_command["report_ref"],
+        "baseline_summary_ref": baseline_source_ref if baseline_source_kind == "baseline_summary" else None,
+        "baseline_source_kind": baseline_source_kind,
         "candidate_a_reference": None,
-        "prior_iteration_compare_reference": repo_rel(first_run_compare_path),
+        "prior_iteration_compare_reference": baseline_source_ref if baseline_source_kind == "first_run_compare_report" else None,
         "documents": documents,
-        "page_count_match": len(page_count_mismatches) == 0,
-        "page_count_matches": page_count_matches,
-        "page_count_mismatches": page_count_mismatches,
-        "page_index_consistency": len(page_count_mismatches) == 0,
-        "text_presence_delta": text_presence_deltas,
-        "text_presence_deltas": text_presence_deltas,
-        "structural_gain_signals": structural_gain_signals,
-        "candidate_b_structural_gain_signals": structural_gain_signals,
-        "candidate_b_hidden_text_signals": hidden_text_signals,
-        "control_limitations": control_limitations,
+        "page_count_match": len(analysis["page_count_mismatches"]) == 0,
+        "page_count_matches": analysis["page_count_matches"],
+        "page_count_mismatches": analysis["page_count_mismatches"],
+        "page_index_consistency": len(analysis["page_count_mismatches"]) == 0,
+        "text_presence_delta": analysis["text_presence_deltas"],
+        "text_presence_deltas": analysis["text_presence_deltas"],
+        "structural_gain_signals": analysis["structural_gain_signals"],
+        "candidate_b_structural_gain_signals": analysis["structural_gain_signals"],
+        "candidate_b_hidden_text_signals": analysis["hidden_text_signals"],
+        "control_limitations": analysis["control_limitations"],
         "vector_control_pages": [],
-        "scanned_ocr_control_pages": scanned_control_pages,
-        "ocr_control_findings": scanned_control_pages,
+        "scanned_ocr_control_pages": analysis["scanned_control_pages"],
+        "ocr_control_findings": analysis["scanned_control_pages"],
         "candidate_b_non_equivalent_fields": list(NON_EQUIVALENT_REPO_FIELDS),
         "non_equivalent_repo_fields": list(NON_EQUIVALENT_REPO_FIELDS),
         "derived_comparison_only": list(DERIVED_COMPARISON_ONLY),
@@ -1050,7 +1167,7 @@ def main(argv: list[str] | None = None) -> int:
             },
         },
         "interference_check_passed": interference_check_passed,
-        "durable_report_hash_authority": repo_rel(RETENTION_MANIFEST_PATH),
+        "durable_report_hash_authority": repo_rel(retention_manifest_path),
     }
     write_json(compare_report_path, compare_report)
 
@@ -1064,25 +1181,106 @@ def main(argv: list[str] | None = None) -> int:
         "repo_root": str(ROOT),
         "git_revision": git_head(),
         "raw_output_root": repo_rel(raw_root),
-        "approved_output_roots": [
-            "tests/reports/nrc_aps_candidate_b_opendataloader_raw/<run_id>/",
-            "tests/reports/nrc_aps_candidate_b_opendataloader_proof_report.json",
-            "tests/reports/nrc_aps_candidate_b_opendataloader_compare_report.json",
-            "tests/reports/nrc_aps_candidate_b_opendataloader_retention_manifest.json",
-        ],
+        "approved_output_roots": approved_output_prefixes(
+            raw_root=raw_root,
+            proof_report_path=proof_report_path,
+            compare_report_path=compare_report_path,
+            retention_manifest_path=retention_manifest_path,
+        ),
         "durable_report_hash_authority": repo_rel(retention_manifest_path),
         "durable_report_inventory": durable_inventory,
         "raw_file_inventory": raw_inventory,
-        "execution_events": execution_events,
+        "execution_events": proof_report["execution_events"],
         "image_source_collisions": image_collisions,
         "label_sidecar_manifest_hash_status": label_hash_status,
-        "outputs_outside_approved_roots": outputs_outside_approved_roots(written_paths),
+        "outputs_outside_approved_roots": outputs_outside_allowed_paths(
+            written_paths,
+            approved_prefixes=approved_output_prefixes(
+                raw_root=raw_root,
+                proof_report_path=proof_report_path,
+                compare_report_path=compare_report_path,
+                retention_manifest_path=retention_manifest_path,
+            ),
+        ),
         "raw_outputs_committed": False,
         "retention_posture": "raw_outputs_retained_locally_under_run_scoped_root_not_committed",
     }
     write_json(retention_manifest_path, retention_manifest)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Run Candidate B second-iteration workbench proof.")
+    parser.add_argument("--baseline-summary", default="")
+    parser.add_argument("--first-run-compare-report", default="")
+    parser.add_argument("--proof-report", default=str(PROOF_REPORT_PATH))
+    parser.add_argument("--compare-report", default=str(COMPARE_REPORT_PATH))
+    parser.add_argument("--retention-manifest", default=str(RETENTION_MANIFEST_PATH))
+    parser.add_argument("--raw-root", default="")
+    args = parser.parse_args(argv)
+
+    started = time.perf_counter()
+    proof_report_path = Path(args.proof_report).resolve()
+    compare_report_path = Path(args.compare_report).resolve()
+    retention_manifest_path = Path(args.retention_manifest).resolve()
+    baseline_summary_path = Path(args.baseline_summary).resolve() if str(args.baseline_summary).strip() else None
+    first_run_compare_path = (
+        Path(args.first_run_compare_report).resolve() if str(args.first_run_compare_report).strip() else None
+    )
+    proof_report_path.parent.mkdir(parents=True, exist_ok=True)
+    compare_report_path.parent.mkdir(parents=True, exist_ok=True)
+    retention_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+
+    baseline_by_fixture, baseline_source_ref, baseline_source_kind = load_baseline_source(
+        baseline_summary_path=baseline_summary_path,
+        first_run_compare_path=first_run_compare_path,
+    )
+    workbench_context = prepare_workbench_context()
+    run_id = build_run_id()
+    raw_root = Path(args.raw_root).resolve() if str(args.raw_root).strip() else default_raw_root(run_id).resolve()
+    raw_root.mkdir(parents=True, exist_ok=True)
+
+    baseline_before_command, baseline_before_report = run_baseline_proof(
+        label="baseline_before_require_ocr",
+        run_root=raw_root,
+    )
+    analysis = collect_candidate_b_findings(
+        fixture_entries=workbench_context["fixture_entries"],
+        label_entry_by_fixture=workbench_context["label_entry_by_fixture"],
+        baseline_by_fixture=baseline_by_fixture,
+        raw_root=raw_root,
+    )
+    baseline_after_command, baseline_after_report = run_baseline_proof(
+        label="baseline_after_require_ocr",
+        run_root=raw_root,
+    )
+    execution_seconds = time.perf_counter() - started
+
+    write_candidate_b_reports(
+        run_id=run_id,
+        proof_report_path=proof_report_path,
+        compare_report_path=compare_report_path,
+        retention_manifest_path=retention_manifest_path,
+        raw_root=raw_root,
+        workbench_context=workbench_context,
+        analysis=analysis,
+        baseline_before_command=baseline_before_command,
+        baseline_before_report=baseline_before_report,
+        baseline_after_command=baseline_after_command,
+        baseline_after_report=baseline_after_report,
+        baseline_source_ref=baseline_source_ref,
+        baseline_source_kind=baseline_source_kind,
+        execution_seconds=execution_seconds,
+    )
     return 0
 
 
+def run_cli(argv: list[str] | None = None) -> int:
+    try:
+        return main(argv)
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(run_cli())
