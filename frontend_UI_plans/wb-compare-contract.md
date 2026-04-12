@@ -36,7 +36,18 @@ Return the selectable source sets for:
 - variant classification for review runs must come from runtime request config / visual lane mode, not UI guesswork
 - Candidate B bundle discovery must be limited to allowlisted local roots
 - no endpoint may accept an arbitrary filesystem path from the client
+- absence of eligible baseline runs in the current checkout is a valid state, not a backend error
+- absence of eligible Candidate A runs in the current checkout is a valid state, not a backend error
 - absence of Candidate B bundles in the current checkout is a valid state, not a backend error
+
+Exact review-run classification rules for v1:
+
+- `baseline` run:
+  - `visual_lane_mode` missing, blank, or `baseline`
+- `candidate_a_page_evidence_v1` run:
+  - `visual_lane_mode` exactly `candidate_a_page_evidence_v1`
+- all other visual-lane modes:
+  - excluded from this workspace
 
 ### 3.4 Candidate B bundle discovery roots
 
@@ -80,6 +91,9 @@ Candidate B bundle item minimum fields:
 - `generated_at_utc`
 - `decision_recommendation`
 - `local_only`
+
+For v1, `bundle_id` should be the checkout-relative bundle-root path.
+Do not use absolute machine paths as the public bundle identifier.
 
 ## 4. Compare Target Identity Contract
 
@@ -173,6 +187,15 @@ Required `tabs` ids:
 - `normalized_text`
 - `diagnostics`
 - `structure`
+
+Required `deep_links` content:
+
+- `baseline_trace`
+- `candidate_a_trace`
+
+For v1, each deep link must use the existing document-trace query-string contract:
+
+- `/review/nrc-aps/document-trace?run_id=<run_id>&target_id=<target_id>`
 
 ## 6. Compare Tab Contract
 

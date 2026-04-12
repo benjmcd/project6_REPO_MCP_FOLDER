@@ -56,6 +56,7 @@ Repo-confirmed constraints that shape this feature:
 - `frontend_UI_plans\nrc_aps_review_ui_spec.md` explicitly keeps cross-run comparison views out of scope for review UI v1
 - Candidate B is workbench-only, non-admitted, non-integrated
 - the landed Candidate B compare surface intentionally added no API routes and no review UI route
+- fresh isolated checkouts may legitimately have no eligible baseline runs, no eligible Candidate A runs, and no eligible Candidate B bundles
 
 Therefore the workbench compare workspace must be a separate additive page and API family.
 
@@ -121,6 +122,7 @@ The page shell should use query parameters for deep-linkable state:
   - `missing`
 - deep links from each column into the existing document-trace page
 - read-only API routes and read-only UI behavior
+- explicit unavailable states when any required source class is absent in the current checkout
 
 ## 7. Out Of Scope For V1
 
@@ -145,6 +147,7 @@ The page shell should use query parameters for deep-linkable state:
 - Candidate B fields marked `derived only` or `non-equivalent` by the committed Candidate B crosswalk must remain marked that way in the UI
 - Candidate B local archived bundles must be treated as optional operator evidence, not guaranteed mainline data
 - a fresh isolated implementation or test worktree may legitimately have no Candidate B bundle roots at all
+- a fresh isolated implementation or test worktree may also legitimately have no eligible baseline runs or no eligible Candidate A runs
 - the existing review page and document-trace page must remain behaviorally unchanged except for optional future navigation additions outside this spec
 
 ## 9. Compare Identity Model
