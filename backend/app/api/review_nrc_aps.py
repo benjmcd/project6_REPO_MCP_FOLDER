@@ -16,6 +16,10 @@ from app.schemas.review_nrc_aps import (
     NrcApsReviewNormalizedTextOut,
     NrcApsReviewIndexedChunksOut,
     NrcApsReviewExtractedUnitsOut,
+    NrcApsWorkbenchCompareSourcesOut,
+    NrcApsWorkbenchCompareTargetsOut,
+    NrcApsWorkbenchCompareManifestOut,
+    NrcApsWorkbenchCompareTabOut,
 )
 from fastapi.responses import FileResponse
 from app.services.review_nrc_aps_catalog import discover_candidate_runs
@@ -34,6 +38,12 @@ from app.services.review_nrc_aps_document_trace import (
     compose_indexed_chunks_payload,
     compose_extracted_units_payload,
 )
+from app.services.review_nrc_aps_workbench_compare import (
+    compose_workbench_compare_manifest,
+    compose_workbench_compare_tab,
+    compose_workbench_compare_targets,
+    discover_workbench_compare_sources,
+)
 
 router = APIRouter()
 
@@ -45,10 +55,92 @@ def _get_review_root_or_404(run_id: str):
     return root
 
 
+def _raise_workbench_compare_http_error(exc: Exception) -> None:
+    detail = str(exc)
+    if detail in {
+        "candidate_b_bundle_id_missing",
+        "candidate_b_bundle_id_invalid",
+        "unsupported_tab",
+    }:
+        raise HTTPException(status_code=400, detail=detail)
+    if detail in {
+        "candidate_b_bundle_unavailable",
+        "fixture_id_not_comparable",
+    }:
+        raise HTTPException(status_code=404, detail=detail)
+    raise HTTPException(status_code=400, detail=detail)
+
+
 @router.get("/runs", response_model=NrcApsReviewRunSelectorOut)
 def get_runs():
     """List reviewable runs and the default run id."""
     return discover_candidate_runs()
+
+
+@router.get("/workbench-compare/sources", response_model=NrcApsWorkbenchCompareSourcesOut)
+def get_workbench_compare_sources():
+    """List compare-eligible baseline/Candidate A runs and Candidate B bundles."""
+    try:
+        return discover_workbench_compare_sources()
+    except ValueError as exc:
+        _raise_workbench_compare_http_error(exc)
+
+
+@router.get("/workbench-compare/targets", response_model=NrcApsWorkbenchCompareTargetsOut)
+def get_workbench_compare_targets(
+    baseline_run_id: str,
+    candidate_a_run_id: str,
+    candidate_b_bundle_id: str,
+):
+    """Return the strict three-way target set for the selected compare sources."""
+    try:
+        return compose_workbench_compare_targets(
+            baseline_run_id=baseline_run_id,
+            candidate_a_run_id=candidate_a_run_id,
+            candidate_b_bundle_id=candidate_b_bundle_id,
+        )
+    except (ValueError, KeyError, FileNotFoundError) as exc:
+        _raise_workbench_compare_http_error(exc)
+
+
+@router.get("/workbench-compare/targets/{fixture_id}/manifest", response_model=NrcApsWorkbenchCompareManifestOut)
+def get_workbench_compare_manifest(
+    fixture_id: str,
+    baseline_run_id: str,
+    candidate_a_run_id: str,
+    candidate_b_bundle_id: str,
+):
+    """Return the shared compare manifest for one selected fixture."""
+    try:
+        return compose_workbench_compare_manifest(
+            baseline_run_id=baseline_run_id,
+            candidate_a_run_id=candidate_a_run_id,
+            candidate_b_bundle_id=candidate_b_bundle_id,
+            fixture_id=fixture_id,
+        )
+    except (ValueError, KeyError, FileNotFoundError) as exc:
+        _raise_workbench_compare_http_error(exc)
+
+
+@router.get("/workbench-compare/targets/{fixture_id}/tabs/{tab_id}", response_model=NrcApsWorkbenchCompareTabOut)
+def get_workbench_compare_tab(
+    fixture_id: str,
+    tab_id: str,
+    baseline_run_id: str,
+    candidate_a_run_id: str,
+    candidate_b_bundle_id: str,
+):
+    """Return one compare tab payload for the selected fixture."""
+    try:
+        return compose_workbench_compare_tab(
+            baseline_run_id=baseline_run_id,
+            candidate_a_run_id=candidate_a_run_id,
+            candidate_b_bundle_id=candidate_b_bundle_id,
+            fixture_id=fixture_id,
+            tab_id=tab_id,
+        )
+    except (ValueError, KeyError, FileNotFoundError) as exc:
+        _raise_workbench_compare_http_error(exc)
 
 @router.get("/pipeline-definition", response_model=NrcApsReviewPipelineDefinitionOut)
 def get_pipeline_definition(run_id: str):

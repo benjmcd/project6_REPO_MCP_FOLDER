@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NRC APS Workbench Compare</title>
+    <script>
+        (function () {
+            const storageKey = 'nrc_aps_review_theme';
+            let preference = 'system';
+            try {
+                preference = localStorage.getItem(storageKey) || 'system';
+            } catch (error) {
+                preference = 'system';
+            }
+            const prefersDark = typeof window.matchMedia === 'function'
+                && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const resolvedTheme = preference === 'dark' ? 'dark' : preference === 'light' ? 'light' : (prefersDark ? 'dark' : 'light');
+            document.documentElement.dataset.theme = resolvedTheme;
+            document.documentElement.dataset.themePreference = preference;
+        }());
+    </script>
+    <link rel="stylesheet" href="/review/nrc-aps/static/review.css">
+    <link rel="stylesheet" href="/review/nrc-aps/static/workbench_compare.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-left compare-header-left">
+            <a href="/review/nrc-aps" class="back-link" aria-label="Back to Pipeline Review">&larr; Back</a>
+            <h1>Workbench Compare</h1>
+        </div>
+        <div class="header-right compare-header-controls">
+            <label for="baseline-run-selector">Baseline:</label>
+            <select id="baseline-run-selector">
+                <option value="">Loading...</option>
+            </select>
+
+            <label for="candidate-a-run-selector">Candidate A:</label>
+            <select id="candidate-a-run-selector">
+                <option value="">Loading...</option>
+            </select>
+
+            <label for="candidate-b-bundle-selector">Candidate B:</label>
+            <select id="candidate-b-bundle-selector">
+                <option value="">Loading...</option>
+            </select>
+
+            <label for="target-selector">Fixture:</label>
+            <select id="target-selector" disabled>
+                <option value="">Loading...</option>
+            </select>
+
+            <label for="theme-selector">Theme:</label>
+            <select id="theme-selector">
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+        </div>
+    </header>
+
+    <main class="app-body">
+        <div id="disabled-overlay" class="disabled-overlay hidden">
+            <div class="disabled-message">
+                <h2 id="disabled-title">Compare Unavailable</h2>
+                <p id="disabled-reason"></p>
+            </div>
+        </div>
+
+        <div class="compare-workspace hidden" id="compare-workspace">
+            <section class="compare-summary-band">
+                <div class="summary-card">
+                    <div class="summary-card-header">
+                        <h2>Selection</h2>
+                        <div class="trace-link-cluster" id="trace-link-cluster"></div>
+                    </div>
+                    <div class="identity-summary" id="compare-identity-summary"></div>
+                    <div class="badge-strip" id="badge-strip"></div>
+                    <div class="notice-grid">
+                        <section class="notice-panel">
+                            <h3>Warnings</h3>
+                            <ul id="warning-list" class="notice-list"></ul>
+                        </section>
+                        <section class="notice-panel">
+                            <h3>Limitations</h3>
+                            <ul id="limitation-list" class="notice-list"></ul>
+                        </section>
+                    </div>
+                </div>
+            </section>
+
+            <section class="compare-tabs-shell">
+                <div class="tabs-header" id="tabs-header"></div>
+                <div class="compare-tab-content" id="compare-tab-content">
+                    <div class="placeholder">Loading compare data...</div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="/review/nrc-aps/static/workbench_compare.js"></script>
+</body>
+</html>
