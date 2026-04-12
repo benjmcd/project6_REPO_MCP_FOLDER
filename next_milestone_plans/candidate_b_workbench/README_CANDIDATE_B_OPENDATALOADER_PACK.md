@@ -47,7 +47,9 @@ Current compare-surface implementation note:
 - this lane adds `tools/run_nrc_aps_candidate_b_compare.py`
 - this lane adds `tools/run_nrc_aps_candidate_b_baseline.py`
 - this lane adds `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
-- the compare surface is validate-only green on this lane, but the first explicit isolated proof run remains environment-blocked until `opendataloader-pdf` is installed in the intended Python 3.12 environment
+- the compare surface is validate-only green on this lane
+- one explicit isolated proof run has now been completed locally on clean `main`; it passed non-interference and approved-output-boundary checks, and the compare decision was `workbench_useful_with_explicit_footer_limitation`
+- that proof evidence remains local-only until a separate preservation decision is made
 
 ---
 
