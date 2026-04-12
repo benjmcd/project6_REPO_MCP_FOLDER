@@ -24,10 +24,18 @@ This specification relies on the following repo-confirmed authority surfaces:
   - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\review.js`
 - live ORM models:
   - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\models\models.py`
-- current audited runtime example:
+- historical audited runtime example used when this spec was written:
   - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260328_150207\`
   - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260328_150207\local_corpus_e2e_summary.json`
   - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260328_150207\lc.db`
+
+Current repo-state note:
+
+- that `20260328_150207` runtime is not present in the current root checkout
+- current root-local validate-only T8 authority now uses the adopted `20260327_062011` runtime under `backend\app\storage_test_runtime\lc_e2e\20260327_062011`
+- later references in this spec to the `20260328_150207` runtime remain historical/example-specific unless explicitly revalidated
+- the current live root implementation ships the document-trace page shell plus selector, trace, source, diagnostics, normalized-text, indexed-chunks, and extracted-units surfaces
+- the broader downstream-usage surface described later in this spec remains a retained design target rather than a shipped root API route
 
 Important repo-confirmed facts that shape this feature:
 
@@ -40,7 +48,7 @@ Important repo-confirmed facts that shape this feature:
   - `aps_content_chunk`
   - file-backed refs such as `blob_ref`, `normalized_text_ref`, and `diagnostics_ref`
 - the current review tree is runtime-root oriented, not source-corpus oriented, so it is not the correct primary launch surface for document inspection
-- the latest audited runtime has:
+- the historical audited runtime example used for this spec had:
   - `69` linkage rows for the run
   - `68` distinct `content_id` values
   - `0` retrieval rows in `aps_retrieval_chunk_v1`

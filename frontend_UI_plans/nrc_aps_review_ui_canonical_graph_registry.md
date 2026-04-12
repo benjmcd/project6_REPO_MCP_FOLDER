@@ -13,12 +13,17 @@ The graph registry exists so the UI does not derive its structure from Mermaid t
 
 Authority inputs for this registry:
 
-- the proven NRC APS proof flow documented in the verified runtime summary:
+- the proven NRC APS proof flow documented in the historical runtime summary used when this registry was written:
   - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\local_corpus_e2e_summary.json`
 - the live downstream API surfaces in:
   - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\api\router.py`
 - the live persisted downstream artifact families under:
   - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\20260327_062011\storage\connectors\reports\`
+
+Current repo-state note:
+
+- the root-local branch now carries the adopted `20260327_062011` runtime in the current root checkout
+- unless explicitly revalidated otherwise, later references in this registry to the verified runtime summary mean that adopted root-local runtime
 
 ## 3. Registry Rules
 
