@@ -87,4 +87,5 @@ For the polished compare-surface lane, the implemented ergonomic pieces are:
 
 Remaining execution burden:
 
-- one explicit isolated proof run in a prepared environment after `opendataloader-pdf` is installed for the intended Python 3.12 interpreter
+- satisfied locally: one explicit isolated proof run was completed on clean `main` in a prepared Python 3.12 environment with `opendataloader-pdf==2.0.0`
+- remaining closeout question: whether that run's artifacts stay local-only or are preserved as tracked evidence

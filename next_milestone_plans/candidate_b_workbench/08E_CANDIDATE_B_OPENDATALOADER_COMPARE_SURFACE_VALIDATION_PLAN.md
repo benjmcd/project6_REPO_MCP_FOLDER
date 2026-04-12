@@ -38,6 +38,10 @@ Exact validate-only command-wiring support:
 This phase is not standard pytest validation.
 It is an intentional workbench execution.
 
+Current status:
+- satisfied locally on clean `main`
+- local proof result preserved the intended acceptance shape: no outputs outside approved roots, non-interference remained green, and the compare decision stayed limitation-aware rather than overclaiming success
+
 Required posture:
 
 - isolated worktree
