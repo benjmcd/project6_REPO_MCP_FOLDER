@@ -7,7 +7,7 @@
 
 ## Exact committed delta since freeze
 
-`git diff --name-only 56c4147c..HEAD` shows a docs-only delta across 10 tracked MVVLC files:
+`git diff --name-only 56c4147c..551b8ecd` shows a docs-only delta across 10 tracked MVVLC files:
 
 - `00E_REPO_CONSUMER_AND_INVARIANT_MAP.md`
 - `00F_LIVE_REPO_VERIFIED_FACTS_AND_OPEN_ITEMS.md`

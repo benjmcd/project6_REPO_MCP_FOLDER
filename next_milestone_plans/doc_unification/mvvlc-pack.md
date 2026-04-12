@@ -52,7 +52,7 @@ Pre-cleanup dirty lines 9-40 narrated:
 - grouped T8 clean-worktree passing
 
 Those were not true for the root checkout when first audited.
-They are now partly true on the root-local branch after the fixture repair: root carries `backend/tests/review_nrc_aps_runtime_fixture.py`, an adopted `backend/app/storage_test_runtime/lc_e2e/20260327_062011` runtime, and a green grouped T8 review bundle.
+They became partly true only in later root-local/workspace-local validation: root gained `backend/tests/review_nrc_aps_runtime_fixture.py`, a workspace-local copy of `backend/app/storage_test_runtime/lc_e2e/20260327_062011` was adopted on the root-local branch, and the grouped T8 review bundle reran green there. The committed `main` tree preserved by this pack contains the helper/test repairs but not that runtime directory.
 
 ### `06C_ACTIVE_TEST_SURFACE_AND_COMMAND_MATRIX.md`
 
@@ -68,11 +68,11 @@ Pre-fix execution evidence disproved those claims for root:
 
 Current corrected status for root:
 
-- grouped root T8 now passes (`76 passed`) after adopting `backend/app/storage_test_runtime/lc_e2e/20260327_062011`, adding `backend/tests/review_nrc_aps_runtime_fixture.py`, and switching the stale hardcoded review tests to shared runtime discovery
+- later root-local reruns produced a green grouped root T8 result (`76 passed`) after adopting `backend/app/storage_test_runtime/lc_e2e/20260327_062011` in workspace-local branch state, adding `backend/tests/review_nrc_aps_runtime_fixture.py`, and switching the stale hardcoded review tests to shared runtime discovery
 
 Current corrected status for the active merged-main worktree:
 
-- `worktrees/pageevidence-main-merge` now validates successfully against the adopted root-local `20260327_062011` runtime through its shared runtime helper
+- `worktrees/pageevidence-main-merge` later validated successfully against that adopted workspace-local `20260327_062011` runtime through its shared runtime helper
 - `worktrees/pageevidence-main-merge/backend/tests/test_review_nrc_aps_document_trace_api.py` no longer hard-codes vanished representative run ids; it now derives representative positive/mixed/negative/large targets dynamically from the current available runtime and conditionally skips cross-runtime comparison if no second qualifying runtime exists
 - the full worktree review/runtime T8 bundle now passes there: `137 passed, 3 skipped`
 
@@ -96,7 +96,7 @@ Pre-cleanup dirty issues identified in this audit:
 - rows for artifact equivalence, run-scoped review/runtime access, runtime-root coexistence, review/catalog/report/API visibility, diagnostics persistence, and broader T5/T6 acceptance are now treated as fully closed
 
 That closure posture was not supported by root execution evidence when first audited.
-The current root-local grouped T8 bundle is now green, but that still does not automatically upgrade broader grouped T7/T8 closure across separate worktrees or all other validation layers.
+That later root-local grouped T8 rerun was green, but it still does not automatically upgrade broader grouped T7/T8 closure across separate worktrees or all other validation layers.
 
 ### `README_INDEX.md`
 
@@ -215,6 +215,6 @@ The MVVLC pack currently has three simultaneous states layered on top of each ot
 1. committed root branch state at `551b8ecd`
 2. dirty local root edits that overclaim merged-main materialization
 3. actual merged-main worktree owner-path implementation authority
-4. a formerly missing review/runtime fixture authority story, now repaired on the root-local branch and on `worktrees/pageevidence-main-merge` via the adopted `20260327_062011` runtime, shared helper-driven review tests, and dynamic representative target selection in the worktree API tests, while other active-worktree executable parity remains a separate question
+4. a formerly missing review/runtime fixture authority story, later repaired in workspace-local validation on the root-local branch and on `worktrees/pageevidence-main-merge` via the adopted `20260327_062011` runtime, shared helper-driven review tests, and dynamic representative target selection in the worktree API tests, while other active-worktree executable parity remains a separate question and the committed `main` tree still omits the adopted runtime directory itself
 
 Those states are not clearly separated in the current root docs.

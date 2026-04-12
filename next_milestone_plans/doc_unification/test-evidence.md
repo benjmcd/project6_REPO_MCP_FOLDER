@@ -3,23 +3,24 @@
 ## Resolution update
 
 The earlier statement that the active merged-main worktree was green across the full official T1-T8 matrix was too strong.
-The later correction that no active checked-out authority surface could reproduce T8 is now superseded for the root-local branch, for `worktrees/pageevidence-main-merge`, and for `worktrees/nrc-aps-runtime-next`.
+The later correction that no active checked-out authority surface could reproduce T8 was later superseded by workspace-local validate-only reruns on the root-local branch, on `worktrees/pageevidence-main-merge`, and on `worktrees/nrc-aps-runtime-next`.
 
 In this pass:
 
-- the surviving hidden `20260327_062011` single-run golden fixture was adopted into the active root at `backend/app/storage_test_runtime/lc_e2e/20260327_062011`
+- the surviving hidden `20260327_062011` single-run golden fixture was copied into workspace-local root-local branch state at `backend/app/storage_test_runtime/lc_e2e/20260327_062011`; that runtime path is not present in the committed `main` tree preserved by this pack
 - root gained `backend/tests/review_nrc_aps_runtime_fixture.py`
 - stale hardcoded root review/document-trace tests were switched to shared runtime discovery and runtime-derived assertions
 - root `backend/app/services/review_nrc_aps_catalog.py` gained timezone normalization for mixed summary/database completion timestamps
-- the full root grouped T8 bundle now passes: `76 passed`
-- `worktrees/nrc-aps-runtime-next` was directly revalidated and its full grouped T8 bundle now also passes: `105 passed, 1 skipped`
+- later root-local validate-only reruns produced a green grouped T8 result: `76 passed`
+- `worktrees/nrc-aps-runtime-next` was then directly revalidated against that same workspace-local runtime and its full grouped T8 bundle also passed: `105 passed, 1 skipped`
 
 The corrected interpretation is now:
 
 - `worktrees/pageevidence-main-merge` remains the strongest owner-path code authority for MVVLC, PageEvidence, and Candidate B behavior
-- the root-local review/runtime T8 authority surface is now restored and executable
-- `worktrees/pageevidence-main-merge` now also reproduces a green full review/runtime T8 bundle against the adopted root-local runtime
-- `worktrees/nrc-aps-runtime-next` now also reproduces a green full review/runtime T8 bundle against that adopted root-local runtime without further code edits
+- the root-local review/runtime T8 authority surface was restored and executable in that later workspace-local validation state
+- the committed `main` tree now preserves the helper plus catalog/test repairs, but not the adopted runtime corpus itself
+- `worktrees/pageevidence-main-merge` later also reproduced a green full review/runtime T8 bundle against the adopted workspace-local runtime
+- `worktrees/nrc-aps-runtime-next` later also reproduced a green full review/runtime T8 bundle against that adopted workspace-local runtime without further code edits
 - separate active worktrees beyond `worktrees/pageevidence-main-merge` still require their own explicit T8 revalidation if they are to claim current executable parity
 
 ## Commands re-run in this correction pass
@@ -76,7 +77,7 @@ python -m pytest .\backend\tests\test_review_nrc_aps_api.py .\backend\tests\test
 Result:
 
 - `76 passed`
-- root review/runtime T8 is now green against the adopted root-local runtime `backend/app/storage_test_runtime/lc_e2e/20260327_062011`
+- that root-local validation run was green against the adopted workspace-local runtime `backend/app/storage_test_runtime/lc_e2e/20260327_062011`
 
 ### `worktrees/pageevidence-main-merge`
 
@@ -137,17 +138,17 @@ py -3.12 -m pytest .\backend\tests\test_review_nrc_aps_api.py .\backend\tests\te
 Result:
 
 - `105 passed, 1 skipped, 3 warnings`
-- the worktree's narrower `backend/tests/review_nrc_aps_runtime_fixture.py` now resolves the adopted root-local `20260327_062011` runtime because that fixture's summary points to live root-local DB and storage paths
+- the worktree's narrower `backend/tests/review_nrc_aps_runtime_fixture.py` resolved the adopted workspace-local `20260327_062011` runtime during that rerun because that fixture's summary pointed to live root-local DB and storage paths
 - no code edits were required in this worktree for T8 parity; the earlier failure state was superseded by the root-local runtime adoption
 
 ## Runtime-fixture inventory
 
-Current filesystem checks show:
+Current committed-tree and filesystem checks show:
 
-- root checkout now carries the adopted `backend/app/storage_test_runtime/lc_e2e/20260327_062011`
-- `worktrees/pageevidence-main-merge` continues to rely on the adopted root-local runtime rather than a separate local corpus
-- `worktrees/nrc-aps-runtime-next` also resolves that adopted root-local runtime successfully through its existing helper
-- hidden `.claude/worktrees/*` directories and archived snapshots remain relevant as historical provenance for where the surviving single-run fixture was discovered before adoption into the root-local branch
+- committed `main` now carries `backend/tests/review_nrc_aps_runtime_fixture.py` plus the catalog/test repairs, but it does not carry `backend/app/storage_test_runtime/lc_e2e/20260327_062011`
+- the later root-local branch/workspace state used an adopted `backend/app/storage_test_runtime/lc_e2e/20260327_062011` runtime for reruns
+- `worktrees/pageevidence-main-merge` and `worktrees/nrc-aps-runtime-next` relied on that same workspace-local runtime rather than on separate committed local corpora during the later reruns recorded here
+- hidden `.claude/worktrees/*` directories and archived snapshots remain relevant as historical provenance for where the surviving single-run fixture was discovered before that branch-local adoption
 
 ## Focused T8 fixture-authority follow-up
 
@@ -169,12 +170,12 @@ Result:
 - root `backend/.env:6` was pinned to the same missing audited runtime generation via `DATABASE_URL=sqlite:///./app/storage_test_runtime/lc_e2e/20260328_150207/lc.db`
 - root also had no source `backend/tests/review_nrc_aps_runtime_fixture.py`, so the root checkout had not yet adopted the helper-driven runtime discovery model that the active worktrees use for T8
 
-Later root-local resolution:
+Later root-local resolution in workspace-local branch state:
 
-- the adopted root-local runtime now lives at `backend/app/storage_test_runtime/lc_e2e/20260327_062011`
+- a workspace-local copy of the adopted runtime then lived at `backend/app/storage_test_runtime/lc_e2e/20260327_062011`
 - root now has `backend/tests/review_nrc_aps_runtime_fixture.py`
-- root `backend/.env` now points at the adopted `20260327_062011` runtime DB
-- the current grouped root T8 bundle is green: `76 passed`
+- workspace root `backend/.env` was aligned to the adopted `20260327_062011` runtime DB during that repair pass
+- the grouped root T8 rerun then came back green: `76 passed`
 
 ### Earlier active worktree T8 helper and representative-run gap
 
@@ -230,7 +231,7 @@ Result:
 - partial validate-only reruns before the full bundle were also green:
   - `backend/tests/test_review_nrc_aps_document_trace_api.py`: `27 passed`
   - `backend/tests/test_review_nrc_aps_runtime_db.py backend/tests/test_review_nrc_aps_document_trace_service.py`: `41 passed, 1 skipped`
-- the worktree's helper is still narrower than the root-local and `pageevidence-main-merge` helpers, but it no longer blocks T8 because the adopted root-local `20260327_062011` runtime now exists and its summary points to live DB/storage targets
+- the worktree's helper is still narrower than the root-local and `pageevidence-main-merge` helpers, but it no longer blocked T8 during that rerun because the adopted workspace-local `20260327_062011` runtime then existed and its summary pointed to live DB/storage targets
 
 ### Tracked corpus history does not live on the current root branch lineage
 
@@ -296,8 +297,8 @@ Result at that time:
 
 Later status after adoption and targeted repairs:
 
-- that hidden-runtime lineage became the source for the adopted root-local `20260327_062011` fixture
-- once adopted into the root-local branch and paired with shared runtime discovery plus worktree-specific test repairs where needed, it became sufficient for:
+- that hidden-runtime lineage became the source for the workspace-local `20260327_062011` fixture adopted on the root-local branch
+- once adopted into workspace-local branch state and paired with shared runtime discovery plus worktree-specific test repairs where needed, it became sufficient for:
   - root grouped T8: `76 passed`
   - `worktrees/pageevidence-main-merge` grouped T8: `137 passed, 3 skipped`
   - `worktrees/nrc-aps-runtime-next` grouped T8: `105 passed, 1 skipped`
@@ -309,10 +310,10 @@ Current direct execution evidence supports this narrower conclusion:
 - root checkout remains non-green on the broader post-freeze validation story outside the repaired T8 review/runtime surface
 - `worktrees/pageevidence-main-merge` is green on the three requested pillars and on the broader evidence/API/corpus correction run
 - `worktrees/pageevidence-main-merge` is also green on the official T7 backend bundle
-- `worktrees/pageevidence-main-merge` is now green on the full review/runtime T8 bundle as well (`137 passed, 3 skipped`)
-- the root-local grouped T8 review/runtime bundle now reproduces a green result (`76 passed`) after adopting the `20260327_062011` runtime and shared helper-driven review tests
-- `worktrees/nrc-aps-runtime-next` is now also green on the full review/runtime T8 bundle (`105 passed, 1 skipped`) against that adopted root-local runtime
-- the surviving hidden/archive runtime is no longer only partial evidence; it became the source for the adopted root-local T8 authority surface that now supports all three revalidated T8 surfaces above
+- `worktrees/pageevidence-main-merge` later validated green on the full review/runtime T8 bundle as well (`137 passed, 3 skipped`)
+- the root-local grouped T8 review/runtime bundle later reproduced a green result (`76 passed`) in workspace-local validation after adopting the `20260327_062011` runtime and shared helper-driven review tests
+- `worktrees/nrc-aps-runtime-next` later also went green on the full review/runtime T8 bundle (`105 passed, 1 skipped`) against that adopted workspace-local runtime
+- the surviving hidden/archive runtime is no longer only partial evidence in this audit history; it became the source for the workspace-local T8 authority surface that supported all three revalidated T8 surfaces above, even though the committed `main` tree still omits the runtime directory itself
 
 ## What this means for doc claims
 
@@ -328,4 +329,4 @@ The current verified authority split is therefore:
 
 - owner-path implementation authority for MVVLC/PageEvidence/Candidate B: `worktrees/pageevidence-main-merge`
 - root planning/control docs: root checkout, but currently dirty and not unified
-- review/runtime T8 fixture authority: now resolved on the root-local branch and on `worktrees/pageevidence-main-merge` through the adopted `backend/app/storage_test_runtime/lc_e2e/20260327_062011` runtime, shared runtime discovery, and dynamic representative target selection in the worktree API tests; separate active worktrees beyond that still require their own explicit executable T8 revalidation
+- review/runtime T8 fixture authority: later resolved in workspace-local validation on the root-local branch and on `worktrees/pageevidence-main-merge` through the adopted `backend/app/storage_test_runtime/lc_e2e/20260327_062011` runtime, shared runtime discovery, and dynamic representative target selection in the worktree API tests; the committed `main` tree preserves the helper/test repairs but not the runtime corpus itself, and separate active worktrees beyond that still require their own explicit executable T8 revalidation
