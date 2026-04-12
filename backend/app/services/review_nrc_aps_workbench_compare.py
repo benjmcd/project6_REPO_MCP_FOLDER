@@ -448,6 +448,61 @@ def _summary_badges(bundle: _BundleArtifacts, compare_doc: dict[str, Any]) -> li
     ]
 
 
+def _proof_warning_matches_fixture(raw_warning: Any, fixture_id: str) -> bool:
+    if isinstance(raw_warning, list):
+        if not raw_warning:
+            return False
+        saw_fixture_scope = False
+        for item in raw_warning:
+            if isinstance(item, str):
+                value = item.strip()
+                if not value:
+                    continue
+                saw_fixture_scope = True
+                if value == fixture_id:
+                    return True
+            elif isinstance(item, dict):
+                fixture_value = str(item.get("fixture_id") or "").strip()
+                if fixture_value:
+                    saw_fixture_scope = True
+                    if fixture_value == fixture_id:
+                        return True
+                fixture_ids = item.get("fixture_ids")
+                if isinstance(fixture_ids, list):
+                    normalized = [str(value).strip() for value in fixture_ids if str(value).strip()]
+                    if normalized:
+                        saw_fixture_scope = True
+                        if fixture_id in normalized:
+                            return True
+        return not saw_fixture_scope
+    if isinstance(raw_warning, dict):
+        status = str(raw_warning.get("status") or "").strip().lower()
+        if status in {"matched", "ok", "passed", "none"}:
+            return False
+        return bool(raw_warning)
+    if isinstance(raw_warning, str):
+        return bool(raw_warning.strip())
+    return bool(raw_warning)
+
+
+def _candidate_b_manifest_warnings(bundle: _BundleArtifacts, compare_doc: dict[str, Any], fixture_id: str) -> list[str]:
+    candidate_b_data = compare_doc.get("candidate_b") or {}
+    warnings: set[str] = {
+        str(item).strip()
+        for item in (candidate_b_data.get("warning_flags") or [])
+        if str(item).strip()
+    }
+    proof_warnings = bundle.proof.get("warnings")
+    if isinstance(proof_warnings, list):
+        warnings.update(str(item).strip() for item in proof_warnings if str(item).strip())
+    elif isinstance(proof_warnings, dict):
+        for key, raw_warning in proof_warnings.items():
+            label = str(key).strip()
+            if label and _proof_warning_matches_fixture(raw_warning, fixture_id):
+                warnings.add(label)
+    return sorted(warnings)
+
+
 def compose_workbench_compare_manifest(
     *,
     baseline_run_id: str,
@@ -480,7 +535,7 @@ def compose_workbench_compare_manifest(
         )
 
     candidate_b_data = compare_doc.get("candidate_b") or {}
-    warnings = sorted(set((candidate_b_data.get("warning_flags") or []) + (bundle.proof.get("warnings") or [])))
+    warnings = _candidate_b_manifest_warnings(bundle, compare_doc, fixture_id)
     limitations = sorted(
         set(
             (candidate_b_data.get("limitation_flags") or [])

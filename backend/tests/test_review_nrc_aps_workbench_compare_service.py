@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from sqlalchemy import text
 
 os.environ["DB_INIT_MODE"] = "none"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -50,6 +51,13 @@ def _source_target_id() -> str:
     try:
         target_id, _ = resolve_target_for_accession(session, RUNTIME.run_id)
         return target_id
+    except AssertionError:
+        row = session.execute(
+            text("SELECT connector_run_target_id FROM connector_run_target WHERE connector_run_id = :run_id ORDER BY connector_run_target_id ASC LIMIT 1"),
+            {"run_id": RUNTIME.run_id},
+        ).first()
+        assert row is not None, f"Could not find any target in run {RUNTIME.run_id}"
+        return str(row[0])
     finally:
         session.close()
 
@@ -159,7 +167,18 @@ def _write_candidate_b_bundle(tmp_path: Path, *, fixture_id: str) -> tuple[Path,
         encoding="utf-8",
     )
     (bundle_root / "proof.json").write_text(
-        json.dumps({"warnings": ["proof_warning"], "interference_check_passed": True}, indent=2, sort_keys=True),
+        json.dumps(
+            {
+                "warnings": {
+                    "header_footer_emitted_despite_config": [],
+                    "image_source_collisions": [],
+                    "labels_sidecar_manifest_hash_status": {"status": "matched"},
+                },
+                "interference_check_passed": True,
+            },
+            indent=2,
+            sort_keys=True,
+        ),
         encoding="utf-8",
     )
     (bundle_root / "retain.json").write_text(
@@ -291,6 +310,41 @@ def test_compose_workbench_compare_payloads_align_selected_fixture(compare_runti
     )
     assert text_tab.columns["candidate_b"].comparability_class == "derived_only"
     assert text_tab.columns["candidate_b"].data["text"] == "Candidate B text body"
+
+
+def test_compose_workbench_compare_manifest_accepts_dict_shaped_proof_warnings(
+    compare_runtime_fixture: dict[str, object], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    baseline_binding = compare_runtime_fixture["baseline_binding"]
+    candidate_a_binding = compare_runtime_fixture["candidate_a_binding"]
+    checkout_root = compare_runtime_fixture["checkout_root"]
+    bundle_id = compare_runtime_fixture["bundle_id"]
+    fixture_id = compare_runtime_fixture["fixture_id"]
+    selector = compare_runtime_fixture["selector"]
+
+    proof_path = checkout_root / "archive" / "20260412-cb-proof" / "cb-proof-test" / "proof.json"
+    proof_payload = json.loads(proof_path.read_text(encoding="utf-8"))
+    proof_payload["warnings"] = {
+        "header_footer_emitted_despite_config": [fixture_id],
+        "image_source_collisions": [],
+        "labels_sidecar_manifest_hash_status": {"status": "matched"},
+    }
+    proof_path.write_text(json.dumps(proof_payload, indent=2, sort_keys=True), encoding="utf-8")
+
+    monkeypatch.setattr(compare_service, "discover_runtime_bindings", lambda: [baseline_binding, candidate_a_binding])
+    monkeypatch.setattr(compare_service, "discover_candidate_runs", lambda: selector)
+
+    manifest = compare_service.compose_workbench_compare_manifest(
+        baseline_run_id=baseline_binding.run_id,
+        candidate_a_run_id=candidate_a_binding.run_id,
+        candidate_b_bundle_id=bundle_id,
+        fixture_id=fixture_id,
+        checkout_root=checkout_root,
+    )
+
+    assert "footer_warning" in manifest.warnings
+    assert "header_footer_emitted_despite_config" in manifest.warnings
+    assert "labels_sidecar_manifest_hash_status" not in manifest.warnings
 
 
 def test_candidate_b_bundle_id_validation_fails_closed(compare_runtime_fixture: dict[str, object]) -> None:

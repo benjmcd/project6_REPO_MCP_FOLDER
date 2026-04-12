@@ -156,6 +156,7 @@ Document Trace UI:
 Workbench Compare UI:
 
 - [http://127.0.0.1:8098/review/nrc-aps/workbench-compare](http://127.0.0.1:8098/review/nrc-aps/workbench-compare)
+- after the review page loads, the header should expose `Workbench Compare` immediately before `Document Trace`
 
 If you want to open Document Trace directly for a specific run:
 
@@ -186,6 +187,7 @@ On `/review/nrc-aps/document-trace`:
 On `/review/nrc-aps/workbench-compare`:
 
 - the page loads without a blank screen
+- the review-page header link to `Workbench Compare` is present and ordered immediately before `Document Trace`
 - the shell renders even if same-checkout compare sources are absent
 - no raw local filesystem paths are displayed in the UI
 - use the dedicated compare validation plan for populated compare testing

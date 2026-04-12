@@ -15,6 +15,7 @@ Use these files as authority when implementing and validating:
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_api.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_service.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_page.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_page.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\seed_wb_compare.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_seed_wb_compare.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_nrc_aps_candidate_b_opendataloader_compare.py`
@@ -73,16 +74,18 @@ After automated tests are green, verify manually:
    - baseline and Candidate A review roots must be seeded with `tools/seed_wb_compare.py`, not `tools/run_nrc_aps_local_corpus_e2e.py`
    - the seeded review roots must use the fixed five-fixture PDF set shared with the Candidate B workbench bundle
    - any Candidate B bundle used for validation must be discovered from the same checkout root as the compare page
-1. the page loads with no Candidate B bundle selected and surfaces a clear unavailable state
-2. the page also surfaces clear unavailable states when no eligible baseline runs or no eligible Candidate A runs exist
-3. selecting valid baseline + Candidate A + Candidate B sources yields a non-empty target list
-4. selecting incompatible sources yields an explicit empty-state explanation
-5. the shared source header shows the expected fixture/document identity
-6. each compare tab renders three columns
-7. Candidate B limitation badges remain visible, including footer-related warnings when present
-8. direct, derived-only, non-equivalent, and missing states are visually distinct
-9. deep links open the correct baseline and Candidate A document-trace routes
-10. no network call attempts to pass arbitrary filesystem paths from the browser
+1. the review page header shows `Workbench Compare` immediately before `Document Trace`
+2. the new header link opens `/review/nrc-aps/workbench-compare`
+3. the page loads with no Candidate B bundle selected and surfaces a clear unavailable state
+4. the page also surfaces clear unavailable states when no eligible baseline runs or no eligible Candidate A runs exist
+5. selecting valid baseline + Candidate A + Candidate B sources yields a non-empty target list
+6. selecting incompatible sources yields an explicit empty-state explanation
+7. the shared source header shows the expected fixture/document identity
+8. each compare tab renders three columns
+9. Candidate B limitation badges remain visible, including footer-related warnings when present
+10. direct, derived-only, non-equivalent, and missing states are visually distinct
+11. deep links open the correct baseline and Candidate A document-trace routes
+12. no network call attempts to pass arbitrary filesystem paths from the browser
 
 ## 5. Validate-Only Rules
 
