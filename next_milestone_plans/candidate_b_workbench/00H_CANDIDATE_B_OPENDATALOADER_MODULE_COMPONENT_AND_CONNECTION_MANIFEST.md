@@ -95,6 +95,17 @@ Responsibilities:
 - it proves footer-page tracking, image-source collision detection, and multi-column signal detection
 - a separate compare-report pytest surface is not present in the current committed tree
 
+### 2b. Future compare-surface helpers (bounded follow-on lane only)
+- `tools/run_nrc_aps_candidate_b_compare.py`
+- `tools/run_nrc_aps_candidate_b_baseline.py`
+- one repo-native `project6.ps1` compare action
+
+Responsibilities:
+- make the workbench compare flow repo-native
+- generate a fresh baseline-summary input instead of depending on a historical compare artifact path
+- preserve isolated runtime and run-scoped output posture
+- remain outside service/API/review integration
+
 ### 3. Optional corpus sidecar labels
 - `tests/fixtures/nrc_aps_docs/v1/candidate_b_opendataloader_labels.json`
 - optional sidecar manifest if truly required
@@ -117,6 +128,9 @@ Responsibilities:
 
 ### Candidate B v1 connection model
 same corpus -> Candidate B support module -> `sys.executable -m opendataloader_pdf` -> raw ODL outputs -> derived Candidate B summaries -> compare against current lower-layer outputs -> Candidate B proof/compare reports
+
+### Future polished compare-surface connection model
+`project6.ps1` compare action -> Candidate B compare runner -> fresh lower-layer proof + fresh baseline-summary generation -> Candidate B support module -> isolated raw outputs + proof/compare/retention artifacts
 
 ### Explicitly forbidden connection model in v1
 OpenDataLoader -> backend service runtime -> connector endpoints -> persisted outward artifact families
