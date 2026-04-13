@@ -47,9 +47,15 @@ Current compare-surface implementation note:
 - this lane adds `tools/run_nrc_aps_candidate_b_compare.py`
 - this lane adds `tools/run_nrc_aps_candidate_b_baseline.py`
 - this lane adds `tests/test_nrc_aps_candidate_b_opendataloader_compare.py`
-- the compare surface is validate-only green on this lane
+- the compare surface is now landed on `main`
 - one explicit isolated proof run has now been completed locally on clean `main`; it passed non-interference and approved-output-boundary checks, and the compare decision was `workbench_useful_with_explicit_footer_limitation`
 - that proof evidence remains local archived operator evidence and is not preserved in tracked history
+
+Current inspection-gap note:
+- the current compare surface can compare Candidate B bundle outputs but cannot yet open a Candidate B-specific inspection page
+- current committed support on `main` does not yet request or retain annotated PDF output
+- current compare deep links still stop at baseline and Candidate A document-trace targets
+- the next justified additive lane is therefore Candidate B Trace, not runtime admission
 
 ---
 
@@ -118,26 +124,33 @@ Current compare-surface implementation note:
 - `08C` test matrix and triage protocol
 - `09A` output isolation / retention / event registry
 
+## Post-v6 follow-on docs
+
+- `04D_CANDIDATE_B_OPENDATALOADER_ANNOTATED_PDF_AND_INSPECTION_ARTIFACT_CONTRACT.md`
+  - exact annotated PDF retention and inspection-artifact contract for the next additive lane
+- `05U_CANDIDATE_B_OPENDATALOADER_CANDIDATE_B_TRACE_IMPLEMENTATION_PLAN.md`
+  - exact repo-fit implementation plan for a separate Candidate B Trace surface
+- `08F_CANDIDATE_B_OPENDATALOADER_CANDIDATE_B_TRACE_VALIDATION_PLAN.md`
+  - exact validate-only and operator verification burden for that lane
+
 ## Next bounded implementation lane
 
 The next justified Candidate B implementation lane is not runtime integration.
-It is a polished compare surface for the existing workbench-only path.
+It is a separate Candidate B Trace surface for the existing workbench-only path.
 
 That lane is scoped in:
 
-- `05T_CANDIDATE_B_OPENDATALOADER_COMPARE_SURFACE_IMPLEMENTATION_PLAN.md`
-- `08E_CANDIDATE_B_OPENDATALOADER_COMPARE_SURFACE_VALIDATION_PLAN.md`
+- `04D_CANDIDATE_B_OPENDATALOADER_ANNOTATED_PDF_AND_INSPECTION_ARTIFACT_CONTRACT.md`
+- `05U_CANDIDATE_B_OPENDATALOADER_CANDIDATE_B_TRACE_IMPLEMENTATION_PLAN.md`
+- `08F_CANDIDATE_B_OPENDATALOADER_CANDIDATE_B_TRACE_VALIDATION_PLAN.md`
 
 Those docs assume:
 
-- no API or review UI changes
-- no backend service changes
-- no runtime admission or selector changes
-- only repo-native compare-runner ergonomics, fresh baseline-summary generation, isolated outputs, and validate-only compare tests
-- exact action name `compare-nrc-aps-candidate-b`
-- exact compare-runner flag `--plan-only`
-- exact run-root default under `tests/reports/cb-compare-<run_id>/`
-- no protected-diff serialization or raw-output commit widening in the first pass
+- no Candidate B admission into the normal run selector
+- no widening of the existing single-run `document-trace` contract
+- additive page/API/service work only for bundle-scoped Candidate B inspection
+- annotated PDF retention under the approved Candidate B raw-output root only
+- compare deep-link widening only for Candidate B bundle inspection
 
 ---
 
@@ -152,13 +165,16 @@ Those docs assume:
 7. `00D_CANDIDATE_B_OPENDATALOADER_CONFIG_AND_PROCESS_CONTRACT.md`
 8. `04A_CANDIDATE_B_OPENDATALOADER_FIELD_REGISTRY_AND_COMPARISON_SEMANTICS.md`
 9. `04C_CANDIDATE_B_OPENDATALOADER_OUTPUT_CROSSWALK_AND_NON_EQUIVALENCE_MAP.md`
-10. `05R_CANDIDATE_B_OPENDATALOADER_WORKBENCH_COMPARISON_EXECUTION_PACKET.md`
-11. `05T_CANDIDATE_B_OPENDATALOADER_COMPARE_SURFACE_IMPLEMENTATION_PLAN.md`
-12. `06A_CANDIDATE_B_OPENDATALOADER_CORPUS_MANIFEST_AND_LABELING_GUIDE.md`
-13. `08A_CANDIDATE_B_OPENDATALOADER_COMMANDS_VALIDATION_AND_DECISION_RUNBOOK.md`
-14. `08D_CANDIDATE_B_OPENDATALOADER_NONINTERFERENCE_PROOF_SEQUENCE.md`
-15. `08E_CANDIDATE_B_OPENDATALOADER_COMPARE_SURFACE_VALIDATION_PLAN.md`
-16. `06R_CANDIDATE_B_OPENDATALOADER_REMAINING_OPEN_ITEMS_AND_DECISION_GATES.md`
+10. `04D_CANDIDATE_B_OPENDATALOADER_ANNOTATED_PDF_AND_INSPECTION_ARTIFACT_CONTRACT.md`
+11. `05R_CANDIDATE_B_OPENDATALOADER_WORKBENCH_COMPARISON_EXECUTION_PACKET.md`
+12. `05T_CANDIDATE_B_OPENDATALOADER_COMPARE_SURFACE_IMPLEMENTATION_PLAN.md`
+13. `05U_CANDIDATE_B_OPENDATALOADER_CANDIDATE_B_TRACE_IMPLEMENTATION_PLAN.md`
+14. `06A_CANDIDATE_B_OPENDATALOADER_CORPUS_MANIFEST_AND_LABELING_GUIDE.md`
+15. `08A_CANDIDATE_B_OPENDATALOADER_COMMANDS_VALIDATION_AND_DECISION_RUNBOOK.md`
+16. `08D_CANDIDATE_B_OPENDATALOADER_NONINTERFERENCE_PROOF_SEQUENCE.md`
+17. `08E_CANDIDATE_B_OPENDATALOADER_COMPARE_SURFACE_VALIDATION_PLAN.md`
+18. `08F_CANDIDATE_B_OPENDATALOADER_CANDIDATE_B_TRACE_VALIDATION_PLAN.md`
+19. `06R_CANDIDATE_B_OPENDATALOADER_REMAINING_OPEN_ITEMS_AND_DECISION_GATES.md`
 
 ---
 
@@ -170,3 +186,9 @@ That is the correct direction.
 
 Candidate B v1 still remains a local workbench comparator.
 What v6 adds is the missing execution discipline required to keep that statement true during real implementation.
+
+The current post-compare follow-on question is narrower:
+
+- should Candidate B gain a separate additive inspection surface based on ODL-native annotated PDFs and raw bundle artifacts
+
+This pack now freezes that follow-on as a separate lane rather than treating it as implied runtime admission.
