@@ -34,12 +34,16 @@ For the live UI and API behavior, the canonical implementation source of truth i
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\workbench_compare.html`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\workbench_compare.css`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\workbench_compare.js`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\candidate_b_trace.html`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\candidate_b_trace.css`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\candidate_b_trace.js`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\review_ui\static\vendor\`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_graph.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_overview.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_tree.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_details.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_workbench_compare.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\services\review_nrc_aps_candidate_b_trace.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_api.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_api.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_service.py`
@@ -47,8 +51,13 @@ For the live UI and API behavior, the canonical implementation source of truth i
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_workbench_compare_api.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_workbench_compare_service.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_workbench_compare_page.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_candidate_b_trace_api.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_candidate_b_trace_service.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_candidate_b_trace_page.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\seed_wb_compare.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_seed_wb_compare.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\support_nrc_aps_candidate_b_opendataloader.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_nrc_aps_candidate_b_opendataloader.py`
 
 The files in this folder are reference material, not the live implementation surface.
 
@@ -64,7 +73,7 @@ Important implementation-scope note:
 - the live document-trace implementation currently ships the page shell, document selector, trace manifest, source stream, diagnostics, normalized-text, indexed-chunks, and extracted-units surfaces
 - the retained planning docs still describe a broader downstream-usage concept, but current live root implementation only carries that as an unavailable manifest tab placeholder, not as a shipped API route
 - the workbench-compare planning docs in this folder now describe the separate shipped compare page and compare API family; they still do not revise the single-run contract of the shipped review page or document-trace page
-- Candidate B-specific inspection is not part of the shipped workbench-compare v1 contract in this folder; the follow-on Candidate B Trace planning lane currently lives under `next_milestone_plans/candidate_b_workbench/`
+- Candidate B-specific inspection now ships as the separate additive `Candidate B Trace` page and API family for bundle-scoped ODL inspection; it does not widen the single-run `document-trace` contract or admit Candidate B into the normal review runtime model
 
 ## Retained Documents
 

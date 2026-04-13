@@ -105,6 +105,7 @@ def test_workbench_compare_js_uses_page_local_query_params_and_compare_routes() 
     assert "${API_ROOT}/sources" in js_content
     assert "baseline_trace" in js_content
     assert "candidate_a_trace" in js_content
+    assert "candidate_b_trace" in js_content
     assert "document-trace?run_id=" not in js_content
 
 

@@ -217,12 +217,18 @@ Required `deep_links` content:
 
 - `baseline_trace`
 - `candidate_a_trace`
+- `candidate_b_trace`
 
-For v1, each deep link must use the existing document-trace query-string contract:
+For v1, baseline and Candidate A deep links must use the existing document-trace query-string contract:
 
 - `/review/nrc-aps/document-trace?run_id=<run_id>&target_id=<target_id>`
 
-No compare-specific query parameters may be forwarded into the document-trace deep link contract unless a later document-trace planning pass explicitly reopens that page contract.
+Candidate B deep links must use the separate bundle-scoped inspection contract:
+
+- `/review/nrc-aps/candidate-b-trace?candidate_b_bundle_id=<bundle_id>&fixture_id=<fixture_id>`
+
+No compare-specific query parameters may be forwarded into the baseline/Candidate A document-trace contract unless a later document-trace planning pass explicitly reopens that page contract.
+`candidate_b_trace` remains a separate additive page and must not be described as document-trace parity or runtime admission.
 
 ## 6. Compare Tab Contract
 

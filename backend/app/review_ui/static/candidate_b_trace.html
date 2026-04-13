@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NRC APS Candidate B Trace</title>
+    <script>
+        (function () {
+            const storageKey = 'nrc_aps_review_theme';
+            let preference = 'system';
+            try {
+                preference = localStorage.getItem(storageKey) || 'system';
+            } catch (error) {
+                preference = 'system';
+            }
+            const prefersDark = typeof window.matchMedia === 'function'
+                && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const resolvedTheme = preference === 'dark' ? 'dark' : preference === 'light' ? 'light' : (prefersDark ? 'dark' : 'light');
+            document.documentElement.dataset.theme = resolvedTheme;
+            document.documentElement.dataset.themePreference = preference;
+        }());
+    </script>
+    <link rel="stylesheet" href="/review/nrc-aps/static/review.css">
+    <link rel="stylesheet" href="/review/nrc-aps/static/candidate_b_trace.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-left candidate-b-trace-header-left">
+            <a href="/review/nrc-aps/workbench-compare" class="back-link" aria-label="Back to Workbench Compare">&larr; Back</a>
+            <h1>Candidate B Trace</h1>
+        </div>
+        <div class="header-right candidate-b-trace-header-controls">
+            <label for="theme-selector">Theme:</label>
+            <select id="theme-selector">
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+        </div>
+    </header>
+
+    <main class="app-body">
+        <div id="disabled-overlay" class="disabled-overlay hidden">
+            <div class="disabled-message">
+                <h2 id="disabled-title">Candidate B Trace Unavailable</h2>
+                <p id="disabled-reason"></p>
+            </div>
+        </div>
+
+        <div class="candidate-b-trace-workspace hidden" id="candidate-b-trace-workspace">
+            <section class="candidate-b-trace-summary-band">
+                <div class="candidate-b-trace-summary-card">
+                    <div class="candidate-b-trace-summary-header">
+                        <h2>Selection</h2>
+                    </div>
+                    <div class="identity-summary" id="identity-summary"></div>
+                    <div class="badge-strip" id="badge-strip"></div>
+                    <div class="notice-grid">
+                        <section class="notice-panel">
+                            <h3>Warnings</h3>
+                            <ul id="warning-list" class="notice-list"></ul>
+                        </section>
+                        <section class="notice-panel">
+                            <h3>Limitations</h3>
+                            <ul id="limitation-list" class="notice-list"></ul>
+                        </section>
+                    </div>
+                </div>
+            </section>
+
+            <section class="candidate-b-trace-tabs-shell">
+                <div class="tabs-header" id="tabs-header"></div>
+                <div class="tab-content-area" id="tab-content-area">
+                    <div class="placeholder">Loading Candidate B trace...</div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="/review/nrc-aps/static/candidate_b_trace.js"></script>
+</body>
+</html>

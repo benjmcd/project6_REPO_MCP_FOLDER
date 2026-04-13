@@ -131,6 +131,7 @@ def _manifest_payload() -> NrcApsWorkbenchCompareManifestOut:
         deep_links=NrcApsWorkbenchCompareDeepLinksOut(
             baseline_trace="/review/nrc-aps/document-trace?run_id=baseline-run-001&target_id=target-baseline-001",
             candidate_a_trace="/review/nrc-aps/document-trace?run_id=candidate-a-run-001&target_id=target-candidate-a-001",
+            candidate_b_trace="/review/nrc-aps/candidate-b-trace?candidate_b_bundle_id=archive%2F20260412-cb-proof%2Fcb-proof-test&fixture_id=fixture-001",
         ),
     )
 
@@ -161,6 +162,7 @@ def _tab_payload() -> NrcApsWorkbenchCompareTabOut:
                 label="Candidate B",
                 data={"page_count": 4},
                 warnings=["footer_warning"],
+                deep_link="/review/nrc-aps/candidate-b-trace?candidate_b_bundle_id=archive%2F20260412-cb-proof%2Fcb-proof-test&fixture_id=fixture-001",
             ),
         },
         comparability_legend={"direct": "Directly comparable against the owner-path variants."},
@@ -274,5 +276,7 @@ def test_workbench_compare_manifest_and_tab_routes_return_payloads(mock_tab, moc
 
     assert manifest_response.status_code == 200
     assert manifest_response.json()["source_identity"]["fixture_id"] == "fixture-001"
+    assert manifest_response.json()["deep_links"]["candidate_b_trace"].startswith("/review/nrc-aps/candidate-b-trace?")
     assert tab_response.status_code == 200
     assert tab_response.json()["columns"]["candidate_b"]["warnings"] == ["footer_warning"]
+    assert tab_response.json()["columns"]["candidate_b"]["deep_link"].startswith("/review/nrc-aps/candidate-b-trace?")
