@@ -74,7 +74,8 @@ The page must allow a user to:
 - choose one shared corpus-backed document
 - see aligned document-level and page-level comparison outputs
 - distinguish direct comparisons from derived overlays and non-equivalent fields
-- jump from each variant back into the existing single-run document-trace page
+- jump from baseline and Candidate A back into the existing single-run document-trace page
+- treat Candidate B inspection as a separate future additive lane rather than as document-trace parity in v1
 
 ## 5. Product Identity
 
@@ -124,11 +125,12 @@ For v1, `candidate_b_bundle_id` should be serialized in URL-safe POSIX-style rel
   - `derived_only`
   - `non_equivalent`
   - `missing`
-- deep links from each column into the existing document-trace page
+- deep links for baseline and Candidate A into the existing document-trace page
 - read-only API routes and read-only UI behavior
 - explicit unavailable states when any required source class is absent in the current checkout
 - review-page header navigation affordance into the compare page
 - no new navigation added inside the document-trace page itself
+- no Candidate B-specific trace/inspection page in this v1 compare lane
 
 ## 7. Out Of Scope For V1
 
@@ -136,6 +138,7 @@ For v1, `candidate_b_bundle_id` should be serialized in URL-safe POSIX-style rel
 - changing the shipped review page into a compare page
 - arbitrary cross-run comparison outside the shared corpus-backed fixture set
 - Candidate B admission, promotion, or defaulting
+- Candidate B-specific trace/inspection surface
 - run execution from the browser
 - editing, annotation, or mutation
 - direct browser reads from arbitrary filesystem paths

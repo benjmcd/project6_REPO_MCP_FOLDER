@@ -4,6 +4,14 @@
 
 Translate the v5 boundary into explicit file-level rules.
 
+Scope note:
+- these file-touch rules govern the original Candidate B v1 comparator/workbench lane
+- they do not supersede a separately reopened additive lane that is explicitly frozen later in this pack
+- the Candidate B Trace follow-on is such a separately reopened lane and is governed by:
+  - `04D_CANDIDATE_B_OPENDATALOADER_ANNOTATED_PDF_AND_INSPECTION_ARTIFACT_CONTRACT.md`
+  - `05U_CANDIDATE_B_OPENDATALOADER_CANDIDATE_B_TRACE_IMPLEMENTATION_PLAN.md`
+  - `08F_CANDIDATE_B_OPENDATALOADER_CANDIDATE_B_TRACE_VALIDATION_PLAN.md`
+
 ---
 
 ## A. Allowed new files in v1
@@ -88,5 +96,9 @@ Escalate and stop if Candidate B v1 appears to require:
 7. creating parallel handoff copies outside `next_milestone_plans/candidate_b_workbench/...`
 
 Those are not v1 decisions.
+
+Follow-on interpretation rule:
+- do not cite this file by itself to block the explicitly reopened Candidate B Trace lane
+- do cite it to block any widening beyond the exact Candidate B Trace area of effect frozen in `05U`
 
 ---
