@@ -152,7 +152,9 @@ Responsibilities:
 - `backend/app/schemas/review_nrc_aps.py`
 - `backend/app/services/review_nrc_aps_workbench_compare.py`
 - `backend/app/review_ui/static/workbench_compare.js`
-- compare tests under `backend/tests/`
+- `backend/tests/test_review_nrc_aps_workbench_compare_api.py`
+- `backend/tests/test_review_nrc_aps_workbench_compare_service.py`
+- `backend/tests/test_review_nrc_aps_workbench_compare_page.py`
 
 Responsibilities:
 
@@ -245,6 +247,9 @@ Minimum doc sync:
 - `frontend_UI_plans/README.md`
 - `frontend_UI_plans/wb-compare-spec.md`
 - `frontend_UI_plans/wb-compare-blueprint.md`
+- `frontend_UI_plans/wb-compare-validation.md`
+- `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md`
+- `frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md`
 - this Candidate B planning pack
 
 The compare docs should remain current for shipped behavior while clearly recording that Candidate B trace is now a separate additive follow-on surface rather than a retrofit of `document-trace`.
