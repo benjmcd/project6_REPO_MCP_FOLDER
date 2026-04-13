@@ -7,6 +7,11 @@ Define the smallest justified implementation lane for a polished, repo-native Ca
 This plan is intentionally narrower than product integration work.
 It is only for a first-class workbench compare flow.
 
+Scope note:
+- this plan governs the compare-surface lane only
+- it does not govern the separately reopened `Candidate B Trace` follow-on frozen in `05U`
+- its non-goals remain correct for the compare lane and must not be misread as globally blocking the later trace lane
+
 ---
 
 ## Canonical source of truth

@@ -6,6 +6,10 @@ Separate validate-only verification from explicit artifact-generating Candidate 
 
 This doc exists because the compare surface is supposed to become easier to run, but it must still respect the repo rule that validate actions fail closed and do not seed artifacts.
 
+Scope note:
+- this validation plan remains compare-surface specific
+- it does not replace the separate `Candidate B Trace` validation burden frozen in `08F`
+
 ---
 
 ## Validation phases

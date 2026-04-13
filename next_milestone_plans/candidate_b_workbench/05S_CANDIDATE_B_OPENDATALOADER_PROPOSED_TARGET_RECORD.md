@@ -5,6 +5,11 @@
 
 Record the exact v1 identity of Candidate B without implying runtime admission.
 
+Scope note:
+- this target record freezes Candidate B identity for the original workbench comparator posture
+- it does not prevent a later bundle-scoped inspection surface from being added
+- it still forbids treating Candidate B as a normal admitted runtime in the first inspection pass
+
 ---
 
 ## Candidate B v1 record
@@ -49,6 +54,7 @@ Record the exact v1 identity of Candidate B without implying runtime admission.
 
 This target record exists to freeze meaning.
 It does not authorize runtime integration.
+It also does not block the separately reopened bundle-scoped `Candidate B Trace` follow-on.
 
 
 ---
