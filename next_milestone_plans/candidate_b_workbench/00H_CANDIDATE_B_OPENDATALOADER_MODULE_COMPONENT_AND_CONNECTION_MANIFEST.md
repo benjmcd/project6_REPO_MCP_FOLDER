@@ -6,6 +6,11 @@
 State exactly which modules/components/connections matter for Candidate B v1,
 and whether they are reference-only, frozen, or allowed new workbench surfaces.
 
+Scope note:
+- this manifest freezes the original Candidate B comparator and compare-surface component model
+- it does not by itself block the separately reopened `Candidate B Trace` follow-on frozen in `05U`
+- if later implementation pressure exceeds the exact surfaces frozen in `05U`, reopen the pack again instead of widening this manifest silently
+
 ---
 
 ## A. Authority / navigation components (reference-only)

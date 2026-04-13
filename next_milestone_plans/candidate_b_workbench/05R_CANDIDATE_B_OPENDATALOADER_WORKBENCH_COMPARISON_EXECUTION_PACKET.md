@@ -9,6 +9,11 @@ For the next bounded compare-surface hardening lane, pair this packet with:
 - `05T_CANDIDATE_B_OPENDATALOADER_COMPARE_SURFACE_IMPLEMENTATION_PLAN.md`
 - `08E_CANDIDATE_B_OPENDATALOADER_COMPARE_SURFACE_VALIDATION_PLAN.md`
 
+Scope note:
+- this execution packet remains compare-surface specific
+- it does not authorize or prohibit the separately reopened `Candidate B Trace` follow-on by itself
+- use `04D`, `05U`, and `08F` for the next additive inspection lane
+
 ---
 
 ## A. What this packet is for
