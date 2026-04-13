@@ -4,8 +4,13 @@
 
 Define the narrowest justified implementation lane for a separate Candidate B inspection surface after the compare surface has landed on `main`.
 
-This lane exists because the current compare page can compare Candidate B summaries,
-but it cannot yet open an ODL-native inspection surface for the selected Candidate B fixture.
+Status note:
+
+- this document froze the Candidate B Trace lane before implementation
+- current branch code now implements that additive lane without widening runtime admission or the existing single-run `document-trace` contract
+
+The gap this lane closed was that the compare page could compare Candidate B summaries,
+but could not yet open an ODL-native inspection surface for the selected Candidate B fixture.
 
 ---
 

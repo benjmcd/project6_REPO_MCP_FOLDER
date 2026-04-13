@@ -75,7 +75,8 @@ The page must allow a user to:
 - see aligned document-level and page-level comparison outputs
 - distinguish direct comparisons from derived overlays and non-equivalent fields
 - jump from baseline and Candidate A back into the existing single-run document-trace page
-- treat Candidate B inspection as a separate future additive lane rather than as document-trace parity in v1
+- jump from Candidate B into the separate additive `Candidate B Trace` page
+- keep Candidate B inspection separate from document-trace parity and separate from runtime admission
 
 ## 5. Product Identity
 
@@ -126,11 +127,11 @@ For v1, `candidate_b_bundle_id` should be serialized in URL-safe POSIX-style rel
   - `non_equivalent`
   - `missing`
 - deep links for baseline and Candidate A into the existing document-trace page
+- deep links for Candidate B into the separate `Candidate B Trace` page
 - read-only API routes and read-only UI behavior
 - explicit unavailable states when any required source class is absent in the current checkout
 - review-page header navigation affordance into the compare page
 - no new navigation added inside the document-trace page itself
-- no Candidate B-specific trace/inspection page in this v1 compare lane
 
 ## 7. Out Of Scope For V1
 
@@ -138,7 +139,7 @@ For v1, `candidate_b_bundle_id` should be serialized in URL-safe POSIX-style rel
 - changing the shipped review page into a compare page
 - arbitrary cross-run comparison outside the shared corpus-backed fixture set
 - Candidate B admission, promotion, or defaulting
-- Candidate B-specific trace/inspection surface
+- widening Candidate B Trace into the normal review run selector or `visual_lane_mode` family
 - run execution from the browser
 - editing, annotation, or mutation
 - direct browser reads from arbitrary filesystem paths
@@ -160,6 +161,7 @@ For v1, `candidate_b_bundle_id` should be serialized in URL-safe POSIX-style rel
 - the existing document-trace page must remain behaviorally unchanged
 - the existing review page may add only the narrow header navigation affordance into `Workbench Compare`; no other review-page behavior change is in scope
 - deep links back into document trace must remain limited to `run_id`, `target_id`, and optional `tab`
+- deep links into `Candidate B Trace` must remain limited to `candidate_b_bundle_id`, `fixture_id`, and optional `tab`
 
 ## 9. Compare Identity Model
 
@@ -217,7 +219,8 @@ The page should use a stable three-zone structure:
   - canonical source identity
   - fixture metadata
   - comparability summary badges
-  - deep links to single-run document trace for baseline and Candidate A
+- deep links to single-run document trace for baseline and Candidate A
+- deep links to the separate `Candidate B Trace` page for Candidate B
 - main body
   - three-column compare grid
 

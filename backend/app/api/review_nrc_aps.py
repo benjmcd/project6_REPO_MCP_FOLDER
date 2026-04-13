@@ -20,8 +20,9 @@ from app.schemas.review_nrc_aps import (
     NrcApsWorkbenchCompareTargetsOut,
     NrcApsWorkbenchCompareManifestOut,
     NrcApsWorkbenchCompareTabOut,
+    NrcApsCandidateBTraceManifestOut,
 )
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from app.services.review_nrc_aps_catalog import discover_candidate_runs
 from app.services.review_nrc_aps_runtime import find_review_root_for_run, normalize_path
 from app.services.review_nrc_aps_runtime_db import runtime_db_session_for_run
@@ -43,6 +44,12 @@ from app.services.review_nrc_aps_workbench_compare import (
     compose_workbench_compare_tab,
     compose_workbench_compare_targets,
     discover_workbench_compare_sources,
+)
+from app.services.review_nrc_aps_candidate_b_trace import (
+    compose_candidate_b_trace_manifest,
+    load_candidate_b_trace_raw_json,
+    load_candidate_b_trace_raw_markdown,
+    resolve_candidate_b_trace_annotated_pdf_info,
 )
 
 router = APIRouter()
@@ -66,6 +73,31 @@ def _raise_workbench_compare_http_error(exc: Exception) -> None:
     if detail in {
         "candidate_b_bundle_unavailable",
         "fixture_id_not_comparable",
+    }:
+        raise HTTPException(status_code=404, detail=detail)
+    raise HTTPException(status_code=400, detail=detail)
+
+
+def _raise_candidate_b_trace_http_error(exc: Exception) -> None:
+    detail = str(exc)
+    if detail in {
+        "candidate_b_bundle_id_missing",
+        "candidate_b_bundle_id_invalid",
+        "candidate_b_raw_root_missing",
+        "candidate_b_raw_root_invalid",
+        "candidate_b_compare_payload_invalid",
+        "candidate_b_bundle_payload_invalid",
+        "candidate_b_annotated_pdf_invalid",
+        "candidate_b_raw_json_invalid",
+        "candidate_b_raw_markdown_invalid",
+    }:
+        raise HTTPException(status_code=400, detail=detail)
+    if detail in {
+        "candidate_b_bundle_unavailable",
+        "candidate_b_fixture_unavailable",
+        "annotated_pdf_unavailable",
+        "candidate_b_raw_json_unavailable",
+        "candidate_b_raw_markdown_unavailable",
     }:
         raise HTTPException(status_code=404, detail=detail)
     raise HTTPException(status_code=400, detail=detail)
@@ -141,6 +173,72 @@ def get_workbench_compare_tab(
         )
     except (ValueError, KeyError, FileNotFoundError) as exc:
         _raise_workbench_compare_http_error(exc)
+
+
+@router.get("/candidate-b-trace/manifest", response_model=NrcApsCandidateBTraceManifestOut)
+def get_candidate_b_trace_manifest(
+    candidate_b_bundle_id: str,
+    fixture_id: str,
+):
+    """Return the Candidate B Trace manifest for one validated bundle-backed fixture."""
+    try:
+        return compose_candidate_b_trace_manifest(
+            candidate_b_bundle_id=candidate_b_bundle_id,
+            fixture_id=fixture_id,
+        )
+    except (ValueError, KeyError, FileNotFoundError) as exc:
+        _raise_candidate_b_trace_http_error(exc)
+
+
+@router.get("/candidate-b-trace/annotated-pdf")
+def get_candidate_b_trace_annotated_pdf(
+    candidate_b_bundle_id: str,
+    fixture_id: str,
+):
+    """Stream the validated annotated PDF for one bundle-backed fixture."""
+    try:
+        pdf_path, media_type, filename = resolve_candidate_b_trace_annotated_pdf_info(
+            candidate_b_bundle_id=candidate_b_bundle_id,
+            fixture_id=fixture_id,
+        )
+        return FileResponse(
+            path=pdf_path,
+            media_type=media_type,
+            filename=filename,
+        )
+    except (ValueError, KeyError, FileNotFoundError) as exc:
+        _raise_candidate_b_trace_http_error(exc)
+
+
+@router.get("/candidate-b-trace/raw-json")
+def get_candidate_b_trace_raw_json(
+    candidate_b_bundle_id: str,
+    fixture_id: str,
+):
+    """Return the validated raw JSON payload for one bundle-backed fixture."""
+    try:
+        return load_candidate_b_trace_raw_json(
+            candidate_b_bundle_id=candidate_b_bundle_id,
+            fixture_id=fixture_id,
+        )
+    except (ValueError, KeyError, FileNotFoundError) as exc:
+        _raise_candidate_b_trace_http_error(exc)
+
+
+@router.get("/candidate-b-trace/raw-markdown")
+def get_candidate_b_trace_raw_markdown(
+    candidate_b_bundle_id: str,
+    fixture_id: str,
+):
+    """Return the validated raw Markdown payload for one bundle-backed fixture."""
+    try:
+        markdown_text = load_candidate_b_trace_raw_markdown(
+            candidate_b_bundle_id=candidate_b_bundle_id,
+            fixture_id=fixture_id,
+        )
+        return PlainTextResponse(markdown_text)
+    except (ValueError, KeyError, FileNotFoundError) as exc:
+        _raise_candidate_b_trace_http_error(exc)
 
 @router.get("/pipeline-definition", response_model=NrcApsReviewPipelineDefinitionOut)
 def get_pipeline_definition(run_id: str):

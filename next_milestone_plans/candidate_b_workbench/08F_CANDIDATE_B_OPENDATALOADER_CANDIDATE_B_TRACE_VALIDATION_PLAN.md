@@ -6,6 +6,11 @@ Define the validate-only and operator verification burden for the Candidate B Tr
 
 This plan assumes the compare surface is already landed and that Candidate B Trace is a separate additive inspection surface.
 
+Status note:
+
+- this document froze the validation burden before implementation
+- the current branch code now implements the additive Candidate B Trace lane and this plan is the validation authority for that surface
+
 ---
 
 ## Validation principles

@@ -9,6 +9,7 @@ This document is the current operational reference for:
 - validating `/review/nrc-aps`
 - validating `/review/nrc-aps/document-trace`
 - validating `/review/nrc-aps/workbench-compare` shell reachability after same-checkout compare prep
+- validating `/review/nrc-aps/candidate-b-trace` follow-through from prepared compare selections
 - validating runtime switching without restarting the backend
 - validating bbox overlays across multiple runs, documents, and pages
 
@@ -45,7 +46,11 @@ Primary authority files:
 - [backend/app/review_ui/static/workbench_compare.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.html)
 - [backend/app/review_ui/static/workbench_compare.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.js)
 - [backend/app/review_ui/static/workbench_compare.css](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.css)
+- [backend/app/review_ui/static/candidate_b_trace.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/candidate_b_trace.html)
+- [backend/app/review_ui/static/candidate_b_trace.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/candidate_b_trace.js)
+- [backend/app/review_ui/static/candidate_b_trace.css](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/candidate_b_trace.css)
 - [backend/app/services/review_nrc_aps_workbench_compare.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_workbench_compare.py)
+- [backend/app/services/review_nrc_aps_candidate_b_trace.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_candidate_b_trace.py)
 
 Related supporting docs:
 
@@ -71,6 +76,7 @@ This guide validates all of the following together:
 - Document Trace load
 - Document Trace run switching
 - workbench-compare page shell reachability
+- Candidate B Trace follow-through from a populated compare selection
 - source PDF loading
 - tab loading for diagnostics, normalized text, indexed chunks, and extracted units
 - source-to-units and units-to-source interaction sanity
@@ -91,7 +97,8 @@ It does not attempt to validate:
 Important workbench-compare note:
 
 - populated workbench-compare validation requires same-checkout prep for baseline, Candidate A, and Candidate B sources
-- this guide checks route/shell reachability only; it does not define the compare prep flow
+- this guide does not define the compare prep flow itself
+- once same-checkout prep exists, this guide should also validate Candidate B Trace follow-through from the compare page
 - use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated same-corpus compare prep and populated operator-validation sequence
 
 ## Preconditions
@@ -217,6 +224,11 @@ Workbench Compare:
 - [http://127.0.0.1:8011/review/nrc-aps/workbench-compare](http://127.0.0.1:8011/review/nrc-aps/workbench-compare)
 - from `/review/nrc-aps`, the header should also expose `Workbench Compare` immediately before `Document Trace`
 
+Candidate B Trace:
+
+- `http://127.0.0.1:8011/review/nrc-aps/candidate-b-trace?candidate_b_bundle_id=<BUNDLE_ID>&fixture_id=<FIXTURE_ID>`
+- the preferred operator path is still to reach this page from a Candidate B deep link inside Workbench Compare after same-checkout prep
+
 Direct run link:
 
 - `http://127.0.0.1:8011/review/nrc-aps/document-trace?run_id=<RUN_ID>`
@@ -290,6 +302,14 @@ On `/review/nrc-aps/workbench-compare`, verify:
 - no raw local filesystem paths are displayed in the browser UI
 - use the dedicated compare validation plan instead of improvising a demo-corpus prep flow
 - theme switch remains usable if exercised
+
+On `/review/nrc-aps/candidate-b-trace`, once same-checkout compare prep is present, verify:
+
+- the page loads from a Candidate B deep link instead of requiring arbitrary path entry
+- the identity summary reflects the selected `candidate_b_bundle_id` and `fixture_id`
+- `annotated_pdf` is the default tab when the artifact is present
+- `summary`, `raw_json`, and `raw_markdown` tabs load coherently
+- no raw local filesystem paths are displayed in the browser UI
 
 If 3 or more reviewable runs are available:
 

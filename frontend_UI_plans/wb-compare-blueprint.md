@@ -25,6 +25,7 @@ flowchart LR
   E --> F["Three-column workspace"]
   F --> G["Deep link to baseline document-trace"]
   F --> H["Deep link to candidate_a document-trace"]
+  F --> I["Deep link to Candidate B Trace"]
 ```
 
 ## 4. Planned Area Of Effect
@@ -141,8 +142,8 @@ The compare page should show one shared source context header and deep links to 
 Current shipped compare truth:
 
 - baseline and Candidate A deep links point into the existing single-run document-trace page
-- Candidate B does not yet have a shipped inspection page in this lane
-- any Candidate B Trace surface must remain a separate additive follow-on, not a stealth widening of `document-trace`
+- Candidate B deep links point into the separate additive `Candidate B Trace` page
+- Candidate B Trace remains a separate additive surface and not a stealth widening of `document-trace`
 
 Do not render three full source viewers in v1.
 
@@ -215,7 +216,7 @@ The manifest endpoint should:
 1. revalidate the selected source combination
 2. revalidate the selected `fixture_id`
 3. build the shared identity summary
-4. build deep links into baseline and Candidate A document trace
+4. build deep links into baseline and Candidate A document trace plus Candidate B Trace
 5. advertise tab availability
 
 The manifest must not invent default selections when one required source class is empty.
