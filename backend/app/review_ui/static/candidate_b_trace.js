@@ -9,7 +9,7 @@ const state = {
     cachedMarkdown: null,
     candidateBBundleId: '',
     fixtureId: '',
-    tabId: 'summary',
+    tabId: '',
 };
 
 const els = {
@@ -30,9 +30,9 @@ function readQueryState() {
     const params = new URLSearchParams(window.location.search);
     state.candidateBBundleId = params.get('candidate_b_bundle_id') || '';
     state.fixtureId = params.get('fixture_id') || '';
-    state.tabId = params.get('tab') || 'summary';
+    state.tabId = params.get('tab') || '';
     if (!TAB_ORDER.includes(state.tabId)) {
-        state.tabId = 'summary';
+        state.tabId = '';
     }
 }
 
