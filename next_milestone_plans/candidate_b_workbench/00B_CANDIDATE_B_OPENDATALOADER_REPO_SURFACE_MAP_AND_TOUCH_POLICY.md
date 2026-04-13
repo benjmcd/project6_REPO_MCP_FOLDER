@@ -11,6 +11,15 @@ Freeze exactly which repo surfaces Candidate B v1 may:
 This v5 version is grounded in the live repo root README, the visible repo tree,
 the visible `backend/app/services` tree, and opened lower-layer files/tests.
 
+Scope note:
+- this document freezes the original Candidate B v1 lower-layer/workbench comparator boundary
+- it does not override a later separately reopened additive lane that is explicitly frozen elsewhere in this pack
+- the Candidate B Trace follow-on is that kind of separately reopened lane and is governed by:
+  - `04D_CANDIDATE_B_OPENDATALOADER_ANNOTATED_PDF_AND_INSPECTION_ARTIFACT_CONTRACT.md`
+  - `05U_CANDIDATE_B_OPENDATALOADER_CANDIDATE_B_TRACE_IMPLEMENTATION_PLAN.md`
+  - `08F_CANDIDATE_B_OPENDATALOADER_CANDIDATE_B_TRACE_VALIDATION_PLAN.md`
+- unless a later lane is explicitly reopened that way, this document remains the controlling touch boundary
+
 ---
 
 ## A. Highest-authority reference surfaces (read-only)
@@ -166,6 +175,11 @@ Candidate B v1 must not add:
 Bounded follow-on compare-surface exception:
 - one repo-native `project6.ps1` compare action is allowed only in the separate compare-surface lane
 - that exception does not permit changes to any API, review UI, runtime selector, or backend service surface
+
+Separate Candidate B Trace note:
+- the prohibition list above remains correct for Candidate B v1
+- it must not be read as invalidating the separately reopened Candidate B Trace lane frozen in `05U`
+- if implementation pressure goes beyond the exact Candidate B Trace scope frozen there, stop and reopen the pack again
 
 ---
 
