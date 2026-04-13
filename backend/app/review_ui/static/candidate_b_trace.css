@@ -1,0 +1,318 @@
+.candidate-b-trace-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.candidate-b-trace-header-controls {
+    row-gap: 10px;
+}
+
+.back-link {
+    text-decoration: none;
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.candidate-b-trace-workspace {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.candidate-b-trace-summary-band {
+    border-bottom: 1px solid var(--border-color);
+    background: var(--pane-bg);
+    max-height: 34vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.candidate-b-trace-summary-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 18px 20px;
+}
+
+.candidate-b-trace-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.identity-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px 16px;
+}
+
+.identity-summary .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--layout-section-bg);
+}
+
+.identity-summary .meta-label {
+    color: var(--muted-text);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.identity-summary .meta-item span:last-child {
+    color: var(--text-color);
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+.badge-strip {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.trace-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    border: 1px solid var(--border-color);
+    background: var(--layout-section-bg);
+}
+
+.trace-badge.info {
+    border-color: var(--primary-color);
+    background: rgba(24, 100, 217, 0.08);
+}
+
+.trace-badge.warning {
+    border-color: #c27908;
+    background: rgba(194, 121, 8, 0.12);
+}
+
+.trace-badge.success {
+    border-color: #218f54;
+    background: rgba(33, 143, 84, 0.12);
+}
+
+.notice-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-items: start;
+}
+
+.notice-panel {
+    padding: 14px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--layout-section-bg);
+}
+
+.notice-panel h3 {
+    font-size: 0.92rem;
+    margin-bottom: 10px;
+}
+
+.notice-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.notice-list li {
+    color: var(--muted-text);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.notice-list li.empty {
+    font-style: italic;
+}
+
+.candidate-b-trace-tabs-shell {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    background: var(--pane-bg);
+    overflow: hidden;
+}
+
+.tabs-header {
+    display: flex;
+    background: var(--pane-header-bg);
+    border-bottom: 1px solid var(--border-color);
+    overflow-x: auto;
+}
+
+.tab-btn {
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted-text);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+}
+
+.tab-btn:hover:not(:disabled) {
+    color: var(--text-color);
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.tab-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.tab-content-area {
+    flex: 1;
+    min-height: 0;
+    padding: 20px;
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--muted-text);
+    font-size: 0.9rem;
+    text-align: center;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    min-height: 220px;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.detail-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--layout-section-bg);
+}
+
+.detail-panel.full-width {
+    grid-column: 1 / -1;
+}
+
+.detail-panel h3 {
+    font-size: 0.95rem;
+}
+
+.detail-list {
+    display: grid;
+    grid-template-columns: minmax(140px, 220px) minmax(0, 1fr);
+    gap: 8px 12px;
+}
+
+.detail-list dt {
+    margin: 0;
+    font-weight: 700;
+    color: var(--muted-text);
+    word-break: break-word;
+}
+
+.detail-list dd {
+    margin: 0;
+    color: var(--text-color);
+    word-break: break-word;
+}
+
+.detail-list pre,
+.artifact-pre {
+    margin: 0;
+    padding: 14px;
+    border: 1px solid var(--preview-border-color);
+    border-radius: 10px;
+    background: var(--preview-bg);
+    color: var(--preview-text);
+    font-size: 0.85rem;
+    line-height: 1.45;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.artifact-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+}
+
+.artifact-frame {
+    width: 100%;
+    min-height: 72vh;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.artifact-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.artifact-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.artifact-link:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 960px) {
+    .detail-grid,
+    .notice-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-list {
+        grid-template-columns: 1fr;
+    }
+
+    .artifact-frame {
+        min-height: 58vh;
+    }
+}

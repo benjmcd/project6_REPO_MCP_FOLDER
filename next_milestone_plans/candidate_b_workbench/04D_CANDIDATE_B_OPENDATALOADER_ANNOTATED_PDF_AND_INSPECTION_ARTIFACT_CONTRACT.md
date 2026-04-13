@@ -2,10 +2,15 @@
 
 ## Purpose
 
-Freeze the narrowest additive artifact contract for a future Candidate B inspection surface.
+Freeze the narrowest additive artifact contract for the separate Candidate B inspection surface.
+
+Status note:
+
+- this document froze the artifact posture before implementation
+- the current branch code now requests and retains annotated PDF output and exposes it through the separate additive Candidate B Trace surface
 
 This doc does **not** admit Candidate B into the normal review runtime model.
-It only defines how ODL-native inspection artifacts may be retained and surfaced without pretending they are owner-path runtime artifacts.
+It defines how ODL-native inspection artifacts are retained and surfaced without pretending they are owner-path runtime artifacts.
 
 ---
 
@@ -17,12 +22,12 @@ Current committed `main` already supports:
 - Candidate B bundle generation through `tools/run_nrc_aps_candidate_b_compare.py`
 - Candidate B compare consumption through `backend/app/services/review_nrc_aps_workbench_compare.py`
 
-Current committed `main` does **not** yet:
+The current additive lane now:
 
-- request annotated PDF output from the ODL runner
-- retain annotated PDF refs in `compare.json`
-- expose a Candidate B-specific inspection route or page
-- add Candidate B deep links alongside baseline and Candidate A trace links
+- requests annotated PDF output from the ODL runner
+- retains annotated PDF refs in `compare.json`
+- exposes a Candidate B-specific inspection route and page
+- adds Candidate B deep links alongside baseline and Candidate A trace links
 
 ---
 
@@ -80,7 +85,7 @@ Hard rules:
 
 ## E. Compare-report field contract
 
-For each `documents[*].candidate_b` entry in `compare.json`, the future inspection lane must add:
+For each `documents[*].candidate_b` entry in `compare.json`, the inspection lane adds:
 
 - `annotated_pdf_ref`
 - `annotated_pdf_sha256`
@@ -113,7 +118,7 @@ Keeping them flat is the narrower change because the current compare bundle and 
 
 ## F. Inspection-surface read contract
 
-A future Candidate B inspection service may read only:
+The Candidate B inspection service may read only:
 
 - validated bundle metadata from:
   - `compare.json`

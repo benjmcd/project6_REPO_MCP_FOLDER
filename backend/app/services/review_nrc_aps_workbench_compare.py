@@ -416,6 +416,10 @@ def _trace_link(run_id: str, target_id: str, *, tab: str | None = None) -> str:
     return f"/review/nrc-aps/document-trace?{urlencode(params)}"
 
 
+def _candidate_b_trace_link(bundle_id: str, fixture_id: str) -> str:
+    return f"/review/nrc-aps/candidate-b-trace?{urlencode({'candidate_b_bundle_id': bundle_id, 'fixture_id': fixture_id})}"
+
+
 def _summary_badges(bundle: _BundleArtifacts, compare_doc: dict[str, Any]) -> list[NrcApsWorkbenchCompareBadgeOut]:
     interference_ok = bool(bundle.compare.get("interference_check_passed"))
     decision = str(bundle.compare.get("decision_recommendation") or "unknown").strip() or "unknown"
@@ -583,6 +587,7 @@ def compose_workbench_compare_manifest(
         deep_links=NrcApsWorkbenchCompareDeepLinksOut(
             baseline_trace=_trace_link(baseline_binding.run_id, baseline_target.target_id),
             candidate_a_trace=_trace_link(candidate_a_binding.run_id, candidate_a_target.target_id),
+            candidate_b_trace=_candidate_b_trace_link(bundle.bundle_id, fixture_id),
         ),
     )
 
@@ -684,6 +689,7 @@ def compose_workbench_compare_tab(
 
     baseline_link = _trace_link(baseline_binding.run_id, baseline_target.target_id, tab=tab_id)
     candidate_a_link = _trace_link(candidate_a_binding.run_id, candidate_a_target.target_id, tab=tab_id)
+    candidate_b_link = _candidate_b_trace_link(bundle.bundle_id, fixture_id)
 
     with runtime_db_session_for_binding(baseline_binding) as baseline_session:
         baseline_manifest = compose_trace_manifest(
@@ -784,6 +790,7 @@ def compose_workbench_compare_tab(
             data=_candidate_b_summary_data(bundle, compare_doc),
             warnings=list((compare_doc.get("candidate_b") or {}).get("warning_flags") or []),
             limitations=list((compare_doc.get("candidate_b") or {}).get("limitation_flags") or []),
+            deep_link=candidate_b_link,
         )
     elif tab_id == "normalized_text":
         columns["baseline"] = (
@@ -830,6 +837,7 @@ def compose_workbench_compare_tab(
             },
             warnings=["Candidate B normalized text is workbench-only and not a replacement for owner-path normalized text."],
             limitations=list((compare_doc.get("candidate_b") or {}).get("limitation_flags") or []),
+            deep_link=candidate_b_link,
         )
     elif tab_id == "diagnostics":
         columns["baseline"] = (
@@ -880,6 +888,7 @@ def compose_workbench_compare_tab(
             data=_candidate_b_diagnostics_data(bundle, compare_doc),
             warnings=list((compare_doc.get("candidate_b") or {}).get("warning_flags") or []),
             limitations=list((compare_doc.get("candidate_b") or {}).get("limitation_flags") or []),
+            deep_link=candidate_b_link,
         )
     else:
         columns["baseline"] = (
@@ -914,6 +923,7 @@ def compose_workbench_compare_tab(
             data=_candidate_b_structure_data(compare_doc),
             warnings=list((compare_doc.get("candidate_b") or {}).get("warning_flags") or []),
             limitations=list((compare_doc.get("candidate_b") or {}).get("limitation_flags") or []),
+            deep_link=candidate_b_link,
         )
 
     warnings = sorted(

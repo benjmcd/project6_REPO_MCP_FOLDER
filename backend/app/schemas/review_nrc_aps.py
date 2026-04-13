@@ -440,6 +440,7 @@ class NrcApsWorkbenchCompareTabDefOut(BaseModel):
 class NrcApsWorkbenchCompareDeepLinksOut(BaseModel):
     baseline_trace: str | None = None
     candidate_a_trace: str | None = None
+    candidate_b_trace: str | None = None
 
 
 class NrcApsWorkbenchCompareManifestOut(BaseModel):
@@ -471,4 +472,58 @@ class NrcApsWorkbenchCompareTabOut(BaseModel):
     comparability_legend: dict[str, str] = Field(default_factory=dict)
     warnings: list[str] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
+
+
+class NrcApsCandidateBTraceTabDefOut(BaseModel):
+    tab_id: str
+    label: str
+    available: bool = True
+
+
+class NrcApsCandidateBTraceIdentityOut(BaseModel):
+    fixture_id: str
+    bundle_id: str
+    candidate_b_run_id: str | None = None
+    document_title: str | None = None
+    source_file_name: str | None = None
+    document_ref: str | None = None
+    document_sha256: str | None = None
+
+
+class NrcApsCandidateBTraceSummaryOut(BaseModel):
+    processing_status: str | None = None
+    decision_recommendation: str | None = None
+    page_count: int | None = None
+    normalized_char_count: int | None = None
+    struct_tree_state: str | None = None
+    heading_count: int | None = None
+    list_count: int | None = None
+    image_count: int | None = None
+    table_count: int | None = None
+    hidden_text_present: bool | None = None
+    footer_page_numbers: list[int] = Field(default_factory=list)
+    image_sources: list[str] = Field(default_factory=list)
+    annotated_pdf_status: str | None = None
+    expected_gain_claims: list[str] = Field(default_factory=list)
+    expected_non_equivalences: list[str] = Field(default_factory=list)
+    regime_labels: list[str] = Field(default_factory=list)
+    review_notes: str | None = None
+
+
+class NrcApsCandidateBTraceArtifactEndpointsOut(BaseModel):
+    annotated_pdf: str | None = None
+    raw_json: str | None = None
+    raw_markdown: str | None = None
+
+
+class NrcApsCandidateBTraceManifestOut(BaseModel):
+    candidate_b_bundle_id: str
+    fixture_id: str
+    identity: NrcApsCandidateBTraceIdentityOut
+    summary: NrcApsCandidateBTraceSummaryOut
+    tabs: list[NrcApsCandidateBTraceTabDefOut] = Field(default_factory=list)
+    default_tab: str = "summary"
+    warnings: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+    artifacts: NrcApsCandidateBTraceArtifactEndpointsOut
 

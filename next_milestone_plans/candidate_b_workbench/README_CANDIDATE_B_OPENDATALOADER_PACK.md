@@ -51,11 +51,11 @@ Current compare-surface implementation note:
 - one explicit isolated proof run has now been completed locally on clean `main`; it passed non-interference and approved-output-boundary checks, and the compare decision was `workbench_useful_with_explicit_footer_limitation`
 - that proof evidence remains local archived operator evidence and is not preserved in tracked history
 
-Current inspection-gap note:
-- the current compare surface can compare Candidate B bundle outputs but cannot yet open a Candidate B-specific inspection page
-- current committed support on `main` does not yet request or retain annotated PDF output
-- current compare deep links still stop at baseline and Candidate A document-trace targets
-- the next justified additive lane is therefore Candidate B Trace, not runtime admission
+Current inspection-surface note:
+- the current branch implementation adds the separate additive `Candidate B Trace` page and API family for bundle-scoped inspection
+- current support now requests annotated PDF output and retains it under the approved Candidate B raw-output root
+- current compare deep links now include `candidate_b_trace` alongside the existing baseline and Candidate A trace links
+- Candidate B still remains workbench-only, non-admitted, and outside the normal review runtime selector
 
 ---
 
@@ -124,19 +124,19 @@ Current inspection-gap note:
 - `08C` test matrix and triage protocol
 - `09A` output isolation / retention / event registry
 
-## Post-v6 follow-on docs
+## Post-v6 Candidate B Trace freeze docs
 
 - `04D_CANDIDATE_B_OPENDATALOADER_ANNOTATED_PDF_AND_INSPECTION_ARTIFACT_CONTRACT.md`
-  - exact annotated PDF retention and inspection-artifact contract for the next additive lane
+  - exact annotated PDF retention and inspection-artifact contract for the additive inspection lane
 - `05U_CANDIDATE_B_OPENDATALOADER_CANDIDATE_B_TRACE_IMPLEMENTATION_PLAN.md`
-  - exact repo-fit implementation plan for a separate Candidate B Trace surface
+  - exact repo-fit implementation plan that froze the separate Candidate B Trace surface
 - `08F_CANDIDATE_B_OPENDATALOADER_CANDIDATE_B_TRACE_VALIDATION_PLAN.md`
   - exact validate-only and operator verification burden for that lane
 
-## Next bounded implementation lane
+## Current bounded additive lane
 
-The next justified Candidate B implementation lane is not runtime integration.
-It is a separate Candidate B Trace surface for the existing workbench-only path.
+The active Candidate B implementation lane is still not runtime integration.
+It is the separate Candidate B Trace surface for the existing workbench-only path.
 
 That lane is scoped in:
 
@@ -187,8 +187,8 @@ That is the correct direction.
 Candidate B v1 still remains a local workbench comparator.
 What v6 adds is the missing execution discipline required to keep that statement true during real implementation.
 
-The current post-compare follow-on question is narrower:
+The Candidate B Trace question was narrower:
 
 - should Candidate B gain a separate additive inspection surface based on ODL-native annotated PDFs and raw bundle artifacts
 
-This pack now freezes that follow-on as a separate lane rather than treating it as implied runtime admission.
+This pack freezes and now anchors that separate lane rather than treating it as implied runtime admission.

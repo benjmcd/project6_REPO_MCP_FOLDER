@@ -86,8 +86,10 @@ After automated tests are green, verify manually:
 10. each compare tab renders three columns
 11. Candidate B limitation badges remain visible, including footer-related warnings when present
 12. direct, derived-only, non-equivalent, and missing states are visually distinct
-13. deep links open the correct baseline and Candidate A document-trace routes
-14. no network call attempts to pass arbitrary filesystem paths from the browser
+13. baseline and Candidate A deep links open the correct document-trace routes
+14. Candidate B deep links open the separate `Candidate B Trace` page rather than `document-trace`
+15. when annotated PDF output is present, `Candidate B Trace` defaults to `annotated_pdf` rather than `summary`
+16. no network call attempts to pass arbitrary filesystem paths from the browser
 
 ## 5. Validate-Only Rules
 

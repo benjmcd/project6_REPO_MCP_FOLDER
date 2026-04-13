@@ -5,6 +5,7 @@ import hashlib
 import importlib.metadata
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -59,6 +60,7 @@ PROTECTED_DIFF_PATHS = [
     "backend/app/services/nrc_aps_page_evidence.py",
     "tools/run_nrc_aps_page_evidence_workbench.py",
 ]
+ANNOTATED_PDF_DIR = "annotated"
 
 
 def utc_now() -> str:
@@ -265,6 +267,37 @@ def run_shell_command(command: list[str], *, cwd: Path, env: dict[str, str]) -> 
     }
 
 
+def build_odl_cli_capability_snapshot() -> dict[str, Any]:
+    help_result = run_shell_command(
+        [sys.executable, "-m", "opendataloader_pdf", "--help"],
+        cwd=ROOT,
+        env=os.environ.copy(),
+    )
+    if not help_result["passed"]:
+        raise RuntimeError("odl_cli_help_failed")
+    help_text = str(help_result.get("stdout") or "")
+    format_line = next(
+        (
+            line.strip()
+            for line in help_text.splitlines()
+            if "Output formats" in line or "Values: json" in line
+        ),
+        "",
+    )
+    if "pdf" not in format_line.lower():
+        raise RuntimeError("annotated_pdf_output_unsupported")
+    format_values: list[str] = []
+    if "Values:" in format_line:
+        values_text = format_line.split("Values:", 1)[1].split("Default:", 1)[0]
+        format_values = [item.strip() for item in values_text.split(",") if item.strip()]
+    return {
+        "command": [sys.executable, "-m", "opendataloader_pdf", "--help"],
+        "format_line": format_line,
+        "format_values": format_values,
+        "supports_pdf": True,
+    }
+
+
 def git_head() -> str | None:
     completed = subprocess.run(
         ["git", "rev-parse", "HEAD"],
@@ -349,6 +382,40 @@ def build_python_metadata() -> dict[str, Any]:
         "odl_package_sha256_verified": None,
         "odl_package_sha256_verification_reason": "installed_package_directory_not_reconstructable_to_pinned_wheel_hash",
     }
+
+
+def canonical_annotated_pdf_path(raw_root: Path, fixture_id: str) -> Path:
+    return raw_root / ANNOTATED_PDF_DIR / f"{fixture_id}.pdf"
+
+
+def canonicalize_generated_annotated_pdf(
+    *,
+    raw_root: Path,
+    fixture_id: str,
+    fixture_stem: str,
+    preexisting_pdf_paths: set[Path],
+) -> Path:
+    canonical_path = canonical_annotated_pdf_path(raw_root, fixture_id)
+    canonical_resolved = canonical_path.resolve()
+    if canonical_path.exists() and canonical_resolved not in preexisting_pdf_paths:
+        return canonical_path
+
+    preferred = (raw_root / f"{fixture_stem}.pdf").resolve()
+    candidates = [
+        path.resolve()
+        for path in raw_root.rglob("*.pdf")
+        if path.resolve() not in preexisting_pdf_paths and path.resolve() != canonical_resolved
+    ]
+    if preferred in candidates:
+        source_path = preferred
+    elif len(candidates) == 1:
+        source_path = candidates[0]
+    else:
+        raise RuntimeError(f"missing_candidate_b_annotated_pdf_output:{fixture_id}")
+
+    canonical_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(source_path), str(canonical_path))
+    return canonical_path
 
 
 def run_baseline_proof(*, label: str, run_root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -519,6 +586,7 @@ def summarize_candidate_output(
     label_entry: dict[str, Any],
     raw_json_path: Path,
     raw_markdown_path: Path,
+    annotated_pdf_path: Path,
     log_text: str,
 ) -> dict[str, Any]:
     root = read_json(raw_json_path)
@@ -606,6 +674,9 @@ def summarize_candidate_output(
         "raw_json_sha256": sha256_path(raw_json_path),
         "raw_markdown_ref": repo_rel(raw_markdown_path),
         "raw_markdown_sha256": sha256_path(raw_markdown_path),
+        "annotated_pdf_ref": repo_rel(annotated_pdf_path),
+        "annotated_pdf_sha256": sha256_path(annotated_pdf_path),
+        "annotated_pdf_status": "present",
         "struct_tree_state": struct_tree_state,
         "struct_tree_state_source": struct_tree_source,
         "table_count": int(element_counts.get("table", 0)),
@@ -631,6 +702,7 @@ def run_candidate_b_cli(
         raise RuntimeError(f"missing_fixture:{fixture_entry.get('fixture_id')}")
     fixture_id = str(fixture_entry.get("fixture_id") or "").strip()
     image_dir = Path("images") / fixture_id
+    preexisting_pdf_paths = {path.resolve() for path in raw_root.rglob("*.pdf")}
     command = [
         sys.executable,
         "-m",
@@ -639,7 +711,7 @@ def run_candidate_b_cli(
         "--output-dir",
         ".",
         "--format",
-        "json,markdown",
+        "json,markdown,pdf",
         "--reading-order",
         "xycut",
         "--table-method",
@@ -681,6 +753,12 @@ def run_candidate_b_cli(
         }, combined_output)
     if not json_path.exists() or not markdown_path.exists():
         raise RuntimeError(f"missing_candidate_b_output:{fixture_id}")
+    annotated_pdf_path = canonicalize_generated_annotated_pdf(
+        raw_root=raw_root,
+        fixture_id=fixture_id,
+        fixture_stem=fixture_path.stem,
+        preexisting_pdf_paths=preexisting_pdf_paths,
+    )
     return ({
         "fixture_id": fixture_id,
         "elapsed_seconds": elapsed,
@@ -690,6 +768,7 @@ def run_candidate_b_cli(
         "stderr": result.stderr,
         "raw_json_ref": repo_rel(json_path),
         "raw_markdown_ref": repo_rel(markdown_path),
+        "annotated_pdf_ref": repo_rel(annotated_pdf_path),
         "image_dir": (raw_root / image_dir).as_posix(),
     }, combined_output)
 
@@ -720,6 +799,8 @@ def raw_file_inventory(raw_root: Path) -> list[dict[str, Any]]:
             category = "candidate_b_raw_json"
         elif suffix == ".md":
             category = "candidate_b_raw_markdown"
+        elif suffix == ".pdf":
+            category = "candidate_b_annotated_pdf"
         elif suffix in {".png", ".jpeg", ".jpg"}:
             category = "candidate_b_extracted_image"
         inventory.append({
@@ -830,6 +911,7 @@ def prepare_workbench_context() -> dict[str, Any]:
         "label_entry_by_fixture": label_entry_by_fixture,
         "label_hash_status": label_hash_status,
         "manifest_sha": manifest_sha,
+        "odl_cli_capabilities": build_odl_cli_capability_snapshot(),
         "python_metadata": build_python_metadata(),
     }
 
@@ -883,6 +965,9 @@ def collect_candidate_b_findings(
                 "baseline": baseline_summary,
                 "candidate_b": {
                     "processing_status": "failed",
+                    "annotated_pdf_ref": None,
+                    "annotated_pdf_sha256": None,
+                    "annotated_pdf_status": "missing",
                     "raw_json_ref": None,
                     "raw_markdown_ref": None,
                     "warning_flags": ["raw_output_generation_failure"],
@@ -900,11 +985,13 @@ def collect_candidate_b_findings(
 
         json_path = raw_root / f"{Path(str(fixture_entry.get('path') or '')).stem}.json"
         markdown_path = raw_root / f"{Path(str(fixture_entry.get('path') or '')).stem}.md"
+        annotated_pdf_path = canonical_annotated_pdf_path(raw_root, fixture_id)
         candidate_summary = summarize_candidate_output(
             fixture_id=fixture_id,
             label_entry=label_entry,
             raw_json_path=json_path,
             raw_markdown_path=markdown_path,
+            annotated_pdf_path=annotated_pdf_path,
             log_text=log_text,
         )
         image_sources_by_fixture[fixture_id] = list(candidate_summary["image_sources"])
@@ -973,6 +1060,7 @@ def collect_candidate_b_findings(
             "elapsed_seconds": cli_result["elapsed_seconds"],
             "raw_json_ref": candidate_summary["raw_json_ref"],
             "raw_markdown_ref": candidate_summary["raw_markdown_ref"],
+            "annotated_pdf_ref": candidate_summary["annotated_pdf_ref"],
         })
 
     return {
@@ -1047,7 +1135,7 @@ def write_candidate_b_reports(
         "odl_package_sha256_verification_reason": python_metadata["odl_package_sha256_verification_reason"],
         "odl_config_snapshot": {
             "batch_input_fixture_ids": list(FROZEN_FIXTURE_IDS),
-            "format": "json,markdown",
+            "format": "json,markdown,pdf",
             "hybrid": "off",
             "image_dir": "images/<fixture_id>",
             "image_format": "png",
