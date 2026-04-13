@@ -174,6 +174,9 @@ function renderTraceLinks(manifest) {
     if (manifest.deep_links?.candidate_a_trace) {
         links.push(`<a href="${manifest.deep_links.candidate_a_trace}">Candidate A Trace</a>`);
     }
+    if (manifest.deep_links?.candidate_b_trace) {
+        links.push(`<a href="${manifest.deep_links.candidate_b_trace}">Candidate B Trace</a>`);
+    }
     els.traceLinkCluster.innerHTML = links.length ? links.join('') : '<span class="meta-item">No trace links available.</span>';
 }
 

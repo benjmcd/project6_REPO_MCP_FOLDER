@@ -1,17 +1,26 @@
 from __future__ import annotations
 
+import json
+import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 
 TESTS_DIR = Path(__file__).resolve().parent
 if str(TESTS_DIR) not in sys.path:
     sys.path.insert(0, str(TESTS_DIR))
 
+import support_nrc_aps_candidate_b_opendataloader as support  # noqa: E402
 from support_nrc_aps_candidate_b_opendataloader import (  # noqa: E402
+    build_odl_cli_capability_snapshot,
+    canonical_annotated_pdf_path,
     collect_footer_pages,
     detect_layout_multi_column_signal,
     find_image_source_collisions,
+    run_candidate_b_cli,
+    summarize_candidate_output,
 )
 
 
@@ -84,3 +93,95 @@ def test_detect_layout_multi_column_signal_finds_horizontal_separation() -> None
     }
 
     assert detect_layout_multi_column_signal(payload) is True
+
+
+def test_build_odl_cli_capability_snapshot_requires_pdf_support(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        support,
+        "run_shell_command",
+        lambda command, *, cwd, env: {
+            "args": command,
+            "cwd": str(cwd),
+            "exit_code": 0,
+            "stdout": "--format FORMAT  Output formats (comma-separated). Values: json, markdown",
+            "stderr": "",
+            "passed": True,
+        },
+    )
+
+    with pytest.raises(RuntimeError, match="annotated_pdf_output_unsupported"):
+        build_odl_cli_capability_snapshot()
+
+
+def test_run_candidate_b_cli_requests_pdf_and_canonicalizes_output(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    corpus_dir = tmp_path / "corpus"
+    corpus_dir.mkdir()
+    fixture_path = corpus_dir / "fontish.pdf"
+    fixture_path.write_bytes(b"%PDF-1.4\n%fixture\n")
+    raw_root = tmp_path / "raw"
+    raw_root.mkdir()
+
+    monkeypatch.setattr(support, "CORPUS_DIR", corpus_dir)
+
+    def _fake_run(command, *, cwd, capture_output, text, encoding):
+        del capture_output, text, encoding
+        assert "--format" in command
+        assert command[command.index("--format") + 1] == "json,markdown,pdf"
+        working = Path(cwd)
+        (working / "fontish.json").write_text(json.dumps({"kids": [], "number of pages": 1}), encoding="utf-8")
+        (working / "fontish.md").write_text("# fontish", encoding="utf-8")
+        (working / "fontish.pdf").write_bytes(b"%PDF-1.4\n%annotated\n")
+        return subprocess.CompletedProcess(command, 0, stdout="ok", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", _fake_run)
+
+    cli_result, _ = run_candidate_b_cli(
+        fixture_entry={"fixture_id": "fontish", "path": "fontish.pdf"},
+        raw_root=raw_root,
+    )
+
+    canonical_path = canonical_annotated_pdf_path(raw_root, "fontish")
+    assert canonical_path.exists()
+    assert not (raw_root / "fontish.pdf").exists()
+    assert cli_result["annotated_pdf_ref"].endswith("annotated/fontish.pdf")
+
+
+def test_summarize_candidate_output_emits_annotated_pdf_refs(tmp_path: Path) -> None:
+    raw_json_path = tmp_path / "fontish.json"
+    raw_markdown_path = tmp_path / "fontish.md"
+    annotated_pdf_path = canonical_annotated_pdf_path(tmp_path, "fontish")
+    annotated_pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    raw_json_path.write_text(
+        json.dumps(
+            {
+                "file name": "fontish.pdf",
+                "number of pages": 1,
+                "kids": [
+                    {
+                        "type": "heading",
+                        "page number": 1,
+                        "content": "Intro",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    raw_markdown_path.write_text("# Intro", encoding="utf-8")
+    annotated_pdf_path.write_bytes(b"%PDF-1.4\n%annotated\n")
+
+    summary = summarize_candidate_output(
+        fixture_id="fontish",
+        label_entry={"regime_labels": []},
+        raw_json_path=raw_json_path,
+        raw_markdown_path=raw_markdown_path,
+        annotated_pdf_path=annotated_pdf_path,
+        log_text="",
+    )
+
+    assert summary["annotated_pdf_status"] == "present"
+    assert summary["annotated_pdf_ref"].endswith("annotated/fontish.pdf")
+    assert summary["annotated_pdf_sha256"]

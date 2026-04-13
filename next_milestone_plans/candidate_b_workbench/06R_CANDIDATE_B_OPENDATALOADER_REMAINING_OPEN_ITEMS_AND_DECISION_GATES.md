@@ -140,38 +140,42 @@ If a later program wants true runtime admission, that must be reopened explicitl
 
 ---
 
-## Remaining open item 7 - annotated PDF retention contract
+## Resolved in this pass - annotated PDF retention contract
 
-### What remains open
-The pinned package appears to expose annotated PDF output capability, but current committed `main` does not yet request or retain annotated PDF artifacts in Candidate B bundles.
+Resolved posture:
+- the Candidate B Trace lane now requests annotated PDF output from the pinned package
+- the retained artifact contract now canonicalizes it under the approved raw-output root
+- annotated PDF presence remains bundle-scoped and does not imply runtime admission
 
 ### Hard rule
-Do not assume annotated PDFs are already part of the current retained Candidate B bundle contract.
-Treat that as a separate additive artifact decision frozen in `04D`.
+Do not widen annotated PDF retention beyond the approved Candidate B raw-output root without a separate explicit reopen.
 
 ---
 
-## Remaining open item 8 - Candidate B Trace implementation lane
+## Resolved in this pass - Candidate B Trace implementation lane
 
-### What remains open
-Current compare manifests and compare columns do not yet expose a Candidate B deep link, and there is no Candidate B-specific inspection page or API family on `main`.
+Resolved posture:
+- compare manifests and Candidate B compare columns now expose `candidate_b_trace`
+- the separate Candidate B-specific inspection page and API family now exist in the additive lane
+- Candidate B still does not enter the normal run selector or `visual_lane_mode` family
 
 ### Hard rule
-Do not claim Candidate B currently has parity with baseline/Candidate A document-trace inspection.
-Current parity ends at compare-column payload adaptation only.
+Do not describe Candidate B Trace as document-trace parity or runtime admission.
+It remains a separate additive inspection surface.
 
 ---
 
-## Remaining open item 9 - compare-pack bridge note
+## Resolved in this pass - compare-pack bridge note
 
-### What remains open
-The shipped Workbench Compare docs and the Candidate B planning pack must stay aligned on one point:
+Resolved posture:
+The shipped Workbench Compare docs and the Candidate B planning pack now align on one point:
 
-- current compare deep links are baseline/Candidate A only
-- Candidate B Trace is a separate future lane
+- baseline and Candidate A deep links remain document-trace routes
+- Candidate B deep links now reach the separate additive `Candidate B Trace` page
+- Candidate B Trace remains outside the existing single-run `document-trace` contract
 
 ### Hard rule
-Do not leave the compare docs phrased as if Candidate B already deep-links into the existing single-run document-trace page.
+Do not collapse that distinction in future edits.
 
 ---
 

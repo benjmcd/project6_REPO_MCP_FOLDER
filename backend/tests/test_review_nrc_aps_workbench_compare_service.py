@@ -287,6 +287,8 @@ def test_compose_workbench_compare_payloads_align_selected_fixture(compare_runti
     assert manifest.source_identity.fixture_id == fixture_id
     assert manifest.variant_bindings.candidate_b.bundle_id == bundle_id
     assert f"run_id={baseline_binding.run_id}" in (manifest.deep_links.baseline_trace or "")
+    assert (manifest.deep_links.candidate_b_trace or "").startswith("/review/nrc-aps/candidate-b-trace?")
+    assert f"fixture_id={fixture_id}" in (manifest.deep_links.candidate_b_trace or "")
 
     summary_tab = compare_service.compose_workbench_compare_tab(
         baseline_run_id=baseline_binding.run_id,
@@ -299,6 +301,7 @@ def test_compose_workbench_compare_payloads_align_selected_fixture(compare_runti
     assert summary_tab.columns["baseline"].available is True
     assert summary_tab.columns["candidate_a"].available is True
     assert summary_tab.columns["candidate_b"].comparability_class == "direct"
+    assert (summary_tab.columns["candidate_b"].deep_link or "").startswith("/review/nrc-aps/candidate-b-trace?")
 
     text_tab = compare_service.compose_workbench_compare_tab(
         baseline_run_id=baseline_binding.run_id,
