@@ -308,6 +308,7 @@ On `/review/nrc-aps/candidate-b-trace`, once same-checkout compare prep is prese
 - the page loads from a Candidate B deep link instead of requiring arbitrary path entry
 - the identity summary reflects the selected `candidate_b_bundle_id` and `fixture_id`
 - `annotated_pdf` is the default tab when the artifact is present
+- the annotated PDF renders inline in the page rather than forcing a download response
 - `summary`, `raw_json`, and `raw_markdown` tabs load coherently
 - no raw local filesystem paths are displayed in the browser UI
 

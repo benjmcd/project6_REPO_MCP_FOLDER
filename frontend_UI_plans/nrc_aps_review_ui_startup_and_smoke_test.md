@@ -205,6 +205,7 @@ On `/review/nrc-aps/candidate-b-trace` after same-checkout prep:
 
 - the page loads from a Candidate B deep link without a 500
 - `annotated_pdf` is the default tab when present
+- the annotated PDF renders inline in the page rather than forcing a download response
 - `summary`, `raw_json`, and `raw_markdown` tabs render or degrade explicitly
 - no raw local filesystem paths are displayed in the UI
 

@@ -101,9 +101,9 @@ not the full raw run.
 Current compare-surface truth remains:
 
 - the approved durable top-level outputs are still `baseline-summary.json`, `proof.json`, `compare.json`, and `retain.json`
-- current committed bundles do not yet carry annotated PDF refs
+- current compare bundles may carry `annotated_pdf_ref`, `annotated_pdf_sha256`, and `annotated_pdf_status` inside `documents[*].candidate_b` while the annotated PDFs themselves remain under the approved run-scoped raw root
 
-If the separate Candidate B Trace lane is reopened, the first additive inspection artifact must follow the contract frozen in:
+The landed Candidate B Trace surface continues to follow the contract frozen in:
 
 - `04D_CANDIDATE_B_OPENDATALOADER_ANNOTATED_PDF_AND_INSPECTION_ARTIFACT_CONTRACT.md`
 
