@@ -91,6 +91,16 @@ def test_candidate_b_trace_js_uses_page_local_query_params_and_routes() -> None:
     assert "document-trace?run_id=" not in js_content
 
 
+def test_candidate_b_trace_js_defers_blank_query_tab_to_manifest_default() -> None:
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "candidate_b_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "tabId: ''" in js_content
+    assert "state.tabId = params.get('tab') || '';" in js_content
+    assert "state.tabId = state.manifest.default_tab || 'summary';" in js_content
+    assert "state.tabId = params.get('tab') || 'summary';" not in js_content
+
+
 def test_candidate_b_trace_css_styles_local_shell_elements() -> None:
     css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "candidate_b_trace.css"
     css_content = css_path.read_text(encoding="utf-8")
