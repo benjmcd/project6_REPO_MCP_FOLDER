@@ -283,6 +283,9 @@ On `/review/nrc-aps/workbench-compare`, verify:
 - the page shell loads without a blank screen
 - the review-page header link to `Workbench Compare` is present and ordered immediately before `Document Trace`
 - the shared fixture/document identity summary renders as readable labeled metadata, not jammed label/value text
+- on a populated high-noise fixture such as `ml17123a319`, the summary band stays bounded and scrolls internally instead of collapsing the compare tab pane
+- the compare tab strip remains visible while tab content scrolls
+- at a shorter-height viewport around 700px, the compare tab content still retains useful vertical depth
 - unavailable-state copy renders cleanly when same-checkout compare sources are absent
 - no raw local filesystem paths are displayed in the browser UI
 - use the dedicated compare validation plan instead of improvising a demo-corpus prep flow

@@ -81,11 +81,13 @@ After automated tests are green, verify manually:
 5. selecting valid baseline + Candidate A + Candidate B sources yields a non-empty target list
 6. selecting incompatible sources yields an explicit empty-state explanation
 7. the shared source header shows the expected fixture/document identity with readable label/value separation
-8. each compare tab renders three columns
-9. Candidate B limitation badges remain visible, including footer-related warnings when present
-10. direct, derived-only, non-equivalent, and missing states are visually distinct
-11. deep links open the correct baseline and Candidate A document-trace routes
-12. no network call attempts to pass arbitrary filesystem paths from the browser
+8. on a high-noise fixture such as `ml17123a319`, the summary band stays bounded and scrolls internally instead of collapsing the tab pane
+9. at a shorter-height viewport around 700px, the tab strip remains visible and the compare tab content retains useful vertical depth
+10. each compare tab renders three columns
+11. Candidate B limitation badges remain visible, including footer-related warnings when present
+12. direct, derived-only, non-equivalent, and missing states are visually distinct
+13. deep links open the correct baseline and Candidate A document-trace routes
+14. no network call attempts to pass arbitrary filesystem paths from the browser
 
 ## 5. Validate-Only Rules
 
