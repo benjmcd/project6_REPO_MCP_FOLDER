@@ -77,6 +77,7 @@ def test_candidate_b_trace_api_routes_return_bundle_backed_payloads(tmp_path: Pa
     assert manifest["fixture_id"] == fixture["fixture_id"]
     assert "C:\\" not in str(manifest)
     assert annotated_pdf_response.headers["content-type"].startswith("application/pdf")
+    assert annotated_pdf_response.headers["content-disposition"].startswith("inline;")
     assert raw_json_response.json()["fixture_id"] == fixture["fixture_id"]
     assert raw_markdown_response.text.startswith("# Candidate B")
 

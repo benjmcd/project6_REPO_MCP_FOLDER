@@ -89,7 +89,8 @@ After automated tests are green, verify manually:
 13. baseline and Candidate A deep links open the correct document-trace routes
 14. Candidate B deep links open the separate `Candidate B Trace` page rather than `document-trace`
 15. when annotated PDF output is present, `Candidate B Trace` defaults to `annotated_pdf` rather than `summary`
-16. no network call attempts to pass arbitrary filesystem paths from the browser
+16. the Candidate B annotated PDF renders inline in the page rather than forcing a download response
+17. no network call attempts to pass arbitrary filesystem paths from the browser
 
 ## 5. Validate-Only Rules
 
