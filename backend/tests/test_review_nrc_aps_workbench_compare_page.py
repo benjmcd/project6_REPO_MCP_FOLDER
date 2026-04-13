@@ -57,6 +57,8 @@ def test_workbench_compare_css_styles_identity_summary_metadata() -> None:
     css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "workbench_compare.css"
     css_content = css_path.read_text(encoding="utf-8")
 
+    assert ".compare-workspace" in css_content
+    assert ".compare-summary-band" in css_content
     assert ".back-link" in css_content
     assert ".tabs-header" in css_content
     assert ".tab-btn" in css_content
@@ -64,6 +66,10 @@ def test_workbench_compare_css_styles_identity_summary_metadata() -> None:
     assert ".identity-summary" in css_content
     assert ".identity-summary .meta-item" in css_content
     assert ".identity-summary .meta-label" in css_content
+    assert "max-height: 40vh;" in css_content
+    assert "overflow-y: auto;" in css_content
+    assert "align-items: start;" in css_content
+    assert "overflow: hidden;" in css_content
 
 
 def test_workbench_compare_js_uses_only_compare_schema_fields() -> None:
