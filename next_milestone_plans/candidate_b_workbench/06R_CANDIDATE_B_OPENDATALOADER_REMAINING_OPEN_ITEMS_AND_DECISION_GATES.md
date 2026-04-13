@@ -119,6 +119,62 @@ Do not describe the compare surface artifacts as preserved in tracked history or
 
 ---
 
+## Resolved in this pass - compare surface landed status
+
+Resolved posture:
+- the compare surface is no longer the next planned lane; it is already landed on `main`
+- future Candidate B planning must start from that shipped compare posture rather than from the older compare-gap assumptions
+
+---
+
+## Resolved in this pass - first inspection-lane classification boundary
+
+Resolved posture:
+- the first Candidate B inspection lane must remain bundle-scoped
+- it must not modify `visual_lane_mode`
+- it must not add Candidate B to the normal review run selector
+
+### Hard rule
+Do not describe Candidate B Trace as if it requires runtime admission in the first pass.
+If a later program wants true runtime admission, that must be reopened explicitly.
+
+---
+
+## Remaining open item 7 - annotated PDF retention contract
+
+### What remains open
+The pinned package appears to expose annotated PDF output capability, but current committed `main` does not yet request or retain annotated PDF artifacts in Candidate B bundles.
+
+### Hard rule
+Do not assume annotated PDFs are already part of the current retained Candidate B bundle contract.
+Treat that as a separate additive artifact decision frozen in `04D`.
+
+---
+
+## Remaining open item 8 - Candidate B Trace implementation lane
+
+### What remains open
+Current compare manifests and compare columns do not yet expose a Candidate B deep link, and there is no Candidate B-specific inspection page or API family on `main`.
+
+### Hard rule
+Do not claim Candidate B currently has parity with baseline/Candidate A document-trace inspection.
+Current parity ends at compare-column payload adaptation only.
+
+---
+
+## Remaining open item 9 - compare-pack bridge note
+
+### What remains open
+The shipped Workbench Compare docs and the Candidate B planning pack must stay aligned on one point:
+
+- current compare deep links are baseline/Candidate A only
+- Candidate B Trace is a separate future lane
+
+### Hard rule
+Do not leave the compare docs phrased as if Candidate B already deep-links into the existing single-run document-trace page.
+
+---
+
 ## Resolved in this pass - compare-lane contract freeze
 
 Resolved posture:

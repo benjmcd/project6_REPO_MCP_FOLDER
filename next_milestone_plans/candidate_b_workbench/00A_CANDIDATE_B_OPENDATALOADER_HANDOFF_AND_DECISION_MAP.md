@@ -7,6 +7,11 @@ State the exact decision v6 is meant to support.
 v6 is not deciding whether OpenDataLoader is “better than PyMuPDF” in the abstract.
 It is deciding whether a **repo-aligned, workbench-only, non-interfering Candidate B comparator** should be opened against the current lower-layer NRC APS proof lane.
 
+Scope note:
+- this decision map governs the original Candidate B comparator decision only
+- it does not supersede the separately reopened additive `Candidate B Trace` follow-on frozen later in this pack
+- that follow-on still does not imply runtime admission or owner-path replacement
+
 ---
 
 ## Hard starting point

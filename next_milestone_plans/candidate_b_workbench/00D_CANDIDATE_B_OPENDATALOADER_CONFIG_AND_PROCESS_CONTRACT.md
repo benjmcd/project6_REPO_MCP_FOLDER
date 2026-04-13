@@ -7,6 +7,11 @@ Freeze the exact OpenDataLoader invocation/config/process contract for Candidate
 Candidate B v1 is a **local Python-launched workbench comparator**.
 It is not a backend/service integration lane, not a Node lane, not a direct Java/JAR lane, and not a hybrid lane.
 
+Scope note:
+- this config contract governs the original comparator/proof lane and the compare-surface lane that followed from it
+- it does not freeze the later additive `Candidate B Trace` artifact-extension decision
+- any later request for annotated PDF output must follow `04D` and `05U` rather than silently widening this first-pass contract
+
 v6 strengthens this doc by freezing more of the sensitive option surface,
 adding batch-split rules,
 and making output/image handling less implicit.
@@ -151,6 +156,10 @@ Candidate B v1 must generate:
 
 Candidate B v1 does **not** need HTML or PDF outputs for the first proof lane.
 Those widen disk footprint without helping the primary comparison question.
+
+Follow-on note:
+- the statement above remains true for the original proof/comparator lane
+- it must not be misread as blocking the separately reopened annotated-PDF retention lane frozen in `04D` and `05U`
 
 Extracted images are allowed only under the approved run-scoped image directory.
 They are comparison-support artifacts, not runtime outputs.

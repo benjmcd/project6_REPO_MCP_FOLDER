@@ -138,6 +138,12 @@ The workbench compare workspace is a separate page because:
 
 The compare page should show one shared source context header and deep links to source inspection.
 
+Current shipped compare truth:
+
+- baseline and Candidate A deep links point into the existing single-run document-trace page
+- Candidate B does not yet have a shipped inspection page in this lane
+- any Candidate B Trace surface must remain a separate additive follow-on, not a stealth widening of `document-trace`
+
 Do not render three full source viewers in v1.
 
 ### 5.3 Backend-owned alignment
