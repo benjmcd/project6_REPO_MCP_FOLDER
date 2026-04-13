@@ -6,7 +6,12 @@
 Standardize the final implementation record so the outcome is auditable
 and does not rely on memory or prose drift.
 
-Use this document as the template for the Candidate B implementation record.
+Use this document as the template for the original Candidate B comparator/proof implementation record.
+
+Bridge note:
+
+- do not use this template unmodified for the later additive `Candidate B Trace` lane
+- the Candidate B Trace lane legitimately touches review/API/schema/frontend surfaces that this older template treats as frozen
 
 Recommended output:
 - `tests/reports/mvvlc_candidate_b_opendataloader_implementation_record_v1.md`
@@ -55,7 +60,7 @@ List every changed file by class:
 - justification:
 - authority precheck confirming this was allowed:
 
-### 5. Explicitly untouched frozen surfaces
+### 5. Explicitly untouched frozen surfaces for the original comparator/proof lane
 Confirm that none of the following changed:
 
 - integrated owner-path/runtime files

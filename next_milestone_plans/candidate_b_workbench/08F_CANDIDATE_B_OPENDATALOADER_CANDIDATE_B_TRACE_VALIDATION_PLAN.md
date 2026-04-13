@@ -66,6 +66,7 @@ Validate:
 
 - `manifest` returns 200 for a valid prepared bundle
 - `annotated-pdf` streams the expected file type for a valid prepared bundle
+- `annotated-pdf` uses inline content disposition suitable for embedded viewing rather than forced download
 - `raw-json` returns structured JSON for a valid prepared bundle
 - `raw-markdown` returns text for a valid prepared bundle
 - invalid bundle ids and invalid fixtures fail closed
@@ -113,11 +114,12 @@ Then verify:
 2. Candidate B deep-link affordances are visible where expected.
 3. Clicking the Candidate B deep link opens `/review/nrc-aps/candidate-b-trace`.
 4. The Candidate B Trace page loads `annotated_pdf` by default when available.
-5. The annotated PDF visibly reflects ODL classifications/regions rather than baseline/Candidate A owner-path rendering.
-6. `summary`, `raw_json`, and `raw_markdown` tabs load coherently.
-7. Query-state reload preserves `candidate_b_bundle_id`, `fixture_id`, and `tab`.
-8. No compare query params leak into baseline/Candidate A document trace pages.
-9. No browser-visible absolute local paths appear in the DOM, network payloads, or console.
+5. The annotated PDF renders inline in the Candidate B Trace page rather than forcing a download response.
+6. The annotated PDF visibly reflects ODL classifications/regions rather than baseline/Candidate A owner-path rendering.
+7. `summary`, `raw_json`, and `raw_markdown` tabs load coherently.
+8. Query-state reload preserves `candidate_b_bundle_id`, `fixture_id`, and `tab`.
+9. No compare query params leak into baseline/Candidate A document trace pages.
+10. No browser-visible absolute local paths appear in the DOM, network payloads, or console.
 
 Minimum fixture coverage:
 

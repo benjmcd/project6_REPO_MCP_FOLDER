@@ -4,7 +4,7 @@
 
 Provide one place that states exactly what was verified from current `main`,
 what Candidate B planning is allowed to treat as repo truth,
-and what remains unproven because Candidate B has not yet been executed.
+and what remains unproven at repo-authority level because Candidate B workbench evidence is still local/operator-scoped rather than preserved as tracked clean-`main` rerun proof.
 
 ---
 

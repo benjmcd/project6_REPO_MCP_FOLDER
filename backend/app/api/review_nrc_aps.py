@@ -205,6 +205,7 @@ def get_candidate_b_trace_annotated_pdf(
             path=pdf_path,
             media_type=media_type,
             filename=filename,
+            content_disposition_type="inline",
         )
     except (ValueError, KeyError, FileNotFoundError) as exc:
         _raise_candidate_b_trace_http_error(exc)
