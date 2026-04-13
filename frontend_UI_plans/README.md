@@ -64,6 +64,7 @@ Important implementation-scope note:
 - the live document-trace implementation currently ships the page shell, document selector, trace manifest, source stream, diagnostics, normalized-text, indexed-chunks, and extracted-units surfaces
 - the retained planning docs still describe a broader downstream-usage concept, but current live root implementation only carries that as an unavailable manifest tab placeholder, not as a shipped API route
 - the workbench-compare planning docs in this folder now describe the separate shipped compare page and compare API family; they still do not revise the single-run contract of the shipped review page or document-trace page
+- Candidate B-specific inspection is not part of the shipped workbench-compare v1 contract in this folder; the follow-on Candidate B Trace planning lane currently lives under `next_milestone_plans/candidate_b_workbench/`
 
 ## Retained Documents
 

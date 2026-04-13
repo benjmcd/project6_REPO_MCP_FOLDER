@@ -93,3 +93,23 @@ not as innocuous logs.
 If a reviewer-facing sample is ever needed,
 prefer a tiny explicitly approved sample or a redacted derivative,
 not the full raw run.
+
+---
+
+## F. Follow-on Candidate B Trace note
+
+Current compare-surface truth remains:
+
+- the approved durable top-level outputs are still `baseline-summary.json`, `proof.json`, `compare.json`, and `retain.json`
+- current committed bundles do not yet carry annotated PDF refs
+
+If the separate Candidate B Trace lane is reopened, the first additive inspection artifact must follow the contract frozen in:
+
+- `04D_CANDIDATE_B_OPENDATALOADER_ANNOTATED_PDF_AND_INSPECTION_ARTIFACT_CONTRACT.md`
+
+That means:
+
+- annotated PDFs stay under the run-scoped raw root
+- they are not committed by default
+- they are hashed and inventoried
+- they are surfaced only through validated bundle-scoped refs, not arbitrary browser path entry
