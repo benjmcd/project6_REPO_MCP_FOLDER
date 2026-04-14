@@ -70,6 +70,10 @@ Post-PR50 shipped-baseline note:
   - `backend/tests/review_browser_fixture.py`
   - `backend/tests/review_browser_server.py`
   - `backend/tests/requirements-browser.txt`
+- the root repo now also carries a validate-only same-checkout prep gate for populated compare + Candidate B Trace operator validation via:
+  - `tools/validate_wb_prep.py`
+  - `tests/test_validate_wb_prep.py`
+- treat that prep gate as the canonical readiness check before populated operator validation of the shipped compare + trace flow
 - treat that as the baseline posture for all future Candidate B planning in this pack
 - do not reopen already-shipped compare or trace questions unless a repo-confirmed blocker requires it
 
@@ -80,8 +84,8 @@ Ordered next-decision note:
   - keep Candidate B at the shipped bundle-scoped compare + trace boundary
   - do not drift into runtime admission or selector integration by implication
 - a wider runtime-admission program remains available only as a later explicit reopen if the shipped bundle-scoped model proves insufficient for a concrete operator/product requirement
+- prepared-state/operator workflow hardening is now landed via the canonical `tools/validate_wb_prep.py` same-checkout prep gate
 - if bundle-scoped posture remains correct, only then consider narrow operator ergonomics improvements
-- harden prepared-state/operator workflow before any broader product expansion
 - do documentation closeout only after those decisions are settled
 
 ---

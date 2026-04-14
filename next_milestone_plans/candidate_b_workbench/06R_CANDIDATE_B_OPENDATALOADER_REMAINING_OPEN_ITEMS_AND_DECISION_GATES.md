@@ -334,17 +334,18 @@ Do not broaden ergonomics work into runtime admission, schema widening, or docum
 
 ---
 
-## Remaining open item 8 - prepared-state/operator workflow hardening
+## Resolved in this pass - prepared-state/operator workflow hardening
 
-### What remains open
-Prepared same-checkout operator validation is now essential to the shipped compare + Candidate B Trace flow, but the canonical prep and validation path should be hardened further.
+Resolved posture:
 
-### Required decision direction
-Prefer:
-
-- one canonical prep sequence
-- one canonical validation sequence
-- fail-closed checks when the checkout is unprepared or incoherent
+- the repo now carries one canonical same-checkout prep sequence for populated compare + Candidate B Trace operator validation:
+  - `py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode baseline`
+  - `py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode candidate_a_page_evidence_v1`
+  - `.\project6.ps1 -Action compare-nrc-aps-candidate-b`
+  - `py -3.12 .\tools\validate_wb_prep.py`
+- `tools/validate_wb_prep.py` is now the validate-only fail-closed prep gate for same-checkout readiness
+- the validator fails closed on empty, donor, ambiguous, or incoherent same-checkout prep state
+- populated operator validation should now start from that canonical prep gate rather than from ad hoc source discovery or donor-worktree assumptions
 
 ### Hard rule
 Do not rely on ambiguous or donor-worktree prep state when validating shipped compare/trace behavior.
@@ -354,7 +355,7 @@ Do not rely on ambiguous or donor-worktree prep state when validating shipped co
 ## Remaining open item 9 - documentation closeout ordering
 
 ### What remains open
-A true documentation closeout pass still makes sense, but only after the browser-coverage, Playwright, scope, ergonomics, and prepared-state decisions above are settled.
+A true documentation closeout pass still makes sense, but only after the scope and ergonomics decisions above are settled.
 
 ### Required decision direction
 Defer closeout until after those decisions.

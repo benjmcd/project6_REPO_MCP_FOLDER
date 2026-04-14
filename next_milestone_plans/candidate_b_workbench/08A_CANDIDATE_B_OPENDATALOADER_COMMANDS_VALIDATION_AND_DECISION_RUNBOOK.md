@@ -141,6 +141,25 @@ treat that as artifact-generating workbench execution rather than validate-only 
 
 ---
 
+## Phase 6A - canonical same-checkout operator-prep validation
+
+If the goal is populated operator validation of shipped Workbench Compare + Candidate B Trace behavior on the same checkout, use this canonical prep sequence:
+
+```powershell
+py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode baseline
+py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode candidate_a_page_evidence_v1
+.\project6.ps1 -Action compare-nrc-aps-candidate-b
+py -3.12 .\tools\validate_wb_prep.py
+```
+
+Rules:
+
+- `tools/validate_wb_prep.py` is validate-only and must exit `0` before populated operator validation proceeds
+- do not trust donor-worktree prep or ad hoc source discovery instead of the canonical prep gate
+- use `frontend_UI_plans/wb-compare-validation.md` for the populated UI/operator follow-through after the prep gate passes
+
+---
+
 ## Phase 7 - decision
 
 ### `proceed_as_documented_workbench`

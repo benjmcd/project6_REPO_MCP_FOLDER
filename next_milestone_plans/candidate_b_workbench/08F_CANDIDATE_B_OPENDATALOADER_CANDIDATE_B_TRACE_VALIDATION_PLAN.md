@@ -19,6 +19,10 @@ Status note:
   - `backend/tests/review_browser_server.py`
   - `backend/tests/requirements-browser.txt`
 - that landed hardening covers the minimum browser assertions frozen below without widening runtime admission or document-trace scope
+- the repo now also carries a validate-only same-checkout prep gate for populated operator validation via:
+  - `tools/validate_wb_prep.py`
+  - `tests/test_validate_wb_prep.py`
+- populated operator validation should now treat that prep gate as the canonical readiness check before opening the compare or Candidate B Trace pages
 
 ---
 
