@@ -86,7 +86,12 @@ Ordered next-decision note:
 - a wider runtime-admission program remains available only as a later explicit reopen if the shipped bundle-scoped model proves insufficient for a concrete operator/product requirement
 - prepared-state/operator workflow hardening is now landed via the canonical `tools/validate_wb_prep.py` same-checkout prep gate
 - if bundle-scoped posture remains correct, only then consider narrow operator ergonomics improvements
-- do documentation closeout only after those decisions are settled
+- documentation closeout is now landed for the active operator front doors:
+  - use `frontend_UI_plans/README.md` as the front-door index
+  - use `frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md` for explicit backend binding and route bring-up
+  - use `frontend_UI_plans/wb-compare-validation.md` for same-checkout prep, `tools/validate_wb_prep.py`, and populated compare/Candidate B Trace validation
+  - use `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md` for the broader manual validation pass after startup and prep succeed
+- keep this pack focused on Candidate B planning/control and decision boundaries rather than duplicated operator walkthrough steps
 
 ---
 

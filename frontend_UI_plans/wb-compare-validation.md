@@ -7,6 +7,25 @@ Define the validate-only and operator verification work required for the workben
 This plan is the validation reference for the compare page/API lane.
 It must not trigger new Candidate B runs or seed runtime artifacts during normal validation.
 
+## 1A. Document Role
+
+This is the canonical same-checkout prep and populated compare-validation document for the shipped Option 1 flow.
+
+Use [frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md) for:
+
+- explicit backend binding
+- route bring-up
+- shell-level reachability checks
+
+Use this document for:
+
+- same-checkout prep
+- `tools/validate_wb_prep.py`
+- populated Workbench Compare validation
+- Candidate B Trace follow-through from compare
+
+Use [frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md) for the broader manual validation pass after startup and prep succeed.
+
 ## 2. Canonical Validation Sources
 
 Use these files as authority when implementing and validating:
