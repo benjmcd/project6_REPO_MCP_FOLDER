@@ -251,6 +251,65 @@ Do not describe the root Playwright workflow as placeholder smoke for this surfa
 The repo is currently coherent around Candidate B as bundle-scoped inspection plus compare participation.
 Whether Candidate B should ever move toward broader runtime-style integration remains intentionally unresolved.
 
+### Exact decision that must be made
+Choose between:
+
+- retaining the shipped bundle-scoped product boundary as the current-horizon endpoint for Candidate B
+- opening a separate explicit runtime-admission program for Candidate B
+
+### Option A - retain bundle-scoped compare + trace as the current-horizon boundary
+Posture:
+
+- Candidate B remains available through Workbench Compare plus Candidate B Trace only
+- Candidate B remains outside `visual_lane_mode`
+- Candidate B remains outside the normal review run selector
+- Candidate B continues to use bundle-root identity rather than runtime-root identity
+
+Recommendation:
+
+- this is the default and recommended current-horizon posture
+
+Why this is the repo-fit default:
+
+- the current shipped compare goal is already met on `main`
+- Candidate B artifacts are bundle-root and ODL-native, not current owner-path review-runtime rows
+- the current Candidate B Trace page already exposes the ODL-native inspection surface that the compare lane needed
+- the repo now has targeted browser enforcement for the shipped compare + Candidate B Trace flow
+- keeping Candidate B bundle-scoped avoids widening runtime classification, run-selector semantics, and document-trace semantics without a repo-confirmed need
+
+### Option B - open a separate Candidate B runtime-admission program
+Posture:
+
+- Candidate B would move toward runtime-style identity instead of bundle-only identity
+- Candidate B would need explicit decisions for selector visibility, runtime classification, trace behavior, and persistence semantics
+
+Current recommendation:
+
+- do not open this program by implication
+- only open it if an explicit product requirement cannot be satisfied by the shipped bundle-scoped compare + trace model
+
+### Reopen triggers required before Option B is justified
+At least one of these must be true:
+
+- operators must select Candidate B from the normal run selector rather than arriving through compare or bundle-backed deep links
+- Candidate B must participate in runtime-root-only workflows that cannot consume bundle-backed inspection
+- Candidate B must be represented as a normal review/runtime row for downstream product behavior rather than as separate compare evidence
+- bundle-scoped Candidate B Trace proves insufficient for a concrete, repo-confirmed operator task
+
+### Expected blast radius if Option B is chosen later
+This would no longer be a narrow Candidate B Trace follow-on.
+It would likely widen at least:
+
+- `backend/app/services/review_nrc_aps_runtime.py`
+- `backend/app/services/review_nrc_aps_catalog.py`
+- `backend/app/services/review_nrc_aps_document_trace.py`
+- `backend/app/services/review_nrc_aps_workbench_compare.py`
+- `backend/app/schemas/review_nrc_aps.py`
+- `backend/app/api/review_nrc_aps.py`
+- review/runtime DB assumptions and fixture/seed flows
+- operator docs in `frontend_UI_plans/`
+- cross-pack assumptions in `next_milestone_plans/multi_variant_visual_lane_control/`
+
 ### Required decision direction
 Make that decision explicitly later.
 Current default posture remains:
@@ -261,6 +320,7 @@ Current default posture remains:
 
 ### Hard rule
 Do not drift into runtime-style integration, selector admission, or widened runtime classification by incidental follow-on edits.
+Do not describe Option B as a small follow-up to Candidate B Trace; it is a separate widened program if reopened.
 
 ---
 

@@ -106,6 +106,10 @@ Ordered next-decision note:
 - Candidate B scope must remain deliberate:
   - the current repo is coherent around bundle-scoped inspection
   - do not drift into runtime-style admission or selector integration by accident
+- the exact Candidate B scope decision is:
+  - retain the shipped bundle-scoped compare + Candidate B Trace boundary for the current horizon
+  - or separately reopen a wider runtime-admission program
+- current repo-grounded recommendation is to retain the shipped bundle-scoped boundary unless a concrete operator/product requirement proves it insufficient
 - if Candidate B remains bundle-scoped, operator ergonomics should improve only where justified
 - same-checkout prepared-state workflow should be hardened before any broader surface expansion
 - documentation closeout should happen after those decisions, not before
