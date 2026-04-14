@@ -210,43 +210,42 @@ Only reopen if a repo-confirmed blocker or explicit product decision requires it
 
 ---
 
-## Remaining open item 7 - repo-native browser regression coverage
+## Resolved in this pass - repo-native browser regression coverage
 
-### What remains open
-The strongest browser evidence for the shipped compare + Candidate B Trace flow still comes from operator passes and external audits.
-The repo does not yet contain its own authoritative browser regression coverage for this flow.
-
-### Required decision direction
-Prefer a repo-native browser regression lane that verifies at minimum:
-
-- Workbench Compare deep-links into Candidate B Trace
-- Candidate B Trace first-load defaults to `annotated_pdf`
-- annotated PDF renders inline
-- baseline and Candidate A still route to `document-trace`
-- no query/path leakage reaches browser-visible surfaces
+Resolved posture:
+- the repo now carries its own targeted browser regression coverage for the shipped compare + Candidate B Trace flow
+- the landed coverage is rooted in:
+  - `e2e/nrc-aps-review.spec.js`
+  - `playwright.config.js`
+  - `.github/workflows/playwright.yml`
+  - `backend/tests/review_browser_fixture.py`
+  - `backend/tests/review_browser_server.py`
+  - `backend/tests/requirements-browser.txt`
+- the covered minimum assertions now include:
+  - Workbench Compare deep-links into Candidate B Trace
+  - Candidate B Trace first-load defaults to `annotated_pdf`
+  - annotated PDF is requested with inline disposition
+  - baseline and Candidate A still route to `document-trace`
+  - no query/path leakage reaches browser-visible surfaces in the covered flow
 
 ### Hard rule
-Do not describe external audit screenshots or manual passes as a substitute for repo-native browser regression coverage.
+Do not describe external audit screenshots or manual passes as the primary enforcement surface for this shipped flow now that repo-native browser coverage exists.
 
 ---
 
-## Remaining open item 8 - Playwright scaffold disposition
+## Resolved in this pass - Playwright scaffold disposition
 
-### What remains open
-The repo still carries a noisy placeholder Playwright scaffold/workflow posture that is not yet aligned with the shipped NRC APS browser surface.
-
-### Required decision direction
-Choose explicitly between:
-
-- replacing it with targeted NRC APS browser coverage
-- or disabling/removing the placeholder path if it is not authoritative
+Resolved posture:
+- the root Playwright workflow is no longer placeholder-only smoke
+- the repo chose the `replace with targeted NRC APS browser coverage` path for the root workflow
+- future Playwright questions are now about explicit coverage expansion/refinement, not about whether the root path is authoritative at all
 
 ### Hard rule
-Do not continue to treat the placeholder Playwright path as if it were meaningful shipped-surface coverage when it is not verifying the NRC APS flow.
+Do not describe the root Playwright workflow as placeholder smoke for this surface unless and until a later change actually removes or bypasses the targeted NRC APS browser coverage.
 
 ---
 
-## Remaining open item 9 - deliberate Candidate B scope decision
+## Remaining open item 7 - deliberate Candidate B scope decision
 
 ### What remains open
 The repo is currently coherent around Candidate B as bundle-scoped inspection plus compare participation.
@@ -265,7 +264,7 @@ Do not drift into runtime-style integration, selector admission, or widened runt
 
 ---
 
-## Remaining open item 10 - bundle-scoped operator ergonomics
+## Remaining open item 8 - bundle-scoped operator ergonomics
 
 ### What remains open
 If Candidate B remains bundle-scoped, there is still room for narrow operator-ergonomics improvement after hardening and scope decisions.
@@ -281,7 +280,7 @@ Do not broaden ergonomics work into runtime admission, schema widening, or docum
 
 ---
 
-## Remaining open item 11 - prepared-state/operator workflow hardening
+## Remaining open item 9 - prepared-state/operator workflow hardening
 
 ### What remains open
 Prepared same-checkout operator validation is now essential to the shipped compare + Candidate B Trace flow, but the canonical prep and validation path should be hardened further.
@@ -298,7 +297,7 @@ Do not rely on ambiguous or donor-worktree prep state when validating shipped co
 
 ---
 
-## Remaining open item 12 - documentation closeout ordering
+## Remaining open item 10 - documentation closeout ordering
 
 ### What remains open
 A true documentation closeout pass still makes sense, but only after the browser-coverage, Playwright, scope, ergonomics, and prepared-state decisions above are settled.

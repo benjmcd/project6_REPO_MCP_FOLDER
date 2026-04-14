@@ -55,7 +55,8 @@ Important cross-pack note:
 - No primary MVVLC implementation, promotion, or decision lane is justified for the current horizon
 - Keep the retained `baseline`-default merged-main state from `05P` + `05Q` in place unless a later explicit program-decision amendment is separately frozen
 - Keep Candidate B/C admission, OCR/media widening, policy retuning, and outward identity/schema changes out of scope unless separately frozen
-- Treat repo-native Python enforcement hardening as a valid parallel lane, not as a hidden dependency of MVVLC widening
+- Treat broader repo-native Python acceptance-path enforcement hardening as a valid parallel lane, not as a hidden dependency of MVVLC widening
+- Root repo-native browser enforcement for the shipped NRC APS review/workbench/Candidate B Trace flow now exists, but it does not replace the broader pack-specified `pytest` acceptance path for MVVLC
 
 Interpretation note:
 
@@ -64,7 +65,9 @@ Interpretation note:
 
 ### What is bounded residual
 
-- Repo-native Python acceptance-path enforcement (pack-specified, not CI-enforced)
+- Repo-native enforcement split:
+  - targeted NRC APS browser coverage is now root-enforced through Playwright plus a Python-backed test harness
+  - the broader pack-specified `pytest` acceptance path is still not visibly root-enforced
 - Tier 2 performance capture breadth: the recorded artifact-aware comparison uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture did not complete within practical session budget
 - Future drift outside audited authority surface
 - Future program-decision amendment, default-promotion target-definition, and any additional-candidate implementation remain separate future scope; merged `main` admits only the one approved Candidate A value and `05P` explicitly keeps it non-default
