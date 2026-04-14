@@ -67,3 +67,42 @@ def test_review_browser_server_candidate_b_trace_defaults_to_annotated_pdf(clien
     assert manifest["default_tab"] == "annotated_pdf"
     assert manifest["artifacts"]["annotated_pdf"].startswith("/api/v1/review/nrc-aps/candidate-b-trace/annotated-pdf?")
     assert "C:\\" not in str(manifest)
+
+
+def test_review_browser_server_document_trace_routes_use_isolated_runtime_fixture(client: TestClient) -> None:
+    runs_response = client.get("/api/v1/review/nrc-aps/runs")
+    assert runs_response.status_code == 200
+    runs_payload = runs_response.json()
+    run_id = runs_payload["default_run_id"]
+    assert run_id
+
+    documents_response = client.get(f"/api/v1/review/nrc-aps/runs/{run_id}/documents")
+    assert documents_response.status_code == 200
+    documents_payload = documents_response.json()
+    assert len(documents_payload["documents"]) == 1
+    target_id = documents_payload["default_target_id"]
+    assert target_id
+
+    trace_response = client.get(f"/api/v1/review/nrc-aps/runs/{run_id}/documents/{target_id}/trace")
+    assert trace_response.status_code == 200
+    trace_manifest = trace_response.json()
+    assert trace_manifest["source"]["viewer_kind"] == "pdf"
+    assert trace_manifest["source"]["source_endpoint"].endswith("/source")
+    assert trace_manifest["summary"]["ordered_unit_count"] == 1
+    assert trace_manifest["summary"]["indexed_chunk_count"] == 1
+    assert "C:\\" not in str(trace_manifest)
+
+    source_response = client.get(trace_manifest["source"]["source_endpoint"])
+    assert source_response.status_code == 200
+    assert source_response.headers["content-type"].startswith("application/pdf")
+    assert source_response.content.startswith(b"%PDF")
+
+    extracted_units_response = client.get(
+        f"/api/v1/review/nrc-aps/runs/{run_id}/documents/{target_id}/extracted-units"
+    )
+    assert extracted_units_response.status_code == 200
+    extracted_units_payload = extracted_units_response.json()
+    assert extracted_units_payload["available"] is True
+    assert extracted_units_payload["total_unit_count"] == 1
+    assert len(extracted_units_payload["units"]) == 1
+    assert "C:\\" not in str(extracted_units_payload)
