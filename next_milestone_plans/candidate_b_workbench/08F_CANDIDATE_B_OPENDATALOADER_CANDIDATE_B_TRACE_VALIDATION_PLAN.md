@@ -9,7 +9,9 @@ This plan assumes the compare surface is already landed and that Candidate B Tra
 Status note:
 
 - this document froze the validation burden before implementation
-- the current branch code now implements the additive Candidate B Trace lane and this plan is the validation authority for that surface
+- the current merged-main code now implements the additive Candidate B Trace lane and this plan is the validation authority for that surface
+- the merged post-PR50 shipped baseline now implements the first-pass trace lane described here
+- the next validation-hardening step is repo-native browser regression coverage rather than another contract expansion
 
 ---
 
@@ -153,3 +155,20 @@ At minimum, these existing surfaces must remain green after implementation:
 - `backend/tests/test_review_nrc_aps_workbench_compare_page.py`
 
 No new validation action should reseed or regenerate Candidate B bundles as part of ordinary pytest runs.
+
+---
+
+## Next hardening after baseline freeze
+
+The shipped baseline is now stable enough that the next validation priority should be repo-native browser coverage for the already-landed compare + Candidate B Trace flow.
+
+That hardening should verify at minimum:
+
+- Workbench Compare deep-links into Candidate B Trace
+- Candidate B Trace first-load defaults to `annotated_pdf` when present
+- annotated PDF renders inline rather than forcing download
+- baseline and Candidate A deep links still route to `document-trace`
+- no compare/query/path leakage reaches browser-visible surfaces
+
+This is a hardening lane, not a contract-expansion lane.
+It should start from the shipped bundle-scoped Candidate B posture rather than reopening runtime admission questions.

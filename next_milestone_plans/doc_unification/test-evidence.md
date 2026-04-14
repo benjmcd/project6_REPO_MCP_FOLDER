@@ -1,5 +1,10 @@
 # Test Evidence
 
+## Status note
+
+This document is a historical earlier audit artifact.
+Its command and evidence summaries should be read as point-in-time audit evidence, not as the current post-PR50 baseline-validation front door.
+
 ## Resolution update
 
 The earlier statement that the active merged-main worktree was green across the full official T1-T8 matrix was too strong.

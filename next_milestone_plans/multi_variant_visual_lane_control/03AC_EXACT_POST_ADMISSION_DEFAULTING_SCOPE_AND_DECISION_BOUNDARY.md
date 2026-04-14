@@ -76,6 +76,11 @@ That retained-default state has since been closed on merged `main` in:
 4. Whether Candidate B and Candidate C should remain non-admitted.
 5. Whether any later selector widening is justified at all.
 
+Interpretation note:
+
+- in this document, Candidate B/C admission means admission into the MVVLC `visual_lane_mode` / integrated runtime-visibility family
+- it does not govern the separate bundle-scoped Candidate B compare + trace surfaces frozen under `../candidate_b_workbench/`
+
 ---
 
 ## Exact questions this planning phase is not allowed to answer by implication

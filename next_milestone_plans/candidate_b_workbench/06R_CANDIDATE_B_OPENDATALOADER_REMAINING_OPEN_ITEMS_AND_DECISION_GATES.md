@@ -190,3 +190,122 @@ Resolved posture:
 - exact baseline proof posture = explicit `baseline-before/runtime` and `baseline-after/runtime` roots with `--require-ocr`
 - protected-diff serialization is out of scope for the first pass
 - no new Candidate B sidecar manifest is authorized in the first pass
+
+---
+
+## Resolved in this pass - post-PR50 shipped baseline freeze
+
+Resolved posture:
+- the shipped baseline now includes:
+  - Workbench Compare
+  - Candidate B Trace
+  - inline annotated PDF delivery
+  - first-load Candidate B Trace defaulting to `annotated_pdf` when present
+- future planning in this pack must start from that landed posture
+- do not treat already-shipped compare or trace behavior as if it were still an open implementation question
+
+### Hard rule
+Do not reopen shipped compare/trace behavior by implication.
+Only reopen if a repo-confirmed blocker or explicit product decision requires it.
+
+---
+
+## Remaining open item 7 - repo-native browser regression coverage
+
+### What remains open
+The strongest browser evidence for the shipped compare + Candidate B Trace flow still comes from operator passes and external audits.
+The repo does not yet contain its own authoritative browser regression coverage for this flow.
+
+### Required decision direction
+Prefer a repo-native browser regression lane that verifies at minimum:
+
+- Workbench Compare deep-links into Candidate B Trace
+- Candidate B Trace first-load defaults to `annotated_pdf`
+- annotated PDF renders inline
+- baseline and Candidate A still route to `document-trace`
+- no query/path leakage reaches browser-visible surfaces
+
+### Hard rule
+Do not describe external audit screenshots or manual passes as a substitute for repo-native browser regression coverage.
+
+---
+
+## Remaining open item 8 - Playwright scaffold disposition
+
+### What remains open
+The repo still carries a noisy placeholder Playwright scaffold/workflow posture that is not yet aligned with the shipped NRC APS browser surface.
+
+### Required decision direction
+Choose explicitly between:
+
+- replacing it with targeted NRC APS browser coverage
+- or disabling/removing the placeholder path if it is not authoritative
+
+### Hard rule
+Do not continue to treat the placeholder Playwright path as if it were meaningful shipped-surface coverage when it is not verifying the NRC APS flow.
+
+---
+
+## Remaining open item 9 - deliberate Candidate B scope decision
+
+### What remains open
+The repo is currently coherent around Candidate B as bundle-scoped inspection plus compare participation.
+Whether Candidate B should ever move toward broader runtime-style integration remains intentionally unresolved.
+
+### Required decision direction
+Make that decision explicitly later.
+Current default posture remains:
+
+- bundle-scoped inspection surface
+- no runtime admission
+- no normal run-selector entry
+
+### Hard rule
+Do not drift into runtime-style integration, selector admission, or widened runtime classification by incidental follow-on edits.
+
+---
+
+## Remaining open item 10 - bundle-scoped operator ergonomics
+
+### What remains open
+If Candidate B remains bundle-scoped, there is still room for narrow operator-ergonomics improvement after hardening and scope decisions.
+
+### Candidate examples
+- stronger fixture-to-fixture navigation in Candidate B Trace
+- clearer missing-artifact states
+- better artifact affordances around annotated PDF, raw JSON, and raw Markdown
+- compact operator shortcuts from compare to trace and back
+
+### Hard rule
+Do not broaden ergonomics work into runtime admission, schema widening, or document-trace parity by stealth.
+
+---
+
+## Remaining open item 11 - prepared-state/operator workflow hardening
+
+### What remains open
+Prepared same-checkout operator validation is now essential to the shipped compare + Candidate B Trace flow, but the canonical prep and validation path should be hardened further.
+
+### Required decision direction
+Prefer:
+
+- one canonical prep sequence
+- one canonical validation sequence
+- fail-closed checks when the checkout is unprepared or incoherent
+
+### Hard rule
+Do not rely on ambiguous or donor-worktree prep state when validating shipped compare/trace behavior.
+
+---
+
+## Remaining open item 12 - documentation closeout ordering
+
+### What remains open
+A true documentation closeout pass still makes sense, but only after the browser-coverage, Playwright, scope, ergonomics, and prepared-state decisions above are settled.
+
+### Required decision direction
+Defer closeout until after those decisions.
+Then remove stale redundancy, point operator docs at the canonical flow, and keep planning docs intentionally scoped rather than bloated.
+
+### Hard rule
+Do not do a broad doc-consolidation sweep while the higher-order product and validation decisions above are still intentionally open.

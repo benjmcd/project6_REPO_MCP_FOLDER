@@ -1,8 +1,20 @@
 # Doc Unification Audit
 
+## Status note
+
+This folder is a historical point-in-time unification audit pack.
+It captures an earlier root-vs-worktree authority reconciliation problem and must not be treated as the current planning front door for the shipped post-PR50 review/workbench/Candidate B Trace baseline.
+
+For current planning authority, use:
+
+- `next_milestone_plans/multi_variant_visual_lane_control/README_INDEX.md`
+- `next_milestone_plans/pageevidence/README_PAGEEVIDENCE_STRENGTHENING_PACK.md`
+- `next_milestone_plans/candidate_b_workbench/README_CANDIDATE_B_OPENDATALOADER_PACK.md`
+- `frontend_UI_plans/README.md`
+
 ## Scope
 
-This folder records the current audit of planning-doc authority, unification, and validation posture across:
+This folder records a historical audit snapshot of planning-doc authority, unification, and validation posture across:
 
 - `next_milestone_plans/multi_variant_visual_lane_control`
 - `next_milestone_plans/pageevidence`
@@ -11,7 +23,7 @@ This folder records the current audit of planning-doc authority, unification, an
 
 ## Canonical authority split
 
-There are two distinct authority layers and they must not be blended:
+There were two distinct authority layers in that audit snapshot and they must not be blended when reading this pack:
 
 1. Root planning and control authority lives in the root checkout under `next_milestone_plans/...`.
 2. Newer live runtime-binding, runtime-DB, PageEvidence-admission, and Candidate B proof implementation authority lives in `worktrees/pageevidence-main-merge`.

@@ -236,6 +236,11 @@ This lane does **not**:
 - admit Candidate B or Candidate C
 - implement broader policy-tuning or promotion/defaulting behavior
 
+Interpretation note:
+
+- Candidate B/C admission here means MVVLC selector/runtime admission
+- it does not prohibit the already-shipped separate bundle-scoped Candidate B compare + trace surfaces governed under `../candidate_b_workbench/`
+
 ---
 
 ## M6B judgment
