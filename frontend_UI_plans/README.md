@@ -115,7 +115,11 @@ Ordered next-decision note:
 - only reopen a wider Candidate B runtime-admission program if a concrete operator/product requirement proves the shipped bundle-scoped model insufficient
 - same-checkout prepared-state workflow hardening is now landed through the validate-only prep gate and canonical prep sequence
 - if Candidate B remains bundle-scoped, operator ergonomics should improve only where justified
-- documentation closeout should happen after those decisions, not before
+- documentation closeout is now landed for the active UI/operator front doors:
+  - `frontend_UI_plans/README.md` remains the front-door index
+  - `nrc_aps_review_ui_startup_and_smoke_test.md` owns explicit backend binding and route bring-up
+  - `wb-compare-validation.md` owns same-checkout prep, `tools/validate_wb_prep.py`, and populated compare + Candidate B Trace validation
+  - `nrc_aps_frontend_ui_operator_validation_guide.md` owns the broader manual validation pass after startup and prep succeed
 
 ## Retained Documents
 
@@ -158,11 +162,11 @@ Ordered next-decision note:
 - `wb-compare-blueprint.md`
   - repo-fit module, route, and implementation blueprint for the workbench compare lane
 - `wb-compare-validation.md`
-  - validate-only test and operator verification plan for the workbench compare workspace
+  - canonical same-checkout prep and populated compare/Candidate B Trace validation flow
 - `nrc_aps_review_ui_startup_and_smoke_test.md`
-  - operator startup and smoke-test guide for the review UI, document-trace, and workbench-compare surfaces
+  - explicit backend binding, startup, and route-reachability guide for the review/document-trace/compare surfaces
 - `nrc_aps_frontend_ui_operator_validation_guide.md`
-  - practical end-to-end validation guide for the current review UI, document-trace, and workbench-compare surfaces
+  - broader end-to-end manual validation guide after startup and compare prep succeed
 - `nrc_aps_runtime_db_reconceptualization_and_next_steps.md`
   - current-state reconceptualization of the NRC APS runtime DB model and the recommended next implementation order
 

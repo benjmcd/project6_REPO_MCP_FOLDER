@@ -16,6 +16,14 @@ This document is the current operational reference for:
 This is the most practical end-to-end testing guide for the current UI surfaces.
 It is not a backend implementation spec and it is not a replacement for the deeper planning docs.
 
+## Canonical Validation Order
+
+Use the current operator docs in this order:
+
+1. Use [frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md) to bind the backend explicitly and prove route/page-shell reachability.
+2. If Workbench Compare or Candidate B Trace are in scope, use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for same-checkout prep and the `tools/validate_wb_prep.py` readiness gate.
+3. Use this guide for the broader manual validation pass after startup and prep have already succeeded.
+
 ## When To Use This Document
 
 Use this guide when you need to:

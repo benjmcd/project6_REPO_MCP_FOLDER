@@ -21,3 +21,11 @@ To establish a rigorous mental model without inheriting prior session context, r
 ## Context Maps
 - **The True Proof Evidence:** `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136/artifact_audit/artifact_audit_report.md`
 - **Phase 8 (Closed):** `docs/nrc_adams/phase_8_contract.md`. Phase 8 APS table materialization is complete; all invariants satisfied in closure-run-005 (41 targets, 41 linkages, 40 distinct content IDs, 40 documents). The next work surface is above the frozen analytical ceiling.
+
+## Review / Compare Operator Path
+For the shipped NRC APS review surfaces on current `main`, use these docs in order:
+
+1. `frontend_UI_plans/README.md` - front-door index for the live review/document-trace/workbench/Candidate B Trace surfaces
+2. `frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md` - explicit backend binding and route bring-up
+3. `frontend_UI_plans/wb-compare-validation.md` - same-checkout prep, `tools/validate_wb_prep.py`, and populated Workbench Compare plus Candidate B Trace validation
+4. `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md` - broader manual validation pass after startup and prep succeed
