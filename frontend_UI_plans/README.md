@@ -54,6 +54,13 @@ For the live UI and API behavior, the canonical implementation source of truth i
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_candidate_b_trace_api.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_candidate_b_trace_service.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_candidate_b_trace_page.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\review_browser_fixture.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\review_browser_server.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_browser_server.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\requirements-browser.txt`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\e2e\nrc-aps-review.spec.js`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\playwright.config.js`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.github\workflows\playwright.yml`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\seed_wb_compare.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_seed_wb_compare.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\support_nrc_aps_candidate_b_opendataloader.py`
@@ -82,15 +89,20 @@ Current shipped-baseline note:
   - `/review/nrc-aps/document-trace`
   - `/review/nrc-aps/workbench-compare`
   - `/review/nrc-aps/candidate-b-trace`
+- the root repo now also carries repo-native browser regression coverage for that shipped compare + Candidate B Trace flow via:
+  - `e2e/nrc-aps-review.spec.js`
+  - `playwright.config.js`
+  - `.github/workflows/playwright.yml`
+  - `backend/tests/review_browser_fixture.py`
+  - `backend/tests/review_browser_server.py`
+  - `backend/tests/requirements-browser.txt`
 - future work should start from that shipped posture rather than from pre-compare or pre-trace assumptions
 - future work should stay additive and lane-scoped unless a repo-confirmed blocker requires a broader reopen
 
 Ordered next-decision note:
 
-- the highest-value next hardening lane is repo-native browser regression coverage for the shipped compare + Candidate B Trace flow
-- the noisy placeholder Playwright scaffold still needs an explicit disposition decision:
-  - replace it with targeted NRC APS browser coverage
-  - or disable/retire it if it is not authoritative
+- the repo-native browser regression lane is now landed, and the root Playwright workflow is no longer a placeholder-only scaffold
+- future browser work should now be explicit expansion or refinement of the targeted NRC APS coverage, not a rehash of whether the root workflow is authoritative at all
 - Candidate B scope must remain deliberate:
   - the current repo is coherent around bundle-scoped inspection
   - do not drift into runtime-style admission or selector integration by accident

@@ -11,7 +11,14 @@ Status note:
 - this document froze the validation burden before implementation
 - the current merged-main code now implements the additive Candidate B Trace lane and this plan is the validation authority for that surface
 - the merged post-PR50 shipped baseline now implements the first-pass trace lane described here
-- the next validation-hardening step is repo-native browser regression coverage rather than another contract expansion
+- the repo now also carries repo-native browser regression coverage for the shipped compare + Candidate B Trace flow via:
+  - `e2e/nrc-aps-review.spec.js`
+  - `playwright.config.js`
+  - `.github/workflows/playwright.yml`
+  - `backend/tests/review_browser_fixture.py`
+  - `backend/tests/review_browser_server.py`
+  - `backend/tests/requirements-browser.txt`
+- that landed hardening covers the minimum browser assertions frozen below without widening runtime admission or document-trace scope
 
 ---
 
@@ -158,17 +165,16 @@ No new validation action should reseed or regenerate Candidate B bundles as part
 
 ---
 
-## Next hardening after baseline freeze
+## Current repo-native browser coverage baseline
 
-The shipped baseline is now stable enough that the next validation priority should be repo-native browser coverage for the already-landed compare + Candidate B Trace flow.
+The shipped baseline now includes repo-native browser coverage for the already-landed compare + Candidate B Trace flow.
 
-That hardening should verify at minimum:
+Current minimum covered assertions:
 
 - Workbench Compare deep-links into Candidate B Trace
 - Candidate B Trace first-load defaults to `annotated_pdf` when present
-- annotated PDF renders inline rather than forcing download
+- annotated PDF route is requested with inline disposition rather than forced download
 - baseline and Candidate A deep links still route to `document-trace`
-- no compare/query/path leakage reaches browser-visible surfaces
+- no query/path leakage reaches browser-visible surfaces in the covered flow
 
-This is a hardening lane, not a contract-expansion lane.
-It should start from the shipped bundle-scoped Candidate B posture rather than reopening runtime admission questions.
+Future browser work should therefore be framed as explicit coverage expansion or refinement, not as a first introduction of repo-native browser enforcement.

@@ -11,13 +11,15 @@ Exact file search for `.github/workflows/*` found exactly one root workflow:
 
 - `.github/workflows/playwright.yml`
 
-Its contents are explicitly Playwright/UI-oriented:
+Its contents are explicitly Playwright/browser-oriented:
 - setup-node
+- setup-python
 - `npm ci`
-- `npx playwright install --with-deps`
-- `npx playwright test`
+- `python -m pip install -r ./backend/tests/requirements-browser.txt`
+- `npx playwright install --with-deps chromium`
+- `npx playwright test --project=chromium`
 
-No Python acceptance-path execution appears there.
+The root workflow therefore enforces a targeted browser path, but no broader root `pytest` acceptance-path execution appears there.
 
 ### Pre-commit surface
 File search for `pre-commit` found no repo-native pre-commit surface.
@@ -37,7 +39,7 @@ returned no hits.
 
 The remaining enforcement-gap claim is now concrete:
 
-- the pack-defined Python acceptance path is **not visibly enforced** by the root workflow/hook/config surfaces checked
+- the pack-defined broader Python `pytest` acceptance path is **not visibly enforced** by the root workflow/hook/config surfaces checked
 - this is no longer generic caution; it is supported by direct negative repo-native evidence
 
 ## What this does and does not mean
