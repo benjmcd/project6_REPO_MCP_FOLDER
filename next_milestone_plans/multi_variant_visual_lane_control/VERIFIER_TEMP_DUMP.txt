@@ -700,7 +700,7 @@ Current validation caveat:
 
 ### A.16 Workflow, migration, and enforcement surface
 
-62. Root workflow surface `.github/workflows/playwright.yml` exists and appears Playwright/UI-oriented.
+62. Root workflow surface `.github/workflows/playwright.yml` exists and now runs targeted NRC APS browser coverage through Playwright against a Python-backed review harness.
 63. `backend/migration_compat.py` provides explicit Alembic migration-compat helpers.
 64. `tools/migrate_sqlite_to_postgres.py` provides repo-native SQLite->Postgres migration tooling.
 65. `backend/alembic/versions/0010_visual_page_refs_json.py` explicitly adds `visual_page_refs_json`.
