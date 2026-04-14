@@ -56,6 +56,16 @@ class PreparedStateError(RuntimeError):
         self.context = context or {}
 
 
+def _optional_int(value: Any) -> int | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return 0
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Validate the current checkout's same-checkout NRC APS workbench compare prep state."
@@ -142,8 +152,8 @@ def _binding_is_workbench_seed(
     normalized_fixture_ids = _normalized_fixture_ids(binding)
     if normalized_fixture_ids != [fixture_id.lower() for fixture_id in FROZEN_FIXTURE_IDS]:
         return False
-    corpus_pdf_count = binding.summary.get("corpus_pdf_count")
-    if int(corpus_pdf_count or 0) != len(FROZEN_FIXTURE_IDS):
+    corpus_pdf_count = _optional_int(binding.summary.get("corpus_pdf_count"))
+    if corpus_pdf_count != len(FROZEN_FIXTURE_IDS):
         return False
 
     summary_visual_lane = str(binding.summary.get("visual_lane_mode") or "").strip().lower()
@@ -268,7 +278,10 @@ def _discover_candidate_b_bundle_sources(checkout_root: Path) -> list[dict[str, 
     bundle_sources: list[dict[str, Any]] = []
     for bundle_root in discover_candidate_b_bundle_roots(checkout_root):
         bundle_id = _canonical_bundle_id(bundle_root, checkout_root)
-        bundle = _load_bundle_artifacts(bundle_id, checkout_root)
+        try:
+            bundle = _load_bundle_artifacts(bundle_id, checkout_root)
+        except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+            continue
         decision_recommendation = str(bundle.compare.get("decision_recommendation") or "").strip() or None
         bundle_sources.append(
             {
