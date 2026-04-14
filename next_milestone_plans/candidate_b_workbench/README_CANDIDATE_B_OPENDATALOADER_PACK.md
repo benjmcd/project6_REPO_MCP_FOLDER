@@ -63,12 +63,19 @@ Post-PR50 shipped-baseline note:
   - Candidate B Trace on `main`
   - inline annotated PDF delivery on `main`
   - first-load Candidate B Trace defaulting to `annotated_pdf` when present
+- the root repo now also carries repo-native browser regression coverage for that shipped flow via:
+  - `e2e/nrc-aps-review.spec.js`
+  - `playwright.config.js`
+  - `.github/workflows/playwright.yml`
+  - `backend/tests/review_browser_fixture.py`
+  - `backend/tests/review_browser_server.py`
+  - `backend/tests/requirements-browser.txt`
 - treat that as the baseline posture for all future Candidate B planning in this pack
 - do not reopen already-shipped compare or trace questions unless a repo-confirmed blocker requires it
 
 Ordered next-decision note:
-- the next highest-value hardening step is repo-native browser regression coverage for the shipped compare + Candidate B Trace flow
-- the placeholder Playwright scaffold still needs an explicit keep/replace/retire decision
+- the repo-native browser regression lane is now landed, and the root Playwright workflow is now targeted at the shipped NRC APS compare + Candidate B Trace flow rather than placeholder browser smoke
+- future browser work should now be explicit expansion or refinement of that targeted coverage, not a question of whether the root workflow is authoritative at all
 - the broader Candidate B product-scope decision remains intentionally unresolved:
   - current repo posture is bundle-scoped inspection
   - do not drift into runtime admission or selector integration by implication

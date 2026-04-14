@@ -11,8 +11,8 @@ Sharpen the bounded-uncertainty correction from v26 using direct repo-native wor
 
 Interpretation:
 - there is a visible root CI/workflow surface
-- it appears oriented to Playwright/UI concerns
-- it does not, on current evidence, close the Python acceptance-path enforcement gap
+- it now exercises targeted NRC APS browser coverage through Playwright against a Python-backed review harness
+- it does not, on current evidence, close the broader pack-specified Python `pytest` acceptance-path enforcement gap
 
 ## Verified migration surface
 
@@ -47,8 +47,9 @@ The live repo evidence now supports this narrower statement:
 What still remains open is:
 
 1. **Enforcement gap**
-   - the pack defines the Python acceptance path
-   - but the visible root workflow surface does not yet show that path being enforced
+   - the pack defines the broader Python `pytest` acceptance path
+   - the visible root workflow surface now enforces a narrower Playwright/browser path instead
+   - so the broader pack-defined `pytest` path is still not visibly root-enforced
 
 2. **Bounded future-drift risk**
    - additional surfaces may still exist outside the audited authority set
