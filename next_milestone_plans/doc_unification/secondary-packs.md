@@ -1,5 +1,17 @@
 # Secondary Packs
 
+## Status note
+
+This document records a historical earlier audit of root-vs-worktree drift.
+It is not current authority for the shipped post-PR50 compare + Candidate B Trace baseline.
+The file-level findings below should be read as historical findings from that earlier audit, not as current repo assertions.
+
+Use current authority docs instead:
+
+- `next_milestone_plans/pageevidence/README_PAGEEVIDENCE_STRENGTHENING_PACK.md`
+- `next_milestone_plans/candidate_b_workbench/README_CANDIDATE_B_OPENDATALOADER_PACK.md`
+- `frontend_UI_plans/README.md`
+
 ## Root `pageevidence` pack
 
 ### Git authority status
