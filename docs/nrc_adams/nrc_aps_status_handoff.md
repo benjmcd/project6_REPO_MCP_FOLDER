@@ -149,6 +149,11 @@ Important correction:
 - `project6.ps1` remains the operator entrypoint for migrations and APS validators.
 - `project6.ps1 -Action prove-nrc-aps-document-processing` is now the fresh isolated lower-layer proof runner for this reopened workstream. It is not a validate-only action: it builds isolated runtime state, runs lower-layer pytest proof, then invokes the existing validate-only artifact-ingestion and content-index gates against that isolated runtime.
 - OCR success paths remain environment-dependent because Tesseract is not bundled in the repo, but the current workspace now has a passing OCR-enabled proof run.
+- For the shipped review/document-trace/workbench/Candidate B Trace operator flow on current `main`, use:
+  - `frontend_UI_plans/README.md` as the front-door index
+  - `frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md` for explicit backend binding and route bring-up
+  - `frontend_UI_plans/wb-compare-validation.md` for same-checkout prep and the `tools/validate_wb_prep.py` readiness gate
+  - `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md` for the broader manual validation pass after startup and prep succeed
 
 ## 7. Current explicit limits
 - Tesseract CLI availability is an external prerequisite for scanned/mixed PDF OCR success.
