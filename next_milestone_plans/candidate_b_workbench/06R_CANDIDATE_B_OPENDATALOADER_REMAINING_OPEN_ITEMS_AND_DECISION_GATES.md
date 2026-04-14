@@ -245,17 +245,13 @@ Do not describe the root Playwright workflow as placeholder smoke for this surfa
 
 ---
 
-## Remaining open item 7 - deliberate Candidate B scope decision
+## Resolved in this pass - current-horizon Candidate B scope decision
 
-### What remains open
-The repo is currently coherent around Candidate B as bundle-scoped inspection plus compare participation.
-Whether Candidate B should ever move toward broader runtime-style integration remains intentionally unresolved.
+Resolved posture:
 
-### Exact decision that must be made
-Choose between:
-
-- retaining the shipped bundle-scoped product boundary as the current-horizon endpoint for Candidate B
-- opening a separate explicit runtime-admission program for Candidate B
+- retain the shipped bundle-scoped compare + Candidate B Trace boundary as the current-horizon endpoint for Candidate B
+- do not open runtime admission, selector admission, or widened runtime classification for Candidate B in the current horizon
+- treat any later runtime-style Candidate B move as a separate explicit reopen rather than as continuation of the current shipped lane
 
 ### Option A - retain bundle-scoped compare + trace as the current-horizon boundary
 Posture:
@@ -267,7 +263,7 @@ Posture:
 
 Recommendation:
 
-- this is the default and recommended current-horizon posture
+- this is now the adopted current-horizon posture
 
 Why this is the repo-fit default:
 
@@ -285,7 +281,7 @@ Posture:
 
 Current recommendation:
 
-- do not open this program by implication
+- this program is not opened by the current-horizon decision
 - only open it if an explicit product requirement cannot be satisfied by the shipped bundle-scoped compare + trace model
 
 ### Reopen triggers required before Option B is justified
@@ -310,9 +306,7 @@ It would likely widen at least:
 - operator docs in `frontend_UI_plans/`
 - cross-pack assumptions in `next_milestone_plans/multi_variant_visual_lane_control/`
 
-### Required decision direction
-Make that decision explicitly later.
-Current default posture remains:
+### Current default posture remains:
 
 - bundle-scoped inspection surface
 - no runtime admission
@@ -324,7 +318,7 @@ Do not describe Option B as a small follow-up to Candidate B Trace; it is a sepa
 
 ---
 
-## Remaining open item 8 - bundle-scoped operator ergonomics
+## Remaining open item 7 - bundle-scoped operator ergonomics
 
 ### What remains open
 If Candidate B remains bundle-scoped, there is still room for narrow operator-ergonomics improvement after hardening and scope decisions.
@@ -340,7 +334,7 @@ Do not broaden ergonomics work into runtime admission, schema widening, or docum
 
 ---
 
-## Remaining open item 9 - prepared-state/operator workflow hardening
+## Remaining open item 8 - prepared-state/operator workflow hardening
 
 ### What remains open
 Prepared same-checkout operator validation is now essential to the shipped compare + Candidate B Trace flow, but the canonical prep and validation path should be hardened further.
@@ -357,7 +351,7 @@ Do not rely on ambiguous or donor-worktree prep state when validating shipped co
 
 ---
 
-## Remaining open item 10 - documentation closeout ordering
+## Remaining open item 9 - documentation closeout ordering
 
 ### What remains open
 A true documentation closeout pass still makes sense, but only after the browser-coverage, Playwright, scope, ergonomics, and prepared-state decisions above are settled.

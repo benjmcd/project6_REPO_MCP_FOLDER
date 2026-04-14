@@ -103,13 +103,10 @@ Ordered next-decision note:
 
 - the repo-native browser regression lane is now landed, and the root Playwright workflow is no longer a placeholder-only scaffold
 - future browser work should now be explicit expansion or refinement of the targeted NRC APS coverage, not a rehash of whether the root workflow is authoritative at all
-- Candidate B scope must remain deliberate:
-  - the current repo is coherent around bundle-scoped inspection
+- the current-horizon Candidate B scope decision is now resolved:
+  - retain the shipped bundle-scoped compare + Candidate B Trace boundary
   - do not drift into runtime-style admission or selector integration by accident
-- the exact Candidate B scope decision is:
-  - retain the shipped bundle-scoped compare + Candidate B Trace boundary for the current horizon
-  - or separately reopen a wider runtime-admission program
-- current repo-grounded recommendation is to retain the shipped bundle-scoped boundary unless a concrete operator/product requirement proves it insufficient
+- only reopen a wider Candidate B runtime-admission program if a concrete operator/product requirement proves the shipped bundle-scoped model insufficient
 - if Candidate B remains bundle-scoped, operator ergonomics should improve only where justified
 - same-checkout prepared-state workflow should be hardened before any broader surface expansion
 - documentation closeout should happen after those decisions, not before
