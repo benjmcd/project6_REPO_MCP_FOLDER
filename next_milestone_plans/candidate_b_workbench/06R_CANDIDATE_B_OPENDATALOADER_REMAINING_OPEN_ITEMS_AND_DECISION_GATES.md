@@ -352,14 +352,16 @@ Do not rely on ambiguous or donor-worktree prep state when validating shipped co
 
 ---
 
-## Remaining open item 9 - documentation closeout ordering
+## Resolved in this pass - documentation closeout
 
-### What remains open
-A true documentation closeout pass still makes sense, but only after the scope and ergonomics decisions above are settled.
+Resolved posture:
 
-### Required decision direction
-Defer closeout until after those decisions.
-Then remove stale redundancy, point operator docs at the canonical flow, and keep planning docs intentionally scoped rather than bloated.
+- active operator/front-door docs now point at one canonical flow:
+  - `frontend_UI_plans/README.md` = front-door index
+  - `frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md` = explicit backend binding and route bring-up
+  - `frontend_UI_plans/wb-compare-validation.md` = same-checkout prep, `tools/validate_wb_prep.py`, and populated compare/Candidate B Trace validation
+  - `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md` = broader manual validation pass after startup and prep succeed
+- this pack stays focused on Candidate B planning/control rather than duplicated operator walkthrough steps
 
 ### Hard rule
-Do not do a broad doc-consolidation sweep while the higher-order product and validation decisions above are still intentionally open.
+Do not reintroduce ambiguity about which doc owns startup, prep, or broader manual validation for the shipped Option 1 flow.
