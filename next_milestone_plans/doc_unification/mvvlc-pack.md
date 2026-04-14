@@ -1,5 +1,10 @@
 # MVVLC Pack
 
+## Status note
+
+This document is a historical earlier audit artifact.
+Its findings should be read as point-in-time findings from that audit, not as the current post-PR50 planning front door.
+
 ## Most important inconsistencies found during audit
 
 Status note:

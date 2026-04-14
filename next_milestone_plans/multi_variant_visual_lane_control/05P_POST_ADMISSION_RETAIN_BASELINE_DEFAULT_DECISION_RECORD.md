@@ -38,6 +38,11 @@ For the current horizon:
 4. OCR-routing, media scope, policy tuning, threshold retuning, and outward variant-identity expansion remain locked.
 5. No default-promotion target-definition lane opens from this decision.
 
+Interpretation note:
+
+- the non-admitted Candidate B/C posture here is limited to MVVLC selector/runtime admission
+- it does not contradict the already-shipped bundle-scoped Candidate B compare + trace surfaces governed in `../candidate_b_workbench/`
+
 ---
 
 ## Why this is the correct current-horizon outcome

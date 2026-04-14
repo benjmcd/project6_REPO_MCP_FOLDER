@@ -97,6 +97,11 @@ Option 2 is accepted only in this constrained form:
 - Candidate B and Candidate C remain conceptual later candidates only,
 - and no per-candidate runtime framework should be introduced yet.
 
+Interpretation note:
+
+- Candidate B/C being later candidates here refers to later MVVLC selector/runtime-admission candidates
+- it does not negate the separately shipped bundle-scoped Candidate B compare + trace surfaces governed under `../candidate_b_workbench/`
+
 This means the first dedicated surface is:
 
 - shared by design,

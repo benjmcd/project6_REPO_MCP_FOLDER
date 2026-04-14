@@ -77,7 +77,8 @@ If it conflicts with `00F`, `05E`, `05F`, `06E`, `03Y`, `03Z`, or `README_INDEX`
 ### Post-M6B current-horizon decision (achieved / current)
 - `05P` freezes the explicit current-horizon decision to retain `baseline` as the default.
 - Candidate A remains admitted but non-default.
-- Candidate B/C remain non-admitted.
+- Candidate B/C remain non-admitted in the MVVLC selector/runtime family.
+- Separate bundle-scoped Candidate B compare + trace surfaces remain outside that admission posture.
 - No default-promotion target-definition lane opens from this decision.
 
 ### Post-M6B retained-default merged-main closure (achieved / current)

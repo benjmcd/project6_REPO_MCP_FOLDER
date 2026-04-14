@@ -41,6 +41,11 @@ The governing admission boundary remains `03AA` + `05H`, the exact approved targ
 - broader promotion/defaulting work is implicitly approved
 - later candidate/defaulting work may start by inference from `05M` or this document alone
 
+Interpretation note:
+
+- Candidate B/C admission here means MVVLC selector/runtime admission
+- it does not prohibit the already-shipped separate bundle-scoped Candidate B compare + trace surfaces governed under `../candidate_b_workbench/`
+
 ---
 
 ## Validation posture for this reconciliation step
