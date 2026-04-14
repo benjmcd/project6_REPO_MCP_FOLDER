@@ -65,6 +65,8 @@ For the live UI and API behavior, the canonical implementation source of truth i
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_seed_wb_compare.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\support_nrc_aps_candidate_b_opendataloader.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_nrc_aps_candidate_b_opendataloader.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\validate_wb_prep.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_validate_wb_prep.py`
 
 The files in this folder are reference material, not the live implementation surface.
 
@@ -96,6 +98,10 @@ Current shipped-baseline note:
   - `backend/tests/review_browser_fixture.py`
   - `backend/tests/review_browser_server.py`
   - `backend/tests/requirements-browser.txt`
+- the root repo now also carries a validate-only same-checkout prep gate for populated compare + Candidate B Trace operator validation via:
+  - `tools/validate_wb_prep.py`
+  - `tests/test_validate_wb_prep.py`
+- that prep gate fails closed on empty, donor, ambiguous, or incoherent same-checkout prep state and should precede populated operator validation
 - future work should start from that shipped posture rather than from pre-compare or pre-trace assumptions
 - future work should stay additive and lane-scoped unless a repo-confirmed blocker requires a broader reopen
 
@@ -107,8 +113,8 @@ Ordered next-decision note:
   - retain the shipped bundle-scoped compare + Candidate B Trace boundary
   - do not drift into runtime-style admission or selector integration by accident
 - only reopen a wider Candidate B runtime-admission program if a concrete operator/product requirement proves the shipped bundle-scoped model insufficient
+- same-checkout prepared-state workflow hardening is now landed through the validate-only prep gate and canonical prep sequence
 - if Candidate B remains bundle-scoped, operator ergonomics should improve only where justified
-- same-checkout prepared-state workflow should be hardened before any broader surface expansion
 - documentation closeout should happen after those decisions, not before
 
 ## Retained Documents
