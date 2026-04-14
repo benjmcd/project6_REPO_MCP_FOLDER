@@ -52,10 +52,29 @@ Current compare-surface implementation note:
 - that proof evidence remains local archived operator evidence and is not preserved in tracked history
 
 Current inspection-surface note:
-- the current branch implementation adds the separate additive `Candidate B Trace` page and API family for bundle-scoped inspection
+- the current merged-main implementation adds the separate additive `Candidate B Trace` page and API family for bundle-scoped inspection
 - current support now requests annotated PDF output and retains it under the approved Candidate B raw-output root
 - current compare deep links now include `candidate_b_trace` alongside the existing baseline and Candidate A trace links
 - Candidate B still remains workbench-only, non-admitted, and outside the normal review runtime selector
+
+Post-PR50 shipped-baseline note:
+- the shipped baseline is now:
+  - Workbench Compare on `main`
+  - Candidate B Trace on `main`
+  - inline annotated PDF delivery on `main`
+  - first-load Candidate B Trace defaulting to `annotated_pdf` when present
+- treat that as the baseline posture for all future Candidate B planning in this pack
+- do not reopen already-shipped compare or trace questions unless a repo-confirmed blocker requires it
+
+Ordered next-decision note:
+- the next highest-value hardening step is repo-native browser regression coverage for the shipped compare + Candidate B Trace flow
+- the placeholder Playwright scaffold still needs an explicit keep/replace/retire decision
+- the broader Candidate B product-scope decision remains intentionally unresolved:
+  - current repo posture is bundle-scoped inspection
+  - do not drift into runtime admission or selector integration by implication
+- if bundle-scoped posture remains correct, only then consider narrow operator ergonomics improvements
+- harden prepared-state/operator workflow before any broader product expansion
+- do documentation closeout only after those decisions are settled
 
 ---
 
@@ -192,3 +211,10 @@ The Candidate B Trace question was narrower:
 - should Candidate B gain a separate additive inspection surface based on ODL-native annotated PDFs and raw bundle artifacts
 
 This pack freezes and now anchors that separate lane rather than treating it as implied runtime admission.
+
+What is newly frozen as baseline is narrower than a new roadmap.
+It means:
+
+- compare + Candidate B Trace are now shipped surfaces
+- the current repo is coherent around bundle-scoped Candidate B inspection
+- the next work should be deliberate hardening and product-decision lanes, not accidental widening

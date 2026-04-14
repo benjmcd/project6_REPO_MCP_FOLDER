@@ -75,6 +75,29 @@ Important implementation-scope note:
 - the workbench-compare planning docs in this folder now describe the separate shipped compare page and compare API family; they still do not revise the single-run contract of the shipped review page or document-trace page
 - Candidate B-specific inspection now ships as the separate additive `Candidate B Trace` page and API family for bundle-scoped ODL inspection; it does not widen the single-run `document-trace` contract or admit Candidate B into the normal review runtime model
 
+Current shipped-baseline note:
+
+- the merged post-PR50 UI baseline is now the reference posture for this folder:
+  - `/review/nrc-aps`
+  - `/review/nrc-aps/document-trace`
+  - `/review/nrc-aps/workbench-compare`
+  - `/review/nrc-aps/candidate-b-trace`
+- future work should start from that shipped posture rather than from pre-compare or pre-trace assumptions
+- future work should stay additive and lane-scoped unless a repo-confirmed blocker requires a broader reopen
+
+Ordered next-decision note:
+
+- the highest-value next hardening lane is repo-native browser regression coverage for the shipped compare + Candidate B Trace flow
+- the noisy placeholder Playwright scaffold still needs an explicit disposition decision:
+  - replace it with targeted NRC APS browser coverage
+  - or disable/retire it if it is not authoritative
+- Candidate B scope must remain deliberate:
+  - the current repo is coherent around bundle-scoped inspection
+  - do not drift into runtime-style admission or selector integration by accident
+- if Candidate B remains bundle-scoped, operator ergonomics should improve only where justified
+- same-checkout prepared-state workflow should be hardened before any broader surface expansion
+- documentation closeout should happen after those decisions, not before
+
 ## Retained Documents
 
 - `nrc_aps_review_ui_spec.md`

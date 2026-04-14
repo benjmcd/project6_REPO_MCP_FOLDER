@@ -8,6 +8,14 @@ Merged `main` now contains the baseline-only selector/bootstrap implementation, 
 
 Merged `main` also now contains the adopted PageEvidence Lane Class A strengthening pack under `../pageevidence/`. That pack is a subordinate repo-native lane-local hold-state/control surface. It records that Pass 1 is complete, Pass 2 is not needed on the merged-main state, the correct current posture is stop and hold, and any future PageEvidence work requires a new explicitly frozen objective.
 
+Important cross-pack note:
+
+- this pack's statements that Candidate B/C remain non-admitted apply to MVVLC selector/runtime admission only
+- they do not negate the separately shipped bundle-scoped Candidate B compare + trace surfaces governed under `../candidate_b_workbench/`
+- current merged-main posture is therefore coherent as:
+  - Candidate A admitted through the MVVLC `visual_lane_mode` family
+  - Candidate B available only through separate bundle-scoped workbench/inspection surfaces
+
 ### What is closed
 
 - Selector config key: `visual_lane_mode`, normalized, forwarded, defaulted, fail-closed to `baseline` (`03U`, `03V`)
@@ -48,6 +56,11 @@ Merged `main` also now contains the adopted PageEvidence Lane Class A strengthen
 - Keep the retained `baseline`-default merged-main state from `05P` + `05Q` in place unless a later explicit program-decision amendment is separately frozen
 - Keep Candidate B/C admission, OCR/media widening, policy retuning, and outward identity/schema changes out of scope unless separately frozen
 - Treat repo-native Python enforcement hardening as a valid parallel lane, not as a hidden dependency of MVVLC widening
+
+Interpretation note:
+
+- "Candidate B/C admission" here means admission into the MVVLC selector/runtime family
+- it does not prohibit the already-shipped bundle-scoped Candidate B compare + trace surfaces documented in `../candidate_b_workbench/`
 
 ### What is bounded residual
 
@@ -111,9 +124,19 @@ All `00*`, `03*`, `05*`, `06*` docs listed in `00A` are active planning docs for
 | `mvvlc_reconciliation_checklist_v6.md` | Working artifact | Hardening task control, not architecture authority |
 | `multi_variant_visual_lane_program_spec_v2.md` | Legacy | Non-governing unless explicitly re-adopted |
 | `claude_code_hardening_task.txt` | Task input | Hardening task specification |
+| `mvvlc_controlled_implementation_prompt.txt` | Task input | Historical implementation prompt, not control authority |
+| `mvvlc_milestone_roadmap_notes.md` | Companion artifact | Narrative milestone notes, not control authority |
+| `mvvlc_milestone_roadmap.png` | Derived artifact | Visual companion to the roadmap notes, not control authority |
+| `VERIFIER_FRONT_DOOR.txt` | Mirror artifact | Convenience verifier mirror, not primary planning authority |
+| `VERIFIER_TEMP_DUMP.txt` | Mirror artifact | Working verifier dump, not primary planning authority |
 | `MANIFEST.json` | Metadata | Pack manifest |
 
 Do not treat non-authoritative artifacts as active planning authority. See `00U` Section 5 for the strength hierarchy.
+
+Manifest note:
+
+- `MANIFEST.json` is intentionally scoped to the control-spine file set
+- the non-authoritative artifacts above may therefore remain intentionally undeclared there
 
 ---
 

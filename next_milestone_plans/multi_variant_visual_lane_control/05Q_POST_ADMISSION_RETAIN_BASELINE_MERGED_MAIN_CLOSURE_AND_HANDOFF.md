@@ -45,6 +45,11 @@ On merged `main`:
 6. No primary MVVLC implementation, promotion, or decision lane is opened by implication from this merged state.
 7. The adopted PageEvidence pack under `next_milestone_plans/pageevidence/` is a subordinate lane-local hold-state/control surface only; it does not reopen a primary MVVLC lane, and any future PageEvidence work still requires a new explicit freeze.
 
+Interpretation note:
+
+- Candidate B/C remaining non-admitted here means non-admitted into the MVVLC selector/runtime family
+- it does not invalidate the already-shipped bundle-scoped Candidate B compare + trace surfaces governed under `next_milestone_plans/candidate_b_workbench/`
+
 ---
 
 ## What this merged-main handoff does not authorize

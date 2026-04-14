@@ -37,6 +37,11 @@ That retained-default state has since been closed on merged `main` in:
 4. Candidate A is not the default.
 5. Candidate B and Candidate C remain non-admitted.
 
+Interpretation note:
+
+- Candidate B/C non-admission in this packet means non-admission into the MVVLC selector/runtime family
+- it does not govern the separate bundle-scoped Candidate B compare + trace surfaces frozen under `../candidate_b_workbench/`
+
 ---
 
 ## Required authority set

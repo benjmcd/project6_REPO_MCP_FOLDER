@@ -7,7 +7,7 @@ Freeze the narrowest additive artifact contract for the separate Candidate B ins
 Status note:
 
 - this document froze the artifact posture before implementation
-- the current branch code now requests and retains annotated PDF output and exposes it through the separate additive Candidate B Trace surface
+- the current merged-main code now requests and retains annotated PDF output and exposes it through the separate additive Candidate B Trace surface
 
 This doc does **not** admit Candidate B into the normal review runtime model.
 It defines how ODL-native inspection artifacts are retained and surfaced without pretending they are owner-path runtime artifacts.
