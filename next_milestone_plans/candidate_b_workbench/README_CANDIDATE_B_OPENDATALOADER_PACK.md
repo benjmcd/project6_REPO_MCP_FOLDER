@@ -76,9 +76,10 @@ Post-PR50 shipped-baseline note:
 Ordered next-decision note:
 - the repo-native browser regression lane is now landed, and the root Playwright workflow is now targeted at the shipped NRC APS compare + Candidate B Trace flow rather than placeholder browser smoke
 - future browser work should now be explicit expansion or refinement of that targeted coverage, not a question of whether the root workflow is authoritative at all
-- the broader Candidate B product-scope decision remains intentionally unresolved:
-  - current repo posture is bundle-scoped inspection
+- the current-horizon Candidate B scope decision is now resolved:
+  - keep Candidate B at the shipped bundle-scoped compare + trace boundary
   - do not drift into runtime admission or selector integration by implication
+- a wider runtime-admission program remains available only as a later explicit reopen if the shipped bundle-scoped model proves insufficient for a concrete operator/product requirement
 - if bundle-scoped posture remains correct, only then consider narrow operator ergonomics improvements
 - harden prepared-state/operator workflow before any broader product expansion
 - do documentation closeout only after those decisions are settled
