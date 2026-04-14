@@ -355,3 +355,90 @@ def test_validate_wb_prep_fails_when_required_fixture_is_missing(
     payload = json.loads(capsys.readouterr().err)
     assert payload["passed"] is False
     assert payload["error"]["code"] == "shared_fixture_required_missing"
+
+
+def test_validate_wb_prep_fails_closed_on_invalid_corpus_pdf_count(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    checkout_root = tmp_path / "checkout"
+    baseline_binding = _make_binding(checkout_root, run_id="baseline-run-001", visual_lane_mode="baseline")
+    candidate_a_binding = _make_binding(
+        checkout_root,
+        run_id="candidate-a-run-001",
+        visual_lane_mode="candidate_a_page_evidence_v1",
+    )
+    baseline_binding.summary["corpus_pdf_count"] = "not-a-number"
+
+    monkeypatch.setattr(
+        validate_wb_prep,
+        "_discover_runtime_bindings_for_checkout",
+        lambda checkout_root: [baseline_binding, candidate_a_binding],
+    )
+    monkeypatch.setattr(
+        validate_wb_prep,
+        "classify_runtime_binding_variant",
+        lambda binding: "candidate_a_page_evidence_v1" if binding.run_id.startswith("candidate-a") else "baseline",
+    )
+    monkeypatch.setattr(
+        validate_wb_prep,
+        "_discover_candidate_b_bundle_sources",
+        lambda checkout_root: [],
+    )
+
+    exit_code = validate_wb_prep.main(["--checkout-root", str(checkout_root)])
+
+    assert exit_code == 1
+    payload = json.loads(capsys.readouterr().err)
+    assert payload["passed"] is False
+    assert payload["error"]["code"] == "baseline_run_missing"
+
+
+def test_validate_wb_prep_fails_closed_on_malformed_candidate_b_bundle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    checkout_root = tmp_path / "checkout"
+    baseline_binding = _make_binding(checkout_root, run_id="baseline-run-001", visual_lane_mode="baseline")
+    candidate_a_binding = _make_binding(
+        checkout_root,
+        run_id="candidate-a-run-001",
+        visual_lane_mode="candidate_a_page_evidence_v1",
+    )
+    malformed_bundle_root = checkout_root / "tests" / "reports" / "cb-compare-bad"
+    malformed_bundle_root.mkdir(parents=True, exist_ok=True)
+
+    monkeypatch.setattr(
+        validate_wb_prep,
+        "_discover_runtime_bindings_for_checkout",
+        lambda checkout_root: [baseline_binding, candidate_a_binding],
+    )
+    monkeypatch.setattr(
+        validate_wb_prep,
+        "classify_runtime_binding_variant",
+        lambda binding: "candidate_a_page_evidence_v1" if binding.run_id.startswith("candidate-a") else "baseline",
+    )
+    monkeypatch.setattr(
+        validate_wb_prep,
+        "discover_candidate_b_bundle_roots",
+        lambda checkout_root: [malformed_bundle_root],
+    )
+    monkeypatch.setattr(
+        validate_wb_prep,
+        "_canonical_bundle_id",
+        lambda bundle_root, checkout_root: "tests/reports/cb-compare-bad",
+    )
+    monkeypatch.setattr(
+        validate_wb_prep,
+        "_load_bundle_artifacts",
+        lambda bundle_id, checkout_root: (_ for _ in ()).throw(ValueError("bad compare payload")),
+    )
+
+    exit_code = validate_wb_prep.main(["--checkout-root", str(checkout_root)])
+
+    assert exit_code == 1
+    payload = json.loads(capsys.readouterr().err)
+    assert payload["passed"] is False
+    assert payload["error"]["code"] == "candidate_b_bundle_missing"
