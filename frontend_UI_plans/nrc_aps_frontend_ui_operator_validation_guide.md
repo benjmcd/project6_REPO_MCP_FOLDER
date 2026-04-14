@@ -97,9 +97,9 @@ It does not attempt to validate:
 Important workbench-compare note:
 
 - populated workbench-compare validation requires same-checkout prep for baseline, Candidate A, and Candidate B sources
-- this guide does not define the compare prep flow itself
+- the canonical compare prep flow now includes the validate-only same-checkout prep gate in `tools/validate_wb_prep.py`
 - once same-checkout prep exists, this guide should also validate Candidate B Trace follow-through from the compare page
-- use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated same-corpus compare prep and populated operator-validation sequence
+- use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated same-corpus compare prep, `tools/validate_wb_prep.py` gate, and populated operator-validation sequence
 
 ## Preconditions
 
