@@ -17,7 +17,9 @@ Use these files as authority when implementing and validating:
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_document_trace_page.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\tests\test_review_nrc_aps_page.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\seed_wb_compare.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tools\validate_wb_prep.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_seed_wb_compare.py`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_validate_wb_prep.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\tests\test_nrc_aps_candidate_b_opendataloader_compare.py`
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\archive\20260412-cb-proof\README.md`
 
@@ -70,7 +72,12 @@ Add a page-route test covering at minimum:
 
 After automated tests are green, verify manually:
 
-0. populate the same checkout with same-corpus compare sources:
+0. populate and validate the same checkout with the canonical prep sequence:
+   - `py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode baseline`
+   - `py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode candidate_a_page_evidence_v1`
+   - `.\project6.ps1 -Action compare-nrc-aps-candidate-b`
+   - `py -3.12 .\tools\validate_wb_prep.py`
+   - do not proceed with populated operator validation unless `tools/validate_wb_prep.py` exits `0`
    - baseline and Candidate A review roots must be seeded with `tools/seed_wb_compare.py`, not `tools/run_nrc_aps_local_corpus_e2e.py`
    - the seeded review roots must use the fixed five-fixture PDF set shared with the Candidate B workbench bundle
    - any Candidate B bundle used for validation must be discovered from the same checkout root as the compare page
@@ -103,6 +110,7 @@ The workbench compare validation lane must:
 
 The compare page may read already-existing local archived bundles, but test and page validation must not invoke a new Candidate B compare run.
 The separate same-corpus prep step may seed baseline and Candidate A review roots for operator validation, but that prep step is outside validate-only test execution and must use the dedicated fixture-corpus seed tool rather than the 69-document local-corpus demo runner.
+The canonical same-checkout prep check is now `tools/validate_wb_prep.py`; it is validate-only, fails closed on empty or incoherent prep state, and should gate populated operator validation rather than ad hoc manual prep guesses.
 
 Existing review and document-trace regression suites must continue to pass after implementation, including:
 
