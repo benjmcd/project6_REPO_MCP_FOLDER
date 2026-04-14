@@ -85,7 +85,7 @@ The bounded uncertainty is now better scoped than in v26:
 
 - the repo does contain explicit migration support for `visual_page_refs_json`
 - therefore the remaining uncertainty should not be described as generic absence of migration support
-- the stronger remaining issue is the enforcement gap: the visible root workflow surface is Playwright-oriented, not visibly Python-acceptance enforcing
+- the stronger remaining issue is now the enforcement split: the visible root workflow surface runs targeted Playwright-driven NRC APS browser coverage, but it still does not visibly enforce the broader pack-specified Python `pytest` acceptance path
 
 
 ## Additional narrowing after enforcement-surface check
@@ -93,7 +93,7 @@ The bounded uncertainty is now better scoped than in v26:
 The enforcement-gap point is now stronger and more concrete than in v27:
 
 - exactly one root workflow was found
-- it is Playwright-only
+- it is Playwright-driven and now uses Python only to host the targeted NRC APS browser harness, not the broader `pytest` acceptance path
 - no pre-commit surface was found
 - no visible pytest references were found in the checked repo-native workflow/config/hook files
 

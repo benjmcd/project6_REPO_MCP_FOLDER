@@ -53,7 +53,7 @@ Verified visible root workflow:
 - `.github/workflows/playwright.yml`
 
 This sharpens the remaining enforcement gap:
-the Python acceptance path is specified by the pack, but not yet visibly enforced by the root workflow surface we found.
+the broader Python `pytest` acceptance path is specified by the pack, while the root workflow surface we found now enforces only the narrower targeted browser path.
 
 
 ## Further narrowing after direct workflow/hook/config check
@@ -65,7 +65,7 @@ Verified:
 
 So the enforcement gap is now best stated as:
 
-**the Python acceptance path is pack-specified but not visibly repo-enforced in the root workflow/hook/config surfaces checked.**
+**the broader Python `pytest` acceptance path is pack-specified but not visibly repo-enforced in the root workflow/hook/config surfaces checked, even though targeted NRC APS browser coverage is now root-enforced there.**
 
 
 ## Further narrowing after schema/contract check

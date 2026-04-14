@@ -75,7 +75,7 @@ Current validation caveat:
 
 23. `connectors_nrc_adams._normalize_request_config(...)` has an explicit `control_keys` exclusion set for lenient pass-through mode.
 24. Root `package.json` exists but has no scripts.
-25. No live `pytest` references were found in the scanned root/docs/backend/tests/tools surfaces during this pass.
+25. No repo-native `pytest` references were found in the specific root/workflow/config surfaces scanned during that pass; direct test-file `pytest` usage is separately recorded in A.10.
 
 ### A.5 Review/catalog/API visibility surface
 
@@ -157,7 +157,7 @@ Current validation caveat:
 
 ### A.16 Workflow, migration, and enforcement surface
 
-62. Root workflow surface `.github/workflows/playwright.yml` exists and appears Playwright/UI-oriented.
+62. Root workflow surface `.github/workflows/playwright.yml` exists and now runs targeted NRC APS browser coverage through Playwright against a Python-backed review harness.
 63. `backend/migration_compat.py` provides explicit Alembic migration-compat helpers.
 64. `tools/migrate_sqlite_to_postgres.py` provides repo-native SQLite->Postgres migration tooling.
 65. `backend/alembic/versions/0010_visual_page_refs_json.py` explicitly adds `visual_page_refs_json`.
@@ -255,7 +255,7 @@ Items that remain genuinely open or bounded.
 
 1. **Tier 2 performance sample breadth:** The local performance gate was executed and passed, but the recorded artifact-aware Tier 2 comparison still uses the declared-root handoff fallback sample because the preferred real-ADAMS timed capture exceeded practical local session budget.
 2. **Broader residual consumer/visibility effects:** Residual effects beyond the already-verified live app-surface chain remain bounded but not zero. Mostly duplicated worktree/archive state and non-audited/generated surfaces.
-3. **Repo-native Python enforcement:** The Python acceptance path is pack-specified (`06J`, `06K`) but not visibly repo-enforced in the root workflow/hook/config surfaces checked.
+3. **Repo-native enforcement split:** Targeted NRC APS browser coverage is now visibly root-enforced through the Playwright workflow, but the broader pack-specified Python `pytest` acceptance path (`06J`, `06K`) is still not visibly root-enforced in the root workflow/hook/config surfaces checked.
 4. **Broader future default-promotion / additional-candidate scope:** Still later-scope. `05P` now explicitly retains `baseline` as the default for the current horizon, and `05Q` now closes that retained-default state on merged `main`, but any future attempt to amend that rule, promote Candidate A to default, admit Candidate B/C into the MVVLC selector/runtime family, reopen OCR-routing/media scope, or authorize further variant work still requires a separate explicit decision record beyond `03AC` + `05O` + `05P` + `05Q`. This does not negate the already-shipped separate bundle-scoped Candidate B compare + trace surfaces governed in `next_milestone_plans/candidate_b_workbench/`.
 
 ---

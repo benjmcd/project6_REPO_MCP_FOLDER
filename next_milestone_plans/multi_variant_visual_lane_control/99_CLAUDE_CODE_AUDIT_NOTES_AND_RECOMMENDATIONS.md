@@ -104,7 +104,7 @@ Add `visual_lane_mode` to the whitelist in `processing_config_from_run_config` a
 Acceptance commands (06J/06K) and performance gates (06I) are pack-specified but not repo-native enforced.
 
 ### Evidence
-- Root `.github/workflows/playwright.yml` exists and is Playwright-only
+- Root `.github/workflows/playwright.yml` exists and now enforces targeted NRC APS browser coverage through Playwright plus a Python-backed harness, but not the broader `pytest` acceptance path
 - No Python acceptance test workflow found
 - No pytest references in repo-native config/hook files
 - Root `package.json` exists but has no scripts
@@ -923,7 +923,7 @@ The following uncertainties are correctly bounded in 06L and should remain expli
 
 ### 6.1 Enforcement Integration Gap
 - **Status**: Pack-specified validation vs repo-native enforcement
-- **Evidence**: `.github/workflows/playwright.yml` is Playwright-only, no Python acceptance workflow
+- **Evidence**: `.github/workflows/playwright.yml` now enforces targeted browser coverage, but no broader root `pytest` acceptance workflow is present
 - **Recommendation**: Maintain as bounded residual requiring manual validation or separate CI work
 
 ### 6.2 Performance Testing Manual Execution  
