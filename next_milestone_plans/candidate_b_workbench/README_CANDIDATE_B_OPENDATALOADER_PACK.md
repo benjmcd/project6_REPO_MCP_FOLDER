@@ -79,6 +79,13 @@ Ordered next-decision note:
 - the broader Candidate B product-scope decision remains intentionally unresolved:
   - current repo posture is bundle-scoped inspection
   - do not drift into runtime admission or selector integration by implication
+- the exact decision to make is now:
+  - either keep Candidate B at the shipped bundle-scoped compare + trace boundary for the current horizon
+  - or explicitly reopen a separate runtime-admission program
+- current repo-grounded recommendation remains the first option:
+  - the shipped compare goal is already met through Workbench Compare + Candidate B Trace
+  - Candidate B artifacts are bundle-root and ODL-native rather than current review-runtime rows
+  - widening Candidate B into runtime admission would be a materially broader lane, not a small follow-on
 - if bundle-scoped posture remains correct, only then consider narrow operator ergonomics improvements
 - harden prepared-state/operator workflow before any broader product expansion
 - do documentation closeout only after those decisions are settled

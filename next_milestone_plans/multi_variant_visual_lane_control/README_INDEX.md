@@ -15,6 +15,8 @@ Important cross-pack note:
 - current merged-main posture is therefore coherent as:
   - Candidate A admitted through the MVVLC `visual_lane_mode` family
   - Candidate B available only through separate bundle-scoped workbench/inspection surfaces
+- any later Candidate B runtime-style integration would be a separate explicit cross-pack reopen
+- do not infer that reopen from the already-shipped bundle-scoped Candidate B compare + trace baseline
 
 ### What is closed
 
