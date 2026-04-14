@@ -16,6 +16,22 @@ Use this when you need to:
 
 This is a startup and smoke-test guide, not an implementation spec.
 
+## Document Role
+
+Use this guide to:
+
+- bind an explicit runtime and storage root
+- start the backend on a known port
+- prove basic route and page-shell reachability for the review, Document Trace, and Workbench Compare surfaces
+
+Use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for:
+
+- same-checkout prep
+- `tools/validate_wb_prep.py`
+- populated Workbench Compare and Candidate B Trace follow-through
+
+Use [frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md) for the broader manual validation pass after startup and prep succeed.
+
 ## Canonical Source Of Truth
 
 The live implementation authority for the UI routes and startup surface is:
