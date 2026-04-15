@@ -96,13 +96,16 @@ Additional current facts about Onlook itself:
 - Onlook itself is documented as built with Next.js, Supabase, TailwindCSS, and Drizzle
 - Bun appears in Onlook's local development setup, not as a target-project requirement
 - local Onlook development and self-hosting are separate concerns from the target project you want Onlook to edit
-- the current working operator path for this lane is local source development under `ext-onlook/`
+- the canonical local operator and debug surface for this investigation lane is local source development under `ext-onlook/` in this worktree at revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
+- a same-revision sibling clone may still exist at `../onlook-lane/ext-onlook/`, but it is not the canonical debug surface for this lane
 - the hosted desktop app is not the current working auth path here because its GitHub and Google login links are dead locally
 - local source development mode exposes a dev-only demo-user sign-in path and that path has been validated here
 - local project import and sandbox creation in the current Onlook source tree are still CodeSandbox-backed, and are now validated here with a real `CSB_API_KEY`
-- the imported `onlook-ui` project now reaches the editor route inside Onlook
+- the imported `onlook-ui` project now reaches the Onlook project route and editor shell, but not editor readiness
+- the current proven direct launch and repro path is `bun run dev -- --hostname 127.0.0.1 --port 3007`
+- the current first live blocker is preview and bridge non-readiness: the CodeSandbox-backed iframe does not become a usable app document, and the editor then hits bridge/theme errors instead of reaching stable edit interactions
+- a separate archived upstream crash path also exists in Onlook filesystem and branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`, which may explain historical hard exits after route open
 - direct local write-back/editing is still not yet proven
-- in the current workspace-local source clones, opening the imported project route currently causes `@onlook/web-client` to exit with code `5`
 - real `OPENROUTER_API_KEY` is still required to claim AI/chat readiness
 
 Verified in:
@@ -198,16 +201,26 @@ If sandbox changes are treated as implicitly approved for live adoption, source-
 The repo does not currently carry a root-local `lc_e2e` runtime tree, so realistic review data for demos and validation must be chosen deliberately rather than assumed from root-local historical examples.
 
 ### 8.5 Cross-worktree runtime dependency
-The current adopted demo runtime comes from the sibling `pr45-postmerge-audit` worktree, so slice 1 depends on a local machine/worktree relationship rather than a repo-native fixture packaged inside `onlook-lane`.
+The current adopted demo runtime comes from the sibling `pr45-postmerge-audit` worktree, so slice 1 depends on a local machine/worktree relationship rather than a repo-native fixture packaged inside this lane.
+
+### 8.6 Operator-surface drift
+If the investigation alternates between multiple local Onlook source clones or launch paths, the actual failure boundary becomes harder to trust.
+
+Current mitigation:
+
+- treat `ext-onlook/` in this worktree as the canonical debug surface
+- leave any sibling same-revision clone idle unless explicitly comparing behavior
+- treat the direct Bun launch path on port `3007` as the canonical repro path for the current blocker
 
 ## 9. Open Unknowns
 These items remain open and should not be flattened into assumptions:
 
 - whether the broken hosted desktop OAuth path will remain irrelevant for this lane or needs later upstream follow-up
-- what exactly causes the reproducible `@onlook/web-client` exit code `5` on the imported project route after corrected local source launch
-- whether that project-route crash is tied to the current local Onlook runtime or to imported-project specifics
+- whether the CodeSandbox preview interstitial and `400` can ever clear automatically enough for the preview iframe to load the real app document in the current local flow
+- whether the preview and bridge failure and the archived filesystem-init crash can co-occur in the same run or represent separate upstream defects
+- whether any imported-project specifics matter only after the preview iframe becomes a live bridged child
 - whether real `OPENROUTER_API_KEY` is required for the exact AI/chat operations you want after import and project open
-- whether `tools/start-onlook-web.ps1` needs more hardening to match the corrected source-launch path for post-key operations on this machine
+- whether `tools/start-onlook-web.ps1` should be hardened further or simply remain a convenience path while the direct Bun launch path is the canonical repro surface
 
 These unknowns do not change the main repo-side determination:
 
