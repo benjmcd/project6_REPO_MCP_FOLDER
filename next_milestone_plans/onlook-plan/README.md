@@ -25,6 +25,13 @@ Current lane state:
 - the app now includes a committed `onlook-ui/.env.example` as the reproducible frontend env template
 - actual Onlook use now assumes a local ignored `onlook-ui/.env.local` for the frontend API base
 - the repo-local backend startup helper is `tools/start-review-api.ps1`
+- the current practical Onlook operator path is the local source clone at `ext-onlook/`, not the hosted desktop OAuth path
+- the repo-local Onlook web startup helper is `tools/start-onlook-web.ps1`
+- canonical local Onlook env files now exist at:
+  - `ext-onlook/apps/web/client/.env`
+  - `ext-onlook/packages/db/.env`
+- local source Onlook now boots at `http://127.0.0.1:3001/login`
+- local source Onlook dev login has been validated through the seeded demo-user flow
 - no live static review UI files have been modified as part of this lane
 
 ## Canonical Authority
@@ -75,10 +82,11 @@ Those files confirm that the current shipped review UI is a build-free static su
 ## Explicit Non-Claims
 This packet does not claim:
 
-- that Onlook itself has already been exercised against this repo
+- that the hosted desktop OAuth path is reliable here
 - that the current static review UI can safely support Onlook write-back
 - that the current root checkout is the correct place to run this lane
-- that hosted or self-hosted Onlook setup has already been tested in this workspace
+- that self-hosted production Onlook has been tested in this workspace
+- that full Onlook AI/chat or Codesandbox-backed features are validated here without real external keys
 - that a final promotion model has already been approved
 
 ## Next Step

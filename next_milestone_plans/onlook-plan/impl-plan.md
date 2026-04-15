@@ -28,7 +28,7 @@ Verified locally:
 - `npm`: `11.6.2`
 - `npx`: `11.6.2`
 - `uvicorn`: `0.40.0`
-- `bun`: not installed
+- `bun`: `1.3.11`
 
 Practical meaning:
 
@@ -97,6 +97,26 @@ Verified locally after the first bounded UI slice:
 Practical meaning:
 
 - the first shell slice is implemented and validated against the adopted runtime context
+
+### 2.7 Local Onlook operator path
+Verified locally against the current official Onlook development setup docs:
+
+- Bun is installed locally
+- Docker Desktop is installed and the local Supabase backend is running
+- the local Onlook source clone exists at `ext-onlook/`
+- the canonical local env files for that source tree now exist at:
+  - `ext-onlook/apps/web/client/.env`
+  - `ext-onlook/packages/db/.env`
+- `bun db:seed` now succeeds from `ext-onlook/`
+- local source Onlook now serves `GET /login` successfully at `http://127.0.0.1:3001/login`
+- the dev-only demo-user login path succeeds and redirects into the app shell
+
+Practical meaning:
+
+- the current working Onlook path for this lane is local source development, not the hosted desktop OAuth flow
+- the repo-side sandbox and the local Onlook operator path are both now real
+- placeholder `CSB_API_KEY` and `OPENROUTER_API_KEY` values are sufficient for local boot and dev login only
+- full AI/chat and Codesandbox-backed feature readiness still requires real external keys
 
 ## 3. Exact Scaffold Choice
 
@@ -210,6 +230,13 @@ Reason:
 - manual shell validation and Onlook-driven startup are different launch paths
 - Onlook is expected to start the frontend from the project root and should not depend on inherited shell env from a separate terminal session
 - keeping this in ignored local config preserves the sandbox boundary without repurposing repo-root config
+
+For the local Onlook source operator path itself, follow the current official env layout:
+
+- `ext-onlook/apps/web/client/.env`
+- `ext-onlook/packages/db/.env`
+
+Do not treat `ext-onlook/.env` as the canonical current setup contract for this lane.
 
 When using Onlook itself:
 
@@ -432,6 +459,29 @@ Explicit non-commit surface:
 - `.omc/state/*`
 
 Anything broader requires explicit reassessment.
+
+### 7.8 Local Onlook source startup
+If the hosted desktop OAuth path is blocked, use the local source path instead.
+
+Canonical helper:
+
+```powershell
+./tools/start-onlook-web.ps1
+```
+
+This helper:
+
+- starts from `ext-onlook/`
+- prepends Bun to `PATH` so Onlook child processes can resolve `bun` correctly on Windows
+- checks that the current canonical local env files exist
+- warns if the local Supabase backend ports are not listening
+- warns when placeholder `CSB_API_KEY` or `OPENROUTER_API_KEY` values are still in use
+
+Expected current result:
+
+- `GET http://127.0.0.1:3001/login` succeeds
+- the page shows the dev demo-user login button in development mode
+- the dev-login flow redirects into the app shell
 
 ## 8. Stop Rules
 Stop and reassess if:
