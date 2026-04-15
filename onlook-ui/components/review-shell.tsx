@@ -53,9 +53,14 @@ export function ReviewShell() {
           return;
         }
         setRunSelector(data);
-        const nextRunId = data.default_run_id ?? data.runs[0]?.run_id ?? null;
+        const firstReviewableRun =
+          data.runs.find((run) => run.reviewable)?.run_id ?? null;
+        const nextRunId = data.default_run_id ?? firstReviewableRun;
         setSelectedRunId((current) => {
-          if (current && data.runs.some((run) => run.run_id === current)) {
+          if (
+            current &&
+            data.runs.some((run) => run.run_id === current && run.reviewable)
+          ) {
             return current;
           }
           return nextRunId;
@@ -93,6 +98,7 @@ export function ReviewShell() {
     async function loadOverview() {
       setIsOverviewLoading(true);
       setErrorMessage(null);
+      setOverview(null);
 
       try {
         const data = await fetchOverview(runId, controller.signal);

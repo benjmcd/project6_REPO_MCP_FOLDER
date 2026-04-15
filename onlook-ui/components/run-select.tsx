@@ -29,8 +29,15 @@ export function RunSelect({
           <option value="">No reviewable runs found</option>
         ) : null}
         {runs.map((run) => (
-          <option key={run.run_id} value={run.run_id}>
+          <option
+            key={run.run_id}
+            value={run.run_id}
+            disabled={!run.reviewable}
+          >
             {formatRunLabel(run)}
+            {!run.reviewable && run.disabled_reason_code
+              ? ` (${run.disabled_reason_code})`
+              : ""}
           </option>
         ))}
       </select>
