@@ -115,9 +115,11 @@ Practical meaning:
 
 - the current working Onlook path for this lane is local source development, not the hosted desktop OAuth flow
 - the repo-side sandbox and the local Onlook operator path are both now real
-- placeholder `CSB_API_KEY` and `OPENROUTER_API_KEY` values are sufficient for local boot and dev login only
-- actual project import and sandbox creation remain CodeSandbox-backed in the current Onlook source tree and therefore still require a real `CSB_API_KEY`
-- AI/chat feature readiness still requires a real `OPENROUTER_API_KEY`
+- placeholder `CSB_API_KEY` values are sufficient for local boot and dev login only
+- with a real `CSB_API_KEY`, actual project import and sandbox creation are now proven through the current CodeSandbox-backed flow
+- the imported `onlook-ui` project now reaches the editor surface
+- direct local write-back/editing still remains a separate proof step
+- placeholder or absent `OPENROUTER_API_KEY` values still do not prove AI/chat feature readiness
 
 ## 3. Exact Scaffold Choice
 
@@ -243,7 +245,7 @@ When using Onlook itself:
 
 - treat `onlook-ui/` as the intended local project source for Onlook import
 - do not point Onlook at the repo root
-- in the current local source Onlook path, assume `onlook-ui/` will be selected through the CodeSandbox-backed local import flow once a real `CSB_API_KEY` is available
+- in the current local source Onlook path, use the proven CodeSandbox-backed local import flow for `onlook-ui/`, but do not treat direct local write-back as already proven
 
 Reason:
 
@@ -427,8 +429,8 @@ npm run dev -- --hostname 127.0.0.1 --port 3000
 For actual Onlook use:
 
 - ensure `onlook-ui/.env.local` exists with `NEXT_PUBLIC_REVIEW_API_BASE`
-- use `onlook-ui/` as the local project source for the next Onlook import step
-- do not treat this as already-proven direct local write-back
+- use `onlook-ui/` as the local project source for the proven import flow
+- treat direct local write-back as the next proof step, not as already-proven behavior
 
 ### 7.6 Frontend static checks
 ```powershell
@@ -462,16 +464,26 @@ Explicit non-commit surface:
 
 Anything broader requires explicit reassessment.
 
-### 7.8 Local Onlook source startup
+### 7.8 Local Onlook source startup and import proof
 If the hosted desktop OAuth path is blocked, use the local source path instead.
 
-Canonical helper:
+Repo-local helper:
 
 ```powershell
 ./tools/start-onlook-web.ps1
 ```
 
-This helper:
+Equivalent direct source-launch path:
+
+```powershell
+Set-Location ./ext-onlook
+$env:PATH = "$env:USERPROFILE/.bun/bin;$env:PATH"
+bun run dev -- --hostname 127.0.0.1 --port 3007
+```
+
+The helper and direct source-launch path both target the same local source clone. The direct source-launch path is the currently proven post-key operator path in this workspace.
+
+The helper:
 
 - starts from `ext-onlook/`
 - prepends Bun to `PATH` so Onlook child processes can resolve `bun` correctly on Windows
@@ -484,7 +496,8 @@ Expected current result:
 - `GET http://127.0.0.1:3001/login` succeeds
 - the page shows the dev demo-user login button in development mode
 - the dev-login flow redirects into the app shell
-- this proves local operator boot and auth only, not actual project import or editing readiness
+- with a real `CSB_API_KEY`, local import of `onlook-ui/` reaches project verification, completes sandbox creation, and opens the imported project route
+- this proves local operator boot, auth, import, sandbox creation, and project open; it does not yet prove direct local write-back or AI/chat readiness
 
 ## 8. Stop Rules
 Stop and reassess if:
@@ -499,7 +512,7 @@ Stop and reassess if:
 ## 9. Immediate Next Move
 The next justified move is:
 
-1. supply a real `CSB_API_KEY`
-2. use the local source Onlook path to import `onlook-ui/` through its current CodeSandbox-backed project flow
-3. verify that the resulting Onlook-managed sandbox can load and edit the already-validated shell without touching live static UI files
-4. if Onlook usage is still deferred or blocked after that, keep the next slice inside `onlook-ui/*` and expand only to already-approved read-only review endpoints
+1. use the proven local source Onlook path to open the imported `onlook-ui` project
+2. make one tiny bounded Onlook-authored change
+3. audit exactly what files change and confirm writes stay inside `onlook-ui/*`
+4. rerun lint/build and review the diff before any commit

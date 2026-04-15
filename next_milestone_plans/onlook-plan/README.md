@@ -32,7 +32,8 @@ Current lane state:
   - `ext-onlook/packages/db/.env`
 - local source Onlook now boots at `http://127.0.0.1:3001/login`
 - local source Onlook dev login has been validated through the seeded demo-user flow
-- actual project import and sandbox creation inside local source Onlook remain CodeSandbox-backed and are not validated with placeholder keys
+- with a real `CSB_API_KEY`, actual project import and sandbox creation inside local source Onlook are now validated through the current CodeSandbox-backed flow
+- the imported `onlook-ui` project now reaches the Onlook editor surface
 - no live static review UI files have been modified as part of this lane
 
 ## Canonical Authority
@@ -87,10 +88,10 @@ This packet does not claim:
 - that the current static review UI can safely support Onlook write-back
 - that the current root checkout is the correct place to run this lane
 - that self-hosted production Onlook has been tested in this workspace
-- that full Onlook AI/chat or Codesandbox-backed features are validated here without real external keys
+- that direct local write-back or full Onlook AI/chat features are validated here beyond import, sandbox creation, and project open
 - that a final promotion model has already been approved
 
 ## Next Step
-Use `strategy.md` as the settled authority and boundary model for this lane.
+Use `strategy.md` as the settled authority and boundary model for this lane, and use `impl-plan.md` as the checklist for the first write-back proof.
 
 Use `pilot-plan.md` and `impl-plan.md` together to move from the validated sandbox shell into actual Onlook targeting or the next bounded UI slice without changing the current live static review UI.
