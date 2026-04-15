@@ -164,6 +164,7 @@ Minimum acceptance for the sandbox app:
 9. local Onlook source development can boot and pass the dev-login flow without touching live static UI files
 10. with a real `CSB_API_KEY`, local project import and sandbox creation can complete for `onlook-ui/` and reach the editor without touching live static UI files
 11. direct local write-back remains a separate proof step and is not patched around
+12. the local Onlook project route must stay alive long enough to reach actual edit interactions; current `@onlook/web-client` exit-code-5 behavior is a blocker until resolved
 
 ### 8.3 Promotion validation
 Before any promotion decision:
