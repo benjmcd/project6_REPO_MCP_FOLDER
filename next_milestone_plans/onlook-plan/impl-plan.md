@@ -78,7 +78,25 @@ Verified locally:
 
 Practical meaning:
 
-- the sandbox app is now real, bootable, and ready for the first feature-wiring slice
+- the sandbox app is now real, bootable, and was a valid base for the first feature-wiring slice
+
+### 2.6 First-slice shell validation
+Verified locally after the first bounded UI slice:
+
+- `onlook-ui/` now contains the typed review API layer under `lib/`
+- `onlook-ui/` now contains the slice-1 shell components under `components/`
+- the sandbox shell renders:
+  - run selector
+  - pipeline pane
+  - tree pane
+  - details pane shell
+- runtime smoke through the sandbox dev server caused real backend requests for:
+  - `GET /api/v1/review/nrc-aps/runs`
+  - `GET /api/v1/review/nrc-aps/runs/{run_id}/overview`
+
+Practical meaning:
+
+- the first shell slice is implemented and validated against the adopted runtime context
 
 ## 3. Exact Scaffold Choice
 
@@ -395,7 +413,7 @@ Stop and reassess if:
 ## 9. Immediate Next Move
 The next justified move is:
 
-1. wire only the direct API base env and first-page shell inside `onlook-ui/`
-2. prove the first page can load runs and overview from the adopted runtime context
-3. keep all writes inside `onlook-ui/*` unless a separately proven backend blocker appears
-4. only then decide whether Onlook itself should be introduced in the next step or whether one more frontend-only slice is needed first
+1. point Onlook at `onlook-ui/` as the only editable target root
+2. verify that Onlook can load and edit the already-validated sandbox shell without touching live static UI files
+3. if Onlook usage is deferred or blocked, keep the next slice inside `onlook-ui/*` and expand only to already-approved read-only review endpoints
+4. keep all writes inside `onlook-ui/*` unless a separately proven backend blocker appears

@@ -6,6 +6,17 @@ Define the exact narrow pilot for starting Onlook usage in this repo from a clea
 ## 2. Pilot Goal
 Create a separate frontend sandbox that can render the main NRC APS review page against the existing backend review APIs and serve as the only Onlook-editable surface.
 
+Current verified state:
+
+- the sandbox app exists at `onlook-ui/`
+- the first shell slice renders the main review surface with:
+  - run selector
+  - pipeline pane
+  - tree pane
+  - details pane shell
+- the current slice consumes `GET /api/v1/review/nrc-aps/runs`
+- the current slice consumes `GET /api/v1/review/nrc-aps/runs/{run_id}/overview`
+
 This pilot is successful if:
 
 - the sandbox app can load real review data through the existing review API
@@ -50,14 +61,16 @@ Reason:
 - the main review page is the smaller proof of whether the Onlook lane is viable at all
 
 ## 5. Exact Backend API Scope
-Initial frontend pilot should consume only:
+Frontend API scope for this pilot remains bounded to:
 
-- `GET /api/v1/review/nrc-aps/runs`
-- `GET /api/v1/review/nrc-aps/runs/{run_id}/overview`
-- `GET /api/v1/review/nrc-aps/pipeline-definition`
-- `GET /api/v1/review/nrc-aps/runs/{run_id}/nodes/{node_id}`
-- `GET /api/v1/review/nrc-aps/runs/{run_id}/files/{tree_id}`
-- `GET /api/v1/review/nrc-aps/runs/{run_id}/files/{tree_id}/preview`
+- current implemented slice:
+  - `GET /api/v1/review/nrc-aps/runs`
+  - `GET /api/v1/review/nrc-aps/runs/{run_id}/overview`
+- reserved next-slice expansion endpoints only if needed:
+  - `GET /api/v1/review/nrc-aps/pipeline-definition`
+  - `GET /api/v1/review/nrc-aps/runs/{run_id}/nodes/{node_id}`
+  - `GET /api/v1/review/nrc-aps/runs/{run_id}/files/{tree_id}`
+  - `GET /api/v1/review/nrc-aps/runs/{run_id}/files/{tree_id}/preview`
 
 Do not expand backend scope unless the sandbox proves a concrete UI/API mismatch that cannot be handled client-side.
 
@@ -187,6 +200,6 @@ Stop and reassess if any of these happen:
 - the sandbox cannot reach acceptable parity without excessive duplicated logic
 
 ## 11. Recommended Next Move
-Use `impl-plan.md` as the bridge from the completed scaffold milestone into the first bounded feature slice.
+Use `impl-plan.md` as the bridge from the completed first shell slice into actual Onlook targeting for `onlook-ui/`.
 
-Do not start broader frontend migration work from this file alone.
+If Onlook usage is deferred, keep the next frontend slice bounded to already-approved read-only review endpoints.
