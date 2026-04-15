@@ -116,7 +116,8 @@ Practical meaning:
 - the current working Onlook path for this lane is local source development, not the hosted desktop OAuth flow
 - the repo-side sandbox and the local Onlook operator path are both now real
 - placeholder `CSB_API_KEY` and `OPENROUTER_API_KEY` values are sufficient for local boot and dev login only
-- full AI/chat and Codesandbox-backed feature readiness still requires real external keys
+- actual project import and sandbox creation remain CodeSandbox-backed in the current Onlook source tree and therefore still require a real `CSB_API_KEY`
+- AI/chat feature readiness still requires a real `OPENROUTER_API_KEY`
 
 ## 3. Exact Scaffold Choice
 
@@ -240,8 +241,9 @@ Do not treat `ext-onlook/.env` as the canonical current setup contract for this 
 
 When using Onlook itself:
 
-- open `onlook-ui/` as the target project root
+- treat `onlook-ui/` as the intended local project source for Onlook import
 - do not point Onlook at the repo root
+- in the current local source Onlook path, assume `onlook-ui/` will be selected through the CodeSandbox-backed local import flow once a real `CSB_API_KEY` is available
 
 Reason:
 
@@ -425,8 +427,8 @@ npm run dev -- --hostname 127.0.0.1 --port 3000
 For actual Onlook use:
 
 - ensure `onlook-ui/.env.local` exists with `NEXT_PUBLIC_REVIEW_API_BASE`
-- point Onlook at `onlook-ui/`
-- let Onlook manage the frontend process from that app root
+- use `onlook-ui/` as the local project source for the next Onlook import step
+- do not treat this as already-proven direct local write-back
 
 ### 7.6 Frontend static checks
 ```powershell
@@ -482,6 +484,7 @@ Expected current result:
 - `GET http://127.0.0.1:3001/login` succeeds
 - the page shows the dev demo-user login button in development mode
 - the dev-login flow redirects into the app shell
+- this proves local operator boot and auth only, not actual project import or editing readiness
 
 ## 8. Stop Rules
 Stop and reassess if:
@@ -496,7 +499,7 @@ Stop and reassess if:
 ## 9. Immediate Next Move
 The next justified move is:
 
-1. point Onlook at `onlook-ui/` as the only editable target root
-2. verify that Onlook can load and edit the already-validated sandbox shell without touching live static UI files
-3. if Onlook usage is deferred or blocked, keep the next slice inside `onlook-ui/*` and expand only to already-approved read-only review endpoints
-4. keep all writes inside `onlook-ui/*` unless a separately proven backend blocker appears
+1. supply a real `CSB_API_KEY`
+2. use the local source Onlook path to import `onlook-ui/` through its current CodeSandbox-backed project flow
+3. verify that the resulting Onlook-managed sandbox can load and edit the already-validated shell without touching live static UI files
+4. if Onlook usage is still deferred or blocked after that, keep the next slice inside `onlook-ui/*` and expand only to already-approved read-only review endpoints
