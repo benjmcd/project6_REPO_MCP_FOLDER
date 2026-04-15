@@ -197,6 +197,7 @@ Do not use server-side data fetching in the first slice.
 For actual Onlook-driven startup, prefer a local ignored file at:
 
 - `onlook-ui/.env.local`
+- created from the committed template `onlook-ui/.env.example`
 
 with:
 
