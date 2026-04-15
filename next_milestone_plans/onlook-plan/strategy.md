@@ -104,6 +104,7 @@ Additional current facts about Onlook itself:
 - the imported `onlook-ui` project now reaches the Onlook project route and editor shell, but not editor readiness
 - the current proven direct launch and repro path is `bun run dev -- --hostname 127.0.0.1 --port 3007`
 - the current first live blocker is preview and bridge non-readiness: the CodeSandbox-backed iframe does not become a usable app document, and the editor then hits bridge/theme errors instead of reaching stable edit interactions
+- a temporary minimal `Next.js + TailwindCSS` control import outside tracked repo content reproduces the same preview and bridge failure under the same runtime, so the current first failure is not specific to `onlook-ui`
 - a separate archived upstream crash path also exists in Onlook filesystem and branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`, which may explain historical hard exits after route open
 - direct local write-back/editing is still not yet proven
 - real `OPENROUTER_API_KEY` is still required to claim AI/chat readiness
@@ -218,7 +219,7 @@ These items remain open and should not be flattened into assumptions:
 - whether the broken hosted desktop OAuth path will remain irrelevant for this lane or needs later upstream follow-up
 - whether the CodeSandbox preview interstitial and `400` can ever clear automatically enough for the preview iframe to load the real app document in the current local flow
 - whether the preview and bridge failure and the archived filesystem-init crash can co-occur in the same run or represent separate upstream defects
-- whether any imported-project specifics matter only after the preview iframe becomes a live bridged child
+- whether any imported-project specifics matter only after the preview iframe becomes a live bridged child, since the current first failure already reproduces on a minimal control import
 - whether real `OPENROUTER_API_KEY` is required for the exact AI/chat operations you want after import and project open
 - whether `tools/start-onlook-web.ps1` should be hardened further or simply remain a convenience path while the direct Bun launch path is the canonical repro surface
 

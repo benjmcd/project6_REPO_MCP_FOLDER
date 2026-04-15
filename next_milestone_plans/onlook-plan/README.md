@@ -36,6 +36,7 @@ Current lane state:
 - with a real `CSB_API_KEY`, actual project import and sandbox creation inside local source Onlook are now validated through the current CodeSandbox-backed flow
 - the imported `onlook-ui` project now reaches the Onlook project route and editor shell, but not editor readiness
 - the first current blocking chain is at the preview boundary: the CodeSandbox-backed preview iframe does not become a usable app document, the bridge never becomes ready, and the editor surfaces bridge/theme errors instead of reaching stable edit interactions
+- a temporary minimal `Next.js + TailwindCSS` control app outside tracked repo content reproduces the same preview and bridge failure under the same local Onlook runtime, which materially weakens `onlook-ui` as the cause of the current first failure
 - archived current-lane evidence also shows a separate route-init crash path inside Onlook filesystem and branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`, which may explain historical hard exits after route open
 - no live static review UI files have been modified as part of this lane
 
