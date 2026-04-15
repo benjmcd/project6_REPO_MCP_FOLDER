@@ -168,8 +168,9 @@ Minimum acceptance for the sandbox app:
 11. editor readiness requires the preview iframe to become a real bridged app child, not merely a rendered shell route
 12. direct local write-back remains a separate proof step and is not patched around
 13. the current operator blocker is preview and bridge non-readiness: observed CodeSandbox Preview interstitial or `400`, Penpal and `iframeRemote` failures, and `frameData.view.getTheme is not a function`
-14. archived filesystem-init crashes inside Onlook remain a separate upstream failure path and should be treated as operator blockers, not repo-code justifications
-15. a minimal control import outside tracked repo content reproduces the same preview and bridge blocker, so the current first failure is not specific to `onlook-ui`
+14. in the fresh clean-clone repro, a forced click on `Yes, proceed to preview` remained a no-op and left the iframe on the same `CodeSandbox Preview` document
+15. fresh clean-clone repro also shows co-occurring filesystem-init crashes inside Onlook, including `IDBFactory is not defined` and `Invalid value used as weak map key`, and these remain operator blockers rather than repo-code justifications
+16. a minimal control import outside tracked repo content reproduces the same preview and bridge blocker, so the current first failure is not specific to `onlook-ui`
 
 ### 8.3 Promotion validation
 Before any promotion decision:
