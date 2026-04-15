@@ -99,8 +99,10 @@ Additional current facts about Onlook itself:
 - the current working operator path for this lane is local source development under `ext-onlook/`
 - the hosted desktop app is not the current working auth path here because its GitHub and Google login links are dead locally
 - local source development mode exposes a dev-only demo-user sign-in path and that path has been validated here
-- local project import and sandbox creation in the current Onlook source tree are still CodeSandbox-backed
-- placeholder `CSB_API_KEY` and `OPENROUTER_API_KEY` values are enough to validate local boot and dev login, but not enough to claim actual project-import, sandbox-creation, AI, or hosted-app feature readiness
+- local project import and sandbox creation in the current Onlook source tree are still CodeSandbox-backed, and are now validated here with a real `CSB_API_KEY`
+- the imported `onlook-ui` project now reaches the editor route inside Onlook
+- direct local write-back/editing is still not yet proven
+- real `OPENROUTER_API_KEY` is still required to claim AI/chat readiness
 
 Verified in:
 
@@ -111,7 +113,7 @@ Verified in:
 - `ext-onlook/apps/web/client/src/app/login/page.tsx`
 - `ext-onlook/apps/web/client/src/app/projects/import/local/_context/index.tsx`
 - `ext-onlook/apps/web/client/src/server/api/routers/project/sandbox.ts`
-- local runtime verification at `http://127.0.0.1:3001/login`
+- workspace-local runtime verification of dev login, local import, sandbox creation, and project open
 
 ## 5. Main Determination
 The correct model here is a `copy-on-write sandbox frontend`.
@@ -201,9 +203,9 @@ The current adopted demo runtime comes from the sibling `pr45-postmerge-audit` w
 These items remain open and should not be flattened into assumptions:
 
 - whether the broken hosted desktop OAuth path will remain irrelevant for this lane or needs later upstream follow-up
-- which exact post-login Onlook operations you want to prove next once a real `CSB_API_KEY` is available
-- whether real `OPENROUTER_API_KEY` is required for the exact AI/chat operations you want after local boot and dev login
-- whether the chosen local source usage path has any extra requirements for importing a nested app directory rather than a repo-root frontend
+- which exact write-back/edit operation you want to prove next now that import and project open are validated
+- whether real `OPENROUTER_API_KEY` is required for the exact AI/chat operations you want after import and project open
+- whether `tools/start-onlook-web.ps1` needs more hardening to match the direct source-launch path for post-key operations on this machine
 
 These unknowns do not change the main repo-side determination:
 
