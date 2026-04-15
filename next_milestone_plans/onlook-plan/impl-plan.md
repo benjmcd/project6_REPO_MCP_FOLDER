@@ -97,7 +97,7 @@ Reason:
 Preferred scaffold command for this lane:
 
 ```powershell
-npx create-next-app@16 onlook-ui --ts --tailwind --eslint --app --use-npm --import-alias "@/*" --disable-git --no-agents-md --no-src-dir --no-react-compiler --empty --yes --reset-preferences
+npx create-next-app@16 onlook-ui --ts --tailwind --eslint --app --use-npm --import-alias "@/*" --disable-git --no-agents-md --no-src-dir --no-react-compiler --empty --turbopack --yes
 ```
 
 Expected scaffold posture:
@@ -111,13 +111,14 @@ Expected scaffold posture:
 
 Stop and reassess instead of scaffolding if:
 
-- the CLI still prompts for settings after `--yes --reset-preferences`
+- the CLI still prompts for settings after `--yes`
 - `--no-agents-md` is rejected by the current CLI
 - the scaffold still emits `AGENTS.md` or `CLAUDE.md` under `onlook-ui/`
 
 Reason:
 
-- current official Next.js CLI docs confirm `--agents-md` is default, `--yes` uses defaults or prior preferences, `--reset-preferences` exists, and `--no-*` negates default options
+- current official Next.js CLI docs confirm `--agents-md` is default, `--yes` uses defaults or prior preferences, and `--no-*` negates default options
+- empirical scaffold verification in this worktree showed `--reset-preferences` still prompts interactively here, so it is not part of the bounded non-interactive command
 - this keeps the sandbox local and compatible with the verified Onlook target shape
 - this avoids creating a nested git repository inside the worktree
 
@@ -348,6 +349,7 @@ Expected checks:
 - local `.gitignore` covers `node_modules/`
 - local `.gitignore` covers `.env.local`
 - no generated `AGENTS.md` or `CLAUDE.md` exists in `onlook-ui/`
+- `next build` completes without the Turbopack workspace-root warning once `next.config.ts` sets `turbopack.root`
 
 ### 7.7 Diff boundary check
 ```powershell
