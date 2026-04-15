@@ -121,6 +121,7 @@ Practical meaning:
 - with a real `CSB_API_KEY`, actual project import and sandbox creation are now proven through the current CodeSandbox-backed flow
 - the imported `onlook-ui` project now reaches the project route and editor shell, but not editor readiness
 - the current first live blocker is preview and bridge non-readiness: the CodeSandbox-backed preview iframe does not become a usable app document, and the editor then hits bridge and theme errors instead of reaching stable edit interactions
+- a temporary minimal `Next.js + TailwindCSS` control import outside tracked repo content reproduces the same preview and bridge failure under the same runtime, so the current first failure is not specific to `onlook-ui`
 - archived current-lane evidence also shows a separate upstream route-init crash path during filesystem and branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`
 - direct local write-back/editing still remains a separate proof step
 - placeholder or absent `OPENROUTER_API_KEY` values still do not prove AI/chat feature readiness
@@ -502,6 +503,7 @@ Expected current result:
 - the dev-login flow redirects into the app shell
 - with a real `CSB_API_KEY`, local import of `onlook-ui/` reaches project verification, completes sandbox creation, and opens the imported project route and editor shell
 - current first live blocker: the preview iframe still does not become a usable app document, observed as CodeSandbox Preview interstitial or `400`, Penpal and `iframeRemote` failures, and `frameData.view.getTheme is not a function`
+- the same current first live blocker also reproduces on a temporary minimal `Next.js + TailwindCSS` control import outside tracked repo content
 - archived current-lane evidence also keeps alive a separate route-init crash path during filesystem and branch initialization
 - this proves local operator boot, auth, import, sandbox creation, project-route reachability, and editor-shell render; it does not yet prove editor readiness, direct local write-back, or AI/chat readiness
 
@@ -521,7 +523,7 @@ Stop and reassess if:
 The next justified move is:
 
 1. treat the preview and bridge failure as an operator blocker, not as a repo-code problem to patch around
-2. keep `ext-onlook/` in this worktree as the canonical debug surface while isolating whether the blocker reproduces on a minimal control import as well as on `onlook-ui/`
-3. capture one synchronized repro that records iframe body state, browser console, network, and any filesystem-init exceptions in the same run
+2. keep `ext-onlook/` in this worktree as the canonical debug surface and treat the control-import reproduction as strong evidence that the blocker currently lives at the broader Onlook and CodeSandbox runtime boundary
+3. capture one synchronized repro that records iframe body state, browser console, network, and any filesystem-init exceptions in the same run when comparing preview and route-init failures
 4. only after the project route reaches stable edit interactions, attempt one tiny bounded Onlook-authored change
 5. then audit exactly what files change and confirm writes stay inside `onlook-ui/*`
