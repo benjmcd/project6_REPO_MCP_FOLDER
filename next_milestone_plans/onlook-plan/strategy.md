@@ -102,6 +102,7 @@ Additional current facts about Onlook itself:
 - local project import and sandbox creation in the current Onlook source tree are still CodeSandbox-backed, and are now validated here with a real `CSB_API_KEY`
 - the imported `onlook-ui` project now reaches the editor route inside Onlook
 - direct local write-back/editing is still not yet proven
+- in the current workspace-local source clones, opening the imported project route currently causes `@onlook/web-client` to exit with code `5`
 - real `OPENROUTER_API_KEY` is still required to claim AI/chat readiness
 
 Verified in:
@@ -203,9 +204,10 @@ The current adopted demo runtime comes from the sibling `pr45-postmerge-audit` w
 These items remain open and should not be flattened into assumptions:
 
 - whether the broken hosted desktop OAuth path will remain irrelevant for this lane or needs later upstream follow-up
-- which exact write-back/edit operation you want to prove next now that import and project open are validated
+- what exactly causes the reproducible `@onlook/web-client` exit code `5` on the imported project route after corrected local source launch
+- whether that project-route crash is tied to the current local Onlook runtime or to imported-project specifics
 - whether real `OPENROUTER_API_KEY` is required for the exact AI/chat operations you want after import and project open
-- whether `tools/start-onlook-web.ps1` needs more hardening to match the direct source-launch path for post-key operations on this machine
+- whether `tools/start-onlook-web.ps1` needs more hardening to match the corrected source-launch path for post-key operations on this machine
 
 These unknowns do not change the main repo-side determination:
 

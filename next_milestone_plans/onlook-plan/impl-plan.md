@@ -119,6 +119,7 @@ Practical meaning:
 - with a real `CSB_API_KEY`, actual project import and sandbox creation are now proven through the current CodeSandbox-backed flow
 - the imported `onlook-ui` project now reaches the editor surface
 - direct local write-back/editing still remains a separate proof step
+- the first write-back proof is currently blocked because opening the imported project route currently causes `@onlook/web-client` to exit with code `5` in the tested workspace-local source clones
 - placeholder or absent `OPENROUTER_API_KEY` values still do not prove AI/chat feature readiness
 
 ## 3. Exact Scaffold Choice
@@ -497,6 +498,8 @@ Expected current result:
 - the page shows the dev demo-user login button in development mode
 - the dev-login flow redirects into the app shell
 - with a real `CSB_API_KEY`, local import of `onlook-ui/` reaches project verification, completes sandbox creation, and opens the imported project route
+- corrected local source launch must also keep the project route alive long enough to reach actual edit interactions
+- current observed blocker: in the tested workspace-local source clones, opening the imported project route currently causes `@onlook/web-client` to exit with code `5`
 - this proves local operator boot, auth, import, sandbox creation, and project open; it does not yet prove direct local write-back or AI/chat readiness
 
 ## 8. Stop Rules
@@ -508,11 +511,12 @@ Stop and reassess if:
 - direct cross-port calls require credentialed requests, server-side fetching, or early proxy work
 - the adopted `pr45-postmerge-audit` runtime root, summary, or database path fails preflight
 - the first slice starts duplicating backend business logic instead of consuming backend outputs
+- corrected local source launch still exits `@onlook/web-client` with code `5` while opening the imported project route
 
 ## 9. Immediate Next Move
 The next justified move is:
 
-1. use the proven local source Onlook path to open the imported `onlook-ui` project
-2. make one tiny bounded Onlook-authored change
-3. audit exactly what files change and confirm writes stay inside `onlook-ui/*`
-4. rerun lint/build and review the diff before any commit
+1. treat the reproducible project-route crash as an operator blocker, not as a repo-code problem to patch around
+2. isolate whether the `@onlook/web-client` exit-code-5 failure is tied to the current local Onlook runtime or to imported-project specifics
+3. only after the project route stays alive long enough for real edit interactions, attempt one tiny bounded Onlook-authored change
+4. then audit exactly what files change and confirm writes stay inside `onlook-ui/*`
