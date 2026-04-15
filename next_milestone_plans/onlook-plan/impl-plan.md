@@ -123,7 +123,8 @@ Practical meaning:
 - the current first live blocker is preview and bridge non-readiness: the CodeSandbox-backed preview iframe does not become a usable app document, and the editor then hits bridge and theme errors instead of reaching stable edit interactions
 - a temporary minimal `Next.js + TailwindCSS` control import outside tracked repo content reproduces the same preview and bridge failure under the same runtime, so the current first failure is not specific to `onlook-ui`
 - same-runtime repros for both `onlook-ui` and the minimal control import show no preview-side requests to `127.0.0.1:8000` before the preview and bridge failure, so the current first failure is upstream of the repo review API seam
-- archived current-lane evidence also shows a separate upstream route-init crash path during filesystem and branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`
+- the CodeSandbox trust/interstitial page is not sufficient by itself to explain the blocker: in the fresh clean-clone repro, a forced click on `Yes, proceed to preview` remained a no-op and left the iframe on the same `CodeSandbox Preview` document
+- fresh clean-clone repro also shows co-occurring upstream route-init and filesystem faults during branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`; these are now current evidence in the same runtime as the preview failure, although strict causal ordering remains unresolved
 - direct local write-back/editing still remains a separate proof step
 - placeholder or absent `OPENROUTER_API_KEY` values still do not prove AI/chat feature readiness
 
@@ -505,7 +506,8 @@ Expected current result:
 - with a real `CSB_API_KEY`, local import of `onlook-ui/` reaches project verification, completes sandbox creation, and opens the imported project route and editor shell
 - current first live blocker: the preview iframe still does not become a usable app document, observed as CodeSandbox Preview interstitial or `400`, Penpal and `iframeRemote` failures, and `frameData.view.getTheme is not a function`
 - the same current first live blocker also reproduces on a temporary minimal `Next.js + TailwindCSS` control import outside tracked repo content
-- archived current-lane evidence also keeps alive a separate route-init crash path during filesystem and branch initialization
+- a forced click on `Yes, proceed to preview` remains a no-op in the fresh clean-clone repro and does not advance the iframe beyond the same `CodeSandbox Preview` document
+- fresh clean-clone repro also co-reproduces route-init and filesystem faults during branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`
 - this proves local operator boot, auth, import, sandbox creation, project-route reachability, and editor-shell render; it does not yet prove editor readiness, direct local write-back, or AI/chat readiness
 
 ## 8. Stop Rules
@@ -518,13 +520,14 @@ Stop and reassess if:
 - the adopted `pr45-postmerge-audit` runtime root, summary, or database path fails preflight
 - the first slice starts duplicating backend business logic instead of consuming backend outputs
 - the imported project route still fails to reach a usable preview iframe and live bridge child
-- the archived filesystem and branch-init crash path reappears in current repros
+- current repros continue to show co-occurring filesystem and branch-init faults during route handling
 
 ## 9. Immediate Next Move
 The next justified move is:
 
 1. treat the preview and bridge failure as an operator blocker, not as a repo-code problem to patch around
-2. keep `ext-onlook/` in this worktree as the canonical debug surface and treat the control-import reproduction as strong evidence that the blocker currently lives at the broader Onlook and CodeSandbox runtime boundary
-3. capture one synchronized repro that records iframe body state, browser console, network, and any filesystem-init exceptions in the same run when comparing preview and route-init failures
-4. only after the project route reaches stable edit interactions, attempt one tiny bounded Onlook-authored change
-5. then audit exactly what files change and confirm writes stay inside `onlook-ui/*`
+2. treat the control-import reproduction and fresh clean-clone synchronized repro as strong evidence that the blocker currently lives at the broader Onlook and CodeSandbox runtime boundary
+3. before any further operator debugging, establish one new fresh same-SHA local clone and do not treat either current local clone as a pristine repro surface
+4. package the synchronized repro evidence for upstream follow-up rather than widening repo scope
+5. only after the project route reaches stable edit interactions, attempt one tiny bounded Onlook-authored change
+6. then audit exactly what files change and confirm writes stay inside `onlook-ui/*`

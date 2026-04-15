@@ -106,10 +106,11 @@ Additional current facts about Onlook itself:
 - the current first live blocker is preview and bridge non-readiness: the CodeSandbox-backed iframe does not become a usable app document, and the editor then hits bridge/theme errors instead of reaching stable edit interactions
 - a temporary minimal `Next.js + TailwindCSS` control import outside tracked repo content reproduces the same preview and bridge failure under the same runtime, so the current first failure is not specific to `onlook-ui`
 - same-runtime repros for both `onlook-ui` and the minimal control import show no preview-side requests to `127.0.0.1:8000` before the preview and bridge failure, so the local review API is not the current first failing surface
+- the CodeSandbox trust/interstitial page is not a standalone explanation: in the fresh clean-clone repro, the `Yes, proceed to preview` control accepted a forced click but remained a no-op and left the iframe on the same `CodeSandbox Preview` document
 - matching upstream issue reports now exist in `onlook-dev/onlook`:
   - `#2336` documents `400 Bad Request` on CodeSandbox preview URLs when accessed via iframe
   - `#3087` documents a trust interstitial and Penpal timeout on self-hosted Onlook
-- a separate archived upstream crash path also exists in Onlook filesystem and branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`, which may explain historical hard exits after route open
+- fresh clean-clone repro also shows co-occurring upstream route-init and filesystem faults in Onlook branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`; these faults are now current evidence, not merely archived history, but strict causal ordering versus the preview failure is still unresolved
 - direct local write-back/editing is still not yet proven
 - real `OPENROUTER_API_KEY` is still required to claim AI/chat readiness
 
@@ -224,7 +225,7 @@ These items remain open and should not be flattened into assumptions:
 
 - whether the broken hosted desktop OAuth path will remain irrelevant for this lane or needs later upstream follow-up
 - whether the CodeSandbox preview interstitial and `400` can ever clear automatically enough for the preview iframe to load the real app document in the current local flow
-- whether the preview and bridge failure and the archived filesystem-init crash can co-occur in the same run or represent separate upstream defects
+- whether the co-occurring preview and bridge failure and filesystem-init crash have a stable causal ordering, or whether they are parallel upstream defects that surface in the same run
 - whether any imported-project specifics matter only after the preview iframe becomes a live bridged child, since the current first failure already reproduces on a minimal control import
 - whether real `OPENROUTER_API_KEY` is required for the exact AI/chat operations you want after import and project open
 - whether `tools/start-onlook-web.ps1` should be hardened further or simply remain a convenience path while the direct Bun launch path is the canonical repro surface
