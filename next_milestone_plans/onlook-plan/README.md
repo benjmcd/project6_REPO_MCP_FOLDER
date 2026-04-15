@@ -37,6 +37,7 @@ Current lane state:
 - the imported `onlook-ui` project now reaches the Onlook project route and editor shell, but not editor readiness
 - the first current blocking chain is at the preview boundary: the CodeSandbox-backed preview iframe does not become a usable app document, the bridge never becomes ready, and the editor surfaces bridge/theme errors instead of reaching stable edit interactions
 - a temporary minimal `Next.js + TailwindCSS` control app outside tracked repo content reproduces the same preview and bridge failure under the same local Onlook runtime, which materially weakens `onlook-ui` as the cause of the current first failure
+- same-runtime repros for both `onlook-ui` and the minimal control app reach the project route and editor shell before failing at the preview boundary, and neither repro reached preview-side requests to `127.0.0.1:8000` before that failure
 - archived current-lane evidence also shows a separate route-init crash path inside Onlook filesystem and branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`, which may explain historical hard exits after route open
 - no live static review UI files have been modified as part of this lane
 
