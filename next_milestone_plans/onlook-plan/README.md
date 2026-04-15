@@ -32,6 +32,7 @@ Current lane state:
   - `ext-onlook/packages/db/.env`
 - local source Onlook now boots at `http://127.0.0.1:3001/login`
 - local source Onlook dev login has been validated through the seeded demo-user flow
+- actual project import and sandbox creation inside local source Onlook remain CodeSandbox-backed and are not validated with placeholder keys
 - no live static review UI files have been modified as part of this lane
 
 ## Canonical Authority

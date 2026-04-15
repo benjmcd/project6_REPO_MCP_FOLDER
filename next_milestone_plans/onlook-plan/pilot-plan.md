@@ -116,6 +116,7 @@ Reason:
    - non-credentialed requests only in slice 1
    Do not leave this implicit.
 6. If the hosted desktop Onlook login path is blocked, use the local source development path under `ext-onlook/` instead of treating hosted OAuth as a prerequisite for this lane.
+7. Do not treat local Onlook boot and dev login as proof that project import or editing is ready; those flows are still CodeSandbox-backed in the current Onlook source tree.
 
 ### 7.2 During Onlook usage
 1. Onlook edits only the sandbox app.
@@ -161,6 +162,7 @@ Minimum acceptance for the sandbox app:
 7. no changes leak into the current static UI files
 8. git diff stays limited to the sandbox lane plus intentional planning updates
 9. local Onlook source development can boot and pass the dev-login flow without touching live static UI files
+10. if actual project import or sandbox creation is the next goal, supply a real `CSB_API_KEY` rather than adding a repo-side workaround
 
 ### 8.3 Promotion validation
 Before any promotion decision:
@@ -202,6 +204,6 @@ Stop and reassess if any of these happen:
 - the sandbox cannot reach acceptable parity without excessive duplicated logic
 
 ## 11. Recommended Next Move
-Use `impl-plan.md` as the bridge from the completed first shell slice into actual Onlook targeting for `onlook-ui/`.
+Use `impl-plan.md` as the bridge from the completed first shell slice into the next Onlook import attempt for `onlook-ui/`.
 
 If Onlook usage is deferred, keep the next frontend slice bounded to already-approved read-only review endpoints.
