@@ -22,6 +22,8 @@ Current lane state:
 - the sandbox app has been scaffolded at `onlook-ui/`
 - the first bounded shell slice is implemented inside `onlook-ui/*`
 - the sandbox shell now loads `/runs` and `/runs/{run_id}/overview` through the existing review API seam
+- actual Onlook use now assumes a local ignored `onlook-ui/.env.local` for the frontend API base
+- the repo-local backend startup helper is `tools/start-review-api.ps1`
 - no live static review UI files have been modified as part of this lane
 
 ## Canonical Authority

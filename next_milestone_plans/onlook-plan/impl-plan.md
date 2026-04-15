@@ -183,7 +183,7 @@ Practical constraint:
 - it is not a safe basis for quietly introducing credentialed cross-origin requests in slice 1
 
 ### 4.3 Exact frontend env
-Use:
+For manual shell-driven validation, use:
 
 ```powershell
 $env:NEXT_PUBLIC_REVIEW_API_BASE='http://127.0.0.1:8000/api/v1/review/nrc-aps'
@@ -193,6 +193,22 @@ The frontend should build all review API requests from that base.
 
 Use `NEXT_PUBLIC_REVIEW_API_BASE` only from slice-1 client components or client-side helper code.
 Do not use server-side data fetching in the first slice.
+
+For actual Onlook-driven startup, prefer a local ignored file at:
+
+- `onlook-ui/.env.local`
+
+with:
+
+```dotenv
+NEXT_PUBLIC_REVIEW_API_BASE=http://127.0.0.1:8000/api/v1/review/nrc-aps
+```
+
+Reason:
+
+- manual shell validation and Onlook-driven startup are different launch paths
+- Onlook is expected to start the frontend from the project root and should not depend on inherited shell env from a separate terminal session
+- keeping this in ignored local config preserves the sandbox boundary without repurposing repo-root config
 
 When using Onlook itself:
 
@@ -342,6 +358,14 @@ Expected result:
 - `15 passed`
 
 ### 7.3 Backend demo server
+Preferred helper:
+
+```powershell
+./tools/start-review-api.ps1
+```
+
+Equivalent explicit command path:
+
 ```powershell
 $runtimeRoot = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime).Path
 $runtimeDb = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/lc.db).Path.Replace('\', '/')
@@ -362,11 +386,19 @@ Expected result:
 - both return `200`-equivalent successful responses
 
 ### 7.5 Frontend env and dev server
+For manual shell-driven startup:
+
 ```powershell
 Set-Location ./onlook-ui
 $env:NEXT_PUBLIC_REVIEW_API_BASE='http://127.0.0.1:8000/api/v1/review/nrc-aps'
 npm run dev -- --hostname 127.0.0.1 --port 3000
 ```
+
+For actual Onlook use:
+
+- ensure `onlook-ui/.env.local` exists with `NEXT_PUBLIC_REVIEW_API_BASE`
+- point Onlook at `onlook-ui/`
+- let Onlook manage the frontend process from that app root
 
 ### 7.6 Frontend static checks
 ```powershell
