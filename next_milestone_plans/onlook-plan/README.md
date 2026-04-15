@@ -20,6 +20,8 @@ Current lane state:
 
 - the planning packet is committed
 - the sandbox app has been scaffolded at `onlook-ui/`
+- the first bounded shell slice is implemented inside `onlook-ui/*`
+- the sandbox shell now loads `/runs` and `/runs/{run_id}/overview` through the existing review API seam
 - no live static review UI files have been modified as part of this lane
 
 ## Canonical Authority
@@ -70,7 +72,7 @@ Those files confirm that the current shipped review UI is a build-free static su
 ## Explicit Non-Claims
 This packet does not claim:
 
-- that Onlook is already wired into this repo
+- that Onlook itself has already been exercised against this repo
 - that the current static review UI can safely support Onlook write-back
 - that the current root checkout is the correct place to run this lane
 - that hosted or self-hosted Onlook setup has already been tested in this workspace
@@ -79,4 +81,4 @@ This packet does not claim:
 ## Next Step
 Use `strategy.md` as the settled authority and boundary model for this lane.
 
-Use `pilot-plan.md` and `impl-plan.md` together to wire the first bounded page shell inside the existing sandbox app without changing the current live static review UI.
+Use `pilot-plan.md` and `impl-plan.md` together to move from the validated sandbox shell into actual Onlook targeting or the next bounded UI slice without changing the current live static review UI.
