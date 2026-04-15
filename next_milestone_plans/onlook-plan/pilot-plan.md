@@ -115,6 +115,7 @@ Reason:
    - client-side browser fetches only in slice 1
    - non-credentialed requests only in slice 1
    Do not leave this implicit.
+6. If the hosted desktop Onlook login path is blocked, use the local source development path under `ext-onlook/` instead of treating hosted OAuth as a prerequisite for this lane.
 
 ### 7.2 During Onlook usage
 1. Onlook edits only the sandbox app.
@@ -159,6 +160,7 @@ Minimum acceptance for the sandbox app:
 6. generated sandbox-local `.gitignore` remains intact after scaffold and covers local build/env artifacts
 7. no changes leak into the current static UI files
 8. git diff stays limited to the sandbox lane plus intentional planning updates
+9. local Onlook source development can boot and pass the dev-login flow without touching live static UI files
 
 ### 8.3 Promotion validation
 Before any promotion decision:

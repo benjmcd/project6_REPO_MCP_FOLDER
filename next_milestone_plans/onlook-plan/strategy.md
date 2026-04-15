@@ -96,12 +96,19 @@ Additional current facts about Onlook itself:
 - Onlook itself is documented as built with Next.js, Supabase, TailwindCSS, and Drizzle
 - Bun appears in Onlook's local development setup, not as a target-project requirement
 - local Onlook development and self-hosting are separate concerns from the target project you want Onlook to edit
+- the current working operator path for this lane is local source development under `ext-onlook/`
+- the hosted desktop app is not the current working auth path here because its GitHub and Google login links are dead locally
+- local source development mode exposes a dev-only demo-user sign-in path and that path has been validated here
+- placeholder `CSB_API_KEY` and `OPENROUTER_API_KEY` values are enough to validate local boot and dev login, but not enough to claim full AI or hosted-app feature readiness
 
 Verified in:
 
 - `https://docs.onlook.com/developers/running-locally`
 - `https://docs.onlook.com/developers/architecture`
 - `https://docs.onlook.com/self-hosting`
+- `ext-onlook/apps/web/client/src/app/login/actions.tsx`
+- `ext-onlook/apps/web/client/src/app/login/page.tsx`
+- local runtime verification at `http://127.0.0.1:3001/login`
 
 ## 5. Main Determination
 The correct model here is a `copy-on-write sandbox frontend`.
@@ -190,8 +197,9 @@ The current adopted demo runtime comes from the sibling `pr45-postmerge-audit` w
 ## 9. Open Unknowns
 These items remain open and should not be flattened into assumptions:
 
-- whether the actual Onlook usage path here will be hosted, local desktop, or self-hosted
-- whether the chosen Onlook usage path has any extra requirements for importing a nested app directory rather than a repo-root frontend
+- whether the broken hosted desktop OAuth path will remain irrelevant for this lane or needs later upstream follow-up
+- whether real `CSB_API_KEY` and `OPENROUTER_API_KEY` values are required for the exact Onlook operations you want after local boot and dev login
+- whether the chosen local source usage path has any extra requirements for importing a nested app directory rather than a repo-root frontend
 
 These unknowns do not change the main repo-side determination:
 
