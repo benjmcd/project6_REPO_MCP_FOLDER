@@ -17,7 +17,8 @@ This lane runs from:
 
 Current status:
 
-- the intended change surface is `next_milestone_plans/onlook-plan/*`
+- the planning packet is committed on this branch
+- the sandbox app exists at `onlook-ui/`
 - tracked tool-state files under `.omc/state/*` may drift during interactive sessions and are not part of the planned commit surface for this lane
 
 ### 2.2 Local frontend tool availability
@@ -64,6 +65,20 @@ Result:
 Practical meaning:
 
 - the adopted demo runtime context is real and usable
+
+### 2.5 Scaffold validation
+Verified locally:
+
+- `onlook-ui/` exists in this worktree
+- no nested git repository was created inside `onlook-ui/`
+- no generated `AGENTS.md` or `CLAUDE.md` exists in `onlook-ui/`
+- `npm run lint` passes in `onlook-ui/`
+- `npm run build` passes in `onlook-ui/`
+- `npm run dev -- --hostname 127.0.0.1 --port 3000` serves `GET /` successfully
+
+Practical meaning:
+
+- the sandbox app is now real, bootable, and ready for the first feature-wiring slice
 
 ## 3. Exact Scaffold Choice
 
@@ -380,7 +395,7 @@ Stop and reassess if:
 ## 9. Immediate Next Move
 The next justified move is:
 
-1. create the sandbox app at `onlook-ui/`
-2. wire only the direct API base env and first-page shell
-3. prove the first page can load runs and overview from the adopted runtime context
+1. wire only the direct API base env and first-page shell inside `onlook-ui/`
+2. prove the first page can load runs and overview from the adopted runtime context
+3. keep all writes inside `onlook-ui/*` unless a separately proven backend blocker appears
 4. only then decide whether Onlook itself should be introduced in the next step or whether one more frontend-only slice is needed first

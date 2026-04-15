@@ -187,6 +187,6 @@ Stop and reassess if any of these happen:
 - the sandbox cannot reach acceptable parity without excessive duplicated logic
 
 ## 11. Recommended Next Move
-Use `impl-plan.md` as the bridge from planning into the first bounded scaffold slice.
+Use `impl-plan.md` as the bridge from the completed scaffold milestone into the first bounded feature slice.
 
 Do not start broader frontend migration work from this file alone.
