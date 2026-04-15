@@ -1,0 +1,384 @@
+# Onlook Implementation Plan
+
+## 1. Purpose
+This document fixes the exact repo-side implementation choices for the first Onlook sandbox slice.
+
+It does not approve live promotion.
+
+It approves only the bounded sandbox scaffold and the minimum supporting runtime/context choices needed to make that scaffold real.
+
+## 2. Verified Preconditions
+
+### 2.1 Clean execution surface
+This lane runs from:
+
+- branch `codex/onlook-lane`
+- worktree `worktrees/onlook-lane`
+
+Current status:
+
+- the intended change surface is `next_milestone_plans/onlook-plan/*`
+- tracked tool-state files under `.omc/state/*` may drift during interactive sessions and are not part of the planned commit surface for this lane
+
+### 2.2 Local frontend tool availability
+Verified locally:
+
+- `node`: `v24.13.0`
+- `npm`: `11.6.2`
+- `npx`: `11.6.2`
+- `uvicorn`: `0.40.0`
+- `bun`: not installed
+
+Practical meaning:
+
+- use `npm`, not Bun, for the sandbox app in this lane
+
+### 2.3 Backend baseline slice
+Verified locally from this worktree:
+
+- `backend/tests/test_review_nrc_aps_catalog.py`
+- `backend/tests/test_review_nrc_aps_api.py`
+
+Result:
+
+- `15 passed, 4 warnings`
+
+Practical meaning:
+
+- the review API/catalog seam is stable enough for a sandbox frontend pilot
+
+### 2.4 Demo runtime smoke
+Verified locally with:
+
+- `DB_INIT_MODE=none`
+- `DATABASE_URL` pointed at the adopted runtime database
+- `STORAGE_DIR` pointed at the adopted `storage_test_runtime` root
+
+Result:
+
+- `GET /api/v1/review/nrc-aps/runs` returned `200`
+- `default_run_id` resolved to `f6e34493-270c-4d93-afa9-bf85bf699f0c`
+- the `runs` array length was `2`
+- `GET /api/v1/review/nrc-aps/runs/f6e34493-270c-4d93-afa9-bf85bf699f0c/overview` returned `200`
+
+Practical meaning:
+
+- the adopted demo runtime context is real and usable
+
+## 3. Exact Scaffold Choice
+
+### 3.1 App type
+Use:
+
+- Next.js
+- App Router
+- TypeScript
+- Tailwind CSS
+- npm-local package management
+
+Do not use:
+
+- Bun
+- root-level `package.json`
+- a repo-wide frontend monorepo restructure
+
+### 3.2 App root
+Create the sandbox app at:
+
+- `onlook-ui/`
+
+Reason:
+
+- short path
+- separate from the shipped static UI
+- keeps sandbox tooling local
+
+### 3.3 Preferred scaffold invocation
+Preferred scaffold command for this lane:
+
+```powershell
+npx create-next-app@16 onlook-ui --ts --tailwind --eslint --app --use-npm --import-alias "@/*" --disable-git --no-agents-md --no-src-dir --no-react-compiler --empty --yes --reset-preferences
+```
+
+Expected scaffold posture:
+
+- no nested git repository
+- no generated `AGENTS.md` or `CLAUDE.md` inside `onlook-ui/`
+- no `src/` directory
+- no React Compiler
+- no default starter page content
+- no broader repo restructuring
+
+Stop and reassess instead of scaffolding if:
+
+- the CLI still prompts for settings after `--yes --reset-preferences`
+- `--no-agents-md` is rejected by the current CLI
+- the scaffold still emits `AGENTS.md` or `CLAUDE.md` under `onlook-ui/`
+
+Reason:
+
+- current official Next.js CLI docs confirm `--agents-md` is default, `--yes` uses defaults or prior preferences, `--reset-preferences` exists, and `--no-*` negates default options
+- this keeps the sandbox local and compatible with the verified Onlook target shape
+- this avoids creating a nested git repository inside the worktree
+
+## 4. Exact Backend Connection Rule
+
+### 4.1 Rule
+Use direct cross-port browser calls from the sandbox app to FastAPI in the first slice.
+
+Slice-1 fetch model is fixed to:
+
+- client-side browser fetches only
+- non-credentialed requests only
+- no cookies, session dependence, or auth headers
+- no frontend proxy or rewrite layer
+
+Do not move to server-side data fetching, credentialed requests, or a frontend proxy in slice 1 without a separate reassessment.
+
+### 4.2 Why
+Verified repo facts:
+
+- FastAPI currently allows broad CORS in `backend/main.py`
+- the initial pilot only needs read-only JSON review endpoints
+- the current shipped review UI uses plain browser `fetch()` calls without credential options
+- adding a proxy now would widen scope before proving the sandbox lane is useful
+
+Practical constraint:
+
+- the current CORS posture is acceptable for plain non-credentialed browser fetches
+- it is not a safe basis for quietly introducing credentialed cross-origin requests in slice 1
+
+### 4.3 Exact frontend env
+Use:
+
+```powershell
+$env:NEXT_PUBLIC_REVIEW_API_BASE='http://127.0.0.1:8000/api/v1/review/nrc-aps'
+```
+
+The frontend should build all review API requests from that base.
+
+Use `NEXT_PUBLIC_REVIEW_API_BASE` only from slice-1 client components or client-side helper code.
+Do not use server-side data fetching in the first slice.
+
+When using Onlook itself:
+
+- open `onlook-ui/` as the target project root
+- do not point Onlook at the repo root
+
+Reason:
+
+- the repo root is not the sandbox frontend app
+- the repo root already contains unrelated tooling and non-frontend files
+
+## 5. Exact Demo Runtime And Data Context
+
+### 5.1 Adopted runtime root
+Use this runtime root for the first sandbox demo:
+
+- `./../pr45-postmerge-audit/backend/app/storage_test_runtime`
+
+Do not point the backend at the nested runtime `storage` directory.
+
+Reason:
+
+- current review runtime discovery expects a `storage` or `storage_test_runtime` root and then resolves `lc_e2e` under it
+
+### 5.2 Adopted runtime summary
+Current verified summary:
+
+- `./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/local_corpus_e2e_summary.json`
+
+Verified useful values:
+
+- `run_id`: `f6e34493-270c-4d93-afa9-bf85bf699f0c`
+- `visual_lane_mode`: `candidate_a_page_evidence_v1`
+- `passed`: `true`
+
+### 5.3 Exact backend env for the pilot
+Use shell env, not a local `.env`, for the first pilot.
+
+Resolve the repo-local sibling paths first, then pass absolute values to the backend server:
+
+```powershell
+$runtimeRoot = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime).Path
+$runtimeDb = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/lc.db).Path.Replace('\', '/')
+$env:DB_INIT_MODE='none'
+$env:DATABASE_URL="sqlite:///$runtimeDb"
+$env:STORAGE_DIR=$runtimeRoot
+```
+
+Reason:
+
+- `DB_INIT_MODE=none` avoids write-on-start migration behavior
+- the backend server must receive absolute resolved paths here because `config.py` normalizes relative `STORAGE_DIR` values against the backend root
+- the database points at the adopted runtime that the current review UI can discover
+- the storage root points at the correct discovery boundary
+- this keeps the sandbox backend context explicit and reproducible
+
+### 5.4 Path-resolution rule
+There are two different path-resolution paths in this repo:
+
+- the backend server reads `STORAGE_DIR` through `app.core.config`, which resolves relative paths against the backend root
+- the validate-only review test fixture passes `STORAGE_DIR` directly into runtime-root discovery, which resolves relative paths from the current working directory
+
+Practical rule:
+
+- use repo-relative `./../pr45-postmerge-audit/...` only for the validate-only test command in section 7.2
+- resolve to absolute paths before starting the backend server in section 7.3
+- do not reuse the section 7.2 relative `STORAGE_DIR` value for the backend server
+
+### 5.5 Cross-worktree dependency rule
+The adopted demo runtime is a local dependency on the sibling `pr45-postmerge-audit` worktree.
+
+Practical rule:
+
+- if that sibling worktree, runtime root, summary file, or database file disappears, stop and reassess
+- do not silently substitute a different runtime without updating the packet and re-validating the adopted context
+
+## 6. Exact First-Slice Component Map
+
+### 6.1 Route shell
+- `onlook-ui/app/layout.tsx`
+- `onlook-ui/app/page.tsx`
+
+### 6.2 API and state layer
+- `onlook-ui/lib/review-api.ts`
+- `onlook-ui/lib/review-types.ts`
+- `onlook-ui/lib/review-adapter.ts`
+
+Responsibilities:
+
+- read-only fetches from `NEXT_PUBLIC_REVIEW_API_BASE`
+- local normalization for display
+- no business-logic duplication from backend services
+
+### 6.3 UI components
+- `onlook-ui/components/review-shell.tsx`
+- `onlook-ui/components/run-select.tsx`
+- `onlook-ui/components/header-bar.tsx`
+- `onlook-ui/components/pipeline-pane.tsx`
+- `onlook-ui/components/tree-pane.tsx`
+- `onlook-ui/components/details-pane.tsx`
+
+### 6.4 Slice-1 behavior boundary
+Required in slice 1:
+
+- header shell
+- run selector
+- load runs
+- load overview
+- tree rendering
+- details panel shell
+- explicit document-trace boundary note or link placeholder
+
+Deferred from slice 1 unless the sandbox proves it is necessary:
+
+- full Mermaid parity
+- theme persistence parity
+- run-light vs run-heavy mode parity
+- document-trace migration
+
+Reason:
+
+- slice 1 should prove the React/Tailwind + Onlook lane is viable
+- it should not immediately recreate every behavior of the current static page
+
+## 7. Exact Commands For The First Implementation Slice
+
+### 7.1 Adopted runtime preflight
+```powershell
+Test-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime
+Test-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/local_corpus_e2e_summary.json
+Test-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/lc.db
+```
+
+Expected result:
+
+- all three return `True`
+
+### 7.2 Baseline backend validation
+```powershell
+$env:STORAGE_DIR='../pr45-postmerge-audit/backend/app/storage_test_runtime'
+$env:PYTHONDONTWRITEBYTECODE='1'
+python -B -m pytest ./backend/tests/test_review_nrc_aps_catalog.py ./backend/tests/test_review_nrc_aps_api.py -p no:cacheprovider
+```
+
+Expected result:
+
+- `15 passed`
+
+### 7.3 Backend demo server
+```powershell
+$runtimeRoot = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime).Path
+$runtimeDb = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/lc.db).Path.Replace('\', '/')
+$env:DB_INIT_MODE='none'
+$env:DATABASE_URL="sqlite:///$runtimeDb"
+$env:STORAGE_DIR=$runtimeRoot
+python -m uvicorn main:app --app-dir ./backend --host 127.0.0.1 --port 8000
+```
+
+### 7.4 Backend API smoke after server start
+```powershell
+Invoke-RestMethod 'http://127.0.0.1:8000/api/v1/review/nrc-aps/runs'
+Invoke-RestMethod 'http://127.0.0.1:8000/api/v1/review/nrc-aps/runs/f6e34493-270c-4d93-afa9-bf85bf699f0c/overview'
+```
+
+Expected result:
+
+- both return `200`-equivalent successful responses
+
+### 7.5 Frontend env and dev server
+```powershell
+Set-Location ./onlook-ui
+$env:NEXT_PUBLIC_REVIEW_API_BASE='http://127.0.0.1:8000/api/v1/review/nrc-aps'
+npm run dev -- --hostname 127.0.0.1 --port 3000
+```
+
+### 7.6 Frontend static checks
+```powershell
+Set-Location ./onlook-ui
+Get-Content ./.gitignore
+npm run lint
+npm run build
+```
+
+Expected checks:
+
+- local `.gitignore` covers `.next/`
+- local `.gitignore` covers `node_modules/`
+- local `.gitignore` covers `.env.local`
+- no generated `AGENTS.md` or `CLAUDE.md` exists in `onlook-ui/`
+
+### 7.7 Diff boundary check
+```powershell
+git status --short
+```
+
+Expected first-slice change boundary:
+
+- `onlook-ui/*`
+- `next_milestone_plans/onlook-plan/*`
+
+Explicit non-commit surface:
+
+- `.omc/state/*`
+
+Anything broader requires explicit reassessment.
+
+## 8. Stop Rules
+Stop and reassess if:
+
+- the scaffold command prompts unexpectedly or emits generated agent-instruction files
+- the scaffold requires touching `backend/app/review_ui/static/*`
+- the sandbox cannot render the first page without backend contract changes
+- direct cross-port calls require credentialed requests, server-side fetching, or early proxy work
+- the adopted `pr45-postmerge-audit` runtime root, summary, or database path fails preflight
+- the first slice starts duplicating backend business logic instead of consuming backend outputs
+
+## 9. Immediate Next Move
+The next justified move is:
+
+1. create the sandbox app at `onlook-ui/`
+2. wire only the direct API base env and first-page shell
+3. prove the first page can load runs and overview from the adopted runtime context
+4. only then decide whether Onlook itself should be introduced in the next step or whether one more frontend-only slice is needed first
