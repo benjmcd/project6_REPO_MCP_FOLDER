@@ -16,6 +16,12 @@ This folder is repo-local planning material on branch `codex/onlook-lane`.
 It is intended to guide a new isolated frontend lane from clean mainline.
 It does not replace live implementation authority.
 
+Current lane state:
+
+- the planning packet is committed
+- the sandbox app has been scaffolded at `onlook-ui/`
+- no live static review UI files have been modified as part of this lane
+
 ## Canonical Authority
 For the current shipped review UI and review API behavior, authority remains:
 
@@ -71,6 +77,6 @@ This packet does not claim:
 - that a final promotion model has already been approved
 
 ## Next Step
-Use `strategy.md` to fix the authority and boundary model.
+Use `strategy.md` as the settled authority and boundary model for this lane.
 
-Use `pilot-plan.md` and `impl-plan.md` together to move from planning into a bounded sandbox scaffold without changing the current live static review UI.
+Use `pilot-plan.md` and `impl-plan.md` together to wire the first bounded page shell inside the existing sandbox app without changing the current live static review UI.
