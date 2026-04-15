@@ -122,6 +122,7 @@ Practical meaning:
 - the imported `onlook-ui` project now reaches the project route and editor shell, but not editor readiness
 - the current first live blocker is preview and bridge non-readiness: the CodeSandbox-backed preview iframe does not become a usable app document, and the editor then hits bridge and theme errors instead of reaching stable edit interactions
 - a temporary minimal `Next.js + TailwindCSS` control import outside tracked repo content reproduces the same preview and bridge failure under the same runtime, so the current first failure is not specific to `onlook-ui`
+- same-runtime repros for both `onlook-ui` and the minimal control import show no preview-side requests to `127.0.0.1:8000` before the preview and bridge failure, so the current first failure is upstream of the repo review API seam
 - archived current-lane evidence also shows a separate upstream route-init crash path during filesystem and branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`
 - direct local write-back/editing still remains a separate proof step
 - placeholder or absent `OPENROUTER_API_KEY` values still do not prove AI/chat feature readiness

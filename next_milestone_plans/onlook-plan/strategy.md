@@ -105,6 +105,7 @@ Additional current facts about Onlook itself:
 - the current proven direct launch and repro path is `bun run dev -- --hostname 127.0.0.1 --port 3007`
 - the current first live blocker is preview and bridge non-readiness: the CodeSandbox-backed iframe does not become a usable app document, and the editor then hits bridge/theme errors instead of reaching stable edit interactions
 - a temporary minimal `Next.js + TailwindCSS` control import outside tracked repo content reproduces the same preview and bridge failure under the same runtime, so the current first failure is not specific to `onlook-ui`
+- same-runtime repros for both `onlook-ui` and the minimal control import show no preview-side requests to `127.0.0.1:8000` before the preview and bridge failure, so the local review API is not the current first failing surface
 - a separate archived upstream crash path also exists in Onlook filesystem and branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`, which may explain historical hard exits after route open
 - direct local write-back/editing is still not yet proven
 - real `OPENROUTER_API_KEY` is still required to claim AI/chat readiness
