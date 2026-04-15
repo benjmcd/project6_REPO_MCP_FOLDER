@@ -12,8 +12,8 @@ It approves only the bounded sandbox scaffold and the minimum supporting runtime
 ### 2.1 Clean execution surface
 This lane runs from:
 
-- branch `codex/onlook-lane`
-- worktree `worktrees/onlook-lane`
+- branch `codex/onlook-next`
+- worktree `worktrees/onlook-next`
 
 Current status:
 
@@ -103,12 +103,14 @@ Verified locally against the current official Onlook development setup docs:
 
 - Bun is installed locally
 - Docker Desktop is installed and the local Supabase backend is running
-- the local Onlook source clone exists at `ext-onlook/`
+- the canonical local Onlook source clone for this lane exists at `ext-onlook/`
+- that clone was last verified at revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
+- a same-revision sibling clone may still exist at `../onlook-lane/ext-onlook/`, but it is not the canonical debug surface for this lane
 - the canonical local env files for that source tree now exist at:
   - `ext-onlook/apps/web/client/.env`
   - `ext-onlook/packages/db/.env`
 - `bun db:seed` now succeeds from `ext-onlook/`
-- local source Onlook now serves `GET /login` successfully at `http://127.0.0.1:3001/login`
+- the current proven direct source-launch path serves `GET /login` successfully at `http://127.0.0.1:3007/login`
 - the dev-only demo-user login path succeeds and redirects into the app shell
 
 Practical meaning:
@@ -117,9 +119,10 @@ Practical meaning:
 - the repo-side sandbox and the local Onlook operator path are both now real
 - placeholder `CSB_API_KEY` values are sufficient for local boot and dev login only
 - with a real `CSB_API_KEY`, actual project import and sandbox creation are now proven through the current CodeSandbox-backed flow
-- the imported `onlook-ui` project now reaches the editor surface
+- the imported `onlook-ui` project now reaches the project route and editor shell, but not editor readiness
+- the current first live blocker is preview and bridge non-readiness: the CodeSandbox-backed preview iframe does not become a usable app document, and the editor then hits bridge and theme errors instead of reaching stable edit interactions
+- archived current-lane evidence also shows a separate upstream route-init crash path during filesystem and branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`
 - direct local write-back/editing still remains a separate proof step
-- the first write-back proof is currently blocked because opening the imported project route currently causes `@onlook/web-client` to exit with code `5` in the tested workspace-local source clones
 - placeholder or absent `OPENROUTER_API_KEY` values still do not prove AI/chat feature readiness
 
 ## 3. Exact Scaffold Choice
@@ -465,7 +468,7 @@ Explicit non-commit surface:
 
 Anything broader requires explicit reassessment.
 
-### 7.8 Local Onlook source startup and import proof
+### 7.8 Local Onlook source startup, import proof, and current blocker
 If the hosted desktop OAuth path is blocked, use the local source path instead.
 
 Repo-local helper:
@@ -482,7 +485,7 @@ $env:PATH = "$env:USERPROFILE/.bun/bin;$env:PATH"
 bun run dev -- --hostname 127.0.0.1 --port 3007
 ```
 
-The helper and direct source-launch path both target the same local source clone. The direct source-launch path is the currently proven post-key operator path in this workspace.
+The helper and direct source-launch path both target the same local source clone. The direct source-launch path is the canonical and currently proven post-key reproduction path in this workspace.
 
 The helper:
 
@@ -494,13 +497,13 @@ The helper:
 
 Expected current result:
 
-- `GET http://127.0.0.1:3001/login` succeeds
+- `GET http://127.0.0.1:3007/login` succeeds through the direct source-launch path
 - the page shows the dev demo-user login button in development mode
 - the dev-login flow redirects into the app shell
-- with a real `CSB_API_KEY`, local import of `onlook-ui/` reaches project verification, completes sandbox creation, and opens the imported project route
-- corrected local source launch must also keep the project route alive long enough to reach actual edit interactions
-- current observed blocker: in the tested workspace-local source clones, opening the imported project route currently causes `@onlook/web-client` to exit with code `5`
-- this proves local operator boot, auth, import, sandbox creation, and project open; it does not yet prove direct local write-back or AI/chat readiness
+- with a real `CSB_API_KEY`, local import of `onlook-ui/` reaches project verification, completes sandbox creation, and opens the imported project route and editor shell
+- current first live blocker: the preview iframe still does not become a usable app document, observed as CodeSandbox Preview interstitial or `400`, Penpal and `iframeRemote` failures, and `frameData.view.getTheme is not a function`
+- archived current-lane evidence also keeps alive a separate route-init crash path during filesystem and branch initialization
+- this proves local operator boot, auth, import, sandbox creation, project-route reachability, and editor-shell render; it does not yet prove editor readiness, direct local write-back, or AI/chat readiness
 
 ## 8. Stop Rules
 Stop and reassess if:
@@ -511,12 +514,14 @@ Stop and reassess if:
 - direct cross-port calls require credentialed requests, server-side fetching, or early proxy work
 - the adopted `pr45-postmerge-audit` runtime root, summary, or database path fails preflight
 - the first slice starts duplicating backend business logic instead of consuming backend outputs
-- corrected local source launch still exits `@onlook/web-client` with code `5` while opening the imported project route
+- the imported project route still fails to reach a usable preview iframe and live bridge child
+- the archived filesystem and branch-init crash path reappears in current repros
 
 ## 9. Immediate Next Move
 The next justified move is:
 
-1. treat the reproducible project-route crash as an operator blocker, not as a repo-code problem to patch around
-2. isolate whether the `@onlook/web-client` exit-code-5 failure is tied to the current local Onlook runtime or to imported-project specifics
-3. only after the project route stays alive long enough for real edit interactions, attempt one tiny bounded Onlook-authored change
-4. then audit exactly what files change and confirm writes stay inside `onlook-ui/*`
+1. treat the preview and bridge failure as an operator blocker, not as a repo-code problem to patch around
+2. keep `ext-onlook/` in this worktree as the canonical debug surface while isolating whether the blocker reproduces on a minimal control import as well as on `onlook-ui/`
+3. capture one synchronized repro that records iframe body state, browser console, network, and any filesystem-init exceptions in the same run
+4. only after the project route reaches stable edit interactions, attempt one tiny bounded Onlook-authored change
+5. then audit exactly what files change and confirm writes stay inside `onlook-ui/*`

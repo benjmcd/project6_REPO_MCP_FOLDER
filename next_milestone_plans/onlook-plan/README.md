@@ -11,7 +11,7 @@ This folder is not a claim that Onlook is already integrated.
 It is the decision packet for an isolated Onlook pilot lane.
 
 ## Status
-This folder is repo-local planning material on branch `codex/onlook-lane`.
+This folder is repo-local planning material on branch `codex/onlook-next`.
 
 It is intended to guide a new isolated frontend lane from clean mainline.
 It does not replace live implementation authority.
@@ -25,16 +25,18 @@ Current lane state:
 - the app now includes a committed `onlook-ui/.env.example` as the reproducible frontend env template
 - actual Onlook use now assumes a local ignored `onlook-ui/.env.local` for the frontend API base
 - the repo-local backend startup helper is `tools/start-review-api.ps1`
-- the current practical Onlook operator path is the local source clone at `ext-onlook/`, not the hosted desktop OAuth path
-- the repo-local Onlook web startup helper is `tools/start-onlook-web.ps1`
+- the canonical local Onlook operator and debug surface for this lane is the source clone at `ext-onlook/` in this worktree, last verified at revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
+- a same-revision sibling clone may still exist at `../onlook-lane/ext-onlook/`, but it is not the canonical debug surface for this lane
+- the repo-local Onlook web startup helper is `tools/start-onlook-web.ps1`, but the direct Bun launch path on port `3007` is the currently proven reproduction path for the project-route blocker
 - canonical local Onlook env files now exist at:
   - `ext-onlook/apps/web/client/.env`
   - `ext-onlook/packages/db/.env`
-- local source Onlook now boots at `http://127.0.0.1:3001/login`
+- local source Onlook now boots through the current proven direct launch path at `http://127.0.0.1:3007/login`
 - local source Onlook dev login has been validated through the seeded demo-user flow
 - with a real `CSB_API_KEY`, actual project import and sandbox creation inside local source Onlook are now validated through the current CodeSandbox-backed flow
-- the imported `onlook-ui` project now reaches the Onlook editor surface
-- the first direct write-back proof is currently blocked because opening the imported project route currently causes `@onlook/web-client` to exit with code `5` in the tested workspace-local source clones
+- the imported `onlook-ui` project now reaches the Onlook project route and editor shell, but not editor readiness
+- the first current blocking chain is at the preview boundary: the CodeSandbox-backed preview iframe does not become a usable app document, the bridge never becomes ready, and the editor surfaces bridge/theme errors instead of reaching stable edit interactions
+- archived current-lane evidence also shows a separate route-init crash path inside Onlook filesystem and branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`, which may explain historical hard exits after route open
 - no live static review UI files have been modified as part of this lane
 
 ## Canonical Authority
@@ -89,10 +91,10 @@ This packet does not claim:
 - that the current static review UI can safely support Onlook write-back
 - that the current root checkout is the correct place to run this lane
 - that self-hosted production Onlook has been tested in this workspace
-- that direct local write-back or full Onlook AI/chat features are validated here beyond import, sandbox creation, and project open
+- that direct local write-back, editor readiness, or full Onlook AI/chat features are validated here beyond import, sandbox creation, project-route reachability, and editor-shell render
 - that a final promotion model has already been approved
 
 ## Next Step
-Use `strategy.md` as the settled authority and boundary model for this lane, and use `impl-plan.md` as the checklist for resolving the current operator blocker before the first write-back proof.
+Use `strategy.md` as the settled authority and boundary model for this lane, and use `impl-plan.md` as the checklist for resolving the current preview and editor blocker before the first write-back proof.
 
 Use `pilot-plan.md` and `impl-plan.md` together to move from the validated sandbox shell into actual Onlook targeting or the next bounded UI slice without changing the current live static review UI.
