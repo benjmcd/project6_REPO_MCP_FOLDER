@@ -1,34 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Onlook UI Sandbox
 
-## Getting Started
+This app is the isolated Onlook-editable sandbox for the NRC APS review lane.
 
-First, run the development server:
+It is not the live review UI.
+Live authority remains under:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- `../backend/main.py`
+- `../backend/app/api/review_nrc_aps.py`
+- `../backend/app/review_ui/static/*`
+
+## Purpose
+
+This sandbox exists to let Onlook edit a separate React and Tailwind surface without changing the current shipped static review UI by default.
+
+Current implemented slice:
+
+- load `GET /api/v1/review/nrc-aps/runs`
+- load `GET /api/v1/review/nrc-aps/runs/{run_id}/overview`
+- render:
+  - run selector
+  - pipeline pane
+  - tree pane
+  - details pane shell
+
+## Local Setup
+
+1. Start the backend review API from the lane root:
+
+```powershell
+./tools/start-review-api.ps1
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Create `./.env.local` from `./.env.example`:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```dotenv
+NEXT_PUBLIC_REVIEW_API_BASE=http://127.0.0.1:8000/api/v1/review/nrc-aps
+```
 
-## Learn More
+3. Start the frontend locally:
 
-To learn more about Next.js, take a look at the following resources:
+```powershell
+npm run dev -- --hostname 127.0.0.1 --port 3000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. For Onlook usage, point Onlook at this folder as the project root:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `worktrees/onlook-lane/onlook-ui`
 
-## Deploy on Vercel
+Do not point Onlook at the repo root.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Operating Rules
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Keep writes inside this app unless a separate repo-confirmed blocker requires more scope.
+- Do not modify `../backend/app/review_ui/static/*` from this lane.
+- Keep client-side, non-credentialed fetches only for this slice.
+- Treat `.env.local` as local machine config only. The committed template is `.env.example`.
+
+## Validation
+
+Frontend checks:
+
+```powershell
+npm run lint
+npm run build
+```
+
+Backend validate-only slice from the lane root:
+
+```powershell
+$env:STORAGE_DIR='../pr45-postmerge-audit/backend/app/storage_test_runtime'
+$env:PYTHONDONTWRITEBYTECODE='1'
+python -B -m pytest ./backend/tests/test_review_nrc_aps_catalog.py ./backend/tests/test_review_nrc_aps_api.py -p no:cacheprovider
+```
+
+## Related Docs
+
+- `../next_milestone_plans/onlook-plan/README.md`
+- `../next_milestone_plans/onlook-plan/pilot-plan.md`
+- `../next_milestone_plans/onlook-plan/impl-plan.md`
