@@ -131,8 +131,11 @@ Verified locally against the current official Onlook development setup docs:
 - the repo-local duplication helper `tools/copy-onlook-ui.ps1` now creates clean duplicates of `onlook-ui/` without `.next/` or `node_modules/`, and copies `.env.local` only when explicitly requested
 - on a fresh worktree, the first frontend bootstrap step is `Copy-Item ./onlook-ui/.env.example ./onlook-ui/.env.local` unless a different local review API base is intentionally needed
 - that duplication helper now refuses a dirty canonical `onlook-ui/` source tree by default unless `-AllowDirtySource` is supplied
-- a fresh duplicate created with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now also passes local `npm run lint` and `npm run build`
-- the safest default operator posture is now: create a duplicate sandbox target first, import that duplicate into Onlook, and leave `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
+- the repo-local duplicate-prep helper `tools/prep-onlook-copy.ps1` now wraps duplicate creation, local install, `npm run lint`, and `npm run build`, and can optionally run the tracked sandbox smoke before any Onlook import
+- that duplicate-prep helper now fails closed when a custom target is not git-ignored unless `-AllowVisibleTarget` is passed explicitly
+- a fresh duplicate prepared with `tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now passes local install, lint, and build in one repo-owned path
+- the repo-local duplicate diff helper `tools/diff-onlook-copy.ps1` now makes duplicate-to-canonical sandbox review explicit before any manual merge-back step while ignoring local-only `.next/`, `node_modules/`, and `.env.local` noise
+- the safest default operator posture is now: prepare a duplicate sandbox target first, import that duplicate into Onlook, and leave `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
 - the repo-local restore helper `tools/restore-onlook.ps1` can now recreate either preserved Onlook patch set from the tracked patch archives and the pinned upstream base commit
 - on a fresh worktree, that restore helper now recreates the expected helper-facing clone names by default:
   - `ext-onlook-fix/`
@@ -593,12 +596,16 @@ Tracked sandbox browser smoke before any duplicate-target Onlook proof:
 ```powershell
 ./tools/run-onlook-sandbox-smoke.ps1 -Profile core
 ./tools/run-onlook-sandbox-smoke.ps1 -Profile full
+./tools/run-onlook-sandbox-smoke.ps1 -Profile full -AppDir onlook-ui-copy
 ```
 
 Repo-local duplicate sandbox copy:
 
 ```powershell
 ./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv
+./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv
+./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv -RunSmokeProfile full
+./tools/diff-onlook-copy.ps1 -TargetDir onlook-ui-copy
 ```
 
 Repo-local Onlook clone restore:
@@ -637,6 +644,7 @@ Expected current result:
 - the dev-login flow redirects into the app shell
 - `./tools/check-onlook.ps1` confirms the preserved local and upstream-clean clones are still pinned, clean, and backed by tracked patch archives
 - `./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` produces a clean duplicate frontend source tree for scratch imports without reusing `.next/` or `node_modules/`
+- `./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` turns that into a one-command duplicate-prep path by adding local install, lint, and build
 - `./tools/restore-onlook.ps1` can recreate the preserved local or upstream-clean Onlook trees from the tracked patch archives if the local solved clones ever drift or need to be rebuilt from the pinned upstream base
 - that restore path is now proven: both preserved patch sets were rebuilt successfully into fresh local clones from the pinned upstream base commit
 - with a real `CSB_API_KEY`, local import of the current committed `onlook-ui/` folder reaches project verification, completes sandbox creation, and opens the imported project route and editor shell
@@ -665,6 +673,7 @@ Expected result:
   - `/review/nrc-aps/candidate-b-trace`
   - baseline and Candidate-A document trace follow-through
 - `./tools/run-onlook-sandbox-smoke.ps1 -Profile full` then consumes those recommended URLs, remaps them into sandbox routes, and proves the populated compare-family surfaces before any Onlook import step
+- `./tools/run-onlook-sandbox-smoke.ps1 -Profile full -AppDir onlook-ui-copy` can now prove a prepared duplicate target before the later Onlook operator proof
 - the sandbox `workbench-compare` route then renders populated compare data
 - the sandbox `candidate-b-trace` route then renders populated artifact-backed tabs
 - the compare-family proof remains local runtime/input prep only; it does not modify shipped static UI authority
@@ -690,5 +699,5 @@ The next justified move is:
 4. use same-checkout compare prep when populated compare-family work is the goal, and do not silently assume that data is present
 5. treat upstream issue evidence as future `Next 16` re-upgrade and runtime-hardening context, not as the current repo blocker
 6. keep AI/chat readiness and any shim-free end-to-end re-proof on the clean extracted branch as separate follow-up work
-7. for routine exploratory work, treat a duplicate created by `tools/copy-onlook-ui.ps1` as the default write target and merge back manually only after review
+7. for routine exploratory work, treat a duplicate prepared by `tools/prep-onlook-copy.ps1` as the default write target and review it first with `tools/diff-onlook-copy.ps1` before any manual merge-back
 8. treat `onlook-ui/` as the canonical write-back target only when direct canonical sandbox edits are the explicit goal
