@@ -32,10 +32,11 @@ Current lane state:
 - the repo-local Onlook web startup helper is `tools/start-onlook-web.ps1`; it now defaults to `ext-onlook-fix/` on port `3000`, pins known-good commits by default, refuses dirty clones by default, and can be pointed at a different local clone with `-OnlookDir`
 - the repo-local integrity helper is `tools/check-onlook.ps1`; it verifies the preserved clones, required env files, preserved patch archives, and can optionally rerun the bounded repo validations with `-RunValidation`
 - the repo-local duplication helper is `tools/copy-onlook-ui.ps1`; it creates a clean source duplicate of `onlook-ui/` without carrying `.next/` or `node_modules/`, and can copy the local frontend env when the duplicate should point at the same backend
+- that duplication helper now refuses a dirty canonical `onlook-ui/` source tree by default, so scratch copies do not silently fork from an in-progress or partially validated state unless explicitly overridden
 - a fresh duplicate created with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now also passes local `npm run lint` and `npm run build`, so producing a clean duplicate sandbox source is a proven path rather than a theoretical recovery step
 - the repo-local restore helper is `tools/restore-onlook.ps1`; it can rebuild either preserved Onlook patch set from the tracked patch archives and the pinned upstream base commit instead of relying on the local solved clones remaining untouched forever
 - the tracked patch archives are now stored under `.gitattributes` with `patches/*.patch -text`, so Windows line-ending normalization no longer corrupts the restore inputs
-- the restore helper has now successfully rebuilt both preserved Onlook patch sets from the pinned upstream base commit into fresh local clones, so clone recovery is also a proven path rather than a manual fallback
+- the restore helper now validates the rebuilt tree hash against the preserved solved tree, and it has successfully rebuilt both preserved Onlook patch sets from the pinned upstream base commit into fresh local clones, so clone recovery is also a proven path rather than a manual fallback
 - canonical local Onlook env files for the proven local operator surface now exist at:
   - `ext-onlook-fix/apps/web/client/.env`
   - `ext-onlook-fix/packages/db/.env`
