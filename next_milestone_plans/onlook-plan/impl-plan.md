@@ -10,14 +10,18 @@ It approves only the bounded sandbox scaffold and the minimum supporting runtime
 ## 2. Verified Preconditions
 
 ### 2.1 Clean execution surface
-This lane runs from:
+This lane was implemented from:
 
 - branch `codex/onlook-next`
 - worktree `worktrees/onlook-next`
 
+Current tracked authority for the completed lane is now merged `main`.
+
+For a clean post-merge validation surface, use a fresh mainline worktree such as `worktrees/mainline-lane`.
+
 Current status:
 
-- the planning packet is committed on this branch
+- the planning packet is now merged and committed on `main`
 - the sandbox app exists at `onlook-ui/`
 - tracked tool-state files under `.omc/state/*` may drift during interactive sessions and are not part of the planned commit surface for this lane
 
@@ -120,6 +124,7 @@ Verified locally against the current official Onlook development setup docs:
 - on a fresh worktree, the first frontend bootstrap step is `Copy-Item ./onlook-ui/.env.example ./onlook-ui/.env.local` unless a different local review API base is intentionally needed
 - that duplication helper now refuses a dirty canonical `onlook-ui/` source tree by default unless `-AllowDirtySource` is supplied
 - a fresh duplicate created with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now also passes local `npm run lint` and `npm run build`
+- the safest default operator posture is now: create a duplicate sandbox target first, import that duplicate into Onlook, and leave `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
 - the repo-local restore helper `tools/restore-onlook.ps1` can now recreate either preserved Onlook patch set from the tracked patch archives and the pinned upstream base commit
 - on a fresh worktree, that restore helper now recreates the expected helper-facing clone names by default:
   - `ext-onlook-fix/`
@@ -136,6 +141,7 @@ Verified locally against the current official Onlook development setup docs:
   - `ext-onlook-fix/packages/db/.env`
 - `bun db:seed` now succeeds from `ext-onlook-fix/`
 - the current proven direct source-launch path serves `GET /login` successfully at `http://127.0.0.1:3000/login`
+- if the browser keeps sticky state on the default `3000` origin, `tools/start-onlook-web.ps1 -Port 3011` is now the bounded fresh-origin fallback instead of reusing stale browser state
 - the dev-only demo-user login path succeeds and redirects into the app shell
 
 Practical meaning:
@@ -471,7 +477,8 @@ npm run dev -- --hostname 127.0.0.1 --port 3000
 For actual Onlook use:
 
 - ensure `onlook-ui/.env.local` exists with `NEXT_PUBLIC_REVIEW_API_BASE`
-- use `onlook-ui/` as the local project source for the proven import flow
+- for the lowest-risk exploratory path, create a duplicate first with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` and import that duplicate
+- use `onlook-ui/` as the local project source only when direct canonical write-back is intentional
 - use `ext-onlook-fix/` when you need the already-proven local operator path
 - use `ext-onlook-pr/` when you need the clean extracted upstream packaging surface
 
@@ -514,6 +521,12 @@ Repo-local helper:
 
 ```powershell
 ./tools/start-onlook-web.ps1
+```
+
+Fresh-origin fallback when browser state on the default `3000` origin is stale:
+
+```powershell
+./tools/start-onlook-web.ps1 -Port 3011
 ```
 
 Repo-local integrity check:
@@ -595,4 +608,5 @@ The next justified move is:
 3. use `ext-onlook-pr/` as the clean upstream-ready patch baseline
 4. treat upstream issue evidence as future `Next 16` re-upgrade and runtime-hardening context, not as the current repo blocker
 5. keep AI/chat readiness and any shim-free end-to-end re-proof on the clean extracted branch as separate follow-up work
-6. treat `onlook-ui/` as the canonical write-back target and use `tools/copy-onlook-ui.ps1` only for scratch duplicates that you are willing to merge back manually
+6. for routine exploratory work, treat a duplicate created by `tools/copy-onlook-ui.ps1` as the default write target and merge back manually only after review
+7. treat `onlook-ui/` as the canonical write-back target only when direct canonical sandbox edits are the explicit goal
