@@ -7,9 +7,15 @@ Set-StrictMode -Version Latest
 
 $laneRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $onlookUiRoot = Join-Path $laneRoot 'onlook-ui'
-$expectedCommits = @{
-    'ext-onlook-fix' = 'c8cf5c16a34d1953f3c215e4beaa2ef96e417733'
-    'ext-onlook-pr' = '6d4c463ad087cf43218f8e73bcf508b6e70a1e8e'
+$expectedStates = @{
+    'ext-onlook-fix' = @{
+        Commit = 'c8cf5c16a34d1953f3c215e4beaa2ef96e417733'
+        Tree = '8f9c9811552a801478df85daeee511104b8695d2'
+    }
+    'ext-onlook-pr' = @{
+        Commit = '6d4c463ad087cf43218f8e73bcf508b6e70a1e8e'
+        Tree = '304a553e444c0327068fcb1cef7eac6430ccdaa8'
+    }
 }
 $portsToInspect = @(3000, 8000, 8083)
 
@@ -32,31 +38,37 @@ function Assert-Path {
 function Assert-CleanClone {
     param(
         [string]$CloneDir,
-        [string]$ExpectedCommit
+        [string]$ExpectedCommit,
+        [string]$ExpectedTree
     )
 
     $cloneRoot = (Resolve-Path (Join-Path $laneRoot $CloneDir)).Path
     $headCommit = ((& git -C $cloneRoot rev-parse HEAD) | Out-String).Trim()
+    $treeHash = ((& git -C $cloneRoot rev-parse "HEAD^{tree}") | Out-String).Trim()
     $status = ((& git -C $cloneRoot status --short) | Out-String).Trim()
 
-    if ($headCommit -ne $ExpectedCommit) {
-        throw "$CloneDir is at $headCommit but expected $ExpectedCommit"
+    if ($headCommit -ne $ExpectedCommit -and $treeHash -ne $ExpectedTree) {
+        throw "$CloneDir is at commit $headCommit with tree $treeHash, but expected commit $ExpectedCommit or equivalent restored tree $ExpectedTree"
     }
 
     if ($status) {
         throw "$CloneDir is dirty:`n$status"
     }
 
-    Write-Host "$CloneDir pinned at $headCommit"
+    if ($headCommit -eq $ExpectedCommit) {
+        Write-Host "$CloneDir pinned at preserved commit $headCommit"
+    } else {
+        Write-Host "$CloneDir matches restored tree $treeHash (preserved commit $ExpectedCommit)"
+    }
 }
 
 Assert-Path $onlookUiRoot 'sandbox app root'
 Assert-Path (Join-Path $onlookUiRoot '.env.example') 'sandbox env template'
-Assert-Path (Join-Path $onlookUiRoot '.env.local') 'sandbox local env'
+Assert-Path (Join-Path $onlookUiRoot '.env.local') 'sandbox local env' 'Create it with Copy-Item ./onlook-ui/.env.example ./onlook-ui/.env.local, then adjust NEXT_PUBLIC_REVIEW_API_BASE only if your local review API will not run on http://127.0.0.1:8000.'
 Assert-Path (Join-Path $laneRoot 'patches\local-writeback.patch') 'local write-back patch archive'
 Assert-Path (Join-Path $laneRoot 'patches\upstream-clean.patch') 'upstream-clean patch archive'
 
-foreach ($cloneDir in $expectedCommits.Keys) {
+foreach ($cloneDir in $expectedStates.Keys) {
     $hint = if ($cloneDir -eq 'ext-onlook-fix') {
         'Restore it with ./tools/restore-onlook.ps1 -PatchSet local-writeback'
     } else {
@@ -64,7 +76,7 @@ foreach ($cloneDir in $expectedCommits.Keys) {
     }
 
     Assert-Path (Join-Path $laneRoot $cloneDir) "$cloneDir clone" $hint
-    Assert-CleanClone -CloneDir $cloneDir -ExpectedCommit $expectedCommits[$cloneDir]
+    Assert-CleanClone -CloneDir $cloneDir -ExpectedCommit $expectedStates[$cloneDir].Commit -ExpectedTree $expectedStates[$cloneDir].Tree
 }
 
 $listening = @{}
@@ -106,9 +118,10 @@ if ($RunValidation) {
 
 Write-Host ''
 Write-Host 'Ready commands:'
+Write-Host '  Copy-Item ./onlook-ui/.env.example ./onlook-ui/.env.local'
 Write-Host '  ./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv'
 Write-Host '  ./tools/restore-onlook.ps1 -PatchSet local-writeback'
 Write-Host '  ./tools/restore-onlook.ps1 -PatchSet upstream-clean'
 Write-Host '  ./tools/start-review-api.ps1'
 Write-Host '  ./tools/start-onlook-web.ps1'
-Write-Host '  ./tools/start-onlook-web.ps1 -OnlookDir ext-onlook-pr -SkipCommitCheck'
+Write-Host '  ./tools/start-onlook-web.ps1 -OnlookDir ext-onlook-pr'
