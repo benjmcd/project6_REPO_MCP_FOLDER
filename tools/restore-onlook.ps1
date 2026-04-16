@@ -16,9 +16,9 @@ $patchPath = Join-Path $laneRoot ("patches\{0}.patch" -f $PatchSet)
 $targetName = if ($TargetDir) {
     $TargetDir
 } elseif ($PatchSet -eq 'local-writeback') {
-    'ext-onlook-rw'
+    'ext-onlook-fix'
 } else {
-    'ext-onlook-uc'
+    'ext-onlook-pr'
 }
 $targetPath = if ([System.IO.Path]::IsPathRooted($targetName)) {
     $targetName

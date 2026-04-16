@@ -16,11 +16,16 @@ $portsToInspect = @(3000, 8000, 8083)
 function Assert-Path {
     param(
         [string]$Path,
-        [string]$Label
+        [string]$Label,
+        [string]$Hint = ''
     )
 
     if (-not (Test-Path $Path)) {
-        throw "Missing ${Label}: $Path"
+        $message = "Missing ${Label}: $Path"
+        if ($Hint) {
+            $message = "$message`n$Hint"
+        }
+        throw $message
     }
 }
 
@@ -52,7 +57,13 @@ Assert-Path (Join-Path $laneRoot 'patches\local-writeback.patch') 'local write-b
 Assert-Path (Join-Path $laneRoot 'patches\upstream-clean.patch') 'upstream-clean patch archive'
 
 foreach ($cloneDir in $expectedCommits.Keys) {
-    Assert-Path (Join-Path $laneRoot $cloneDir) "$cloneDir clone"
+    $hint = if ($cloneDir -eq 'ext-onlook-fix') {
+        'Restore it with ./tools/restore-onlook.ps1 -PatchSet local-writeback'
+    } else {
+        'Restore it with ./tools/restore-onlook.ps1 -PatchSet upstream-clean'
+    }
+
+    Assert-Path (Join-Path $laneRoot $cloneDir) "$cloneDir clone" $hint
     Assert-CleanClone -CloneDir $cloneDir -ExpectedCommit $expectedCommits[$cloneDir]
 }
 
@@ -96,8 +107,8 @@ if ($RunValidation) {
 Write-Host ''
 Write-Host 'Ready commands:'
 Write-Host '  ./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv'
-Write-Host '  ./tools/restore-onlook.ps1 -PatchSet local-writeback -TargetDir ext-onlook-rw'
-Write-Host '  ./tools/restore-onlook.ps1 -PatchSet upstream-clean -TargetDir ext-onlook-uc'
+Write-Host '  ./tools/restore-onlook.ps1 -PatchSet local-writeback'
+Write-Host '  ./tools/restore-onlook.ps1 -PatchSet upstream-clean'
 Write-Host '  ./tools/start-review-api.ps1'
 Write-Host '  ./tools/start-onlook-web.ps1'
 Write-Host '  ./tools/start-onlook-web.ps1 -OnlookDir ext-onlook-pr -SkipCommitCheck'
