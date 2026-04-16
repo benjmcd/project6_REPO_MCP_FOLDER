@@ -92,4 +92,4 @@ Write-Host "Tree hash: $treeHash"
 Write-Host "Current branch: $restoreBranch"
 Write-Host ''
 Write-Host 'Next steps:'
-Write-Host "  ./tools/start-onlook-web.ps1 -OnlookDir $(Split-Path -Leaf $targetPath) -SkipCommitCheck"
+Write-Host "  ./tools/start-onlook-web.ps1 -OnlookDir $(Split-Path -Leaf $targetPath)"
