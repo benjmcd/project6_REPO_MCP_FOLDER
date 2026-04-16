@@ -47,7 +47,7 @@ if (-not (Test-Path $dbEnv)) {
 if ($gitExe) {
     $headCommit = (& git -C $onlookRoot rev-parse HEAD).Trim()
     $treeHash = (& git -C $onlookRoot rev-parse "HEAD^{tree}").Trim()
-    $dirtyState = (& git -C $onlookRoot status --short).Trim()
+    $dirtyState = ((& git -C $onlookRoot status --short) | Out-String).Trim()
 
     if (-not $AllowDirty -and $dirtyState) {
         throw "Onlook clone is dirty at $onlookRoot. Commit or stash it first, or rerun with -AllowDirty if you intend to use a modified clone."
