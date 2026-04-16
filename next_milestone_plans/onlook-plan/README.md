@@ -39,6 +39,7 @@ Current lane state:
 - on a fresh worktree, the restore helper now recreates the expected helper-facing clone names by default:
   - `ext-onlook-fix/` for the local-writeback patch set
   - `ext-onlook-pr/` for the upstream-clean patch set
+- when those restored clones do not already carry local env files, the restore helper now bootstraps `apps/web/client/.env` and `packages/db/.env` from the upstream templates using local-demo Supabase defaults plus placeholder OpenRouter/Codesandbox keys
 - the startup and integrity helpers now accept either the preserved solved Onlook commits or a clean restored clone whose tree hash matches the preserved solved state exactly, so fresh recovery no longer requires `-SkipCommitCheck`
 - the tracked patch archives are now stored under `.gitattributes` with `patches/*.patch -text`, so Windows line-ending normalization no longer corrupts the restore inputs
 - the restore helper now validates the rebuilt tree hash against the preserved solved tree, and it has successfully rebuilt both preserved Onlook patch sets from the pinned upstream base commit into fresh local clones, so clone recovery is also a proven path rather than a manual fallback
