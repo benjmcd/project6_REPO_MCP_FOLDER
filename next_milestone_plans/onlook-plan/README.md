@@ -25,16 +25,24 @@ Current lane state:
 - the sandbox app now carries a committed compatibility fix that keeps React `19.2.4` but pins `next` and `eslint-config-next` to `15.5.15`
 - the app now includes a committed `onlook-ui/.env.example` as the reproducible frontend env template
 - actual Onlook use now assumes a local ignored `onlook-ui/.env.local` for the frontend API base
+- on a fresh worktree, the first frontend bootstrap step is `Copy-Item ./onlook-ui/.env.example ./onlook-ui/.env.local` unless a different local review API base is intentionally needed
 - the repo-local backend startup helper is `tools/start-review-api.ps1`
 - the original clean upstream base reference for this lane is the source clone lineage rooted at `ext-onlook/`, last verified from upstream revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
 - the current proven local operator and debug surface for the resolved repo lane is `ext-onlook-fix/` on local branch `codex/local-writeback-fix` at commit `c8cf5c16`
 - the clean upstream packaging surface is `ext-onlook-pr/` on local branch `codex/upstream-clean` at commit `6d4c463a`
-- the repo-local Onlook web startup helper is `tools/start-onlook-web.ps1`; it now defaults to `ext-onlook-fix/` on port `3000`, pins known-good commits by default, refuses dirty clones by default, and can be pointed at a different local clone with `-OnlookDir`
-- the repo-local integrity helper is `tools/check-onlook.ps1`; it verifies the preserved clones, required env files, preserved patch archives, and can optionally rerun the bounded repo validations with `-RunValidation`
+- the repo-local Onlook web startup helper is `tools/start-onlook-web.ps1`; it now defaults to `ext-onlook-fix/` on port `3000`, pins known-good commits by default, refuses dirty clones by default, fails closed if the fixed preload helper port `8083` is already occupied, and can be pointed at a different local clone with `-OnlookDir`
+- the repo-local integrity helper is `tools/check-onlook.ps1`; it verifies the preserved clones or tree-equivalent restored clones, required env files, preserved patch archives, and can optionally rerun the bounded repo validations with `-RunValidation`
 - the repo-local duplication helper is `tools/copy-onlook-ui.ps1`; it creates a clean source duplicate of `onlook-ui/` without carrying `.next/` or `node_modules/`, and can copy the local frontend env when the duplicate should point at the same backend
 - that duplication helper now refuses a dirty canonical `onlook-ui/` source tree by default, so scratch copies do not silently fork from an in-progress or partially validated state unless explicitly overridden
 - a fresh duplicate created with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now also passes local `npm run lint` and `npm run build`, so producing a clean duplicate sandbox source is a proven path rather than a theoretical recovery step
 - the repo-local restore helper is `tools/restore-onlook.ps1`; it can rebuild either preserved Onlook patch set from the tracked patch archives and the pinned upstream base commit instead of relying on the local solved clones remaining untouched forever
+- on a fresh worktree, the restore helper now recreates the expected helper-facing clone names by default:
+  - `ext-onlook-fix/` for the local-writeback patch set
+  - `ext-onlook-pr/` for the upstream-clean patch set
+- when those restored clones do not already carry local env files, the restore helper now bootstraps `apps/web/client/.env` and `packages/db/.env` from the upstream templates using local-demo Supabase defaults plus placeholder OpenRouter/Codesandbox keys
+- when those restored clones do not already carry installed workspace dependencies, the restore helper now runs `bun install`
+- if that dependency install rewrites `bun.lock`, the restore helper now restores the tracked lockfile back to `HEAD` and still fails closed on any broader tracked drift
+- the startup and integrity helpers now accept either the preserved solved Onlook commits or a clean restored clone whose tree hash matches the preserved solved state exactly, so fresh recovery no longer requires `-SkipCommitCheck`
 - the tracked patch archives are now stored under `.gitattributes` with `patches/*.patch -text`, so Windows line-ending normalization no longer corrupts the restore inputs
 - the restore helper now validates the rebuilt tree hash against the preserved solved tree, and it has successfully rebuilt both preserved Onlook patch sets from the pinned upstream base commit into fresh local clones, so clone recovery is also a proven path rather than a manual fallback
 - canonical local Onlook env files for the proven local operator surface now exist at:
