@@ -257,16 +257,16 @@ Reason:
 ## 4. Exact Backend Connection Rule
 
 ### 4.1 Rule
-Use direct cross-port browser calls from the sandbox app to FastAPI in the first slice.
+Use direct cross-port browser calls from the sandbox app to FastAPI in this lane.
 
-Slice-1 fetch model is fixed to:
+The sandbox-family fetch model is fixed to:
 
 - client-side browser fetches only
 - non-credentialed requests only
 - no cookies, session dependence, or auth headers
 - no frontend proxy or rewrite layer
 
-Do not move to server-side data fetching, credentialed requests, or a frontend proxy in slice 1 without a separate reassessment.
+Do not move to server-side data fetching, credentialed requests, or a frontend proxy in this lane without a separate reassessment.
 
 ### 4.2 Why
 Verified repo facts:
@@ -279,7 +279,7 @@ Verified repo facts:
 Practical constraint:
 
 - the current CORS posture is acceptable for plain non-credentialed browser fetches
-- it is not a safe basis for quietly introducing credentialed cross-origin requests in slice 1
+- it is not a safe basis for quietly introducing credentialed cross-origin requests in this lane
 
 ### 4.3 Exact frontend env
 For manual shell-driven validation, use:
@@ -290,8 +290,8 @@ $env:NEXT_PUBLIC_REVIEW_API_BASE='http://127.0.0.1:8000/api/v1/review/nrc-aps'
 
 The frontend should build all review API requests from that base.
 
-Use `NEXT_PUBLIC_REVIEW_API_BASE` only from slice-1 client components or client-side helper code.
-Do not use server-side data fetching in the first slice.
+Use `NEXT_PUBLIC_REVIEW_API_BASE` only from sandbox client components or client-side helper code.
+Do not use server-side data fetching in this lane.
 
 For actual Onlook-driven startup, prefer a local ignored file at:
 
@@ -666,7 +666,7 @@ Stop and reassess if:
 - the sandbox cannot render the first page without backend contract changes
 - direct cross-port calls require credentialed requests, server-side fetching, or early proxy work
 - the adopted `pr45-postmerge-audit` runtime root, summary, or database path fails preflight
-- the first slice starts duplicating backend business logic instead of consuming backend outputs
+- the sandbox route family starts duplicating backend business logic instead of consuming backend outputs
 - a fresh import of the current committed sandbox app stops hydrating in direct preview or stops loading the populated shell in the Onlook iframe
 - future work starts depending on the clean extracted upstream branch as if shim-free host write-back had already been re-proven there
 
