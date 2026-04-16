@@ -26,6 +26,26 @@ $runtimeGeneratedPaths = @(
     'apps/web/client/public/onlook-preload-script.js'
 )
 
+function Test-LineEndingOnlyDrift {
+    param(
+        [string]$RepoRoot,
+        [string[]]$RepoPaths
+    )
+
+    foreach ($repoPath in $RepoPaths) {
+        $worktreePath = Join-Path $RepoRoot ($repoPath -replace '/', '\')
+        if (-not (Test-Path $worktreePath)) {
+            return $false
+        }
+    }
+
+    $quotedPaths = ($RepoPaths | ForEach-Object { '"' + $_ + '"' }) -join ' '
+    $cmd = 'git -C "' + $RepoRoot + '" diff --ignore-space-at-eol --exit-code -- ' + $quotedPaths + ' >nul 2>nul'
+    cmd.exe /d /c $cmd | Out-Null
+
+    return ($LASTEXITCODE -eq 0)
+}
+
 if (-not (Test-Path $onlookPath)) {
     throw "Missing Onlook source clone: $onlookPath`nRestore it with ./tools/restore-onlook.ps1 -PatchSet local-writeback (for ext-onlook-fix) or ./tools/restore-onlook.ps1 -PatchSet upstream-clean (for ext-onlook-pr)."
 }
@@ -61,13 +81,10 @@ if ($gitExe) {
 
     if ($dirtyPaths.Count -gt 0) {
         $onlyRuntimeGenerated = @($dirtyPaths | Where-Object { $runtimeGeneratedPaths -notcontains $_ }).Count -eq 0
-        if ($onlyRuntimeGenerated) {
-            & git -C $onlookRoot diff --ignore-space-at-eol --exit-code -- $runtimeGeneratedPaths | Out-Null
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host 'Normalizing line-ending-only drift in runtime-generated files before startup.'
-                & git -C $onlookRoot restore --worktree --staged -- $runtimeGeneratedPaths
-                $dirtyLines = @(& git -C $onlookRoot status --short)
-            }
+        if ($onlyRuntimeGenerated -and (Test-LineEndingOnlyDrift -RepoRoot $onlookRoot -RepoPaths $runtimeGeneratedPaths)) {
+            Write-Host 'Normalizing line-ending-only drift in runtime-generated files before startup.'
+            & git -C $onlookRoot restore --worktree --staged -- $runtimeGeneratedPaths
+            $dirtyLines = @(& git -C $onlookRoot status --short)
         }
     }
 
