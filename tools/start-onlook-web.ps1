@@ -11,13 +11,19 @@ Set-StrictMode -Version Latest
 
 $laneRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $onlookPath = Join-Path $laneRoot $OnlookDir
-$expectedCommits = @{
-    'ext-onlook-fix' = 'c8cf5c16a34d1953f3c215e4beaa2ef96e417733'
-    'ext-onlook-pr' = '6d4c463ad087cf43218f8e73bcf508b6e70a1e8e'
+$expectedStates = @{
+    'ext-onlook-fix' = @{
+        Commit = 'c8cf5c16a34d1953f3c215e4beaa2ef96e417733'
+        Tree = '8f9c9811552a801478df85daeee511104b8695d2'
+    }
+    'ext-onlook-pr' = @{
+        Commit = '6d4c463ad087cf43218f8e73bcf508b6e70a1e8e'
+        Tree = '304a553e444c0327068fcb1cef7eac6430ccdaa8'
+    }
 }
 
 if (-not (Test-Path $onlookPath)) {
-    throw "Missing Onlook source clone: $onlookPath"
+    throw "Missing Onlook source clone: $onlookPath`nRestore it with ./tools/restore-onlook.ps1 -PatchSet local-writeback (for ext-onlook-fix) or ./tools/restore-onlook.ps1 -PatchSet upstream-clean (for ext-onlook-pr)."
 }
 
 $onlookRoot = (Resolve-Path $onlookPath).Path
@@ -40,16 +46,17 @@ if (-not (Test-Path $dbEnv)) {
 
 if ($gitExe) {
     $headCommit = (& git -C $onlookRoot rev-parse HEAD).Trim()
-    $dirtyState = (& git -C $onlookRoot status --short).Trim()
+    $treeHash = (& git -C $onlookRoot rev-parse "HEAD^{tree}").Trim()
+    $dirtyState = ((& git -C $onlookRoot status --short) | Out-String).Trim()
 
     if (-not $AllowDirty -and $dirtyState) {
         throw "Onlook clone is dirty at $onlookRoot. Commit or stash it first, or rerun with -AllowDirty if you intend to use a modified clone."
     }
 
-    if (-not $SkipCommitCheck -and $expectedCommits.ContainsKey($OnlookDir)) {
-        $expectedCommit = $expectedCommits[$OnlookDir]
-        if ($headCommit -ne $expectedCommit) {
-            throw "Onlook clone $OnlookDir is at $headCommit but the pinned commit is $expectedCommit. Rerun with -SkipCommitCheck only if you intentionally want a different revision."
+    if (-not $SkipCommitCheck -and $expectedStates.ContainsKey($OnlookDir)) {
+        $expectedState = $expectedStates[$OnlookDir]
+        if ($headCommit -ne $expectedState.Commit -and $treeHash -ne $expectedState.Tree) {
+            throw "Onlook clone $OnlookDir is at commit $headCommit with tree $treeHash, but the expected preserved state is commit $($expectedState.Commit) or an equivalent restored tree $($expectedState.Tree). Rerun with -SkipCommitCheck only if you intentionally want a different revision."
         }
     }
 }
@@ -61,6 +68,11 @@ foreach ($requiredPort in @(54321, 54322)) {
     if ($requiredPort -notin $listeningPorts) {
         Write-Warning "Supabase port $requiredPort is not listening. Run 'bun backend:start' in ext-onlook first."
     }
+}
+
+$preloadPort = 8083
+if ($preloadPort -in $listeningPorts) {
+    throw "Onlook preload helper port $preloadPort is already in use. Stop the other Onlook web runtime before starting another clone."
 }
 
 $clientEnvText = Get-Content $clientEnv -Raw
@@ -77,6 +89,7 @@ Write-Host "Using Onlook source clone: $onlookRoot"
 Write-Host "Using Onlook workspace dir: $OnlookDir"
 if ($gitExe) {
     Write-Host "Using Onlook commit: $headCommit"
+    Write-Host "Using Onlook tree:   $treeHash"
 }
 Write-Host "Using client env: $clientEnv"
 Write-Host "Using db env: $dbEnv"

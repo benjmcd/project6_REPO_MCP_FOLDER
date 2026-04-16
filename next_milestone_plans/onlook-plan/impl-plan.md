@@ -117,9 +117,18 @@ Verified locally against the current official Onlook development setup docs:
   - `patches/local-writeback.patch`
   - `patches/upstream-clean.patch`
 - the repo-local duplication helper `tools/copy-onlook-ui.ps1` now creates clean duplicates of `onlook-ui/` without `.next/` or `node_modules/`, and copies `.env.local` only when explicitly requested
+- on a fresh worktree, the first frontend bootstrap step is `Copy-Item ./onlook-ui/.env.example ./onlook-ui/.env.local` unless a different local review API base is intentionally needed
 - that duplication helper now refuses a dirty canonical `onlook-ui/` source tree by default unless `-AllowDirtySource` is supplied
 - a fresh duplicate created with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now also passes local `npm run lint` and `npm run build`
 - the repo-local restore helper `tools/restore-onlook.ps1` can now recreate either preserved Onlook patch set from the tracked patch archives and the pinned upstream base commit
+- on a fresh worktree, that restore helper now recreates the expected helper-facing clone names by default:
+  - `ext-onlook-fix/`
+  - `ext-onlook-pr/`
+- when those restored clones do not already carry local env files, the restore helper now bootstraps `apps/web/client/.env` and `packages/db/.env` from the upstream templates using local-demo Supabase defaults plus placeholder OpenRouter/Codesandbox keys
+- when those restored clones do not already carry installed workspace dependencies, the restore helper now runs `bun install`
+- if that dependency install rewrites `bun.lock`, the restore helper now restores the tracked lockfile back to `HEAD` and still fails closed on any broader tracked drift
+- the startup and integrity helpers now accept either the preserved solved Onlook commits or a clean restored clone whose tree hash matches the preserved solved state exactly
+- the startup helper also fails closed if the fixed Onlook preload helper port `8083` is already in use, instead of allowing a second runtime to degrade into a runtime `EADDRINUSE` failure
 - the tracked patch archives are now protected by `.gitattributes` with `patches/*.patch -text`, so the stored restore inputs are not silently rewritten by Windows line-ending conversion
 - the restore helper now validates the rebuilt tree hash against the preserved solved tree, and it has successfully recreated both preserved Onlook patch sets from the pinned upstream base commit into fresh local clones
 - the canonical local env files for the proven local operator surface now exist at:
@@ -523,8 +532,8 @@ Repo-local duplicate sandbox copy:
 Repo-local Onlook clone restore:
 
 ```powershell
-./tools/restore-onlook.ps1 -PatchSet local-writeback -TargetDir ext-onlook-rw
-./tools/restore-onlook.ps1 -PatchSet upstream-clean -TargetDir ext-onlook-uc
+./tools/restore-onlook.ps1 -PatchSet local-writeback
+./tools/restore-onlook.ps1 -PatchSet upstream-clean
 ```
 
 Equivalent direct source-launch path:
