@@ -1,6 +1,7 @@
 param(
     [ValidateSet('core', 'full')]
     [string]$Profile = 'full',
+    [string]$AppDir = 'onlook-ui',
     [string]$BindHost = '127.0.0.1',
     [int]$UiPort = 3007,
     [int]$ApiPort = 8000,
@@ -11,7 +12,11 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $laneRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$onlookUiRoot = Join-Path $laneRoot 'onlook-ui'
+$onlookUiRoot = if ([System.IO.Path]::IsPathRooted($AppDir)) {
+    [System.IO.Path]::GetFullPath($AppDir)
+} else {
+    [System.IO.Path]::GetFullPath((Join-Path $laneRoot $AppDir))
+}
 $smokeScript = Join-Path $laneRoot 'tools\onlook-sandbox-smoke.mjs'
 $wbPrepScript = Join-Path $laneRoot 'tools\validate_wb_prep.py'
 $apiStartScript = Join-Path $laneRoot 'tools\start-review-api.ps1'
@@ -71,6 +76,10 @@ function Stop-ProcessTree {
 
     Write-Host "Stopping $Label process tree rooted at PID $ProcessId"
     taskkill /PID $ProcessId /T /F | Out-Null
+}
+
+if (-not $onlookUiRoot.StartsWith($laneRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "Sandbox app path must stay inside the lane root: $laneRoot"
 }
 
 Assert-Path $onlookUiRoot 'sandbox app root'

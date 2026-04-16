@@ -56,7 +56,10 @@ npm run dev -- --hostname 127.0.0.1 --port 3000
 
 Lowest-risk default:
 
-- create a duplicate first with `../tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv`
+- prepare a duplicate first with `../tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv`
+- the default scratch target `onlook-ui-copy/` is tracked in the repo `.gitignore`, so duplicate-target work does not depend on workstation-local excludes
+- custom visible scratch targets now require `-AllowVisibleTarget` explicitly so duplicate work does not accidentally pollute repo status
+- review that duplicate against canonical `onlook-ui/` with `../tools/diff-onlook-copy.ps1 -TargetDir onlook-ui-copy`
 - import that duplicate into Onlook
 - leave `onlook-ui/` untouched unless direct canonical write-back is intentional
 
@@ -102,12 +105,14 @@ Tracked sandbox browser smoke before any duplicate-target Onlook proof:
 ```powershell
 ../tools/run-onlook-sandbox-smoke.ps1 -Profile core
 ../tools/run-onlook-sandbox-smoke.ps1 -Profile full
+../tools/run-onlook-sandbox-smoke.ps1 -Profile full -AppDir onlook-ui-copy
 ```
 
 Meaning:
 
 - `core` starts an isolated local review API plus an isolated sandbox dev server and proves the hydrated review, document-trace, and analyst-insight routes
 - `full` adds the same-checkout compare-family proof by consuming the recommended URLs emitted by `../tools/validate_wb_prep.py` and remapping those live review URLs into the sandbox route table
+- `-AppDir onlook-ui-copy` lets the same proof run against a prepared duplicate target before import
 - both profiles stop after browser proof; they do not import a duplicate target into Onlook or exercise the Onlook editor/write-back path
 
 ## Related Docs

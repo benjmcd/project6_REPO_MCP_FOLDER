@@ -203,6 +203,12 @@ Meaning:
    - manually port selected ideas
    - promote the sandbox toward eventual cutover
 
+Current operator rule:
+
+- when Onlook edits land in a duplicate target, review that duplicate against canonical `onlook-ui/` with `tools/diff-onlook-copy.ps1`
+- do not treat duplicate-target saves as canonical sandbox truth until that review happens
+- do not treat canonical sandbox acceptance as automatic approval to touch `backend/app/review_ui/static/*`
+
 The preferred long-term model, if Onlook becomes part of normal workflow, is:
 
 - eventual cutover after parity

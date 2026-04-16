@@ -16,6 +16,7 @@ $targetPath = if ([System.IO.Path]::IsPathRooted($TargetDir)) {
     Join-Path $laneRoot $TargetDir
 }
 $targetPath = [System.IO.Path]::GetFullPath($targetPath)
+$targetName = Split-Path -Leaf $targetPath
 $archiveRoot = Join-Path $laneRoot 'archive'
 $skipDirs = @('.git', '.next', 'node_modules')
 $copyLocalEnvPath = Join-Path $sourceRoot '.env.local'
@@ -67,7 +68,6 @@ if (Test-Path $targetPath) {
     }
 
     $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-    $targetName = Split-Path -Leaf $targetPath
     $archivePath = Join-Path $archiveRoot "$targetName.$timestamp"
     Move-Item -LiteralPath $targetPath -Destination $archivePath
     Write-Host "Archived existing target to $archivePath"
@@ -90,6 +90,7 @@ if ($CopyLocalEnv -and (Test-Path $copyLocalEnvPath)) {
 
 Write-Host ''
 Write-Host 'Next steps:'
+Write-Host "  ./tools/prep-onlook-copy.ps1 -TargetDir $targetName -CopyLocalEnv"
 Write-Host "  Set-Location $targetPath"
 Write-Host '  npm install'
 Write-Host '  npm run lint'

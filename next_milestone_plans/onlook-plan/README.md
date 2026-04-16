@@ -45,8 +45,12 @@ Current lane state:
 - the repo-local integrity helper is `tools/check-onlook.ps1`; it verifies the preserved clones or tree-equivalent restored clones, required env files, preserved patch archives, can optionally rerun the bounded repo validations with `-RunValidation`, and treats line-ending-only drift in the known runtime-generated files as non-blocking rather than misclassifying it as a semantic source edit, but only when both the worktree delta and the staged/index delta are line-ending-only
 - the repo-local duplication helper is `tools/copy-onlook-ui.ps1`; it creates a clean source duplicate of `onlook-ui/` without carrying `.next/` or `node_modules/`, and can copy the local frontend env when the duplicate should point at the same backend
 - that duplication helper now refuses a dirty canonical `onlook-ui/` source tree by default, so scratch copies do not silently fork from an in-progress or partially validated state unless explicitly overridden
-- a fresh duplicate created with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now also passes local `npm run lint` and `npm run build`, so producing a clean duplicate sandbox source is a proven path rather than a theoretical recovery step
-- the lowest-risk default for exploratory Onlook work is now: create a duplicate sandbox source with `tools/copy-onlook-ui.ps1`, import that duplicate, and keep `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
+- the repo-local duplicate-prep helper is `tools/prep-onlook-copy.ps1`; it wraps duplicate creation, local `npm install`, `npm run lint`, and `npm run build`, and can optionally run the tracked sandbox smoke before any Onlook import step
+- the default duplicate target `onlook-ui-copy/` is now tracked in `.gitignore`, so the low-risk scratch path does not depend on workstation-local exclude rules
+- that duplicate-prep helper now fails closed when a custom target is not git-ignored unless `-AllowVisibleTarget` is passed explicitly
+- a fresh duplicate prepared with `tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now passes local install, lint, and build in one repo-owned path, so producing a clean duplicate sandbox source is a proven path rather than a theoretical recovery step
+- the repo-local duplicate diff helper is `tools/diff-onlook-copy.ps1`; it compares meaningful duplicate source files back to canonical `onlook-ui/` while ignoring local-only build/install/env artifacts, so duplicate-to-canonical promotion review is explicit instead of ad hoc
+- the lowest-risk default for exploratory Onlook work is now: prepare a duplicate sandbox source with `tools/prep-onlook-copy.ps1`, import that duplicate, and keep `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
 - the repo-local restore helper is `tools/restore-onlook.ps1`; it can rebuild either preserved Onlook patch set from the tracked patch archives and the pinned upstream base commit instead of relying on the local solved clones remaining untouched forever
 - on a fresh worktree, the restore helper now recreates the expected helper-facing clone names by default:
   - `ext-onlook-fix/` for the local-writeback patch set
@@ -80,10 +84,10 @@ Current lane state:
   - `tools/validate_wb_prep.py` can validate the resulting same-checkout compare selection and emit recommended review, trace, and compare URLs
 - the compare prep tooling now works from a clean worktree by resolving the expected `phase7a-py311` interpreter from the nearest ancestor `./.venvs/` when the worktree itself does not carry a local copy
 - the Candidate-B compare tooling now correctly recognizes wrapped `opendataloader_pdf --help` output when checking for annotated-PDF capability, so CLI help formatting no longer creates a false negative
-- the repo-local sandbox browser smoke helper is `tools/run-onlook-sandbox-smoke.ps1`; it starts an isolated local review API and isolated sandbox dev server, proves the hydrated sandbox routes before any Onlook import step, and supports two bounded profiles:
+- the repo-local sandbox browser smoke helper is `tools/run-onlook-sandbox-smoke.ps1`; it starts an isolated local review API and isolated sandbox dev server, proves the hydrated sandbox routes before any Onlook import step, can target either canonical `onlook-ui/` or a prepared duplicate with `-AppDir`, and supports two bounded profiles:
   - `-Profile core` for review, document-trace, and analyst-insight
   - `-Profile full` for the full route family, including compare-family routes after `tools/validate_wb_prep.py` emits the recommended same-checkout live-review URLs that the helper then remaps into sandbox routes
-- the canonical host-write-back target remains `onlook-ui/`; duplicate copies created with `tools/copy-onlook-ui.ps1` are for scratch imports or comparison work and do not auto-promote changes back into the canonical sandbox app
+- the canonical host-write-back target remains `onlook-ui/`; duplicate copies created with the duplicate helpers are for scratch imports or comparison work, do not auto-promote changes back into the canonical sandbox app, and should be reviewed first with `tools/diff-onlook-copy.ps1`
 - that local write-back proof ran on the preserved local operator surface at `ext-onlook-fix/` and used the file-input import path, so it should not be flattened into a claim that the clean extracted upstream branch has already re-proven host write-back end-to-end without the local shim
 - the clean extracted upstream branch at `ext-onlook-pr/` removes the workspace-specific `/api/local-project` shim and path-registration fallback, keeps the browser directory-handle persistence path, passes `@onlook/web-client` typecheck, and passes `@onlook/web-client` build with placeholder required envs
 - the exact local Onlook commits are now also preserved inside this tracked repo lane as:
@@ -160,8 +164,10 @@ Use `strategy.md` as the settled authority and boundary model for this lane, and
 Use `pilot-plan.md` and `impl-plan.md` together to keep the current repo lane stable while:
 
 - using duplicate sandbox copies as the default experimental write target
+- preparing those duplicate targets with `tools/prep-onlook-copy.ps1` before any Onlook import step
 - treating `onlook-ui/` as the canonical sandbox source only when direct canonical write-back is intentional
 - using `tools/run-onlook-sandbox-smoke.ps1` as the repeatable pre-Onlook browser proof for the bounded route family
+- using `tools/diff-onlook-copy.ps1` as the explicit duplicate-to-canonical review step before any later promotion decision
 - treating same-checkout compare prep as an opt-in local runtime/data layer when populated compare-family route validation is required
 - treating `ext-onlook-pr/` as the upstream-ready patch baseline
 - keeping any future AI/chat or shim-free end-to-end re-proof as separate follow-up work

@@ -169,7 +169,7 @@ Reason:
 10. When populated compare-family validation matters, prepare same-checkout compare data explicitly instead of assuming it exists.
 
 ### 7.2 During Onlook usage
-1. The lowest-risk default is to let Onlook edit a duplicate sandbox app created by `tools/copy-onlook-ui.ps1`, not `onlook-ui/` directly.
+1. The lowest-risk default is to let Onlook edit a duplicate sandbox app prepared by `tools/prep-onlook-copy.ps1`, not `onlook-ui/` directly.
 2. Importing `onlook-ui/` directly is an explicit choice that makes `onlook-ui/*` the direct host write-back target.
 3. No writes are made to:
    - `backend/main.py`
@@ -189,6 +189,7 @@ Every saved sandbox iteration must be classified as one of:
 - candidate for promotion review
 
 Do not silently treat saved Onlook edits as live-product truth.
+Before any duplicate-to-canonical merge-back, review the duplicate against `onlook-ui/` with `tools/diff-onlook-copy.ps1`.
 
 ## 8. Validation Rules
 
@@ -235,8 +236,9 @@ Minimum acceptance for the sandbox app:
 Before any promotion decision:
 
 1. compare sandbox behavior against the current static UI on the same backend data
-2. identify any contract gaps or regressions
-3. decide explicitly whether promotion means:
+2. review duplicate-to-canonical sandbox changes explicitly with `tools/diff-onlook-copy.ps1`
+3. identify any contract gaps or regressions
+4. decide explicitly whether promotion means:
    - selective manual port
    - broader migration plan
    - rejection of the sandbox changes
@@ -275,9 +277,10 @@ Use `impl-plan.md` as the bridge from the now-solved local repo lane into the cu
 
 For lowest-risk local use:
 
-1. create a duplicate sandbox target with `tools/copy-onlook-ui.ps1`
-2. import that duplicate into Onlook
-3. keep `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
+1. prepare a duplicate sandbox target with `tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv`
+2. review the duplicate against canonical `onlook-ui/` with `tools/diff-onlook-copy.ps1 -TargetDir onlook-ui-copy`
+3. import that duplicate into Onlook
+4. keep `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
 
 When populated compare-family work is required:
 
@@ -285,5 +288,6 @@ When populated compare-family work is required:
 2. generate a local Candidate-B compare bundle with `tools/run_nrc_aps_candidate_b_compare.py`
 3. validate the resulting selection and recommended URLs with `tools/validate_wb_prep.py`
 4. prove the hydrated full route family with `tools/run-onlook-sandbox-smoke.ps1 -Profile full`
+5. if the duplicate target is the intended Onlook import, re-run that proof against the duplicate with `tools/run-onlook-sandbox-smoke.ps1 -Profile full -AppDir onlook-ui-copy`
 
 Do not broaden repo scope beyond the sandbox app until the clean extracted upstream branch is either sent upstream or re-proven shim-free end-to-end.

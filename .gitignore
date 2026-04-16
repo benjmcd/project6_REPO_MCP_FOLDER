@@ -24,3 +24,4 @@ backend/app/storage_nonsalient_sample/
 /playwright/.cache/
 /playwright/.auth/
 .gstack/
+/onlook-ui-copy/
