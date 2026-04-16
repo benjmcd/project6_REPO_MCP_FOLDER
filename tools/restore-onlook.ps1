@@ -157,9 +157,9 @@ function Ensure-BunDependencies {
     Write-Host "Installing Onlook dependencies in $RepoRoot"
     Push-Location $RepoRoot
     try {
-        & $bunExe install --frozen-lockfile
+        & $bunExe install
         if ($LASTEXITCODE -ne 0) {
-            throw "bun install --frozen-lockfile failed with exit code $LASTEXITCODE"
+            throw "bun install failed with exit code $LASTEXITCODE"
         }
     }
     finally {
