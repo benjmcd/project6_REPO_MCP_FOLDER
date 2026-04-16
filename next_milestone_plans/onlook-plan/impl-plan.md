@@ -133,7 +133,12 @@ Verified locally against the current official Onlook development setup docs:
 - when those restored clones do not already carry installed workspace dependencies, the restore helper now runs `bun install`
 - if that dependency install rewrites `bun.lock`, the restore helper now restores the tracked lockfile back to `HEAD` and still fails closed on any broader tracked drift
 - the startup and integrity helpers now accept either the preserved solved Onlook commits or a clean restored clone whose tree hash matches the preserved solved state exactly
+- the startup helper now normalizes line-ending-only drift in the known runtime-generated files before enforcing the dirty-clone guard
+- the integrity helper now treats that same line-ending-only drift as non-blocking rather than misclassifying it as a semantic source edit
 - the startup helper also fails closed if the fixed Onlook preload helper port `8083` is already in use, instead of allowing a second runtime to degrade into a runtime `EADDRINUSE` failure
+- the currently tolerated runtime-generated files are:
+  - `apps/web/client/messages/en.d.json.ts`
+  - `apps/web/client/public/onlook-preload-script.js`
 - the tracked patch archives are now protected by `.gitattributes` with `patches/*.patch -text`, so the stored restore inputs are not silently rewritten by Windows line-ending conversion
 - the restore helper now validates the rebuilt tree hash against the preserved solved tree, and it has successfully recreated both preserved Onlook patch sets from the pinned upstream base commit into fresh local clones
 - the canonical local env files for the proven local operator surface now exist at:
