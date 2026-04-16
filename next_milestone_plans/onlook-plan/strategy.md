@@ -227,7 +227,7 @@ If sandbox changes are treated as implicitly approved for live adoption, source-
 The repo does not currently carry a root-local `lc_e2e` runtime tree, so realistic review data for demos and validation must be chosen deliberately rather than assumed from root-local historical examples.
 
 ### 8.5 Cross-worktree runtime dependency
-The current adopted demo runtime comes from the sibling `pr45-postmerge-audit` worktree, so slice 1 depends on a local machine/worktree relationship rather than a repo-native fixture packaged inside this lane.
+The current adopted demo runtime comes from the sibling `pr45-postmerge-audit` worktree, so the bounded sandbox lane still depends on a local machine/worktree relationship rather than a repo-native fixture packaged inside this lane.
 
 ### 8.6 Operator-surface drift
 If the investigation alternates between multiple local Onlook source clones or launch paths, the actual failure boundary becomes harder to trust.
@@ -255,7 +255,7 @@ These unknowns do not change the main repo-side determination:
 - the backend API should still remain the first seam
 - the current static UI should still remain untouched by default
 
-For slice 1 specifically, `impl-plan.md` now fixes:
+For the current bounded lane, `impl-plan.md` now fixes:
 
 - direct cross-port API calls as the first connection rule
 - client-side, non-credentialed browser fetches as the first fetch model
