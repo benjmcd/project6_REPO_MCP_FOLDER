@@ -19,6 +19,7 @@ from app.services.review_nrc_aps_runtime import (
 
 
 TESTS_ROOT = Path(__file__).resolve().parent
+INITIAL_STORAGE_DIR = str(os.environ.get("STORAGE_DIR") or "").strip()
 
 
 def _candidate_shared_runtime_parent() -> Path | None:
@@ -63,7 +64,7 @@ def _resolve_runtime_parents() -> list[Path]:
 RUNTIME_PARENTS = _resolve_runtime_parents()
 RUNTIME_PARENT = next((candidate for candidate in RUNTIME_PARENTS if candidate.exists()), RUNTIME_PARENTS[0])
 
-if not str(os.environ.get("STORAGE_DIR") or "").strip() and RUNTIME_PARENT.exists():
+if not INITIAL_STORAGE_DIR and RUNTIME_PARENT.exists():
     default_storage_root = RUNTIME_PARENT.parent.resolve()
     os.environ["STORAGE_DIR"] = str(default_storage_root)
     settings.storage_dir = str(default_storage_root)
@@ -151,9 +152,10 @@ def latest_passed_runtime() -> AuditedReviewRuntime:
     runtimes = discover_passed_runtimes()
     assert runtimes, f"No passed local-corpus runtime found under {RUNTIME_PARENT}"
     selected_runtime = runtimes[0]
-    selected_storage_root = selected_runtime.runtime_dir.parent.resolve()
-    os.environ["STORAGE_DIR"] = str(selected_storage_root)
-    settings.storage_dir = str(selected_storage_root)
+    if not INITIAL_STORAGE_DIR:
+        selected_storage_root = selected_runtime.runtime_dir.parent.resolve()
+        os.environ["STORAGE_DIR"] = str(selected_storage_root)
+        settings.storage_dir = str(selected_storage_root)
     return selected_runtime
 
 
@@ -186,9 +188,10 @@ def latest_document_trace_ready_runtime() -> AuditedReviewRuntime:
     runtimes = discover_document_trace_ready_runtimes()
     assert runtimes, f"No document-trace-ready local-corpus runtime found under {RUNTIME_PARENT}"
     selected_runtime = runtimes[0]
-    selected_storage_root = selected_runtime.runtime_dir.parent.resolve()
-    os.environ["STORAGE_DIR"] = str(selected_storage_root)
-    settings.storage_dir = str(selected_storage_root)
+    if not INITIAL_STORAGE_DIR:
+        selected_storage_root = selected_runtime.runtime_dir.parent.resolve()
+        os.environ["STORAGE_DIR"] = str(selected_storage_root)
+        settings.storage_dir = str(selected_storage_root)
     return selected_runtime
 
 

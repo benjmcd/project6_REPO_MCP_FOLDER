@@ -21,8 +21,18 @@ Current lane state:
 
 - the planning packet is committed
 - the sandbox app has been scaffolded at `onlook-ui/`
-- the first bounded shell slice is implemented inside `onlook-ui/*`
-- the sandbox shell now loads `/runs` and `/runs/{run_id}/overview` through the existing review API seam
+- the sandbox app now implements a bounded multi-route review UI family inside `onlook-ui/*`:
+  - `/`
+  - `/document-trace`
+  - `/workbench-compare`
+  - `/candidate-b-trace`
+  - `/analyst-insight`
+- the root review shell now loads `/runs` and `/runs/{run_id}/overview` through the existing review API seam and exposes route navigation for the full sandbox family
+- the document-trace route now loads manifest, diagnostics, normalized-text, indexed-chunks, and extracted-units payloads through the existing review API seam
+- the analyst-insight route now exercises the three existing aliased POST endpoints through the existing backend services without changing the shipped static UI authority
+- the compare-family routes now support two bounded states:
+  - graceful degradation when same-checkout compare prep is absent
+  - populated compare and Candidate-B-trace rendering when same-checkout compare prep has been created locally
 - the sandbox app now carries a committed compatibility fix that keeps React `19.2.4` but pins `next` and `eslint-config-next` to `15.5.15`
 - the app now includes a committed `onlook-ui/.env.example` as the reproducible frontend env template
 - actual Onlook use now assumes a local ignored `onlook-ui/.env.local` for the frontend API base
@@ -64,6 +74,12 @@ Current lane state:
 - the same fresh sandbox now renders the populated review shell inside the Onlook iframe and editor shell, not just in a top-level preview tab
 - from a fresh browser profile, switching the canvas to `Preview` and accepting the CodeSandbox trust interstitial now loads the real sandbox app inside the Onlook iframe
 - direct local write-back is now proven for this repo lane: a bounded Onlook-authored save wrote into `onlook-ui/app/page.tsx` on disk and the host file was restored clean afterward
+- same-checkout compare prep is now a repo-native, validated local path for this lane:
+  - `tools/seed_wb_compare.py` can seed baseline and Candidate-A review runtimes under `backend/app/storage_test_runtime/lc_e2e/`
+  - `tools/run_nrc_aps_candidate_b_compare.py` can generate a local Candidate-B bundle under `tests/reports/cb-compare-*`
+  - `tools/validate_wb_prep.py` can validate the resulting same-checkout compare selection and emit recommended review, trace, and compare URLs
+- the compare prep tooling now works from a clean worktree by resolving the expected `phase7a-py311` interpreter from the nearest ancestor `./.venvs/` when the worktree itself does not carry a local copy
+- the Candidate-B compare tooling now correctly recognizes wrapped `opendataloader_pdf --help` output when checking for annotated-PDF capability, so CLI help formatting no longer creates a false negative
 - the canonical host-write-back target remains `onlook-ui/`; duplicate copies created with `tools/copy-onlook-ui.ps1` are for scratch imports or comparison work and do not auto-promote changes back into the canonical sandbox app
 - that local write-back proof ran on the preserved local operator surface at `ext-onlook-fix/` and used the file-input import path, so it should not be flattened into a claim that the clean extracted upstream branch has already re-proven host write-back end-to-end without the local shim
 - the clean extracted upstream branch at `ext-onlook-pr/` removes the workspace-specific `/api/local-project` shim and path-registration fallback, keeps the browser directory-handle persistence path, passes `@onlook/web-client` typecheck, and passes `@onlook/web-client` build with placeholder required envs
@@ -99,10 +115,11 @@ Those files confirm that the current shipped review UI is a build-free static su
 4. The backend review API should remain the first integration seam.
 5. The narrowest supported target shape for the sandbox app is `Next.js + TailwindCSS`.
 6. While CodeSandbox-backed Onlook preview remains part of this lane, the sandbox app should stay on `Next 15.5.15`; `Next 16` is not the currently working target version here.
-7. Slice 1 should use client-side, non-credentialed browser fetches only.
+7. The sandbox route family should continue to use client-side, non-credentialed browser fetches only unless the lane is explicitly re-scoped.
 8. The adopted demo runtime is a local cross-worktree dependency, not a repo-native sandbox fixture.
-9. The default promotion posture should be `sandbox-first`, not immediate replacement of the live UI.
-10. Promotion into live authority should happen only after explicit parity and acceptance checks.
+9. Same-checkout compare prep is an optional local runtime/input layer for populated compare-family validation, not a product-code dependency of the shipped UI.
+10. The default promotion posture should be `sandbox-first`, not immediate replacement of the live UI.
+11. Promotion into live authority should happen only after explicit parity and acceptance checks.
 
 ## Documents In This Folder
 - `strategy.md`
@@ -120,8 +137,8 @@ Those files confirm that the current shipped review UI is a build-free static su
   - exact backend connection rule
   - exact adopted demo runtime/data context
   - exact runtime preflight and path-resolution rules
-  - exact first-slice component map
-  - exact validation commands
+  - exact multi-route sandbox component map
+  - exact validation and compare-prep commands
 
 ## Explicit Non-Claims
 This packet does not claim:
@@ -141,5 +158,6 @@ Use `pilot-plan.md` and `impl-plan.md` together to keep the current repo lane st
 
 - using duplicate sandbox copies as the default experimental write target
 - treating `onlook-ui/` as the canonical sandbox source only when direct canonical write-back is intentional
+- treating same-checkout compare prep as an opt-in local runtime/data layer when populated compare-family route validation is required
 - treating `ext-onlook-pr/` as the upstream-ready patch baseline
 - keeping any future AI/chat or shim-free end-to-end re-proof as separate follow-up work

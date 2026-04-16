@@ -34,7 +34,18 @@ if str(BACKEND) not in sys.path:
 
 SUMMARY_SCHEMA_ID = "aps.local_corpus_e2e_summary.v1"
 SUMMARY_SCHEMA_VERSION = 1
-EXPECTED_INTERPRETER = ROOT / ".venvs" / "phase7a-py311" / "Scripts" / "python.exe"
+
+
+def _resolve_expected_interpreter() -> Path:
+    relative = Path(".venvs") / "phase7a-py311" / "Scripts" / "python.exe"
+    for base in (ROOT, *ROOT.parents):
+        candidate = (base / relative).resolve()
+        if candidate.exists():
+            return candidate
+    return (ROOT / relative).resolve()
+
+
+EXPECTED_INTERPRETER = _resolve_expected_interpreter()
 DEFAULT_RUNTIME_PARENT = ROOT / "backend" / "app" / "storage_test_runtime" / "lc_e2e"
 DEFAULT_CORPUS_ROOT = ROOT / "data_demo" / "nrc_adams_documents_for_testing"
 DOCUMENT_TYPES_JSON = (
