@@ -39,6 +39,26 @@ function Assert-Path {
     }
 }
 
+function Test-LineEndingOnlyDrift {
+    param(
+        [string]$RepoRoot,
+        [string[]]$RepoPaths
+    )
+
+    foreach ($repoPath in $RepoPaths) {
+        $worktreePath = Join-Path $RepoRoot ($repoPath -replace '/', '\')
+        if (-not (Test-Path $worktreePath)) {
+            return $false
+        }
+    }
+
+    $quotedPaths = ($RepoPaths | ForEach-Object { '"' + $_ + '"' }) -join ' '
+    $cmd = 'git -C "' + $RepoRoot + '" diff --ignore-space-at-eol --exit-code -- ' + $quotedPaths + ' >nul 2>nul'
+    cmd.exe /d /c $cmd | Out-Null
+
+    return ($LASTEXITCODE -eq 0)
+}
+
 function Assert-CleanClone {
     param(
         [string]$CloneDir,
@@ -59,12 +79,9 @@ function Assert-CleanClone {
 
     if ($dirtyPaths.Count -gt 0) {
         $onlyRuntimeGenerated = @($dirtyPaths | Where-Object { $runtimeGeneratedPaths -notcontains $_ }).Count -eq 0
-        if ($onlyRuntimeGenerated) {
-            & git -C $cloneRoot diff --ignore-space-at-eol --exit-code -- $runtimeGeneratedPaths | Out-Null
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "$CloneDir has line-ending-only drift in runtime-generated files; treating it as non-blocking."
-                $statusLines = @()
-            }
+        if ($onlyRuntimeGenerated -and (Test-LineEndingOnlyDrift -RepoRoot $cloneRoot -RepoPaths $runtimeGeneratedPaths)) {
+            Write-Host "$CloneDir has line-ending-only drift in runtime-generated files; treating it as non-blocking."
+            $statusLines = @()
         }
     }
 
