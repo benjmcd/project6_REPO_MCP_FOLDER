@@ -96,21 +96,25 @@ Additional current facts about Onlook itself:
 - Onlook itself is documented as built with Next.js, Supabase, TailwindCSS, and Drizzle
 - Bun appears in Onlook's local development setup, not as a target-project requirement
 - local Onlook development and self-hosting are separate concerns from the target project you want Onlook to edit
-- the canonical local operator and debug surface for this investigation lane is local source development under `ext-onlook/` in this worktree at revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
-- a same-revision sibling clone may still exist at `../onlook-lane/ext-onlook/`, but it is not the canonical debug surface for this lane
+- the original clean upstream base reference for this lane is local source development rooted at `ext-onlook/` in this worktree at revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
+- the current proven local operator and debug surface for the resolved repo lane is `ext-onlook-fix/` on local branch `codex/local-writeback-fix` at commit `c8cf5c16`
+- the current clean upstream packaging surface is `ext-onlook-pr/` on local branch `codex/upstream-clean` at commit `6d4c463a`
 - the hosted desktop app is not the current working auth path here because its GitHub and Google login links are dead locally
 - local source development mode exposes a dev-only demo-user sign-in path and that path has been validated here
 - local project import and sandbox creation in the current Onlook source tree are still CodeSandbox-backed, and are now validated here with a real `CSB_API_KEY`
-- the current proven direct launch and repro path is `bun run dev -- --hostname 127.0.0.1 --port 3007`
+- the current proven direct launch and repro path for the solved local lane is `bun run dev -- --hostname 127.0.0.1 --port 3000` from `ext-onlook-fix/`
 - the earlier repo-side preview blocker was `Next 16`; the sandbox app now carries a committed compatibility fix that keeps React `19.2.4` but pins `next` and `eslint-config-next` to `15.5.15`
 - with that compatibility fix in place, a fresh local Onlook import of `onlook-ui/` now creates a new CodeSandbox preview that hydrates successfully
 - direct preview of that fresh sandbox now logs the `review-shell` lifecycle, fetches `/runs` and `/runs/{run_id}/overview`, and loads the populated review shell
 - the same fresh sandbox now renders the populated review shell inside the Onlook iframe and editor shell, so the current repo lane is no longer blocked at preview hydration
+- from a fresh browser profile, switching the canvas to `Preview` and accepting the CodeSandbox trust interstitial now loads the real sandbox app inside the Onlook iframe
+- direct local write-back is now proven for this repo lane on the preserved local operator surface: a bounded Onlook-authored save wrote into `onlook-ui/app/page.tsx` on disk and the host file was restored clean afterward
+- that local write-back proof used the file-input import path and the preserved local `/api/local-project` shim, so it should not be overstated as proof that the clean extracted upstream branch has already re-proven host write-back end-to-end without the shim
+- the clean extracted upstream branch removes that workspace-specific shim, keeps the browser directory-handle persistence path, and now passes `@onlook/web-client` typecheck plus `@onlook/web-client` build when required envs are stubbed
 - matching upstream issue reports now exist in `onlook-dev/onlook`:
   - `#2336` documents `400 Bad Request` on CodeSandbox preview URLs when accessed via iframe
   - `#3087` documents a trust interstitial and Penpal timeout on self-hosted Onlook
 - those upstream issues remain relevant for future `Next 16` re-upgrade work and for broader Onlook runtime hardening, but they no longer block the current repo lane while the sandbox app stays on `Next 15`
-- direct local write-back/editing is still not yet proven
 - real `OPENROUTER_API_KEY` is still required to claim AI/chat readiness
 
 Verified in:
@@ -215,18 +219,20 @@ If the investigation alternates between multiple local Onlook source clones or l
 
 Current mitigation:
 
-- treat `ext-onlook/` in this worktree as the canonical debug surface
-- leave any sibling same-revision clone idle unless explicitly comparing behavior
-- treat the direct Bun launch path on port `3007` as the canonical repro path for the current blocker
+- treat `ext-onlook-fix/` as the canonical local operator surface for the solved repo lane
+- treat `ext-onlook-pr/` as the clean upstream packaging surface
+- keep `ext-onlook/` only as the clean base reference unless you are explicitly re-checking raw upstream behavior
+- do not switch the repo lane back to the old `3007` repro path unless you are intentionally revisiting the pre-fix failure
 
 ## 9. Open Unknowns
 These items remain open and should not be flattened into assumptions:
 
 - whether the broken hosted desktop OAuth path will remain irrelevant for this lane or needs later upstream follow-up
-- whether the Onlook-local runtime patches can now be reduced safely after the repo-side `Next 15` fix, or whether some of them remain required for stable iframe behavior
+- whether the clean extracted upstream branch at `ext-onlook-pr/` now needs a fresh shim-free end-to-end write-back proof before it is sent upstream
+- whether the remaining Onlook-local runtime patches can be reduced further after the local lane was solved, or whether some of them remain required for stable fresh-profile iframe and trust behavior
 - whether a future `Next 16` re-upgrade becomes viable once CodeSandbox and Onlook close their current preview/runtime gaps
 - whether real `OPENROUTER_API_KEY` is required for the exact AI/chat operations you want after import and project open
-- whether `tools/start-onlook-web.ps1` should be hardened further or simply remain a convenience path while the direct Bun launch path is the canonical repro surface
+- whether the parameterized `tools/start-onlook-web.ps1` helper should stay as a repo-local convenience script only or graduate into the long-term canonical launch path for local Onlook work here
 
 These unknowns do not change the main repo-side determination:
 
@@ -241,10 +247,10 @@ For slice 1 specifically, `impl-plan.md` now fixes:
 - the adopted `pr45-postmerge-audit` runtime root as a local demo context with explicit stop rules
 
 ## 10. Final Recommendation
-Proceed with a separate Onlook pilot in this clean worktree.
+Proceed with the separate Onlook pilot in this clean worktree as the current solved local lane.
 
 Do not modify the current static review UI as part of the initial Onlook lane.
 
 Use the existing review API as the integration seam.
 
-Keep the sandbox app on `Next 15.5.15` while CodeSandbox-backed preview is part of the workflow, and treat any future live adoption or `Next 16` re-upgrade as separate decisions rather than automatic side effects of using Onlook.
+Keep the sandbox app on `Next 15.5.15` while CodeSandbox-backed preview is part of the workflow, use `ext-onlook-fix/` as the preserved local solved operator surface, and treat `ext-onlook-pr/` as the upstream-ready patch baseline rather than widening repo product scope further.

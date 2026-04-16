@@ -1,13 +1,20 @@
 param(
     [string]$BindHost = '127.0.0.1',
-    [int]$Port = 3001
+    [int]$Port = 3000,
+    [string]$OnlookDir = 'ext-onlook-fix'
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $laneRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$onlookRoot = (Resolve-Path (Join-Path $laneRoot 'ext-onlook')).Path
+$onlookPath = Join-Path $laneRoot $OnlookDir
+
+if (-not (Test-Path $onlookPath)) {
+    throw "Missing Onlook source clone: $onlookPath"
+}
+
+$onlookRoot = (Resolve-Path $onlookPath).Path
 $bunExe = Join-Path $env:USERPROFILE '.bun\bin\bun.exe'
 $clientEnv = Join-Path $onlookRoot 'apps\web\client\.env'
 $dbEnv = Join-Path $onlookRoot 'packages\db\.env'
@@ -44,6 +51,7 @@ if (-not ($env:PATH -split ';' | Where-Object { $_ -eq $bunBin })) {
 }
 
 Write-Host "Using Onlook source clone: $onlookRoot"
+Write-Host "Using Onlook workspace dir: $OnlookDir"
 Write-Host "Using client env: $clientEnv"
 Write-Host "Using db env: $dbEnv"
 Write-Host "Starting local Onlook web at http://$BindHost`:$Port"

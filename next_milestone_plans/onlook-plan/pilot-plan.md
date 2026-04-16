@@ -115,9 +115,9 @@ Reason:
    - client-side browser fetches only in slice 1
    - non-credentialed requests only in slice 1
    Do not leave this implicit.
-6. If the hosted desktop Onlook login path is blocked, use the local source development path under `ext-onlook/` instead of treating hosted OAuth as a prerequisite for this lane.
-7. Do not treat local Onlook boot and dev login alone as proof that project import or editing is ready; import and sandbox creation are now validated with a real `CSB_API_KEY`, but direct local write-back/editing is still unproven.
-8. Treat `ext-onlook/` in this worktree as the canonical local operator and debug surface for this lane.
+6. If the hosted desktop Onlook login path is blocked, use the local source development path under `ext-onlook-fix/` for the solved repo lane instead of treating hosted OAuth as a prerequisite for this lane.
+7. Do not treat local Onlook boot and dev login alone as proof that project import or editing is ready; the current local lane now proves import, sandbox creation, hydrated iframe preview, trust-click recovery, and bounded host write-back, but that proof should not be flattened into a claim that the clean extracted upstream branch has already re-proven shim-free host write-back.
+8. Treat `ext-onlook-fix/` as the canonical local operator and debug surface for the solved repo lane, and treat `ext-onlook-pr/` as the clean upstream packaging surface.
 9. Do not alternate between sibling local Onlook clones or launch paths unless you are explicitly comparing behavior.
 
 ### 7.2 During Onlook usage
@@ -167,8 +167,10 @@ Minimum acceptance for the sandbox app:
 10. with a real `CSB_API_KEY`, local project import and sandbox creation can complete for `onlook-ui/` and reach the project route and editor shell without touching live static UI files
 11. with the committed sandbox-app compatibility fix in place, a fresh local import of `onlook-ui/` now produces a preview that hydrates and loads the populated review shell
 12. the same fresh sandbox now renders the populated review shell inside the Onlook iframe and editor shell, not just in a top-level preview tab
-13. direct local write-back remains a separate proof step and is not patched around
-14. upstream runtime evidence from the old `Next 16` failure remains useful context for future re-upgrade work, but it no longer blocks the current repo lane
+13. from a fresh browser profile, Preview mode can clear the CodeSandbox trust interstitial and load the real sandbox app inside the Onlook iframe
+14. in the preserved local operator branch, a bounded Onlook-authored save can write back into `onlook-ui/*` and the changed host file can be audited and restored clean
+15. the clean extracted upstream branch remains a separate packaging surface and should not be overclaimed as end-to-end re-proven until shim-free host write-back is rechecked there
+16. upstream runtime evidence from the old `Next 16` failure remains useful context for future re-upgrade work, but it no longer blocks the current repo lane
 
 ### 8.3 Promotion validation
 Before any promotion decision:
@@ -210,6 +212,6 @@ Stop and reassess if any of these happen:
 - the sandbox cannot reach acceptable parity without excessive duplicated logic
 
 ## 11. Recommended Next Move
-Use `impl-plan.md` as the bridge from the now-hydrated sandbox shell into the first direct write-back proof for `onlook-ui/`.
+Use `impl-plan.md` as the bridge from the now-solved local repo lane into the clean upstream packaging split.
 
-Do not broaden repo scope beyond the sandbox app until a tiny bounded Onlook-authored change is proven and audited.
+Do not broaden repo scope beyond the sandbox app until the clean extracted upstream branch is either sent upstream or re-proven shim-free end-to-end.
