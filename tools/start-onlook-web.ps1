@@ -40,10 +40,19 @@ function Test-LineEndingOnlyDrift {
     }
 
     $quotedPaths = ($RepoPaths | ForEach-Object { '"' + $_ + '"' }) -join ' '
-    $cmd = 'git -C "' + $RepoRoot + '" diff --ignore-space-at-eol --exit-code -- ' + $quotedPaths + ' >nul 2>nul'
-    cmd.exe /d /c $cmd | Out-Null
+    $diffModes = @('', '--cached')
 
-    return ($LASTEXITCODE -eq 0)
+    foreach ($diffMode in $diffModes) {
+        $cmd = 'git -C "' + $RepoRoot + '" diff ' + $diffMode + ' --ignore-space-at-eol --exit-code -- ' + $quotedPaths + ' >nul 2>nul'
+        $cmd = $cmd -replace '\s+', ' '
+        cmd.exe /d /c $cmd | Out-Null
+
+        if ($LASTEXITCODE -ne 0) {
+            return $false
+        }
+    }
+
+    return $true
 }
 
 if (-not (Test-Path $onlookPath)) {
