@@ -116,7 +116,9 @@ Reason:
    - non-credentialed requests only in slice 1
    Do not leave this implicit.
 6. If the hosted desktop Onlook login path is blocked, use the local source development path under `ext-onlook/` instead of treating hosted OAuth as a prerequisite for this lane.
-7. Do not treat local Onlook boot and dev login as proof that project import or editing is ready; those flows are still CodeSandbox-backed in the current Onlook source tree.
+7. Do not treat local Onlook boot and dev login alone as proof that project import or editing is ready; import and sandbox creation are now validated with a real `CSB_API_KEY`, but direct local write-back/editing is still unproven.
+8. Treat `ext-onlook/` in this worktree as the canonical local operator and debug surface for this lane.
+9. Do not alternate between sibling local Onlook clones or launch paths unless you are explicitly comparing behavior.
 
 ### 7.2 During Onlook usage
 1. Onlook edits only the sandbox app.
@@ -162,7 +164,13 @@ Minimum acceptance for the sandbox app:
 7. no changes leak into the current static UI files
 8. git diff stays limited to the sandbox lane plus intentional planning updates
 9. local Onlook source development can boot and pass the dev-login flow without touching live static UI files
-10. if actual project import or sandbox creation is the next goal, supply a real `CSB_API_KEY` rather than adding a repo-side workaround
+10. with a real `CSB_API_KEY`, local project import and sandbox creation can complete for `onlook-ui/` and reach the project route and editor shell without touching live static UI files
+11. editor readiness requires the preview iframe to become a real bridged app child, not merely a rendered shell route
+12. direct local write-back remains a separate proof step and is not patched around
+13. the current operator blocker is preview and bridge non-readiness: observed CodeSandbox Preview interstitial or `400`, Penpal and `iframeRemote` failures, and `frameData.view.getTheme is not a function`
+14. in the fresh clean-clone repro, a forced click on `Yes, proceed to preview` remained a no-op and left the iframe on the same `CodeSandbox Preview` document
+15. fresh clean-clone repro also shows co-occurring filesystem-init crashes inside Onlook, including `IDBFactory is not defined` and `Invalid value used as weak map key`, and these remain operator blockers rather than repo-code justifications
+16. a minimal control import outside tracked repo content reproduces the same preview and bridge blocker, so the current first failure is not specific to `onlook-ui`
 
 ### 8.3 Promotion validation
 Before any promotion decision:
@@ -204,6 +212,6 @@ Stop and reassess if any of these happen:
 - the sandbox cannot reach acceptable parity without excessive duplicated logic
 
 ## 11. Recommended Next Move
-Use `impl-plan.md` as the bridge from the completed first shell slice into the next Onlook import attempt for `onlook-ui/`.
+Use `impl-plan.md` as the bridge from the completed first shell slice into the next operator investigation step for `onlook-ui/`.
 
-If Onlook usage is deferred, keep the next frontend slice bounded to already-approved read-only review endpoints.
+Do not broaden repo scope until the preview iframe and editor bridge stay alive long enough to reach actual edit interactions.
