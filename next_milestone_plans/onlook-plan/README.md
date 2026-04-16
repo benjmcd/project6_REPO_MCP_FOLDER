@@ -22,27 +22,28 @@ Current lane state:
 - the sandbox app has been scaffolded at `onlook-ui/`
 - the first bounded shell slice is implemented inside `onlook-ui/*`
 - the sandbox shell now loads `/runs` and `/runs/{run_id}/overview` through the existing review API seam
+- the sandbox app now carries a committed compatibility fix that keeps React `19.2.4` but pins `next` and `eslint-config-next` to `15.5.15`
 - the app now includes a committed `onlook-ui/.env.example` as the reproducible frontend env template
 - actual Onlook use now assumes a local ignored `onlook-ui/.env.local` for the frontend API base
 - the repo-local backend startup helper is `tools/start-review-api.ps1`
 - the canonical local Onlook operator and debug surface for this lane is the source clone at `ext-onlook/` in this worktree, last verified at revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
 - a same-revision sibling clone may still exist at `../onlook-lane/ext-onlook/`, but it is not the canonical debug surface for this lane
-- the repo-local Onlook web startup helper is `tools/start-onlook-web.ps1`, but the direct Bun launch path on port `3007` is the currently proven reproduction path for the project-route blocker
+- the repo-local Onlook web startup helper is `tools/start-onlook-web.ps1`, but the direct Bun launch path on port `3007` is the currently proven local operator path for this lane
 - canonical local Onlook env files now exist at:
   - `ext-onlook/apps/web/client/.env`
   - `ext-onlook/packages/db/.env`
 - local source Onlook now boots through the current proven direct launch path at `http://127.0.0.1:3007/login`
 - local source Onlook dev login has been validated through the seeded demo-user flow
 - with a real `CSB_API_KEY`, actual project import and sandbox creation inside local source Onlook are now validated through the current CodeSandbox-backed flow
-- the imported `onlook-ui` project now reaches the Onlook project route and editor shell, but not editor readiness
-- the first current blocking chain is at the preview boundary: the CodeSandbox-backed preview iframe does not become a usable app document, the bridge never becomes ready, and the editor surfaces bridge/theme errors instead of reaching stable edit interactions
-- a temporary minimal `Next.js + TailwindCSS` control app outside tracked repo content reproduces the same preview and bridge failure under the same local Onlook runtime, which materially weakens `onlook-ui` as the cause of the current first failure
-- same-runtime repros for both `onlook-ui` and the minimal control app reach the project route and editor shell before failing at the preview boundary, and neither repro reached preview-side requests to `127.0.0.1:8000` before that failure
-- the CodeSandbox trust/interstitial screen itself is not the sole blocker here: in the fresh clean-clone repro, a forced click on `Yes, proceed to preview` was accepted but remained a no-op and did not advance the iframe beyond the same `CodeSandbox Preview` document
+- the earlier `Next 16` preview blocker is now resolved for this repo lane by the committed sandbox-app compatibility fix
+- a fresh local Onlook import of the current `onlook-ui/` folder now creates a new sandbox preview that hydrates successfully
+- direct preview of that fresh sandbox now logs the `review-shell` lifecycle, fetches `/runs` and `/runs/{run_id}/overview`, and loads the populated review shell
+- the same fresh sandbox now renders the populated review shell inside the Onlook iframe and editor shell, not just in a top-level preview tab
 - official upstream issue reports now also match this boundary:
   - Onlook issue `#2336`: CodeSandbox preview URLs return `400` in iframe context
   - Onlook issue `#3087`: trust interstitial and Penpal timeout on self-hosted Onlook
-- fresh clean-clone evidence also reproves route-init and filesystem faults inside the same runtime, including `IDBFactory is not defined` and `Invalid value used as weak map key`; those faults now co-occur with the preview and bridge failure, although strict causal ordering remains unresolved
+- those upstream issues still matter for future `Next 16` re-upgrade work and for generic Onlook runtime hardening, but they no longer block the current repo lane once the sandbox app stays on `Next 15`
+- direct local write-back/editing and AI/chat readiness remain separate proof steps and are not claimed by this packet
 - no live static review UI files have been modified as part of this lane
 
 ## Canonical Authority
@@ -66,10 +67,11 @@ Those files confirm that the current shipped review UI is a build-free static su
 3. If Onlook is used here, it should be used against a separate frontend sandbox app in a clean mainline-based worktree.
 4. The backend review API should remain the first integration seam.
 5. The narrowest supported target shape for the sandbox app is `Next.js + TailwindCSS`.
-6. Slice 1 should use client-side, non-credentialed browser fetches only.
-7. The adopted demo runtime is a local cross-worktree dependency, not a repo-native sandbox fixture.
-8. The default promotion posture should be `sandbox-first`, not immediate replacement of the live UI.
-9. Promotion into live authority should happen only after explicit parity and acceptance checks.
+6. While CodeSandbox-backed Onlook preview remains part of this lane, the sandbox app should stay on `Next 15.5.15`; `Next 16` is not the currently working target version here.
+7. Slice 1 should use client-side, non-credentialed browser fetches only.
+8. The adopted demo runtime is a local cross-worktree dependency, not a repo-native sandbox fixture.
+9. The default promotion posture should be `sandbox-first`, not immediate replacement of the live UI.
+10. Promotion into live authority should happen only after explicit parity and acceptance checks.
 
 ## Documents In This Folder
 - `strategy.md`
@@ -97,10 +99,10 @@ This packet does not claim:
 - that the current static review UI can safely support Onlook write-back
 - that the current root checkout is the correct place to run this lane
 - that self-hosted production Onlook has been tested in this workspace
-- that direct local write-back, editor readiness, or full Onlook AI/chat features are validated here beyond import, sandbox creation, project-route reachability, and editor-shell render
+- that direct local write-back or full Onlook AI/chat features are validated here beyond import, sandbox creation, hydrated preview, and populated iframe render
 - that a final promotion model has already been approved
 
 ## Next Step
-Use `strategy.md` as the settled authority and boundary model for this lane, and use `impl-plan.md` as the checklist for resolving the current preview and editor blocker before the first write-back proof.
+Use `strategy.md` as the settled authority and boundary model for this lane, and use `impl-plan.md` as the checklist for the first write-back proof now that the preview and hydrated-shell blocker is resolved for the sandbox app.
 
-Use `pilot-plan.md` and `impl-plan.md` together to move from the validated sandbox shell into actual Onlook targeting or the next bounded UI slice without changing the current live static review UI.
+Use `pilot-plan.md` and `impl-plan.md` together to move from the now-validated hydrated sandbox shell into direct write-back proof without changing the current live static review UI.

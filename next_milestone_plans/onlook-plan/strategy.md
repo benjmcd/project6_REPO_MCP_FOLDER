@@ -101,16 +101,15 @@ Additional current facts about Onlook itself:
 - the hosted desktop app is not the current working auth path here because its GitHub and Google login links are dead locally
 - local source development mode exposes a dev-only demo-user sign-in path and that path has been validated here
 - local project import and sandbox creation in the current Onlook source tree are still CodeSandbox-backed, and are now validated here with a real `CSB_API_KEY`
-- the imported `onlook-ui` project now reaches the Onlook project route and editor shell, but not editor readiness
 - the current proven direct launch and repro path is `bun run dev -- --hostname 127.0.0.1 --port 3007`
-- the current first live blocker is preview and bridge non-readiness: the CodeSandbox-backed iframe does not become a usable app document, and the editor then hits bridge/theme errors instead of reaching stable edit interactions
-- a temporary minimal `Next.js + TailwindCSS` control import outside tracked repo content reproduces the same preview and bridge failure under the same runtime, so the current first failure is not specific to `onlook-ui`
-- same-runtime repros for both `onlook-ui` and the minimal control import show no preview-side requests to `127.0.0.1:8000` before the preview and bridge failure, so the local review API is not the current first failing surface
-- the CodeSandbox trust/interstitial page is not a standalone explanation: in the fresh clean-clone repro, the `Yes, proceed to preview` control accepted a forced click but remained a no-op and left the iframe on the same `CodeSandbox Preview` document
+- the earlier repo-side preview blocker was `Next 16`; the sandbox app now carries a committed compatibility fix that keeps React `19.2.4` but pins `next` and `eslint-config-next` to `15.5.15`
+- with that compatibility fix in place, a fresh local Onlook import of `onlook-ui/` now creates a new CodeSandbox preview that hydrates successfully
+- direct preview of that fresh sandbox now logs the `review-shell` lifecycle, fetches `/runs` and `/runs/{run_id}/overview`, and loads the populated review shell
+- the same fresh sandbox now renders the populated review shell inside the Onlook iframe and editor shell, so the current repo lane is no longer blocked at preview hydration
 - matching upstream issue reports now exist in `onlook-dev/onlook`:
   - `#2336` documents `400 Bad Request` on CodeSandbox preview URLs when accessed via iframe
   - `#3087` documents a trust interstitial and Penpal timeout on self-hosted Onlook
-- fresh clean-clone repro also shows co-occurring upstream route-init and filesystem faults in Onlook branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`; these faults are now current evidence, not merely archived history, but strict causal ordering versus the preview failure is still unresolved
+- those upstream issues remain relevant for future `Next 16` re-upgrade work and for broader Onlook runtime hardening, but they no longer block the current repo lane while the sandbox app stays on `Next 15`
 - direct local write-back/editing is still not yet proven
 - real `OPENROUTER_API_KEY` is still required to claim AI/chat readiness
 
@@ -224,9 +223,8 @@ Current mitigation:
 These items remain open and should not be flattened into assumptions:
 
 - whether the broken hosted desktop OAuth path will remain irrelevant for this lane or needs later upstream follow-up
-- whether the CodeSandbox preview interstitial and `400` can ever clear automatically enough for the preview iframe to load the real app document in the current local flow
-- whether the co-occurring preview and bridge failure and filesystem-init crash have a stable causal ordering, or whether they are parallel upstream defects that surface in the same run
-- whether any imported-project specifics matter only after the preview iframe becomes a live bridged child, since the current first failure already reproduces on a minimal control import
+- whether the Onlook-local runtime patches can now be reduced safely after the repo-side `Next 15` fix, or whether some of them remain required for stable iframe behavior
+- whether a future `Next 16` re-upgrade becomes viable once CodeSandbox and Onlook close their current preview/runtime gaps
 - whether real `OPENROUTER_API_KEY` is required for the exact AI/chat operations you want after import and project open
 - whether `tools/start-onlook-web.ps1` should be hardened further or simply remain a convenience path while the direct Bun launch path is the canonical repro surface
 
@@ -249,4 +247,4 @@ Do not modify the current static review UI as part of the initial Onlook lane.
 
 Use the existing review API as the integration seam.
 
-Treat any future live adoption as a separate promotion decision, not as an automatic side effect of using Onlook.
+Keep the sandbox app on `Next 15.5.15` while CodeSandbox-backed preview is part of the workflow, and treat any future live adoption or `Next 16` re-upgrade as separate decisions rather than automatic side effects of using Onlook.

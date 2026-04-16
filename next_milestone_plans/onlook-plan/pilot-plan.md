@@ -165,12 +165,10 @@ Minimum acceptance for the sandbox app:
 8. git diff stays limited to the sandbox lane plus intentional planning updates
 9. local Onlook source development can boot and pass the dev-login flow without touching live static UI files
 10. with a real `CSB_API_KEY`, local project import and sandbox creation can complete for `onlook-ui/` and reach the project route and editor shell without touching live static UI files
-11. editor readiness requires the preview iframe to become a real bridged app child, not merely a rendered shell route
-12. direct local write-back remains a separate proof step and is not patched around
-13. the current operator blocker is preview and bridge non-readiness: observed CodeSandbox Preview interstitial or `400`, Penpal and `iframeRemote` failures, and `frameData.view.getTheme is not a function`
-14. in the fresh clean-clone repro, a forced click on `Yes, proceed to preview` remained a no-op and left the iframe on the same `CodeSandbox Preview` document
-15. fresh clean-clone repro also shows co-occurring filesystem-init crashes inside Onlook, including `IDBFactory is not defined` and `Invalid value used as weak map key`, and these remain operator blockers rather than repo-code justifications
-16. a minimal control import outside tracked repo content reproduces the same preview and bridge blocker, so the current first failure is not specific to `onlook-ui`
+11. with the committed sandbox-app compatibility fix in place, a fresh local import of `onlook-ui/` now produces a preview that hydrates and loads the populated review shell
+12. the same fresh sandbox now renders the populated review shell inside the Onlook iframe and editor shell, not just in a top-level preview tab
+13. direct local write-back remains a separate proof step and is not patched around
+14. upstream runtime evidence from the old `Next 16` failure remains useful context for future re-upgrade work, but it no longer blocks the current repo lane
 
 ### 8.3 Promotion validation
 Before any promotion decision:
@@ -212,6 +210,6 @@ Stop and reassess if any of these happen:
 - the sandbox cannot reach acceptable parity without excessive duplicated logic
 
 ## 11. Recommended Next Move
-Use `impl-plan.md` as the bridge from the completed first shell slice into the next operator investigation step for `onlook-ui/`.
+Use `impl-plan.md` as the bridge from the now-hydrated sandbox shell into the first direct write-back proof for `onlook-ui/`.
 
-Do not broaden repo scope until the preview iframe and editor bridge stay alive long enough to reach actual edit interactions.
+Do not broaden repo scope beyond the sandbox app until a tiny bounded Onlook-authored change is proven and audited.
