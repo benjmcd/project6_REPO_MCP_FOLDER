@@ -227,6 +227,9 @@ Minimum acceptance for the sandbox app:
     - render explicit empty states when same-checkout compare prep is absent
     - or render populated compare-family payloads once same-checkout compare prep passes `tools/validate_wb_prep.py`
 20. any compare-family population proof must come from repo-native same-checkout prep, not from silently mutating shipped static UI files or widening backend contracts
+21. before any duplicate-target Onlook operator proof, `tools/run-onlook-sandbox-smoke.ps1` must pass:
+    - `-Profile core` for the non-compare routes
+    - `-Profile full` for the full route family when same-checkout compare prep is in scope
 
 ### 8.3 Promotion validation
 Before any promotion decision:
@@ -281,5 +284,6 @@ When populated compare-family work is required:
 1. seed same-checkout baseline and Candidate-A runtimes with `tools/seed_wb_compare.py`
 2. generate a local Candidate-B compare bundle with `tools/run_nrc_aps_candidate_b_compare.py`
 3. validate the resulting selection and recommended URLs with `tools/validate_wb_prep.py`
+4. prove the hydrated full route family with `tools/run-onlook-sandbox-smoke.ps1 -Profile full`
 
 Do not broaden repo scope beyond the sandbox app until the clean extracted upstream branch is either sent upstream or re-proven shim-free end-to-end.
