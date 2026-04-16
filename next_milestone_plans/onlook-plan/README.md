@@ -29,7 +29,10 @@ Current lane state:
 - the original clean upstream base reference for this lane is the source clone lineage rooted at `ext-onlook/`, last verified from upstream revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
 - the current proven local operator and debug surface for the resolved repo lane is `ext-onlook-fix/` on local branch `codex/local-writeback-fix` at commit `c8cf5c16`
 - the clean upstream packaging surface is `ext-onlook-pr/` on local branch `codex/upstream-clean` at commit `6d4c463a`
-- the repo-local Onlook web startup helper is `tools/start-onlook-web.ps1`; it now defaults to `ext-onlook-fix/` on port `3000` and can be pointed at a different local clone with `-OnlookDir`
+- the repo-local Onlook web startup helper is `tools/start-onlook-web.ps1`; it now defaults to `ext-onlook-fix/` on port `3000`, pins known-good commits by default, refuses dirty clones by default, and can be pointed at a different local clone with `-OnlookDir`
+- the repo-local integrity helper is `tools/check-onlook.ps1`; it verifies the preserved clones, required env files, preserved patch archives, and can optionally rerun the bounded repo validations with `-RunValidation`
+- the repo-local duplication helper is `tools/copy-onlook-ui.ps1`; it creates a clean source duplicate of `onlook-ui/` without carrying `.next/` or `node_modules/`, and can copy the local frontend env when the duplicate should point at the same backend
+- a fresh duplicate created with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now also passes local `npm run lint` and `npm run build`, so producing a clean duplicate sandbox source is a proven path rather than a theoretical recovery step
 - canonical local Onlook env files for the proven local operator surface now exist at:
   - `ext-onlook-fix/apps/web/client/.env`
   - `ext-onlook-fix/packages/db/.env`
@@ -42,8 +45,12 @@ Current lane state:
 - the same fresh sandbox now renders the populated review shell inside the Onlook iframe and editor shell, not just in a top-level preview tab
 - from a fresh browser profile, switching the canvas to `Preview` and accepting the CodeSandbox trust interstitial now loads the real sandbox app inside the Onlook iframe
 - direct local write-back is now proven for this repo lane: a bounded Onlook-authored save wrote into `onlook-ui/app/page.tsx` on disk and the host file was restored clean afterward
+- the canonical host-write-back target remains `onlook-ui/`; duplicate copies created with `tools/copy-onlook-ui.ps1` are for scratch imports or comparison work and do not auto-promote changes back into the canonical sandbox app
 - that local write-back proof ran on the preserved local operator surface at `ext-onlook-fix/` and used the file-input import path, so it should not be flattened into a claim that the clean extracted upstream branch has already re-proven host write-back end-to-end without the local shim
 - the clean extracted upstream branch at `ext-onlook-pr/` removes the workspace-specific `/api/local-project` shim and path-registration fallback, keeps the browser directory-handle persistence path, passes `@onlook/web-client` typecheck, and passes `@onlook/web-client` build with placeholder required envs
+- the exact local Onlook commits are now also preserved inside this tracked repo lane as:
+  - `patches/local-writeback.patch`
+  - `patches/upstream-clean.patch`
 - official upstream issue reports now also match this boundary:
   - Onlook issue `#2336`: CodeSandbox preview URLs return `400` in iframe context
   - Onlook issue `#3087`: trust interstitial and Penpal timeout on self-hosted Onlook

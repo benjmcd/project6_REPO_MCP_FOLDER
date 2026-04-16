@@ -38,6 +38,9 @@ It is how to package the clean extracted Onlook patch set without overstating wh
 - from a fresh browser profile, switching to `Preview` and accepting the CodeSandbox trust interstitial now loads the real sandbox app inside the Onlook iframe
 - direct local write-back is now proven on the preserved local operator branch `ext-onlook-fix/` at `c8cf5c16`: a bounded Onlook-authored save wrote into `onlook-ui/app/page.tsx` on disk and the host file was restored clean afterward
 - the clean extracted upstream-ready branch `ext-onlook-pr/` at `6d4c463a` removes the workspace-specific `/api/local-project` shim and path-registration fallback, keeps the browser directory-handle persistence path, passes `@onlook/web-client` typecheck, and passes `@onlook/web-client` build when required envs are stubbed
+- both local Onlook commits are now preserved as tracked patch archives in this repo lane:
+  - `patches/local-writeback.patch`
+  - `patches/upstream-clean.patch`
 - the local write-back proof used the file-input import path and the preserved local shim, so the shim-free extracted branch should not yet be described as end-to-end re-proven without an additional host write-back run there
 
 ## What This Proves
