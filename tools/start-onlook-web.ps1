@@ -70,6 +70,11 @@ foreach ($requiredPort in @(54321, 54322)) {
     }
 }
 
+$preloadPort = 8083
+if ($preloadPort -in $listeningPorts) {
+    throw "Onlook preload helper port $preloadPort is already in use. Stop the other Onlook web runtime before starting another clone."
+}
+
 $clientEnvText = Get-Content $clientEnv -Raw
 if ($clientEnvText -match 'OPENROUTER_API_KEY=local-dev-placeholder' -or $clientEnvText -match 'CSB_API_KEY=local-dev-placeholder') {
     Write-Warning 'Placeholder OpenRouter or Codesandbox keys allow local boot and dev login only. AI and hosted-app features remain unvalidated until real keys are supplied.'
