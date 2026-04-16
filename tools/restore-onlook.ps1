@@ -170,6 +170,22 @@ function Ensure-BunDependencies {
         throw "Dependencies were not materialized at $nodeModulesPath"
     }
 
+    $postInstallStatus = ((git -C $RepoRoot status --short) | Out-String).Trim()
+    if ($postInstallStatus) {
+        $statusLines = @($postInstallStatus -split "`r?`n" | Where-Object { $_ })
+        $nonLockDrift = @($statusLines | Where-Object { $_ -notmatch '^\s*[A-Z?]{1,2}\s+bun\.lock$' })
+
+        if ($nonLockDrift.Count -gt 0) {
+            throw "Dependency install left tracked drift:`n$postInstallStatus"
+        }
+
+        Invoke-Git -Arguments @('-C', $RepoRoot, 'restore', '--worktree', '--source=HEAD', '--', 'bun.lock')
+        $postInstallStatus = ((git -C $RepoRoot status --short) | Out-String).Trim()
+        if ($postInstallStatus) {
+            throw "Dependency install still left tracked drift after bun.lock restore:`n$postInstallStatus"
+        }
+    }
+
     Write-Host "Installed dependencies: $nodeModulesPath"
 }
 
