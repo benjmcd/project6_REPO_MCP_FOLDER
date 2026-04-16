@@ -138,6 +138,41 @@ function Ensure-DbEnv {
     Write-Host "Bootstrapped db env: $envPath"
 }
 
+function Ensure-BunDependencies {
+    param(
+        [string]$RepoRoot
+    )
+
+    $nodeModulesPath = Join-Path $RepoRoot 'node_modules'
+    if (Test-Path $nodeModulesPath) {
+        Write-Host "Found existing dependencies: $nodeModulesPath"
+        return
+    }
+
+    $bunExe = Join-Path $env:USERPROFILE '.bun\bin\bun.exe'
+    if (-not (Test-Path $bunExe)) {
+        throw "Missing Bun executable at: $bunExe"
+    }
+
+    Write-Host "Installing Onlook dependencies in $RepoRoot"
+    Push-Location $RepoRoot
+    try {
+        & $bunExe install --frozen-lockfile
+        if ($LASTEXITCODE -ne 0) {
+            throw "bun install --frozen-lockfile failed with exit code $LASTEXITCODE"
+        }
+    }
+    finally {
+        Pop-Location
+    }
+
+    if (-not (Test-Path $nodeModulesPath)) {
+        throw "Dependencies were not materialized at $nodeModulesPath"
+    }
+
+    Write-Host "Installed dependencies: $nodeModulesPath"
+}
+
 if (-not (Test-Path $patchPath)) {
     throw "Missing tracked patch archive: $patchPath"
 }
@@ -177,6 +212,7 @@ if ($treeHash -ne $expectedTree) {
 
 Ensure-ClientEnv -RepoRoot $targetPath
 Ensure-DbEnv -RepoRoot $targetPath
+Ensure-BunDependencies -RepoRoot $targetPath
 
 Write-Host "Restored Onlook clone at $targetPath"
 Write-Host "Patch set: $PatchSet"

@@ -125,6 +125,7 @@ Verified locally against the current official Onlook development setup docs:
   - `ext-onlook-fix/`
   - `ext-onlook-pr/`
 - when those restored clones do not already carry local env files, the restore helper now bootstraps `apps/web/client/.env` and `packages/db/.env` from the upstream templates using local-demo Supabase defaults plus placeholder OpenRouter/Codesandbox keys
+- when those restored clones do not already carry installed workspace dependencies, the restore helper now runs `bun install --frozen-lockfile`
 - the startup and integrity helpers now accept either the preserved solved Onlook commits or a clean restored clone whose tree hash matches the preserved solved state exactly
 - the tracked patch archives are now protected by `.gitattributes` with `patches/*.patch -text`, so the stored restore inputs are not silently rewritten by Windows line-ending conversion
 - the restore helper now validates the rebuilt tree hash against the preserved solved tree, and it has successfully recreated both preserved Onlook patch sets from the pinned upstream base commit into fresh local clones
