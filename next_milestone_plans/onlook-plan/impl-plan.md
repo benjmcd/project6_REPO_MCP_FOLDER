@@ -120,6 +120,9 @@ Verified locally against the current official Onlook development setup docs:
 - that duplication helper now refuses a dirty canonical `onlook-ui/` source tree by default unless `-AllowDirtySource` is supplied
 - a fresh duplicate created with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now also passes local `npm run lint` and `npm run build`
 - the repo-local restore helper `tools/restore-onlook.ps1` can now recreate either preserved Onlook patch set from the tracked patch archives and the pinned upstream base commit
+- on a fresh worktree, that restore helper now recreates the expected helper-facing clone names by default:
+  - `ext-onlook-fix/`
+  - `ext-onlook-pr/`
 - the tracked patch archives are now protected by `.gitattributes` with `patches/*.patch -text`, so the stored restore inputs are not silently rewritten by Windows line-ending conversion
 - the restore helper now validates the rebuilt tree hash against the preserved solved tree, and it has successfully recreated both preserved Onlook patch sets from the pinned upstream base commit into fresh local clones
 - the canonical local env files for the proven local operator surface now exist at:
@@ -523,8 +526,8 @@ Repo-local duplicate sandbox copy:
 Repo-local Onlook clone restore:
 
 ```powershell
-./tools/restore-onlook.ps1 -PatchSet local-writeback -TargetDir ext-onlook-rw
-./tools/restore-onlook.ps1 -PatchSet upstream-clean -TargetDir ext-onlook-uc
+./tools/restore-onlook.ps1 -PatchSet local-writeback
+./tools/restore-onlook.ps1 -PatchSet upstream-clean
 ```
 
 Equivalent direct source-launch path:

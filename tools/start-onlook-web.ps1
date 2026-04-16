@@ -17,7 +17,7 @@ $expectedCommits = @{
 }
 
 if (-not (Test-Path $onlookPath)) {
-    throw "Missing Onlook source clone: $onlookPath"
+    throw "Missing Onlook source clone: $onlookPath`nRestore it with ./tools/restore-onlook.ps1 -PatchSet local-writeback (for ext-onlook-fix) or ./tools/restore-onlook.ps1 -PatchSet upstream-clean (for ext-onlook-pr)."
 }
 
 $onlookRoot = (Resolve-Path $onlookPath).Path
