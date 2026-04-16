@@ -109,14 +109,15 @@ Verified locally against the current official Onlook development setup docs:
 
 - Bun is installed locally
 - Docker Desktop is installed and the local Supabase backend is running
-- the canonical local Onlook source clone for this lane exists at `ext-onlook/`
-- that clone was last verified at revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
-- a same-revision sibling clone may still exist at `../onlook-lane/ext-onlook/`, but it is not the canonical debug surface for this lane
-- the canonical local env files for that source tree now exist at:
-  - `ext-onlook/apps/web/client/.env`
-  - `ext-onlook/packages/db/.env`
-- `bun db:seed` now succeeds from `ext-onlook/`
-- the current proven direct source-launch path serves `GET /login` successfully at `http://127.0.0.1:3007/login`
+- the original clean upstream base reference for this lane exists at `ext-onlook/`
+- that base clone was last verified at revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
+- the current proven local operator surface for the solved repo lane is `ext-onlook-fix/` on local branch `codex/local-writeback-fix` at commit `c8cf5c16`
+- the clean upstream packaging surface is `ext-onlook-pr/` on local branch `codex/upstream-clean` at commit `6d4c463a`
+- the canonical local env files for the proven local operator surface now exist at:
+  - `ext-onlook-fix/apps/web/client/.env`
+  - `ext-onlook-fix/packages/db/.env`
+- `bun db:seed` now succeeds from `ext-onlook-fix/`
+- the current proven direct source-launch path serves `GET /login` successfully at `http://127.0.0.1:3000/login`
 - the dev-only demo-user login path succeeds and redirects into the app shell
 
 Practical meaning:
@@ -129,8 +130,11 @@ Practical meaning:
 - a fresh local import of the current `onlook-ui/` folder now produces a new sandbox preview that hydrates successfully
 - direct preview of that fresh sandbox now logs the `review-shell` lifecycle, fetches `/runs` and `/runs/{run_id}/overview`, and loads the populated review shell
 - the same fresh sandbox now renders the populated review shell inside the Onlook iframe and editor shell, so the repo lane is no longer blocked at preview hydration
+- from a fresh browser profile, switching the canvas to `Preview` and accepting the CodeSandbox trust interstitial now loads the real sandbox app inside the Onlook iframe
+- direct local write-back/editing is now proven for this repo lane on the preserved local operator surface: a bounded save wrote into `onlook-ui/app/page.tsx` on disk and the host file was restored clean afterward
+- that write-back proof used the file-input import path and the preserved local `/api/local-project` shim, so it should not be overstated as proof that the clean extracted upstream branch has already re-proven shim-free host write-back end-to-end
+- the clean extracted upstream branch removes the workspace-specific `/api/local-project` shim and path-registration fallback, keeps the browser directory-handle persistence path, passes `bun --filter @onlook/web-client typecheck`, and passes `bun --filter @onlook/web-client build` when the required envs are stubbed
 - upstream issue reports for the old preview/runtime failures remain relevant for future `Next 16` re-upgrade work and for generic Onlook runtime hardening, but they no longer block the current repo lane while the sandbox app stays on `Next 15`
-- direct local write-back/editing still remains a separate proof step
 - placeholder or absent `OPENROUTER_API_KEY` values still do not prove AI/chat feature readiness
 
 ## 3. Exact Scaffold Choice
@@ -254,16 +258,18 @@ Reason:
 
 For the local Onlook source operator path itself, follow the current official env layout:
 
-- `ext-onlook/apps/web/client/.env`
-- `ext-onlook/packages/db/.env`
+- `ext-onlook-fix/apps/web/client/.env`
+- `ext-onlook-fix/packages/db/.env`
 
-Do not treat `ext-onlook/.env` as the canonical current setup contract for this lane.
+Do not treat `ext-onlook/.env` as the canonical current setup contract for the solved local lane.
 
 When using Onlook itself:
 
 - treat `onlook-ui/` as the intended local project source for Onlook import
 - do not point Onlook at the repo root
-- in the current local source Onlook path, use the proven CodeSandbox-backed local import flow for `onlook-ui/`, but do not treat direct local write-back as already proven
+- for immediate local repo-lane work, use the preserved local operator surface at `ext-onlook-fix/`
+- for upstream packaging work, use the clean extracted branch at `ext-onlook-pr/`
+- do not treat the clean extracted upstream branch as already re-proven shim-free end-to-end until host write-back is exercised there without the local `/api/local-project` shim
 
 Reason:
 
@@ -448,7 +454,8 @@ For actual Onlook use:
 
 - ensure `onlook-ui/.env.local` exists with `NEXT_PUBLIC_REVIEW_API_BASE`
 - use `onlook-ui/` as the local project source for the proven import flow
-- treat direct local write-back as the next proof step, not as already-proven behavior
+- use `ext-onlook-fix/` when you need the already-proven local operator path
+- use `ext-onlook-pr/` when you need the clean extracted upstream packaging surface
 
 ### 7.6 Frontend static checks
 ```powershell
@@ -494,16 +501,17 @@ Repo-local helper:
 Equivalent direct source-launch path:
 
 ```powershell
-Set-Location ./ext-onlook
+Set-Location ./ext-onlook-fix
 $env:PATH = "$env:USERPROFILE/.bun/bin;$env:PATH"
-bun run dev -- --hostname 127.0.0.1 --port 3007
+bun run dev -- --hostname 127.0.0.1 --port 3000
 ```
 
-The helper and direct source-launch path both target the same local source clone. The direct source-launch path is the canonical and currently proven post-key reproduction path in this workspace.
+The helper and direct source-launch path both target the same proven local operator clone by default. The direct source-launch path is the canonical and currently proven local write-back path in this workspace.
 
 The helper:
 
-- starts from `ext-onlook/`
+- starts from `ext-onlook-fix/` by default
+- can be pointed at a different local clone with `-OnlookDir`
 - prepends Bun to `PATH` so Onlook child processes can resolve `bun` correctly on Windows
 - checks that the current canonical local env files exist
 - warns if the local Supabase backend ports are not listening
@@ -511,14 +519,16 @@ The helper:
 
 Expected current result:
 
-- `GET http://127.0.0.1:3007/login` succeeds through the direct source-launch path
+- `GET http://127.0.0.1:3000/login` succeeds through the direct source-launch path
 - the page shows the dev demo-user login button in development mode
 - the dev-login flow redirects into the app shell
 - with a real `CSB_API_KEY`, local import of the current committed `onlook-ui/` folder reaches project verification, completes sandbox creation, and opens the imported project route and editor shell
 - fresh local import of the current committed `onlook-ui/` folder now yields a new CodeSandbox preview that hydrates successfully
 - direct preview of that fresh sandbox logs the `review-shell` lifecycle, fetches `/runs` and `/runs/{run_id}/overview`, and loads the populated review shell
 - the same fresh sandbox now renders the populated review shell inside the Onlook iframe and editor shell
-- this proves local operator boot, auth, import, sandbox creation, hydrated preview, and populated iframe render; it does not yet prove direct local write-back or AI/chat readiness
+- from a fresh browser profile, switching to `Preview` and accepting the CodeSandbox trust interstitial now loads the real sandbox app inside the Onlook iframe
+- a bounded Onlook-authored save now writes into `onlook-ui/app/page.tsx` on disk and the host file can be restored clean afterward
+- this proves local operator boot, auth, import, sandbox creation, hydrated preview, populated iframe render, trust-click recovery, and bounded host write-back on the preserved local operator surface; it does not yet prove full AI/chat readiness or shim-free re-proof on the clean extracted upstream branch
 
 ## 8. Stop Rules
 Stop and reassess if:
@@ -530,13 +540,13 @@ Stop and reassess if:
 - the adopted `pr45-postmerge-audit` runtime root, summary, or database path fails preflight
 - the first slice starts duplicating backend business logic instead of consuming backend outputs
 - a fresh import of the current committed sandbox app stops hydrating in direct preview or stops loading the populated shell in the Onlook iframe
-- future work starts depending on unproven write-back behavior without a separate proof step
+- future work starts depending on the clean extracted upstream branch as if shim-free host write-back had already been re-proven there
 
 ## 9. Immediate Next Move
 The next justified move is:
 
-1. treat the old preview and bridge failure as resolved for this repo lane, not as an active reason to widen repo scope further
-2. use a fresh local import of the current committed sandbox app whenever you need to re-prove preview hydration or iframe render
-3. treat upstream issue evidence as future `Next 16` re-upgrade and runtime-hardening context, not as the current repo blocker
-4. the next proof step is one tiny bounded Onlook-authored change
-5. then audit exactly what files change and confirm writes stay inside `onlook-ui/*`
+1. treat preview hydration and local repo-lane write-back as resolved for this repo lane, not as active reasons to widen repo product scope further
+2. use `ext-onlook-fix/` when you need the preserved solved local operator path
+3. use `ext-onlook-pr/` as the clean upstream-ready patch baseline
+4. treat upstream issue evidence as future `Next 16` re-upgrade and runtime-hardening context, not as the current repo blocker
+5. keep AI/chat readiness and any shim-free end-to-end re-proof on the clean extracted branch as separate follow-up work
