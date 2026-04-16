@@ -121,15 +121,17 @@ Reason:
 9. Do not alternate between sibling local Onlook clones or launch paths unless you are explicitly comparing behavior.
 
 ### 7.2 During Onlook usage
-1. Onlook edits only the sandbox app.
-2. No writes are made to:
+1. The lowest-risk default is to let Onlook edit a duplicate sandbox app created by `tools/copy-onlook-ui.ps1`, not `onlook-ui/` directly.
+2. Importing `onlook-ui/` directly is an explicit choice that makes `onlook-ui/*` the direct host write-back target.
+3. No writes are made to:
    - `backend/main.py`
    - `backend/app/api/review_nrc_aps.py`
    - `backend/app/schemas/review_nrc_aps.py`
    - `backend/app/review_ui/static/*`
    unless a separate explicit decision expands scope.
-3. Any Onlook-produced change must still be reviewed like normal repo code.
-4. The sandbox remains non-authoritative until promotion is explicitly approved.
+4. Any Onlook-produced change must still be reviewed like normal repo code.
+5. The sandbox remains non-authoritative until promotion is explicitly approved.
+6. If browser state on the default Onlook origin becomes sticky or keeps reopening an old imported project, restart local Onlook on a fresh port such as `3011` instead of reusing the stale browser origin blindly.
 
 ### 7.3 After Onlook usage
 Every saved sandbox iteration must be classified as one of:
@@ -213,5 +215,11 @@ Stop and reassess if any of these happen:
 
 ## 11. Recommended Next Move
 Use `impl-plan.md` as the bridge from the now-solved local repo lane into the clean upstream packaging split.
+
+For lowest-risk local use:
+
+1. create a duplicate sandbox target with `tools/copy-onlook-ui.ps1`
+2. import that duplicate into Onlook
+3. keep `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
 
 Do not broaden repo scope beyond the sandbox app until the clean extracted upstream branch is either sent upstream or re-proven shim-free end-to-end.

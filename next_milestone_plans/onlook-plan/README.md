@@ -11,10 +11,11 @@ This folder is not a claim that Onlook is already integrated.
 It is the decision packet for an isolated Onlook pilot lane.
 
 ## Status
-This folder is repo-local planning material on branch `codex/onlook-next`.
+This packet is now merged repo-local planning and operating material on `main`.
 
-It is intended to guide a new isolated frontend lane from clean mainline.
-It does not replace live implementation authority.
+The original implementation lane lived on branch `codex/onlook-next` in worktree `worktrees/onlook-next`.
+Those names now matter as provenance only.
+Use the merged copy on `main` as the current tracked authority for this lane.
 
 Current lane state:
 
@@ -35,6 +36,7 @@ Current lane state:
 - the repo-local duplication helper is `tools/copy-onlook-ui.ps1`; it creates a clean source duplicate of `onlook-ui/` without carrying `.next/` or `node_modules/`, and can copy the local frontend env when the duplicate should point at the same backend
 - that duplication helper now refuses a dirty canonical `onlook-ui/` source tree by default, so scratch copies do not silently fork from an in-progress or partially validated state unless explicitly overridden
 - a fresh duplicate created with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now also passes local `npm run lint` and `npm run build`, so producing a clean duplicate sandbox source is a proven path rather than a theoretical recovery step
+- the lowest-risk default for exploratory Onlook work is now: create a duplicate sandbox source with `tools/copy-onlook-ui.ps1`, import that duplicate, and keep `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
 - the repo-local restore helper is `tools/restore-onlook.ps1`; it can rebuild either preserved Onlook patch set from the tracked patch archives and the pinned upstream base commit instead of relying on the local solved clones remaining untouched forever
 - on a fresh worktree, the restore helper now recreates the expected helper-facing clone names by default:
   - `ext-onlook-fix/` for the local-writeback patch set
@@ -49,6 +51,7 @@ Current lane state:
   - `ext-onlook-fix/apps/web/client/.env`
   - `ext-onlook-fix/packages/db/.env`
 - local source Onlook now boots through the current proven direct launch path at `http://127.0.0.1:3000/login`
+- if browser state on `http://127.0.0.1:3000` becomes sticky or points at an old imported project, `tools/start-onlook-web.ps1 -Port 3011` is now the bounded fresh-origin fallback for local use
 - local source Onlook dev login has been validated through the seeded demo-user flow
 - with a real `CSB_API_KEY`, actual project import and sandbox creation inside local source Onlook are now validated through the current CodeSandbox-backed flow
 - the earlier `Next 16` preview blocker is now resolved for this repo lane by the committed sandbox-app compatibility fix
@@ -130,4 +133,9 @@ This packet does not claim:
 ## Next Step
 Use `strategy.md` as the settled authority and boundary model for this lane, and use `impl-plan.md` as the record of the now-solved local write-back lane plus the cleaned upstream packaging split.
 
-Use `pilot-plan.md` and `impl-plan.md` together to keep the current repo lane stable while treating `ext-onlook-pr/` as the upstream-ready patch baseline and any future AI/chat or shim-free end-to-end re-proof as separate follow-up work.
+Use `pilot-plan.md` and `impl-plan.md` together to keep the current repo lane stable while:
+
+- using duplicate sandbox copies as the default experimental write target
+- treating `onlook-ui/` as the canonical sandbox source only when direct canonical write-back is intentional
+- treating `ext-onlook-pr/` as the upstream-ready patch baseline
+- keeping any future AI/chat or shim-free end-to-end re-proof as separate follow-up work
