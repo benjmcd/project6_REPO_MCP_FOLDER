@@ -72,6 +72,12 @@ Verified locally:
 - `onlook-ui/` exists in this worktree
 - no nested git repository was created inside `onlook-ui/`
 - no generated `AGENTS.md` or `CLAUDE.md` exists in `onlook-ui/`
+- `onlook-ui/` now carries the committed compatibility fix for CodeSandbox-backed Onlook preview:
+  - `next`: `15.5.15`
+  - `eslint-config-next`: `15.5.15`
+  - `@eslint/eslintrc`: `^3`
+  - `next.config.ts`: `outputFileTracingRoot`
+  - `eslint.config.mjs`: `FlatCompat`-based Next 15 config
 - `npm run lint` passes in `onlook-ui/`
 - `npm run build` passes in `onlook-ui/`
 - `npm run dev -- --hostname 127.0.0.1 --port 3000` serves `GET /` successfully
@@ -119,12 +125,11 @@ Practical meaning:
 - the repo-side sandbox and the local Onlook operator path are both now real
 - placeholder `CSB_API_KEY` values are sufficient for local boot and dev login only
 - with a real `CSB_API_KEY`, actual project import and sandbox creation are now proven through the current CodeSandbox-backed flow
-- the imported `onlook-ui` project now reaches the project route and editor shell, but not editor readiness
-- the current first live blocker is preview and bridge non-readiness: the CodeSandbox-backed preview iframe does not become a usable app document, and the editor then hits bridge and theme errors instead of reaching stable edit interactions
-- a temporary minimal `Next.js + TailwindCSS` control import outside tracked repo content reproduces the same preview and bridge failure under the same runtime, so the current first failure is not specific to `onlook-ui`
-- same-runtime repros for both `onlook-ui` and the minimal control import show no preview-side requests to `127.0.0.1:8000` before the preview and bridge failure, so the current first failure is upstream of the repo review API seam
-- the CodeSandbox trust/interstitial page is not sufficient by itself to explain the blocker: in the fresh clean-clone repro, a forced click on `Yes, proceed to preview` remained a no-op and left the iframe on the same `CodeSandbox Preview` document
-- fresh clean-clone repro also shows co-occurring upstream route-init and filesystem faults during branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`; these are now current evidence in the same runtime as the preview failure, although strict causal ordering remains unresolved
+- the earlier repo-side preview blocker was `Next 16`; the sandbox app now carries the committed compatibility fix that keeps React `19.2.4` but pins `next` and `eslint-config-next` to `15.5.15`
+- a fresh local import of the current `onlook-ui/` folder now produces a new sandbox preview that hydrates successfully
+- direct preview of that fresh sandbox now logs the `review-shell` lifecycle, fetches `/runs` and `/runs/{run_id}/overview`, and loads the populated review shell
+- the same fresh sandbox now renders the populated review shell inside the Onlook iframe and editor shell, so the repo lane is no longer blocked at preview hydration
+- upstream issue reports for the old preview/runtime failures remain relevant for future `Next 16` re-upgrade work and for generic Onlook runtime hardening, but they no longer block the current repo lane while the sandbox app stays on `Next 15`
 - direct local write-back/editing still remains a separate proof step
 - placeholder or absent `OPENROUTER_API_KEY` values still do not prove AI/chat feature readiness
 
@@ -157,11 +162,17 @@ Reason:
 - keeps sandbox tooling local
 
 ### 3.3 Preferred scaffold invocation
-Preferred scaffold command for this lane:
+Historical scaffold command used early in this lane:
 
 ```powershell
 npx create-next-app@16 onlook-ui --ts --tailwind --eslint --app --use-npm --import-alias "@/*" --disable-git --no-agents-md --no-src-dir --no-react-compiler --empty --turbopack --yes
 ```
+
+Current rule:
+
+- treat the command above as historical setup context only
+- the authoritative dependency/config state for this lane is the committed `Next 15.5.15` compatibility fix described in section `2.5`
+- do not leave a recreated sandbox app on the raw scaffolded `Next 16` dependency set if you are rebuilding this lane from scratch
 
 Expected scaffold posture:
 
@@ -453,7 +464,7 @@ Expected checks:
 - local `.gitignore` covers `node_modules/`
 - local `.gitignore` covers `.env.local`
 - no generated `AGENTS.md` or `CLAUDE.md` exists in `onlook-ui/`
-- `next build` completes without the Turbopack workspace-root warning once `next.config.ts` sets `turbopack.root`
+- `next build` completes under the committed `Next 15` compatibility config once `next.config.ts` sets `outputFileTracingRoot`
 
 ### 7.7 Diff boundary check
 ```powershell
@@ -503,12 +514,11 @@ Expected current result:
 - `GET http://127.0.0.1:3007/login` succeeds through the direct source-launch path
 - the page shows the dev demo-user login button in development mode
 - the dev-login flow redirects into the app shell
-- with a real `CSB_API_KEY`, local import of `onlook-ui/` reaches project verification, completes sandbox creation, and opens the imported project route and editor shell
-- current first live blocker: the preview iframe still does not become a usable app document, observed as CodeSandbox Preview interstitial or `400`, Penpal and `iframeRemote` failures, and `frameData.view.getTheme is not a function`
-- the same current first live blocker also reproduces on a temporary minimal `Next.js + TailwindCSS` control import outside tracked repo content
-- a forced click on `Yes, proceed to preview` remains a no-op in the fresh clean-clone repro and does not advance the iframe beyond the same `CodeSandbox Preview` document
-- fresh clean-clone repro also co-reproduces route-init and filesystem faults during branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`
-- this proves local operator boot, auth, import, sandbox creation, project-route reachability, and editor-shell render; it does not yet prove editor readiness, direct local write-back, or AI/chat readiness
+- with a real `CSB_API_KEY`, local import of the current committed `onlook-ui/` folder reaches project verification, completes sandbox creation, and opens the imported project route and editor shell
+- fresh local import of the current committed `onlook-ui/` folder now yields a new CodeSandbox preview that hydrates successfully
+- direct preview of that fresh sandbox logs the `review-shell` lifecycle, fetches `/runs` and `/runs/{run_id}/overview`, and loads the populated review shell
+- the same fresh sandbox now renders the populated review shell inside the Onlook iframe and editor shell
+- this proves local operator boot, auth, import, sandbox creation, hydrated preview, and populated iframe render; it does not yet prove direct local write-back or AI/chat readiness
 
 ## 8. Stop Rules
 Stop and reassess if:
@@ -519,15 +529,14 @@ Stop and reassess if:
 - direct cross-port calls require credentialed requests, server-side fetching, or early proxy work
 - the adopted `pr45-postmerge-audit` runtime root, summary, or database path fails preflight
 - the first slice starts duplicating backend business logic instead of consuming backend outputs
-- the imported project route still fails to reach a usable preview iframe and live bridge child
-- current repros continue to show co-occurring filesystem and branch-init faults during route handling
+- a fresh import of the current committed sandbox app stops hydrating in direct preview or stops loading the populated shell in the Onlook iframe
+- future work starts depending on unproven write-back behavior without a separate proof step
 
 ## 9. Immediate Next Move
 The next justified move is:
 
-1. treat the preview and bridge failure as an operator blocker, not as a repo-code problem to patch around
-2. treat the control-import reproduction and fresh clean-clone synchronized repro as strong evidence that the blocker currently lives at the broader Onlook and CodeSandbox runtime boundary
-3. before any further operator debugging, establish one new fresh same-SHA local clone and do not treat either current local clone as a pristine repro surface
-4. package the synchronized repro evidence for upstream follow-up rather than widening repo scope
-5. only after the project route reaches stable edit interactions, attempt one tiny bounded Onlook-authored change
-6. then audit exactly what files change and confirm writes stay inside `onlook-ui/*`
+1. treat the old preview and bridge failure as resolved for this repo lane, not as an active reason to widen repo scope further
+2. use a fresh local import of the current committed sandbox app whenever you need to re-prove preview hydration or iframe render
+3. treat upstream issue evidence as future `Next 16` re-upgrade and runtime-hardening context, not as the current repo blocker
+4. the next proof step is one tiny bounded Onlook-authored change
+5. then audit exactly what files change and confirm writes stay inside `onlook-ui/*`
