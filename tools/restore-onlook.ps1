@@ -31,6 +31,10 @@ $restoreBranch = if ($PatchSet -eq 'local-writeback') {
 } else {
     'codex/restored-upstream-clean'
 }
+$expectedTrees = @{
+    'local-writeback' = '8f9c9811552a801478df85daeee511104b8695d2'
+    'upstream-clean' = '304a553e444c0327068fcb1cef7eac6430ccdaa8'
+}
 
 function Invoke-Git {
     param(
@@ -69,15 +73,22 @@ Invoke-Git -Arguments @('-C', $targetPath, 'switch', '-c', $restoreBranch)
 Invoke-Git -Arguments @('-C', $targetPath, 'am', '--3way', $patchPath)
 
 $headCommit = ((git -C $targetPath rev-parse HEAD) | Out-String).Trim()
+$treeHash = ((git -C $targetPath rev-parse "HEAD^{tree}") | Out-String).Trim()
 $status = ((git -C $targetPath status --short) | Out-String).Trim()
 if ($status) {
     throw "Restored clone is dirty:`n$status"
+}
+
+$expectedTree = $expectedTrees[$PatchSet]
+if ($treeHash -ne $expectedTree) {
+    throw "Restored tree hash $treeHash does not match expected $expectedTree for patch set $PatchSet"
 }
 
 Write-Host "Restored Onlook clone at $targetPath"
 Write-Host "Patch set: $PatchSet"
 Write-Host "Base commit: $baseCommit"
 Write-Host "Current commit: $headCommit"
+Write-Host "Tree hash: $treeHash"
 Write-Host "Current branch: $restoreBranch"
 Write-Host ''
 Write-Host 'Next steps:'

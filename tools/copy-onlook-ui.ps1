@@ -1,7 +1,8 @@
 param(
     [string]$TargetDir = 'onlook-ui-copy',
     [switch]$CopyLocalEnv,
-    [switch]$ArchiveExisting
+    [switch]$ArchiveExisting,
+    [switch]$AllowDirtySource
 )
 
 $ErrorActionPreference = 'Stop'
@@ -18,6 +19,7 @@ $targetPath = [System.IO.Path]::GetFullPath($targetPath)
 $archiveRoot = Join-Path $laneRoot 'archive'
 $skipDirs = @('.git', '.next', 'node_modules')
 $copyLocalEnvPath = Join-Path $sourceRoot '.env.local'
+$sourceStatus = ((& git -C $laneRoot status --short --untracked-files=all -- onlook-ui) | Out-String).Trim()
 
 function Copy-Tree {
     param(
@@ -49,6 +51,10 @@ function Copy-Tree {
 
 if (-not (Test-Path $sourceRoot)) {
     throw "Missing sandbox source: $sourceRoot"
+}
+
+if (-not $AllowDirtySource -and $sourceStatus) {
+    throw "Sandbox source onlook-ui is dirty:`n$sourceStatus`nCommit or stash those changes first, or rerun with -AllowDirtySource if you intentionally want to duplicate an in-progress tree."
 }
 
 if (Test-Path $targetPath) {
