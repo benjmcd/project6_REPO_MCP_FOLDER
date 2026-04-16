@@ -21,6 +21,39 @@ $expectedStates = @{
         Tree = '304a553e444c0327068fcb1cef7eac6430ccdaa8'
     }
 }
+$runtimeGeneratedPaths = @(
+    'apps/web/client/messages/en.d.json.ts'
+    'apps/web/client/public/onlook-preload-script.js'
+)
+
+function Test-LineEndingOnlyDrift {
+    param(
+        [string]$RepoRoot,
+        [string[]]$RepoPaths
+    )
+
+    foreach ($repoPath in $RepoPaths) {
+        $worktreePath = Join-Path $RepoRoot ($repoPath -replace '/', '\')
+        if (-not (Test-Path $worktreePath)) {
+            return $false
+        }
+    }
+
+    $quotedPaths = ($RepoPaths | ForEach-Object { '"' + $_ + '"' }) -join ' '
+    $diffModes = @('', '--cached')
+
+    foreach ($diffMode in $diffModes) {
+        $cmd = 'git -C "' + $RepoRoot + '" diff ' + $diffMode + ' --ignore-space-at-eol --exit-code -- ' + $quotedPaths + ' >nul 2>nul'
+        $cmd = $cmd -replace '\s+', ' '
+        cmd.exe /d /c $cmd | Out-Null
+
+        if ($LASTEXITCODE -ne 0) {
+            return $false
+        }
+    }
+
+    return $true
+}
 
 if (-not (Test-Path $onlookPath)) {
     throw "Missing Onlook source clone: $onlookPath`nRestore it with ./tools/restore-onlook.ps1 -PatchSet local-writeback (for ext-onlook-fix) or ./tools/restore-onlook.ps1 -PatchSet upstream-clean (for ext-onlook-pr)."
@@ -47,7 +80,24 @@ if (-not (Test-Path $dbEnv)) {
 if ($gitExe) {
     $headCommit = (& git -C $onlookRoot rev-parse HEAD).Trim()
     $treeHash = (& git -C $onlookRoot rev-parse "HEAD^{tree}").Trim()
-    $dirtyState = ((& git -C $onlookRoot status --short) | Out-String).Trim()
+    $dirtyLines = @(& git -C $onlookRoot status --short)
+    $dirtyPaths = @(
+        $dirtyLines |
+            Where-Object { $_.Length -ge 4 } |
+            ForEach-Object { $_.Substring(3).Trim() } |
+            Where-Object { $_ }
+    )
+
+    if ($dirtyPaths.Count -gt 0) {
+        $onlyRuntimeGenerated = @($dirtyPaths | Where-Object { $runtimeGeneratedPaths -notcontains $_ }).Count -eq 0
+        if ($onlyRuntimeGenerated -and (Test-LineEndingOnlyDrift -RepoRoot $onlookRoot -RepoPaths $runtimeGeneratedPaths)) {
+            Write-Host 'Normalizing line-ending-only drift in runtime-generated files before startup.'
+            & git -C $onlookRoot restore --worktree --staged -- $runtimeGeneratedPaths
+            $dirtyLines = @(& git -C $onlookRoot status --short)
+        }
+    }
+
+    $dirtyState = ($dirtyLines | Out-String).Trim()
 
     if (-not $AllowDirty -and $dirtyState) {
         throw "Onlook clone is dirty at $onlookRoot. Commit or stash it first, or rerun with -AllowDirty if you intend to use a modified clone."
