@@ -12,8 +12,8 @@ It approves only the bounded sandbox scaffold and the minimum supporting runtime
 ### 2.1 Clean execution surface
 This lane runs from:
 
-- branch `codex/onlook-lane`
-- worktree `worktrees/onlook-lane`
+- branch `codex/onlook-next`
+- worktree `worktrees/onlook-next`
 
 Current status:
 
@@ -103,21 +103,30 @@ Verified locally against the current official Onlook development setup docs:
 
 - Bun is installed locally
 - Docker Desktop is installed and the local Supabase backend is running
-- the local Onlook source clone exists at `ext-onlook/`
+- the canonical local Onlook source clone for this lane exists at `ext-onlook/`
+- that clone was last verified at revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
+- a same-revision sibling clone may still exist at `../onlook-lane/ext-onlook/`, but it is not the canonical debug surface for this lane
 - the canonical local env files for that source tree now exist at:
   - `ext-onlook/apps/web/client/.env`
   - `ext-onlook/packages/db/.env`
 - `bun db:seed` now succeeds from `ext-onlook/`
-- local source Onlook now serves `GET /login` successfully at `http://127.0.0.1:3001/login`
+- the current proven direct source-launch path serves `GET /login` successfully at `http://127.0.0.1:3007/login`
 - the dev-only demo-user login path succeeds and redirects into the app shell
 
 Practical meaning:
 
 - the current working Onlook path for this lane is local source development, not the hosted desktop OAuth flow
 - the repo-side sandbox and the local Onlook operator path are both now real
-- placeholder `CSB_API_KEY` and `OPENROUTER_API_KEY` values are sufficient for local boot and dev login only
-- actual project import and sandbox creation remain CodeSandbox-backed in the current Onlook source tree and therefore still require a real `CSB_API_KEY`
-- AI/chat feature readiness still requires a real `OPENROUTER_API_KEY`
+- placeholder `CSB_API_KEY` values are sufficient for local boot and dev login only
+- with a real `CSB_API_KEY`, actual project import and sandbox creation are now proven through the current CodeSandbox-backed flow
+- the imported `onlook-ui` project now reaches the project route and editor shell, but not editor readiness
+- the current first live blocker is preview and bridge non-readiness: the CodeSandbox-backed preview iframe does not become a usable app document, and the editor then hits bridge and theme errors instead of reaching stable edit interactions
+- a temporary minimal `Next.js + TailwindCSS` control import outside tracked repo content reproduces the same preview and bridge failure under the same runtime, so the current first failure is not specific to `onlook-ui`
+- same-runtime repros for both `onlook-ui` and the minimal control import show no preview-side requests to `127.0.0.1:8000` before the preview and bridge failure, so the current first failure is upstream of the repo review API seam
+- the CodeSandbox trust/interstitial page is not sufficient by itself to explain the blocker: in the fresh clean-clone repro, a forced click on `Yes, proceed to preview` remained a no-op and left the iframe on the same `CodeSandbox Preview` document
+- fresh clean-clone repro also shows co-occurring upstream route-init and filesystem faults during branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`; these are now current evidence in the same runtime as the preview failure, although strict causal ordering remains unresolved
+- direct local write-back/editing still remains a separate proof step
+- placeholder or absent `OPENROUTER_API_KEY` values still do not prove AI/chat feature readiness
 
 ## 3. Exact Scaffold Choice
 
@@ -243,7 +252,7 @@ When using Onlook itself:
 
 - treat `onlook-ui/` as the intended local project source for Onlook import
 - do not point Onlook at the repo root
-- in the current local source Onlook path, assume `onlook-ui/` will be selected through the CodeSandbox-backed local import flow once a real `CSB_API_KEY` is available
+- in the current local source Onlook path, use the proven CodeSandbox-backed local import flow for `onlook-ui/`, but do not treat direct local write-back as already proven
 
 Reason:
 
@@ -427,8 +436,8 @@ npm run dev -- --hostname 127.0.0.1 --port 3000
 For actual Onlook use:
 
 - ensure `onlook-ui/.env.local` exists with `NEXT_PUBLIC_REVIEW_API_BASE`
-- use `onlook-ui/` as the local project source for the next Onlook import step
-- do not treat this as already-proven direct local write-back
+- use `onlook-ui/` as the local project source for the proven import flow
+- treat direct local write-back as the next proof step, not as already-proven behavior
 
 ### 7.6 Frontend static checks
 ```powershell
@@ -462,16 +471,26 @@ Explicit non-commit surface:
 
 Anything broader requires explicit reassessment.
 
-### 7.8 Local Onlook source startup
+### 7.8 Local Onlook source startup, import proof, and current blocker
 If the hosted desktop OAuth path is blocked, use the local source path instead.
 
-Canonical helper:
+Repo-local helper:
 
 ```powershell
 ./tools/start-onlook-web.ps1
 ```
 
-This helper:
+Equivalent direct source-launch path:
+
+```powershell
+Set-Location ./ext-onlook
+$env:PATH = "$env:USERPROFILE/.bun/bin;$env:PATH"
+bun run dev -- --hostname 127.0.0.1 --port 3007
+```
+
+The helper and direct source-launch path both target the same local source clone. The direct source-launch path is the canonical and currently proven post-key reproduction path in this workspace.
+
+The helper:
 
 - starts from `ext-onlook/`
 - prepends Bun to `PATH` so Onlook child processes can resolve `bun` correctly on Windows
@@ -481,10 +500,15 @@ This helper:
 
 Expected current result:
 
-- `GET http://127.0.0.1:3001/login` succeeds
+- `GET http://127.0.0.1:3007/login` succeeds through the direct source-launch path
 - the page shows the dev demo-user login button in development mode
 - the dev-login flow redirects into the app shell
-- this proves local operator boot and auth only, not actual project import or editing readiness
+- with a real `CSB_API_KEY`, local import of `onlook-ui/` reaches project verification, completes sandbox creation, and opens the imported project route and editor shell
+- current first live blocker: the preview iframe still does not become a usable app document, observed as CodeSandbox Preview interstitial or `400`, Penpal and `iframeRemote` failures, and `frameData.view.getTheme is not a function`
+- the same current first live blocker also reproduces on a temporary minimal `Next.js + TailwindCSS` control import outside tracked repo content
+- a forced click on `Yes, proceed to preview` remains a no-op in the fresh clean-clone repro and does not advance the iframe beyond the same `CodeSandbox Preview` document
+- fresh clean-clone repro also co-reproduces route-init and filesystem faults during branch initialization, including `IDBFactory is not defined` and `Invalid value used as weak map key`
+- this proves local operator boot, auth, import, sandbox creation, project-route reachability, and editor-shell render; it does not yet prove editor readiness, direct local write-back, or AI/chat readiness
 
 ## 8. Stop Rules
 Stop and reassess if:
@@ -495,11 +519,15 @@ Stop and reassess if:
 - direct cross-port calls require credentialed requests, server-side fetching, or early proxy work
 - the adopted `pr45-postmerge-audit` runtime root, summary, or database path fails preflight
 - the first slice starts duplicating backend business logic instead of consuming backend outputs
+- the imported project route still fails to reach a usable preview iframe and live bridge child
+- current repros continue to show co-occurring filesystem and branch-init faults during route handling
 
 ## 9. Immediate Next Move
 The next justified move is:
 
-1. supply a real `CSB_API_KEY`
-2. use the local source Onlook path to import `onlook-ui/` through its current CodeSandbox-backed project flow
-3. verify that the resulting Onlook-managed sandbox can load and edit the already-validated shell without touching live static UI files
-4. if Onlook usage is still deferred or blocked after that, keep the next slice inside `onlook-ui/*` and expand only to already-approved read-only review endpoints
+1. treat the preview and bridge failure as an operator blocker, not as a repo-code problem to patch around
+2. treat the control-import reproduction and fresh clean-clone synchronized repro as strong evidence that the blocker currently lives at the broader Onlook and CodeSandbox runtime boundary
+3. before any further operator debugging, establish one new fresh same-SHA local clone and do not treat either current local clone as a pristine repro surface
+4. package the synchronized repro evidence for upstream follow-up rather than widening repo scope
+5. only after the project route reaches stable edit interactions, attempt one tiny bounded Onlook-authored change
+6. then audit exactly what files change and confirm writes stay inside `onlook-ui/*`
