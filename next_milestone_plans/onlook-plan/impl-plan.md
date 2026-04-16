@@ -113,6 +113,11 @@ Verified locally against the current official Onlook development setup docs:
 - that base clone was last verified at revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
 - the current proven local operator surface for the solved repo lane is `ext-onlook-fix/` on local branch `codex/local-writeback-fix` at commit `c8cf5c16`
 - the clean upstream packaging surface is `ext-onlook-pr/` on local branch `codex/upstream-clean` at commit `6d4c463a`
+- the exact local Onlook commits are now also preserved inside this tracked repo lane as:
+  - `patches/local-writeback.patch`
+  - `patches/upstream-clean.patch`
+- the repo-local duplication helper `tools/copy-onlook-ui.ps1` now creates clean duplicates of `onlook-ui/` without `.next/` or `node_modules/`, and copies `.env.local` only when explicitly requested
+- a fresh duplicate created with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now also passes local `npm run lint` and `npm run build`
 - the canonical local env files for the proven local operator surface now exist at:
   - `ext-onlook-fix/apps/web/client/.env`
   - `ext-onlook-fix/packages/db/.env`
@@ -498,6 +503,19 @@ Repo-local helper:
 ./tools/start-onlook-web.ps1
 ```
 
+Repo-local integrity check:
+
+```powershell
+./tools/check-onlook.ps1
+./tools/check-onlook.ps1 -RunValidation
+```
+
+Repo-local duplicate sandbox copy:
+
+```powershell
+./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv
+```
+
 Equivalent direct source-launch path:
 
 ```powershell
@@ -512,16 +530,21 @@ The helper:
 
 - starts from `ext-onlook-fix/` by default
 - can be pointed at a different local clone with `-OnlookDir`
+- pins `ext-onlook-fix/` and `ext-onlook-pr/` to their known-good commits by default unless `-SkipCommitCheck` is supplied
+- refuses dirty local clones by default unless `-AllowDirty` is supplied
 - prepends Bun to `PATH` so Onlook child processes can resolve `bun` correctly on Windows
 - checks that the current canonical local env files exist
 - warns if the local Supabase backend ports are not listening
 - warns when placeholder `CSB_API_KEY` or `OPENROUTER_API_KEY` values are still in use
+- keeps the solved local operator path fail-closed by refusing drift from the pinned local commits unless explicitly overridden
 
 Expected current result:
 
 - `GET http://127.0.0.1:3000/login` succeeds through the direct source-launch path
 - the page shows the dev demo-user login button in development mode
 - the dev-login flow redirects into the app shell
+- `./tools/check-onlook.ps1` confirms the preserved local and upstream-clean clones are still pinned, clean, and backed by tracked patch archives
+- `./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` produces a clean duplicate frontend source tree for scratch imports without reusing `.next/` or `node_modules/`
 - with a real `CSB_API_KEY`, local import of the current committed `onlook-ui/` folder reaches project verification, completes sandbox creation, and opens the imported project route and editor shell
 - fresh local import of the current committed `onlook-ui/` folder now yields a new CodeSandbox preview that hydrates successfully
 - direct preview of that fresh sandbox logs the `review-shell` lifecycle, fetches `/runs` and `/runs/{run_id}/overview`, and loads the populated review shell
@@ -550,3 +573,4 @@ The next justified move is:
 3. use `ext-onlook-pr/` as the clean upstream-ready patch baseline
 4. treat upstream issue evidence as future `Next 16` re-upgrade and runtime-hardening context, not as the current repo blocker
 5. keep AI/chat readiness and any shim-free end-to-end re-proof on the clean extracted branch as separate follow-up work
+6. treat `onlook-ui/` as the canonical write-back target and use `tools/copy-onlook-ui.ps1` only for scratch duplicates that you are willing to merge back manually
