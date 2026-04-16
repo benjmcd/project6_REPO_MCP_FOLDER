@@ -17,7 +17,11 @@ $expectedStates = @{
         Tree = '304a553e444c0327068fcb1cef7eac6430ccdaa8'
     }
 }
-$portsToInspect = @(3000, 8000, 8083)
+$portsToInspect = @(3000, 3011, 8000, 8083)
+$runtimeGeneratedPaths = @(
+    'apps/web/client/messages/en.d.json.ts'
+    'apps/web/client/public/onlook-preload-script.js'
+)
 
 function Assert-Path {
     param(
@@ -35,6 +39,35 @@ function Assert-Path {
     }
 }
 
+function Test-LineEndingOnlyDrift {
+    param(
+        [string]$RepoRoot,
+        [string[]]$RepoPaths
+    )
+
+    foreach ($repoPath in $RepoPaths) {
+        $worktreePath = Join-Path $RepoRoot ($repoPath -replace '/', '\')
+        if (-not (Test-Path $worktreePath)) {
+            return $false
+        }
+    }
+
+    $quotedPaths = ($RepoPaths | ForEach-Object { '"' + $_ + '"' }) -join ' '
+    $diffModes = @('', '--cached')
+
+    foreach ($diffMode in $diffModes) {
+        $cmd = 'git -C "' + $RepoRoot + '" diff ' + $diffMode + ' --ignore-space-at-eol --exit-code -- ' + $quotedPaths + ' >nul 2>nul'
+        $cmd = $cmd -replace '\s+', ' '
+        cmd.exe /d /c $cmd | Out-Null
+
+        if ($LASTEXITCODE -ne 0) {
+            return $false
+        }
+    }
+
+    return $true
+}
+
 function Assert-CleanClone {
     param(
         [string]$CloneDir,
@@ -45,7 +78,23 @@ function Assert-CleanClone {
     $cloneRoot = (Resolve-Path (Join-Path $laneRoot $CloneDir)).Path
     $headCommit = ((& git -C $cloneRoot rev-parse HEAD) | Out-String).Trim()
     $treeHash = ((& git -C $cloneRoot rev-parse "HEAD^{tree}") | Out-String).Trim()
-    $status = ((& git -C $cloneRoot status --short) | Out-String).Trim()
+    $statusLines = @(& git -C $cloneRoot status --short)
+    $dirtyPaths = @(
+        $statusLines |
+            Where-Object { $_.Length -ge 4 } |
+            ForEach-Object { $_.Substring(3).Trim() } |
+            Where-Object { $_ }
+    )
+
+    if ($dirtyPaths.Count -gt 0) {
+        $onlyRuntimeGenerated = @($dirtyPaths | Where-Object { $runtimeGeneratedPaths -notcontains $_ }).Count -eq 0
+        if ($onlyRuntimeGenerated -and (Test-LineEndingOnlyDrift -RepoRoot $cloneRoot -RepoPaths $runtimeGeneratedPaths)) {
+            Write-Host "$CloneDir has line-ending-only drift in runtime-generated files; treating it as non-blocking."
+            $statusLines = @()
+        }
+    }
+
+    $status = ($statusLines | Out-String).Trim()
 
     if ($headCommit -ne $ExpectedCommit -and $treeHash -ne $ExpectedTree) {
         throw "$CloneDir is at commit $headCommit with tree $treeHash, but expected commit $ExpectedCommit or equivalent restored tree $ExpectedTree"
