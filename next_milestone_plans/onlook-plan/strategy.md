@@ -174,6 +174,21 @@ Reason:
 - the existing API seam already supports run list, overview, pipeline definition, document selector, trace, and diagnostics flows
 - changing backend first would widen scope before proving the frontend lane is worth keeping
 
+### 6.4 Current bounded route family
+The current practical sandbox target is the bounded review UI family, not the whole repo generically:
+
+- `/review/nrc-aps`
+- `/review/nrc-aps/document-trace`
+- `/review/nrc-aps/workbench-compare`
+- `/review/nrc-aps/candidate-b-trace`
+- `/review/analyst-insight`
+
+Current interpretation rule:
+
+- treat main review, document trace, and analyst insight as directly data-backed against existing backend seams
+- treat workbench compare and Candidate B trace as requiring explicit same-checkout compare prep when populated validation is needed
+- do not misclassify missing compare prep as proof that the sandbox route family itself is broken
+
 ## 7. Recommended Promotion Model
 Default promotion posture:
 
@@ -251,6 +266,6 @@ Proceed with the separate Onlook pilot in this clean worktree as the current sol
 
 Do not modify the current static review UI as part of the initial Onlook lane.
 
-Use the existing review API as the integration seam.
+Use the existing review API and analyst aliases as the integration seams for the bounded review UI family.
 
 Keep the sandbox app on `Next 15.5.15` while CodeSandbox-backed preview is part of the workflow, use `ext-onlook-fix/` as the preserved local solved operator surface, and treat `ext-onlook-pr/` as the upstream-ready patch baseline rather than widening repo product scope further.

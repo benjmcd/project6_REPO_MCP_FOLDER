@@ -90,23 +90,28 @@ Practical meaning:
 
 - the sandbox app is now real, bootable, and was a valid base for the first feature-wiring slice
 
-### 2.6 First-slice shell validation
-Verified locally after the first bounded UI slice:
+### 2.6 Multi-route sandbox validation
+Verified locally after the route-family expansion:
 
 - `onlook-ui/` now contains the typed review API layer under `lib/`
-- `onlook-ui/` now contains the slice-1 shell components under `components/`
-- the sandbox shell renders:
-  - run selector
-  - pipeline pane
-  - tree pane
-  - details pane shell
-- runtime smoke through the sandbox dev server caused real backend requests for:
-  - `GET /api/v1/review/nrc-aps/runs`
-  - `GET /api/v1/review/nrc-aps/runs/{run_id}/overview`
+- `onlook-ui/` now contains the route-family shell components under `components/`
+- `onlook-ui/` now exposes these Next routes:
+  - `/`
+  - `/document-trace`
+  - `/workbench-compare`
+  - `/candidate-b-trace`
+  - `/analyst-insight`
+- browser validation against the local sandbox dev server confirmed:
+  - the root review route renders the populated review shell
+  - the document-trace route renders populated manifest and tab data against a live review runtime
+  - the analyst-insight route completes the bounded three-stage POST flow
+  - the workbench-compare route renders populated compare data once same-checkout compare prep exists
+  - the Candidate-B-trace route renders populated artifact-backed tabs once same-checkout compare prep exists
 
 Practical meaning:
 
-- the first shell slice is implemented and validated against the adopted runtime context
+- the sandbox is no longer a single-page proof-of-fit
+- the bounded review UI family is now implemented and validated against the adopted backend seams
 
 ### 2.7 Local Onlook operator path
 Verified locally against the current official Onlook development setup docs:
@@ -165,6 +170,26 @@ Practical meaning:
 - the clean extracted upstream branch removes the workspace-specific `/api/local-project` shim and path-registration fallback, keeps the browser directory-handle persistence path, passes `bun --filter @onlook/web-client typecheck`, and passes `bun --filter @onlook/web-client build` when the required envs are stubbed
 - upstream issue reports for the old preview/runtime failures remain relevant for future `Next 16` re-upgrade work and for generic Onlook runtime hardening, but they no longer block the current repo lane while the sandbox app stays on `Next 15`
 - placeholder or absent `OPENROUTER_API_KEY` values still do not prove AI/chat feature readiness
+
+### 2.8 Same-checkout compare prep validation
+Verified locally in this worktree:
+
+- `./../../.venvs/phase7a-py311/Scripts/python.exe ./tools/seed_wb_compare.py --runtime-root ./backend/app/storage_test_runtime/lc_e2e/wb-b0 --visual-lane-mode baseline`
+- `./../../.venvs/phase7a-py311/Scripts/python.exe ./tools/seed_wb_compare.py --runtime-root ./backend/app/storage_test_runtime/lc_e2e/wb-a0 --visual-lane-mode candidate_a_page_evidence_v1`
+- `./../../.venvs/phase7a-py311/Scripts/python.exe ./tools/run_nrc_aps_candidate_b_compare.py`
+- `python ./tools/validate_wb_prep.py`
+
+Result:
+
+- a same-checkout baseline review runtime now exists at `backend/app/storage_test_runtime/lc_e2e/wb-b0`
+- a same-checkout Candidate-A review runtime now exists at `backend/app/storage_test_runtime/lc_e2e/wb-a0`
+- a same-checkout Candidate-B compare bundle now exists under `tests/reports/cb-compare-*`
+- `tools/validate_wb_prep.py` now passes and emits recommended compare and trace URLs for the sandbox route family
+
+Practical meaning:
+
+- populated compare-family validation is now a repo-native local path in a clean worktree
+- compare-family population no longer depends on silently borrowing stale external runtime state
 
 ## 3. Exact Scaffold Choice
 
@@ -354,13 +379,12 @@ Reason:
 There are two different path-resolution paths in this repo:
 
 - the backend server reads `STORAGE_DIR` through `app.core.config`, which resolves relative paths against the backend root
-- the validate-only review test fixture passes `STORAGE_DIR` directly into runtime-root discovery, which resolves relative paths from the current working directory
+- the validate-only review test fixture discovers review roots directly, but the `/runs` API assertions inside that same test slice still execute through the FastAPI app and therefore still depend on `app.core.config`
 
 Practical rule:
 
-- use repo-relative `./../pr45-postmerge-audit/...` only for the validate-only test command in section 7.2
-- resolve to absolute paths before starting the backend server in section 7.3
-- do not reuse the section 7.2 relative `STORAGE_DIR` value for the backend server
+- resolve the adopted sibling runtime root to an absolute path both for the validate-only backend test slice in section 7.2 and for the backend server in section 7.3
+- do not reuse older relative `STORAGE_DIR` examples once same-checkout compare prep exists, because the API assertions in the validation slice can otherwise miss the intended sibling runtime root
 
 ### 5.5 Cross-worktree dependency rule
 The adopted demo runtime is a local dependency on the sibling `pr45-postmerge-audit` worktree.
@@ -370,53 +394,67 @@ Practical rule:
 - if that sibling worktree, runtime root, summary file, or database file disappears, stop and reassess
 - do not silently substitute a different runtime without updating the packet and re-validating the adopted context
 
-## 6. Exact First-Slice Component Map
+## 6. Exact Multi-Route Sandbox Component Map
 
 ### 6.1 Route shell
 - `onlook-ui/app/layout.tsx`
 - `onlook-ui/app/page.tsx`
+- `onlook-ui/app/document-trace/page.tsx`
+- `onlook-ui/app/workbench-compare/page.tsx`
+- `onlook-ui/app/candidate-b-trace/page.tsx`
+- `onlook-ui/app/analyst-insight/page.tsx`
 
 ### 6.2 API and state layer
 - `onlook-ui/lib/review-api.ts`
 - `onlook-ui/lib/review-types.ts`
 - `onlook-ui/lib/review-adapter.ts`
+- `onlook-ui/lib/sandbox-routes.ts`
+- `onlook-ui/lib/sandbox-links.ts`
+- `onlook-ui/lib/display.ts`
+- `onlook-ui/lib/analyst-samples.ts`
 
 Responsibilities:
 
 - read-only fetches from `NEXT_PUBLIC_REVIEW_API_BASE`
-- local normalization for display
+- local normalization for display and sandbox-route remapping
 - no business-logic duplication from backend services
+- no change to shipped static UI authority
 
 ### 6.3 UI components
 - `onlook-ui/components/review-shell.tsx`
-- `onlook-ui/components/run-select.tsx`
-- `onlook-ui/components/header-bar.tsx`
-- `onlook-ui/components/pipeline-pane.tsx`
-- `onlook-ui/components/tree-pane.tsx`
-- `onlook-ui/components/details-pane.tsx`
+- `onlook-ui/components/document-trace-shell.tsx`
+- `onlook-ui/components/workbench-compare-shell.tsx`
+- `onlook-ui/components/candidate-b-trace-shell.tsx`
+- `onlook-ui/components/analyst-insight-shell.tsx`
+- `onlook-ui/components/sandbox-primitives.tsx`
+- existing shared slice-1 components reused by the root review route:
+  - `run-select.tsx`
+  - `header-bar.tsx`
+  - `pipeline-pane.tsx`
+  - `tree-pane.tsx`
+  - `details-pane.tsx`
 
-### 6.4 Slice-1 behavior boundary
-Required in slice 1:
+### 6.4 Behavior boundary
+Required in the current route family:
 
-- header shell
-- run selector
-- load runs
-- load overview
-- tree rendering
-- details panel shell
-- explicit document-trace boundary note or link placeholder
+- route navigation across the bounded sandbox family
+- main review loading against the live review API seam
+- document-trace manifest and tab rendering against a live review runtime
+- analyst-insight alias execution against the existing POST endpoints
+- compare-family graceful degradation when same-checkout compare prep is absent
+- compare-family populated rendering when same-checkout compare prep is present
 
-Deferred from slice 1 unless the sandbox proves it is necessary:
+Still intentionally deferred:
 
 - full Mermaid parity
 - theme persistence parity
 - run-light vs run-heavy mode parity
-- document-trace migration
+- automatic promotion from sandbox state into live authority
 
 Reason:
 
-- slice 1 should prove the React/Tailwind + Onlook lane is viable
-- it should not immediately recreate every behavior of the current static page
+- the current route family proves the React/Tailwind + Onlook lane is viable across the bounded review UI family
+- it still keeps live-product authority, backend contracts, and promotion policy separate
 
 ## 7. Exact Commands For The First Implementation Slice
 
@@ -433,7 +471,8 @@ Expected result:
 
 ### 7.2 Baseline backend validation
 ```powershell
-$env:STORAGE_DIR='../pr45-postmerge-audit/backend/app/storage_test_runtime'
+$runtimeRoot = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime).Path
+$env:STORAGE_DIR=$runtimeRoot
 $env:PYTHONDONTWRITEBYTECODE='1'
 python -B -m pytest ./backend/tests/test_review_nrc_aps_catalog.py ./backend/tests/test_review_nrc_aps_api.py -p no:cacheprovider
 ```
@@ -508,10 +547,15 @@ Expected checks:
 git status --short
 ```
 
-Expected first-slice change boundary:
+Expected route-family change boundary:
 
 - `onlook-ui/*`
 - `next_milestone_plans/onlook-plan/*`
+
+Expected narrow helper/support additions only when same-checkout compare prep needs worktree support:
+
+- `tools/run_nrc_aps_local_corpus_e2e.py`
+- `tests/support_nrc_aps_candidate_b_opendataloader.py`
 
 Explicit non-commit surface:
 
@@ -593,6 +637,27 @@ Expected current result:
 - a bounded Onlook-authored save now writes into `onlook-ui/app/page.tsx` on disk and the host file can be restored clean afterward
 - this proves local operator boot, auth, import, sandbox creation, hydrated preview, populated iframe render, trust-click recovery, and bounded host write-back on the preserved local operator surface; it does not yet prove full AI/chat readiness or shim-free re-proof on the clean extracted upstream branch
 
+### 7.9 Same-checkout compare prep and route-family proof
+Repo-native local compare prep commands:
+
+```powershell
+./../../.venvs/phase7a-py311/Scripts/python.exe ./tools/seed_wb_compare.py --runtime-root ./backend/app/storage_test_runtime/lc_e2e/wb-b0 --visual-lane-mode baseline
+./../../.venvs/phase7a-py311/Scripts/python.exe ./tools/seed_wb_compare.py --runtime-root ./backend/app/storage_test_runtime/lc_e2e/wb-a0 --visual-lane-mode candidate_a_page_evidence_v1
+./../../.venvs/phase7a-py311/Scripts/python.exe ./tools/run_nrc_aps_candidate_b_compare.py
+python ./tools/validate_wb_prep.py
+```
+
+Expected result:
+
+- `tools/validate_wb_prep.py` passes
+- the output includes recommended same-checkout URLs for:
+  - `/review/nrc-aps/workbench-compare`
+  - `/review/nrc-aps/candidate-b-trace`
+  - baseline and Candidate-A document trace follow-through
+- the sandbox `workbench-compare` route then renders populated compare data
+- the sandbox `candidate-b-trace` route then renders populated artifact-backed tabs
+- the compare-family proof remains local runtime/input prep only; it does not modify shipped static UI authority
+
 ## 8. Stop Rules
 Stop and reassess if:
 
@@ -608,10 +673,11 @@ Stop and reassess if:
 ## 9. Immediate Next Move
 The next justified move is:
 
-1. treat preview hydration and local repo-lane write-back as resolved for this repo lane, not as active reasons to widen repo product scope further
+1. treat preview hydration, local repo-lane write-back, and populated compare-family prep as resolved for the current local lane
 2. use `ext-onlook-fix/` when you need the preserved solved local operator path
 3. use `ext-onlook-pr/` as the clean upstream-ready patch baseline
-4. treat upstream issue evidence as future `Next 16` re-upgrade and runtime-hardening context, not as the current repo blocker
-5. keep AI/chat readiness and any shim-free end-to-end re-proof on the clean extracted branch as separate follow-up work
-6. for routine exploratory work, treat a duplicate created by `tools/copy-onlook-ui.ps1` as the default write target and merge back manually only after review
-7. treat `onlook-ui/` as the canonical write-back target only when direct canonical sandbox edits are the explicit goal
+4. use same-checkout compare prep when populated compare-family work is the goal, and do not silently assume that data is present
+5. treat upstream issue evidence as future `Next 16` re-upgrade and runtime-hardening context, not as the current repo blocker
+6. keep AI/chat readiness and any shim-free end-to-end re-proof on the clean extracted branch as separate follow-up work
+7. for routine exploratory work, treat a duplicate created by `tools/copy-onlook-ui.ps1` as the default write target and merge back manually only after review
+8. treat `onlook-ui/` as the canonical write-back target only when direct canonical sandbox edits are the explicit goal

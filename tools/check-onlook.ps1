@@ -156,7 +156,8 @@ if ($RunValidation) {
 
     Push-Location $laneRoot
     try {
-        $env:STORAGE_DIR = '../pr45-postmerge-audit/backend/app/storage_test_runtime'
+        $runtimeRoot = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime).Path
+        $env:STORAGE_DIR = $runtimeRoot
         $env:PYTHONDONTWRITEBYTECODE = '1'
         python -B -m pytest ./backend/tests/test_review_nrc_aps_catalog.py ./backend/tests/test_review_nrc_aps_api.py -p no:cacheprovider
     }
