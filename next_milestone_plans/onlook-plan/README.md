@@ -80,6 +80,9 @@ Current lane state:
   - `tools/validate_wb_prep.py` can validate the resulting same-checkout compare selection and emit recommended review, trace, and compare URLs
 - the compare prep tooling now works from a clean worktree by resolving the expected `phase7a-py311` interpreter from the nearest ancestor `./.venvs/` when the worktree itself does not carry a local copy
 - the Candidate-B compare tooling now correctly recognizes wrapped `opendataloader_pdf --help` output when checking for annotated-PDF capability, so CLI help formatting no longer creates a false negative
+- the repo-local sandbox browser smoke helper is `tools/run-onlook-sandbox-smoke.ps1`; it starts an isolated local review API and isolated sandbox dev server, proves the hydrated sandbox routes before any Onlook import step, and supports two bounded profiles:
+  - `-Profile core` for review, document-trace, and analyst-insight
+  - `-Profile full` for the full route family, including compare-family routes after `tools/validate_wb_prep.py` emits the recommended same-checkout live-review URLs that the helper then remaps into sandbox routes
 - the canonical host-write-back target remains `onlook-ui/`; duplicate copies created with `tools/copy-onlook-ui.ps1` are for scratch imports or comparison work and do not auto-promote changes back into the canonical sandbox app
 - that local write-back proof ran on the preserved local operator surface at `ext-onlook-fix/` and used the file-input import path, so it should not be flattened into a claim that the clean extracted upstream branch has already re-proven host write-back end-to-end without the local shim
 - the clean extracted upstream branch at `ext-onlook-pr/` removes the workspace-specific `/api/local-project` shim and path-registration fallback, keeps the browser directory-handle persistence path, passes `@onlook/web-client` typecheck, and passes `@onlook/web-client` build with placeholder required envs
@@ -158,6 +161,7 @@ Use `pilot-plan.md` and `impl-plan.md` together to keep the current repo lane st
 
 - using duplicate sandbox copies as the default experimental write target
 - treating `onlook-ui/` as the canonical sandbox source only when direct canonical write-back is intentional
+- using `tools/run-onlook-sandbox-smoke.ps1` as the repeatable pre-Onlook browser proof for the bounded route family
 - treating same-checkout compare prep as an opt-in local runtime/data layer when populated compare-family route validation is required
 - treating `ext-onlook-pr/` as the upstream-ready patch baseline
 - keeping any future AI/chat or shim-free end-to-end re-proof as separate follow-up work

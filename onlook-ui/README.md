@@ -97,6 +97,19 @@ Same-checkout compare prep validation when populated compare-family routes are n
 python ../tools/validate_wb_prep.py
 ```
 
+Tracked sandbox browser smoke before any duplicate-target Onlook proof:
+
+```powershell
+../tools/run-onlook-sandbox-smoke.ps1 -Profile core
+../tools/run-onlook-sandbox-smoke.ps1 -Profile full
+```
+
+Meaning:
+
+- `core` starts an isolated local review API plus an isolated sandbox dev server and proves the hydrated review, document-trace, and analyst-insight routes
+- `full` adds the same-checkout compare-family proof by consuming the recommended URLs emitted by `../tools/validate_wb_prep.py` and remapping those live review URLs into the sandbox route table
+- both profiles stop after browser proof; they do not import a duplicate target into Onlook or exercise the Onlook editor/write-back path
+
 ## Related Docs
 
 - `../next_milestone_plans/onlook-plan/README.md`

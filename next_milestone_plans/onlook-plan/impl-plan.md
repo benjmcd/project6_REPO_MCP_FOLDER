@@ -101,12 +101,15 @@ Verified locally after the route-family expansion:
   - `/workbench-compare`
   - `/candidate-b-trace`
   - `/analyst-insight`
-- browser validation against the local sandbox dev server confirmed:
+- tracked browser validation against the local sandbox dev server confirmed:
   - the root review route renders the populated review shell
   - the document-trace route renders populated manifest and tab data against a live review runtime
   - the analyst-insight route completes the bounded three-stage POST flow
   - the workbench-compare route renders populated compare data once same-checkout compare prep exists
   - the Candidate-B-trace route renders populated artifact-backed tabs once same-checkout compare prep exists
+- the repo-local harness for that proof is now `tools/run-onlook-sandbox-smoke.ps1`:
+  - `-Profile core` proves the hydrated review, document-trace, and analyst-insight routes
+  - `-Profile full` first requires `tools/validate_wb_prep.py`, then remaps the resulting recommended live review URLs into the sandbox route table to prove the full route family without using Onlook yet
 
 Practical meaning:
 
@@ -585,6 +588,13 @@ Repo-local integrity check:
 ./tools/check-onlook.ps1 -RunValidation
 ```
 
+Tracked sandbox browser smoke before any duplicate-target Onlook proof:
+
+```powershell
+./tools/run-onlook-sandbox-smoke.ps1 -Profile core
+./tools/run-onlook-sandbox-smoke.ps1 -Profile full
+```
+
 Repo-local duplicate sandbox copy:
 
 ```powershell
@@ -654,6 +664,7 @@ Expected result:
   - `/review/nrc-aps/workbench-compare`
   - `/review/nrc-aps/candidate-b-trace`
   - baseline and Candidate-A document trace follow-through
+- `./tools/run-onlook-sandbox-smoke.ps1 -Profile full` then consumes those recommended URLs, remaps them into sandbox routes, and proves the populated compare-family surfaces before any Onlook import step
 - the sandbox `workbench-compare` route then renders populated compare data
 - the sandbox `candidate-b-trace` route then renders populated artifact-backed tabs
 - the compare-family proof remains local runtime/input prep only; it does not modify shipped static UI authority
