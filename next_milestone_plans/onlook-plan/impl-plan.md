@@ -118,6 +118,9 @@ Verified locally against the current official Onlook development setup docs:
   - `patches/upstream-clean.patch`
 - the repo-local duplication helper `tools/copy-onlook-ui.ps1` now creates clean duplicates of `onlook-ui/` without `.next/` or `node_modules/`, and copies `.env.local` only when explicitly requested
 - a fresh duplicate created with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now also passes local `npm run lint` and `npm run build`
+- the repo-local restore helper `tools/restore-onlook.ps1` can now recreate either preserved Onlook patch set from the tracked patch archives and the pinned upstream base commit
+- the tracked patch archives are now protected by `.gitattributes` with `patches/*.patch -text`, so the stored restore inputs are not silently rewritten by Windows line-ending conversion
+- the restore helper has now successfully recreated both preserved Onlook patch sets from the pinned upstream base commit into fresh local clones
 - the canonical local env files for the proven local operator surface now exist at:
   - `ext-onlook-fix/apps/web/client/.env`
   - `ext-onlook-fix/packages/db/.env`
@@ -516,6 +519,13 @@ Repo-local duplicate sandbox copy:
 ./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv
 ```
 
+Repo-local Onlook clone restore:
+
+```powershell
+./tools/restore-onlook.ps1 -PatchSet local-writeback -TargetDir ext-onlook-rw
+./tools/restore-onlook.ps1 -PatchSet upstream-clean -TargetDir ext-onlook-uc
+```
+
 Equivalent direct source-launch path:
 
 ```powershell
@@ -545,6 +555,8 @@ Expected current result:
 - the dev-login flow redirects into the app shell
 - `./tools/check-onlook.ps1` confirms the preserved local and upstream-clean clones are still pinned, clean, and backed by tracked patch archives
 - `./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` produces a clean duplicate frontend source tree for scratch imports without reusing `.next/` or `node_modules/`
+- `./tools/restore-onlook.ps1` can recreate the preserved local or upstream-clean Onlook trees from the tracked patch archives if the local solved clones ever drift or need to be rebuilt from the pinned upstream base
+- that restore path is now proven: both preserved patch sets were rebuilt successfully into fresh local clones from the pinned upstream base commit
 - with a real `CSB_API_KEY`, local import of the current committed `onlook-ui/` folder reaches project verification, completes sandbox creation, and opens the imported project route and editor shell
 - fresh local import of the current committed `onlook-ui/` folder now yields a new CodeSandbox preview that hydrates successfully
 - direct preview of that fresh sandbox logs the `review-shell` lifecycle, fetches `/runs` and `/runs/{run_id}/overview`, and loads the populated review shell

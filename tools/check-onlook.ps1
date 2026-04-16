@@ -96,6 +96,8 @@ if ($RunValidation) {
 Write-Host ''
 Write-Host 'Ready commands:'
 Write-Host '  ./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv'
+Write-Host '  ./tools/restore-onlook.ps1 -PatchSet local-writeback -TargetDir ext-onlook-rw'
+Write-Host '  ./tools/restore-onlook.ps1 -PatchSet upstream-clean -TargetDir ext-onlook-uc'
 Write-Host '  ./tools/start-review-api.ps1'
 Write-Host '  ./tools/start-onlook-web.ps1'
 Write-Host '  ./tools/start-onlook-web.ps1 -OnlookDir ext-onlook-pr -SkipCommitCheck'
