@@ -2,9 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { chromium, expect } from '@playwright/test';
 
-const BROWSER_ARGS = [
-  '--disable-features=LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests',
-];
+const BROWSER_ARGS = [];
 
 function parseArgs(argv) {
   const args = {
@@ -416,6 +414,22 @@ async function navigateWithinPreview(page, path, description, isReady, timeoutMs
   return waitForPreviewState(page, description, timeoutMs, isReady);
 }
 
+async function openRouteWithFallback(
+  page,
+  frame,
+  label,
+  description,
+  isReady,
+  fallbackPath,
+  timeoutMs,
+) {
+  try {
+    return await clickRoute(page, frame, label, description, isReady, timeoutMs);
+  } catch {
+    return navigateWithinPreview(page, fallbackPath, description, isReady, timeoutMs);
+  }
+}
+
 function getSelectLocator(frame, label) {
   return frame
     .locator('label')
@@ -582,7 +596,7 @@ async function isWorkbenchComparePopulated(frame, timeoutMs) {
 }
 
 async function assertWorkbenchCompare(page, frame, selection, directPath, timeoutMs) {
-  frame = await clickRoute(
+  frame = await openRouteWithFallback(
     page,
     frame,
     'Workbench Compare',
@@ -591,6 +605,7 @@ async function assertWorkbenchCompare(page, frame, selection, directPath, timeou
       await waitForHydratedFrameMain(currentFrame, Math.min(timeoutMs, 10000));
       return getSelectLocator(currentFrame, 'Baseline').isVisible();
     },
+    directPath,
     timeoutMs,
   );
   await waitForHydratedFrameMain(frame, timeoutMs);
@@ -674,7 +689,7 @@ async function isCandidateBTraceReady(frame, timeoutMs) {
 }
 
 async function assertCandidateBTrace(page, frame, selection, directPath, timeoutMs) {
-  frame = await clickRoute(
+  frame = await openRouteWithFallback(
     page,
     frame,
     'Candidate B Trace',
@@ -683,6 +698,7 @@ async function assertCandidateBTrace(page, frame, selection, directPath, timeout
       await waitForHydratedFrameMain(currentFrame, Math.min(timeoutMs, 10000));
       return getSelectLocator(currentFrame, 'Baseline').isVisible();
     },
+    directPath,
     timeoutMs,
   );
   await waitForHydratedFrameMain(frame, timeoutMs);

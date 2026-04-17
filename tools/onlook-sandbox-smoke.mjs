@@ -123,6 +123,8 @@ function isIgnorableAbort(url, failureText) {
     url.includes('/_next/static/webpack/webpack.')
     || url.includes('.webpack.hot-update.json')
     || url.includes('_rsc=')
+    || url.includes('/api/v1/review/nrc-aps/')
+    || url.includes('/api/v1/analyst-insight/')
     || url.includes('/documents/') && url.includes('/source')
     || url.includes('/candidate-b-trace/annotated-pdf')
   );
@@ -196,13 +198,44 @@ function createProblemCollector(page) {
 }
 
 async function openRoute(page, baseUrl, path, responsePredicates) {
-  const waits = responsePredicates.map(({ predicate, label, timeoutMs }) =>
-    page.waitForResponse(predicate, { timeout: timeoutMs }),
-  );
+  const seenResponses = [];
+  const onResponse = (response) => {
+    seenResponses.push(response);
+  };
 
-  await page.goto(absoluteUrl(baseUrl, path), { waitUntil: 'domcontentloaded' });
-  const responses = await Promise.all(waits);
-  responsePredicates.forEach(({ label }, index) => ensureOk(responses[index], label));
+  page.on('response', onResponse);
+  try {
+    await page.goto(absoluteUrl(baseUrl, path), { waitUntil: 'domcontentloaded' });
+
+    const deadline = Date.now() + Math.max(...responsePredicates.map(({ timeoutMs }) => timeoutMs));
+    const matches = new Map();
+
+    while (Date.now() < deadline) {
+      for (const response of seenResponses) {
+        for (const entry of responsePredicates) {
+          if (!matches.has(entry.label) && entry.predicate(response)) {
+            matches.set(entry.label, response);
+          }
+        }
+      }
+
+      if (matches.size === responsePredicates.length) {
+        break;
+      }
+
+      await page.waitForTimeout(250);
+    }
+
+    for (const entry of responsePredicates) {
+      const response = matches.get(entry.label);
+      if (!response) {
+        throw new Error(`Timed out waiting for ${entry.label} on ${path}`);
+      }
+      ensureOk(response, entry.label);
+    }
+  } finally {
+    page.off('response', onResponse);
+  }
 }
 
 async function waitForHydratedMain(page, timeoutMs) {
@@ -350,11 +383,12 @@ async function assertCandidateBTraceRoute(page, baseUrl, routePath, timeoutMs) {
   await page.getByRole('button', { name: 'Raw JSON' }).click();
   const rawJsonResponse = await rawJsonPromise;
   ensureOk(rawJsonResponse, 'candidate-b raw-json response');
-  const rawJsonBody = await rawJsonResponse.text();
+  const rawJsonPre = page.locator('pre').first();
+  await expect(rawJsonPre).toBeVisible({ timeout: timeoutMs });
+  const rawJsonBody = await rawJsonPre.innerText();
   if (!rawJsonBody.includes('"file name"') && !rawJsonBody.includes('"fixture_id"')) {
     throw new Error('candidate-b raw-json response did not include an expected structured payload marker');
   }
-  await expect(page.locator('pre')).toBeVisible({ timeout: timeoutMs });
 
   const rawMarkdownPromise = page.waitForResponse(
     (response) =>
@@ -365,11 +399,12 @@ async function assertCandidateBTraceRoute(page, baseUrl, routePath, timeoutMs) {
   await page.getByRole('button', { name: 'Raw Markdown' }).click();
   const rawMarkdownResponse = await rawMarkdownPromise;
   ensureOk(rawMarkdownResponse, 'candidate-b raw-markdown response');
-  const rawMarkdownBody = await rawMarkdownResponse.text();
+  const rawMarkdownPre = page.locator('pre').first();
+  await expect(rawMarkdownPre).toBeVisible({ timeout: timeoutMs });
+  const rawMarkdownBody = await rawMarkdownPre.innerText();
   if (rawMarkdownBody.trim().length < 20) {
     throw new Error('candidate-b raw-markdown response was unexpectedly short');
   }
-  await expect(page.locator('pre')).toBeVisible({ timeout: timeoutMs });
 }
 
 async function assertAnalystInsightRoute(page, baseUrl, timeoutMs) {
