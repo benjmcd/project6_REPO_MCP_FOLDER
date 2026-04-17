@@ -21,13 +21,23 @@ Current lane state:
 
 - the planning packet is committed
 - the sandbox app has been scaffolded at `onlook-ui/`
-- the first bounded shell slice is implemented inside `onlook-ui/*`
-- the sandbox shell now loads `/runs` and `/runs/{run_id}/overview` through the existing review API seam
+- the sandbox app now implements a bounded multi-route review UI family inside `onlook-ui/*`:
+  - `/`
+  - `/document-trace`
+  - `/workbench-compare`
+  - `/candidate-b-trace`
+  - `/analyst-insight`
+- the root review shell now loads `/runs` and `/runs/{run_id}/overview` through the existing review API seam and exposes route navigation for the full sandbox family
+- the document-trace route now loads manifest, diagnostics, normalized-text, indexed-chunks, and extracted-units payloads through the existing review API seam
+- the analyst-insight route now exercises the three existing aliased POST endpoints through the existing backend services without changing the shipped static UI authority
+- the compare-family routes now support two bounded states:
+  - graceful degradation when same-checkout compare prep is absent
+  - populated compare and Candidate-B-trace rendering when same-checkout compare prep has been created locally
 - the sandbox app now carries a committed compatibility fix that keeps React `19.2.4` but pins `next` and `eslint-config-next` to `15.5.15`
 - the app now includes a committed `onlook-ui/.env.example` as the reproducible frontend env template
 - actual Onlook use now assumes a local ignored `onlook-ui/.env.local` for the frontend API base
 - on a fresh worktree, the first frontend bootstrap step is `Copy-Item ./onlook-ui/.env.example ./onlook-ui/.env.local` unless a different local review API base is intentionally needed
-- the repo-local backend startup helper is `tools/start-review-api.ps1`
+- the repo-local backend startup helper is `tools/start-review-api.ps1`; it now auto-resolves the repo-native same-checkout runtime under `backend/app/storage_test_runtime` first and only falls back to the historical sibling adopted runtime when the repo-native runtime is unavailable
 - the original clean upstream base reference for this lane is the source clone lineage rooted at `ext-onlook/`, last verified from upstream revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
 - the current proven local operator and debug surface for the resolved repo lane is `ext-onlook-fix/` on local branch `codex/local-writeback-fix` at commit `c8cf5c16`
 - the clean upstream packaging surface is `ext-onlook-pr/` on local branch `codex/upstream-clean` at commit `6d4c463a`
@@ -35,8 +45,13 @@ Current lane state:
 - the repo-local integrity helper is `tools/check-onlook.ps1`; it verifies the preserved clones or tree-equivalent restored clones, required env files, preserved patch archives, can optionally rerun the bounded repo validations with `-RunValidation`, and treats line-ending-only drift in the known runtime-generated files as non-blocking rather than misclassifying it as a semantic source edit, but only when both the worktree delta and the staged/index delta are line-ending-only
 - the repo-local duplication helper is `tools/copy-onlook-ui.ps1`; it creates a clean source duplicate of `onlook-ui/` without carrying `.next/` or `node_modules/`, and can copy the local frontend env when the duplicate should point at the same backend
 - that duplication helper now refuses a dirty canonical `onlook-ui/` source tree by default, so scratch copies do not silently fork from an in-progress or partially validated state unless explicitly overridden
-- a fresh duplicate created with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now also passes local `npm run lint` and `npm run build`, so producing a clean duplicate sandbox source is a proven path rather than a theoretical recovery step
-- the lowest-risk default for exploratory Onlook work is now: create a duplicate sandbox source with `tools/copy-onlook-ui.ps1`, import that duplicate, and keep `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
+- the repo-local duplicate-prep helper is `tools/prep-onlook-copy.ps1`; it wraps duplicate creation, local `npm install`, `npm run lint`, and `npm run build`, and can optionally run the tracked sandbox smoke before any Onlook import step
+- the default duplicate target `onlook-ui-copy/` is now tracked in `.gitignore`, so the low-risk scratch path does not depend on workstation-local exclude rules
+- that duplicate-prep helper now fails closed when a custom target is not git-ignored unless `-AllowVisibleTarget` is passed explicitly
+- that duplicate-prep helper now also materializes an upload-safe duplicate `.env` with only the public `NEXT_PUBLIC_REVIEW_API_BASE`, because Onlook intentionally skips `.env.local` during project upload
+- a fresh duplicate prepared with `tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now passes local install, lint, and build in one repo-owned path, so producing a clean duplicate sandbox source is a proven path rather than a theoretical recovery step
+- the repo-local duplicate diff helper is `tools/diff-onlook-copy.ps1`; it compares meaningful duplicate source files back to canonical `onlook-ui/` while ignoring local-only build/install/env artifacts, including the generated duplicate `.env`, so duplicate-to-canonical promotion review is explicit instead of ad hoc
+- the lowest-risk default for exploratory Onlook work is now: prepare a duplicate sandbox source with `tools/prep-onlook-copy.ps1`, import that duplicate, and keep `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
 - the repo-local restore helper is `tools/restore-onlook.ps1`; it can rebuild either preserved Onlook patch set from the tracked patch archives and the pinned upstream base commit instead of relying on the local solved clones remaining untouched forever
 - on a fresh worktree, the restore helper now recreates the expected helper-facing clone names by default:
   - `ext-onlook-fix/` for the local-writeback patch set
@@ -64,7 +79,17 @@ Current lane state:
 - the same fresh sandbox now renders the populated review shell inside the Onlook iframe and editor shell, not just in a top-level preview tab
 - from a fresh browser profile, switching the canvas to `Preview` and accepting the CodeSandbox trust interstitial now loads the real sandbox app inside the Onlook iframe
 - direct local write-back is now proven for this repo lane: a bounded Onlook-authored save wrote into `onlook-ui/app/page.tsx` on disk and the host file was restored clean afterward
-- the canonical host-write-back target remains `onlook-ui/`; duplicate copies created with `tools/copy-onlook-ui.ps1` are for scratch imports or comparison work and do not auto-promote changes back into the canonical sandbox app
+- same-checkout compare prep is now a repo-native, validated local path for this lane:
+  - `tools/seed_wb_compare.py` can seed baseline and Candidate-A review runtimes under `backend/app/storage_test_runtime/lc_e2e/`
+  - `tools/run_nrc_aps_candidate_b_compare.py` can generate a local Candidate-B bundle under `tests/reports/cb-compare-*`
+  - `tools/validate_wb_prep.py` can validate the resulting same-checkout compare selection and emit recommended review, trace, and compare URLs
+- the compare prep tooling now works from a clean worktree by resolving the expected `phase7a-py311` interpreter from the nearest ancestor `./.venvs/` when the worktree itself does not carry a local copy
+- the Candidate-B compare tooling now correctly recognizes wrapped `opendataloader_pdf --help` output when checking for annotated-PDF capability, so CLI help formatting no longer creates a false negative
+- the repo-local sandbox browser smoke helper is `tools/run-onlook-sandbox-smoke.ps1`; it starts an isolated local review API and isolated sandbox dev server, proves the hydrated sandbox routes before any Onlook import step, can target either canonical `onlook-ui/` or a prepared duplicate with `-AppDir`, and supports two bounded profiles:
+  - `-Profile core` for review, document-trace, and analyst-insight
+  - `-Profile full` for the full route family, including compare-family routes after `tools/validate_wb_prep.py` emits the recommended same-checkout live-review URLs that the helper then remaps into sandbox routes
+- the repo-local duplicate-target operator proof helper is `tools/run-onlook-operator-proof.ps1`; it reuses or starts local Onlook web plus the local review API, verifies that the API exposes the expected same-checkout reviewable runs from `tools/validate_wb_prep.py`, restarts the expected local Onlook clone once if a reused browser session is stale, imports a prepared duplicate, proves trusted preview navigation across the full sandbox route family, runs the analyst flow, and proves duplicate-only write-back while restoring the duplicate file and leaving canonical `onlook-ui/` untouched
+- the canonical host-write-back target remains `onlook-ui/`; duplicate copies created with the duplicate helpers are for scratch imports or comparison work, do not auto-promote changes back into the canonical sandbox app, and should be reviewed first with `tools/diff-onlook-copy.ps1`
 - that local write-back proof ran on the preserved local operator surface at `ext-onlook-fix/` and used the file-input import path, so it should not be flattened into a claim that the clean extracted upstream branch has already re-proven host write-back end-to-end without the local shim
 - the clean extracted upstream branch at `ext-onlook-pr/` removes the workspace-specific `/api/local-project` shim and path-registration fallback, keeps the browser directory-handle persistence path, passes `@onlook/web-client` typecheck, and passes `@onlook/web-client` build with placeholder required envs
 - the exact local Onlook commits are now also preserved inside this tracked repo lane as:
@@ -99,10 +124,11 @@ Those files confirm that the current shipped review UI is a build-free static su
 4. The backend review API should remain the first integration seam.
 5. The narrowest supported target shape for the sandbox app is `Next.js + TailwindCSS`.
 6. While CodeSandbox-backed Onlook preview remains part of this lane, the sandbox app should stay on `Next 15.5.15`; `Next 16` is not the currently working target version here.
-7. Slice 1 should use client-side, non-credentialed browser fetches only.
-8. The adopted demo runtime is a local cross-worktree dependency, not a repo-native sandbox fixture.
-9. The default promotion posture should be `sandbox-first`, not immediate replacement of the live UI.
-10. Promotion into live authority should happen only after explicit parity and acceptance checks.
+7. The sandbox route family should continue to use client-side, non-credentialed browser fetches only unless the lane is explicitly re-scoped.
+8. The default demo runtime is the repo-native same-checkout `backend/app/storage_test_runtime`; the older sibling adopted runtime is fallback/provenance only.
+9. Same-checkout compare prep is an optional local runtime/input layer for populated compare-family validation, not a product-code dependency of the shipped UI.
+10. The default promotion posture should be `sandbox-first`, not immediate replacement of the live UI.
+11. Promotion into live authority should happen only after explicit parity and acceptance checks.
 
 ## Documents In This Folder
 - `strategy.md`
@@ -118,10 +144,10 @@ Those files confirm that the current shipped review UI is a build-free static su
 - `impl-plan.md`
   - exact sandbox scaffold choice
   - exact backend connection rule
-  - exact adopted demo runtime/data context
+  - exact local demo runtime/data context
   - exact runtime preflight and path-resolution rules
-  - exact first-slice component map
-  - exact validation commands
+  - exact multi-route sandbox component map
+  - exact validation and compare-prep commands
 
 ## Explicit Non-Claims
 This packet does not claim:
@@ -140,6 +166,11 @@ Use `strategy.md` as the settled authority and boundary model for this lane, and
 Use `pilot-plan.md` and `impl-plan.md` together to keep the current repo lane stable while:
 
 - using duplicate sandbox copies as the default experimental write target
+- preparing those duplicate targets with `tools/prep-onlook-copy.ps1` before any Onlook import step
 - treating `onlook-ui/` as the canonical sandbox source only when direct canonical write-back is intentional
+- using `tools/run-onlook-sandbox-smoke.ps1` as the repeatable pre-Onlook browser proof for the bounded route family
+- using `tools/run-onlook-operator-proof.ps1` as the repeatable duplicate-target Onlook proof before relying on editor-side save/write-back behavior
+- using `tools/diff-onlook-copy.ps1` as the explicit duplicate-to-canonical review step before any later promotion decision
+- treating same-checkout compare prep as an opt-in local runtime/data layer when populated compare-family route validation is required
 - treating `ext-onlook-pr/` as the upstream-ready patch baseline
 - keeping any future AI/chat or shim-free end-to-end re-proof as separate follow-up work

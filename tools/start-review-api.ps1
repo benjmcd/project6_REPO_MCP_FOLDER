@@ -1,33 +1,33 @@
+param(
+    [string]$RuntimeRoot = '',
+    [int]$Port = 8000
+)
+
 $ErrorActionPreference = 'Stop'
 
 $laneRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$runtimeRoot = (Resolve-Path (Join-Path $laneRoot '..\\pr45-postmerge-audit\\backend\\app\\storage_test_runtime')).Path
-$summaryPath = (Resolve-Path (Join-Path $runtimeRoot 'lc_e2e\\20260412_182041\\local_corpus_e2e_summary.json')).Path
-$runtimeDb = (Resolve-Path (Join-Path $runtimeRoot 'lc_e2e\\20260412_182041\\lc.db')).Path
+. (Join-Path $PSScriptRoot 'resolve-review-runtime.ps1')
 
-if (-not (Test-Path $runtimeRoot)) {
-    throw "Missing adopted runtime root: $runtimeRoot"
-}
-
-if (-not (Test-Path $summaryPath)) {
-    throw "Missing adopted runtime summary: $summaryPath"
-}
-
-if (-not (Test-Path $runtimeDb)) {
-    throw "Missing adopted runtime db: $runtimeDb"
-}
+$runtimeState = Resolve-ReviewRuntimeState -LaneRoot $laneRoot -RuntimeRoot $RuntimeRoot
+$runtimeRoot = $runtimeState.RuntimeRoot
+$summaryPath = $runtimeState.SummaryPath
+$runtimeDb = $runtimeState.RuntimeDb
 
 $env:DB_INIT_MODE = 'none'
 $env:DATABASE_URL = "sqlite:///$($runtimeDb.Replace('\', '/'))"
 $env:STORAGE_DIR = $runtimeRoot
 
+Write-Host "Using runtime source: $($runtimeState.Source)"
 Write-Host "Using runtime root: $runtimeRoot"
+Write-Host "Using review root: $($runtimeState.ReviewRoot)"
+Write-Host "Using run id: $($runtimeState.RunId)"
 Write-Host "Using runtime db: $runtimeDb"
-Write-Host 'Starting review API on 127.0.0.1:8000'
+Write-Host "Using runtime summary: $summaryPath"
+Write-Host "Starting review API on 127.0.0.1:$Port"
 
 Push-Location $laneRoot
 try {
-    python -m uvicorn main:app --app-dir ./backend --host 127.0.0.1 --port 8000
+    python -m uvicorn main:app --app-dir ./backend --host 127.0.0.1 --port $Port
 }
 finally {
     Pop-Location
