@@ -30,6 +30,7 @@ $canonicalRoot = if ([System.IO.Path]::IsPathRooted($CanonicalDir)) {
 }
 $proofFile = 'app/page.tsx'
 $proofMarker = 'onlook-operator-proof-' + [guid]::NewGuid().ToString('N').Substring(0, 8)
+$uploadEnvPath = Join-Path $appRoot '.env'
 
 function Assert-Path {
     param(
@@ -206,6 +207,45 @@ function Stop-ListeningPortProcessTrees {
     }
 }
 
+function Set-EnvValueInFile {
+    param(
+        [string]$Path,
+        [string]$Name,
+        [string]$Value
+    )
+
+    $originalContent = [System.IO.File]::ReadAllText($Path)
+    $updatedContent = if ($originalContent -match ("(?m)^" + [regex]::Escape($Name) + "=")) {
+        [regex]::Replace(
+            $originalContent,
+            "(?m)^" + [regex]::Escape($Name) + "=.*$",
+            ($Name + '=' + $Value),
+            1
+        )
+    } else {
+        $separator = if ($originalContent.Length -eq 0 -or $originalContent.EndsWith("`r`n") -or $originalContent.EndsWith("`n")) {
+            ''
+        } else {
+            "`r`n"
+        }
+        $originalContent + $separator + ($Name + '=' + $Value + "`r`n")
+    }
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $updatedContent, $utf8NoBom)
+    return $originalContent
+}
+
+function Restore-FileContent {
+    param(
+        [string]$Path,
+        [string]$Content
+    )
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $Content, $utf8NoBom)
+}
+
 function Start-OnlookWebProcess {
     param(
         [string]$LaneRoot,
@@ -294,7 +334,7 @@ Assert-Path $onlookStartScript 'Onlook web start helper'
 Assert-Path $onlookRoot 'Onlook source clone'
 Assert-Path $appRoot 'duplicate sandbox app'
 Assert-Path $canonicalRoot 'canonical sandbox app'
-Assert-Path (Join-Path $appRoot '.env') 'upload-safe duplicate env'
+Assert-Path $uploadEnvPath 'upload-safe duplicate env'
 Assert-Path (Join-Path $appRoot $proofFile) 'duplicate proof file'
 Assert-Path (Join-Path $canonicalRoot $proofFile) 'canonical proof file'
 
@@ -346,8 +386,11 @@ $apiProcess = $null
 $uiProcess = $null
 $startedSupabase = $false
 $reusedOnlookWeb = $false
+$originalUploadEnv = $null
 
 try {
+    $originalUploadEnv = Set-EnvValueInFile -Path $uploadEnvPath -Name 'NEXT_PUBLIC_REVIEW_API_BASE' -Value ("http://$BindHost`:$ApiPort/api/v1/review/nrc-aps")
+
     if (-not ((Test-PortListening -Port 54321) -and (Test-PortListening -Port 54322))) {
         Write-Host "Starting local Onlook backend stack from $OnlookDir"
         Push-Location $onlookRoot
@@ -373,7 +416,15 @@ try {
         }
 
         $apiProcess = Start-Process -FilePath 'powershell.exe' `
-            -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', './tools/start-review-api.ps1') `
+            -ArgumentList @(
+                '-NoProfile',
+                '-ExecutionPolicy',
+                'Bypass',
+                '-File',
+                './tools/start-review-api.ps1',
+                '-Port',
+                $ApiPort
+            ) `
             -WorkingDirectory $laneRoot `
             -RedirectStandardOutput $apiOut `
             -RedirectStandardError $apiErr `
@@ -447,6 +498,10 @@ try {
     }
 }
 finally {
+    if ($null -ne $originalUploadEnv) {
+        Restore-FileContent -Path $uploadEnvPath -Content $originalUploadEnv
+    }
+
     if (-not $LeaveServicesRunning) {
         if ($uiProcess) {
             Stop-ProcessTree -Process $uiProcess -Label 'Onlook web'
