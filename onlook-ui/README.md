@@ -58,6 +58,7 @@ Lowest-risk default:
 
 - prepare a duplicate first with `../tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv`
 - the default scratch target `onlook-ui-copy/` is tracked in the repo `.gitignore`, so duplicate-target work does not depend on workstation-local excludes
+- that prep helper now materializes an upload-safe `onlook-ui-copy/.env` containing only the public `NEXT_PUBLIC_REVIEW_API_BASE`, because Onlook intentionally skips `.env.local` during project upload
 - custom visible scratch targets now require `-AllowVisibleTarget` explicitly so duplicate work does not accidentally pollute repo status
 - review that duplicate against canonical `onlook-ui/` with `../tools/diff-onlook-copy.ps1 -TargetDir onlook-ui-copy`
 - import that duplicate into Onlook
@@ -71,6 +72,7 @@ Do not point Onlook at the repo root.
 - Do not modify `../backend/app/review_ui/static/*` from this lane.
 - Keep client-side, non-credentialed fetches only for this sandbox family.
 - Treat `.env.local` as local machine config only. The committed template is `.env.example`.
+- Treat the duplicate-target `.env` created by `../tools/prep-onlook-copy.ps1` as upload-only public config, not as canonical sandbox source.
 - Treat same-checkout compare prep as an opt-in local runtime/input layer for populated compare-family validation, not as an always-present product dependency.
 
 ## Validation
@@ -85,7 +87,7 @@ npm run build
 Backend validate-only slice from the lane root:
 
 ```powershell
-$runtimeRoot = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime).Path
+$runtimeRoot = (Resolve-Path ./backend/app/storage_test_runtime).Path
 $env:STORAGE_DIR=$runtimeRoot
 $env:PYTHONDONTWRITEBYTECODE='1'
 python -B -m pytest ./backend/tests/test_review_nrc_aps_catalog.py ./backend/tests/test_review_nrc_aps_api.py -p no:cacheprovider
@@ -114,6 +116,18 @@ Meaning:
 - `full` adds the same-checkout compare-family proof by consuming the recommended URLs emitted by `../tools/validate_wb_prep.py` and remapping those live review URLs into the sandbox route table
 - `-AppDir onlook-ui-copy` lets the same proof run against a prepared duplicate target before import
 - both profiles stop after browser proof; they do not import a duplicate target into Onlook or exercise the Onlook editor/write-back path
+
+Tracked duplicate-target Onlook operator proof:
+
+```powershell
+../tools/run-onlook-operator-proof.ps1
+```
+
+Meaning:
+
+- the operator proof imports a prepared duplicate target into local Onlook, reuses or starts the local review API, and proves trusted preview navigation across the full sandbox route family
+- it also runs the analyst flow and proves duplicate-only write-back while restoring the duplicate proof file and leaving canonical `onlook-ui/` untouched
+- use it after `../tools/run-onlook-sandbox-smoke.ps1 -Profile full -AppDir onlook-ui-copy` when you need editor-side proof rather than browser-only route proof
 
 ## Related Docs
 

@@ -56,19 +56,19 @@ Practical meaning:
 Verified locally with:
 
 - `DB_INIT_MODE=none`
-- `DATABASE_URL` pointed at the adopted runtime database
-- `STORAGE_DIR` pointed at the adopted `storage_test_runtime` root
+- `DATABASE_URL` pointed at the selected same-checkout runtime database
+- `STORAGE_DIR` pointed at the repo-native `backend/app/storage_test_runtime` root
 
 Result:
 
 - `GET /api/v1/review/nrc-aps/runs` returned `200`
-- `default_run_id` resolved to `f6e34493-270c-4d93-afa9-bf85bf699f0c`
+- `default_run_id` resolved to `d7a563e3-fd10-4df1-a85a-56000472e736`
 - the `runs` array length was `2`
-- `GET /api/v1/review/nrc-aps/runs/f6e34493-270c-4d93-afa9-bf85bf699f0c/overview` returned `200`
+- `GET /api/v1/review/nrc-aps/runs/d7a563e3-fd10-4df1-a85a-56000472e736/overview` returned `200`
 
 Practical meaning:
 
-- the adopted demo runtime context is real and usable
+- the repo-native same-checkout runtime context is real and usable for the current operator lane
 
 ### 2.5 Scaffold validation
 Verified locally:
@@ -114,7 +114,7 @@ Verified locally after the route-family expansion:
 Practical meaning:
 
 - the sandbox is no longer a single-page proof-of-fit
-- the bounded review UI family is now implemented and validated against the adopted backend seams
+- the bounded review UI family is now implemented and validated against the existing backend seams
 
 ### 2.7 Local Onlook operator path
 Verified locally against the current official Onlook development setup docs:
@@ -133,8 +133,10 @@ Verified locally against the current official Onlook development setup docs:
 - that duplication helper now refuses a dirty canonical `onlook-ui/` source tree by default unless `-AllowDirtySource` is supplied
 - the repo-local duplicate-prep helper `tools/prep-onlook-copy.ps1` now wraps duplicate creation, local install, `npm run lint`, and `npm run build`, and can optionally run the tracked sandbox smoke before any Onlook import
 - that duplicate-prep helper now fails closed when a custom target is not git-ignored unless `-AllowVisibleTarget` is passed explicitly
+- that duplicate-prep helper now also materializes an upload-safe duplicate `.env` with only the public `NEXT_PUBLIC_REVIEW_API_BASE`, because Onlook intentionally skips `.env.local` during project upload
 - a fresh duplicate prepared with `tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now passes local install, lint, and build in one repo-owned path
-- the repo-local duplicate diff helper `tools/diff-onlook-copy.ps1` now makes duplicate-to-canonical sandbox review explicit before any manual merge-back step while ignoring local-only `.next/`, `node_modules/`, and `.env.local` noise
+- the repo-local duplicate diff helper `tools/diff-onlook-copy.ps1` now makes duplicate-to-canonical sandbox review explicit before any manual merge-back step while ignoring local-only `.next/`, `node_modules/`, `.env.local`, and generated duplicate `.env` noise
+- the repo-local duplicate-target operator proof helper `tools/run-onlook-operator-proof.ps1` now reuses or starts local Onlook web plus the local review API, imports a prepared duplicate, proves trusted preview navigation across the full sandbox route family, runs the analyst flow, and proves duplicate-only write-back while restoring the duplicate file and leaving canonical `onlook-ui/` untouched
 - the safest default operator posture is now: prepare a duplicate sandbox target first, import that duplicate into Onlook, and leave `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
 - the repo-local restore helper `tools/restore-onlook.ps1` can now recreate either preserved Onlook patch set from the tracked patch archives and the pinned upstream base commit
 - on a fresh worktree, that restore helper now recreates the expected helper-facing clone names by default:
@@ -338,36 +340,44 @@ Reason:
 
 ## 5. Exact Demo Runtime And Data Context
 
-### 5.1 Adopted runtime root
-Use this runtime root for the first sandbox demo:
+### 5.1 Default runtime root
+Use this runtime root by default for the current sandbox lane:
+
+- `./backend/app/storage_test_runtime`
+
+Historical fallback only when the repo-native runtime is unavailable:
 
 - `./../pr45-postmerge-audit/backend/app/storage_test_runtime`
 
-Do not point the backend at the nested runtime `storage` directory.
+Do not point the backend at the nested per-run `storage` directory.
 
 Reason:
 
+- the current repo-native same-checkout runtime now contains the bounded review and compare-prep state needed for the active lane
 - current review runtime discovery expects a `storage` or `storage_test_runtime` root and then resolves `lc_e2e` under it
 
-### 5.2 Adopted runtime summary
-Current verified summary:
+### 5.2 Current same-checkout runtime summaries
+Current verified same-checkout summaries:
 
-- `./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/local_corpus_e2e_summary.json`
+- `./backend/app/storage_test_runtime/lc_e2e/wb-b0/local_corpus_e2e_summary.json`
+- `./backend/app/storage_test_runtime/lc_e2e/wb-a0/local_corpus_e2e_summary.json`
 
 Verified useful values:
 
-- `run_id`: `f6e34493-270c-4d93-afa9-bf85bf699f0c`
-- `visual_lane_mode`: `candidate_a_page_evidence_v1`
+- baseline `run_id`: `28eafe46-34de-4931-bd42-6c6a88dc0ac6`
+- candidate-a `run_id`: `d7a563e3-fd10-4df1-a85a-56000472e736`
+- baseline `visual_lane_mode`: `baseline`
+- candidate-a `visual_lane_mode`: `candidate_a_page_evidence_v1`
 - `passed`: `true`
 
 ### 5.3 Exact backend env for the pilot
-Use shell env, not a local `.env`, for the first pilot.
+Use shell env, not a local `.env`, for the active local API process.
 
-Resolve the repo-local sibling paths first, then pass absolute values to the backend server:
+Resolve the repo-native runtime paths first, then pass absolute values to the backend server:
 
 ```powershell
-$runtimeRoot = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime).Path
-$runtimeDb = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/lc.db).Path.Replace('\', '/')
+$runtimeRoot = (Resolve-Path ./backend/app/storage_test_runtime).Path
+$runtimeDb = (Resolve-Path ./backend/app/storage_test_runtime/lc_e2e/wb-a0/lc.db).Path.Replace('\', '/')
 $env:DB_INIT_MODE='none'
 $env:DATABASE_URL="sqlite:///$runtimeDb"
 $env:STORAGE_DIR=$runtimeRoot
@@ -377,7 +387,7 @@ Reason:
 
 - `DB_INIT_MODE=none` avoids write-on-start migration behavior
 - the backend server must receive absolute resolved paths here because `config.py` normalizes relative `STORAGE_DIR` values against the backend root
-- the database points at the adopted runtime that the current review UI can discover
+- the database points at a current same-checkout runtime that the review API can discover
 - the storage root points at the correct discovery boundary
 - this keeps the sandbox backend context explicit and reproducible
 
@@ -389,16 +399,18 @@ There are two different path-resolution paths in this repo:
 
 Practical rule:
 
-- resolve the adopted sibling runtime root to an absolute path both for the validate-only backend test slice in section 7.2 and for the backend server in section 7.3
-- do not reuse older relative `STORAGE_DIR` examples once same-checkout compare prep exists, because the API assertions in the validation slice can otherwise miss the intended sibling runtime root
+- resolve the active runtime root to an absolute path both for the validate-only backend test slice in section 7.2 and for the backend server in section 7.3
+- do not reuse older relative `STORAGE_DIR` examples once same-checkout compare prep exists, because the API assertions in the validation slice can otherwise miss the intended runtime root
 
-### 5.5 Cross-worktree dependency rule
-The adopted demo runtime is a local dependency on the sibling `pr45-postmerge-audit` worktree.
+### 5.5 Runtime fallback rule
+The historical sibling adopted runtime is now fallback/provenance only.
 
 Practical rule:
 
-- if that sibling worktree, runtime root, summary file, or database file disappears, stop and reassess
-- do not silently substitute a different runtime without updating the packet and re-validating the adopted context
+- use `tools/start-review-api.ps1` as the default entrypoint so runtime selection stays consistent
+- prefer the repo-native same-checkout runtime whenever it exists
+- only fall back to the sibling adopted runtime when the repo-native runtime is unavailable
+- if both are unavailable, stop and reassess
 
 ## 6. Exact Multi-Route Sandbox Component Map
 
@@ -464,11 +476,11 @@ Reason:
 
 ## 7. Exact Commands For The First Implementation Slice
 
-### 7.1 Adopted runtime preflight
+### 7.1 Runtime preflight
 ```powershell
-Test-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime
-Test-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/local_corpus_e2e_summary.json
-Test-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/lc.db
+Test-Path ./backend/app/storage_test_runtime
+Test-Path ./backend/app/storage_test_runtime/lc_e2e/wb-b0/local_corpus_e2e_summary.json
+Test-Path ./backend/app/storage_test_runtime/lc_e2e/wb-a0/local_corpus_e2e_summary.json
 ```
 
 Expected result:
@@ -477,7 +489,7 @@ Expected result:
 
 ### 7.2 Baseline backend validation
 ```powershell
-$runtimeRoot = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime).Path
+$runtimeRoot = (Resolve-Path ./backend/app/storage_test_runtime).Path
 $env:STORAGE_DIR=$runtimeRoot
 $env:PYTHONDONTWRITEBYTECODE='1'
 python -B -m pytest ./backend/tests/test_review_nrc_aps_catalog.py ./backend/tests/test_review_nrc_aps_api.py -p no:cacheprovider
@@ -494,11 +506,16 @@ Preferred helper:
 ./tools/start-review-api.ps1
 ```
 
+Current helper behavior:
+
+- auto-resolves the repo-native same-checkout runtime first
+- falls back to the historical sibling adopted runtime only when the repo-native runtime is unavailable
+
 Equivalent explicit command path:
 
 ```powershell
-$runtimeRoot = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime).Path
-$runtimeDb = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/lc.db).Path.Replace('\', '/')
+$runtimeRoot = (Resolve-Path ./backend/app/storage_test_runtime).Path
+$runtimeDb = (Resolve-Path ./backend/app/storage_test_runtime/lc_e2e/wb-a0/lc.db).Path.Replace('\', '/')
 $env:DB_INIT_MODE='none'
 $env:DATABASE_URL="sqlite:///$runtimeDb"
 $env:STORAGE_DIR=$runtimeRoot
@@ -508,7 +525,7 @@ python -m uvicorn main:app --app-dir ./backend --host 127.0.0.1 --port 8000
 ### 7.4 Backend API smoke after server start
 ```powershell
 Invoke-RestMethod 'http://127.0.0.1:8000/api/v1/review/nrc-aps/runs'
-Invoke-RestMethod 'http://127.0.0.1:8000/api/v1/review/nrc-aps/runs/f6e34493-270c-4d93-afa9-bf85bf699f0c/overview'
+Invoke-RestMethod 'http://127.0.0.1:8000/api/v1/review/nrc-aps/runs/d7a563e3-fd10-4df1-a85a-56000472e736/overview'
 ```
 
 Expected result:
@@ -528,6 +545,7 @@ For actual Onlook use:
 
 - ensure `onlook-ui/.env.local` exists with `NEXT_PUBLIC_REVIEW_API_BASE`
 - for the lowest-risk exploratory path, create a duplicate first with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` and import that duplicate
+- for an import-ready duplicate, prefer `tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv`; it now writes a public duplicate `.env` for CodeSandbox upload in addition to local install/lint/build
 - use `onlook-ui/` as the local project source only when direct canonical write-back is intentional
 - use `ext-onlook-fix/` when you need the already-proven local operator path
 - use `ext-onlook-pr/` when you need the clean extracted upstream packaging surface
@@ -685,7 +703,7 @@ Stop and reassess if:
 - the scaffold requires touching `backend/app/review_ui/static/*`
 - the sandbox cannot render the first page without backend contract changes
 - direct cross-port calls require credentialed requests, server-side fetching, or early proxy work
-- the adopted `pr45-postmerge-audit` runtime root, summary, or database path fails preflight
+- neither the repo-native runtime nor the explicit fallback runtime can satisfy preflight
 - the sandbox route family starts duplicating backend business logic instead of consuming backend outputs
 - a fresh import of the current committed sandbox app stops hydrating in direct preview or stops loading the populated shell in the Onlook iframe
 - future work starts depending on the clean extracted upstream branch as if shim-free host write-back had already been re-proven there

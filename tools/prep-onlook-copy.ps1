@@ -19,6 +19,31 @@ $targetPath = if ([System.IO.Path]::IsPathRooted($TargetDir)) {
 }
 $targetName = $targetPath.Substring($laneRoot.Length).TrimStart('\', '/')
 $targetIgnorePath = ($targetName.TrimEnd('\', '/')) + '/'
+$uploadEnvPath = Join-Path $targetPath '.env'
+
+function Get-EnvValue {
+    param(
+        [string]$Path,
+        [string]$Name
+    )
+
+    if (-not (Test-Path $Path)) {
+        return $null
+    }
+
+    foreach ($line in Get-Content $Path) {
+        $trimmed = $line.Trim()
+        if (-not $trimmed -or $trimmed.StartsWith('#')) {
+            continue
+        }
+
+        if ($trimmed -match ('^{0}=(.*)$' -f [regex]::Escape($Name))) {
+            return $Matches[1]
+        }
+    }
+
+    return $null
+}
 
 function Invoke-Checked {
     param(
@@ -68,6 +93,19 @@ try {
         powershell.exe @copyArgs
     }
 
+    $publicReviewApiBase = Get-EnvValue -Path (Join-Path $targetPath '.env.local') -Name 'NEXT_PUBLIC_REVIEW_API_BASE'
+    if (-not $publicReviewApiBase) {
+        $publicReviewApiBase = Get-EnvValue -Path (Join-Path $targetPath '.env.example') -Name 'NEXT_PUBLIC_REVIEW_API_BASE'
+    }
+    if ($publicReviewApiBase) {
+        Set-Content -LiteralPath $uploadEnvPath -Value @(
+            '# Upload-safe sandbox env for Onlook import.'
+            '# Keep this limited to public variables only.'
+            ('NEXT_PUBLIC_REVIEW_API_BASE={0}' -f $publicReviewApiBase)
+            ''
+        )
+    }
+
     Push-Location $targetPath
     try {
         Invoke-Checked -Label 'npm install' -Command { npm install }
@@ -102,6 +140,9 @@ finally {
 
 Write-Host "Prepared duplicate sandbox target: $targetPath"
 Write-Host "Validated local install, lint, and build."
+if (Test-Path $uploadEnvPath) {
+    Write-Host "Materialized upload-safe .env for CodeSandbox import: $uploadEnvPath"
+}
 if ($RunSmokeProfile -ne 'none') {
     Write-Host "Validated browser smoke profile: $RunSmokeProfile"
 }

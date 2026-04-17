@@ -6,6 +6,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $laneRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+. (Join-Path $PSScriptRoot 'resolve-review-runtime.ps1')
 $onlookUiRoot = Join-Path $laneRoot 'onlook-ui'
 $expectedStates = @{
     'ext-onlook-fix' = @{
@@ -145,6 +146,8 @@ foreach ($port in $portsToInspect) {
 }
 
 if ($RunValidation) {
+    $runtimeState = Resolve-ReviewRuntimeState -LaneRoot $laneRoot
+
     Push-Location $onlookUiRoot
     try {
         npm run lint
@@ -156,8 +159,7 @@ if ($RunValidation) {
 
     Push-Location $laneRoot
     try {
-        $runtimeRoot = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime).Path
-        $env:STORAGE_DIR = $runtimeRoot
+        $env:STORAGE_DIR = $runtimeState.RuntimeRoot
         $env:PYTHONDONTWRITEBYTECODE = '1'
         python -B -m pytest ./backend/tests/test_review_nrc_aps_catalog.py ./backend/tests/test_review_nrc_aps_api.py -p no:cacheprovider
     }
@@ -169,14 +171,16 @@ if ($RunValidation) {
 Write-Host ''
 Write-Host 'Ready commands:'
 Write-Host '  Copy-Item ./onlook-ui/.env.example ./onlook-ui/.env.local'
+Write-Host '  ./tools/start-review-api.ps1'
+Write-Host '  ./tools/start-review-api.ps1 -RuntimeRoot ./backend/app/storage_test_runtime'
 Write-Host '  ./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv'
 Write-Host '  ./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv'
 Write-Host '  ./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv -RunSmokeProfile full'
 Write-Host '  ./tools/diff-onlook-copy.ps1 -TargetDir onlook-ui-copy'
+Write-Host '  ./tools/run-onlook-operator-proof.ps1'
 Write-Host '  ./tools/restore-onlook.ps1 -PatchSet local-writeback'
 Write-Host '  ./tools/restore-onlook.ps1 -PatchSet upstream-clean'
 Write-Host '  ./tools/run-onlook-sandbox-smoke.ps1 -Profile core'
 Write-Host '  ./tools/run-onlook-sandbox-smoke.ps1 -Profile full'
-Write-Host '  ./tools/start-review-api.ps1'
 Write-Host '  ./tools/start-onlook-web.ps1'
 Write-Host '  ./tools/start-onlook-web.ps1 -OnlookDir ext-onlook-pr'

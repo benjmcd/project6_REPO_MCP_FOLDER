@@ -261,7 +261,7 @@ export function CandidateBTraceShell() {
       mounted = false;
       controller.abort();
     };
-  }, [searchParams, selectedCandidateBBundleId, selectedFixtureId]);
+  }, [searchParams, selectedCandidateBBundleId, selectedFixtureId, selection]);
 
   useEffect(() => {
     if (!manifest) {
