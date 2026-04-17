@@ -1,0 +1,321 @@
+param(
+    [string]$AppDir = 'onlook-ui-copy',
+    [string]$CanonicalDir = 'onlook-ui',
+    [string]$OnlookDir = 'ext-onlook-fix',
+    [string]$BindHost = '127.0.0.1',
+    [int]$OnlookPort = 3011,
+    [int]$ApiPort = 8000,
+    [int]$ReadyTimeoutSeconds = 300,
+    [switch]$LeaveServicesRunning
+)
+
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+$laneRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$operatorScript = Join-Path $laneRoot 'tools\onlook-operator-proof.mjs'
+$wbPrepScript = Join-Path $laneRoot 'tools\validate_wb_prep.py'
+$apiStartScript = Join-Path $laneRoot 'tools\start-review-api.ps1'
+$onlookStartScript = Join-Path $laneRoot 'tools\start-onlook-web.ps1'
+$onlookRoot = Join-Path $laneRoot $OnlookDir
+$appRoot = if ([System.IO.Path]::IsPathRooted($AppDir)) {
+    [System.IO.Path]::GetFullPath($AppDir)
+} else {
+    [System.IO.Path]::GetFullPath((Join-Path $laneRoot $AppDir))
+}
+$canonicalRoot = if ([System.IO.Path]::IsPathRooted($CanonicalDir)) {
+    [System.IO.Path]::GetFullPath($CanonicalDir)
+} else {
+    [System.IO.Path]::GetFullPath((Join-Path $laneRoot $CanonicalDir))
+}
+$proofFile = 'app/page.tsx'
+$proofMarker = 'onlook-operator-proof-' + [guid]::NewGuid().ToString('N').Substring(0, 8)
+
+function Assert-Path {
+    param(
+        [string]$Path,
+        [string]$Label
+    )
+
+    if (-not (Test-Path $Path)) {
+        throw "Missing ${Label}: $Path"
+    }
+}
+
+function Test-PortListening {
+    param([int]$Port)
+
+    $listeners = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+    return @($listeners).Count -gt 0
+}
+
+function Wait-PortListening {
+    param(
+        [int[]]$Ports,
+        [int]$TimeoutSeconds
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        $allListening = $true
+        foreach ($port in $Ports) {
+            if (-not (Test-PortListening -Port $port)) {
+                $allListening = $false
+                break
+            }
+        }
+
+        if ($allListening) {
+            return
+        }
+
+        Start-Sleep -Seconds 2
+    }
+
+    throw "Timed out waiting for ports to listen: $($Ports -join ', ')"
+}
+
+function Test-HttpReady {
+    param([string]$Url)
+
+    try {
+        $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 5
+        return $response.StatusCode -ge 200 -and $response.StatusCode -lt 400
+    } catch {
+        return $false
+    }
+}
+
+function Wait-HttpReady {
+    param(
+        [string]$Url,
+        [int]$TimeoutSeconds
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        if (Test-HttpReady -Url $Url) {
+            return
+        }
+
+        Start-Sleep -Seconds 2
+    }
+
+    throw "Timed out waiting for HTTP readiness at $Url"
+}
+
+function Assert-ReviewApiPopulated {
+    param([string]$Url)
+
+    $payload = Invoke-RestMethod -Uri $Url -UseBasicParsing -TimeoutSec 15
+    if ($null -eq $payload) {
+        throw "Review API returned an empty payload at $Url"
+    }
+
+    $runs = @($payload.runs)
+    if ($runs.Count -lt 1) {
+        throw "Review API returned zero runs at $Url"
+    }
+
+    $reviewableRuns = @($runs | Where-Object { $_.reviewable -eq $true })
+    if ($reviewableRuns.Count -lt 1) {
+        throw "Review API returned runs but none were reviewable at $Url"
+    }
+}
+
+function Stop-ProcessTree {
+    param(
+        [System.Diagnostics.Process]$Process,
+        [string]$Label
+    )
+
+    if (-not $Process) {
+        return
+    }
+
+    $existing = Get-Process -Id $Process.Id -ErrorAction SilentlyContinue
+    if (-not $existing) {
+        return
+    }
+
+    Write-Host "Stopping $Label process tree rooted at PID $($Process.Id)"
+    taskkill /PID $Process.Id /T /F | Out-Null
+}
+
+function Resolve-BrowserChannel {
+    $edgePath = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
+    $chromePath = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
+
+    if (Test-Path $edgePath) {
+        return 'msedge'
+    }
+
+    if (Test-Path $chromePath) {
+        return 'chrome'
+    }
+
+    throw 'Missing supported system browser. Install Microsoft Edge or Google Chrome before running the Onlook operator proof.'
+}
+
+Assert-Path $operatorScript 'operator proof script'
+Assert-Path $wbPrepScript 'compare prep validator'
+Assert-Path $apiStartScript 'review API start helper'
+Assert-Path $onlookStartScript 'Onlook web start helper'
+Assert-Path $onlookRoot 'Onlook source clone'
+Assert-Path $appRoot 'duplicate sandbox app'
+Assert-Path $canonicalRoot 'canonical sandbox app'
+Assert-Path (Join-Path $appRoot '.env') 'upload-safe duplicate env'
+Assert-Path (Join-Path $appRoot $proofFile) 'duplicate proof file'
+Assert-Path (Join-Path $canonicalRoot $proofFile) 'canonical proof file'
+
+if (-not $appRoot.StartsWith($laneRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "Duplicate sandbox app must stay inside the lane root: $laneRoot"
+}
+
+if (-not $canonicalRoot.StartsWith($laneRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "Canonical sandbox app must stay inside the lane root: $laneRoot"
+}
+
+if ($appRoot -eq $canonicalRoot) {
+    throw 'Operator proof must target a duplicate sandbox app, not canonical onlook-ui/.'
+}
+
+$browserChannel = Resolve-BrowserChannel
+
+Push-Location $laneRoot
+try {
+    $prepOutput = python ./tools/validate_wb_prep.py | Out-String
+    if ($LASTEXITCODE -ne 0) {
+        throw "validate_wb_prep.py failed with exit code $LASTEXITCODE"
+    }
+}
+finally {
+    Pop-Location
+}
+
+$prepSummary = $prepOutput | ConvertFrom-Json
+if (-not $prepSummary.passed) {
+    throw 'validate_wb_prep.py did not return a passing prep summary.'
+}
+
+$apiUrl = "http://$BindHost`:$ApiPort/api/v1/review/nrc-aps/runs"
+$onlookLoginUrl = "http://$BindHost`:$OnlookPort/login"
+$tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("onlook-operator-" + [System.Guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $tempRoot | Out-Null
+$apiOut = Join-Path $tempRoot 'api.out.log'
+$apiErr = Join-Path $tempRoot 'api.err.log'
+$uiOut = Join-Path $tempRoot 'ui.out.log'
+$uiErr = Join-Path $tempRoot 'ui.err.log'
+
+$apiProcess = $null
+$uiProcess = $null
+$startedSupabase = $false
+
+try {
+    if (-not ((Test-PortListening -Port 54321) -and (Test-PortListening -Port 54322))) {
+        Write-Host "Starting local Onlook backend stack from $OnlookDir"
+        Push-Location $onlookRoot
+        try {
+            cmd /d /c bun backend:start
+            if ($LASTEXITCODE -ne 0) {
+                throw "bun backend:start failed with exit code $LASTEXITCODE"
+            }
+        }
+        finally {
+            Pop-Location
+        }
+
+        Wait-PortListening -Ports @(54321, 54322) -TimeoutSeconds $ReadyTimeoutSeconds
+        $startedSupabase = $true
+    }
+
+    if (Test-HttpReady -Url $apiUrl) {
+        Write-Host "Reusing review API at $apiUrl"
+    } else {
+        if (Test-PortListening -Port $ApiPort) {
+            throw "Review API port $ApiPort is already listening but did not answer $apiUrl"
+        }
+
+        $apiProcess = Start-Process -FilePath 'powershell.exe' `
+            -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', './tools/start-review-api.ps1') `
+            -WorkingDirectory $laneRoot `
+            -RedirectStandardOutput $apiOut `
+            -RedirectStandardError $apiErr `
+            -PassThru
+
+        Wait-HttpReady -Url $apiUrl -TimeoutSeconds $ReadyTimeoutSeconds
+    }
+
+    Assert-ReviewApiPopulated -Url $apiUrl
+
+    if (Test-HttpReady -Url $onlookLoginUrl) {
+        Write-Host "Reusing local Onlook web at $onlookLoginUrl"
+    } else {
+        if (Test-PortListening -Port $OnlookPort) {
+            throw "Onlook web port $OnlookPort is already listening but did not answer $onlookLoginUrl"
+        }
+
+        $uiProcess = Start-Process -FilePath 'powershell.exe' `
+            -ArgumentList @(
+                '-NoProfile',
+                '-ExecutionPolicy',
+                'Bypass',
+                '-File',
+                './tools/start-onlook-web.ps1',
+                '-OnlookDir',
+                $OnlookDir,
+                '-Port',
+                $OnlookPort
+            ) `
+            -WorkingDirectory $laneRoot `
+            -RedirectStandardOutput $uiOut `
+            -RedirectStandardError $uiErr `
+            -PassThru
+
+        Wait-HttpReady -Url $onlookLoginUrl -TimeoutSeconds $ReadyTimeoutSeconds
+    }
+
+    Push-Location $laneRoot
+    try {
+        node ./tools/onlook-operator-proof.mjs `
+            --base-url ("http://$BindHost`:$OnlookPort") `
+            --app-dir $appRoot `
+            --canonical-dir $canonicalRoot `
+            --browser-channel $browserChannel `
+            --document-trace-path ([string]$prepSummary.recommended_urls.baseline_trace) `
+            --workbench-path ([string]$prepSummary.recommended_urls.workbench_compare) `
+            --candidate-b-path ([string]$prepSummary.recommended_urls.candidate_b_trace) `
+            --proof-file $proofFile `
+            --proof-marker $proofMarker
+        if ($LASTEXITCODE -ne 0) {
+            throw "onlook-operator-proof.mjs failed with exit code $LASTEXITCODE"
+        }
+    }
+    finally {
+        Pop-Location
+    }
+}
+finally {
+    if (-not $LeaveServicesRunning) {
+        if ($uiProcess) {
+            Stop-ProcessTree -Process $uiProcess -Label 'Onlook web'
+        }
+
+        if ($apiProcess) {
+            Stop-ProcessTree -Process $apiProcess -Label 'review API'
+        }
+
+        if ($startedSupabase) {
+            Write-Host "Stopping local Onlook backend stack from $OnlookDir"
+            Push-Location $onlookRoot
+            try {
+                cmd /d /c bun --filter @onlook/backend stop
+            }
+            finally {
+                Pop-Location
+            }
+        }
+    }
+
+    Write-Host "Operator proof logs: $tempRoot"
+}

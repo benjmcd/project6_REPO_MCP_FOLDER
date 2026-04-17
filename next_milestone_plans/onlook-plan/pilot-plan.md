@@ -158,28 +158,30 @@ Reason:
 2. The backend static UI remains untouched.
 3. The backend review API remains the authority seam.
 4. The runtime/data context used by the sandbox must be explicit, not implied from missing root-local historical fixtures.
-5. The frontend-to-backend connection rule must remain explicit:
+5. The default runtime for the current lane is the repo-native same-checkout `backend/app/storage_test_runtime`; the older sibling adopted runtime is fallback only.
+6. The frontend-to-backend connection rule must remain explicit:
    - direct cross-port API calls
    - client-side browser fetches only
    - non-credentialed requests only
-6. If the hosted desktop Onlook login path is blocked, use the local source development path under `ext-onlook-fix/` for the solved repo lane instead of treating hosted OAuth as a prerequisite for this lane.
-7. Do not treat local Onlook boot and dev login alone as proof that project import or editing is ready; the current local lane now proves import, sandbox creation, hydrated iframe preview, trust-click recovery, and bounded host write-back, but that proof should not be flattened into a claim that the clean extracted upstream branch has already re-proven shim-free host write-back.
-8. Treat `ext-onlook-fix/` as the canonical local operator and debug surface for the solved repo lane, and treat `ext-onlook-pr/` as the clean upstream packaging surface.
-9. Do not alternate between sibling local Onlook clones or launch paths unless you are explicitly comparing behavior.
-10. When populated compare-family validation matters, prepare same-checkout compare data explicitly instead of assuming it exists.
+7. If the hosted desktop Onlook login path is blocked, use the local source development path under `ext-onlook-fix/` for the solved repo lane instead of treating hosted OAuth as a prerequisite for this lane.
+8. Do not treat local Onlook boot and dev login alone as proof that project import or editing is ready; the current local lane now proves import, sandbox creation, hydrated iframe preview, trust-click recovery, and bounded host write-back, but that proof should not be flattened into a claim that the clean extracted upstream branch has already re-proven shim-free host write-back.
+9. Treat `ext-onlook-fix/` as the canonical local operator and debug surface for the solved repo lane, and treat `ext-onlook-pr/` as the clean upstream packaging surface.
+10. Do not alternate between sibling local Onlook clones or launch paths unless you are explicitly comparing behavior.
+11. When populated compare-family validation matters, prepare same-checkout compare data explicitly instead of assuming it exists.
 
 ### 7.2 During Onlook usage
 1. The lowest-risk default is to let Onlook edit a duplicate sandbox app prepared by `tools/prep-onlook-copy.ps1`, not `onlook-ui/` directly.
-2. Importing `onlook-ui/` directly is an explicit choice that makes `onlook-ui/*` the direct host write-back target.
-3. No writes are made to:
+2. That prepared duplicate now includes an upload-safe `.env` with only the public review API base, because Onlook intentionally skips `.env.local` during project upload.
+3. Importing `onlook-ui/` directly is an explicit choice that makes `onlook-ui/*` the direct host write-back target.
+4. No writes are made to:
    - `backend/main.py`
    - `backend/app/api/review_nrc_aps.py`
    - `backend/app/schemas/review_nrc_aps.py`
    - `backend/app/review_ui/static/*`
    unless a separate explicit decision expands scope.
-4. Any Onlook-produced change must still be reviewed like normal repo code.
-5. The sandbox remains non-authoritative until promotion is explicitly approved.
-6. If browser state on the default Onlook origin becomes sticky or keeps reopening an old imported project, restart local Onlook on a fresh port such as `3011` instead of reusing the stale browser origin blindly.
+5. Any Onlook-produced change must still be reviewed like normal repo code.
+6. The sandbox remains non-authoritative until promotion is explicitly approved.
+7. If browser state on the default Onlook origin becomes sticky or keeps reopening an old imported project, restart local Onlook on a fresh port such as `3011` instead of reusing the stale browser origin blindly.
 
 ### 7.3 After Onlook usage
 Every saved sandbox iteration must be classified as one of:
@@ -289,5 +291,6 @@ When populated compare-family work is required:
 3. validate the resulting selection and recommended URLs with `tools/validate_wb_prep.py`
 4. prove the hydrated full route family with `tools/run-onlook-sandbox-smoke.ps1 -Profile full`
 5. if the duplicate target is the intended Onlook import, re-run that proof against the duplicate with `tools/run-onlook-sandbox-smoke.ps1 -Profile full -AppDir onlook-ui-copy`
+6. if editor-side proof is required, run `tools/run-onlook-operator-proof.ps1`; it now proves duplicate-target import, trusted preview navigation, analyst flow, and duplicate-only write-back with duplicate restoration and canonical protection
 
 Do not broaden repo scope beyond the sandbox app until the clean extracted upstream branch is either sent upstream or re-proven shim-free end-to-end.

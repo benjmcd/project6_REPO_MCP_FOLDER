@@ -15,7 +15,7 @@ $targetPath = if ([System.IO.Path]::IsPathRooted($TargetDir)) {
     [System.IO.Path]::GetFullPath((Join-Path $laneRoot $TargetDir))
 }
 $skipDirs = @('.next', 'node_modules')
-$skipFiles = @('.env.local')
+$skipFiles = @('.env', '.env.local')
 
 function Get-RelativeRepoPath {
     param(

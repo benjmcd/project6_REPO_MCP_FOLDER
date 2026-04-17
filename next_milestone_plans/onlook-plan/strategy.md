@@ -206,6 +206,7 @@ Meaning:
 Current operator rule:
 
 - when Onlook edits land in a duplicate target, review that duplicate against canonical `onlook-ui/` with `tools/diff-onlook-copy.ps1`
+- treat `tools/run-onlook-operator-proof.ps1` as the explicit duplicate-target proof before relying on editor-side save/write-back behavior
 - do not treat duplicate-target saves as canonical sandbox truth until that review happens
 - do not treat canonical sandbox acceptance as automatic approval to touch `backend/app/review_ui/static/*`
 
@@ -230,10 +231,21 @@ If the pilot starts changing backend contracts too early, the experiment stops b
 If sandbox changes are treated as implicitly approved for live adoption, source-of-truth confusion follows.
 
 ### 8.4 Runtime-context ambiguity
-The repo does not currently carry a root-local `lc_e2e` runtime tree, so realistic review data for demos and validation must be chosen deliberately rather than assumed from root-local historical examples.
+The lane now has a repo-native same-checkout runtime tree, but older sibling adopted runtime examples still exist in nearby provenance material.
 
-### 8.5 Cross-worktree runtime dependency
-The current adopted demo runtime comes from the sibling `pr45-postmerge-audit` worktree, so the bounded sandbox lane still depends on a local machine/worktree relationship rather than a repo-native fixture packaged inside this lane.
+Practical meaning:
+
+- demos and validation should prefer the repo-native runtime by default
+- older sibling-runtime examples should not be copied forward as if they were the active default
+
+### 8.5 Runtime-source ambiguity
+The older sibling adopted runtime still exists locally, but the active operator lane now has a repo-native same-checkout runtime under `backend/app/storage_test_runtime`.
+
+Practical meaning:
+
+- the active helper flow should prefer the repo-native runtime
+- the sibling adopted runtime should remain fallback/provenance only
+- docs and helpers should not treat both as equal defaults
 
 ### 8.6 Operator-surface drift
 If the investigation alternates between multiple local Onlook source clones or launch paths, the actual failure boundary becomes harder to trust.
@@ -265,7 +277,7 @@ For the current bounded lane, `impl-plan.md` now fixes:
 
 - direct cross-port API calls as the first connection rule
 - client-side, non-credentialed browser fetches as the first fetch model
-- the adopted `pr45-postmerge-audit` runtime root as a local demo context with explicit stop rules
+- the repo-native same-checkout runtime as the default local demo context, with the older sibling adopted runtime retained as explicit fallback only
 
 ## 10. Final Recommendation
 Proceed with the separate Onlook pilot in this clean worktree as the current solved local lane.
