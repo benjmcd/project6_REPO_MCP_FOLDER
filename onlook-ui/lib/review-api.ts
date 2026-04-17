@@ -17,9 +17,11 @@ import type {
   WorkbenchCompareTargets,
 } from "@/lib/review-types";
 
+const DEFAULT_REVIEW_API_BASE = "/api/v1/review/nrc-aps";
+
 function normalizeApiBase(rawBase: string | undefined): string | null {
   if (!rawBase) {
-    return null;
+    return DEFAULT_REVIEW_API_BASE;
   }
 
   return rawBase.replace(/\/+$/, "");
@@ -52,7 +54,7 @@ export function readApiOrigin(): string | null {
 }
 
 export function isReviewApiConfigured(): boolean {
-  return readReviewApiBase() !== null;
+  return true;
 }
 
 type RequestOptions = {

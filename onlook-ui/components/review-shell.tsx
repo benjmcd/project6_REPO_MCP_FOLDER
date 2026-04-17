@@ -188,7 +188,7 @@ export function ReviewShell() {
               </div>
             </div>
             <div className="text-sm text-slate-600">
-              Use the route chips above to move between the React sandbox ports of the live review surfaces.
+              Use the route chips above to move between the React sandbox routes of the bounded review family.
             </div>
           </div>
           {errorMessage ? (
@@ -199,7 +199,7 @@ export function ReviewShell() {
           {isRunsLoading || isOverviewLoading ? (
             <div className="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700">
               {isRunsLoading
-                ? "Loading review runs from the existing API..."
+                ? "Loading review runs from the sandbox fixture API..."
                 : "Loading overview payload for the selected run..."}
             </div>
           ) : null}
