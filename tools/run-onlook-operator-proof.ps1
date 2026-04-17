@@ -105,7 +105,10 @@ function Wait-HttpReady {
 }
 
 function Assert-ReviewApiPopulated {
-    param([string]$Url)
+    param(
+        [string]$Url,
+        [string[]]$ExpectedRunIds = @()
+    )
 
     $payload = Invoke-RestMethod -Uri $Url -UseBasicParsing -TimeoutSec 15
     if ($null -eq $payload) {
@@ -120,6 +123,18 @@ function Assert-ReviewApiPopulated {
     $reviewableRuns = @($runs | Where-Object { $_.reviewable -eq $true })
     if ($reviewableRuns.Count -lt 1) {
         throw "Review API returned runs but none were reviewable at $Url"
+    }
+
+    $reviewableRunIds = @(
+        $reviewableRuns |
+            ForEach-Object { [string]$_.run_id } |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    )
+
+    foreach ($expectedRunId in @($ExpectedRunIds | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })) {
+        if ($reviewableRunIds -notcontains $expectedRunId) {
+            throw "Review API at $Url did not expose expected reviewable run $expectedRunId. Available reviewable runs: $($reviewableRunIds -join ', ')"
+        }
     }
 }
 
@@ -140,6 +155,121 @@ function Stop-ProcessTree {
 
     Write-Host "Stopping $Label process tree rooted at PID $($Process.Id)"
     taskkill /PID $Process.Id /T /F | Out-Null
+}
+
+function Get-PortOwnerIds {
+    param([int[]]$Ports)
+
+    return @(
+        Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
+            Where-Object { $Ports -contains $_.LocalPort } |
+            Select-Object -ExpandProperty OwningProcess -Unique
+    )
+}
+
+function Get-ProcessCommandLine {
+    param([int]$ProcessId)
+
+    return (
+        Get-CimInstance Win32_Process -Filter "ProcessId = $ProcessId" -ErrorAction SilentlyContinue |
+            Select-Object -ExpandProperty CommandLine -ErrorAction SilentlyContinue
+    )
+}
+
+function Test-OnlookWebOwnerMatchesExpectedClone {
+    param(
+        [int]$Port,
+        [string]$ExpectedRoot
+    )
+
+    foreach ($ownerId in (Get-PortOwnerIds -Ports @($Port))) {
+        $commandLine = Get-ProcessCommandLine -ProcessId $ownerId
+        if ($commandLine -and $commandLine.IndexOf($ExpectedRoot, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Stop-ListeningPortProcessTrees {
+    param(
+        [int[]]$Ports,
+        [string]$Label
+    )
+
+    foreach ($ownerId in (Get-PortOwnerIds -Ports $Ports)) {
+        $ownerProcess = Get-Process -Id $ownerId -ErrorAction SilentlyContinue
+        if ($ownerProcess) {
+            Stop-ProcessTree -Process $ownerProcess -Label "$Label (PID $ownerId)"
+        }
+    }
+}
+
+function Start-OnlookWebProcess {
+    param(
+        [string]$LaneRoot,
+        [string]$OnlookDir,
+        [int]$OnlookPort,
+        [int]$ReadyTimeoutSeconds,
+        [string]$UiOut,
+        [string]$UiErr,
+        [string]$OnlookLoginUrl
+    )
+
+    $process = Start-Process -FilePath 'powershell.exe' `
+        -ArgumentList @(
+            '-NoProfile',
+            '-ExecutionPolicy',
+            'Bypass',
+            '-File',
+            './tools/start-onlook-web.ps1',
+            '-OnlookDir',
+            $OnlookDir,
+            '-Port',
+            $OnlookPort
+        ) `
+        -WorkingDirectory $LaneRoot `
+        -RedirectStandardOutput $UiOut `
+        -RedirectStandardError $UiErr `
+        -PassThru
+
+    Wait-HttpReady -Url $OnlookLoginUrl -TimeoutSeconds $ReadyTimeoutSeconds
+    return $process
+}
+
+function Invoke-OperatorProofNode {
+    param(
+        [string]$LaneRoot,
+        [string]$BindHost,
+        [int]$OnlookPort,
+        [string]$AppRoot,
+        [string]$CanonicalRoot,
+        [string]$BrowserChannel,
+        [pscustomobject]$PrepSummary,
+        [string]$ProofFile,
+        [string]$ProofMarker
+    )
+
+    Push-Location $LaneRoot
+    try {
+        node ./tools/onlook-operator-proof.mjs `
+            --base-url ("http://$BindHost`:$OnlookPort") `
+            --app-dir $AppRoot `
+            --canonical-dir $CanonicalRoot `
+            --browser-channel $BrowserChannel `
+            --document-trace-path ([string]$PrepSummary.recommended_urls.baseline_trace) `
+            --workbench-path ([string]$PrepSummary.recommended_urls.workbench_compare) `
+            --candidate-b-path ([string]$PrepSummary.recommended_urls.candidate_b_trace) `
+            --proof-file $ProofFile `
+            --proof-marker $ProofMarker
+        if ($LASTEXITCODE -ne 0) {
+            throw "onlook-operator-proof.mjs failed with exit code $LASTEXITCODE"
+        }
+    }
+    finally {
+        Pop-Location
+    }
 }
 
 function Resolve-BrowserChannel {
@@ -198,6 +328,11 @@ if (-not $prepSummary.passed) {
     throw 'validate_wb_prep.py did not return a passing prep summary.'
 }
 
+$expectedReviewRunIds = @(
+    [string]$prepSummary.selection.baseline_run_id
+    [string]$prepSummary.selection.candidate_a_run_id
+) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+
 $apiUrl = "http://$BindHost`:$ApiPort/api/v1/review/nrc-aps/runs"
 $onlookLoginUrl = "http://$BindHost`:$OnlookPort/login"
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("onlook-operator-" + [System.Guid]::NewGuid().ToString('N'))
@@ -210,6 +345,7 @@ $uiErr = Join-Path $tempRoot 'ui.err.log'
 $apiProcess = $null
 $uiProcess = $null
 $startedSupabase = $false
+$reusedOnlookWeb = $false
 
 try {
     if (-not ((Test-PortListening -Port 54321) -and (Test-PortListening -Port 54322))) {
@@ -246,53 +382,68 @@ try {
         Wait-HttpReady -Url $apiUrl -TimeoutSeconds $ReadyTimeoutSeconds
     }
 
-    Assert-ReviewApiPopulated -Url $apiUrl
+    Assert-ReviewApiPopulated -Url $apiUrl -ExpectedRunIds $expectedReviewRunIds
 
     if (Test-HttpReady -Url $onlookLoginUrl) {
+        if (-not (Test-OnlookWebOwnerMatchesExpectedClone -Port $OnlookPort -ExpectedRoot $onlookRoot)) {
+            throw "Onlook web at $onlookLoginUrl did not appear to belong to $OnlookDir at $onlookRoot. Stop the conflicting listener before running the operator proof."
+        }
+
         Write-Host "Reusing local Onlook web at $onlookLoginUrl"
+        $reusedOnlookWeb = $true
     } else {
         if (Test-PortListening -Port $OnlookPort) {
             throw "Onlook web port $OnlookPort is already listening but did not answer $onlookLoginUrl"
         }
 
-        $uiProcess = Start-Process -FilePath 'powershell.exe' `
-            -ArgumentList @(
-                '-NoProfile',
-                '-ExecutionPolicy',
-                'Bypass',
-                '-File',
-                './tools/start-onlook-web.ps1',
-                '-OnlookDir',
-                $OnlookDir,
-                '-Port',
-                $OnlookPort
-            ) `
-            -WorkingDirectory $laneRoot `
-            -RedirectStandardOutput $uiOut `
-            -RedirectStandardError $uiErr `
-            -PassThru
-
-        Wait-HttpReady -Url $onlookLoginUrl -TimeoutSeconds $ReadyTimeoutSeconds
+        $uiProcess = Start-OnlookWebProcess `
+            -LaneRoot $laneRoot `
+            -OnlookDir $OnlookDir `
+            -OnlookPort $OnlookPort `
+            -ReadyTimeoutSeconds $ReadyTimeoutSeconds `
+            -UiOut $uiOut `
+            -UiErr $uiErr `
+            -OnlookLoginUrl $onlookLoginUrl
     }
 
-    Push-Location $laneRoot
     try {
-        node ./tools/onlook-operator-proof.mjs `
-            --base-url ("http://$BindHost`:$OnlookPort") `
-            --app-dir $appRoot `
-            --canonical-dir $canonicalRoot `
-            --browser-channel $browserChannel `
-            --document-trace-path ([string]$prepSummary.recommended_urls.baseline_trace) `
-            --workbench-path ([string]$prepSummary.recommended_urls.workbench_compare) `
-            --candidate-b-path ([string]$prepSummary.recommended_urls.candidate_b_trace) `
-            --proof-file $proofFile `
-            --proof-marker $proofMarker
-        if ($LASTEXITCODE -ne 0) {
-            throw "onlook-operator-proof.mjs failed with exit code $LASTEXITCODE"
-        }
+        Invoke-OperatorProofNode `
+            -LaneRoot $laneRoot `
+            -BindHost $BindHost `
+            -OnlookPort $OnlookPort `
+            -AppRoot $appRoot `
+            -CanonicalRoot $canonicalRoot `
+            -BrowserChannel $browserChannel `
+            -PrepSummary $prepSummary `
+            -ProofFile $proofFile `
+            -ProofMarker $proofMarker
     }
-    finally {
-        Pop-Location
+    catch {
+        if ($reusedOnlookWeb) {
+            Write-Warning "Operator proof failed while reusing local Onlook web. Restarting the expected clone once and retrying."
+            Stop-ListeningPortProcessTrees -Ports @($OnlookPort, 8083) -Label 'stale Onlook runtime'
+            $uiProcess = Start-OnlookWebProcess `
+                -LaneRoot $laneRoot `
+                -OnlookDir $OnlookDir `
+                -OnlookPort $OnlookPort `
+                -ReadyTimeoutSeconds $ReadyTimeoutSeconds `
+                -UiOut $uiOut `
+                -UiErr $uiErr `
+                -OnlookLoginUrl $onlookLoginUrl
+
+            Invoke-OperatorProofNode `
+                -LaneRoot $laneRoot `
+                -BindHost $BindHost `
+                -OnlookPort $OnlookPort `
+                -AppRoot $appRoot `
+                -CanonicalRoot $canonicalRoot `
+                -BrowserChannel $browserChannel `
+                -PrepSummary $prepSummary `
+                -ProofFile $proofFile `
+                -ProofMarker $proofMarker
+        } else {
+            throw
+        }
     }
 }
 finally {
