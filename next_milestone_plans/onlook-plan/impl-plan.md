@@ -123,9 +123,15 @@ Verified locally against the current official Onlook development setup docs:
 - Docker Desktop is installed and the local Supabase backend is running
 - the original clean upstream base reference for this lane exists at `ext-onlook/`
 - that base clone was last verified at revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
-- the current proven local operator surface for the solved repo lane is `ext-onlook-fix/` on local branch `codex/local-writeback-fix` at commit `c8cf5c16`
+- the current proven local operator surface for the solved repo lane is `ext-onlook-fix/` on local branch `codex/restored-local-writeback` at commit `14dbc96e`
+- that preserved local operator surface now includes the import/runtime stabilization fixes required for the current local-folder flow:
+  - safe git-config probing during repo init
+  - deferred theme reads until `frameData.view` exists
+  - safe gesture handling while preview connections are not yet ready
+  - guarded text-cleanup teardown when branch history has already been cleared
+  - destroyed-connection-safe preload child-state lookups for frame and branch identifiers
 - the clean upstream packaging surface is `ext-onlook-pr/` on local branch `codex/upstream-clean` at commit `6d4c463a`
-- the exact local Onlook commits are now also preserved inside this tracked repo lane as:
+- the current preserved local Onlook patch stacks are now also stored inside this tracked repo lane as:
   - `patches/local-writeback.patch`
   - `patches/upstream-clean.patch`
 - the repo-local duplication helper `tools/copy-onlook-ui.ps1` now creates clean duplicates of `onlook-ui/` without `.next/` or `node_modules/`, and copies `.env.local` only when explicitly requested
@@ -161,6 +167,7 @@ Verified locally against the current official Onlook development setup docs:
 - the current proven direct source-launch path serves `GET /login` successfully at `http://127.0.0.1:3000/login`
 - if the browser keeps sticky state on the default `3000` origin, `tools/start-onlook-web.ps1 -Port 3011` is now the bounded fresh-origin fallback instead of reusing stale browser state
 - the dev-only demo-user login path succeeds and redirects into the app shell
+- current local-folder import proof on that preserved surface no longer reproduces the earlier `failed to exec in podman container`, `No frame view found`, `No element found`, `No branch selected`, or destroyed-connection child-state crashes during import and preview reload
 
 Practical meaning:
 

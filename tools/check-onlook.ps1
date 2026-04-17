@@ -10,8 +10,8 @@ $laneRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $onlookUiRoot = Join-Path $laneRoot 'onlook-ui'
 $expectedStates = @{
     'ext-onlook-fix' = @{
-        Commit = 'c8cf5c16a34d1953f3c215e4beaa2ef96e417733'
-        Tree = '8f9c9811552a801478df85daeee511104b8695d2'
+        Commit = '14dbc96e01436dabbf03e8a16f27cb23f008ec90'
+        Tree = 'a2a7672c9241802cd741d6d8fce9b847651c003c'
     }
     'ext-onlook-pr' = @{
         Commit = '6d4c463ad087cf43218f8e73bcf508b6e70a1e8e'

@@ -39,7 +39,19 @@ Current lane state:
 - on a fresh worktree, the first frontend bootstrap step is `Copy-Item ./onlook-ui/.env.example ./onlook-ui/.env.local` unless a different local review API base is intentionally needed
 - the repo-local backend startup helper is `tools/start-review-api.ps1`; it now auto-resolves the repo-native same-checkout runtime under `backend/app/storage_test_runtime` first and only falls back to the historical sibling adopted runtime when the repo-native runtime is unavailable
 - the original clean upstream base reference for this lane is the source clone lineage rooted at `ext-onlook/`, last verified from upstream revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
-- the current proven local operator and debug surface for the resolved repo lane is `ext-onlook-fix/` on local branch `codex/local-writeback-fix` at commit `c8cf5c16`
+- the current proven local operator and debug surface for the resolved repo lane is `ext-onlook-fix/` on local branch `codex/restored-local-writeback` at commit `14dbc96e`
+- that preserved local operator surface now includes the local import/runtime stabilization fixes needed for the current lane:
+  - safe git-config probing during repo init
+  - deferred frame-theme reads until a live frame view exists
+  - safe gesture handling while preview connections are not ready
+  - guarded text-cleanup teardown when branch history has already been cleared
+  - destroyed-connection-safe preload child-state lookups for frame and branch identifiers
+- current local-folder import proof on that preserved surface no longer reproduces the earlier:
+  - `failed to exec in podman container`
+  - `No frame view found`
+  - `No element found`
+  - `No branch selected`
+  - destroyed-connection child-state crashes during import and preview reload
 - the clean upstream packaging surface is `ext-onlook-pr/` on local branch `codex/upstream-clean` at commit `6d4c463a`
 - the repo-local Onlook web startup helper is `tools/start-onlook-web.ps1`; it now defaults to `ext-onlook-fix/` on port `3000`, pins known-good commits by default, refuses dirty clones by default, fails closed if the fixed preload helper port `8083` is already occupied, can be pointed at a different local clone with `-OnlookDir`, and now normalizes line-ending-only drift in the known runtime-generated files before enforcing the dirty-clone guard, but only when both the worktree delta and the staged/index delta are line-ending-only
 - the repo-local integrity helper is `tools/check-onlook.ps1`; it verifies the preserved clones or tree-equivalent restored clones, required env files, preserved patch archives, can optionally rerun the bounded repo validations with `-RunValidation`, and treats line-ending-only drift in the known runtime-generated files as non-blocking rather than misclassifying it as a semantic source edit, but only when both the worktree delta and the staged/index delta are line-ending-only
@@ -92,7 +104,7 @@ Current lane state:
 - the canonical host-write-back target remains `onlook-ui/`; duplicate copies created with the duplicate helpers are for scratch imports or comparison work, do not auto-promote changes back into the canonical sandbox app, and should be reviewed first with `tools/diff-onlook-copy.ps1`
 - that local write-back proof ran on the preserved local operator surface at `ext-onlook-fix/` and used the file-input import path, so it should not be flattened into a claim that the clean extracted upstream branch has already re-proven host write-back end-to-end without the local shim
 - the clean extracted upstream branch at `ext-onlook-pr/` removes the workspace-specific `/api/local-project` shim and path-registration fallback, keeps the browser directory-handle persistence path, passes `@onlook/web-client` typecheck, and passes `@onlook/web-client` build with placeholder required envs
-- the exact local Onlook commits are now also preserved inside this tracked repo lane as:
+- the current preserved local Onlook patch stacks are now also stored inside this tracked repo lane as:
   - `patches/local-writeback.patch`
   - `patches/upstream-clean.patch`
 - official upstream issue reports now also match this boundary:
