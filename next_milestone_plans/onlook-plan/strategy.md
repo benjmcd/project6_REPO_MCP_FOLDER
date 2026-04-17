@@ -174,6 +174,21 @@ Reason:
 - the existing API seam already supports run list, overview, pipeline definition, document selector, trace, and diagnostics flows
 - changing backend first would widen scope before proving the frontend lane is worth keeping
 
+### 6.4 Current bounded route family
+The current practical sandbox target is the bounded review UI family, not the whole repo generically:
+
+- `/review/nrc-aps`
+- `/review/nrc-aps/document-trace`
+- `/review/nrc-aps/workbench-compare`
+- `/review/nrc-aps/candidate-b-trace`
+- `/review/analyst-insight`
+
+Current interpretation rule:
+
+- treat main review, document trace, and analyst insight as directly data-backed against existing backend seams
+- treat workbench compare and Candidate B trace as requiring explicit same-checkout compare prep when populated validation is needed
+- do not misclassify missing compare prep as proof that the sandbox route family itself is broken
+
 ## 7. Recommended Promotion Model
 Default promotion posture:
 
@@ -187,6 +202,13 @@ Meaning:
    - discard it
    - manually port selected ideas
    - promote the sandbox toward eventual cutover
+
+Current operator rule:
+
+- when Onlook edits land in a duplicate target, review that duplicate against canonical `onlook-ui/` with `tools/diff-onlook-copy.ps1`
+- treat `tools/run-onlook-operator-proof.ps1` as the explicit duplicate-target proof before relying on editor-side save/write-back behavior
+- do not treat duplicate-target saves as canonical sandbox truth until that review happens
+- do not treat canonical sandbox acceptance as automatic approval to touch `backend/app/review_ui/static/*`
 
 The preferred long-term model, if Onlook becomes part of normal workflow, is:
 
@@ -209,10 +231,21 @@ If the pilot starts changing backend contracts too early, the experiment stops b
 If sandbox changes are treated as implicitly approved for live adoption, source-of-truth confusion follows.
 
 ### 8.4 Runtime-context ambiguity
-The repo does not currently carry a root-local `lc_e2e` runtime tree, so realistic review data for demos and validation must be chosen deliberately rather than assumed from root-local historical examples.
+The lane now has a repo-native same-checkout runtime tree, but older sibling adopted runtime examples still exist in nearby provenance material.
 
-### 8.5 Cross-worktree runtime dependency
-The current adopted demo runtime comes from the sibling `pr45-postmerge-audit` worktree, so slice 1 depends on a local machine/worktree relationship rather than a repo-native fixture packaged inside this lane.
+Practical meaning:
+
+- demos and validation should prefer the repo-native runtime by default
+- older sibling-runtime examples should not be copied forward as if they were the active default
+
+### 8.5 Runtime-source ambiguity
+The older sibling adopted runtime still exists locally, but the active operator lane now has a repo-native same-checkout runtime under `backend/app/storage_test_runtime`.
+
+Practical meaning:
+
+- the active helper flow should prefer the repo-native runtime
+- the sibling adopted runtime should remain fallback/provenance only
+- docs and helpers should not treat both as equal defaults
 
 ### 8.6 Operator-surface drift
 If the investigation alternates between multiple local Onlook source clones or launch paths, the actual failure boundary becomes harder to trust.
@@ -240,17 +273,17 @@ These unknowns do not change the main repo-side determination:
 - the backend API should still remain the first seam
 - the current static UI should still remain untouched by default
 
-For slice 1 specifically, `impl-plan.md` now fixes:
+For the current bounded lane, `impl-plan.md` now fixes:
 
 - direct cross-port API calls as the first connection rule
 - client-side, non-credentialed browser fetches as the first fetch model
-- the adopted `pr45-postmerge-audit` runtime root as a local demo context with explicit stop rules
+- the repo-native same-checkout runtime as the default local demo context, with the older sibling adopted runtime retained as explicit fallback only
 
 ## 10. Final Recommendation
 Proceed with the separate Onlook pilot in this clean worktree as the current solved local lane.
 
 Do not modify the current static review UI as part of the initial Onlook lane.
 
-Use the existing review API as the integration seam.
+Use the existing review API and analyst aliases as the integration seams for the bounded review UI family.
 
 Keep the sandbox app on `Next 15.5.15` while CodeSandbox-backed preview is part of the workflow, use `ext-onlook-fix/` as the preserved local solved operator surface, and treat `ext-onlook-pr/` as the upstream-ready patch baseline rather than widening repo product scope further.

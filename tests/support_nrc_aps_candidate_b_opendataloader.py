@@ -276,19 +276,18 @@ def build_odl_cli_capability_snapshot() -> dict[str, Any]:
     if not help_result["passed"]:
         raise RuntimeError("odl_cli_help_failed")
     help_text = str(help_result.get("stdout") or "")
-    format_line = next(
-        (
-            line.strip()
-            for line in help_text.splitlines()
-            if "Output formats" in line or "Values: json" in line
-        ),
-        "",
-    )
+    collapsed_help = " ".join(line.strip() for line in help_text.splitlines() if line.strip())
+    format_line = ""
+    if "Output formats" in collapsed_help:
+        format_block = "Output formats" + collapsed_help.split("Output formats", 1)[1]
+        format_line = format_block.split("Default:", 1)[0].strip()
+    elif "Values: json" in collapsed_help:
+        format_line = collapsed_help.split("Values: json", 1)[0].strip() + " Values: json"
     if "pdf" not in format_line.lower():
         raise RuntimeError("annotated_pdf_output_unsupported")
     format_values: list[str] = []
     if "Values:" in format_line:
-        values_text = format_line.split("Values:", 1)[1].split("Default:", 1)[0]
+        values_text = format_line.split("Values:", 1)[1].strip().rstrip(".")
         format_values = [item.strip() for item in values_text.split(",") if item.strip()]
     return {
         "command": [sys.executable, "-m", "opendataloader_pdf", "--help"],

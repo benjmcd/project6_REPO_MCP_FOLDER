@@ -5,6 +5,7 @@ import { startTransition, useEffect, useState } from "react";
 import { DetailsPane } from "@/components/details-pane";
 import { HeaderBar } from "@/components/header-bar";
 import { PipelinePane } from "@/components/pipeline-pane";
+import { SurfaceIntro, type SurfaceBadge } from "@/components/sandbox-primitives";
 import { TreePane } from "@/components/tree-pane";
 import {
   fetchOverview,
@@ -130,6 +131,29 @@ export function ReviewShell() {
   const selectedRun =
     runSelector?.runs.find((run) => run.run_id === selectedRunId) ?? null;
 
+  const badges: SurfaceBadge[] = [
+    {
+      label: "API base",
+      value: readReviewApiBase() ?? "Unconfigured",
+      tone: readReviewApiBase() ? "accent" : "warning",
+    },
+    {
+      label: "Runs loaded",
+      value: String(runSelector?.runs.length ?? 0),
+      tone: "neutral",
+    },
+    {
+      label: "Projection nodes",
+      value: String(overview?.run_projection.nodes.length ?? 0),
+      tone: "neutral",
+    },
+    {
+      label: "Layout sections",
+      value: String(overview?.pipeline_layout.sections.length ?? 0),
+      tone: "neutral",
+    },
+  ];
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.14),_transparent_26%),linear-gradient(180deg,_#f7fafc_0%,_#eef4f8_100%)] text-slate-950">
       <HeaderBar
@@ -147,6 +171,12 @@ export function ReviewShell() {
       />
 
       <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5 px-6 py-6">
+        <SurfaceIntro
+          title="Review Overview"
+          detail="This is the original sandbox surface that proved the repo-side hydration fix. It now anchors the wider multi-route Onlook lane for the NRC APS review family."
+          badges={badges}
+        />
+
         <section className="rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
@@ -157,16 +187,8 @@ export function ReviewShell() {
                 {readReviewApiBase() ?? "Unconfigured"}
               </div>
             </div>
-            <div className="flex flex-wrap gap-2 text-xs font-medium">
-              <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-slate-700">
-                Runs loaded: {runSelector?.runs.length ?? 0}
-              </span>
-              <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-slate-700">
-                Projection nodes: {overview?.run_projection.nodes.length ?? 0}
-              </span>
-              <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-slate-700">
-                Layout sections: {overview?.pipeline_layout.sections.length ?? 0}
-              </span>
+            <div className="text-sm text-slate-600">
+              Use the route chips above to move between the React sandbox ports of the live review surfaces.
             </div>
           </div>
           {errorMessage ? (

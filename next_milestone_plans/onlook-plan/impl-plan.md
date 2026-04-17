@@ -56,19 +56,19 @@ Practical meaning:
 Verified locally with:
 
 - `DB_INIT_MODE=none`
-- `DATABASE_URL` pointed at the adopted runtime database
-- `STORAGE_DIR` pointed at the adopted `storage_test_runtime` root
+- `DATABASE_URL` pointed at the selected same-checkout runtime database
+- `STORAGE_DIR` pointed at the repo-native `backend/app/storage_test_runtime` root
 
 Result:
 
 - `GET /api/v1/review/nrc-aps/runs` returned `200`
-- `default_run_id` resolved to `f6e34493-270c-4d93-afa9-bf85bf699f0c`
+- `default_run_id` resolved to `d7a563e3-fd10-4df1-a85a-56000472e736`
 - the `runs` array length was `2`
-- `GET /api/v1/review/nrc-aps/runs/f6e34493-270c-4d93-afa9-bf85bf699f0c/overview` returned `200`
+- `GET /api/v1/review/nrc-aps/runs/d7a563e3-fd10-4df1-a85a-56000472e736/overview` returned `200`
 
 Practical meaning:
 
-- the adopted demo runtime context is real and usable
+- the repo-native same-checkout runtime context is real and usable for the current operator lane
 
 ### 2.5 Scaffold validation
 Verified locally:
@@ -90,23 +90,31 @@ Practical meaning:
 
 - the sandbox app is now real, bootable, and was a valid base for the first feature-wiring slice
 
-### 2.6 First-slice shell validation
-Verified locally after the first bounded UI slice:
+### 2.6 Multi-route sandbox validation
+Verified locally after the route-family expansion:
 
 - `onlook-ui/` now contains the typed review API layer under `lib/`
-- `onlook-ui/` now contains the slice-1 shell components under `components/`
-- the sandbox shell renders:
-  - run selector
-  - pipeline pane
-  - tree pane
-  - details pane shell
-- runtime smoke through the sandbox dev server caused real backend requests for:
-  - `GET /api/v1/review/nrc-aps/runs`
-  - `GET /api/v1/review/nrc-aps/runs/{run_id}/overview`
+- `onlook-ui/` now contains the route-family shell components under `components/`
+- `onlook-ui/` now exposes these Next routes:
+  - `/`
+  - `/document-trace`
+  - `/workbench-compare`
+  - `/candidate-b-trace`
+  - `/analyst-insight`
+- tracked browser validation against the local sandbox dev server confirmed:
+  - the root review route renders the populated review shell
+  - the document-trace route renders populated manifest and tab data against a live review runtime
+  - the analyst-insight route completes the bounded three-stage POST flow
+  - the workbench-compare route renders populated compare data once same-checkout compare prep exists
+  - the Candidate-B-trace route renders populated artifact-backed tabs once same-checkout compare prep exists
+- the repo-local harness for that proof is now `tools/run-onlook-sandbox-smoke.ps1`:
+  - `-Profile core` proves the hydrated review, document-trace, and analyst-insight routes
+  - `-Profile full` first requires `tools/validate_wb_prep.py`, then remaps the resulting recommended live review URLs into the sandbox route table to prove the full route family without using Onlook yet
 
 Practical meaning:
 
-- the first shell slice is implemented and validated against the adopted runtime context
+- the sandbox is no longer a single-page proof-of-fit
+- the bounded review UI family is now implemented and validated against the existing backend seams
 
 ### 2.7 Local Onlook operator path
 Verified locally against the current official Onlook development setup docs:
@@ -123,8 +131,13 @@ Verified locally against the current official Onlook development setup docs:
 - the repo-local duplication helper `tools/copy-onlook-ui.ps1` now creates clean duplicates of `onlook-ui/` without `.next/` or `node_modules/`, and copies `.env.local` only when explicitly requested
 - on a fresh worktree, the first frontend bootstrap step is `Copy-Item ./onlook-ui/.env.example ./onlook-ui/.env.local` unless a different local review API base is intentionally needed
 - that duplication helper now refuses a dirty canonical `onlook-ui/` source tree by default unless `-AllowDirtySource` is supplied
-- a fresh duplicate created with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now also passes local `npm run lint` and `npm run build`
-- the safest default operator posture is now: create a duplicate sandbox target first, import that duplicate into Onlook, and leave `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
+- the repo-local duplicate-prep helper `tools/prep-onlook-copy.ps1` now wraps duplicate creation, local install, `npm run lint`, and `npm run build`, and can optionally run the tracked sandbox smoke before any Onlook import
+- that duplicate-prep helper now fails closed when a custom target is not git-ignored unless `-AllowVisibleTarget` is passed explicitly
+- that duplicate-prep helper now also materializes an upload-safe duplicate `.env` with only the public `NEXT_PUBLIC_REVIEW_API_BASE`, because Onlook intentionally skips `.env.local` during project upload
+- a fresh duplicate prepared with `tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now passes local install, lint, and build in one repo-owned path
+- the repo-local duplicate diff helper `tools/diff-onlook-copy.ps1` now makes duplicate-to-canonical sandbox review explicit before any manual merge-back step while ignoring local-only `.next/`, `node_modules/`, `.env.local`, and generated duplicate `.env` noise
+- the repo-local duplicate-target operator proof helper `tools/run-onlook-operator-proof.ps1` now reuses or starts local Onlook web plus the local review API, verifies that the API exposes the expected same-checkout reviewable runs from `tools/validate_wb_prep.py`, restarts the expected local Onlook clone once if a reused browser session is stale, imports a prepared duplicate, proves trusted preview navigation across the full sandbox route family, runs the analyst flow, and proves duplicate-only write-back while restoring the duplicate file and leaving canonical `onlook-ui/` untouched
+- the safest default operator posture is now: prepare a duplicate sandbox target first, import that duplicate into Onlook, and leave `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
 - the repo-local restore helper `tools/restore-onlook.ps1` can now recreate either preserved Onlook patch set from the tracked patch archives and the pinned upstream base commit
 - on a fresh worktree, that restore helper now recreates the expected helper-facing clone names by default:
   - `ext-onlook-fix/`
@@ -165,6 +178,26 @@ Practical meaning:
 - the clean extracted upstream branch removes the workspace-specific `/api/local-project` shim and path-registration fallback, keeps the browser directory-handle persistence path, passes `bun --filter @onlook/web-client typecheck`, and passes `bun --filter @onlook/web-client build` when the required envs are stubbed
 - upstream issue reports for the old preview/runtime failures remain relevant for future `Next 16` re-upgrade work and for generic Onlook runtime hardening, but they no longer block the current repo lane while the sandbox app stays on `Next 15`
 - placeholder or absent `OPENROUTER_API_KEY` values still do not prove AI/chat feature readiness
+
+### 2.8 Same-checkout compare prep validation
+Verified locally in this worktree:
+
+- `./../../.venvs/phase7a-py311/Scripts/python.exe ./tools/seed_wb_compare.py --runtime-root ./backend/app/storage_test_runtime/lc_e2e/wb-b0 --visual-lane-mode baseline`
+- `./../../.venvs/phase7a-py311/Scripts/python.exe ./tools/seed_wb_compare.py --runtime-root ./backend/app/storage_test_runtime/lc_e2e/wb-a0 --visual-lane-mode candidate_a_page_evidence_v1`
+- `./../../.venvs/phase7a-py311/Scripts/python.exe ./tools/run_nrc_aps_candidate_b_compare.py`
+- `python ./tools/validate_wb_prep.py`
+
+Result:
+
+- a same-checkout baseline review runtime now exists at `backend/app/storage_test_runtime/lc_e2e/wb-b0`
+- a same-checkout Candidate-A review runtime now exists at `backend/app/storage_test_runtime/lc_e2e/wb-a0`
+- a same-checkout Candidate-B compare bundle now exists under `tests/reports/cb-compare-*`
+- `tools/validate_wb_prep.py` now passes and emits recommended compare and trace URLs for the sandbox route family
+
+Practical meaning:
+
+- populated compare-family validation is now a repo-native local path in a clean worktree
+- compare-family population no longer depends on silently borrowing stale external runtime state
 
 ## 3. Exact Scaffold Choice
 
@@ -232,16 +265,16 @@ Reason:
 ## 4. Exact Backend Connection Rule
 
 ### 4.1 Rule
-Use direct cross-port browser calls from the sandbox app to FastAPI in the first slice.
+Use direct cross-port browser calls from the sandbox app to FastAPI in this lane.
 
-Slice-1 fetch model is fixed to:
+The sandbox-family fetch model is fixed to:
 
 - client-side browser fetches only
 - non-credentialed requests only
 - no cookies, session dependence, or auth headers
 - no frontend proxy or rewrite layer
 
-Do not move to server-side data fetching, credentialed requests, or a frontend proxy in slice 1 without a separate reassessment.
+Do not move to server-side data fetching, credentialed requests, or a frontend proxy in this lane without a separate reassessment.
 
 ### 4.2 Why
 Verified repo facts:
@@ -254,7 +287,7 @@ Verified repo facts:
 Practical constraint:
 
 - the current CORS posture is acceptable for plain non-credentialed browser fetches
-- it is not a safe basis for quietly introducing credentialed cross-origin requests in slice 1
+- it is not a safe basis for quietly introducing credentialed cross-origin requests in this lane
 
 ### 4.3 Exact frontend env
 For manual shell-driven validation, use:
@@ -265,8 +298,8 @@ $env:NEXT_PUBLIC_REVIEW_API_BASE='http://127.0.0.1:8000/api/v1/review/nrc-aps'
 
 The frontend should build all review API requests from that base.
 
-Use `NEXT_PUBLIC_REVIEW_API_BASE` only from slice-1 client components or client-side helper code.
-Do not use server-side data fetching in the first slice.
+Use `NEXT_PUBLIC_REVIEW_API_BASE` only from sandbox client components or client-side helper code.
+Do not use server-side data fetching in this lane.
 
 For actual Onlook-driven startup, prefer a local ignored file at:
 
@@ -307,36 +340,44 @@ Reason:
 
 ## 5. Exact Demo Runtime And Data Context
 
-### 5.1 Adopted runtime root
-Use this runtime root for the first sandbox demo:
+### 5.1 Default runtime root
+Use this runtime root by default for the current sandbox lane:
+
+- `./backend/app/storage_test_runtime`
+
+Historical fallback only when the repo-native runtime is unavailable:
 
 - `./../pr45-postmerge-audit/backend/app/storage_test_runtime`
 
-Do not point the backend at the nested runtime `storage` directory.
+Do not point the backend at the nested per-run `storage` directory.
 
 Reason:
 
+- the current repo-native same-checkout runtime now contains the bounded review and compare-prep state needed for the active lane
 - current review runtime discovery expects a `storage` or `storage_test_runtime` root and then resolves `lc_e2e` under it
 
-### 5.2 Adopted runtime summary
-Current verified summary:
+### 5.2 Current same-checkout runtime summaries
+Current verified same-checkout summaries:
 
-- `./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/local_corpus_e2e_summary.json`
+- `./backend/app/storage_test_runtime/lc_e2e/wb-b0/local_corpus_e2e_summary.json`
+- `./backend/app/storage_test_runtime/lc_e2e/wb-a0/local_corpus_e2e_summary.json`
 
 Verified useful values:
 
-- `run_id`: `f6e34493-270c-4d93-afa9-bf85bf699f0c`
-- `visual_lane_mode`: `candidate_a_page_evidence_v1`
+- baseline `run_id`: `28eafe46-34de-4931-bd42-6c6a88dc0ac6`
+- candidate-a `run_id`: `d7a563e3-fd10-4df1-a85a-56000472e736`
+- baseline `visual_lane_mode`: `baseline`
+- candidate-a `visual_lane_mode`: `candidate_a_page_evidence_v1`
 - `passed`: `true`
 
 ### 5.3 Exact backend env for the pilot
-Use shell env, not a local `.env`, for the first pilot.
+Use shell env, not a local `.env`, for the active local API process.
 
-Resolve the repo-local sibling paths first, then pass absolute values to the backend server:
+Resolve the repo-native runtime paths first, then pass absolute values to the backend server:
 
 ```powershell
-$runtimeRoot = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime).Path
-$runtimeDb = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/lc.db).Path.Replace('\', '/')
+$runtimeRoot = (Resolve-Path ./backend/app/storage_test_runtime).Path
+$runtimeDb = (Resolve-Path ./backend/app/storage_test_runtime/lc_e2e/wb-a0/lc.db).Path.Replace('\', '/')
 $env:DB_INIT_MODE='none'
 $env:DATABASE_URL="sqlite:///$runtimeDb"
 $env:STORAGE_DIR=$runtimeRoot
@@ -346,7 +387,7 @@ Reason:
 
 - `DB_INIT_MODE=none` avoids write-on-start migration behavior
 - the backend server must receive absolute resolved paths here because `config.py` normalizes relative `STORAGE_DIR` values against the backend root
-- the database points at the adopted runtime that the current review UI can discover
+- the database points at a current same-checkout runtime that the review API can discover
 - the storage root points at the correct discovery boundary
 - this keeps the sandbox backend context explicit and reproducible
 
@@ -354,77 +395,92 @@ Reason:
 There are two different path-resolution paths in this repo:
 
 - the backend server reads `STORAGE_DIR` through `app.core.config`, which resolves relative paths against the backend root
-- the validate-only review test fixture passes `STORAGE_DIR` directly into runtime-root discovery, which resolves relative paths from the current working directory
+- the validate-only review test fixture discovers review roots directly, but the `/runs` API assertions inside that same test slice still execute through the FastAPI app and therefore still depend on `app.core.config`
 
 Practical rule:
 
-- use repo-relative `./../pr45-postmerge-audit/...` only for the validate-only test command in section 7.2
-- resolve to absolute paths before starting the backend server in section 7.3
-- do not reuse the section 7.2 relative `STORAGE_DIR` value for the backend server
+- resolve the active runtime root to an absolute path both for the validate-only backend test slice in section 7.2 and for the backend server in section 7.3
+- do not reuse older relative `STORAGE_DIR` examples once same-checkout compare prep exists, because the API assertions in the validation slice can otherwise miss the intended runtime root
 
-### 5.5 Cross-worktree dependency rule
-The adopted demo runtime is a local dependency on the sibling `pr45-postmerge-audit` worktree.
+### 5.5 Runtime fallback rule
+The historical sibling adopted runtime is now fallback/provenance only.
 
 Practical rule:
 
-- if that sibling worktree, runtime root, summary file, or database file disappears, stop and reassess
-- do not silently substitute a different runtime without updating the packet and re-validating the adopted context
+- use `tools/start-review-api.ps1` as the default entrypoint so runtime selection stays consistent
+- prefer the repo-native same-checkout runtime whenever it exists
+- only fall back to the sibling adopted runtime when the repo-native runtime is unavailable
+- if both are unavailable, stop and reassess
 
-## 6. Exact First-Slice Component Map
+## 6. Exact Multi-Route Sandbox Component Map
 
 ### 6.1 Route shell
 - `onlook-ui/app/layout.tsx`
 - `onlook-ui/app/page.tsx`
+- `onlook-ui/app/document-trace/page.tsx`
+- `onlook-ui/app/workbench-compare/page.tsx`
+- `onlook-ui/app/candidate-b-trace/page.tsx`
+- `onlook-ui/app/analyst-insight/page.tsx`
 
 ### 6.2 API and state layer
 - `onlook-ui/lib/review-api.ts`
 - `onlook-ui/lib/review-types.ts`
 - `onlook-ui/lib/review-adapter.ts`
+- `onlook-ui/lib/sandbox-routes.ts`
+- `onlook-ui/lib/sandbox-links.ts`
+- `onlook-ui/lib/display.ts`
+- `onlook-ui/lib/analyst-samples.ts`
 
 Responsibilities:
 
 - read-only fetches from `NEXT_PUBLIC_REVIEW_API_BASE`
-- local normalization for display
+- local normalization for display and sandbox-route remapping
 - no business-logic duplication from backend services
+- no change to shipped static UI authority
 
 ### 6.3 UI components
 - `onlook-ui/components/review-shell.tsx`
-- `onlook-ui/components/run-select.tsx`
-- `onlook-ui/components/header-bar.tsx`
-- `onlook-ui/components/pipeline-pane.tsx`
-- `onlook-ui/components/tree-pane.tsx`
-- `onlook-ui/components/details-pane.tsx`
+- `onlook-ui/components/document-trace-shell.tsx`
+- `onlook-ui/components/workbench-compare-shell.tsx`
+- `onlook-ui/components/candidate-b-trace-shell.tsx`
+- `onlook-ui/components/analyst-insight-shell.tsx`
+- `onlook-ui/components/sandbox-primitives.tsx`
+- existing shared slice-1 components reused by the root review route:
+  - `run-select.tsx`
+  - `header-bar.tsx`
+  - `pipeline-pane.tsx`
+  - `tree-pane.tsx`
+  - `details-pane.tsx`
 
-### 6.4 Slice-1 behavior boundary
-Required in slice 1:
+### 6.4 Behavior boundary
+Required in the current route family:
 
-- header shell
-- run selector
-- load runs
-- load overview
-- tree rendering
-- details panel shell
-- explicit document-trace boundary note or link placeholder
+- route navigation across the bounded sandbox family
+- main review loading against the live review API seam
+- document-trace manifest and tab rendering against a live review runtime
+- analyst-insight alias execution against the existing POST endpoints
+- compare-family graceful degradation when same-checkout compare prep is absent
+- compare-family populated rendering when same-checkout compare prep is present
 
-Deferred from slice 1 unless the sandbox proves it is necessary:
+Still intentionally deferred:
 
 - full Mermaid parity
 - theme persistence parity
 - run-light vs run-heavy mode parity
-- document-trace migration
+- automatic promotion from sandbox state into live authority
 
 Reason:
 
-- slice 1 should prove the React/Tailwind + Onlook lane is viable
-- it should not immediately recreate every behavior of the current static page
+- the current route family proves the React/Tailwind + Onlook lane is viable across the bounded review UI family
+- it still keeps live-product authority, backend contracts, and promotion policy separate
 
 ## 7. Exact Commands For The First Implementation Slice
 
-### 7.1 Adopted runtime preflight
+### 7.1 Runtime preflight
 ```powershell
-Test-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime
-Test-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/local_corpus_e2e_summary.json
-Test-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/lc.db
+Test-Path ./backend/app/storage_test_runtime
+Test-Path ./backend/app/storage_test_runtime/lc_e2e/wb-b0/local_corpus_e2e_summary.json
+Test-Path ./backend/app/storage_test_runtime/lc_e2e/wb-a0/local_corpus_e2e_summary.json
 ```
 
 Expected result:
@@ -433,7 +489,8 @@ Expected result:
 
 ### 7.2 Baseline backend validation
 ```powershell
-$env:STORAGE_DIR='../pr45-postmerge-audit/backend/app/storage_test_runtime'
+$runtimeRoot = (Resolve-Path ./backend/app/storage_test_runtime).Path
+$env:STORAGE_DIR=$runtimeRoot
 $env:PYTHONDONTWRITEBYTECODE='1'
 python -B -m pytest ./backend/tests/test_review_nrc_aps_catalog.py ./backend/tests/test_review_nrc_aps_api.py -p no:cacheprovider
 ```
@@ -449,11 +506,16 @@ Preferred helper:
 ./tools/start-review-api.ps1
 ```
 
+Current helper behavior:
+
+- auto-resolves the repo-native same-checkout runtime first
+- falls back to the historical sibling adopted runtime only when the repo-native runtime is unavailable
+
 Equivalent explicit command path:
 
 ```powershell
-$runtimeRoot = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime).Path
-$runtimeDb = (Resolve-Path ./../pr45-postmerge-audit/backend/app/storage_test_runtime/lc_e2e/20260412_182041/lc.db).Path.Replace('\', '/')
+$runtimeRoot = (Resolve-Path ./backend/app/storage_test_runtime).Path
+$runtimeDb = (Resolve-Path ./backend/app/storage_test_runtime/lc_e2e/wb-a0/lc.db).Path.Replace('\', '/')
 $env:DB_INIT_MODE='none'
 $env:DATABASE_URL="sqlite:///$runtimeDb"
 $env:STORAGE_DIR=$runtimeRoot
@@ -463,7 +525,7 @@ python -m uvicorn main:app --app-dir ./backend --host 127.0.0.1 --port 8000
 ### 7.4 Backend API smoke after server start
 ```powershell
 Invoke-RestMethod 'http://127.0.0.1:8000/api/v1/review/nrc-aps/runs'
-Invoke-RestMethod 'http://127.0.0.1:8000/api/v1/review/nrc-aps/runs/f6e34493-270c-4d93-afa9-bf85bf699f0c/overview'
+Invoke-RestMethod 'http://127.0.0.1:8000/api/v1/review/nrc-aps/runs/d7a563e3-fd10-4df1-a85a-56000472e736/overview'
 ```
 
 Expected result:
@@ -483,6 +545,7 @@ For actual Onlook use:
 
 - ensure `onlook-ui/.env.local` exists with `NEXT_PUBLIC_REVIEW_API_BASE`
 - for the lowest-risk exploratory path, create a duplicate first with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` and import that duplicate
+- for an import-ready duplicate, prefer `tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv`; it now writes a public duplicate `.env` for CodeSandbox upload in addition to local install/lint/build
 - use `onlook-ui/` as the local project source only when direct canonical write-back is intentional
 - use `ext-onlook-fix/` when you need the already-proven local operator path
 - use `ext-onlook-pr/` when you need the clean extracted upstream packaging surface
@@ -508,10 +571,15 @@ Expected checks:
 git status --short
 ```
 
-Expected first-slice change boundary:
+Expected route-family change boundary:
 
 - `onlook-ui/*`
 - `next_milestone_plans/onlook-plan/*`
+
+Expected narrow helper/support additions only when same-checkout compare prep needs worktree support:
+
+- `tools/run_nrc_aps_local_corpus_e2e.py`
+- `tests/support_nrc_aps_candidate_b_opendataloader.py`
 
 Explicit non-commit surface:
 
@@ -541,10 +609,21 @@ Repo-local integrity check:
 ./tools/check-onlook.ps1 -RunValidation
 ```
 
+Tracked sandbox browser smoke before any duplicate-target Onlook proof:
+
+```powershell
+./tools/run-onlook-sandbox-smoke.ps1 -Profile core
+./tools/run-onlook-sandbox-smoke.ps1 -Profile full
+./tools/run-onlook-sandbox-smoke.ps1 -Profile full -AppDir onlook-ui-copy
+```
+
 Repo-local duplicate sandbox copy:
 
 ```powershell
 ./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv
+./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv
+./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv -RunSmokeProfile full
+./tools/diff-onlook-copy.ps1 -TargetDir onlook-ui-copy
 ```
 
 Repo-local Onlook clone restore:
@@ -583,6 +662,7 @@ Expected current result:
 - the dev-login flow redirects into the app shell
 - `./tools/check-onlook.ps1` confirms the preserved local and upstream-clean clones are still pinned, clean, and backed by tracked patch archives
 - `./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` produces a clean duplicate frontend source tree for scratch imports without reusing `.next/` or `node_modules/`
+- `./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` turns that into a one-command duplicate-prep path by adding local install, lint, and build
 - `./tools/restore-onlook.ps1` can recreate the preserved local or upstream-clean Onlook trees from the tracked patch archives if the local solved clones ever drift or need to be rebuilt from the pinned upstream base
 - that restore path is now proven: both preserved patch sets were rebuilt successfully into fresh local clones from the pinned upstream base commit
 - with a real `CSB_API_KEY`, local import of the current committed `onlook-ui/` folder reaches project verification, completes sandbox creation, and opens the imported project route and editor shell
@@ -593,6 +673,29 @@ Expected current result:
 - a bounded Onlook-authored save now writes into `onlook-ui/app/page.tsx` on disk and the host file can be restored clean afterward
 - this proves local operator boot, auth, import, sandbox creation, hydrated preview, populated iframe render, trust-click recovery, and bounded host write-back on the preserved local operator surface; it does not yet prove full AI/chat readiness or shim-free re-proof on the clean extracted upstream branch
 
+### 7.9 Same-checkout compare prep and route-family proof
+Repo-native local compare prep commands:
+
+```powershell
+./../../.venvs/phase7a-py311/Scripts/python.exe ./tools/seed_wb_compare.py --runtime-root ./backend/app/storage_test_runtime/lc_e2e/wb-b0 --visual-lane-mode baseline
+./../../.venvs/phase7a-py311/Scripts/python.exe ./tools/seed_wb_compare.py --runtime-root ./backend/app/storage_test_runtime/lc_e2e/wb-a0 --visual-lane-mode candidate_a_page_evidence_v1
+./../../.venvs/phase7a-py311/Scripts/python.exe ./tools/run_nrc_aps_candidate_b_compare.py
+python ./tools/validate_wb_prep.py
+```
+
+Expected result:
+
+- `tools/validate_wb_prep.py` passes
+- the output includes recommended same-checkout URLs for:
+  - `/review/nrc-aps/workbench-compare`
+  - `/review/nrc-aps/candidate-b-trace`
+  - baseline and Candidate-A document trace follow-through
+- `./tools/run-onlook-sandbox-smoke.ps1 -Profile full` then consumes those recommended URLs, remaps them into sandbox routes, and proves the populated compare-family surfaces before any Onlook import step
+- `./tools/run-onlook-sandbox-smoke.ps1 -Profile full -AppDir onlook-ui-copy` can now prove a prepared duplicate target before the later Onlook operator proof
+- the sandbox `workbench-compare` route then renders populated compare data
+- the sandbox `candidate-b-trace` route then renders populated artifact-backed tabs
+- the compare-family proof remains local runtime/input prep only; it does not modify shipped static UI authority
+
 ## 8. Stop Rules
 Stop and reassess if:
 
@@ -600,18 +703,19 @@ Stop and reassess if:
 - the scaffold requires touching `backend/app/review_ui/static/*`
 - the sandbox cannot render the first page without backend contract changes
 - direct cross-port calls require credentialed requests, server-side fetching, or early proxy work
-- the adopted `pr45-postmerge-audit` runtime root, summary, or database path fails preflight
-- the first slice starts duplicating backend business logic instead of consuming backend outputs
+- neither the repo-native runtime nor the explicit fallback runtime can satisfy preflight
+- the sandbox route family starts duplicating backend business logic instead of consuming backend outputs
 - a fresh import of the current committed sandbox app stops hydrating in direct preview or stops loading the populated shell in the Onlook iframe
 - future work starts depending on the clean extracted upstream branch as if shim-free host write-back had already been re-proven there
 
 ## 9. Immediate Next Move
 The next justified move is:
 
-1. treat preview hydration and local repo-lane write-back as resolved for this repo lane, not as active reasons to widen repo product scope further
+1. treat preview hydration, local repo-lane write-back, and populated compare-family prep as resolved for the current local lane
 2. use `ext-onlook-fix/` when you need the preserved solved local operator path
 3. use `ext-onlook-pr/` as the clean upstream-ready patch baseline
-4. treat upstream issue evidence as future `Next 16` re-upgrade and runtime-hardening context, not as the current repo blocker
-5. keep AI/chat readiness and any shim-free end-to-end re-proof on the clean extracted branch as separate follow-up work
-6. for routine exploratory work, treat a duplicate created by `tools/copy-onlook-ui.ps1` as the default write target and merge back manually only after review
-7. treat `onlook-ui/` as the canonical write-back target only when direct canonical sandbox edits are the explicit goal
+4. use same-checkout compare prep when populated compare-family work is the goal, and do not silently assume that data is present
+5. treat upstream issue evidence as future `Next 16` re-upgrade and runtime-hardening context, not as the current repo blocker
+6. keep AI/chat readiness and any shim-free end-to-end re-proof on the clean extracted branch as separate follow-up work
+7. for routine exploratory work, treat a duplicate prepared by `tools/prep-onlook-copy.ps1` as the default write target and review it first with `tools/diff-onlook-copy.ps1` before any manual merge-back
+8. treat `onlook-ui/` as the canonical write-back target only when direct canonical sandbox edits are the explicit goal
