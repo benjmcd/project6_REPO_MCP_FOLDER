@@ -132,10 +132,19 @@ $uiErr = Join-Path $tempRoot 'ui.err.log'
 $apiProcess = $null
 $uiProcess = $null
 $smokeUrl = "http://$BindHost`:$UiPort"
+$reviewApiBase = "http://$BindHost`:$ApiPort/api/v1/review/nrc-aps"
 
 try {
     $apiProcess = Start-Process -FilePath 'powershell.exe' `
-        -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', './tools/start-review-api.ps1') `
+        -ArgumentList @(
+            '-NoProfile',
+            '-ExecutionPolicy',
+            'Bypass',
+            '-File',
+            './tools/start-review-api.ps1',
+            '-Port',
+            $ApiPort
+        ) `
         -WorkingDirectory $laneRoot `
         -RedirectStandardOutput $apiOut `
         -RedirectStandardError $apiErr `
@@ -143,8 +152,14 @@ try {
 
     Wait-HttpReady -Url "http://$BindHost`:$ApiPort/api/v1/review/nrc-aps/runs" -TimeoutSeconds $ReadyTimeoutSeconds
 
-    $uiProcess = Start-Process -FilePath 'cmd.exe' `
-        -ArgumentList @('/d', '/c', 'npm run dev -- --hostname ' + $BindHost + ' --port ' + $UiPort) `
+    $uiProcess = Start-Process -FilePath 'powershell.exe' `
+        -ArgumentList @(
+            '-NoProfile',
+            '-ExecutionPolicy',
+            'Bypass',
+            '-Command',
+            "& { `$env:NEXT_PUBLIC_REVIEW_API_BASE = '$reviewApiBase'; npm run dev -- --hostname '$BindHost' --port $UiPort }"
+        ) `
         -WorkingDirectory $onlookUiRoot `
         -RedirectStandardOutput $uiOut `
         -RedirectStandardError $uiErr `

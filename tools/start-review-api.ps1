@@ -1,5 +1,6 @@
 param(
-    [string]$RuntimeRoot = ''
+    [string]$RuntimeRoot = '',
+    [int]$Port = 8000
 )
 
 $ErrorActionPreference = 'Stop'
@@ -22,11 +23,11 @@ Write-Host "Using review root: $($runtimeState.ReviewRoot)"
 Write-Host "Using run id: $($runtimeState.RunId)"
 Write-Host "Using runtime db: $runtimeDb"
 Write-Host "Using runtime summary: $summaryPath"
-Write-Host 'Starting review API on 127.0.0.1:8000'
+Write-Host "Starting review API on 127.0.0.1:$Port"
 
 Push-Location $laneRoot
 try {
-    python -m uvicorn main:app --app-dir ./backend --host 127.0.0.1 --port 8000
+    python -m uvicorn main:app --app-dir ./backend --host 127.0.0.1 --port $Port
 }
 finally {
     Pop-Location
