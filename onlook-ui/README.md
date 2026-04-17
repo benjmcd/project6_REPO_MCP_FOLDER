@@ -125,7 +125,7 @@ Tracked duplicate-target Onlook operator proof:
 
 Meaning:
 
-- the operator proof imports a prepared duplicate target into local Onlook, reuses or starts the local review API, and proves trusted preview navigation across the full sandbox route family
+- the operator proof imports a prepared duplicate target into local Onlook, reuses or starts the local review API, verifies that the API exposes the expected same-checkout reviewable runs from `../tools/validate_wb_prep.py`, restarts the expected local Onlook clone once if a reused browser session is stale, and proves trusted preview navigation across the full sandbox route family
 - it also runs the analyst flow and proves duplicate-only write-back while restoring the duplicate proof file and leaving canonical `onlook-ui/` untouched
 - use it after `../tools/run-onlook-sandbox-smoke.ps1 -Profile full -AppDir onlook-ui-copy` when you need editor-side proof rather than browser-only route proof
 

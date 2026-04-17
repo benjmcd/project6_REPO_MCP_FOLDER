@@ -311,7 +311,6 @@ async function assertRootPreview(page, timeoutMs) {
   let previewFrame = null;
   const runResponses = [];
   let processedRunResponseCount = 0;
-  let latestRunsPayload = null;
   const onResponse = (response) => {
     if (isReviewRunsResponse(response)) {
       runResponses.push(response);
@@ -348,14 +347,7 @@ async function assertRootPreview(page, timeoutMs) {
       if (runResponses.length > processedRunResponseCount) {
         const latestResponse = runResponses[runResponses.length - 1];
         ensureOk(latestResponse, 'review runs response');
-        latestRunsPayload = await parseReviewRunsPayload(latestResponse);
         processedRunResponseCount = runResponses.length;
-
-        if (getReviewableRunCount(latestRunsPayload) < 1) {
-          throw new Error(
-            `Preview reached the local review API, but no reviewable runs were available:\n${JSON.stringify(latestRunsPayload, null, 2).slice(0, 1200)}`,
-          );
-        }
       }
 
       await page.waitForTimeout(1500);
@@ -775,25 +767,6 @@ function isReviewRunsResponse(response) {
     response.url().includes('/api/v1/review/nrc-aps/runs')
     && response.request().method() === 'GET'
   );
-}
-
-function getReviewableRunCount(payload) {
-  if (!payload || !Array.isArray(payload.runs)) {
-    return 0;
-  }
-
-  return payload.runs.filter((run) => run?.reviewable === true).length;
-}
-
-async function parseReviewRunsPayload(response) {
-  const bodyText = await response.text();
-  try {
-    return JSON.parse(bodyText);
-  } catch {
-    throw new Error(
-      `Review runs response was not valid JSON:\n${bodyText.slice(0, 1200)}`,
-    );
-  }
 }
 
 async function assertAnalystInsight(page, frame, timeoutMs) {

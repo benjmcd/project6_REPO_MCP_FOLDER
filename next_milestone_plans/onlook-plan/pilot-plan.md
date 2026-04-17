@@ -291,6 +291,6 @@ When populated compare-family work is required:
 3. validate the resulting selection and recommended URLs with `tools/validate_wb_prep.py`
 4. prove the hydrated full route family with `tools/run-onlook-sandbox-smoke.ps1 -Profile full`
 5. if the duplicate target is the intended Onlook import, re-run that proof against the duplicate with `tools/run-onlook-sandbox-smoke.ps1 -Profile full -AppDir onlook-ui-copy`
-6. if editor-side proof is required, run `tools/run-onlook-operator-proof.ps1`; it now proves duplicate-target import, trusted preview navigation, analyst flow, and duplicate-only write-back with duplicate restoration and canonical protection
+6. if editor-side proof is required, run `tools/run-onlook-operator-proof.ps1`; it now proves duplicate-target import, requires the expected same-checkout reviewable runs from `tools/validate_wb_prep.py`, restarts the expected local Onlook clone once if a reused browser session is stale, proves trusted preview navigation, analyst flow, and duplicate-only write-back with duplicate restoration and canonical protection
 
 Do not broaden repo scope beyond the sandbox app until the clean extracted upstream branch is either sent upstream or re-proven shim-free end-to-end.
