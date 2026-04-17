@@ -39,7 +39,7 @@ $restoreBranch = if ($PatchSet -eq 'local-writeback') {
     'codex/restored-upstream-clean'
 }
 $expectedTrees = @{
-    'local-writeback' = '8f9c9811552a801478df85daeee511104b8695d2'
+    'local-writeback' = 'a2a7672c9241802cd741d6d8fce9b847651c003c'
     'upstream-clean' = '304a553e444c0327068fcb1cef7eac6430ccdaa8'
 }
 
