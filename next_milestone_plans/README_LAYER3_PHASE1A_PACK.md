@@ -24,6 +24,9 @@ And to the carried-forward Gate C quantitative associated/cohort continuation fr
 And to the carried-forward Gate D package-entry freeze packet for the landed bounded packaging/reconciliation entry slice:
 - `next_milestone_plans/Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md`
 
+And to the narrow post-Gate D APS handoff freeze packet that freezes the first bounded APS adapter target and contract before any APS-facing lane opens:
+- `next_milestone_plans/Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md`
+
 This README is operational and navigational.
 If it conflicts with the stronger frozen control docs, the control docs govern.
 
@@ -49,6 +52,7 @@ The lane now contains:
 - the carried-forward Gate C quantitative single-item plan/pass-entry packet that governed the bounded plan/pass lane now landed on current `main`
 - the carried-forward Gate C quantitative associated/cohort shaping continuation packet that governed the bounded cohort pass lane now landed on current `main`
 - the carried-forward Gate D package-entry freeze packet that governed the bounded packaging/reconciliation entry slice now landed on current `main` without reopening route/UI or APS handoff scope
+- the narrow post-Gate D APS handoff freeze packet that now freezes the first bounded APS-facing adapter target and contract at the evidence-bundle-family boundary before any APS-facing implementation lane opens
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -71,6 +75,7 @@ Current bounded posture:
 - Phase 1A itself does not admit typing, orchestration, packaging, APS handoff, route-family work, UI widening, or consumer widening
 - later carried-forward Gate C freezes now cover the landed typing/unit, single-item pass, and quantitative cohort slices
 - later carried-forward Gate D freeze now covers the landed bounded package-entry slice only; it does not mean packaging or consumer routes beyond that slice have already landed
+- the new post-Gate D APS handoff freeze now settles the exact first APS-facing target and adapter contract without implying that APS handoff itself has already landed
 
 The active REV2 control docs in this pack have also been re-audited against current `main` after the repo-root analyst-insight page, alias-router, static-asset, and runtime-helper surfaces landed. Treat the REV1 artifacts and the REV1-to-REV2 correction memo as historical context only.
 
@@ -101,6 +106,9 @@ Read this after `06_GATEC_PASS_FREEZE.md` if you need the carried-forward contra
 
 Read this after `07_GATEC_COHORT_FREEZE.md` if you need the carried-forward contract that governed the bounded Gate D package-entry slice now landed on current `main`:
 - `Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md`
+
+Read this after `08_GATED_PACKAGE_FREEZE.md` if you need the narrow frozen contract for the first bounded APS-facing adapter and handoff lane before any APS-facing implementation starts:
+- `Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md`
 
 ### 2. Execution handoff
 
@@ -177,6 +185,12 @@ This document is also outside the accepted Phase 1A normative control spine.
 It is the actual frozen contract that governed the bounded Gate D package-entry slice now landed on current `main`, and it does not itself imply that packaging or consumer routes beyond that slice have already landed:
 - `08_GATED_PACKAGE_FREEZE.md`
 
+### Post-Phase 1A carried-forward APS handoff freeze packet
+
+This document is also outside the accepted Phase 1A normative control spine.
+It is the narrow frozen contract for the first bounded APS-facing adapter/handoff lane, and it does not itself imply that APS handoff has already landed on current `main`:
+- `09_GATED_APS_HANDOFF_FREEZE.md`
+
 Rule:
 - if a rule exists only in an operational companion doc, move or restate it in the normative control spine before relying on it as durable control guidance
 
@@ -231,6 +245,13 @@ Start with:
 - `Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md`
 - `Layer3_execution_freeze/13-phase1a-surface-map.md`
 - `docs/analyst_insight/analyst_insight_status_handoff.md`
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
+
+### If you are deciding what must happen before bounded APS handoff continuation is allowed
+
+Start with:
+- `Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md`
+- `Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md`
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 
 ## Residual boundary note
