@@ -6,6 +6,7 @@ Generated: 2026-03-09 (America/Los_Angeles)
 >> Status note (2026-03-14): Phase 7/7A (Advanced NRC APS Ingestion) is in an `accepted-state`. Phase 8 (Downstream Consumption) is in a PROVISIONAL state. The authoritative repository map and authority definitions live in [docs/nrc_adams/nrc_aps_authority_matrix.md](docs/nrc_adams/nrc_aps_authority_matrix.md).
 >> Status note (2026-03-26): PostgreSQL Tier1 status and the current split-default semantics now live in [docs/postgres/postgres_status_handoff.md](docs/postgres/postgres_status_handoff.md). This file remains a broad repo map, not the authoritative PostgreSQL lane surface.
 >> Status note (2026-04-03): Analyst-insight layer status, contract summary, and deferred tech debt now live in [docs/analyst_insight/analyst_insight_status_handoff.md](docs/analyst_insight/analyst_insight_status_handoff.md). This file remains a broad repo map, not the authoritative analyst-insight lane surface.
+>> Status note (2026-04-18): Onlook testing, troubleshooting, audit, and operator use now start from [docs/onlook-ops.md](docs/onlook-ops.md). The Onlook planning packet under `next_milestone_plans/onlook-plan/` remains the boundary and provenance set, and [docs/onlook-normalized-smoke.md](docs/onlook-normalized-smoke.md) remains the current-project first-gate doc.
 >> **CRITICAL WARNING**: Unverified `tests/...` and `tools/...` paths referenced below may not exist in this specific export workspace and should not be trusted as safe authority paths unless their on-disk presence is directly confirmed.
 
 > Proof note (2026-03-13): fresh OCR-enabled lower-layer proof is now checked in at `tests/reports/nrc_aps_document_processing_proof_report.json`, `tests/reports/nrc_aps_artifact_ingestion_validation_report.json`, and `tests/reports/nrc_aps_content_index_validation_report.json`, current OCR-success proof is established in this workspace, and a fresh full `gate-nrc-aps` PASS was rerun on March 13, 2026. The aggregate-scoped APS validation reports refreshed by that gate rerun are now current; other checked-in `tests/reports/*.json` files remain historical snapshots unless explicitly regenerated in the current pass.
@@ -34,6 +35,7 @@ Runtime model is in-process execution (no external worker queue).
 | `data_demo/` | Demo CSV plus local user-supplied example artifacts; not an authority surface |
 | `data_actual/` | Local MCS archives + evaluation outputs |
 | `README.md` | Primary operational and capability docs |
+| `docs/onlook-ops.md` | Onlook operator front door for testing, troubleshooting, audit, and use |
 | `SCIENCEBASE_PILOT_RUNBOOK.md` | ScienceBase pilot operator runbook |
 | `METHOD_AWARE_FRAMEWORK_CHANGELOG.md` | Consolidated project change history |
 | `project6.ps1` | Setup/migrate/start/status/validate/all helper script |
