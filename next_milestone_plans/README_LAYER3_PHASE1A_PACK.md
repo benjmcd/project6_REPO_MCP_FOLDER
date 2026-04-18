@@ -15,10 +15,10 @@ It also now points to the narrow post-Phase 1A Gate C entry-freeze bridge:
 And to the actual first Gate C implementation-entry freeze packet:
 - `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`
 
-And to the next bounded Gate C plan/pass-entry freeze packet:
+And to the carried-forward Gate C plan/pass-entry freeze packet for the landed bounded plan/pass slice:
 - `next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md`
 
-And to the next bounded Gate C quantitative associated/cohort continuation freeze packet:
+And to the carried-forward Gate C quantitative associated/cohort continuation freeze packet for the landed bounded cohort slice:
 - `next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md`
 
 This README is operational and navigational.
@@ -41,10 +41,10 @@ The lane now contains:
 - the committed bounded Phase 1A code slice
 - the committed postcode acceptance audit
 - the pack-local roadmap, reconciliation, navigation, and concrete surface-map surfaces needed for bounded Phase 1A closure
-- the narrow post-Phase 1A Gate C entry-freeze bridge that identified the blocker set before the next lane could open safely
-- the now-frozen first Gate C typing/unit implementation-entry packet needed to open the next bounded write-enabled typing/unit lane without reopening broader scope
-- the now-frozen next Gate C quantitative single-item plan/pass-entry packet needed before a bounded write-enabled plan/pass lane can open without overclaiming qualitative or cohort execution
-- the now-frozen next Gate C quantitative associated/cohort shaping continuation packet needed before a bounded write-enabled cohort pass lane can open without ad hoc dataset-version coercion
+- the narrow post-Phase 1A Gate C entry-freeze bridge that identified the blocker set before later Gate C slices could open safely
+- the carried-forward first Gate C typing/unit implementation-entry packet that governed the bounded typing/unit lane now landed on current `main`
+- the carried-forward Gate C quantitative single-item plan/pass-entry packet that governed the bounded plan/pass lane now landed on current `main`
+- the carried-forward Gate C quantitative associated/cohort shaping continuation packet that governed the bounded cohort pass lane now landed on current `main`
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -81,16 +81,16 @@ Read these first when you need the tranche boundary, prep rules, and validation 
 - `Layer3_planning_docs/02_PHASE1A_IMPLEMENTATION_PREP_SPEC_REV2.md`
 - `Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
 
-Read this after the REV2 trio if you are deciding what the next Layer 3 lane must freeze before any Gate C implementation starts:
+Read this after the REV2 trio if you are deciding what the first Gate C slice had to freeze before any write-enabled Gate C implementation started:
 - `Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md`
 
-Read this after `04_GATEC_ENTRY_FREEZE.md` if you are deciding what exact bounded Gate C slice may be implemented next:
+Read this after `04_GATEC_ENTRY_FREEZE.md` if you need the carried-forward contract for the first bounded Gate C typing/unit slice that has now landed on current `main`:
 - `Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`
 
-Read this after `05_GATEC_IMPLEMENTATION_FREEZE.md` if you are deciding what exact bounded plan/pass continuation slice may be implemented next:
+Read this after `05_GATEC_IMPLEMENTATION_FREEZE.md` if you need the carried-forward contract for the bounded Gate C quantitative single-item plan/pass slice that has now landed on current `main`:
 - `Layer3_planning_docs/06_GATEC_PASS_FREEZE.md`
 
-Read this after `06_GATEC_PASS_FREEZE.md` if you are deciding what exact bounded quantitative associated/cohort continuation slice may be implemented next:
+Read this after `06_GATEC_PASS_FREEZE.md` if you need the carried-forward contract for the bounded Gate C quantitative associated/cohort continuation slice that has now landed on current `main`:
 - `Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md`
 
 ### 2. Execution handoff
@@ -138,28 +138,28 @@ These help navigation, reconciliation, and visual orientation, but do not overri
 - `13-phase1a-surface-map.md`
 - `layer3_phase1a_roadmap.png`
 
-### Post-Phase 1A next-lane bridge
+### Post-Phase 1A carried-forward bridge
 
 This bridge document is not part of the accepted Phase 1A normative control spine.
 It exists to explain why a separate Gate C freeze packet was required:
 - `04_GATEC_ENTRY_FREEZE.md`
 
-### Post-Phase 1A next-lane freeze packet
+### Post-Phase 1A carried-forward freeze packet
 
 This document is also outside the accepted Phase 1A normative control spine.
-It is the actual frozen contract for the first bounded Gate C typing/unit implementation lane:
+It is the actual frozen contract that governed the first bounded Gate C typing/unit implementation lane now landed on current `main`:
 - `05_GATEC_IMPLEMENTATION_FREEZE.md`
 
-### Post-Phase 1A next-lane continuation freeze packet
+### Post-Phase 1A carried-forward continuation freeze packet
 
 This document is also outside the accepted Phase 1A normative control spine.
-It is the actual frozen contract for the next bounded Gate C quantitative single-item plan/pass implementation lane:
+It is the actual frozen contract that governed the bounded Gate C quantitative single-item plan/pass implementation lane now landed on current `main`:
 - `06_GATEC_PASS_FREEZE.md`
 
-### Post-Phase 1A next-lane cohort continuation freeze packet
+### Post-Phase 1A carried-forward cohort continuation freeze packet
 
 This document is also outside the accepted Phase 1A normative control spine.
-It is the actual frozen contract for the next bounded Gate C quantitative associated/cohort shaping and pass-entry lane:
+It is the actual frozen contract that governed the bounded Gate C quantitative associated/cohort shaping and pass-entry lane now landed on current `main`:
 - `07_GATEC_COHORT_FREEZE.md`
 
 Rule:
@@ -198,7 +198,7 @@ Start with:
 Current answer:
 - no additional Phase 1A code work is justified by default from the current lane state
 
-### If you are deciding what must happen before Gate C implementation is allowed
+### If you are deciding what must happen before broader Gate C continuation is allowed
 
 Start with:
 - `Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md`

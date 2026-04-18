@@ -2,10 +2,11 @@
 
 ## Purpose and authority note
 
-This document freezes the next write-enabled Gate C implementation-entry contract for Layer 3 after the already-landed typing/unit slice.
+This document freezes the bounded write-enabled Gate C plan/pass continuation contract for Layer 3 after the already-landed typing/unit slice.
+The bounded quantitative single-item plan/pass lane governed by this freeze has now landed on current `main`.
 
 It exists to answer one question only:
-- what exact bounded plan/pass slice may be implemented next without reopening route, UI, runtime DB, packaging, APS handoff, or broader qualitative-engine scope
+- what exact bounded plan/pass slice was admitted without reopening route, UI, runtime DB, packaging, APS handoff, or broader qualitative-engine scope
 
 It is not:
 - a broad orchestration rewrite
@@ -32,7 +33,7 @@ Evidence basis: `P|layer3_primary_planningdocs/03_LAYER3_SESSION_LEDGER_AND_WORK
 
 ## Frozen tranche
 
-The next write-enabled Gate C implementation slice is now frozen as:
+The bounded Gate C plan/pass continuation slice was frozen and has now landed as:
 - `Gate C continuation = internal plan/pass entry for dataset-version-backed quantitative single-item sets only`
 - land only:
   - `l3_analysis_plan`
@@ -54,7 +55,7 @@ Hard rule:
 
 ## Canonical starting point
 
-The live repo already has four relevant families that this next slice must treat distinctly:
+The live repo already has four relevant families that this slice had to treat distinctly:
 
 1. `Phase 1A Layer 3 ledger surfaces`
 - `backend/app/models/models.py`
@@ -86,7 +87,7 @@ The live repo already has four relevant families that this next slice must treat
 
 Frozen interpretation of that starting point:
 - the mutable Layer 3 write-side truth remains the Layer 3 ledger, not `AnalysisRun`
-- the current typing/unit slice is the only admitted Gate C input surface for this next lane
+- the current typing/unit slice is the only admitted Gate C input surface for this bounded lane
 - the quantitative analysis plane is a wrapped engine candidate only for compatible quantitative single-item sets
 - the analyst-insight service modules are deterministic helpers that may remain adjacent helper context, but they are not proof that a general qualitative pass engine already exists
 - the analyst-insight route/page family and the review/runtime DB plane remain out of scope
@@ -102,13 +103,13 @@ Gate C will extend the Layer 3 ledger in canonical order after the typing/unit s
 4. `l3_pass_run`
 
 Frozen persistence rule:
-- the next lane writes new parallel Layer 3 plan/pass tables
+- the bounded lane writes new parallel Layer 3 plan/pass tables
 - large input/output bodies remain workspace-store refs, not oversized inline ledger payloads
 - `AnalysisRun` may exist as wrapped quantitative-engine context, but it is never the durable Layer 3 orchestration truth
 
 Implications:
 - `l3_pass_run.summary_json` may include an adjacent `analysis_run_id` or similar linkage only as cross-surface provenance
-- the next lane must not require edits to `AnalysisRun`, `AnalysisArtifact`, or their route/schema family just to admit the Layer 3 pass slice
+- the bounded lane must not require edits to `AnalysisRun`, `AnalysisArtifact`, or their route/schema family just to admit the Layer 3 pass slice
 - runtime DB state remains read-only context only and never mutable Layer 3 execution state
 
 ### 2. Session lifecycle posture
@@ -118,19 +119,19 @@ Current repo-confirmed starting point:
 - the typing/unit slice starts only from that finalized state
 
 Frozen continuation rule:
-- the next pass-entry lane starts only from sessions that have already been finalized by the Phase 1A loading closure and successfully typed into units/sets
+- the bounded pass-entry lane starts only from sessions that have already been finalized by the Phase 1A loading closure and successfully typed into units/sets
 - the same `l3_session` may then be reopened for later Gate C work rather than creating a parallel replacement session
 
 Frozen minimum lifecycle handling:
 - before moving the session into `active_planning`, the implementation must preserve the prior finalized loading closure evidence inside `summary_json`
-- the next lane may then move the session through:
+- the bounded lane may then move the session through:
   - `active_planning`
   - `active_execution`
   - one terminal completion state again after the bounded pass slice ends
 - the implementation must not silently discard or overwrite the prior loading-closure counts, warning reasons, or prior `completed_at` evidence
 
 Hard stop:
-- if the next lane cannot preserve the pre-pass closure evidence while reopening the same session, reopen the freeze instead of improvising a second-session or silent-overwrite model
+- if the bounded lane cannot preserve the pre-pass closure evidence while reopening the same session, reopen the freeze instead of improvising a second-session or silent-overwrite model
 
 ### 3. Admitted set-selection and planning posture
 
@@ -184,7 +185,7 @@ Intentionally not frozen here:
 - a canonical long-term `l3_analysis_plan.status` enum
 
 Rule:
-- the next lane must still distinguish successful plan creation from fail-closed no-admissible-set outcomes, but the exact minimal internal status labels may remain implementation-local for this slice
+- the bounded lane must still distinguish successful plan creation from fail-closed no-admissible-set outcomes, but the exact minimal internal status labels may remain implementation-local for this slice
 
 ### 5. First-v1 pass posture
 
@@ -195,7 +196,7 @@ Frozen admitted engine family:
 - `wrapped_quantitative_analysis` only
 
 Frozen quantitative reuse posture:
-- the next lane may reuse the existing quantitative analysis plane only through direct service-level wrapping
+- the bounded lane may reuse the existing quantitative analysis plane only through direct service-level wrapping
 - the owner module may call repo-local quantitative services directly
 - the owner module may not self-call HTTP routes
 - the owner module may not describe `AnalysisRun` as already being the Layer 3 pass ledger
@@ -285,7 +286,7 @@ Frozen proof posture:
 
 ## Explicit non-goals
 
-Do not include in the next Gate C implementation lane:
+Do not include in the bounded Gate C implementation lane:
 - qualitative pass execution
 - `associated_cohort` pass execution
 - `cross_modal` or `comparative` pass execution
@@ -301,7 +302,7 @@ Do not include in the next Gate C implementation lane:
 
 ## Stop conditions
 
-Stop and reopen the freeze instead of improvising if the next Gate C write lane requires:
+Stop and reopen the freeze instead of improvising if the bounded Gate C write lane requires:
 - `backend/app/api/router.py`
 - `backend/app/schemas/api.py`
 - `backend/main.py`
@@ -317,11 +318,11 @@ Stop and reopen the freeze instead of improvising if the next Gate C write lane 
 ## Concise readiness judgment
 
 Readiness judgment:
-- `Ready for a bounded write-enabled Gate C plan/pass implementation lane`
+- `This freeze was sufficient for the bounded write-enabled Gate C plan/pass implementation lane that has now landed on current main`
 
 Reason:
 - the earlier blocker was a missing freeze for how `l3_analysis_plan` and `l3_pass_run` should land relative to the already-landed typing/unit slice, the existing quantitative plane, the analyst-insight helper surfaces, and the runtime DB boundary
-- this document now freezes that next continuation contract explicitly while keeping qualitative/cohort execution out
+- this document froze that bounded continuation contract explicitly while keeping qualitative/cohort execution out, and the governed lane is now landed on current `main`
 
 What still remains intentionally deferred after this freeze:
 - qualitative pass execution
