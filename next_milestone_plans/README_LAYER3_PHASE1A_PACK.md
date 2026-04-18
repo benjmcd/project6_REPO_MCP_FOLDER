@@ -27,6 +27,7 @@ Current lane history already includes:
 - `0b0ecf7e` `feat(layer3): add Phase 1A feeder-ledger entry slice`
 - `d67bc0e8` `docs(layer3): add Phase 1A postcode acceptance audit`
 - `f252d820` `docs(layer3): add phase1a pack front door and roadmap`
+- `119c1d73` `docs(layer3): add phase1a surface map`
 
 Current bounded posture:
 - Phase 1A remains Gate-B-only feeder / ledger entry
@@ -114,6 +115,7 @@ Start with:
 - `10_PHASE1A_POSTCODE_ACCEPTANCE_AUDIT.md`
 - `11_PHASE1A_RECONCILIATION_CHECKLIST.md`
 - `12_PHASE1A_ROADMAP_AND_DECISION_NOTES.md`
+- `13-phase1a-surface-map.md`
 
 ### If you need the concrete implementation surface map
 

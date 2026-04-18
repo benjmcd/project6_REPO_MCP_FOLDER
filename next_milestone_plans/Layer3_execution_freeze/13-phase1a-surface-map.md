@@ -136,6 +136,39 @@ What it uses:
 - `tmp_path` for disposable payload persistence
 - direct internal service imports only
 
+## Component and contract posture
+
+### UI / frontend components
+
+For this tranche, there are no new Layer 3 UI components.
+
+Explicitly not added:
+- no review page
+- no workbench page
+- no static asset bundle
+- no browser flow
+
+Relevant untouched boundary surfaces:
+- `backend/main.py`
+- `backend/app/review_ui/static/**`
+- `backend/app/api/review_nrc_aps.py`
+
+### API / schema contracts
+
+For this tranche, there are no new public API contracts.
+
+Explicitly not added:
+- no new router
+- no new `APIRouter` include
+- no new `backend/app/schemas/api.py` block
+- no new review-facing or consumer-facing schema export
+
+Relevant untouched boundary surfaces:
+- `backend/app/api/router.py`
+- `backend/app/api/review_nrc_aps.py`
+- `backend/app/schemas/api.py`
+- `backend/app/schemas/review_nrc_aps.py`
+
 ## Libraries and dependencies actually in play
 
 ### Framework and persistence stack
@@ -143,6 +176,7 @@ What it uses:
 - `FastAPI`
   - remains an adjacent boundary only for this tranche
   - no new route or page surface was added
+- existing mounted review/component surfaces remain unchanged
 - `SQLAlchemy`
   - ORM model definitions live in `backend/app/models/models.py`
   - `Session` enters through `backend/app/db/session.py`
@@ -209,11 +243,14 @@ Existing route boundary files:
 - `backend/main.py`
 - `backend/app/api/router.py`
 - `backend/app/api/review_nrc_aps.py`
+- `backend/app/schemas/api.py`
+- `backend/app/schemas/review_nrc_aps.py`
 
 Phase 1A posture at those boundaries:
 - no new `/api/v1/layer3` route family
 - no new `/review/layer3` page family
 - no router inclusion for Layer 3
+- no new public schema contract block
 - no change to existing review, market, or analyst-insight browser surfaces
 
 ### Adjacent read-only connection families

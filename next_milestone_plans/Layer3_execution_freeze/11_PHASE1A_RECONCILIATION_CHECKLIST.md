@@ -78,7 +78,9 @@ These items should remain true for lane-local closure to stay coherent:
    - `d67bc0e8` `docs(layer3): add Phase 1A postcode acceptance audit`
 4. Confirm the front-door / roadmap closeout commit remains in history:
    - `f252d820` `docs(layer3): add phase1a pack front door and roadmap`
-5. If a later follow-up adds docs or review material, confirm it does not rewrite or blur the meaning of those four commits by implication.
+5. Confirm the surface-map closeout commit remains in history:
+   - `119c1d73` `docs(layer3): add phase1a surface map`
+6. If a later follow-up adds docs or review material, confirm it does not rewrite or blur the meaning of those five commits by implication.
 
 ## 4. Proof-state checklist
 

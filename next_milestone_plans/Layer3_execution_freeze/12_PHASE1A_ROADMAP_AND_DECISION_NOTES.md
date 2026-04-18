@@ -71,9 +71,14 @@ Update them together.
 - The lane now carries its own postcode acceptance audit in commit `d67bc0e8`.
 - This notes doc, the derived roadmap PNG, the reconciliation checklist, and the pack README now close the missing navigation/operational-doc gap for the lane itself.
 
+### M7 - Concrete surface-map closure (achieved)
+
+- The lane now carries an explicit module / dependency / endpoint / connection map in `13-phase1a-surface-map.md`.
+- Commit `119c1d73` closes the remaining lane-local clarity gap around owner modules, libraries, config/migration paths, storage paths, untouched schema surfaces, and untouched route boundaries.
+
 ## Current roadmap position
 
-- M0 through M6 are achieved for the bounded Phase 1A lane.
+- M0 through M7 are achieved for the bounded Phase 1A lane.
 - The lane now contains:
   - the planning baseline
   - the execution handoff fence
@@ -81,6 +86,7 @@ Update them together.
   - the committed code slice
   - the committed postcode acceptance audit
   - the operational front-door/reconciliation/roadmap surfaces
+  - the concrete implementation surface map
 
 ## Current posture
 
