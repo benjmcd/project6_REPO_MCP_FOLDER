@@ -333,6 +333,7 @@ def test_gated_package_entry_emits_canonical_user_and_review_packages(tmp_path):
             "handoff_status",
         }
         assert canonical_payload["package_header"]["package_kind"] == "canonical_internal"
+        assert canonical_payload["selection_and_source_summary"]["manifest_item_count"] == 1
         assert canonical_payload["selection_and_source_summary"]["material_snapshot_count"] == 1
         assert canonical_payload["pass_summary"]["analysis_plan_id"] == stored_reconciliation.summary_json["analysis_plan_id"]
         assert canonical_payload["consumer_projection_summary"]["derived_package_kinds_json"] == [
@@ -367,6 +368,7 @@ def test_gated_package_entry_marks_excluded_inventory_as_warning_packages(tmp_pa
         review_payload = _load_payload(rows[PACKAGE_KIND_REVIEW_FACING].payload_ref)
 
         assert result.reconciliation_record.status == "reconciled_with_warnings"
+        assert canonical_payload["selection_and_source_summary"]["manifest_item_count"] == 2
         assert result.reconciliation_record.summary_json["excluded_set_count"] == 1
         assert all(row.status == "package_complete_with_warnings" for row in rows.values())
         assert any(caveat["caveat_type"] == "excluded_analysis_set" for caveat in canonical_payload["caveats"])

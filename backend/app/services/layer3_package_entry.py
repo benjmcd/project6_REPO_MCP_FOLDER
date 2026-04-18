@@ -574,6 +574,20 @@ def _build_caveats(
     return caveats
 
 
+def _manifest_items_or_raise(manifest: L3SelectionManifest) -> list[dict[str, Any]]:
+    manifest_json = manifest.manifest_json
+    if not isinstance(manifest_json, dict):
+        raise Layer3PackageEntryError(
+            f"Layer 3 selection manifest '{manifest.selection_manifest_id}' is missing manifest_json.items required for Gate D package entry"
+        )
+    manifest_items = manifest_json.get("items")
+    if not isinstance(manifest_items, list) or not manifest_items:
+        raise Layer3PackageEntryError(
+            f"Layer 3 selection manifest '{manifest.selection_manifest_id}' is missing manifest_json.items required for Gate D package entry"
+        )
+    return manifest_items
+
+
 def _selection_and_source_summary(
     *,
     session: L3Session,
@@ -581,13 +595,14 @@ def _selection_and_source_summary(
     descriptors: list[L3Descriptor],
     snapshots: list[L3MaterialSnapshot],
 ) -> dict[str, Any]:
+    manifest_items = _manifest_items_or_raise(manifest)
     source_shape_counts = Counter(snapshot.source_shape for snapshot in snapshots)
     source_plane_counts = Counter(snapshot.source_plane for snapshot in snapshots)
     return {
         "selection_manifest_id": manifest.selection_manifest_id,
         "selection_hash": manifest.selection_hash,
         "source_plane_hints_json": _json_clone(manifest.source_plane_hints_json or {}),
-        "manifest_item_count": len(list(manifest.manifest_json or [])),
+        "manifest_item_count": len(manifest_items),
         "descriptor_count": len(descriptors),
         "material_snapshot_count": len(snapshots),
         "source_shape_counts_json": dict(sorted(source_shape_counts.items())),
