@@ -9,7 +9,7 @@
   "scope": {
     "lane": {
       "worktreePath": "worktrees/onlook-proof",
-      "head": "3a9f81f48eb1a4f9ec45b7c9ca8292f4d004ec93",
+      "head": "24c060eaf5465c7f1cf922ce6c58c7cf89dd0b49",
       "helperFiles": {
         "tools/run-onlook-normalized-smoke.ps1": "84be330c76625dc1c14e202899bf246abd57552b5a19930cdb580dceef66ee90",
         "tools/onlook-normalized-smoke.mjs": "3df8d88cf440c17a7041d4a15ce4372c64846ee874bbab47c9bfad5feb8291fc",
@@ -295,6 +295,6 @@
   "failureReason": null,
   "artifacts": null,
   "artifactType": "durable-tracked-proof",
-  "verifiedAt": "2026-04-18T07:11:00-07:00",
-  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-071040-0c1244e9/ledger.json"
+  "verifiedAt": "2026-04-18T07:14:21-07:00",
+  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-071247-767979b6/ledger.json"
 }

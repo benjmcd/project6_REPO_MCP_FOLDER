@@ -3,7 +3,7 @@
 Current scoped status:
 - This is a current-project first gate, not a general Onlook gate.
 - The default pair now comes from [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json). It is the single source of truth for the active verified pair.
-- The current lane-head proof metadata lives in [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json).
+- The saved default-proof metadata lives in [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json).
 - The current runtime-clone provenance also comes from [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json) and the ledger it references.
 - The currently passing runtime surface is the restored runtime-clone state recorded in the referenced proof ledger.
 - The active verified pair is:
@@ -12,6 +12,7 @@ Current scoped status:
 - The canonical current proof pointer is `tools/onlook-active-pair.json`.
 - Do not pin a ledger path from this doc. Read `sourceLedgerPath` and `verifiedAt` from `tools/onlook-active-pair.json` for the live proof pointer.
 - Default invocation validates the referenced durable proof ledger plus the local helper surfaces and runtime-clone provenance before it trusts the active pair.
+- Proof-surface-only commits can advance repo `HEAD` without invalidating the active pair when those helper surfaces and the runtime-clone state remain unchanged.
 - The historical stale/unhealthy pair is retained only as prior context and is no longer a default:
   - project URL `http://127.0.0.1:3011/project/c2486161-3bad-4958-b2c9-7c6502bc76a0`
   - preview origin `https://vzyzj3-3000.csb.app/`
