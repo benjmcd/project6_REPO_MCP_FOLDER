@@ -6,9 +6,8 @@ Current scoped status:
 - The saved default-proof metadata lives in [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json).
 - The current runtime-clone provenance also comes from [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json) and the ledger it references.
 - The currently passing runtime surface is the restored runtime-clone state recorded in the referenced proof ledger.
-- The active verified pair is:
-  - project URL `http://127.0.0.1:3011/project/34743ff9-9eb2-4172-a3e0-b4154853e608`
-  - preview origin `https://72nw5n-3000.csb.app/`
+- The active verified pair also lives in [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json).
+- Read `projectUrl` and `previewOrigin` there for the live pair instead of pinning them in this doc.
 - The canonical current proof pointer is `tools/onlook-active-pair.json`.
 - Do not pin a ledger path from this doc. Read `sourceLedgerPath` and `verifiedAt` from `tools/onlook-active-pair.json` for the live proof pointer.
 - Default invocation validates the referenced durable proof ledger plus the local helper surfaces and runtime-clone provenance before it trusts the active pair.
