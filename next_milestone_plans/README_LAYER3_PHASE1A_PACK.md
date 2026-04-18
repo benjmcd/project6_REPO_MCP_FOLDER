@@ -12,6 +12,9 @@ Use it to orient quickly across the three active pack directories:
 It also now points to the narrow post-Phase 1A Gate C entry-freeze bridge:
 - `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md`
 
+And to the actual first Gate C implementation-entry freeze packet:
+- `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`
+
 This README is operational and navigational.
 If it conflicts with the stronger frozen control docs, the control docs govern.
 
@@ -32,7 +35,8 @@ The lane now contains:
 - the committed bounded Phase 1A code slice
 - the committed postcode acceptance audit
 - the pack-local roadmap, reconciliation, navigation, and concrete surface-map surfaces needed for bounded Phase 1A closure
-- the narrow post-Phase 1A Gate C entry-freeze bridge needed to keep the next lane read-only until its blocker set is actually frozen
+- the narrow post-Phase 1A Gate C entry-freeze bridge that identified the blocker set before the next lane could open safely
+- the now-frozen first Gate C typing/unit implementation-entry packet needed to open the next bounded write-enabled typing/unit lane without reopening broader scope
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -71,6 +75,9 @@ Read these first when you need the tranche boundary, prep rules, and validation 
 
 Read this after the REV2 trio if you are deciding what the next Layer 3 lane must freeze before any Gate C implementation starts:
 - `Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md`
+
+Read this after `04_GATEC_ENTRY_FREEZE.md` if you are deciding what exact bounded Gate C slice may be implemented next:
+- `Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`
 
 ### 2. Execution handoff
 
@@ -119,9 +126,15 @@ These help navigation, reconciliation, and visual orientation, but do not overri
 
 ### Post-Phase 1A next-lane bridge
 
-This document is not part of the accepted Phase 1A normative control spine.
-It exists only to freeze the next planning question before any Gate C implementation lane is opened:
+This bridge document is not part of the accepted Phase 1A normative control spine.
+It exists to explain why a separate Gate C freeze packet was required:
 - `04_GATEC_ENTRY_FREEZE.md`
+
+### Post-Phase 1A next-lane freeze packet
+
+This document is also outside the accepted Phase 1A normative control spine.
+It is the actual frozen contract for the first bounded Gate C typing/unit implementation lane:
+- `05_GATEC_IMPLEMENTATION_FREEZE.md`
 
 Rule:
 - if a rule exists only in an operational companion doc, move or restate it in the normative control spine before relying on it as durable control guidance
@@ -163,6 +176,7 @@ Current answer:
 
 Start with:
 - `Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md`
+- `Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`
 - `Layer3_execution_freeze/13-phase1a-surface-map.md`
 - `docs/analyst_insight/analyst_insight_status_handoff.md`
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
