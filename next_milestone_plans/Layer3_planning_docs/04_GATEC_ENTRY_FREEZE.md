@@ -7,6 +7,10 @@ This document is the narrow post-Phase 1A planning bridge for the next Layer 3 l
 It exists to answer one question only:
 - what must be explicitly frozen before any Gate C typing-orchestration implementation work starts
 
+Status note:
+- the missing implementation-entry freeze identified by this bridge is now supplied by `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`
+- this document remains the blocker audit and bridge rationale for why that freeze packet was required
+
 It is not a write-enabled prompt.
 It is not a Phase 2 implementation plan.
 It is not permission to widen route, UI, packaging, APS handoff, or consumer scope.
@@ -25,7 +29,7 @@ Authority-note extension:
 
 This document keeps the already-accepted boundaries:
 - Phase 1A remains closed as Gate-B-only feeder and ledger entry
-- Gate C is still blocked until typing heuristics and analysis-unit boundaries are explicitly frozen
+- this bridge alone is not enough to open Gate C write work; the later freeze packet must also govern
 - package-family work, APS handoff, route-family widening, and consumer widening remain out
 
 ## Current starting point
@@ -198,11 +202,11 @@ Current tests already prove parts of the adjacent live surface area:
 
 Gate C planning should name its proof posture relative to these existing tests instead of assuming a blank-slate proof harness.
 
-## Exact blockers that still need explicit freeze
+## Exact blockers this bridge identified for explicit freeze
 
 ### 1. Typing heuristics
 
-Still not frozen:
+Bridge-identified gap:
 - what counts as the first Layer 3 typed record
 - whether typing is descriptor-derived, retrieval-derived, material-derived, or hybrid
 - what deterministic fields must exist before a record is considered typed
@@ -214,7 +218,7 @@ Required outcome before Gate C write work:
 
 ### 2. Analysis-unit boundary
 
-Still not frozen:
+Bridge-identified gap:
 - what an analysis unit is
 - whether unit/group/set boundaries map to dataset-version rows, retrieval chunks, descriptor groups, or another bounded shape
 - how those boundaries differ from the already-live dataset-centric `AnalysisRun` family
@@ -226,7 +230,7 @@ Required outcome before Gate C write work:
 
 ### 3. Persistence posture relative to existing analysis tables
 
-Still not frozen:
+Bridge-identified gap:
 - whether Gate C reuses `AnalysisRun` and its companion tables
 - whether Gate C writes parallel Layer 3 tables
 - whether Gate C reads existing analysis outputs without treating them as Layer 3 truth
@@ -237,7 +241,7 @@ Required outcome before Gate C write work:
 
 ### 4. Invocation and proof posture
 
-Still not frozen:
+Bridge-identified gap:
 - whether Gate C entry proof is internal-service only
 - whether it may use existing dataset analysis routes
 - whether any analyst-insight alias route or page surface is in scope
@@ -249,7 +253,7 @@ Required outcome before Gate C write work:
 
 ### 5. Qualitative-engine ceiling
 
-Still not frozen:
+Bridge-identified gap:
 - how far Gate C goes beyond bounded deterministic typing/orchestration
 - whether any broader qualitative-engine ambition enters the tranche
 
@@ -285,9 +289,9 @@ Required outcome before Gate C write work:
 
 ## Recommended next-lane output
 
-The smallest justified next planning deliverable is not a broad architecture rewrite.
+The smallest justified next planning deliverable was not a broad architecture rewrite.
 
-It is one Gate C freeze packet that settles:
+It was one Gate C freeze packet that settles:
 - first-v1 typing heuristic
 - first-v1 analysis-unit and grouping boundary
 - reuse-vs-parallel persistence posture against `AnalysisRun`
@@ -295,7 +299,8 @@ It is one Gate C freeze packet that settles:
 - proof posture
 - explicit non-goals
 
-That next packet should remain read-only until those freezes are accepted.
+That packet now exists at:
+- `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`
 
 ## Stop conditions for the next lane
 
@@ -308,13 +313,14 @@ Stop instead of widening scope if a proposed Gate C lane requires:
 
 ## Bottom line
 
-For opening the next Layer 3 lane, Phase 1A completion no longer appears to be the blocker.
+For opening the next Layer 3 lane, Phase 1A completion is no longer the blocker.
 
-The blocker is now a missing explicit Gate C freeze across:
+The blocker identified here was the missing explicit Gate C freeze across:
 - typing heuristics
 - analysis-unit boundaries
 - persistence posture
 - invocation and proof posture
 - qualitative-engine ceiling
 
-Until those are frozen, the correct next step is planning, not implementation.
+That blocker is now satisfied by `05_GATEC_IMPLEMENTATION_FREEZE.md`.
+Do not open a write-enabled Gate C lane from this bridge alone; use the bridge plus the freeze packet together.
