@@ -50,6 +50,7 @@ Interpretation:
 - Default invocation uses the active verified pair only.
 - Explicit `-ProjectUrl` and `-PreviewOrigin` are an override pair.
 - If `tools/onlook-active-pair.json` is missing, stale, or no longer matches the referenced proof ledger, local helper surfaces, or runtime-clone provenance, default invocation fails closed.
+- If the saved preview origin is serving a host-side `502 Bad Gateway` or another dead preview while sandbox smoke still passes on `onlook-ui/` or `onlook-ui-copy/`, treat that as stale active-pair drift rather than immediate product failure. Regenerate a fresh pair through duplicate-target operator proof, rerun the gate explicitly against that pair, and only then refresh the tracked proof surfaces.
 - `no-active-default` means the gate has no trustworthy default pair and requires explicit override args.
 
 Fail-closed buckets:
