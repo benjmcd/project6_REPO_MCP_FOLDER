@@ -226,7 +226,7 @@ The handoff strategy is frozen now as:
 Frozen first-v1 APS posture:
 - canonical and derived package payloads may include `handoff_status` and compatibility notes
 - the package lane must not emit a first APS-target package yet
-- the future first APS target remains bounded evidence-bundle-family level unless a later explicit freeze proves otherwise
+- the exact first APS target was later frozen separately by `09_GATED_APS_HANDOFF_FREEZE.md` at the bounded evidence-bundle-family level
 
 ### 6. Similar-problem reuse posture
 
@@ -312,7 +312,7 @@ Reason:
 What still remains intentionally deferred after this freeze:
 - the future workbench route family
 - broader qualitative, hybrid, cross-modal, and comparative execution breadth
-- the exact first APS handoff target and adapter contract
+- later APS-facing fan-out beyond the first evidence-bundle-family tranche
 - deeper runtime-facing consumer widening
 
 ## Concise evidence appendix
