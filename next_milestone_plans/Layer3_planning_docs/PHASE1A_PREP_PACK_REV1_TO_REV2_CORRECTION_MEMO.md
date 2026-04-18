@@ -1,5 +1,11 @@
 # Phase1A Prep Pack REV1 To REV2 Correction Memo
 
+## Historical Note
+
+This memo explains why REV2 was created from the earlier REV1 snapshot.
+On current `main`, the repo-root analyst-insight page, alias-router, static-asset, and runtime-helper same-path surfaces are now live.
+Treat the contradiction table below as historical explanation of the REV2 pivot, not as current live-repo truth.
+
 ## 1. Purpose
 
 This memo records the bounded correction from the REV1 Phase 1A prep pack to the REV2 pack. It is not a new architecture synthesis and it does not reopen the Phase 1A tranche boundary.

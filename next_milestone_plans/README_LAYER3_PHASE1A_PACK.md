@@ -9,6 +9,9 @@ Use it to orient quickly across the three active pack directories:
 - `next_milestone_plans/Layer3_execution_handoff`
 - `next_milestone_plans/Layer3_execution_freeze`
 
+It also now points to the narrow post-Phase 1A Gate C entry-freeze bridge:
+- `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md`
+
 This README is operational and navigational.
 If it conflicts with the stronger frozen control docs, the control docs govern.
 
@@ -21,6 +24,7 @@ The lane now contains:
 - the committed bounded Phase 1A code slice
 - the committed postcode acceptance audit
 - the pack-local roadmap, reconciliation, navigation, and concrete surface-map surfaces needed for lane-local closure
+- the narrow post-Phase 1A Gate C entry-freeze bridge needed to keep the next lane read-only until its blocker set is actually frozen
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -42,6 +46,8 @@ Current bounded posture:
   - `l3_material_snapshot`
 - typing, orchestration, packaging, APS handoff, route-family work, UI widening, and consumer widening remain deferred
 
+The active REV2 control docs in this pack have also been re-audited against current `main` after the repo-root analyst-insight page, alias-router, static-asset, and runtime-helper surfaces landed. Treat the REV1 artifacts and the REV1-to-REV2 correction memo as historical context only.
+
 ## One-line use rule
 
 Use this pack as the lane-local authoritative planning and closure bundle for the bounded Phase 1A Layer 3 slice; do not treat it as permission to reopen broader Layer 3 scope.
@@ -54,6 +60,9 @@ Read these first when you need the tranche boundary, prep rules, and validation 
 - `Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
 - `Layer3_planning_docs/02_PHASE1A_IMPLEMENTATION_PREP_SPEC_REV2.md`
 - `Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
+
+Read this after the REV2 trio if you are deciding what the next Layer 3 lane must freeze before any Gate C implementation starts:
+- `Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md`
 
 ### 2. Execution handoff
 
@@ -100,6 +109,12 @@ These help navigation, reconciliation, and visual orientation, but do not overri
 - `13-phase1a-surface-map.md`
 - `layer3_phase1a_roadmap.png`
 
+### Post-Phase 1A next-lane bridge
+
+This document is not part of the accepted Phase 1A normative control spine.
+It exists only to freeze the next planning question before any Gate C implementation lane is opened:
+- `04_GATEC_ENTRY_FREEZE.md`
+
 Rule:
 - if a rule exists only in an operational companion doc, move or restate it in the normative control spine before relying on it as durable control guidance
 
@@ -135,6 +150,14 @@ Start with:
 
 Current answer:
 - no additional Phase 1A code work is justified by default from the current lane state
+
+### If you are deciding what must happen before Gate C implementation is allowed
+
+Start with:
+- `Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md`
+- `Layer3_execution_freeze/13-phase1a-surface-map.md`
+- `docs/analyst_insight/analyst_insight_status_handoff.md`
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
 
 ## Residual boundary note
 

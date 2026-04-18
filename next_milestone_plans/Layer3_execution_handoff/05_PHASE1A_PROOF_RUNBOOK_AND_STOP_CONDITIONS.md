@@ -29,15 +29,15 @@ Phase 1A retained objective:
 
 3. `Preflight rule`
    Confirm that the write pass does not rely on `backend/main.py`, `backend/app/api/router.py`, `backend/app/api/review_nrc_aps.py`, `backend/app/schemas/review_nrc_aps.py`, `backend/app/review_ui/static/analyst_insight.html`, `backend/app/review_ui/static/analyst_insight.js`, or `backend/app/services/review_nrc_aps_runtime_db.py`.
-   `Evidence:` `A|next_milestone_plans/Layer3_execution_handoff/04_PHASE1A_FILE_TOUCH_AND_OWNER_MATRIX.md|artifact|forbidden-touch rows`; `A|next_milestone_plans/Layer3_planning_docs/PHASE1A_PREP_PACK_REV1_TO_REV2_CORRECTION_MEMO.md|artifact|section 5`
+   `Evidence:` `A|next_milestone_plans/Layer3_execution_handoff/04_PHASE1A_FILE_TOUCH_AND_OWNER_MATRIX.md|artifact|forbidden-touch rows`; `A|next_milestone_plans/Layer3_execution_handoff/06_PHASE1A_CODEWRITING_HANDOFF.md|artifact|section 4 invariant 6`
 
 4. `Preflight rule`
    Confirm that the runtime DB remains read-only and is not being reused as the Layer 3 ledger, write target, or incidental migration surface.
    `Evidence:` `P|layer3_primary_planningdocs/09_LAYER3_PERSISTENCE_RUNTIME_AND_SECURITY_BOUNDARIES.md|Runtime DB rule|76-83`; `R|backend/app/services/review_nrc_aps_document_trace.py|_resolve_safe_runtime_path|169-180`; `A|next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md|artifact|section 4`
 
 5. `Preflight rule`
-   Quarantine the analyst-insight same-path contradiction. The worktree may be used only as a caution note: **worktree-only divergence — not repo-root implementation truth.**
-   `Evidence:` `R|backend/main.py|review routes only; no analyst_insight_page symbol|45-80`; `R|backend/app/api/router.py|include_router market_data routers only|93-97`; `R|backend/app/review_ui/static/analyst_insight.html|missing-at-repo-root|not present`; `R|backend/app/review_ui/static/analyst_insight.js|missing-at-repo-root|not present`; `R|backend/app/services/review_nrc_aps_runtime_db.py|missing-at-repo-root|not present`; `W|worktrees/mainline-lane/backend/main.py|confirmation-only|75-97`; `W|worktrees/mainline-lane/backend/app/api/router.py|confirmation-only|98-100`
+   Keep authority classes separate. The repo-root analyst-insight surfaces are live, but they remain adjacent forbidden-touch surfaces for Phase 1A; other worktrees may be used only as caution or comparison notes and not as current truth overrides.
+   `Evidence:` `R|backend/main.py|analyst_insight_page and root link|75-97`; `R|backend/app/api/router.py|review_nrc_aps plus legacy and alias analyst-insight routers|93-100`; `R|backend/app/review_ui/static/analyst_insight.html|present|exists`; `R|backend/app/review_ui/static/analyst_insight.js|present|exists`; `R|backend/app/services/review_nrc_aps_runtime_db.py|read-only runtime DB session management|1-87`; `A|next_milestone_plans/Layer3_execution_handoff/04_PHASE1A_FILE_TOUCH_AND_OWNER_MATRIX.md|artifact|auto-out-of-scope worktrees rule`
 
 6. `Command status`
    Exact preflight commands for Phase 1A are **not established in the provided materials.**
@@ -126,11 +126,11 @@ Phase 1A retained objective:
 
 3. `Stop immediately`
    If implementation requires `backend/main.py`, `backend/app/api/router.py`, `backend/app/api/review_nrc_aps.py`, `backend/app/schemas/review_nrc_aps.py`, analyst-insight static assets, or `backend/app/services/review_nrc_aps_runtime_db.py`.
-   `Evidence:` `A|next_milestone_plans/Layer3_execution_handoff/04_PHASE1A_FILE_TOUCH_AND_OWNER_MATRIX.md|artifact|rows for main, router, review_nrc_aps, review_nrc_aps_document_trace, review_nrc_aps_runtime_db, analyst_insight assets`; `A|next_milestone_plans/Layer3_planning_docs/PHASE1A_PREP_PACK_REV1_TO_REV2_CORRECTION_MEMO.md|artifact|section 5`
+   `Evidence:` `A|next_milestone_plans/Layer3_execution_handoff/04_PHASE1A_FILE_TOUCH_AND_OWNER_MATRIX.md|artifact|rows for main, router, review_nrc_aps, review_nrc_aps_document_trace, review_nrc_aps_runtime_db, analyst_insight assets`
 
 4. `Stop immediately`
-   If the later pass reaches for worktree-only analyst-insight surfaces as if they were repo-root authority. This is a source-class violation.
-   `Evidence:` `W|worktrees/mainline-lane/backend/main.py|confirmation-only|75-97`; `W|worktrees/mainline-lane/backend/app/api/router.py|confirmation-only|98-100`; `A|next_milestone_plans/Layer3_planning_docs/PHASE1A_PREP_PACK_REV1_TO_REV2_CORRECTION_MEMO.md|artifact|section 5`
+   If the later pass reaches for other-worktree files as if they were current repo-root authority. This is a source-class violation.
+   `Evidence:` `A|next_milestone_plans/Layer3_execution_handoff/04_PHASE1A_FILE_TOUCH_AND_OWNER_MATRIX.md|artifact|auto-out-of-scope worktrees rule`
 
 5. `Stop immediately`
    If runtime DB writes, runtime DB migrations, or runtime DB ledger reuse appear necessary.
@@ -185,5 +185,5 @@ Phase 1A retained objective:
    `Evidence:` `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B and Gate C|95-105`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Reopen triggers|58-63`
 
 4. `Escalate back to planning`
-   If the later pass needs to interpret worktree-only analyst-insight surfaces as current repo-root truth.
-   `Evidence:` `W|worktrees/mainline-lane/backend/main.py|confirmation-only|75-97`; `W|worktrees/mainline-lane/backend/app/api/router.py|confirmation-only|98-100`; `A|next_milestone_plans/Layer3_planning_docs/PHASE1A_PREP_PACK_REV1_TO_REV2_CORRECTION_MEMO.md|artifact|section 5`
+   If the later pass needs to interpret other-worktree files as current repo-root truth.
+   `Evidence:` `A|next_milestone_plans/Layer3_execution_handoff/04_PHASE1A_FILE_TOUCH_AND_OWNER_MATRIX.md|artifact|auto-out-of-scope worktrees rule`

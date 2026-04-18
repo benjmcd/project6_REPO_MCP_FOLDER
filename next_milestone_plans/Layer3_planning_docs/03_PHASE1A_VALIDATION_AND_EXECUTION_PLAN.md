@@ -1,5 +1,11 @@
 # 03 Phase1A Validation and Execution Plan
 
+## Historical Note
+
+This REV1 artifact preserves an earlier repo snapshot and is superseded by `03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`.
+On current `main`, repo-root now contains the analyst-insight page, alias-router, static-asset, and runtime-helper same-path surfaces.
+Do not treat the analyst-insight mismatch wording below as current live truth.
+
 ## 1. Purpose and authority note
 
 This document defines the bounded sequencing, proof, risk, and rollback posture for `Phase 1A = Gate-B-only feeder/ledger entry`. It does not authorize a broader first slice.

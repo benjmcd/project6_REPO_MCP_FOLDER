@@ -3,9 +3,9 @@
 ## Correction Note
 
 This revision corrects three things from the REV1 baseline doc:
-1. it replaces the broad bundled claim that the repo-root analyst-insight/page/alias/runtime-helper baseline was simply "not established" with an exact same-path code/status reconciliation,
+1. it replaces the broad bundled claim that the repo-root analyst-insight/page/alias/runtime-helper baseline was simply "not established" with a revalidated current-main repo-root confirmation,
 2. it corrects the repo/project posture wording from "four relevant live strengths" to the primary baseline's broader six-lane posture while still keeping Phase 1A focused on the four directly relevant reusable strengths,
-3. it narrows the confidence rationale from a generic repo-root/worktree mismatch statement to the exact executable surfaces that remain contradictory.
+3. it narrows the confidence rationale from an analyst-insight mismatch story to the later-gate freezes that remain intentionally open.
 
 Retained unchanged:
 - `Phase 1A = Gate-B-only feeder/ledger entry`
@@ -19,7 +19,7 @@ Material effect on judgment:
 - recommended next step: unchanged
 - overall confidence: unchanged at `Medium`
 
-Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE.md|artifact|REV1 correction target`; `P|layer3_primary_planningdocs/00B_LAYER3_LIVE_REPO_BASELINE_AND_INVARIANTS.md|Live repo reality: there are already multiple adjacent lanes|52-61`; `R|docs/analyst_insight/analyst_insight_status_handoff.md|Current status summary and page/alias route tables|20-21`; `R|backend/main.py|review routes only; no analyst_insight_page symbol|47-80`; `R|backend/app/api/router.py|legacy market_data routers only|93-97`
+Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE.md|artifact|REV1 correction target`; `P|layer3_primary_planningdocs/00B_LAYER3_LIVE_REPO_BASELINE_AND_INVARIANTS.md|Live repo reality: there are already multiple adjacent lanes|52-61`; `R|docs/analyst_insight/analyst_insight_status_handoff.md|Current status summary and page/alias route tables|20-38`; `R|backend/main.py|analyst_insight_page and root link|75-97`; `R|backend/app/api/router.py|review_nrc_aps plus legacy and alias analyst-insight routers|93-100`; `R|backend/app/services/review_nrc_aps_runtime_db.py|read-only runtime DB session management|1-87`
 
 ## 1. Purpose and authority note
 
@@ -35,7 +35,7 @@ Applied authority order for this correction lane:
 7. historical report artifacts
 
 Overall confidence for this baseline remains `Medium`.
-Reason: the tranche boundary and no-go set are stable, but the exact analyst-insight/runtime-helper executable surfaces remain contradictory across the current implementation-truth set. That contradiction is narrow and exact, and it does not force a broader Phase 1A.
+Reason: the tranche boundary and no-go set are stable, but later-gate freezes for the workbench route family, first-v1 typing heuristics, and qualitative-engine ambition remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
 
 ## 2. Sources used and authority model
 
@@ -67,13 +67,14 @@ Current final-pack artifacts used only as lower-authority comparison surfaces:
    `Evidence:` `P|layer3_primary_planningdocs/00B_LAYER3_LIVE_REPO_BASELINE_AND_INVARIANTS.md|Generic dataset/version/analysis plane already exists|65-89`; `P|layer3_primary_planningdocs/00B_LAYER3_LIVE_REPO_BASELINE_AND_INVARIANTS.md|APS connector/content/retrieval plane already exists|91-116`; `P|layer3_primary_planningdocs/00B_LAYER3_LIVE_REPO_BASELINE_AND_INVARIANTS.md|The shipped analyst-insight surface is real, but narrow|118-140`; `P|layer3_primary_planningdocs/00B_LAYER3_LIVE_REPO_BASELINE_AND_INVARIANTS.md|The APS downstream consumer/artifact lane already exists|143-160`; `R|backend/app/services/market_data_integration.py|build_integrated_dataset|1-79`; `R|backend/app/services/market_data_validation.py|validate_market_rows|1-231`; `R|backend/app/services/market_insight_ai.py|process_market_insights and heuristic emitters|1-152`; `R|backend/app/api/router.py|APS evidence/context/deterministic endpoints|504-892`
 
 4. `Revised from REV1`
-   `Conclusion:` The exact analyst-insight/runtime-helper same-path surfaces are not settled as a simple repo-root absence. The narrower truth is:
+   `Conclusion:` The exact analyst-insight/runtime-helper same-path surfaces are now confirmed at repo root:
    - primary planning and the repo-root analyst-insight status doc treat the narrow analyst-insight surface as live repo posture,
-   - current repo-root code confirms the underlying deterministic kernel and legacy `market-pipeline` routes,
-   - current repo-root same-path code does not confirm `/review/analyst-insight` in `backend/main.py`, alias-router inclusion in `backend/app/api/router.py`, `backend/app/review_ui/static/analyst_insight.html`, `backend/app/review_ui/static/analyst_insight.js`, or `backend/app/services/review_nrc_aps_runtime_db.py`,
-   - same-path worktree files do confirm those exact code surfaces.
-   `Claim strength:` primary + repo + worktree triangulation.
-   `Evidence:` `P|layer3_primary_planningdocs/00B_LAYER3_LIVE_REPO_BASELINE_AND_INVARIANTS.md|The shipped analyst-insight surface is real, but narrow|118-140`; `R|docs/analyst_insight/analyst_insight_status_handoff.md|Current status summary and page route table|20-25`; `R|docs/analyst_insight/analyst_insight_status_handoff.md|Current contract summary|34-52`; `R|backend/main.py|review routes only; no analyst_insight_page symbol|47-80`; `R|backend/app/api/router.py|legacy market_data routers only|93-97`; `R|backend/app/review_ui/static/analyst_insight.html|missing-at-repo-root|not present`; `R|backend/app/review_ui/static/analyst_insight.js|missing-at-repo-root|not present`; `R|backend/app/services/review_nrc_aps_runtime_db.py|missing-at-repo-root|not present`; `W|worktrees/mainline-lane/backend/main.py|confirmation-only|75-77`; `W|worktrees/mainline-lane/backend/app/api/router.py|confirmation-only|98-100`; `W|worktrees/mainline-lane/backend/app/review_ui/static/analyst_insight.html|confirmation-only|exists`; `W|worktrees/mainline-lane/backend/app/review_ui/static/analyst_insight.js|confirmation-only|exists`; `W|worktrees/mainline-lane/backend/app/services/review_nrc_aps_runtime_db.py|confirmation-only|exists`
+   - current repo-root code confirms `/review/analyst-insight` in `backend/main.py`,
+   - current repo-root code confirms alias-router inclusion in `backend/app/api/router.py`,
+   - current repo-root same-path assets and runtime-helper module are present,
+   - these surfaces remain adjacent narrow analyst-insight and review-runtime surfaces, not Phase 1A owner surfaces.
+   `Claim strength:` primary + repo triangulation.
+   `Evidence:` `P|layer3_primary_planningdocs/00B_LAYER3_LIVE_REPO_BASELINE_AND_INVARIANTS.md|The shipped analyst-insight surface is real, but narrow|118-140`; `R|docs/analyst_insight/analyst_insight_status_handoff.md|Current status summary and current contract summary|20-52`; `R|backend/main.py|analyst_insight_page and root link|75-97`; `R|backend/app/api/router.py|review_nrc_aps plus legacy and alias analyst-insight routers|93-100`; `R|backend/app/review_ui/static/analyst_insight.html|present|exists`; `R|backend/app/review_ui/static/analyst_insight.js|present|exists`; `R|backend/app/services/review_nrc_aps_runtime_db.py|read-only runtime DB session management|1-87`
 
 ## 4. Settled implementation-entry baseline
 
@@ -146,7 +147,7 @@ Current final-pack artifacts used only as lower-authority comparison surfaces:
    `Evidence:` `P|layer3_primary_planningdocs/03_LAYER3_SESSION_LEDGER_AND_WORKSPACE_MODEL.md|Canonical write order|76-89`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Explicit out-of-scope items for the first slice|123-129`
 
 2. `Recommended but not settled`
-   `Conclusion:` Keep Phase 1A additive and service-first. Reuse upstream feeder/context surfaces as read-side inputs only, and do not let the analyst-insight executable-surface contradiction broaden the tranche or lower the no-go boundary.
+   `Conclusion:` Keep Phase 1A additive and service-first. Reuse upstream feeder/context surfaces as read-side inputs only, and do not let the presence of adjacent analyst-insight repo-root surfaces broaden the tranche or lower the no-go boundary.
    `Claim strength:` primary + repo triangulation; recommendation only.
    `Evidence:` `P|layer3_primary_planningdocs/06_LAYER3_ENGINE_MAP_AND_EXISTING_REPO_REUSE.md|First-pass reuse recommendation|180-185`; `P|layer3_primary_planningdocs/06_LAYER3_ENGINE_MAP_AND_EXISTING_REPO_REUSE.md|Reuse anti-patterns|189-195`
 
@@ -185,9 +186,9 @@ Current final-pack artifacts used only as lower-authority comparison surfaces:
    `Evidence:` `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate C - typing/orchestration entry|101-105`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate D - packaging/handoff entry|107-111`
 
 3. `Revised from REV1`
-   `Conclusion:` Overall confidence remains `Medium`, but the reason is narrower than REV1 stated. The limiting issue is the exact analyst-insight/runtime-helper executable-surface contradiction inside the current implementation-truth set, not a broad absence of analyst-insight overlap or a Phase 1A blocker.
-   `Claim strength:` primary + repo + worktree triangulation.
-   `Evidence:` `R|docs/analyst_insight/analyst_insight_status_handoff.md|Current status summary and page/alias route tables|20-25`; `R|backend/main.py|review routes only; no analyst_insight_page symbol|47-80`; `R|backend/app/api/router.py|legacy market_data routers only|93-97`; `W|worktrees/mainline-lane/backend/main.py|confirmation-only|75-77`; `W|worktrees/mainline-lane/backend/app/api/router.py|confirmation-only|98-100`
+   `Conclusion:` Overall confidence remains `Medium`, but the reason is narrower than REV1 stated. The limiting issues are the still-open later-gate freezes for the future workbench route family, first-v1 typing heuristics, and qualitative-engine ambition, not a repo-root analyst-insight mismatch and not a Phase 1A blocker.
+   `Claim strength:` direct primary-planning evidence.
+   `Evidence:` `P|layer3_primary_planningdocs/00D_LAYER3_PACK_COHERENCE_AND_GAP_AUDIT.md|What is still intentionally not frozen|85-91`; `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate C - typing/orchestration entry|101-105`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
 
 ## 10. Concise evidence appendix
 
@@ -203,16 +204,10 @@ Primary planning anchors most heavily relied upon in this revision:
 Repo-root anchors most heavily relied upon in this revision:
 - `R|docs/analyst_insight/analyst_insight_status_handoff.md|Current status summary and current contract summary|20-52`
 - `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|178-184`
-- `R|backend/main.py|review routes only; no analyst_insight_page symbol|47-80`
-- `R|backend/app/api/router.py|legacy market_data routers only|93-97`
+- `R|backend/main.py|analyst_insight_page and root link|75-97`
+- `R|backend/app/api/router.py|review_nrc_aps plus legacy and alias analyst-insight routers|93-100`
 - `R|backend/app/services/market_data_integration.py|build_integrated_dataset|1-79`
 - `R|backend/app/services/market_data_validation.py|validate_market_rows|1-231`
 - `R|backend/app/services/market_insight_ai.py|process_market_insights and heuristic emitters|1-152`
+- `R|backend/app/services/review_nrc_aps_runtime_db.py|read-only runtime DB session management|1-87`
 - `R|backend/app/services/review_nrc_aps_document_trace.py|safe runtime path resolution|169-180`
-
-Same-path worktree confirmations used only to narrow exact executable-surface divergence:
-- `W|worktrees/mainline-lane/backend/main.py|confirmation-only|75-77`
-- `W|worktrees/mainline-lane/backend/app/api/router.py|confirmation-only|98-100`
-- `W|worktrees/mainline-lane/backend/app/review_ui/static/analyst_insight.html|confirmation-only|exists`
-- `W|worktrees/mainline-lane/backend/app/review_ui/static/analyst_insight.js|confirmation-only|exists`
-- `W|worktrees/mainline-lane/backend/app/services/review_nrc_aps_runtime_db.py|confirmation-only|exists`
