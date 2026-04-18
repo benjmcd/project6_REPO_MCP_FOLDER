@@ -122,19 +122,19 @@ Read the gate semantics in:
 - If duplicate-target operator proof fails, treat that as an Onlook import/trust/preview/write-back issue on the duplicate path.
 - If normalized smoke fails closed, treat that as active-pair provenance or proof-state drift first, not immediate product proof.
 
-## Current Portability Caveat
-The current default no-arg normalized-smoke proof is not yet a fresh-clone-portable contract.
+## Current Portability Contract
+The default no-arg normalized-smoke path is portable only when the active proof contract is backed by tracked repo surfaces and matching local runtime/helper provenance.
 
-Why:
-- `tools/onlook-active-pair.json` points to a ledger under `archive/onlook-normalized-smoke/...`.
-- `/archive/` is intentionally ignored locally.
-- the no-arg wrapper requires that referenced source ledger to exist and match provenance.
+Check:
+- `tools/onlook-active-pair.json`
+- the `sourceLedgerPath` it currently references
+- `./tools/check-onlook.ps1 -ShowGateStatusOnly`
 
-Practical meaning:
-- on this workstation or any worktree that still has the matching local archive ledger, the default no-arg gate can succeed
-- on a fresh clone or another machine, the default no-arg gate may fail closed until the canonical proof is reproved or the proof-artifact contract is made durable
+Interpretation:
+- if `sourceLedgerPath` resolves to tracked repo truth such as `tools/onlook-proof.json`, the default no-arg gate can travel with the repo as long as the local helper fingerprint and runtime-clone state still match
+- if `sourceLedgerPath` resolves to ignored local evidence under `archive/onlook-normalized-smoke/...`, the default no-arg gate is only portable to worktrees or machines that still have that exact local archive evidence
 
-Do not overstate the current default pair as globally portable until that caveat is closed.
+Do not describe the default pair as globally portable without checking the current proof contract first.
 
 ## What Each Proof Surface Answers
 - `./tools/check-onlook.ps1`
@@ -149,5 +149,5 @@ Do not overstate the current default pair as globally portable until that caveat
 ## Non-Claims
 - This file does not claim that live static UI promotion is approved.
 - This file does not claim that AI/chat features are proven ready.
-- This file does not claim that the current default no-arg proof is portable to every fresh clone.
+- This file does not claim portability unless the current active proof contract is backed by tracked repo surfaces and matching local runtime/helper provenance.
 - This file does not replace the Onlook plan packet for design intent or non-claims.
