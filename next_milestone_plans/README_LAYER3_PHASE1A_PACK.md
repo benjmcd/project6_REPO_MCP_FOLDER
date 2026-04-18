@@ -18,6 +18,9 @@ And to the actual first Gate C implementation-entry freeze packet:
 And to the next bounded Gate C plan/pass-entry freeze packet:
 - `next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md`
 
+And to the next bounded Gate C quantitative associated/cohort continuation freeze packet:
+- `next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md`
+
 This README is operational and navigational.
 If it conflicts with the stronger frozen control docs, the control docs govern.
 
@@ -41,6 +44,7 @@ The lane now contains:
 - the narrow post-Phase 1A Gate C entry-freeze bridge that identified the blocker set before the next lane could open safely
 - the now-frozen first Gate C typing/unit implementation-entry packet needed to open the next bounded write-enabled typing/unit lane without reopening broader scope
 - the now-frozen next Gate C quantitative single-item plan/pass-entry packet needed before a bounded write-enabled plan/pass lane can open without overclaiming qualitative or cohort execution
+- the now-frozen next Gate C quantitative associated/cohort shaping continuation packet needed before a bounded write-enabled cohort pass lane can open without ad hoc dataset-version coercion
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -85,6 +89,9 @@ Read this after `04_GATEC_ENTRY_FREEZE.md` if you are deciding what exact bounde
 
 Read this after `05_GATEC_IMPLEMENTATION_FREEZE.md` if you are deciding what exact bounded plan/pass continuation slice may be implemented next:
 - `Layer3_planning_docs/06_GATEC_PASS_FREEZE.md`
+
+Read this after `06_GATEC_PASS_FREEZE.md` if you are deciding what exact bounded quantitative associated/cohort continuation slice may be implemented next:
+- `Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md`
 
 ### 2. Execution handoff
 
@@ -149,6 +156,12 @@ This document is also outside the accepted Phase 1A normative control spine.
 It is the actual frozen contract for the next bounded Gate C quantitative single-item plan/pass implementation lane:
 - `06_GATEC_PASS_FREEZE.md`
 
+### Post-Phase 1A next-lane cohort continuation freeze packet
+
+This document is also outside the accepted Phase 1A normative control spine.
+It is the actual frozen contract for the next bounded Gate C quantitative associated/cohort shaping and pass-entry lane:
+- `07_GATEC_COHORT_FREEZE.md`
+
 Rule:
 - if a rule exists only in an operational companion doc, move or restate it in the normative control spine before relying on it as durable control guidance
 
@@ -191,6 +204,7 @@ Start with:
 - `Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md`
 - `Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`
 - `Layer3_planning_docs/06_GATEC_PASS_FREEZE.md`
+- `Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md`
 - `Layer3_execution_freeze/13-phase1a-surface-map.md`
 - `docs/analyst_insight/analyst_insight_status_handoff.md`
 - `docs/nrc_adams/nrc_aps_status_handoff.md`

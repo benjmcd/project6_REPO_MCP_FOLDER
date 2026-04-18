@@ -39,7 +39,7 @@ Primary-planning citation note:
 - Those files are not tracked in this repo/worktree and must not be misread as repo-local implementation truth.
 
 Overall confidence remains `Medium`.
-Reason: the validation target is stable, the former Gate C typing/unit blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`, and the next bounded quantitative single-item plan/pass-entry blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md`, but the future workbench route family and broader qualitative/cohort/cross-modal execution breadth remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
+Reason: the validation target is stable, the former Gate C typing/unit blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`, the bounded quantitative single-item plan/pass-entry blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md`, and the next quantitative associated/cohort shaped-input blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md`, but the future workbench route family and broader qualitative/cross-modal execution breadth remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
 
 ## 2. Tranche sequencing and dependency order
 
@@ -158,17 +158,22 @@ Reason: the validation target is stable, the former Gate C typing/unit blocker i
    `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
    `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md|artifact|bounded Gate C plan/pass implementation contract`; `P|layer3_primary_planningdocs/05_LAYER3_SUBLAYER2_ORCHESTRATION_AND_PASS_EXECUTION.md|Plan formation and pass families|57-132`
 
-3. `Open due to architecture ambiguity`
+3. `Settled by newer freeze artifact`
+   `Conclusion:` A bounded quantitative associated/cohort shaping and pass-entry continuation is now explicitly frozen by `07_GATEC_COHORT_FREEZE.md`, so later unresolved Gate C ambiguity is now concentrated in qualitative and cross-modal execution rather than in dataset-version shaping for the first cohort lane.
+   `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
+   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md|artifact|bounded Gate C quantitative associated/cohort shaping and pass-entry contract`; `P|layer3_primary_planningdocs/06_LAYER3_ENGINE_MAP_AND_EXISTING_REPO_REUSE.md|Quantitative associated/cohort requires coherent shaping and explicit shaped-input contract|109-121`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|One associated/cohort pass family is part of the recommended first implementation slice|114-115`
+
+4. `Open due to architecture ambiguity`
    `Conclusion:` Later public UI/API work is blocked until the future Layer 3 route-family and workbench surface are explicitly frozen.
    `Claim strength:` direct primary-planning evidence.
    `Evidence:` `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
 
-4. `Revised from REV1`
+5. `Revised from REV1`
    `Conclusion:` If a later phase wants to depend on the exact `/review/analyst-insight` page, alias-router wiring, same-path `analyst_insight.html` or `analyst_insight.js`, or same-path `review_nrc_aps_runtime_db.py` in the root checkout, those adjacent repo-root surfaces must be explicitly frozen into the later-phase route, ownership, and proof contract first.
    `Claim strength:` primary + repo triangulation.
    `Evidence:` `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`; `R|docs/analyst_insight/analyst_insight_status_handoff.md|Current status summary and current contract summary|20-52`; `R|backend/main.py|analyst_insight_page and root link|75-97`; `R|backend/app/api/router.py|review_nrc_aps plus legacy and alias analyst-insight routers|93-100`; `R|backend/app/review_ui/static/analyst_insight.html|present|exists`; `R|backend/app/review_ui/static/analyst_insight.js|present|exists`; `R|backend/app/services/review_nrc_aps_runtime_db.py|read-only runtime DB session management|1-87`
 
-5. `Open due to architecture ambiguity`
+6. `Open due to architecture ambiguity`
    `Conclusion:` Package definition, handoff strategy, and first consumer admission must be explicitly settled before Gate D or any broader release claim.
    `Claim strength:` direct primary-planning evidence.
    `Evidence:` `P|layer3_primary_planningdocs/10_LAYER3_CONSUMER_INTEGRATION_MAP.md|Must-have|67-72`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate D - packaging/handoff entry|107-111`
@@ -198,9 +203,9 @@ Reason: the validation target is stable, the former Gate C typing/unit blocker i
    `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN.md|artifact|REV1 correction target`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|178-184`
 
 2. `Revised from REV1`
-   `Conclusion:` Overall confidence remains `Medium`, but the limiting factor is narrower than REV1 stated: it is the still-open later-gate freezes for the future workbench route family and the broader qualitative/cohort/cross-modal execution breadth, not a repo-root analyst-insight mismatch and not a Phase 1A blocker.
+   `Conclusion:` Overall confidence remains `Medium`, but the limiting factor is narrower than REV1 stated: it is the still-open later-gate freezes for the future workbench route family and the broader qualitative/cross-modal execution breadth, not a repo-root analyst-insight mismatch and not a Phase 1A blocker.
    `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
-   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md|artifact|bounded Gate C typing/unit implementation contract`; `A|next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md|artifact|bounded Gate C plan/pass implementation contract`; `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
+   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md|artifact|bounded Gate C typing/unit implementation contract`; `A|next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md|artifact|bounded Gate C plan/pass implementation contract`; `A|next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md|artifact|bounded Gate C quantitative associated/cohort shaping and pass-entry contract`; `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
 
 3. `Settled from source evidence`
    `Conclusion:` Nothing in this correction pass reopens broader architecture or changes what must still not be implemented yet.
