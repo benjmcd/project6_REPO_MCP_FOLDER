@@ -36,6 +36,11 @@ $routeCoverage = @(
     @{ route = 'Workbench Compare'; expectedPath = '/workbench-compare' },
     @{ route = 'Document Trace'; expectedPath = '/document-trace' }
 )
+$laneHelperPaths = @(
+    'tools/run-onlook-normalized-smoke.ps1',
+    'tools/onlook-normalized-smoke.mjs',
+    'tools/start-onlook-web.ps1'
+)
 
 function Assert-Path {
     param(
@@ -193,6 +198,57 @@ function Get-RuntimeCloneState {
     }
 }
 
+function Get-LaneHelperHashes {
+    $hashes = [ordered]@{}
+
+    foreach ($repoPath in $laneHelperPaths) {
+        $fullPath = Join-Path $laneRoot ($repoPath -replace '/', '\')
+        Assert-Path $fullPath "lane helper file"
+        $hashes[$repoPath] = (Get-FileHash -Algorithm SHA256 -Path $fullPath).Hash.ToLowerInvariant()
+    }
+
+    return $hashes
+}
+
+function Assert-LaneHelperState {
+    param(
+        [object]$ActivePairState,
+        [object]$Ledger,
+        [string]$ActivePairPath,
+        [string]$CurrentLaneHead
+    )
+
+    $helperFiles = $Ledger.scope.lane.helperFiles
+    if (-not $helperFiles) {
+        if ($ActivePairState.laneHead -ne $CurrentLaneHead) {
+            throw "Active pair provenance does not match current lane/runtime state in $ActivePairPath. Provide -ProjectUrl and -PreviewOrigin explicitly."
+        }
+
+        return
+    }
+
+    $currentHelperHashes = Get-LaneHelperHashes
+    $mismatches = @()
+
+    foreach ($property in $helperFiles.PSObject.Properties) {
+        $repoPath = [string]$property.Name
+        $expectedHash = [string]$property.Value
+        if (-not $currentHelperHashes.Contains($repoPath)) {
+            $mismatches += "$repoPath (missing locally)"
+            continue
+        }
+
+        $currentHash = [string]$currentHelperHashes[$repoPath]
+        if ($currentHash -ne $expectedHash.ToLowerInvariant()) {
+            $mismatches += "$repoPath ($currentHash != $expectedHash)"
+        }
+    }
+
+    if ($mismatches.Count -gt 0) {
+        throw "Active pair helper provenance does not match current lane helper state in $ActivePairPath. Provide -ProjectUrl and -PreviewOrigin explicitly. Mismatches: $($mismatches -join '; ')"
+    }
+}
+
 function Resolve-LedgerPath {
     param([string]$Path)
 
@@ -260,7 +316,6 @@ function Resolve-PairSelection {
     $runtimeState = Get-RuntimeCloneState
     $laneHead = Get-GitHead -RepoRoot $laneRoot
     if (
-        $state.laneHead -ne $laneHead -or
         $state.runtimeCloneHead -ne $runtimeState.head -or
         [bool]$state.runtimeCloneHasLocalDiffPaths -ne [bool]$runtimeState.hasLocalDiffPaths -or
         $state.runtimeCloneLocalDiffSummary -ne $runtimeState.localDiffSummary
@@ -282,6 +337,8 @@ function Resolve-PairSelection {
     ) {
         throw "Active pair source ledger does not match the active pair state in $activePairPath. Provide -ProjectUrl and -PreviewOrigin explicitly."
     }
+
+    Assert-LaneHelperState -ActivePairState $state -Ledger $ledger -ActivePairPath $activePairPath -CurrentLaneHead $laneHead
 
     return @{
         projectUrl = [string]$state.projectUrl
