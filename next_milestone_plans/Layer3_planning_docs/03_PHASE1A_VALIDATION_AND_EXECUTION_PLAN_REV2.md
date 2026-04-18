@@ -39,7 +39,7 @@ Primary-planning citation note:
 - Those files are not tracked in this repo/worktree and must not be misread as repo-local implementation truth.
 
 Overall confidence remains `Medium`.
-Reason: the validation target is stable, the former Gate C typing/unit blocker was frozen by `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md` and the bounded typing/unit slice has now landed on current `main`, the bounded quantitative single-item plan/pass slice governed by `next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md` has now landed on current `main`, and the bounded quantitative associated/cohort continuation governed by `next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md` has now landed on current `main`, but the future workbench route family and broader qualitative/cross-modal execution breadth remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
+Reason: the validation target is stable, the former Gate C typing/unit blocker was frozen by `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md` and the bounded typing/unit slice has now landed on current `main`, the bounded quantitative single-item plan/pass slice governed by `next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md` has now landed on current `main`, the bounded quantitative associated/cohort continuation governed by `next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md` has now landed on current `main`, and the next bounded Gate D package-entry continuation is now frozen by `next_milestone_plans/Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md`, but the future workbench route family, the exact first APS adapter target, and the broader qualitative/cross-modal execution breadth remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
 
 ## 2. Tranche sequencing and dependency order
 
@@ -173,10 +173,10 @@ Reason: the validation target is stable, the former Gate C typing/unit blocker w
    `Claim strength:` primary + repo triangulation.
    `Evidence:` `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`; `R|docs/analyst_insight/analyst_insight_status_handoff.md|Current status summary and current contract summary|20-52`; `R|backend/main.py|analyst_insight_page and root link|75-97`; `R|backend/app/api/router.py|review_nrc_aps plus legacy and alias analyst-insight routers|93-100`; `R|backend/app/review_ui/static/analyst_insight.html|present|exists`; `R|backend/app/review_ui/static/analyst_insight.js|present|exists`; `R|backend/app/services/review_nrc_aps_runtime_db.py|read-only runtime DB session management|1-87`
 
-6. `Open due to architecture ambiguity`
-   `Conclusion:` Package definition, handoff strategy, and first consumer admission must be explicitly settled before Gate D or any broader release claim.
-   `Claim strength:` direct primary-planning evidence.
-   `Evidence:` `P|layer3_primary_planningdocs/10_LAYER3_CONSUMER_INTEGRATION_MAP.md|Must-have|67-72`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate D - packaging/handoff entry|107-111`
+6. `Settled by newer freeze artifact`
+   `Conclusion:` Package definition, handoff strategy, and first consumer scope for the next bounded package-entry lane were explicitly settled by `08_GATED_PACKAGE_FREEZE.md`, so Gate D no longer depends on ad hoc package-family or consumer-scope decisions for that first internal package slice.
+   `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
+   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md|artifact|bounded Gate D package-entry contract`; `P|layer3_primary_planningdocs/10_LAYER3_CONSUMER_INTEGRATION_MAP.md|Must-have and package requirements|67-92`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate D - packaging/handoff entry|107-111`
 
 ## 8. What should explicitly not be implemented yet
 
@@ -203,9 +203,9 @@ Reason: the validation target is stable, the former Gate C typing/unit blocker w
    `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN.md|artifact|REV1 correction target`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|178-184`
 
 2. `Revised from REV1`
-   `Conclusion:` Overall confidence remains `Medium`, but the limiting factor is narrower than REV1 stated: it is the still-open later-gate freezes for the future workbench route family and the broader qualitative/cross-modal execution breadth, not a repo-root analyst-insight mismatch and not a Phase 1A blocker.
+   `Conclusion:` Overall confidence remains `Medium`, but the limiting factor is narrower than REV1 stated: it is now the still-open future workbench route family, the exact first APS adapter target, and the broader qualitative/cross-modal execution breadth, not a repo-root analyst-insight mismatch and not a Phase 1A blocker.
    `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
-   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md|artifact|bounded Gate C typing/unit implementation contract`; `A|next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md|artifact|bounded Gate C plan/pass implementation contract`; `A|next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md|artifact|bounded Gate C quantitative associated/cohort shaping and pass-entry contract`; `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
+   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md|artifact|bounded Gate C typing/unit implementation contract`; `A|next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md|artifact|bounded Gate C plan/pass implementation contract`; `A|next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md|artifact|bounded Gate C quantitative associated/cohort shaping and pass-entry contract`; `A|next_milestone_plans/Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md|artifact|bounded Gate D package-entry contract`; `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
 
 3. `Settled from source evidence`
    `Conclusion:` Nothing in this correction pass reopens broader architecture or changes what must still not be implemented yet.
