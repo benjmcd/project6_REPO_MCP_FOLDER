@@ -32,7 +32,7 @@ function Copy-Tree {
         New-Item -ItemType Directory -Path $DestDir | Out-Null
     }
 
-    foreach ($entry in Get-ChildItem $SourceDir -Force) {
+    foreach ($entry in Get-ChildItem -LiteralPath $SourceDir -Force) {
         if ($entry.PSIsContainer) {
             if ($skipDirs -contains $entry.Name) {
                 continue

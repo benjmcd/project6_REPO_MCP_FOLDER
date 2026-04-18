@@ -57,8 +57,8 @@ export function PipelinePane({
       <div className="border-b border-slate-200 px-5 py-4">
         <h2 className="text-lg font-semibold text-slate-950">Pipeline pane</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Slice 1 renders the existing run projection and pipeline layout without
-          recreating Mermaid parity yet.
+          This lane renders the current run projection and pipeline layout from
+          the committed review snapshot without recreating Mermaid parity yet.
         </p>
       </div>
 

@@ -97,7 +97,8 @@ Additional current facts about Onlook itself:
 - Bun appears in Onlook's local development setup, not as a target-project requirement
 - local Onlook development and self-hosting are separate concerns from the target project you want Onlook to edit
 - the original clean upstream base reference for this lane is local source development rooted at `ext-onlook/` in this worktree at revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
-- the current proven local operator and debug surface for the resolved repo lane is `ext-onlook-fix/` on local branch `codex/local-writeback-fix` at commit `c8cf5c16`
+- the current proven local operator and debug surface for the resolved repo lane is `ext-onlook-fix/` on local branch `codex/restored-local-writeback` at commit `14dbc96e`
+- that preserved local operator surface now includes the import/runtime stabilization fixes required for the current local-folder workflow, including safe git-config probing, deferred frame/theme access, guarded gesture and teardown behavior during preview reconnect, and destroyed-connection-safe preload child-state lookups
 - the current clean upstream packaging surface is `ext-onlook-pr/` on local branch `codex/upstream-clean` at commit `6d4c463a`
 - the hosted desktop app is not the current working auth path here because its GitHub and Google login links are dead locally
 - local source development mode exposes a dev-only demo-user sign-in path and that path has been validated here
@@ -109,6 +110,7 @@ Additional current facts about Onlook itself:
 - the same fresh sandbox now renders the populated review shell inside the Onlook iframe and editor shell, so the current repo lane is no longer blocked at preview hydration
 - from a fresh browser profile, switching the canvas to `Preview` and accepting the CodeSandbox trust interstitial now loads the real sandbox app inside the Onlook iframe
 - direct local write-back is now proven for this repo lane on the preserved local operator surface: a bounded Onlook-authored save wrote into `onlook-ui/app/page.tsx` on disk and the host file was restored clean afterward
+- current local-folder import proof on that preserved surface no longer reproduces the earlier `failed to exec in podman container`, `No frame view found`, `No element found`, `No branch selected`, or destroyed-connection child-state crashes during import and preview reload
 - that local write-back proof used the file-input import path and the preserved local `/api/local-project` shim, so it should not be overstated as proof that the clean extracted upstream branch has already re-proven host write-back end-to-end without the shim
 - the clean extracted upstream branch removes that workspace-specific shim, keeps the browser directory-handle persistence path, and now passes `@onlook/web-client` typecheck plus `@onlook/web-client` build when required envs are stubbed
 - matching upstream issue reports now exist in `onlook-dev/onlook`:

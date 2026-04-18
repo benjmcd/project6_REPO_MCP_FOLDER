@@ -123,20 +123,26 @@ Verified locally against the current official Onlook development setup docs:
 - Docker Desktop is installed and the local Supabase backend is running
 - the original clean upstream base reference for this lane exists at `ext-onlook/`
 - that base clone was last verified at revision `a242be584fa9c71ca5be9e5e7a2640595c4200be`
-- the current proven local operator surface for the solved repo lane is `ext-onlook-fix/` on local branch `codex/local-writeback-fix` at commit `c8cf5c16`
+- the current proven local operator surface for the solved repo lane is `ext-onlook-fix/` on local branch `codex/restored-local-writeback` at commit `14dbc96e`
+- that preserved local operator surface now includes the import/runtime stabilization fixes required for the current local-folder flow:
+  - safe git-config probing during repo init
+  - deferred theme reads until `frameData.view` exists
+  - safe gesture handling while preview connections are not yet ready
+  - guarded text-cleanup teardown when branch history has already been cleared
+  - destroyed-connection-safe preload child-state lookups for frame and branch identifiers
 - the clean upstream packaging surface is `ext-onlook-pr/` on local branch `codex/upstream-clean` at commit `6d4c463a`
-- the exact local Onlook commits are now also preserved inside this tracked repo lane as:
+- the current preserved local Onlook patch stacks are now also stored inside this tracked repo lane as:
   - `patches/local-writeback.patch`
   - `patches/upstream-clean.patch`
 - the repo-local duplication helper `tools/copy-onlook-ui.ps1` now creates clean duplicates of `onlook-ui/` without `.next/` or `node_modules/`, and copies `.env.local` only when explicitly requested
-- on a fresh worktree, the first frontend bootstrap step is `Copy-Item ./onlook-ui/.env.example ./onlook-ui/.env.local` unless a different local review API base is intentionally needed
+- the committed default frontend API base is now same-origin via `onlook-ui/.env.example`, and `onlook-ui/.env.local` is only needed when a direct localhost override is intentionally required
 - that duplication helper now refuses a dirty canonical `onlook-ui/` source tree by default unless `-AllowDirtySource` is supplied
 - the repo-local duplicate-prep helper `tools/prep-onlook-copy.ps1` now wraps duplicate creation, local install, `npm run lint`, and `npm run build`, and can optionally run the tracked sandbox smoke before any Onlook import
 - that duplicate-prep helper now fails closed when a custom target is not git-ignored unless `-AllowVisibleTarget` is passed explicitly
 - that duplicate-prep helper now also materializes an upload-safe duplicate `.env` with only the public `NEXT_PUBLIC_REVIEW_API_BASE`, because Onlook intentionally skips `.env.local` during project upload
-- a fresh duplicate prepared with `tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` now passes local install, lint, and build in one repo-owned path
+- a fresh duplicate prepared with `tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy` now passes local install, lint, build, and fixture-backed route smoke in one repo-owned path
 - the repo-local duplicate diff helper `tools/diff-onlook-copy.ps1` now makes duplicate-to-canonical sandbox review explicit before any manual merge-back step while ignoring local-only `.next/`, `node_modules/`, `.env.local`, and generated duplicate `.env` noise
-- the repo-local duplicate-target operator proof helper `tools/run-onlook-operator-proof.ps1` now reuses or starts local Onlook web plus the local review API, verifies that the API exposes the expected same-checkout reviewable runs from `tools/validate_wb_prep.py`, restarts the expected local Onlook clone once if a reused browser session is stale, imports a prepared duplicate, proves trusted preview navigation across the full sandbox route family, runs the analyst flow, and proves duplicate-only write-back while restoring the duplicate file and leaving canonical `onlook-ui/` untouched
+- the repo-local duplicate-target operator proof helper `tools/run-onlook-operator-proof.ps1` now reuses or starts local Onlook web, verifies that the prepared duplicate still has the import-safe same-origin fixture API route and a sub-10 MB fixture index, restarts the expected local Onlook clone once if a reused browser session is stale, imports a prepared duplicate, proves trusted preview navigation across the full sandbox route family, runs the analyst flow, and proves duplicate-only write-back while restoring the duplicate file and leaving canonical `onlook-ui/` untouched
 - the safest default operator posture is now: prepare a duplicate sandbox target first, import that duplicate into Onlook, and leave `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
 - the repo-local restore helper `tools/restore-onlook.ps1` can now recreate either preserved Onlook patch set from the tracked patch archives and the pinned upstream base commit
 - on a fresh worktree, that restore helper now recreates the expected helper-facing clone names by default:
@@ -161,6 +167,7 @@ Verified locally against the current official Onlook development setup docs:
 - the current proven direct source-launch path serves `GET /login` successfully at `http://127.0.0.1:3000/login`
 - if the browser keeps sticky state on the default `3000` origin, `tools/start-onlook-web.ps1 -Port 3011` is now the bounded fresh-origin fallback instead of reusing stale browser state
 - the dev-only demo-user login path succeeds and redirects into the app shell
+- current local-folder import proof on that preserved surface no longer reproduces the earlier `failed to exec in podman container`, `No frame view found`, `No element found`, `No branch selected`, or destroyed-connection child-state crashes during import and preview reload
 
 Practical meaning:
 
@@ -290,13 +297,21 @@ Practical constraint:
 - it is not a safe basis for quietly introducing credentialed cross-origin requests in this lane
 
 ### 4.3 Exact frontend env
-For manual shell-driven validation, use:
+Default sandbox behavior now uses the committed same-origin fixture API:
+
+```dotenv
+NEXT_PUBLIC_REVIEW_API_BASE=/api/v1/review/nrc-aps
+```
+
+Use the local review API only when re-exporting the committed fixture snapshot or when you intentionally want localhost parity checks.
+
+For manual shell-driven localhost validation, use:
 
 ```powershell
 $env:NEXT_PUBLIC_REVIEW_API_BASE='http://127.0.0.1:8000/api/v1/review/nrc-aps'
 ```
 
-The frontend should build all review API requests from that base.
+The frontend should build all review API requests from that base when the localhost override is in use.
 
 Use `NEXT_PUBLIC_REVIEW_API_BASE` only from sandbox client components or client-side helper code.
 Do not use server-side data fetching in this lane.
@@ -543,9 +558,9 @@ npm run dev -- --hostname 127.0.0.1 --port 3000
 
 For actual Onlook use:
 
-- ensure `onlook-ui/.env.local` exists with `NEXT_PUBLIC_REVIEW_API_BASE`
-- for the lowest-risk exploratory path, create a duplicate first with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` and import that duplicate
-- for an import-ready duplicate, prefer `tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv`; it now writes a public duplicate `.env` for CodeSandbox upload in addition to local install/lint/build
+- rely on the committed same-origin `onlook-ui/.env.example` default unless a localhost override is intentionally needed
+- for the lowest-risk exploratory path, create a duplicate first with `tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy` and import that duplicate
+- for an import-ready duplicate, prefer `tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy`; it now writes a public duplicate `.env` for CodeSandbox upload in addition to local install/lint/build
 - use `onlook-ui/` as the local project source only when direct canonical write-back is intentional
 - use `ext-onlook-fix/` when you need the already-proven local operator path
 - use `ext-onlook-pr/` when you need the clean extracted upstream packaging surface
@@ -620,9 +635,9 @@ Tracked sandbox browser smoke before any duplicate-target Onlook proof:
 Repo-local duplicate sandbox copy:
 
 ```powershell
-./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv
-./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv
-./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv -RunSmokeProfile full
+./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy
+./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy
+./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -RunSmokeProfile full
 ./tools/diff-onlook-copy.ps1 -TargetDir onlook-ui-copy
 ```
 
@@ -661,8 +676,8 @@ Expected current result:
 - the page shows the dev demo-user login button in development mode
 - the dev-login flow redirects into the app shell
 - `./tools/check-onlook.ps1` confirms the preserved local and upstream-clean clones are still pinned, clean, and backed by tracked patch archives
-- `./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` produces a clean duplicate frontend source tree for scratch imports without reusing `.next/` or `node_modules/`
-- `./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv` turns that into a one-command duplicate-prep path by adding local install, lint, and build
+- `./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy` produces a clean duplicate frontend source tree for scratch imports without reusing `.next/` or `node_modules/`
+- `./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy` turns that into a one-command duplicate-prep path by adding local install, lint, build, and the import-safe same-origin fixture contract
 - `./tools/restore-onlook.ps1` can recreate the preserved local or upstream-clean Onlook trees from the tracked patch archives if the local solved clones ever drift or need to be rebuilt from the pinned upstream base
 - that restore path is now proven: both preserved patch sets were rebuilt successfully into fresh local clones from the pinned upstream base commit
 - with a real `CSB_API_KEY`, local import of the current committed `onlook-ui/` folder reaches project verification, completes sandbox creation, and opens the imported project route and editor shell

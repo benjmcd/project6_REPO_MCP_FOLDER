@@ -4,7 +4,6 @@ param(
     [string]$OnlookDir = 'ext-onlook-fix',
     [string]$BindHost = '127.0.0.1',
     [int]$OnlookPort = 3011,
-    [int]$ApiPort = 8000,
     [int]$ReadyTimeoutSeconds = 300,
     [switch]$LeaveServicesRunning
 )
@@ -14,8 +13,6 @@ Set-StrictMode -Version Latest
 
 $laneRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $operatorScript = Join-Path $laneRoot 'tools\onlook-operator-proof.mjs'
-$wbPrepScript = Join-Path $laneRoot 'tools\validate_wb_prep.py'
-$apiStartScript = Join-Path $laneRoot 'tools\start-review-api.ps1'
 $onlookStartScript = Join-Path $laneRoot 'tools\start-onlook-web.ps1'
 $onlookRoot = Join-Path $laneRoot $OnlookDir
 $appRoot = if ([System.IO.Path]::IsPathRooted($AppDir)) {
@@ -31,6 +28,9 @@ $canonicalRoot = if ([System.IO.Path]::IsPathRooted($CanonicalDir)) {
 $proofFile = 'app/page.tsx'
 $proofMarker = 'onlook-operator-proof-' + [guid]::NewGuid().ToString('N').Substring(0, 8)
 $uploadEnvPath = Join-Path $appRoot '.env'
+$fixturePath = Join-Path $canonicalRoot 'data\fixture.json'
+$duplicateFixturePath = Join-Path $appRoot 'data\fixture.json'
+$duplicateApiRoutePath = Join-Path $appRoot 'app\api\[...slug]\route.ts'
 
 function Assert-Path {
     param(
@@ -40,6 +40,60 @@ function Assert-Path {
 
     if (-not (Test-Path $Path)) {
         throw "Missing ${Label}: $Path"
+    }
+}
+
+function Assert-LiteralPath {
+    param(
+        [string]$Path,
+        [string]$Label
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        throw "Missing ${Label}: $Path"
+    }
+}
+
+function Get-EnvValue {
+    param(
+        [string]$Path,
+        [string]$Name
+    )
+
+    foreach ($line in Get-Content -LiteralPath $Path) {
+        $trimmed = $line.Trim()
+        if (-not $trimmed -or $trimmed.StartsWith('#')) {
+            continue
+        }
+
+        if ($trimmed -match ('^{0}=(.*)$' -f [regex]::Escape($Name))) {
+            return $Matches[1]
+        }
+    }
+
+    return $null
+}
+
+function Assert-DuplicateImportContract {
+    param(
+        [string]$AppRoot,
+        [string]$UploadEnvPath,
+        [string]$FixturePath,
+        [string]$ApiRoutePath
+    )
+
+    Assert-LiteralPath $UploadEnvPath 'upload-safe duplicate env'
+    Assert-LiteralPath $FixturePath 'duplicate fixture snapshot'
+    Assert-LiteralPath $ApiRoutePath 'duplicate fixture API route'
+
+    $publicApiBase = Get-EnvValue -Path $UploadEnvPath -Name 'NEXT_PUBLIC_REVIEW_API_BASE'
+    if ($publicApiBase -ne '/api/v1/review/nrc-aps') {
+        throw "Duplicate upload env must use the same-origin fixture API base. Expected /api/v1/review/nrc-aps, found: $publicApiBase"
+    }
+
+    $fixtureFile = Get-Item -LiteralPath $FixturePath
+    if ($fixtureFile.Length -gt 10MB) {
+        throw "Duplicate fixture snapshot exceeds the current Onlook import size ceiling: $($fixtureFile.Length) bytes at $FixturePath"
     }
 }
 
@@ -105,40 +159,6 @@ function Wait-HttpReady {
     throw "Timed out waiting for HTTP readiness at $Url"
 }
 
-function Assert-ReviewApiPopulated {
-    param(
-        [string]$Url,
-        [string[]]$ExpectedRunIds = @()
-    )
-
-    $payload = Invoke-RestMethod -Uri $Url -UseBasicParsing -TimeoutSec 15
-    if ($null -eq $payload) {
-        throw "Review API returned an empty payload at $Url"
-    }
-
-    $runs = @($payload.runs)
-    if ($runs.Count -lt 1) {
-        throw "Review API returned zero runs at $Url"
-    }
-
-    $reviewableRuns = @($runs | Where-Object { $_.reviewable -eq $true })
-    if ($reviewableRuns.Count -lt 1) {
-        throw "Review API returned runs but none were reviewable at $Url"
-    }
-
-    $reviewableRunIds = @(
-        $reviewableRuns |
-            ForEach-Object { [string]$_.run_id } |
-            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
-    )
-
-    foreach ($expectedRunId in @($ExpectedRunIds | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })) {
-        if ($reviewableRunIds -notcontains $expectedRunId) {
-            throw "Review API at $Url did not expose expected reviewable run $expectedRunId. Available reviewable runs: $($reviewableRunIds -join ', ')"
-        }
-    }
-}
-
 function Stop-ProcessTree {
     param(
         [System.Diagnostics.Process]$Process,
@@ -193,6 +213,17 @@ function Test-OnlookWebOwnerMatchesExpectedClone {
     return $false
 }
 
+function Get-FixtureRoutes {
+    param([string]$Path)
+
+    $fixture = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json
+    if (-not $fixture.routes) {
+        throw "Fixture file does not expose route metadata: $Path"
+    }
+
+    return $fixture.routes
+}
+
 function Stop-ListeningPortProcessTrees {
     param(
         [int[]]$Ports,
@@ -205,45 +236,6 @@ function Stop-ListeningPortProcessTrees {
             Stop-ProcessTree -Process $ownerProcess -Label "$Label (PID $ownerId)"
         }
     }
-}
-
-function Set-EnvValueInFile {
-    param(
-        [string]$Path,
-        [string]$Name,
-        [string]$Value
-    )
-
-    $originalContent = [System.IO.File]::ReadAllText($Path)
-    $updatedContent = if ($originalContent -match ("(?m)^" + [regex]::Escape($Name) + "=")) {
-        [regex]::Replace(
-            $originalContent,
-            "(?m)^" + [regex]::Escape($Name) + "=.*$",
-            ($Name + '=' + $Value),
-            1
-        )
-    } else {
-        $separator = if ($originalContent.Length -eq 0 -or $originalContent.EndsWith("`r`n") -or $originalContent.EndsWith("`n")) {
-            ''
-        } else {
-            "`r`n"
-        }
-        $originalContent + $separator + ($Name + '=' + $Value + "`r`n")
-    }
-
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($Path, $updatedContent, $utf8NoBom)
-    return $originalContent
-}
-
-function Restore-FileContent {
-    param(
-        [string]$Path,
-        [string]$Content
-    )
-
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($Path, $Content, $utf8NoBom)
 }
 
 function Start-OnlookWebProcess {
@@ -286,7 +278,9 @@ function Invoke-OperatorProofNode {
         [string]$AppRoot,
         [string]$CanonicalRoot,
         [string]$BrowserChannel,
-        [pscustomobject]$PrepSummary,
+        [string]$DocumentTracePath,
+        [string]$WorkbenchPath,
+        [string]$CandidateBPath,
         [string]$ProofFile,
         [string]$ProofMarker
     )
@@ -298,9 +292,9 @@ function Invoke-OperatorProofNode {
             --app-dir $AppRoot `
             --canonical-dir $CanonicalRoot `
             --browser-channel $BrowserChannel `
-            --document-trace-path ([string]$PrepSummary.recommended_urls.baseline_trace) `
-            --workbench-path ([string]$PrepSummary.recommended_urls.workbench_compare) `
-            --candidate-b-path ([string]$PrepSummary.recommended_urls.candidate_b_trace) `
+            --document-trace-path $DocumentTracePath `
+            --workbench-path $WorkbenchPath `
+            --candidate-b-path $CandidateBPath `
             --proof-file $ProofFile `
             --proof-marker $ProofMarker
         if ($LASTEXITCODE -ne 0) {
@@ -328,13 +322,11 @@ function Resolve-BrowserChannel {
 }
 
 Assert-Path $operatorScript 'operator proof script'
-Assert-Path $wbPrepScript 'compare prep validator'
-Assert-Path $apiStartScript 'review API start helper'
 Assert-Path $onlookStartScript 'Onlook web start helper'
 Assert-Path $onlookRoot 'Onlook source clone'
 Assert-Path $appRoot 'duplicate sandbox app'
 Assert-Path $canonicalRoot 'canonical sandbox app'
-Assert-Path $uploadEnvPath 'upload-safe duplicate env'
+Assert-Path $fixturePath 'sandbox fixture snapshot'
 Assert-Path (Join-Path $appRoot $proofFile) 'duplicate proof file'
 Assert-Path (Join-Path $canonicalRoot $proofFile) 'canonical proof file'
 
@@ -350,47 +342,28 @@ if ($appRoot -eq $canonicalRoot) {
     throw 'Operator proof must target a duplicate sandbox app, not canonical onlook-ui/.'
 }
 
+Assert-DuplicateImportContract `
+    -AppRoot $appRoot `
+    -UploadEnvPath $uploadEnvPath `
+    -FixturePath $duplicateFixturePath `
+    -ApiRoutePath $duplicateApiRoutePath
+
 $browserChannel = Resolve-BrowserChannel
-
-Push-Location $laneRoot
-try {
-    $prepOutput = python ./tools/validate_wb_prep.py | Out-String
-    if ($LASTEXITCODE -ne 0) {
-        throw "validate_wb_prep.py failed with exit code $LASTEXITCODE"
-    }
-}
-finally {
-    Pop-Location
-}
-
-$prepSummary = $prepOutput | ConvertFrom-Json
-if (-not $prepSummary.passed) {
-    throw 'validate_wb_prep.py did not return a passing prep summary.'
-}
-
-$expectedReviewRunIds = @(
-    [string]$prepSummary.selection.baseline_run_id
-    [string]$prepSummary.selection.candidate_a_run_id
-) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
-
-$apiUrl = "http://$BindHost`:$ApiPort/api/v1/review/nrc-aps/runs"
+$fixtureRoutes = Get-FixtureRoutes -Path $fixturePath
+$documentTracePath = [string]$fixtureRoutes.document_trace
+$workbenchPath = [string]$fixtureRoutes.workbench_compare
+$candidateBPath = [string]$fixtureRoutes.candidate_b_trace
 $onlookLoginUrl = "http://$BindHost`:$OnlookPort/login"
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("onlook-operator-" + [System.Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $tempRoot | Out-Null
-$apiOut = Join-Path $tempRoot 'api.out.log'
-$apiErr = Join-Path $tempRoot 'api.err.log'
 $uiOut = Join-Path $tempRoot 'ui.out.log'
 $uiErr = Join-Path $tempRoot 'ui.err.log'
 
-$apiProcess = $null
 $uiProcess = $null
 $startedSupabase = $false
 $reusedOnlookWeb = $false
-$originalUploadEnv = $null
 
 try {
-    $originalUploadEnv = Set-EnvValueInFile -Path $uploadEnvPath -Name 'NEXT_PUBLIC_REVIEW_API_BASE' -Value ("http://$BindHost`:$ApiPort/api/v1/review/nrc-aps")
-
     if (-not ((Test-PortListening -Port 54321) -and (Test-PortListening -Port 54322))) {
         Write-Host "Starting local Onlook backend stack from $OnlookDir"
         Push-Location $onlookRoot
@@ -407,33 +380,6 @@ try {
         Wait-PortListening -Ports @(54321, 54322) -TimeoutSeconds $ReadyTimeoutSeconds
         $startedSupabase = $true
     }
-
-    if (Test-HttpReady -Url $apiUrl) {
-        Write-Host "Reusing review API at $apiUrl"
-    } else {
-        if (Test-PortListening -Port $ApiPort) {
-            throw "Review API port $ApiPort is already listening but did not answer $apiUrl"
-        }
-
-        $apiProcess = Start-Process -FilePath 'powershell.exe' `
-            -ArgumentList @(
-                '-NoProfile',
-                '-ExecutionPolicy',
-                'Bypass',
-                '-File',
-                './tools/start-review-api.ps1',
-                '-Port',
-                $ApiPort
-            ) `
-            -WorkingDirectory $laneRoot `
-            -RedirectStandardOutput $apiOut `
-            -RedirectStandardError $apiErr `
-            -PassThru
-
-        Wait-HttpReady -Url $apiUrl -TimeoutSeconds $ReadyTimeoutSeconds
-    }
-
-    Assert-ReviewApiPopulated -Url $apiUrl -ExpectedRunIds $expectedReviewRunIds
 
     if (Test-HttpReady -Url $onlookLoginUrl) {
         if (-not (Test-OnlookWebOwnerMatchesExpectedClone -Port $OnlookPort -ExpectedRoot $onlookRoot)) {
@@ -465,7 +411,9 @@ try {
             -AppRoot $appRoot `
             -CanonicalRoot $canonicalRoot `
             -BrowserChannel $browserChannel `
-            -PrepSummary $prepSummary `
+            -DocumentTracePath $documentTracePath `
+            -WorkbenchPath $workbenchPath `
+            -CandidateBPath $candidateBPath `
             -ProofFile $proofFile `
             -ProofMarker $proofMarker
     }
@@ -489,7 +437,9 @@ try {
                 -AppRoot $appRoot `
                 -CanonicalRoot $canonicalRoot `
                 -BrowserChannel $browserChannel `
-                -PrepSummary $prepSummary `
+                -DocumentTracePath $documentTracePath `
+                -WorkbenchPath $workbenchPath `
+                -CandidateBPath $candidateBPath `
                 -ProofFile $proofFile `
                 -ProofMarker $proofMarker
         } else {
@@ -498,17 +448,9 @@ try {
     }
 }
 finally {
-    if ($null -ne $originalUploadEnv) {
-        Restore-FileContent -Path $uploadEnvPath -Content $originalUploadEnv
-    }
-
     if (-not $LeaveServicesRunning) {
         if ($uiProcess) {
             Stop-ProcessTree -Process $uiProcess -Label 'Onlook web'
-        }
-
-        if ($apiProcess) {
-            Stop-ProcessTree -Process $apiProcess -Label 'review API'
         }
 
         if ($startedSupabase) {

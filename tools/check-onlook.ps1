@@ -1,5 +1,6 @@
 param(
-    [switch]$RunValidation
+    [switch]$RunValidation,
+    [switch]$ShowGateStatusOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -10,8 +11,8 @@ $laneRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $onlookUiRoot = Join-Path $laneRoot 'onlook-ui'
 $expectedStates = @{
     'ext-onlook-fix' = @{
-        Commit = 'c8cf5c16a34d1953f3c215e4beaa2ef96e417733'
-        Tree = '8f9c9811552a801478df85daeee511104b8695d2'
+        Commit = '14dbc96e01436dabbf03e8a16f27cb23f008ec90'
+        Tree = 'a2a7672c9241802cd741d6d8fce9b847651c003c'
     }
     'ext-onlook-pr' = @{
         Commit = '6d4c463ad087cf43218f8e73bcf508b6e70a1e8e'
@@ -23,6 +24,35 @@ $runtimeGeneratedPaths = @(
     'apps/web/client/messages/en.d.json.ts'
     'apps/web/client/public/onlook-preload-script.js'
 )
+$activePairFile = Join-Path $laneRoot 'tools\onlook-active-pair.json'
+
+function Write-GateStatus {
+    Write-Host '  Current-project first gate (headed Chrome, fresh browser context, active verified pair only):'
+    if (Test-Path $activePairFile) {
+        try {
+            $activePair = Get-Content $activePairFile -Raw | ConvertFrom-Json
+            if ($activePair.status -eq 'verified-live') {
+                Write-Host '    Default active verified pair: ./tools/run-onlook-normalized-smoke.ps1'
+                Write-Host "    Active pair file: ./tools/onlook-active-pair.json"
+                Write-Host "    Active project URL: $($activePair.projectUrl)"
+                Write-Host "    Active preview origin: $($activePair.previewOrigin)"
+                Write-Host "    Source ledger: $($activePair.sourceLedgerPath)"
+                Write-Host "    Verified at: $($activePair.verifiedAt)"
+            } else {
+                Write-Host "    No active default pair. Status: $($activePair.status)"
+                Write-Host "    Status reason: $($activePair.statusReason)"
+                Write-Host '    Default invocation fails closed until a verified-live active pair is recorded.'
+            }
+        } catch {
+            Write-Host '    Active pair state is unreadable. Default invocation fails closed.'
+        }
+    } else {
+        Write-Host '    No active pair state file found. Default invocation fails closed.'
+    }
+    Write-Host '    Explicit override pair: ./tools/run-onlook-normalized-smoke.ps1 -ProjectUrl <project-url> -PreviewOrigin <preview-origin>'
+    Write-Host '  Broader secondary proof (wider import/proof workflow, not equivalent to the first gate):'
+    Write-Host '    ./tools/run-onlook-operator-proof.ps1'
+}
 
 function Assert-Path {
     param(
@@ -118,6 +148,12 @@ Assert-Path (Join-Path $onlookUiRoot '.env.local') 'sandbox local env' 'Create i
 Assert-Path (Join-Path $laneRoot 'patches\local-writeback.patch') 'local write-back patch archive'
 Assert-Path (Join-Path $laneRoot 'patches\upstream-clean.patch') 'upstream-clean patch archive'
 
+if ($ShowGateStatusOnly) {
+    Write-Host 'Gate status:'
+    Write-GateStatus
+    return
+}
+
 foreach ($cloneDir in $expectedStates.Keys) {
     $hint = if ($cloneDir -eq 'ext-onlook-fix') {
         'Restore it with ./tools/restore-onlook.ps1 -PatchSet local-writeback'
@@ -177,7 +213,7 @@ Write-Host '  ./tools/copy-onlook-ui.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv
 Write-Host '  ./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv'
 Write-Host '  ./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv -RunSmokeProfile full'
 Write-Host '  ./tools/diff-onlook-copy.ps1 -TargetDir onlook-ui-copy'
-Write-Host '  ./tools/run-onlook-operator-proof.ps1'
+Write-GateStatus
 Write-Host '  ./tools/restore-onlook.ps1 -PatchSet local-writeback'
 Write-Host '  ./tools/restore-onlook.ps1 -PatchSet upstream-clean'
 Write-Host '  ./tools/run-onlook-sandbox-smoke.ps1 -Profile core'

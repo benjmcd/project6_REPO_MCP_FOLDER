@@ -41,7 +41,7 @@ export function HeaderBar({
               Onlook sandbox
             </span>
             <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-violet-700">
-              Slice 1
+              Multi-route lane
             </span>
           </div>
           <div className="space-y-2">
@@ -49,9 +49,9 @@ export function HeaderBar({
               NRC APS review sandbox
             </h1>
             <p className="max-w-2xl text-sm leading-6 text-slate-600">
-              This React and Tailwind shell reads the existing review API only.
-              The live static review UI and document trace surface remain the
-              authority while this sandbox proves the Onlook lane.
+              This React and Tailwind shell serves an import-safe, same-origin
+              snapshot of the review family so Onlook can edit the sandbox lane
+              without depending on your localhost API.
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs font-medium">
@@ -62,7 +62,7 @@ export function HeaderBar({
               Credentials omitted
             </span>
             <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700">
-              Document Trace stays on the live surface in slice 1
+              Fixture-backed preview safe for Onlook import
             </span>
           </div>
         </div>
