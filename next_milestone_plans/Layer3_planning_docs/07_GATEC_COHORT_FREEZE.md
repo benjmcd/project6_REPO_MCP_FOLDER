@@ -2,10 +2,11 @@
 
 ## Purpose and authority note
 
-This document freezes the next write-enabled Gate C continuation contract after the already-landed quantitative single-item pass slice.
+This document freezes the bounded write-enabled Gate C quantitative associated/cohort continuation contract after the already-landed quantitative single-item pass slice.
+The bounded quantitative associated/cohort continuation governed by this freeze has now landed on current `main`.
 
 It answers one question only:
-- what exact bounded quantitative associated/cohort continuation may be implemented next without reopening qualitative, cross-modal, comparative, route/UI, runtime DB, reconciliation, packaging, or APS handoff scope
+- what exact bounded quantitative associated/cohort continuation was admitted without reopening qualitative, cross-modal, comparative, route/UI, runtime DB, reconciliation, packaging, or APS handoff scope
 
 It is not:
 - a broad orchestration rewrite
@@ -33,7 +34,7 @@ Evidence basis: `P|layer3_primary_planningdocs/05_LAYER3_SUBLAYER2_ORCHESTRATION
 
 ## Frozen tranche
 
-The next write-enabled Gate C continuation slice is now frozen as:
+The bounded write-enabled Gate C continuation slice was frozen and has now landed as:
 - `Gate C continuation = internal quantitative associated/cohort shaping and pass entry for dataset-version-backed cohorts only`
 - extend the existing `l3_analysis_plan` / `l3_pass_run` surfaces already landed by the single-item pass slice
 - preserve the already-landed Phase 1A, typing/unit, and single-item pass behavior exactly as they are
@@ -51,7 +52,7 @@ Hard rule:
 
 ## Canonical starting point
 
-The live repo already has five distinct surfaces that this next slice must respect:
+The live repo already has five distinct surfaces that this slice had to respect:
 
 1. `Current Gate C typing/unit truth`
 - `backend/app/services/layer3_typing_entry.py`
@@ -81,13 +82,13 @@ Frozen reading of that starting point:
 - pass entry currently proves only quantitative `single_item` execution
 - the quantitative plane already knows how to operate on a `dataset_version_id`, not on raw multi-unit Layer 3 cohorts
 - the repo already has generic helpers for persisting a dataframe as a dataset version, but no Layer 3-owned cohort-shaping contract yet
-- the next lane must freeze that shaped-input bridge explicitly instead of improvising ad hoc multi-unit coercion inside pass execution
+- this freeze makes that shaped-input bridge explicit instead of leaving ad hoc multi-unit coercion inside pass execution
 
 ## Frozen Gate C cohort continuation decisions
 
 ### 1. Admitted set posture
 
-The next continuation lane may admit only `l3_analysis_set` rows where:
+The bounded continuation lane may admit only `l3_analysis_set` rows where:
 - `set_type == "associated_cohort"`
 - `formation_basis_json["analysis_modality"] == "quantitative"`
 - cohort cardinality is at least `2`
@@ -130,7 +131,7 @@ Hard rule:
 
 ### 3. Persistence and provenance posture
 
-The next lane may reuse the existing dataset-version persistence substrate only in this bounded way:
+The bounded lane may reuse the existing dataset-version persistence substrate only in this bounded way:
 - create one derived dataset-version-like payload for the shaped cohort
 - persist it through the existing repo-local dataset/version helpers rather than inventing a second storage system
 - preserve Layer 3 plan/pass truth in `l3_analysis_plan` and `l3_pass_run`
@@ -152,7 +153,7 @@ Hard rule:
 
 ### 4. Plan and pass posture
 
-The next lane extends the existing pass-entry owner surface rather than replacing it.
+The bounded lane extends the existing pass-entry owner surface rather than replacing it.
 
 Frozen pass-family expansion:
 - keep the already-landed `single_item` path intact
@@ -176,7 +177,7 @@ Minimum additional cohort exclusion reasons that must exist in this next lane:
 
 ### 5. Quantitative-plane reuse depth
 
-The next lane may call the existing quantitative plane only after the cohort has been shaped into the frozen dataset-version-compatible contract.
+The bounded lane may call the existing quantitative plane only after the cohort has been shaped into the frozen dataset-version-compatible contract.
 
 Frozen reuse rule:
 - `recommend_analysis(...)` and `run_analysis(...)` may operate on the derived cohort dataset version
@@ -195,7 +196,7 @@ Frozen owner posture:
 - owner module remains `backend/app/services/layer3_pass_entry.py`
 - proof file remains `backend/tests/test_layer3_pass_entry.py`
 
-Frozen expected touch envelope for the next write lane:
+Frozen expected touch envelope for the bounded write lane:
 - `backend/app/services/layer3_pass_entry.py`
 - `backend/tests/test_layer3_pass_entry.py`
 
@@ -221,7 +222,7 @@ Frozen proof posture:
 
 ## Explicit non-goals
 
-Do not include in the next Gate C implementation lane:
+Do not include in the bounded Gate C implementation lane:
 - qualitative cohort execution
 - hybrid, cross-modal, or comparative execution
 - generic cohort resampling/interpolation policy
@@ -233,7 +234,7 @@ Do not include in the next Gate C implementation lane:
 
 ## Stop conditions
 
-Stop and reopen the freeze instead of improvising if the next write lane requires:
+Stop and reopen the freeze instead of improvising if the bounded write lane requires:
 - edits to `backend/app/services/analysis.py`
 - edits to `backend/app/models/models.py` or a new migration just to admit this cohort slice
 - route, schema, or page changes
@@ -246,4 +247,4 @@ Stop and reopen the freeze instead of improvising if the next write lane require
 ## Concise readiness judgment
 
 Readiness judgment:
-- `Ready for a bounded write-enabled Gate C quantitative associated/cohort shaping and pass-entry lane`
+- `This freeze was sufficient for the bounded write-enabled Gate C quantitative associated/cohort shaping and pass-entry lane that has now landed on current main`
