@@ -44,14 +44,14 @@ Reason: the validation target is stable, and the former Gate C typing/unit block
 ## 2. Tranche sequencing and dependency order
 
 1. `Settled from source evidence`
-   `Conclusion:` The execution sequence remains: selection commit, session creation, selection manifest write, descriptor expansion, retrieval event recording, material snapshot persistence.
-   `Claim strength:` direct primary-planning evidence.
-   `Evidence:` `P|layer3_primary_planningdocs/01_LAYER3_OPERATOR_USE_MODEL_AND_SYSTEM_BOUNDARY.md|Checkpoint 1 - selection commit|135-135`; `P|layer3_primary_planningdocs/03_LAYER3_SESSION_LEDGER_AND_WORKSPACE_MODEL.md|Canonical write order|76-89`
+   `Conclusion:` The execution sequence remains: selection commit, session creation, selection manifest write, descriptor expansion, retrieval event recording, material snapshot persistence, and Phase 1A session finalization/status closure.
+   `Claim strength:` primary-planning evidence plus repo-local Phase 1A implementation truth.
+   `Evidence:` `P|layer3_primary_planningdocs/01_LAYER3_OPERATOR_USE_MODEL_AND_SYSTEM_BOUNDARY.md|Checkpoint 1 - selection commit|135-135`; `P|layer3_primary_planningdocs/03_LAYER3_SESSION_LEDGER_AND_WORKSPACE_MODEL.md|Canonical write order|76-89`; `R|backend/app/services/layer3_session_entry.py|finalize_session status closure|361-387`
 
 2. `Settled from source evidence`
-   `Conclusion:` Validation order should mirror the write order: prove committed selection entry first, then descriptor outcomes, then retrieval outcomes, then snapshot refs. Do not start with typing, packages, or consumer checks.
-   `Claim strength:` direct primary-planning evidence.
-   `Evidence:` `P|layer3_primary_planningdocs/03_LAYER3_SESSION_LEDGER_AND_WORKSPACE_MODEL.md|Canonical write order|76-89`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`
+   `Conclusion:` Validation order should mirror the write order: prove committed selection entry first, then descriptor outcomes, then retrieval outcomes, then snapshot refs, then finalized Phase 1A session status/completed-at closure. Do not start with typing, packages, or consumer checks.
+   `Claim strength:` primary-planning evidence plus repo-local Phase 1A implementation truth.
+   `Evidence:` `P|layer3_primary_planningdocs/03_LAYER3_SESSION_LEDGER_AND_WORKSPACE_MODEL.md|Canonical write order|76-89`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`; `R|backend/app/services/layer3_session_entry.py|finalize_session status closure|361-387`
 
 3. `Recommended but not settled`
    `Conclusion:` Execution should stay service-first and additive. Later public-route or consumer validation belongs only after explicit higher-gate admission.
@@ -71,9 +71,10 @@ Reason: the validation target is stable, and the former Gate C typing/unit block
    - evidence that descriptor expansion records explicit success/failure outcomes,
    - evidence that retrieval attempts fail closed and record `l3_retrieval_event`,
    - evidence that material bodies are externalized and only snapshot refs are ledgered,
+   - evidence that the Phase 1A session is finalized to a terminal status with `completed_at` before later-gate entry is allowed,
    - evidence that no Phase 2+ objects are introduced.
-   `Claim strength:` primary-planning evidence plus bounded implementation recommendation.
-   `Evidence:` `P|layer3_primary_planningdocs/02_LAYER3_SOURCE_PLANES_AND_FEEDING_MODEL.md|Resolution outcomes|121-131`; `P|layer3_primary_planningdocs/03_LAYER3_SESSION_LEDGER_AND_WORKSPACE_MODEL.md|Persistence split|61-75`; `P|layer3_primary_planningdocs/03_LAYER3_SESSION_LEDGER_AND_WORKSPACE_MODEL.md|Canonical write order|76-89`
+   `Claim strength:` primary-planning evidence plus repo-local Phase 1A implementation truth.
+   `Evidence:` `P|layer3_primary_planningdocs/02_LAYER3_SOURCE_PLANES_AND_FEEDING_MODEL.md|Resolution outcomes|121-131`; `P|layer3_primary_planningdocs/03_LAYER3_SESSION_LEDGER_AND_WORKSPACE_MODEL.md|Persistence split|61-75`; `P|layer3_primary_planningdocs/03_LAYER3_SESSION_LEDGER_AND_WORKSPACE_MODEL.md|Canonical write order|76-89`; `R|backend/app/services/layer3_session_entry.py|finalize_session status closure|361-387`
 
 3. `Settled from source evidence`
    `Conclusion:` Validation must also prove that the runtime DB remains read-only and outside the write-side path.

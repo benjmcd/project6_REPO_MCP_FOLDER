@@ -230,6 +230,7 @@ Frozen core touched-code envelope for the first write lane:
 
 Frozen invocation posture:
 - direct internal service calls only
+- direct typing entry starts only from finalized Phase 1A sessions with terminal status and non-null `completed_at`
 - no public route additions
 - no page/browser harness
 - no internal HTTP self-calls
@@ -238,6 +239,7 @@ Frozen proof posture:
 - one targeted pytest module using direct internal service calls
 - one manual Alembic migration only
 - proof must show at minimum:
+  - one fail-closed unfinalized-session path
   - one quantitative single-item path
   - one document-backed associated-cohort or singleton qualitative path
   - one fail-closed unsupported-shape or unsupported-formation path
@@ -286,6 +288,7 @@ Stop and reopen the freeze instead of improvising if the first Gate C write lane
 - `l3_analysis_plan` or `l3_pass_run`
 - public operator override UI
 - cross-snapshot composition as a first-slice requirement
+- typing entry from `active_loading` or otherwise non-finalized Phase 1A sessions
 - automatic `cross_modal` or `comparative` set formation
 - direct persistence through `AnalysisRun`
 - any claim that the current analyst-insight page or alias routes are already the Gate C workbench contract
