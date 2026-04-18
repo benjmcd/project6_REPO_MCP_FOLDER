@@ -9,7 +9,7 @@
   "scope": {
     "lane": {
       "worktreePath": "worktrees/onlook-main-settle",
-      "head": "86aa7b6e9081882f7c217afeaa61d6440cabf3e1",
+      "head": "44634d12236648e86b9a76f4285cb36711aab0ea",
       "helperFiles": {
         "tools/run-onlook-normalized-smoke.ps1": "277e74d3d51a8c76ba55d3e616baf0300f98eb091f61d36355470940a2a9aa83",
         "tools/onlook-normalized-smoke.mjs": "6289ae3dbf084cac59fcc95886f968aae2ebde8e72aa015cb048e4d8faea2d84",
@@ -294,8 +294,10 @@
   "failureRoute": null,
   "failureStage": null,
   "failureReason": null,
-  "artifacts": null,
+  "artifacts": {
+    "observability": "C:\\Users\\benny\\OneDrive\\Desktop\\project6_REPO_MCP_FOLDER\\worktrees\\onlook-main-settle\\archive\\onlook-normalized-smoke\\20260418-105447-04cf009c\\observability.json"
+  },
   "artifactType": "durable-tracked-proof",
-  "verifiedAt": "2026-04-18T10:38:34-07:00",
-  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-103741-74f1db2e/ledger.json"
+  "verifiedAt": "2026-04-18T10:55:42-07:00",
+  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-105447-04cf009c/ledger.json"
 }
