@@ -39,7 +39,7 @@ Primary-planning citation note:
 - Those files are not tracked in this repo/worktree and must not be misread as repo-local implementation truth.
 
 Overall confidence for this baseline remains `Medium`.
-Reason: the tranche boundary and no-go set are stable, the former Gate C typing/unit blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`, the bounded quantitative single-item plan/pass-entry blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md`, and the next quantitative associated/cohort shaped-input blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md`, but the future workbench route family and broader qualitative/cross-modal execution breadth remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
+Reason: the tranche boundary and no-go set are stable, the former Gate C typing/unit blocker was frozen by `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md` and the bounded typing/unit slice has now landed on current `main`, the bounded quantitative single-item plan/pass slice governed by `next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md` has now landed on current `main`, and the bounded quantitative associated/cohort continuation governed by `next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md` has now landed on current `main`, but the future workbench route family and broader qualitative/cross-modal execution breadth remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
 
 ## 2. Sources used and authority model
 
@@ -163,17 +163,17 @@ Current final-pack artifacts used only as lower-authority comparison surfaces:
    `Evidence:` `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
 
 2. `Settled by newer freeze artifact`
-   `Conclusion:` First-v1 typing heuristics and analysis-unit boundaries are now explicitly frozen and no longer block a bounded Gate C typing/unit implementation lane.
+   `Conclusion:` First-v1 typing heuristics and analysis-unit boundaries were explicitly frozen by `05_GATEC_IMPLEMENTATION_FREEZE.md`, and the bounded Gate C typing/unit slice governed by that freeze has now landed on current `main`.
    `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
    `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md|artifact|bounded Gate C typing/unit implementation contract`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate C - typing/orchestration entry|101-105`
 
 3. `Settled by newer freeze artifact`
-   `Conclusion:` A bounded quantitative single-item plan/pass entry is now explicitly frozen and no longer depends on ad hoc plan/pass identity decisions.
+   `Conclusion:` A bounded quantitative single-item plan/pass entry was explicitly frozen by `06_GATEC_PASS_FREEZE.md`, and the bounded plan/pass slice governed by that freeze has now landed on current `main` without depending on ad hoc plan/pass identity decisions.
    `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
    `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md|artifact|bounded Gate C plan/pass implementation contract`; `P|layer3_primary_planningdocs/05_LAYER3_SUBLAYER2_ORCHESTRATION_AND_PASS_EXECUTION.md|Plan formation and pass families|57-132`
 
 4. `Settled by newer freeze artifact`
-   `Conclusion:` The bounded quantitative associated/cohort shaped-input bridge is now explicitly frozen, so the next Gate C cohort continuation no longer depends on ad hoc dataset-version coercion.
+   `Conclusion:` The bounded quantitative associated/cohort shaped-input bridge was explicitly frozen by `07_GATEC_COHORT_FREEZE.md`, and the corresponding bounded cohort continuation has now landed on current `main`, so Gate C no longer depends on ad hoc dataset-version coercion for that first quantitative cohort slice.
    `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
    `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md|artifact|bounded Gate C quantitative associated/cohort shaping and pass-entry contract`; `P|layer3_primary_planningdocs/06_LAYER3_ENGINE_MAP_AND_EXISTING_REPO_REUSE.md|Quantitative associated/cohort requires coherent shaping and explicit shaped-input contract|109-121`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|One associated/cohort pass family is part of the recommended first implementation slice|114-115`
 

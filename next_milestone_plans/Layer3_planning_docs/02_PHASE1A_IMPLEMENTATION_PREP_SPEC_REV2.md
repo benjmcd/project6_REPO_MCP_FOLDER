@@ -39,7 +39,7 @@ Primary-planning citation note:
 - Those files are not tracked in this repo/worktree and must not be misread as repo-local implementation truth.
 
 Overall confidence for this spec remains `Medium`.
-Reason: the Phase 1A object boundary is stable, the former Gate C typing/unit blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`, the bounded quantitative single-item plan/pass-entry blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md`, and the next quantitative associated/cohort shaped-input blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md`, but the future workbench route family and broader qualitative/cross-modal execution breadth remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
+Reason: the Phase 1A object boundary is stable, the former Gate C typing/unit blocker was frozen by `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md` and the bounded typing/unit slice has now landed on current `main`, the bounded quantitative single-item plan/pass slice governed by `next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md` has now landed on current `main`, and the bounded quantitative associated/cohort continuation governed by `next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md` has now landed on current `main`, but the future workbench route family and broader qualitative/cross-modal execution breadth remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
 
 ## 2. Exact Phase 1A scope
 

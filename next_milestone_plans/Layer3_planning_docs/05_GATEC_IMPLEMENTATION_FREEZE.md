@@ -3,9 +3,10 @@
 ## Purpose and authority note
 
 This document freezes the first write-enabled Gate C implementation-entry contract for Layer 3.
+The bounded typing/unit slice governed by this freeze has now landed on current `main`.
 
 It exists to answer one question only:
-- what exact bounded typing and analysis-unit slice may be implemented next without reopening route, UI, packaging, APS handoff, or consumer scope
+- what exact bounded typing and analysis-unit slice was admitted without reopening route, UI, packaging, APS handoff, or consumer scope
 
 It is not:
 - a broader Layer 3 rewrite
@@ -30,7 +31,7 @@ Evidence basis: `P|layer3_primary_planningdocs/03_LAYER3_SESSION_LEDGER_AND_WORK
 
 ## Frozen tranche
 
-The first write-enabled Gate C implementation slice is now frozen as:
+The first write-enabled Gate C implementation slice was frozen and has now landed as:
 - `Gate C = internal typing and analysis-unit entry only`
 - land only:
   - `l3_typing_record`
@@ -296,11 +297,11 @@ Stop and reopen the freeze instead of improvising if the first Gate C write lane
 ## Concise readiness judgment
 
 Readiness judgment:
-- `Ready for a bounded write-enabled Gate C typing/unit implementation lane`
+- `This freeze was sufficient for the bounded write-enabled Gate C typing/unit implementation lane that has now landed on current main`
 
 Reason:
 - the earlier blocker was a missing implementation-entry freeze across typing, unit/group/set formation, persistence posture, owner surfaces, proof posture, and no-go boundaries
-- this document now freezes that contract explicitly
+- this document froze that contract explicitly, and the bounded lane governed by it is now landed on current `main`
 
 What still remains intentionally deferred after this freeze:
 - public route-family decisions
