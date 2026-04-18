@@ -46,6 +46,13 @@ PASS_STATUS_FAILED = "failed"
 SOURCE_GATE_PASS_FREEZE = "06_GATEC_PASS_FREEZE"
 PLAN_VERSION = "gatec_pass_entry_v1"
 PASS_SCOPE_QUANT_SINGLE_ITEM = "quantitative_single_item_dataset_version"
+SUPPORTED_WRAPPED_QUANTITATIVE_METHODS = frozenset(
+    {
+        "cross_correlation",
+        "decomposition",
+        "structural_break",
+    }
+)
 
 FINALIZED_PASS_ENTRY_SESSION_STATUSES = frozenset(
     {
@@ -174,6 +181,10 @@ def _choose_method_name_or_raise(db: Session, *, dataset_version_id: str) -> str
         raise Layer3PassEntryError(
             f"Dataset version '{dataset_version_id}' yielded an empty quantitative method recommendation"
         )
+    if selected not in SUPPORTED_WRAPPED_QUANTITATIVE_METHODS:
+        raise Layer3PassEntryError(
+            f"Dataset version '{dataset_version_id}' recommended unsupported Gate C method '{selected}'"
+        )
     return selected
 
 
@@ -276,7 +287,17 @@ def _classify_sets(
                 )
             )
             continue
-        selected_method_name = _choose_method_name_or_raise(db, dataset_version_id=dataset_version_id)
+        try:
+            selected_method_name = _choose_method_name_or_raise(db, dataset_version_id=dataset_version_id)
+        except Layer3PassEntryError:
+            excluded.append(
+                _exclusion_entry(
+                    analysis_set,
+                    reason_code="recommended_method_not_admitted",
+                    analysis_modality=analysis_unit.analysis_modality,
+                )
+            )
+            continue
         admitted.append(
             _AdmittedSetCandidate(
                 analysis_set=analysis_set,
@@ -557,6 +578,7 @@ def materialize_pass_entry(db: Session, *, session_id: str) -> Layer3PassEntryRe
             excluded=excluded,
             error_message=str(exc),
         )
+        db.commit()
         raise
 
     session.status = _final_session_status(

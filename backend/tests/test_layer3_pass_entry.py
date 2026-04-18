@@ -127,6 +127,68 @@ def _seed_dataset_version(db, tmp_path: Path, *, dataset_id: str, dataset_versio
     db.flush()
 
 
+def _seed_non_timeseries_dataset_version(db, tmp_path: Path, *, dataset_id: str, dataset_version_id: str) -> None:
+    dataset = Dataset(
+        dataset_id=dataset_id,
+        name=f"Dataset {dataset_id}",
+        description="Gate C unsupported-method proof dataset",
+        frequency_hint="MS",
+        time_column=None,
+    )
+    version = DatasetVersion(
+        dataset_version_id=dataset_version_id,
+        dataset_id=dataset_id,
+        version_label="v1",
+        version_type="baseline",
+        status="ready",
+        notes="gatec-pass-entry-unsupported-method-proof",
+    )
+    category = VariableDefinition(
+        variable_id=f"var-category-{dataset_version_id}",
+        dataset_version_id=dataset_version_id,
+        variable_name="category",
+        dtype="string",
+        role="dimension",
+        is_numeric=False,
+        is_time_index=False,
+        ordinal_position=0,
+    )
+    value = VariableDefinition(
+        variable_id=f"var-value-{dataset_version_id}",
+        dataset_version_id=dataset_version_id,
+        variable_name="value",
+        dtype="float64",
+        role="measure",
+        is_numeric=True,
+        is_time_index=False,
+        ordinal_position=1,
+    )
+    value_profile = VariableProfile(
+        variable_profile_id=f"profile-value-{dataset_version_id}",
+        dataset_version_id=dataset_version_id,
+        variable_id=value.variable_id,
+        seasonality_flag=False,
+        stationarity_hint="likely_stationary",
+        summary_json={},
+    )
+    db.add_all([dataset, version, category, value, value_profile])
+    db.flush()
+
+    frame = pd.DataFrame(
+        {
+            "category": ["alpha", "beta", "gamma"],
+            "value": [1.0, 2.5, 3.5],
+        }
+    )
+    dataset_dir = tmp_path / "datasets"
+    dataset_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = dataset_dir / f"{dataset_version_id}.csv"
+    frame.to_csv(csv_path, index=False)
+    version.storage_ref = str(csv_path)
+    version.row_count = len(frame)
+    db.flush()
+
+
 def _build_quant_ready_session(db, tmp_path: Path) -> tuple[str, str, datetime]:
     dataset_version_id = "dv-pass-001"
     _seed_dataset_version(db, tmp_path, dataset_id="ds-pass-001", dataset_version_id=dataset_version_id)
@@ -312,6 +374,61 @@ def _build_qual_only_ready_session(db, tmp_path: Path) -> tuple[str, str, dateti
     return session.session_id, phase1a_status, phase1a_completed_at
 
 
+def _build_non_timeseries_quant_ready_session(db, tmp_path: Path) -> tuple[str, str, datetime]:
+    dataset_version_id = "dv-pass-003"
+    _seed_non_timeseries_dataset_version(
+        db,
+        tmp_path,
+        dataset_id="ds-pass-003",
+        dataset_version_id=dataset_version_id,
+    )
+
+    request = SessionEntryRequest(
+        manifest_items=[
+            {
+                "source_plane": "plane_a",
+                "descriptor_type": "dataset_version",
+                "selector_payload": {"dataset_version_id": dataset_version_id},
+                "selection_basis": {"selection_id": "sel-pass-unsupported-method"},
+                "expansion_reason": "committed_selection",
+            }
+        ],
+        source_plane_hints={"plane_a": ["dataset_version"]},
+        commit_reason="gatec-pass-entry-unsupported-method-proof",
+        entry_route_context={"entrypoint": "pytest"},
+        operator_context={"operator": "pytest"},
+        summary={"phase": "gate_c_pass"},
+    )
+
+    session, manifest = commit_selection(db, request)
+    descriptors = expand_descriptors(db, session=session, manifest=manifest)
+    record_retrieval_event(
+        db,
+        session=session,
+        descriptor=descriptors[0],
+        outcome="loaded",
+        reason_code="loaded",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape="dataset_version",
+                source_identity={"dataset_version_id": dataset_version_id},
+                source_provenance={"dataset_id": "ds-pass-003", "storage_ref": str(tmp_path / "datasets" / f"{dataset_version_id}.csv")},
+                payload={"dataset_version_id": dataset_version_id},
+                load_summary={"loaded_records": 1, "failed_records": 0},
+            )
+        ],
+        storage_root=tmp_path,
+    )
+    finalize_session(db, session=session)
+    phase1a_status = session.status
+    phase1a_completed_at = session.completed_at
+    db.commit()
+
+    materialize_typing_entry(db, session_id=session.session_id)
+    db.commit()
+    return session.session_id, phase1a_status, phase1a_completed_at
+
+
 def test_gatec_pass_entry_executes_quantitative_single_item_and_preserves_loading_closure(tmp_path):
     original_storage_dir = settings.storage_dir
     settings.storage_dir = str(tmp_path)
@@ -434,6 +551,7 @@ def test_gatec_pass_entry_marks_session_failed_when_wrapped_analysis_errors(tmp_
 
         with pytest.raises(Layer3PassEntryError, match="analysis exploded"):
             layer3_pass_entry_module.materialize_pass_entry(db, session_id=session_id)
+        db.rollback()
 
         stored_plan = db.query(L3AnalysisPlan).one()
         stored_pass = db.query(L3PassRun).one()
@@ -453,5 +571,25 @@ def test_gatec_pass_entry_marks_session_failed_when_wrapped_analysis_errors(tmp_
         assert session.summary_json["pass_entry"]["analysis_plan_id"] == stored_plan.analysis_plan_id
         assert session.summary_json["pass_entry"]["pass_run_ids_json"] == [stored_pass.pass_run_id]
         assert "analysis exploded" in session.summary_json["pass_entry"]["failure_reason"]
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_gatec_pass_entry_excludes_unsupported_recommended_method_and_fails_closed(tmp_path):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, phase1a_status, phase1a_completed_at = _build_non_timeseries_quant_ready_session(db, tmp_path)
+
+        with pytest.raises(Layer3PassEntryError, match="has no admissible analysis sets"):
+            materialize_pass_entry(db, session_id=session_id)
+
+        session = db.get(L3Session, session_id)
+        assert session.status == phase1a_status
+        assert _utc_isoformat(session.completed_at) == _utc_isoformat(phase1a_completed_at)
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
     finally:
         settings.storage_dir = original_storage_dir
