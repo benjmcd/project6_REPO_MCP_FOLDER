@@ -828,3 +828,66 @@ class L3MaterialSnapshot(Base):
 
     session: Mapped[L3Session] = relationship(back_populates="material_snapshots")
     descriptor: Mapped[L3Descriptor] = relationship(back_populates="material_snapshots")
+
+
+class L3TypingRecord(Base, TimestampMixin):
+    __tablename__ = "l3_typing_record"
+    __table_args__ = (UniqueConstraint("material_snapshot_id", name="uq_l3_typing_record_material_snapshot"),)
+
+    typing_record_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    material_snapshot_id: Mapped[str] = mapped_column(ForeignKey("l3_material_snapshot.material_snapshot_id"), nullable=False)
+    candidate_modalities_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    chosen_modality: Mapped[str] = mapped_column(String(64), nullable=False)
+    typing_basis_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    overridden_by_operator: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    override_reason: Mapped[str | None] = mapped_column(Text)
+
+    session: Mapped[L3Session] = relationship()
+    material_snapshot: Mapped[L3MaterialSnapshot] = relationship()
+
+
+class L3AnalysisUnit(Base, TimestampMixin):
+    __tablename__ = "l3_analysis_unit"
+    __table_args__ = (UniqueConstraint("session_id", "unit_hash", name="uq_l3_analysis_unit_session_hash"),)
+
+    analysis_unit_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    unit_kind: Mapped[str] = mapped_column(String(64), nullable=False)
+    analysis_modality: Mapped[str] = mapped_column(String(64), nullable=False)
+    member_snapshot_ids_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    member_ranges_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    must_remain_intact: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    typing_record_ids_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    derived_view_ref: Mapped[str | None] = mapped_column(String(1024))
+    unit_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
+    session: Mapped[L3Session] = relationship()
+
+
+class L3AnalysisGroup(Base):
+    __tablename__ = "l3_analysis_group"
+
+    analysis_group_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    analysis_modality: Mapped[str] = mapped_column(String(64), nullable=False)
+    typing_basis_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    analysis_unit_ids_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    status: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    session: Mapped[L3Session] = relationship()
+
+
+class L3AnalysisSet(Base, TimestampMixin):
+    __tablename__ = "l3_analysis_set"
+
+    analysis_set_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    analysis_group_ids_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    analysis_unit_ids_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    set_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    formation_basis_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
+    session: Mapped[L3Session] = relationship()

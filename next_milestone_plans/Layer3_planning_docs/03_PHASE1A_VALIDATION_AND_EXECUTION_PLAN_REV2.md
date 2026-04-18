@@ -39,7 +39,7 @@ Primary-planning citation note:
 - Those files are not tracked in this repo/worktree and must not be misread as repo-local implementation truth.
 
 Overall confidence remains `Medium`.
-Reason: the validation target is stable, but later-gate freezes for the workbench route family, first-v1 typing heuristics, and qualitative-engine ambition remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
+Reason: the validation target is stable, and the former Gate C typing/unit blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`, but later-gate freezes for the workbench route family and qualitative-engine ambition remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
 
 ## 2. Tranche sequencing and dependency order
 
@@ -147,10 +147,10 @@ Reason: the validation target is stable, but later-gate freezes for the workbenc
 
 ## 7. What evidence must exist before Phase 2 is allowed
 
-1. `Open due to architecture ambiguity`
-   `Conclusion:` Phase 2 is blocked until typing heuristics and analysis-unit boundaries are explicitly frozen.
-   `Claim strength:` direct primary-planning evidence.
-   `Evidence:` `P|layer3_primary_planningdocs/00D_LAYER3_PACK_COHERENCE_AND_GAP_AUDIT.md|What is still intentionally not frozen|85-91`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate C - typing/orchestration entry|101-105`
+1. `Settled by newer freeze artifact`
+   `Conclusion:` Phase 2 is no longer blocked on typing heuristics or analysis-unit boundaries; that blocker is now satisfied by `05_GATEC_IMPLEMENTATION_FREEZE.md` for the bounded Gate C typing/unit lane.
+   `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
+   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md|artifact|bounded Gate C typing/unit implementation contract`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate C - typing/orchestration entry|101-105`
 
 2. `Open due to architecture ambiguity`
    `Conclusion:` Later public UI/API work is blocked until the future Layer 3 route-family and workbench surface are explicitly frozen.
@@ -192,9 +192,9 @@ Reason: the validation target is stable, but later-gate freezes for the workbenc
    `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN.md|artifact|REV1 correction target`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|178-184`
 
 2. `Revised from REV1`
-   `Conclusion:` Overall confidence remains `Medium`, but the limiting factor is narrower than REV1 stated: it is the still-open later-gate freezes for the future workbench route family, first-v1 typing heuristics, and qualitative-engine ambition, not a repo-root analyst-insight mismatch and not a Phase 1A blocker.
-   `Claim strength:` direct primary-planning evidence.
-   `Evidence:` `P|layer3_primary_planningdocs/00D_LAYER3_PACK_COHERENCE_AND_GAP_AUDIT.md|What is still intentionally not frozen|85-91`; `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate C - typing/orchestration entry|101-105`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
+   `Conclusion:` Overall confidence remains `Medium`, but the limiting factor is narrower than REV1 stated: it is the still-open later-gate freezes for the future workbench route family and qualitative-engine ambition, not a repo-root analyst-insight mismatch and not a Phase 1A blocker.
+   `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
+   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md|artifact|bounded Gate C typing/unit implementation contract`; `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
 
 3. `Settled from source evidence`
    `Conclusion:` Nothing in this correction pass reopens broader architecture or changes what must still not be implemented yet.
