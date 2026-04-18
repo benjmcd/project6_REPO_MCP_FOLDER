@@ -74,7 +74,8 @@ Update them together.
 ### M7 - Concrete surface-map closure (achieved)
 
 - The lane now carries an explicit module / dependency / endpoint / connection map in `13-phase1a-surface-map.md`.
-- Commit `119c1d73` closes the remaining lane-local clarity gap around owner modules, libraries, config/migration paths, storage paths, untouched schema surfaces, and untouched route boundaries.
+- Commit `119c1d73` added the explicit surface map that closed the major remaining lane-local clarity gap around owner modules, libraries, config/migration paths, storage paths, untouched schema surfaces, and untouched route boundaries.
+- Later doc-only alignment passes may refine the companion docs without changing the underlying milestone sequence.
 
 ## Current roadmap position
 

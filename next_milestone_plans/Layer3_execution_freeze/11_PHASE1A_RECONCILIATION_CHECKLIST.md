@@ -70,6 +70,9 @@ These items tie the planning pack to the committed implementation:
 
 These items should remain true for lane-local closure to stay coherent:
 
+The listed commits are the key milestone commits for the bounded lane shape.
+Later doc-only alignment commits may exist without needing to become new milestone markers if they do not change scope meaning.
+
 1. Confirm the freeze-pack commit remains in history:
    - `a95bc104` `docs(layer3): freeze phase1a planning pack`
 2. Confirm the bounded code commit remains in history:
