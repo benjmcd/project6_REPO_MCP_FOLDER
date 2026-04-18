@@ -926,3 +926,35 @@ class L3PassRun(Base, TimestampMixin):
     session: Mapped[L3Session] = relationship()
     analysis_plan: Mapped[L3AnalysisPlan] = relationship()
     analysis_set: Mapped[L3AnalysisSet] = relationship()
+
+
+class L3ReconciliationRecord(Base, TimestampMixin):
+    __tablename__ = "l3_reconciliation_record"
+    __table_args__ = (UniqueConstraint("session_id", name="uq_l3_reconciliation_record_session"),)
+
+    reconciliation_record_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    status: Mapped[str] = mapped_column(String(64), nullable=False)
+    summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
+    session: Mapped[L3Session] = relationship()
+
+
+class L3OutputPackage(Base, TimestampMixin):
+    __tablename__ = "l3_output_package"
+    __table_args__ = (UniqueConstraint("session_id", "package_kind", name="uq_l3_output_package_session_kind"),)
+
+    output_package_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    reconciliation_record_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_reconciliation_record.reconciliation_record_id"),
+        nullable=False,
+    )
+    package_kind: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(64), nullable=False)
+    payload_ref: Mapped[str] = mapped_column(String(1024), nullable=False)
+    payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
+    session: Mapped[L3Session] = relationship()
+    reconciliation_record: Mapped[L3ReconciliationRecord] = relationship()
