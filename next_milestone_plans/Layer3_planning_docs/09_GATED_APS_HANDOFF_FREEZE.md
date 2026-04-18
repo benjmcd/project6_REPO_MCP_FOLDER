@@ -245,7 +245,7 @@ Stop and reopen the freeze instead of improvising if the bounded write lane requ
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze is sufficient for the bounded write-enabled APS handoff lane that has now landed on this branch after the already-landed Gate D package-entry slice on current main`
+- `This freeze is sufficient for the bounded write-enabled APS handoff lane that is now present in the current implementation state after the already-landed Gate D package-entry slice on current main`
 
 Reason:
 - the earlier blocker was no longer internal packaging
