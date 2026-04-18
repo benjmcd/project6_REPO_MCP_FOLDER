@@ -19,7 +19,7 @@ Normative control remains with the active Phase 1A control spine and the postcod
 The following state is already achieved on `codex/layer3-lane`:
 - the bounded Phase 1A code slice is committed
 - the postcode acceptance audit is committed
-- the lane-local planning pack now includes a front-door README, a reconciliation checklist, and a roadmap notes + PNG pair
+- the lane-local planning pack now includes a front-door README, a reconciliation checklist, a roadmap notes + PNG pair, and a concrete implementation surface map
 
 This checklist is therefore:
 - a record of what was required for lane-local closure
@@ -38,7 +38,8 @@ These items should remain true for the pack to be considered lane-locally cohere
 4. Confirm `README_LAYER3_PHASE1A_PACK.md` is present as the front-door navigation doc.
 5. Confirm `11_PHASE1A_RECONCILIATION_CHECKLIST.md` is present as the operational future-recheck surface.
 6. Confirm `12_PHASE1A_ROADMAP_AND_DECISION_NOTES.md` and `layer3_phase1a_roadmap.png` are present together.
-7. Confirm no pack-local doc claims broader Layer 3 implementation closure than the bounded Phase 1A slice actually provides.
+7. Confirm `13-phase1a-surface-map.md` is present as the concrete module / dependency / boundary map.
+8. Confirm no pack-local doc claims broader Layer 3 implementation closure than the bounded Phase 1A slice actually provides.
 
 ## 2. Code-to-doc closure checklist
 
@@ -61,8 +62,9 @@ These items tie the planning pack to the committed implementation:
    - `l3_pass_run`
    - `l3_reconciliation_record`
    - `l3_output_package`
-4. Confirm the README, roadmap notes, and reconciliation checklist all describe the same frozen boundary as the normative control docs.
-5. Confirm no operational companion doc implies that route-family work, UI widening, APS handoff, or consumer widening is now live.
+4. Confirm the README, roadmap notes, reconciliation checklist, and surface map all describe the same frozen boundary as the normative control docs.
+5. Confirm the surface map does not imply a new route family, public endpoint, runtime DB write surface, or downstream APS handoff surface is now live.
+6. Confirm no operational companion doc implies that route-family work, UI widening, APS handoff, or consumer widening is now live.
 
 ## 3. Commit-state checklist
 
@@ -74,7 +76,9 @@ These items should remain true for lane-local closure to stay coherent:
    - `0b0ecf7e` `feat(layer3): add Phase 1A feeder-ledger entry slice`
 3. Confirm the postcode acceptance audit commit remains in history:
    - `d67bc0e8` `docs(layer3): add Phase 1A postcode acceptance audit`
-4. If a later follow-up adds docs or review material, confirm it does not rewrite or blur the meaning of those three commits by implication.
+4. Confirm the front-door / roadmap closeout commit remains in history:
+   - `f252d820` `docs(layer3): add phase1a pack front door and roadmap`
+5. If a later follow-up adds docs or review material, confirm it does not rewrite or blur the meaning of those four commits by implication.
 
 ## 4. Proof-state checklist
 
@@ -93,7 +97,8 @@ These items keep navigation docs from drifting into fake authority:
 2. `12_PHASE1A_ROADMAP_AND_DECISION_NOTES.md` must continue to declare that stronger control docs govern if there is a conflict.
 3. `layer3_phase1a_roadmap.png` must remain a derived artifact from the roadmap notes rather than a separate planning truth source.
 4. If roadmap notes change materially, the PNG must be updated in the same pass.
-5. If a new lane-local control doc is added, the README should be updated so the front door stays accurate.
+5. `13-phase1a-surface-map.md` must remain an operational companion and must not silently become a stronger authority than the control spine.
+6. If a new lane-local control doc is added, the README should be updated so the front door stays accurate.
 
 ## 6. Reopen triggers
 

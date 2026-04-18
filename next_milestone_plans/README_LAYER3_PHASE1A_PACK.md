@@ -20,12 +20,13 @@ The lane now contains:
 - the implementation-local freeze docs
 - the committed bounded Phase 1A code slice
 - the committed postcode acceptance audit
-- the pack-local roadmap, reconciliation, and navigation surfaces needed for lane-local closure
+- the pack-local roadmap, reconciliation, navigation, and concrete surface-map surfaces needed for lane-local closure
 
-Committed branch-local closure sequence:
+Current lane history already includes:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
 - `0b0ecf7e` `feat(layer3): add Phase 1A feeder-ledger entry slice`
 - `d67bc0e8` `docs(layer3): add Phase 1A postcode acceptance audit`
+- `f252d820` `docs(layer3): add phase1a pack front door and roadmap`
 
 Current bounded posture:
 - Phase 1A remains Gate-B-only feeder / ledger entry
@@ -66,6 +67,7 @@ Read these when you need the implementation-local defaults, acceptance criteria,
 - `Layer3_execution_freeze/10_PHASE1A_POSTCODE_ACCEPTANCE_AUDIT.md`
 - `Layer3_execution_freeze/11_PHASE1A_RECONCILIATION_CHECKLIST.md`
 - `Layer3_execution_freeze/12_PHASE1A_ROADMAP_AND_DECISION_NOTES.md`
+- `Layer3_execution_freeze/13-phase1a-surface-map.md`
 - `Layer3_execution_freeze/layer3_phase1a_roadmap.png`
 - `Layer3_execution_freeze/FREEZE_PACK_REV1_TO_REV2_SOURCE_HYGIENE_MEMO.md`
 
@@ -91,6 +93,7 @@ These help navigation, reconciliation, and visual orientation, but do not overri
 - `README_LAYER3_PHASE1A_PACK.md`
 - `11_PHASE1A_RECONCILIATION_CHECKLIST.md`
 - `12_PHASE1A_ROADMAP_AND_DECISION_NOTES.md`
+- `13-phase1a-surface-map.md`
 - `layer3_phase1a_roadmap.png`
 
 Rule:
@@ -111,6 +114,13 @@ Start with:
 - `10_PHASE1A_POSTCODE_ACCEPTANCE_AUDIT.md`
 - `11_PHASE1A_RECONCILIATION_CHECKLIST.md`
 - `12_PHASE1A_ROADMAP_AND_DECISION_NOTES.md`
+
+### If you need the concrete implementation surface map
+
+Start with:
+- `Layer3_execution_freeze/13-phase1a-surface-map.md`
+- `Layer3_execution_handoff/06_PHASE1A_CODEWRITING_HANDOFF.md`
+- the four code files from commit `0b0ecf7e`
 
 ### If you are deciding whether more Phase 1A code work is justified
 
