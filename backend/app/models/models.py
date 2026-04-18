@@ -891,3 +891,38 @@ class L3AnalysisSet(Base, TimestampMixin):
     formation_basis_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
 
     session: Mapped[L3Session] = relationship()
+
+
+class L3AnalysisPlan(Base, TimestampMixin):
+    __tablename__ = "l3_analysis_plan"
+
+    analysis_plan_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    analysis_set_ids_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    status: Mapped[str] = mapped_column(String(64), nullable=False, default="formed")
+    approved_by_operator: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    plan_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
+    session: Mapped[L3Session] = relationship()
+
+
+class L3PassRun(Base, TimestampMixin):
+    __tablename__ = "l3_pass_run"
+
+    pass_run_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    analysis_plan_id: Mapped[str] = mapped_column(ForeignKey("l3_analysis_plan.analysis_plan_id"), nullable=False)
+    analysis_set_id: Mapped[str] = mapped_column(ForeignKey("l3_analysis_set.analysis_set_id"), nullable=False)
+    pass_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    engine_family: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(64), nullable=False)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    input_payload_ref: Mapped[str] = mapped_column(String(1024), nullable=False)
+    output_payload_ref: Mapped[str | None] = mapped_column(String(1024))
+    summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
+    session: Mapped[L3Session] = relationship()
+    analysis_plan: Mapped[L3AnalysisPlan] = relationship()
+    analysis_set: Mapped[L3AnalysisSet] = relationship()
