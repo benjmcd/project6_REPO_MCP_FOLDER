@@ -72,16 +72,29 @@ function Get-EnvValueFromFile {
         return $null
     }
 
-    return $line.Substring($Key.Length + 1)
+    $value = $line.Substring($Key.Length + 1).Trim()
+    if (
+        ($value.StartsWith('"') -and $value.EndsWith('"')) -or
+        ($value.StartsWith("'") -and $value.EndsWith("'"))
+    ) {
+        $value = $value.Substring(1, $value.Length - 2)
+    }
+
+    return $value
 }
 
 function Get-CsbApiKeyState {
     param([string]$RepoRoot)
 
-    if ($env:CSB_API_KEY) {
-        return @{
-            source = 'process env'
-            status = if ($env:CSB_API_KEY -match 'placeholder|your|replace|demo|example') { 'placeholder' } else { 'present' }
+    $processValue = [Environment]::GetEnvironmentVariable('CSB_API_KEY', 'Process')
+    $processStatus = 'missing'
+    if (-not [string]::IsNullOrWhiteSpace($processValue)) {
+        $processStatus = if ($processValue -match 'placeholder|your|replace|demo|example') { 'placeholder' } else { 'present' }
+        if ($processStatus -eq 'present') {
+            return @{
+                source = 'process env'
+                status = 'present'
+            }
         }
     }
 
@@ -100,15 +113,23 @@ function Get-CsbApiKeyState {
             }
         }
 
+        $valueStatus = if ($value -match 'placeholder|your|replace|demo|example') { 'placeholder' } else { 'present' }
+        if ($valueStatus -eq 'present') {
+            return @{
+                source = $path
+                status = 'present'
+            }
+        }
+
         return @{
             source = $path
-            status = if ($value -match 'placeholder|your|replace|demo|example') { 'placeholder' } else { 'present' }
+            status = $valueStatus
         }
     }
 
     return @{
-        source = 'no configured source'
-        status = 'missing'
+        source = if ($processStatus -eq 'missing') { 'no configured source' } else { 'process env' }
+        status = $processStatus
     }
 }
 

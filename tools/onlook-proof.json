@@ -9,9 +9,9 @@
   "scope": {
     "lane": {
       "worktreePath": "worktrees/onlook-main-settle",
-      "head": "44634d12236648e86b9a76f4285cb36711aab0ea",
+      "head": "b9b0a51be78058a76614096f507d990d5baa37ba",
       "helperFiles": {
-        "tools/run-onlook-normalized-smoke.ps1": "277e74d3d51a8c76ba55d3e616baf0300f98eb091f61d36355470940a2a9aa83",
+        "tools/run-onlook-normalized-smoke.ps1": "1adc0324416582e78a85f8195994fa63afd889ba45f3e4a2eeb69ffd04a346ce",
         "tools/onlook-normalized-smoke.mjs": "6289ae3dbf084cac59fcc95886f968aae2ebde8e72aa015cb048e4d8faea2d84",
         "tools/start-onlook-web.ps1": "594c6e8e546352706dc9d9df254d4b3b68dec053eefded89ddf169233e9381a7"
       }
@@ -295,9 +295,9 @@
   "failureStage": null,
   "failureReason": null,
   "artifacts": {
-    "observability": "C:\\Users\\benny\\OneDrive\\Desktop\\project6_REPO_MCP_FOLDER\\worktrees\\onlook-main-settle\\archive\\onlook-normalized-smoke\\20260418-105447-04cf009c\\observability.json"
+    "observability": "archive/onlook-normalized-smoke/20260418-110829-b944e1ba/observability.json"
   },
   "artifactType": "durable-tracked-proof",
-  "verifiedAt": "2026-04-18T10:55:42-07:00",
-  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-105447-04cf009c/ledger.json"
+  "verifiedAt": "2026-04-18T11:10:26-07:00",
+  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-110829-b944e1ba/ledger.json"
 }

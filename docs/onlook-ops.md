@@ -104,6 +104,7 @@ This gate also requires a real `CSB_API_KEY` to reach the local Onlook web runti
 Preferred local setup:
 - store the real key in `ext-onlook-fix/apps/web/client/.env.local`
 - let the startup wrapper import `.env` plus `.env.local` into the process before it launches the local Onlook web host
+- a placeholder parent-shell `CSB_API_KEY` no longer blocks this path when `.env.local` has the real key
 
 Read the gate semantics in:
 - [docs/onlook-normalized-smoke.md](./onlook-normalized-smoke.md)
