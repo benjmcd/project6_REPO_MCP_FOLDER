@@ -112,20 +112,24 @@ Typing remains a two-axis decision:
 - `source_shape`
 - `analysis_modality`
 
-Frozen first-v1 default posture:
-- `tabular_numeric` -> chosen modality `quantitative`
-- `time_series` -> chosen modality `quantitative`
-- `document_chunks` -> chosen modality `qualitative`
-- `mixed_source_payload` -> chosen modality `hybrid`
+Frozen repo-confirmed current-shape admission:
+- current landed Phase 1A proof only directly confirms `l3_material_snapshot.source_shape` values:
+  - `dataset_version`
+  - `aps_content_document`
+- the first Gate C write lane may automatically type only those repo-confirmed current shapes
+
+Frozen first-v1 mapping from repo-confirmed current shapes to planning intent:
+- `dataset_version` is treated as the current repo-backed entry into the planning-level `tabular_numeric` family and defaults to chosen modality `quantitative`
+- `aps_content_document` is treated as the current repo-backed entry into the planning-level `document_chunks` family and defaults to chosen modality `qualitative`
 
 Frozen candidate-modality posture:
-- `tabular_numeric` and `time_series` may record `["quantitative"]`
-- `document_chunks` may record `["qualitative", "hybrid"]`, but default to `qualitative`
-- `mixed_source_payload` may record `["hybrid", "qualitative", "quantitative"]`, but default to `hybrid`
+- `dataset_version` may record `["quantitative"]`
+- `aps_content_document` may record `["qualitative"]`
 
 Frozen first-v1 limits:
-- no automatic hybrid promotion from plain `document_chunks` alone
-- no automatic typing for source shapes outside the four shapes above
+- no automatic hybrid promotion from `aps_content_document`
+- no automatic typing for source shapes beyond the two repo-confirmed current shapes above
+- future shapes such as planning-level `time_series`, `mixed_source_payload`, or `bundle_artifact` require a separate explicit freeze before automatic typing lands for them
 - unsupported or ambiguous source shapes must fail closed instead of guessing
 
 Frozen typing-record minimum:
@@ -152,19 +156,17 @@ Frozen unit rule:
 - automatic first-v1 unit formation is one unit per admitted snapshot
 
 Frozen first-v1 `unit_kind` posture:
-- `tabular_numeric` and `time_series` snapshots form one atomic quantitative unit
-- `document_chunks` snapshots form one atomic qualitative unit
-- `mixed_source_payload` snapshots form one must-remain-intact hybrid unit
+- `dataset_version` snapshots form one atomic quantitative unit
+- `aps_content_document` snapshots form one atomic qualitative unit
 
 Frozen split-vs-keep-intact rule for the first slice:
-- `mixed_source_payload` must set `must_remain_intact = true`
-- all other admitted first-v1 unit kinds default to `must_remain_intact = false`
+- all admitted first-v1 unit kinds default to `must_remain_intact = false`
 - no cross-snapshot composition lands in the first Gate C slice
 - no auto-splitting of one snapshot into multiple units lands in the first Gate C slice
 
 Frozen first-v1 implication:
-- hybrid is first-class because `mixed_source_payload` remains admitted
-- richer composite and split heuristics remain deferred until a later explicitly frozen lane
+- hybrid remains a first-class architectural modality in the planning corpus, but it is not automatically admitted in this first Gate C write lane because no repo-confirmed current Phase 1A source shape proves that path yet
+- richer composite, hybrid, and split heuristics remain deferred until a later explicitly frozen lane
 
 ### 4. First-v1 analysis-group boundary
 
@@ -238,7 +240,6 @@ Frozen proof posture:
 - proof must show at minimum:
   - one quantitative single-item path
   - one document-backed associated-cohort or singleton qualitative path
-  - one hybrid must-remain-intact path
   - one fail-closed unsupported-shape or unsupported-formation path
   - no `AnalysisRun` reuse as Layer 3 persistence
   - no route/UI/runtime DB widening
@@ -257,6 +258,7 @@ Current analyst-insight interpretation remains:
 - a reusable later pass-kernel family
 - not the Gate C owner surface
 - not permission to widen the public analyst-insight route family during this slice
+- not evidence that hybrid typing/unit formation is already repo-confirmed in the current Phase 1A ledger
 
 ## Explicit non-goals
 
@@ -270,6 +272,7 @@ Do not include in the first Gate C implementation lane:
 - runtime DB writes, runtime DB migrations, or runtime-helper reuse as execution state
 - packaging, APS handoff, or consumer admission work
 - broader qualitative-engine or comparative-engine work
+- automatic hybrid unit formation from a new unproven source shape
 - generalized split/composition heuristics beyond the frozen first-v1 defaults above
 
 ## Stop conditions
