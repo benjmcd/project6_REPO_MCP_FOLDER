@@ -16,6 +16,8 @@ This packet is now merged repo-local planning and operating material on `main`.
 The original implementation lane lived on branch `codex/onlook-next` in worktree `worktrees/onlook-next`.
 Those names now matter as provenance only.
 Use the merged copy on `main` as the current tracked authority for this lane.
+For day-to-day testing, troubleshooting, audit, and operator command selection, start with [docs/onlook-ops.md](../../docs/onlook-ops.md).
+Use this packet for boundary, provenance, implementation, and non-claim context.
 
 Current lane state:
 
@@ -57,6 +59,8 @@ Current lane state:
 - the clean upstream packaging surface is `ext-onlook-pr/` on local branch `codex/upstream-clean` at commit `6d4c463a`
 - the repo-local Onlook web startup helper is `tools/start-onlook-web.ps1`; it now defaults to `ext-onlook-fix/` on port `3000`, pins known-good commits by default, refuses dirty clones by default, fails closed if the fixed preload helper port `8083` is already occupied, can be pointed at a different local clone with `-OnlookDir`, and now normalizes line-ending-only drift in the known runtime-generated files before enforcing the dirty-clone guard, but only when both the worktree delta and the staged/index delta are line-ending-only
 - the repo-local integrity helper is `tools/check-onlook.ps1`; it verifies the preserved clones or tree-equivalent restored clones, required env files, preserved patch archives, can optionally rerun the bounded repo validations with `-RunValidation`, and treats line-ending-only drift in the known runtime-generated files as non-blocking rather than misclassifying it as a semantic source edit, but only when both the worktree delta and the staged/index delta are line-ending-only
+- the current-project first gate is documented in `docs/onlook-normalized-smoke.md`; it is narrower than this packet and narrower than the broader duplicate-target operator proof
+- the canonical operator front door is now `docs/onlook-ops.md`; it links this packet, the current-project first-gate doc, and the executable tools into one day-to-day authority path
 - the repo-local duplication helper is `tools/copy-onlook-ui.ps1`; it creates a clean source duplicate of `onlook-ui/` without carrying `.next/` or `node_modules/`, and can copy the local frontend env when the duplicate should point at the same backend
 - that duplication helper now refuses a dirty canonical `onlook-ui/` source tree by default, so scratch copies do not silently fork from an in-progress or partially validated state unless explicitly overridden
 - the repo-local duplicate-prep helper is `tools/prep-onlook-copy.ps1`; it wraps duplicate creation, local `npm install`, `npm run lint`, and `npm run build`, and can optionally run the tracked sandbox smoke before any Onlook import step

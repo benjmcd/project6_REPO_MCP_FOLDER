@@ -5,6 +5,7 @@
 > - [nrc_aps_authority_matrix.md](docs/nrc_adams/nrc_aps_authority_matrix.md) (Repo-wide Authority Map)
 > - [nrc_aps_reader_path.md](docs/nrc_adams/nrc_aps_reader_path.md) (Navigational Guide)
 > - [frontend_UI_plans/README.md](frontend_UI_plans/README.md) (Review UI / Document Trace / Workbench Compare / Candidate B Trace operator front door)
+> - [docs/onlook-ops.md](docs/onlook-ops.md) (Onlook testing / troubleshooting / audit / operator front door)
 > - [postgres_status_handoff.md](docs/postgres/postgres_status_handoff.md) (PostgreSQL Tier1 Status)
 >
 > **CRITICAL WARNING**: Unverified `tests/...` and `tools/...` paths referenced below may not exist in this specific export workspace and should not be trusted as safe authority paths unless their on-disk presence is directly confirmed.
