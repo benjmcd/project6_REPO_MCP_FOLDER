@@ -8,17 +8,18 @@
   "previewOrigin": "https://72nw5n-3000.csb.app/",
   "scope": {
     "lane": {
-      "worktreePath": "worktrees/onlook-proof",
-      "head": "4a069af3800d15ba3923b21e1e13b8ffddd2287e",
+      "worktreePath": "worktrees/onlook-main-settle",
+      "head": "b9b0a51be78058a76614096f507d990d5baa37ba",
       "helperFiles": {
-        "tools/run-onlook-normalized-smoke.ps1": "84be330c76625dc1c14e202899bf246abd57552b5a19930cdb580dceef66ee90",
-        "tools/onlook-normalized-smoke.mjs": "4c84f0e038ffc76c14e02f8663f9b314dfa3acc9a00881d3dcabdfd69dc6b213",
-        "tools/start-onlook-web.ps1": "b4d1a1a36c0e722a6b9d23ae975173440b1317f86861074ca9a03f7f93253b28"
+        "tools/run-onlook-normalized-smoke.ps1": "1adc0324416582e78a85f8195994fa63afd889ba45f3e4a2eeb69ffd04a346ce",
+        "tools/onlook-normalized-smoke.mjs": "6289ae3dbf084cac59fcc95886f968aae2ebde8e72aa015cb048e4d8faea2d84",
+        "tools/start-onlook-web.ps1": "594c6e8e546352706dc9d9df254d4b3b68dec053eefded89ddf169233e9381a7"
       }
     },
     "runtimeClone": {
       "dir": "ext-onlook-fix",
-      "head": "8e70e9afc606576630f20e64957448fbf511ef00",
+      "head": "76c9155aeb3ad644b469fbd715c19161ecdbd4bd",
+      "tree": "a2a7672c9241802cd741d6d8fce9b847651c003c",
       "hasLocalDiffPaths": false,
       "localDiffPaths": [],
       "localDiffSummary": "clean"
@@ -34,7 +35,7 @@
       "headed": true,
       "freshContext": true
     },
-    "hostStartMode": "host-already-up",
+    "hostStartMode": "host-started-by-wrapper",
     "routesCovered": [
       {
         "route": "Workbench Compare",
@@ -160,7 +161,7 @@
           "x": 0,
           "y": 238,
           "width": 1521,
-          "height": 1372
+          "height": 8828
         },
         {
           "tag": "MAIN",
@@ -169,7 +170,7 @@
           "x": 0,
           "y": 0,
           "width": 1521,
-          "height": 1610
+          "height": 9066
         }
       ]
     },
@@ -184,11 +185,11 @@
       "locatorVisible": true,
       "before": {
         "pathname": "/",
-        "historyLength": 6
+        "historyLength": 7
       },
       "after": {
         "pathname": "/document-trace",
-        "historyLength": 7
+        "historyLength": 8
       },
       "pass": true,
       "failureReason": null,
@@ -274,7 +275,7 @@
           "x": 0,
           "y": 238,
           "width": 1521,
-          "height": 1443
+          "height": 8828
         },
         {
           "tag": "MAIN",
@@ -283,7 +284,7 @@
           "x": 0,
           "y": 0,
           "width": 1521,
-          "height": 1681
+          "height": 9066
         }
       ]
     }
@@ -293,8 +294,10 @@
   "failureRoute": null,
   "failureStage": null,
   "failureReason": null,
-  "artifacts": null,
+  "artifacts": {
+    "observability": "archive/onlook-normalized-smoke/20260418-110829-b944e1ba/observability.json"
+  },
   "artifactType": "durable-tracked-proof",
-  "verifiedAt": "2026-04-18T07:43:54-07:00",
-  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-074335-e7b15b40/ledger.json"
+  "verifiedAt": "2026-04-18T11:10:26-07:00",
+  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-110829-b944e1ba/ledger.json"
 }

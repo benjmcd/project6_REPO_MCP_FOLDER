@@ -26,6 +26,125 @@ $runtimeGeneratedPaths = @(
     'apps/web/client/public/onlook-preload-script.js'
 )
 
+function Get-EnvValueFromFile {
+    param(
+        [string]$Path,
+        [string]$Key
+    )
+
+    if (-not (Test-Path $Path)) {
+        return $null
+    }
+
+    $line = Get-Content $Path | Where-Object { $_ -match "^{0}=" -f [regex]::Escape($Key) } | Select-Object -First 1
+    if (-not $line) {
+        return $null
+    }
+
+    $value = $line.Substring($Key.Length + 1).Trim()
+    if (
+        ($value.StartsWith('"') -and $value.EndsWith('"')) -or
+        ($value.StartsWith("'") -and $value.EndsWith("'"))
+    ) {
+        $value = $value.Substring(1, $value.Length - 2)
+    }
+
+    return $value
+}
+
+function Test-PlaceholderValue {
+    param([string]$Value)
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return $false
+    }
+
+    return $Value -match 'placeholder|your|replace|demo|example'
+}
+
+function Import-ClientEnvToProcess {
+    param([string]$ClientRoot)
+
+    foreach ($candidate in @('.env', '.env.local')) {
+        $path = Join-Path $ClientRoot $candidate
+        if (-not (Test-Path $path)) {
+            continue
+        }
+
+        foreach ($line in Get-Content $path) {
+            if ([string]::IsNullOrWhiteSpace($line)) {
+                continue
+            }
+
+            $trimmed = $line.Trim()
+            if ($trimmed.StartsWith('#')) {
+                continue
+            }
+
+            $separatorIndex = $trimmed.IndexOf('=')
+            if ($separatorIndex -lt 1) {
+                continue
+            }
+
+            $key = $trimmed.Substring(0, $separatorIndex).Trim()
+            $value = Get-EnvValueFromFile -Path $path -Key $key
+            if ($null -eq $value) {
+                continue
+            }
+
+            $currentValue = [Environment]::GetEnvironmentVariable($key, 'Process')
+            $shouldOverride = [string]::IsNullOrWhiteSpace($currentValue)
+            if (-not $shouldOverride -and (Test-PlaceholderValue -Value $currentValue) -and -not (Test-PlaceholderValue -Value $value)) {
+                $shouldOverride = $true
+            }
+
+            if ($shouldOverride) {
+                [Environment]::SetEnvironmentVariable($key, $value, 'Process')
+            }
+        }
+    }
+}
+
+function Get-EnvKeyState {
+    param(
+        [string]$ClientRoot,
+        [string]$Key
+    )
+
+    $processValue = [Environment]::GetEnvironmentVariable($Key, 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($processValue)) {
+        return @{
+            source = 'process env'
+            status = if (Test-PlaceholderValue -Value $processValue) { 'placeholder' } else { 'present' }
+        }
+    }
+
+    foreach ($candidate in @('.env.local', '.env')) {
+        $path = Join-Path $ClientRoot $candidate
+        $value = Get-EnvValueFromFile -Path $path -Key $Key
+        if ($null -eq $value) {
+            continue
+        }
+
+        if ([string]::IsNullOrWhiteSpace($value)) {
+            return @{
+                source = $path
+                status = 'empty'
+            }
+        }
+
+        return @{
+            source = $path
+            status = if (Test-PlaceholderValue -Value $value) { 'placeholder' } else { 'present' }
+        }
+    }
+
+    return @{
+        source = 'no configured source'
+        status = 'missing'
+    }
+}
+
 function Test-LineEndingOnlyDrift {
     param(
         [string]$RepoRoot,
@@ -77,6 +196,8 @@ if (-not (Test-Path $dbEnv)) {
     throw "Missing Onlook db env file: $dbEnv"
 }
 
+Import-ClientEnvToProcess -ClientRoot (Join-Path $onlookRoot 'apps\web\client')
+
 if ($gitExe) {
     $headCommit = (& git -C $onlookRoot rev-parse HEAD).Trim()
     $treeHash = (& git -C $onlookRoot rev-parse "HEAD^{tree}").Trim()
@@ -125,9 +246,15 @@ if ($preloadPort -in $listeningPorts) {
     throw "Onlook preload helper port $preloadPort is already in use. Stop the other Onlook web runtime before starting another clone."
 }
 
-$clientEnvText = Get-Content $clientEnv -Raw
-if ($clientEnvText -match 'OPENROUTER_API_KEY=local-dev-placeholder' -or $clientEnvText -match 'CSB_API_KEY=local-dev-placeholder') {
-    Write-Warning 'Placeholder OpenRouter or Codesandbox keys allow local boot and dev login only. AI and hosted-app features remain unvalidated until real keys are supplied.'
+$csbApiKeyState = Get-EnvKeyState -ClientRoot (Join-Path $onlookRoot 'apps\web\client') -Key 'CSB_API_KEY'
+if ($csbApiKeyState.status -ne 'present') {
+    Write-Warning "Current-project first gate requires a real CSB_API_KEY. Found $($csbApiKeyState.status) CSB_API_KEY from $($csbApiKeyState.source)."
+} else {
+    Write-Host "Using CSB_API_KEY from $($csbApiKeyState.source)"
+}
+$openRouterState = Get-EnvKeyState -ClientRoot (Join-Path $onlookRoot 'apps\web\client') -Key 'OPENROUTER_API_KEY'
+if ($openRouterState.status -ne 'present') {
+    Write-Warning "OpenRouter is not fully configured. Found $($openRouterState.status) OPENROUTER_API_KEY from $($openRouterState.source). AI features remain unvalidated until a real key is supplied."
 }
 
 $bunBin = Split-Path -Parent $bunExe
