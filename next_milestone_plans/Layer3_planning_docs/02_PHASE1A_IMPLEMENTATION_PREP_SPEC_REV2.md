@@ -39,7 +39,7 @@ Primary-planning citation note:
 - Those files are not tracked in this repo/worktree and must not be misread as repo-local implementation truth.
 
 Overall confidence for this spec remains `Medium`.
-Reason: the Phase 1A object boundary is stable, but later-gate freezes for the workbench route family, first-v1 typing heuristics, and qualitative-engine ambition remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
+Reason: the Phase 1A object boundary is stable, and the former Gate C typing/unit blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`, but later-gate freezes for the workbench route family and qualitative-engine ambition remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
 
 ## 2. Exact Phase 1A scope
 
