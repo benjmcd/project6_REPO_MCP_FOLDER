@@ -979,7 +979,10 @@ async function waitForRootReview(page, observability, previewOrigin, timeoutMs) 
       frame = await waitForPreviewQuiet(page, observability, previewOrigin, Math.min(remainingMs, timeoutMs));
       lastFrame = frame;
 
-      const currentPath = await frame.evaluate(() => window.location.pathname).catch(() => null);
+      const currentPath = await frame.evaluate(() => window.location.pathname).catch(() => (
+        getPathnameFromUrl(safeFrameUrl(frame))
+        ?? getPathnameFromUrl(observability.lastKnownTargetFrameUrl)
+      ));
       if (currentPath && currentPath !== '/') {
         await frame.goto(previewOrigin, { waitUntil: 'domcontentloaded', timeout: Math.max(1000, remainingMs) });
         frame = await waitForPreviewFrame(page, previewOrigin, Math.max(1000, deadline - Date.now()));
@@ -1134,6 +1137,69 @@ async function getPathState(frame) {
   }));
 }
 
+async function waitForRouteNavigation(page, observability, previewOrigin, beforePathname, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  let lastFrame = null;
+  let lastState = null;
+
+  while (Date.now() < deadline) {
+    try {
+      const frame = await waitForPreviewQuiet(
+        page,
+        observability,
+        previewOrigin,
+        Math.max(1000, deadline - Date.now()),
+      );
+      rememberPreviewFrame(observability, frame);
+      lastFrame = frame;
+      lastState = await getPathState(frame);
+      if (lastState.pathname !== beforePathname) {
+        return {
+          frame,
+          after: lastState,
+        };
+      }
+    } catch (error) {
+      if (!isRecoverablePreviewError(error)) {
+        throw error;
+      }
+    }
+
+    await page.waitForTimeout(250);
+  }
+
+  if (!lastFrame) {
+    try {
+      lastFrame = await waitForPreviewFrame(page, previewOrigin, 1000);
+      rememberPreviewFrame(observability, lastFrame);
+    } catch {
+      lastFrame = null;
+    }
+  }
+
+  if (lastFrame) {
+    try {
+      lastState = await getPathState(lastFrame);
+    } catch (error) {
+      if (!isRecoverablePreviewError(error)) {
+        throw error;
+      }
+    }
+  }
+
+  if (!lastFrame) {
+    throw new Error(`Preview frame vanished after route click and did not recover within ${timeoutMs}ms`);
+  }
+
+  return {
+    frame: lastFrame,
+    after: lastState ?? {
+      pathname: beforePathname,
+      historyLength: 0,
+    },
+  };
+}
+
 async function collectStacks(page, frame, chip) {
   const box = await chip.boundingBox();
   if (!box) {
@@ -1205,6 +1271,18 @@ function describeElement(element) {
     parts.push(`"${element.text}"`);
   }
   return parts.join(' ');
+}
+
+function getPathnameFromUrl(urlValue) {
+  if (!urlValue) {
+    return null;
+  }
+
+  try {
+    return new URL(urlValue).pathname;
+  } catch {
+    return null;
+  }
 }
 
 function routeFailureReason(routeName, before, after, overlay, hostStack, previewStack) {
@@ -1363,15 +1441,15 @@ async function smokeRoute(page, args, observability, routeName, expectedPath, pr
       route: routeName,
     });
 
-    try {
-      await frame.waitForFunction((pathname) => window.location.pathname !== pathname, before.pathname, {
-        timeout: 5000,
-      });
-    } catch {
-      // Fail closed below using the final pathname/history snapshot.
-    }
-
-    const after = await getPathState(frame);
+    const routeOutcome = await waitForRouteNavigation(
+      page,
+      observability,
+      args.previewOrigin,
+      before.pathname,
+      5000,
+    );
+    frame = routeOutcome.frame ?? frame;
+    const after = routeOutcome.after ?? before;
     const pass = after.pathname === expectedPath && after.historyLength > before.historyLength;
 
     return {
