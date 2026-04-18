@@ -185,6 +185,7 @@ Do not describe the default pair as globally portable without checking the curre
   - This is the headless comparison surface.
 - `./tools/run-onlook-operator-proof.ps1`
   - Can Onlook import and operate on the duplicate sandbox target with trusted preview navigation and duplicate-only write-back?
+  - This is still an automation proof surface. Do not flatten a passing operator-proof run into a blanket claim that ordinary future manual Chrome/editor behavior can never diverge.
 - `./tools/run-onlook-normalized-smoke.ps1`
   - Does the current active verified pair still pass the current-project first gate under the saved proof/runtime/helper contract?
   - This is the headed Chrome gate for the active verified pair.
@@ -193,4 +194,5 @@ Do not describe the default pair as globally portable without checking the curre
 - This file does not claim that live static UI promotion is approved.
 - This file does not claim that AI/chat features are proven ready.
 - This file does not claim portability unless the current active proof contract is backed by tracked repo surfaces and matching local runtime/helper provenance.
+- This file does not claim that a passing automation proof permanently guarantees later manual Chrome/operator reliability.
 - This file does not replace the Onlook plan packet for design intent or non-claims.
