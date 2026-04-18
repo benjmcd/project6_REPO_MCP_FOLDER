@@ -737,3 +737,94 @@ class DatasetRow(Base):
     values_json: Mapped[dict] = mapped_column(JSON, default=dict)
 
     dataset_version: Mapped[DatasetVersion] = relationship(back_populates="rows")
+
+
+class L3Session(Base):
+    __tablename__ = "l3_session"
+
+    session_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(64), nullable=False, default="draft_created")
+    selection_manifest_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    entry_route_context_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    operator_context_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
+    manifests: Mapped[list["L3SelectionManifest"]] = relationship(back_populates="session", cascade="all, delete-orphan")
+    descriptors: Mapped[list["L3Descriptor"]] = relationship(back_populates="session", cascade="all, delete-orphan")
+    retrieval_events: Mapped[list["L3RetrievalEvent"]] = relationship(back_populates="session", cascade="all, delete-orphan")
+    material_snapshots: Mapped[list["L3MaterialSnapshot"]] = relationship(back_populates="session", cascade="all, delete-orphan")
+
+
+class L3SelectionManifest(Base):
+    __tablename__ = "l3_selection_manifest"
+    __table_args__ = (UniqueConstraint("session_id", name="uq_l3_selection_manifest_session"),)
+
+    selection_manifest_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    manifest_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    source_plane_hints_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    selection_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    committed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    commit_reason: Mapped[str] = mapped_column(Text, nullable=False)
+
+    session: Mapped[L3Session] = relationship(back_populates="manifests")
+    descriptors: Mapped[list["L3Descriptor"]] = relationship(back_populates="selection_manifest", cascade="all, delete-orphan")
+
+
+class L3Descriptor(Base):
+    __tablename__ = "l3_descriptor"
+    __table_args__ = (UniqueConstraint("session_id", "descriptor_hash", name="uq_l3_descriptor_session_hash"),)
+
+    descriptor_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    selection_manifest_id: Mapped[str] = mapped_column(ForeignKey("l3_selection_manifest.selection_manifest_id"), nullable=False)
+    source_plane: Mapped[str] = mapped_column(String(64), nullable=False)
+    descriptor_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    selector_payload_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    selection_basis_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    expansion_reason: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(64), nullable=False, default="expanded")
+    descriptor_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+
+    session: Mapped[L3Session] = relationship(back_populates="descriptors")
+    selection_manifest: Mapped[L3SelectionManifest] = relationship(back_populates="descriptors")
+    retrieval_events: Mapped[list["L3RetrievalEvent"]] = relationship(back_populates="descriptor", cascade="all, delete-orphan")
+    material_snapshots: Mapped[list["L3MaterialSnapshot"]] = relationship(back_populates="descriptor", cascade="all, delete-orphan")
+
+
+class L3RetrievalEvent(Base):
+    __tablename__ = "l3_retrieval_event"
+
+    retrieval_event_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    descriptor_id: Mapped[str] = mapped_column(ForeignKey("l3_descriptor.descriptor_id"), nullable=False)
+    outcome: Mapped[str] = mapped_column(String(64), nullable=False)
+    reason_code: Mapped[str] = mapped_column(String(128), nullable=False)
+    material_snapshot_ids_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    event_payload_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    session: Mapped[L3Session] = relationship(back_populates="retrieval_events")
+    descriptor: Mapped[L3Descriptor] = relationship(back_populates="retrieval_events")
+
+
+class L3MaterialSnapshot(Base):
+    __tablename__ = "l3_material_snapshot"
+
+    material_snapshot_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    descriptor_id: Mapped[str] = mapped_column(ForeignKey("l3_descriptor.descriptor_id"), nullable=False)
+    source_plane: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_shape: Mapped[str] = mapped_column(String(64), nullable=False)
+    payload_ref: Mapped[str] = mapped_column(String(1024), nullable=False)
+    payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_identity_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    source_provenance_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    co_retrieval_group_id: Mapped[str | None] = mapped_column(String(64))
+    load_summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
+    session: Mapped[L3Session] = relationship(back_populates="material_snapshots")
+    descriptor: Mapped[L3Descriptor] = relationship(back_populates="material_snapshots")
