@@ -310,12 +310,12 @@ function Resolve-BrowserChannel {
     $edgePath = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
     $chromePath = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
 
-    if (Test-Path $edgePath) {
-        return 'msedge'
-    }
-
     if (Test-Path $chromePath) {
         return 'chrome'
+    }
+
+    if (Test-Path $edgePath) {
+        return 'msedge'
     }
 
     throw 'Missing supported system browser. Install Microsoft Edge or Google Chrome before running the Onlook operator proof.'

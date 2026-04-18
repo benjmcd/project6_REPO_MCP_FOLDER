@@ -388,6 +388,7 @@ async function waitForHydratedFrameMain(frame, timeoutMs) {
 
 async function waitForPreviewState(page, description, timeoutMs, predicate) {
   const deadline = Date.now() + timeoutMs;
+  let lastPreviewState = null;
 
   while (Date.now() < deadline) {
     const frame = findPreviewFrame(page);
@@ -396,6 +397,14 @@ async function waitForPreviewState(page, description, timeoutMs, predicate) {
       continue;
     }
 
+    lastPreviewState = await frame.evaluate(() => ({
+      url: window.location.href,
+      bodyText: (document.body?.innerText ?? '').slice(0, 1200),
+    })).catch(() => ({
+      url: frame.url(),
+      bodyText: '<preview body unavailable>',
+    }));
+
     if (await predicate(frame).catch(() => false)) {
       return frame;
     }
@@ -403,7 +412,11 @@ async function waitForPreviewState(page, description, timeoutMs, predicate) {
     await page.waitForTimeout(1000);
   }
 
-  throw new Error(`Timed out waiting for ${description}`);
+  if (!lastPreviewState) {
+    throw new Error(`Timed out waiting for ${description}; preview frame unavailable`);
+  }
+
+  throw new Error(`Timed out waiting for ${description}; preview url=${lastPreviewState.url}; preview body=${JSON.stringify(lastPreviewState.bodyText)}`);
 }
 
 async function navigateWithinPreview(page, path, description, isReady, timeoutMs) {
@@ -533,6 +546,21 @@ async function clickRoute(page, frame, label, description, isReady, timeoutMs) {
     await link.evaluate((node) => node.click());
     return waitForPreviewState(page, description, timeoutMs, isReady);
   }
+}
+
+async function openReviewRoute(page, frame, timeoutMs) {
+  return openRouteWithFallback(
+    page,
+    frame,
+    'Review',
+    'Review route',
+    async (currentFrame) => {
+      const bodyText = await currentFrame.locator('body').innerText().catch(() => '');
+      return /Runs loaded:\s*[1-9]/.test(bodyText);
+    },
+    '/',
+    timeoutMs,
+  );
 }
 
 async function assertDocumentTrace(page, frame, selection, timeoutMs) {
@@ -944,17 +972,7 @@ async function main() {
       documentTraceSelection,
       args.timeoutMs,
     );
-    previewFrame = await clickRoute(
-      page,
-      previewFrame,
-      'Review',
-      'Review route',
-      async (currentFrame) => {
-        const bodyText = await currentFrame.locator('body').innerText().catch(() => '');
-        return /Runs loaded:\s*[1-9]/.test(bodyText);
-      },
-      args.timeoutMs,
-    );
+    previewFrame = await openReviewRoute(page, previewFrame, args.timeoutMs);
     previewFrame = await assertRootPreview(page, args.timeoutMs);
 
     previewFrame = await assertWorkbenchCompare(
@@ -964,17 +982,7 @@ async function main() {
       workbenchDirectPath,
       args.timeoutMs,
     );
-    previewFrame = await clickRoute(
-      page,
-      previewFrame,
-      'Review',
-      'Review route',
-      async (currentFrame) => {
-        const bodyText = await currentFrame.locator('body').innerText().catch(() => '');
-        return /Runs loaded:\s*[1-9]/.test(bodyText);
-      },
-      args.timeoutMs,
-    );
+    previewFrame = await openReviewRoute(page, previewFrame, args.timeoutMs);
     previewFrame = await assertRootPreview(page, args.timeoutMs);
 
     previewFrame = await assertCandidateBTrace(
@@ -984,17 +992,7 @@ async function main() {
       candidateBDirectPath,
       args.timeoutMs,
     );
-    previewFrame = await clickRoute(
-      page,
-      previewFrame,
-      'Review',
-      'Review route',
-      async (currentFrame) => {
-        const bodyText = await currentFrame.locator('body').innerText().catch(() => '');
-        return /Runs loaded:\s*[1-9]/.test(bodyText);
-      },
-      args.timeoutMs,
-    );
+    previewFrame = await openReviewRoute(page, previewFrame, args.timeoutMs);
     previewFrame = await assertRootPreview(page, args.timeoutMs);
 
     previewFrame = await clickRoute(
