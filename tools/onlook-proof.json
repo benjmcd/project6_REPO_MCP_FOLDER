@@ -4,12 +4,12 @@
     "channel": "chrome",
     "headed": true
   },
-  "projectUrl": "http://127.0.0.1:3011/project/c7ae0439-cbdf-4ab1-bd7b-255b3e85c1ae",
-  "previewOrigin": "https://vn24pv-3000.csb.app/",
+  "projectUrl": "http://127.0.0.1:3011/project/afaa640a-256b-4d7a-8e9e-74c81a15e987",
+  "previewOrigin": "https://qfjvhq-3000.csb.app/",
   "scope": {
     "lane": {
-      "worktreePath": "worktrees/onlook-main-post",
-      "head": "ce9936da42f9a43499a4cd5a0c1533cde3bd8424",
+      "worktreePath": "worktrees/onlook-canonical-main",
+      "head": "f94ea3932c6e65d0b775253df1e54ce7088b82b4",
       "helperFiles": {
         "tools/run-onlook-normalized-smoke.ps1": "1adc0324416582e78a85f8195994fa63afd889ba45f3e4a2eeb69ffd04a346ce",
         "tools/onlook-normalized-smoke.mjs": "8ac8b963bdb8ae065a76803cb163b55f8e9f7c97cb114ca8c4b5d2c718cdf794",
@@ -18,15 +18,15 @@
     },
     "runtimeClone": {
       "dir": "ext-onlook-fix",
-      "head": "7d7f3b4be76916427f885efad8fd70ef6419cc38",
+      "head": "641c3a8509beaf88624d954a697ad8d81c5b3884",
       "tree": "a2a7672c9241802cd741d6d8fce9b847651c003c",
       "hasLocalDiffPaths": false,
       "localDiffPaths": [],
       "localDiffSummary": "clean"
     },
     "currentPair": {
-      "projectUrl": "http://127.0.0.1:3011/project/c7ae0439-cbdf-4ab1-bd7b-255b3e85c1ae",
-      "previewOrigin": "https://vn24pv-3000.csb.app/",
+      "projectUrl": "http://127.0.0.1:3011/project/afaa640a-256b-4d7a-8e9e-74c81a15e987",
+      "previewOrigin": "https://qfjvhq-3000.csb.app/",
       "projectUrlSource": "explicit",
       "previewOriginSource": "explicit"
     },
@@ -295,9 +295,9 @@
   "failureStage": null,
   "failureReason": null,
   "artifacts": {
-    "observability": "archive/onlook-normalized-smoke/20260418-120702-89922bfb/observability.json"
+    "observability": "archive/onlook-normalized-smoke/20260418-130801-d3a3fb72/observability.json"
   },
   "artifactType": "durable-tracked-proof",
-  "verifiedAt": "2026-04-18T12:07:52-07:00",
-  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-120702-89922bfb/ledger.json"
+  "verifiedAt": "2026-04-18T13:10:00-07:00",
+  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-130801-d3a3fb72/ledger.json"
 }

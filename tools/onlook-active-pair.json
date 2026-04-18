@@ -1,13 +1,13 @@
 {
-  "projectUrl": "http://127.0.0.1:3011/project/c7ae0439-cbdf-4ab1-bd7b-255b3e85c1ae",
-  "previewOrigin": "https://vn24pv-3000.csb.app/",
+  "projectUrl": "http://127.0.0.1:3011/project/afaa640a-256b-4d7a-8e9e-74c81a15e987",
+  "previewOrigin": "https://qfjvhq-3000.csb.app/",
   "sourceLedgerPath": "tools/onlook-proof.json",
-  "verifiedAt": "2026-04-18T12:07:52-07:00",
-  "laneHead": "ce9936da42f9a43499a4cd5a0c1533cde3bd8424",
-  "runtimeCloneHead": "7d7f3b4be76916427f885efad8fd70ef6419cc38",
+  "verifiedAt": "2026-04-18T13:10:00-07:00",
+  "laneHead": "f94ea3932c6e65d0b775253df1e54ce7088b82b4",
+  "runtimeCloneHead": "641c3a8509beaf88624d954a697ad8d81c5b3884",
   "runtimeCloneTree": "a2a7672c9241802cd741d6d8fce9b847651c003c",
   "runtimeCloneHasLocalDiffPaths": false,
   "runtimeCloneLocalDiffSummary": "clean",
   "status": "verified-live",
-  "statusReason": "Refreshed from the fresh duplicate-target imported pair proven on 2026-04-18 by operator proof and two consecutive explicit normalized-smoke passes on the current helper/runtime state. The older 34743ff9-9eb2-4172-a3e0-b4154853e608 / 72nw5n-3000.csb.app pair is historical and no longer the default."
+  "statusReason": "Refreshed from the fresh duplicate-target imported pair proven on 2026-04-18 by operator proof and two consecutive explicit normalized-smoke passes on the current helper/runtime state. The older c7ae0439-cbdf-4ab1-bd7b-255b3e85c1ae / vn24pv-3000.csb.app pair is historical and no longer the default."
 }

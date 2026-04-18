@@ -18,6 +18,9 @@ $onlookUiRoot = if ([System.IO.Path]::IsPathRooted($AppDir)) {
 }
 $smokeScript = Join-Path $laneRoot 'tools\onlook-sandbox-smoke.mjs'
 $fixturePath = Join-Path $onlookUiRoot 'data\fixture.json'
+$nextBinPath = Join-Path $onlookUiRoot 'node_modules\.bin\next.cmd'
+$packageJsonPath = Join-Path $onlookUiRoot 'package.json'
+$packageLockPath = Join-Path $onlookUiRoot 'package-lock.json'
 
 function Assert-Path {
     param(
@@ -27,6 +30,61 @@ function Assert-Path {
 
     if (-not (Test-Path $Path)) {
         throw "Missing ${Label}: $Path"
+    }
+}
+
+function Invoke-Checked {
+    param(
+        [string]$Label,
+        [scriptblock]$Command
+    )
+
+    & $Command
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Label failed with exit code $LASTEXITCODE"
+    }
+}
+
+function Get-StartupLogTail {
+    param([string[]]$Paths)
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    foreach ($path in $Paths) {
+        if (-not (Test-Path $path)) {
+            continue
+        }
+
+        foreach ($line in (Get-Content $path -Tail 40)) {
+            if ($line) {
+                $lines.Add($line)
+            }
+        }
+    }
+
+    return ($lines | Select-Object -Last 20) -join [Environment]::NewLine
+}
+
+function Ensure-SandboxDependencies {
+    param([string]$AppRoot)
+
+    if (Test-Path $nextBinPath) {
+        return
+    }
+
+    Assert-Path $packageJsonPath 'sandbox package.json'
+    Assert-Path $packageLockPath 'sandbox package-lock.json'
+
+    Write-Host "Bootstrapping sandbox dependencies with npm ci: $AppRoot"
+    Push-Location $AppRoot
+    try {
+        Invoke-Checked -Label 'npm ci' -Command { npm ci }
+    }
+    finally {
+        Pop-Location
+    }
+
+    if (-not (Test-Path $nextBinPath)) {
+        throw "Sandbox dependencies were bootstrapped but Next.js is still unavailable: $nextBinPath"
     }
 }
 
@@ -40,11 +98,22 @@ function Test-PortListening {
 function Wait-HttpReady {
     param(
         [string]$Url,
-        [int]$TimeoutSeconds
+        [int]$TimeoutSeconds,
+        [System.Diagnostics.Process]$Process,
+        [string[]]$LogPaths
     )
 
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $deadline) {
+        if ($Process -and $Process.HasExited) {
+            $logTail = Get-StartupLogTail -Paths $LogPaths
+            $message = "Sandbox UI exited before readiness at $Url"
+            if ($logTail) {
+                $message = "$message`nRecent startup logs:`n$logTail"
+            }
+            throw $message
+        }
+
         try {
             $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 5
             if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 400) {
@@ -94,6 +163,7 @@ if (-not $onlookUiRoot.StartsWith($laneRoot, [System.StringComparison]::OrdinalI
 Assert-Path $onlookUiRoot 'sandbox app root'
 Assert-Path $smokeScript 'sandbox smoke script'
 Assert-Path $fixturePath 'sandbox fixture snapshot'
+Ensure-SandboxDependencies -AppRoot $onlookUiRoot
 
 if (Test-PortListening -Port $UiPort) {
     throw "Sandbox UI port $UiPort is already listening. Stop the conflicting listener before running this smoke harness."
@@ -127,7 +197,7 @@ try {
         -RedirectStandardError $uiErr `
         -PassThru
 
-    Wait-HttpReady -Url $smokeUrl -TimeoutSeconds $ReadyTimeoutSeconds
+    Wait-HttpReady -Url $smokeUrl -TimeoutSeconds $ReadyTimeoutSeconds -Process $uiProcess -LogPaths @($uiErr, $uiOut)
 
     Push-Location $laneRoot
     try {
