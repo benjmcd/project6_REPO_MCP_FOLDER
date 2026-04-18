@@ -39,7 +39,7 @@ Primary-planning citation note:
 - Those files are not tracked in this repo/worktree and must not be misread as repo-local implementation truth.
 
 Overall confidence for this baseline remains `Medium`.
-Reason: the tranche boundary and no-go set are stable, and the former Gate C typing/unit blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`, but later-gate freezes for the workbench route family and qualitative-engine ambition remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
+Reason: the tranche boundary and no-go set are stable, the former Gate C typing/unit blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`, and the next bounded quantitative single-item plan/pass-entry blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md`, but the future workbench route family and broader qualitative/cohort/cross-modal execution breadth remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
 
 ## 2. Sources used and authority model
 
@@ -167,12 +167,17 @@ Current final-pack artifacts used only as lower-authority comparison surfaces:
    `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
    `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md|artifact|bounded Gate C typing/unit implementation contract`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate C - typing/orchestration entry|101-105`
 
-3. `Open due to architecture ambiguity`
+3. `Settled by newer freeze artifact`
+   `Conclusion:` A bounded quantitative single-item plan/pass entry is now explicitly frozen and no longer depends on ad hoc plan/pass identity decisions.
+   `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
+   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md|artifact|bounded Gate C plan/pass implementation contract`; `P|layer3_primary_planningdocs/05_LAYER3_SUBLAYER2_ORCHESTRATION_AND_PASS_EXECUTION.md|Plan formation and pass families|57-132`
+
+4. `Open due to architecture ambiguity`
    `Conclusion:` Qualitative-engine ambition beyond the currently reusable narrow deterministic pieces remains open and still waits.
    `Claim strength:` direct primary-planning evidence.
    `Evidence:` `P|layer3_primary_planningdocs/00D_LAYER3_PACK_COHERENCE_AND_GAP_AUDIT.md|What is still intentionally not frozen|85-91`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
 
-4. `Deferred / not for this tranche`
+5. `Deferred / not for this tranche`
    `Conclusion:` Canonical internal package definition, handoff strategy choice, and first consumer scope definition remain later-gate blockers, not Phase 1A blockers.
    `Claim strength:` direct primary-planning evidence.
    `Evidence:` `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate D - packaging/handoff entry|107-111`; `P|layer3_primary_planningdocs/10_LAYER3_CONSUMER_INTEGRATION_MAP.md|Must-have|67-72`
@@ -190,9 +195,9 @@ Current final-pack artifacts used only as lower-authority comparison surfaces:
    `Evidence:` `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate C - typing/orchestration entry|101-105`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate D - packaging/handoff entry|107-111`
 
 3. `Revised from REV1`
-   `Conclusion:` Overall confidence remains `Medium`, but the reason is narrower than REV1 stated. The limiting issues are the still-open later-gate freezes for the future workbench route family and qualitative-engine ambition, not a repo-root analyst-insight mismatch and not a Phase 1A blocker.
+   `Conclusion:` Overall confidence remains `Medium`, but the reason is narrower than REV1 stated. The limiting issues are the still-open later-gate freezes for the future workbench route family and the broader qualitative/cohort/cross-modal execution breadth, not a repo-root analyst-insight mismatch and not a Phase 1A blocker.
    `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
-   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md|artifact|bounded Gate C typing/unit implementation contract`; `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
+   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md|artifact|bounded Gate C typing/unit implementation contract`; `A|next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md|artifact|bounded Gate C quantitative single-item plan/pass implementation contract`; `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
 
 ## 10. Concise evidence appendix
 
