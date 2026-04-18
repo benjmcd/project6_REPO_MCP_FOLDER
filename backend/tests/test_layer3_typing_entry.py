@@ -155,6 +155,47 @@ def _build_unsupported_shape_session(db, tmp_path: Path) -> str:
     return session.session_id
 
 
+def _build_unfinalized_session(db, tmp_path: Path) -> str:
+    request = SessionEntryRequest(
+        manifest_items=[
+            {
+                "source_plane": "plane_a",
+                "descriptor_type": "dataset_version",
+                "selector_payload": {"dataset_version_id": "dv-unfinalized"},
+                "selection_basis": {"selection_id": "sel-unfinalized"},
+                "expansion_reason": "committed_selection",
+            }
+        ],
+        source_plane_hints={"plane_a": ["dataset_version"]},
+        commit_reason="gatec-typing-entry-unfinalized-session",
+        entry_route_context={"entrypoint": "pytest"},
+        operator_context={"operator": "pytest"},
+        summary={"phase": "gate_c"},
+    )
+
+    session, manifest = commit_selection(db, request)
+    descriptors = expand_descriptors(db, session=session, manifest=manifest)
+    record_retrieval_event(
+        db,
+        session=session,
+        descriptor=descriptors[0],
+        outcome="loaded",
+        reason_code="loaded",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape="dataset_version",
+                source_identity={"dataset_version_id": "dv-unfinalized"},
+                source_provenance={"dataset_id": "ds-unfinalized", "storage_ref": "datasets/dv-unfinalized.json"},
+                payload={"rows": [{"x": 1, "y": 2}]},
+                load_summary={"loaded_records": 1, "failed_records": 0},
+            )
+        ],
+        storage_root=tmp_path,
+    )
+    db.commit()
+    return session.session_id
+
+
 def test_gatec_typing_entry_materializes_quant_single_item_and_qual_associated_cohort(tmp_path):
     db = _make_session()
     session_id = _build_gatec_ready_session(db, tmp_path)
@@ -240,6 +281,20 @@ def test_gatec_typing_entry_fails_closed_on_unsupported_shape(tmp_path):
     session_id = _build_unsupported_shape_session(db, tmp_path)
 
     with pytest.raises(Layer3TypingEntryError, match="unsupported source_shape 'opaque_blob'"):
+        materialize_typing_entry(db, session_id=session_id)
+
+    assert db.query(L3TypingRecord).count() == 0
+    assert db.query(L3AnalysisUnit).count() == 0
+    assert db.query(L3AnalysisGroup).count() == 0
+    assert db.query(L3AnalysisSet).count() == 0
+    assert db.query(AnalysisRun).count() == 0
+
+
+def test_gatec_typing_entry_requires_finalized_session(tmp_path):
+    db = _make_session()
+    session_id = _build_unfinalized_session(db, tmp_path)
+
+    with pytest.raises(Layer3TypingEntryError, match="must be finalized before Gate C typing entry"):
         materialize_typing_entry(db, session_id=session_id)
 
     assert db.query(L3TypingRecord).count() == 0

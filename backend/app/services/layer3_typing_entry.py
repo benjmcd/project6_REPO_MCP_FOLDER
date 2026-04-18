@@ -17,6 +17,10 @@ from app.models.models import (
     L3TypingRecord,
     uuid_str,
 )
+from app.services.layer3_session_entry import (
+    SESSION_STATUS_COMPLETED,
+    SESSION_STATUS_COMPLETED_WITH_WARNINGS,
+)
 
 MODALITY_QUANTITATIVE = "quantitative"
 MODALITY_QUALITATIVE = "qualitative"
@@ -88,6 +92,13 @@ SUPPORTED_TYPING_RULES = {
     ),
 }
 
+FINALIZED_TYPING_SESSION_STATUSES = frozenset(
+    {
+        SESSION_STATUS_COMPLETED,
+        SESSION_STATUS_COMPLETED_WITH_WARNINGS,
+    }
+)
+
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
@@ -109,6 +120,10 @@ def _load_session_or_raise(db: Session, *, session_id: str) -> L3Session:
     session = db.get(L3Session, session_id)
     if session is None:
         raise Layer3TypingEntryError(f"Layer 3 session '{session_id}' was not found")
+    if session.status not in FINALIZED_TYPING_SESSION_STATUSES or session.completed_at is None:
+        raise Layer3TypingEntryError(
+            f"Layer 3 session '{session_id}' must be finalized before Gate C typing entry"
+        )
     return session
 
 
