@@ -9,10 +9,10 @@
   "scope": {
     "lane": {
       "worktreePath": "worktrees/onlook-proof",
-      "head": "24c060eaf5465c7f1cf922ce6c58c7cf89dd0b49",
+      "head": "4a069af3800d15ba3923b21e1e13b8ffddd2287e",
       "helperFiles": {
         "tools/run-onlook-normalized-smoke.ps1": "84be330c76625dc1c14e202899bf246abd57552b5a19930cdb580dceef66ee90",
-        "tools/onlook-normalized-smoke.mjs": "3df8d88cf440c17a7041d4a15ce4372c64846ee874bbab47c9bfad5feb8291fc",
+        "tools/onlook-normalized-smoke.mjs": "4c84f0e038ffc76c14e02f8663f9b314dfa3acc9a00881d3dcabdfd69dc6b213",
         "tools/start-onlook-web.ps1": "b4d1a1a36c0e722a6b9d23ae975173440b1317f86861074ca9a03f7f93253b28"
       }
     },
@@ -295,6 +295,6 @@
   "failureReason": null,
   "artifacts": null,
   "artifactType": "durable-tracked-proof",
-  "verifiedAt": "2026-04-18T07:14:21-07:00",
-  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-071247-767979b6/ledger.json"
+  "verifiedAt": "2026-04-18T07:43:54-07:00",
+  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-074335-e7b15b40/ledger.json"
 }
