@@ -1,5 +1,11 @@
 # 01 Implementation Entry Baseline
 
+## Historical Note
+
+This REV1 artifact preserves an earlier repo snapshot and is superseded by `01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`.
+On current `main`, repo-root now contains the analyst-insight page, alias-router, static-asset, and runtime-helper same-path surfaces.
+Do not treat the analyst-insight mismatch wording below as current live truth.
+
 ## 1. Purpose and authority note
 
 This document fixes the working baseline for a bounded implementation-entry pass only. It is not a full Layer 3 architecture restatement. It treats primary planning as baseline authority, secondary planning as supplemental only, curated repo-root files as implementation truth, same-path worktree files as confirmation only, current candidate final-pack artifacts as comparison-only synthesis, and historical report artifacts as lowest-authority comparison material.
