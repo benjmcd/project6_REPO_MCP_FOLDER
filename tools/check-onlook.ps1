@@ -245,7 +245,10 @@ function Assert-CleanClone {
 
 Assert-Path $onlookUiRoot 'sandbox app root'
 Assert-Path (Join-Path $onlookUiRoot '.env.example') 'sandbox env template'
-Assert-Path (Join-Path $onlookUiRoot '.env.local') 'sandbox local env' 'Create it with Copy-Item ./onlook-ui/.env.example ./onlook-ui/.env.local, then adjust NEXT_PUBLIC_REVIEW_API_BASE only if your local review API will not run on http://127.0.0.1:8000.'
+$sandboxLocalEnv = Join-Path $onlookUiRoot '.env.local'
+if (-not (Test-Path $sandboxLocalEnv)) {
+    Write-Host 'Sandbox local env not present; using the same-origin default from ./onlook-ui/.env.example.'
+}
 Assert-Path (Join-Path $laneRoot 'patches\local-writeback.patch') 'local write-back patch archive'
 Assert-Path (Join-Path $laneRoot 'patches\upstream-clean.patch') 'upstream-clean patch archive'
 
