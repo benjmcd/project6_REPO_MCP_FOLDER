@@ -2,7 +2,7 @@
 
 ## Status note
 
-This roadmap is a high-level lane-local orientation artifact.
+This roadmap is a high-level pack-local orientation artifact for the bounded Phase 1A slice that was originally closed on `codex/layer3-lane` and is now carried forward on current `main`.
 
 If it conflicts with:
 - `01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
