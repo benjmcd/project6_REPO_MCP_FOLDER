@@ -154,7 +154,7 @@ Reason: the validation target is stable, the former Gate C typing/unit blocker i
    `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md|artifact|bounded Gate C typing/unit implementation contract`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate C - typing/orchestration entry|101-105`
 
 2. `Settled by newer freeze artifact`
-   `Conclusion:` A bounded quantitative single-item plan/pass entry is now explicitly frozen by `06_GATEC_PASS_FREEZE.md` for the next Gate C continuation lane, so later unresolved Gate C ambiguity is now concentrated in broader qualitative/cohort/cross-modal execution rather than in initial plan/pass identity.
+   `Conclusion:` A bounded quantitative single-item plan/pass entry is now explicitly frozen by `06_GATEC_PASS_FREEZE.md` for the next Gate C continuation lane, so the remaining ambiguity after that artifact was no longer in initial plan/pass identity and instead moved to the later cohort, qualitative, and cross-modal continuation questions that were addressed separately afterward.
    `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
    `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md|artifact|bounded Gate C plan/pass implementation contract`; `P|layer3_primary_planningdocs/05_LAYER3_SUBLAYER2_ORCHESTRATION_AND_PASS_EXECUTION.md|Plan formation and pass families|57-132`
 
