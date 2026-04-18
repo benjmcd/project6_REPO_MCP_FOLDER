@@ -47,6 +47,8 @@ The repo already has three relevant live surface families:
 - `backend/app/api/market_insight_ai.py`
 - `backend/app/review_ui/static/analyst_insight.html`
 - `backend/app/review_ui/static/analyst_insight.js`
+- `backend/app/review_ui/static/analyst_insight.css`
+- `backend/app/review_ui/static/review.css`
 - `backend/app/services/review_nrc_aps_runtime_db.py`
 
 The current repo therefore already has:
@@ -106,6 +108,8 @@ The current analyst-insight UI chain already runs:
 - `backend/main.py`
 - `backend/app/review_ui/static/analyst_insight.html`
 - `backend/app/review_ui/static/analyst_insight.js`
+- `backend/app/review_ui/static/analyst_insight.css`
+- `backend/app/review_ui/static/review.css`
 - the `/api/v1/analyst-insight/...` alias routes
 
 That means Gate C must not silently widen browser or workbench scope just because this chain already exists.
@@ -300,7 +304,7 @@ Stop instead of widening scope if a proposed Gate C lane requires:
 
 ## Bottom line
 
-Phase 1A is no longer the blocker.
+For opening the next Layer 3 lane, Phase 1A completion no longer appears to be the blocker.
 
 The blocker is now a missing explicit Gate C freeze across:
 - typing heuristics
