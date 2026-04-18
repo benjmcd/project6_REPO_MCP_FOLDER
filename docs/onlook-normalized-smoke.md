@@ -12,7 +12,7 @@ Current scoped status:
 - The canonical current proof pointer is `tools/onlook-active-pair.json`.
 - Do not pin a ledger path from this doc. Read `sourceLedgerPath` and `verifiedAt` from `tools/onlook-active-pair.json` for the live proof pointer.
 - Default invocation validates the referenced durable proof ledger plus the local helper surfaces and runtime-clone provenance before it trusts the active pair.
-- Proof-surface-only commits can advance repo `HEAD` without invalidating the active pair when those helper surfaces and the runtime-clone state remain unchanged.
+- Proof-pointer or helper commits can advance repo `HEAD` without invalidating the active pair when the referenced helper fingerprint and the runtime-clone state still match.
 - The historical stale/unhealthy pair is retained only as prior context and is no longer a default:
   - project URL `http://127.0.0.1:3011/project/c2486161-3bad-4958-b2c9-7c6502bc76a0`
   - preview origin `https://vzyzj3-3000.csb.app/`
