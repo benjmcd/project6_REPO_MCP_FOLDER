@@ -13,6 +13,8 @@ Current scoped status:
 - Do not pin a ledger path from this doc. Read `sourceLedgerPath` and `verifiedAt` from `tools/onlook-active-pair.json` for the live proof pointer.
 - Default invocation validates the referenced durable proof ledger plus the local helper surfaces and runtime-clone provenance before it trusts the active pair.
 - Proof-pointer or helper commits can advance repo `HEAD` without invalidating the active pair when the referenced helper fingerprint and the runtime-clone state still match.
+- The current-project first gate also requires a real `CSB_API_KEY` to reach the local Onlook web runtime because `sandbox.start` must create a browser session for the active sandbox.
+- The supported low-friction path is `ext-onlook-fix/apps/web/client/.env.local`, which overrides the placeholder key in `apps/web/client/.env` during wrapper startup.
 - The historical stale/unhealthy pair is retained only as prior context and is no longer a default:
   - project URL `http://127.0.0.1:3011/project/c2486161-3bad-4958-b2c9-7c6502bc76a0`
   - preview origin `https://vzyzj3-3000.csb.app/`
@@ -31,6 +33,7 @@ Normalization steps for the current pair:
 
 Runtime note:
 - The wrapper will start the local Onlook backend first when the dev-login ports are missing, then start the web host if `3011` is down.
+- Host startup now imports the client env surface into the startup process, with `.env.local` overriding `.env`, before it launches the Onlook web runtime.
 - If `3011` is down but a stale Onlook preload helper is still holding `8083`, the wrapper will clear that recoverable stale helper before retrying host startup.
 - If startup fails before Chrome opens, the wrapper still writes a fail-closed ledger with the startup classification.
 - Use `host-started-by-wrapper` and `host-already-up` for host runtime state.

@@ -14,6 +14,10 @@ const LANE_HELPER_FILES = [
   'tools/onlook-normalized-smoke.mjs',
   'tools/start-onlook-web.ps1',
 ];
+const RUNTIME_GENERATED_PATHS = [
+  'apps/web/client/messages/en.d.json.ts',
+  'apps/web/client/public/onlook-preload-script.js',
+];
 const ROUTE_PLAN = [
   ['Workbench Compare', '/workbench-compare'],
   ['Document Trace', '/document-trace'],
@@ -579,8 +583,9 @@ async function readJsonFile(filePath, label) {
 }
 
 async function getFileSha256(filePath) {
-  const buffer = await fs.readFile(filePath);
-  return crypto.createHash('sha256').update(buffer).digest('hex');
+  const text = await fs.readFile(filePath, 'utf8');
+  const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  return crypto.createHash('sha256').update(normalized, 'utf8').digest('hex');
 }
 
 async function readLaneHelperHashes() {
@@ -608,17 +613,48 @@ function parseStatusPaths(statusText) {
     .filter(Boolean);
 }
 
+async function isLineEndingOnlyDrift(repoRoot, repoPaths) {
+  for (const repoPath of repoPaths) {
+    const fullPath = path.join(repoRoot, ...repoPath.split('/'));
+    try {
+      await fs.access(fullPath);
+    } catch {
+      return false;
+    }
+  }
+
+  for (const diffMode of [[], ['--cached']]) {
+    try {
+      await execFileAsync('git', ['-C', repoRoot, 'diff', ...diffMode, '--ignore-space-at-eol', '--exit-code', '--', ...repoPaths], {
+        cwd: repoRoot,
+      });
+    } catch {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 async function readCurrentProvenance(runtimeDir) {
   const laneRoot = path.join(__dirname, '..');
   const runtimeRoot = path.join(laneRoot, runtimeDir);
   const laneHead = await execText('git', ['-C', laneRoot, 'rev-parse', 'HEAD'], laneRoot);
   const runtimeHead = await execText('git', ['-C', runtimeRoot, 'rev-parse', 'HEAD'], laneRoot);
+  const runtimeTree = await execText('git', ['-C', runtimeRoot, 'rev-parse', 'HEAD^{tree}'], laneRoot);
   const runtimeStatus = await execText('git', ['-C', runtimeRoot, 'status', '--short'], laneRoot);
-  const runtimeCloneDirtyPaths = parseStatusPaths(runtimeStatus);
+  let runtimeCloneDirtyPaths = parseStatusPaths(runtimeStatus);
+  if (runtimeCloneDirtyPaths.length > 0) {
+    const onlyRuntimeGenerated = runtimeCloneDirtyPaths.every((repoPath) => RUNTIME_GENERATED_PATHS.includes(repoPath));
+    if (onlyRuntimeGenerated && await isLineEndingOnlyDrift(runtimeRoot, RUNTIME_GENERATED_PATHS)) {
+      runtimeCloneDirtyPaths = [];
+    }
+  }
 
   return {
     laneHead,
     runtimeHead,
+    runtimeTree,
     runtimeCloneHasLocalDiffPaths: runtimeCloneDirtyPaths.length > 0,
     runtimeCloneLocalDiffSummary: runtimeCloneDirtyPaths.length > 0
       ? `${runtimeCloneDirtyPaths.length} local diff path(s)`
@@ -634,6 +670,7 @@ function assertActivePairState(state, filePath) {
     'verifiedAt',
     'laneHead',
     'runtimeCloneHead',
+    'runtimeCloneTree',
     'runtimeCloneHasLocalDiffPaths',
     'runtimeCloneLocalDiffSummary',
     'status',
@@ -672,7 +709,7 @@ async function resolvePairArgs(args) {
 
   const current = await readCurrentProvenance(args.runtimeDir);
   if (
-    activePairState.runtimeCloneHead !== current.runtimeHead
+    activePairState.runtimeCloneTree !== current.runtimeTree
     || Boolean(activePairState.runtimeCloneHasLocalDiffPaths) !== current.runtimeCloneHasLocalDiffPaths
     || activePairState.runtimeCloneLocalDiffSummary !== current.runtimeCloneLocalDiffSummary
   ) {
@@ -695,6 +732,7 @@ async function resolvePairArgs(args) {
     || ledgerPreviewOrigin !== activePreviewOrigin
     || ledger.scope?.lane?.head !== activePairState.laneHead
     || ledger.scope?.runtimeClone?.head !== activePairState.runtimeCloneHead
+    || ledger.scope?.runtimeClone?.tree !== activePairState.runtimeCloneTree
   ) {
     throw new Error(`Active pair source ledger does not match ${activePairPath}; provide --project-url and --preview-origin explicitly.`);
   }
@@ -735,8 +773,15 @@ async function buildScope(args) {
   const runtimeRoot = path.join(laneRoot, args.runtimeDir);
   const laneHead = await execText('git', ['-C', laneRoot, 'rev-parse', 'HEAD'], laneRoot);
   const runtimeHead = await execText('git', ['-C', runtimeRoot, 'rev-parse', 'HEAD'], laneRoot);
+  const runtimeTree = await execText('git', ['-C', runtimeRoot, 'rev-parse', 'HEAD^{tree}'], laneRoot);
   const runtimeStatus = await execText('git', ['-C', runtimeRoot, 'status', '--short'], laneRoot);
-  const runtimeCloneDirtyPaths = parseStatusPaths(runtimeStatus);
+  let runtimeCloneDirtyPaths = parseStatusPaths(runtimeStatus);
+  if (runtimeCloneDirtyPaths.length > 0) {
+    const onlyRuntimeGenerated = runtimeCloneDirtyPaths.every((repoPath) => RUNTIME_GENERATED_PATHS.includes(repoPath));
+    if (onlyRuntimeGenerated && await isLineEndingOnlyDrift(runtimeRoot, RUNTIME_GENERATED_PATHS)) {
+      runtimeCloneDirtyPaths = [];
+    }
+  }
   const helperFiles = await readLaneHelperHashes();
 
   return {
@@ -748,6 +793,7 @@ async function buildScope(args) {
     runtimeClone: {
       dir: args.runtimeDir,
       head: runtimeHead,
+      tree: runtimeTree,
       hasLocalDiffPaths: runtimeCloneDirtyPaths.length > 0,
       localDiffPaths: runtimeCloneDirtyPaths,
       localDiffSummary: runtimeCloneDirtyPaths.length > 0
