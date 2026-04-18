@@ -93,9 +93,9 @@ try {
         powershell.exe @copyArgs
     }
 
-    $publicReviewApiBase = Get-EnvValue -Path (Join-Path $targetPath '.env.local') -Name 'NEXT_PUBLIC_REVIEW_API_BASE'
+    $publicReviewApiBase = Get-EnvValue -Path (Join-Path $targetPath '.env.example') -Name 'NEXT_PUBLIC_REVIEW_API_BASE'
     if (-not $publicReviewApiBase) {
-        $publicReviewApiBase = Get-EnvValue -Path (Join-Path $targetPath '.env.example') -Name 'NEXT_PUBLIC_REVIEW_API_BASE'
+        $publicReviewApiBase = Get-EnvValue -Path (Join-Path $targetPath '.env.local') -Name 'NEXT_PUBLIC_REVIEW_API_BASE'
     }
     if ($publicReviewApiBase) {
         Set-Content -LiteralPath $uploadEnvPath -Value @(

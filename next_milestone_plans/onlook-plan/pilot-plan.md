@@ -26,7 +26,7 @@ Current verified state:
 
 This pilot is successful if:
 
-- the sandbox app can load real review data through the existing review API family
+- the sandbox app can load a committed same-origin snapshot generated from the existing review API family
 - Onlook can target the sandbox app instead of the live static UI
 - the pilot leaves current live UI authority untouched
 
@@ -171,17 +171,18 @@ Reason:
 
 ### 7.2 During Onlook usage
 1. The lowest-risk default is to let Onlook edit a duplicate sandbox app prepared by `tools/prep-onlook-copy.ps1`, not `onlook-ui/` directly.
-2. That prepared duplicate now includes an upload-safe `.env` with only the public review API base, because Onlook intentionally skips `.env.local` during project upload.
-3. Importing `onlook-ui/` directly is an explicit choice that makes `onlook-ui/*` the direct host write-back target.
-4. No writes are made to:
+2. That prepared duplicate now includes an upload-safe `.env` with only the public same-origin review API base, because Onlook intentionally skips `.env.local` during project upload.
+3. The committed fixture snapshot and split binary assets must stay under the current Onlook local-folder 10 MB per-file import ceiling.
+4. Importing `onlook-ui/` directly is an explicit choice that makes `onlook-ui/*` the direct host write-back target.
+5. No writes are made to:
    - `backend/main.py`
    - `backend/app/api/review_nrc_aps.py`
    - `backend/app/schemas/review_nrc_aps.py`
    - `backend/app/review_ui/static/*`
    unless a separate explicit decision expands scope.
-5. Any Onlook-produced change must still be reviewed like normal repo code.
-6. The sandbox remains non-authoritative until promotion is explicitly approved.
-7. If browser state on the default Onlook origin becomes sticky or keeps reopening an old imported project, restart local Onlook on a fresh port such as `3011` instead of reusing the stale browser origin blindly.
+6. Any Onlook-produced change must still be reviewed like normal repo code.
+7. The sandbox remains non-authoritative until promotion is explicitly approved.
+8. If browser state on the default Onlook origin becomes sticky or keeps reopening an old imported project, restart local Onlook on a fresh port such as `3011` instead of reusing the stale browser origin blindly.
 
 ### 7.3 After Onlook usage
 Every saved sandbox iteration must be classified as one of:
@@ -209,7 +210,7 @@ with an explicitly adopted runtime root when needed.
 Minimum acceptance for the sandbox app:
 
 1. app boots locally
-2. run selector loads from the live review API seam
+2. run selector loads from the committed same-origin fixture seam by default, with optional localhost override only when explicitly configured
 3. overview/pipeline data renders without backend contract changes
 4. chosen API connection rule works consistently in local development
 5. the sandbox route family continues to use browser fetches without cookies, sessions, or auth headers
@@ -279,7 +280,7 @@ Use `impl-plan.md` as the bridge from the now-solved local repo lane into the cu
 
 For lowest-risk local use:
 
-1. prepare a duplicate sandbox target with `tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv`
+1. prepare a duplicate sandbox target with `tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy`
 2. review the duplicate against canonical `onlook-ui/` with `tools/diff-onlook-copy.ps1 -TargetDir onlook-ui-copy`
 3. import that duplicate into Onlook
 4. keep `onlook-ui/` untouched unless direct canonical write-back is the explicit goal
@@ -291,6 +292,6 @@ When populated compare-family work is required:
 3. validate the resulting selection and recommended URLs with `tools/validate_wb_prep.py`
 4. prove the hydrated full route family with `tools/run-onlook-sandbox-smoke.ps1 -Profile full`
 5. if the duplicate target is the intended Onlook import, re-run that proof against the duplicate with `tools/run-onlook-sandbox-smoke.ps1 -Profile full -AppDir onlook-ui-copy`
-6. if editor-side proof is required, run `tools/run-onlook-operator-proof.ps1`; it now proves duplicate-target import, requires the expected same-checkout reviewable runs from `tools/validate_wb_prep.py`, restarts the expected local Onlook clone once if a reused browser session is stale, proves trusted preview navigation, analyst flow, and duplicate-only write-back with duplicate restoration and canonical protection
+6. if editor-side proof is required, run `tools/run-onlook-operator-proof.ps1`; it now proves duplicate-target import against the same-origin fixture route, requires the duplicate to keep the import-safe fixture contract, restarts the expected local Onlook clone once if a reused browser session is stale, and proves trusted preview navigation, analyst flow, and duplicate-only write-back with duplicate restoration and canonical protection
 
 Do not broaden repo scope beyond the sandbox app until the clean extracted upstream branch is either sent upstream or re-proven shim-free end-to-end.

@@ -1,0 +1,12 @@
+{
+  "projectUrl": "http://127.0.0.1:3011/project/34743ff9-9eb2-4172-a3e0-b4154853e608",
+  "previewOrigin": "https://72nw5n-3000.csb.app/",
+  "sourceLedgerPath": "archive/onlook-normalized-smoke/20260417-234834-5e385316/ledger.json",
+  "verifiedAt": "2026-04-17T23:48:34-07:00",
+  "laneHead": "2727d41331f86646fe1e46ffc647da54c123e8dd",
+  "runtimeCloneHead": "14dbc96e01436dabbf03e8a16f27cb23f008ec90",
+  "runtimeCloneHasLocalDiffPaths": true,
+  "runtimeCloneLocalDiffSummary": "5 local diff path(s)",
+  "status": "verified-live",
+  "statusReason": "Refreshed from the latest successful no-arg normalized-smoke verification that resolved via active-verified-pair on 2026-04-17. The older c2486161-3bad-4958-b2c9-7c6502bc76a0 / zm8wn2-3000.csb.app pair is historical and no longer the default."
+}
