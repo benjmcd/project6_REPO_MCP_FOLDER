@@ -3,8 +3,8 @@
 Current scoped status:
 - This is a current-project first gate, not a general Onlook gate.
 - The default pair now comes from [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json). It is the single source of truth for the active verified pair.
-- The currently verified pass is scoped to `./worktrees/mainline-lane` at lane HEAD `2727d41331f86646fe1e46ffc647da54c123e8dd`.
-- The currently verified pass also depends on the nested runtime clone `./worktrees/mainline-lane/ext-onlook-fix` at runtime HEAD `14dbc96e01436dabbf03e8a16f27cb23f008ec90`.
+- The current lane-head proof metadata lives in [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json).
+- The current runtime-clone provenance also comes from [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json) and the ledger it references.
 - The currently passing runtime surface includes the retained local runtime-clone fix set recorded in the ledger scope. The known material retained diff path is `apps/web/client/src/app/project/[id]/_components/bottom-bar/index.tsx`.
 - The active verified pair is:
   - project URL `http://127.0.0.1:3011/project/34743ff9-9eb2-4172-a3e0-b4154853e608`
