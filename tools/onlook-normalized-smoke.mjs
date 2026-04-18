@@ -12,6 +12,336 @@ const ROUTE_PLAN = [
   ['Workbench Compare', '/workbench-compare'],
   ['Document Trace', '/document-trace'],
 ];
+const MAX_BREADCRUMBS = 80;
+const MAX_CHECKPOINTS = 20;
+const MAX_FRAME_EVENTS = 120;
+const MAX_CONSOLE_ENTRIES = 80;
+const MAX_NETWORK_ENTRIES = 80;
+
+function isoNow() {
+  return new Date().toISOString();
+}
+
+function pushBounded(list, value, maxEntries) {
+  list.push(value);
+  if (list.length > maxEntries) {
+    list.splice(0, list.length - maxEntries);
+  }
+}
+
+function truncateText(value, maxLength = 1200) {
+  return String(value ?? '').slice(0, maxLength);
+}
+
+function safeFrameUrl(frame) {
+  try {
+    return frame?.url?.() ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function safeFrameName(frame) {
+  try {
+    return frame?.name?.() ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function nextOrder(observability) {
+  observability.sequence += 1;
+  return observability.sequence;
+}
+
+function createObservability(previewOrigin, hostOrigin) {
+  return {
+    previewOrigin,
+    hostOrigin,
+    sequence: 0,
+    targetPreviewFrame: null,
+    lastKnownTargetFrameUrl: null,
+    data: {
+      breadcrumbs: [],
+      checkpoints: [],
+      frameLifecycleEvents: [],
+      consoleEntries: [],
+      networkEntries: [],
+    },
+  };
+}
+
+function rememberPreviewFrame(observability, frame) {
+  if (!frame) {
+    return frame;
+  }
+
+  observability.targetPreviewFrame = frame;
+  const frameUrl = safeFrameUrl(frame);
+  if (frameUrl.startsWith(observability.previewOrigin)) {
+    observability.lastKnownTargetFrameUrl = frameUrl;
+  }
+  return frame;
+}
+
+function recordBreadcrumb(observability, phase, details = {}) {
+  pushBounded(
+    observability.data.breadcrumbs,
+    {
+      order: nextOrder(observability),
+      at: isoNow(),
+      phase,
+      ...details,
+    },
+    MAX_BREADCRUMBS,
+  );
+}
+
+function isPreviewRelevantFrame(observability, frame) {
+  if (!frame) {
+    return false;
+  }
+
+  const url = safeFrameUrl(frame);
+  if (url.startsWith(observability.previewOrigin)) {
+    return true;
+  }
+
+  if (observability.targetPreviewFrame && frame === observability.targetPreviewFrame) {
+    return true;
+  }
+
+  if (observability.lastKnownTargetFrameUrl && url === observability.lastKnownTargetFrameUrl) {
+    return true;
+  }
+
+  const parentFrame = frame.parentFrame?.();
+  if (!parentFrame) {
+    return false;
+  }
+
+  return isPreviewRelevantFrame(observability, parentFrame);
+}
+
+function attachObservability(page, observability) {
+  page.on('frameattached', (frame) => {
+    pushBounded(
+      observability.data.frameLifecycleEvents,
+      {
+        order: nextOrder(observability),
+        at: isoNow(),
+        event: 'frameattached',
+        relevantToPreview: isPreviewRelevantFrame(observability, frame),
+        url: safeFrameUrl(frame),
+        name: safeFrameName(frame),
+        parentUrl: safeFrameUrl(frame.parentFrame?.()),
+      },
+      MAX_FRAME_EVENTS,
+    );
+  });
+
+  page.on('framedetached', (frame) => {
+    pushBounded(
+      observability.data.frameLifecycleEvents,
+      {
+        order: nextOrder(observability),
+        at: isoNow(),
+        event: 'framedetached',
+        relevantToPreview: isPreviewRelevantFrame(observability, frame),
+        url: safeFrameUrl(frame) || observability.lastKnownTargetFrameUrl || '',
+        name: safeFrameName(frame),
+        parentUrl: safeFrameUrl(frame.parentFrame?.()),
+      },
+      MAX_FRAME_EVENTS,
+    );
+  });
+
+  page.on('framenavigated', (frame) => {
+    const frameUrl = safeFrameUrl(frame);
+    if (frameUrl.startsWith(observability.previewOrigin)) {
+      observability.lastKnownTargetFrameUrl = frameUrl;
+      observability.targetPreviewFrame = frame;
+    }
+
+    pushBounded(
+      observability.data.frameLifecycleEvents,
+      {
+        order: nextOrder(observability),
+        at: isoNow(),
+        event: 'framenavigated',
+        relevantToPreview: isPreviewRelevantFrame(observability, frame),
+        url: frameUrl,
+        name: safeFrameName(frame),
+        parentUrl: safeFrameUrl(frame.parentFrame?.()),
+      },
+      MAX_FRAME_EVENTS,
+    );
+  });
+
+  page.on('console', (message) => {
+    const type = message.type();
+    if (!['error', 'warning'].includes(type)) {
+      return;
+    }
+
+    const location = message.location();
+    const url = location?.url ?? '';
+    const surface = url.startsWith(observability.previewOrigin)
+      ? 'preview'
+      : url.startsWith(observability.hostOrigin)
+        ? 'host'
+        : 'other';
+
+    pushBounded(
+      observability.data.consoleEntries,
+      {
+        order: nextOrder(observability),
+        at: isoNow(),
+        type,
+        surface,
+        url,
+        text: truncateText(message.text(), 500),
+      },
+      MAX_CONSOLE_ENTRIES,
+    );
+  });
+
+  page.on('response', (response) => {
+    const url = response.url();
+    if (!url.startsWith(observability.previewOrigin) && !url.startsWith(observability.hostOrigin)) {
+      return;
+    }
+
+    let frameUrl = '';
+    try {
+      frameUrl = safeFrameUrl(response.frame());
+    } catch {
+      frameUrl = '';
+    }
+
+    pushBounded(
+      observability.data.networkEntries,
+      {
+        order: nextOrder(observability),
+        at: isoNow(),
+        surface: url.startsWith(observability.previewOrigin) ? 'preview' : 'host',
+        url,
+        status: response.status(),
+        resourceType: response.request().resourceType(),
+        frameUrl,
+      },
+      MAX_NETWORK_ENTRIES,
+    );
+  });
+}
+
+async function collectHostSnapshot(page) {
+  let url = null;
+  let bodyTextSnippet = null;
+  let editorMode = null;
+  let overlay = null;
+  let readError = null;
+
+  try {
+    const state = await page.evaluate(() => ({
+      url: window.location.href,
+      bodyText: (document.body?.innerText ?? '').slice(0, 1200),
+    }));
+    url = state.url;
+    bodyTextSnippet = state.bodyText;
+  } catch (error) {
+    readError = error instanceof Error ? error.message : String(error);
+  }
+
+  try {
+    editorMode = await getEditorMode(page);
+  } catch {
+    editorMode = null;
+  }
+
+  try {
+    overlay = await getLoadingOverlay(page);
+  } catch {
+    overlay = null;
+  }
+
+  return {
+    url,
+    bodyTextSnippet,
+    editorMode,
+    overlay,
+    readError,
+  };
+}
+
+async function collectPreviewSnapshot(page, observability, frame = null) {
+  if (frame) {
+    rememberPreviewFrame(observability, frame);
+  }
+
+  const allFrames = page.frames();
+  const previewFrames = allFrames.filter((item) => safeFrameUrl(item).startsWith(observability.previewOrigin));
+
+  let activeTargetFrame = null;
+  if (observability.targetPreviewFrame && allFrames.includes(observability.targetPreviewFrame)) {
+    activeTargetFrame = observability.targetPreviewFrame;
+  } else if (previewFrames.length > 0) {
+    activeTargetFrame = previewFrames[0];
+    rememberPreviewFrame(observability, activeTargetFrame);
+  }
+
+  const targetFrameStillExists = Boolean(
+    observability.targetPreviewFrame && allFrames.includes(observability.targetPreviewFrame),
+  );
+  const replacementState = observability.targetPreviewFrame && !targetFrameStillExists
+    ? (previewFrames.length > 0 ? 'replaced' : 'vanished')
+    : 'same';
+
+  let previewBodySnippet = null;
+  let readError = null;
+  if (activeTargetFrame) {
+    try {
+      const previewState = await activeTargetFrame.evaluate(() => ({
+        url: window.location.href,
+        bodyText: (document.body?.innerText ?? '').slice(0, 1200),
+      }));
+      observability.lastKnownTargetFrameUrl = previewState.url;
+      previewBodySnippet = previewState.bodyText;
+    } catch (error) {
+      readError = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  return {
+    frameList: allFrames.map((item) => ({
+      url: safeFrameUrl(item),
+      name: safeFrameName(item),
+      parentUrl: safeFrameUrl(item.parentFrame?.()),
+    })),
+    lastKnownTargetFrameUrl: observability.lastKnownTargetFrameUrl,
+    targetFrameStillExists,
+    replacementState,
+    previewBodySnippet,
+    readError,
+  };
+}
+
+async function captureCheckpoint(page, observability, phase, frame = null) {
+  recordBreadcrumb(observability, phase);
+  const host = await collectHostSnapshot(page);
+  const preview = await collectPreviewSnapshot(page, observability, frame);
+  pushBounded(
+    observability.data.checkpoints,
+    {
+      order: nextOrder(observability),
+      at: isoNow(),
+      phase,
+      host,
+      preview,
+    },
+    MAX_CHECKPOINTS,
+  );
+}
 
 async function loadChromium() {
   const moduleUrl = pathToFileURL(
@@ -465,7 +795,7 @@ async function waitForRootReview(frame, page, previewOrigin, timeoutMs) {
   }
 }
 
-async function normalizeSession(page, args) {
+async function normalizeSession(page, args, observability) {
   const normalization = {
     loginNeeded: false,
     trustCleared: false,
@@ -478,6 +808,9 @@ async function normalizeSession(page, args) {
   try {
     await page.goto(args.projectUrl, { waitUntil: 'domcontentloaded', timeout: args.timeoutMs });
     await page.waitForTimeout(2000);
+    recordBreadcrumb(observability, 'host-opened', {
+      hostUrl: page.url(),
+    });
 
     if (page.url().includes('/login')) {
       normalization.loginNeeded = true;
@@ -503,15 +836,30 @@ async function normalizeSession(page, args) {
         }));
         throw new Error(`Dev-mode login did not persist to the project page; host url=${loginState.url}; host body=${JSON.stringify(loginState.bodyText)}`);
       }
+
+      recordBreadcrumb(observability, 'post-login', {
+        hostUrl: page.url(),
+      });
     }
 
     let frame = await waitForPreviewFrame(page, args.previewOrigin, args.timeoutMs);
+    rememberPreviewFrame(observability, frame);
+    recordBreadcrumb(observability, 'preview-frame-found', {
+      previewUrl: safeFrameUrl(frame),
+    });
     normalization.trustCleared = await clearTrustIfNeeded(frame, page, args.previewOrigin, args.timeoutMs);
+    recordBreadcrumb(observability, 'trust-cleared', {
+      cleared: normalization.trustCleared,
+    });
 
     frame = await waitForPreviewFrame(page, args.previewOrigin, args.timeoutMs);
+    rememberPreviewFrame(observability, frame);
     const previewMode = await switchToPreviewMode(page, args.timeoutMs);
     normalization.initialEditorMode = previewMode.initialEditorMode;
     normalization.finalEditorModeBeforeSmoke = previewMode.finalEditorMode;
+    recordBreadcrumb(observability, 'preview-mode-set', {
+      editorMode: previewMode.finalEditorMode,
+    });
 
     normalization.overlayAtSmokeTime = await getLoadingOverlay(page);
     if (normalization.overlayAtSmokeTime.present) {
@@ -519,9 +867,12 @@ async function normalizeSession(page, args) {
     }
 
     frame = await waitForPreviewFrame(page, args.previewOrigin, args.timeoutMs);
+    rememberPreviewFrame(observability, frame);
     await waitForRootReview(frame, page, args.previewOrigin, args.timeoutMs);
     frame = await waitForPreviewFrame(page, args.previewOrigin, args.timeoutMs);
+    rememberPreviewFrame(observability, frame);
     normalization.rootReviewVisible = true;
+    await captureCheckpoint(page, observability, 'root-review-visible', frame);
 
     return {
       frame,
@@ -698,52 +1049,129 @@ function classifyFailure(message, routes = []) {
   };
 }
 
-async function smokeRoute(page, args, routeName, expectedPath, prepared = null) {
-  const { frame, normalization } = prepared ?? await normalizeSession(page, args);
-  const chip = frame.getByRole('link', { name: routeName }).first();
-  await chip.waitFor({ state: 'visible', timeout: args.timeoutMs });
+function classifyFailurePhase(message, routes = [], stage = null) {
+  const text = String(message ?? '');
 
-  const before = await getPathState(frame);
-  const stacks = await collectStacks(page, frame, chip);
-  await page.mouse.click(stacks.center.x, stacks.center.y);
-
-  try {
-    await frame.waitForFunction((pathname) => window.location.pathname !== pathname, before.pathname, {
-      timeout: 5000,
-    });
-  } catch {
-    // Fail closed below using the final pathname/history snapshot.
+  if (text.includes('Frame was detached') || text.includes('Execution context was destroyed')) {
+    return 'frame-detach / preview loss';
   }
 
-  const after = await getPathState(frame);
-  const pass = after.pathname === expectedPath && after.historyLength > before.historyLength;
+  if (routes.some((route) => route.pass === false) || stage === 'route verdict') {
+    return 'route verdict';
+  }
 
-  return {
-    route: routeName,
-    expectedPath,
-    overlayAtSmokeTime: normalization.overlayAtSmokeTime,
-    before,
-    after,
-    pass,
-    failureReason: pass
-      ? null
-      : routeFailureReason(
-          routeName,
-          before,
-          after,
-          normalization.overlayAtSmokeTime,
-          stacks.hostStack,
-          stacks.previewStack,
-        ),
-    hostHitStack: stacks.hostStack,
-    previewHitStack: stacks.previewStack,
-  };
+  if (text.includes('Root review shell did not become visible')) {
+    return 'root-review restoration';
+  }
+
+  if (
+    text.includes('Timed out waiting for preview frame')
+    || text.includes('Timed out clearing the CodeSandbox trust interstitial')
+    || text.includes('Timed out switching the host editor mode to Preview')
+  ) {
+    return 'trust/frame entry';
+  }
+
+  return 'other';
+}
+
+async function writeArtifacts(args, ledger, observability) {
+  const output = JSON.stringify(ledger, null, 2);
+  if (args.jsonOut) {
+    await fs.writeFile(args.jsonOut, `${output}\n`, 'utf8');
+    const observabilityPath = path.join(path.dirname(args.jsonOut), 'observability.json');
+    await fs.writeFile(
+      observabilityPath,
+      `${JSON.stringify(observability.data, null, 2)}\n`,
+      'utf8',
+    );
+    ledger.artifacts = {
+      observability: observabilityPath,
+    };
+    await fs.writeFile(args.jsonOut, `${JSON.stringify(ledger, null, 2)}\n`, 'utf8');
+  }
+  console.log(JSON.stringify(ledger, null, 2));
+}
+
+async function smokeRoute(page, args, observability, routeName, expectedPath, prepared = null) {
+  const { frame, normalization } = prepared ?? await normalizeSession(page, args, observability);
+  rememberPreviewFrame(observability, frame);
+  await captureCheckpoint(page, observability, `route-start:${routeName}`, frame);
+
+  let routeStage = 'route-start';
+  let before = null;
+  let stacks = null;
+
+  try {
+    const chip = frame.getByRole('link', { name: routeName }).first();
+    await chip.waitFor({ state: 'visible', timeout: args.timeoutMs });
+    routeStage = 'route-link-visible';
+    recordBreadcrumb(observability, `route-link-visible:${routeName}`, {
+      route: routeName,
+      locatorVisible: true,
+    });
+
+    before = await getPathState(frame);
+    stacks = await collectStacks(page, frame, chip);
+    await page.mouse.click(stacks.center.x, stacks.center.y);
+    routeStage = 'route-clicked';
+    recordBreadcrumb(observability, `route-clicked:${routeName}`, {
+      route: routeName,
+    });
+
+    try {
+      await frame.waitForFunction((pathname) => window.location.pathname !== pathname, before.pathname, {
+        timeout: 5000,
+      });
+    } catch {
+      // Fail closed below using the final pathname/history snapshot.
+    }
+
+    const after = await getPathState(frame);
+    const pass = after.pathname === expectedPath && after.historyLength > before.historyLength;
+
+    return {
+      route: routeName,
+      expectedPath,
+      overlayAtSmokeTime: normalization.overlayAtSmokeTime,
+      locatorVisible: true,
+      before,
+      after,
+      pass,
+      failureReason: pass
+        ? null
+        : routeFailureReason(
+            routeName,
+            before,
+            after,
+            normalization.overlayAtSmokeTime,
+            stacks.hostStack,
+            stacks.previewStack,
+          ),
+      hostHitStack: stacks.hostStack,
+      previewHitStack: stacks.previewStack,
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      error.routeName = routeName;
+      error.routeStage = routeStage;
+      error.routeBefore = before;
+      error.routeStacks = stacks;
+      error.normalization = error.normalization ?? normalization;
+    }
+    await captureCheckpoint(page, observability, 'failure', frame).catch(() => {});
+    if (error instanceof Error) {
+      error.failureCheckpointRecorded = true;
+    }
+    throw error;
+  }
 }
 
 async function main() {
   const args = await resolvePairArgs(parseArgs(process.argv.slice(2)));
   args.previewOrigin = normalizePreviewOrigin(args.previewOrigin);
   const scope = await buildScope(args);
+  const observability = createObservability(args.previewOrigin, new URL(args.projectUrl).origin);
 
   const chromium = await loadChromium();
   const browser = await chromium.launch({
@@ -753,6 +1181,7 @@ async function main() {
   });
 
   const page = await browser.newPage({ viewport: { width: 1600, height: 1100 } });
+  attachObservability(page, observability);
   const ledger = {
     status: 'fail',
     browser: {
@@ -765,19 +1194,26 @@ async function main() {
     normalization: null,
     routes: [],
     classification: null,
+    failurePhase: null,
+    failureRoute: null,
+    failureStage: null,
     failureReason: null,
+    artifacts: null,
   };
 
   try {
-    const firstNormalization = await normalizeSession(page, args);
+    const firstNormalization = await normalizeSession(page, args, observability);
     ledger.normalization = firstNormalization.normalization;
 
     let prepared = firstNormalization;
     for (const [routeName, expectedPath] of ROUTE_PLAN) {
-      const result = await smokeRoute(page, args, routeName, expectedPath, prepared);
+      const result = await smokeRoute(page, args, observability, routeName, expectedPath, prepared);
       ledger.routes.push(result);
       if (!result.pass && !ledger.failureReason) {
         ledger.failureReason = `${routeName}: ${result.failureReason}`;
+        ledger.failureRoute = routeName;
+        ledger.failureStage = 'route verdict';
+        await captureCheckpoint(page, observability, 'failure').catch(() => {});
       }
       prepared = null;
     }
@@ -786,12 +1222,10 @@ async function main() {
     ledger.classification = ledger.status === 'fail'
       ? classifyFailure(ledger.failureReason, ledger.routes)
       : null;
-
-    const output = JSON.stringify(ledger, null, 2);
-    if (args.jsonOut) {
-      await fs.writeFile(args.jsonOut, `${output}\n`, 'utf8');
-    }
-    console.log(output);
+    ledger.failurePhase = ledger.status === 'fail'
+      ? classifyFailurePhase(ledger.failureReason, ledger.routes, ledger.failureStage)
+      : null;
+    await writeArtifacts(args, ledger, observability);
 
     if (ledger.status !== 'pass') {
       process.exitCode = 1;
@@ -800,12 +1234,14 @@ async function main() {
     ledger.status = 'fail';
     ledger.normalization = error?.normalization ?? ledger.normalization;
     ledger.failureReason = error instanceof Error ? error.message : String(error);
+    ledger.failureRoute = error?.routeName ?? ledger.failureRoute;
+    ledger.failureStage = error?.routeStage ?? ledger.failureStage;
     ledger.classification = classifyFailure(ledger.failureReason, ledger.routes);
-    const output = JSON.stringify(ledger, null, 2);
-    if (args.jsonOut) {
-      await fs.writeFile(args.jsonOut, `${output}\n`, 'utf8');
+    ledger.failurePhase = classifyFailurePhase(ledger.failureReason, ledger.routes, ledger.failureStage);
+    if (!error?.failureCheckpointRecorded) {
+      await captureCheckpoint(page, observability, 'failure').catch(() => {});
     }
-    console.log(output);
+    await writeArtifacts(args, ledger, observability);
     process.exitCode = 1;
   } finally {
     await browser.close();
