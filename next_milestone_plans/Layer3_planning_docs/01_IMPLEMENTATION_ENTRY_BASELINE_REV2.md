@@ -39,7 +39,7 @@ Primary-planning citation note:
 - Those files are not tracked in this repo/worktree and must not be misread as repo-local implementation truth.
 
 Overall confidence for this baseline remains `Medium`.
-Reason: the tranche boundary and no-go set are stable, but later-gate freezes for the workbench route family, first-v1 typing heuristics, and qualitative-engine ambition remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
+Reason: the tranche boundary and no-go set are stable, and the former Gate C typing/unit blocker is now frozen by `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`, but later-gate freezes for the workbench route family and qualitative-engine ambition remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
 
 ## 2. Sources used and authority model
 
@@ -162,10 +162,10 @@ Current final-pack artifacts used only as lower-authority comparison surfaces:
    `Claim strength:` direct primary-planning evidence.
    `Evidence:` `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
 
-2. `Open due to architecture ambiguity`
-   `Conclusion:` First-v1 typing heuristics remain intentionally open and still block Gate C work.
-   `Claim strength:` direct primary-planning evidence.
-   `Evidence:` `P|layer3_primary_planningdocs/00D_LAYER3_PACK_COHERENCE_AND_GAP_AUDIT.md|What is still intentionally not frozen|85-91`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate C - typing/orchestration entry|101-105`
+2. `Settled by newer freeze artifact`
+   `Conclusion:` First-v1 typing heuristics and analysis-unit boundaries are now explicitly frozen and no longer block a bounded Gate C typing/unit implementation lane.
+   `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
+   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md|artifact|bounded Gate C typing/unit implementation contract`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate C - typing/orchestration entry|101-105`
 
 3. `Open due to architecture ambiguity`
    `Conclusion:` Qualitative-engine ambition beyond the currently reusable narrow deterministic pieces remains open and still waits.
@@ -190,9 +190,9 @@ Current final-pack artifacts used only as lower-authority comparison surfaces:
    `Evidence:` `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate C - typing/orchestration entry|101-105`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate D - packaging/handoff entry|107-111`
 
 3. `Revised from REV1`
-   `Conclusion:` Overall confidence remains `Medium`, but the reason is narrower than REV1 stated. The limiting issues are the still-open later-gate freezes for the future workbench route family, first-v1 typing heuristics, and qualitative-engine ambition, not a repo-root analyst-insight mismatch and not a Phase 1A blocker.
-   `Claim strength:` direct primary-planning evidence.
-   `Evidence:` `P|layer3_primary_planningdocs/00D_LAYER3_PACK_COHERENCE_AND_GAP_AUDIT.md|What is still intentionally not frozen|85-91`; `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate C - typing/orchestration entry|101-105`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
+   `Conclusion:` Overall confidence remains `Medium`, but the reason is narrower than REV1 stated. The limiting issues are the still-open later-gate freezes for the future workbench route family and qualitative-engine ambition, not a repo-root analyst-insight mismatch and not a Phase 1A blocker.
+   `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
+   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md|artifact|bounded Gate C typing/unit implementation contract`; `P|layer3_primary_planningdocs/08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md|Open questions|24-31`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Needs explicit user freeze or confirmation|131-135`
 
 ## 10. Concise evidence appendix
 
