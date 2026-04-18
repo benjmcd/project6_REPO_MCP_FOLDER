@@ -25,6 +25,83 @@ $runtimeGeneratedPaths = @(
     'apps/web/client/public/onlook-preload-script.js'
 )
 $activePairFile = Join-Path $laneRoot 'tools\onlook-active-pair.json'
+$defaultGateRuntimeDir = 'ext-onlook-fix'
+
+function Get-EnvValueFromFile {
+    param(
+        [string]$Path,
+        [string]$Key
+    )
+
+    if (-not (Test-Path $Path)) {
+        return $null
+    }
+
+    $line = Get-Content $Path | Where-Object { $_ -match "^{0}=" -f [regex]::Escape($Key) } | Select-Object -First 1
+    if (-not $line) {
+        return $null
+    }
+
+    $value = $line.Substring($Key.Length + 1).Trim()
+    if (
+        ($value.StartsWith('"') -and $value.EndsWith('"')) -or
+        ($value.StartsWith("'") -and $value.EndsWith("'"))
+    ) {
+        $value = $value.Substring(1, $value.Length - 2)
+    }
+
+    return $value
+}
+
+function Test-PlaceholderValue {
+    param([string]$Value)
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return $false
+    }
+
+    return $Value -match 'placeholder|your|replace|demo|example'
+}
+
+function Get-EnvKeyState {
+    param(
+        [string]$ClientRoot,
+        [string]$Key
+    )
+
+    $processValue = [Environment]::GetEnvironmentVariable($Key, 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($processValue)) {
+        return @{
+            source = 'process env'
+            status = if (Test-PlaceholderValue -Value $processValue) { 'placeholder' } else { 'present' }
+        }
+    }
+
+    foreach ($candidate in @('.env.local', '.env')) {
+        $path = Join-Path $ClientRoot $candidate
+        $value = Get-EnvValueFromFile -Path $path -Key $Key
+        if ($null -eq $value) {
+            continue
+        }
+
+        if ([string]::IsNullOrWhiteSpace($value)) {
+            return @{
+                source = $path
+                status = 'empty'
+            }
+        }
+
+        return @{
+            source = $path
+            status = if (Test-PlaceholderValue -Value $value) { 'placeholder' } else { 'present' }
+        }
+    }
+
+    return @{
+        source = 'no configured source'
+        status = 'missing'
+    }
+}
 
 function Write-GateStatus {
     Write-Host '  Current-project first gate (headed Chrome, fresh browser context, active verified pair only):'
@@ -48,6 +125,18 @@ function Write-GateStatus {
         }
     } else {
         Write-Host '    No active pair state file found. Default invocation fails closed.'
+    }
+    $defaultGateClientRoot = Join-Path $laneRoot "$defaultGateRuntimeDir\apps\web\client"
+    if (Test-Path $defaultGateClientRoot) {
+        $csbApiKeyState = Get-EnvKeyState -ClientRoot $defaultGateClientRoot -Key 'CSB_API_KEY'
+        if ($csbApiKeyState.status -eq 'present') {
+            Write-Host "    Current-project gate CSB_API_KEY: ready ($($csbApiKeyState.source))"
+        } else {
+            Write-Host "    Current-project gate CSB_API_KEY: not ready ($($csbApiKeyState.status) from $($csbApiKeyState.source))"
+            Write-Host '    Default normalized-smoke startup can still fail closed until a real CSB_API_KEY reaches the local Onlook web runtime.'
+        }
+    } else {
+        Write-Host "    Current-project gate runtime clone missing: ./$defaultGateRuntimeDir"
     }
     Write-Host '    Explicit override pair: ./tools/run-onlook-normalized-smoke.ps1 -ProjectUrl <project-url> -PreviewOrigin <preview-origin>'
     Write-Host '  Broader secondary proof (wider import/proof workflow, not equivalent to the first gate):'
