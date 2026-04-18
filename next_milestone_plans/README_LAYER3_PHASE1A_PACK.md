@@ -24,7 +24,7 @@ And to the carried-forward Gate C quantitative associated/cohort continuation fr
 And to the carried-forward Gate D package-entry freeze packet for the landed bounded packaging/reconciliation entry slice:
 - `next_milestone_plans/Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md`
 
-And to the carried-forward Gate D APS handoff freeze packet for the bounded first APS evidence-bundle-family handoff slice on this branch:
+And to the carried-forward Gate D APS handoff freeze packet for the bounded first APS evidence-bundle-family handoff slice in the current implementation state:
 - `next_milestone_plans/Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md`
 
 This README is operational and navigational.
@@ -52,7 +52,7 @@ The lane now contains:
 - the carried-forward Gate C quantitative single-item plan/pass-entry packet that governed the bounded plan/pass lane now landed on current `main`
 - the carried-forward Gate C quantitative associated/cohort shaping continuation packet that governed the bounded cohort pass lane now landed on current `main`
 - the carried-forward Gate D package-entry freeze packet that governed the bounded packaging/reconciliation entry slice now landed on current `main` without reopening route/UI or APS handoff scope
-- the carried-forward Gate D APS handoff freeze packet that governed the bounded APS evidence-bundle-family adapter/handoff slice now landed on this branch without widening route/UI, runtime DB, or later APS-family scope
+- the carried-forward Gate D APS handoff freeze packet that governs the bounded APS evidence-bundle-family adapter/handoff slice now present in the current implementation state without widening route/UI, runtime DB, or later APS-family scope
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -75,7 +75,7 @@ Current bounded posture:
 - Phase 1A itself does not admit typing, orchestration, packaging, APS handoff, route-family work, UI widening, or consumer widening
 - later carried-forward Gate C freezes now cover the landed typing/unit, single-item pass, and quantitative cohort slices
 - later carried-forward Gate D freeze now covers the landed bounded package-entry slice only; it does not mean packaging or consumer routes beyond that slice have already landed
-- the carried-forward Gate D APS handoff freeze now covers the bounded APS evidence-bundle-family handoff slice on this branch only; it does not mean broader APS families, route/UI surfaces, or consumer routes beyond that slice have already landed
+- the carried-forward Gate D APS handoff freeze now covers the bounded APS evidence-bundle-family handoff slice present in the current implementation state only; it does not mean broader APS families, route/UI surfaces, or consumer routes beyond that slice have already landed
 
 The active REV2 control docs in this pack have also been re-audited against current `main` after the repo-root analyst-insight page, alias-router, static-asset, and runtime-helper surfaces landed. Treat the REV1 artifacts and the REV1-to-REV2 correction memo as historical context only.
 
@@ -107,7 +107,7 @@ Read this after `06_GATEC_PASS_FREEZE.md` if you need the carried-forward contra
 Read this after `07_GATEC_COHORT_FREEZE.md` if you need the carried-forward contract that governed the bounded Gate D package-entry slice now landed on current `main`:
 - `Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md`
 
-Read this after `08_GATED_PACKAGE_FREEZE.md` if you need the carried-forward contract that governs the bounded APS evidence-bundle-family handoff slice now landed on this branch:
+Read this after `08_GATED_PACKAGE_FREEZE.md` if you need the carried-forward contract that governs the bounded APS evidence-bundle-family handoff slice now present in the current implementation state:
 - `Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md`
 
 ### 2. Execution handoff
@@ -188,7 +188,7 @@ It is the actual frozen contract that governed the bounded Gate D package-entry 
 ### Post-Phase 1A carried-forward APS handoff freeze packet
 
 This document is also outside the accepted Phase 1A normative control spine.
-It is the narrow frozen contract that governs the bounded APS evidence-bundle-family adapter/handoff slice now landed on this branch, and it does not itself imply that broader APS fan-out, route/UI surfaces, or consumer routes beyond that slice have already landed:
+It is the narrow frozen contract that governs the bounded APS evidence-bundle-family adapter/handoff slice now present in the current implementation state, and it does not itself imply that broader APS fan-out, route/UI surfaces, or consumer routes beyond that slice have already landed:
 - `09_GATED_APS_HANDOFF_FREEZE.md`
 
 Rule:
