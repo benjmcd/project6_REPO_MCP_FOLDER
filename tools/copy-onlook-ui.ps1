@@ -90,7 +90,9 @@ if ($CopyLocalEnv -and (Test-Path $copyLocalEnvPath)) {
 
 Write-Host ''
 Write-Host 'Next steps:'
+Write-Host "  ./tools/prep-onlook-copy.ps1 -TargetDir $targetName"
 Write-Host "  ./tools/prep-onlook-copy.ps1 -TargetDir $targetName -CopyLocalEnv"
+Write-Host '  Add -CopyLocalEnv only when the duplicate should share a direct localhost review API override.'
 Write-Host "  Set-Location $targetPath"
 Write-Host '  npm install'
 Write-Host '  npm run lint'

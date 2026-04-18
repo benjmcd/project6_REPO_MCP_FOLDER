@@ -1,13 +1,13 @@
 {
-  "projectUrl": "http://127.0.0.1:3011/project/34743ff9-9eb2-4172-a3e0-b4154853e608",
-  "previewOrigin": "https://72nw5n-3000.csb.app/",
+  "projectUrl": "http://127.0.0.1:3011/project/c7ae0439-cbdf-4ab1-bd7b-255b3e85c1ae",
+  "previewOrigin": "https://vn24pv-3000.csb.app/",
   "sourceLedgerPath": "tools/onlook-proof.json",
-  "verifiedAt": "2026-04-18T11:10:26-07:00",
-  "laneHead": "b9b0a51be78058a76614096f507d990d5baa37ba",
-  "runtimeCloneHead": "76c9155aeb3ad644b469fbd715c19161ecdbd4bd",
+  "verifiedAt": "2026-04-18T12:07:52-07:00",
+  "laneHead": "ce9936da42f9a43499a4cd5a0c1533cde3bd8424",
+  "runtimeCloneHead": "7d7f3b4be76916427f885efad8fd70ef6419cc38",
   "runtimeCloneTree": "a2a7672c9241802cd741d6d8fce9b847651c003c",
   "runtimeCloneHasLocalDiffPaths": false,
   "runtimeCloneLocalDiffSummary": "clean",
   "status": "verified-live",
-  "statusReason": "Refreshed from the freshest successful no-arg merged-main normalized-smoke verification on 2026-04-18. The canonical default points at the tracked durable proof ledger in tools/onlook-proof.json and validates helper fingerprints plus runtime-clone tree provenance."
+  "statusReason": "Refreshed from the fresh duplicate-target imported pair proven on 2026-04-18 by operator proof and two consecutive explicit normalized-smoke passes on the current helper/runtime state. The older 34743ff9-9eb2-4172-a3e0-b4154853e608 / 72nw5n-3000.csb.app pair is historical and no longer the default."
 }

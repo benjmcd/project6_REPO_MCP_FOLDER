@@ -6,9 +6,8 @@ Current scoped status:
 - The saved default-proof metadata lives in [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json).
 - The current runtime-clone provenance also comes from [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json) and the ledger it references.
 - The currently passing runtime surface is the restored runtime-clone state recorded in the referenced proof ledger.
-- The active verified pair is:
-  - project URL `http://127.0.0.1:3011/project/34743ff9-9eb2-4172-a3e0-b4154853e608`
-  - preview origin `https://72nw5n-3000.csb.app/`
+- The active verified pair also lives in [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json).
+- Read `projectUrl` and `previewOrigin` there for the live pair instead of pinning them in this doc.
 - The canonical current proof pointer is `tools/onlook-active-pair.json`.
 - Do not pin a ledger path from this doc. Read `sourceLedgerPath` and `verifiedAt` from `tools/onlook-active-pair.json` for the live proof pointer.
 - Default invocation validates the referenced durable proof ledger plus the local helper surfaces and runtime-clone provenance before it trusts the active pair.
@@ -16,9 +15,8 @@ Current scoped status:
 - The current-project first gate also requires a real `CSB_API_KEY` to reach the local Onlook web runtime because `sandbox.start` must create a browser session for the active sandbox.
 - The supported low-friction path is `ext-onlook-fix/apps/web/client/.env.local`, which overrides the placeholder key in `apps/web/client/.env` during wrapper startup.
 - A placeholder parent-shell `CSB_API_KEY` does not block the gate when `ext-onlook-fix/apps/web/client/.env.local` holds the real key.
-- The historical stale/unhealthy pair is retained only as prior context and is no longer a default:
-  - project URL `http://127.0.0.1:3011/project/c2486161-3bad-4958-b2c9-7c6502bc76a0`
-  - preview origin `https://vzyzj3-3000.csb.app/`
+- `./tools/check-onlook.ps1 -ShowGateStatusOnly` is the quickest read-only way to inspect the current default pair, proof source, and `CSB_API_KEY` readiness before running the gate.
+- Older active pairs are historical context only. Read `statusReason` in `tools/onlook-active-pair.json` or Git history if prior defaults matter; do not pin them in this doc.
 - The currently verified browser mode is headed Chrome with a fresh browser context.
 - The currently covered mouse route-chip checks are only:
   - `Workbench Compare`
@@ -34,6 +32,7 @@ Normalization steps for the current pair:
 
 Runtime note:
 - The wrapper will start the local Onlook backend first when the dev-login ports are missing, then start the web host if `3011` is down.
+- The default host origin for this gate is `http://127.0.0.1:3011`; `3000` remains the broader local Onlook web default outside this specific gate.
 - Host startup now imports the client env surface into the startup process, with `.env.local` overriding `.env`, before it launches the Onlook web runtime.
 - If `3011` is down but a stale Onlook preload helper is still holding `8083`, the wrapper will clear that recoverable stale helper before retrying host startup.
 - If startup fails before Chrome opens, the wrapper still writes a fail-closed ledger with the startup classification.
@@ -47,6 +46,7 @@ Interpretation:
 - Do not use direct URL typing, deep-links, or fallback navigation for the route verdict itself.
 - Resume product debugging only from a failed normalized-smoke artifact for the active verified pair or an explicit override pair, or after widening coverage on purpose.
 - Operator proof is broader secondary proof. It is not equivalent to this current-project first gate.
+- Sandbox `onlook-ui/.env.local` is not part of this gate unless you are intentionally overriding the sandbox app away from the committed same-origin fixture route.
 - Default invocation uses the active verified pair only.
 - Explicit `-ProjectUrl` and `-PreviewOrigin` are an override pair.
 - If `tools/onlook-active-pair.json` is missing, stale, or no longer matches the referenced proof ledger, local helper surfaces, or runtime-clone provenance, default invocation fails closed.
