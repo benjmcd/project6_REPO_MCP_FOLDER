@@ -111,7 +111,7 @@ The exact first APS-facing target is frozen now as:
 - using the existing repo-local evidence-bundle contract, persisted artifact expectations, and fail-closed validation surface
 
 Frozen target rule:
-- the next APS-facing lane must target the live evidence-bundle family directly
+- the bounded APS-facing lane admitted by this freeze must target the live evidence-bundle family directly
 - it must not invent a Layer 3-only pseudo-APS bundle family as a substitute
 - it must not jump directly to citation-pack, report, context-packet, dossier, deterministic-insight, deterministic-challenge, or review-packet families
 
@@ -245,7 +245,7 @@ Stop and reopen the freeze instead of improvising if the bounded write lane requ
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze is sufficient for the bounded write-enabled APS handoff lane that should follow the already-landed Gate D package-entry slice on current main`
+- `This freeze is sufficient for the bounded write-enabled APS handoff lane that has now landed on this branch after the already-landed Gate D package-entry slice on current main`
 
 Reason:
 - the earlier blocker was no longer internal packaging
