@@ -4,15 +4,15 @@
     "channel": "chrome",
     "headed": true
   },
-  "projectUrl": "http://127.0.0.1:3011/project/afaa640a-256b-4d7a-8e9e-74c81a15e987",
-  "previewOrigin": "https://qfjvhq-3000.csb.app/",
+  "projectUrl": "http://127.0.0.1:3011/project/0e6b387e-464e-48e9-9952-c0bf75059acb",
+  "previewOrigin": "https://7mm7hz-3000.csb.app/",
   "scope": {
     "lane": {
       "worktreePath": "worktrees/onlook-canonical-main",
-      "head": "f94ea3932c6e65d0b775253df1e54ce7088b82b4",
+      "head": "28bd7cee40a107d368153d254dc2d331e1bbc2f2",
       "helperFiles": {
         "tools/run-onlook-normalized-smoke.ps1": "1adc0324416582e78a85f8195994fa63afd889ba45f3e4a2eeb69ffd04a346ce",
-        "tools/onlook-normalized-smoke.mjs": "8ac8b963bdb8ae065a76803cb163b55f8e9f7c97cb114ca8c4b5d2c718cdf794",
+        "tools/onlook-normalized-smoke.mjs": "328bac2833340ff5a9599c25583a100b354e06f5da20bd9b96d43e1749de3e6f",
         "tools/start-onlook-web.ps1": "594c6e8e546352706dc9d9df254d4b3b68dec053eefded89ddf169233e9381a7"
       }
     },
@@ -25,8 +25,8 @@
       "localDiffSummary": "clean"
     },
     "currentPair": {
-      "projectUrl": "http://127.0.0.1:3011/project/afaa640a-256b-4d7a-8e9e-74c81a15e987",
-      "previewOrigin": "https://qfjvhq-3000.csb.app/",
+      "projectUrl": "http://127.0.0.1:3011/project/0e6b387e-464e-48e9-9952-c0bf75059acb",
+      "previewOrigin": "https://7mm7hz-3000.csb.app/",
       "projectUrlSource": "explicit",
       "previewOriginSource": "explicit"
     },
@@ -295,9 +295,9 @@
   "failureStage": null,
   "failureReason": null,
   "artifacts": {
-    "observability": "archive/onlook-normalized-smoke/20260418-130801-d3a3fb72/observability.json"
+    "observability": "archive/onlook-normalized-smoke/20260418-140657-af17aa5b/observability.json"
   },
   "artifactType": "durable-tracked-proof",
-  "verifiedAt": "2026-04-18T13:10:00-07:00",
-  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-130801-d3a3fb72/ledger.json"
+  "verifiedAt": "2026-04-18T14:07:52-07:00",
+  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-140657-af17aa5b/ledger.json"
 }

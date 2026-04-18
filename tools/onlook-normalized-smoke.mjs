@@ -35,6 +35,8 @@ const ROOT_REVIEW_LOADING_MARKERS = [
 const ROOT_REVIEW_DEGRADED_MARKERS = [
   'No reviewable runs found',
   'Runs loaded: 0',
+  '502 Bad Gateway',
+  'we were not able to access the dev server behind this port',
 ];
 
 function isoNow() {
@@ -1080,6 +1082,13 @@ async function normalizeSession(page, args, observability) {
       });
     }
 
+    const previewModeEntry = await switchToPreviewMode(page, args.timeoutMs);
+    normalization.initialEditorMode = previewModeEntry.initialEditorMode;
+    recordBreadcrumb(observability, 'preview-mode-set', {
+      editorMode: previewModeEntry.finalEditorMode,
+      phaseDetail: 'pre-frame',
+    });
+
     let frame = await waitForPreviewFrame(page, args.previewOrigin, args.timeoutMs);
     rememberPreviewFrame(observability, frame);
     recordBreadcrumb(observability, 'preview-frame-found', {
@@ -1092,12 +1101,15 @@ async function normalizeSession(page, args, observability) {
 
     frame = await waitForPreviewFrame(page, args.previewOrigin, args.timeoutMs);
     rememberPreviewFrame(observability, frame);
-    const previewMode = await switchToPreviewMode(page, args.timeoutMs);
-    normalization.initialEditorMode = previewMode.initialEditorMode;
-    normalization.finalEditorModeBeforeSmoke = previewMode.finalEditorMode;
+    const previewModeConfirm = await switchToPreviewMode(page, args.timeoutMs);
+    normalization.finalEditorModeBeforeSmoke = previewModeConfirm.finalEditorMode;
     recordBreadcrumb(observability, 'preview-mode-set', {
-      editorMode: previewMode.finalEditorMode,
+      editorMode: previewModeConfirm.finalEditorMode,
+      phaseDetail: 'post-trust',
     });
+
+    frame = await waitForPreviewFrame(page, args.previewOrigin, args.timeoutMs);
+    rememberPreviewFrame(observability, frame);
 
     normalization.overlayAtSmokeTime = await getLoadingOverlay(page);
     if (normalization.overlayAtSmokeTime.present) {
