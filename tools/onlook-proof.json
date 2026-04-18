@@ -1,0 +1,300 @@
+{
+  "status": "pass",
+  "browser": {
+    "channel": "chrome",
+    "headed": true
+  },
+  "projectUrl": "http://127.0.0.1:3011/project/34743ff9-9eb2-4172-a3e0-b4154853e608",
+  "previewOrigin": "https://72nw5n-3000.csb.app/",
+  "scope": {
+    "lane": {
+      "worktreePath": "worktrees/onlook-proof",
+      "head": "3a9f81f48eb1a4f9ec45b7c9ca8292f4d004ec93",
+      "helperFiles": {
+        "tools/run-onlook-normalized-smoke.ps1": "84be330c76625dc1c14e202899bf246abd57552b5a19930cdb580dceef66ee90",
+        "tools/onlook-normalized-smoke.mjs": "3df8d88cf440c17a7041d4a15ce4372c64846ee874bbab47c9bfad5feb8291fc",
+        "tools/start-onlook-web.ps1": "b4d1a1a36c0e722a6b9d23ae975173440b1317f86861074ca9a03f7f93253b28"
+      }
+    },
+    "runtimeClone": {
+      "dir": "ext-onlook-fix",
+      "head": "8e70e9afc606576630f20e64957448fbf511ef00",
+      "hasLocalDiffPaths": false,
+      "localDiffPaths": [],
+      "localDiffSummary": "clean"
+    },
+    "currentPair": {
+      "projectUrl": "http://127.0.0.1:3011/project/34743ff9-9eb2-4172-a3e0-b4154853e608",
+      "previewOrigin": "https://72nw5n-3000.csb.app/",
+      "projectUrlSource": "active-verified-pair",
+      "previewOriginSource": "active-verified-pair"
+    },
+    "browser": {
+      "channel": "chrome",
+      "headed": true,
+      "freshContext": true
+    },
+    "hostStartMode": "host-already-up",
+    "routesCovered": [
+      {
+        "route": "Workbench Compare",
+        "expectedPath": "/workbench-compare"
+      },
+      {
+        "route": "Document Trace",
+        "expectedPath": "/document-trace"
+      }
+    ]
+  },
+  "normalization": {
+    "loginNeeded": true,
+    "trustCleared": true,
+    "initialEditorMode": "design",
+    "finalEditorModeBeforeSmoke": "preview",
+    "rootReviewVisible": true,
+    "overlayAtSmokeTime": {
+      "present": false,
+      "className": null,
+      "text": null
+    }
+  },
+  "routes": [
+    {
+      "route": "Workbench Compare",
+      "expectedPath": "/workbench-compare",
+      "overlayAtSmokeTime": {
+        "present": false,
+        "className": null,
+        "text": null
+      },
+      "locatorVisible": true,
+      "before": {
+        "pathname": "/",
+        "historyLength": 5
+      },
+      "after": {
+        "pathname": "/workbench-compare",
+        "historyLength": 6
+      },
+      "pass": true,
+      "failureReason": null,
+      "hostHitStack": [
+        {
+          "tag": "IFRAME",
+          "className": "size-full outline outline-4 backdrop-blur-sm transition outline-teal-400",
+          "text": "",
+          "x": 271,
+          "y": 232.40625,
+          "width": 1536,
+          "height": 960
+        },
+        {
+          "tag": "DIV",
+          "className": "absolute inset-0 opacity-40 transition min-w-0 visible hover:opacity-60",
+          "text": "",
+          "x": 270,
+          "y": 231.40625,
+          "width": 1538,
+          "height": 962
+        },
+        {
+          "tag": "DIV",
+          "className": "flex-1",
+          "text": "",
+          "x": 271,
+          "y": 232.40625,
+          "width": 1536,
+          "height": 960
+        },
+        {
+          "tag": "DIV",
+          "className": "flex size-full flex-col rounded-lg border bg-card",
+          "text": "",
+          "x": 270,
+          "y": 231.40625,
+          "width": 1538,
+          "height": 962
+        },
+        {
+          "tag": "DIV",
+          "className": "relative",
+          "text": "",
+          "x": 270,
+          "y": 231.40625,
+          "width": 1538,
+          "height": 962
+        }
+      ],
+      "previewHitStack": [
+        {
+          "tag": "A",
+          "className": "rounded-full border px-4 py-2 text-sm font-medium transition border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100",
+          "text": "Workbench Compare",
+          "x": 276.75,
+          "y": 419,
+          "width": 168.21875,
+          "height": 38
+        },
+        {
+          "tag": "NAV",
+          "className": "mt-5 flex flex-wrap gap-2",
+          "text": "ReviewDocument TraceWorkbench CompareCandidate B TraceAnalyst Insight",
+          "x": 45,
+          "y": 419,
+          "width": 1431,
+          "height": 38
+        },
+        {
+          "tag": "SECTION",
+          "className": "rounded-[2rem] border border-slate-200 bg-white/85 p-5 shadow-sm backdrop-blur",
+          "text": "Onlook Review SandboxReview OverviewThis is the original sandbox surface that proved the repo-side hydration fix. It now",
+          "x": 24,
+          "y": 262,
+          "width": 1473,
+          "height": 360
+        },
+        {
+          "tag": "DIV",
+          "className": "mx-auto flex w-full max-w-[1600px] flex-col gap-5 px-6 py-6",
+          "text": "Onlook Review SandboxReview OverviewThis is the original sandbox surface that proved the repo-side hydration fix. It now",
+          "x": 0,
+          "y": 238,
+          "width": 1521,
+          "height": 1372
+        },
+        {
+          "tag": "MAIN",
+          "className": "min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.14),_transparent_26%),linear-gradient(180deg,_#f7fafc_0%,_#eef4f8_100%)] text-slate-950",
+          "text": "Onlook sandboxMulti-route laneNRC APS review sandboxThis React and Tailwind shell serves an import-safe, same-origin sna",
+          "x": 0,
+          "y": 0,
+          "width": 1521,
+          "height": 1610
+        }
+      ]
+    },
+    {
+      "route": "Document Trace",
+      "expectedPath": "/document-trace",
+      "overlayAtSmokeTime": {
+        "present": false,
+        "className": null,
+        "text": null
+      },
+      "locatorVisible": true,
+      "before": {
+        "pathname": "/",
+        "historyLength": 6
+      },
+      "after": {
+        "pathname": "/document-trace",
+        "historyLength": 7
+      },
+      "pass": true,
+      "failureReason": null,
+      "hostHitStack": [
+        {
+          "tag": "IFRAME",
+          "className": "size-full outline outline-4 backdrop-blur-sm transition outline-teal-400",
+          "text": "",
+          "x": 271,
+          "y": 232.40625,
+          "width": 1536,
+          "height": 960
+        },
+        {
+          "tag": "DIV",
+          "className": "absolute inset-0 opacity-40 transition min-w-0 visible hover:opacity-60",
+          "text": "",
+          "x": 270,
+          "y": 231.40625,
+          "width": 1538,
+          "height": 962
+        },
+        {
+          "tag": "DIV",
+          "className": "flex-1",
+          "text": "",
+          "x": 271,
+          "y": 232.40625,
+          "width": 1536,
+          "height": 960
+        },
+        {
+          "tag": "DIV",
+          "className": "flex size-full flex-col rounded-lg border bg-card",
+          "text": "",
+          "x": 270,
+          "y": 231.40625,
+          "width": 1538,
+          "height": 962
+        },
+        {
+          "tag": "DIV",
+          "className": "relative",
+          "text": "",
+          "x": 270,
+          "y": 231.40625,
+          "width": 1538,
+          "height": 962
+        }
+      ],
+      "previewHitStack": [
+        {
+          "tag": "A",
+          "className": "rounded-full border px-4 py-2 text-sm font-medium transition border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100",
+          "text": "Document Trace",
+          "x": 131.578125,
+          "y": 419,
+          "width": 137.171875,
+          "height": 38
+        },
+        {
+          "tag": "NAV",
+          "className": "mt-5 flex flex-wrap gap-2",
+          "text": "ReviewDocument TraceWorkbench CompareCandidate B TraceAnalyst Insight",
+          "x": 45,
+          "y": 419,
+          "width": 1431,
+          "height": 38
+        },
+        {
+          "tag": "SECTION",
+          "className": "rounded-[2rem] border border-slate-200 bg-white/85 p-5 shadow-sm backdrop-blur",
+          "text": "Onlook Review SandboxReview OverviewThis is the original sandbox surface that proved the repo-side hydration fix. It now",
+          "x": 24,
+          "y": 262,
+          "width": 1473,
+          "height": 360
+        },
+        {
+          "tag": "DIV",
+          "className": "mx-auto flex w-full max-w-[1600px] flex-col gap-5 px-6 py-6",
+          "text": "Onlook Review SandboxReview OverviewThis is the original sandbox surface that proved the repo-side hydration fix. It now",
+          "x": 0,
+          "y": 238,
+          "width": 1521,
+          "height": 1443
+        },
+        {
+          "tag": "MAIN",
+          "className": "min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.14),_transparent_26%),linear-gradient(180deg,_#f7fafc_0%,_#eef4f8_100%)] text-slate-950",
+          "text": "Onlook sandboxMulti-route laneNRC APS review sandboxThis React and Tailwind shell serves an import-safe, same-origin sna",
+          "x": 0,
+          "y": 0,
+          "width": 1521,
+          "height": 1681
+        }
+      ]
+    }
+  ],
+  "classification": null,
+  "failurePhase": null,
+  "failureRoute": null,
+  "failureStage": null,
+  "failureReason": null,
+  "artifacts": null,
+  "artifactType": "durable-tracked-proof",
+  "verifiedAt": "2026-04-18T07:11:00-07:00",
+  "sourceArtifactPath": "archive/onlook-normalized-smoke/20260418-071040-0c1244e9/ledger.json"
+}

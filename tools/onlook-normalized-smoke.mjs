@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -8,6 +9,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const execFileAsync = promisify(execFile);
 const DEFAULT_ACTIVE_PAIR_FILE = path.join(__dirname, 'onlook-active-pair.json');
+const LANE_HELPER_FILES = [
+  'tools/run-onlook-normalized-smoke.ps1',
+  'tools/onlook-normalized-smoke.mjs',
+  'tools/start-onlook-web.ps1',
+];
 const ROUTE_PLAN = [
   ['Workbench Compare', '/workbench-compare'],
   ['Document Trace', '/document-trace'],
@@ -469,6 +475,23 @@ async function readJsonFile(filePath, label) {
   }
 }
 
+async function getFileSha256(filePath) {
+  const buffer = await fs.readFile(filePath);
+  return crypto.createHash('sha256').update(buffer).digest('hex');
+}
+
+async function readLaneHelperHashes() {
+  const laneRoot = path.join(__dirname, '..');
+  const helperHashes = {};
+
+  for (const repoPath of LANE_HELPER_FILES) {
+    const fullPath = path.join(laneRoot, ...repoPath.split('/'));
+    helperHashes[repoPath] = await getFileSha256(fullPath);
+  }
+
+  return helperHashes;
+}
+
 function parseStatusPaths(statusText) {
   if (!statusText) {
     return [];
@@ -546,8 +569,7 @@ async function resolvePairArgs(args) {
 
   const current = await readCurrentProvenance(args.runtimeDir);
   if (
-    activePairState.laneHead !== current.laneHead
-    || activePairState.runtimeCloneHead !== current.runtimeHead
+    activePairState.runtimeCloneHead !== current.runtimeHead
     || Boolean(activePairState.runtimeCloneHasLocalDiffPaths) !== current.runtimeCloneHasLocalDiffPaths
     || activePairState.runtimeCloneLocalDiffSummary !== current.runtimeCloneLocalDiffSummary
   ) {
@@ -574,6 +596,29 @@ async function resolvePairArgs(args) {
     throw new Error(`Active pair source ledger does not match ${activePairPath}; provide --project-url and --preview-origin explicitly.`);
   }
 
+  const helperFiles = ledger.scope?.lane?.helperFiles;
+  if (helperFiles && Object.keys(helperFiles).length > 0) {
+    const currentHelperFiles = await readLaneHelperHashes();
+    const mismatches = [];
+    for (const [repoPath, expectedHash] of Object.entries(helperFiles)) {
+      const currentHash = currentHelperFiles[repoPath];
+      if (!currentHash) {
+        mismatches.push(`${repoPath} (missing locally)`);
+        continue;
+      }
+
+      if (currentHash !== String(expectedHash).toLowerCase()) {
+        mismatches.push(`${repoPath} (${currentHash} != ${expectedHash})`);
+      }
+    }
+
+    if (mismatches.length > 0) {
+      throw new Error(`Active pair helper provenance does not match current lane helper state in ${activePairPath}; provide --project-url and --preview-origin explicitly. Mismatches: ${mismatches.join('; ')}`);
+    }
+  } else if (activePairState.laneHead !== current.laneHead) {
+    throw new Error(`Active pair provenance does not match current lane/runtime state in ${activePairPath}; provide --project-url and --preview-origin explicitly.`);
+  }
+
   args.projectUrl = activePairState.projectUrl;
   args.previewOrigin = activePairState.previewOrigin;
   args.projectUrlSource = 'active-verified-pair';
@@ -589,11 +634,13 @@ async function buildScope(args) {
   const runtimeHead = await execText('git', ['-C', runtimeRoot, 'rev-parse', 'HEAD'], laneRoot);
   const runtimeStatus = await execText('git', ['-C', runtimeRoot, 'status', '--short'], laneRoot);
   const runtimeCloneDirtyPaths = parseStatusPaths(runtimeStatus);
+  const helperFiles = await readLaneHelperHashes();
 
   return {
     lane: {
       worktreePath: path.relative(repoRoot, laneRoot).replace(/\\/g, '/'),
       head: laneHead,
+      helperFiles,
     },
     runtimeClone: {
       dir: args.runtimeDir,
