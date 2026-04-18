@@ -21,7 +21,7 @@ And to the carried-forward Gate C plan/pass-entry freeze packet for the landed b
 And to the carried-forward Gate C quantitative associated/cohort continuation freeze packet for the landed bounded cohort slice:
 - `next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md`
 
-And to the carried-forward Gate D package-entry freeze packet for the next bounded packaging/reconciliation lane:
+And to the carried-forward Gate D package-entry freeze packet for the bounded packaging/reconciliation entry slice:
 - `next_milestone_plans/Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md`
 
 This README is operational and navigational.
@@ -48,7 +48,7 @@ The lane now contains:
 - the carried-forward first Gate C typing/unit implementation-entry packet that governed the bounded typing/unit lane now landed on current `main`
 - the carried-forward Gate C quantitative single-item plan/pass-entry packet that governed the bounded plan/pass lane now landed on current `main`
 - the carried-forward Gate C quantitative associated/cohort shaping continuation packet that governed the bounded cohort pass lane now landed on current `main`
-- the carried-forward Gate D package-entry freeze packet that now defines the next bounded packaging/reconciliation continuation without reopening route/UI or APS handoff scope
+- the carried-forward Gate D package-entry freeze packet that now governs the bounded packaging/reconciliation entry slice without reopening route/UI or APS handoff scope
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -70,7 +70,7 @@ Current bounded posture:
   - `l3_material_snapshot`
 - Phase 1A itself does not admit typing, orchestration, packaging, APS handoff, route-family work, UI widening, or consumer widening
 - later carried-forward Gate C freezes now cover the landed typing/unit, single-item pass, and quantitative cohort slices
-- later carried-forward Gate D freeze now covers the next bounded package-entry continuation only; it does not mean packaging or consumer routes have already landed
+- later carried-forward Gate D freeze now governs the bounded package-entry slice only; it does not mean packaging or consumer routes beyond that slice have already landed
 
 The active REV2 control docs in this pack have also been re-audited against current `main` after the repo-root analyst-insight page, alias-router, static-asset, and runtime-helper surfaces landed. Treat the REV1 artifacts and the REV1-to-REV2 correction memo as historical context only.
 
@@ -99,7 +99,7 @@ Read this after `05_GATEC_IMPLEMENTATION_FREEZE.md` if you need the carried-forw
 Read this after `06_GATEC_PASS_FREEZE.md` if you need the carried-forward contract for the bounded Gate C quantitative associated/cohort continuation slice that has now landed on current `main`:
 - `Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md`
 
-Read this after `07_GATEC_COHORT_FREEZE.md` if you need the carried-forward contract for the next bounded Gate D package-entry continuation:
+Read this after `07_GATEC_COHORT_FREEZE.md` if you need the carried-forward contract for the bounded Gate D package-entry slice:
 - `Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md`
 
 ### 2. Execution handoff
@@ -174,7 +174,7 @@ It is the actual frozen contract that governed the bounded Gate C quantitative a
 ### Post-Phase 1A carried-forward Gate D package freeze packet
 
 This document is also outside the accepted Phase 1A normative control spine.
-It is the actual frozen contract for the next bounded Gate D package-entry continuation and it does not itself imply that packaging or consumer routes have already landed:
+It is the actual frozen contract for the bounded Gate D package-entry slice and it does not itself imply that packaging or consumer routes beyond that slice have already landed:
 - `08_GATED_PACKAGE_FREEZE.md`
 
 Rule:
