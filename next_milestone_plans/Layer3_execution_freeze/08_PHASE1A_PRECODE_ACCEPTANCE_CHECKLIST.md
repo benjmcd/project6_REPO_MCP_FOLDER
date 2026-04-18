@@ -1,5 +1,10 @@
 # 08 Phase1A Precode Acceptance Checklist
 
+## Historical Note
+
+This checklist is retained for historical continuity and is superseded by `08_PHASE1A_PRECODE_ACCEPTANCE_CHECKLIST_REV2.md`.
+Use the REV2 checklist as the current control doc; older analyst-insight worktree-only wording below is not the current live-repo posture.
+
 ## Purpose and use
 
 Use this checklist before a write-enabled session edits any code. Every item must be true before editing begins. If any item cannot be checked cleanly, stop and escalate instead of widening scope.
@@ -29,16 +34,16 @@ Evidence basis: `A|next_milestone_plans/Layer3_execution_freeze/07_PHASE1A_IMPLE
 - [ ] I will use exactly one manual migration file path pattern: `backend/alembic/versions/<revision>_layer3_session_entry.py`.  
   `Evidence:` `A|next_milestone_plans/Layer3_execution_freeze/07_PHASE1A_IMPLEMENTATION_LOCAL_DECISIONS.md|artifact|recommended choices 3-4`
 
-- [ ] I will not touch `backend/app/schemas/api.py` unless I stop and explicitly escalate first.  
+- [ ] I will not touch `backend/app/schemas/api.py` unless I stop and explicitly escalate first.
   `Evidence:` `A|next_milestone_plans/Layer3_execution_freeze/07_PHASE1A_IMPLEMENTATION_LOCAL_DECISIONS.md|artifact|recommended choice 2`
 
-- [ ] I will not touch `backend/main.py`, `backend/app/api/router.py`, `backend/app/api/review_nrc_aps.py`, `backend/app/schemas/review_nrc_aps.py`, `backend/app/review_ui/static/**`, `backend/app/services/review_nrc_aps_*`, `backend/app/services/analysis.py`, `backend/app/api/market_data_*.py`, `backend/app/services/market_data_*.py`, or the downstream `backend/app/services/nrc_aps_*` artifact family.  
+- [ ] I will not touch `backend/main.py`, `backend/app/api/router.py`, `backend/app/api/review_nrc_aps.py`, `backend/app/schemas/review_nrc_aps.py`, `backend/app/review_ui/static/**`, `backend/app/services/review_nrc_aps_*`, `backend/app/services/analysis.py`, `backend/app/api/market_data_*.py`, `backend/app/services/market_data_*.py`, or the downstream `backend/app/services/nrc_aps_*` artifact family.
   `Evidence:` `A|next_milestone_plans/Layer3_execution_handoff/04_PHASE1A_FILE_TOUCH_AND_OWNER_MATRIX.md|artifact|forbidden-touch rows and out-of-scope path families`
 
-- [ ] I will not treat any worktree-only analyst-insight file or route as repo-root implementation truth.  
-  `Evidence:` `A|next_milestone_plans/Layer3_execution_handoff/06_PHASE1A_CODEWRITING_HANDOFF.md|artifact|section 4 invariant 6`; `W|worktrees/mainline-lane/backend/main.py|confirmation-only|75-97`
+- [ ] I will not treat any other-worktree file or route as repo-root implementation truth.
+  `Evidence:` `A|next_milestone_plans/Layer3_execution_handoff/06_PHASE1A_CODEWRITING_HANDOFF.md|artifact|section 4 invariant 6`
 
-- [ ] I will use a test-only internal proof harness that imports the new service module directly; I will not add a temporary route or browser surface.  
+- [ ] I will use a test-only internal proof harness that imports the new service module directly; I will not add a temporary route or browser surface.
   `Evidence:` `A|next_milestone_plans/Layer3_execution_freeze/07_PHASE1A_IMPLEMENTATION_LOCAL_DECISIONS.md|artifact|recommended choice 6`; `P|layer3_primary_planningdocs/06_LAYER3_ENGINE_MAP_AND_EXISTING_REPO_REUSE.md|Recommended invocation posture|141-143`
 
 - [ ] I acknowledge the proof burden: one machine-checkable proof surface, one happy path, one partial-feed path, explicit payload refs/hashes/lineage, and explicit unchanged forbidden surfaces.  

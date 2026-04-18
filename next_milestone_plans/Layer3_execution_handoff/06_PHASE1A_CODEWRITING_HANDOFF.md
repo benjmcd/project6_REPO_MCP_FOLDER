@@ -12,6 +12,10 @@ Applied authority order for this handoff lane:
 5. current REV2 implementation-prep baseline docs
 6. older report and final-pack artifacts
 
+Primary-planning citation note:
+- `P` citations whose path segment begins `layer3_primary_planningdocs/` refer to the external canonical Layer 3 planning corpus at `C:\Users\benny\OneDrive\Desktop\Layer3\layer3_primary_planningdocs`.
+- Those files are not tracked in this repo/worktree and must not be misread as repo-local implementation truth.
+
 Frozen scope retained:
 - `Phase 1A = Gate-B-only feeder/ledger entry`
 - object set limited to `l3_session`, `l3_selection_manifest`, `l3_descriptor`, `l3_retrieval_event`, `l3_material_snapshot`
@@ -68,8 +72,8 @@ Evidence basis: `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DE
 5. Existing adjacent repo surfaces remain constraints, not targets. Existing dataset/version, analysis-run, connector-run, APS content, review/document-trace, market-data, and downstream APS artifact semantics must remain intact.
    `Evidence:` `R|backend/app/models/models.py|class Dataset; class DatasetVersion; class AnalysisRun; class AnalysisArtifact; class ConnectorRun; class ConnectorRunTarget; class ApsContentDocument; class ApsContentChunk; class ApsContentLinkage; class DatasetSourceProvenance|36-726`; `R|backend/app/api/review_nrc_aps.py|review/document trace routes|40-220`; `R|backend/app/schemas/review_nrc_aps.py|review/document-trace contracts|8-220`; `R|backend/app/services/analysis.py|artifact persistence helpers; recommend_analysis; run_analysis|48-87`; `R|backend/app/services/analysis.py|run_analysis|541-541`
 
-6. Same-path worktree analyst-insight surfaces remain caution only. They do not upgrade repo-root authority and do not authorize touching missing repo-root files.
-   `Evidence:` `R|backend/main.py|review routes only; no analyst_insight_page symbol|45-80`; `R|backend/app/api/router.py|include_router market_data routers only|93-97`; `R|backend/app/review_ui/static/analyst_insight.html|missing-at-repo-root|not present`; `R|backend/app/review_ui/static/analyst_insight.js|missing-at-repo-root|not present`; `R|backend/app/services/review_nrc_aps_runtime_db.py|missing-at-repo-root|not present`; `W|worktrees/mainline-lane/backend/main.py|confirmation-only|75-97`; `W|worktrees/mainline-lane/backend/app/api/router.py|confirmation-only|98-100`
+6. Other worktree files remain caution only. For analyst-insight specifically, repo-root already contains the current page, router, asset, and runtime-helper surfaces, but their presence still does not authorize touching them in Phase 1A.
+   `Evidence:` `R|backend/main.py|analyst_insight_page and root link|75-97`; `R|backend/app/api/router.py|review_nrc_aps plus legacy and alias analyst-insight routers|93-100`; `R|backend/app/review_ui/static/analyst_insight.html|present|exists`; `R|backend/app/review_ui/static/analyst_insight.js|present|exists`; `R|backend/app/services/review_nrc_aps_runtime_db.py|read-only runtime DB session management|1-87`; `A|next_milestone_plans/Layer3_execution_handoff/04_PHASE1A_FILE_TOUCH_AND_OWNER_MATRIX.md|artifact|auto-out-of-scope worktrees rule`
 
 ## 5. Exact repo surfaces that constrain implementation
 
@@ -87,7 +91,7 @@ Evidence basis: `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DE
 
 4. `Read-only consumer and runtime-boundary surfaces`
    `backend/app/schemas/review_nrc_aps.py`, `backend/app/services/review_nrc_aps_graph.py`, `backend/app/services/review_nrc_aps_document_trace.py`, and `backend/app/services/review_nrc_aps_runtime_db.py` constrain the pass by defining adjacent review/runtime behavior. They must not be touched.
-   `Evidence:` `R|backend/app/schemas/review_nrc_aps.py|review/document-trace contracts|8-220`; `R|backend/app/services/review_nrc_aps_document_trace.py|compose_document_selector and _resolve_safe_runtime_path|82-180`; `R|backend/app/services/review_nrc_aps_runtime_db.py|missing-at-repo-root|not present`; `A|next_milestone_plans/Layer3_execution_handoff/04_PHASE1A_FILE_TOUCH_AND_OWNER_MATRIX.md|artifact|rows for review/document-trace surfaces`
+   `Evidence:` `R|backend/app/schemas/review_nrc_aps.py|review/document-trace contracts|8-220`; `R|backend/app/services/review_nrc_aps_document_trace.py|compose_document_selector and _resolve_safe_runtime_path|82-180`; `R|backend/app/services/review_nrc_aps_runtime_db.py|read-only runtime DB session management|1-87`; `A|next_milestone_plans/Layer3_execution_handoff/04_PHASE1A_FILE_TOUCH_AND_OWNER_MATRIX.md|artifact|rows for review/document-trace surfaces`
 
 5. `Read-only adjacent engine families`
    `backend/app/api/market_data_integration.py`, `backend/app/api/market_data_validation.py`, `backend/app/api/market_insight_ai.py`, `backend/app/services/market_data_integration.py`, `backend/app/services/market_data_validation.py`, `backend/app/services/market_insight_ai.py`, and `backend/app/services/analysis.py` constrain semantics but must not be touched in Phase 1A.
@@ -127,10 +131,10 @@ Evidence basis: `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DE
    `Evidence:` `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate C - typing/orchestration entry|101-105`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate D - packaging/handoff entry|107-111`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Explicit out-of-scope items for the first slice|123-129`
 
 3. Stop if runtime DB writes, runtime DB migrations, runtime DB ledger reuse, or dependence on `backend/app/services/review_nrc_aps_runtime_db.py` becomes necessary.
-   `Evidence:` `P|layer3_primary_planningdocs/09_LAYER3_PERSISTENCE_RUNTIME_AND_SECURITY_BOUNDARIES.md|Runtime DB rule|76-83`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Fail-closed conditions|120-127`; `R|backend/app/services/review_nrc_aps_runtime_db.py|missing-at-repo-root|not present`
+   `Evidence:` `P|layer3_primary_planningdocs/09_LAYER3_PERSISTENCE_RUNTIME_AND_SECURITY_BOUNDARIES.md|Runtime DB rule|76-83`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Fail-closed conditions|120-127`; `R|backend/app/services/review_nrc_aps_runtime_db.py|read-only runtime DB session management|1-87`
 
-4. Stop if the write pass needs to treat worktree-only analyst-insight surfaces as repo-root truth.
-   `Evidence:` `W|worktrees/mainline-lane/backend/main.py|confirmation-only|75-97`; `W|worktrees/mainline-lane/backend/app/api/router.py|confirmation-only|98-100`; `A|next_milestone_plans/Layer3_planning_docs/PHASE1A_PREP_PACK_REV1_TO_REV2_CORRECTION_MEMO.md|artifact|section 2`
+4. Stop if the write pass needs to treat other-worktree files as repo-root truth.
+   `Evidence:` `A|next_milestone_plans/Layer3_execution_handoff/04_PHASE1A_FILE_TOUCH_AND_OWNER_MATRIX.md|artifact|auto-out-of-scope worktrees rule`
 
 5. Stop if the write pass cannot choose its new service-module path or proof-file path without inventing a broader new truth surface.
    `Evidence:` `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Can be decided implementation-locally once the pack is accepted|137-141`; `A|next_milestone_plans/Layer3_execution_handoff/04_PHASE1A_FILE_TOUCH_AND_OWNER_MATRIX.md|artifact|conditional new-module and new-proof rows`; `A|next_milestone_plans/Layer3_execution_handoff/05_PHASE1A_PROOF_RUNBOOK_AND_STOP_CONDITIONS.md|artifact|escalation triggers 1-2`
