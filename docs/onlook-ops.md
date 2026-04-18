@@ -45,6 +45,34 @@ Do not blur those roles:
 - `ext-onlook-pr/` is the cleaner upstream packaging proof surface.
 - `ext-onlook/` is the clean base reference, not the default solved surface.
 
+## Startup Facts
+- `onlook-ui/.env.example` is the default same-origin sandbox config. `onlook-ui/.env.local` is optional and should only exist when you intentionally want the sandbox app to call a direct localhost review API instead of the committed same-origin fixture route.
+- `tools/check-onlook.ps1` no longer requires `onlook-ui/.env.local` for the default same-origin path.
+- `tools/prep-onlook-copy.ps1` writes an upload-safe duplicate `.env` from the duplicate's `.env.example` or `.env.local` because Onlook upload skips `.env.local`.
+- The current-project first gate and the broader duplicate-target operator proof depend on the local Onlook host env, not the sandbox app env. The important credential is the real `CSB_API_KEY` for `ext-onlook-fix/apps/web/client/.env.local`.
+
+## Fresh Bootstrap
+Use this on a fresh worktree or whenever the local Onlook clones are missing or untrusted.
+
+1. Restore the proven local operator clone and the clean packaging clone:
+```powershell
+./tools/restore-onlook.ps1 -PatchSet local-writeback
+./tools/restore-onlook.ps1 -PatchSet upstream-clean
+```
+2. Put a real `CSB_API_KEY` in `ext-onlook-fix/apps/web/client/.env.local`.
+3. Verify the structural state and the current default gate status:
+```powershell
+./tools/check-onlook.ps1
+./tools/check-onlook.ps1 -ShowGateStatusOnly
+```
+
+## Port Roles
+- `3000`: default local Onlook web origin started by `./tools/start-onlook-web.ps1`
+- `3011`: fresh-origin Onlook host used by the current-project first gate
+- `3007`: temporary sandbox dev server used by `./tools/run-onlook-sandbox-smoke.ps1`
+- `8083`: Onlook preload helper port; a stale listener here can block host startup
+- `8000`: direct localhost review API port when you intentionally override the sandbox env away from the same-origin fixture route
+
 ## Default Low-Risk Workflow
 1. Preflight the current lane:
 ```powershell
@@ -52,8 +80,9 @@ Do not blur those roles:
 ```
 2. Prepare a clean duplicate target:
 ```powershell
-./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -CopyLocalEnv
+./tools/prep-onlook-copy.ps1 -TargetDir onlook-ui-copy -ArchiveExisting
 ```
+Add `-CopyLocalEnv` only when the duplicate should use the same direct localhost review API override as canonical `onlook-ui/`.
 3. Prove the duplicate target before import:
 ```powershell
 ./tools/run-onlook-sandbox-smoke.ps1 -Profile core -AppDir onlook-ui-copy
@@ -99,12 +128,14 @@ Use:
 
 This gate is authoritative only for the current active verified pair recorded in:
 - [tools/onlook-active-pair.json](../tools/onlook-active-pair.json)
+- the proof surface referenced by its `sourceLedgerPath`
 
 This gate also requires a real `CSB_API_KEY` to reach the local Onlook web runtime.
 Preferred local setup:
 - store the real key in `ext-onlook-fix/apps/web/client/.env.local`
 - let the startup wrapper import `.env` plus `.env.local` into the process before it launches the local Onlook web host
 - a placeholder parent-shell `CSB_API_KEY` no longer blocks this path when `.env.local` has the real key
+- use `./tools/check-onlook.ps1 -ShowGateStatusOnly` as the quickest read-only status view for the active default pair, proof source, and key readiness
 
 Read the gate semantics in:
 - [docs/onlook-normalized-smoke.md](./onlook-normalized-smoke.md)
@@ -119,6 +150,8 @@ Read the gate semantics in:
 ./tools/restore-onlook.ps1 -PatchSet local-writeback
 ./tools/restore-onlook.ps1 -PatchSet upstream-clean
 ```
+- If you are using the default same-origin sandbox path, do not create `onlook-ui/.env.local` just to satisfy preflight. `onlook-ui/.env.example` is already the default operator-safe config.
+- If `./tools/check-onlook.ps1 -ShowGateStatusOnly` reports `Current-project gate CSB_API_KEY: not ready`, fix `ext-onlook-fix/apps/web/client/.env.local` first. Changing sandbox `.env.local` will not fix local Onlook host startup.
 - If the current-project first gate fails before or during `sandbox.start`, verify that `ext-onlook-fix/apps/web/client/.env.local` contains a real `CSB_API_KEY`, then rerun the gate from a cold host.
 - If you need local Onlook web on a fresh origin instead of sticky browser state:
 ```powershell
@@ -128,6 +161,7 @@ Read the gate semantics in:
 - If sandbox smoke fails, treat that as a pre-Onlook blocker for the sandbox app or its runtime inputs.
 - If duplicate-target operator proof fails, treat that as an Onlook import/trust/preview/write-back issue on the duplicate path.
 - If normalized smoke fails closed, treat that as active-pair provenance or proof-state drift first, not immediate product proof.
+- If browser behavior looks mixed, compare the headed Onlook-host proofs (`run-onlook-operator-proof.ps1` or `run-onlook-normalized-smoke.ps1`) against the headless sandbox proof (`run-onlook-sandbox-smoke.ps1`) before widening into product debugging.
 
 ## Current Portability Contract
 The default no-arg normalized-smoke path is portable only when the active proof contract is backed by tracked repo surfaces and matching local runtime/helper provenance.
@@ -145,16 +179,20 @@ Do not describe the default pair as globally portable without checking the curre
 
 ## What Each Proof Surface Answers
 - `./tools/check-onlook.ps1`
-  - Is the local operator surface structurally intact?
+  - Is the local operator surface structurally intact, and is the current default pair/key state readable?
 - `./tools/run-onlook-sandbox-smoke.ps1`
-  - Does the sandbox app itself render and navigate correctly before any Onlook import?
+  - Does the sandbox app itself render and navigate correctly before any Onlook import, using the committed same-origin fixture route family?
+  - This is the headless comparison surface.
 - `./tools/run-onlook-operator-proof.ps1`
   - Can Onlook import and operate on the duplicate sandbox target with trusted preview navigation and duplicate-only write-back?
+  - This is still an automation proof surface. Do not flatten a passing operator-proof run into a blanket claim that ordinary future manual Chrome/editor behavior can never diverge.
 - `./tools/run-onlook-normalized-smoke.ps1`
-  - Does the current active verified pair still pass the current-project first gate?
+  - Does the current active verified pair still pass the current-project first gate under the saved proof/runtime/helper contract?
+  - This is the headed Chrome gate for the active verified pair.
 
 ## Non-Claims
 - This file does not claim that live static UI promotion is approved.
 - This file does not claim that AI/chat features are proven ready.
 - This file does not claim portability unless the current active proof contract is backed by tracked repo surfaces and matching local runtime/helper provenance.
+- This file does not claim that a passing automation proof permanently guarantees later manual Chrome/operator reliability.
 - This file does not replace the Onlook plan packet for design intent or non-claims.

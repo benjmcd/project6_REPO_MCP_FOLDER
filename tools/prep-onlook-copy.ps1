@@ -149,6 +149,6 @@ if ($RunSmokeProfile -ne 'none') {
 Write-Host ''
 Write-Host 'Next steps:'
 Write-Host "  ./tools/diff-onlook-copy.ps1 -TargetDir $TargetDir"
-Write-Host '  ./tools/start-review-api.ps1'
 Write-Host '  ./tools/start-onlook-web.ps1'
 Write-Host "  Import $TargetDir into Onlook for duplicate-target editing"
+Write-Host '  If you intentionally use a localhost review API override, start ./tools/start-review-api.ps1 before import or smoke.'
