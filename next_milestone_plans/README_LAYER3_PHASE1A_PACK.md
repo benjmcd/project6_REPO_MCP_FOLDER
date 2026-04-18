@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This file is the front door for the bounded Phase 1A Layer 3 planning and closure pack on `codex/layer3-lane`.
+This file is the front door for the bounded Phase 1A Layer 3 planning and closure pack that was landed from `codex/layer3-lane` and is now carried forward on current `main`.
 
 Use it to orient quickly across the three active pack directories:
 - `next_milestone_plans/Layer3_planning_docs`
@@ -23,7 +23,7 @@ The lane now contains:
 - the implementation-local freeze docs
 - the committed bounded Phase 1A code slice
 - the committed postcode acceptance audit
-- the pack-local roadmap, reconciliation, navigation, and concrete surface-map surfaces needed for lane-local closure
+- the pack-local roadmap, reconciliation, navigation, and concrete surface-map surfaces needed for bounded Phase 1A closure
 - the narrow post-Phase 1A Gate C entry-freeze bridge needed to keep the next lane read-only until its blocker set is actually frozen
 
 Key lane closure commits include:
@@ -50,7 +50,7 @@ The active REV2 control docs in this pack have also been re-audited against curr
 
 ## One-line use rule
 
-Use this pack as the lane-local authoritative planning and closure bundle for the bounded Phase 1A Layer 3 slice; do not treat it as permission to reopen broader Layer 3 scope.
+Use this pack as the authoritative planning and closure bundle for the bounded Phase 1A Layer 3 slice; do not treat it as permission to reopen broader Layer 3 scope.
 
 ## Pack layout
 
@@ -161,7 +161,7 @@ Start with:
 
 ## Residual boundary note
 
-This README closes the lane-local navigation gap, not broader repo-wide Layer 3 documentation closure.
+This README closes the pack-local navigation gap, not broader repo-wide Layer 3 documentation closure.
 
 It does not prove that unrelated dirty root planning pools or higher-level repo front doors are globally reconciled.
 That broader question requires a separate read-only root-doc audit.
