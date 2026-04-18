@@ -3,14 +3,16 @@
 Current scoped status:
 - This is a current-project first gate, not a general Onlook gate.
 - The default pair now comes from [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json). It is the single source of truth for the active verified pair.
-- The current lane-head proof metadata lives in [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json).
+- The saved default-proof metadata lives in [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json).
 - The current runtime-clone provenance also comes from [`tools/onlook-active-pair.json`](../tools/onlook-active-pair.json) and the ledger it references.
-- The currently passing runtime surface includes the retained local runtime-clone fix set recorded in the ledger scope. The known material retained diff path is `apps/web/client/src/app/project/[id]/_components/bottom-bar/index.tsx`.
+- The currently passing runtime surface is the restored runtime-clone state recorded in the referenced proof ledger.
 - The active verified pair is:
   - project URL `http://127.0.0.1:3011/project/34743ff9-9eb2-4172-a3e0-b4154853e608`
   - preview origin `https://72nw5n-3000.csb.app/`
 - The canonical current proof pointer is `tools/onlook-active-pair.json`.
 - Do not pin a ledger path from this doc. Read `sourceLedgerPath` and `verifiedAt` from `tools/onlook-active-pair.json` for the live proof pointer.
+- Default invocation validates the referenced durable proof ledger plus the local helper surfaces and runtime-clone provenance before it trusts the active pair.
+- Proof-pointer or helper commits can advance repo `HEAD` without invalidating the active pair when the referenced helper fingerprint and the runtime-clone state still match.
 - The historical stale/unhealthy pair is retained only as prior context and is no longer a default:
   - project URL `http://127.0.0.1:3011/project/c2486161-3bad-4958-b2c9-7c6502bc76a0`
   - preview origin `https://vzyzj3-3000.csb.app/`
@@ -43,7 +45,7 @@ Interpretation:
 - Operator proof is broader secondary proof. It is not equivalent to this current-project first gate.
 - Default invocation uses the active verified pair only.
 - Explicit `-ProjectUrl` and `-PreviewOrigin` are an override pair.
-- If `tools/onlook-active-pair.json` is missing, stale, or no longer matches current lane/runtime provenance, default invocation fails closed.
+- If `tools/onlook-active-pair.json` is missing, stale, or no longer matches the referenced proof ledger, local helper surfaces, or runtime-clone provenance, default invocation fails closed.
 - `no-active-default` means the gate has no trustworthy default pair and requires explicit override args.
 
 Fail-closed buckets:

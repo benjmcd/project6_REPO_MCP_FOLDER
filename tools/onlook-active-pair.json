@@ -1,12 +1,12 @@
 {
   "projectUrl": "http://127.0.0.1:3011/project/34743ff9-9eb2-4172-a3e0-b4154853e608",
   "previewOrigin": "https://72nw5n-3000.csb.app/",
-  "sourceLedgerPath": "archive/onlook-normalized-smoke/20260418-041727-879970e4/ledger.json",
-  "verifiedAt": "2026-04-18T04:17:47-07:00",
-  "laneHead": "f6c46741ecb34dcf0192090b6e67fda3c2aca45d",
-  "runtimeCloneHead": "14dbc96e01436dabbf03e8a16f27cb23f008ec90",
-  "runtimeCloneHasLocalDiffPaths": true,
-  "runtimeCloneLocalDiffSummary": "5 local diff path(s)",
+  "sourceLedgerPath": "tools/onlook-proof.json",
+  "verifiedAt": "2026-04-18T07:43:54-07:00",
+  "laneHead": "4a069af3800d15ba3923b21e1e13b8ffddd2287e",
+  "runtimeCloneHead": "8e70e9afc606576630f20e64957448fbf511ef00",
+  "runtimeCloneHasLocalDiffPaths": false,
+  "runtimeCloneLocalDiffSummary": "clean",
   "status": "verified-live",
-  "statusReason": "Refreshed from the freshest successful no-arg normalized-smoke verification that resolved via active-verified-pair on 2026-04-18. The older c2486161-3bad-4958-b2c9-7c6502bc76a0 / zm8wn2-3000.csb.app pair is historical and no longer the default."
+  "statusReason": "Refreshed from the freshest successful no-arg normalized-smoke verification that resolved via active-verified-pair under the helper-fingerprint provenance contract on 2026-04-18. The canonical default points at the tracked durable proof ledger in tools/onlook-proof.json."
 }

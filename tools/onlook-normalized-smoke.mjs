@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -8,6 +9,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const execFileAsync = promisify(execFile);
 const DEFAULT_ACTIVE_PAIR_FILE = path.join(__dirname, 'onlook-active-pair.json');
+const LANE_HELPER_FILES = [
+  'tools/run-onlook-normalized-smoke.ps1',
+  'tools/onlook-normalized-smoke.mjs',
+  'tools/start-onlook-web.ps1',
+];
 const ROUTE_PLAN = [
   ['Workbench Compare', '/workbench-compare'],
   ['Document Trace', '/document-trace'],
@@ -17,6 +23,15 @@ const MAX_CHECKPOINTS = 20;
 const MAX_FRAME_EVENTS = 120;
 const MAX_CONSOLE_ENTRIES = 80;
 const MAX_NETWORK_ENTRIES = 80;
+const PREVIEW_QUIET_MS = 1500;
+const ROOT_REVIEW_LOADING_MARKERS = [
+  'Loading review runs from the sandbox fixture API...',
+  'Loading overview payload for the selected run...',
+];
+const ROOT_REVIEW_DEGRADED_MARKERS = [
+  'No reviewable runs found',
+  'Runs loaded: 0',
+];
 
 function isoNow() {
   return new Date().toISOString();
@@ -61,6 +76,7 @@ function createObservability(previewOrigin, hostOrigin) {
     sequence: 0,
     targetPreviewFrame: null,
     lastKnownTargetFrameUrl: null,
+    lastPreviewInstabilityAtMs: 0,
     data: {
       breadcrumbs: [],
       checkpoints: [],
@@ -97,6 +113,10 @@ function recordBreadcrumb(observability, phase, details = {}) {
   );
 }
 
+function markPreviewInstability(observability) {
+  observability.lastPreviewInstabilityAtMs = Date.now();
+}
+
 function isPreviewRelevantFrame(observability, frame) {
   if (!frame) {
     return false;
@@ -125,6 +145,9 @@ function isPreviewRelevantFrame(observability, frame) {
 
 function attachObservability(page, observability) {
   page.on('frameattached', (frame) => {
+    if (isPreviewRelevantFrame(observability, frame)) {
+      markPreviewInstability(observability);
+    }
     pushBounded(
       observability.data.frameLifecycleEvents,
       {
@@ -141,6 +164,9 @@ function attachObservability(page, observability) {
   });
 
   page.on('framedetached', (frame) => {
+    if (isPreviewRelevantFrame(observability, frame)) {
+      markPreviewInstability(observability);
+    }
     pushBounded(
       observability.data.frameLifecycleEvents,
       {
@@ -161,6 +187,7 @@ function attachObservability(page, observability) {
     if (frameUrl.startsWith(observability.previewOrigin)) {
       observability.lastKnownTargetFrameUrl = frameUrl;
       observability.targetPreviewFrame = frame;
+      markPreviewInstability(observability);
     }
 
     pushBounded(
@@ -204,6 +231,16 @@ function attachObservability(page, observability) {
       },
       MAX_CONSOLE_ENTRIES,
     );
+
+    if (
+      surface === 'preview'
+      && (
+        url.includes('/_next/static/webpack/')
+        || type === 'error'
+      )
+    ) {
+      markPreviewInstability(observability);
+    }
   });
 
   page.on('response', (response) => {
@@ -217,6 +254,17 @@ function attachObservability(page, observability) {
       frameUrl = safeFrameUrl(response.frame());
     } catch {
       frameUrl = '';
+    }
+
+    if (
+      url.startsWith(observability.previewOrigin)
+      && (
+        response.request().resourceType() === 'document'
+        || url.includes('/_next/static/webpack/')
+        || url.includes('hot-update')
+      )
+    ) {
+      markPreviewInstability(observability);
     }
 
     pushBounded(
@@ -341,6 +389,67 @@ async function captureCheckpoint(page, observability, phase, frame = null) {
     },
     MAX_CHECKPOINTS,
   );
+}
+
+function classifyRootReviewBody(bodyText) {
+  const text = String(bodyText ?? '');
+  const loadingMarkers = ROOT_REVIEW_LOADING_MARKERS.filter((marker) => text.includes(marker));
+  const degradedMarkers = ROOT_REVIEW_DEGRADED_MARKERS.filter((marker) => text.includes(marker));
+
+  return {
+    ready: loadingMarkers.length === 0 && degradedMarkers.length === 0,
+    loadingMarkers,
+    degradedMarkers,
+    text,
+  };
+}
+
+async function readPreviewBody(frame) {
+  return frame.evaluate(() => (document.body?.innerText ?? '').slice(0, 1200));
+}
+
+async function waitForPreviewQuiet(page, observability, previewOrigin, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const frame = page.frames().find((item) => item.url().startsWith(previewOrigin));
+    if (!frame) {
+      await page.waitForTimeout(500);
+      continue;
+    }
+
+    rememberPreviewFrame(observability, frame);
+    const quietForMs = Date.now() - observability.lastPreviewInstabilityAtMs;
+    if (quietForMs < PREVIEW_QUIET_MS) {
+      await page.waitForTimeout(500);
+      continue;
+    }
+
+    try {
+      const readyState = await frame.evaluate(() => document.readyState);
+      if (readyState === 'interactive' || readyState === 'complete') {
+        return frame;
+      }
+    } catch (error) {
+      if (
+        !(error instanceof Error)
+        || (
+          !error.message.includes('Execution context was destroyed')
+          && !error.message.includes('Frame was detached')
+        )
+      ) {
+        throw error;
+      }
+    }
+
+    await page.waitForTimeout(500);
+  }
+
+  const pageState = await page.evaluate(() => ({
+    url: window.location.href,
+    bodyText: (document.body?.innerText ?? '').slice(0, 1200),
+  }));
+  throw new Error(`Preview did not settle at ${previewOrigin}; host url=${pageState.url}; host body=${JSON.stringify(pageState.bodyText)}`);
 }
 
 async function loadChromium() {
@@ -469,6 +578,23 @@ async function readJsonFile(filePath, label) {
   }
 }
 
+async function getFileSha256(filePath) {
+  const buffer = await fs.readFile(filePath);
+  return crypto.createHash('sha256').update(buffer).digest('hex');
+}
+
+async function readLaneHelperHashes() {
+  const laneRoot = path.join(__dirname, '..');
+  const helperHashes = {};
+
+  for (const repoPath of LANE_HELPER_FILES) {
+    const fullPath = path.join(laneRoot, ...repoPath.split('/'));
+    helperHashes[repoPath] = await getFileSha256(fullPath);
+  }
+
+  return helperHashes;
+}
+
 function parseStatusPaths(statusText) {
   if (!statusText) {
     return [];
@@ -546,8 +672,7 @@ async function resolvePairArgs(args) {
 
   const current = await readCurrentProvenance(args.runtimeDir);
   if (
-    activePairState.laneHead !== current.laneHead
-    || activePairState.runtimeCloneHead !== current.runtimeHead
+    activePairState.runtimeCloneHead !== current.runtimeHead
     || Boolean(activePairState.runtimeCloneHasLocalDiffPaths) !== current.runtimeCloneHasLocalDiffPaths
     || activePairState.runtimeCloneLocalDiffSummary !== current.runtimeCloneLocalDiffSummary
   ) {
@@ -574,6 +699,29 @@ async function resolvePairArgs(args) {
     throw new Error(`Active pair source ledger does not match ${activePairPath}; provide --project-url and --preview-origin explicitly.`);
   }
 
+  const helperFiles = ledger.scope?.lane?.helperFiles;
+  if (helperFiles && Object.keys(helperFiles).length > 0) {
+    const currentHelperFiles = await readLaneHelperHashes();
+    const mismatches = [];
+    for (const [repoPath, expectedHash] of Object.entries(helperFiles)) {
+      const currentHash = currentHelperFiles[repoPath];
+      if (!currentHash) {
+        mismatches.push(`${repoPath} (missing locally)`);
+        continue;
+      }
+
+      if (currentHash !== String(expectedHash).toLowerCase()) {
+        mismatches.push(`${repoPath} (${currentHash} != ${expectedHash})`);
+      }
+    }
+
+    if (mismatches.length > 0) {
+      throw new Error(`Active pair helper provenance does not match current lane helper state in ${activePairPath}; provide --project-url and --preview-origin explicitly. Mismatches: ${mismatches.join('; ')}`);
+    }
+  } else if (activePairState.laneHead !== current.laneHead) {
+    throw new Error(`Active pair provenance does not match current lane/runtime state in ${activePairPath}; provide --project-url and --preview-origin explicitly.`);
+  }
+
   args.projectUrl = activePairState.projectUrl;
   args.previewOrigin = activePairState.previewOrigin;
   args.projectUrlSource = 'active-verified-pair';
@@ -589,11 +737,13 @@ async function buildScope(args) {
   const runtimeHead = await execText('git', ['-C', runtimeRoot, 'rev-parse', 'HEAD'], laneRoot);
   const runtimeStatus = await execText('git', ['-C', runtimeRoot, 'status', '--short'], laneRoot);
   const runtimeCloneDirtyPaths = parseStatusPaths(runtimeStatus);
+  const helperFiles = await readLaneHelperHashes();
 
   return {
     lane: {
       worktreePath: path.relative(repoRoot, laneRoot).replace(/\\/g, '/'),
       head: laneHead,
+      helperFiles,
     },
     runtimeClone: {
       dir: args.runtimeDir,
@@ -764,35 +914,74 @@ async function switchToPreviewMode(page, timeoutMs) {
   throw new Error('Timed out switching the host editor mode to Preview');
 }
 
-async function waitForRootReview(frame, page, previewOrigin, timeoutMs) {
-  try {
-    const currentPath = await frame.evaluate(() => window.location.pathname).catch(() => null);
-    if (currentPath && currentPath !== '/') {
-      await frame.goto(previewOrigin, { waitUntil: 'domcontentloaded', timeout: timeoutMs });
-      frame = await waitForPreviewFrame(page, previewOrigin, timeoutMs);
+function isRecoverablePreviewError(error) {
+  return error instanceof Error && (
+    error.message.includes('Execution context was destroyed')
+    || error.message.includes('Frame was detached')
+  );
+}
+
+async function waitForRootReview(page, observability, previewOrigin, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  let lastFrame = null;
+
+  while (Date.now() < deadline) {
+    try {
+      const remainingMs = deadline - Date.now();
+      let frame = await waitForPreviewFrame(page, previewOrigin, Math.max(1000, remainingMs));
+      rememberPreviewFrame(observability, frame);
+      frame = await waitForPreviewQuiet(page, observability, previewOrigin, Math.min(remainingMs, timeoutMs));
+      lastFrame = frame;
+
+      const currentPath = await frame.evaluate(() => window.location.pathname).catch(() => null);
+      if (currentPath && currentPath !== '/') {
+        await frame.goto(previewOrigin, { waitUntil: 'domcontentloaded', timeout: Math.max(1000, remainingMs) });
+        frame = await waitForPreviewFrame(page, previewOrigin, Math.max(1000, deadline - Date.now()));
+        rememberPreviewFrame(observability, frame);
+        frame = await waitForPreviewQuiet(page, observability, previewOrigin, Math.max(1000, deadline - Date.now()));
+        lastFrame = frame;
+      }
+
+      const overview = frame.getByText('Review Overview').first();
+      const workbench = frame.getByRole('link', { name: 'Workbench Compare' }).first();
+      const documentTrace = frame.getByRole('link', { name: 'Document Trace' }).first();
+      await overview.waitFor({ state: 'visible', timeout: Math.max(1000, deadline - Date.now()) });
+      await workbench.waitFor({ state: 'visible', timeout: Math.max(1000, deadline - Date.now()) });
+      await documentTrace.waitFor({ state: 'visible', timeout: Math.max(1000, deadline - Date.now()) });
+
+      const previewBody = await readPreviewBody(frame);
+      const rootReview = classifyRootReviewBody(previewBody);
+      if (rootReview.ready) {
+        await page.waitForTimeout(500);
+        return frame;
+      }
+    } catch (error) {
+      if (!isRecoverablePreviewError(error)) {
+        break;
+      }
     }
 
-    const overview = frame.getByText('Review Overview').first();
-    const workbench = frame.getByRole('link', { name: 'Workbench Compare' }).first();
-    const documentTrace = frame.getByRole('link', { name: 'Document Trace' }).first();
-    await overview.waitFor({ state: 'visible', timeout: timeoutMs });
-    await workbench.waitFor({ state: 'visible', timeout: timeoutMs });
-    await documentTrace.waitFor({ state: 'visible', timeout: timeoutMs });
     await page.waitForTimeout(1000);
-  } catch {
-    const previewState = await frame.evaluate(() => ({
-      url: window.location.href,
-      bodyText: (document.body?.innerText ?? '').slice(0, 1200),
-    })).catch(() => ({
-      url: frame.url(),
-      bodyText: '<preview body unavailable>',
-    }));
-    const hostState = await page.evaluate(() => ({
-      url: window.location.href,
-      bodyText: (document.body?.innerText ?? '').slice(0, 1200),
-    }));
-    throw new Error(`Root review shell did not become visible; preview url=${previewState.url}; preview body=${JSON.stringify(previewState.bodyText)}; host url=${hostState.url}; host body=${JSON.stringify(hostState.bodyText)}`);
   }
+
+  const targetFrame = lastFrame ?? page.frames().find((item) => item.url().startsWith(previewOrigin));
+  const previewState = targetFrame
+    ? await targetFrame.evaluate(() => ({
+        url: window.location.href,
+        bodyText: (document.body?.innerText ?? '').slice(0, 1200),
+      })).catch(() => ({
+        url: targetFrame.url(),
+        bodyText: '<preview body unavailable>',
+      }))
+    : {
+        url: previewOrigin,
+        bodyText: '<preview body unavailable>',
+      };
+  const hostState = await page.evaluate(() => ({
+    url: window.location.href,
+    bodyText: (document.body?.innerText ?? '').slice(0, 1200),
+  }));
+  throw new Error(`Root review shell did not become visible; preview url=${previewState.url}; preview body=${JSON.stringify(previewState.bodyText)}; host url=${hostState.url}; host body=${JSON.stringify(hostState.bodyText)}`);
 }
 
 async function normalizeSession(page, args, observability) {
@@ -866,10 +1055,8 @@ async function normalizeSession(page, args, observability) {
       normalization.overlayAtSmokeTime = await waitForOverlayToClear(page, args.timeoutMs);
     }
 
-    frame = await waitForPreviewFrame(page, args.previewOrigin, args.timeoutMs);
-    rememberPreviewFrame(observability, frame);
-    await waitForRootReview(frame, page, args.previewOrigin, args.timeoutMs);
-    frame = await waitForPreviewFrame(page, args.previewOrigin, args.timeoutMs);
+    frame = await waitForRootReview(page, observability, args.previewOrigin, args.timeoutMs);
+    frame = await waitForPreviewQuiet(page, observability, args.previewOrigin, args.timeoutMs);
     rememberPreviewFrame(observability, frame);
     normalization.rootReviewVisible = true;
     await captureCheckpoint(page, observability, 'root-review-visible', frame);
@@ -884,6 +1071,14 @@ async function normalizeSession(page, args, observability) {
     }
     throw error;
   }
+}
+
+async function restoreRootReview(page, args, observability) {
+  let frame = await waitForRootReview(page, observability, args.previewOrigin, args.timeoutMs);
+  frame = await waitForPreviewQuiet(page, observability, args.previewOrigin, args.timeoutMs);
+  rememberPreviewFrame(observability, frame);
+  await captureCheckpoint(page, observability, 'root-review-visible', frame);
+  return frame;
 }
 
 async function getPathState(frame) {
@@ -1094,7 +1289,10 @@ async function writeArtifacts(args, ledger, observability) {
 }
 
 async function smokeRoute(page, args, observability, routeName, expectedPath, prepared = null) {
-  const { frame, normalization } = prepared ?? await normalizeSession(page, args, observability);
+  const preparedState = prepared ?? await normalizeSession(page, args, observability);
+  let frame = preparedState.frame;
+  const { normalization } = preparedState;
+  frame = await waitForPreviewQuiet(page, observability, args.previewOrigin, Math.min(args.timeoutMs, 5000));
   rememberPreviewFrame(observability, frame);
   await captureCheckpoint(page, observability, `route-start:${routeName}`, frame);
 
@@ -1206,7 +1404,8 @@ async function main() {
     ledger.normalization = firstNormalization.normalization;
 
     let prepared = firstNormalization;
-    for (const [routeName, expectedPath] of ROUTE_PLAN) {
+    for (let index = 0; index < ROUTE_PLAN.length; index += 1) {
+      const [routeName, expectedPath] = ROUTE_PLAN[index];
       const result = await smokeRoute(page, args, observability, routeName, expectedPath, prepared);
       ledger.routes.push(result);
       if (!result.pass && !ledger.failureReason) {
@@ -1214,7 +1413,17 @@ async function main() {
         ledger.failureRoute = routeName;
         ledger.failureStage = 'route verdict';
         await captureCheckpoint(page, observability, 'failure').catch(() => {});
+        break;
       }
+
+      if (index < ROUTE_PLAN.length - 1) {
+        prepared = {
+          frame: await restoreRootReview(page, args, observability),
+          normalization: firstNormalization.normalization,
+        };
+        continue;
+      }
+
       prepared = null;
     }
 
