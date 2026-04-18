@@ -70,10 +70,14 @@ function Get-EnvKeyState {
     )
 
     $processValue = [Environment]::GetEnvironmentVariable($Key, 'Process')
+    $processStatus = 'missing'
     if (-not [string]::IsNullOrWhiteSpace($processValue)) {
-        return @{
-            source = 'process env'
-            status = if (Test-PlaceholderValue -Value $processValue) { 'placeholder' } else { 'present' }
+        $processStatus = if (Test-PlaceholderValue -Value $processValue) { 'placeholder' } else { 'present' }
+        if ($processStatus -eq 'present') {
+            return @{
+                source = 'process env'
+                status = 'present'
+            }
         }
     }
 
@@ -91,15 +95,23 @@ function Get-EnvKeyState {
             }
         }
 
+        $valueStatus = if (Test-PlaceholderValue -Value $value) { 'placeholder' } else { 'present' }
+        if ($valueStatus -eq 'present') {
+            return @{
+                source = $path
+                status = 'present'
+            }
+        }
+
         return @{
             source = $path
-            status = if (Test-PlaceholderValue -Value $value) { 'placeholder' } else { 'present' }
+            status = $valueStatus
         }
     }
 
     return @{
-        source = 'no configured source'
-        status = 'missing'
+        source = if ($processStatus -eq 'missing') { 'no configured source' } else { 'process env' }
+        status = $processStatus
     }
 }
 
