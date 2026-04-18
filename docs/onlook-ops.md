@@ -51,6 +51,7 @@ Do not blur those roles:
 - `tools/run-onlook-sandbox-smoke.ps1` now bootstraps missing local sandbox app dependencies from the checked-in `package-lock.json` before it starts the temporary dev server.
 - `tools/prep-onlook-copy.ps1` writes an upload-safe duplicate `.env` from the duplicate's `.env.example` or `.env.local` because Onlook upload skips `.env.local`.
 - The current-project first gate and the broader duplicate-target operator proof depend on the local Onlook host env, not the sandbox app env. The important credential is the real `CSB_API_KEY` for `ext-onlook-fix/apps/web/client/.env.local`.
+- `tools/run-onlook-operator-proof.ps1` now prefers local Chrome when Chrome is installed so the headed import proof stays aligned with the headed Chrome current-project gate.
 
 ## Fresh Bootstrap
 Use this on a fresh worktree or whenever the local Onlook clones are missing or untrusted.
@@ -163,7 +164,7 @@ Read the gate semantics in:
 - If sandbox smoke fails, treat that as a pre-Onlook blocker for the sandbox app or its runtime inputs.
 - If duplicate-target operator proof fails, treat that as an Onlook import/trust/preview/write-back issue on the duplicate path.
 - If normalized smoke fails closed, treat that as active-pair provenance or proof-state drift first, not immediate product proof.
-- If normalized smoke fails because the saved preview origin is unhealthy but `run-onlook-sandbox-smoke.ps1` still passes for canonical or duplicate sandbox targets, treat that as a stale active pair. Rebuild `onlook-ui-copy`, rerun `run-onlook-operator-proof.ps1`, rerun explicit `run-onlook-normalized-smoke.ps1 -ProjectUrl <project-url> -PreviewOrigin <preview-origin>`, and only then refresh `tools/onlook-active-pair.json` plus `tools/onlook-proof.json` on purpose.
+- If normalized smoke fails because the saved preview origin is unhealthy but `run-onlook-sandbox-smoke.ps1` still passes for canonical or duplicate sandbox targets, treat that as a stale active pair. Rebuild `onlook-ui-copy`, rerun `run-onlook-operator-proof.ps1`, rerun explicit `run-onlook-normalized-smoke.ps1 -ProjectUrl <project-url> -PreviewOrigin <preview-origin>` until you have two consecutive headed Chrome passes on that pair, and only then refresh `tools/onlook-active-pair.json` plus `tools/onlook-proof.json` on purpose.
 - If browser behavior looks mixed, compare the headed Onlook-host proofs (`run-onlook-operator-proof.ps1` or `run-onlook-normalized-smoke.ps1`) against the headless sandbox proof (`run-onlook-sandbox-smoke.ps1`) before widening into product debugging.
 
 ## Current Portability Contract

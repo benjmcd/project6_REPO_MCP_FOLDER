@@ -25,10 +25,11 @@ Current scoped status:
 Normalization steps for the current pair:
 1. Open the host project URL.
 2. If the host lands on `/login`, use `DEV MODE: Sign in as demo user`.
-3. If the embedded preview shows the CodeSandbox trust interstitial, clear it.
-4. Force the host editor mode to `Preview`.
-5. Verify the root review shell is visible before starting the smoke verdict.
-6. Restore the preview to root review before each covered route verdict.
+3. Force the host editor mode to `Preview` as soon as the host project page is open.
+4. Wait for the embedded preview frame and clear the CodeSandbox trust interstitial if it appears.
+5. Reassert `Preview` and reacquire the preview frame after trust clearance or frame replacement.
+6. Verify the root review shell is visible before starting the smoke verdict.
+7. Restore the preview to root review before each covered route verdict.
 
 Runtime note:
 - The wrapper will start the local Onlook backend first when the dev-login ports are missing, then start the web host if `3011` is down.
@@ -50,7 +51,7 @@ Interpretation:
 - Default invocation uses the active verified pair only.
 - Explicit `-ProjectUrl` and `-PreviewOrigin` are an override pair.
 - If `tools/onlook-active-pair.json` is missing, stale, or no longer matches the referenced proof ledger, local helper surfaces, or runtime-clone provenance, default invocation fails closed.
-- If the saved preview origin is serving a host-side `502 Bad Gateway` or another dead preview while sandbox smoke still passes on `onlook-ui/` or `onlook-ui-copy/`, treat that as stale active-pair drift rather than immediate product failure. Regenerate a fresh pair through duplicate-target operator proof, rerun the gate explicitly against that pair, and only then refresh the tracked proof surfaces.
+- If the saved preview origin is serving a host-side `502 Bad Gateway` or another dead preview while sandbox smoke still passes on `onlook-ui/` or `onlook-ui-copy/`, treat that as stale active-pair drift rather than immediate product failure. Regenerate a fresh pair through duplicate-target operator proof, rerun the gate explicitly against that pair until it passes twice consecutively in headed Chrome, and only then refresh the tracked proof surfaces.
 - `no-active-default` means the gate has no trustworthy default pair and requires explicit override args.
 
 Fail-closed buckets:
