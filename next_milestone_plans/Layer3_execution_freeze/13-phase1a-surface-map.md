@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document is a lane-local operational companion for the bounded Phase 1A Layer 3 slice on `codex/layer3-lane`.
+This document is a pack-local operational companion for the bounded Phase 1A Layer 3 slice that was originally closed on `codex/layer3-lane` and is now carried forward on current `main`.
 
 It exists to make the concrete implementation surfaces explicit in one place:
 - owner modules
@@ -286,4 +286,4 @@ What it did not do in one place was spell out the live concrete surface map acro
 - storage and DB connection points
 - untouched endpoint and adjacent-service families
 
-This companion doc closes that lane-local clarity gap without reopening scope.
+This companion doc closes that pack-local clarity gap without reopening scope.

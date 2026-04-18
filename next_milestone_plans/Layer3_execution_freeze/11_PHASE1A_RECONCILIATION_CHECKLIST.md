@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This checklist is the lane-local reconciliation and future re-verification surface for the bounded Phase 1A Layer 3 pack on `codex/layer3-lane`.
+This checklist is the pack-local reconciliation and future re-verification surface for the bounded Phase 1A Layer 3 pack that was originally closed on `codex/layer3-lane` and is now carried forward on current `main`.
 
 It exists to prevent:
 - the frozen planning pack being mistaken for broader Layer 3 closure
@@ -16,7 +16,7 @@ Normative control remains with the active Phase 1A control spine and the postcod
 
 ## Current adopted-state note
 
-The following state is already achieved on `codex/layer3-lane`:
+The following state was achieved on `codex/layer3-lane` and is now carried forward in the active pack:
 - the bounded Phase 1A code slice is committed
 - the postcode acceptance audit is committed
 - the lane-local planning pack now includes a front-door README, a reconciliation checklist, a roadmap notes + PNG pair, and a concrete implementation surface map
