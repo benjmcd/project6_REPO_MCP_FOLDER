@@ -22,12 +22,15 @@ The lane now contains:
 - the committed postcode acceptance audit
 - the pack-local roadmap, reconciliation, navigation, and concrete surface-map surfaces needed for lane-local closure
 
-Current lane history already includes:
+Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
 - `0b0ecf7e` `feat(layer3): add Phase 1A feeder-ledger entry slice`
 - `d67bc0e8` `docs(layer3): add Phase 1A postcode acceptance audit`
 - `f252d820` `docs(layer3): add phase1a pack front door and roadmap`
 - `119c1d73` `docs(layer3): add phase1a surface map`
+
+These are the milestone commits that define the bounded Phase 1A lane shape.
+Later doc-only alignment commits may exist without changing that milestone meaning.
 
 Current bounded posture:
 - Phase 1A remains Gate-B-only feeder / ledger entry
