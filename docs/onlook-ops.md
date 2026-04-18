@@ -100,6 +100,12 @@ Use:
 This gate is authoritative only for the current active verified pair recorded in:
 - [tools/onlook-active-pair.json](../tools/onlook-active-pair.json)
 
+This gate also requires a real `CSB_API_KEY` to reach the local Onlook web runtime.
+Preferred local setup:
+- store the real key in `ext-onlook-fix/apps/web/client/.env.local`
+- let the startup wrapper import `.env` plus `.env.local` into the process before it launches the local Onlook web host
+- a placeholder parent-shell `CSB_API_KEY` no longer blocks this path when `.env.local` has the real key
+
 Read the gate semantics in:
 - [docs/onlook-normalized-smoke.md](./onlook-normalized-smoke.md)
 
@@ -113,6 +119,7 @@ Read the gate semantics in:
 ./tools/restore-onlook.ps1 -PatchSet local-writeback
 ./tools/restore-onlook.ps1 -PatchSet upstream-clean
 ```
+- If the current-project first gate fails before or during `sandbox.start`, verify that `ext-onlook-fix/apps/web/client/.env.local` contains a real `CSB_API_KEY`, then rerun the gate from a cold host.
 - If you need local Onlook web on a fresh origin instead of sticky browser state:
 ```powershell
 ./tools/start-onlook-web.ps1 -Port 3011

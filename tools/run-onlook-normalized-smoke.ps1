@@ -41,6 +41,10 @@ $laneHelperPaths = @(
     'tools/onlook-normalized-smoke.mjs',
     'tools/start-onlook-web.ps1'
 )
+$runtimeGeneratedPaths = @(
+    'apps/web/client/messages/en.d.json.ts',
+    'apps/web/client/public/onlook-preload-script.js'
+)
 
 function Assert-Path {
     param(
@@ -50,6 +54,82 @@ function Assert-Path {
 
     if (-not (Test-Path $Path)) {
         throw "Missing ${Label}: $Path"
+    }
+}
+
+function Get-EnvValueFromFile {
+    param(
+        [string]$Path,
+        [string]$Key
+    )
+
+    if (-not (Test-Path $Path)) {
+        return $null
+    }
+
+    $line = Get-Content $Path | Where-Object { $_ -match "^{0}=" -f [regex]::Escape($Key) } | Select-Object -First 1
+    if (-not $line) {
+        return $null
+    }
+
+    $value = $line.Substring($Key.Length + 1).Trim()
+    if (
+        ($value.StartsWith('"') -and $value.EndsWith('"')) -or
+        ($value.StartsWith("'") -and $value.EndsWith("'"))
+    ) {
+        $value = $value.Substring(1, $value.Length - 2)
+    }
+
+    return $value
+}
+
+function Get-CsbApiKeyState {
+    param([string]$RepoRoot)
+
+    $processValue = [Environment]::GetEnvironmentVariable('CSB_API_KEY', 'Process')
+    $processStatus = 'missing'
+    if (-not [string]::IsNullOrWhiteSpace($processValue)) {
+        $processStatus = if ($processValue -match 'placeholder|your|replace|demo|example') { 'placeholder' } else { 'present' }
+        if ($processStatus -eq 'present') {
+            return @{
+                source = 'process env'
+                status = 'present'
+            }
+        }
+    }
+
+    $clientRoot = Join-Path $RepoRoot 'apps\web\client'
+    foreach ($candidate in @('.env.local', '.env')) {
+        $path = Join-Path $clientRoot $candidate
+        $value = Get-EnvValueFromFile -Path $path -Key 'CSB_API_KEY'
+        if ($null -eq $value) {
+            continue
+        }
+
+        if ([string]::IsNullOrWhiteSpace($value)) {
+            return @{
+                source = $path
+                status = 'empty'
+            }
+        }
+
+        $valueStatus = if ($value -match 'placeholder|your|replace|demo|example') { 'placeholder' } else { 'present' }
+        if ($valueStatus -eq 'present') {
+            return @{
+                source = $path
+                status = 'present'
+            }
+        }
+
+        return @{
+            source = $path
+            status = $valueStatus
+        }
+    }
+
+    return @{
+        source = if ($processStatus -eq 'missing') { 'no configured source' } else { 'process env' }
+        status = $processStatus
     }
 }
 
@@ -157,6 +237,16 @@ function Get-GitHead {
     }
 }
 
+function Get-GitTree {
+    param([string]$RepoRoot)
+
+    try {
+        return ((& git -C $RepoRoot rev-parse "HEAD^{tree}") | Out-String).Trim()
+    } catch {
+        return $null
+    }
+}
+
 function Get-GitDirtyPaths {
     param([string]$RepoRoot)
 
@@ -171,6 +261,35 @@ function Get-GitDirtyPaths {
     } catch {
         return @()
     }
+}
+
+function Test-LineEndingOnlyDrift {
+    param(
+        [string]$RepoRoot,
+        [string[]]$RepoPaths
+    )
+
+    foreach ($repoPath in $RepoPaths) {
+        $worktreePath = Join-Path $RepoRoot ($repoPath -replace '/', '\')
+        if (-not (Test-Path $worktreePath)) {
+            return $false
+        }
+    }
+
+    $quotedPaths = ($RepoPaths | ForEach-Object { '"' + $_ + '"' }) -join ' '
+    $diffModes = @('', '--cached')
+
+    foreach ($diffMode in $diffModes) {
+        $cmd = 'git -C "' + $RepoRoot + '" diff ' + $diffMode + ' --ignore-space-at-eol --exit-code -- ' + $quotedPaths + ' >nul 2>nul'
+        $cmd = $cmd -replace '\s+', ' '
+        cmd.exe /d /c $cmd | Out-Null
+
+        if ($LASTEXITCODE -ne 0) {
+            return $false
+        }
+    }
+
+    return $true
 }
 
 function Read-JsonFile {
@@ -189,9 +308,16 @@ function Read-JsonFile {
 
 function Get-RuntimeCloneState {
     $runtimeDirtyPaths = @(Get-GitDirtyPaths -RepoRoot $onlookRoot)
+    if ($runtimeDirtyPaths.Count -gt 0) {
+        $onlyRuntimeGenerated = @($runtimeDirtyPaths | Where-Object { $runtimeGeneratedPaths -notcontains $_ }).Count -eq 0
+        if ($onlyRuntimeGenerated -and (Test-LineEndingOnlyDrift -RepoRoot $onlookRoot -RepoPaths $runtimeGeneratedPaths)) {
+            $runtimeDirtyPaths = @()
+        }
+    }
 
     return @{
         head = Get-GitHead -RepoRoot $onlookRoot
+        tree = Get-GitTree -RepoRoot $onlookRoot
         hasLocalDiffPaths = $runtimeDirtyPaths.Count -gt 0
         localDiffPaths = $runtimeDirtyPaths
         localDiffSummary = if ($runtimeDirtyPaths.Count -gt 0) { "$($runtimeDirtyPaths.Count) local diff path(s)" } else { 'clean' }
@@ -204,7 +330,14 @@ function Get-LaneHelperHashes {
     foreach ($repoPath in $laneHelperPaths) {
         $fullPath = Join-Path $laneRoot ($repoPath -replace '/', '\')
         Assert-Path $fullPath "lane helper file"
-        $hashes[$repoPath] = (Get-FileHash -Algorithm SHA256 -Path $fullPath).Hash.ToLowerInvariant()
+        $content = [IO.File]::ReadAllText($fullPath).Replace("`r`n", "`n").Replace("`r", "`n")
+        $bytes = [Text.Encoding]::UTF8.GetBytes($content)
+        $sha256 = [Security.Cryptography.SHA256]::Create()
+        try {
+            $hashes[$repoPath] = ([BitConverter]::ToString($sha256.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant()
+        } finally {
+            $sha256.Dispose()
+        }
     }
 
     return $hashes
@@ -297,6 +430,7 @@ function Resolve-PairSelection {
         'verifiedAt',
         'laneHead',
         'runtimeCloneHead',
+        'runtimeCloneTree',
         'runtimeCloneHasLocalDiffPaths',
         'runtimeCloneLocalDiffSummary',
         'status',
@@ -316,7 +450,7 @@ function Resolve-PairSelection {
     $runtimeState = Get-RuntimeCloneState
     $laneHead = Get-GitHead -RepoRoot $laneRoot
     if (
-        $state.runtimeCloneHead -ne $runtimeState.head -or
+        $state.runtimeCloneTree -ne $runtimeState.tree -or
         [bool]$state.runtimeCloneHasLocalDiffPaths -ne [bool]$runtimeState.hasLocalDiffPaths -or
         $state.runtimeCloneLocalDiffSummary -ne $runtimeState.localDiffSummary
     ) {
@@ -333,7 +467,8 @@ function Resolve-PairSelection {
         $ledger.projectUrl -ne $state.projectUrl -or
         $ledger.previewOrigin -ne $state.previewOrigin -or
         $ledger.scope.lane.head -ne $state.laneHead -or
-        $ledger.scope.runtimeClone.head -ne $state.runtimeCloneHead
+        $ledger.scope.runtimeClone.head -ne $state.runtimeCloneHead -or
+        $ledger.scope.runtimeClone.tree -ne $state.runtimeCloneTree
     ) {
         throw "Active pair source ledger does not match the active pair state in $activePairPath. Provide -ProjectUrl and -PreviewOrigin explicitly."
     }
@@ -405,6 +540,7 @@ function Get-ScopeRecord {
         runtimeClone = @{
             dir = $OnlookDir
             head = $runtimeState.head
+            tree = $runtimeState.tree
             hasLocalDiffPaths = $runtimeState.hasLocalDiffPaths
             localDiffPaths = $runtimeState.localDiffPaths
             localDiffSummary = $runtimeState.localDiffSummary
@@ -476,6 +612,11 @@ try {
     $resolvedPreviewOrigin = $pairSelection.previewOrigin
     $projectUrlSource = $pairSelection.projectUrlSource
     $previewOriginSource = $pairSelection.previewOriginSource
+
+    $csbApiKeyState = Get-CsbApiKeyState -RepoRoot $onlookRoot
+    if ($csbApiKeyState.status -ne 'present') {
+        throw "Current-project first gate requires a real CSB_API_KEY because sandbox.start must create a browser session for the active sandbox. Found $($csbApiKeyState.status) CSB_API_KEY from $($csbApiKeyState.source)."
+    }
 
     if ((-not (Test-PortListening -Port 54321)) -or (-not (Test-PortListening -Port 54322))) {
         $startedBackend = $true
