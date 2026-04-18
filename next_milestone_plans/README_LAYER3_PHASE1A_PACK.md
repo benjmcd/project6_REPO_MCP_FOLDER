@@ -15,6 +15,14 @@ It also now points to the narrow post-Phase 1A Gate C entry-freeze bridge:
 This README is operational and navigational.
 If it conflicts with the stronger frozen control docs, the control docs govern.
 
+## Authority note
+
+The active control docs in this pack use `P` citations whose path segment begins `layer3_primary_planningdocs/`.
+Those citations point to the external canonical Layer 3 planning corpus at `C:\Users\benny\OneDrive\Desktop\Layer3\layer3_primary_planningdocs`.
+Those source files are not tracked in this repo/worktree.
+Treat them as external planning authority, not repo-local implementation truth.
+Repo-local implementation truth still comes from the `R|...` repo paths cited in the pack.
+
 ## Current state
 
 The lane now contains:

@@ -12,6 +12,10 @@ Applied authority order for this handoff lane:
 5. current REV2 implementation-prep baseline docs
 6. older report and final-pack artifacts
 
+Primary-planning citation note:
+- `P` citations whose path segment begins `layer3_primary_planningdocs/` refer to the external canonical Layer 3 planning corpus at `C:\Users\benny\OneDrive\Desktop\Layer3\layer3_primary_planningdocs`.
+- Those files are not tracked in this repo/worktree and must not be misread as repo-local implementation truth.
+
 Frozen scope retained:
 - `Phase 1A = Gate-B-only feeder/ledger entry`
 - object set limited to `l3_session`, `l3_selection_manifest`, `l3_descriptor`, `l3_retrieval_event`, `l3_material_snapshot`

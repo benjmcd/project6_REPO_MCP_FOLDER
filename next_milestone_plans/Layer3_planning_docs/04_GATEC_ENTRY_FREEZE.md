@@ -19,6 +19,10 @@ Authority order for this document:
 3. this Gate C entry-freeze bridge
 4. historical Phase 1A REV1 artifacts as context only
 
+Authority-note extension:
+- Where the active Phase 1A REV2 control spine uses `P` citations whose path segment begins `layer3_primary_planningdocs/`, those citations refer to the external canonical Layer 3 planning corpus at `C:\Users\benny\OneDrive\Desktop\Layer3\layer3_primary_planningdocs`.
+- Those planning sources are external to this repo/worktree and do not replace live repo code as implementation truth.
+
 This document keeps the already-accepted boundaries:
 - Phase 1A remains closed as Gate-B-only feeder and ledger entry
 - Gate C is still blocked until typing heuristics and analysis-unit boundaries are explicitly frozen

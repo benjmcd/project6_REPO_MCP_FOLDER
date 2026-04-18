@@ -34,6 +34,10 @@ Applied authority order for this correction lane:
 6. current final-pack artifacts
 7. historical report artifacts
 
+Primary-planning citation note:
+- `P` citations whose path segment begins `layer3_primary_planningdocs/` refer to the external canonical Layer 3 planning corpus at `C:\Users\benny\OneDrive\Desktop\Layer3\layer3_primary_planningdocs`.
+- Those files are not tracked in this repo/worktree and must not be misread as repo-local implementation truth.
+
 Overall confidence remains `Medium`.
 Reason: the validation target is stable, but later-gate freezes for the workbench route family, first-v1 typing heuristics, and qualitative-engine ambition remain intentionally open. Those are later-phase blockers, not Phase 1A blockers.
 
