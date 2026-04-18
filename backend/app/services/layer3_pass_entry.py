@@ -274,9 +274,7 @@ def _prepare_cohort_candidate(
     if len(analysis_unit_ids) < 2:
         return None, "cohort_cardinality_not_admitted"
 
-    source_frames: list[pd.DataFrame] = []
-    source_dataset_version_ids: list[str] = []
-    prepared_columns: list[_PreparedCohortColumn] = []
+    prepared_sources: list[tuple[str, str, pd.DataFrame, _PreparedCohortColumn]] = []
     frequency_hints: list[str] = []
 
     for analysis_unit_id in analysis_unit_ids:
@@ -343,21 +341,29 @@ def _prepare_cohort_candidate(
             dataset_version_id=dataset_version_id,
             variable_name=measure_variable.variable_name,
         )
-        prepared_columns.append(
-            _PreparedCohortColumn(
-                column_name=series_column,
-                analysis_unit_id=analysis_unit.analysis_unit_id,
-                material_snapshot_id=snapshot.material_snapshot_id,
-                dataset_version_id=dataset_version_id,
-                descriptor_id=snapshot.descriptor_id,
-                stationarity_hint=source_profile.stationarity_hint if source_profile is not None else None,
-                seasonality_flag=source_profile.seasonality_flag if source_profile is not None else None,
+        prepared_sources.append(
+            (
+                dataset_version_id,
+                analysis_unit.analysis_unit_id,
+                aligned_frame,
+                _PreparedCohortColumn(
+                    column_name=series_column,
+                    analysis_unit_id=analysis_unit.analysis_unit_id,
+                    material_snapshot_id=snapshot.material_snapshot_id,
+                    dataset_version_id=dataset_version_id,
+                    descriptor_id=snapshot.descriptor_id,
+                    stationarity_hint=source_profile.stationarity_hint if source_profile is not None else None,
+                    seasonality_flag=source_profile.seasonality_flag if source_profile is not None else None,
+                ),
             )
         )
-        source_frames.append(aligned_frame)
-        source_dataset_version_ids.append(dataset_version_id)
         if dataset.frequency_hint:
             frequency_hints.append(dataset.frequency_hint)
+
+    prepared_sources.sort(key=lambda item: (item[0], item[1]))
+    source_frames = [item[2] for item in prepared_sources]
+    source_dataset_version_ids = [item[0] for item in prepared_sources]
+    prepared_columns = [item[3] for item in prepared_sources]
 
     shaped_dataframe = source_frames[0]
     for source_frame in source_frames[1:]:
