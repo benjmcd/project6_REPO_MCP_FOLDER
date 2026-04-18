@@ -91,9 +91,10 @@ Reason: the Phase 1A object boundary is stable, and the former Gate C typing/uni
    - `expand_descriptors(selection_manifest) -> l3_descriptor[*]`
    - `record_retrieval(descriptor, load_outcome) -> l3_retrieval_event`
    - `persist_material_snapshot(retrieval_event, storage_ref) -> l3_material_snapshot`
+   - `finalize_session(session) -> l3_session status/completed_at summary closure`
    These are internal service boundaries, not public route or consumer contracts.
-   `Claim strength:` primary-planning evidence plus bounded implementation recommendation.
-   `Evidence:` `P|layer3_primary_planningdocs/03_LAYER3_SESSION_LEDGER_AND_WORKSPACE_MODEL.md|Canonical write order|76-89`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`
+   `Claim strength:` primary-planning evidence plus repo-local Phase 1A implementation truth.
+   `Evidence:` `P|layer3_primary_planningdocs/03_LAYER3_SESSION_LEDGER_AND_WORKSPACE_MODEL.md|Canonical write order|76-89`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`; `R|backend/app/services/layer3_session_entry.py|finalize_session status closure|361-387`
 
 ## 4. Exact persistence and storage split needed for Phase 1A
 
