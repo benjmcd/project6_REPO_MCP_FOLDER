@@ -91,7 +91,7 @@ Reason: the validation target is stable, the former Gate C typing/unit blocker w
 1. `Recommended but not settled`
    `Conclusion:` Planned blast radius remains low because Phase 1A is ledger-first, additive, and internal. It does not require replacing existing APS or analyst-insight surfaces.
    `Claim strength:` primary + repo triangulation; recommendation only.
-   `Evidence:` `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Recommended first implementation slice|109-121`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|187-194`
+`Evidence:` `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Recommended first implementation slice|109-121`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|188-194`
 
 2. `Revised from REV1`
    `Conclusion:` The main regression risk is not a generic analyst-insight overlap gap. It is accidental dependence on the adjacent repo-root `/review/analyst-insight` route, alias-router wiring, same-path static assets, or same-path runtime-helper file that can tempt scope widening out of Gate B.
@@ -220,7 +220,7 @@ Reason: the validation target is stable, the former Gate C typing/unit blocker w
 1. `Recommended but not settled`
    `Conclusion:` Readiness remains sufficient to enter implementation for the bounded `Phase 1A` Gate-B-only slice. The correction pass changes wording calibration, not execution scope.
    `Claim strength:` primary + repo triangulation; recommendation only.
-   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN.md|artifact|REV1 correction target`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|187-194`
+   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN.md|artifact|REV1 correction target`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|188-194`
 
 2. `Revised from REV1`
    `Conclusion:` Overall confidence remains `Medium`, but the limiting factor is narrower than REV1 stated: it is now the still-open future workbench route family, APS-facing fan-out beyond the bounded evidence-report-export continuation now present in the current branch state, and the broader qualitative/cross-modal execution breadth, not a repo-root analyst-insight mismatch and not a Phase 1A blocker.
@@ -246,7 +246,7 @@ Primary planning anchors most heavily relied upon in this revision:
 
 Repo-root anchors most heavily relied upon in this revision:
 - `R|docs/analyst_insight/analyst_insight_status_handoff.md|Current status summary and current contract summary|20-52`
-- `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|187-194`
+- `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|188-194`
 - `R|backend/main.py|analyst_insight_page and root link|75-97`
 - `R|backend/app/api/router.py|review_nrc_aps plus legacy and alias analyst-insight routers|93-100`
 - `R|backend/app/api/market_data_integration.py|router and alias_router surfaces|1-59`
