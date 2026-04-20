@@ -190,8 +190,8 @@ The next safe continuation is:
 1. preserve the restored lower-layer baseline and current OCR-enabled proof basis
 2. treat the bounded Layer 3 APS export-derived context-packet handoff slice as the current additive ceiling extension on current `main`, not as permission to widen into export-package implementation, package-derived context, dossier, deterministic, or later APS families
 3. treat `next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md` as the governing carried-forward contract for that bounded direct export-derived context-packet slice only, not as permission to widen directly into later shared APS families
-4. treat the bounded Layer 3 APS multisource admission slice as the current additive ceiling extension on current `main` beyond the landed direct export-derived context-packet slice, not as permission to widen into export-package implementation, package-derived context, dossier, deterministic, or later APS families
-5. treat `next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md` as the governing carried-forward contract for that bounded shared same-run source-admission slice only, not as permission to widen directly into export-package implementation, package-derived context, dossier, deterministic, or later APS families
+4. treat the bounded Layer 3 APS multisource admission slice as the current additive ceiling extension on current `main` beyond the landed direct export-derived context-packet slice, and do not reinterpret the current branch's next shared-family freeze choice as proof that export-package implementation or later APS families have landed on current `main`
+5. treat `next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md` as the governing carried-forward contract for that bounded shared same-run source-admission slice on current `main`, and treat branch-local `next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` as the separately frozen choice of `evidence_report_export_package` as the first downstream shared APS consumer, not yet landed on current `main` and not permission to widen directly into export-package implementation, package-derived context, dossier, deterministic, or later APS families
 6. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes, and treat `.\project6.ps1 -Action validate-nrc-aps-content-index` plus `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` as the validate-only refresh path for those checked-in reports
 
 ## 9. Primary live authority surfaces for this workstream
@@ -220,6 +220,11 @@ The next safe continuation is:
 - `next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md`
+- `backend/app/services/nrc_aps_evidence_report_export_package_contract.py`
+- `backend/app/services/nrc_aps_evidence_report_export_package.py`
+- `backend/app/services/nrc_aps_context_packet_contract.py`
+- `backend/app/services/review_nrc_aps_graph.py`
 - `backend/app/services/connectors_nrc_adams.py`
 - `backend/app/services/nrc_aps_media_detection.py`
 - `backend/app/services/nrc_aps_document_processing.py`
