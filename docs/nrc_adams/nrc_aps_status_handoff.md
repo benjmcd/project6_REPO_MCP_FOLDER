@@ -1,7 +1,7 @@
 # NRC ADAMS APS Status Handoff
 
 ## 1. Purpose and truth model
-This document is the canonical live-repo status surface for the NRC ADAMS APS stack. Last updated April 19, 2026 to reflect the merged bounded Layer 3 APS evidence-bundle handoff slice, on top of the earlier Deterministic Challenge Review Packet v1 closeout and narrow Tier2 diagnostics-write closeout.
+This document is the canonical live-repo status surface for the NRC ADAMS APS stack. Last updated April 19, 2026 to reflect the bounded Layer 3 APS citation-pack handoff slice in the current implementation state, on top of the earlier bounded evidence-bundle handoff slice, the Deterministic Challenge Review Packet v1 closeout, and the narrow Tier2 diagnostics-write closeout.
 
 Repo truth precedence used here:
 1. live code, tests, scripts, migrations, and repo-contained proof artifacts
@@ -159,7 +159,7 @@ Important correction:
 ## 7. Current explicit limits
 - Tesseract CLI availability is an external prerequisite for scanned/mixed PDF OCR success.
 - In a no-Tesseract environment, scanned PDFs fail closed with `ocr_required_but_unavailable`, and mixed PDFs may degrade to weak/native-only output.
-- The merged Layer 3 APS consumer remains intentionally limited to the first evidence-bundle-family tranche: `aps_evidence_bundle_handoff` emitted from already-packaged terminal Layer 3 sessions. Later APS families, route/UI widening, and APS contract/gate widening remain deferred.
+- The current implementation state now includes bounded Layer 3 APS evidence-bundle and citation-pack handoff tranches: `aps_evidence_bundle_handoff` and `aps_evidence_citation_pack_handoff` emitted from already-packaged terminal Layer 3 sessions without route/UI widening, runtime DB writes, or APS contract/gate widening. Later APS families remain deferred.
 - The checked-in fixture corpus now proves manifest-driven parser routing, degradation semantics, downstream usefulness for representative born-digital content, and OCR-success usefulness for the scanned/mixed corpus fixtures in this workspace.
 - The current checked-in lower-layer proof basis in this workspace (covers behavior through March 13, 2026) is:
   - `tests/reports/nrc_aps_document_processing_proof_report.json`
@@ -185,14 +185,16 @@ Important correction:
 ## 8. Recommended next continuation
 The next safe continuation is:
 1. preserve the restored lower-layer baseline and current OCR-enabled proof basis
-2. treat the merged bounded Layer 3 APS evidence-bundle handoff slice as the current additive ceiling extension, not as permission to widen into later APS families
-3. treat `next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md` as the only admitted next bounded APS-family continuation: one citation-pack-family handoff sourced from the already-landed evidence-bundle handoff slice, not a jump into report/context/deterministic families
+2. treat the bounded Layer 3 APS citation-pack handoff slice as the current additive ceiling extension, not as permission to widen into later APS families
+3. treat `next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md` as the governing freeze for that bounded citation-pack-family continuation rather than as permission to jump directly into report/context/deterministic families
 4. require a fresh explicit freeze before any APS-family fan-out beyond citation-pack, route/UI widening, or broader runtime-facing consumer admission
 5. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes, and treat `.\project6.ps1 -Action validate-nrc-aps-content-index` plus `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` as the validate-only refresh path for those checked-in reports
 
 ## 9. Primary live authority surfaces for this workstream
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 - `backend/app/services/layer3_aps_handoff.py`
+- `backend/app/services/layer3_aps_citation_handoff.py`
+- `backend/tests/test_layer3_aps_citation_handoff.py`
 - `next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md`
 - `backend/app/services/connectors_nrc_adams.py`
 - `backend/app/services/nrc_aps_media_detection.py`
