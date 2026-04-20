@@ -185,8 +185,8 @@ Important correction:
 ## 8. Recommended next continuation
 The next safe continuation is:
 1. preserve the restored lower-layer baseline and current OCR-enabled proof basis
-2. treat the bounded Layer 3 APS citation-pack handoff slice as the current additive ceiling extension, not as permission to widen into later APS families
-3. treat `next_milestone_plans/Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md` as the governing freeze for the next bounded evidence-report-family continuation rather than as permission to jump directly into export/context/deterministic families
+2. treat the bounded Layer 3 APS report handoff slice as the current additive ceiling extension in the current implementation state, not as permission to widen into later APS families
+3. treat `next_milestone_plans/Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md` as the governing carried-forward contract for that bounded evidence-report-family slice rather than as permission to jump directly into export/context/deterministic families
 4. require a fresh explicit freeze before any APS-family fan-out beyond evidence-report, route/UI widening, or broader runtime-facing consumer admission
 5. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes, and treat `.\project6.ps1 -Action validate-nrc-aps-content-index` plus `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` as the validate-only refresh path for those checked-in reports
 

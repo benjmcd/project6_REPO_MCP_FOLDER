@@ -30,7 +30,7 @@ And to the carried-forward Gate D APS handoff freeze packet for the bounded firs
 And to the carried-forward Gate D APS citation continuation freeze packet for the bounded citation-pack-family handoff slice now landed on current `main` after the landed evidence-bundle handoff:
 - `next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md`
 
-And to the carried-forward Gate D APS report continuation freeze packet for the next bounded evidence-report-family continuation after the landed citation-pack handoff:
+And to the carried-forward Gate D APS report continuation freeze packet for the bounded evidence-report-family continuation slice now implemented in the current branch state after the landed citation-pack handoff on current `main`:
 - `next_milestone_plans/Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md`
 
 This README is operational and navigational.
@@ -60,7 +60,7 @@ The lane now contains:
 - the carried-forward Gate D package-entry freeze packet that governed the bounded packaging/reconciliation entry slice now landed on current `main` without reopening route/UI or APS handoff scope
 - the carried-forward Gate D APS handoff freeze packet that governed the bounded APS evidence-bundle-family adapter/handoff slice now landed on current `main` without widening route/UI, runtime DB, or later APS-family scope
 - the carried-forward Gate D APS citation continuation freeze packet that governed the bounded citation-pack-family handoff slice now landed on current `main` without widening route/UI, runtime DB, or later APS-family fan-out
-- the carried-forward Gate D APS report continuation freeze packet that now governs the next bounded evidence-report-family continuation beyond the landed citation-pack handoff while keeping export/context/deterministic fan-out, route/UI, and runtime DB widening out
+- the carried-forward Gate D APS report continuation freeze packet that now governs the bounded evidence-report-family continuation slice implemented in the current branch state beyond the landed citation-pack handoff while keeping export/context/deterministic fan-out, route/UI, and runtime DB widening out
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -121,7 +121,7 @@ Read this after `08_GATED_PACKAGE_FREEZE.md` if you need the carried-forward con
 Read this after `09_GATED_APS_HANDOFF_FREEZE.md` if you need the carried-forward contract that governed the bounded citation-pack-family handoff slice now landed on current `main`:
 - `Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md`
 
-Read this after `10_GATED_APS_CITATION_FREEZE.md` if you need the governing contract for the next bounded evidence-report-family continuation not yet landed on current `main`:
+Read this after `10_GATED_APS_CITATION_FREEZE.md` if you need the governing contract for the bounded evidence-report-family continuation slice implemented in the current branch state and not yet landed on current `main`:
 - `Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md`
 
 ### 2. Execution handoff
@@ -217,7 +217,7 @@ Rule:
 ### Post-Phase 1A carried-forward APS report continuation freeze packet
 
 This document is also outside the accepted Phase 1A normative control spine.
-It is the narrow frozen contract that now governs the next bounded evidence-report-family continuation beyond the already-landed citation-pack slice, and it does not itself imply that evidence-report handoff, export/context/deterministic families, or route/UI surfaces have already landed:
+It is the narrow frozen contract that now governs the bounded evidence-report-family continuation slice implemented in the current branch state beyond the already-landed citation-pack slice, and it does not itself imply that export/context/deterministic families or route/UI surfaces have already landed on current `main`:
 - `11_GATED_APS_REPORT_FREEZE.md`
 
 ## Current use guidance
