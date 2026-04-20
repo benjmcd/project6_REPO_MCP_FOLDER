@@ -187,7 +187,7 @@ Stop and reopen the freeze instead of improvising if the bounded write lane requ
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze is the governing carried-forward contract for the bounded APS-family export-derived context-packet continuation slice now landed on current main beyond the landed evidence-report-export slice`
+- `This freeze is the governing carried-forward contract for the bounded APS-family export-derived context-packet continuation slice now landed on current `main` beyond the landed evidence-report-export slice`
 
 Reason:
 - the earlier assumption that evidence-report-export-package was the likeliest next slice is not supported by the current Layer 3 handoff shape

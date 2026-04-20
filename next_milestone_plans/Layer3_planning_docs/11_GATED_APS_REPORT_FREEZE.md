@@ -164,12 +164,12 @@ Stop and reopen the freeze instead of improvising if the bounded write lane requ
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze is now the governing carried-forward contract for the bounded APS-family evidence-report continuation slice now landed on current main beyond the landed citation-pack-family handoff slice`
+- `This freeze is now the governing carried-forward contract for the bounded APS-family evidence-report continuation slice now landed on current `main` beyond the landed citation-pack-family handoff slice`
 
 Reason:
 - the earlier blocker was no longer the first post-citation APS-family choice
 - the remaining missing decision at freeze time was the exact next later APS family and whether that continuation could stay outside runtime DB writes
-- this document froze that decision narrowly at the live evidence-report-family boundary, and the bounded evidence-report handoff slice governed by it has now landed on current main while keeping export/context/deterministic families, route/UI, runtime DB, and broader consumer widening out
+- this document froze that decision narrowly at the live evidence-report-family boundary, and the bounded evidence-report handoff slice governed by it has now landed on current `main` while keeping export/context/deterministic families, route/UI, runtime DB, and broader consumer widening out
 
 What still remains intentionally deferred after this freeze:
 - the future workbench route family
