@@ -255,7 +255,7 @@ Reason:
 What still remains intentionally deferred after this freeze:
 - the future workbench route family
 - broader qualitative, hybrid, cross-modal, and comparative execution breadth
-- later APS-facing fan-out beyond the first evidence-bundle-family tranche
+- later APS-facing fan-out beyond the separately frozen citation-pack-family continuation
 - deeper runtime-facing consumer widening
 
 ## Concise evidence appendix

@@ -91,7 +91,7 @@ Reason: the validation target is stable, the former Gate C typing/unit blocker w
 1. `Recommended but not settled`
    `Conclusion:` Planned blast radius remains low because Phase 1A is ledger-first, additive, and internal. It does not require replacing existing APS or analyst-insight surfaces.
    `Claim strength:` primary + repo triangulation; recommendation only.
-   `Evidence:` `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Recommended first implementation slice|109-121`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|185-190`
+   `Evidence:` `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Recommended first implementation slice|109-121`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|185-191`
 
 2. `Revised from REV1`
    `Conclusion:` The main regression risk is not a generic analyst-insight overlap gap. It is accidental dependence on the adjacent repo-root `/review/analyst-insight` route, alias-router wiring, same-path static assets, or same-path runtime-helper file that can tempt scope widening out of Gate B.
@@ -179,7 +179,7 @@ Reason: the validation target is stable, the former Gate C typing/unit blocker w
    `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md|artifact|bounded Gate D package-entry contract`; `P|layer3_primary_planningdocs/10_LAYER3_CONSUMER_INTEGRATION_MAP.md|Must-have and package requirements|67-92`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate D - packaging/handoff entry|107-111`
 
 7. `Settled by newer freeze artifact`
-   `Conclusion:` The exact first APS adapter target and bounded adapter contract were explicitly frozen by `09_GATED_APS_HANDOFF_FREEZE.md`, and the bounded APS evidence-bundle-family handoff slice governed by that freeze is now present in the current implementation state, so the remaining APS-facing ambiguity is no longer first-target selection and is instead broader fan-out beyond the first evidence-bundle-family tranche.
+   `Conclusion:` The exact first APS adapter target and bounded adapter contract were explicitly frozen by `09_GATED_APS_HANDOFF_FREEZE.md`, and the bounded APS evidence-bundle-family handoff slice governed by that freeze is now present in the current implementation state, so the remaining APS-facing ambiguity after that artifact was no longer first-target selection and instead moved to the next later APS-family continuation question that is now addressed separately below.
    `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
    `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md|artifact|bounded first APS-facing adapter contract`; `P|layer3_primary_planningdocs/07_LAYER3_RECONCILIATION_PACKAGING_AND_HANDOFF.md|Recommended first APS-facing tranche|209-217`; `P|layer3_primary_planningdocs/10_LAYER3_CONSUMER_INTEGRATION_MAP.md|APS downstream handoff requirements and sequencing|67-107`; `P|layer3_primary_planningdocs/decisions/ADR-007_FIRST_APS_HANDOFF_TRANCHE.md|Evidence-bundle-family level is the first APS-facing tranche|6-44`
 
@@ -210,7 +210,7 @@ Reason: the validation target is stable, the former Gate C typing/unit blocker w
 1. `Recommended but not settled`
    `Conclusion:` Readiness remains sufficient to enter implementation for the bounded `Phase 1A` Gate-B-only slice. The correction pass changes wording calibration, not execution scope.
    `Claim strength:` primary + repo triangulation; recommendation only.
-   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN.md|artifact|REV1 correction target`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|185-190`
+   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN.md|artifact|REV1 correction target`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|185-191`
 
 2. `Revised from REV1`
    `Conclusion:` Overall confidence remains `Medium`, but the limiting factor is narrower than REV1 stated: it is now the still-open future workbench route family, APS-facing fan-out beyond the newly frozen citation-pack continuation, and the broader qualitative/cross-modal execution breadth, not a repo-root analyst-insight mismatch and not a Phase 1A blocker.
