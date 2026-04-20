@@ -159,7 +159,7 @@ Stop and reopen the freeze instead of improvising if the bounded write lane requ
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze is now the governing carried-forward contract for the bounded APS citation handoff slice now landed on current main after the already-landed evidence-bundle handoff slice`
+- `This freeze is now the governing carried-forward contract for the bounded APS citation handoff slice now landed on current \`main\` after the already-landed evidence-bundle handoff slice`
 
 Reason:
 - the earlier blocker was no longer the first APS-family choice

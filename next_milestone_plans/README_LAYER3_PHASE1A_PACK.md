@@ -27,7 +27,7 @@ And to the carried-forward Gate D package-entry freeze packet for the landed bou
 And to the carried-forward Gate D APS handoff freeze packet for the bounded first APS evidence-bundle-family handoff slice now landed on current `main`:
 - `next_milestone_plans/Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md`
 
-And to the carried-forward Gate D APS citation continuation freeze packet for the bounded citation-pack-family handoff slice after the landed evidence-bundle handoff:
+And to the carried-forward Gate D APS citation continuation freeze packet for the bounded citation-pack-family handoff slice now landed on current `main` after the landed evidence-bundle handoff:
 - `next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md`
 
 This README is operational and navigational.

@@ -245,7 +245,7 @@ Stop and reopen the freeze instead of improvising if the bounded write lane requ
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze is now the governing carried-forward contract for the bounded APS evidence-bundle-family handoff slice now landed on current main after the already-landed Gate D package-entry slice`
+- `This freeze is now the governing carried-forward contract for the bounded APS evidence-bundle-family handoff slice now landed on current \`main\` after the already-landed Gate D package-entry slice`
 
 Reason:
 - the earlier blocker was no longer internal packaging
