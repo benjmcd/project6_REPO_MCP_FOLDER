@@ -245,12 +245,12 @@ Stop and reopen the freeze instead of improvising if the bounded write lane requ
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze is sufficient for the bounded write-enabled APS handoff lane that is now present in the current implementation state after the already-landed Gate D package-entry slice on current main`
+- `This freeze is now the governing carried-forward contract for the bounded APS evidence-bundle-family handoff slice now landed on current main after the already-landed Gate D package-entry slice`
 
 Reason:
 - the earlier blocker was no longer internal packaging
 - the remaining missing decision was the exact first APS-facing target and bounded adapter posture
-- this document freezes that decision narrowly at the live evidence-bundle-family boundary while keeping later APS families, route/UI, runtime DB, and broader consumer widening out
+- this document froze that decision narrowly at the live evidence-bundle-family boundary and now governs the bounded APS evidence-bundle-family handoff slice landed on current `main` while keeping later APS families, route/UI, runtime DB, and broader consumer widening out
 
 What still remains intentionally deferred after this freeze:
 - the future workbench route family
