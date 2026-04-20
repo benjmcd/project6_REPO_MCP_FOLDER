@@ -194,11 +194,10 @@ Reason:
 - repo truth shows the live export-package family requires at least two same-run exports while the current Layer 3 APS report-export handoff admits exactly one export row per session
 - repo truth also shows the live context-packet family already accepts `evidence_report_export` directly as an allowed source family, so this is the first next APS family that fits the current bounded Layer 3 source posture without inventing wider semantics
 - this document froze that decision narrowly, and the bounded export-derived context-packet handoff slice governed by it has now landed on current `main` while keeping export-package implementation, package-derived context, dossier, deterministic, route/UI, runtime DB, and broader consumer widening out
-- the exact next later continuation beyond that landed direct export-derived context slice is now separately frozen by `14_GATED_APS_MULTISOURCE_FREEZE.md` at the shared same-run multisource admission boundary required before later shared APS families can be admitted
+- the exact next later continuation beyond that landed direct export-derived context slice is now governed by `14_GATED_APS_MULTISOURCE_FREEZE.md`, and the bounded shared same-run multisource admission slice governed by that freeze is now implemented in the current branch state while still not landed on current `main`
 
 What still remains intentionally deferred after this freeze:
 - APS evidence-report-export-package implementation
-- the next write-enabled shared-source admission lane governed by `14_GATED_APS_MULTISOURCE_FREEZE.md`
 - package-derived context-packet fan-out
 - context-dossier, deterministic, and review-packet fan-out beyond the export-derived context-packet family
 - the future workbench route family

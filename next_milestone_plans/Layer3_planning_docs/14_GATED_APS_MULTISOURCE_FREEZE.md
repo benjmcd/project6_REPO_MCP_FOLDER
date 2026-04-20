@@ -140,16 +140,16 @@ Stop and reopen the freeze instead of improvising if the next write lane require
 ## Concise readiness judgment
 
 Readiness judgment:
-- This freeze is the governing carried-forward contract for the next bounded APS continuation not yet landed on current `main`.
+- This freeze is the governing carried-forward contract for the bounded APS multisource admission slice now implemented in the current branch state but not yet landed on current `main`.
 
 Reason:
 - the already-landed direct export-derived context-packet slice was the last single-source APS continuation compatible with the current Layer 3 handoff shape
 - repo truth shows the next visible shared APS families require at least two same-run sources
 - repo truth also shows current Layer 3 durable and handoff surfaces remain session-scoped and single-source
-- so the next exact continuation is the shared same-run multisource admission boundary, not direct export-package or context-dossier implementation
+- this document froze that exact shared-source seam narrowly, and the bounded multisource admission slice governed by it is now implemented in the current branch state using existing `co_retrieval_group_id` plus APS source identity without schema widening
+- that bounded slice still does not admit direct export-package or context-dossier implementation, and it is not yet landed on current `main`
 
 What still remains intentionally deferred after this freeze:
-- the next write-enabled shared-source admission lane itself
 - direct `evidence_report_export_package` implementation
 - package-derived context-packet fan-out
 - direct `context_dossier`, deterministic, and review-packet fan-out
