@@ -53,8 +53,9 @@ Critical architectural rule:
 Current repo-side facts to preserve:
 - current `main` includes the bounded APS multisource implementation from PR `#101`
 - current `main` includes the docs-only multisource closeout from PR `#102`
-- the next required decision is to freeze the first downstream shared APS consumer of the landed multisource seam
-- the current leading candidates are `evidence_report_export_package` and `context_dossier`
+- current branch state also carries open PR `#106`, the read-only freeze selecting `evidence_report_export_package` as the first downstream shared APS consumer beyond the landed multisource seam
+- the immediate required move is to land PR `#106`, not to reopen the consumer-selection decision from scratch
+- `context_dossier` remains later and must not be presented as co-equal current focus with the selected export-package boundary
 
 Also update the scheduled refresh task so it no longer:
 - writes or references `current_main_commit`
