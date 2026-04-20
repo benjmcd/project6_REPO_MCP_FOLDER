@@ -188,7 +188,7 @@ Important correction:
 ## 8. Recommended next continuation
 The next safe continuation is:
 1. preserve the restored lower-layer baseline and current OCR-enabled proof basis
-2. treat the bounded Layer 3 APS export-derived context-packet handoff slice as the current additive ceiling extension in the current implementation state, not as permission to widen into export-package implementation, package-derived context, dossier, deterministic, or later APS families
+2. treat the bounded Layer 3 APS export-derived context-packet handoff slice as the current additive ceiling extension on current `main`, not as permission to widen into export-package implementation, package-derived context, dossier, deterministic, or later APS families
 3. treat `next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md` as the governing carried-forward contract for that bounded direct export-derived context-packet slice, and treat export-package implementation as still later because the live export-package family requires at least two same-run exports while the current Layer 3 APS context handoff deliberately stays on the direct export source-family boundary
 4. do not treat the new context handoff slice as permission to widen into package-derived context, dossier, deterministic, or later APS families
 5. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes, and treat `.\project6.ps1 -Action validate-nrc-aps-content-index` plus `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` as the validate-only refresh path for those checked-in reports

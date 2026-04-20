@@ -187,13 +187,13 @@ Stop and reopen the freeze instead of improvising if the bounded write lane requ
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze is the governing carried-forward contract for the bounded APS-family export-derived context-packet continuation slice now present in the current implementation state beyond the landed evidence-report-export slice`
+- `This freeze is the governing carried-forward contract for the bounded APS-family export-derived context-packet continuation slice now landed on current main beyond the landed evidence-report-export slice`
 
 Reason:
 - the earlier assumption that evidence-report-export-package was the likeliest next slice is not supported by the current Layer 3 handoff shape
 - repo truth shows the live export-package family requires at least two same-run exports while the current Layer 3 APS report-export handoff admits exactly one export row per session
 - repo truth also shows the live context-packet family already accepts `evidence_report_export` directly as an allowed source family, so this is the first next APS family that fits the current bounded Layer 3 source posture without inventing wider semantics
-- this document froze that decision narrowly, and the bounded export-derived context-packet handoff slice governed by it is now present in the current implementation state while keeping export-package implementation, package-derived context, dossier, deterministic, route/UI, runtime DB, and broader consumer widening out
+- this document froze that decision narrowly, and the bounded export-derived context-packet handoff slice governed by it has now landed on current `main` while keeping export-package implementation, package-derived context, dossier, deterministic, route/UI, runtime DB, and broader consumer widening out
 
 What still remains intentionally deferred after this freeze:
 - APS evidence-report-export-package implementation
