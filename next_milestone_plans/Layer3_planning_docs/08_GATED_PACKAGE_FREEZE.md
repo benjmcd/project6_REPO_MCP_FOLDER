@@ -303,7 +303,7 @@ Stop and reopen the freeze instead of improvising if the bounded write lane requ
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze is sufficient for the bounded write-enabled Gate D package-entry lane that should follow the already-landed quantitative cohort continuation on current main`
+- ``This freeze was sufficient for the bounded write-enabled Gate D package-entry lane that has now landed on current `main` beyond the already-landed quantitative cohort continuation ``
 
 Reason:
 - the earlier blocker was a missing freeze for the canonical internal package, the derived user/review package posture, the handoff strategy, and the first consumer scope

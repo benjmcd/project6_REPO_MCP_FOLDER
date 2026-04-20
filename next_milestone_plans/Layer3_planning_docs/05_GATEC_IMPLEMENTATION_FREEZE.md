@@ -297,7 +297,7 @@ Stop and reopen the freeze instead of improvising if the first Gate C write lane
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze was sufficient for the bounded write-enabled Gate C typing/unit implementation lane that has now landed on current main`
+- ``This freeze was sufficient for the bounded write-enabled Gate C typing/unit implementation lane that has now landed on current `main` ``
 
 Reason:
 - the earlier blocker was a missing implementation-entry freeze across typing, unit/group/set formation, persistence posture, owner surfaces, proof posture, and no-go boundaries

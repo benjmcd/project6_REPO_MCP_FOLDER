@@ -247,4 +247,4 @@ Stop and reopen the freeze instead of improvising if the bounded write lane requ
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze was sufficient for the bounded write-enabled Gate C quantitative associated/cohort shaping and pass-entry lane that has now landed on current main`
+- ``This freeze was sufficient for the bounded write-enabled Gate C quantitative associated/cohort shaping and pass-entry lane that has now landed on current `main` ``

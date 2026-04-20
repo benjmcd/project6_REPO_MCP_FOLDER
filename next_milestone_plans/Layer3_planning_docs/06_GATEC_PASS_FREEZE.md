@@ -318,7 +318,7 @@ Stop and reopen the freeze instead of improvising if the bounded Gate C write la
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze was sufficient for the bounded write-enabled Gate C plan/pass implementation lane that has now landed on current main`
+- ``This freeze was sufficient for the bounded write-enabled Gate C plan/pass implementation lane that has now landed on current `main` ``
 
 Reason:
 - the earlier blocker was a missing freeze for how `l3_analysis_plan` and `l3_pass_run` should land relative to the already-landed typing/unit slice, the existing quantitative plane, the analyst-insight helper surfaces, and the runtime DB boundary
