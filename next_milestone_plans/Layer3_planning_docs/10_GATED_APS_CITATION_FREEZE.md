@@ -159,12 +159,12 @@ Stop and reopen the freeze instead of improvising if the bounded write lane requ
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze is sufficient for the bounded next APS-facing write-enabled lane after the already-landed evidence-bundle handoff slice on current main`
+- `This freeze is sufficient for the bounded APS citation handoff lane now present in the current implementation state after the already-landed evidence-bundle handoff slice on current main`
 
 Reason:
 - the earlier blocker was no longer the first APS-family choice
 - the remaining missing decision was the exact next later APS family and whether it should source from already-landed evidence-bundle handoff truth or reopen earlier package truth
-- this document freezes that decision narrowly at the live citation-pack-family boundary while keeping report/context/deterministic families, route/UI, runtime DB, and broader consumer widening out
+- this document freezes that decision narrowly at the live citation-pack-family boundary and now governs the bounded citation handoff slice present in the current implementation state while keeping report/context/deterministic families, route/UI, runtime DB, and broader consumer widening out
 
 What still remains intentionally deferred after this freeze:
 - the future workbench route family

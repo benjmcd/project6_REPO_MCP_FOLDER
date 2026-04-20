@@ -27,7 +27,7 @@ And to the carried-forward Gate D package-entry freeze packet for the landed bou
 And to the carried-forward Gate D APS handoff freeze packet for the bounded first APS evidence-bundle-family handoff slice in the current implementation state:
 - `next_milestone_plans/Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md`
 
-And to the carried-forward Gate D APS citation continuation freeze packet for the bounded next later-APS-family slice after the landed evidence-bundle handoff:
+And to the carried-forward Gate D APS citation continuation freeze packet for the bounded citation-pack-family handoff slice after the landed evidence-bundle handoff:
 - `next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md`
 
 This README is operational and navigational.
@@ -56,7 +56,7 @@ The lane now contains:
 - the carried-forward Gate C quantitative associated/cohort shaping continuation packet that governed the bounded cohort pass lane now landed on current `main`
 - the carried-forward Gate D package-entry freeze packet that governed the bounded packaging/reconciliation entry slice now landed on current `main` without reopening route/UI or APS handoff scope
 - the carried-forward Gate D APS handoff freeze packet that governs the bounded APS evidence-bundle-family adapter/handoff slice now present in the current implementation state without widening route/UI, runtime DB, or later APS-family scope
-- the carried-forward Gate D APS citation continuation freeze packet now freezes the exact next later APS-family continuation at the citation-pack-family boundary only; it does not mean that later slice has already landed
+- the carried-forward Gate D APS citation continuation freeze packet now governs the bounded citation-pack-family handoff slice present in the current implementation state without widening route/UI, runtime DB, or later APS-family fan-out
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -114,7 +114,7 @@ Read this after `07_GATEC_COHORT_FREEZE.md` if you need the carried-forward cont
 Read this after `08_GATED_PACKAGE_FREEZE.md` if you need the carried-forward contract that governs the bounded APS evidence-bundle-family handoff slice now present in the current implementation state:
 - `Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md`
 
-Read this after `09_GATED_APS_HANDOFF_FREEZE.md` if you need the carried-forward contract that freezes the exact next later APS-family continuation at the citation-pack-family boundary only:
+Read this after `09_GATED_APS_HANDOFF_FREEZE.md` if you need the carried-forward contract that governs the bounded citation-pack-family handoff slice now present in the current implementation state:
 - `Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md`
 
 ### 2. Execution handoff
@@ -201,7 +201,7 @@ It is the narrow frozen contract that governs the bounded APS evidence-bundle-fa
 ### Post-Phase 1A carried-forward APS citation continuation freeze packet
 
 This document is also outside the accepted Phase 1A normative control spine.
-It is the narrow frozen contract that freezes the exact next later APS-family continuation at the citation-pack-family boundary only after the already-landed evidence-bundle slice, and it does not itself imply that report/context/deterministic families or route/UI surfaces have already landed:
+It is the narrow frozen contract that now governs the bounded citation-pack-family handoff slice present in the current implementation state after the already-landed evidence-bundle slice, and it does not itself imply that report/context/deterministic families or route/UI surfaces have already landed:
 - `10_GATED_APS_CITATION_FREEZE.md`
 
 Rule:
