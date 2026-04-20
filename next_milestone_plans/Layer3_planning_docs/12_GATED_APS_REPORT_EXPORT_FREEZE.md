@@ -166,12 +166,12 @@ Stop and reopen the freeze instead of improvising if the bounded write lane requ
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze is the governing carried-forward contract for the next bounded APS-family evidence-report-export continuation slice beyond the landed evidence-report handoff slice, and it is freeze-only rather than an implementation claim`
+- `This freeze is the governing carried-forward contract for the bounded APS-family evidence-report-export continuation slice now present in the current branch state beyond the landed evidence-report handoff slice`
 
 Reason:
 - the earlier blocker was no longer the first post-report APS-family choice
-- the remaining missing decision is the exact next later APS family and whether that continuation can stay outside runtime DB writes
-- repo truth places evidence-report-export immediately after evidence-report and before export-package/context fan-out
+- this document froze that decision narrowly at the live evidence-report-export-family boundary, and the bounded evidence-report-export handoff slice governed by it is now present in the current branch state while keeping export-package/context/deterministic families, route/UI, runtime DB, and broader consumer widening out
+- repo truth still places evidence-report-export immediately after evidence-report and before export-package/context fan-out
 
 What still remains intentionally deferred after this freeze:
 - the future workbench route family
