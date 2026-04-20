@@ -139,13 +139,13 @@ Stop and reopen the freeze instead of improvising if the next write lane require
 ## Concise readiness judgment
 
 Readiness judgment:
-- This freeze is the governing carried-forward branch-only contract for the bounded choice of `evidence_report_export_package` as the first downstream shared APS consumer beyond the already-landed multisource slice. It is not yet landed on current `main`.
+- This freeze is the governing carried-forward contract now landed on current `main` for the bounded choice of `evidence_report_export_package` as the first downstream shared APS consumer beyond the already-landed multisource slice.
 
 Reason:
 - the already-landed multisource slice resolved the shared same-run source-admission seam on current durable Layer 3 surfaces
 - repo truth shows `export_package` is the first visible shared APS family after paired branch exports
 - repo truth also shows package-derived context packets consume `export_package`, while `context_dossier` remains further downstream of paired export-derived packets
-- this branch-local freeze therefore settles the next shared-family choice narrowly without admitting implementation
+- this now-landed freeze therefore settles the next shared-family choice narrowly without admitting implementation
 
 What still remains intentionally deferred after this freeze:
 - direct `evidence_report_export_package` implementation
