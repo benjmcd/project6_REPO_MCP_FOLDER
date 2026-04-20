@@ -36,7 +36,7 @@ And to the carried-forward Gate D APS report continuation freeze packet for the 
 And to the carried-forward Gate D APS report-export continuation freeze packet for the bounded evidence-report-export-family continuation slice now landed on current `main` beyond the landed evidence-report handoff:
 - `next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md`
 
-And to the carried-forward Gate D APS context continuation freeze packet for the bounded export-derived context-packet slice now present in the current implementation state beyond the landed evidence-report-export handoff:
+And to the carried-forward Gate D APS context continuation freeze packet for the bounded export-derived context-packet slice now landed on current `main` beyond the landed evidence-report-export handoff:
 - `next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md`
 
 This README is operational and navigational.
@@ -68,7 +68,7 @@ The lane now contains:
 - the carried-forward Gate D APS citation continuation freeze packet that governed the bounded citation-pack-family handoff slice now landed on current `main` without widening route/UI, runtime DB, or later APS-family fan-out
 - the carried-forward Gate D APS report continuation freeze packet that governed the bounded evidence-report-family continuation slice now landed on current `main` beyond the landed citation-pack handoff while keeping export/context/deterministic fan-out, route/UI, and runtime DB widening out
 - the carried-forward Gate D APS report-export continuation freeze packet that now governs the bounded evidence-report-export-family continuation slice now landed on current `main` beyond the landed evidence-report handoff while keeping export-package/context/deterministic fan-out, route/UI, and runtime DB widening out
-- the carried-forward Gate D APS context continuation freeze packet that now governs the bounded export-derived context-packet continuation slice now present in the current implementation state beyond the landed evidence-report-export handoff while keeping export-package implementation, package-derived context/dossier/deterministic fan-out, route/UI, and runtime DB widening out
+- the carried-forward Gate D APS context continuation freeze packet that now governs the bounded export-derived context-packet continuation slice now landed on current `main` beyond the landed evidence-report-export handoff while keeping export-package implementation, package-derived context/dossier/deterministic fan-out, route/UI, and runtime DB widening out
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -94,7 +94,7 @@ Current bounded posture:
 - the carried-forward Gate D APS handoff freeze now covers the bounded APS evidence-bundle-family handoff slice now landed on current `main` only; it does not mean broader APS families, route/UI surfaces, or consumer routes beyond that slice have already landed
 - the carried-forward Gate D APS citation and report freezes now cover the landed bounded citation-pack and evidence-report slices only; they do not mean later APS families beyond those slices have already landed
 - the carried-forward Gate D APS report-export freeze now covers the bounded evidence-report-export slice now landed on current `main` only; it does not mean evidence-report-export-package or later APS families have already landed
-- the carried-forward Gate D APS context freeze now covers only the bounded export-derived context-packet slice now present in the current implementation state; it does not mean export-package implementation, package-derived context, dossier, deterministic, or route/UI surfaces have already landed
+- the carried-forward Gate D APS context freeze now covers only the bounded export-derived context-packet slice now landed on current `main`; it does not mean export-package implementation, package-derived context, dossier, deterministic, or route/UI surfaces have already landed
 
 The active REV2 control docs in this pack have also been re-audited against current `main` after the repo-root analyst-insight page, alias-router, static-asset, and runtime-helper surfaces landed. Treat the REV1 artifacts and the REV1-to-REV2 correction memo as historical context only.
 
@@ -138,7 +138,7 @@ Read this after `10_GATED_APS_CITATION_FREEZE.md` if you need the governing cont
 Read this after `11_GATED_APS_REPORT_FREEZE.md` if you need the governing contract for the bounded evidence-report-export-family continuation slice now landed on current `main` beyond the landed evidence-report handoff:
 - `Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md`
 
-Read this after `12_GATED_APS_REPORT_EXPORT_FREEZE.md` if you need the governing contract for the bounded export-derived context-packet continuation slice now present in the current implementation state beyond the landed evidence-report-export handoff:
+Read this after `12_GATED_APS_REPORT_EXPORT_FREEZE.md` if you need the governing contract for the bounded export-derived context-packet continuation slice now landed on current `main` beyond the landed evidence-report-export handoff:
 - `Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md`
 
 ### 2. Execution handoff
@@ -246,7 +246,7 @@ It is the narrow frozen contract that governs the bounded evidence-report-export
 ### Post-Phase 1A carried-forward APS context continuation freeze packet
 
 This document is also outside the accepted Phase 1A normative control spine.
-It is the narrow frozen contract that governs the bounded export-derived context-packet continuation slice now present in the current implementation state beyond the already-landed evidence-report-export slice, and it does not itself imply that export-package implementation, package-derived context, dossier, deterministic, or route/UI surfaces have already landed:
+It is the narrow frozen contract that governs the bounded export-derived context-packet continuation slice now landed on current `main` beyond the already-landed evidence-report-export slice, and it does not itself imply that export-package implementation, package-derived context, dossier, deterministic, or route/UI surfaces have already landed:
 - `13_GATED_APS_CONTEXT_FREEZE.md`
 
 ## Current use guidance
