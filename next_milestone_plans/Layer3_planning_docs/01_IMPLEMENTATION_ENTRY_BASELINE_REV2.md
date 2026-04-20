@@ -58,7 +58,7 @@ Current final-pack artifacts used only as lower-authority comparison surfaces:
 1. `Settled from source evidence`
    `Conclusion:` The current repo posture is still to continue above the frozen APS analytical ceiling with a single bounded slice rather than reopen lower layers or redesign frozen APS downstream surfaces.
    `Claim strength:` primary + repo triangulation.
-   `Evidence:` `R|docs/nrc_adams/nrc_aps_status_handoff.md|Upper analytical ceiling|21-21`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|185-190`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Frozen decisions in scope|17-24`
+   `Evidence:` `R|docs/nrc_adams/nrc_aps_status_handoff.md|Upper analytical ceiling|21-21`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|185-191`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Frozen decisions in scope|17-24`
 
 2. `Settled from source evidence`
    `Conclusion:` The authoritative primary baseline treats the repo as six adjacent lanes, not four: quantitative plane, APS feeder/content/retrieval plane, narrow analyst-insight kernel, mature APS downstream artifact lane, read-only runtime DB consumption boundary, and additive downstream operator surfaces.
@@ -188,7 +188,7 @@ Current final-pack artifacts used only as lower-authority comparison surfaces:
    `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md|artifact|bounded Gate D package-entry contract`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate D - packaging/handoff entry|107-111`; `P|layer3_primary_planningdocs/10_LAYER3_CONSUMER_INTEGRATION_MAP.md|Must-have and package requirements|67-92`
 
 7. `Settled by newer freeze artifact`
-   `Conclusion:` The exact first APS adapter target and bounded adapter contract were explicitly frozen by `09_GATED_APS_HANDOFF_FREEZE.md`, and the bounded APS evidence-bundle-family handoff slice governed by that freeze is now present in the current implementation state, so the remaining APS-facing ambiguity is no longer first-target selection and is instead broader fan-out beyond the first evidence-bundle-family tranche.
+   `Conclusion:` The exact first APS adapter target and bounded adapter contract were explicitly frozen by `09_GATED_APS_HANDOFF_FREEZE.md`, and the bounded APS evidence-bundle-family handoff slice governed by that freeze is now present in the current implementation state, so the remaining APS-facing ambiguity after that artifact was no longer first-target selection and instead moved to the next later APS-family continuation question that is now addressed separately below.
    `Claim strength:` repo-local freeze artifact plus primary-planning evidence.
    `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md|artifact|bounded first APS-facing adapter contract`; `P|layer3_primary_planningdocs/07_LAYER3_RECONCILIATION_PACKAGING_AND_HANDOFF.md|Recommended first APS-facing tranche|209-217`; `P|layer3_primary_planningdocs/10_LAYER3_CONSUMER_INTEGRATION_MAP.md|APS downstream handoff requirements and sequencing|67-107`; `P|layer3_primary_planningdocs/decisions/ADR-007_FIRST_APS_HANDOFF_TRANCHE.md|Evidence-bundle-family level is the first APS-facing tranche|6-44`
 
@@ -202,7 +202,7 @@ Current final-pack artifacts used only as lower-authority comparison surfaces:
 1. `Recommended but not settled`
    `Conclusion:` The repo remains ready for a bounded Phase 1A implementation entry using this corrected Gate-B-only pack. The correction pass changes wording calibration, not tranche scope.
    `Claim strength:` primary + repo triangulation; recommendation only.
-   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE.md|artifact|REV1 correction target`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|185-190`
+   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE.md|artifact|REV1 correction target`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|185-191`
 
 2. `Settled from source evidence`
    `Conclusion:` The repo is still not ready to claim Phase 2+ readiness for typing, orchestration, packaging, or consumer widening.
