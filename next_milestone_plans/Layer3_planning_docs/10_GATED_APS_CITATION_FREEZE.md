@@ -163,13 +163,13 @@ Readiness judgment:
 
 Reason:
 - the earlier blocker was no longer the first APS-family choice
-- the remaining missing decision was the exact next later APS family and whether it should source from already-landed evidence-bundle handoff truth or reopen earlier package truth
-- this document froze that decision narrowly at the live citation-pack-family boundary and now governs the bounded citation handoff slice landed on current `main` while keeping report/context/deterministic families, route/UI, runtime DB, and broader consumer widening out
+- the remaining missing decision at the time was the exact next later APS family and whether it should source from already-landed evidence-bundle handoff truth or reopen earlier package truth
+- this document froze that decision narrowly at the live citation-pack-family boundary and now governs the bounded citation handoff slice landed on current `main`, while the next evidence-report-family continuation is now separately frozen by `11_GATED_APS_REPORT_FREEZE.md` and report-export/context/deterministic families, route/UI, runtime DB, and broader consumer widening remain out
 
 What still remains intentionally deferred after this freeze:
 - the future workbench route family
 - broader qualitative, hybrid, cross-modal, and comparative execution breadth
-- APS evidence-report, context, dossier, deterministic, and review-packet fan-out beyond the citation-pack family
+- APS evidence-report-export, export-package, context, dossier, deterministic, and review-packet fan-out beyond the separately frozen evidence-report-family continuation
 - deeper runtime-facing consumer widening
 
 ## Evidence appendix
