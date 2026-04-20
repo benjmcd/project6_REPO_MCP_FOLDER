@@ -185,9 +185,9 @@ Important correction:
 ## 8. Recommended next continuation
 The next safe continuation is:
 1. preserve the restored lower-layer baseline and current OCR-enabled proof basis
-2. continue above the frozen analytical ceiling with a single bounded slice
-3. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` whenever OCR/corpus behavior changes or when validating a new environment
-4. treat `.\project6.ps1 -Action validate-nrc-aps-content-index` and `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` as the validate-only refresh path for these two checked-in reports; rerun them only when those surfaces change again or when re-establishing a new workspace-local baseline
+2. treat the merged bounded Layer 3 APS evidence-bundle handoff slice as the current additive ceiling extension, not as permission to widen into later APS families
+3. require a fresh explicit freeze before any later APS-family fan-out, route/UI widening, or broader runtime-facing consumer admission
+4. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes, and treat `.\project6.ps1 -Action validate-nrc-aps-content-index` plus `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` as the validate-only refresh path for those checked-in reports
 
 ## 9. Primary live authority surfaces for this workstream
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
