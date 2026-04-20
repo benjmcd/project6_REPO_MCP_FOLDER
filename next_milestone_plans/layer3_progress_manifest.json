@@ -8,12 +8,13 @@
     "authoritative_local_checkout_rule": "Use any clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match current main.",
     "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3-progress-main",
     "snapshot_date": "2026-04-20",
-    "current_main_commit": "5107ad15bef43b9aef913f163641bdc28f7b88d8",
-    "current_main_commit_source": "git rev-parse project6-origin/main",
+    "snapshot_base_main_commit": "5107ad15bef43b9aef913f163641bdc28f7b88d8",
+    "snapshot_base_main_commit_source": "git rev-parse project6-origin/main at last artifact refresh before this artifact pack itself merged",
     "notes": [
       "This artifact is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.",
       "The dirty root checkout is not authority for this artifact.",
-      "GitHub PR state is authority for open vs merged status."
+      "GitHub PR state is authority for open vs merged status.",
+      "Do not treat snapshot_base_main_commit as a self-updating claim about whatever commit main is on after this artifact file itself merges."
     ]
   },
   "authority_order": [
