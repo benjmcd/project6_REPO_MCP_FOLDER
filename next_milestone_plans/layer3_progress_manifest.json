@@ -1,0 +1,627 @@
+{
+  "artifact_version": 1,
+  "artifact_name": "layer3-progress-artifact",
+  "artifact_scope": {
+    "lane_name": "Layer3 APS bounded continuation chain",
+    "repo": "benjmcd/project6_REPO_MCP_FOLDER",
+    "authoritative_remote": "project6-origin/main",
+    "authoritative_local_checkout_rule": "Use any clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match current main.",
+    "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3-progress-main",
+    "snapshot_date": "2026-04-20",
+    "current_main_commit": "5107ad15bef43b9aef913f163641bdc28f7b88d8",
+    "current_main_commit_source": "git rev-parse project6-origin/main",
+    "notes": [
+      "This artifact is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.",
+      "The dirty root checkout is not authority for this artifact.",
+      "GitHub PR state is authority for open vs merged status."
+    ]
+  },
+  "authority_order": [
+    {
+      "rank": 1,
+      "source": "GitHub pull request state",
+      "use_for": [
+        "open_vs_merged",
+        "merge_commit",
+        "PR URL",
+        "closeout_followup state"
+      ],
+      "rule": "Do not infer merged state from planning-doc wording alone."
+    },
+    {
+      "rank": 2,
+      "source": "Current main repo truth",
+      "use_for": [
+        "landed implementation surfaces",
+        "governing doc presence on current main",
+        "current limitations"
+      ],
+      "paths": [
+        "docs/nrc_adams/nrc_aps_status_handoff.md",
+        "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+        "next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md",
+        "next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md",
+        "next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md"
+      ]
+    },
+    {
+      "rank": 3,
+      "source": "Active planning docs",
+      "use_for": [
+        "milestone naming",
+        "governing no-go boundaries",
+        "deferred scope"
+      ],
+      "rule": "Planning docs may describe branch-local or future state. Reconcile them against rank-1 and rank-2 authority before updating status."
+    }
+  ],
+  "state_model": {
+    "merged": "The relevant implementation or docs-closeout PR is merged into main.",
+    "merged_with_open_docs_closeout": "The implementation milestone is merged on main, but its explicitly tracked docs-only closeout PR is still open.",
+    "open": "The relevant PR exists and is still open.",
+    "planned": "The step is repo-confirmed as the next decision or next freeze, but no PR exists yet.",
+    "deferred": "The family is explicitly kept out by current freeze docs.",
+    "branch_only": "The step exists in a branch but is not merged into main."
+  },
+  "current_snapshot": {
+    "main_state_summary": "Current main includes the bounded multisource implementation slice from PR #101 and the post-merge docs closeout from PR #102.",
+    "open_followups": []
+  },
+  "milestones": [
+    {
+      "milestone_id": "phase1a-foundation",
+      "title": "Phase 1A feeder-ledger foundation",
+      "main_state": "merged",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md",
+        "next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md"
+      ],
+      "owner_surfaces": [
+        "backend/app/services/layer3_session_entry.py",
+        "backend/tests/test_layer3_session_entry.py"
+      ],
+      "events": [
+        {
+          "pr": 69,
+          "kind": "implementation-foundation",
+          "state": "merged",
+          "merge_commit": "57b8b7eb8cc6f24189dd6f0d8153486aaa84f142",
+          "title": "Layer3 Phase 1A feeder-ledger slice and closure pack",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/69"
+        }
+      ],
+      "unlocks": [
+        "gatec-entry-bridge"
+      ]
+    },
+    {
+      "milestone_id": "gatec-entry-bridge",
+      "title": "Gate C entry bridge",
+      "main_state": "merged",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md"
+      ],
+      "events": [
+        {
+          "pr": 70,
+          "kind": "docs-bridge",
+          "state": "merged",
+          "merge_commit": "27d997569704e2ba1717557b13ef86bea6f8cff4",
+          "title": "docs(layer3): align phase1a pack and freeze gatec entry",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/70"
+        }
+      ],
+      "unlocks": [
+        "gatec-typing-unit"
+      ]
+    },
+    {
+      "milestone_id": "gatec-typing-unit",
+      "title": "Gate C typing-unit slice",
+      "main_state": "merged",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "backend/app/services/layer3_typing_entry.py",
+        "backend/tests/test_layer3_typing_entry.py"
+      ],
+      "events": [
+        {
+          "pr": 71,
+          "kind": "freeze",
+          "state": "merged",
+          "merge_commit": "86aa7b6e9081882f7c217afea4900180bbfd8f3e",
+          "title": "docs(layer3): freeze Gate C typing/unit entry",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/71"
+        },
+        {
+          "pr": 72,
+          "kind": "implementation",
+          "state": "merged",
+          "merge_commit": "5e9210a36cbac8a644ac905e1f1ff1acaf1a12be",
+          "title": "feat(layer3): add Gate C typing-unit entry slice",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/72"
+        }
+      ],
+      "unlocks": [
+        "gatec-pass-entry"
+      ]
+    },
+    {
+      "milestone_id": "gatec-pass-entry",
+      "title": "Gate C single-item pass-entry slice",
+      "main_state": "merged",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "backend/app/services/layer3_pass_entry.py",
+        "backend/tests/test_layer3_pass_entry.py"
+      ],
+      "events": [
+        {
+          "pr": 73,
+          "kind": "prep-freeze",
+          "state": "merged",
+          "merge_commit": "d7aad559da05b6d197fe060c6841ced883cb66a0",
+          "title": "docs(layer3): freeze finalized session gate",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/73"
+        },
+        {
+          "pr": 74,
+          "kind": "freeze",
+          "state": "merged",
+          "merge_commit": "cb89f0d89b8b853392105d278d0886d0dfef31ea",
+          "title": "docs(layer3): freeze Gate C pass entry",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/74"
+        },
+        {
+          "pr": 75,
+          "kind": "implementation",
+          "state": "merged",
+          "merge_commit": "5333540c3fe770ab59121850d554f7512a35c2a5",
+          "title": "feat(layer3): add Gate C pass-entry slice",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/75"
+        }
+      ],
+      "unlocks": [
+        "gatec-cohort"
+      ]
+    },
+    {
+      "milestone_id": "gatec-cohort",
+      "title": "Gate C associated-cohort slice",
+      "main_state": "merged",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "backend/app/services/layer3_pass_entry.py",
+        "backend/tests/test_layer3_pass_entry.py"
+      ],
+      "events": [
+        {
+          "pr": 77,
+          "kind": "freeze",
+          "state": "merged",
+          "merge_commit": "82ee499af13d4879ad4620c47d9ff5a0f8b6f66c",
+          "title": "docs(layer3): freeze Gate C quantitative cohort bridge",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/77"
+        },
+        {
+          "pr": 79,
+          "kind": "implementation",
+          "state": "merged",
+          "merge_commit": "f94ea3932c6e65d0b775253df1b8b90fe2949544",
+          "title": "feat(layer3): add Gate C cohort pass entry slice",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/79"
+        },
+        {
+          "pr": 80,
+          "kind": "docs-closeout",
+          "state": "merged",
+          "merge_commit": "19a7912675f1f5ca54bf8e2ef389870330203efe",
+          "title": "docs(layer3): align post-pr79 cohort landing",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/80"
+        }
+      ],
+      "unlocks": [
+        "gated-package"
+      ]
+    },
+    {
+      "milestone_id": "gated-package",
+      "title": "Gate D package-entry slice",
+      "main_state": "merged",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "backend/app/services/layer3_package_entry.py",
+        "backend/tests/test_layer3_package_entry.py"
+      ],
+      "events": [
+        {
+          "pr": 81,
+          "kind": "freeze",
+          "state": "merged",
+          "merge_commit": "6edacde3d366cdbeefbc60732b69bca76418f3e5",
+          "title": "docs(layer3): freeze gated package entry",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/81"
+        },
+        {
+          "pr": 82,
+          "kind": "implementation",
+          "state": "merged",
+          "merge_commit": "d4ffd0a3b2bc415fd4e49bce8c286d6b4c3ee658",
+          "title": "feat(layer3): add Gate D package entry slice",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/82"
+        },
+        {
+          "pr": 84,
+          "kind": "docs-closeout",
+          "state": "merged",
+          "merge_commit": "a583f92a953400799acfd0fa32838b3041e2110a",
+          "title": "docs(layer3): align post-pr82 package landing",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/84"
+        }
+      ],
+      "unlocks": [
+        "aps-handoff"
+      ]
+    },
+    {
+      "milestone_id": "aps-handoff",
+      "title": "APS evidence-bundle handoff slice",
+      "main_state": "merged",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "backend/app/services/layer3_aps_handoff.py",
+        "backend/tests/test_layer3_aps_handoff.py"
+      ],
+      "events": [
+        {
+          "pr": 85,
+          "kind": "freeze",
+          "state": "merged",
+          "merge_commit": "3356887194bacf93cd7a1ab672936e6920626a80",
+          "title": "docs(layer3): freeze gated aps handoff entry",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/85"
+        },
+        {
+          "pr": 86,
+          "kind": "implementation",
+          "state": "merged",
+          "merge_commit": "66e3a525445cc144aee91bff185f3ddcbd51550b",
+          "title": "feat(layer3): add gated APS handoff slice",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/86"
+        },
+        {
+          "pr": 87,
+          "kind": "docs-closeout",
+          "state": "merged",
+          "merge_commit": "c459cdef3a295fe8eae66426fdb1f4e96bd718a8",
+          "title": "docs(aps): record bounded layer3 handoff",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/87"
+        }
+      ],
+      "unlocks": [
+        "aps-citation"
+      ]
+    },
+    {
+      "milestone_id": "aps-citation",
+      "title": "APS citation-pack handoff slice",
+      "main_state": "merged",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "backend/app/services/layer3_aps_citation_handoff.py",
+        "backend/tests/test_layer3_aps_citation_handoff.py"
+      ],
+      "events": [
+        {
+          "pr": 88,
+          "kind": "freeze",
+          "state": "merged",
+          "merge_commit": "333ab18a2de270d22f479b2dacddce43963e5b6a",
+          "title": "docs(layer3): freeze aps citation continuation",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/88"
+        },
+        {
+          "pr": 89,
+          "kind": "implementation",
+          "state": "merged",
+          "merge_commit": "d2514cf94c71ccb92d9ce2ebe5e9196905814727",
+          "title": "feat(layer3): add APS citation handoff slice",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/89"
+        },
+        {
+          "pr": 90,
+          "kind": "docs-closeout",
+          "state": "merged",
+          "merge_commit": "a4059b2064573e3f03f812e44d76d4db0f2ef91a",
+          "title": "docs(layer3): align post-pr89 aps landing",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/90"
+        }
+      ],
+      "unlocks": [
+        "aps-report"
+      ]
+    },
+    {
+      "milestone_id": "aps-report",
+      "title": "APS evidence-report handoff slice",
+      "main_state": "merged",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "backend/app/services/layer3_aps_report_handoff.py",
+        "backend/tests/test_layer3_aps_report_handoff.py"
+      ],
+      "events": [
+        {
+          "pr": 91,
+          "kind": "freeze",
+          "state": "merged",
+          "merge_commit": "c798dc8e41c416905c9a2c6b1d606aab3bca705d",
+          "title": "docs(layer3): freeze aps report continuation",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/91"
+        },
+        {
+          "pr": 92,
+          "kind": "implementation",
+          "state": "merged",
+          "merge_commit": "bac791c55023adcb14ccc20e605682f0560c5dc3",
+          "title": "feat(layer3): add gated APS report handoff slice",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/92"
+        },
+        {
+          "pr": 93,
+          "kind": "docs-closeout",
+          "state": "merged",
+          "merge_commit": "350d035d7af5a1a159ac7ee955bffa75d2927d4f",
+          "title": "docs(layer3): align post-pr92 report landing",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/93"
+        }
+      ],
+      "unlocks": [
+        "aps-report-export"
+      ]
+    },
+    {
+      "milestone_id": "aps-report-export",
+      "title": "APS evidence-report-export handoff slice",
+      "main_state": "merged",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "backend/app/services/layer3_aps_report_export_handoff.py",
+        "backend/tests/test_layer3_aps_report_export_handoff.py"
+      ],
+      "events": [
+        {
+          "pr": 94,
+          "kind": "freeze",
+          "state": "merged",
+          "merge_commit": "975d093091027796c29101f2de0c1bf2adcaff7b",
+          "title": "docs(layer3): freeze aps report-export continuation",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/94"
+        },
+        {
+          "pr": 95,
+          "kind": "implementation",
+          "state": "merged",
+          "merge_commit": "95f144c22ca268e414e46ab2f31709ec29854874",
+          "title": "feat(layer3): add aps report-export handoff slice",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/95"
+        },
+        {
+          "pr": 96,
+          "kind": "docs-closeout",
+          "state": "merged",
+          "merge_commit": "6682907c982265160d0e1cd04971f07b7e3951e2",
+          "title": "docs(layer3): align post-pr95 export landing",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/96"
+        }
+      ],
+      "unlocks": [
+        "aps-context"
+      ]
+    },
+    {
+      "milestone_id": "aps-context",
+      "title": "APS export-derived context-packet slice",
+      "main_state": "merged",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "backend/app/services/layer3_aps_context_packet_handoff.py",
+        "backend/tests/test_layer3_aps_context_packet_handoff.py"
+      ],
+      "events": [
+        {
+          "pr": 97,
+          "kind": "freeze",
+          "state": "merged",
+          "merge_commit": "22602fb7a6462d57865dd57b2d9c92ecb1717c98",
+          "title": "docs(layer3): freeze aps context continuation",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/97"
+        },
+        {
+          "pr": 98,
+          "kind": "implementation",
+          "state": "merged",
+          "merge_commit": "ae40e5910b47b0932adaf8f20dba2171628932ac",
+          "title": "feat(layer3): add APS context-packet handoff slice",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/98"
+        },
+        {
+          "pr": 99,
+          "kind": "docs-closeout",
+          "state": "merged",
+          "merge_commit": "256ac6d63a9416691401bb46016277112b27fb53",
+          "title": "docs(layer3): align post-pr98 context landing",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/99"
+        }
+      ],
+      "unlocks": [
+        "aps-multisource"
+      ]
+    },
+    {
+      "milestone_id": "aps-multisource",
+      "title": "APS same-run multisource admission",
+      "main_state": "merged",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "backend/app/services/layer3_aps_multisource.py",
+        "backend/tests/test_layer3_aps_multisource.py"
+      ],
+      "events": [
+        {
+          "pr": 100,
+          "kind": "freeze",
+          "state": "merged",
+          "merge_commit": "370540f421ab5fae0ae150051a8b769c2dc0c7ce",
+          "title": "docs(layer3): freeze aps multisource continuation",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/100"
+        },
+        {
+          "pr": 101,
+          "kind": "implementation",
+          "state": "merged",
+          "merge_commit": "3ed9f36d0bc0f698725189926beaadbcad759f76",
+          "title": "feat(layer3): add aps multisource admission slice",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/101"
+        },
+        {
+          "pr": 102,
+          "kind": "docs-closeout",
+          "state": "merged",
+          "merge_commit": "5107ad15bef43b9aef913f163641bdc28f7b88d8",
+          "title": "docs(layer3): align post-pr101 multisource landing",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/102"
+        }
+      ],
+      "unlocks": [
+        "first-shared-consumer-freeze"
+      ],
+      "notes": [
+        "Implementation landed on main via PR #101.",
+        "Post-merge docs closeout landed on main via PR #102."
+      ]
+    }
+  ],
+  "next_required_decision": {
+    "decision_id": "first-shared-consumer-freeze",
+    "title": "Freeze the first downstream shared APS consumer of the multisource seam",
+    "state": "planned",
+    "why_now": "Current main proves same-run multisource admission, but does not yet freeze which downstream shared APS family consumes that seam first.",
+    "candidate_families": [
+      {
+        "id": "evidence-report-export-package",
+        "state": "candidate",
+        "reason": "Live contract requires two same-run exports and is the likeliest first shared consumer."
+      },
+      {
+        "id": "context-dossier",
+        "state": "candidate-but-not-first-default",
+        "reason": "Also requires paired packets, but sits further downstream and should not skip the first shared-family freeze."
+      }
+    ],
+    "must_not_skip": [
+      "Do not open a direct write-enabled export-package implementation lane before the freeze exists.",
+      "Do not open a direct context-dossier implementation lane before the freeze exists.",
+      "Do not widen route/UI, runtime DB, or schema as part of the first shared-consumer freeze."
+    ]
+  },
+  "deferred_scope": [
+    "direct evidence-report-export-package implementation before the next freeze",
+    "package-derived context packet",
+    "context dossier implementation",
+    "deterministic insight artifact continuation",
+    "deterministic challenge artifact continuation",
+    "deterministic challenge review-packet continuation",
+    "validate-only top-chain expansion",
+    "future workbench route family",
+    "broader qualitative, hybrid, comparative, or cross-modal Layer3 breadth",
+    "runtime DB writes",
+    "schema widening",
+    "route/UI widening"
+  ],
+  "refresh_inputs": {
+    "github_prs": [
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      77,
+      79,
+      80,
+      81,
+      82,
+      84,
+      85,
+      86,
+      87,
+      88,
+      89,
+      90,
+      91,
+      92,
+      93,
+      94,
+      95,
+      96,
+      97,
+      98,
+      99,
+      100,
+      101,
+      102
+    ],
+    "repo_paths": [
+      "docs/nrc_adams/nrc_aps_status_handoff.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md",
+      "next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md",
+      "next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md"
+    ]
+  }
+}

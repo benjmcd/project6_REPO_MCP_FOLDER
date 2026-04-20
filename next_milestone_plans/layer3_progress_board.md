@@ -1,0 +1,122 @@
+# Layer3 Progress Board
+
+## Purpose
+
+This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
+It tracks the bounded Layer3 Phase1A through APS multisource chain only.
+It is intentionally scoped to:
+- the landed milestone chain from Phase 1A feeder-ledger entry through APS multisource admission
+- the now-landed docs-only closeout that followed multisource landing
+- the next required planning decision beyond multisource
+
+It is not a general whole-repo roadmap.
+It does not replace GitHub PR state.
+
+## Authority Order
+
+Use this order when refreshing this board:
+1. GitHub PR state for merged vs open
+2. current `project6-origin/main` repo truth
+3. active planning docs and freeze docs
+
+Hard rule:
+- do not mark a step as landed on `main` from planning-doc wording alone
+
+## Current Snapshot
+
+As of `2026-04-20`:
+- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main`
+- valid local authority rule: use any clean checkout whose contents match current `main`
+- authoritative remote branch: `project6-origin/main`
+- current `main` commit: `5107ad15bef43b9aef913f163641bdc28f7b88d8`
+- current `main` includes the bounded APS multisource implementation slice from PR `#101`
+- current `main` also includes the docs-only multisource closeout from PR `#102`
+
+## Milestone Status
+
+| Milestone | Current `main` state | Governing doc | Key PRs | Notes |
+| --- | --- | --- | --- | --- |
+| Phase 1A feeder-ledger foundation | merged | `01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`, `03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md` | `#69` | First bounded implementation-entry slice |
+| Gate C entry bridge | merged | `04_GATEC_ENTRY_FREEZE.md` | `#70` | Opens the first Gate C implementation freeze |
+| Gate C typing-unit slice | merged | `05_GATEC_IMPLEMENTATION_FREEZE.md` | `#71`, `#72` | First write-enabled Gate C slice |
+| Gate C single-item pass-entry slice | merged | `06_GATEC_PASS_FREEZE.md` | `#73`, `#74`, `#75` | Adds plan/pass entry for the single-item quantitative path |
+| Gate C associated-cohort slice | merged | `07_GATEC_COHORT_FREEZE.md` | `#77`, `#79`, `#80` | Extends Gate C to the bounded cohort path |
+| Gate D package-entry slice | merged | `08_GATED_PACKAGE_FREEZE.md` | `#81`, `#82`, `#84` | Adds internal canonical package entry |
+| APS evidence-bundle handoff | merged | `09_GATED_APS_HANDOFF_FREEZE.md` | `#85`, `#86`, `#87` | First APS-facing bounded handoff |
+| APS citation-pack handoff | merged | `10_GATED_APS_CITATION_FREEZE.md` | `#88`, `#89`, `#90` | Next APS continuation beyond evidence-bundle |
+| APS evidence-report handoff | merged | `11_GATED_APS_REPORT_FREEZE.md` | `#91`, `#92`, `#93` | Bounded report-family continuation |
+| APS evidence-report-export handoff | merged | `12_GATED_APS_REPORT_EXPORT_FREEZE.md` | `#94`, `#95`, `#96` | Bounded export-family continuation |
+| APS export-derived context-packet | merged | `13_GATED_APS_CONTEXT_FREEZE.md` | `#97`, `#98`, `#99` | Direct export-derived context path |
+| APS same-run multisource admission | merged | `14_GATED_APS_MULTISOURCE_FREEZE.md` | `#100`, `#101`, `#102` | Implementation and its docs closeout are both landed on `main` |
+
+## What Is Complete
+
+```mermaid
+flowchart LR
+    A["Phase 1A feeder-ledger"] --> B["Gate C entry bridge"]
+    B --> C["Gate C typing-unit"]
+    C --> D["Gate C pass-entry"]
+    D --> E["Gate C cohort"]
+    E --> F["Gate D package-entry"]
+    F --> G["APS evidence-bundle handoff"]
+    G --> H["APS citation-pack handoff"]
+    H --> I["APS evidence-report handoff"]
+    I --> J["APS evidence-report-export handoff"]
+    J --> K["APS context-packet handoff"]
+    K --> L["APS multisource admission"]
+
+    classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
+
+    class A,B,C,D,E,F,G,H,I,J,K,L merged;
+```
+
+## Next Required Decision
+
+The next required move is not another write-enabled implementation lane by default.
+It is a fresh read-only freeze deciding which downstream shared APS family will be the first consumer of the now-landed multisource seam.
+
+Current bounded candidates:
+- `evidence_report_export_package`
+- `context_dossier`
+
+Hard rule:
+- do not open a direct write-enabled export-package or dossier implementation lane before that freeze exists
+
+```mermaid
+flowchart LR
+    A["Current main after multisource closeout"] --> B["Freeze first shared APS consumer"]
+    B --> C["Evidence-report-export package"]
+    B --> D["Context dossier"]
+    C --> E["Package-derived context packet"]
+    D --> F["Deterministic chain"]
+
+    classDef next fill:#fff1bf,stroke:#9a6b00,color:#111;
+    classDef future fill:#e8e8e8,stroke:#666,color:#111;
+
+    class A,B next;
+    class C,D,E,F future;
+```
+
+## Deferred Scope
+
+These remain explicitly out until later freezes admit them:
+- direct `evidence_report_export_package` implementation
+- package-derived context packet
+- direct `context_dossier` implementation
+- deterministic insight, deterministic challenge, and review-packet fan-out
+- validate-only top-chain expansion
+- route/UI widening
+- runtime DB writes
+- schema widening
+- broader qualitative, hybrid, comparative, or cross-modal Layer3 breadth
+
+## Refresh Inputs
+
+Refresh this board against:
+- `next_milestone_plans/layer3_progress_manifest.json`
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
+- `next_milestone_plans/README_LAYER3_PHASE1A_PACK.md`
+- `next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
+- `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
+- `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `14_GATED_APS_MULTISOURCE_FREEZE.md`
+- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, and `#102`
