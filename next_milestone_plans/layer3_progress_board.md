@@ -6,7 +6,7 @@ This file is the human-facing companion to `next_milestone_plans/layer3_progress
 It tracks the bounded Layer3 Phase1A through APS multisource chain only.
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger entry through APS multisource admission
-- the current open docs-only closeout that follows multisource landing
+- the now-landed docs-only closeout that followed multisource landing
 - the next required planning decision beyond multisource
 
 It is not a general whole-repo roadmap.
@@ -25,11 +25,12 @@ Hard rule:
 ## Current Snapshot
 
 As of `2026-04-20`:
-- authoritative local checkout: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main`
+- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main`
+- valid local authority rule: use any clean checkout whose contents match current `main`
 - authoritative remote branch: `project6-origin/main`
-- current `main` commit: `3ed9f36d0bc0f698725189926beaadbcad759f76`
+- current `main` commit: `5107ad15bef43b9aef913f163641bdc28f7b88d8`
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
-- open follow-up: PR `#102` is still open and is docs-only closeout for the multisource landing
+- current `main` also includes the docs-only multisource closeout from PR `#102`
 
 ## Milestone Status
 
@@ -46,13 +47,7 @@ As of `2026-04-20`:
 | APS evidence-report handoff | merged | `11_GATED_APS_REPORT_FREEZE.md` | `#91`, `#92`, `#93` | Bounded report-family continuation |
 | APS evidence-report-export handoff | merged | `12_GATED_APS_REPORT_EXPORT_FREEZE.md` | `#94`, `#95`, `#96` | Bounded export-family continuation |
 | APS export-derived context-packet | merged | `13_GATED_APS_CONTEXT_FREEZE.md` | `#97`, `#98`, `#99` | Direct export-derived context path |
-| APS same-run multisource admission | merged on `main`, docs closeout still open | `14_GATED_APS_MULTISOURCE_FREEZE.md` | `#100`, `#101`, open `#102` | Implementation is landed; current `main` docs still underclaim it until `#102` merges |
-
-## Current Open Item
-
-| PR | State | Kind | Effect if merged |
-| --- | --- | --- | --- |
-| `#102` | open | docs-only closeout | Updates the active README/status/REV2/freeze surfaces so current `main` stops underclaiming the landed multisource slice |
+| APS same-run multisource admission | merged | `14_GATED_APS_MULTISOURCE_FREEZE.md` | `#100`, `#101`, `#102` | Implementation and its docs closeout are both landed on `main` |
 
 ## What Is Complete
 
@@ -69,18 +64,15 @@ flowchart LR
     I --> J["APS evidence-report-export handoff"]
     J --> K["APS context-packet handoff"]
     K --> L["APS multisource admission"]
-    L --> M["PR #102 docs closeout"]
 
     classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
-    classDef open fill:#fff1bf,stroke:#9a6b00,color:#111;
 
     class A,B,C,D,E,F,G,H,I,J,K,L merged;
-    class M open;
 ```
 
 ## Next Required Decision
 
-The next required move after PR `#102` is not another write-enabled implementation lane by default.
+The next required move is not another write-enabled implementation lane by default.
 It is a fresh read-only freeze deciding which downstream shared APS family will be the first consumer of the now-landed multisource seam.
 
 Current bounded candidates:
@@ -92,7 +84,7 @@ Hard rule:
 
 ```mermaid
 flowchart LR
-    A["PR #102 docs closeout"] --> B["Freeze first shared APS consumer"]
+    A["Current main after multisource closeout"] --> B["Freeze first shared APS consumer"]
     B --> C["Evidence-report-export package"]
     B --> D["Context dossier"]
     C --> E["Package-derived context packet"]

@@ -59,7 +59,13 @@ Read these files first:
 
 ### Local checkout rule
 
-Use this local checkout as the filesystem authority for the artifact:
+Use any clean local checkout of `benjmcd/project6_REPO_MCP_FOLDER` whose contents match current `main` as the filesystem authority for the artifact.
+
+Discovery rule:
+- prefer the checkout that actually contains this spec and the matching `layer3_progress_manifest.json`
+- if multiple clean checkouts exist, prefer the one tracking `project6-origin/main` or otherwise matching current `main`
+
+Seed path used when this artifact pack was authored:
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main`
 
 Do not treat the dirty root checkout at:
