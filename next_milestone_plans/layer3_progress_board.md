@@ -3,11 +3,11 @@
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
-It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the immediate first shared-consumer freeze that follows multisource.
+It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource.
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger entry through APS multisource admission
 - the now-landed docs-only closeout that followed multisource landing
-- the current open branch-only freeze that selects the first downstream shared APS consumer beyond multisource
+- the landed first shared-consumer freeze that selects the first downstream shared APS consumer beyond multisource
 
 It is not a general whole-repo roadmap.
 It does not replace GitHub PR state.
@@ -31,12 +31,12 @@ As of `2026-04-20`:
 - snapshot base `main` commit at last artifact refresh before this artifact pack itself merged: `5107ad15bef43b9aef913f163641bdc28f7b88d8`
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
-- current branch state also carries open PR `#106`, a read-only freeze that selects `evidence_report_export_package` as the first downstream shared APS consumer beyond the landed multisource seam; it is not yet landed on `main`
+- current `main` also includes PR `#106`, the landed read-only freeze that selects `evidence_report_export_package` as the first downstream shared APS consumer beyond the landed multisource seam
 
 ## Program State Summary
 
-- Done now on `main`: 12 merged milestones from Phase 1A feeder-ledger foundation through APS same-run multisource admission
-- Current focus: land the open export-package first shared-consumer freeze from PR `#106`
+- Done now on `main`: 13 merged milestones from Phase 1A feeder-ledger foundation through the APS export-package first shared-consumer freeze
+- Current focus: open the bounded export-package handoff implementation lane
 - Candidate next consumers: selected first consumer `evidence_report_export_package`; later-but-not-first `context_dossier`
 - Deferred but not active: 12 explicitly deferred scope items remain out until later freezes admit them
 
@@ -56,7 +56,7 @@ As of `2026-04-20`:
 | APS evidence-report-export handoff | merged | `12_GATED_APS_REPORT_EXPORT_FREEZE.md` | `#94`, `#95`, `#96` | Bounded export-family continuation |
 | APS export-derived context-packet | merged | `13_GATED_APS_CONTEXT_FREEZE.md` | `#97`, `#98`, `#99` | Direct export-derived context path |
 | APS same-run multisource admission | merged | `14_GATED_APS_MULTISOURCE_FREEZE.md` | `#100`, `#101`, `#102` | Implementation and its docs closeout are both landed on `main` |
-| APS export-package first shared-consumer freeze | open | `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` | `#106` | Branch-local read-only freeze selects `evidence_report_export_package` as the first downstream shared APS consumer; not yet landed on `main` |
+| APS export-package first shared-consumer freeze | merged | `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` | `#106` | Landed read-only freeze selects `evidence_report_export_package` as the first downstream shared APS consumer on `main` |
 
 ## What Is Complete
 
@@ -76,29 +76,30 @@ flowchart LR
     I --> J["APS evidence-report-export handoff"]
     J --> K["APS context-packet handoff"]
     K --> L["APS multisource admission"]
+    L --> M["APS export-package first shared-consumer freeze"]
 
     classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
 
-    class A,B,C,D,E,F,G,H,I,J,K,L merged;
+    class A,B,C,D,E,F,G,H,I,J,K,L,M merged;
 ```
 
 ## Next Required Decision
 
-The immediate required move is not another write-enabled implementation lane by default.
-It is to land the open read-only freeze in PR `#106` that selects which downstream shared APS family will consume the now-landed multisource seam first.
+The immediate required move is now the bounded write-enabled export-package handoff lane.
+The selection freeze that chose which downstream shared APS family consumes the landed multisource seam first is now already landed on `main`.
 
 Current bounded selection state:
-- selected in the open branch-local freeze: `evidence_report_export_package`
+- selected first consumer on current `main`: `evidence_report_export_package`
 - later but not first: `context_dossier`
 
 Hard rule:
-- do not open a direct write-enabled export-package or dossier implementation lane before PR `#106` merges and the freeze is post-merge audited
+- do not skip directly to package-derived context or dossier implementation before the bounded export-package handoff lane
 
 The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current `main` after multisource closeout"] --> B["Open freeze in PR #106"]
+    A["Current `main` after export-package freeze landing"] --> B["Open bounded export-package handoff lane"]
     B --> C["Evidence-report-export package (selected first consumer)"]
     B --> D["Context dossier (later, not first)"]
     C --> E["Package-derived context packet"]

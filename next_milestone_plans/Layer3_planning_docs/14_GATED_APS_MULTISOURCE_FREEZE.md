@@ -150,7 +150,7 @@ Reason:
 - repo truth shows the next visible shared APS families require at least two same-run sources
 - repo truth also shows current Layer 3 durable and handoff surfaces remain session-scoped and single-source
 - this document froze that exact shared-source seam narrowly, and the bounded multisource admission slice governed by it has now landed on current `main` using existing `co_retrieval_group_id` plus APS source identity without schema widening
-- that bounded slice still does not admit direct export-package or context-dossier implementation, and the branch-local `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` follow-on still does not admit write-enabled export-package implementation
+- that bounded slice still does not admit direct export-package or context-dossier implementation, and the now-landed `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` follow-on still does not admit write-enabled export-package implementation
 
 What still remains intentionally deferred after this freeze:
 - direct `evidence_report_export_package` implementation
