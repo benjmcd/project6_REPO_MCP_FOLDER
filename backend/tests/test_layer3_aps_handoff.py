@@ -143,30 +143,37 @@ def _seed_aps_content_fixture(
     run_id: str,
     target_id: str,
     content_id: str,
+    content_contract_id: str = aps_contract.APS_CONTENT_CONTRACT_ID,
+    chunking_contract_id: str = aps_contract.APS_CHUNKING_CONTRACT_ID,
+    normalization_contract_id: str = aps_contract.APS_NORMALIZATION_CONTRACT_ID,
+    artifact_suffix: str = "",
 ) -> None:
-    db.add(
-        ConnectorRun(
-            connector_run_id=run_id,
-            connector_key="nrc_adams_aps",
-            status="completed",
+    if db.get(ConnectorRun, run_id) is None:
+        db.add(
+            ConnectorRun(
+                connector_run_id=run_id,
+                connector_key="nrc_adams_aps",
+                status="completed",
+            )
         )
-    )
-    db.add(
-        ConnectorRunTarget(
-            connector_run_target_id=target_id,
-            connector_run_id=run_id,
-            status="completed",
-            ordinal=0,
+    if db.get(ConnectorRunTarget, target_id) is None:
+        db.add(
+            ConnectorRunTarget(
+                connector_run_target_id=target_id,
+                connector_run_id=run_id,
+                status="completed",
+                ordinal=0,
+            )
         )
-    )
 
     artifact_root = tmp_path / "aps"
     chunk_texts = [
         "Inspection findings confirm stable cooling performance.",
         "No safety-significant degradation was identified during the interval.",
     ]
+    suffix = f"_{artifact_suffix}" if artifact_suffix else ""
     content_units_ref = _write_json(
-        artifact_root / f"{content_id}_content_units.json",
+        artifact_root / f"{content_id}{suffix}_content_units.json",
         {
             "content_id": content_id,
             "run_id": run_id,
@@ -176,32 +183,32 @@ def _seed_aps_content_fixture(
     )
     normalized_text = "\n".join(chunk_texts)
     normalized_text_ref = _write_text(
-        artifact_root / f"{content_id}_normalized.txt",
+        artifact_root / f"{content_id}{suffix}_normalized.txt",
         normalized_text,
     )
     blob_ref = _write_text(
-        artifact_root / f"{content_id}.pdf",
+        artifact_root / f"{content_id}{suffix}.pdf",
         "pdf-placeholder",
     )
     selection_ref = _write_json(
-        artifact_root / f"{content_id}_selection.json",
+        artifact_root / f"{content_id}{suffix}_selection.json",
         {"run_id": run_id, "target_id": target_id},
     )
     discovery_ref = _write_json(
-        artifact_root / f"{content_id}_discovery.json",
+        artifact_root / f"{content_id}{suffix}_discovery.json",
         {"run_id": run_id, "target_id": target_id},
     )
     diagnostics_ref = _write_json(
-        artifact_root / f"{content_id}_diagnostics.json",
+        artifact_root / f"{content_id}{suffix}_diagnostics.json",
         {"quality_status": "strong"},
     )
 
     db.add(
         ApsContentDocument(
             content_id=content_id,
-            content_contract_id=aps_contract.APS_CONTENT_CONTRACT_ID,
-            chunking_contract_id=aps_contract.APS_CHUNKING_CONTRACT_ID,
-            normalization_contract_id=aps_contract.APS_NORMALIZATION_CONTRACT_ID,
+            content_contract_id=content_contract_id,
+            chunking_contract_id=chunking_contract_id,
+            normalization_contract_id=normalization_contract_id,
             normalized_text_sha256=hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
             normalized_char_count=len(normalized_text),
             chunk_count=len(chunk_texts),
@@ -219,8 +226,8 @@ def _seed_aps_content_fixture(
             ApsContentChunk(
                 content_id=content_id,
                 chunk_id=f"{content_id}-chunk-{ordinal + 1}",
-                content_contract_id=aps_contract.APS_CONTENT_CONTRACT_ID,
-                chunking_contract_id=aps_contract.APS_CHUNKING_CONTRACT_ID,
+                content_contract_id=content_contract_id,
+                chunking_contract_id=chunking_contract_id,
                 chunk_ordinal=ordinal,
                 start_char=ordinal * 64,
                 end_char=(ordinal * 64) + len(chunk_text),
@@ -238,8 +245,8 @@ def _seed_aps_content_fixture(
             run_id=run_id,
             target_id=target_id,
             accession_number="ML26001A001",
-            content_contract_id=aps_contract.APS_CONTENT_CONTRACT_ID,
-            chunking_contract_id=aps_contract.APS_CHUNKING_CONTRACT_ID,
+            content_contract_id=content_contract_id,
+            chunking_contract_id=chunking_contract_id,
             content_units_ref=content_units_ref,
             normalized_text_ref=normalized_text_ref,
             normalized_text_sha256=hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
@@ -428,6 +435,83 @@ def test_materialize_aps_handoff_fails_closed_on_missing_packaged_run_target_ide
         with pytest.raises(
             Layer3ApsHandoffError,
             match="content_id, run_id, and target_id",
+        ):
+            materialize_aps_handoff(db, session_id=session_id)
+
+        assert (
+            db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .count()
+            == 0
+        )
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_materialize_aps_handoff_ignores_non_current_contract_variants(tmp_path: Path) -> None:
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, run_id, target_id, content_id = _build_packaged_session(
+            db,
+            tmp_path,
+            include_full_aps_identity=True,
+        )
+        _seed_aps_content_fixture(
+            db,
+            tmp_path,
+            run_id=run_id,
+            target_id=target_id,
+            content_id=content_id,
+            content_contract_id="aps_content_units_v1",
+            chunking_contract_id="aps_chunking_v1",
+            normalization_contract_id="aps_text_normalization_v1",
+            artifact_suffix="legacy",
+        )
+        db.commit()
+
+        result = materialize_aps_handoff(db, session_id=session_id)
+        db.commit()
+
+        assert result.bundle_payload["schema_id"] == aps_contract.APS_EVIDENCE_BUNDLE_SCHEMA_ID
+        assert result.bundle_payload["total_hits"] == 2
+        assert {
+            row["content_contract_id"] for row in result.bundle_payload["results"]
+        } == {aps_contract.APS_CONTENT_CONTRACT_ID}
+        assert {
+            row["chunking_contract_id"] for row in result.bundle_payload["results"]
+        } == {aps_contract.APS_CHUNKING_CONTRACT_ID}
+        assert {
+            row["normalization_contract_id"] for row in result.bundle_payload["results"]
+        } == {aps_contract.APS_NORMALIZATION_CONTRACT_ID}
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_materialize_aps_handoff_normalizes_bundle_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, _, _, _ = _build_packaged_session(
+            db,
+            tmp_path,
+            include_full_aps_identity=True,
+        )
+
+        def _raise_bundle_error(*, base_items, normalized_request):
+            raise aps_bundle_module.EvidenceBundleError(
+                aps_contract.APS_RUNTIME_FAILURE_PROVENANCE_MISSING,
+                "missing required provenance fields: target_id",
+                status_code=422,
+            )
+
+        monkeypatch.setattr(aps_bundle_module, "_validated_items_for_mode", _raise_bundle_error)
+
+        with pytest.raises(
+            Layer3ApsHandoffError,
+            match="APS evidence bundle handoff failed",
         ):
             materialize_aps_handoff(db, session_id=session_id)
 

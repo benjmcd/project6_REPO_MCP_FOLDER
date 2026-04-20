@@ -260,6 +260,9 @@ def _load_base_rows_or_raise(
         .filter(ApsContentLinkage.run_id == run_id)
         .filter(ApsContentLinkage.content_id.in_(content_ids))
         .filter(ApsContentLinkage.target_id.in_(target_ids))
+        .filter(ApsContentLinkage.content_contract_id == aps_contract.APS_CONTENT_CONTRACT_ID)
+        .filter(ApsContentLinkage.chunking_contract_id == aps_contract.APS_CHUNKING_CONTRACT_ID)
+        .filter(ApsContentDocument.normalization_contract_id == aps_contract.APS_NORMALIZATION_CONTRACT_ID)
         .order_by(
             ApsContentLinkage.content_id.asc(),
             ApsContentLinkage.target_id.asc(),
@@ -432,18 +435,23 @@ def materialize_aps_handoff(db: Session, *, session_id: str) -> Layer3ApsHandoff
     run_id, selected_targets = _selected_aps_targets_or_raise(canonical_payload)
     base_rows = _load_base_rows_or_raise(db, run_id=run_id, selected_targets=selected_targets)
     normalized_request = _normalized_request(run_id=run_id, selected_targets=selected_targets)
-    ordered_items = aps_bundle._validated_items_for_mode(
-        base_items=base_rows,
-        normalized_request=normalized_request,
-    )
-    for item in ordered_items:
-        item.pop("chunk_length", None)
-    bundle_payload = _bundle_payload(
-        run_id=run_id,
-        normalized_request=normalized_request,
-        ordered_items=ordered_items,
-    )
-    validated_payload, bundle_ref = _persist_bundle_or_raise(run_id=run_id, payload=bundle_payload)
+    try:
+        ordered_items = aps_bundle._validated_items_for_mode(
+            base_items=base_rows,
+            normalized_request=normalized_request,
+        )
+        for item in ordered_items:
+            item.pop("chunk_length", None)
+        bundle_payload = _bundle_payload(
+            run_id=run_id,
+            normalized_request=normalized_request,
+            ordered_items=ordered_items,
+        )
+        validated_payload, bundle_ref = _persist_bundle_or_raise(run_id=run_id, payload=bundle_payload)
+    except aps_bundle.EvidenceBundleError as exc:
+        raise Layer3ApsHandoffError(
+            f"APS evidence bundle handoff failed ({exc.code}): {exc.message or str(exc)}"
+        ) from exc
     package_status = source_rows[PACKAGE_KIND_CANONICAL_INTERNAL].status
     output_package = L3OutputPackage(
         output_package_id=uuid_str(),
