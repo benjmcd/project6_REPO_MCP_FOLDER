@@ -163,8 +163,8 @@ Repo-local anchors used most directly:
 - `R|backend/app/models/models.py|L3Session remains session-scoped and L3 durable output surfaces remain unique by session and package kind|742-750;931-948`
 - `R|backend/app/services/layer3_session_entry.py|Current durable co_retrieval_group_id write path for loaded materials|290-346`
 - `R|backend/app/services/layer3_typing_entry.py|Current typing surface already reuses co_retrieval_group_id for associated cohorts|320-339`
-- `R|backend/app/services/layer3_aps_multisource.py|Current bounded multisource admission owner surface|1-257`
-- `R|backend/tests/test_layer3_aps_multisource.py|Current bounded multisource admission proof surface covers success and fail-closed source boundaries|1-283`
+- `R|backend/app/services/layer3_aps_multisource.py|Current bounded multisource admission owner surface|105-435`
+- `R|backend/tests/test_layer3_aps_multisource.py|Current bounded multisource admission proof surface covers success and fail-closed source boundaries|166-307`
 - `R|backend/app/services/layer3_aps_report_export_handoff.py|Current report-export handoff loads one session and one source package kind|83-128`
 - `R|backend/app/services/layer3_aps_context_packet_handoff.py|Current context-packet handoff loads one session and one source package kind|83-128`
 - `R|backend/app/services/nrc_aps_evidence_report_export_package_contract.py|Live export-package family requires at least two source exports|17-18;69-76`
