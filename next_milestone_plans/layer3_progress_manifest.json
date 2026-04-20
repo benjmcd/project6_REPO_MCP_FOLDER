@@ -2,16 +2,17 @@
   "artifact_version": 1,
   "artifact_name": "layer3-progress-artifact",
   "artifact_scope": {
-    "lane_name": "Layer3 APS bounded continuation chain",
+    "lane_name": "Layer3 APS bounded continuation chain through the first shared-consumer freeze",
     "repo": "benjmcd/project6_REPO_MCP_FOLDER",
     "authoritative_remote": "project6-origin/main",
-    "authoritative_local_checkout_rule": "Use any clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match current main.",
+    "authoritative_local_checkout_rule": "Use any clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match current `main`.",
     "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3-progress-main",
     "snapshot_date": "2026-04-20",
     "snapshot_base_main_commit": "5107ad15bef43b9aef913f163641bdc28f7b88d8",
     "snapshot_base_main_commit_source": "git rev-parse project6-origin/main at last artifact refresh before this artifact pack itself merged",
     "notes": [
       "This artifact is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.",
+      "This artifact may also represent the immediate branch-local or open follow-up freeze that selects the first downstream shared APS consumer beyond multisource, but must not present that follow-up as landed on main until GitHub confirms merge.",
       "The dirty root checkout is not authority for this artifact.",
       "GitHub PR state is authority for open vs merged status.",
       "Do not treat snapshot_base_main_commit as a self-updating claim about whatever commit main is on after this artifact file itself merges."
@@ -31,10 +32,10 @@
     },
     {
       "rank": 2,
-      "source": "Current main repo truth",
+      "source": "Current `main` repo truth",
       "use_for": [
         "landed implementation surfaces",
-        "governing doc presence on current main",
+        "governing doc presence on current `main`",
         "current limitations"
       ],
       "paths": [
@@ -75,13 +76,22 @@
     "branch_only": "The step exists in a branch but is not merged into main."
   },
   "current_snapshot": {
-    "main_state_summary": "Current main includes the bounded multisource implementation slice from PR #101 and the post-merge docs closeout from PR #102.",
-    "open_followups": []
+    "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101 and the post-merge docs closeout from PR #102.",
+    "open_followups": [
+      {
+        "pr": 106,
+        "kind": "freeze",
+        "state": "open",
+        "title": "docs(layer3): freeze aps export-package continuation",
+        "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/106",
+        "note": "Current branch carries the read-only selection freeze for evidence_report_export_package as the first downstream shared APS consumer, but it is not yet landed on main."
+      }
+    ]
   },
   "summary_counts": {
     "merged_milestones": 12,
-    "open_milestones": 0,
-    "planned_decisions": 1,
+    "open_milestones": 1,
+    "planned_decisions": 0,
     "deferred_scope_items": 12
   },
   "artifact_render_contract": {
@@ -609,28 +619,55 @@
         "Implementation landed on main via PR #101.",
         "Post-merge docs closeout landed on main via PR #102."
       ]
+    },
+    {
+      "milestone_id": "aps-export-package-freeze",
+      "title": "APS export-package first shared-consumer freeze",
+      "main_state": "open",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md"
+      ],
+      "events": [
+        {
+          "pr": 106,
+          "kind": "freeze",
+          "state": "open",
+          "title": "docs(layer3): freeze aps export-package continuation",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/106"
+        }
+      ],
+      "unlocks": [
+        "aps-export-package-handoff"
+      ],
+      "notes": [
+        "Branch-local read-only freeze selects evidence_report_export_package as the first downstream shared APS consumer beyond landed multisource.",
+        "This freeze is open in PR #106 and is not yet landed on main."
+      ]
     }
   ],
   "next_required_decision": {
-    "decision_id": "first-shared-consumer-freeze",
-    "title": "Freeze the first downstream shared APS consumer of the multisource seam",
-    "state": "planned",
-    "why_now": "Current main proves same-run multisource admission, but does not yet freeze which downstream shared APS family consumes that seam first.",
+    "decision_id": "land-export-package-freeze",
+    "title": "Land the export-package first shared-consumer freeze",
+    "state": "open",
+    "why_now": "Current branch already carries the read-only selection freeze in PR #106, but main does not. The immediate required move is to land that freeze before opening the next write-enabled lane.",
     "candidate_families": [
       {
         "id": "evidence-report-export-package",
-        "state": "candidate",
-        "reason": "Live contract requires two same-run exports and is the likeliest first shared consumer."
+        "state": "selected-in-open-freeze",
+        "reason": "Chosen in branch-local open PR #106 as the first downstream shared APS consumer, but still not landed on main."
       },
       {
         "id": "context-dossier",
-        "state": "candidate-but-not-first-default",
-        "reason": "Also requires paired packets, but sits further downstream and should not skip the first shared-family freeze."
+        "state": "later-not-first",
+        "reason": "Still later and must not skip the selected export-package boundary."
       }
     ],
     "must_not_skip": [
-      "Do not open a direct write-enabled export-package implementation lane before the freeze exists.",
-      "Do not open a direct context-dossier implementation lane before the freeze exists.",
+      "Do not open a direct write-enabled export-package handoff lane before PR #106 merges and its freeze is post-merge audited.",
+      "Do not open a direct context-dossier implementation lane before the export-package boundary is settled on main.",
       "Do not widen route/UI, runtime DB, or schema as part of the first shared-consumer freeze."
     ]
   },
@@ -680,7 +717,8 @@
       99,
       100,
       101,
-      102
+      102,
+      106
     ],
     "repo_paths": [
       "docs/nrc_adams/nrc_aps_status_handoff.md",
@@ -698,6 +736,7 @@
       "next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md",
       "next_milestone_plans/progress-ui-spec.md"
     ]
   }

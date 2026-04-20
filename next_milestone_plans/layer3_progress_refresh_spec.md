@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the immediate first shared-consumer freeze that can remain branch-local or open beyond multisource.
 
 ## Canonical Inputs
 
@@ -30,6 +30,7 @@ Current tracked PR set:
 - `#94`, `#95`, `#96`
 - `#97`, `#98`, `#99`
 - `#100`, `#101`, `#102`
+- `#106`
 
 Hard rule:
 - never mark a step as landed on `main` from repo docs alone if the GitHub PR is still open
@@ -57,6 +58,12 @@ Read these files first:
 - `next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md`
+
+If the current branch or worktree carries an open or branch-only first shared-consumer freeze beyond multisource, also read:
+- `next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md`
+
+Hard rule:
+- do not upgrade that follow-up freeze into merged `main` state unless GitHub confirms the relevant PR merged
 
 ### Local checkout rule
 
@@ -97,6 +104,7 @@ Any external live artifact or dashboard must also obey:
    - `next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
    - `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
    - `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `14_GATED_APS_MULTISOURCE_FREEZE.md`
+   - and any active branch-only or open follow-up freeze that sits immediately beyond that landed chain, currently `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md`
 7. For each milestone:
    - update PR state from GitHub
    - update merge commit from GitHub
@@ -129,7 +137,7 @@ Hard rule:
 ## What Not To Do
 
 Do not:
-- infer merged state from prose like `now landed on current main` unless GitHub confirms the relevant PR merged
+- infer merged state from prose like `now landed on current \`main\`` unless GitHub confirms the relevant PR merged
 - widen the artifact into unrelated repo work
 - rewrite milestone ids or reorder the whole chain without repo-confirmed reason
 - silently drop the docs-closeout PRs, because they are part of the actual operational progression
@@ -139,17 +147,21 @@ Do not:
 
 ## Current Program Boundary
 
-The current bounded chain ends at:
+The current bounded chain on `main` ends at:
 - APS same-run multisource admission
 
-The next required decision is:
-- freeze the first downstream shared APS consumer of the landed multisource seam
+The current open follow-up beyond that landed chain is:
+- PR `#106`, the branch-local freeze that selects `evidence_report_export_package` as the first downstream shared APS consumer of the landed multisource seam
 
-The current leading candidates are:
+The first selected shared consumer in that open follow-up is:
 - `evidence_report_export_package`
+
+The later but not first consumer remains:
 - `context_dossier`
 
-These are still planned, not landed.
+These are not both still open candidates in the same way:
+- `evidence_report_export_package` is selected in the open freeze
+- `context_dossier` remains later and not first
 
 ## Schedule Guidance
 
