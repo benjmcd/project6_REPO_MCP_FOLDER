@@ -58,7 +58,7 @@ Current final-pack artifacts used only as lower-authority comparison surfaces:
 1. `Settled from source evidence`
    `Conclusion:` The current repo posture is still to continue above the frozen APS analytical ceiling with a single bounded slice rather than reopen lower layers or redesign frozen APS downstream surfaces.
    `Claim strength:` primary + repo triangulation.
-   `Evidence:` `R|docs/nrc_adams/nrc_aps_status_handoff.md|Upper analytical ceiling|21-21`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|187-194`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Frozen decisions in scope|17-24`
+`Evidence:` `R|docs/nrc_adams/nrc_aps_status_handoff.md|Upper analytical ceiling|21-21`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|188-194`; `P|layer3_primary_planningdocs/12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md|Frozen decisions in scope|17-24`
 
 2. `Settled from source evidence`
    `Conclusion:` The authoritative primary baseline treats the repo as six adjacent lanes, not four: quantitative plane, APS feeder/content/retrieval plane, narrow analyst-insight kernel, mature APS downstream artifact lane, read-only runtime DB consumption boundary, and additive downstream operator surfaces.
@@ -212,7 +212,7 @@ Current final-pack artifacts used only as lower-authority comparison surfaces:
 1. `Recommended but not settled`
    `Conclusion:` The repo remains ready for a bounded Phase 1A implementation entry using this corrected Gate-B-only pack. The correction pass changes wording calibration, not tranche scope.
    `Claim strength:` primary + repo triangulation; recommendation only.
-   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE.md|artifact|REV1 correction target`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|187-194`
+   `Evidence:` `A|next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE.md|artifact|REV1 correction target`; `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md|Gate B - feeding implementation entry|95-100`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|188-194`
 
 2. `Settled from source evidence`
    `Conclusion:` The repo is still not ready to claim Phase 2+ readiness for typing, orchestration, packaging, or consumer widening.
@@ -237,7 +237,7 @@ Primary planning anchors most heavily relied upon in this revision:
 
 Repo-root anchors most heavily relied upon in this revision:
 - `R|docs/analyst_insight/analyst_insight_status_handoff.md|Current status summary and current contract summary|20-52`
-- `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|187-194`
+- `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|188-194`
 - `R|backend/main.py|analyst_insight_page and root link|75-97`
 - `R|backend/app/api/router.py|review_nrc_aps plus legacy and alias analyst-insight routers|93-100`
 - `R|backend/app/services/market_data_integration.py|build_integrated_dataset|1-79`
