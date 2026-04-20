@@ -1,7 +1,7 @@
 # NRC ADAMS APS Status Handoff
 
 ## 1. Purpose and truth model
-This document is the canonical live-repo status surface for the NRC ADAMS APS stack. Last updated April 20, 2026 to reflect the bounded Layer 3 APS evidence-report-export handoff slice now present in the current branch state, on top of the bounded evidence-report slice now landed on current `main`, the earlier bounded evidence-bundle and citation-pack handoff slices also landed on current `main`, the Deterministic Challenge Review Packet v1 closeout, and the narrow Tier2 diagnostics-write closeout.
+This document is the canonical live-repo status surface for the NRC ADAMS APS stack. Last updated April 20, 2026 to reflect the bounded Layer 3 APS evidence-report-export handoff slice now landed on current `main`, on top of the bounded evidence-report slice now landed on current `main`, the earlier bounded evidence-bundle and citation-pack handoff slices also landed on current `main`, the Deterministic Challenge Review Packet v1 closeout, and the narrow Tier2 diagnostics-write closeout.
 
 Repo truth precedence used here:
 1. live code, tests, scripts, migrations, and repo-contained proof artifacts
@@ -24,7 +24,7 @@ Status wording used below:
 | Bounded Layer 3 APS evidence-bundle handoff consumer | Present as one additive Layer 3 consumer of the live APS evidence-bundle family; emits `aps_evidence_bundle_handoff` from already-packaged terminal Layer 3 sessions without widening APS contract/gate files. | `backend/app/services/layer3_aps_handoff.py`, `backend/tests/test_layer3_aps_handoff.py`, `next_milestone_plans/Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md` |
 | Bounded Layer 3 APS citation-pack handoff consumer | Present as one additive Layer 3 consumer of the live APS citation-pack family; emits `aps_evidence_citation_pack_handoff` from already-packaged terminal Layer 3 sessions without route/UI widening, runtime DB writes, or APS contract/gate widening. | `backend/app/services/layer3_aps_citation_handoff.py`, `backend/tests/test_layer3_aps_citation_handoff.py`, `next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md` |
 | Bounded Layer 3 APS evidence-report handoff consumer | Present as one additive Layer 3 consumer of the live APS evidence-report family; emits `aps_evidence_report_handoff` from already-packaged terminal Layer 3 sessions without route/UI widening, runtime DB writes, or APS contract/gate widening. | `backend/app/services/layer3_aps_report_handoff.py`, `backend/tests/test_layer3_aps_report_handoff.py`, `next_milestone_plans/Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md` |
-| Bounded Layer 3 APS evidence-report-export handoff consumer | Present in the current branch state as one additive Layer 3 consumer of the live APS evidence-report-export family; emits `aps_evidence_report_export_handoff` from already-packaged terminal Layer 3 sessions without route/UI widening, runtime DB writes, or APS contract/gate widening. | `backend/app/services/layer3_aps_report_export_handoff.py`, `backend/tests/test_layer3_aps_report_export_handoff.py`, `next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md` |
+| Bounded Layer 3 APS evidence-report-export handoff consumer | Present as one additive Layer 3 consumer of the live APS evidence-report-export family; emits `aps_evidence_report_export_handoff` from already-packaged terminal Layer 3 sessions without route/UI widening, runtime DB writes, or APS contract/gate widening. | `backend/app/services/layer3_aps_report_export_handoff.py`, `backend/tests/test_layer3_aps_report_export_handoff.py`, `next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md` |
 | API/schema wiring for lower-layer controls | Present | `backend/app/schemas/api.py`, `backend/app/api/router.py` |
 | Lower-layer fixture corpus | Present and manifest-driven | `tests/fixtures/nrc_aps_docs/v1/manifest.json`, `tests/support_nrc_aps_doc_corpus.py`, `tests/test_nrc_aps_document_corpus.py`, plus live text/PDF/corrupt/truncated fixtures including `tests/fixtures/nrc_aps_docs/v1/ML17123A319.pdf` |
 | Fresh lower-layer proof runner | Present and current | `tools/run_nrc_aps_document_processing_proof.py`, `project6.ps1 -Action prove-nrc-aps-document-processing`, and `tests/reports/nrc_aps_document_processing_proof_report.json` |
@@ -162,7 +162,7 @@ Important correction:
 ## 7. Current explicit limits
 - Tesseract CLI availability is an external prerequisite for scanned/mixed PDF OCR success.
 - In a no-Tesseract environment, scanned PDFs fail closed with `ocr_required_but_unavailable`, and mixed PDFs may degrade to weak/native-only output.
-- The current merged `main` state now includes bounded Layer 3 APS evidence-bundle, citation-pack, and evidence-report handoff tranches: `aps_evidence_bundle_handoff`, `aps_evidence_citation_pack_handoff`, and `aps_evidence_report_handoff` emitted from already-packaged terminal Layer 3 sessions without route/UI widening, runtime DB writes, or APS contract/gate widening. Later APS families remain deferred.
+- The current merged `main` state now includes bounded Layer 3 APS evidence-bundle, citation-pack, evidence-report, and evidence-report-export handoff tranches: `aps_evidence_bundle_handoff`, `aps_evidence_citation_pack_handoff`, `aps_evidence_report_handoff`, and `aps_evidence_report_export_handoff` emitted from already-packaged terminal Layer 3 sessions without route/UI widening, runtime DB writes, or APS contract/gate widening. Later APS families remain deferred.
 - The checked-in fixture corpus now proves manifest-driven parser routing, degradation semantics, downstream usefulness for representative born-digital content, and OCR-success usefulness for the scanned/mixed corpus fixtures in this workspace.
 - The current checked-in lower-layer proof basis in this workspace (covers behavior through March 13, 2026) is:
   - `tests/reports/nrc_aps_document_processing_proof_report.json`
@@ -188,7 +188,7 @@ Important correction:
 ## 8. Recommended next continuation
 The next safe continuation is:
 1. preserve the restored lower-layer baseline and current OCR-enabled proof basis
-2. treat the bounded Layer 3 APS evidence-report-export handoff slice as the current additive ceiling extension in the current branch state, not as permission to widen into export-package/context/deterministic or later APS families
+2. treat the bounded Layer 3 APS evidence-report-export handoff slice as the current additive ceiling extension now landed on current `main`, not as permission to widen into export-package/context/deterministic or later APS families
 3. treat `next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md` as the governing carried-forward contract for that bounded evidence-report-export-family slice rather than as permission to jump directly into export-package/context/deterministic families
 4. require a fresh explicit freeze before any APS-family fan-out beyond evidence-report-export, route/UI widening, or broader runtime-facing consumer admission
 5. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes, and treat `.\project6.ps1 -Action validate-nrc-aps-content-index` plus `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` as the validate-only refresh path for those checked-in reports
@@ -198,9 +198,11 @@ The next safe continuation is:
 - `backend/app/services/layer3_aps_handoff.py`
 - `backend/app/services/layer3_aps_citation_handoff.py`
 - `backend/app/services/layer3_aps_report_handoff.py`
+- `backend/app/services/layer3_aps_report_export_handoff.py`
 - `backend/tests/test_layer3_aps_handoff.py`
 - `backend/tests/test_layer3_aps_citation_handoff.py`
 - `backend/tests/test_layer3_aps_report_handoff.py`
+- `backend/tests/test_layer3_aps_report_export_handoff.py`
 - `next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md`
