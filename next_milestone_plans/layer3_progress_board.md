@@ -3,11 +3,11 @@
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
-It tracks the bounded Layer3 Phase1A through APS multisource chain only.
+It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the immediate first shared-consumer freeze that follows multisource.
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger entry through APS multisource admission
 - the now-landed docs-only closeout that followed multisource landing
-- the next required planning decision beyond multisource
+- the current open branch-only freeze that selects the first downstream shared APS consumer beyond multisource
 
 It is not a general whole-repo roadmap.
 It does not replace GitHub PR state.
@@ -31,17 +31,18 @@ As of `2026-04-20`:
 - snapshot base `main` commit at last artifact refresh before this artifact pack itself merged: `5107ad15bef43b9aef913f163641bdc28f7b88d8`
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
+- current branch state also carries open PR `#106`, a read-only freeze that selects `evidence_report_export_package` as the first downstream shared APS consumer beyond the landed multisource seam; it is not yet landed on `main`
 
 ## Program State Summary
 
 - Done now on `main`: 12 merged milestones from Phase 1A feeder-ledger foundation through APS same-run multisource admission
-- Current focus: freeze the first downstream shared APS consumer of the multisource seam
-- Candidate next consumers: `evidence_report_export_package`, `context_dossier`
+- Current focus: land the open export-package first shared-consumer freeze from PR `#106`
+- Candidate next consumers: selected first consumer `evidence_report_export_package`; later-but-not-first `context_dossier`
 - Deferred but not active: 12 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Status
 
-| Milestone | Current `main` state | Governing doc | Key PRs | Notes |
+| Milestone | Current chain state | Governing doc | Key PRs | Notes |
 | --- | --- | --- | --- | --- |
 | Phase 1A feeder-ledger foundation | merged | `01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`, `03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md` | `#69` | First bounded implementation-entry slice |
 | Gate C entry bridge | merged | `04_GATEC_ENTRY_FREEZE.md` | `#70` | Opens the first Gate C implementation freeze |
@@ -55,6 +56,7 @@ As of `2026-04-20`:
 | APS evidence-report-export handoff | merged | `12_GATED_APS_REPORT_EXPORT_FREEZE.md` | `#94`, `#95`, `#96` | Bounded export-family continuation |
 | APS export-derived context-packet | merged | `13_GATED_APS_CONTEXT_FREEZE.md` | `#97`, `#98`, `#99` | Direct export-derived context path |
 | APS same-run multisource admission | merged | `14_GATED_APS_MULTISOURCE_FREEZE.md` | `#100`, `#101`, `#102` | Implementation and its docs closeout are both landed on `main` |
+| APS export-package first shared-consumer freeze | open | `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` | `#106` | Branch-local read-only freeze selects `evidence_report_export_package` as the first downstream shared APS consumer; not yet landed on `main` |
 
 ## What Is Complete
 
@@ -82,23 +84,23 @@ flowchart LR
 
 ## Next Required Decision
 
-The next required move is not another write-enabled implementation lane by default.
-It is a fresh read-only freeze deciding which downstream shared APS family will be the first consumer of the now-landed multisource seam.
+The immediate required move is not another write-enabled implementation lane by default.
+It is to land the open read-only freeze in PR `#106` that selects which downstream shared APS family will consume the now-landed multisource seam first.
 
-Current bounded candidates:
-- `evidence_report_export_package`
-- `context_dossier`
+Current bounded selection state:
+- selected in the open branch-local freeze: `evidence_report_export_package`
+- later but not first: `context_dossier`
 
 Hard rule:
-- do not open a direct write-enabled export-package or dossier implementation lane before that freeze exists
+- do not open a direct write-enabled export-package or dossier implementation lane before PR `#106` merges and the freeze is post-merge audited
 
 The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current main after multisource closeout"] --> B["Freeze first shared APS consumer"]
-    B --> C["Evidence-report-export package"]
-    B --> D["Context dossier"]
+    A["Current `main` after multisource closeout"] --> B["Open freeze in PR #106"]
+    B --> C["Evidence-report-export package (selected first consumer)"]
+    B --> D["Context dossier (later, not first)"]
     C --> E["Package-derived context packet"]
     D --> F["Deterministic chain"]
 
@@ -131,5 +133,5 @@ Refresh this board against:
 - `next_milestone_plans/README_LAYER3_PHASE1A_PACK.md`
 - `next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
 - `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
-- `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `14_GATED_APS_MULTISOURCE_FREEZE.md`
-- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, and `#102`
+- `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md`
+- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, and `#106`
