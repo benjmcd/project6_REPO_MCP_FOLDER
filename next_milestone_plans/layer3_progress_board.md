@@ -32,6 +32,13 @@ As of `2026-04-20`:
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
 
+## Program State Summary
+
+- Done now on `main`: 12 merged milestones from Phase 1A feeder-ledger foundation through APS same-run multisource admission
+- Current focus: freeze the first downstream shared APS consumer of the multisource seam
+- Candidate next consumers: `evidence_report_export_package`, `context_dossier`
+- Deferred but not active: 12 explicitly deferred scope items remain out until later freezes admit them
+
 ## Milestone Status
 
 | Milestone | Current `main` state | Governing doc | Key PRs | Notes |
@@ -50,6 +57,9 @@ As of `2026-04-20`:
 | APS same-run multisource admission | merged | `14_GATED_APS_MULTISOURCE_FREEZE.md` | `#100`, `#101`, `#102` | Implementation and its docs closeout are both landed on `main` |
 
 ## What Is Complete
+
+The Program State Summary and Milestone Status table above are the primary human-readable surfaces in this board.
+The Mermaid views below are secondary visual aids only.
 
 ```mermaid
 flowchart LR
@@ -81,6 +91,8 @@ Current bounded candidates:
 
 Hard rule:
 - do not open a direct write-enabled export-package or dossier implementation lane before that freeze exists
+
+The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
@@ -114,6 +126,7 @@ These remain explicitly out until later freezes admit them:
 
 Refresh this board against:
 - `next_milestone_plans/layer3_progress_manifest.json`
+- `next_milestone_plans/progress-ui-spec.md`
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 - `next_milestone_plans/README_LAYER3_PHASE1A_PACK.md`
 - `next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
