@@ -1,7 +1,7 @@
 # NRC ADAMS APS Status Handoff
 
 ## 1. Purpose and truth model
-This document is the canonical live-repo status surface for the NRC ADAMS APS stack. Last updated March 26, 2026 to reflect the committed Deterministic Challenge Review Packet v1 closeout and refreshed checked-in validate-only review-packet report, on top of the earlier narrow Tier2 diagnostics-write closeout.
+This document is the canonical live-repo status surface for the NRC ADAMS APS stack. Last updated April 19, 2026 to reflect the merged bounded Layer 3 APS evidence-bundle handoff slice, on top of the earlier Deterministic Challenge Review Packet v1 closeout and narrow Tier2 diagnostics-write closeout.
 
 Repo truth precedence used here:
 1. live code, tests, scripts, migrations, and repo-contained proof artifacts
@@ -21,7 +21,7 @@ Status wording used below:
 | Upper analytical ceiling | Still closed/frozen through Deterministic Challenge Review Packet v1 | current live contract/service/gate/tests/report surfaces for citation pack, evidence report/export/package, context packet, context dossier, deterministic insight, deterministic challenge, deterministic challenge review packet |
 | Lower document-processing layer | Reopened additively for deterministic media detection, real PDF extraction, OCR fallback hooks, quality gating, and content-units v2 | `backend/app/services/nrc_aps_media_detection.py`, `backend/app/services/nrc_aps_document_processing.py`, `backend/app/services/nrc_aps_ocr.py`, `backend/app/services/nrc_aps_artifact_ingestion.py`, `backend/app/services/nrc_aps_content_index.py`, `backend/alembic/versions/0009_aps_document_processing_metadata.py` |
 | Phase 8 APS bridge | **Closed** - All required APS-table materialization invariants satisfied (41 targets, 41 linkages, 40 distinct content IDs, 40 documents) using run `closure-run-005`. | `backend/app/services/nrc_adams_index_builder.py` run with `closure-run-005` on `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136` |
-
+| Bounded Layer 3 APS evidence-bundle handoff consumer | Present as one additive Layer 3 consumer of the live APS evidence-bundle family; emits `aps_evidence_bundle_handoff` from already-packaged terminal Layer 3 sessions without widening APS contract/gate files. | `backend/app/services/layer3_aps_handoff.py`, `backend/tests/test_layer3_aps_handoff.py`, `next_milestone_plans/Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md` |
 | API/schema wiring for lower-layer controls | Present | `backend/app/schemas/api.py`, `backend/app/api/router.py` |
 | Lower-layer fixture corpus | Present and manifest-driven | `tests/fixtures/nrc_aps_docs/v1/manifest.json`, `tests/support_nrc_aps_doc_corpus.py`, `tests/test_nrc_aps_document_corpus.py`, plus live text/PDF/corrupt/truncated fixtures including `tests/fixtures/nrc_aps_docs/v1/ML17123A319.pdf` |
 | Fresh lower-layer proof runner | Present and current | `tools/run_nrc_aps_document_processing_proof.py`, `project6.ps1 -Action prove-nrc-aps-document-processing`, and `tests/reports/nrc_aps_document_processing_proof_report.json` |
@@ -34,6 +34,7 @@ Status wording used below:
 | Surface | Current state | Proof |
 | --- | --- | --- |
 | Fresh full aggregate NRC gate PASS after lower-layer expansion | Available; covers pre-March-25 state | rerun on March 13, 2026 via `./project6.ps1 -Action gate-nrc-aps`: aggregate pytest slice `143 passed, 29 deselected`, post-validator dossier ambiguity negative slice `1 passed, 55 deselected`, and aggregate validate-only reports refreshed to PASS through Deterministic Challenge Artifact. Note: March 25, 2026 hardening commits (`2f597f9`, `90c0c58`) changed diagnostics_ref resolution and visual artifact materialization behavior after this gate run. |
+| Fresh bounded Layer 3 APS handoff proof | Available in this workspace for the merged bounded APS consumer slice | focused rerun on April 19, 2026: `51 passed, 2 warnings` across `backend/tests/test_layer3_aps_handoff.py`, `backend/tests/test_layer3_package_entry.py`, and `backend/tests/test_nrc_aps_evidence_bundle_integration.py` |
 | Existing APS validation reports under `tests/reports/` | Partially fresh | refreshed in this workspace for the March 26 closeouts: `nrc_aps_content_index_validation_report.json`, `nrc_aps_evidence_bundle_validation_report.json`, and `nrc_aps_deterministic_challenge_review_packet_validation_report.json`; other checked-in APS reports remain prior generated artifacts unless explicitly rerun |
 | Fresh live batch and promotion validation | Not rerun in this pass | existing manifests/reports remain available under `backend/app/storage/connectors/reports/` and `tests/reports/` |
 
@@ -158,6 +159,7 @@ Important correction:
 ## 7. Current explicit limits
 - Tesseract CLI availability is an external prerequisite for scanned/mixed PDF OCR success.
 - In a no-Tesseract environment, scanned PDFs fail closed with `ocr_required_but_unavailable`, and mixed PDFs may degrade to weak/native-only output.
+- The merged Layer 3 APS consumer remains intentionally limited to the first evidence-bundle-family tranche: `aps_evidence_bundle_handoff` emitted from already-packaged terminal Layer 3 sessions. Later APS families, route/UI widening, and APS contract/gate widening remain deferred.
 - The checked-in fixture corpus now proves manifest-driven parser routing, degradation semantics, downstream usefulness for representative born-digital content, and OCR-success usefulness for the scanned/mixed corpus fixtures in this workspace.
 - The current checked-in lower-layer proof basis in this workspace (covers behavior through March 13, 2026) is:
   - `tests/reports/nrc_aps_document_processing_proof_report.json`
@@ -189,6 +191,7 @@ The next safe continuation is:
 
 ## 9. Primary live authority surfaces for this workstream
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
+- `backend/app/services/layer3_aps_handoff.py`
 - `backend/app/services/connectors_nrc_adams.py`
 - `backend/app/services/nrc_aps_media_detection.py`
 - `backend/app/services/nrc_aps_document_processing.py`
@@ -209,6 +212,7 @@ The next safe continuation is:
 - `tests/test_nrc_aps_content_index.py`
 - `tests/test_nrc_aps_content_index_gate.py`
 - `tests/test_api.py`
+- `backend/tests/test_layer3_aps_handoff.py`
 - `backend/tests/test_diagnostics_ref_persistence.py`
 - `backend/tests/test_nrc_aps_evidence_bundle_integration.py`
 - `tools/run_nrc_aps_document_processing_proof.py`
