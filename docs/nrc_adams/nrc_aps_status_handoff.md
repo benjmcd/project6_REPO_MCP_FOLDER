@@ -189,8 +189,8 @@ Important correction:
 The next safe continuation is:
 1. preserve the restored lower-layer baseline and current OCR-enabled proof basis
 2. treat the bounded Layer 3 APS evidence-report-export handoff slice as the current additive ceiling extension now landed on current `main`, not as permission to widen into export-package/context/deterministic or later APS families
-3. treat `next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md` as the governing carried-forward contract for that bounded evidence-report-export-family slice rather than as permission to jump directly into export-package/context/deterministic families
-4. require a fresh explicit freeze before any APS-family fan-out beyond evidence-report-export, route/UI widening, or broader runtime-facing consumer admission
+3. treat `next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md` as the governing carried-forward contract for the next bounded direct export-derived context-packet continuation, because the live export-package family requires at least two same-run exports while the current Layer 3 APS report-export handoff admits one export row per session
+4. do not treat the new context freeze as permission to widen into export-package implementation, package-derived context, dossier, deterministic, or later APS families
 5. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes, and treat `.\project6.ps1 -Action validate-nrc-aps-content-index` plus `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` as the validate-only refresh path for those checked-in reports
 
 ## 9. Primary live authority surfaces for this workstream
@@ -206,6 +206,7 @@ The next safe continuation is:
 - `next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md`
 - `backend/app/services/connectors_nrc_adams.py`
 - `backend/app/services/nrc_aps_media_detection.py`
 - `backend/app/services/nrc_aps_document_processing.py`
@@ -223,6 +224,9 @@ The next safe continuation is:
 - `backend/app/services/nrc_aps_evidence_report_export_contract.py`
 - `backend/app/services/nrc_aps_evidence_report_export.py`
 - `backend/app/services/nrc_aps_evidence_report_export_gate.py`
+- `backend/app/services/nrc_aps_context_packet_contract.py`
+- `backend/app/services/nrc_aps_context_packet.py`
+- `backend/app/services/nrc_aps_context_packet_gate.py`
 - `backend/app/models/models.py`
 - `backend/app/schemas/api.py`
 - `backend/alembic/versions/0009_aps_document_processing_metadata.py`
@@ -238,6 +242,8 @@ The next safe continuation is:
 - `tests/test_nrc_aps_evidence_citation_pack_gate.py`
 - `tests/test_nrc_aps_evidence_report.py`
 - `tests/test_nrc_aps_evidence_report_gate.py`
+- `tests/test_nrc_aps_context_packet.py`
+- `tests/test_nrc_aps_context_packet_gate.py`
 - `tests/test_api.py`
 - `backend/tests/test_layer3_aps_handoff.py`
 - `backend/tests/test_diagnostics_ref_persistence.py`
