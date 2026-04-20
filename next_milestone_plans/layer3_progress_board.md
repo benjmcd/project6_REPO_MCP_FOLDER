@@ -28,7 +28,7 @@ As of `2026-04-20`:
 - seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main`
 - valid local authority rule: use any clean checkout whose contents match current `main`
 - authoritative remote branch: `project6-origin/main`
-- current `main` commit: `5107ad15bef43b9aef913f163641bdc28f7b88d8`
+- snapshot base `main` commit at last artifact refresh before this artifact pack itself merged: `5107ad15bef43b9aef913f163641bdc28f7b88d8`
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
 
