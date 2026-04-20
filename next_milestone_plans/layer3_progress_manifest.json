@@ -78,6 +78,81 @@
     "main_state_summary": "Current main includes the bounded multisource implementation slice from PR #101 and the post-merge docs closeout from PR #102.",
     "open_followups": []
   },
+  "summary_counts": {
+    "merged_milestones": 12,
+    "open_milestones": 0,
+    "planned_decisions": 1,
+    "deferred_scope_items": 12
+  },
+  "artifact_render_contract": {
+    "purpose": "Provide a stable view contract for external render surfaces so they do not have to infer layout from prose or depend on runtime JavaScript or Mermaid for critical meaning.",
+    "top_level_sections": [
+      {
+        "section_id": "program-state",
+        "title": "Program State Summary",
+        "source": "summary_counts"
+      },
+      {
+        "section_id": "current-focus",
+        "title": "Current Focus",
+        "source": "next_required_decision"
+      },
+      {
+        "section_id": "completed-chain",
+        "title": "Completed Chain",
+        "source": "milestones where main_state=merged"
+      },
+      {
+        "section_id": "candidate-next",
+        "title": "Candidate Next Consumers",
+        "source": "next_required_decision.candidate_families"
+      },
+      {
+        "section_id": "deferred-scope",
+        "title": "Deferred Scope",
+        "source": "deferred_scope"
+      }
+    ],
+    "state_visuals": {
+      "merged": {
+        "label": "Done",
+        "fill": "#d8f5d0",
+        "stroke": "#2f6b2f"
+      },
+      "merged_with_open_docs_closeout": {
+        "label": "Done with docs follow-up open",
+        "fill": "#eef7d7",
+        "stroke": "#6d8a2b"
+      },
+      "open": {
+        "label": "Open",
+        "fill": "#fff4e6",
+        "stroke": "#b8860b"
+      },
+      "planned": {
+        "label": "Current focus or next planned step",
+        "fill": "#fff1bf",
+        "stroke": "#9a6b00"
+      },
+      "deferred": {
+        "label": "Deferred",
+        "fill": "#e8e8e8",
+        "stroke": "#666666"
+      },
+      "branch_only": {
+        "label": "Branch only",
+        "fill": "#e7edff",
+        "stroke": "#4b63b3"
+      }
+    },
+    "hard_rules": [
+      "Critical meaning must render correctly with HTML and CSS alone.",
+      "JavaScript may enhance interaction but must not be required to show milestone rows, current focus, candidate next consumers, or deferred scope.",
+      "Mermaid is optional enhancement only and must never be the sole carrier of state meaning.",
+      "If the live artifact cannot read refreshed files at view time, the scheduled refresh must rewrite the artifact itself from current manifest data.",
+      "Do not present candidate next consumers as the current active implementation lane."
+    ]
+  },
   "milestones": [
     {
       "milestone_id": "phase1a-foundation",
@@ -622,7 +697,8 @@
       "next_milestone_plans/Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md",
-      "next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md"
+      "next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md",
+      "next_milestone_plans/progress-ui-spec.md"
     ]
   }
 }
