@@ -2,7 +2,7 @@
 
 ## Purpose and authority note
 
-This document freezes the bounded next APS-facing continuation after the already-landed Gate D APS evidence-bundle handoff slice.
+This document freezes the bounded APS citation continuation contract after the already-landed Gate D APS evidence-bundle handoff slice.
 It answers one question only:
 - what exact later APS family is admitted next, and with what source and proof posture, without reopening route/UI, runtime DB, earlier package truth, or later report/context/deterministic fan-out
 
@@ -30,8 +30,8 @@ Evidence basis: `P|layer3_primary_planningdocs/07_LAYER3_RECONCILIATION_PACKAGIN
 
 ## Frozen tranche
 
-The bounded next APS-facing continuation is frozen as:
-- `Gate D APS continuation next slice = one bounded adapter from the already-landed Layer 3 aps_evidence_bundle_handoff output row into the existing APS citation-pack-family boundary only`
+The bounded APS citation continuation is frozen as:
+- `Gate D APS citation continuation slice = one bounded adapter from the already-landed Layer 3 aps_evidence_bundle_handoff output row into the existing APS citation-pack-family boundary only`
 - keep the already-landed `canonical_internal`, `user_facing`, `review_facing`, and `aps_evidence_bundle_handoff` rows as the already-proven upstream truth
 - admit one additional APS-facing Layer 3 output package family only for the citation-pack target
 - reuse the existing `L3OutputPackage` durable surface; do not add new Layer 3 package tables or migrations for this tranche
@@ -72,12 +72,12 @@ Frozen reading of that starting point:
 
 ### 1. Exact next APS family
 
-The exact next APS-facing family is frozen now as:
+The exact APS family admitted by this freeze is:
 - the live APS citation-pack-family boundary
 - using the existing repo-local citation-pack contract, persisted artifact expectations, and fail-closed gate surface
 
 Frozen target rule:
-- the bounded next APS-facing lane admitted by this freeze must target the live citation-pack family directly
+- the bounded APS-facing lane admitted by this freeze must target the live citation-pack family directly
 - it must source from the already-landed `aps_evidence_bundle_handoff` row and its persisted bundle artifact
 - it must not recompute from `canonical_internal` package truth when the already-landed evidence-bundle handoff row is available
 - it must not jump directly to report, context, dossier, deterministic, or review-packet families
@@ -96,7 +96,7 @@ Frozen provenance rule:
 
 ### 3. APS citation-pack compatibility posture
 
-The bounded next APS-facing lane must treat the live APS citation-pack family as the compatibility boundary.
+The bounded APS-facing lane must treat the live APS citation-pack family as the compatibility boundary.
 
 Frozen compatibility requirements:
 - reuse the live citation-pack schema ids
@@ -159,12 +159,12 @@ Stop and reopen the freeze instead of improvising if the bounded write lane requ
 ## Concise readiness judgment
 
 Readiness judgment:
-- `This freeze is sufficient for the bounded APS citation handoff lane now present in the current implementation state after the already-landed evidence-bundle handoff slice on current main`
+- `This freeze is now the governing carried-forward contract for the bounded APS citation handoff slice now landed on current \`main\` after the already-landed evidence-bundle handoff slice`
 
 Reason:
 - the earlier blocker was no longer the first APS-family choice
 - the remaining missing decision was the exact next later APS family and whether it should source from already-landed evidence-bundle handoff truth or reopen earlier package truth
-- this document freezes that decision narrowly at the live citation-pack-family boundary and now governs the bounded citation handoff slice present in the current implementation state while keeping report/context/deterministic families, route/UI, runtime DB, and broader consumer widening out
+- this document froze that decision narrowly at the live citation-pack-family boundary and now governs the bounded citation handoff slice landed on current `main` while keeping report/context/deterministic families, route/UI, runtime DB, and broader consumer widening out
 
 What still remains intentionally deferred after this freeze:
 - the future workbench route family
