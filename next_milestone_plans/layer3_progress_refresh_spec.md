@@ -86,21 +86,23 @@ Optional render surfaces are allowed, but only if they do not replace or contrad
 1. Read `next_milestone_plans/layer3_progress_manifest.json`.
 2. Refresh GitHub state for the tracked PR set.
 3. Refresh the current `main` commit SHA.
-4. Re-read:
+4. Record that SHA as `snapshot_base_main_commit`, meaning the base `main` commit used for the artifact refresh.
+5. Do not write that SHA back as a self-updating `current_main_commit` claim, because this artifact can merge in a later commit than the snapshot it describes.
+6. Re-read:
    - `docs/nrc_adams/nrc_aps_status_handoff.md`
    - `next_milestone_plans/README_LAYER3_PHASE1A_PACK.md`
    - `next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
    - `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
    - `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `14_GATED_APS_MULTISOURCE_FREEZE.md`
-5. For each milestone:
+7. For each milestone:
    - update PR state from GitHub
    - update merge commit from GitHub
    - keep the milestone grouped under the same semantic milestone id unless repo truth proves the grouping wrong
-6. Reconcile board wording against the manifest.
-7. Update Mermaid diagrams so merged, open, and planned states remain visually distinct.
-8. Preserve explicit deferred scope.
-9. If the next-step decision has changed, update `next_required_decision` in the manifest and the matching section in the board.
-10. Fail closed if GitHub state cannot be refreshed:
+8. Reconcile board wording against the manifest.
+9. Update Mermaid diagrams so merged, open, and planned states remain visually distinct.
+10. Preserve explicit deferred scope.
+11. If the next-step decision has changed, update `next_required_decision` in the manifest and the matching section in the board.
+12. Fail closed if GitHub state cannot be refreshed:
    - keep the last known manifest state
    - mark the refresh as stale instead of inventing merged/open status
 
