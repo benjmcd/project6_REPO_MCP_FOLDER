@@ -6,6 +6,7 @@ This file tells an external agent, including Claude Cowork, how to refresh the L
 Use it together with:
 - `next_milestone_plans/layer3_progress_manifest.json`
 - `next_milestone_plans/layer3_progress_board.md`
+- `next_milestone_plans/progress-ui-spec.md`
 
 This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.
 
@@ -80,6 +81,8 @@ Maintain exactly these files:
 - `next_milestone_plans/layer3_progress_board.md`
 
 Optional render surfaces are allowed, but only if they do not replace or contradict those two files.
+Any external live artifact or dashboard must also obey:
+- `next_milestone_plans/progress-ui-spec.md`
 
 ## Refresh Procedure
 
@@ -99,10 +102,12 @@ Optional render surfaces are allowed, but only if they do not replace or contrad
    - update merge commit from GitHub
    - keep the milestone grouped under the same semantic milestone id unless repo truth proves the grouping wrong
 8. Reconcile board wording against the manifest.
-9. Update Mermaid diagrams so merged, open, and planned states remain visually distinct.
-10. Preserve explicit deferred scope.
-11. If the next-step decision has changed, update `next_required_decision` in the manifest and the matching section in the board.
-12. Fail closed if GitHub state cannot be refreshed:
+9. Reconcile any external render surface against `next_milestone_plans/progress-ui-spec.md`.
+10. Ensure the primary render path is HTML/CSS readable without JavaScript or Mermaid.
+11. Preserve explicit deferred scope.
+12. If the next-step decision has changed, update `next_required_decision` in the manifest and the matching section in the board.
+13. If the live artifact cannot read refreshed files at view time, regenerate the artifact itself from the refreshed manifest and board instead of leaving a stale embedded snapshot in place.
+14. Fail closed if GitHub state cannot be refreshed:
    - keep the last known manifest state
    - mark the refresh as stale instead of inventing merged/open status
 
@@ -129,6 +134,8 @@ Do not:
 - rewrite milestone ids or reorder the whole chain without repo-confirmed reason
 - silently drop the docs-closeout PRs, because they are part of the actual operational progression
 - present speculative later families as already admitted
+- call the artifact live if it only embeds a stale snapshot and never updates from refreshed inputs
+- rely on Mermaid or JavaScript as the only way primary progress meaning becomes visible
 
 ## Current Program Boundary
 
@@ -161,3 +168,8 @@ If Claude Cowork does not have a native GitHub MCP connector:
 - if neither is available, keep the last known GitHub-derived state and report that live PR refresh is blocked
 
 Do not compensate for missing GitHub access by upgrading repo-doc wording into proof of merge.
+
+If Cowork can update the artifact but cannot read files live at render time:
+- rewrite the artifact itself during each successful refresh
+- rebuild all primary milestone rows and summary sections from the refreshed manifest
+- treat JavaScript and Mermaid as optional enhancement only
