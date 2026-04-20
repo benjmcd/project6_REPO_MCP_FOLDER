@@ -174,7 +174,8 @@ Reason:
 What still remains intentionally deferred after this freeze:
 - the future workbench route family
 - broader qualitative, hybrid, cross-modal, and comparative execution breadth
-- APS evidence-report-export, export-package, context, dossier, deterministic, and review-packet fan-out beyond the evidence-report family
+- the exact next later APS-family continuation beyond evidence-report is now separately frozen by `12_GATED_APS_REPORT_EXPORT_FREEZE.md` at the evidence-report-export boundary; that later freeze is not itself an implementation claim
+- APS export-package, context, dossier, deterministic, and review-packet fan-out beyond the evidence-report-export family
 - deeper runtime-facing consumer widening
 
 ## Evidence appendix
