@@ -186,12 +186,14 @@ Important correction:
 The next safe continuation is:
 1. preserve the restored lower-layer baseline and current OCR-enabled proof basis
 2. treat the merged bounded Layer 3 APS evidence-bundle handoff slice as the current additive ceiling extension, not as permission to widen into later APS families
-3. require a fresh explicit freeze before any later APS-family fan-out, route/UI widening, or broader runtime-facing consumer admission
-4. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes, and treat `.\project6.ps1 -Action validate-nrc-aps-content-index` plus `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` as the validate-only refresh path for those checked-in reports
+3. treat `next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md` as the only admitted next bounded APS-family continuation: one citation-pack-family handoff sourced from the already-landed evidence-bundle handoff slice, not a jump into report/context/deterministic families
+4. require a fresh explicit freeze before any APS-family fan-out beyond citation-pack, route/UI widening, or broader runtime-facing consumer admission
+5. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes, and treat `.\project6.ps1 -Action validate-nrc-aps-content-index` plus `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` as the validate-only refresh path for those checked-in reports
 
 ## 9. Primary live authority surfaces for this workstream
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 - `backend/app/services/layer3_aps_handoff.py`
+- `next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md`
 - `backend/app/services/connectors_nrc_adams.py`
 - `backend/app/services/nrc_aps_media_detection.py`
 - `backend/app/services/nrc_aps_document_processing.py`
@@ -200,6 +202,9 @@ The next safe continuation is:
 - `backend/app/services/nrc_aps_content_index.py`
 - `backend/app/services/nrc_aps_evidence_bundle_contract.py`
 - `backend/app/services/nrc_aps_evidence_bundle.py`
+- `backend/app/services/nrc_aps_evidence_citation_pack_contract.py`
+- `backend/app/services/nrc_aps_evidence_citation_pack.py`
+- `backend/app/services/nrc_aps_evidence_citation_pack_gate.py`
 - `backend/app/models/models.py`
 - `backend/app/schemas/api.py`
 - `backend/alembic/versions/0009_aps_document_processing_metadata.py`
@@ -211,6 +216,8 @@ The next safe continuation is:
 - `tests/test_nrc_aps_artifact_ingestion.py`
 - `tests/test_nrc_aps_content_index.py`
 - `tests/test_nrc_aps_content_index_gate.py`
+- `tests/test_nrc_aps_evidence_citation_pack.py`
+- `tests/test_nrc_aps_evidence_citation_pack_gate.py`
 - `tests/test_api.py`
 - `backend/tests/test_layer3_aps_handoff.py`
 - `backend/tests/test_diagnostics_ref_persistence.py`
