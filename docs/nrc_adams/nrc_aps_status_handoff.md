@@ -196,12 +196,19 @@ The next safe continuation is:
 
 ## 9. Primary live authority surfaces for this workstream
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
+- `backend/app/models/models.py`
+- `backend/app/services/layer3_session_entry.py`
+- `backend/app/services/layer3_typing_entry.py`
+- `backend/app/services/layer3_package_entry.py`
 - `backend/app/services/layer3_aps_handoff.py`
 - `backend/app/services/layer3_aps_citation_handoff.py`
 - `backend/app/services/layer3_aps_report_handoff.py`
 - `backend/app/services/layer3_aps_report_export_handoff.py`
 - `backend/app/services/layer3_aps_context_packet_handoff.py`
 - `backend/app/services/layer3_aps_multisource.py`
+- `backend/tests/test_layer3_session_entry.py`
+- `backend/tests/test_layer3_typing_entry.py`
+- `backend/tests/test_layer3_package_entry.py`
 - `backend/tests/test_layer3_aps_handoff.py`
 - `backend/tests/test_layer3_aps_citation_handoff.py`
 - `backend/tests/test_layer3_aps_report_handoff.py`
