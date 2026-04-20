@@ -42,6 +42,9 @@ And to the carried-forward Gate D APS context continuation freeze packet for the
 And to the carried-forward Gate D APS multisource continuation freeze packet for the bounded same-run shared-source admission boundary now landed on current `main` beyond the landed export-derived context-packet slice:
 - `next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md`
 
+And to the carried-forward Gate D APS export-package first shared-consumer freeze packet for the bounded branch-only choice of `evidence_report_export_package` as the first later shared APS family beyond the landed multisource slice, not yet landed on current `main`:
+- `next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md`
+
 This README is operational and navigational.
 If it conflicts with the stronger frozen control docs, the control docs govern.
 
@@ -73,6 +76,7 @@ The lane now contains:
 - the carried-forward Gate D APS report-export continuation freeze packet that now governs the bounded evidence-report-export-family continuation slice now landed on current `main` beyond the landed evidence-report handoff while keeping export-package/context/deterministic fan-out, route/UI, and runtime DB widening out
 - the carried-forward Gate D APS context continuation freeze packet that now governs the bounded export-derived context-packet continuation slice now landed on current `main` beyond the landed evidence-report-export handoff while keeping export-package implementation, package-derived context/dossier/deterministic fan-out, route/UI, and runtime DB widening out
 - the carried-forward Gate D APS multisource continuation freeze packet that now governs the bounded same-run shared-source admission boundary now landed on current `main` beyond the landed export-derived context-packet slice while keeping direct export-package, package-derived context, dossier, deterministic fan-out, route/UI, runtime DB, and schema widening out
+- the carried-forward Gate D APS export-package first shared-consumer freeze packet that now governs the branch-only read-only choice of `evidence_report_export_package` as the first downstream shared APS family beyond the landed multisource slice while keeping direct export-package implementation, package-derived context, context-dossier, deterministic fan-out, route/UI, runtime DB, and schema widening out
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -100,6 +104,7 @@ Current bounded posture:
 - the carried-forward Gate D APS report-export freeze now covers the bounded evidence-report-export slice now landed on current `main` only; it does not mean evidence-report-export-package or later APS families have already landed
 - the carried-forward Gate D APS context freeze now covers only the bounded export-derived context-packet slice now landed on current `main`; it does not mean export-package implementation, package-derived context, dossier, deterministic, or route/UI surfaces have already landed
 - the carried-forward Gate D APS multisource freeze now covers only the bounded shared same-run source-admission slice now landed on current `main`; it does not mean export-package implementation, package-derived context, context-dossier, deterministic, or schema surfaces have already landed
+- the carried-forward Gate D APS export-package first shared-consumer freeze now covers only the branch-local decision to select `evidence_report_export_package` as the first later shared APS family beyond the landed multisource slice; it does not mean export-package implementation, package-derived context, context-dossier, deterministic, or schema surfaces have already landed
 
 The active REV2 control docs in this pack have also been re-audited against current `main` after the repo-root analyst-insight page, alias-router, static-asset, and runtime-helper surfaces landed. Treat the REV1 artifacts and the REV1-to-REV2 correction memo as historical context only.
 
@@ -261,6 +266,11 @@ It is the narrow frozen contract that governs the bounded export-derived context
 
 It is the narrow frozen contract that governs the bounded same-run shared-source admission slice now landed on current `main` beyond the already-landed export-derived context-packet slice, and it does not itself imply that direct export-package implementation, package-derived context, context-dossier, deterministic, or schema surfaces have already landed:
 - `14_GATED_APS_MULTISOURCE_FREEZE.md`
+
+### Post-Phase 1A carried-forward APS export-package first shared-consumer freeze packet
+
+It is the narrow frozen contract that governs the branch-local read-only choice of `evidence_report_export_package` as the first downstream shared APS family beyond the already-landed multisource slice, and it does not itself imply that export-package implementation, package-derived context, context-dossier, deterministic, or schema surfaces have already landed:
+- `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md`
 
 ## Current use guidance
 
