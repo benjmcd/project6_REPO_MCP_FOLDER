@@ -190,8 +190,8 @@ The next safe continuation is:
 1. preserve the restored lower-layer baseline and current OCR-enabled proof basis
 2. treat the bounded Layer 3 APS export-derived context-packet handoff slice as the current additive ceiling extension on current `main`, not as permission to widen into export-package implementation, package-derived context, dossier, deterministic, or later APS families
 3. treat `next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md` as the governing carried-forward contract for that bounded direct export-derived context-packet slice only, not as permission to widen directly into later shared APS families
-4. treat `next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md` as the governing carried-forward contract for the next not-yet-landed shared same-run source-admission boundary required before direct export-package or context-dossier implementation can be admitted
-5. do not treat the new multisource freeze as permission to widen directly into export-package implementation, package-derived context, dossier, deterministic, or later APS families
+4. treat the bounded Layer 3 APS multisource admission slice as the current additive ceiling extension in the current branch state beyond current `main`, not as permission to widen into export-package implementation, package-derived context, dossier, deterministic, or later APS families
+5. treat `next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md` as the governing carried-forward contract for that bounded shared same-run source-admission slice only, not as permission to widen directly into export-package implementation, package-derived context, dossier, deterministic, or later APS families
 6. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes, and treat `.\project6.ps1 -Action validate-nrc-aps-content-index` plus `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` as the validate-only refresh path for those checked-in reports
 
 ## 9. Primary live authority surfaces for this workstream
@@ -201,11 +201,13 @@ The next safe continuation is:
 - `backend/app/services/layer3_aps_report_handoff.py`
 - `backend/app/services/layer3_aps_report_export_handoff.py`
 - `backend/app/services/layer3_aps_context_packet_handoff.py`
+- `backend/app/services/layer3_aps_multisource.py`
 - `backend/tests/test_layer3_aps_handoff.py`
 - `backend/tests/test_layer3_aps_citation_handoff.py`
 - `backend/tests/test_layer3_aps_report_handoff.py`
 - `backend/tests/test_layer3_aps_report_export_handoff.py`
 - `backend/tests/test_layer3_aps_context_packet_handoff.py`
+- `backend/tests/test_layer3_aps_multisource.py`
 - `next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md`
