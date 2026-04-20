@@ -35,6 +35,7 @@ from test_layer3_aps_handoff import _build_packaged_session, _make_session, _row
 
 def test_materialize_aps_citation_handoff_emits_pack_row_without_runtime_db_writes(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     original_storage_dir = settings.storage_dir
     settings.storage_dir = str(tmp_path)
@@ -67,9 +68,11 @@ def test_materialize_aps_citation_handoff_emits_pack_row_without_runtime_db_writ
         assert loaded_payload["source_bundle"]["run_id"] == run_id
         assert loaded_payload["total_citations"] >= 1
 
-        aps_citation_gate_module._load_candidate_runs = lambda run_ids, limit: [  # type: ignore[assignment]
-            {"run_id": run_id, "status": "completed"}
-        ]
+        monkeypatch.setattr(
+            aps_citation_gate_module,
+            "_load_candidate_runs",
+            lambda run_ids, limit: [{"run_id": run_id, "status": "completed"}],
+        )
         gate_report = aps_citation_gate_module.validate_evidence_citation_pack_gate(
             run_ids=[run_id],
             limit=1,
