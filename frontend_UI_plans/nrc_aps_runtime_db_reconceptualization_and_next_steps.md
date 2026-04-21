@@ -136,6 +136,9 @@ The following are already landed on current `main` and should no longer be treat
 - operator-safe runtime binding summaries in the review run catalog and compare run sources
 - runtime, DB, and storage authority labeling in the shipped review and document-trace identity surfaces
 - selected-source authority labeling in the shipped workbench compare identity surface and compare-unavailable overlay path
+- bounded document-trace backend data-path audit coverage at both route and multi-route session scope
+- large-document page-window gating with bounded virtualized rendering for high-page-count PDFs
+- indexed-chunks sync controls with explicit reset-on-document-switch behavior
 
 ### Phase 4: Review/Document-Trace Transparency Is Now Landed
 
@@ -152,12 +155,14 @@ Verification result:
 - headed Chrome and headless Chrome now both show matching selected-source authority on the runtime-backed compare-unavailable path
 - the compare-available identity band is browser-proved in the repo's fixture-backed review-browser harness, not inferred from static tests alone
 - operators can now tell what runtime they are viewing without checking server startup history
+- document trace now carries explicit large-document rendering guards and static regression coverage for the virtualized viewer path
+- document trace now carries route/session data-path audit coverage plus explicit indexed-chunks sync markers in static page tests
 
 ### Phase 5: Optimize Document Trace Data Paths
 
 Objective:
 
-- improve the actual query/data path once runtime identity is correct
+- improve the actual query/data path beyond the already-landed route/session audit guards and large-document rendering guardrails once runtime identity is correct
 
 Likely targets:
 
