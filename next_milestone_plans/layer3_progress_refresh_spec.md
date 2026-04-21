@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice, plus the merged malformed-scoped candidate-discovery closeout from PR `#119`, plus the now-landed context-dossier freeze beyond that landed package-context boundary, plus the now-landed bounded context-dossier handoff implementation slice from PR `#121`, plus the post-PR122 artifact-state fix from PR `#123`, plus the now-landed deterministic-insight continuation freeze from PR `#124`, plus the now-landed deterministic insight handoff implementation slice and narrow deterministic gate hardening from PR `#126`, plus the post-PR126 docs/progress sync from PR `#127`, plus the now-landed deterministic-challenge continuation freeze from PR `#128`, plus the post-PR132 docs/progress sync from PR `#133`, plus the now-landed deterministic challenge review-packet handoff lane from PR `#134`, plus the post-PR134 docs/progress sync from PR `#135`, and the now-landed validate-only-gates freeze from PR `#136` beyond that landed review-packet boundary.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice, plus the merged malformed-scoped candidate-discovery closeout from PR `#119`, plus the now-landed context-dossier freeze beyond that landed package-context boundary, plus the now-landed bounded context-dossier handoff implementation slice from PR `#121`, plus the post-PR122 artifact-state fix from PR `#123`, plus the now-landed deterministic-insight continuation freeze from PR `#124`, plus the now-landed deterministic insight handoff implementation slice and narrow deterministic gate hardening from PR `#126`, plus the post-PR126 docs/progress sync from PR `#127`, plus the now-landed deterministic-challenge continuation freeze from PR `#128`, plus the post-PR132 docs/progress sync from PR `#133`, plus the now-landed deterministic challenge review-packet handoff lane from PR `#134`, plus the post-PR134 docs/progress sync from PR `#135`, plus the now-landed validate-only-gates freeze from PR `#136`, its docs/progress sync from PR `#137`, and the current open bounded validate-only gate-report refresh lane from PR `#138` beyond that landed review-packet boundary.
 
 ## Canonical Inputs
 
@@ -31,7 +31,7 @@ Current tracked PR set:
 - `#97`, `#98`, `#99`
 - `#100`, `#101`, `#102`
 - `#106`, `#107`, `#108`, `#109`
-- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, `#136`
+- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, `#136`, `#137`, `#138`
 
 Hard rule:
 - never mark a step as landed on `main` from repo docs alone if the GitHub PR is still open
@@ -137,8 +137,9 @@ Any external live artifact or dashboard must also obey:
    - and, when present in the current checkout, the landed `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze plus the live deterministic insight family surfaces rooted in `backend/app/services/nrc_aps_deterministic_insight_artifact_contract.py`, `backend/app/services/nrc_aps_deterministic_insight_artifact.py`, `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`, and `backend/app/services/review_nrc_aps_graph.py`
    - and, when present in the current checkout, the landed deterministic insight handoff owner/proof surfaces rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`
    - and, when present in the current checkout, the landed `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze plus the live deterministic challenge family surfaces rooted in `backend/app/services/nrc_aps_deterministic_challenge_artifact_contract.py`, `backend/app/services/nrc_aps_deterministic_challenge_artifact.py`, `backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py`, and `backend/app/services/review_nrc_aps_graph.py`
-   - and, when present in the current checkout, the landed `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze plus the live deterministic challenge review-packet family surfaces rooted in `backend/app/services/nrc_aps_deterministic_challenge_review_packet_contract.py`, `backend/app/services/nrc_aps_deterministic_challenge_review_packet.py`, `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`, and the open owner/proof surfaces rooted in `backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py` and `backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py`
-   - and, when present in the current checkout, the branch-local `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze plus the generic validate-only review surfaces rooted in `backend/app/services/review_nrc_aps_graph.py`, `backend/app/services/review_nrc_aps_tree.py`, `backend/tests/test_review_nrc_aps_graph.py`, `project6.ps1`, and `backend/app/services/connectors_sciencebase.py`
+- and, when present in the current checkout, the landed `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze plus the live deterministic challenge review-packet family surfaces rooted in `backend/app/services/nrc_aps_deterministic_challenge_review_packet_contract.py`, `backend/app/services/nrc_aps_deterministic_challenge_review_packet.py`, `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`, and the landed owner/proof surfaces rooted in `backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py` and `backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py`
+- and, when present in the current checkout, the landed `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze plus the generic validate-only review surfaces rooted in `backend/app/services/review_nrc_aps_graph.py`, `backend/app/services/review_nrc_aps_tree.py`, `backend/tests/test_review_nrc_aps_graph.py`, `project6.ps1`, and `backend/app/services/connectors_sciencebase.py`
+- and, when present in the current checkout, the open validate-only gate-report refresh owner/proof surfaces rooted in `backend/app/services/review_nrc_aps_gate_reports.py`, `tools/nrc_aps_refresh_review_gate_reports.py`, `tools/run_nrc_aps_local_corpus_e2e.py`, `backend/tests/test_review_nrc_aps_gate_reports.py`, and `project6.ps1`
 7. For each milestone:
    - update PR state from GitHub
    - update merge commit from GitHub
@@ -204,15 +205,17 @@ The current bounded chain on `main` ends at:
 - and the post-PR132 docs/progress sync from PR `#133`
 - and the now-landed deterministic challenge review-packet handoff slice plus narrow review-packet gate hardening from PR `#134`
 - and the post-PR134 docs/progress sync from PR `#135`
+- and the landed read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze from PR `#136`
+- and the post-PR136 docs/progress sync from PR `#137`
 
 The preserved source-branch rule on current `main` is:
 - dossier input must remain paired export-derived context packets rather than package-derived context
 
-The current planned continuation beyond current `main` is:
-- the bounded validate-only execution or report-refresh lane beyond the now-landed `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze and the now-landed deterministic challenge review-packet handoff, still pinned to the existing generic review graph, review tree, review-packet gate, and operator surfaces
+The current open continuation beyond current `main` is:
+- the bounded validate-only gate-report refresh lane from PR `#138` beyond the now-landed `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze and the now-landed deterministic challenge review-packet handoff, still pinned to the existing generic review graph, review tree, local-corpus proof, and operator surfaces
 
 The next required move is:
-- open that bounded validate-only execution or report-refresh lane without widening promotion, retrieval cutover, route or UI, runtime DB, or schema scope
+- land that bounded validate-only gate-report refresh lane without widening promotion, retrieval cutover, route or UI, runtime DB, or schema scope
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`

@@ -23,13 +23,14 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
+
+from app.services.review_nrc_aps_gate_reports import run_gate_reports_for_run  # noqa: E402
 
 
 SUMMARY_SCHEMA_ID = "aps.local_corpus_e2e_summary.v1"
@@ -122,22 +123,6 @@ KNOWN_CORPUS_FOLDERS: dict[str, CorpusFolderSpec] = {
         CorpusFolderSpec("weekly_information_report_documents_for_testing", "weekly-information-report", "Weekly Information Report"),
     )
 }
-
-GATE_SPECS: tuple[tuple[str, str, str], ...] = (
-    ("artifact_ingestion", "nrc_aps_artifact_ingestion_gate.py", "artifact_ingestion.json"),
-    ("content_index", "nrc_aps_content_index_gate.py", "content_index.json"),
-    ("evidence_bundle", "nrc_aps_evidence_bundle_gate.py", "evidence_bundle.json"),
-    ("evidence_citation_pack", "nrc_aps_evidence_citation_pack_gate.py", "evidence_citation_pack.json"),
-    ("evidence_report", "nrc_aps_evidence_report_gate.py", "evidence_report.json"),
-    ("evidence_report_export", "nrc_aps_evidence_report_export_gate.py", "evidence_report_export.json"),
-    ("evidence_report_export_package", "nrc_aps_evidence_report_export_package_gate.py", "evidence_report_export_package.json"),
-    ("context_packet", "nrc_aps_context_packet_gate.py", "context_packet.json"),
-    ("context_dossier", "nrc_aps_context_dossier_gate.py", "context_dossier.json"),
-    ("deterministic_insight_artifact", "nrc_aps_deterministic_insight_artifact_gate.py", "deterministic_insight_artifact.json"),
-    ("deterministic_challenge_artifact", "nrc_aps_deterministic_challenge_artifact_gate.py", "deterministic_challenge_artifact.json"),
-    ("deterministic_challenge_review_packet", "nrc_aps_deterministic_challenge_review_packet_gate.py", "deterministic_challenge_review_packet.json"),
-)
-
 
 class ProofError(RuntimeError):
     pass
@@ -985,25 +970,17 @@ def _collect_advanced_metrics(runtime: RuntimeContext, run_id: str, docs: list[L
 
 
 def _run_gate_scripts(runtime: RuntimeContext, run_id: str, runtime_root: Path) -> dict[str, Any]:
-    reports_dir = runtime_root / "gate_reports"
-    reports_dir.mkdir(parents=True, exist_ok=True)
-    gate_results: dict[str, Any] = {}
-    for gate_name, script_name, report_name in GATE_SPECS:
-        report_path = reports_dir / report_name
-        command = [sys.executable, str(ROOT / "tools" / script_name), "--run-id", run_id, "--report", str(report_path)]
-        completed = subprocess.run(command, cwd=str(ROOT), env=runtime.env, capture_output=True, text=True)
-        payload = _read_json(report_path)
-        passed = bool(payload.get("passed"))
-        _assert(completed.returncode == 0, f"gate {gate_name} exited with {completed.returncode}: {completed.stderr}")
-        _assert(passed, f"gate {gate_name} reported passed=false")
-        gate_results[gate_name] = {
-            "script": script_name,
-            "report_path": str(report_path),
-            "passed": passed,
-            "checked_runs": int(payload.get("checked_runs") or 0),
-            "stdout": completed.stdout,
-            "stderr": completed.stderr,
-        }
+    result = run_gate_reports_for_run(
+        run_id=run_id,
+        report_dir=runtime_root / "gate_reports",
+        database_path=runtime.database_path,
+        storage_dir=runtime.storage_dir,
+        python_executable=sys.executable,
+        require_runs=True,
+    )
+    gate_results = dict(result.get("gate_results") or {})
+    for gate_name, payload in gate_results.items():
+        _assert(bool(payload.get("passed")), f"gate {gate_name} failed: {str(payload.get('stderr') or payload.get('stdout') or '').strip()}")
     return gate_results
 
 

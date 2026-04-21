@@ -1,6 +1,6 @@
 [CmdletBinding(PositionalBinding = $false)]
 param(
-    [ValidateSet("setup", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "validate-nrc-aps-promotion", "validate-nrc-aps-retrieval-cutover", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "compare-nrc-aps-candidate-b", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
+    [ValidateSet("setup", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "refresh-nrc-aps-review-gate-reports", "validate-nrc-aps-promotion", "validate-nrc-aps-retrieval-cutover", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "compare-nrc-aps-candidate-b", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
     [string]$Action = "status",
     [string]$BaseUrl = "http://127.0.0.1:8000",
     [int]$ConsecutiveRuns = 3,
@@ -50,6 +50,7 @@ $NrcApsContextDossierGatePath = Join-Path $RepoRoot "tools\nrc_aps_context_dossi
 $NrcApsDeterministicInsightArtifactGatePath = Join-Path $RepoRoot "tools\nrc_aps_deterministic_insight_artifact_gate.py"
 $NrcApsDeterministicChallengeArtifactGatePath = Join-Path $RepoRoot "tools\nrc_aps_deterministic_challenge_artifact_gate.py"
 $NrcApsDeterministicChallengeReviewPacketGatePath = Join-Path $RepoRoot "tools\nrc_aps_deterministic_challenge_review_packet_gate.py"
+$NrcApsReviewGateRefreshPath = Join-Path $RepoRoot "tools\nrc_aps_refresh_review_gate_reports.py"
 $NrcApsPromotionGatePath = Join-Path $RepoRoot "tools\nrc_aps_promotion_gate.py"
 $NrcApsRetrievalCutoverGatePath = Join-Path $RepoRoot "tools\nrc_aps_retrieval_cutover_gate.py"
 $NrcApsPromotionTuningPath = Join-Path $RepoRoot "tools\nrc_aps_promotion_tuning.py"
@@ -576,6 +577,19 @@ switch ($Action) {
                 "--report", $NrcApsDeterministicChallengeReviewPacketValidationReportPath
             ) -WorkingDirectory $BackendDirAbs
         }
+    }
+    "refresh-nrc-aps-review-gate-reports" {
+        if (-not (Test-Path $NrcApsReviewGateRefreshPath)) {
+            throw "NRC APS review gate refresh script not found: $NrcApsReviewGateRefreshPath"
+        }
+        if ([string]::IsNullOrWhiteSpace($NrcApsRunId)) {
+            throw "NrcApsRunId is required for refresh-nrc-aps-review-gate-reports."
+        }
+        $args = @(
+            $NrcApsReviewGateRefreshPath,
+            "--run-id", $NrcApsRunId
+        ) + $ActionArgs
+        Invoke-Py -Arguments $args -WorkingDirectory $RepoRoot
     }
     "validate-nrc-aps-promotion" {
         if (-not (Test-Path $NrcApsPromotionGatePath)) {
