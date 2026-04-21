@@ -12,8 +12,8 @@ os.environ["DB_INIT_MODE"] = "none"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from tests.review_browser_fixture import capture_review_browser_patch_state, restore_review_browser_patches
-from tests.review_browser_server import create_app
+from review_browser_fixture import capture_review_browser_patch_state, restore_review_browser_patches
+from review_browser_server import create_app
 
 
 @pytest.fixture()
