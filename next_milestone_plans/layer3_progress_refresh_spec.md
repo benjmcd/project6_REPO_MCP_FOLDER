@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice, plus the merged malformed-scoped candidate-discovery closeout from PR `#119`, plus the now-landed context-dossier freeze beyond that landed package-context boundary, plus the now-landed bounded context-dossier handoff implementation slice from PR `#121`, plus the post-PR122 artifact-state fix from PR `#123`, plus the now-landed deterministic-insight continuation freeze from PR `#124`, plus the now-landed deterministic insight handoff implementation slice and narrow deterministic gate hardening from PR `#126`, plus the post-PR126 docs/progress sync from PR `#127`, plus the now-landed deterministic-challenge continuation freeze from PR `#128`, plus the post-PR132 docs/progress sync from PR `#133`, plus the now-landed deterministic challenge review-packet handoff lane from PR `#134`, plus the post-PR134 docs/progress sync from PR `#135`, and the current open validate-only-gates freeze on PR `#136` beyond that landed review-packet boundary.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice, plus the merged malformed-scoped candidate-discovery closeout from PR `#119`, plus the now-landed context-dossier freeze beyond that landed package-context boundary, plus the now-landed bounded context-dossier handoff implementation slice from PR `#121`, plus the post-PR122 artifact-state fix from PR `#123`, plus the now-landed deterministic-insight continuation freeze from PR `#124`, plus the now-landed deterministic insight handoff implementation slice and narrow deterministic gate hardening from PR `#126`, plus the post-PR126 docs/progress sync from PR `#127`, plus the now-landed deterministic-challenge continuation freeze from PR `#128`, plus the post-PR132 docs/progress sync from PR `#133`, plus the now-landed deterministic challenge review-packet handoff lane from PR `#134`, plus the post-PR134 docs/progress sync from PR `#135`, and the now-landed validate-only-gates freeze from PR `#136` beyond that landed review-packet boundary.
 
 ## Canonical Inputs
 
@@ -208,11 +208,11 @@ The current bounded chain on `main` ends at:
 The preserved source-branch rule on current `main` is:
 - dossier input must remain paired export-derived context packets rather than package-derived context
 
-The current open continuation beyond current `main` is:
-- the read-only validate-only-gates freeze rooted in `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` on PR `#136` beyond the now-landed `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze and the now-landed deterministic challenge review-packet handoff
+The current planned continuation beyond current `main` is:
+- the bounded validate-only execution or report-refresh lane beyond the now-landed `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze and the now-landed deterministic challenge review-packet handoff, still pinned to the existing generic review graph, review tree, review-packet gate, and operator surfaces
 
-The next required move beyond that current open freeze is:
-- open the bounded validate-only execution or report-refresh lane, still pinned to the existing generic review graph, review tree, review-packet gate, and operator surfaces
+The next required move is:
+- open that bounded validate-only execution or report-refresh lane without widening promotion, retrieval cutover, route or UI, runtime DB, or schema scope
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`
