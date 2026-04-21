@@ -94,8 +94,9 @@ async function fetchJson(path, params = null) {
 }
 
 function setOverlay(title, message) {
+    const authorityText = buildAuthoritySummaryText();
     els.disabledTitle.textContent = title;
-    els.disabledReason.textContent = message;
+    els.disabledReason.textContent = authorityText ? `${message} Selected authorities: ${authorityText}.` : message;
     els.disabledOverlay.classList.remove('hidden');
     els.compareWorkspace.classList.add('hidden');
 }
@@ -128,8 +129,49 @@ function setOptions(selectEl, items, valueKey, labelKey, currentValue, placehold
     return resolved;
 }
 
+function selectedRunSource(kind) {
+    const list = kind === 'baseline'
+        ? (state.sources?.baseline_runs || [])
+        : (state.sources?.candidate_a_runs || []);
+    const selectedId = kind === 'baseline' ? state.baselineRunId : state.candidateARunId;
+    return list.find((item) => item.run_id === selectedId) || null;
+}
+
+function selectedBundleSource() {
+    const bundles = state.sources?.candidate_b_bundles || [];
+    return bundles.find((item) => item.bundle_id === state.candidateBBundleId) || null;
+}
+
+function formatRuntimeBinding(binding) {
+    if (!binding) {
+        return 'n/a';
+    }
+    const parts = [binding.runtime_label || 'n/a'];
+    if (binding.database_label) parts.push(`db ${binding.database_label}`);
+    if (binding.storage_label) parts.push(`storage ${binding.storage_label}`);
+    return parts.join(' | ');
+}
+
+function buildAuthoritySummaryText() {
+    const parts = [];
+    const baseline = selectedRunSource('baseline');
+    const candidateA = selectedRunSource('candidate_a');
+    const candidateB = selectedBundleSource();
+    parts.push(`baseline ${formatRuntimeBinding(baseline?.runtime_binding || null)}`);
+    parts.push(`candidate A ${formatRuntimeBinding(candidateA?.runtime_binding || null)}`);
+    if (candidateB) {
+        parts.push(`candidate B ${candidateB.display_label || candidateB.bundle_id}`);
+    } else {
+        parts.push('candidate B none selected');
+    }
+    return parts.join(' | ');
+}
+
 function renderIdentitySummary(manifest) {
     const identity = manifest.source_identity;
+    const baseline = selectedRunSource('baseline');
+    const candidateA = selectedRunSource('candidate_a');
+    const candidateB = selectedBundleSource();
     els.identitySummary.innerHTML = `
         <div class="meta-item"><span class="meta-label">Fixture</span><span>${escapeHtml(identity.fixture_id || 'n/a')}</span></div>
         <div class="meta-item"><span class="meta-label">Title</span><span>${escapeHtml(identity.document_title || 'n/a')}</span></div>
@@ -137,6 +179,9 @@ function renderIdentitySummary(manifest) {
         <div class="meta-item"><span class="meta-label">Source</span><span>${escapeHtml(identity.source_file_name || 'n/a')}</span></div>
         <div class="meta-item"><span class="meta-label">Accession</span><span>${escapeHtml(identity.accession_number || 'n/a')}</span></div>
         <div class="meta-item"><span class="meta-label">Document Ref</span><span>${escapeHtml(identity.document_ref || 'n/a')}</span></div>
+        <div class="meta-item"><span class="meta-label">Baseline Runtime</span><span>${escapeHtml(formatRuntimeBinding(baseline?.runtime_binding || null))}</span></div>
+        <div class="meta-item"><span class="meta-label">Candidate A Runtime</span><span>${escapeHtml(formatRuntimeBinding(candidateA?.runtime_binding || null))}</span></div>
+        <div class="meta-item"><span class="meta-label">Candidate B Source</span><span>${escapeHtml(candidateB?.display_label || candidateB?.bundle_id || 'n/a')}</span></div>
     `;
 }
 

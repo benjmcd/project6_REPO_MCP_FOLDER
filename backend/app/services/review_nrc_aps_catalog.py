@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from app.schemas.review_nrc_aps import (
     NrcApsReviewRunSelectorItemOut,
     NrcApsReviewRunSelectorOut,
+    NrcApsReviewRuntimeBindingSummaryOut,
     NrcApsReviewRunSummaryCountersOut,
 )
 from app.services.nrc_aps_contract import parse_iso_datetime
@@ -57,6 +58,14 @@ def _reviewability(summary: dict) -> tuple[bool, str | None]:
 
 def _display_label(run_id: str, binding: ReviewRuntimeBinding, status: str, counters: NrcApsReviewRunSummaryCountersOut) -> str:
     return f"{run_id} | {binding.review_root.name} | {status} | {counters.selected_count} selected / {counters.failed_count} failed"
+
+
+def build_runtime_binding_summary(binding: ReviewRuntimeBinding) -> NrcApsReviewRuntimeBindingSummaryOut:
+    return NrcApsReviewRuntimeBindingSummaryOut(
+        runtime_label=binding.review_root.name,
+        database_label=binding.database_path.name if binding.database_path is not None else None,
+        storage_label=binding.storage_dir.name if binding.storage_dir is not None else None,
+    )
 
 
 def _summary_status(summary: dict) -> str:
@@ -128,6 +137,7 @@ def discover_candidate_runs(_db: object | None = None) -> NrcApsReviewRunSelecto
             reviewable=reviewable and status == "completed",
             disabled_reason_code=None if reviewable and status == "completed" else disabled_reason or "run_not_completed",
             summary_counters=counters,
+            runtime_binding=build_runtime_binding_summary(binding),
         )
         out_runs.append(item)
         if item.reviewable and item.completed_at:
