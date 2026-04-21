@@ -8,6 +8,7 @@ from typing import Any
 
 from app.core.config import settings
 from app.services import nrc_aps_evidence_report
+from app.services import nrc_aps_evidence_report_export
 from app.services import nrc_aps_evidence_report_export_contract as contract
 from app.services import nrc_aps_sync_drift
 
@@ -121,7 +122,7 @@ def validate_evidence_report_export_gate(
         run_id = str(row.get("run_id") or "").strip()
         if not run_id:
             continue
-        scope = f"run_{run_id}"
+        scope = nrc_aps_evidence_report_export.evidence_report_export_scope(run_id)
         export_paths = sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_evidence_report_export_v1.json"))
         failure_paths = sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_evidence_report_export_failure_v1.json"))
         reasons: list[str] = []
