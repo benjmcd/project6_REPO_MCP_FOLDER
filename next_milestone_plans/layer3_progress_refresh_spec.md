@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice, plus the merged malformed-scoped candidate-discovery closeout from PR `#119`, plus the now-landed context-dossier freeze beyond that landed package-context boundary, plus the now-landed bounded context-dossier handoff implementation slice from PR `#121`, plus the post-PR122 artifact-state fix from PR `#123`, plus the now-landed deterministic-insight continuation freeze from PR `#124`.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice, plus the merged malformed-scoped candidate-discovery closeout from PR `#119`, plus the now-landed context-dossier freeze beyond that landed package-context boundary, plus the now-landed bounded context-dossier handoff implementation slice from PR `#121`, plus the post-PR122 artifact-state fix from PR `#123`, plus the now-landed deterministic-insight continuation freeze from PR `#124`, plus the current branch-only deterministic insight handoff implementation slice and narrow deterministic gate hardening beyond that landed freeze.
 
 ## Canonical Inputs
 
@@ -78,6 +78,8 @@ When present in the current checkout, also read:
 - `backend/app/services/nrc_aps_deterministic_insight_artifact_contract.py`
 - `backend/app/services/nrc_aps_deterministic_insight_artifact.py`
 - `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`
+- `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py`
+- `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`
 - `backend/app/services/review_nrc_aps_graph.py`
 - `backend/tests/test_layer3_aps_context_packet_handoff.py`
 - `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
@@ -129,6 +131,7 @@ Any external live artifact or dashboard must also obey:
    - and, when present in the current checkout, the landed `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze plus the live dossier family surfaces rooted in `backend/app/services/nrc_aps_context_dossier_contract.py`, `backend/app/services/nrc_aps_context_dossier.py`, `backend/app/services/nrc_aps_context_dossier_gate.py`, and `backend/app/services/review_nrc_aps_graph.py`
    - and, when present in the current checkout, the landed bounded dossier handoff owner/proof surfaces rooted in `backend/app/services/layer3_aps_context_dossier_handoff.py` and `backend/tests/test_layer3_aps_context_dossier_handoff.py`
    - and, when present in the current checkout, the landed `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze plus the live deterministic insight family surfaces rooted in `backend/app/services/nrc_aps_deterministic_insight_artifact_contract.py`, `backend/app/services/nrc_aps_deterministic_insight_artifact.py`, `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`, and `backend/app/services/review_nrc_aps_graph.py`
+   - and, when present in the current checkout, the branch-local deterministic insight handoff owner/proof surfaces rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`
 7. For each milestone:
    - update PR state from GitHub
    - update merge commit from GitHub
@@ -184,12 +187,13 @@ The current bounded chain on `main` ends at:
 - the post-PR121 docs/progress closeout from PR `#122`
 - the post-PR122 artifact-state fix from PR `#123`
 - the landed read-only deterministic-insight continuation freeze from PR `#124`
+- and, in branch-local artifact surfaces when present, the bounded deterministic insight handoff implementation slice plus narrow deterministic gate hardening beyond that landed freeze
 
 The preserved source-branch rule on current `main` is:
 - dossier input must remain paired export-derived context packets rather than package-derived context
 
 The next required move beyond current `main` is:
-- open the bounded write-enabled deterministic insight handoff lane for the first deterministic continuation beyond the landed `context_dossier` handoff, rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`
+- land the current branch-only bounded deterministic insight handoff lane for the first deterministic continuation beyond the landed `context_dossier` handoff, rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`
