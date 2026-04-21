@@ -65,6 +65,9 @@ And to the bounded Gate D APS review-packet handoff lane now landed on current `
 - `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`
 - `backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py`
 
+And to the current open-PR Gate D APS validate-only-gates continuation freeze packet for the bounded next verification continuation beyond the landed review-packet boundary:
+- `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
+
 This README is operational and navigational.
 If it conflicts with the stronger frozen control docs, the control docs govern.
 
@@ -108,6 +111,7 @@ The lane now contains:
 - current `main` now also includes the bounded Gate D APS deterministic-challenge handoff implementation slice rooted in `backend/app/services/layer3_aps_deterministic_challenge_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_challenge_artifact_handoff.py`, plus the narrow deterministic challenge gate hardening in `backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py`; that landed lane keeps one persisted deterministic insight artifact as the immediate source boundary and still does not mean later review-packet fan-out, validate-only expansion, route/UI, runtime DB, or schema widening have landed on current `main`
 - current `main` now also includes the read-only Gate D APS deterministic challenge review-packet continuation freeze packet rooted in `next_milestone_plans/Layer3_planning_docs/20_GATED_APS_REVIEW_PACKET_FREEZE.md`; it selects `deterministic_challenge_review_packet` as the exact next deterministic continuation beyond the landed deterministic-challenge boundary while keeping validate-only gates later
 - current `main` now also includes the bounded Gate D APS deterministic challenge review-packet handoff implementation slice rooted in `backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py`, plus the narrow review-packet gate hardening in `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`; that landed lane keeps one persisted deterministic challenge artifact as the immediate source boundary and still does not admit validate-only expansion, route/UI, runtime DB, or schema widening
+- current open PR `#136` now carries the read-only Gate D APS validate-only-gates continuation freeze packet rooted in `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`; it selects `validate_only_gates` as the exact next verification continuation beyond the landed review-packet handoff while keeping validate-only execution/report refresh, promotion, retrieval cutover, route/UI, runtime DB, and schema widening later
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -146,6 +150,7 @@ Current bounded posture:
 - current `main` now also includes the bounded `aps_deterministic_challenge_artifact_handoff` lane from PR `#130`, rooted in `backend/app/services/layer3_aps_deterministic_challenge_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_challenge_artifact_handoff.py`, plus the narrow deterministic challenge gate hardening in `backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py`; that landed lane preserves one persisted deterministic insight artifact as the immediate source boundary, leaves `ConnectorRun.query_plan_json` untouched, and does not admit later deterministic review-packet fan-out, validate-only expansion, route/UI, runtime DB, or schema widening by itself
 - current `main` now also includes the read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze selecting `deterministic_challenge_review_packet` as the exact next deterministic continuation beyond the landed deterministic-challenge boundary; it does not mean review-packet implementation or validate-only surfaces have landed on current `main`
 - current `main` now also includes the bounded `aps_deterministic_challenge_review_packet_handoff` lane rooted in `backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py` and `backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py`, plus the narrow review-packet gate hardening in `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`; that landed lane preserves one persisted deterministic challenge artifact as the immediate source boundary and still does not admit validate-only expansion, route/UI, runtime DB, or schema widening by itself
+- current branch now also includes the read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze selecting `validate_only_gates` as the next verification continuation beyond the landed review-packet handoff while making explicit that current `main` still has generic gate-report validate-only surfaces rather than a dedicated validate-only family-specific runtime stack
 
 The active REV2 control docs in this pack have also been re-audited against current `main` after the repo-root analyst-insight page, alias-router, static-asset, and runtime-helper surfaces landed. Treat the REV1 artifacts and the REV1-to-REV2 correction memo as historical context only.
 
@@ -204,8 +209,14 @@ Read this after `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` if you need the now-lan
 - `backend/tests/test_layer3_aps_context_packet_handoff.py`
 - `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
 
-Read this after `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` if you need the current open-PR contract for the next deterministic continuation beyond the landed deterministic-insight boundary:
+Read this after `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` if you need the governing contract for the now-landed next deterministic continuation beyond the landed deterministic-insight boundary:
 - `Layer3_planning_docs/19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md`
+
+Read this after `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` if you need the governing contract for the now-landed next deterministic continuation beyond the landed deterministic-challenge boundary:
+- `Layer3_planning_docs/20_GATED_APS_REVIEW_PACKET_FREEZE.md`
+
+Read this after `20_GATED_APS_REVIEW_PACKET_FREEZE.md` if you need the current open read-only validate-only-gates freeze on PR `#136` beyond the now-landed deterministic challenge review-packet handoff:
+- `Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
 ### 2. Execution handoff
 
