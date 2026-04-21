@@ -25,16 +25,16 @@ Applied authority order for this document:
 9. `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
 10. historical Phase 1A REV1 artifacts as context only
 
-Current merged-state note:
+Current upstream merged-state note:
 - current `main` now includes the bounded `aps_deterministic_challenge_review_packet_handoff` slice rooted in `backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py` and `backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py`
 - current `main` now also includes the landed read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze from PR `#136`, the bounded generic validate-only gate-report refresh lane from PR `#138`, the landed read-only `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` freeze from PR `#140`, and the bounded dedicated validate-only runtime/report-ref implementation slice from PR `#143`
 - the live downstream graph on current `main` still ends the bounded tracked chain at `validate_only_gates`
 - current `main` already contains concrete later-family surfaces for promotion governance and retrieval cutover proof, but no later post-validate-only freeze has yet landed on current `main`
 
-Current open-PR note:
-- open PR `#145` carries the read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze selecting promotion governance as the next bounded later family beyond the landed validate-only runtime/report-ref boundary
-- open PR `#145` keeps retrieval cutover later
-- open PR `#145` does not admit promotion implementation changes, retrieval cutover changes, route/UI widening, runtime DB writes, or schema widening
+Current merged-state note:
+- current `main` now also includes this landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, selecting promotion governance as the next bounded later family beyond the landed validate-only runtime/report-ref boundary
+- current `main` keeps retrieval cutover later
+- this landed freeze still does not admit promotion implementation changes, retrieval cutover changes, route/UI widening, runtime DB writes, or schema widening
 
 Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md|artifact|current governing freeze for the landed dedicated validate_only runtime/report-ref boundary`; `R|backend/app/services/review_nrc_aps_graph.py|Live downstream graph still ends the bounded tracked chain at validate_only_gates and does not define a later named post-validate-only node|38-45;67-72;87-92;108-113`; `R|backend/app/services/nrc_aps_validate_only_gates_contract.py|Current dedicated validate-only contract surface already landed on current \`main\`|1-203`; `R|backend/app/services/nrc_aps_validate_only_gates.py|Current dedicated validate-only runtime surface already landed on current \`main\`|1-508`; `R|backend/app/services/nrc_aps_validate_only_gates_gate.py|Current dedicated validate-only gate surface already landed on current \`main\`|1-264`; `R|backend/tests/test_nrc_aps_validate_only_gates.py|Current dedicated validate-only proof surface already landed on current \`main\`|1-277`; `R|backend/app/services/nrc_aps_promotion_gate.py|Current promotion governance family already exists on current \`main\`, including policy loading, governance evaluation, and validation entrypoints|14-19;174-182;518-727`; `R|tests/test_nrc_aps_promotion_gate.py|Current promotion governance proof surface already exists on current \`main\`|136-205`; `R|backend/app/services/nrc_aps_promotion_tuning.py|Current promotion policy comparison and rationale surface already exists on current \`main\`|15-22;106-205`; `R|tests/test_nrc_aps_promotion_tuning.py|Current promotion tuning proof surface already exists on current \`main\`|110-177`; `R|backend/app/services/aps_retrieval_plane_cutover_validation.py|Current retrieval cutover family is a separate parity-proof surface over retrieval materialization and canonical payload comparison|20-27;164-340`; `R|backend/tests/test_aps_retrieval_plane_cutover_validation.py|Current retrieval cutover proof surface already exists on current \`main\`|193-316`; `R|backend/tests/test_aps_retrieval_plane_cutover_gate.py|Current retrieval cutover CLI gate proof surface already exists on current \`main\`|187-196`; `R|tools/nrc_aps_retrieval_cutover_gate.py|Current retrieval cutover CLI wrapper already exists on current \`main\`|1-12`; `R|project6.ps1|Current operator entrypoints already expose validate-only, promotion, and retrieval-cutover actions, with promotion and retrieval cutover kept distinct|3-3;56-58;628-679`
 
@@ -98,7 +98,7 @@ Frozen target rule:
 - the first later post-validate-only family is settled in favor of promotion governance
 - do not reopen that ordering unless live repo truth changes materially
 - do not invent a separate repo-backed validate-only top-chain family without direct repo evidence
-- this open freeze still does not admit promotion implementation changes, retrieval cutover changes, route/UI widening, runtime DB writes, or schema widening
+- this landed freeze still does not admit promotion implementation changes, retrieval cutover changes, route/UI widening, runtime DB writes, or schema widening
 
 ### 2. Source-boundary rule
 
@@ -179,9 +179,9 @@ Reason:
 - the live downstream graph stops at `validate_only_gates`
 - promotion governance is the clearest concrete later family already present on current `main`
 - retrieval cutover is present too, but as a separate later parity-proof family
-- this branch therefore freezes the first later family choice without widening implementation scope
+- this freeze therefore records the first later family choice without widening implementation scope
 
-What still remains intentionally deferred after this open read-only freeze:
+What still remains intentionally deferred after this landed read-only freeze:
 - retrieval cutover
 - route/UI widening
 - runtime DB writes or migrations
