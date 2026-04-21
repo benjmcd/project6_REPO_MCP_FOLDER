@@ -133,24 +133,25 @@ The following are already landed on current `main` and should no longer be treat
 - read-only runtime DB access
 - runtime DB required-table compatibility checks
 - direct test coverage for runtime DB session safety rails
+- operator-safe runtime binding summaries in the review run catalog and compare run sources
+- runtime, DB, and storage authority labeling in the shipped review and document-trace identity surfaces
+- selected-source authority labeling in the shipped workbench compare identity surface and compare-unavailable overlay path
 
-### Phase 4: Improve Review/Document-Trace Transparency
+### Phase 4: Review/Document-Trace Transparency Is Now Landed
 
-Objective:
+Current landed scope:
 
-- make runtime identity and state clearer in the frontend/UI
+- review exposes runtime, DB, and storage authority in the run identity bar
+- document trace exposes runtime, DB, and storage authority in the identity summary for the selected run/target
+- workbench compare exposes baseline runtime, Candidate A runtime, and Candidate B source authority in the identity summary
+- compare-unavailable state now carries selected-source authority instead of leaving runtime provenance implicit
 
-Examples:
+Verification result:
 
-- stronger run labels
-- clearer current-run/current-target identity
-- explicit empty/missing/not-reviewable messaging
-- clearer trace-state communication when source, diagnostics, chunks, or extracted units are absent
-
-Acceptance criteria:
-
-- switching runs/documents does not leave stale ambiguity in the UI
-- operators can tell what runtime they are viewing without checking server startup history
+- headed Chrome and headless Chrome now both show matching runtime identity on the runtime-backed review/document-trace surfaces
+- headed Chrome and headless Chrome now both show matching selected-source authority on the runtime-backed compare-unavailable path
+- the compare-available identity band is browser-proved in the repo's fixture-backed review-browser harness, not inferred from static tests alone
+- operators can now tell what runtime they are viewing without checking server startup history
 
 ### Phase 5: Optimize Document Trace Data Paths
 
@@ -196,26 +197,32 @@ Therefore:
 
 ## Immediate Recommended Action Tree
 
-### 1. Verification Step
+### 1. Verification Result On Current `main`
 
-Verify whether operators can already tell, from the shipped review/document-trace/workbench surfaces alone:
+The runtime-identity clarity gate has now been rerun against current `main`.
+
+Verified operator-visible facts:
 
 - which runtime is selected
 - which target/document is selected
 - which runtime DB/storage pair is authoritative for the current view
-- why a trace surface is empty, unavailable, or not reviewable
+- why a compare surface is unavailable when Candidate B source coverage is incomplete
 
-### 2. If Verification Passes
+Scope boundary:
 
-If the shipped review/document-trace/workbench surfaces already make runtime identity and failure states adequately explicit, stop and do not open another lane from this document by default.
+- runtime-backed browser proof covered review, document trace, and compare-unavailable
+- fixture-backed browser proof covered the compare-available identity band
 
-### 3. If Verification Fails
+### 2. Default Next Step
 
-Make the next implementation pass a bounded transparency or ergonomics pass:
+Stop and do not open another lane from this document by default.
 
-- improve runtime identity labeling
-- improve empty/missing/not-reviewable messaging
-- add narrow runtime-binding introspection only where the current shipped surface leaves real ambiguity
+### 3. Reopen Rule
+
+Only reopen a bounded follow-up if:
+
+- a new browser/operator repro proves remaining runtime-identity ambiguity, or
+- measured evidence justifies the Phase 5 data-path optimization work
 
 ## Residual Risks
 
@@ -227,8 +234,10 @@ Make the next implementation pass a bounded transparency or ergonomics pass:
 
 The next implementation should not be "optimize the DB" in the abstract.
 
-The next implementation, if a real gap is proven, should be:
+Current `main` now has the runtime-centric shift and the bounded transparency pass.
+
+The next implementation, if a real gap is later proven, should be:
 
 1. keep current `main` as the authority baseline
-2. improve review/document-trace/workbench transparency or operator ergonomics additively
+2. avoid reopening transparency work unless a concrete browser/operator ambiguity is reproduced
 3. only then do targeted data-path optimization if measured evidence justifies it
