@@ -48,6 +48,12 @@ And to the carried-forward Gate D APS export-package first shared-consumer freez
 And to the carried-forward Gate D APS package-derived-context continuation freeze packet now landed on current `main` for the bounded next shared APS family beyond the landed export-package boundary:
 - `next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
 
+And to the carried-forward Gate D APS context-dossier continuation freeze packet now landed on current `main` for the bounded next later shared APS family beyond the landed package-context boundary:
+- `next_milestone_plans/Layer3_planning_docs/17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md`
+
+And to the current branch-local Gate D APS deterministic-insight continuation freeze packet for the bounded first deterministic continuation beyond the landed dossier boundary:
+- `next_milestone_plans/Layer3_planning_docs/18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md`
+
 This README is operational and navigational.
 If it conflicts with the stronger frozen control docs, the control docs govern.
 
@@ -85,6 +91,7 @@ The lane now contains:
 - current `main` now also includes the bounded Gate D APS package-derived context handoff implementation slice rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py` and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`, plus the now-landed malformed-scoped candidate-discovery hardening across `backend/app/services/nrc_aps_evidence_report_export_gate.py`, `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`, and `backend/app/services/nrc_aps_context_packet_gate.py`; this still does not mean broader package-derived context, `context_dossier`, deterministic fan-out, route/UI, runtime DB, or schema widening have landed
 - current `main` now also includes the read-only Gate D APS context-dossier freeze packet rooted in `next_milestone_plans/Layer3_planning_docs/17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md`; it settles `context_dossier` as the next later shared APS family after the landed package-context milestone while preserving paired export-derived context packets as dossier inputs, but it still does not mean `context_dossier` implementation, deterministic fan-out, route/UI, runtime DB, or schema widening have landed on current `main`
 - current `main` now also includes the bounded Gate D APS context-dossier handoff implementation slice rooted in `backend/app/services/layer3_aps_context_dossier_handoff.py` and `backend/tests/test_layer3_aps_context_dossier_handoff.py`, plus the narrow dossier-gate scope hardening in `backend/app/services/nrc_aps_context_dossier_gate.py`; that landed lane preserves paired export-derived context packets as dossier inputs and still does not mean deterministic fan-out, route/UI, runtime DB, or schema widening have landed
+- current branch now also includes the read-only Gate D APS deterministic-insight continuation freeze packet rooted in `next_milestone_plans/Layer3_planning_docs/18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md`; it selects `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary without admitting deterministic implementation, challenge/review-packet fan-out, route/UI, runtime DB, or schema widening, and it has not landed on current `main` yet
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -117,6 +124,7 @@ Current bounded posture:
 - current `main` now also includes the bounded package-derived context handoff slice rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py` and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`, plus the now-landed malformed-scoped candidate-discovery hardening across `backend/app/services/nrc_aps_evidence_report_export_gate.py`, `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`, and `backend/app/services/nrc_aps_context_packet_gate.py`; it still does not mean broader package-derived context, `context_dossier`, deterministic, or schema surfaces have landed
 - current `main` now also includes the read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze selecting `context_dossier` as the next later shared APS family after the landed package-context milestone while preserving paired export-derived context packets as dossier inputs; it does not mean `context_dossier` implementation, deterministic, or schema surfaces have landed on current `main`
 - current `main` now also includes the bounded `aps_context_dossier_handoff` slice rooted in `backend/app/services/layer3_aps_context_dossier_handoff.py`, plus the narrow dossier-gate scope hardening in `backend/app/services/nrc_aps_context_dossier_gate.py`; that landed lane keeps paired export-derived context packets as dossier inputs and does not admit deterministic fan-out by itself
+- current branch now also includes the read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze selecting `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary; it does not mean deterministic implementation, challenge/review-packet fan-out, or schema surfaces have landed on current `main`
 
 The active REV2 control docs in this pack have also been re-audited against current `main` after the repo-root analyst-insight page, alias-router, static-asset, and runtime-helper surfaces landed. Treat the REV1 artifacts and the REV1-to-REV2 correction memo as historical context only.
 
@@ -298,6 +306,18 @@ It is the narrow frozen contract that governs the now-landed read-only choice on
 This document is outside the accepted Phase 1A normative control spine.
 It is the carried-forward read-only freeze now landed on current `main` that selects package-derived context packet as the next later shared APS family beyond the already-landed export-package boundary, and it does not itself imply that package-derived context implementation, `context_dossier`, deterministic, or schema surfaces have landed on current `main`:
 - `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
+
+### Post-Phase 1A carried-forward APS context-dossier continuation freeze packet
+
+This document is outside the accepted Phase 1A normative control spine.
+It is the carried-forward read-only freeze now landed on current `main` that selects `context_dossier` as the next later shared APS family beyond the already-landed package-context boundary while preserving paired export-derived context packets as dossier inputs, and it does not itself imply that deterministic, review-packet, or schema surfaces have landed on current `main`:
+- `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md`
+
+### Post-Phase 1A carried-forward APS deterministic-insight continuation freeze packet
+
+This document is outside the accepted Phase 1A normative control spine.
+It is the current branch-local read-only freeze that selects `deterministic_insight_artifact` as the first deterministic continuation beyond the already-landed dossier boundary, and it does not itself imply that deterministic implementation, challenge/review-packet fan-out, or schema surfaces have landed on current `main`:
+- `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md`
 
 ## Current use guidance
 
