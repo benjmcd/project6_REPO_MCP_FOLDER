@@ -58,14 +58,14 @@ As of `2026-04-21`:
 - current `main` now also includes the post-PR128 docs/progress sync from PR `#129`
 - current `main` now also includes the bounded deterministic challenge handoff implementation slice from PR `#130`, rooted in `backend/app/services/layer3_aps_deterministic_challenge_artifact_handoff.py`, `backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py`, and `backend/tests/test_layer3_aps_deterministic_challenge_artifact_handoff.py`
 - current `main` now also includes the post-PR130 docs/progress sync from PR `#131`
-- current branch now carries open PR `#132` for the read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze selecting `deterministic_challenge_review_packet` as the next deterministic continuation beyond the now-landed deterministic challenge handoff
+- current `main` now also includes the landed read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze from PR `#132`, selecting `deterministic_challenge_review_packet` as the next deterministic continuation beyond the now-landed deterministic challenge handoff
 
 ## Program State Summary
 
-- Done now on `main`: 22 merged milestones from Phase 1A feeder-ledger foundation through the landed APS deterministic-challenge handoff
-- Current focus: the open read-only deterministic challenge review-packet continuation freeze on PR `#132` beyond the now-landed deterministic challenge handoff
-- Candidate next consumers: `deterministic_challenge_review_packet` is the current open continuation focus; validate-only gates remain later
-- Deferred but not active: 9 explicitly deferred scope items remain out until later freezes admit them
+- Done now on `main`: 23 merged milestones from Phase 1A feeder-ledger foundation through the landed APS deterministic challenge review-packet continuation freeze
+- Current focus: the planned bounded deterministic challenge review-packet handoff lane beyond the now-landed review-packet freeze
+- Candidate next consumers: `deterministic_challenge_review_packet` is the current planned handoff focus; validate-only gates remain later
+- Deferred but not active: 8 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Status
 
@@ -93,7 +93,8 @@ As of `2026-04-21`:
 | APS deterministic-insight handoff | merged | `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` | `#126` | Landed bounded implementation slice rooted in `layer3_aps_deterministic_insight_artifact_handoff.py`, plus narrow deterministic gate hardening in `nrc_aps_deterministic_insight_artifact_gate.py`; one persisted dossier source boundary is preserved, `ConnectorRun.query_plan_json` stays untouched, and later deterministic fan-out remains out |
 | APS deterministic-challenge continuation freeze | merged | `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` | `#128` | Landed read-only freeze on current `main` selects `deterministic_challenge_artifact` as the next deterministic continuation beyond the landed deterministic-insight boundary without yet admitting implementation, challenge-review-packet fan-out, validate-only expansion, route/UI widening, runtime DB writes, or schema widening |
 | APS deterministic-challenge handoff | merged | `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` | `#130` | Landed bounded implementation slice rooted in `layer3_aps_deterministic_challenge_artifact_handoff.py`, plus narrow deterministic challenge gate hardening in `nrc_aps_deterministic_challenge_artifact_gate.py`; one persisted deterministic insight artifact remains the immediate source boundary and later deterministic fan-out stays out |
-| APS deterministic challenge review-packet continuation freeze | open | `20_GATED_APS_REVIEW_PACKET_FREEZE.md` | `#132` | Open read-only freeze selects `deterministic_challenge_review_packet` as the next deterministic continuation beyond the landed deterministic challenge handoff; later write-enabled review-packet handoff and validate-only expansion remain later |
+| APS deterministic challenge review-packet continuation freeze | merged | `20_GATED_APS_REVIEW_PACKET_FREEZE.md` | `#132` | Landed read-only freeze selects `deterministic_challenge_review_packet` as the next deterministic continuation beyond the landed deterministic challenge handoff; later write-enabled review-packet handoff and validate-only expansion remain later |
+| APS deterministic challenge review-packet handoff | planned | `20_GATED_APS_REVIEW_PACKET_FREEZE.md` | `next lane` | Planned bounded handoff lane will center on `layer3_aps_deterministic_challenge_review_packet_handoff.py` and `test_layer3_aps_deterministic_challenge_review_packet_handoff.py`, while reusing the already-landed review-packet contract/runtime/gate family on current `main` and still keeping validate-only expansion later |
 
 ## What Is Complete
 
@@ -134,7 +135,7 @@ flowchart LR
 
 ## Next Required Decision
 
-The immediate required move is now to review and merge open PR `#132`, the read-only `deterministic_challenge_review_packet` continuation freeze beyond the now-landed `deterministic_challenge_artifact` handoff.
+The immediate required move is now to open the bounded write-enabled `deterministic_challenge_review_packet` handoff lane beyond the now-landed `deterministic_challenge_artifact` boundary and the now-landed review-packet freeze.
 
 Current bounded selection state:
 - selected first consumer on current `main`: `evidence_report_export_package`
@@ -150,8 +151,8 @@ Current bounded selection state:
 - landed deterministic handoff implementation: PR `#126` for `aps_deterministic_insight_artifact_handoff`
 - landed next freeze target: PR `#128` for `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md`
 - landed bounded handoff implementation: PR `#130` for `deterministic_challenge_artifact`
-- current open next freeze target: PR `#132` for `20_GATED_APS_REVIEW_PACKET_FREEZE.md`
-- current open continuation target: `deterministic_challenge_review_packet`
+- landed next freeze target: PR `#132` for `20_GATED_APS_REVIEW_PACKET_FREEZE.md`
+- current planned continuation target: `deterministic_challenge_review_packet` handoff
 - later after that: `validate_only_gates`
 
 Hard rule:
@@ -162,16 +163,17 @@ The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current main after deterministic challenge handoff landing"] --> B["Open deterministic challenge review-packet freeze"]
-    B --> C["Deterministic challenge review packet"]
+    A["Current main after deterministic challenge handoff landing"] --> B["Landed deterministic challenge review-packet freeze"]
+    B --> C["Planned deterministic challenge review-packet handoff"]
     C --> D["Validate-only gates"]
 
     classDef done fill:#d8f5d0,stroke:#2f6b2f,color:#111;
-    classDef open fill:#fff1bf,stroke:#9a6b00,color:#111;
+    classDef planned fill:#fff1bf,stroke:#9a6b00,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
 
     class A done;
-    class B open;
+    class B done;
+    class C planned;
     class C,D future;
 ```
 
