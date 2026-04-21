@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and malformed-scoped APS gate hardening follow-up that follow that landed freeze.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and malformed-scoped APS gate hardening follow-up that follow that landed freeze, plus the current branch-local context-dossier freeze beyond that landed package-context boundary.
 
 ## Canonical Inputs
 
@@ -31,7 +31,7 @@ Current tracked PR set:
 - `#97`, `#98`, `#99`
 - `#100`, `#101`, `#102`
 - `#106`, `#107`, `#108`, `#109`
-- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`
+- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`
 
 Hard rule:
 - never mark a step as landed on `main` from repo docs alone if the GitHub PR is still open
@@ -68,8 +68,13 @@ Also read:
 
 When present in the current checkout, also read:
 - `next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md`
 - `backend/app/services/layer3_aps_context_packet_package_handoff.py`
 - `backend/app/services/nrc_aps_context_packet_gate.py`
+- `backend/app/services/nrc_aps_context_dossier_contract.py`
+- `backend/app/services/nrc_aps_context_dossier.py`
+- `backend/app/services/nrc_aps_context_dossier_gate.py`
+- `backend/app/services/review_nrc_aps_graph.py`
 - `backend/tests/test_layer3_aps_context_packet_handoff.py`
 - `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
 
@@ -82,7 +87,7 @@ Discovery rule:
 - if multiple clean checkouts exist, prefer the one matching current `main` for merged repo truth, or the one carrying the declared branch-only milestone when the manifest says a branch-only step is in scope
 
 Seed path used when this artifact pack was authored:
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-pkgctx-sync`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-dossier-freeze`
 
 Do not treat the dirty root checkout at:
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER`
@@ -117,6 +122,7 @@ Any external live artifact or dashboard must also obey:
    - and, when present in the current checkout, the bounded export-package handoff owner surfaces rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
    - and the now-landed package-derived-context freeze rooted in `next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
    - and the landed package-derived context owner/proof surfaces rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py`, `backend/app/services/nrc_aps_context_packet_gate.py`, `backend/tests/test_layer3_aps_report_export_handoff.py`, `backend/tests/test_layer3_aps_context_packet_handoff.py`, and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
+   - and, when present in the current checkout, the branch-local `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze plus the live dossier family surfaces rooted in `backend/app/services/nrc_aps_context_dossier_contract.py`, `backend/app/services/nrc_aps_context_dossier.py`, `backend/app/services/nrc_aps_context_dossier_gate.py`, and `backend/app/services/review_nrc_aps_graph.py`
 7. For each milestone:
    - update PR state from GitHub
    - update merge commit from GitHub
@@ -167,10 +173,12 @@ The current bounded chain on `main` ends at:
 - the landed APS package-derived context handoff slice beyond the landed export-package handoff boundary
 - the malformed-scoped APS gate hardening follow-up that keeps the export, export-package, and context-packet gates fail-closed on malformed scoped artifacts
 
-No active branch-only or open milestone is currently tracked beyond that landed `main` boundary.
+The current branch/workspace now also carries:
+- the read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze selecting `context_dossier` as the next later shared APS family after the landed package-context milestone
+- the preserved source-branch rule that dossier input must remain paired export-derived context packets rather than package-derived context
 
 The next required move beyond current `main` is:
-- open a fresh read-only freeze for `context_dossier`
+- land the branch-local read-only `context_dossier` freeze already present in the active checkout
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`
@@ -186,6 +194,7 @@ These are not both still open candidates in the same way:
 - `aps_evidence_report_export_package_handoff` is now landed on current `main`
 - package-derived context packet is now landed on current `main` as the next write-enabled shared-family target after that landed handoff boundary, and current `main` also includes the malformed-scoped APS gate hardening follow-up
 - `context_dossier` remains later and not first
+- the current branch-local dossier freeze keeps paired export-derived context packets as the live dossier input branch and must not be refreshed into package-derived dossier input claims
 
 ## Schedule Guidance
 
