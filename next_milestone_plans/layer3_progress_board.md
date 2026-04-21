@@ -3,7 +3,7 @@
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
-It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and the now-landed malformed-scoped candidate-discovery closeout beyond that landed package-context boundary, plus the now-landed read-only context-dossier freeze that preserves paired export-derived context packets as dossier inputs, plus the now-landed bounded context-dossier handoff implementation slice and its docs/progress sync on current `main`, plus the now-landed read-only deterministic-insight continuation freeze on current `main` beyond the landed dossier boundary, plus the now-landed bounded deterministic insight handoff implementation slice and narrow deterministic gate hardening beyond that landed freeze, plus the now-landed read-only deterministic-challenge continuation freeze on current `main` beyond that landed deterministic-insight boundary, plus the now-landed bounded deterministic challenge handoff implementation slice, plus the now-landed deterministic challenge review-packet continuation freeze and bounded review-packet handoff implementation slice, plus the now-landed validate-only-gates freeze from PR `#136`, its docs/progress sync from PR `#137`, the now-landed bounded validate-only gate-report refresh lane from PR `#138` plus its docs/progress sync from PR `#139` beyond that landed review-packet boundary, and the now-landed dedicated validate-only runtime/report-ref continuation freeze from PR `#140` beyond that landed generic boundary.
+It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and the now-landed malformed-scoped candidate-discovery closeout beyond that landed package-context boundary, plus the now-landed read-only context-dossier freeze that preserves paired export-derived context packets as dossier inputs, plus the now-landed bounded context-dossier handoff implementation slice and its docs/progress sync on current `main`, plus the now-landed read-only deterministic-insight continuation freeze on current `main` beyond the landed dossier boundary, plus the now-landed bounded deterministic insight handoff implementation slice and narrow deterministic gate hardening beyond that landed freeze, plus the now-landed read-only deterministic-challenge continuation freeze on current `main` beyond that landed deterministic-insight boundary, plus the now-landed bounded deterministic challenge handoff implementation slice, plus the now-landed deterministic challenge review-packet continuation freeze and bounded review-packet handoff implementation slice, plus the now-landed validate-only-gates freeze from PR `#136`, its docs/progress sync from PR `#137`, the now-landed bounded validate-only gate-report refresh lane from PR `#138` plus its docs/progress sync from PR `#139` beyond that landed review-packet boundary, and the now-landed dedicated validate-only runtime/report-ref continuation freeze from PR `#140` beyond that landed generic boundary, and the now-landed bounded dedicated validate-only runtime/report-ref implementation slice from PR `#143`.
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger entry through APS multisource admission
 - the now-landed docs-only closeout that followed multisource landing
@@ -75,14 +75,14 @@ As of `2026-04-21`:
 - current `main` now also includes the read-only `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` freeze from PR `#140`, selecting the dedicated validate-only family-specific runtime/report-ref decision as the next bounded continuation beyond that landed generic gate-report boundary
 - current `main` now also includes the post-PR140 docs/progress sync from PR `#141`
 - current `main` now also includes the post-PR141 docs/progress sync from PR `#142`
-- open PR `#143` now carries the bounded dedicated validate-only runtime/report-ref implementation lane selected by that landed freeze while keeping it unmerged on current `main`
+- current `main` now also includes the bounded dedicated validate-only runtime/report-ref implementation lane from PR `#143`, selected by that landed freeze and now merged on current `main`
 
 ## Program State Summary
 
-- Done now on `main`: 27 merged milestones from Phase 1A feeder-ledger foundation through the landed APS dedicated validate-only runtime/report-ref continuation freeze beyond the validate-only gate-report refresh lane
-- Current focus: merge open PR `#143`, which carries the bounded dedicated validate-only runtime/report-ref implementation lane selected by the landed freeze from PR `#140`
-- Candidate next consumers: the landed `validate_only_gates` family choice and the landed dedicated validate-only runtime/report-ref freeze are both complete on current `main`; the active bounded continuation is now the open implementation lane in PR `#143`
-- Deferred but not active: 8 explicitly deferred scope items remain out until later freezes admit them
+- Done now on `main`: 28 merged milestones from Phase 1A feeder-ledger foundation through the landed APS dedicated validate-only runtime/report-ref implementation lane beyond the validate-only gate-report refresh lane
+- Current focus: no later post-validate-only continuation is admitted on current `main` yet; if work resumes beyond the landed dedicated validate-only runtime/report-ref boundary, first settle a fresh read-only freeze
+- Candidate next consumers: none are admitted on current `main` yet beyond the landed dedicated validate-only runtime/report-ref boundary; later validate-only top-chain expansion, promotion, and retrieval cutover still require a new freeze
+- Deferred but not active: 10 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Status
 
@@ -115,7 +115,7 @@ As of `2026-04-21`:
 | APS validate-only-gates continuation freeze | merged | `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` | `#136`, `#137` | Landed read-only freeze on current `main` from PR `#136`, plus its docs/progress sync from PR `#137`, selects `validate_only_gates` as the next verification continuation beyond the landed deterministic challenge review-packet handoff while making explicit that current `main` still relies on generic gate-report surfaces rather than a dedicated validate-only runtime family |
 | APS validate-only gate-report refresh lane | merged | `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` | `#138` | Landed bounded validate-only lane is rooted in `review_nrc_aps_gate_reports.py`, `nrc_aps_refresh_review_gate_reports.py`, `run_nrc_aps_local_corpus_e2e.py`, `test_review_nrc_aps_gate_reports.py`, and `project6.ps1`; it refreshes one adopted review runtime's `gate_reports` plus `summary.gate_results` without promotion, retrieval cutover, route/UI, runtime DB, schema, or dedicated validate-only runtime-family widening |
 | APS dedicated validate-only runtime/report-ref continuation freeze | merged | `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` | `#140`, `#141`, `#142` | Landed read-only freeze from PR `#140` selects the dedicated validate-only family-specific runtime/report-ref decision as the next bounded continuation beyond the landed generic gate-report refresh lane while still excluding implementation, promotion, retrieval cutover, route/UI, runtime DB, and schema widening; post-PR140 docs/progress sync from PR `#141` and post-PR141 docs/progress sync from PR `#142` are also landed on current `main` |
-| APS dedicated validate-only runtime/report-ref implementation lane | open | `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` | `#143` | Open PR `#143` carries the bounded write-enabled continuation selected by the landed `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` freeze; owner surfaces now include `nrc_aps_validate_only_gates_contract.py`, `nrc_aps_validate_only_gates.py`, `nrc_aps_validate_only_gates_gate.py`, `test_nrc_aps_validate_only_gates.py`, `nrc_aps_refresh_validate_only_gates.py`, `nrc_aps_validate_only_gates_gate.py`, `review_nrc_aps_runtime.py`, `review_nrc_aps_gate_reports.py`, `review_nrc_aps_graph.py`, `review_nrc_aps_tree.py`, `connectors_sciencebase.py`, and `project6.ps1`, while promotion, retrieval cutover, route/UI, runtime DB, and schema widening remain out |
+| APS dedicated validate-only runtime/report-ref implementation lane | merged | `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` | `#143` | Landed bounded write-enabled continuation from PR `#143` is rooted in `nrc_aps_validate_only_gates_contract.py`, `nrc_aps_validate_only_gates.py`, `nrc_aps_validate_only_gates_gate.py`, `test_nrc_aps_validate_only_gates.py`, `nrc_aps_refresh_validate_only_gates.py`, `nrc_aps_validate_only_gates_gate.py`, `review_nrc_aps_runtime.py`, `review_nrc_aps_gate_reports.py`, `review_nrc_aps_graph.py`, `review_nrc_aps_tree.py`, `connectors_sciencebase.py`, and `project6.ps1`; later validate-only top-chain expansion, promotion, retrieval cutover, route/UI, runtime DB, and schema widening remain out |
 
 ## What Is Complete
 
@@ -161,7 +161,7 @@ flowchart LR
 
 ## Next Required Decision
 
-The immediate required move is now to merge open PR `#143`. The bounded validate-only gate-report refresh lane, the dedicated validate-only runtime/report-ref freeze, and the post-PR140 and post-PR141 docs/progress syncs are already landed on current `main`; the only active open item in this bounded packet is the dedicated validate-only runtime/report-ref implementation lane selected by that landed freeze.
+No later post-validate-only continuation is admitted on current `main` yet. The bounded validate-only gate-report refresh lane, the dedicated validate-only runtime/report-ref freeze, the post-PR140 and post-PR141 docs/progress syncs, and the dedicated validate-only runtime/report-ref implementation lane from PR `#143` are all already landed on current `main`; any continuation beyond that boundary now requires a fresh read-only freeze.
 
 Current bounded selection state:
 - selected first consumer on current `main`: `evidence_report_export_package`
@@ -201,14 +201,12 @@ flowchart LR
     C --> D["Landed runtime/report-ref freeze (PR #140)"]
     D --> E["Landed post-PR140 docs sync (PR #141)"]
     E --> F["Landed post-PR141 docs sync (PR #142)"]
-    F --> G["Open PR #143 write-enabled runtime/report-ref lane"]
+    F --> G["Landed write-enabled runtime/report-ref lane (PR #143)"]
 
     classDef done fill:#d8f5d0,stroke:#2f6b2f,color:#111;
-    classDef next fill:#e7edff,stroke:#4b63b3,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
 
-    class A,B,C,D,E,F done;
-    class G next;
+    class A,B,C,D,E,F,G done;
 ```
 
 ## Deferred Scope
@@ -218,6 +216,8 @@ These remain explicitly out until later freezes admit them:
 - package-derived context implementation beyond a bounded handoff lane rooted in the landed freeze
 - deterministic challenge and review-packet fan-out
 - validate-only top-chain expansion
+- promotion
+- retrieval cutover
 - future workbench route family
 - route/UI widening
 - runtime DB writes

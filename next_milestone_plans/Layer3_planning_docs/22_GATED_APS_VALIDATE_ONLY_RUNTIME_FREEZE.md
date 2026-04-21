@@ -36,15 +36,13 @@ Current merged-state note:
 - current `main` now also includes the bounded generic validate-only gate-report refresh lane from PR `#138`, rooted in `backend/app/services/review_nrc_aps_gate_reports.py`, `tools/nrc_aps_refresh_review_gate_reports.py`, `tools/run_nrc_aps_local_corpus_e2e.py`, `backend/tests/test_review_nrc_aps_gate_reports.py`, and `project6.ps1`
 - current `main` now also includes the post-PR138 docs/progress sync from PR `#139`
 - current `main` already maps `validate_only_gates` to generic `gate_reports` plus `summary.gate_results` in `backend/app/services/review_nrc_aps_graph.py` and `backend/app/services/review_nrc_aps_tree.py`
-- current `main` does not yet expose a dedicated `aps_validate_only_gates_report_refs` bucket in `backend/app/services/connectors_sciencebase.py`
-- current `main` does not yet contain a dedicated `nrc_aps_validate_only_gates_contract.py`, `nrc_aps_validate_only_gates.py`, or `nrc_aps_validate_only_gates_gate.py`
 - current `main` now also includes this landed read-only freeze from PR `#140`, selecting the dedicated validate-only runtime/report-ref boundary as the only admissible next continuation beyond that landed generic gate-report refresh lane
+- current `main` now also exposes a dedicated `aps_validate_only_gates_report_refs` bucket in `backend/app/services/connectors_sciencebase.py`
+- current `main` now also includes the bounded dedicated validate-only runtime/report-ref implementation slice from PR `#143`, rooted in `backend/app/services/nrc_aps_validate_only_gates_contract.py`, `backend/app/services/nrc_aps_validate_only_gates.py`, `backend/app/services/nrc_aps_validate_only_gates_gate.py`, `backend/tests/test_nrc_aps_validate_only_gates.py`, `tools/nrc_aps_refresh_validate_only_gates.py`, `tools/nrc_aps_validate_only_gates_gate.py`, `backend/app/services/review_nrc_aps_runtime.py`, `backend/app/services/review_nrc_aps_gate_reports.py`, `backend/app/services/review_nrc_aps_graph.py`, `backend/app/services/review_nrc_aps_tree.py`, `backend/app/services/connectors_sciencebase.py`, and `project6.ps1`
+- that landed lane keeps the landed generic gate-report refresh boundary as its immediate upstream truth, adds the dedicated validate-only contract/runtime/gate plus report-ref registry surfaces selected by this freeze, and still does not admit later validate-only top-chain expansion, promotion, retrieval cutover, route/UI, runtime DB, or schema widening
+- no later post-validate-only freeze has yet landed on current `main`
 
-Open implementation note:
-- open PR `#143` now carries the bounded dedicated validate-only runtime/report-ref implementation slice rooted in `backend/app/services/nrc_aps_validate_only_gates_contract.py`, `backend/app/services/nrc_aps_validate_only_gates.py`, `backend/app/services/nrc_aps_validate_only_gates_gate.py`, `backend/tests/test_nrc_aps_validate_only_gates.py`, `tools/nrc_aps_refresh_validate_only_gates.py`, `tools/nrc_aps_validate_only_gates_gate.py`, `backend/app/services/review_nrc_aps_runtime.py`, `backend/app/services/review_nrc_aps_gate_reports.py`, `backend/app/services/review_nrc_aps_graph.py`, `backend/app/services/review_nrc_aps_tree.py`, `backend/app/services/connectors_sciencebase.py`, and `project6.ps1`
-- that open lane keeps the landed generic gate-report refresh boundary as its immediate upstream truth, adds the dedicated validate-only contract/runtime/gate plus report-ref registry surfaces selected by this freeze, and still does not mean current `main` has landed dedicated validate-only runtime/report-ref implementation
-
-Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md|artifact|current governing freeze for the landed generic validate_only_gates boundary`; `R|backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py|Current bounded deterministic challenge review-packet handoff owner surface on current \`main\`|1-392`; `R|backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py|Current bounded deterministic challenge review-packet handoff proof surface on current \`main\`|1-627`; `R|backend/app/services/review_nrc_aps_graph.py|Live downstream graph still places validate_only_gates immediately after deterministic challenge review packet and still projects that node from gate_reports plus gate_results|38-41;67-68;87-88;108-109;413-428;543-548;774-779`; `R|backend/app/services/review_nrc_aps_tree.py|Live review tree still treats gate_reports and gate_results as first-class runtime layout surfaces|61-71`; `R|backend/app/services/review_nrc_aps_gate_reports.py|Current landed bounded generic validate-only refresh owner surface on current \`main\`|25-212`; `R|backend/tests/test_review_nrc_aps_gate_reports.py|Current landed bounded generic validate-only refresh proof surface on current \`main\`|31-141`; `R|project6.ps1|Current operator entrypoints expose refresh-nrc-aps-review-gate-reports as validate-only execution on current \`main\`|53-53;581-593`; `R|backend/app/services/connectors_sciencebase.py|Current run-level report-ref registry still stops at deterministic challenge review packet and does not yet define a dedicated validate_only_gates bucket|2948-2962`
+Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md|artifact|current governing freeze for the landed generic validate_only_gates boundary`; `R|backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py|Current bounded deterministic challenge review-packet handoff owner surface on current \`main\`|1-392`; `R|backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py|Current bounded deterministic challenge review-packet handoff proof surface on current \`main\`|1-627`; `R|backend/app/services/review_nrc_aps_graph.py|Live downstream graph still places validate_only_gates immediately after deterministic challenge review packet and now projects that node from the dedicated validate-only artifact plus expected generic gate reports|38-41;67-68;87-88;108-109;303-305;580-596;823-840`; `R|backend/app/services/review_nrc_aps_tree.py|Live review tree still treats gate_reports and gate_results as first-class runtime layout surfaces|61-71`; `R|backend/app/services/review_nrc_aps_gate_reports.py|Current landed bounded generic validate-only refresh owner surface on current \`main\`|25-212`; `R|backend/tests/test_review_nrc_aps_gate_reports.py|Current landed bounded generic validate-only refresh proof surface on current \`main\`|31-141`; `R|backend/app/services/nrc_aps_validate_only_gates_contract.py|Current dedicated validate-only contract surface on current \`main\`|1-203`; `R|backend/app/services/nrc_aps_validate_only_gates.py|Current dedicated validate-only runtime surface on current \`main\`|1-508`; `R|backend/app/services/nrc_aps_validate_only_gates_gate.py|Current dedicated validate-only gate surface on current \`main\`|1-264`; `R|backend/tests/test_nrc_aps_validate_only_gates.py|Current dedicated validate-only proof surface on current \`main\`|1-277`; `R|backend/app/services/review_nrc_aps_runtime.py|Current shared validate-only runtime-binding surface on current \`main\`|1-379`; `R|project6.ps1|Current operator entrypoints expose refresh-nrc-aps-review-gate-reports plus refresh-nrc-aps-validate-only-gates as bounded validate-only execution on current \`main\`|53-53;581-612`; `R|backend/app/services/connectors_sciencebase.py|Current run-level report-ref registry now includes a dedicated validate_only_gates bucket on current \`main\`|2962-2962`
 
 ## Frozen tranche
 
@@ -86,8 +84,8 @@ Frozen reading of that starting point:
 - the live downstream graph still places `validate_only_gates` immediately after `deterministic_challenge_review_packet`
 - the live review graph and review tree still treat `gate_reports/*.json` plus `summary.gate_results` as the runtime surfaces for that `validate_only_gates` node
 - current operator entrypoints already expose validate-only execution through `refresh-nrc-aps-review-gate-reports` and aggregate `gate-nrc-aps`
-- current `main` does not yet define a dedicated validate-only family-specific report-ref bucket or a dedicated `nrc_aps_validate_only_gates_*` contract/runtime/gate trio
-- therefore, if continuation resumes beyond the landed generic gate-report boundary, the next step must be a read-only decision on that dedicated runtime/report-ref family rather than a direct implementation jump
+- current `main` now also defines a dedicated validate-only family-specific report-ref bucket plus a dedicated `nrc_aps_validate_only_gates_*` contract/runtime/gate trio
+- therefore current `main` now proves the bounded dedicated validate-only runtime/report-ref continuation selected by this freeze, while later validate-only top-chain expansion, promotion, and retrieval cutover remain outside the landed packet until a fresh read-only freeze admits them
 
 ## Frozen GateD APS validate-only runtime/report-ref decisions
 
@@ -100,7 +98,7 @@ The exact next continuation admitted by this freeze is:
 Frozen target rule:
 - the next APS freeze beyond the landed generic validate-only gate-report refresh lane is now settled in favor of the dedicated runtime/report-ref family decision
 - do not reopen that ordering unless repo truth changes on the live downstream graph or validate-only runtime surfaces
-- do not treat this read-only freeze as proof that any dedicated validate-only implementation has landed on current `main`
+- this now-landed read-only freeze plus the now-landed bounded implementation lane on current `main` still do not admit later validate-only top-chain expansion, promotion, retrieval cutover, route/UI, runtime DB, or schema widening
 
 ### 2. Source-boundary rule
 
@@ -117,42 +115,43 @@ Frozen source rule:
 
 ### 3. Expected bounded implementation posture
 
-The expected owner/proof posture admitted after this freeze, if a later write-enabled lane is justified, is:
+The expected owner/proof posture admitted after this freeze, and now landed on current `main` from PR `#143`, is:
 - a bounded dedicated validate-only runtime/report-ref lane rooted in the current run-level report-ref registry plus dedicated validate_only runtime surfaces
-- likely owner surfaces:
+- primary owner surfaces:
 - `backend/app/services/connectors_sciencebase.py`
 - `backend/app/services/review_nrc_aps_graph.py`
 - `backend/app/services/review_nrc_aps_tree.py`
-- `backend/app/services/review_nrc_aps_details.py`
+- `backend/app/services/review_nrc_aps_gate_reports.py`
+- `backend/app/services/review_nrc_aps_runtime.py`
 - `project6.ps1`
-- likely dedicated new surfaces, only if later admitted by a write-enabled lane:
+- landed dedicated surfaces:
 - `backend/app/services/nrc_aps_validate_only_gates_contract.py`
 - `backend/app/services/nrc_aps_validate_only_gates.py`
 - `backend/app/services/nrc_aps_validate_only_gates_gate.py`
-- likely focused proof surfaces:
+- focused proof surfaces:
 - `backend/tests/test_review_nrc_aps_graph.py`
 - `backend/tests/test_review_nrc_aps_gate_reports.py`
-- any future dedicated validate-only gate/runtime proof files admitted by that later lane
+- `backend/tests/test_nrc_aps_validate_only_gates.py`
 
 Frozen implementation rule for the later lane admitted after this freeze:
 - keep the later continuation validate-only
 - keep it fail-closed on empty runtime
 - do not seed new artifacts
 - do not widen into promotion, retrieval cutover, route/UI, runtime DB writes, or schema changes
-- if a later continuation can be proven unnecessary because the landed generic gate-report boundary is already sufficient, stop instead of widening
+- if a later post-validate-only continuation can be proven unnecessary because the landed dedicated validate-only boundary is sufficient, stop instead of widening
 
 ### 4. Why promotion and retrieval cutover are not next
 
 Frozen reason promotion and retrieval cutover are not the next APS family:
 - the live downstream graph still places `validate_only_gates` immediately after `deterministic_challenge_review_packet`
-- current `main` now proves only the generic gate-report refresh posture for that validate-only node
-- current repo truth still leaves the dedicated validate-only runtime/report-ref family unresolved
-- selecting promotion or retrieval cutover next would skip the remaining validate-only boundary question that still exists in live repo truth
+- current `main` now proves both the landed generic gate-report refresh posture and the landed dedicated validate-only runtime/report-ref boundary for that validate-only node
+- no later post-validate-only freeze has yet admitted validate-only top-chain expansion, promotion, or retrieval cutover
+- selecting promotion or retrieval cutover next without a fresh freeze would skip the remaining post-validate-only decision boundary that still exists in live repo truth
 
 ### 5. Explicitly deferred downstream families
 
 This freeze keeps deferred:
-- dedicated validate-only runtime/report-ref implementation
+- later validate-only top-chain expansion
 - promotion
 - retrieval cutover
 - route/UI widening
@@ -183,15 +182,16 @@ Stop and reopen the freeze instead of improvising if a later continuation requir
 ## Concise readiness judgment
 
 Readiness judgment:
-- This landed read-only freeze on current `main` from PR `#140` is the governing carried-forward contract for the bounded next decision on whether to admit dedicated validate-only runtime/report-ref surfaces beyond the landed generic gate-report boundary.
+- This now-landed read-only freeze on current `main` from PR `#140`, plus the now-landed bounded dedicated validate-only runtime/report-ref implementation lane from PR `#143`, are the governing carried-forward contract for the validate-only boundary beyond the landed generic gate-report refresh lane.
 
 Reason:
-- current `main` already proves the landed generic validate-only gate-report refresh lane and the runtime surfaces that back it
-- repo truth still does not contain a dedicated validate-only family-specific report-ref/runtime stack
-- this read-only freeze therefore settles the next decision narrowly without overclaiming implementation
+- current `main` already proves the landed generic validate-only gate-report refresh lane and the dedicated validate-only family-specific report-ref/runtime stack that this freeze selected
+- the live downstream graph still ends the bounded tracked chain at `validate_only_gates`
+- no later post-validate-only freeze has yet admitted validate-only top-chain expansion, promotion, or retrieval cutover
+- this freeze therefore remains the governing carried-forward boundary while later continuation still requires a fresh read-only freeze rather than direct widening
 
-What still remains intentionally deferred after this landed read-only freeze:
-- dedicated validate-only runtime/report-ref implementation
+What still remains intentionally deferred after this now-landed read-only freeze and now-landed implementation lane:
+- later validate-only top-chain expansion
 - promotion
 - retrieval cutover
 - route/UI widening
