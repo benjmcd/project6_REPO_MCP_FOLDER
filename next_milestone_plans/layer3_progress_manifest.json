@@ -2,13 +2,13 @@
   "artifact_version": 1,
   "artifact_name": "layer3-progress-artifact",
   "artifact_scope": {
-    "lane_name": "Layer3 APS bounded continuation chain through the landed package-context handoff slice plus the branch-local context-dossier freeze",
+    "lane_name": "Layer3 APS bounded continuation chain through the landed package-context handoff slice plus the landed context-dossier freeze",
     "repo": "benjmcd/project6_REPO_MCP_FOLDER",
     "authoritative_remote": "project6-origin/main",
     "authoritative_local_checkout_rule": "Use a clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match the artifact state being refreshed. Prefer current `main` for merged repo truth, and use the active branch checkout when the manifest declares a branch-only milestone.",
-    "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3-dossier-freeze",
+    "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3-post118-closeout",
     "snapshot_date": "2026-04-20",
-    "snapshot_base_main_commit": "3bbd4f5045abc565de56a359a64c702d51faa2b6",
+    "snapshot_base_main_commit": "d598caf4e435bdbdf625dc81c5da01c9d41ff293",
     "snapshot_base_main_commit_source": "git rev-parse project6-origin/main at the artifact refresh that produced this snapshot",
     "notes": [
       "This artifact is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.",
@@ -18,8 +18,8 @@
       "The dirty root checkout is not authority for this artifact.",
       "GitHub PR state is authority for open vs merged status.",
       "Do not treat snapshot_base_main_commit as a self-updating claim about whatever commit main is on after this artifact file itself merges.",
-      "The current branch/workspace now also carries the read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze selecting `context_dossier` as the next later shared APS family after the landed package-context milestone while preserving paired export-derived context packets as the live dossier input branch.",
-      "The branch-local dossier freeze is now tracked by open PR #118."
+      "Current `main` now also includes the landed read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze selecting `context_dossier` as the next later shared APS family after the landed package-context milestone while preserving paired export-derived context packets as the live dossier input branch.",
+      "The next admitted move is the bounded `context_dossier` handoff implementation lane; deterministic remains later."
     ]
   },
   "authority_order": [
@@ -91,16 +91,14 @@
     "branch_only": "The step exists in a branch but is not merged into main."
   },
   "current_snapshot": {
-    "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107, the bounded export-package handoff implementation slice from PR #109 plus its docs closeout from PR #110, the exact-run export/export-package gate-hardening follow-up from PR #111 and PR #112, the landed package-derived-context continuation freeze from PR #113, the bounded package-derived context handoff implementation slice from PR #115, the earlier PR #116 hardening pass, the post-PR116 docs/progress sync from PR #117, and the merged PR #119 malformed-scoped candidate-discovery closeout across the export, export-package, and context-packet gates.",
-    "open_followups": [
-      118
-    ],
-    "branch_state_summary": "Current branch/workspace now carries the read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze selecting `context_dossier` as the next later shared APS family after the landed package-context milestone while preserving paired export-derived context packets as the live dossier input branch. That freeze is now tracked by open PR #118 and is not yet landed on current `main`."
+    "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107, the bounded export-package handoff implementation slice from PR #109 plus its docs closeout from PR #110, the exact-run export/export-package gate-hardening follow-up from PR #111 and PR #112, the landed package-derived-context continuation freeze from PR #113, the bounded package-derived context handoff implementation slice from PR #115, the earlier PR #116 hardening pass, the post-PR116 docs/progress sync from PR #117, the landed read-only context-dossier continuation freeze from PR #118, and the merged PR #119 malformed-scoped candidate-discovery closeout across the export, export-package, and context-packet gates.",
+    "open_followups": [],
+    "branch_state_summary": "No in-scope branch-only milestones remain active in this current-`main` snapshot."
   },
   "summary_counts": {
-    "merged_milestones": 16,
-    "open_milestones": 1,
-    "planned_decisions": 0,
+    "merged_milestones": 17,
+    "open_milestones": 0,
+    "planned_decisions": 1,
     "deferred_scope_items": 12,
     "branch_only_milestones": 0
   },
@@ -759,7 +757,7 @@
     {
       "milestone_id": "aps-context-dossier-freeze",
       "title": "APS context-dossier continuation freeze",
-      "main_state": "open",
+      "main_state": "merged",
       "governing_docs": [
         "next_milestone_plans/Layer3_planning_docs/17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md"
       ],
@@ -770,7 +768,8 @@
         {
           "pr": 118,
           "kind": "freeze",
-          "state": "open",
+          "state": "merged",
+          "merge_commit": "d598caf4e435bdbdf625dc81c5da01c9d41ff293",
           "title": "docs(layer3): freeze aps context-dossier continuation",
           "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/118"
         }
@@ -779,30 +778,30 @@
         "aps-context-dossier-handoff"
       ],
       "notes": [
-        "Open PR #118 now carries this read-only freeze as the next later shared APS family beyond the landed package-context milestone.",
-        "This open freeze preserves paired export-derived context packets as the live dossier input branch and must not be misread as dossier implementation proof or as permission to source dossier from package-derived context."
+        "PR #118 landed this read-only freeze as the next later shared APS family beyond the landed package-context milestone.",
+        "This landed freeze preserves paired export-derived context packets as the live dossier input branch and must not be misread as dossier implementation proof or as permission to source dossier from package-derived context."
       ]
     }
   ],
   "next_required_decision": {
-    "decision_id": "aps-context-dossier-freeze",
-    "title": "Land the open context-dossier freeze",
-    "state": "open",
-    "why_now": "Current `main` includes the landed package-derived context handoff implementation slice from PR #115, the earlier PR #116 hardening pass, the post-PR116 docs/progress sync from PR #117, and the merged PR #119 malformed-scoped candidate-discovery closeout when run_ids are omitted across the export, export-package, and context-packet gates. Open PR #118 now carries the read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze that becomes the next active later shared-family decision.",
+    "decision_id": "aps-context-dossier-handoff",
+    "title": "Open the bounded context-dossier handoff implementation lane",
+    "state": "planned",
+    "why_now": "Current `main` includes the landed package-derived context handoff implementation slice from PR #115, the earlier PR #116 hardening pass, the post-PR116 docs/progress sync from PR #117, the landed read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze from PR #118, and the merged PR #119 malformed-scoped candidate-discovery closeout when run_ids are omitted across the export, export-package, and context-packet gates. The next admitted move is the bounded dossier handoff lane rooted in export-derived context-packet inputs.",
     "candidate_families": [
       {
         "id": "context-dossier",
-        "state": "open",
-        "reason": "Open PR #118 carries the read-only dossier freeze, and it preserves paired export-derived context packets as the live dossier input branch."
+        "state": "planned",
+        "reason": "The landed read-only dossier freeze now settles `context_dossier` as the next later shared APS family while preserving paired export-derived context packets as the live dossier input branch."
       },
       {
         "id": "deterministic-chain",
         "state": "deferred",
-        "reason": "Remains later until the dossier freeze lands and a bounded dossier implementation lane is admitted."
+        "reason": "Remains later until the bounded dossier implementation lane lands."
       }
     ],
     "must_not_skip": [
-      "Do not skip directly to deterministic fan-out before open PR #118 lands.",
+      "Do not skip directly to deterministic fan-out before the bounded context-dossier handoff lane lands.",
       "Do not treat the landed package-derived context handoff as permission to widen route/UI, runtime DB, or schema.",
       "Do not collapse export-derived and package-derived context branches into one undifferentiated context lane.",
       "Do not present package-derived context as dossier input proof in this tranche."
