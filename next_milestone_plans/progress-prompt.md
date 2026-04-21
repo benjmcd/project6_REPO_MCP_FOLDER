@@ -70,8 +70,10 @@ Current repo-side facts to preserve:
 - paired export-derived context packets remain the live dossier input branch; the landed package-derived context handoff must not be presented as dossier input proof
 - current `main` now also includes the landed read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze from PR `#124`, selecting `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary
 - current `main` now also includes the bounded deterministic insight handoff implementation slice from PR `#126`, rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`, plus narrow deterministic gate hardening in `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`
-- the immediate required move is now to freeze `deterministic_challenge_artifact` as the next deterministic continuation, not to restate the already-landed deterministic insight handoff lane
-- `deterministic_challenge_artifact` is now the current planned current-focus choice; review-packet and validate-only steps remain later and must not be collapsed into the same state
+- current `main` now also includes the post-PR126 docs/progress sync from PR `#127`
+- current branch now also includes the read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze selecting `deterministic_challenge_artifact` as the next deterministic continuation beyond the landed deterministic-insight boundary
+- the immediate required move is now to land that branch-local deterministic challenge freeze, not to restate the already-landed deterministic insight handoff lane
+- `deterministic_challenge_artifact` is now the current branch-local current-focus choice; review-packet and validate-only steps remain later and must not be collapsed into the same state
 
 When rebuilding from a checkout that matches current `main` after PR `#124` is merged:
 - show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
@@ -84,6 +86,13 @@ When rebuilding from a checkout that matches current `main` after PR `#124` is m
 - do not present package-derived context as dossier input proof
 - show the read-only deterministic continuation freeze, rooted in `deterministic_insight_artifact`, as `merged`
 - do not collapse later deterministic steps into the same state as that next freeze decision
+
+When rebuilding from a branch checkout that also carries the read-only deterministic challenge continuation freeze before any PR exists:
+- show the bounded deterministic insight handoff lane as `merged`
+- show the post-PR126 docs/progress sync from PR `#127` as already landed on current `main`
+- show the read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze as `branch_only`
+- show `deterministic_challenge_artifact` as the current branch-local focus
+- do not upgrade that freeze to `open` or `merged` without GitHub confirmation
 
 When rebuilding from a branch checkout that also carries the bounded deterministic insight handoff lane but before any PR exists:
 - show the read-only deterministic continuation freeze as `merged`
