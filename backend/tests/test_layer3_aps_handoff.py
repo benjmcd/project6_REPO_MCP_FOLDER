@@ -266,9 +266,9 @@ def _build_packaged_session(
     tmp_path: Path,
     *,
     include_full_aps_identity: bool,
+    run_id: str = "run-aps-handoff-001",
 ) -> tuple[str, str, str, str]:
     dataset_version_id = "dv-aps-handoff-001"
-    run_id = "run-aps-handoff-001"
     target_id = "target-aps-handoff-001"
     content_id = "content-aps-handoff-001"
 

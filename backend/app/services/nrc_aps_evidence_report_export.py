@@ -32,13 +32,17 @@ def _safe_scope_token(value: str) -> str:
     return "".join(ch for ch in raw if ch.isalnum() or ch in {"_", "-", "."}) or "unknown"
 
 
+def evidence_report_export_scope(run_id: str) -> str:
+    return f"run_{_safe_scope_token(run_id)}"
+
+
 def evidence_report_export_artifact_path(*, run_id: str, evidence_report_export_id: str, reports_dir: str | Path) -> Path:
-    scope = f"run_{_safe_scope_token(run_id)}"
+    scope = evidence_report_export_scope(run_id)
     return Path(reports_dir) / contract.expected_export_file_name(scope=scope, evidence_report_export_id=evidence_report_export_id)
 
 
 def evidence_report_export_failure_artifact_path(*, run_id: str, evidence_report_export_id: str, reports_dir: str | Path) -> Path:
-    scope = f"run_{_safe_scope_token(run_id)}"
+    scope = evidence_report_export_scope(run_id)
     return Path(reports_dir) / contract.expected_failure_file_name(scope=scope, evidence_report_export_id=evidence_report_export_id)
 
 

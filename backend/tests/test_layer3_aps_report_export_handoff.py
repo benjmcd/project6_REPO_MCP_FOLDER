@@ -124,6 +124,56 @@ def test_materialize_aps_report_export_handoff_emits_row_without_runtime_db_writ
         settings.storage_dir = original_storage_dir
 
 
+def test_materialize_aps_report_export_handoff_handles_non_path_safe_run_ids(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        run_id = "run/aps export:001"
+        session_id, built_run_id, _target_id, _content_id = _build_packaged_session(
+            db,
+            tmp_path,
+            include_full_aps_identity=True,
+            run_id=run_id,
+        )
+        assert built_run_id == run_id
+        materialize_aps_handoff(db, session_id=session_id)
+        db.commit()
+        materialize_aps_citation_handoff(db, session_id=session_id)
+        db.commit()
+        materialize_aps_report_handoff(db, session_id=session_id)
+        db.commit()
+
+        result = materialize_aps_report_export_handoff(db, session_id=session_id)
+        db.commit()
+
+        monkeypatch.setattr(
+            aps_report_export_gate_module,
+            "_load_candidate_runs",
+            lambda run_ids, limit: [{"run_id": run_id, "status": "completed"}],
+        )
+        gate_report = aps_report_export_gate_module.validate_evidence_report_export_gate(
+            run_ids=[run_id],
+            limit=1,
+            report_path=tmp_path / "evidence_report_export_gate_non_path_safe.json",
+            require_runs=True,
+        )
+        rows = _rows_by_kind(db)
+        handoff_row = rows[PACKAGE_KIND_APS_EVIDENCE_REPORT_EXPORT_HANDOFF]
+        loaded_payload, _export_path = aps_report_export_module.load_persisted_evidence_report_export_artifact(
+            evidence_report_export_ref=handoff_row.payload_ref
+        )
+
+        assert gate_report["passed"] is True
+        assert result.output_package.output_package_id == handoff_row.output_package_id
+        assert loaded_payload["source_evidence_report"]["source_citation_pack"]["source_bundle"]["run_id"] == run_id
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
 def test_materialize_aps_report_export_handoff_fails_closed_on_missing_source_report_ref(
     tmp_path: Path,
 ) -> None:
