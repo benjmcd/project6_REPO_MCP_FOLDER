@@ -4,6 +4,9 @@ import json
 from pathlib import Path
 from typing import Any
 
+from app.services import review_nrc_aps_gate_reports
+from app.services import nrc_aps_validate_only_gates as validate_only_runtime
+from app.services import nrc_aps_validate_only_gates_contract as validate_only_contract
 from app.schemas.review_nrc_aps import (
     NrcApsReviewCanonicalEdgeOut,
     NrcApsReviewCanonicalGraphOut,
@@ -291,6 +294,39 @@ def _find_first_matching_artifact(artifacts: list[dict[str, Any]], suffix: str, 
     return None
 
 
+def _load_validate_only_artifact(
+    *,
+    run_id: str,
+    review_root: Path,
+) -> tuple[dict[str, Any] | None, str | None]:
+    try:
+        payload, artifact_path = validate_only_runtime.load_persisted_validate_only_gates_artifact(
+            run_id=run_id,
+            review_root=review_root,
+        )
+    except validate_only_runtime.ValidateOnlyGatesError as exc:
+        if exc.code == validate_only_contract.APS_RUNTIME_FAILURE_ARTIFACT_NOT_FOUND:
+            return None, None
+        return None, f"mismatch: validate-only runtime artifact {exc.code}"
+
+    relative_path = normalize_path(review_root, artifact_path)
+    return {
+        "path": relative_path,
+        "name": Path(relative_path).name,
+        "payload": payload,
+    }, None
+
+
+def _collect_generic_gate_reports(review_root: Path) -> list[str]:
+    gate_reports_root = review_root / "gate_reports"
+    refs: list[str] = []
+    for spec in review_nrc_aps_gate_reports.GATE_REPORT_SPECS:
+        candidate = gate_reports_root / spec.report_name
+        if candidate.is_file():
+            refs.append(normalize_path(review_root, candidate))
+    return refs
+
+
 def _collect_run_projection_inputs(run_id: str, review_root: Path) -> dict[str, Any]:
     summary = load_summary(review_root)
     downstream = _load_downstream_artifacts(review_root, summary)
@@ -410,12 +446,11 @@ def _collect_run_projection_inputs(run_id: str, review_root: Path) -> dict[str, 
         ),
     )
 
-    gate_reports_root = review_root / "gate_reports"
-    gate_reports = [
-        normalize_path(review_root, candidate)
-        for candidate in sorted(gate_reports_root.glob("*.json"))
-        if candidate.is_file()
-    ]
+    gate_reports = _collect_generic_gate_reports(review_root)
+    validate_only_artifact, validate_only_warning = _load_validate_only_artifact(
+        run_id=run_id,
+        review_root=review_root,
+    )
     return {
         "summary": summary,
         "branch_data": branch_data,
@@ -425,6 +460,8 @@ def _collect_run_projection_inputs(run_id: str, review_root: Path) -> dict[str, 
         "insight": insight,
         "challenge": challenge,
         "review_packet": review_packet,
+        "validate_only_artifact": validate_only_artifact,
+        "validate_only_warning": validate_only_warning,
         "gate_reports": gate_reports,
         "gate_results": summary.get("gate_results") or {},
         "search_smoke": summary.get("search_smoke") or {},
@@ -541,11 +578,23 @@ def build_pipeline_projection(run_id: str, review_root: Path) -> NrcApsReviewPro
             structured_summary = _payload_summary(payload, ["review_item_count", "acknowledgement_count", "blocker_count"])
             mapped_file_refs = [inputs["review_packet"]["path"]] if inputs["review_packet"] else []
         elif projection_id == "validate_only_gates":
+            artifact = inputs["validate_only_artifact"] or {}
+            artifact_payload = dict(artifact.get("payload") or {})
             passed = sum(1 for value in inputs["gate_results"].values() if isinstance(value, dict) and value.get("passed") is True)
             total = len(inputs["gate_results"])
             detail_lines.append(_line(f"{passed} passed of {total}"))
-            structured_summary = {"gate_total": total, "gate_passed": passed}
-            mapped_file_refs = inputs["gate_reports"]
+            if artifact:
+                detail_lines.append(_line(artifact.get("name")))
+            structured_summary = {
+                "gate_total": total,
+                "gate_passed": passed,
+                "has_validate_only_artifact": bool(artifact),
+            }
+            if artifact_payload:
+                structured_summary["validate_only_gates_id"] = artifact_payload.get("validate_only_gates_id")
+            mapped_file_refs = ([artifact["path"]] if artifact else []) + list(inputs["gate_reports"])
+            if inputs["validate_only_warning"]:
+                warnings.append(inputs["validate_only_warning"])
 
         nodes.append(
             _build_node(
@@ -772,11 +821,24 @@ def build_run_projection(run_id: str, review_root: Path) -> NrcApsReviewProjecti
             else:
                 warnings.append("mismatch: challenge review packet missing")
         elif node_id == "validate_only_gates":
+            artifact = inputs["validate_only_artifact"] or {}
+            artifact_payload = dict(artifact.get("payload") or {})
             passed = sum(1 for value in inputs["gate_results"].values() if isinstance(value, dict) and value.get("passed") is True)
             total = len(inputs["gate_results"])
             detail_lines.extend([_line("gate_reports/*.json"), _line(f"{passed} passed", f"{total - passed} failed")])
-            mapped_file_refs = inputs["gate_reports"]
-            structured_summary = {"gate_total": total, "gate_passed": passed, "gate_results": inputs["gate_results"]}
+            if artifact:
+                detail_lines.append(_line(artifact.get("name")))
+            mapped_file_refs = ([artifact["path"]] if artifact else []) + list(inputs["gate_reports"])
+            structured_summary = {
+                "gate_total": total,
+                "gate_passed": passed,
+                "gate_results": inputs["gate_results"],
+                "has_validate_only_artifact": bool(artifact),
+            }
+            if artifact_payload:
+                structured_summary["validate_only_gates_id"] = artifact_payload.get("validate_only_gates_id")
+            if inputs["validate_only_warning"]:
+                warnings.append(inputs["validate_only_warning"])
 
         state = "complete" if mapped_file_refs or node_id in {"source_corpus", "preflight", "search_smoke"} else "missing"
         if warnings:
