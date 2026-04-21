@@ -2,13 +2,13 @@
   "artifact_version": 1,
   "artifact_name": "layer3-progress-artifact",
   "artifact_scope": {
-    "lane_name": "Layer3 APS bounded continuation chain through the landed deterministic challenge review-packet handoff, with the next required read-only validate-only-gates freeze as the active continuation focus",
+    "lane_name": "Layer3 APS bounded continuation chain through the landed deterministic challenge review-packet handoff, with the open validate-only-gates freeze on PR #136 as the active continuation focus",
     "repo": "benjmcd/project6_REPO_MCP_FOLDER",
     "authoritative_remote": "project6-origin/main",
     "authoritative_local_checkout_rule": "Use a clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match the artifact state being refreshed. Prefer current `main` for merged repo truth, and use the active branch checkout when the manifest declares an open or branch-only milestone.",
     "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3-progress-main",
     "snapshot_date": "2026-04-21",
-    "snapshot_base_main_commit": "5d1362659ef205548d5e91c4ab8287a851dc69b3",
+    "snapshot_base_main_commit": "63d1c85c7e67814a8bde3775084731a439800050",
     "snapshot_base_main_commit_source": "git rev-parse project6-origin/main at the artifact refresh that produced this snapshot",
     "notes": [
       "This artifact is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.",
@@ -27,8 +27,9 @@
       "Current `main` now also includes the post-PR128 docs/progress sync from PR #129.",
       "Current `main` now also includes the bounded deterministic challenge handoff slice plus narrow deterministic challenge gate hardening from PR #130.",
       "Current `main` now also includes the post-PR130 docs/progress sync from PR #131.",
-      "The next justified move is the planned read-only validate-only-gates freeze beyond the landed deterministic challenge review-packet handoff; broader route/UI, runtime DB, and schema widening remain later.",
-      "Current `main` now also includes the bounded deterministic challenge review-packet handoff slice plus narrow review-packet gate hardening from PR #134."
+      "Current `main` now also includes the bounded deterministic challenge review-packet handoff slice plus narrow review-packet gate hardening from PR #134.",
+      "Current `main` now also includes the post-PR134 docs/progress sync from PR #135.",
+      "Open PR #136 now carries the read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze selecting `validate_only_gates` as the next verification continuation beyond the landed deterministic challenge review-packet handoff while keeping later validate-only execution or report refresh, promotion, retrieval cutover, route or UI widening, runtime DB writes, and schema widening out."
     ]
   },
   "authority_order": [
@@ -95,7 +96,18 @@
         "next_milestone_plans/Layer3_planning_docs/19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md",
         "backend/app/services/nrc_aps_deterministic_challenge_artifact_contract.py",
         "backend/app/services/nrc_aps_deterministic_challenge_artifact.py",
-        "backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py"
+        "backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py",
+        "next_milestone_plans/Layer3_planning_docs/20_GATED_APS_REVIEW_PACKET_FREEZE.md",
+        "backend/app/services/nrc_aps_deterministic_challenge_review_packet_contract.py",
+        "backend/app/services/nrc_aps_deterministic_challenge_review_packet.py",
+        "backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py",
+        "backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py",
+        "backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py",
+        "next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md",
+        "backend/app/services/review_nrc_aps_tree.py",
+        "backend/tests/test_review_nrc_aps_graph.py",
+        "backend/app/services/connectors_sciencebase.py",
+        "project6.ps1"
       ]
     },
     {
@@ -118,14 +130,14 @@
     "branch_only": "The step exists in a branch but is not merged into main."
   },
   "current_snapshot": {
-    "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107, the bounded export-package handoff implementation slice from PR #109 plus its docs closeout from PR #110, the exact-run export/export-package gate-hardening follow-up from PR #111 and PR #112, the landed package-derived-context continuation freeze from PR #113, the bounded package-derived context handoff implementation slice from PR #115, the earlier PR #116 hardening pass, the post-PR116 docs/progress sync from PR #117, the landed read-only context-dossier continuation freeze from PR #118, the merged PR #119 malformed-scoped candidate-discovery closeout across the export, export-package, and context-packet gates, the post-PR118 docs/progress sync from PR #120, the bounded context-dossier handoff implementation slice plus narrow dossier-gate scope hardening from PR #121, the post-PR121 docs/progress sync from PR #122, the post-PR122 artifact-state fix from PR #123, the landed read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze from PR #124, the bounded deterministic insight handoff implementation slice plus narrow deterministic gate hardening from PR #126, the post-PR126 docs/progress sync from PR #127, the landed read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze from PR #128, the post-PR128 docs/progress sync from PR #129, the bounded deterministic challenge handoff implementation slice plus narrow deterministic challenge gate hardening from PR #130, the post-PR130 docs/progress sync from PR #131, the landed read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze from PR #132, the post-PR132 docs/progress sync from PR #133, and the bounded deterministic challenge review-packet handoff slice plus narrow review-packet gate hardening from PR #134.",
+    "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107, the bounded export-package handoff implementation slice from PR #109 plus its docs closeout from PR #110, the exact-run export/export-package gate-hardening follow-up from PR #111 and PR #112, the landed package-derived-context continuation freeze from PR #113, the bounded package-derived context handoff implementation slice from PR #115, the earlier PR #116 hardening pass, the post-PR116 docs/progress sync from PR #117, the landed read-only context-dossier continuation freeze from PR #118, the merged PR #119 malformed-scoped candidate-discovery closeout across the export, export-package, and context-packet gates, the post-PR118 docs/progress sync from PR #120, the bounded context-dossier handoff implementation slice plus narrow dossier-gate scope hardening from PR #121, the post-PR121 docs/progress sync from PR #122, the post-PR122 artifact-state fix from PR #123, the landed read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze from PR #124, the bounded deterministic insight handoff implementation slice plus narrow deterministic gate hardening from PR #126, the post-PR126 docs/progress sync from PR #127, the landed read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze from PR #128, the post-PR128 docs/progress sync from PR #129, the bounded deterministic challenge handoff implementation slice plus narrow deterministic challenge gate hardening from PR #130, the post-PR130 docs/progress sync from PR #131, the landed read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze from PR #132, the post-PR132 docs/progress sync from PR #133, and the bounded deterministic challenge review-packet handoff slice plus narrow review-packet gate hardening from PR #134, plus the post-PR134 docs/progress sync from PR #135.",
     "open_followups": [],
-    "branch_state_summary": "No open branch-local milestone currently precedes the next planned read-only validate-only-gates freeze beyond the landed deterministic challenge review-packet handoff."
+    "branch_state_summary": "Open PR #136 now carries the read-only validate-only-gates freeze rooted in `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` beyond the landed deterministic challenge review-packet handoff."
   },
   "summary_counts": {
     "merged_milestones": 24,
-    "open_milestones": 0,
-    "planned_decisions": 1,
+    "open_milestones": 1,
+    "planned_decisions": 0,
     "deferred_scope_items": 8,
     "branch_only_milestones": 0
   },
@@ -1016,23 +1028,51 @@
       "unlocks": [
         "validate-only-gates"
       ]
+    },
+    {
+      "milestone_id": "validate-only-gates-freeze",
+      "title": "APS validate-only-gates continuation freeze",
+      "main_state": "open",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md"
+      ],
+      "events": [
+        {
+          "pr": 136,
+          "kind": "freeze",
+          "state": "open",
+          "title": "docs(layer3): freeze validate-only-gates continuation",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/136"
+        }
+      ],
+      "notes": [
+        "Open PR #136 now carries the read-only freeze selecting validate_only_gates as the exact next verification continuation beyond the landed deterministic challenge review-packet handoff.",
+        "Current `main` still relies on generic gate_reports plus gate_results review surfaces and validate-only operator entrypoints rather than a dedicated validate-only family-specific runtime stack.",
+        "This open freeze must not be misread as validate-only execution, promotion, retrieval cutover, route or UI widening, runtime DB writes, or schema widening."
+      ],
+      "unlocks": [
+        "validate-only-execution-or-report-refresh"
+      ]
     }
   ],
   "next_required_decision": {
-    "decision_id": "open-validate-only-gates-freeze",
-    "title": "Open the read-only validate-only-gates freeze beyond the landed deterministic challenge review-packet handoff",
-    "state": "planned",
-    "why_now": "Current `main` now includes the bounded deterministic challenge review-packet handoff from PR #134, so the next unlanded family on the live downstream graph is validate_only_gates.",
+    "decision_id": "validate-only-gates-freeze",
+    "title": "Current open read-only validate-only-gates freeze on PR #136 beyond the landed deterministic challenge review-packet handoff",
+    "state": "open",
+    "why_now": "Current `main` now includes the bounded deterministic challenge review-packet handoff plus the post-PR134 docs/progress sync from PR #135, and PR #136 now carries the read-only validate-only-gates freeze as the active continuation focus.",
     "candidate_families": [
       {
         "id": "validate_only_gates",
-        "state": "planned",
-        "reason": "It is the next live downstream family after the now-landed deterministic challenge review-packet handoff."
+        "state": "open",
+        "reason": "PR #136 now carries the read-only freeze selecting validate_only_gates as the next verification continuation beyond the landed review-packet handoff."
       }
     ],
     "must_not_skip": [
-      "Do not skip directly to validate-only gates before the deterministic challenge review-packet chain is settled and landed.",
-      "Do not treat the landed package-derived context handoff as permission to widen route/UI, runtime DB, or schema.",
+      "Do not skip directly from the landed deterministic challenge review-packet handoff to promotion or retrieval cutover before the validate-only boundary is settled.",
+      "Do not treat the landed package-derived context handoff as permission to widen route or UI, runtime DB, or schema.",
       "Do not collapse export-derived and package-derived context branches into one undifferentiated context lane.",
       "Do not present package-derived context as dossier input proof in this tranche."
     ]
@@ -1106,7 +1146,9 @@
       131,
       132,
       133,
-      134
+      134,
+      135,
+      136
     ],
     "repo_paths": [
       "docs/nrc_adams/nrc_aps_status_handoff.md",
@@ -1157,7 +1199,11 @@
       "backend/app/services/review_nrc_aps_graph.py",
       "next_milestone_plans/Layer3_planning_docs/20_GATED_APS_REVIEW_PACKET_FREEZE.md",
       "backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py",
-      "backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py"
+      "backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py",
+      "next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md",
+      "backend/app/services/review_nrc_aps_tree.py",
+      "backend/tests/test_review_nrc_aps_graph.py",
+      "project6.ps1"
     ]
   }
 }
