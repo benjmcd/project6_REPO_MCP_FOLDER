@@ -20,7 +20,7 @@ To establish a rigorous mental model without inheriting prior session context, r
 
 ## Context Maps
 - **The True Proof Evidence:** `backend/app/storage_test_runtime/advanced_validation_runs/run_20260314_010136/artifact_audit/artifact_audit_report.md`
-- **Phase 8 (Closed):** `docs/nrc_adams/phase_8_contract.md`. Phase 8 APS table materialization is complete; all invariants satisfied in closure-run-005 (41 targets, 41 linkages, 40 distinct content IDs, 40 documents). The next work surface is above the frozen analytical ceiling.
+- **Phase 8 (Closed):** `docs/nrc_adams/phase_8_contract.md`. Phase 8 APS table materialization is complete; all invariants satisfied in closure-run-005 (41 targets, 41 linkages, 40 distinct content IDs, 40 documents). Current `main` now already includes the bounded continuation above that closed analytical ceiling; use `docs/nrc_adams/nrc_aps_status_handoff.md` for the live merged-main continuation posture rather than treating this line as a pending next-step marker.
 
 ## Review / Compare Operator Path
 For the shipped NRC APS review surfaces on current `main`, use these docs in order:

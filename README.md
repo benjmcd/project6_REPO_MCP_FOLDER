@@ -94,7 +94,7 @@ The connector runtime is in-process and currently includes ScienceBase public/MC
 - `aps_deterministic_insight_artifact_failures`
 - `aps_deterministic_challenge_artifacts`
 - `aps_deterministic_challenge_artifact_failures`
-- NRC APS upper analytical layers remain frozen through Deterministic Challenge Artifact v1.
+- NRC APS upper analytical continuation on current `main` now extends beyond Deterministic Challenge Artifact v1: the repo also carries the landed Deterministic Challenge Review Packet v1 closeout, the bounded validate-only gate/report refresh lane, the dedicated validate-only runtime/report-ref lane, and the settled later APS family packet. Use `docs/nrc_adams/nrc_aps_status_handoff.md` for the canonical current continuation posture.
 - NRC APS lower document-processing layers are now reopened additively:
   - deterministic media detection (`aps_media_detection_v1`)
   - PyMuPDF-based PDF extraction (`aps_document_extraction_v1`)
@@ -130,7 +130,7 @@ The connector runtime is in-process and currently includes ScienceBase public/MC
   - post-validator dossier ambiguity negative slice: `1 passed, 55 deselected`
   - aggregate validate-only report set refreshed to PASS, including deterministic challenge
 - OCR-enabled lower-layer adequacy proof is now established in this workspace.
-- The current safe continuation can move above Deterministic Challenge Artifact v1 without reopening the restored lower-layer baseline.
+- The earlier "move above Deterministic Challenge Artifact v1" continuation is no longer pending on current `main`; that bounded continuation has already landed. Use `docs/nrc_adams/nrc_aps_status_handoff.md` rather than this summary paragraph for the live merged-main continuation posture.
 - Senate LDA metadata connector v1 adds:
   - official LDA `/filings/` query support with optional `Authorization: Token <key>` auth
   - one connector target per filing UUID on the existing generic run/targets/events/reports surfaces
@@ -330,4 +330,4 @@ py -3.12 tools\run_attached_dataset_eval.py --method-name cross_correlation --da
 - [docs/nrc_adams/content_index_gate_runbook.md](docs/nrc_adams/content_index_gate_runbook.md)
 - [docs/nrc_adams/evidence_bundle_gate_runbook.md](docs/nrc_adams/evidence_bundle_gate_runbook.md)
 
-For the current NRC APS layer status, proof artifacts, closed-layer guidance, and next-step handoff through Deterministic Challenge Artifact v1, use the canonical handoff doc above. The layer-specific runbooks remain gate/operator workflow references.
+For the current NRC APS layer status, proof artifacts, closed-layer guidance, and settled continuation posture beyond Deterministic Challenge Artifact v1, use the canonical handoff doc above. The layer-specific runbooks remain gate/operator workflow references.
