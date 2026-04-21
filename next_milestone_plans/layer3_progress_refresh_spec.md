@@ -30,7 +30,7 @@ Current tracked PR set:
 - `#94`, `#95`, `#96`
 - `#97`, `#98`, `#99`
 - `#100`, `#101`, `#102`
-- `#106`, `#107`, `#108`
+- `#106`, `#107`, `#108`, `#109`
 
 Hard rule:
 - never mark a step as landed on `main` from repo docs alone if the GitHub PR is still open
@@ -157,7 +157,7 @@ The current active branch continuation beyond that landed chain is:
 - the bounded export-package handoff implementation lane governed by the now-landed freeze
 
 The next required move beyond current `main` is:
-- review and land the current branch's bounded export-package handoff implementation lane
+- review and land open PR `#109`, the bounded export-package handoff implementation lane
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`
@@ -170,7 +170,8 @@ The later but not first consumer remains:
 
 These are not both still open candidates in the same way:
 - `evidence_report_export_package` is selected on current `main`
-- the bounded export-package handoff lane can exist as `branch_only` before a GitHub PR exists
+- before a GitHub PR exists, the bounded export-package handoff lane can exist as `branch_only`
+- once GitHub confirms the PR exists, that same lane should move to `open`
 - `context_dossier` remains later and not first
 
 ## Schedule Guidance
