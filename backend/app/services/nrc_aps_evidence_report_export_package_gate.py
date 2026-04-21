@@ -36,6 +36,12 @@ def _owner_run_id_from_failure_payload(payload: dict[str, Any]) -> str | None:
     return owner_run_id or None
 
 
+def _payload_matches_requested_run(payload: dict[str, Any], run_id: str, owner_run_id: str | None) -> bool:
+    if not payload:
+        return True
+    return owner_run_id is None or owner_run_id == run_id
+
+
 def _load_candidate_runs(*, run_ids: list[str] | None, limit: int | None) -> list[dict[str, Any]]:
     reports_dir = Path(settings.connector_reports_dir)
     reports_dir.mkdir(parents=True, exist_ok=True)
@@ -99,7 +105,11 @@ def validate_evidence_report_export_package_gate(
         matched_packages: list[tuple[Path, dict[str, Any]]] = []
         for package_path in sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_evidence_report_export_package_v1.json")):
             package_payload = _read_json(package_path)
-            if _owner_run_id_from_package_payload(package_payload) != run_id:
+            if not _payload_matches_requested_run(
+                package_payload,
+                run_id,
+                _owner_run_id_from_package_payload(package_payload),
+            ):
                 continue
             matched_packages.append((package_path, package_payload))
         matched_failures: list[tuple[Path, dict[str, Any]]] = []
@@ -107,7 +117,11 @@ def validate_evidence_report_export_package_gate(
             Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_evidence_report_export_package_failure_v1.json")
         ):
             failure_payload = _read_json(failure_path)
-            if _owner_run_id_from_failure_payload(failure_payload) != run_id:
+            if not _payload_matches_requested_run(
+                failure_payload,
+                run_id,
+                _owner_run_id_from_failure_payload(failure_payload),
+            ):
                 continue
             matched_failures.append((failure_path, failure_payload))
         reasons: list[str] = []
