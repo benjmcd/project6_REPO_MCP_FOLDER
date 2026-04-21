@@ -4,7 +4,7 @@ This file maps the portable `handoff/` package across package-local controls and
 
 ## 1. Package Role
 
-- Package type: current-state portable handoff for the frozen upper analytical ceiling through Deterministic Challenge Artifact v1 plus the reopened lower document-processing workstream.
+- Package type: March 13, 2026 portable handoff snapshot for the frozen upper analytical ceiling through Deterministic Challenge Artifact v1 plus the reopened lower document-processing workstream.
 - Truth model: mixed package (`MODEL B`).
 - Control docs (`handoff/README.md`, `handoff/START_HERE.txt`, `handoff/HANDOFF_INDEX.md`, `handoff/handoff_manifest.json`, `handoff/docs/nrc_adams/nrc_aps_status_handoff.md`) are package-local handoff surfaces.
 - Code/tests/proof anchors are mirrored copies unless explicitly marked otherwise in `handoff/handoff_manifest.json`.
@@ -12,7 +12,7 @@ This file maps the portable `handoff/` package across package-local controls and
 - Canonical status file in package: `handoff/docs/nrc_adams/nrc_aps_status_handoff.md`.
 - Manifest of entry mode/provenance: `handoff/handoff_manifest.json`.
 - Entry guide: `handoff/START_HERE.txt`.
-- Manifest coverage semantics: intentionally scoped current-state authority subset, not exhaustive of every file under `handoff/`.
+- Manifest coverage semantics: intentionally scoped snapshot authority subset, not exhaustive of every file under `handoff/`.
 
 ## 2. Current Authority Surfaces Included
 
