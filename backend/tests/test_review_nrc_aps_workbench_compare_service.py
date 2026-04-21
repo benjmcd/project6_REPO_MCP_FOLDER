@@ -255,6 +255,11 @@ def test_discover_workbench_compare_sources_returns_visible_runs_and_local_bundl
     assert [item.run_id for item in payload.candidate_a_runs] == [candidate_a_binding.run_id]
     assert payload.candidate_b_bundles[0].bundle_id == compare_runtime_fixture["bundle_id"]
     assert "\\" not in payload.candidate_b_bundles[0].bundle_id
+    assert payload.baseline_runs[0].runtime_binding is not None
+    assert payload.baseline_runs[0].runtime_binding.runtime_label == baseline_binding.review_root.name
+    assert payload.baseline_runs[0].runtime_binding.database_label == baseline_binding.database_path.name
+    expected_storage_label = baseline_binding.storage_dir.name if baseline_binding.storage_dir is not None else None
+    assert payload.baseline_runs[0].runtime_binding.storage_label == expected_storage_label
 
 
 def test_compose_workbench_compare_payloads_align_selected_fixture(compare_runtime_fixture: dict[str, object], monkeypatch: pytest.MonkeyPatch) -> None:

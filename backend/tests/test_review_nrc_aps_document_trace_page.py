@@ -187,6 +187,10 @@ def test_document_trace_js_renders_run_identity() -> None:
     assert '<strong>RUN</strong>' in js_content
     # loadTargetDoc must clear stale identity with immediate run display
     assert 'Immediately update run identity and clear stale document identity' in js_content
+    assert '<strong>RUNTIME</strong>' in js_content
+    assert '<strong>DB</strong>' in js_content
+    assert '<strong>STORAGE</strong>' in js_content
+    assert 'renderRuntimeBindingEntries' in js_content
 
 
 def test_review_js_has_run_identity_update() -> None:
