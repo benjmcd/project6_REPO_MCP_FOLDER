@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 os.environ["DB_INIT_MODE"] = "none"
@@ -32,8 +33,20 @@ def override_get_db():
     yield db
 
 
-app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _scoped_db_override():
+    previous = app.dependency_overrides.get(get_db)
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        yield
+    finally:
+        if previous is not None:
+            app.dependency_overrides[get_db] = previous
+        else:
+            app.dependency_overrides.pop(get_db, None)
 
 
 def _write_runtime_summary(runtime_dir: Path, *, run_id: str) -> None:

@@ -42,7 +42,6 @@ def override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 
@@ -208,12 +207,18 @@ def _seed_canonical_rows(db, *, artifact_dir: Path, run_id: str = "run-api-001")
 
 class TestApsRetrievalPlaneOperatorApi(unittest.TestCase):
     def setUp(self) -> None:
+        self._previous_db_override = app.dependency_overrides.get(get_db)
+        app.dependency_overrides[get_db] = override_get_db
         Base.metadata.drop_all(bind=engine)
         Base.metadata.create_all(bind=engine)
         self.temp_dir = tempfile.TemporaryDirectory()
 
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
+        if self._previous_db_override is not None:
+            app.dependency_overrides[get_db] = self._previous_db_override
+        else:
+            app.dependency_overrides.pop(get_db, None)
 
     def test_operator_routes_match_public_routes_after_rebuild(self):
         db = TestingSessionLocal()
