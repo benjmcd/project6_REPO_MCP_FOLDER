@@ -91,7 +91,7 @@
     "branch_only": "The step exists in a branch but is not merged into main."
   },
   "current_snapshot": {
-    "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107, the bounded export-package handoff implementation slice from PR #109 plus its docs closeout from PR #110, the exact-run export/export-package gate-hardening follow-up from PR #111 and PR #112, the landed package-derived-context continuation freeze from PR #113, the bounded package-derived context handoff implementation slice from PR #115, the earlier PR #116 hardening pass, the post-PR116 docs/progress sync from PR #117, the landed read-only context-dossier continuation freeze from PR #118, the merged PR #119 malformed-scoped candidate-discovery closeout across the export, export-package, and context-packet gates, the post-PR118 docs/progress sync from PR #120, and the bounded context-dossier handoff implementation slice plus narrow dossier-gate scope hardening from PR #121.",
+    "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107, the bounded export-package handoff implementation slice from PR #109 plus its docs closeout from PR #110, the exact-run export/export-package gate-hardening follow-up from PR #111 and PR #112, the landed package-derived-context continuation freeze from PR #113, the bounded package-derived context handoff implementation slice from PR #115, the earlier PR #116 hardening pass, the post-PR116 docs/progress sync from PR #117, the landed read-only context-dossier continuation freeze from PR #118, the merged PR #119 malformed-scoped candidate-discovery closeout across the export, export-package, and context-packet gates, the post-PR118 docs/progress sync from PR #120, the bounded context-dossier handoff implementation slice plus narrow dossier-gate scope hardening from PR #121, and the post-PR121 docs/progress sync from PR #122.",
     "open_followups": [],
     "branch_state_summary": null
   },
@@ -99,7 +99,7 @@
     "merged_milestones": 18,
     "open_milestones": 0,
     "planned_decisions": 1,
-    "deferred_scope_items": 11,
+      "deferred_scope_items": 10,
     "branch_only_milestones": 0
   },
   "artifact_render_contract": {
@@ -851,7 +851,6 @@
   "deferred_scope": [
     "direct edits to the shared evidence-report-export-package contract/runtime surfaces beyond the landed bounded export-package handoff and exact-run gate-hardening lane",
     "package-derived context implementation beyond the landed bounded handoff slice",
-    "deterministic insight artifact continuation",
     "deterministic challenge artifact continuation",
     "deterministic challenge review-packet continuation",
     "validate-only top-chain expansion",
