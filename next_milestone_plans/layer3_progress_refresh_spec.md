@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice, plus the merged malformed-scoped candidate-discovery closeout from PR `#119`, plus the now-landed context-dossier freeze beyond that landed package-context boundary, plus the now-landed bounded context-dossier handoff implementation slice from PR `#121`, plus the post-PR122 artifact-state fix from PR `#123`, plus the now-landed deterministic-insight continuation freeze from PR `#124`, plus the now-landed deterministic insight handoff implementation slice and narrow deterministic gate hardening from PR `#126`, plus the post-PR126 docs/progress sync from PR `#127`, plus the now-landed deterministic-challenge continuation freeze from PR `#128`, plus the post-PR132 docs/progress sync from PR `#133`, plus the now-landed deterministic challenge review-packet handoff lane from PR `#134`, plus the post-PR134 docs/progress sync from PR `#135`, plus the now-landed validate-only-gates freeze from PR `#136`, its docs/progress sync from PR `#137`, the now-landed bounded validate-only gate-report refresh lane from PR `#138`, the post-PR138 docs/progress sync from PR `#139`, the now-landed read-only `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` freeze from PR `#140` beyond that landed generic validate-only boundary, and the now-landed post-PR140 docs/progress sync from PR `#141`.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice, plus the merged malformed-scoped candidate-discovery closeout from PR `#119`, plus the now-landed context-dossier freeze beyond that landed package-context boundary, plus the now-landed bounded context-dossier handoff implementation slice from PR `#121`, plus the post-PR122 artifact-state fix from PR `#123`, plus the now-landed deterministic-insight continuation freeze from PR `#124`, plus the now-landed deterministic insight handoff implementation slice and narrow deterministic gate hardening from PR `#126`, plus the post-PR126 docs/progress sync from PR `#127`, plus the now-landed deterministic-challenge continuation freeze from PR `#128`, plus the post-PR132 docs/progress sync from PR `#133`, plus the now-landed deterministic challenge review-packet handoff lane from PR `#134`, plus the post-PR134 docs/progress sync from PR `#135`, plus the now-landed validate-only-gates freeze from PR `#136`, its docs/progress sync from PR `#137`, the now-landed bounded validate-only gate-report refresh lane from PR `#138`, the post-PR138 docs/progress sync from PR `#139`, the now-landed read-only `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` freeze from PR `#140` beyond that landed generic validate-only boundary, the now-landed post-PR140 docs/progress sync from PR `#141`, the now-landed post-PR141 docs/progress sync from PR `#142`, and the open dedicated validate-only runtime/report-ref implementation lane in PR `#143`.
 
 ## Canonical Inputs
 
@@ -31,7 +31,7 @@ Current tracked PR set:
 - `#97`, `#98`, `#99`
 - `#100`, `#101`, `#102`
 - `#106`, `#107`, `#108`, `#109`
-- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, `#136`, `#137`, `#138`, `#139`, `#140`, `#141`
+- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, `#136`, `#137`, `#138`, `#139`, `#140`, `#141`, `#142`, `#143`
 
 Hard rule:
 - never mark a step as landed on `main` from repo docs alone if the GitHub PR is still open
@@ -94,7 +94,7 @@ Use a clean local checkout of `benjmcd/project6_REPO_MCP_FOLDER` whose contents 
 
 Discovery rule:
 - prefer the checkout that actually contains this spec and the matching `layer3_progress_manifest.json`
-- if multiple clean checkouts exist, prefer the one matching current `main` for merged repo truth, or the one carrying the declared branch-only milestone when the manifest says a branch-only step is in scope
+- if multiple clean checkouts exist, prefer the one matching current `main` for merged repo truth, or the one carrying the declared open or branch-only milestone when the manifest says a non-merged step is in scope
 
 Seed path used when this artifact pack was authored:
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main`
@@ -155,10 +155,11 @@ Any external live artifact or dashboard must also obey:
 14. Fail closed if GitHub state cannot be refreshed:
    - keep the last known manifest state
    - mark the refresh as stale instead of inventing merged/open status
-15. If the current checkout carries a branch-local milestone that is not yet backed by an open or merged GitHub PR:
-   - keep that milestone as `branch_only`
-   - do not upgrade it to `open` until GitHub confirms a PR exists
-   - do not hide it from branch-local artifact surfaces if the manifest declares it
+15. If the current checkout carries a milestone that is not yet merged on `main`:
+   - keep that milestone as `branch_only` only when no open or merged GitHub PR exists
+   - upgrade it to `open` once GitHub confirms a PR exists
+   - do not upgrade it to `merged` until GitHub confirms the merge
+   - do not hide it from active artifact surfaces if the manifest declares it
 
 ## State Mapping Rules
 
@@ -223,8 +224,8 @@ The current landed continuation at the end of current `main` is:
 The next required move is:
 - current `main` now also includes the post-PR140 docs/progress sync from PR `#141`
 - current `main` now also includes the post-PR141 docs/progress sync from PR `#142`
-- when the current checkout contains the dedicated validate-only runtime/report-ref implementation surfaces without a GitHub PR, keep that milestone as `branch_only`
-- current `main` still points next to the write-enabled implementation boundary settled by `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`; do not widen directly into promotion, retrieval cutover, route or UI, runtime DB, or schema scope without first following that bounded implementation lane
+- open PR `#143` now carries the bounded dedicated validate-only runtime/report-ref implementation lane selected by `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`
+- current `main` still points next to that write-enabled implementation boundary; do not widen directly into promotion, retrieval cutover, route or UI, runtime DB, or schema scope without first settling the bounded implementation lane
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`
