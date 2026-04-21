@@ -26,6 +26,10 @@ def test_discover_candidate_runs():
     assert golden_run is not None, "Golden run fixture should be found"
     assert golden_run.reviewable is True
     assert golden_run.disabled_reason_code is None
+    assert golden_run.runtime_binding is not None
+    assert golden_run.runtime_binding.runtime_label == RUNTIME.runtime_dir.name
+    assert golden_run.runtime_binding.database_label == RUNTIME.db_path.name
+    assert golden_run.runtime_binding.storage_label == RUNTIME.storage_dir.name
 
     # 2. Default selection contract: default_run_id must select the most recently completed reviewable run
     assert out.default_run_id is not None, "A default run must be selected when reviewable candidates exist"
@@ -94,3 +98,7 @@ def test_discover_candidate_runs_handles_mixed_naive_and_aware_completed_at(mock
 
     assert out.default_run_id == "summary-run"
     assert [item.run_id for item in out.runs[:2]] == ["summary-run", "db-run"]
+    assert out.runs[0].runtime_binding is not None
+    assert out.runs[0].runtime_binding.runtime_label == "summary-run"
+    assert out.runs[0].runtime_binding.database_label == "lc.db"
+    assert out.runs[0].runtime_binding.storage_label == "storage"

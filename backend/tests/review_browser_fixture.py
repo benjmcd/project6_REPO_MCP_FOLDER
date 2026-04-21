@@ -16,7 +16,11 @@ from app.models import ApsContentChunk, ApsContentDocument, ApsContentLinkage, C
 import app.services.review_nrc_aps_candidate_b_trace as trace_service
 import app.services.review_nrc_aps_runtime as runtime_service
 import app.services.review_nrc_aps_workbench_compare as compare_service
-from app.schemas.review_nrc_aps import NrcApsReviewRunSelectorItemOut, NrcApsReviewRunSelectorOut
+from app.schemas.review_nrc_aps import (
+    NrcApsReviewRunSelectorItemOut,
+    NrcApsReviewRunSelectorOut,
+    NrcApsReviewRuntimeBindingSummaryOut,
+)
 from app.services.review_nrc_aps_runtime import ReviewRuntimeBinding
 
 
@@ -449,6 +453,11 @@ def build_review_browser_fixture(tmp_path: Path) -> ReviewBrowserFixture:
                 submitted_at="2026-04-13T22:50:00Z",
                 completed_at="2026-04-13T23:00:00Z",
                 reviewable=True,
+                runtime_binding=NrcApsReviewRuntimeBindingSummaryOut(
+                    runtime_label=baseline_binding.review_root.name,
+                    database_label=baseline_binding.database_path.name if baseline_binding.database_path else None,
+                    storage_label=baseline_binding.storage_dir.name if baseline_binding.storage_dir else None,
+                ),
             ),
             NrcApsReviewRunSelectorItemOut(
                 run_id=candidate_a_binding.run_id,
@@ -457,6 +466,11 @@ def build_review_browser_fixture(tmp_path: Path) -> ReviewBrowserFixture:
                 submitted_at="2026-04-13T22:55:00Z",
                 completed_at="2026-04-13T23:05:00Z",
                 reviewable=True,
+                runtime_binding=NrcApsReviewRuntimeBindingSummaryOut(
+                    runtime_label=candidate_a_binding.review_root.name,
+                    database_label=candidate_a_binding.database_path.name if candidate_a_binding.database_path else None,
+                    storage_label=candidate_a_binding.storage_dir.name if candidate_a_binding.storage_dir else None,
+                ),
             ),
         ],
     )

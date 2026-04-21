@@ -67,3 +67,13 @@ def test_review_js_has_identity_aware_overlay_messages():
 
     # Catalog error
     assert "Failed to load the run catalog" in js_content
+
+
+def test_review_js_exposes_runtime_binding_in_identity_bar() -> None:
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "review.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "runtime_binding" in js_content
+    assert "Runtime:" in js_content
+    assert "DB:" in js_content
+    assert "Storage:" in js_content

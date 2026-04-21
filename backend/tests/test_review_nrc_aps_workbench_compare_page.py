@@ -119,3 +119,15 @@ def test_workbench_compare_js_renders_required_compare_columns() -> None:
     assert "compare-grid" in js_content
     assert "comparability_legend" in js_content
     assert "summary_badges" in js_content
+
+
+def test_workbench_compare_js_surfaces_runtime_authority_in_identity_and_overlay() -> None:
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "workbench_compare.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "runtime_binding" in js_content
+    assert "Baseline Runtime" in js_content
+    assert "Candidate A Runtime" in js_content
+    assert "Candidate B Source" in js_content
+    assert "Selected authorities:" in js_content
+    assert "buildAuthoritySummaryText" in js_content
