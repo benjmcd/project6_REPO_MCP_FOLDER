@@ -45,8 +45,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: `${PYTHON} -m uvicorn tests.review_browser_server:create_app --factory --host 127.0.0.1 --port ${SERVER_PORT}`,
-    cwd: './backend',
+    command: `${PYTHON} -m uvicorn review_browser_server:create_app --factory --host 127.0.0.1 --port ${SERVER_PORT}`,
+    cwd: './backend/tests',
     env: {
       DB_INIT_MODE: 'none',
     },
