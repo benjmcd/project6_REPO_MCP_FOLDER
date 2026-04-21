@@ -50,7 +50,7 @@ As of `2026-04-21`:
 - Done now on `main`: 29 merged milestones from Phase 1A feeder-ledger foundation through the landed APS promotion continuation freeze from PR `#145`, with its later docs/progress, settlement, and progress-packet closeouts from PR `#146`, `#147`, and `#148`
 - Current focus: the bounded later APS family packet beyond the landed dedicated validate-only runtime/report-ref boundary is now settled on current `main` and tracked through the post-PR147 progress-packet closeout from PR `#148`; no further later APS family decision or implementation lane is currently justified by default
 - Candidate next consumers: none active in this bounded packet; promotion governance is already sufficient on current `main`, and retrieval cutover already exists there as a separate validate-only parity-proof family
-- Deferred but not active: 8 explicitly deferred scope items remain out until later freezes admit them
+- Deferred but not active: 8 explicitly deferred scope items remain out until later freezes admit them; see the activation-criteria section below for the exact candidate-next and current-focus gates
 
 ## Milestone Table
 
@@ -172,6 +172,204 @@ These remain explicitly out until later freezes admit them:
 - runtime DB writes
 - schema widening
 - route/UI widening
+
+## Deferred Scope Activation Criteria
+
+Use this section when deciding whether any deferred item may graduate from the muted deferred list into either `Candidate Next Consumers` or `Current Focus`.
+
+Hard rules:
+- do not promote a deferred item from gray-box status just because it sounds adjacent to the settled packet
+- candidate-next admission requires repo-confirmed evidence that the family is concrete, bounded, and not already settled elsewhere
+- current-focus admission requires a planned or open bounded lane with named owner surfaces, explicit proof shape, and an exact no-go list
+- a new additive workbench family is not the same thing as widening shipped review/document-trace/workbench surfaces
+- broader package-derived-context work is not the same thing as reopening the shared export/export-package contract/runtime surfaces
+- do not invent validate-only top-chain work unless live repo graph/tree truth defines a real post-`validate_only_gates` family
+
+### 1. Direct shared `evidence_report_export_package` contract/runtime edits beyond the landed bounded handoff lane
+
+Current boundary:
+- current `main` lands the additive `aps_evidence_report_export_package_handoff` consumer plus narrow exact-run export/export-package gate hardening
+- the settled packet does not admit a broader reopening of the shared evidence-report-export or evidence-report-export-package contract/runtime surfaces
+
+Candidate-next admission requires:
+- live repo truth proving a concrete downstream need that additive consumer code or the existing exact-run gate hardening cannot satisfy
+- a new freeze that explicitly reopens the shared export/export-package contract/runtime surfaces instead of selecting another downstream consumer lane
+- exact naming of the shared services, gates, contracts, tests, and operator entrypoints that would change, plus the precise no-go list that still remains out
+
+Current-focus admission requires:
+- `next_required_decision` or a tracked milestone explicitly selecting this shared-surface reopening as the active bounded lane
+- an explicit upstream/downstream source boundary relative to `aps_multisource_admission` and `aps_evidence_report_export_package_handoff`
+- proof that validates the shared contract/gate reopening while still keeping package-derived context, route/UI widening, runtime DB writes, and schema widening out unless separately admitted
+
+Primary authority surfaces:
+- `next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md`
+- `backend/app/services/layer3_aps_report_export_package_handoff.py`
+- `backend/app/services/nrc_aps_evidence_report_export_gate.py`
+- `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`
+- `backend/tests/test_layer3_aps_report_export_package_handoff.py`
+
+### 2. Package-derived context implementation beyond the landed bounded handoff slice
+
+Current boundary:
+- current `main` lands the bounded `aps_context_packet_package_handoff` slice and adjacent gate hardening only
+- the live dossier-input rule still resolves from paired export-derived context packets, so package-derived context must not be presented as dossier-input proof by default
+
+Candidate-next admission requires:
+- live repo truth proving a concrete gap that the bounded package-derived-context handoff does not cover
+- a new freeze that explicitly chooses the next package-derived-context continuation instead of implying that broader package-context work is already admitted
+- an explicit rule preserving or deliberately replacing the current paired export-derived dossier-input boundary
+
+Current-focus admission requires:
+- a planned or open milestone naming the exact next package-context consumer or continuation, not just `broader package context`
+- exact owner services, gates, tests, and provenance rules plus a precise keep-out list for dossier, deterministic, route/UI, runtime DB, and schema surfaces
+- proof that the continuation does not misrepresent package-derived context as already equivalent to the paired export-derived dossier-input path
+
+Primary authority surfaces:
+- `next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md`
+- `backend/app/services/layer3_aps_context_packet_package_handoff.py`
+- `backend/app/services/nrc_aps_context_packet_gate.py`
+- `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
+
+### 3. Validate-only top-chain expansion
+
+Current boundary:
+- current `main` lands the dedicated validate-only runtime/report-ref boundary and the later APS family settlement packet
+- the live downstream graph still ends the bounded tracked chain at `validate_only_gates`
+- the landed promotion freeze explicitly says not to invent a separate repo-backed post-validate-only top-chain family without direct repo proof
+
+Candidate-next admission requires:
+- live repo graph/tree truth defining a concrete later named validate-only family beyond the current `validate_only_gates` boundary
+- a new freeze explicitly selecting that validate-only family instead of promotion, retrieval-cutover parity proof, or the already-settled later-family closure posture
+- repo truth showing the family is neither already sufficient nor already present elsewhere under a different settled lane
+
+Current-focus admission requires:
+- `next_required_decision` or a tracked milestone moving from `settled` to a planned/open validate-only continuation with exact named surfaces
+- exact review graph/tree/runtime/report-ref or adjacent validate-only services, tests, CLI actions, and operator entrypoints for that family
+- a proof plan that remains validate-only, fails closed on empty runtime, and still keeps promotion, retrieval cutover, route/UI widening, runtime DB writes, and schema widening out unless separately admitted
+
+Primary authority surfaces:
+- `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/23_GATED_APS_PROMOTION_FREEZE.md`
+- `backend/app/services/review_nrc_aps_graph.py`
+- `backend/app/services/review_nrc_aps_tree.py`
+- `project6.ps1`
+
+### 4. Future workbench route family
+
+Current boundary:
+- current `main` already ships additive `/review/nrc-aps/workbench-compare` and `/review/nrc-aps/candidate-b-trace` surfaces, plus the same-checkout prep gate and browser coverage
+- future workbench-route work therefore means a new additive workbench family beyond the shipped compare and Candidate B Trace posture, not a restatement of already-landed routes
+
+Candidate-next admission requires:
+- browser/operator validation or a concrete product requirement proving that the shipped review/document-trace/workbench/Candidate B surfaces are insufficient
+- a new freeze specifying an additive workbench page/API family instead of smuggling the work into the existing review or document-trace contracts
+- exact route/page/API surfaces, same-checkout or validate-only preparation rules, and any bundle-scope versus runtime-scope constraints governing the new family
+
+Current-focus admission requires:
+- a planned or open milestone identifying the exact workbench routes, backend services, static pages, and validation files that are in scope
+- headed and headless Chrome validation as part of the lane contract for shell reachability and operator flow
+- preservation of current Candidate B bundle-scoped, non-admitted boundaries unless the freeze explicitly reopens them
+
+Primary authority surfaces:
+- `frontend_UI_plans/README.md`
+- `frontend_UI_plans/wb-compare-spec.md`
+- `frontend_UI_plans/wb-compare-contract.md`
+- `frontend_UI_plans/wb-compare-blueprint.md`
+- `frontend_UI_plans/wb-compare-validation.md`
+- `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md`
+
+### 5. Broader qualitative, hybrid, comparative, or cross-modal Layer3 breadth
+
+Current boundary:
+- the settled packet is a bounded quantitative/APS continuation chain
+- no active freeze on current `main` admits broader qualitative, hybrid, comparative, or cross-modal Layer3 breadth as a next lane
+
+Candidate-next admission requires:
+- a new freeze choosing one exact breadth axis instead of reopening all broader Layer3 breadth under a single umbrella label
+- live repo truth identifying the concrete upstream inputs, downstream consumers, and proof surfaces for that chosen breadth axis
+- an explicit statement of whether the work is additive consumer work, a review surface, or a separate program surface, plus what remains out
+
+Current-focus admission requires:
+- a planned or open milestone naming the exact owner files, tests, proof artifacts, and operational entrypoints for the chosen breadth lane
+- a bounded source boundary relative to the settled APS chain so breadth work is not misread as a latent extension of the already-closed packet
+- explicit control of route/UI widening, runtime DB writes, and schema widening unless the same freeze admits them
+
+Primary authority surfaces:
+- `next_milestone_plans/README_LAYER3_PHASE1A_PACK.md`
+- `next_milestone_plans/layer3_progress_manifest.json`
+- `next_milestone_plans/layer3_progress_board.md`
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
+
+### 6. Runtime DB writes
+
+Current boundary:
+- current `main` treats review/document-trace runtime DBs as read-only evidence-plane surfaces
+- runtime DB safety rails, operator authority labeling, and browser proof are landed, but write-enabled runtime behavior remains explicitly out
+
+Candidate-next admission requires:
+- live repo truth proving that the read-only evidence-plane model is insufficient and that the required writes belong in runtime snapshots rather than the control-plane DB
+- a new freeze explicitly admitting write-enabled runtime behavior and defining which runtime DBs may be written, by which surfaces, and under what isolation model
+- operator-safe authority rules that prevent accidental writes or migrations against immutable runtime snapshots
+
+Current-focus admission requires:
+- a planned or open lane naming the exact services, scripts, routes, and write paths that will perform runtime writes
+- a proof plan using isolated runtime state while preserving the hard rule that validate-only actions remain validate-only and must not seed or generate artifacts
+- docs and operator surfaces identifying write authority, rollback expectations, and cleanup semantics before the lane becomes current focus
+
+Primary authority surfaces:
+- `frontend_UI_plans/nrc_aps_runtime_db_reconceptualization_and_next_steps.md`
+- `backend/app/api/review_nrc_aps.py`
+- `backend/app/services/review_nrc_aps_runtime_db.py`
+- `backend/tests/test_review_nrc_aps_runtime_db.py`
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
+
+### 7. Schema widening
+
+Current boundary:
+- multiple freezes in the bounded chain explicitly keep schema widening out
+- current `main` lands additive consumers and operator surfaces without changing the bounded packet schema boundary
+
+Candidate-next admission requires:
+- a concrete blocker proving that the required consumer, validation surface, or operator flow cannot be supported within the existing schema
+- a new freeze enumerating the exact tables, models, fields, or indexes that would widen and the exact consumers that require them
+- explicit separation from route/UI or runtime-write widening unless the same freeze deliberately admits a combined tranche
+
+Current-focus admission requires:
+- a planned or open write-enabled lane naming the exact model files, migration files, services, tests, and verification steps that own the schema change
+- a proof plan including migration execution and direct validation of the widened schema boundary rather than only prose justification
+- active-packet and front-door doc updates in the same lane because schema widening changes the meaning of the bounded packet, not just its implementation detail
+
+Primary authority surfaces:
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
+- `next_milestone_plans/README_LAYER3_PHASE1A_PACK.md`
+- `backend/app/models/models.py`
+- `backend/alembic`
+- `project6.ps1`
+
+### 8. Route/UI widening
+
+Current boundary:
+- current `main` already ships the bounded review, document-trace, workbench-compare, and Candidate B Trace posture plus runtime-authority transparency
+- the settled Layer3/APS packet still explicitly keeps broader route or UI widening out
+
+Candidate-next admission requires:
+- browser/operator evidence proving that the shipped route/UI posture is insufficient, ambiguous, or incomplete for the intended operator task
+- a new freeze specifying the exact page, route, API, and navigation surfaces that would widen, and clearly separating additive new surfaces from edits to shipped review/document-trace/workbench pages
+- preservation of current runtime-authority and validate-only boundaries unless a separate freeze reopens them
+
+Current-focus admission requires:
+- a planned or open lane naming the exact frontend/backend owner files plus the headed/headless Chrome validation flow that will prove the widened surface
+- active front-door docs updated in step with the implementation so operator guidance does not drift behind the shipped UI
+- runtime DB writes and schema widening remaining separately admitted unless the same freeze explicitly reopens them
+
+Primary authority surfaces:
+- `frontend_UI_plans/README.md`
+- `frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md`
+- `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md`
+- `frontend_UI_plans/nrc_aps_runtime_db_reconceptualization_and_next_steps.md`
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
 
 ## Refresh Inputs
 
