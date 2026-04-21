@@ -69,9 +69,9 @@ Current repo-side facts to preserve:
 - current `main` also includes the post-PR122 artifact-state fix from PR `#123`
 - paired export-derived context packets remain the live dossier input branch; the landed package-derived context handoff must not be presented as dossier input proof
 - current `main` now also includes the landed read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze from PR `#124`, selecting `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary
-- current open PR `#126` now carries the bounded deterministic insight handoff implementation slice rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`, plus narrow deterministic gate hardening in `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`
-- the immediate required move is now to land the current open deterministic insight handoff implementation lane, not another docs-only restatement of the same milestone
-- `deterministic_insight_artifact` is the current open bounded current-focus choice; later deterministic steps remain later and must not be collapsed into the same state
+- current `main` now also includes the bounded deterministic insight handoff implementation slice from PR `#126`, rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`, plus narrow deterministic gate hardening in `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`
+- the immediate required move is now to freeze `deterministic_challenge_artifact` as the next deterministic continuation, not to restate the already-landed deterministic insight handoff lane
+- `deterministic_challenge_artifact` is now the current planned current-focus choice; review-packet and validate-only steps remain later and must not be collapsed into the same state
 
 When rebuilding from a checkout that matches current `main` after PR `#124` is merged:
 - show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
