@@ -51,6 +51,10 @@ def _fallback_run_id_from_artifact_name(name: str) -> str | None:
     return "_".join(parts[1:-1]).strip() or None
 
 
+def _candidate_scope_for_run_id(run_id: str) -> str:
+    return nrc_aps_evidence_report_export_package.evidence_report_export_package_scope(run_id)
+
+
 def _payload_matches_requested_run(payload: dict[str, Any], run_id: str, owner_run_id: str | None) -> bool:
     if not payload:
         return True
@@ -65,17 +69,41 @@ def _load_candidate_runs(*, run_ids: list[str] | None, limit: int | None) -> lis
     if normalized_run_ids:
         return [{"run_id": run_id} for run_id in normalized_run_ids]
 
-    candidates: dict[str, float] = {}
+    payload_candidates: dict[str, float] = {}
+    payload_scopes: set[str] = set()
+    fallback_candidates: dict[str, float] = {}
     for path in reports_dir.glob("*_aps_evidence_report_export_package_v1.json"):
         payload = _read_json(path)
-        run_id = _owner_run_id_from_package_payload(payload) or _fallback_run_id_from_artifact_name(path.name)
+        run_id = _owner_run_id_from_package_payload(payload)
         if run_id:
-            candidates[run_id] = max(float(path.stat().st_mtime), float(candidates.get(run_id, 0.0)))
+            payload_candidates[run_id] = max(float(path.stat().st_mtime), float(payload_candidates.get(run_id, 0.0)))
+            payload_scopes.add(_candidate_scope_for_run_id(run_id))
+            continue
+        fallback_run_id = _fallback_run_id_from_artifact_name(path.name)
+        if fallback_run_id:
+            fallback_candidates[fallback_run_id] = max(
+                float(path.stat().st_mtime),
+                float(fallback_candidates.get(fallback_run_id, 0.0)),
+            )
     for path in reports_dir.glob("*_aps_evidence_report_export_package_failure_v1.json"):
         payload = _read_json(path)
-        run_id = _owner_run_id_from_failure_payload(payload) or _fallback_run_id_from_artifact_name(path.name)
+        run_id = _owner_run_id_from_failure_payload(payload)
         if run_id:
-            candidates[run_id] = max(float(path.stat().st_mtime), float(candidates.get(run_id, 0.0)))
+            payload_candidates[run_id] = max(float(path.stat().st_mtime), float(payload_candidates.get(run_id, 0.0)))
+            payload_scopes.add(_candidate_scope_for_run_id(run_id))
+            continue
+        fallback_run_id = _fallback_run_id_from_artifact_name(path.name)
+        if fallback_run_id:
+            fallback_candidates[fallback_run_id] = max(
+                float(path.stat().st_mtime),
+                float(fallback_candidates.get(fallback_run_id, 0.0)),
+            )
+
+    candidates = dict(payload_candidates)
+    for fallback_run_id, mtime in fallback_candidates.items():
+        if _candidate_scope_for_run_id(fallback_run_id) in payload_scopes:
+            continue
+        candidates[fallback_run_id] = max(float(mtime), float(candidates.get(fallback_run_id, 0.0)))
 
     ordered = sorted(candidates.items(), key=lambda item: item[1], reverse=True)
     if limit and limit > 0:
