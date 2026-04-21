@@ -82,6 +82,7 @@ The lane now contains:
 - the carried-forward Gate D APS export-package first shared-consumer freeze packet that now governs the landed read-only choice on current `main` of `evidence_report_export_package` as the first downstream shared APS family beyond the landed multisource slice while keeping package-derived context, context-dossier, deterministic fan-out, route/UI, runtime DB, and schema widening out
 - the landed Gate D APS export-package handoff implementation slice rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`, plus the merged narrow export/export-package gate-hardening follow-up in `backend/app/services/nrc_aps_evidence_report_export_gate.py` and `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`; this still does not mean package-derived context, context-dossier, deterministic fan-out, route/UI, runtime DB, or schema widening have landed on current `main`
 - the carried-forward Gate D APS package-derived-context freeze packet that now lands on current `main` and selects the next later shared APS family beyond the landed export-package boundary; it still does not mean package-derived context implementation, `context_dossier`, deterministic fan-out, route/UI, runtime DB, or schema widening have landed on current `main`
+- the current branch/workspace now also carries the bounded Gate D APS package-derived context handoff implementation slice rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py` and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`, plus the narrow context-packet gate hardening in `backend/app/services/nrc_aps_context_packet_gate.py` and `backend/tests/test_layer3_aps_context_packet_handoff.py`; this branch-local slice is not yet landed on current `main` and still does not mean broader package-derived context, `context_dossier`, deterministic fan-out, route/UI, runtime DB, or schema widening have landed
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -111,6 +112,7 @@ Current bounded posture:
 - the carried-forward Gate D APS multisource freeze now covers only the bounded shared same-run source-admission slice now landed on current `main`; it does not mean export-package implementation, package-derived context, context-dossier, deterministic, or schema surfaces have already landed
 - the carried-forward Gate D APS export-package first shared-consumer freeze now covers the now-landed decision on current `main` to select `evidence_report_export_package` as the first later shared APS family beyond the landed multisource slice, and the bounded export-package handoff slice now also lands on current `main`; that still does not mean package-derived context, context-dossier, deterministic, or schema surfaces have already landed
 - the carried-forward Gate D APS package-derived-context freeze now covers the landed read-only choice on current `main` to select package-derived context packet as the next later shared APS family beyond the landed export-package boundary, but it does not mean package-derived context implementation, `context_dossier`, deterministic, or schema surfaces have landed on current `main`
+- the current branch/workspace also now carries the bounded package-derived context handoff slice rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py` and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`, plus the narrow context-packet gate hardening in `backend/app/services/nrc_aps_context_packet_gate.py` and `backend/tests/test_layer3_aps_context_packet_handoff.py`; it is not yet landed on current `main`, and it still does not mean broader package-derived context, `context_dossier`, deterministic, or schema surfaces have landed
 
 The active REV2 control docs in this pack have also been re-audited against current `main` after the repo-root analyst-insight page, alias-router, static-asset, and runtime-helper surfaces landed. Treat the REV1 artifacts and the REV1-to-REV2 correction memo as historical context only.
 
@@ -162,6 +164,12 @@ Read this after `13_GATED_APS_CONTEXT_FREEZE.md` if you need the governing contr
 
 Read this after `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` if you need the governing contract for the now-landed next later shared APS family beyond the landed export-package boundary:
 - `Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
+
+Read this after `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` if you need the current branch-local bounded package-derived context handoff slice that is not yet landed on current `main`:
+- `backend/app/services/layer3_aps_context_packet_package_handoff.py`
+- `backend/app/services/nrc_aps_context_packet_gate.py`
+- `backend/tests/test_layer3_aps_context_packet_handoff.py`
+- `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
 
 ### 2. Execution handoff
 
