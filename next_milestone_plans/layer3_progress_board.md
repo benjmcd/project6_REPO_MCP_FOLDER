@@ -59,8 +59,8 @@ As of `2026-04-20`:
 ## Program State Summary
 
 - Done now on `main`: 21 merged milestones from Phase 1A feeder-ledger foundation through the landed APS deterministic-challenge continuation freeze
-- Current focus: the planned bounded deterministic challenge artifact handoff beyond the now-landed deterministic challenge freeze
-- Candidate next consumers: `deterministic_challenge_artifact` is the current planned continuation focus; review-packet and validate-only gates remain later
+- Current focus: open PR `#130`, the bounded deterministic challenge artifact handoff beyond the now-landed deterministic challenge freeze
+- Candidate next consumers: `deterministic_challenge_artifact` is the current open continuation focus; review-packet and validate-only gates remain later
 - Deferred but not active: 9 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Status
@@ -88,6 +88,7 @@ As of `2026-04-20`:
 | APS deterministic-insight continuation freeze | merged | `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` | `#124` | Landed read-only freeze on current `main` selects `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary; it does not itself land deterministic implementation, challenge/review-packet fan-out, or schema widening |
 | APS deterministic-insight handoff | merged | `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` | `#126` | Landed bounded implementation slice rooted in `layer3_aps_deterministic_insight_artifact_handoff.py`, plus narrow deterministic gate hardening in `nrc_aps_deterministic_insight_artifact_gate.py`; one persisted dossier source boundary is preserved, `ConnectorRun.query_plan_json` stays untouched, and later deterministic fan-out remains out |
 | APS deterministic-challenge continuation freeze | merged | `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` | `#128` | Landed read-only freeze on current `main` selects `deterministic_challenge_artifact` as the next deterministic continuation beyond the landed deterministic-insight boundary without yet admitting implementation, challenge-review-packet fan-out, validate-only expansion, route/UI widening, runtime DB writes, or schema widening |
+| APS deterministic-challenge handoff | open | `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` | `#130` | Open bounded implementation slice rooted in `layer3_aps_deterministic_challenge_artifact_handoff.py`, plus narrow deterministic challenge gate hardening in `nrc_aps_deterministic_challenge_artifact_gate.py`; one persisted deterministic insight artifact remains the immediate source boundary and later deterministic fan-out stays out |
 
 ## What Is Complete
 
@@ -127,7 +128,7 @@ flowchart LR
 
 ## Next Required Decision
 
-The immediate required move is now to open the bounded `deterministic_challenge_artifact` handoff lane beyond the now-landed `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze.
+The immediate required move is now to review and merge PR `#130`, the bounded `deterministic_challenge_artifact` handoff lane beyond the now-landed `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze.
 
 Current bounded selection state:
 - selected first consumer on current `main`: `evidence_report_export_package`
@@ -142,7 +143,7 @@ Current bounded selection state:
 - landed deterministic continuation freeze: PR `#124` for `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md`
 - landed deterministic handoff implementation: PR `#126` for `aps_deterministic_insight_artifact_handoff`
 - landed next freeze target: PR `#128` for `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md`
-- current planned next handoff target: `deterministic_challenge_artifact`
+- current open next handoff target: PR `#130` for `deterministic_challenge_artifact`
 - later after that: `deterministic_challenge_review_packet`, then `validate_only_gates`
 
 Hard rule:
@@ -153,16 +154,16 @@ The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current main after deterministic challenge freeze landing"] --> B["Deterministic challenge artifact handoff"]
+    A["Current branch with open PR #130"] --> B["Deterministic challenge artifact handoff"]
     B --> C["Deterministic challenge review packet"]
     C --> D["Validate-only gates"]
 
     classDef done fill:#d8f5d0,stroke:#2f6b2f,color:#111;
-    classDef planned fill:#fff1bf,stroke:#9a6b00,color:#111;
+    classDef open fill:#fff4e6,stroke:#b8860b,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
 
     class A done;
-    class B planned;
+    class B open;
     class C,D future;
 ```
 
