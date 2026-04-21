@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice, plus the merged malformed-scoped candidate-discovery closeout from PR `#119`, plus the now-landed context-dossier freeze beyond that landed package-context boundary, plus the now-landed bounded context-dossier handoff implementation slice from PR `#121`, plus the post-PR122 artifact-state fix from PR `#123`, plus the now-landed deterministic-insight continuation freeze from PR `#124`, plus the now-landed deterministic insight handoff implementation slice and narrow deterministic gate hardening from PR `#126`, plus the post-PR126 docs/progress sync from PR `#127`, plus the now-landed deterministic-challenge continuation freeze from PR `#128`, plus the post-PR132 docs/progress sync from PR `#133`, plus the now-landed deterministic challenge review-packet handoff lane from PR `#134`, plus the post-PR134 docs/progress sync from PR `#135`, plus the now-landed validate-only-gates freeze from PR `#136`, its docs/progress sync from PR `#137`, the now-landed bounded validate-only gate-report refresh lane from PR `#138`, the post-PR138 docs/progress sync from PR `#139`, the now-landed read-only `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` freeze from PR `#140` beyond that landed generic validate-only boundary, the now-landed post-PR140 docs/progress sync from PR `#141`, the now-landed post-PR141 docs/progress sync from PR `#142`, and the now-landed dedicated validate-only runtime/report-ref implementation lane from PR `#143`.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS dedicated validate-only runtime/report-ref chain already landed on current `main`, plus the open read-only `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze from PR `#145` beyond that landed boundary.
 
 ## Canonical Inputs
 
@@ -31,7 +31,7 @@ Current tracked PR set:
 - `#97`, `#98`, `#99`
 - `#100`, `#101`, `#102`
 - `#106`, `#107`, `#108`, `#109`
-- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, `#136`, `#137`, `#138`, `#139`, `#140`, `#141`, `#142`, `#143`
+- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#125`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, `#136`, `#137`, `#138`, `#139`, `#140`, `#141`, `#142`, `#143`, `#144`, `#145`
 
 Hard rule:
 - never mark a step as landed on `main` from repo docs alone if the GitHub PR is still open
@@ -41,52 +41,35 @@ Hard rule:
 Treat current `project6-origin/main` repo truth as authority for:
 - which implementation surfaces are actually landed
 - which freeze docs exist on current `main`
-- which families remain explicitly deferred
+- which later families remain explicitly deferred
 
 Read these files first:
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 - `next_milestone_plans/README_LAYER3_PHASE1A_PACK.md`
 - `next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
 - `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
-- `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md`
-- `next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md`
-- `next_milestone_plans/Layer3_planning_docs/06_GATEC_PASS_FREEZE.md`
-- `next_milestone_plans/Layer3_planning_docs/07_GATEC_COHORT_FREEZE.md`
-- `next_milestone_plans/Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md`
-- `next_milestone_plans/Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md`
-- `next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md`
-- `next_milestone_plans/Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md`
-- `next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md`
-- `next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md`
-- `next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md`
-
-Also read:
-- `next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md`
-- `backend/app/services/nrc_aps_evidence_report_export_gate.py`
-- `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`
+- `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`
+- `backend/app/services/review_nrc_aps_graph.py`
+- `backend/app/services/nrc_aps_validate_only_gates_contract.py`
+- `backend/app/services/nrc_aps_validate_only_gates.py`
+- `backend/app/services/nrc_aps_validate_only_gates_gate.py`
+- `backend/app/services/review_nrc_aps_runtime.py`
+- `backend/app/services/review_nrc_aps_gate_reports.py`
+- `backend/app/services/connectors_sciencebase.py`
+- `project6.ps1`
 - `next_milestone_plans/progress-prompt.md`
 
 When present in the current checkout, also read:
-- `next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
-- `next_milestone_plans/Layer3_planning_docs/17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md`
-- `backend/app/services/layer3_aps_context_packet_package_handoff.py`
-- `backend/app/services/nrc_aps_context_packet_gate.py`
-- `backend/app/services/nrc_aps_context_dossier_contract.py`
-- `backend/app/services/nrc_aps_context_dossier.py`
-- `backend/app/services/nrc_aps_context_dossier_gate.py`
-- `next_milestone_plans/Layer3_planning_docs/18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md`
-- `backend/app/services/nrc_aps_deterministic_insight_artifact_contract.py`
-- `backend/app/services/nrc_aps_deterministic_insight_artifact.py`
-- `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`
-- `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py`
-- `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`
-- `backend/app/services/review_nrc_aps_graph.py`
-- `next_milestone_plans/Layer3_planning_docs/19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md`
-- `backend/app/services/nrc_aps_deterministic_challenge_artifact_contract.py`
-- `backend/app/services/nrc_aps_deterministic_challenge_artifact.py`
-- `backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py`
-- `backend/tests/test_layer3_aps_context_packet_handoff.py`
-- `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
+- `next_milestone_plans/Layer3_planning_docs/23_GATED_APS_PROMOTION_FREEZE.md`
+- `backend/app/services/nrc_aps_promotion_gate.py`
+- `tests/test_nrc_aps_promotion_gate.py`
+- `backend/app/services/nrc_aps_promotion_tuning.py`
+- `tests/test_nrc_aps_promotion_tuning.py`
+- `backend/app/services/nrc_adams_resources/aps_promotion_policy_v1.json`
+- `backend/app/services/aps_retrieval_plane_cutover_validation.py`
+- `backend/tests/test_aps_retrieval_plane_cutover_validation.py`
+- `backend/tests/test_aps_retrieval_plane_cutover_gate.py`
+- `tools/nrc_aps_retrieval_cutover_gate.py`
 
 ### Local checkout rule
 
@@ -121,27 +104,7 @@ Any external live artifact or dashboard must also obey:
 3. Refresh the current `main` commit SHA.
 4. Record that SHA as `snapshot_base_main_commit`, meaning the base `main` commit used for the artifact refresh.
 5. Do not write that SHA back as a self-updating `current_main_commit` claim, because this artifact can merge in a later commit than the snapshot it describes.
-6. Re-read:
-   - `docs/nrc_adams/nrc_aps_status_handoff.md`
-   - `next_milestone_plans/README_LAYER3_PHASE1A_PACK.md`
-   - `next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
-   - `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
-   - `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `14_GATED_APS_MULTISOURCE_FREEZE.md`
-   - and the now-landed first shared-consumer freeze that sits immediately beyond that landed chain, currently `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md`
-   - and the merged exact-run gate-hardening owner surfaces rooted in `backend/app/services/nrc_aps_evidence_report_export_gate.py` and `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`
-   - and, when present in the current checkout, the bounded export-package handoff owner surfaces rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
-   - and the now-landed package-derived-context freeze rooted in `next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
-   - and the landed package-derived context owner/proof surfaces rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py`, `backend/app/services/nrc_aps_context_packet_gate.py`, `backend/tests/test_layer3_aps_report_export_handoff.py`, `backend/tests/test_layer3_aps_context_packet_handoff.py`, and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
-   - and, when present in the current checkout, the landed `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze plus the live dossier family surfaces rooted in `backend/app/services/nrc_aps_context_dossier_contract.py`, `backend/app/services/nrc_aps_context_dossier.py`, `backend/app/services/nrc_aps_context_dossier_gate.py`, and `backend/app/services/review_nrc_aps_graph.py`
-   - and, when present in the current checkout, the landed bounded dossier handoff owner/proof surfaces rooted in `backend/app/services/layer3_aps_context_dossier_handoff.py` and `backend/tests/test_layer3_aps_context_dossier_handoff.py`
-   - and, when present in the current checkout, the landed `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze plus the live deterministic insight family surfaces rooted in `backend/app/services/nrc_aps_deterministic_insight_artifact_contract.py`, `backend/app/services/nrc_aps_deterministic_insight_artifact.py`, `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`, and `backend/app/services/review_nrc_aps_graph.py`
-   - and, when present in the current checkout, the landed deterministic insight handoff owner/proof surfaces rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`
-   - and, when present in the current checkout, the landed `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze plus the live deterministic challenge family surfaces rooted in `backend/app/services/nrc_aps_deterministic_challenge_artifact_contract.py`, `backend/app/services/nrc_aps_deterministic_challenge_artifact.py`, `backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py`, and `backend/app/services/review_nrc_aps_graph.py`
-- and, when present in the current checkout, the landed `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze plus the live deterministic challenge review-packet family surfaces rooted in `backend/app/services/nrc_aps_deterministic_challenge_review_packet_contract.py`, `backend/app/services/nrc_aps_deterministic_challenge_review_packet.py`, `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`, and the landed owner/proof surfaces rooted in `backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py` and `backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py`
-- and, when present in the current checkout, the landed `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze plus the generic validate-only review surfaces rooted in `backend/app/services/review_nrc_aps_graph.py`, `backend/app/services/review_nrc_aps_tree.py`, `backend/tests/test_review_nrc_aps_graph.py`, `project6.ps1`, and `backend/app/services/connectors_sciencebase.py`
-- and, when present in the current checkout, the landed validate-only gate-report refresh owner/proof surfaces rooted in `backend/app/services/review_nrc_aps_gate_reports.py`, `tools/nrc_aps_refresh_review_gate_reports.py`, `tools/run_nrc_aps_local_corpus_e2e.py`, `backend/tests/test_review_nrc_aps_gate_reports.py`, and `project6.ps1`
-- and, when present in the current checkout, the landed `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` freeze from PR `#140` plus the decision surfaces rooted in `backend/app/services/connectors_sciencebase.py`, `backend/app/services/review_nrc_aps_graph.py`, `backend/app/services/review_nrc_aps_tree.py`, `backend/app/services/review_nrc_aps_details.py`, and `project6.ps1`
-- and, when present in the current checkout, the landed dedicated validate-only runtime/report-ref implementation surfaces rooted in `backend/app/services/nrc_aps_validate_only_gates_contract.py`, `backend/app/services/nrc_aps_validate_only_gates.py`, `backend/app/services/nrc_aps_validate_only_gates_gate.py`, `backend/tests/test_nrc_aps_validate_only_gates.py`, `tools/nrc_aps_refresh_validate_only_gates.py`, `tools/nrc_aps_validate_only_gates_gate.py`, `backend/app/services/review_nrc_aps_runtime.py`, `backend/app/services/review_nrc_aps_gate_reports.py`, `backend/app/services/review_nrc_aps_graph.py`, `backend/app/services/review_nrc_aps_tree.py`, `backend/app/services/connectors_sciencebase.py`, and `project6.ps1`
+6. Re-read the active planning/status/progress packet and all repo authority surfaces named in `refresh_inputs.repo_paths`.
 7. For each milestone:
    - update PR state from GitHub
    - update merge commit from GitHub
@@ -150,7 +113,7 @@ Any external live artifact or dashboard must also obey:
 9. Reconcile any external render surface against `next_milestone_plans/progress-ui-spec.md`.
 10. Ensure the primary render path is HTML/CSS readable without JavaScript or Mermaid.
 11. Preserve explicit deferred scope.
-12. If the next-step decision has changed, update `next_required_decision` in the manifest and the matching section in the board.
+12. If the next-step decision has changed, update `next_required_decision` in the manifest and the matching sections in the board and prompt.
 13. If the live artifact cannot read refreshed files at view time, regenerate the artifact itself from the refreshed manifest and board instead of leaving a stale embedded snapshot in place.
 14. Fail closed if GitHub state cannot be refreshed:
    - keep the last known manifest state
@@ -190,58 +153,23 @@ Do not:
 ## Current Program Boundary
 
 The current bounded chain on `main` ends at:
-- the landed APS package-derived context handoff slice beyond the landed export-package handoff boundary
-- the landed read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze from PR `#118`
-- the merged malformed-scoped candidate-discovery closeout from PR `#119` for the export, export-package, and context-packet gates
-- the post-PR118 docs/progress closeout from PR `#120`
-- the landed bounded `aps_context_dossier_handoff` implementation slice from PR `#121`
-- the post-PR121 docs/progress closeout from PR `#122`
-- the post-PR122 artifact-state fix from PR `#123`
-- the landed read-only deterministic-insight continuation freeze from PR `#124`
-- and the now-landed deterministic insight handoff implementation slice plus narrow deterministic gate hardening beyond that landed freeze
-- and the post-PR126 docs/progress sync from PR `#127`
-- and the now-landed deterministic challenge continuation freeze from PR `#128`
-- and the post-PR128 docs/progress sync from PR `#129`
-- and the now-landed deterministic challenge handoff implementation slice plus narrow deterministic challenge gate hardening from PR `#130`
-- and the post-PR130 docs/progress sync from PR `#131`
-- and the now-landed deterministic challenge review-packet continuation freeze from PR `#132`
-- and the post-PR132 docs/progress sync from PR `#133`
-- and the now-landed deterministic challenge review-packet handoff slice plus narrow review-packet gate hardening from PR `#134`
-- and the post-PR134 docs/progress sync from PR `#135`
-- and the landed read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze from PR `#136`
-- and the post-PR136 docs/progress sync from PR `#137`
-- and the landed bounded validate-only gate-report refresh lane from PR `#138`
-- and the post-PR138 docs/progress sync from PR `#139`
-- and the post-PR140 docs/progress sync from PR `#141`
-- and the post-PR141 docs/progress sync from PR `#142`
+- the landed dedicated validate-only runtime/report-ref continuation freeze from PR `#140`
+- the post-PR140 docs/progress sync from PR `#141`
+- the post-PR141 docs/progress sync from PR `#142`
+- the landed dedicated validate-only runtime/report-ref implementation lane from PR `#143`
+- the post-PR143 docs/progress sync from PR `#144`
 
 The preserved source-branch rule on current `main` is:
 - dossier input must remain paired export-derived context packets rather than package-derived context
 
 The current landed continuation at the end of current `main` is:
-- the landed bounded validate-only gate-report refresh lane from PR `#138` beyond the now-landed `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze and the now-landed deterministic challenge review-packet handoff, still pinned to the existing generic review graph, review tree, local-corpus proof, and operator surfaces
+- the bounded dedicated validate-only runtime/report-ref implementation lane from PR `#143`, rooted in the dedicated validate-only contract/runtime/gate trio plus the bounded review graph/tree/runtime/report-ref integrations selected by `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`
 
-The next required move is:
-- current `main` now also includes the post-PR140 docs/progress sync from PR `#141`
-- current `main` now also includes the post-PR141 docs/progress sync from PR `#142`
-- current `main` now also includes the bounded dedicated validate-only runtime/report-ref implementation lane from PR `#143`, selected by `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`
-- no later post-validate-only freeze is yet landed on current `main`; do not widen directly into validate-only top-chain expansion, promotion, retrieval cutover, route or UI, runtime DB, or schema scope without first settling a fresh read-only freeze
-
-The first selected shared consumer on current `main` is:
-- `evidence_report_export_package`
-
-The landed bounded implementation target on current `main` is:
-- `aps_evidence_report_export_package_handoff`
-
-The later but not first consumer remains:
-- `context_dossier`
-
-These are not both still open candidates in the same way:
-- `evidence_report_export_package` is selected on current `main`
-- `aps_evidence_report_export_package_handoff` is now landed on current `main`
-- package-derived context packet is now landed on current `main` as the next write-enabled shared-family target after that landed handoff boundary, and current `main` now also includes the merged malformed-scoped candidate-discovery closeout from PR `#119`
-- `context_dossier` is now the settled next later shared-family target beyond the landed package-context boundary
-- paired export-derived context packets remain the dossier input branch and must not be refreshed into package-derived dossier input claims
+The next required move in this checkout is:
+- open PR `#145` now carries the read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze
+- that freeze selects promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary
+- retrieval cutover remains later
+- do not widen directly into promotion implementation, retrieval cutover, route/UI, runtime DB, or schema scope without first settling this freeze in GitHub state
 
 ## Schedule Guidance
 
