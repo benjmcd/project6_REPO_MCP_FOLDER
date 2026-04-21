@@ -39,7 +39,7 @@ Current merged-state note:
 - current `main` already has validate-only operator entrypoints through `project6.ps1`, including `validate-nrc-aps-deterministic-challenge-review-packet` and aggregate `gate-nrc-aps`
 - current `main` does not yet expose a dedicated `aps_validate_only_gates_report_refs` bucket in `backend/app/services/connectors_sciencebase.py`
 - current `main` does not yet contain a dedicated `nrc_aps_validate_only_gates_contract.py`, `nrc_aps_validate_only_gates.py`, or `nrc_aps_validate_only_gates_gate.py`
-- current branch now also includes this read-only freeze selecting `validate_only_gates` as the exact next verification continuation beyond the landed deterministic challenge review-packet handoff while keeping later promotion, retrieval cutover, route/UI, runtime DB, and schema widening out
+- current open PR `#136` now carries this read-only freeze selecting `validate_only_gates` as the exact next verification continuation beyond the landed deterministic challenge review-packet handoff while keeping later promotion, retrieval cutover, route/UI, runtime DB, and schema widening out
 
 Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/20_GATED_APS_REVIEW_PACKET_FREEZE.md|artifact|current governing freeze for the landed deterministic challenge review-packet boundary`; `R|backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py|Current bounded deterministic challenge review-packet handoff owner surface on current \`main\`|1-392`; `R|backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py|Current bounded deterministic challenge review-packet handoff proof surface on current \`main\`|1-627`; `R|backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py|Live review-packet gate already validates the persisted review-packet boundary through a dedicated validate-only report path|137-289`; `R|backend/app/services/review_nrc_aps_graph.py|Live downstream graph places validate_only_gates immediately after deterministic challenge review packet and maps that node to gate_reports plus gate_results|38-41;67-68;87-88;108-109;413-428;543-548;774-779`; `R|backend/app/services/review_nrc_aps_tree.py|Live review tree already treats gate_reports and gate_results as first-class runtime layout surfaces|61-71`; `R|backend/tests/test_review_nrc_aps_graph.py|Live review-graph proof already asserts validate_only_gates exists and is backed by real gate totals in the review runtime|28-52`; `R|project6.ps1|Current operator entrypoints already expose deterministic challenge review-packet validation and aggregate gate execution as validate-only actions|569-579;664-708`; `R|backend/app/services/connectors_sciencebase.py|Current run-level report-ref registry stops at deterministic challenge review packet and does not yet define a dedicated validate_only_gates bucket|2948-2962`
 
@@ -174,7 +174,7 @@ Stop and reopen the freeze instead of improvising if a later continuation requir
 ## Concise readiness judgment
 
 Readiness judgment:
-- This branch-local read-only freeze is the governing carried-forward contract for the bounded choice of `validate_only_gates` as the next APS family after the landed deterministic challenge review-packet boundary.
+- This open read-only freeze on PR `#136` is the governing carried-forward contract for the bounded choice of `validate_only_gates` as the next APS family after the landed deterministic challenge review-packet boundary.
 
 Reason:
 - current `main` already proves the bounded deterministic challenge review-packet handoff and its persisted review-packet artifact boundary
@@ -182,7 +182,7 @@ Reason:
 - repo truth does not yet contain a dedicated validate-only family-specific runtime stack
 - this read-only freeze therefore settles the next family choice narrowly without overclaiming implementation
 
-What still remains intentionally deferred after this branch-local read-only freeze:
+What still remains intentionally deferred after this open read-only freeze on PR `#136`:
 - the later validate-only execution or report-refresh lane
 - promotion
 - retrieval cutover
