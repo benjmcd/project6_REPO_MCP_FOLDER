@@ -30,8 +30,9 @@ Current-state note:
 - current `main` now includes the bounded `aps_evidence_report_export_package_handoff` slice rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
 - current `main` also now includes the narrow export/export-package gate hardening follow-up in `backend/app/services/nrc_aps_evidence_report_export_gate.py`, `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`, `backend/tests/test_layer3_aps_report_export_handoff.py`, and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
 - current `main` now includes this read-only freeze selecting the next later shared-family boundary beyond that landed export-package seam
+- current branch/workspace now also carries the bounded package-derived context handoff implementation slice rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py` and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`, plus the narrow context-packet gate hardening in `backend/app/services/nrc_aps_context_packet_gate.py` and `backend/tests/test_layer3_aps_context_packet_handoff.py`, but that branch-local slice is not yet landed on current `main`
 
-Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md|artifact|current governing freeze for the landed export-package boundary`; `R|backend/app/services/layer3_aps_report_export_package_handoff.py|Current bounded export-package handoff owner surface|35-405`; `R|backend/tests/test_layer3_aps_report_export_package_handoff.py|Current bounded export-package handoff proof covers success, fail-closed boundaries, and scope-collision hardening|46-428`; `R|backend/app/services/nrc_aps_evidence_report_export_gate.py|Current export gate now filters by exact embedded run identity instead of sanitized filename scope alone|25-188`; `R|backend/app/services/nrc_aps_evidence_report_export_package_gate.py|Current export-package gate now filters by exact owner_run_id instead of sanitized filename scope alone|25-203`; `R|backend/app/services/nrc_aps_context_packet_contract.py|Live context-packet contract accepts evidence_report_export_package as a package source family|22-28;145-148;181-183`; `R|backend/app/services/nrc_aps_context_packet.py|Live package-derived context packet family still mutates run refs on persist|468-549`; `R|backend/app/services/nrc_aps_context_dossier_contract.py|Live context-dossier family remains later and depends on paired context packets with compatible source-family posture|18-32;166-174;237-282`; `R|backend/app/services/review_nrc_aps_graph.py|Live downstream shared graph places export_package before context_packet_package and before context_dossier|33-37;58-64;99-105`
+Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md|artifact|current governing freeze for the landed export-package boundary`; `R|backend/app/services/layer3_aps_report_export_package_handoff.py|Current bounded export-package handoff owner surface|35-405`; `R|backend/tests/test_layer3_aps_report_export_package_handoff.py|Current bounded export-package handoff proof covers success, fail-closed boundaries, and scope-collision hardening|46-428`; `R|backend/app/services/nrc_aps_evidence_report_export_gate.py|Current export gate now filters by exact embedded run identity instead of sanitized filename scope alone|25-188`; `R|backend/app/services/nrc_aps_evidence_report_export_package_gate.py|Current export-package gate now filters by exact owner_run_id instead of sanitized filename scope alone|25-203`; `R|backend/app/services/layer3_aps_context_packet_package_handoff.py|Current bounded package-derived context handoff owner surface in the current branch/workspace|31-277`; `R|backend/tests/test_layer3_aps_context_packet_package_handoff.py|Current bounded package-derived context handoff proof surface in the current branch/workspace|38-230`; `R|backend/app/services/nrc_aps_context_packet_gate.py|Current context-packet gate now filters exact owner-run identity under sanitized filename-scope collisions|31-67;122-233`; `R|backend/tests/test_layer3_aps_context_packet_handoff.py|Current bounded context-packet proof surface now covers non-path-safe run ids and exact owner-run collision filtering|124-255`; `R|backend/app/services/nrc_aps_context_packet_contract.py|Live context-packet contract accepts evidence_report_export_package as a package source family|22-28;145-148;181-183`; `R|backend/app/services/nrc_aps_context_packet.py|Live package-derived context packet family still mutates run refs on persist|468-549`; `R|backend/app/services/nrc_aps_context_dossier_contract.py|Live context-dossier family remains later and depends on paired context packets with compatible source-family posture|18-32;166-174;237-282`; `R|backend/app/services/review_nrc_aps_graph.py|Live downstream shared graph places export_package before context_packet_package and before context_dossier|33-37;58-64;99-105`
 
 ## Frozen tranche
 
@@ -43,7 +44,7 @@ The bounded APS package-derived context continuation is frozen as:
 - if any later continuation cannot stay inside the landed export-package handoff seam plus the live context-packet contract boundary, reopen the freeze instead of improvising
 
 Hard rule:
-- do not reinterpret this freeze as permission to widen directly into package-derived context implementation, `context_dossier`, deterministic, review-packet, route/UI, runtime DB, or schema work
+- do not reinterpret this freeze and the bounded current branch handoff slice as permission to widen directly beyond package-derived context into `context_dossier`, deterministic, review-packet, route/UI, runtime DB, or schema work
 
 ## Canonical starting point
 
@@ -87,13 +88,14 @@ Frozen target rule:
 
 ### 2. Expected bounded implementation posture
 
-Expected owner/proof posture for the next write-enabled lane after this freeze:
-- a new bounded Layer 3 package-derived context handoff surface
-- focused proof rooted in a dedicated package-derived context handoff test
+The expected owner/proof posture admitted after this freeze is now present in the current branch/workspace as:
+- a new bounded Layer 3 package-derived context handoff surface rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py`
+- focused proof rooted in `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
+- narrow shared context-packet gate hardening rooted in `backend/app/services/nrc_aps_context_packet_gate.py` and `backend/tests/test_layer3_aps_context_packet_handoff.py`
 
-Frozen implementation rule for that later write-enabled lane:
+Frozen implementation rule for the current branch-local write-enabled lane admitted after this freeze:
 - source only from the already-landed `aps_evidence_report_export_package_handoff` truth and the live package-source branch of the context-packet contract
-- reuse the live `nrc_aps_context_packet` contract/load/gate boundary without direct edits unless a repo-confirmed blocker forces a reopened freeze
+- reuse the live `nrc_aps_context_packet` contract/load boundary and keep gate edits narrow; the current branch-local slice hardens only the shared context-packet gate because a repo-confirmed sanitized filename-scope collision blocker required exact owner-run filtering
 - keep `backend/app/models/models.py`, migrations, route/UI, runtime DB writes, and later dossier/deterministic fan-out out
 
 ### 3. Why dossier is not next
@@ -107,7 +109,7 @@ Frozen reason dossier is not the next shared-family choice:
 
 This freeze keeps deferred:
 - direct edits to the shared `nrc_aps_evidence_report_export_package*.py` runtime surfaces beyond the now-landed handoff and gate-hardening boundary
-- package-derived context-packet implementation
+- package-derived context implementation beyond the bounded current branch handoff slice
 - direct `context_dossier` implementation
 - deterministic-insight, deterministic-challenge, and review-packet families
 - route/UI widening
@@ -163,6 +165,10 @@ Repo-local anchors used most directly:
 - `R|backend/tests/test_layer3_aps_report_export_package_handoff.py|Current bounded export-package handoff proof covers success, fail-closed boundaries, and scope-collision hardening|46-428`
 - `R|backend/app/services/nrc_aps_evidence_report_export_gate.py|Current export gate now filters by exact embedded run identity instead of sanitized filename scope alone|25-188`
 - `R|backend/app/services/nrc_aps_evidence_report_export_package_gate.py|Current export-package gate now filters by exact owner_run_id instead of sanitized filename scope alone|25-203`
+- `R|backend/app/services/layer3_aps_context_packet_package_handoff.py|Current bounded package-derived context handoff owner surface in the current branch/workspace|31-277`
+- `R|backend/tests/test_layer3_aps_context_packet_package_handoff.py|Current bounded package-derived context handoff proof surface in the current branch/workspace|38-230`
+- `R|backend/app/services/nrc_aps_context_packet_gate.py|Current context-packet gate now filters exact owner-run identity under sanitized filename-scope collisions|31-67;122-233`
+- `R|backend/tests/test_layer3_aps_context_packet_handoff.py|Current bounded context-packet proof surface now covers non-path-safe run ids and exact owner-run collision filtering|124-255`
 - `R|backend/app/services/nrc_aps_context_packet_contract.py|Live context-packet contract accepts evidence_report_export_package as a package source family|22-28;145-148;181-183`
 - `R|backend/app/services/nrc_aps_context_packet.py|Live package-derived context packet family still mutates run refs on persist|468-549`
 - `R|backend/app/services/nrc_aps_context_dossier_contract.py|Live context-dossier family remains later and depends on paired context packets with compatible source-family posture|18-32;166-174;237-282`
