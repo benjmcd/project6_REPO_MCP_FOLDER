@@ -3,11 +3,11 @@
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
-It tracks the bounded Layer3 Phase1A through APS validate-only runtime/report-ref chain already landed on current `main`, plus the open read-only `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze from PR `#145` beyond that landed boundary.
+It tracks the bounded Layer3 Phase1A through APS validate-only runtime/report-ref chain already landed on current `main`, plus the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze from PR `#145` beyond that landed boundary.
 
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger foundation through the bounded dedicated validate-only runtime/report-ref implementation lane
-- the open read-only promotion continuation freeze now carried by PR `#145`
+- the landed read-only promotion continuation freeze from PR `#145`
 - the next later family decision immediately beyond the landed dedicated validate-only boundary
 
 It is not a general whole-repo roadmap.
@@ -42,14 +42,14 @@ As of `2026-04-21`:
 - current `main` now includes the landed deterministic challenge review-packet continuation freeze from PR `#132`, the post-PR132 docs/progress sync from PR `#133`, the bounded deterministic challenge review-packet handoff slice from PR `#134`, and the post-PR134 docs/progress sync from PR `#135`
 - current `main` now includes the landed validate-only-gates continuation freeze from PR `#136`, the post-PR136 docs/progress sync from PR `#137`, the bounded validate-only gate-report refresh lane from PR `#138`, and the post-PR138 docs/progress sync from PR `#139`
 - current `main` now includes the landed dedicated validate-only runtime/report-ref continuation freeze from PR `#140`, the post-PR140 docs/progress sync from PR `#141`, the post-PR141 docs/progress sync from PR `#142`, the bounded dedicated validate-only runtime/report-ref implementation lane from PR `#143`, and the post-PR143 docs/progress sync from PR `#144`
-- no later post-validate-only freeze has yet landed on current `main`
-- open PR `#145` now carries the read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze selecting promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later
+- current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`
+- current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, selecting promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later
 
 ## Program State Summary
 
-- Done now on `main`: 28 merged milestones from Phase 1A feeder-ledger foundation through the landed APS dedicated validate-only runtime/report-ref implementation lane, plus the post-PR143 docs/progress sync from PR `#144`
-- Current focus: open PR `#145` for the read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze
-- Candidate next consumers: promotion is selected in open PR `#145` as the first later APS family; retrieval cutover remains later; no separate repo-backed post-validate-only top-chain family is admitted here
+- Done now on `main`: 29 merged milestones from Phase 1A feeder-ledger foundation through the landed APS promotion continuation freeze from PR `#145`
+- Current focus: planned promotion-governance continuation or sufficiency audit of the existing promotion family already present on current `main`
+- Candidate next consumers: promotion is now the landed later-family choice on current `main`; retrieval cutover remains later; no separate repo-backed post-validate-only top-chain family is admitted here
 - Deferred but not active: 9 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Table
@@ -84,7 +84,7 @@ As of `2026-04-21`:
 | APS validate-only gate-report refresh lane | merged | `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` | `#138`, `#139` | Landed bounded validate-only gate-report refresh lane plus docs/progress sync |
 | APS dedicated validate-only runtime/report-ref continuation freeze | merged | `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` | `#140`, `#141`, `#142` | Landed read-only freeze plus both docs/progress sync passes |
 | APS dedicated validate-only runtime/report-ref implementation lane | merged | `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` | `#143`, `#144` | Landed bounded implementation lane plus post-PR143 docs/progress sync |
-| APS promotion continuation freeze | open | `23_GATED_APS_PROMOTION_FREEZE.md` | `#145` | Open PR `#145` carries this read-only freeze selecting promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later |
+| APS promotion continuation freeze | merged | `23_GATED_APS_PROMOTION_FREEZE.md` | `#145` | Landed read-only freeze from PR `#145` selects promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later |
 
 ## Completed Chain
 
@@ -127,39 +127,39 @@ flowchart LR
 
 ## Current Focus
 
-The immediate active step in this checkout is open PR `#145` for the read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze.
+The immediate active step after this closeout is a planned promotion-governance continuation or sufficiency audit centered on the existing promotion family already present on current `main`.
 
 Current bounded selection state:
 - current `main` is settled through the dedicated validate-only runtime/report-ref implementation lane from PR `#143` and the post-PR143 docs/progress sync from PR `#144`
-- no later post-validate-only freeze has yet landed on current `main`
-- open PR `#145` now carries `23_GATED_APS_PROMOTION_FREEZE.md`
-- that freeze selects promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary
+- current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`
+- promotion is now the landed later-family choice on current `main` under `23_GATED_APS_PROMOTION_FREEZE.md`
+- the landed freeze selects promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary
 - retrieval cutover remains later
-- open PR `#145` does not admit promotion implementation changes, retrieval cutover changes, route/UI widening, runtime DB writes, or schema widening
-- open PR `#145` does not invent a separate repo-backed post-validate-only top-chain family
+- the landed freeze does not admit promotion implementation changes, retrieval cutover changes, route/UI widening, runtime DB writes, or schema widening by itself
+- the landed freeze does not invent a separate repo-backed post-validate-only top-chain family
 
 Hard rule:
 - do not skip directly from the landed dedicated validate-only runtime/report-ref boundary to retrieval cutover before the promotion family is settled
 
 ## Candidate Next Consumers
 
-- `promotion`: selected in open PR `#145` as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary
-- `retrieval_cutover`: still later; not admitted by open PR `#145`
+- `promotion`: now the landed later-family choice on current `main`; the remaining question is whether the existing promotion family needs any bounded follow-up lane
+- `retrieval_cutover`: still later; it must not skip ahead of the now-landed promotion selection
 
 The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current main after PR #144"] --> B["Open promotion freeze (PR #145)"]
+    A["Current main after PR #145"] --> B["Planned promotion-governance continuation"]
     B --> C["Later promotion-governance lane"]
     B -.-> D["Later retrieval cutover lane"]
 
     classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
-    classDef branch fill:#e7edff,stroke:#4b63b3,color:#111;
+    classDef planned fill:#fff1bf,stroke:#9a6b00,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
 
     class A merged;
-    class B branch;
+    class B planned;
     class C,D future;
 ```
 

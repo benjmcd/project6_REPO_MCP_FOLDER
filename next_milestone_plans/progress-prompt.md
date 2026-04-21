@@ -89,8 +89,8 @@ Current repo-side facts to preserve:
 - current `main` now also includes the post-PR143 docs/progress sync from PR `#144`
 - if the current checkout matches current `main` after PR `#144`, render the dedicated validate-only runtime/report-ref implementation lane as `merged`
 - if no later post-validate-only freeze exists on current `main`, render the current focus as the next freeze decision rather than as another current-main implementation lane
-- if GitHub confirms open PR `#145` for `23_GATED_APS_PROMOTION_FREEZE.md`, render that freeze as `open`
-- if the current checkout carries `23_GATED_APS_PROMOTION_FREEZE.md`, show promotion as the selected first later APS family in open PR `#145` beyond the landed dedicated validate-only boundary, keep retrieval cutover later, and do not invent a separate repo-backed post-validate-only top-chain family
+- if the current checkout matches current `main` after PR `#145`, render `23_GATED_APS_PROMOTION_FREEZE.md` as `merged`
+- if the current checkout matches current `main` after PR `#145`, show promotion as the landed first later APS family beyond the landed dedicated validate-only boundary, keep retrieval cutover later, and do not invent a separate repo-backed post-validate-only top-chain family
 
 When rebuilding from a checkout that matches current `main` after PR `#144`:
 - show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
@@ -116,10 +116,10 @@ When rebuilding from a checkout that matches current `main` after PR `#144`:
 - show the post-PR141 docs/progress sync from PR `#142` as already landed on `main`
 - show the dedicated validate-only runtime/report-ref implementation lane from PR `#143` as `merged`
 - show the post-PR143 docs/progress sync from PR `#144` as already landed on `main`
-- if refreshing from the branch checkout carrying `23_GATED_APS_PROMOTION_FREEZE.md`, show that freeze as `open` while GitHub confirms open PR `#145`
+- if refreshing from a checkout that matches current `main` after PR `#145`, show that freeze as `merged`
 
-Current open-PR fact to preserve when present:
-- open PR `#145` carries the read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze selecting promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later
+Current merged-state fact to preserve when present:
+- current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, selecting promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later
 
 Also update the scheduled refresh task so it no longer:
 - writes or references `current_main_commit`
