@@ -82,7 +82,8 @@ Current repo-side facts to preserve:
 - current `main` now also includes the landed read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze from PR `#136`, selecting `validate_only_gates` as the exact next verification continuation beyond the landed review-packet handoff
 - current `main` now also includes the post-PR136 docs/progress sync from PR `#137`
 - current `main` now also includes the bounded validate-only gate-report refresh lane from PR `#138`, rooted in `backend/app/services/review_nrc_aps_gate_reports.py`, `tools/nrc_aps_refresh_review_gate_reports.py`, `tools/run_nrc_aps_local_corpus_e2e.py`, `backend/tests/test_review_nrc_aps_gate_reports.py`, and `project6.ps1`
-- the immediate required move is no longer to flip validate-only-gates or the bounded gate-report refresh lane from branch/open state into merged state; both are now landed on current `main`, and any further continuation would require a fresh read-only decision on whether to admit dedicated validate-only family-specific report-ref/runtime surfaces
+- current `main` now also includes the post-PR138 docs/progress sync from PR `#139`
+- the immediate required move is no longer to flip validate-only-gates or the bounded gate-report refresh lane from branch/open state into merged state; both are now landed on current `main`, and this branch now carries the fresh read-only decision on whether to admit dedicated validate-only family-specific report-ref/runtime surfaces
 - `validate_only_gates` is now the landed current-main family choice through the bounded gate-report refresh lane from PR `#138`
 
 When rebuilding from a checkout that matches current `main` after PR `#138`:
@@ -103,6 +104,8 @@ When rebuilding from a checkout that matches current `main` after PR `#138`:
 - show `validate_only_gates` as `merged` from PR `#136`
 - show the post-PR136 docs/progress closeout from PR `#137` as already landed on `main`
 - show the bounded validate-only gate-report refresh lane as `merged`
+- show the post-PR138 docs/progress closeout from PR `#139` as already landed on `main`
+- if refreshing from this branch before merge, show `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` as `branch_only` until GitHub confirms a PR exists
 
 Also update the scheduled refresh task so it no longer:
 - writes or references `current_main_commit`
