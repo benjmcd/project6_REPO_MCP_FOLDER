@@ -73,7 +73,7 @@ Current repo-side facts to preserve:
 - `deterministic_insight_artifact` is the current open bounded current-focus choice; later deterministic steps remain later and must not be collapsed into the same state
 
 When rebuilding from a checkout that matches the current open-PR state after PR `#124` is open:
-- show that slice as completed on `main`
+- show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
 - show the exact-run gate-hardening follow-up as already landed on `main`
 - show the landed package-derived-context freeze as completed on `main`
 - show the package-derived context handoff slice as `merged`
