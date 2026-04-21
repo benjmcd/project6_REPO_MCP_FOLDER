@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -121,3 +122,20 @@ def test_refresh_review_gate_reports_fails_closed_on_run_mismatch(tmp_path):
 
     with pytest.raises(ValueError, match="does not match requested run_id"):
         gate_reports.refresh_review_gate_reports(run_id="run-xyz", review_root=runtime_root)
+
+
+def test_local_corpus_e2e_help_bootstraps_backend_imports():
+    repo_root = Path(__file__).resolve().parents[2]
+    env = dict(os.environ)
+    env.pop("PYTHONPATH", None)
+
+    result = subprocess.run(
+        [sys.executable, str(repo_root / "tools" / "run_nrc_aps_local_corpus_e2e.py"), "--help"],
+        cwd=repo_root,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "usage:" in result.stdout.lower()

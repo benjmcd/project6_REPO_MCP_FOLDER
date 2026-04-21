@@ -40,6 +40,9 @@ Current merged-state note:
 - current `main` does not yet expose a dedicated `aps_validate_only_gates_report_refs` bucket in `backend/app/services/connectors_sciencebase.py`
 - current `main` does not yet contain a dedicated `nrc_aps_validate_only_gates_contract.py`, `nrc_aps_validate_only_gates.py`, or `nrc_aps_validate_only_gates_gate.py`
 - current `main` now also includes this landed read-only freeze from PR `#136`, selecting `validate_only_gates` as the exact next verification continuation beyond the landed deterministic challenge review-packet handoff while keeping later promotion, retrieval cutover, route/UI, runtime DB, and schema widening out
+- current `main` now also includes the post-PR136 docs/progress sync from PR `#137`
+- current open PR `#138` now carries the bounded validate-only gate-report refresh lane rooted in `backend/app/services/review_nrc_aps_gate_reports.py`, `tools/nrc_aps_refresh_review_gate_reports.py`, `tools/run_nrc_aps_local_corpus_e2e.py`, `backend/tests/test_review_nrc_aps_gate_reports.py`, and `project6.ps1`
+- that open lane refreshes one adopted review runtime's `gate_reports/*.json` plus `summary.gate_results`, stays validate-only and fail-closed on missing runtime, and still does not admit a dedicated validate-only family-specific report-ref bucket or dedicated `nrc_aps_validate_only_gates_*` contract/runtime/gate family
 
 Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/20_GATED_APS_REVIEW_PACKET_FREEZE.md|artifact|current governing freeze for the landed deterministic challenge review-packet boundary`; `R|backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py|Current bounded deterministic challenge review-packet handoff owner surface on current \`main\`|1-392`; `R|backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py|Current bounded deterministic challenge review-packet handoff proof surface on current \`main\`|1-627`; `R|backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py|Live review-packet gate already validates the persisted review-packet boundary through a dedicated validate-only report path|137-289`; `R|backend/app/services/review_nrc_aps_graph.py|Live downstream graph places validate_only_gates immediately after deterministic challenge review packet and maps that node to gate_reports plus gate_results|38-41;67-68;87-88;108-109;413-428;543-548;774-779`; `R|backend/app/services/review_nrc_aps_tree.py|Live review tree already treats gate_reports and gate_results as first-class runtime layout surfaces|61-71`; `R|backend/tests/test_review_nrc_aps_graph.py|Live review-graph proof already asserts validate_only_gates exists and is backed by real gate totals in the review runtime|28-52`; `R|project6.ps1|Current operator entrypoints already expose deterministic challenge review-packet validation and aggregate gate execution as validate-only actions|569-579;664-708`; `R|backend/app/services/connectors_sciencebase.py|Current run-level report-ref registry stops at deterministic challenge review packet and does not yet define a dedicated validate_only_gates bucket|2948-2962`
 
@@ -111,16 +114,19 @@ Frozen source rule:
 
 ### 3. Expected bounded implementation posture
 
-The expected owner/proof posture admitted after this freeze is:
-- a bounded validate-only execution or report-refresh lane rooted in the existing operator and review surfaces already present on current `main`
+The expected owner/proof posture admitted after this freeze, and now carried on current open PR `#138`, is:
+- a bounded validate-only gate-report refresh lane rooted in the existing operator and review surfaces already present on current `main`
 - primary owner surfaces:
-  - `project6.ps1`
-  - `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`
-  - `backend/app/services/review_nrc_aps_graph.py`
-  - `backend/app/services/review_nrc_aps_tree.py`
+- `backend/app/services/review_nrc_aps_gate_reports.py`
+- `tools/nrc_aps_refresh_review_gate_reports.py`
+- `tools/run_nrc_aps_local_corpus_e2e.py`
+- `project6.ps1`
+- `backend/app/services/review_nrc_aps_graph.py`
+- `backend/app/services/review_nrc_aps_tree.py`
 - focused proof surfaces:
-  - `backend/tests/test_review_nrc_aps_graph.py`
-  - any existing validate-only gate tests or checked-in gate reports directly refreshed by that later lane
+- `backend/tests/test_review_nrc_aps_gate_reports.py`
+- `backend/tests/test_review_nrc_aps_graph.py`
+- any adopted review-runtime `gate_reports/*.json` plus `summary.gate_results` directly refreshed by that open lane
 
 Frozen implementation rule for the later lane admitted after this freeze:
 - keep the later continuation validate-only
@@ -182,8 +188,8 @@ Reason:
 - repo truth does not yet contain a dedicated validate-only family-specific runtime stack
 - this read-only freeze therefore settles the next family choice narrowly without overclaiming implementation
 
-What still remains intentionally deferred after this landed read-only freeze on current `main`:
-- the later validate-only execution or report-refresh lane
+What still remains intentionally deferred after this landed read-only freeze on current `main` and current open PR `#138`:
+- a dedicated validate-only family-specific report-ref bucket or dedicated `nrc_aps_validate_only_gates_*` contract/runtime/gate family
 - promotion
 - retrieval cutover
 - the future workbench route family
@@ -201,3 +207,7 @@ Repo-local anchors used most directly:
 - `R|backend/tests/test_review_nrc_aps_graph.py|Live review-graph proof already asserts validate_only_gates exists and is backed by real gate totals in the review runtime|28-52`
 - `R|project6.ps1|Current operator entrypoints already expose deterministic challenge review-packet validation and aggregate gate execution as validate-only actions|569-579;664-708`
 - `R|backend/app/services/connectors_sciencebase.py|Current run-level report-ref registry stops at deterministic challenge review packet and does not yet define a dedicated validate_only_gates bucket|2948-2962`
+- `R|backend/app/services/review_nrc_aps_gate_reports.py|Open bounded validate-only gate-report refresh owner surface on current branch|25-212`
+- `R|tools/nrc_aps_refresh_review_gate_reports.py|Open validate-only gate-report refresh CLI bridge on current branch|1-36`
+- `R|tools/run_nrc_aps_local_corpus_e2e.py|Current local-corpus proof runner now reuses the shared gate-report refresh helper on current branch|26-27;973-985`
+- `R|backend/tests/test_review_nrc_aps_gate_reports.py|Open validate-only gate-report refresh proof surface on current branch|31-123`

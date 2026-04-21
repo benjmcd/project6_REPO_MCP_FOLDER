@@ -150,7 +150,7 @@ Current bounded posture:
 - current `main` now also includes the bounded `aps_deterministic_challenge_artifact_handoff` lane from PR `#130`, rooted in `backend/app/services/layer3_aps_deterministic_challenge_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_challenge_artifact_handoff.py`, plus the narrow deterministic challenge gate hardening in `backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py`; that landed lane preserves one persisted deterministic insight artifact as the immediate source boundary, leaves `ConnectorRun.query_plan_json` untouched, and does not admit later deterministic review-packet fan-out, validate-only expansion, route/UI, runtime DB, or schema widening by itself
 - current `main` now also includes the read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze selecting `deterministic_challenge_review_packet` as the exact next deterministic continuation beyond the landed deterministic-challenge boundary; it does not mean review-packet implementation or validate-only surfaces have landed on current `main`
 - current `main` now also includes the bounded `aps_deterministic_challenge_review_packet_handoff` lane rooted in `backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py` and `backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py`, plus the narrow review-packet gate hardening in `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`; that landed lane preserves one persisted deterministic challenge artifact as the immediate source boundary and still does not admit validate-only expansion, route/UI, runtime DB, or schema widening by itself
-- current branch now also includes the read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze selecting `validate_only_gates` as the next verification continuation beyond the landed review-packet handoff while making explicit that current `main` still has generic gate-report validate-only surfaces rather than a dedicated validate-only family-specific runtime stack
+- current `main` now also includes the read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze plus the post-PR136 docs/progress sync from PR `#137`, and current open PR `#138` now carries the bounded validate-only gate-report refresh lane rooted in `backend/app/services/review_nrc_aps_gate_reports.py`, `tools/nrc_aps_refresh_review_gate_reports.py`, `tools/run_nrc_aps_local_corpus_e2e.py`, `backend/tests/test_review_nrc_aps_gate_reports.py`, and `project6.ps1`
 
 The active REV2 control docs in this pack have also been re-audited against current `main` after the repo-root analyst-insight page, alias-router, static-asset, and runtime-helper surfaces landed. Treat the REV1 artifacts and the REV1-to-REV2 correction memo as historical context only.
 
@@ -217,6 +217,13 @@ Read this after `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` if you need the
 
 Read this after `20_GATED_APS_REVIEW_PACKET_FREEZE.md` if you need the now-landed read-only validate-only-gates freeze on current `main` beyond the now-landed deterministic challenge review-packet handoff:
 - `Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
+
+Read these after `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` if you need the current open bounded validate-only gate-report refresh lane beyond that landed freeze:
+- `backend/app/services/review_nrc_aps_gate_reports.py`
+- `tools/nrc_aps_refresh_review_gate_reports.py`
+- `tools/run_nrc_aps_local_corpus_e2e.py`
+- `backend/tests/test_review_nrc_aps_gate_reports.py`
+- `project6.ps1`
 
 ### 2. Execution handoff
 
