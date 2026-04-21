@@ -121,6 +121,142 @@ def test_materialize_aps_context_packet_handoff_emits_row_without_runtime_db_wri
         settings.storage_dir = original_storage_dir
 
 
+def test_materialize_aps_context_packet_handoff_handles_non_path_safe_run_ids(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        run_id = "run/context packet:001"
+        session_id, built_run_id, _target_id, _content_id = _build_packaged_session(
+            db,
+            tmp_path,
+            run_id=run_id,
+            include_full_aps_identity=True,
+        )
+        assert built_run_id == run_id
+        materialize_aps_handoff(db, session_id=session_id)
+        db.commit()
+        materialize_aps_citation_handoff(db, session_id=session_id)
+        db.commit()
+        materialize_aps_report_handoff(db, session_id=session_id)
+        db.commit()
+        materialize_aps_report_export_handoff(db, session_id=session_id)
+        db.commit()
+
+        result = materialize_aps_context_packet_handoff(db, session_id=session_id)
+        db.commit()
+
+        monkeypatch.setattr(
+            aps_context_gate_module,
+            "_load_candidate_runs",
+            lambda run_ids, limit: [{"run_id": run_id, "status": "completed"}],
+        )
+        gate_report = aps_context_gate_module.validate_context_packet_gate(
+            run_ids=[run_id],
+            limit=1,
+            report_path=tmp_path / "context_packet_gate_non_path_safe.json",
+            require_runs=True,
+        )
+        rows = _rows_by_kind(db)
+        handoff_row = rows[PACKAGE_KIND_APS_CONTEXT_PACKET_HANDOFF]
+        loaded_payload, _packet_path = aps_context_module.load_persisted_context_packet_artifact(
+            context_packet_ref=handoff_row.payload_ref
+        )
+
+        assert gate_report["passed"] is True
+        assert result.output_package.output_package_id == handoff_row.output_package_id
+        assert loaded_payload["source_descriptor"]["owner_run_id"] == run_id
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_context_packet_gate_filters_scope_collisions_by_exact_owner_run_id(
+    tmp_path: Path,
+) -> None:
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        run_id = "ab"
+        foreign_run_id = "a/b"
+        session_id, built_run_id, _target_id, _content_id = _build_packaged_session(
+            db,
+            tmp_path,
+            run_id=run_id,
+            include_full_aps_identity=True,
+        )
+        assert built_run_id == run_id
+        materialize_aps_handoff(db, session_id=session_id)
+        db.commit()
+        materialize_aps_citation_handoff(db, session_id=session_id)
+        db.commit()
+        materialize_aps_report_handoff(db, session_id=session_id)
+        db.commit()
+        materialize_aps_report_export_handoff(db, session_id=session_id)
+        db.commit()
+        materialize_aps_context_packet_handoff(db, session_id=session_id)
+        db.commit()
+
+        foreign_failure_id = aps_context_contract.derive_failure_context_packet_id(
+            source_locator="foreign-scope-collision",
+            error_code="foreign_scope_collision",
+        )
+        foreign_failure_payload = {
+            "schema_id": aps_context_contract.APS_CONTEXT_PACKET_FAILURE_SCHEMA_ID,
+            "schema_version": aps_context_contract.APS_CONTEXT_PACKET_SCHEMA_VERSION,
+            "generated_at_utc": "2026-04-21T00:00:00Z",
+            "context_packet_id": foreign_failure_id,
+            "projection_contract_id": aps_context_contract.APS_CONTEXT_PACKET_PROJECTION_CONTRACT_ID,
+            "fact_grammar_contract_id": aps_context_contract.APS_CONTEXT_PACKET_FACT_GRAMMAR_CONTRACT_ID,
+            "owner_run_id": foreign_run_id,
+            "source_family": aps_context_contract.APS_CONTEXT_PACKET_SOURCE_FAMILY_EXPORT,
+            "source_request": {
+                "source_family": aps_context_contract.APS_CONTEXT_PACKET_SOURCE_FAMILY_EXPORT,
+                "evidence_report_id": None,
+                "evidence_report_ref": None,
+                "evidence_report_export_id": None,
+                "evidence_report_export_ref": None,
+                "evidence_report_export_package_id": None,
+                "evidence_report_export_package_ref": None,
+                "persist_context_packet": False,
+            },
+            "source_descriptor": {},
+            "error_code": "foreign_scope_collision",
+            "error_message": "foreign context-packet artifact under same sanitized scope",
+        }
+        foreign_failure_payload["context_packet_checksum"] = aps_context_contract.compute_context_packet_checksum(
+            foreign_failure_payload
+        )
+        foreign_failure_path = aps_context_module.context_packet_failure_artifact_path(
+            owner_run_id=foreign_run_id,
+            context_packet_id=foreign_failure_id,
+            reports_dir=settings.connector_reports_dir,
+        )
+        foreign_failure_path.parent.mkdir(parents=True, exist_ok=True)
+        foreign_failure_path.write_text(
+            json.dumps(foreign_failure_payload, sort_keys=True),
+            encoding="utf-8",
+        )
+
+        discovered_runs = aps_context_gate_module._load_candidate_runs(run_ids=None, limit=10)
+        assert {str(row["run_id"]) for row in discovered_runs} == {run_id, foreign_run_id}
+
+        gate_report = aps_context_gate_module.validate_context_packet_gate(
+            run_ids=[run_id],
+            limit=1,
+            report_path=tmp_path / "context_packet_gate_scope_collision.json",
+            require_runs=True,
+        )
+        assert gate_report["passed"] is True
+        assert gate_report["checks"][0]["failure_refs"] == []
+        assert len(gate_report["checks"][0]["context_packet_refs"]) == 1
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
 def test_materialize_aps_context_packet_handoff_fails_closed_on_missing_source_export_ref(
     tmp_path: Path,
 ) -> None:
