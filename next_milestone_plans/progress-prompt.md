@@ -55,7 +55,13 @@ Current repo-side facts to preserve:
 - current `main` includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the export-package first shared-consumer freeze and its docs-only closeout from PR `#106` and PR `#107`
 - the immediate required move is no longer to choose the first shared consumer; that choice is already settled on current `main` in favor of `evidence_report_export_package`
+- the current branch also carries the bounded export-package handoff implementation slice rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`; it is branch-local and must not be shown as landed on current `main`
 - `context_dossier` remains later and must not be presented as a co-equal current-focus choice with the landed export-package boundary
+
+When rebuilding from a branch that already carries the bounded export-package handoff implementation slice:
+- show that slice as the current branch-local focus
+- keep it visually distinct from merged `main` milestones
+- do not describe it as merely an unresolved future option
 
 Also update the scheduled refresh task so it no longer:
 - writes or references `current_main_commit`

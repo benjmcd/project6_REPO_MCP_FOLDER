@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the current branch's bounded export-package handoff implementation lane governed by that freeze.
 
 ## Canonical Inputs
 
@@ -30,7 +30,7 @@ Current tracked PR set:
 - `#94`, `#95`, `#96`
 - `#97`, `#98`, `#99`
 - `#100`, `#101`, `#102`
-- `#106`
+- `#106`, `#107`, `#108`
 
 Hard rule:
 - never mark a step as landed on `main` from repo docs alone if the GitHub PR is still open
@@ -61,6 +61,7 @@ Read these files first:
 
 Also read:
 - `next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md`
+- `next_milestone_plans/progress-prompt.md`
 
 ### Local checkout rule
 
@@ -102,6 +103,7 @@ Any external live artifact or dashboard must also obey:
    - `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
    - `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `14_GATED_APS_MULTISOURCE_FREEZE.md`
    - and the now-landed first shared-consumer freeze that sits immediately beyond that landed chain, currently `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md`
+   - and, when present in the current checkout, the current branch's bounded export-package handoff owner surfaces rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
 7. For each milestone:
    - update PR state from GitHub
    - update merge commit from GitHub
@@ -115,6 +117,10 @@ Any external live artifact or dashboard must also obey:
 14. Fail closed if GitHub state cannot be refreshed:
    - keep the last known manifest state
    - mark the refresh as stale instead of inventing merged/open status
+15. If the current checkout carries a branch-local milestone that is not yet backed by an open or merged GitHub PR:
+   - keep that milestone as `branch_only`
+   - do not upgrade it to `open` until GitHub confirms a PR exists
+   - do not hide it from branch-local artifact surfaces if the manifest declares it
 
 ## State Mapping Rules
 
@@ -147,17 +153,24 @@ Do not:
 The current bounded chain on `main` ends at:
 - APS export-package first shared-consumer freeze
 
-The next required move beyond that landed chain is:
-- open the bounded export-package handoff implementation lane governed by the now-landed freeze
+The current active branch continuation beyond that landed chain is:
+- the bounded export-package handoff implementation lane governed by the now-landed freeze
+
+The next required move beyond current `main` is:
+- review and land the current branch's bounded export-package handoff implementation lane
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`
+
+The current branch's bounded implementation target is:
+- `aps_evidence_report_export_package_handoff`
 
 The later but not first consumer remains:
 - `context_dossier`
 
 These are not both still open candidates in the same way:
 - `evidence_report_export_package` is selected on current `main`
+- the bounded export-package handoff lane can exist as `branch_only` before a GitHub PR exists
 - `context_dossier` remains later and not first
 
 ## Schedule Guidance

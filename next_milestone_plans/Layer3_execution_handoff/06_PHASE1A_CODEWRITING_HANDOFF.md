@@ -103,7 +103,7 @@ Evidence basis: `P|layer3_primary_planningdocs/11_LAYER3_VALIDATION_PROOF_AND_DE
 
 7. `Read-only live status docs`
    `docs/nrc_adams/nrc_aps_status_handoff.md` and `docs/analyst_insight/analyst_insight_status_handoff.md` constrain current repo posture and no-go ceilings. They are not implementation targets for the write pass.
-`Evidence:` `R|docs/nrc_adams/nrc_aps_status_handoff.md|Purpose and truth model|3-16`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|188-194`; `R|docs/analyst_insight/analyst_insight_status_handoff.md|Purpose and truth model|3-15`; `R|docs/analyst_insight/analyst_insight_status_handoff.md|Intentional deferred tech debt|70-80`
+`Evidence:` `R|docs/nrc_adams/nrc_aps_status_handoff.md|Purpose and truth model|3-16`; `R|docs/nrc_adams/nrc_aps_status_handoff.md|Recommended next continuation|189-195`; `R|docs/analyst_insight/analyst_insight_status_handoff.md|Purpose and truth model|3-15`; `R|docs/analyst_insight/analyst_insight_status_handoff.md|Intentional deferred tech debt|70-80`
 
 ## 6. Exact proofs that must exist afterward
 
