@@ -23,14 +23,16 @@ Goal:
   - what the current focus is
   - what the candidate next consumers are
   - what is explicitly deferred
+  - what each deferred item would need before it could become a candidate next consumer or the current focus
 
 Hard rules:
 - GitHub PR state is authority for merged versus open.
 - Do not infer merge state from planning-doc wording alone.
 - The artifact must remain readable with HTML and CSS alone.
-- JavaScript may enhance interaction, but it must not be required for milestone rows, current focus, candidate next consumers, or deferred scope.
+- JavaScript may enhance interaction, but it must not be required for milestone rows, current focus, candidate next consumers, deferred scope, or deferred activation criteria.
 - Mermaid is optional enhancement only. If it does not render, there must be no loss of meaning.
 - Do not call the artifact live if it only embeds a stale snapshot and never updates from refreshed inputs.
+- Do not promote a deferred item into candidate-next or current-focus without using the manifest-declared activation criteria.
 
 Required sections in order:
 1. Program State Summary
@@ -39,6 +41,7 @@ Required sections in order:
 4. Milestone Table
 5. Candidate Next Consumers
 6. Deferred Scope
+7. Deferred Scope Activation Criteria
 
 Visual rules:
 - `merged`: green
@@ -142,5 +145,6 @@ Success criteria:
 - the artifact renders correctly without relying on Mermaid
 - the milestone table is present without JS-created critical rows
 - done, current focus, candidate next consumers, and deferred scope are visually distinct
+- each deferred item shows both candidate-next and current-focus activation criteria in static HTML
 - the scheduled refresh and the artifact are wired so the visible artifact actually updates after refresh
 ```

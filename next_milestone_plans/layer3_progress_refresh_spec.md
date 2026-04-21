@@ -42,6 +42,7 @@ Treat current `project6-origin/main` repo truth as authority for:
 - which implementation surfaces are actually landed
 - which freeze docs exist on current `main`
 - which later families remain explicitly deferred
+- what each deferred item would need before it could graduate into `Candidate Next Consumers` or `Current Focus`
 
 Read these files first:
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
@@ -113,12 +114,13 @@ Any external live artifact or dashboard must also obey:
 9. Reconcile any external render surface against `next_milestone_plans/progress-ui-spec.md`.
 10. Ensure the primary render path is HTML/CSS readable without JavaScript or Mermaid.
 11. Preserve explicit deferred scope.
-12. If the next-step decision has changed, or the bounded packet is now settled with no further active next lane, update `next_required_decision` in the manifest and the matching sections in the board and prompt.
-13. If the live artifact cannot read refreshed files at view time, regenerate the artifact itself from the refreshed manifest and board instead of leaving a stale embedded snapshot in place.
-14. Fail closed if GitHub state cannot be refreshed:
+12. Preserve and re-audit the deferred activation contract so every deferred item still has explicit candidate-next and current-focus promotion rules.
+13. If the next-step decision has changed, or the bounded packet is now settled with no further active next lane, update `next_required_decision` in the manifest and the matching sections in the board and prompt.
+14. If the live artifact cannot read refreshed files at view time, regenerate the artifact itself from the refreshed manifest and board instead of leaving a stale embedded snapshot in place.
+15. Fail closed if GitHub state cannot be refreshed:
    - keep the last known manifest state
    - mark the refresh as stale instead of inventing merged/open status
-15. If the current checkout carries a milestone that is not yet merged on `main`:
+16. If the current checkout carries a milestone that is not yet merged on `main`:
    - keep that milestone as `branch_only` only when no open or merged GitHub PR exists
    - upgrade it to `open` once GitHub confirms a PR exists
    - do not upgrade it to `merged` until GitHub confirms the merge
@@ -140,6 +142,8 @@ Special case:
 Hard rule:
 - do not collapse `merged_with_open_docs_closeout` into plain `merged`
 - when `next_required_decision.state=settled`, do not invent a planned or open next lane in the artifact
+- do not promote a deferred item into candidate-next or current-focus unless its manifest-declared activation conditions are actually satisfied by refreshed repo truth
+- do not silently omit the deferred activation section when the deferred list is non-empty
 
 ## What Not To Do
 
@@ -149,6 +153,7 @@ Do not:
 - rewrite milestone ids or reorder the whole chain without repo-confirmed reason
 - silently drop the docs-closeout PRs, because they are part of the actual operational progression
 - present speculative later families as already admitted
+- invent activation criteria ad hoc in the artifact without first updating the repo-side manifest and board
 - call the artifact live if it only embeds a stale snapshot and never updates from refreshed inputs
 - rely on Mermaid or JavaScript as the only way primary progress meaning becomes visible
 
@@ -194,4 +199,5 @@ Do not compensate for missing GitHub access by upgrading repo-doc wording into p
 If Cowork can update the artifact but cannot read files live at render time:
 - rewrite the artifact itself during each successful refresh
 - rebuild all primary milestone rows and summary sections from the refreshed manifest
+- rebuild the deferred activation section from `deferred_scope_activation_contract`, not from a hardcoded stale prose block
 - treat JavaScript and Mermaid as optional enhancement only
