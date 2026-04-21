@@ -48,9 +48,9 @@ As of `2026-04-21`:
 ## Program State Summary
 
 - Done now on `main`: 29 merged milestones from Phase 1A feeder-ledger foundation through the landed APS promotion continuation freeze from PR `#145`
-- Current focus: planned promotion-governance continuation or sufficiency audit of the existing promotion family already present on current `main`
-- Candidate next consumers: promotion is now the landed later-family choice on current `main`; retrieval cutover remains later; no separate repo-backed post-validate-only top-chain family is admitted here
-- Deferred but not active: 9 explicitly deferred scope items remain out until later freezes admit them
+- Current focus: the bounded later APS family packet beyond the landed dedicated validate-only runtime/report-ref boundary is now settled on current `main`; no further later APS family decision or implementation lane is currently justified by default
+- Candidate next consumers: none active in this bounded packet; promotion governance is already sufficient on current `main`, and retrieval cutover already exists there as a separate validate-only parity-proof family
+- Deferred but not active: 8 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Table
 
@@ -84,7 +84,7 @@ As of `2026-04-21`:
 | APS validate-only gate-report refresh lane | merged | `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` | `#138`, `#139` | Landed bounded validate-only gate-report refresh lane plus docs/progress sync |
 | APS dedicated validate-only runtime/report-ref continuation freeze | merged | `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` | `#140`, `#141`, `#142` | Landed read-only freeze plus both docs/progress sync passes |
 | APS dedicated validate-only runtime/report-ref implementation lane | merged | `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` | `#143`, `#144` | Landed bounded implementation lane plus post-PR143 docs/progress sync |
-| APS promotion continuation freeze | merged | `23_GATED_APS_PROMOTION_FREEZE.md` | `#145` | Landed read-only freeze from PR `#145` selects promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later |
+| APS promotion continuation freeze | merged | `23_GATED_APS_PROMOTION_FREEZE.md` | `#145` | Landed read-only freeze from PR `#145` selected promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary; live repo truth now also shows the existing promotion governance family already sufficient on current `main` |
 
 ## Completed Chain
 
@@ -127,40 +127,38 @@ flowchart LR
 
 ## Current Focus
 
-The immediate active step after this closeout is a planned promotion-governance continuation or sufficiency audit centered on the existing promotion family already present on current `main`.
+The bounded later APS family packet beyond the landed dedicated validate-only runtime/report-ref boundary is now settled on current `main`.
 
 Current bounded selection state:
 - current `main` is settled through the dedicated validate-only runtime/report-ref implementation lane from PR `#143` and the post-PR143 docs/progress sync from PR `#144`
 - current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`
-- promotion is now the landed later-family choice on current `main` under `23_GATED_APS_PROMOTION_FREEZE.md`
-- the landed freeze selects promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary
-- retrieval cutover remains later
-- the landed freeze does not admit promotion implementation changes, retrieval cutover changes, route/UI widening, runtime DB writes, or schema widening by itself
+- promotion is the landed first later-family choice on current `main` under `23_GATED_APS_PROMOTION_FREEZE.md`
+- the existing promotion governance family is already sufficient on current `main` through `backend/app/services/nrc_aps_promotion_gate.py`, `tests/test_nrc_aps_promotion_gate.py`, `backend/app/services/nrc_aps_promotion_tuning.py`, `tests/test_nrc_aps_promotion_tuning.py`, `backend/app/services/nrc_adams_resources/aps_promotion_policy_v1.json`, and `project6.ps1`
+- retrieval cutover already exists on current `main` as a separate validate-only parity-proof family through `backend/app/services/aps_retrieval_plane_cutover_validation.py`, `backend/tests/test_aps_retrieval_plane_cutover_validation.py`, `backend/tests/test_aps_retrieval_plane_cutover_gate.py`, `tools/nrc_aps_retrieval_cutover_gate.py`, and `project6.ps1`
+- no further later APS family decision or implementation lane is currently justified by default from this merged-main state
 - the landed freeze does not invent a separate repo-backed post-validate-only top-chain family
 
 Hard rule:
-- do not skip directly from the landed dedicated validate-only runtime/report-ref boundary to retrieval cutover before the promotion family is settled
+- do not invent another later APS family lane by default from this merged-main state alone
 
 ## Candidate Next Consumers
 
-- `promotion`: now the landed later-family choice on current `main`; the remaining question is whether the existing promotion family needs any bounded follow-up lane
-- `retrieval_cutover`: still later; it must not skip ahead of the now-landed promotion selection
+- none active in this bounded packet
+- promotion governance is already sufficient on current `main`
+- retrieval cutover already exists on current `main` as a separate validate-only parity-proof family
 
 The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current main after PR #145"] --> B["Planned promotion-governance continuation"]
-    B --> C["Later promotion-governance lane"]
-    B -.-> D["Later retrieval cutover lane"]
+    A["Current main after PR #145"] --> B["Later APS family packet settled"]
+    B -.-> C["Reopen only if live repo truth proves a concrete gap"]
 
     classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
-    classDef planned fill:#fff1bf,stroke:#9a6b00,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
 
-    class A merged;
-    class B planned;
-    class C,D future;
+    class A,B merged;
+    class C future;
 ```
 
 ## Deferred Scope
@@ -174,7 +172,6 @@ These remain explicitly out until later freezes admit them:
 - runtime DB writes
 - schema widening
 - route/UI widening
-- retrieval cutover
 
 ## Refresh Inputs
 
