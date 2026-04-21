@@ -5,6 +5,7 @@
 This document captures the current repo-confirmed DB situation for the NRC APS review and Document Trace surfaces, disregarding `/review/market-pipeline` except where shared startup or routing still affects the same backend process.
 
 This is a planning and decision document. It is not an implementation spec for a single patch and it is not a generic database-optimization memo.
+It now reflects current `main` after the runtime-centric review/document-trace shift and the landed runtime DB safety rails.
 
 ## Canonical Source Of Truth
 
@@ -20,12 +21,12 @@ For the current live implementation on `main`, the primary authority is:
 - [backend/app/models/models.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/models/models.py)
 - [backend/main.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/main.py)
 
-For the already-frozen but not-yet-mainlined runtime-switching plus bbox-overlay work, the authority is:
+Historical reference only:
 
 - branch `codex/review-ui-runtime-switching-bbox`
 - commit `f3d03b3d`
 
-That branch is real evidence for the preferred direction, but it is not the current `main` baseline.
+That branch is real historical evidence for an earlier runtime-switching direction, but it is not current `main` authority and must not be treated as directly promotable as-is.
 
 ## Repo-Confirmed Current State
 
@@ -42,33 +43,31 @@ This is not theoretical. It is visible in:
 - [session.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/db/session.py), which creates one global `engine` and one global `SessionLocal`
 - [review_nrc_aps_runtime.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_runtime.py), which separately discovers summary-backed runtime roots on disk
 
-### 2. Current `main` still treats review/document-trace as global-DB consumers
+### 2. Current `main` now routes review/document-trace through runtime DB sessions
 
-On current `main`, the review endpoints still use the process-global session through `Depends(get_db)` in:
+On current `main`, the review/document-trace routes use the runtime DB helper in:
 
 - [review_nrc_aps.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/api/review_nrc_aps.py)
+- [review_nrc_aps_runtime_db.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/services/review_nrc_aps_runtime_db.py)
 
-and `get_db()` itself comes from:
+Current live behavior now includes:
 
-- [deps.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/api/deps.py)
+- review/document-trace route handlers open runtime-scoped sessions through `runtime_db_session_for_run(run_id)`
+- runtime DBs open read-only via SQLite URI `mode=ro`
+- required review/document-trace tables are validated before a session is yielded
+- the runtime DB/session contract is directly tested in `backend/tests/test_review_nrc_aps_runtime_db.py`
 
-which yields a session from the one global `SessionLocal`.
+The process-global app DB still exists for the control plane, but the review/document-trace consumption plane no longer depends on it for runtime evidence reads.
 
-That means current `main` still has a structural mismatch:
-
-- runtime discovery is filesystem-driven by `run_id`
-- trace data resolution still assumes one process-global DB
-
-### 3. The frozen side branch already proves the direction
+### 3. The frozen side branch is historical only
 
 The branch:
 
 - `codex/review-ui-runtime-switching-bbox`
 
-contains the already-frozen review/document-trace runtime-switching work and bbox overlay restoration. It demonstrates the preferred architectural direction:
+contains an earlier runtime-switching and bbox-overlay snapshot. It still has evidentiary value for historical direction, but it is stale relative to current `main` and is not a safe promotion target now.
 
-- review/document-trace routes should resolve runtime state by `run_id`
-- runtime-backed DB access should not be locked to the global app DB session
+Use current `main` as authority first and consult that branch only if a narrowly scoped historical comparison is actually needed.
 
 ### 4. The biggest DB risk is not scale, it is identity and authority
 
@@ -76,7 +75,7 @@ The most important immediate DB risks are:
 
 - wrong runtime binding because `.env` or startup defaults point at the wrong DB/storage pair
 - accidental migration of a runtime snapshot DB because [main.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/main.py) runs migrations unless `DB_INIT_MODE=none`
-- stale assumptions that `/review/nrc-aps` is backed by one canonical DB when the review artifacts actually live per runtime
+- stale operator or docs assumptions about which runtime DB/storage pair is actually being viewed
 
 ### 5. Performance is secondary to correct binding
 
@@ -86,7 +85,7 @@ There are real query and schema issues, but they are not the first priority:
 - [models.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/models/models.py) stores `visual_page_refs_json` as `Text` in APS tables
 - APS tables rely mostly on unique constraints and do not express many targeted read indexes in the model layer
 
-Those are real future work items, but they are less urgent than making runtime binding explicit and safe.
+Those are real future work items, but they are less urgent than making runtime identity and operator visibility clearer.
 
 ## Reconceptualized Model
 
@@ -125,61 +124,15 @@ This plane should be runtime-centric and keyed by `run_id`, not globally DB-cent
 
 ## What Should Come Next
 
-### Phase 1: Mainline The Frozen Runtime-Switching Review Work
+### Landed Foundation On Current `main`
 
-Objective:
+The following are already landed on current `main` and should no longer be treated as future promotion work:
 
-- promote the `codex/review-ui-runtime-switching-bbox` direction onto `main`
-
-Why first:
-
-- the preferred architecture already exists in a frozen form
-- continuing to build new review/document-trace features on old `main` semantics would compound debt
-- this is the narrowest way to align `main` with the intended runtime-centric review model
-
-Acceptance criteria:
-
-- current `main` review/document-trace behavior matches the frozen branch direction
-- bbox overlays remain present
-- runtime switching works without restart
-
-### Phase 2: Formalize Runtime DB Resolution As A First-Class Contract
-
-Objective:
-
-- make runtime-backed DB/session resolution explicit in the review/document-trace backend
-
-Required outcomes:
-
-- `run_id` resolves to:
-  - review root
-  - runtime DB path
-  - runtime storage root
-- review/document-trace routes stop depending conceptually on the control-plane global DB for runtime evidence reads
-- the runtime DB contract is visible and testable
-
-Acceptance criteria:
-
-- review/document-trace reads are per-runtime by contract
-- a wrong global app DB binding no longer silently changes review truth for the selected runtime
-
-### Phase 3: Add Runtime DB Safety Rails
-
-Objective:
-
-- prevent accidental corruption or ambiguity when serving runtime-backed review surfaces
-
-Required outcomes:
-
-- no automatic migration against runtime snapshot DBs
-- explicit schema/version compatibility checks before opening a runtime DB
-- runtime DB access treated as read-only
-- an explicit way to introspect or log the effective runtime DB/storage binding used for review requests
-
-Acceptance criteria:
-
-- review startup/validation can prove the exact DB/storage pair in use
-- runtime DB misuse fails closed
+- runtime-centric review/document-trace route binding by `run_id`
+- explicit runtime DB path and storage-dir resolution
+- read-only runtime DB access
+- runtime DB required-table compatibility checks
+- direct test coverage for runtime DB session safety rails
 
 ### Phase 4: Improve Review/Document-Trace Transparency
 
@@ -234,50 +187,48 @@ Those may become relevant later, but they are not the narrowest correct next mov
 Current repo reality should shape implementation sequencing:
 
 - `main` remains the current live baseline
-- the best review/document-trace direction is frozen on `codex/review-ui-runtime-switching-bbox`
 - there is unrelated dirty/untracked work in the repo, including market-pipeline-related files
 
 Therefore:
 
-- further review/document-trace work should start from the frozen branch direction, not from generic `main`
+- further review/document-trace work should start from the shipped current-`main` posture, not from stale branch-era assumptions
 - `/review/market-pipeline` should be ignored as a product driver unless shared startup or routing must be disentangled for review safety
 
 ## Immediate Recommended Action Tree
 
 ### 1. Verification Step
 
-Diff current `main` review/document-trace surfaces against:
+Verify whether operators can already tell, from the shipped review/document-trace/workbench surfaces alone:
 
-- branch `codex/review-ui-runtime-switching-bbox`
-
-and confirm the exact promotion set needed to mainline the runtime-switching plus bbox work.
+- which runtime is selected
+- which target/document is selected
+- which runtime DB/storage pair is authoritative for the current view
+- why a trace surface is empty, unavailable, or not reviewable
 
 ### 2. If Verification Passes
 
-Make the next implementation pass a bounded mainline-promotion plus safety-rail pass:
-
-- promote the branch work
-- formalize runtime DB resolution
-- add runtime DB safety/binding introspection where needed
+If the shipped review/document-trace/workbench surfaces already make runtime identity and failure states adequately explicit, stop and do not open another lane from this document by default.
 
 ### 3. If Verification Fails
 
-If the branch and `main` have drifted too far for a narrow promotion, stop and produce a reconciliation plan rather than patching incrementally on old `main` assumptions.
+Make the next implementation pass a bounded transparency or ergonomics pass:
+
+- improve runtime identity labeling
+- improve empty/missing/not-reviewable messaging
+- add narrow runtime-binding introspection only where the current shipped surface leaves real ambiguity
 
 ## Residual Risks
 
-- branch-to-main drift may be larger than expected
 - current startup still couples migrations to the configured `DATABASE_URL`
 - runtime DB schema compatibility across older snapshots may not be uniform
-- review/document-trace tests can prove route behavior, but browser validation still matters for runtime switching and bbox continuity
+- review/document-trace tests can prove route behavior, but browser validation still matters for runtime identity clarity and bbox continuity
 
 ## Bottom Line
 
 The next implementation should not be "optimize the DB" in the abstract.
 
-The next implementation should be:
+The next implementation, if a real gap is proven, should be:
 
-1. land the frozen runtime-switching plus bbox review work on `main`
-2. formalize runtime DB identity and routing
-3. add safety rails around runtime DB use
-4. only then do targeted UI/data-path improvements
+1. keep current `main` as the authority baseline
+2. improve review/document-trace/workbench transparency or operator ergonomics additively
+3. only then do targeted data-path optimization if measured evidence justifies it
