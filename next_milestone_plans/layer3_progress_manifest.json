@@ -2,7 +2,7 @@
   "artifact_version": 1,
   "artifact_name": "layer3-progress-artifact",
   "artifact_scope": {
-    "lane_name": "Layer3 APS bounded continuation chain through the first shared-consumer freeze",
+    "lane_name": "Layer3 APS bounded continuation chain through the export-package handoff implementation lane",
     "repo": "benjmcd/project6_REPO_MCP_FOLDER",
     "authoritative_remote": "project6-origin/main",
     "authoritative_local_checkout_rule": "Use any clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match current `main`.",
@@ -12,7 +12,7 @@
     "snapshot_base_main_commit_source": "git rev-parse project6-origin/main at last artifact refresh before this artifact pack itself merged",
     "notes": [
       "This artifact is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.",
-      "This artifact now includes the landed first shared-consumer freeze that selects the first downstream shared APS consumer beyond multisource on current `main`.",
+      "This artifact now includes the landed first shared-consumer freeze that selects the first downstream shared APS consumer beyond multisource on current `main`, plus the current branch's bounded export-package handoff implementation slice governed by that freeze.",
       "The dirty root checkout is not authority for this artifact.",
       "GitHub PR state is authority for open vs merged status.",
       "Do not treat snapshot_base_main_commit as a self-updating claim about whatever commit main is on after this artifact file itself merges."
@@ -54,7 +54,9 @@
         "next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md",
         "next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md",
         "next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md",
-        "next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md"
+        "next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md",
+        "backend/app/services/layer3_aps_report_export_package_handoff.py",
+        "backend/tests/test_layer3_aps_report_export_package_handoff.py"
       ]
     },
     {
@@ -77,14 +79,16 @@
     "branch_only": "The step exists in a branch but is not merged into main."
   },
   "current_snapshot": {
-    "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge docs closeout from PR #102, and the landed export-package first shared-consumer freeze from PR #106.",
-    "open_followups": []
+    "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, and the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107.",
+    "open_followups": [],
+    "branch_state_summary": "Current branch and open PR #109 carry the bounded APS export-package handoff implementation slice rooted in backend/app/services/layer3_aps_report_export_package_handoff.py and backend/tests/test_layer3_aps_report_export_package_handoff.py; it is not yet landed on current `main`."
   },
   "summary_counts": {
     "merged_milestones": 13,
-    "open_milestones": 0,
-    "planned_decisions": 1,
-    "deferred_scope_items": 12
+    "open_milestones": 1,
+    "planned_decisions": 0,
+    "deferred_scope_items": 12,
+    "branch_only_milestones": 0
   },
   "artifact_render_contract": {
     "purpose": "Provide a stable view contract for external render surfaces so they do not have to infer layout from prose or depend on runtime JavaScript or Mermaid for critical meaning.",
@@ -639,18 +643,43 @@
         "Read-only freeze selects evidence_report_export_package as the first downstream shared APS consumer beyond landed multisource.",
         "This freeze landed on current `main` via PR #106."
       ]
+    },
+    {
+      "milestone_id": "aps-export-package-handoff",
+      "title": "APS evidence-report-export-package handoff",
+      "main_state": "open",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "backend/app/services/layer3_aps_report_export_package_handoff.py",
+        "backend/tests/test_layer3_aps_report_export_package_handoff.py"
+      ],
+      "events": [
+        {
+          "pr": 109,
+          "kind": "implementation",
+          "state": "open",
+          "title": "feat(layer3): add export-package handoff slice",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/109"
+        }
+      ],
+      "notes": [
+        "Current branch carries the bounded export-package handoff implementation slice governed by the landed first shared-consumer freeze.",
+        "This slice is branch-only and not yet landed on current `main`."
+      ]
     }
   ],
   "next_required_decision": {
     "decision_id": "aps-export-package-handoff",
-    "title": "Open the bounded export-package handoff implementation lane",
-    "state": "planned",
-    "why_now": "Current `main` now includes the landed export-package first shared-consumer freeze from PR #106. The next bounded move is the write-enabled handoff lane governed by that freeze.",
+    "title": "Review and land the bounded export-package handoff implementation lane",
+    "state": "open",
+    "why_now": "Current `main` already includes the landed export-package first shared-consumer freeze from PR #106 and its docs-only closeout from PR #107. Open PR #109 now carries the bounded handoff implementation slice governed by that freeze.",
     "candidate_families": [
       {
         "id": "evidence-report-export-package",
-        "state": "selected-first-consumer-on-main",
-        "reason": "Selected on current `main` as the first downstream shared APS consumer by the landed freeze in PR #106."
+        "state": "open-implementation-pr",
+        "reason": "Selected on current `main` as the first downstream shared APS consumer, and PR #109 now carries the bounded implementation slice."
       },
       {
         "id": "context-dossier",
@@ -659,13 +688,13 @@
       }
     ],
     "must_not_skip": [
-      "Do not skip directly to package-derived context or context-dossier before the bounded export-package handoff lane.",
-      "Do not open a direct context-dossier implementation lane before the export-package boundary is settled on main.",
-      "Do not widen route/UI, runtime DB, or schema as part of the first shared-consumer freeze."
+      "Do not skip directly to package-derived context or context-dossier before the bounded export-package handoff lane lands.",
+      "Do not open a direct context-dossier implementation lane before the export-package handoff boundary lands.",
+      "Do not widen route/UI, runtime DB, or schema as part of the bounded export-package handoff lane."
     ]
   },
   "deferred_scope": [
-    "direct evidence-report-export-package implementation before the bounded export-package handoff lane lands",
+    "direct edits to the shared evidence-report-export-package contract/runtime surfaces beyond the bounded export-package handoff lane",
     "package-derived context packet",
     "context dossier implementation",
     "deterministic insight artifact continuation",
@@ -711,7 +740,10 @@
       100,
       101,
       102,
-      106
+      106,
+      107,
+      108,
+      109
     ],
     "repo_paths": [
       "docs/nrc_adams/nrc_aps_status_handoff.md",
@@ -730,7 +762,10 @@
       "next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md",
-      "next_milestone_plans/progress-ui-spec.md"
+      "next_milestone_plans/progress-ui-spec.md",
+      "backend/app/services/layer3_aps_report_export_package_handoff.py",
+      "backend/tests/test_layer3_aps_report_export_package_handoff.py",
+      "next_milestone_plans/progress-prompt.md"
     ]
   }
 }
