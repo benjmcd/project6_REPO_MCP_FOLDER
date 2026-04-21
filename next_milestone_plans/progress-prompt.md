@@ -60,7 +60,7 @@ Current repo-side facts to preserve:
 - current `main` also includes the exact-run export/export-package gate-hardening follow-up from PR `#111` and `#112`
 - current `main` now includes the landed `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` freeze from PR `#113`, selecting package-derived context packet as the next later shared APS family beyond the landed export-package boundary
 - current `main` now includes the bounded package-derived context handoff implementation slice from PR `#115`, rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py` and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
-- current `main` now also includes the malformed-scoped APS gate hardening follow-up from PR `#116` across the export, export-package, and context-packet gates
+- open PR `#119` now carries the remaining malformed-scoped candidate-discovery closeout across the export, export-package, and context-packet gates; it is not yet landed on current `main`
 - current `main` also includes the post-PR116 docs/progress sync from PR `#117`
 - the current branch/workspace now also carries the read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze selecting `context_dossier` as the next later shared APS family after the landed package-context milestone
 - paired export-derived context packets remain the live dossier input branch; the landed package-derived context handoff must not be presented as dossier input proof
@@ -72,8 +72,9 @@ When rebuilding from a checkout that matches the current branch-local dossier fr
 - show the exact-run gate-hardening follow-up as already landed on `main`
 - show the landed package-derived-context freeze as completed on `main`
 - show the package-derived context handoff slice as `merged`
+- show the open malformed-scoped candidate-discovery closeout in PR `#119` as the immediate current focus
 - show the current branch-local `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze as `open`
-- use the open `context_dossier` freeze as the current focus that follows the landed package-context boundary
+- show the open `context_dossier` freeze as the next milestone focus after PR `#119`, not as already unblocked current `main` truth
 - do not present package-derived context as dossier input proof
 - do not present deterministic as the current focus while `context_dossier` remains the next later shared-family decision
 
