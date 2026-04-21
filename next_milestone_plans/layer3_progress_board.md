@@ -3,7 +3,7 @@
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
-It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and the now-landed malformed-scoped candidate-discovery closeout beyond that landed package-context boundary, plus the now-landed read-only context-dossier freeze that preserves paired export-derived context packets as dossier inputs.
+It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and the now-landed malformed-scoped candidate-discovery closeout beyond that landed package-context boundary, plus the now-landed read-only context-dossier freeze that preserves paired export-derived context packets as dossier inputs, plus the now-landed bounded context-dossier handoff implementation slice and its docs/progress sync on current `main`.
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger entry through APS multisource admission
 - the now-landed docs-only closeout that followed multisource landing
@@ -12,6 +12,7 @@ It is intentionally scoped to:
 - the now-landed package-derived-context freeze on current `main`
 - the now-landed bounded package-derived context handoff implementation slice beyond that landed freeze
 - the now-landed read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze beyond the landed package-context boundary
+- the now-landed bounded `aps_context_dossier_handoff` implementation slice on current `main`
 
 It is not a general whole-repo roadmap.
 It does not replace GitHub PR state.
@@ -29,10 +30,10 @@ Hard rule:
 ## Current Snapshot
 
 As of `2026-04-20`:
-- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-post118-closeout`
+- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\pr121-postmerge-audit`
 - valid local authority rule: use a clean checkout whose contents match the artifact state being refreshed; prefer current `main` for merged repo truth and the active branch checkout when a branch-only milestone is declared
 - authoritative remote branch: `project6-origin/main`
-- snapshot base `main` commit at this artifact refresh: `d598caf4e435bdbdf625dc81c5da01c9d41ff293`
+- snapshot base `main` commit at this artifact refresh: `5a9ce95a183097775afbd09ca0117e66a65b3e00`
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the landed export-package first shared-consumer freeze from PR `#106` and its docs-only closeout from PR `#107`
@@ -43,13 +44,16 @@ As of `2026-04-20`:
 - current `main` now also includes the merged PR `#119` malformed-scoped candidate-discovery closeout across `backend/app/services/nrc_aps_evidence_report_export_gate.py`, `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`, `backend/app/services/nrc_aps_context_packet_gate.py`, `backend/tests/test_layer3_aps_report_export_handoff.py`, `backend/tests/test_layer3_aps_report_export_package_handoff.py`, and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
 - current `main` also includes the post-PR116 docs/progress sync from PR `#117`
 - current `main` now also includes the landed read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze from PR `#118`, selecting `context_dossier` as the next later shared APS family after the landed package-context milestone while preserving paired export-derived context packets as the live dossier input branch
+- current `main` also includes the post-PR118 docs/progress sync from PR `#120`
+- current `main` now also includes the bounded `aps_context_dossier_handoff` implementation slice from PR `#121`, rooted in `backend/app/services/layer3_aps_context_dossier_handoff.py`, `backend/app/services/nrc_aps_context_dossier_gate.py`, and `backend/tests/test_layer3_aps_context_dossier_handoff.py`
+- current `main` also includes the post-PR121 docs/progress sync from PR `#122`
 
 ## Program State Summary
 
 - Done now on `main`: 18 merged milestones from Phase 1A feeder-ledger foundation through the landed APS context-dossier handoff
 - Current focus: open a fresh read-only freeze for the first deterministic continuation, rooted in `deterministic_insight_artifact`, beyond the now-landed `context_dossier` handoff
 - Candidate next consumers: `deterministic_insight_artifact` is the next bounded consumer now; challenge, review-packet, and validate-only gates remain later
-- Deferred but not active: 11 explicitly deferred scope items remain out until later freezes admit them
+- Deferred but not active: 10 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Status
 
