@@ -5,14 +5,15 @@ Use this prompt when rebuilding the Claude Cowork artifact or its scheduled refr
 ```text
 Rebuild the Layer3 APS progress artifact so it reflects current repo truth and renders reliably.
 
-Use this clean repo checkout as the filesystem authority:
-`C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main`
+Use the clean repo checkout that contains the current artifact files and matches the artifact state you want to refresh.
+For this branch-local packet, the current seed checkout is:
+`C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-ctxpkt-freeze`
 
 Read these files in this order:
-1. `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main\next_milestone_plans\layer3_progress_refresh_spec.md`
-2. `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main\next_milestone_plans\layer3_progress_manifest.json`
-3. `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main\next_milestone_plans\layer3_progress_board.md`
-4. `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main\next_milestone_plans\progress-ui-spec.md`
+1. `next_milestone_plans/layer3_progress_refresh_spec.md`
+2. `next_milestone_plans/layer3_progress_manifest.json`
+3. `next_milestone_plans/layer3_progress_board.md`
+4. `next_milestone_plans/progress-ui-spec.md`
 
 Goal:
 - rebuild the `layer3-aps-progress` Cowork artifact so it clearly shows:
@@ -55,13 +56,15 @@ Current repo-side facts to preserve:
 - current `main` includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the export-package first shared-consumer freeze and its docs-only closeout from PR `#106` and PR `#107`
 - the immediate required move is no longer to choose the first shared consumer; that choice is already settled on current `main` in favor of `evidence_report_export_package`
-- current `main` also includes the bounded export-package handoff implementation slice from PR `#109`, rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
-- package-derived context packet is now the next later shared-family freeze target from the landed export-package boundary
+- current `main` also includes the bounded export-package handoff implementation slice from PR `#109` and its docs-only closeout from PR `#110`, rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
+- current `main` also includes the exact-run export/export-package gate-hardening follow-up from PR `#111` and `#112`
+- open PR `#113` now carries the read-only `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` freeze selecting package-derived context packet as the next later shared APS family beyond the landed export-package boundary; it is not yet landed on `main`
 - `context_dossier` remains later and must not be presented as a co-equal current-focus choice with the next package-derived-context freeze
 
-When rebuilding from current `main` after the export-package handoff slice lands:
+When rebuilding from a checkout that matches current `main` after the export-package handoff slice lands:
 - show that slice as completed on `main`
-- use the next package-derived-context freeze as the current focus
+- show the exact-run gate-hardening follow-up as already landed on `main`
+- use open PR `#113` as the current focus for the package-derived-context freeze rather than treating that freeze as still branch-only
 - do not describe the landed handoff as still open or merely branch-local
 
 Also update the scheduled refresh task so it no longer:
