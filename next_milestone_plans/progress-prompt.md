@@ -75,9 +75,9 @@ Current repo-side facts to preserve:
 - current `main` now also includes the post-PR128 docs/progress sync from PR `#129`
 - current `main` now also includes the bounded deterministic challenge handoff implementation slice from PR `#130`, rooted in `backend/app/services/layer3_aps_deterministic_challenge_artifact_handoff.py`, `backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py`, and `backend/tests/test_layer3_aps_deterministic_challenge_artifact_handoff.py`
 - current `main` now also includes the post-PR130 docs/progress sync from PR `#131`
-- current branch now carries the read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze selecting `deterministic_challenge_review_packet` as the next deterministic continuation beyond the now-landed deterministic challenge handoff
-- the immediate required move is now to open a PR for that branch-local read-only freeze, not to restate the already-landed challenge handoff lane
-- `deterministic_challenge_review_packet` is now the current branch-only current-focus choice; validate-only gates remain later and must not be collapsed into the same state
+- current branch now carries open PR `#132` for the read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze selecting `deterministic_challenge_review_packet` as the next deterministic continuation beyond the now-landed deterministic challenge handoff
+- the immediate required move is now to review and merge open PR `#132`, not to restate the already-landed challenge handoff lane
+- `deterministic_challenge_review_packet` is now the current open current-focus choice; validate-only gates remain later and must not be collapsed into the same state
 
 When rebuilding from a checkout that matches current `main` after PR `#130` is merged:
 - show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
@@ -94,10 +94,10 @@ When rebuilding from a checkout that matches current `main` after PR `#130` is m
 - show the next deterministic challenge review-packet freeze as `planned`
 - do not collapse later deterministic steps into the same state as that next planned freeze or its later handoff lane
 
-When rebuilding from a branch checkout that carries the current deterministic challenge review-packet freeze before any PR exists:
+When rebuilding from a branch checkout that carries the current deterministic challenge review-packet freeze after a PR exists:
 - show the bounded deterministic challenge handoff as `merged`
-- show the read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze as `branch_only`
-- do not upgrade that freeze to `open` or `merged` without GitHub confirmation
+- show the read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze as `open`
+- attach PR `#132` as the current open freeze lane
 - keep `validate_only_gates` later
 
 Also update the scheduled refresh task so it no longer:
