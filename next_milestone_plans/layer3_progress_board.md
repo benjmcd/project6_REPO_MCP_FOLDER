@@ -38,12 +38,12 @@ As of `2026-04-20`:
 - current `main` also now includes the bounded export-package handoff implementation slice from PR `#109` and its docs-only closeout from PR `#110`, rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
 - current `main` also now includes the exact-run export/export-package gate-hardening follow-up from PR `#111` and PR `#112`
 - current `main` now includes the landed `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` package-derived-context freeze from PR `#113`
-- current branch/workspace now also carries the bounded package-derived context handoff implementation slice rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py` and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`, plus the narrow context-packet gate hardening in `backend/app/services/nrc_aps_context_packet_gate.py` and `backend/tests/test_layer3_aps_context_packet_handoff.py`; this branch-local slice is not yet landed on current `main`
+- current branch/workspace now also carries the bounded package-derived context handoff implementation slice rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py` and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`, plus the narrow context-packet gate hardening in `backend/app/services/nrc_aps_context_packet_gate.py` and `backend/tests/test_layer3_aps_context_packet_handoff.py`; GitHub now confirms open PR `#115` for this slice, but it is not yet landed on current `main`
 
 ## Program State Summary
 
 - Done now on `main`: 15 merged milestones from Phase 1A feeder-ledger foundation through the APS package-derived-context freeze
-- Current focus: land the bounded package-derived context handoff branch-local slice
+- Current focus: land the bounded package-derived context handoff open slice
 - Candidate next consumers: package-derived context packet first; later-but-not-first `context_dossier`
 - Deferred but not active: 12 explicitly deferred scope items remain out until later freezes admit them
 
@@ -66,7 +66,7 @@ As of `2026-04-20`:
 | APS export-package first shared-consumer freeze | merged | `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` | `#106` | Landed read-only freeze selects `evidence_report_export_package` as the first downstream shared APS consumer on `main` |
 | APS evidence-report-export-package handoff | merged | `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` | `#109`, `#110`, `#111`, `#112` | Landed bounded implementation slice rooted in `layer3_aps_report_export_package_handoff.py`, plus docs closeout and exact-run export/export-package gate hardening |
 | APS package-derived context continuation freeze | merged | `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` | `#113` | Landed read-only freeze selects package-derived context packet as the next later shared APS family beyond the landed export-package boundary |
-| APS package-derived context handoff | branch_only | `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` | pending | Current branch/workspace carries the bounded handoff implementation slice rooted in `layer3_aps_context_packet_package_handoff.py`, plus narrow exact owner-run context-packet gate hardening, but no PR exists yet |
+| APS package-derived context handoff | open | `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` | `#115` | Open PR now carries the bounded handoff implementation slice rooted in `layer3_aps_context_packet_package_handoff.py`, plus narrow exact owner-run context-packet gate hardening; it is not yet landed on `main` |
 
 ## What Is Complete
 
@@ -93,43 +93,43 @@ flowchart LR
 
     classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
     classDef merged2 fill:#d8f5d0,stroke:#2f6b2f,color:#111;
-    classDef branch fill:#e7edff,stroke:#4b63b3,color:#111;
+    classDef open fill:#fff4e6,stroke:#b8860b,color:#111;
 
     class A,B,C,D,E,F,G,H,I,J,K,L,M,N merged;
     class O merged2;
-    class P branch;
+    class P open;
 ```
 
 ## Next Required Decision
 
-The immediate required move is now to land the bounded package-derived context-packet handoff branch-local slice.
-The first shared-consumer selection freeze, the bounded export-package handoff implementation slice, and the package-derived-context freeze are all already landed on `main`, while the bounded package-derived context handoff slice exists only in the current branch/workspace.
+The immediate required move is now to land the bounded package-derived context-packet handoff open slice.
+The first shared-consumer selection freeze, the bounded export-package handoff implementation slice, and the package-derived-context freeze are all already landed on `main`, while GitHub now confirms open PR `#115` for the bounded package-derived context handoff slice.
 
 Current bounded selection state:
 - selected first consumer on current `main`: `evidence_report_export_package`
 - landed bounded handoff lane: `aps_evidence_report_export_package_handoff`
 - landed next freeze: `#113` for `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
-- current branch-local write-enabled target after that landed freeze: package-derived context packet handoff
+- current open write-enabled target after that landed freeze: package-derived context packet handoff via PR `#115`
 - later but not first: `context_dossier`
 
 Hard rule:
-- do not skip directly to `context_dossier` or deterministic fan-out before the bounded package-derived context handoff branch-local slice lands
+- do not skip directly to `context_dossier` or deterministic fan-out before the bounded package-derived context handoff open slice lands
 
 The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current `main` after package-context freeze landing"] --> B["Current branch package-context handoff slice"]
+    A["Current `main` after package-context freeze landing"] --> B["Open PR #115 package-context handoff slice"]
     B --> C["Land package-context handoff on `main`"]
     C --> D["Context dossier (later, not first)"]
     C --> E["Deterministic chain"]
 
     classDef next fill:#fff1bf,stroke:#9a6b00,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
-    classDef branch fill:#e7edff,stroke:#4b63b3,color:#111;
+    classDef open fill:#fff4e6,stroke:#b8860b,color:#111;
 
     class A next;
-    class B branch;
+    class B open;
     class C next;
     class D,E future;
 ```
@@ -164,4 +164,4 @@ Refresh this board against:
 - `backend/app/services/nrc_aps_context_packet_gate.py`
 - `backend/tests/test_layer3_aps_context_packet_handoff.py`
 - `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
-- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, `#106`, `#107`, `#108`, `#109`, `#110`, `#111`, `#112`, and `#113`
+- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, `#106`, `#107`, `#108`, `#109`, `#110`, `#111`, `#112`, `#113`, and `#115`

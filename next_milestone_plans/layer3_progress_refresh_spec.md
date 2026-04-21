@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the current branch-local bounded package-derived context handoff implementation slice that follows that landed freeze.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the current open bounded package-derived context handoff implementation slice that follows that landed freeze.
 
 ## Canonical Inputs
 
@@ -31,7 +31,7 @@ Current tracked PR set:
 - `#97`, `#98`, `#99`
 - `#100`, `#101`, `#102`
 - `#106`, `#107`, `#108`, `#109`
-- `#110`, `#111`, `#112`, `#113`
+- `#110`, `#111`, `#112`, `#113`, `#115`
 
 Hard rule:
 - never mark a step as landed on `main` from repo docs alone if the GitHub PR is still open
@@ -167,10 +167,10 @@ The current bounded chain on `main` ends at:
 - APS package-derived-context continuation freeze beyond the landed export-package handoff boundary
 
 The current branch/workspace beyond that landed `main` boundary now carries:
-- the bounded package-derived context handoff implementation slice plus the exact owner-run context-packet gate hardening follow-up
+- the bounded package-derived context handoff implementation slice plus the exact owner-run context-packet gate hardening follow-up, now tracked by open PR `#115`
 
 The next required move beyond current `main` is:
-- land the bounded package-derived context handoff branch-local slice
+- land the bounded package-derived context handoff open slice from PR `#115`
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`

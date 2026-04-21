@@ -61,7 +61,7 @@ Current repo-side facts to preserve:
 - current `main` now includes the landed `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` freeze from PR `#113`, selecting package-derived context packet as the next later shared APS family beyond the landed export-package boundary
 - the current branch/workspace now carries the bounded package-derived context handoff implementation slice rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py` and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
 - the current branch/workspace also includes the narrow context-packet gate hardening in `backend/app/services/nrc_aps_context_packet_gate.py` and `backend/tests/test_layer3_aps_context_packet_handoff.py`
-- that branch-local slice is not yet landed on current `main` and should remain `branch_only` until GitHub confirms a PR exists
+- GitHub now confirms open PR `#115` for that slice, so it should render as `open`, not `branch_only`
 - `context_dossier` remains later and must not be presented as a co-equal current-focus choice with the next package-derived-context freeze
 
 When rebuilding from a checkout that matches current `main` after the export-package handoff slice lands:
@@ -69,10 +69,10 @@ When rebuilding from a checkout that matches current `main` after the export-pac
 - show the exact-run gate-hardening follow-up as already landed on `main`
 - show the landed package-derived-context freeze as completed on `main`
 
-When rebuilding from the current branch/workspace checkout before a PR exists:
-- show the bounded package-derived context handoff slice as `branch_only`
-- use landing that branch-local slice as the current focus that follows the landed freeze
-- do not describe that branch-local slice as landed on `main` or as an open PR before GitHub confirms one exists
+When rebuilding from the current branch/workspace checkout while PR `#115` is open:
+- show the bounded package-derived context handoff slice as `open`
+- use landing that open slice as the current focus that follows the landed freeze
+- do not describe that open slice as landed on `main` before GitHub confirms the merge
 
 Also update the scheduled refresh task so it no longer:
 - writes or references `current_main_commit`
