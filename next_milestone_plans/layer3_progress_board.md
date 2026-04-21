@@ -3,7 +3,7 @@
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
-It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and the now-landed malformed-scoped candidate-discovery closeout beyond that landed package-context boundary, plus the now-landed read-only context-dossier freeze that preserves paired export-derived context packets as dossier inputs, plus the now-landed bounded context-dossier handoff implementation slice and its docs/progress sync on current `main`, plus the now-landed read-only deterministic-insight continuation freeze on current `main` beyond the landed dossier boundary, plus the now-landed bounded deterministic insight handoff implementation slice and narrow deterministic gate hardening beyond that landed freeze, plus the current open read-only deterministic-challenge continuation freeze on PR `#128` beyond that landed deterministic-insight boundary.
+It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and the now-landed malformed-scoped candidate-discovery closeout beyond that landed package-context boundary, plus the now-landed read-only context-dossier freeze that preserves paired export-derived context packets as dossier inputs, plus the now-landed bounded context-dossier handoff implementation slice and its docs/progress sync on current `main`, plus the now-landed read-only deterministic-insight continuation freeze on current `main` beyond the landed dossier boundary, plus the now-landed bounded deterministic insight handoff implementation slice and narrow deterministic gate hardening beyond that landed freeze, plus the now-landed read-only deterministic-challenge continuation freeze on current `main` beyond that landed deterministic-insight boundary.
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger entry through APS multisource admission
 - the now-landed docs-only closeout that followed multisource landing
@@ -15,7 +15,7 @@ It is intentionally scoped to:
 - the now-landed bounded `aps_context_dossier_handoff` implementation slice on current `main`
 - the now-landed read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze on current `main` beyond the landed dossier boundary
 - the now-landed bounded `aps_deterministic_insight_artifact_handoff` implementation slice and narrow deterministic gate hardening beyond that landed freeze
-- the current open read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze on PR `#128` beyond the landed deterministic-insight boundary
+- the now-landed read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze on current `main` beyond the landed deterministic-insight boundary
 
 It is not a general whole-repo roadmap.
 It does not replace GitHub PR state.
@@ -36,7 +36,7 @@ As of `2026-04-20`:
 - seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main`
 - valid local authority rule: use a clean checkout whose contents match the artifact state being refreshed; prefer current `main` for merged repo truth and the active branch checkout when a branch-only milestone is declared
 - authoritative remote branch: `project6-origin/main`
-- snapshot base `main` commit at this artifact refresh: `1d3c69ba01b410ab134caf2053464fd9a00894dd`
+- snapshot base `main` commit at this artifact refresh: `b6805645d0114103397f6a3ed0c504b5168fb58e`
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the landed export-package first shared-consumer freeze from PR `#106` and its docs-only closeout from PR `#107`
@@ -54,14 +54,14 @@ As of `2026-04-20`:
 - current `main` now also includes the landed read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze from PR `#124`, selecting `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary
 - current `main` now also includes the bounded deterministic insight handoff implementation slice from PR `#126`, rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`, plus the narrow deterministic gate hardening in `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`
 - current `main` now also includes the post-PR126 docs/progress sync from PR `#127`
-- current open PR `#128` now carries the read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze selecting `deterministic_challenge_artifact` as the next deterministic continuation beyond the landed deterministic-insight boundary
+- current `main` now also includes the landed read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze from PR `#128`, selecting `deterministic_challenge_artifact` as the next deterministic continuation beyond the landed deterministic-insight boundary
 
 ## Program State Summary
 
-- Done now on `main`: 20 merged milestones from Phase 1A feeder-ledger foundation through the landed APS deterministic-insight handoff
-- Current focus: the current open read-only deterministic challenge artifact freeze on PR `#128` beyond the now-landed deterministic insight handoff
-- Candidate next consumers: `deterministic_challenge_artifact` is the current open continuation focus; review-packet and validate-only gates remain later
-- Deferred but not active: 10 explicitly deferred scope items remain out until later freezes admit them
+- Done now on `main`: 21 merged milestones from Phase 1A feeder-ledger foundation through the landed APS deterministic-challenge continuation freeze
+- Current focus: the planned bounded deterministic challenge artifact handoff beyond the now-landed deterministic challenge freeze
+- Candidate next consumers: `deterministic_challenge_artifact` is the current planned continuation focus; review-packet and validate-only gates remain later
+- Deferred but not active: 9 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Status
 
@@ -87,7 +87,7 @@ As of `2026-04-20`:
 | APS context-dossier handoff | merged | `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` | `#121` | Landed bounded implementation slice rooted in `layer3_aps_context_dossier_handoff.py`, with narrow dossier gate hardening; package-derived context stays gating provenance only while paired export-derived context packets remain the dossier input branch |
 | APS deterministic-insight continuation freeze | merged | `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` | `#124` | Landed read-only freeze on current `main` selects `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary; it does not itself land deterministic implementation, challenge/review-packet fan-out, or schema widening |
 | APS deterministic-insight handoff | merged | `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` | `#126` | Landed bounded implementation slice rooted in `layer3_aps_deterministic_insight_artifact_handoff.py`, plus narrow deterministic gate hardening in `nrc_aps_deterministic_insight_artifact_gate.py`; one persisted dossier source boundary is preserved, `ConnectorRun.query_plan_json` stays untouched, and later deterministic fan-out remains out |
-| APS deterministic-challenge continuation freeze | open | `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` | `#128` | Current open read-only freeze on PR `#128` selects `deterministic_challenge_artifact` as the next deterministic continuation beyond the landed deterministic-insight boundary without yet admitting implementation, challenge-review-packet fan-out, validate-only expansion, route/UI widening, runtime DB writes, or schema widening |
+| APS deterministic-challenge continuation freeze | merged | `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` | `#128` | Landed read-only freeze on current `main` selects `deterministic_challenge_artifact` as the next deterministic continuation beyond the landed deterministic-insight boundary without yet admitting implementation, challenge-review-packet fan-out, validate-only expansion, route/UI widening, runtime DB writes, or schema widening |
 
 ## What Is Complete
 
@@ -114,19 +114,20 @@ flowchart LR
     P --> Q["APS context-dossier freeze"]
     Q --> R["APS context-dossier handoff"]
     R --> S["APS deterministic-insight freeze"]
+    S --> T["APS deterministic-insight handoff"]
+    T --> U["APS deterministic-challenge freeze"]
 
     classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
     classDef merged2 fill:#d8f5d0,stroke:#2f6b2f,color:#111;
     classDef merged3 fill:#d8f5d0,stroke:#2f6b2f,color:#111;
     class A,B,C,D,E,F,G,H,I,J,K,L,M,N merged;
     class O merged2;
-    class P,Q,R merged3;
-    class S merged3;
+    class P,Q,R,S,T,U merged3;
 ```
 
 ## Next Required Decision
 
-The immediate required move is now to land current open PR `#128`, then open the bounded `deterministic_challenge_artifact` handoff lane beyond the now-landed `deterministic_insight_artifact` handoff.
+The immediate required move is now to open the bounded `deterministic_challenge_artifact` handoff lane beyond the now-landed `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze.
 
 Current bounded selection state:
 - selected first consumer on current `main`: `evidence_report_export_package`
@@ -140,21 +141,21 @@ Current bounded selection state:
 - dossier input branch must remain paired export-derived context packets
 - landed deterministic continuation freeze: PR `#124` for `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md`
 - landed deterministic handoff implementation: PR `#126` for `aps_deterministic_insight_artifact_handoff`
-- current open next freeze target: `deterministic_challenge_artifact`
+- landed next freeze target: PR `#128` for `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md`
+- current planned next handoff target: `deterministic_challenge_artifact`
 - later after that: `deterministic_challenge_review_packet`, then `validate_only_gates`
 
 Hard rule:
-- do not skip directly to deterministic challenge review packet or validate-only gates before the deterministic challenge artifact freeze is settled and landed
+- do not skip directly to deterministic challenge review packet or validate-only gates before the bounded deterministic challenge artifact handoff lane is settled and landed
 - do not present package-derived context as dossier input proof in this tranche
 
 The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current branch after deterministic insight handoff landing"] --> B["Open deterministic challenge artifact freeze"]
-    B --> C["Deterministic challenge artifact handoff"]
-    C --> D["Deterministic challenge review packet"]
-    D --> E["Validate-only gates"]
+    A["Current main after deterministic challenge freeze landing"] --> B["Deterministic challenge artifact handoff"]
+    B --> C["Deterministic challenge review packet"]
+    C --> D["Validate-only gates"]
 
     classDef done fill:#d8f5d0,stroke:#2f6b2f,color:#111;
     classDef planned fill:#fff1bf,stroke:#9a6b00,color:#111;
@@ -162,7 +163,7 @@ flowchart LR
 
     class A done;
     class B planned;
-    class C,D,E future;
+    class C,D future;
 ```
 
 ## Deferred Scope
@@ -170,7 +171,6 @@ flowchart LR
 These remain explicitly out until later freezes admit them:
 - direct shared `evidence_report_export_package` contract/runtime edits beyond the landed bounded export-package handoff and exact-run gate-hardening lane
 - package-derived context implementation beyond a bounded handoff lane rooted in the landed freeze
-- deterministic challenge artifact implementation beyond the current open read-only freeze
 - deterministic challenge and review-packet fan-out
 - validate-only top-chain expansion
 - future workbench route family
