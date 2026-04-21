@@ -54,11 +54,13 @@ Render these sections in this order:
    - use manifest `summary_counts` and `next_required_decision`
 
 2. `Current Focus`
-   - render the `next_required_decision` block as the most visually prominent non-complete section
+   - render the `next_required_decision` block as the most visually prominent active or closure section
+   - if `next_required_decision.state` is not `settled`, treat it as the most visually prominent non-complete section
+   - if `next_required_decision.state` is `settled`, render a closure card instead of a next-lane card
    - include:
      - title
      - why now
-     - must-not-skip rules
+     - must-not-skip rules or reopen conditions
 
 3. `Completed Chain`
    - render the merged milestone chain as a visual rail or grouped sequence
@@ -77,6 +79,7 @@ Render these sections in this order:
 
 5. `Candidate Next Consumers`
    - render `next_required_decision.candidate_families`
+   - if the list is empty under a `settled` packet, render an explicit `None active` message instead of inventing candidates
    - visually distinguish these from the current focus
 
 6. `Deferred Scope`
@@ -90,6 +93,7 @@ Use these colors consistently:
 - `merged_with_open_docs_closeout`: green-olive or other clearly separate done-plus-followup state
 - `open`: orange
 - `planned`: amber
+- `settled`: green-gray or other clearly closed-but-not-deferred state
 - `deferred`: gray
 - `branch_only`: blue or other clearly non-main state
 

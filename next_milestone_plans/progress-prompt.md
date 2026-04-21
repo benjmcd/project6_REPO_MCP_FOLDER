@@ -91,6 +91,7 @@ Current repo-side facts to preserve:
 - if no later post-validate-only freeze exists on current `main`, render the current focus as the next freeze decision rather than as another current-main implementation lane
 - if the current checkout matches current `main` after PR `#145`, render `23_GATED_APS_PROMOTION_FREEZE.md` as `merged`
 - if the current checkout matches current `main` after PR `#145`, show promotion as the landed first later APS family beyond the landed dedicated validate-only boundary, keep retrieval cutover later, and do not invent a separate repo-backed post-validate-only top-chain family
+- if live repo truth on current `main` already proves the existing promotion governance family sufficient and retrieval cutover already present as a separate parity-proof family, render the later APS family packet as `settled` rather than inventing another next lane
 
 When rebuilding from a checkout that matches current `main` after PR `#144`:
 - show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
@@ -119,7 +120,8 @@ When rebuilding from a checkout that matches current `main` after PR `#144`:
 - if refreshing from a checkout that matches current `main` after PR `#145`, show that freeze as `merged`
 
 Current merged-state fact to preserve when present:
-- current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, selecting promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later
+- current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, which selected promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later during the freeze decision itself
+- live repo truth now also shows the existing promotion governance family already sufficient on current `main`, while retrieval cutover already exists there as a separate validate-only parity-proof family
 
 Also update the scheduled refresh task so it no longer:
 - writes or references `current_main_commit`
