@@ -1012,7 +1012,9 @@
       122,
       123,
       124,
-      126
+      126,
+      127,
+      128
     ],
     "repo_paths": [
       "docs/nrc_adams/nrc_aps_status_handoff.md",
