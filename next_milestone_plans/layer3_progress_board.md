@@ -43,13 +43,13 @@ As of `2026-04-20`:
 - current `main` now also includes the malformed-scoped APS gate hardening follow-up from PR `#116` across `backend/app/services/nrc_aps_evidence_report_export_gate.py`, `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`, `backend/app/services/nrc_aps_context_packet_gate.py`, `backend/tests/test_layer3_aps_report_export_handoff.py`, `backend/tests/test_layer3_aps_report_export_package_handoff.py`, and `backend/tests/test_layer3_aps_context_packet_handoff.py`
 - current `main` also includes the post-PR116 docs/progress sync from PR `#117`
 - current branch/workspace now also carries the read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze selecting `context_dossier` as the next later shared APS family after the landed package-context milestone while preserving paired export-derived context packets as the live dossier input branch
-- no open PR exists yet for that branch-local freeze
+- open PR `#118` now tracks that branch-local freeze and it is not yet landed on `main`
 
 ## Program State Summary
 
 - Done now on `main`: 16 merged milestones from Phase 1A feeder-ledger foundation through the APS package-derived context handoff
-- Current focus: land the branch-local `context_dossier` freeze while preserving paired export-derived context packets as dossier inputs
-- Candidate next consumers: `context_dossier` is branch-local now; deterministic remains later
+- Current focus: land the open `context_dossier` freeze while preserving paired export-derived context packets as dossier inputs
+- Candidate next consumers: `context_dossier` is open now; deterministic remains later
 - Deferred but not active: 12 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Status
@@ -72,7 +72,7 @@ As of `2026-04-20`:
 | APS evidence-report-export-package handoff | merged | `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` | `#109`, `#110`, `#111`, `#112` | Landed bounded implementation slice rooted in `layer3_aps_report_export_package_handoff.py`, plus docs closeout and exact-run export/export-package gate hardening |
 | APS package-derived context continuation freeze | merged | `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` | `#113` | Landed read-only freeze selects package-derived context packet as the next later shared APS family beyond the landed export-package boundary |
 | APS package-derived context handoff | merged | `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` | `#115`, `#116` | Landed bounded handoff implementation slice plus malformed-scoped APS gate hardening follow-up |
-| APS context-dossier continuation freeze | branch_only | `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` | none yet | Current branch/workspace carries this read-only freeze; it preserves paired export-derived context packets as dossier inputs and is not yet landed on `main` |
+| APS context-dossier continuation freeze | open | `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` | `#118` | Open PR now carries this read-only freeze; it preserves paired export-derived context packets as dossier inputs and is not yet landed on `main` |
 
 ## What Is Complete
 
@@ -108,7 +108,7 @@ flowchart LR
 
 ## Next Required Decision
 
-The immediate required move is now to land the branch-local read-only `context_dossier` freeze already present in this workspace.
+The immediate required move is now to land open PR `#118`, which carries the read-only `context_dossier` freeze already present in this workspace.
 The first shared-consumer selection freeze, the bounded export-package handoff implementation slice, the package-derived-context freeze, the bounded package-derived context handoff slice, the malformed-scoped APS gate hardening follow-up, and the post-PR116 docs/progress sync are all already landed on `main`.
 
 Current bounded selection state:
@@ -116,7 +116,7 @@ Current bounded selection state:
 - landed bounded handoff lane: `aps_evidence_report_export_package_handoff`
 - landed next freeze: `#113` for `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
 - landed bounded handoff implementation: package-derived context packet via PRs `#115` and `#116`
-- current branch/workspace now carries the read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze
+- open freeze PR: `#118` for `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md`
 - next later shared-family target: `context_dossier`
 - dossier input branch must remain paired export-derived context packets
 - later after that: deterministic chain
@@ -129,8 +129,8 @@ The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current `main` after package-context handoff landing"] --> B["Branch-local context-dossier freeze"]
-    B --> C["Land context-dossier continuation freeze"]
+    A["Current `main` after package-context handoff landing"] --> B["Open context-dossier freeze"]
+    B --> C["Land PR #118"]
     C --> D["Context dossier implementation lane"]
     C --> E["Deterministic chain"]
 
@@ -172,4 +172,4 @@ Refresh this board against:
 - `backend/app/services/nrc_aps_context_packet_gate.py`
 - `backend/tests/test_layer3_aps_context_packet_handoff.py`
 - `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
-- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, `#106`, `#107`, `#108`, `#109`, `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, and `#117`
+- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, `#106`, `#107`, `#108`, `#109`, `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, and `#118`
