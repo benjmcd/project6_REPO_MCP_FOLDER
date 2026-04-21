@@ -141,6 +141,7 @@ Any external live artifact or dashboard must also obey:
 - and, when present in the current checkout, the landed `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze plus the generic validate-only review surfaces rooted in `backend/app/services/review_nrc_aps_graph.py`, `backend/app/services/review_nrc_aps_tree.py`, `backend/tests/test_review_nrc_aps_graph.py`, `project6.ps1`, and `backend/app/services/connectors_sciencebase.py`
 - and, when present in the current checkout, the landed validate-only gate-report refresh owner/proof surfaces rooted in `backend/app/services/review_nrc_aps_gate_reports.py`, `tools/nrc_aps_refresh_review_gate_reports.py`, `tools/run_nrc_aps_local_corpus_e2e.py`, `backend/tests/test_review_nrc_aps_gate_reports.py`, and `project6.ps1`
 - and, when present in the current checkout, the landed `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` freeze from PR `#140` plus the decision surfaces rooted in `backend/app/services/connectors_sciencebase.py`, `backend/app/services/review_nrc_aps_graph.py`, `backend/app/services/review_nrc_aps_tree.py`, `backend/app/services/review_nrc_aps_details.py`, and `project6.ps1`
+- and, when present in the current checkout, the branch-local dedicated validate-only runtime/report-ref implementation surfaces rooted in `backend/app/services/nrc_aps_validate_only_gates_contract.py`, `backend/app/services/nrc_aps_validate_only_gates.py`, `backend/app/services/nrc_aps_validate_only_gates_gate.py`, `backend/tests/test_nrc_aps_validate_only_gates.py`, `tools/nrc_aps_refresh_validate_only_gates.py`, `tools/nrc_aps_validate_only_gates_gate.py`, `backend/app/services/review_nrc_aps_runtime.py`, `backend/app/services/review_nrc_aps_gate_reports.py`, `backend/app/services/review_nrc_aps_graph.py`, `backend/app/services/review_nrc_aps_tree.py`, `backend/app/services/connectors_sciencebase.py`, and `project6.ps1`
 7. For each milestone:
    - update PR state from GitHub
    - update merge commit from GitHub
@@ -210,6 +211,8 @@ The current bounded chain on `main` ends at:
 - and the post-PR136 docs/progress sync from PR `#137`
 - and the landed bounded validate-only gate-report refresh lane from PR `#138`
 - and the post-PR138 docs/progress sync from PR `#139`
+- and the post-PR140 docs/progress sync from PR `#141`
+- and the post-PR141 docs/progress sync from PR `#142`
 
 The preserved source-branch rule on current `main` is:
 - dossier input must remain paired export-derived context packets rather than package-derived context
@@ -219,7 +222,9 @@ The current landed continuation at the end of current `main` is:
 
 The next required move is:
 - current `main` now also includes the post-PR140 docs/progress sync from PR `#141`
-- current `main` still points next to the write-enabled implementation boundary settled by `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`; do not widen directly into implementation, promotion, retrieval cutover, route or UI, runtime DB, or schema scope without first following that freeze
+- current `main` now also includes the post-PR141 docs/progress sync from PR `#142`
+- when the current checkout contains the dedicated validate-only runtime/report-ref implementation surfaces without a GitHub PR, keep that milestone as `branch_only`
+- current `main` still points next to the write-enabled implementation boundary settled by `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`; do not widen directly into promotion, retrieval cutover, route or UI, runtime DB, or schema scope without first following that bounded implementation lane
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`
