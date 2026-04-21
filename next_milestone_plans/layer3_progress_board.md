@@ -3,7 +3,7 @@
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
-It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and the now-landed malformed-scoped candidate-discovery closeout beyond that landed package-context boundary, plus the now-landed read-only context-dossier freeze that preserves paired export-derived context packets as dossier inputs, plus the now-landed bounded context-dossier handoff implementation slice and its docs/progress sync on current `main`, plus the now-landed read-only deterministic-insight continuation freeze on current `main` beyond the landed dossier boundary, plus the now-landed bounded deterministic insight handoff implementation slice and narrow deterministic gate hardening beyond that landed freeze, plus the now-landed read-only deterministic-challenge continuation freeze on current `main` beyond that landed deterministic-insight boundary, plus the now-landed bounded deterministic challenge handoff implementation slice, plus the now-landed deterministic challenge review-packet continuation freeze and bounded review-packet handoff implementation slice, and the current open validate-only-gates freeze on PR `#136` beyond that landed review-packet boundary.
+It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and the now-landed malformed-scoped candidate-discovery closeout beyond that landed package-context boundary, plus the now-landed read-only context-dossier freeze that preserves paired export-derived context packets as dossier inputs, plus the now-landed bounded context-dossier handoff implementation slice and its docs/progress sync on current `main`, plus the now-landed read-only deterministic-insight continuation freeze on current `main` beyond the landed dossier boundary, plus the now-landed bounded deterministic insight handoff implementation slice and narrow deterministic gate hardening beyond that landed freeze, plus the now-landed read-only deterministic-challenge continuation freeze on current `main` beyond that landed deterministic-insight boundary, plus the now-landed bounded deterministic challenge handoff implementation slice, plus the now-landed deterministic challenge review-packet continuation freeze and bounded review-packet handoff implementation slice, and the now-landed validate-only-gates freeze from PR `#136` beyond that landed review-packet boundary.
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger entry through APS multisource admission
 - the now-landed docs-only closeout that followed multisource landing
@@ -19,7 +19,7 @@ It is intentionally scoped to:
 - the now-landed bounded `aps_deterministic_challenge_artifact_handoff` implementation slice and narrow deterministic challenge gate hardening beyond that landed freeze
 - the now-landed read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze on current `main` beyond the landed deterministic-challenge boundary
 - the now-landed bounded `aps_deterministic_challenge_review_packet_handoff` implementation slice and narrow review-packet gate hardening beyond that landed freeze
-- the current open read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze on PR `#136` beyond the landed deterministic challenge review-packet handoff
+- the now-landed read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze on current `main` beyond the landed deterministic challenge review-packet handoff
 
 It is not a general whole-repo roadmap.
 It does not replace GitHub PR state.
@@ -66,13 +66,13 @@ As of `2026-04-21`:
 - current `main` now also includes the post-PR132 docs/progress sync from PR `#133`
 - current `main` now also includes the bounded deterministic challenge review-packet handoff slice from PR `#134`, rooted in `backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py`, plus the narrow review-packet gate hardening in `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`
 - current `main` now also includes the post-PR134 docs/progress sync from PR `#135`
-- current open PR `#136` now carries the read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze selecting `validate_only_gates` as the next verification continuation beyond the landed deterministic challenge review-packet handoff while keeping later validate-only execution/report refresh, promotion, retrieval cutover, route/UI, runtime DB, and schema widening out
+- current `main` now also includes the read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze from PR `#136`, selecting `validate_only_gates` as the next verification continuation beyond the landed deterministic challenge review-packet handoff while keeping later validate-only execution/report refresh, promotion, retrieval cutover, route/UI, runtime DB, and schema widening out
 
 ## Program State Summary
 
-- Done now on `main`: 24 merged milestones from Phase 1A feeder-ledger foundation through the landed APS deterministic challenge review-packet handoff, plus the landed post-PR134 docs/progress closeout
-- Current focus: the current open read-only validate-only-gates freeze on PR `#136` beyond the now-landed deterministic challenge review-packet handoff
-- Candidate next consumers: `validate_only_gates` is the current open freeze focus on PR `#136` beyond the now-landed review-packet handoff; broader widening remains later
+- Done now on `main`: 25 merged milestones from Phase 1A feeder-ledger foundation through the landed APS validate-only-gates continuation freeze
+- Current focus: the planned bounded validate-only execution or report-refresh lane beyond the now-landed validate-only-gates freeze
+- Candidate next consumers: the `validate_only_gates` family choice is now landed on current `main`; the next planned move is the bounded validate-only execution or report-refresh lane and broader widening remains later
 - Deferred but not active: 8 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Status
@@ -103,7 +103,7 @@ As of `2026-04-21`:
 | APS deterministic-challenge handoff | merged | `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` | `#130` | Landed bounded implementation slice rooted in `layer3_aps_deterministic_challenge_artifact_handoff.py`, plus narrow deterministic challenge gate hardening in `nrc_aps_deterministic_challenge_artifact_gate.py`; one persisted deterministic insight artifact remains the immediate source boundary and later deterministic fan-out stays out |
 | APS deterministic challenge review-packet continuation freeze | merged | `20_GATED_APS_REVIEW_PACKET_FREEZE.md` | `#132` | Landed read-only freeze selects `deterministic_challenge_review_packet` as the next deterministic continuation beyond the landed deterministic challenge handoff; later write-enabled review-packet handoff and validate-only expansion remain later |
 | APS deterministic challenge review-packet handoff | merged | `20_GATED_APS_REVIEW_PACKET_FREEZE.md` | `#134` | Landed bounded handoff lane is rooted in `layer3_aps_deterministic_challenge_review_packet_handoff.py` and `test_layer3_aps_deterministic_challenge_review_packet_handoff.py`, with narrow adjacent hardening in `nrc_aps_deterministic_challenge_review_packet_gate.py`; validate-only gates remain later |
-| APS validate-only-gates continuation freeze | open | `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` | `#136` | Open read-only freeze on PR `#136` selects `validate_only_gates` as the next verification continuation beyond the landed deterministic challenge review-packet handoff while making explicit that current `main` still relies on generic gate-report surfaces rather than a dedicated validate-only runtime family |
+| APS validate-only-gates continuation freeze | merged | `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` | `#136` | Landed read-only freeze on current `main` from PR `#136` selects `validate_only_gates` as the next verification continuation beyond the landed deterministic challenge review-packet handoff while making explicit that current `main` still relies on generic gate-report surfaces rather than a dedicated validate-only runtime family |
 
 ## What Is Complete
 
@@ -146,7 +146,7 @@ flowchart LR
 
 ## Next Required Decision
 
-The immediate required move is now represented by open PR `#136`, which carries the read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze beyond the now-landed `deterministic_challenge_review_packet` handoff boundary.
+The immediate required move is now the planned bounded validate-only execution or report-refresh lane beyond the now-landed `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze and the now-landed `deterministic_challenge_review_packet` handoff boundary.
 
 Current bounded selection state:
 - selected first consumer on current `main`: `evidence_report_export_package`
@@ -165,8 +165,8 @@ Current bounded selection state:
 - landed next freeze target: PR `#132` for `20_GATED_APS_REVIEW_PACKET_FREEZE.md`
 - landed bounded handoff implementation: PR `#134` for `deterministic_challenge_review_packet`
 - landed post-PR134 docs/progress sync: PR `#135`
-- current open continuation target: `validate_only_gates` freeze on PR `#136`
-- later after that: validate-only execution or report refresh
+- landed read-only continuation freeze on current `main`: PR `#136` for `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
+- current planned continuation target: validate-only execution or report refresh
 
 Hard rule:
 - do not skip directly to validate-only gates before the bounded deterministic challenge review-packet chain is settled and landed
@@ -176,16 +176,15 @@ The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current main after review-packet handoff landing"] --> B["Current open validate-only gates freeze"]
-    B --> C["Later validate-only gate execution or refresh"]
+    A["Current main after review-packet handoff landing"] --> B["Landed validate-only gates freeze"]
+    B --> C["Planned validate-only gate execution or refresh"]
 
     classDef done fill:#d8f5d0,stroke:#2f6b2f,color:#111;
-    classDef open fill:#fff4e6,stroke:#b8860b,color:#111;
+    classDef next fill:#fff4e6,stroke:#b8860b,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
 
-    class A done;
-    class B open;
-    class C future;
+    class A,B done;
+    class C next;
 ```
 
 ## Deferred Scope
