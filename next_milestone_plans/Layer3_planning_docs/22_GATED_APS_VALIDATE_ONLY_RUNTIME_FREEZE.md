@@ -38,7 +38,7 @@ Current merged-state note:
 - current `main` already maps `validate_only_gates` to generic `gate_reports` plus `summary.gate_results` in `backend/app/services/review_nrc_aps_graph.py` and `backend/app/services/review_nrc_aps_tree.py`
 - current `main` does not yet expose a dedicated `aps_validate_only_gates_report_refs` bucket in `backend/app/services/connectors_sciencebase.py`
 - current `main` does not yet contain a dedicated `nrc_aps_validate_only_gates_contract.py`, `nrc_aps_validate_only_gates.py`, or `nrc_aps_validate_only_gates_gate.py`
-- open PR `#140` now carries this read-only freeze selecting the dedicated validate-only runtime/report-ref boundary as the only admissible next continuation beyond that landed generic gate-report refresh lane
+- current `main` now also includes this landed read-only freeze from PR `#140`, selecting the dedicated validate-only runtime/report-ref boundary as the only admissible next continuation beyond that landed generic gate-report refresh lane
 
 Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md|artifact|current governing freeze for the landed generic validate_only_gates boundary`; `R|backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py|Current bounded deterministic challenge review-packet handoff owner surface on current \`main\`|1-392`; `R|backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py|Current bounded deterministic challenge review-packet handoff proof surface on current \`main\`|1-627`; `R|backend/app/services/review_nrc_aps_graph.py|Live downstream graph still places validate_only_gates immediately after deterministic challenge review packet and still projects that node from gate_reports plus gate_results|38-41;67-68;87-88;108-109;413-428;543-548;774-779`; `R|backend/app/services/review_nrc_aps_tree.py|Live review tree still treats gate_reports and gate_results as first-class runtime layout surfaces|61-71`; `R|backend/app/services/review_nrc_aps_gate_reports.py|Current landed bounded generic validate-only refresh owner surface on current \`main\`|25-212`; `R|backend/tests/test_review_nrc_aps_gate_reports.py|Current landed bounded generic validate-only refresh proof surface on current \`main\`|31-141`; `R|project6.ps1|Current operator entrypoints expose refresh-nrc-aps-review-gate-reports as validate-only execution on current \`main\`|53-53;581-593`; `R|backend/app/services/connectors_sciencebase.py|Current run-level report-ref registry still stops at deterministic challenge review packet and does not yet define a dedicated validate_only_gates bucket|2948-2962`
 
@@ -179,14 +179,14 @@ Stop and reopen the freeze instead of improvising if a later continuation requir
 ## Concise readiness judgment
 
 Readiness judgment:
-- This open read-only freeze in PR `#140` is the governing carried-forward contract for the bounded next decision on whether to admit dedicated validate-only runtime/report-ref surfaces beyond the landed generic gate-report boundary.
+- This landed read-only freeze on current `main` from PR `#140` is the governing carried-forward contract for the bounded next decision on whether to admit dedicated validate-only runtime/report-ref surfaces beyond the landed generic gate-report boundary.
 
 Reason:
 - current `main` already proves the landed generic validate-only gate-report refresh lane and the runtime surfaces that back it
 - repo truth still does not contain a dedicated validate-only family-specific report-ref/runtime stack
 - this read-only freeze therefore settles the next decision narrowly without overclaiming implementation
 
-What still remains intentionally deferred after this open read-only freeze:
+What still remains intentionally deferred after this landed read-only freeze:
 - dedicated validate-only runtime/report-ref implementation
 - promotion
 - retrieval cutover
