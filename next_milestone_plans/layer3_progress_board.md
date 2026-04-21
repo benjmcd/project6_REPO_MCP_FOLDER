@@ -3,7 +3,7 @@
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
-It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and the now-landed malformed-scoped candidate-discovery closeout beyond that landed package-context boundary, plus the now-landed read-only context-dossier freeze that preserves paired export-derived context packets as dossier inputs, plus the now-landed bounded context-dossier handoff implementation slice and its docs/progress sync on current `main`, plus the now-landed read-only deterministic-insight continuation freeze on current `main` beyond the landed dossier boundary.
+It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and the now-landed malformed-scoped candidate-discovery closeout beyond that landed package-context boundary, plus the now-landed read-only context-dossier freeze that preserves paired export-derived context packets as dossier inputs, plus the now-landed bounded context-dossier handoff implementation slice and its docs/progress sync on current `main`, plus the now-landed read-only deterministic-insight continuation freeze on current `main` beyond the landed dossier boundary, plus the current open deterministic insight handoff implementation slice and narrow deterministic gate hardening beyond that landed freeze.
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger entry through APS multisource admission
 - the now-landed docs-only closeout that followed multisource landing
@@ -14,6 +14,7 @@ It is intentionally scoped to:
 - the now-landed read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze beyond the landed package-context boundary
 - the now-landed bounded `aps_context_dossier_handoff` implementation slice on current `main`
 - the now-landed read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze on current `main` beyond the landed dossier boundary
+- the current open bounded `aps_deterministic_insight_artifact_handoff` implementation slice and narrow deterministic gate hardening beyond that landed freeze
 
 It is not a general whole-repo roadmap.
 It does not replace GitHub PR state.
@@ -50,12 +51,13 @@ As of `2026-04-20`:
 - current `main` also includes the post-PR121 docs/progress sync from PR `#122`
 - current `main` also includes the post-PR122 artifact-state fix from PR `#123`
 - current `main` now also includes the landed read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze from PR `#124`, selecting `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary
+- current open PR `#126` now carries the bounded deterministic insight handoff implementation slice rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`, plus the narrow deterministic gate hardening in `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`; that lane is not yet landed on current `main`
 
 ## Program State Summary
 
 - Done now on `main`: 19 merged milestones from Phase 1A feeder-ledger foundation through the landed APS deterministic-insight continuation freeze
-- Current focus: the next bounded move is the planned deterministic insight handoff implementation lane rooted in `deterministic_insight_artifact`
-- Candidate next consumers: `deterministic_insight_artifact` is the planned next bounded implementation now; challenge, review-packet, and validate-only gates remain later
+- Current focus: the current open bounded deterministic insight handoff implementation lane is rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`; it is not yet landed on current `main`
+- Candidate next consumers: `deterministic_insight_artifact` is the current open bounded implementation now; challenge, review-packet, and validate-only gates remain later
 - Deferred but not active: 10 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Status
@@ -81,6 +83,7 @@ As of `2026-04-20`:
 | APS context-dossier continuation freeze | merged | `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` | `#118` | Landed read-only freeze preserves paired export-derived context packets as dossier inputs and settles `context_dossier` as the next later shared APS family beyond the landed package-context milestone |
 | APS context-dossier handoff | merged | `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` | `#121` | Landed bounded implementation slice rooted in `layer3_aps_context_dossier_handoff.py`, with narrow dossier gate hardening; package-derived context stays gating provenance only while paired export-derived context packets remain the dossier input branch |
 | APS deterministic-insight continuation freeze | merged | `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` | `#124` | Landed read-only freeze on current `main` selects `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary; it does not itself land deterministic implementation, challenge/review-packet fan-out, or schema widening |
+| APS deterministic-insight handoff | open | `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` | `#126` | Current open bounded implementation slice rooted in `layer3_aps_deterministic_insight_artifact_handoff.py`, plus narrow deterministic gate hardening in `nrc_aps_deterministic_insight_artifact_gate.py`; one persisted dossier source boundary is preserved, `ConnectorRun.query_plan_json` stays untouched, and the lane is not yet landed on current `main` |
 
 ## What Is Complete
 
@@ -119,7 +122,7 @@ flowchart LR
 
 ## Next Required Decision
 
-The immediate required move is now to open the bounded write-enabled deterministic insight handoff lane for the first deterministic continuation beyond the landed `context_dossier` handoff, rooted in `deterministic_insight_artifact`.
+The immediate required move is now to land the current open bounded deterministic insight handoff lane for the first deterministic continuation beyond the landed `context_dossier` handoff, rooted in `deterministic_insight_artifact`.
 
 Current bounded selection state:
 - selected first consumer on current `main`: `evidence_report_export_package`
@@ -132,27 +135,29 @@ Current bounded selection state:
 - landed bounded implementation lane: PR `#121` for `aps_context_dossier_handoff`
 - dossier input branch must remain paired export-derived context packets
 - landed deterministic continuation freeze: PR `#124` for `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md`
+- current open implementation lane: PR `#126` for `aps_deterministic_insight_artifact_handoff`
+- current open gate hardening: exact owner-run filtering under sanitized deterministic artifact scopes
 - later after that: `deterministic_challenge_artifact`, `deterministic_challenge_review_packet`, then `validate_only_gates`
 
 Hard rule:
-- do not skip directly to later deterministic fan-out before the first deterministic continuation is frozen
+- do not skip directly to later deterministic fan-out before the current open deterministic insight handoff lane lands
 - do not present package-derived context as dossier input proof in this tranche
 
 The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current main after deterministic insight freeze landing"] --> B["Planned deterministic insight artifact handoff"]
+    A["Current main after deterministic insight freeze landing"] --> B["Open deterministic insight artifact handoff"]
     B --> C["Deterministic challenge artifact"]
     C --> D["Deterministic challenge review packet"]
     D --> E["Validate-only gates"]
 
     classDef done fill:#d8f5d0,stroke:#2f6b2f,color:#111;
-    classDef next fill:#fff1bf,stroke:#9a6b00,color:#111;
+    classDef open fill:#fff4e6,stroke:#b8860b,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
 
     class A done;
-    class B next;
+    class B open;
     class C,D,E future;
 ```
 
@@ -187,6 +192,8 @@ Refresh this board against:
 - `backend/app/services/nrc_aps_deterministic_insight_artifact_contract.py`
 - `backend/app/services/nrc_aps_deterministic_insight_artifact.py`
 - `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`
+- `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py`
+- `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`
 - `backend/app/services/review_nrc_aps_graph.py`
 - `backend/app/services/nrc_aps_evidence_report_export_gate.py`
 - `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`
@@ -194,4 +201,4 @@ Refresh this board against:
 - `backend/app/services/nrc_aps_context_packet_gate.py`
 - `backend/tests/test_layer3_aps_context_packet_handoff.py`
 - `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
-- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, `#106`, `#107`, `#108`, `#109`, `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, and `#124`
+- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, `#106`, `#107`, `#108`, `#109`, `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, and `#126`
