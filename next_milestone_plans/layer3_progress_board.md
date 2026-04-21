@@ -185,7 +185,7 @@ Hard rules:
 - broader package-derived-context work is not the same thing as reopening the shared export/export-package contract/runtime surfaces
 - do not invent validate-only top-chain work unless live repo graph/tree truth defines a real post-`validate_only_gates` family
 
-### 1. Direct shared `evidence_report_export_package` contract/runtime edits beyond the landed bounded handoff lane
+### 1. Direct shared `evidence_report_export_package` contract/runtime edits beyond the landed bounded export-package handoff and exact-run gate-hardening lane
 
 Current boundary:
 - current `main` lands the additive `aps_evidence_report_export_package_handoff` consumer plus narrow exact-run export/export-package gate hardening
