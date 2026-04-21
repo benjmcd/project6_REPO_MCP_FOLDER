@@ -1,0 +1,3 @@
+# Keep this local-state directory without tracking runtime contents.
+*
+!.gitignore
