@@ -2,6 +2,7 @@
 
 Generated: 2026-03-09 (America/Los_Angeles)
 
+> Status note (2026-04-21): Current repo authority and front-door status now start from [README.md](README.md). Lane-specific current authority lives in [docs/nrc_adams/nrc_aps_reader_path.md](docs/nrc_adams/nrc_aps_reader_path.md), [docs/nrc_adams/nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md), [frontend_UI_plans/README.md](frontend_UI_plans/README.md), [docs/onlook-ops.md](docs/onlook-ops.md), and the other lane-status docs linked from [README.md](README.md). This file remains an intentionally scoped broad repo map, not a live whole-repo status ledger. Older status notes below are preserved lineage snapshots and do not override those current authority surfaces.
 > Status note (2026-03-13): NRC APS operational status and current lower-layer document-processing authority now live in [docs/nrc_adams/nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md). This file remains a broad repo map. Older ScienceBase-centric snapshot sections below are not the authoritative NRC APS status surface.
 >> Status note (2026-03-14): Phase 7/7A (Advanced NRC APS Ingestion) is in an `accepted-state`. Phase 8 (Downstream Consumption) is in a PROVISIONAL state. The authoritative repository map and authority definitions live in [docs/nrc_adams/nrc_aps_authority_matrix.md](docs/nrc_adams/nrc_aps_authority_matrix.md).
 >> Status note (2026-03-26): PostgreSQL Tier1 status and the current split-default semantics now live in [docs/postgres/postgres_status_handoff.md](docs/postgres/postgres_status_handoff.md). This file remains a broad repo map, not the authoritative PostgreSQL lane surface.
@@ -14,7 +15,7 @@ Generated: 2026-03-09 (America/Los_Angeles)
 
 ## 1) Repository scope
 
-This repository currently contains:
+This broad repo map currently highlights the primary active tracks:
 
 1. Method-aware analysis vertical slice:
    CSV upload -> profile -> transform -> annotate -> analysis artifact persistence.

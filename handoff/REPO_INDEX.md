@@ -2,11 +2,12 @@
 
 Generated: 2026-03-09 (America/Los_Angeles)
 
-> Status note (2026-03-11): NRC APS operational status, closed layers, schema/API/gate inventories, proof artifacts, and next-step handoff now live in [docs/nrc_adams/nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md). This file remains a broad repo map. Older ScienceBase-centric status snapshot sections below are not the authoritative NRC APS status surface.
+> Status note (2026-04-21): This file is a package-local March 13, 2026 broad map for the portable `handoff/` snapshot. For current-main authority use [../README.md](../README.md), [../docs/nrc_adams/nrc_aps_reader_path.md](../docs/nrc_adams/nrc_aps_reader_path.md), [../docs/nrc_adams/nrc_aps_status_handoff.md](../docs/nrc_adams/nrc_aps_status_handoff.md), and [../frontend_UI_plans/README.md](../frontend_UI_plans/README.md). Sections below preserve package-era scope/layout and are intentionally scoped, not a current whole-repo inventory.
+> Historical package note (2026-03-11): NRC APS operational status, closed layers, schema/API/gate inventories, proof artifacts, and next-step handoff now live in [docs/nrc_adams/nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md). This file remains a broad repo map. Older ScienceBase-centric status snapshot sections below are not the authoritative NRC APS status surface.
 
 ## 1) Repository scope
 
-This repository currently contains:
+This packaged March 13, 2026 broad-map snapshot highlights:
 
 1. Method-aware analysis vertical slice:
    CSV upload -> profile -> transform -> annotate -> analysis artifact persistence.
