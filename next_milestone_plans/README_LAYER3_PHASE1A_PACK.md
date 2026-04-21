@@ -54,6 +54,9 @@ And to the carried-forward Gate D APS context-dossier continuation freeze packet
 And to the carried-forward Gate D APS deterministic-insight continuation freeze packet now landed on current `main` for the bounded first deterministic continuation beyond the landed dossier boundary:
 - `next_milestone_plans/Layer3_planning_docs/18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md`
 
+And to the carried-forward Gate D APS deterministic-challenge continuation freeze packet currently carried on this branch for the bounded next deterministic continuation beyond the landed deterministic-insight boundary:
+- `next_milestone_plans/Layer3_planning_docs/19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md`
+
 This README is operational and navigational.
 If it conflicts with the stronger frozen control docs, the control docs govern.
 
@@ -93,6 +96,7 @@ The lane now contains:
 - current `main` now also includes the bounded Gate D APS context-dossier handoff implementation slice rooted in `backend/app/services/layer3_aps_context_dossier_handoff.py` and `backend/tests/test_layer3_aps_context_dossier_handoff.py`, plus the narrow dossier-gate scope hardening in `backend/app/services/nrc_aps_context_dossier_gate.py`; that landed lane preserves paired export-derived context packets as dossier inputs and still does not mean deterministic fan-out, route/UI, runtime DB, or schema widening have landed
 - current `main` now also includes the read-only Gate D APS deterministic-insight continuation freeze packet rooted in `next_milestone_plans/Layer3_planning_docs/18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md`; it selects `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary without admitting deterministic implementation, challenge/review-packet fan-out, route/UI, runtime DB, or schema widening by itself
 - current `main` now also includes the bounded Gate D APS deterministic-insight handoff implementation slice rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`, plus the narrow deterministic-gate hardening in `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`; that landed lane keeps one persisted dossier as the deterministic source boundary, leaves `ConnectorRun.query_plan_json` untouched, and still does not mean challenge/review-packet fan-out, route/UI, runtime DB, or schema widening have landed on current `main`
+- current branch now also includes the read-only Gate D APS deterministic-challenge continuation freeze packet rooted in `next_milestone_plans/Layer3_planning_docs/19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md`; it selects `deterministic_challenge_artifact` as the next deterministic continuation beyond the landed deterministic-insight boundary without admitting challenge implementation, challenge-review-packet fan-out, validate-only expansion, route/UI, runtime DB, or schema widening by itself
 
 Key lane closure commits include:
 - `a95bc104` `docs(layer3): freeze phase1a planning pack`
@@ -127,6 +131,7 @@ Current bounded posture:
 - current `main` now also includes the bounded `aps_context_dossier_handoff` slice rooted in `backend/app/services/layer3_aps_context_dossier_handoff.py`, plus the narrow dossier-gate scope hardening in `backend/app/services/nrc_aps_context_dossier_gate.py`; that landed lane keeps paired export-derived context packets as dossier inputs and does not admit deterministic fan-out by itself
 - current `main` now also includes the read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze selecting `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary; it does not mean deterministic implementation, challenge/review-packet fan-out, or schema surfaces have landed on current `main`
 - current `main` now also includes the bounded `aps_deterministic_insight_artifact_handoff` slice rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py`, plus the narrow deterministic-gate hardening in `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`; that landed lane preserves one persisted dossier as the deterministic source boundary and does not admit later deterministic fan-out, route/UI, runtime DB, or schema widening by itself
+- current branch now also includes the read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze selecting `deterministic_challenge_artifact` as the next deterministic continuation beyond the landed deterministic-insight boundary; it does not mean deterministic challenge implementation, challenge-review-packet fan-out, validate-only expansion, route/UI, runtime DB, or schema surfaces have landed
 
 The active REV2 control docs in this pack have also been re-audited against current `main` after the repo-root analyst-insight page, alias-router, static-asset, and runtime-helper surfaces landed. Treat the REV1 artifacts and the REV1-to-REV2 correction memo as historical context only.
 
@@ -184,6 +189,9 @@ Read this after `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` if you need the now-lan
 - `backend/app/services/nrc_aps_context_packet_gate.py`
 - `backend/tests/test_layer3_aps_context_packet_handoff.py`
 - `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
+
+Read this after `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` if you need the current branch-local contract for the next deterministic continuation beyond the landed deterministic-insight boundary:
+- `Layer3_planning_docs/19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md`
 
 ### 2. Execution handoff
 
