@@ -3,12 +3,12 @@
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
-It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the current branch's bounded export-package handoff implementation lane governed by that freeze.
+It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze.
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger entry through APS multisource admission
 - the now-landed docs-only closeout that followed multisource landing
 - the landed first shared-consumer freeze that selects the first downstream shared APS consumer beyond multisource
-- the current branch's bounded export-package handoff implementation slice that has not yet landed on `main`
+- the now-landed bounded export-package handoff implementation slice on current `main`
 
 It is not a general whole-repo roadmap.
 It does not replace GitHub PR state.
@@ -33,13 +33,13 @@ As of `2026-04-20`:
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the landed export-package first shared-consumer freeze from PR `#106` and its docs-only closeout from PR `#107`
-- current branch and open PR `#109` also carry the bounded export-package handoff implementation slice rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`; it is not yet landed on current `main`
+- current `main` also now includes the bounded export-package handoff implementation slice from PR `#109`, rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
 
 ## Program State Summary
 
-- Done now on `main`: 13 merged milestones from Phase 1A feeder-ledger foundation through the APS export-package first shared-consumer freeze
-- Current focus: review and land open PR `#109`, the bounded export-package handoff implementation lane
-- Candidate next consumers: active branch implementation target `evidence_report_export_package`; later-but-not-first `context_dossier`
+- Done now on `main`: 14 merged milestones from Phase 1A feeder-ledger foundation through the APS export-package handoff slice
+- Current focus: freeze the package-derived context-packet continuation from the landed export-package boundary
+- Candidate next consumers: package-derived context packet first; later-but-not-first `context_dossier`
 - Deferred but not active: 12 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Status
@@ -59,7 +59,7 @@ As of `2026-04-20`:
 | APS export-derived context-packet | merged | `13_GATED_APS_CONTEXT_FREEZE.md` | `#97`, `#98`, `#99` | Direct export-derived context path |
 | APS same-run multisource admission | merged | `14_GATED_APS_MULTISOURCE_FREEZE.md` | `#100`, `#101`, `#102` | Implementation and its docs closeout are both landed on `main` |
 | APS export-package first shared-consumer freeze | merged | `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` | `#106` | Landed read-only freeze selects `evidence_report_export_package` as the first downstream shared APS consumer on `main` |
-| APS evidence-report-export-package handoff | open | `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` | `#109` | Open PR carries the bounded implementation slice rooted in `layer3_aps_report_export_package_handoff.py` |
+| APS evidence-report-export-package handoff | merged | `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` | `#109` | Landed bounded implementation slice rooted in `layer3_aps_report_export_package_handoff.py` |
 
 ## What Is Complete
 
@@ -80,53 +80,49 @@ flowchart LR
     J --> K["APS context-packet handoff"]
     K --> L["APS multisource admission"]
     L --> M["APS export-package first shared-consumer freeze"]
-    M --> N["APS export-package handoff (open PR #109)"]
+    M --> N["APS export-package handoff"]
 
     classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
-    classDef branch fill:#e7edff,stroke:#4b63b3,color:#111;
 
-    class A,B,C,D,E,F,G,H,I,J,K,L,M merged;
-    class N branch;
+    class A,B,C,D,E,F,G,H,I,J,K,L,M,N merged;
 ```
 
 ## Next Required Decision
 
-The immediate required move is now to review and land open PR `#109`, the bounded write-enabled export-package handoff lane.
-The selection freeze that chose which downstream shared APS family consumes the landed multisource seam first is already landed on `main`.
+The immediate required move is now to freeze the package-derived context-packet continuation from the landed export-package boundary.
+The selection freeze and the bounded export-package handoff implementation slice are both already landed on `main`.
 
 Current bounded selection state:
 - selected first consumer on current `main`: `evidence_report_export_package`
-- open implementation lane: `aps_evidence_report_export_package_handoff` on PR `#109`
+- landed bounded handoff lane: `aps_evidence_report_export_package_handoff`
+- next later shared-family target: package-derived context packet
 - later but not first: `context_dossier`
 
 Hard rule:
-- do not skip directly to package-derived context or dossier implementation before open PR `#109` lands cleanly
+- do not skip directly to package-derived context implementation, `context_dossier`, or deterministic fan-out before a fresh package-derived context freeze lands cleanly
 
 The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current `main` after export-package freeze landing"] --> B["Open PR #109 export-package handoff lane"]
-    B --> C["Land bounded export-package handoff lane"]
-    C --> D["Evidence-report-export package (selected first consumer)"]
-    C --> E["Context dossier (later, not first)"]
-    D --> F["Package-derived context packet"]
-    E --> G["Deterministic chain"]
+    A["Current `main` after export-package handoff landing"] --> B["Freeze package-derived context continuation"]
+    B --> C["Package-derived context packet"]
+    B --> D["Context dossier (later, not first)"]
+    C --> E["Deterministic chain"]
+    D --> F["Later dossier-fed chain"]
 
     classDef next fill:#fff1bf,stroke:#9a6b00,color:#111;
-    classDef branch fill:#e7edff,stroke:#4b63b3,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
 
-    class A,C next;
-    class B branch;
-    class D,E,F,G future;
+    class A,B next;
+    class C,D,E,F future;
 ```
 
 ## Deferred Scope
 
 These remain explicitly out until later freezes admit them:
-- direct shared `evidence_report_export_package` contract/runtime edits beyond the bounded export-package handoff lane
-- package-derived context packet
+- direct shared `evidence_report_export_package` contract/runtime edits beyond the landed bounded export-package handoff lane
+- package-derived context-packet implementation before a fresh freeze admits it
 - direct `context_dossier` implementation
 - deterministic insight, deterministic challenge, and review-packet fan-out
 - validate-only top-chain expansion
