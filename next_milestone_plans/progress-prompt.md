@@ -58,13 +58,13 @@ Current repo-side facts to preserve:
 - the immediate required move is no longer to choose the first shared consumer; that choice is already settled on current `main` in favor of `evidence_report_export_package`
 - current `main` also includes the bounded export-package handoff implementation slice from PR `#109` and its docs-only closeout from PR `#110`, rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
 - current `main` also includes the exact-run export/export-package gate-hardening follow-up from PR `#111` and `#112`
-- current branch now carries the read-only `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` freeze selecting package-derived context packet as the next later shared APS family beyond the landed export-package boundary; it is not yet landed on `main`
+- open PR `#113` now carries the read-only `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` freeze selecting package-derived context packet as the next later shared APS family beyond the landed export-package boundary; it is not yet landed on `main`
 - `context_dossier` remains later and must not be presented as a co-equal current-focus choice with the next package-derived-context freeze
 
 When rebuilding from a checkout that matches current `main` after the export-package handoff slice lands:
 - show that slice as completed on `main`
 - show the exact-run gate-hardening follow-up as already landed on `main`
-- use the current branch-local package-derived-context freeze as `branch_only` if it exists in the checkout but is not yet backed by an open or merged GitHub PR
+- use open PR `#113` as the current focus for the package-derived-context freeze rather than treating that freeze as still branch-only
 - do not describe the landed handoff as still open or merely branch-local
 
 Also update the scheduled refresh task so it no longer:

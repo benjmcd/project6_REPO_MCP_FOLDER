@@ -31,7 +31,7 @@ Current tracked PR set:
 - `#97`, `#98`, `#99`
 - `#100`, `#101`, `#102`
 - `#106`, `#107`, `#108`, `#109`
-- `#110`, `#111`, `#112`
+- `#110`, `#111`, `#112`, `#113`
 
 Hard rule:
 - never mark a step as landed on `main` from repo docs alone if the GitHub PR is still open
@@ -162,7 +162,7 @@ The current bounded chain on `main` ends at:
 - APS export-package handoff implementation slice plus the exact-run export/export-package gate-hardening follow-up
 
 The next required move beyond current `main` is:
-- land the branch-local package-derived context-packet freeze on `main`
+- review and merge open PR `#113` for the package-derived context-packet freeze
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`
@@ -176,7 +176,7 @@ The later but not first consumer remains:
 These are not both still open candidates in the same way:
 - `evidence_report_export_package` is selected on current `main`
 - `aps_evidence_report_export_package_handoff` is now landed on current `main`
-- package-derived context packet is the next later shared-family freeze target after that landed handoff boundary, and the current branch now already carries that read-only freeze
+- package-derived context packet is the next later shared-family freeze target after that landed handoff boundary, and open PR `#113` now carries that read-only freeze
 - `context_dossier` remains later and not first
 
 ## Schedule Guidance

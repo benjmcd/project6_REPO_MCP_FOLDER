@@ -84,14 +84,14 @@
   "current_snapshot": {
     "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107, the bounded export-package handoff implementation slice from PR #109 plus its docs closeout from PR #110, and the exact-run export/export-package gate-hardening follow-up from PR #111 and PR #112.",
     "open_followups": [],
-    "branch_state_summary": "Current branch carries the read-only `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` freeze selecting package-derived context packet as the next later shared APS family beyond the landed export-package boundary."
+    "branch_state_summary": "Open PR #113 carries the read-only `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` freeze selecting package-derived context packet as the next later shared APS family beyond the landed export-package boundary."
   },
   "summary_counts": {
     "merged_milestones": 14,
-    "open_milestones": 0,
+    "open_milestones": 1,
     "planned_decisions": 0,
     "deferred_scope_items": 12,
-    "branch_only_milestones": 1
+    "branch_only_milestones": 0
   },
   "artifact_render_contract": {
     "purpose": "Provide a stable view contract for external render surfaces so they do not have to infer layout from prose or depend on runtime JavaScript or Mermaid for critical meaning.",
@@ -677,33 +677,41 @@
     {
       "milestone_id": "aps-package-context-freeze",
       "title": "APS package-derived context continuation freeze",
-      "main_state": "branch_only",
+      "main_state": "open",
       "governing_docs": [
         "next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md"
       ],
       "owner_surfaces": [
         "next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md"
       ],
-      "events": [],
+      "events": [
+        {
+          "pr": 113,
+          "kind": "freeze",
+          "state": "open",
+          "title": "docs(layer3): freeze aps package-context continuation",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/113"
+        }
+      ],
       "unlocks": [
         "aps-package-context-handoff"
       ],
       "notes": [
-        "Current branch carries a read-only freeze selecting package-derived context packet as the next later shared APS family beyond the landed export-package boundary.",
-        "This freeze is not yet landed on current `main` and must not be treated as implementation proof."
+        "Open PR #113 carries the read-only freeze selecting package-derived context packet as the next later shared APS family beyond the landed export-package boundary.",
+        "This open freeze is not yet landed on current `main` and must not be treated as implementation proof."
       ]
     }
   ],
   "next_required_decision": {
     "decision_id": "aps-package-context-freeze",
-    "title": "Land the branch-local package-derived context continuation freeze on `main`",
-    "state": "branch_only",
-    "why_now": "Current `main` now includes the bounded export-package handoff implementation slice plus the exact-run gate-hardening follow-up. Current branch already carries the read-only freeze that selects package-derived context packet as the next later shared APS family beyond that landed boundary, so the immediate move is to land that freeze on `main` before any implementation opens.",
+    "title": "Review and merge open PR #113 for the package-derived context continuation freeze",
+    "state": "open",
+    "why_now": "Current `main` now includes the bounded export-package handoff implementation slice plus the exact-run gate-hardening follow-up. Open PR #113 now carries the read-only freeze that selects package-derived context packet as the next later shared APS family beyond that landed boundary, so the immediate move is to land that freeze on `main` before any implementation opens.",
     "candidate_families": [
       {
         "id": "context-packet-package",
-        "state": "branch_only",
-        "reason": "Live graph places package-derived context packet directly after export_package, and current branch already carries the read-only freeze that settles this as the next later shared-family boundary."
+        "state": "open",
+        "reason": "Live graph places package-derived context packet directly after export_package, and open PR #113 now carries the read-only freeze that settles this as the next later shared-family boundary."
       },
       {
         "id": "context-dossier",
@@ -712,14 +720,14 @@
       }
     ],
     "must_not_skip": [
-      "Do not skip directly to package-derived context implementation before the branch-local freeze lands cleanly on `main`.",
+      "Do not skip directly to package-derived context implementation before open PR #113 lands cleanly on `main`.",
       "Do not open a direct context-dossier implementation lane before the package-derived-context boundary is settled.",
       "Do not widen route/UI, runtime DB, or schema as part of the next package-derived-context freeze lane."
     ]
   },
   "deferred_scope": [
     "direct edits to the shared evidence-report-export-package contract/runtime surfaces beyond the landed bounded export-package handoff and exact-run gate-hardening lane",
-    "package-derived context-packet implementation before the branch-local freeze lands on current `main`",
+    "package-derived context-packet implementation before open PR #113 lands on current `main`",
     "context dossier implementation",
     "deterministic insight artifact continuation",
     "deterministic challenge artifact continuation",
@@ -770,7 +778,8 @@
       109,
       110,
       111,
-      112
+      112,
+      113
     ],
     "repo_paths": [
       "docs/nrc_adams/nrc_aps_status_handoff.md",
