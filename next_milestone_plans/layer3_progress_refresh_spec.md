@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice, plus the merged malformed-scoped candidate-discovery closeout from PR `#119`, plus the now-landed context-dossier freeze beyond that landed package-context boundary, plus the now-landed bounded context-dossier handoff implementation slice from PR `#121`.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice, plus the merged malformed-scoped candidate-discovery closeout from PR `#119`, plus the now-landed context-dossier freeze beyond that landed package-context boundary, plus the now-landed bounded context-dossier handoff implementation slice from PR `#121`, plus the post-PR122 artifact-state fix from PR `#123`, plus the current open deterministic-insight continuation freeze on PR `#124`.
 
 ## Canonical Inputs
 
@@ -31,7 +31,7 @@ Current tracked PR set:
 - `#97`, `#98`, `#99`
 - `#100`, `#101`, `#102`
 - `#106`, `#107`, `#108`, `#109`
-- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`
+- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`
 
 Hard rule:
 - never mark a step as landed on `main` from repo docs alone if the GitHub PR is still open
@@ -74,6 +74,10 @@ When present in the current checkout, also read:
 - `backend/app/services/nrc_aps_context_dossier_contract.py`
 - `backend/app/services/nrc_aps_context_dossier.py`
 - `backend/app/services/nrc_aps_context_dossier_gate.py`
+- `next_milestone_plans/Layer3_planning_docs/18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md`
+- `backend/app/services/nrc_aps_deterministic_insight_artifact_contract.py`
+- `backend/app/services/nrc_aps_deterministic_insight_artifact.py`
+- `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`
 - `backend/app/services/review_nrc_aps_graph.py`
 - `backend/tests/test_layer3_aps_context_packet_handoff.py`
 - `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
@@ -87,7 +91,7 @@ Discovery rule:
 - if multiple clean checkouts exist, prefer the one matching current `main` for merged repo truth, or the one carrying the declared branch-only milestone when the manifest says a branch-only step is in scope
 
 Seed path used when this artifact pack was authored:
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-dossier-handoff`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-dins-freeze`
 
 Do not treat the dirty root checkout at:
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER`
@@ -124,6 +128,7 @@ Any external live artifact or dashboard must also obey:
    - and the landed package-derived context owner/proof surfaces rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py`, `backend/app/services/nrc_aps_context_packet_gate.py`, `backend/tests/test_layer3_aps_report_export_handoff.py`, `backend/tests/test_layer3_aps_context_packet_handoff.py`, and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
    - and, when present in the current checkout, the landed `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze plus the live dossier family surfaces rooted in `backend/app/services/nrc_aps_context_dossier_contract.py`, `backend/app/services/nrc_aps_context_dossier.py`, `backend/app/services/nrc_aps_context_dossier_gate.py`, and `backend/app/services/review_nrc_aps_graph.py`
    - and, when present in the current checkout, the landed bounded dossier handoff owner/proof surfaces rooted in `backend/app/services/layer3_aps_context_dossier_handoff.py` and `backend/tests/test_layer3_aps_context_dossier_handoff.py`
+   - and, when present in the current checkout, the branch-local `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze plus the live deterministic insight family surfaces rooted in `backend/app/services/nrc_aps_deterministic_insight_artifact_contract.py`, `backend/app/services/nrc_aps_deterministic_insight_artifact.py`, `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`, and `backend/app/services/review_nrc_aps_graph.py`
 7. For each milestone:
    - update PR state from GitHub
    - update merge commit from GitHub
@@ -175,12 +180,15 @@ The current bounded chain on `main` ends at:
 - the landed read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze from PR `#118`
 - the merged malformed-scoped candidate-discovery closeout from PR `#119` for the export, export-package, and context-packet gates
 - the post-PR118 docs/progress closeout from PR `#120`
+- the landed bounded `aps_context_dossier_handoff` implementation slice from PR `#121`
+- the post-PR121 docs/progress closeout from PR `#122`
+- the post-PR122 artifact-state fix from PR `#123`
 
 The preserved source-branch rule on current `main` is:
 - dossier input must remain paired export-derived context packets rather than package-derived context
 
 The next required move beyond current `main` is:
-- open a fresh read-only freeze for the first deterministic continuation beyond the landed `context_dossier` handoff, rooted in `deterministic_insight_artifact`
+- review and land open PR `#124`, which carries the read-only freeze for the first deterministic continuation beyond the landed `context_dossier` handoff, rooted in `deterministic_insight_artifact`
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`

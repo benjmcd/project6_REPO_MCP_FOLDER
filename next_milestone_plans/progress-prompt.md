@@ -7,7 +7,7 @@ Rebuild the Layer3 APS progress artifact so it reflects current repo truth and r
 
 Use the clean repo checkout that contains the current artifact files and matches the artifact state you want to refresh.
 For this packet, the current seed checkout is:
-`C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-dossier-handoff`
+`C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-dins-freeze`
 
 Read these files in this order:
 1. `next_milestone_plans/layer3_progress_refresh_spec.md`
@@ -65,19 +65,23 @@ Current repo-side facts to preserve:
 - current `main` now also includes the landed read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze from PR `#118`, selecting `context_dossier` as the next later shared APS family after the landed package-context milestone
 - current `main` also includes the post-PR118 docs/progress closeout from PR `#120`
 - current `main` now includes the bounded `aps_context_dossier_handoff` implementation slice from PR `#121`, rooted in `backend/app/services/layer3_aps_context_dossier_handoff.py` and `backend/tests/test_layer3_aps_context_dossier_handoff.py`, plus narrow dossier-gate scope hardening in `backend/app/services/nrc_aps_context_dossier_gate.py`
+- current `main` also includes the post-PR121 docs/progress closeout from PR `#122`
+- current `main` also includes the post-PR122 artifact-state fix from PR `#123`
 - paired export-derived context packets remain the live dossier input branch; the landed package-derived context handoff must not be presented as dossier input proof
-- the immediate required move is now a fresh read-only freeze for the first deterministic continuation beyond the landed dossier handoff, not another docs-only restatement of the same milestone
-- `deterministic_insight_artifact` is the next bounded current-focus choice; later deterministic steps remain later and must not be collapsed into the same state
+- open PR `#124` now carries the read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze selecting `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary; it has not landed on current `main` yet
+- the immediate required move is now to review and land that open deterministic continuation freeze, not another docs-only restatement of the same milestone
+- `deterministic_insight_artifact` is the current open bounded current-focus choice; later deterministic steps remain later and must not be collapsed into the same state
 
-When rebuilding from a checkout that matches the current `main` state after the context-dossier handoff lands:
-- show that slice as completed on `main`
+When rebuilding from a checkout that matches the current open-PR state after PR `#124` is open:
+- show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
 - show the exact-run gate-hardening follow-up as already landed on `main`
 - show the landed package-derived-context freeze as completed on `main`
 - show the package-derived context handoff slice as `merged`
 - show the landed `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze as `merged`
 - show the bounded `context_dossier` handoff lane from PR `#121` as `merged`
+- show the post-PR121 docs/progress closeout from PR `#122` and the post-PR122 artifact-state fix from PR `#123` as already landed on `main`
 - do not present package-derived context as dossier input proof
-- use a fresh read-only deterministic continuation freeze, rooted in `deterministic_insight_artifact`, as the next milestone focus beyond the landed dossier boundary
+- show the read-only deterministic continuation freeze, rooted in `deterministic_insight_artifact`, as `open` while PR `#124` remains open
 - do not collapse later deterministic steps into the same state as that next freeze decision
 
 Also update the scheduled refresh task so it no longer:
