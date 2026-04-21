@@ -46,10 +46,10 @@ As of `2026-04-20`:
 
 ## Program State Summary
 
-- Done now on `main`: 17 merged milestones from Phase 1A feeder-ledger foundation through the landed APS context-dossier continuation freeze
-- Current focus: review and land open PR `#121` for the bounded `context_dossier` handoff implementation lane while preserving paired export-derived context packets as dossier inputs
-- Candidate next consumers: `context_dossier` is the open bounded implementation lane now; deterministic remains later
-- Deferred but not active: 12 explicitly deferred scope items remain out until later freezes admit them
+- Done now on `main`: 18 merged milestones from Phase 1A feeder-ledger foundation through the landed APS context-dossier handoff
+- Current focus: open a fresh read-only freeze for the first deterministic continuation, rooted in `deterministic_insight_artifact`, beyond the now-landed `context_dossier` handoff
+- Candidate next consumers: `deterministic_insight_artifact` is the next bounded consumer now; challenge, review-packet, and validate-only gates remain later
+- Deferred but not active: 11 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Status
 
@@ -72,7 +72,7 @@ As of `2026-04-20`:
 | APS package-derived context continuation freeze | merged | `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` | `#113` | Landed read-only freeze selects package-derived context packet as the next later shared APS family beyond the landed export-package boundary |
 | APS package-derived context handoff | merged | `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` | `#115`, `#116`, `#119` | Landed bounded handoff implementation slice; PR `#116` was an earlier hardening pass, and PR `#119` lands the remaining malformed-scoped candidate-discovery closeout |
 | APS context-dossier continuation freeze | merged | `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` | `#118` | Landed read-only freeze preserves paired export-derived context packets as dossier inputs and settles `context_dossier` as the next later shared APS family beyond the landed package-context milestone |
-| APS context-dossier handoff | open | `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` | `#121` | Open bounded implementation slice rooted in `layer3_aps_context_dossier_handoff.py`, with narrow dossier gate hardening; package-derived context stays gating provenance only while paired export-derived context packets remain the dossier input branch |
+| APS context-dossier handoff | merged | `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` | `#121` | Landed bounded implementation slice rooted in `layer3_aps_context_dossier_handoff.py`, with narrow dossier gate hardening; package-derived context stays gating provenance only while paired export-derived context packets remain the dossier input branch |
 
 ## What Is Complete
 
@@ -105,13 +105,12 @@ flowchart LR
 
     class A,B,C,D,E,F,G,H,I,J,K,L,M,N merged;
     class O merged2;
-    class P,Q merged3;
-    class R next;
+    class P,Q,R merged3;
 ```
 
 ## Next Required Decision
 
-The immediate required move is now to review and land open PR `#121`, which carries the bounded `context_dossier` handoff implementation lane admitted by the now-landed read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze.
+The immediate required move is now a fresh read-only freeze for the first deterministic continuation beyond the landed `context_dossier` handoff, rooted in `deterministic_insight_artifact`.
 
 Current bounded selection state:
 - selected first consumer on current `main`: `evidence_report_export_package`
@@ -121,27 +120,31 @@ Current bounded selection state:
 - earlier hardening pass on current `main`: PR `#116`
 - landed malformed-scoped candidate-discovery closeout on current `main`: PR `#119`
 - landed read-only continuation freeze: PR `#118` for `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md`
-- current open bounded implementation lane: PR `#121` for `aps_context_dossier_handoff`
+- landed bounded implementation lane: PR `#121` for `aps_context_dossier_handoff`
 - dossier input branch must remain paired export-derived context packets
-- later after that: deterministic chain
+- next fresh freeze target: `deterministic_insight_artifact`
+- later after that: `deterministic_challenge_artifact`, `deterministic_challenge_review_packet`, then `validate_only_gates`
 
 Hard rule:
-- do not skip directly to deterministic fan-out before the bounded `context_dossier` handoff lane lands
+- do not skip directly to later deterministic fan-out before the first deterministic continuation is frozen
 - do not present package-derived context as dossier input proof in this tranche
 
 The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current `main` after context-dossier freeze landing"] --> B["Open PR #121 dossier handoff lane"]
-    B --> C["Land dossier handoff on `main`"]
-    C --> D["Deterministic chain"]
+    A["Current `main` after dossier handoff landing"] --> B["Freeze deterministic insight artifact continuation"]
+    B --> C["Deterministic insight artifact"]
+    C --> D["Deterministic challenge artifact"]
+    D --> E["Deterministic challenge review packet"]
+    E --> F["Validate-only gates"]
 
     classDef next fill:#fff1bf,stroke:#9a6b00,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
 
-    class A,B,C next;
-    class D future;
+    class A future;
+    class B next;
+    class C,D,E,F future;
 ```
 
 ## Deferred Scope
