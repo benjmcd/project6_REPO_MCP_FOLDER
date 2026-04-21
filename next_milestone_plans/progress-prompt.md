@@ -71,11 +71,11 @@ Current repo-side facts to preserve:
 - current `main` now also includes the landed read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze from PR `#124`, selecting `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary
 - current `main` now also includes the bounded deterministic insight handoff implementation slice from PR `#126`, rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`, plus narrow deterministic gate hardening in `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`
 - current `main` now also includes the post-PR126 docs/progress sync from PR `#127`
-- current open PR `#128` now carries the read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze selecting `deterministic_challenge_artifact` as the next deterministic continuation beyond the landed deterministic-insight boundary
-- the immediate required move is now to land current open PR `#128`, not to restate the already-landed deterministic insight handoff lane
-- `deterministic_challenge_artifact` is now the current open current-focus choice; review-packet and validate-only steps remain later and must not be collapsed into the same state
+- current `main` now also includes the landed read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze from PR `#128`, selecting `deterministic_challenge_artifact` as the next deterministic continuation beyond the landed deterministic-insight boundary
+- the immediate required move is now to open the bounded deterministic challenge handoff lane, not to restate the already-landed deterministic insight handoff or challenge-freeze lanes
+- `deterministic_challenge_artifact` is now the current planned current-focus choice; review-packet and validate-only steps remain later and must not be collapsed into the same state
 
-When rebuilding from a checkout that matches current `main` after PR `#124` is merged:
+When rebuilding from a checkout that matches current `main` after PR `#128` is merged:
 - show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
 - show the exact-run gate-hardening follow-up as already landed on `main`
 - show the landed package-derived-context freeze as completed on `main`
@@ -85,19 +85,20 @@ When rebuilding from a checkout that matches current `main` after PR `#124` is m
 - show the post-PR121 docs/progress closeout from PR `#122` and the post-PR122 artifact-state fix from PR `#123` as already landed on `main`
 - do not present package-derived context as dossier input proof
 - show the read-only deterministic continuation freeze, rooted in `deterministic_insight_artifact`, as `merged`
-- do not collapse later deterministic steps into the same state as that next freeze decision
+- show the read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze as `merged`
+- show the next deterministic challenge handoff as `planned`
+- do not collapse later deterministic steps into the same state as that next planned handoff decision
 
-When rebuilding from a branch checkout that matches the current open deterministic challenge freeze lane:
+When rebuilding from a branch checkout that matches the next deterministic challenge handoff lane after a PR exists:
 - show the bounded deterministic insight handoff lane as `merged`
 - show the post-PR126 docs/progress sync from PR `#127` as already landed on current `main`
-- show the read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze as `open`
-- show `deterministic_challenge_artifact` as the current open focus
-- do not upgrade that freeze to `merged` without GitHub confirmation
+- show the read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze as `merged`
+- show `deterministic_challenge_artifact` handoff as the current `open` focus
+- do not upgrade that handoff lane to `merged` without GitHub confirmation
 
-When rebuilding from a branch checkout that also carries the bounded deterministic insight handoff lane but before any PR exists:
-- show the read-only deterministic continuation freeze as `merged`
-- show the bounded deterministic insight handoff lane as `branch_only`
-- show the deterministic gate hardening as part of that same `branch_only` lane rather than as an unrelated maintenance milestone
+When rebuilding from a branch checkout that carries the next deterministic challenge handoff lane before any PR exists:
+- show the read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze as `merged`
+- show the bounded deterministic challenge handoff lane as `branch_only`
 - do not upgrade that lane to `open` or `merged` without GitHub confirmation
 
 Also update the scheduled refresh task so it no longer:
