@@ -113,7 +113,7 @@ Any external live artifact or dashboard must also obey:
 9. Reconcile any external render surface against `next_milestone_plans/progress-ui-spec.md`.
 10. Ensure the primary render path is HTML/CSS readable without JavaScript or Mermaid.
 11. Preserve explicit deferred scope.
-12. If the next-step decision has changed, update `next_required_decision` in the manifest and the matching sections in the board and prompt.
+12. If the next-step decision has changed, or the bounded packet is now settled with no further active next lane, update `next_required_decision` in the manifest and the matching sections in the board and prompt.
 13. If the live artifact cannot read refreshed files at view time, regenerate the artifact itself from the refreshed manifest and board instead of leaving a stale embedded snapshot in place.
 14. Fail closed if GitHub state cannot be refreshed:
    - keep the last known manifest state
@@ -130,6 +130,7 @@ Use these labels exactly:
 - `merged`
 - `open`
 - `planned`
+- `settled`
 - `deferred`
 - `branch_only`
 
@@ -138,6 +139,7 @@ Special case:
 
 Hard rule:
 - do not collapse `merged_with_open_docs_closeout` into plain `merged`
+- when `next_required_decision.state=settled`, do not invent a planned or open next lane in the artifact
 
 ## What Not To Do
 
@@ -165,11 +167,11 @@ The preserved source-branch rule on current `main` is:
 The current landed continuation at the end of current `main` is:
 - the bounded dedicated validate-only runtime/report-ref implementation lane from PR `#143`, rooted in the dedicated validate-only contract/runtime/gate trio plus the bounded review graph/tree/runtime/report-ref integrations selected by `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`
 
-The next required move in this checkout is:
+The current settled state in this checkout is:
 - current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`
-- that freeze selects promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary
-- retrieval cutover remains later
-- do not widen directly into promotion implementation, retrieval cutover, route/UI, runtime DB, or schema scope without first settling this freeze in GitHub state
+- live repo truth now also shows the existing promotion governance family already sufficient on current `main`
+- retrieval cutover already exists on current `main` as a separate validate-only parity-proof family
+- do not invent another later APS family lane unless live repo truth proves a concrete new gap
 
 ## Schedule Guidance
 

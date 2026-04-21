@@ -2,13 +2,13 @@
   "artifact_version": 1,
   "artifact_name": "layer3-progress-artifact",
   "artifact_scope": {
-    "lane_name": "bounded Layer3 APS validate-only packet through the landed promotion continuation freeze beyond the landed dedicated validate-only runtime/report-ref implementation lane",
+    "lane_name": "bounded Layer3 APS validate-only packet through later APS family settlement beyond the landed dedicated validate-only runtime/report-ref implementation lane",
     "repo": "benjmcd/project6_REPO_MCP_FOLDER",
     "authoritative_remote": "project6-origin/main",
     "authoritative_local_checkout_rule": "Use a clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match the artifact state being refreshed. Prefer current `main` for merged repo truth, and use the active branch checkout when the manifest declares an open or branch-only milestone.",
     "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3-progress-main",
     "snapshot_date": "2026-04-21",
-    "snapshot_base_main_commit": "35032341d7352cbebc41e5bab94b816572995014",
+    "snapshot_base_main_commit": "2670f0638d2515acf177c499e73d3f56aaaca87c",
     "snapshot_base_main_commit_source": "git rev-parse project6-origin/main at the artifact refresh that produced this snapshot",
     "notes": [
       "This artifact is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.",
@@ -37,7 +37,8 @@
       "Current `main` now also includes the post-PR141 docs/progress sync from PR #142.",
       "Current `main` now also includes the bounded dedicated validate-only runtime/report-ref implementation lane from PR #143.",
       "Current `main` now also includes the post-PR143 docs/progress sync from PR #144.",
-      "Current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, selecting promotion as the first later APS family while keeping retrieval cutover later."
+      "Current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, which selected promotion as the first later APS family while keeping retrieval cutover later during the freeze decision itself.",
+      "Live repo truth now also shows the existing promotion governance family already sufficient on current `main`, while retrieval cutover already exists there as a separate validate-only parity-proof family; no further later APS family decision or implementation lane is currently justified by default."
     ]
   },
   "authority_order": [
@@ -152,19 +153,20 @@
     "merged_with_open_docs_closeout": "The implementation milestone is merged on main, but its explicitly tracked docs-only closeout PR is still open.",
     "open": "The relevant PR exists and is still open.",
     "planned": "The step is repo-confirmed as the next decision or next freeze, but no PR exists yet.",
+    "settled": "The bounded packet is closed on current main and no further active next lane is currently justified.",
     "deferred": "The family is explicitly kept out by current freeze docs.",
     "branch_only": "The step exists in a branch but is not merged into main."
   },
   "current_snapshot": {
-    "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107, the bounded export-package handoff implementation slice from PR #109 plus its docs closeout from PR #110, the exact-run export/export-package gate-hardening follow-up from PR #111 and PR #112, the landed package-derived-context continuation freeze from PR #113, the bounded package-derived context handoff implementation slice from PR #115, the earlier PR #116 hardening pass, the post-PR116 docs/progress sync from PR #117, the landed read-only context-dossier continuation freeze from PR #118, the merged PR #119 malformed-scoped candidate-discovery closeout across the export, export-package, and context-packet gates, the post-PR118 docs/progress sync from PR #120, the bounded context-dossier handoff implementation slice plus narrow dossier-gate scope hardening from PR #121, the post-PR121 docs/progress sync from PR #122, the post-PR122 artifact-state fix from PR #123, the landed read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze from PR #124, the bounded deterministic insight handoff implementation slice plus narrow deterministic gate hardening from PR #126, the post-PR126 docs/progress sync from PR #127, the landed read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze from PR #128, the post-PR128 docs/progress sync from PR #129, the bounded deterministic challenge handoff implementation slice plus narrow deterministic challenge gate hardening from PR #130, the post-PR130 docs/progress sync from PR #131, the landed read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze from PR #132, the post-PR132 docs/progress sync from PR #133, the bounded deterministic challenge review-packet handoff slice plus narrow review-packet gate hardening from PR #134, the post-PR134 docs/progress sync from PR #135, the landed read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze from PR #136, the post-PR136 docs/progress sync from PR #137, the bounded validate-only gate-report refresh lane from PR #138, the post-PR138 docs/progress sync from PR #139, the landed read-only `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` freeze from PR #140, the post-PR140 docs/progress sync from PR #141, and the post-PR141 docs/progress sync from PR #142, plus the bounded dedicated validate-only runtime/report-ref implementation lane from PR #143, plus the post-PR143 docs/progress sync from PR #144. Current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR #145.",
+    "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107, the bounded export-package handoff implementation slice from PR #109 plus its docs closeout from PR #110, the exact-run export/export-package gate-hardening follow-up from PR #111 and PR #112, the landed package-derived-context continuation freeze from PR #113, the bounded package-derived context handoff implementation slice from PR #115, the earlier PR #116 hardening pass, the post-PR116 docs/progress sync from PR #117, the landed read-only context-dossier continuation freeze from PR #118, the merged PR #119 malformed-scoped candidate-discovery closeout across the export, export-package, and context-packet gates, the post-PR118 docs/progress sync from PR #120, the bounded context-dossier handoff implementation slice plus narrow dossier-gate scope hardening from PR #121, the post-PR121 docs/progress sync from PR #122, the post-PR122 artifact-state fix from PR #123, the landed read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze from PR #124, the bounded deterministic insight handoff implementation slice plus narrow deterministic gate hardening from PR #126, the post-PR126 docs/progress sync from PR #127, the landed read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze from PR #128, the post-PR128 docs/progress sync from PR #129, the bounded deterministic challenge handoff implementation slice plus narrow deterministic challenge gate hardening from PR #130, the post-PR130 docs/progress sync from PR #131, the landed read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze from PR #132, the post-PR132 docs/progress sync from PR #133, the bounded deterministic challenge review-packet handoff slice plus narrow review-packet gate hardening from PR #134, the post-PR134 docs/progress sync from PR #135, the landed read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze from PR #136, the post-PR136 docs/progress sync from PR #137, the bounded validate-only gate-report refresh lane from PR #138, the post-PR138 docs/progress sync from PR #139, the landed read-only `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` freeze from PR #140, the post-PR140 docs/progress sync from PR #141, and the post-PR141 docs/progress sync from PR #142, plus the bounded dedicated validate-only runtime/report-ref implementation lane from PR #143, plus the post-PR143 docs/progress sync from PR #144. Current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR #145. Live repo truth now also shows the existing promotion governance family already sufficient on current `main`, while retrieval cutover already exists there as a separate validate-only parity-proof family; no further later APS family decision or implementation lane is currently justified by default.",
     "open_followups": [],
-    "branch_state_summary": "This checkout carries only the narrow docs/progress sync updating the active packet to reflect the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145` on current `main`."
+    "branch_state_summary": "This checkout carries only the narrow docs/progress settlement recording that no further later APS family lane is currently justified by default from the merged-main state already proven in repo truth."
   },
   "summary_counts": {
     "merged_milestones": 29,
     "open_milestones": 0,
-    "planned_decisions": 1,
-    "deferred_scope_items": 9,
+    "planned_decisions": 0,
+    "deferred_scope_items": 8,
     "branch_only_milestones": 0
   },
   "artifact_render_contract": {
@@ -217,6 +219,11 @@
         "fill": "#fff1bf",
         "stroke": "#9a6b00"
       },
+      "settled": {
+        "label": "Settled",
+        "fill": "#e4f3ea",
+        "stroke": "#4f7a63"
+      },
       "deferred": {
         "label": "Deferred",
         "fill": "#e8e8e8",
@@ -233,7 +240,8 @@
       "JavaScript may enhance interaction but must not be required to show milestone rows, current focus, candidate next consumers, or deferred scope.",
       "Mermaid is optional enhancement only and must never be the sole carrier of state meaning.",
       "If the live artifact cannot read refreshed files at view time, the scheduled refresh must rewrite the artifact itself from current manifest data.",
-      "Do not present candidate next consumers as the current active implementation lane."
+      "Do not present candidate next consumers as the current active implementation lane.",
+      "When next_required_decision.state=settled, do not invent a planned or open next lane in the artifact."
     ]
   },
   "milestones": [
@@ -1210,34 +1218,22 @@
       ],
       "notes": [
         "Current `main` now includes this landed read-only freeze from PR `#145`, selecting promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary.",
-        "It keeps retrieval cutover later and does not admit promotion implementation changes, route or UI widening, runtime DB writes, or schema widening."
+        "Live repo truth now also shows the existing promotion governance family already sufficient on current `main`, while retrieval cutover already exists there as a separate validate-only parity-proof family.",
+        "No further later APS family decision or implementation lane is currently justified by default from this merged-main state."
       ],
-      "unlocks": [
-        "promotion-governance-lane"
-      ]
+      "unlocks": []
     }
   ],
   "next_required_decision": {
-    "decision_id": "promotion-governance-lane",
-    "title": "Decide whether the existing promotion family needs a bounded follow-up lane",
-    "state": "planned",
-    "why_now": "Current `main` now includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR #145 selecting promotion as the first later APS family beyond the landed dedicated validate_only_gates runtime/report-ref boundary. The promotion family already exists on current `main`, so the next move is a bounded promotion-governance continuation or a stop decision if live repo truth proves that family already sufficient.",
-    "candidate_families": [
-      {
-        "id": "promotion",
-        "state": "planned",
-        "reason": "Promotion is now the landed later-family choice on current `main`; the remaining question is whether the existing promotion family needs any bounded follow-up lane."
-      },
-      {
-        "id": "retrieval_cutover",
-        "state": "planned",
-        "reason": "Retrieval cutover remains later and must not skip ahead of the now-landed promotion selection."
-      }
-    ],
+    "decision_id": "later-aps-families-settled",
+    "title": "No further later APS family lane is currently justified",
+    "state": "settled",
+    "why_now": "Current `main` already proves the existing promotion governance family sufficient through its policy, gate, tuning, operator, and direct test surfaces, while retrieval cutover already exists there as a separate validate-only parity-proof family with direct validation and CLI-gate tests.",
+    "candidate_families": [],
     "must_not_skip": [
-      "Do not skip directly from the landed promotion freeze to retrieval cutover before promotion sufficiency is settled.",
-      "Do not invent a separate repo-backed post-validate-only top-chain family without direct repo proof.",
-      "If live repo truth proves the existing promotion family is already sufficient, stop instead of widening by default."
+      "Do not invent another later APS family lane by default from this merged-main state alone.",
+      "Reopen only if live repo truth proves a concrete gap in the promotion or retrieval-cutover surfaces.",
+      "Do not treat retrieval cutover as deferred; it already exists on current main as a separate validate-only parity-proof family."
     ]
   },
   "deferred_scope": [
@@ -1248,8 +1244,7 @@
     "broader qualitative, hybrid, comparative, or cross-modal Layer3 breadth",
     "runtime DB writes",
     "schema widening",
-    "route/UI widening",
-    "retrieval cutover"
+    "route/UI widening"
   ],
   "refresh_inputs": {
     "github_prs": [
@@ -1401,5 +1396,5 @@
       "tools/nrc_aps_retrieval_cutover_gate.py"
     ]
   },
-  "snapshot_base_main_commit": "35032341d7352cbebc41e5bab94b816572995014"
+  "snapshot_base_main_commit": "2670f0638d2515acf177c499e73d3f56aaaca87c"
 }
