@@ -36,7 +36,7 @@ Current merged-state note:
 - current `main` already has the live deterministic challenge review-packet contract, runtime, and gate surfaces rooted in `backend/app/services/nrc_aps_deterministic_challenge_review_packet_contract.py`, `backend/app/services/nrc_aps_deterministic_challenge_review_packet.py`, and `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`
 - current `main` already has run-level report-ref registry buckets for deterministic challenge and deterministic challenge review packet in `backend/app/services/connectors_sciencebase.py`
 - current `main` now also includes this landed read-only freeze from PR `#132`, selecting `deterministic_challenge_review_packet` as the exact next deterministic APS family after the landed deterministic challenge handoff
-- current open PR `#134` now contains the first bounded deterministic challenge review-packet handoff lane rooted in `backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py`, plus the narrow adjacent review-packet gate hardening in `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`; that open lane is still branch-local until merged and must not be restated as current-`main` truth
+- current `main` now also includes the first bounded deterministic challenge review-packet handoff lane from PR `#134`, rooted in `backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py`, plus the narrow adjacent review-packet gate hardening in `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`; that landed lane still does not by itself admit validate-only, route/UI, runtime DB, or schema widening
 
 Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md|artifact|current governing freeze for the landed deterministic challenge boundary`; `R|backend/app/services/layer3_aps_deterministic_challenge_artifact_handoff.py|Current bounded deterministic challenge handoff owner surface on current \`main\`|31-341`; `R|backend/tests/test_layer3_aps_deterministic_challenge_artifact_handoff.py|Current bounded deterministic challenge handoff proof surface on current \`main\`|46-522`; `R|backend/app/services/review_nrc_aps_graph.py|Live downstream graph places deterministic challenge review packet immediately after deterministic challenge and before validate-only gates|38-40;85-88;106-109`; `R|backend/app/services/nrc_aps_deterministic_challenge_review_packet_contract.py|Live deterministic challenge review-packet contract is a single-challenge-artifact projection family with frozen schema, projection identity, and bucket derivation posture|11-18;83-147;150-197`; `R|backend/app/services/nrc_aps_deterministic_challenge_review_packet.py|Live deterministic challenge review-packet runtime loads one persisted challenge artifact, derives a review packet, and persists or validates it fail-closed|47-87;180-390`; `R|backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py|Live review-packet gate validates persisted review-packet artifacts and still resolves candidate files through raw run-scope globbing on current \`main\`|28-64;83-192`; `R|backend/app/services/connectors_sciencebase.py|Current run-level report-ref registry already reserves deterministic challenge and deterministic challenge review packet buckets|2959-2961`
 
@@ -75,7 +75,7 @@ Frozen reading of that starting point:
 - the live deterministic challenge review-packet family already derives one review packet from one persisted deterministic challenge artifact under a fixed projection contract and fail-closed runtime posture
 - the live downstream graph still places deterministic challenge review packet immediately after deterministic challenge and before validate-only gates
 - the run-level report-ref registry already has deterministic challenge review-packet buckets, so the next continuation does not need a new registry family to exist
-- current open PR `#134` now contains that first focused proof surface and the narrow adjacent review-packet gate hardening as explicit bounded work; this landed read-only freeze still does not by itself mean the handoff lane has landed on current `main`
+- current `main` now also includes that first focused proof surface and the narrow adjacent review-packet gate hardening as explicit bounded work; this landed read-only freeze still does not by itself admit validate-only or broader widening
 - therefore `deterministic_challenge_review_packet` is the exact next APS family to freeze after the landed deterministic challenge boundary
 
 ## Frozen GateD APS deterministic review-packet decisions
@@ -170,7 +170,7 @@ Reason:
 - this read-only freeze therefore settles the next deterministic-family choice narrowly without admitting implementation
 
 What still remains intentionally deferred after this landed read-only freeze:
-- the later deterministic challenge review-packet handoff lane until current open PR `#134` lands on `main`
+- the next read-only validate-only-gates freeze beyond the now-landed deterministic challenge review-packet handoff
 - validate-only top-chain expansion
 - the future workbench route family
 - broader qualitative, hybrid, cross-modal, and comparative execution breadth
