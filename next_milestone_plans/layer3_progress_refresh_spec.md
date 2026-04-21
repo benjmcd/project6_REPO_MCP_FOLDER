@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS dedicated validate-only runtime/report-ref chain already landed on current `main`, plus the branch-local read-only `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze carried by this checkout beyond that landed boundary.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS dedicated validate-only runtime/report-ref chain already landed on current `main`, plus the open read-only `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze from PR `#145` beyond that landed boundary.
 
 ## Canonical Inputs
 
@@ -31,7 +31,7 @@ Current tracked PR set:
 - `#97`, `#98`, `#99`
 - `#100`, `#101`, `#102`
 - `#106`, `#107`, `#108`, `#109`
-- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#125`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, `#136`, `#137`, `#138`, `#139`, `#140`, `#141`, `#142`, `#143`, `#144`
+- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#125`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, `#136`, `#137`, `#138`, `#139`, `#140`, `#141`, `#142`, `#143`, `#144`, `#145`
 
 Hard rule:
 - never mark a step as landed on `main` from repo docs alone if the GitHub PR is still open
@@ -166,7 +166,7 @@ The current landed continuation at the end of current `main` is:
 - the bounded dedicated validate-only runtime/report-ref implementation lane from PR `#143`, rooted in the dedicated validate-only contract/runtime/gate trio plus the bounded review graph/tree/runtime/report-ref integrations selected by `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`
 
 The next required move in this checkout is:
-- this branch now carries the read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze
+- open PR `#145` now carries the read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze
 - that freeze selects promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary
 - retrieval cutover remains later
 - do not widen directly into promotion implementation, retrieval cutover, route/UI, runtime DB, or schema scope without first settling this freeze in GitHub state

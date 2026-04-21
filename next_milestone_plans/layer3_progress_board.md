@@ -3,11 +3,11 @@
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
-It tracks the bounded Layer3 Phase1A through APS validate-only runtime/report-ref chain already landed on current `main`, plus this branch-local read-only `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze beyond that landed boundary.
+It tracks the bounded Layer3 Phase1A through APS validate-only runtime/report-ref chain already landed on current `main`, plus the open read-only `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze from PR `#145` beyond that landed boundary.
 
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger foundation through the bounded dedicated validate-only runtime/report-ref implementation lane
-- the branch-local read-only promotion continuation freeze carried by this checkout
+- the open read-only promotion continuation freeze now carried by PR `#145`
 - the next later family decision immediately beyond the landed dedicated validate-only boundary
 
 It is not a general whole-repo roadmap.
@@ -43,13 +43,13 @@ As of `2026-04-21`:
 - current `main` now includes the landed validate-only-gates continuation freeze from PR `#136`, the post-PR136 docs/progress sync from PR `#137`, the bounded validate-only gate-report refresh lane from PR `#138`, and the post-PR138 docs/progress sync from PR `#139`
 - current `main` now includes the landed dedicated validate-only runtime/report-ref continuation freeze from PR `#140`, the post-PR140 docs/progress sync from PR `#141`, the post-PR141 docs/progress sync from PR `#142`, the bounded dedicated validate-only runtime/report-ref implementation lane from PR `#143`, and the post-PR143 docs/progress sync from PR `#144`
 - no later post-validate-only freeze has yet landed on current `main`
-- this branch now carries the read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze selecting promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later
+- open PR `#145` now carries the read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze selecting promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later
 
 ## Program State Summary
 
 - Done now on `main`: 28 merged milestones from Phase 1A feeder-ledger foundation through the landed APS dedicated validate-only runtime/report-ref implementation lane, plus the post-PR143 docs/progress sync from PR `#144`
-- Current focus: this branch-local read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze
-- Candidate next consumers: promotion is selected branch-locally as the first later APS family; retrieval cutover remains later; no separate repo-backed post-validate-only top-chain family is admitted here
+- Current focus: open PR `#145` for the read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze
+- Candidate next consumers: promotion is selected in open PR `#145` as the first later APS family; retrieval cutover remains later; no separate repo-backed post-validate-only top-chain family is admitted here
 - Deferred but not active: 9 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Table
@@ -84,7 +84,7 @@ As of `2026-04-21`:
 | APS validate-only gate-report refresh lane | merged | `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` | `#138`, `#139` | Landed bounded validate-only gate-report refresh lane plus docs/progress sync |
 | APS dedicated validate-only runtime/report-ref continuation freeze | merged | `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` | `#140`, `#141`, `#142` | Landed read-only freeze plus both docs/progress sync passes |
 | APS dedicated validate-only runtime/report-ref implementation lane | merged | `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` | `#143`, `#144` | Landed bounded implementation lane plus post-PR143 docs/progress sync |
-| APS promotion continuation freeze | branch_only | `23_GATED_APS_PROMOTION_FREEZE.md` | none yet | This branch-local read-only freeze selects promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later |
+| APS promotion continuation freeze | open | `23_GATED_APS_PROMOTION_FREEZE.md` | `#145` | Open PR `#145` carries this read-only freeze selecting promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later |
 
 ## Completed Chain
 
@@ -127,30 +127,30 @@ flowchart LR
 
 ## Current Focus
 
-The immediate active step in this checkout is the branch-local read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze.
+The immediate active step in this checkout is open PR `#145` for the read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze.
 
 Current bounded selection state:
 - current `main` is settled through the dedicated validate-only runtime/report-ref implementation lane from PR `#143` and the post-PR143 docs/progress sync from PR `#144`
 - no later post-validate-only freeze has yet landed on current `main`
-- this branch now carries `23_GATED_APS_PROMOTION_FREEZE.md`
+- open PR `#145` now carries `23_GATED_APS_PROMOTION_FREEZE.md`
 - that freeze selects promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary
 - retrieval cutover remains later
-- this branch does not admit promotion implementation changes, retrieval cutover changes, route/UI widening, runtime DB writes, or schema widening
-- this branch does not invent a separate repo-backed post-validate-only top-chain family
+- open PR `#145` does not admit promotion implementation changes, retrieval cutover changes, route/UI widening, runtime DB writes, or schema widening
+- open PR `#145` does not invent a separate repo-backed post-validate-only top-chain family
 
 Hard rule:
 - do not skip directly from the landed dedicated validate-only runtime/report-ref boundary to retrieval cutover before the promotion family is settled
 
 ## Candidate Next Consumers
 
-- `promotion`: selected branch-locally as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary
-- `retrieval_cutover`: still later; not admitted by this branch-local freeze
+- `promotion`: selected in open PR `#145` as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary
+- `retrieval_cutover`: still later; not admitted by open PR `#145`
 
 The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current main after PR #144"] --> B["Branch-local promotion freeze"]
+    A["Current main after PR #144"] --> B["Open promotion freeze (PR #145)"]
     B --> C["Later promotion-governance lane"]
     B -.-> D["Later retrieval cutover lane"]
 
@@ -203,4 +203,4 @@ Refresh this board against:
 - `backend/tests/test_aps_retrieval_plane_cutover_gate.py`
 - `tools/nrc_aps_retrieval_cutover_gate.py`
 - `project6.ps1`
-- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, `#106`, `#107`, `#108`, `#109`, `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#125`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, `#136`, `#137`, `#138`, `#139`, `#140`, `#141`, `#142`, `#143`, and `#144`
+- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, `#106`, `#107`, `#108`, `#109`, `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#125`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, `#136`, `#137`, `#138`, `#139`, `#140`, `#141`, `#142`, `#143`, and `#144`, and `#145`
