@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from app.services import review_nrc_aps_gate_reports
 from app.services import nrc_aps_validate_only_gates as validate_only_runtime
 from app.services import nrc_aps_validate_only_gates_contract as validate_only_contract
 from app.schemas.review_nrc_aps import (
@@ -316,6 +317,16 @@ def _load_validate_only_artifact(
     }, None
 
 
+def _collect_generic_gate_reports(review_root: Path) -> list[str]:
+    gate_reports_root = review_root / "gate_reports"
+    refs: list[str] = []
+    for spec in review_nrc_aps_gate_reports.GATE_REPORT_SPECS:
+        candidate = gate_reports_root / spec.report_name
+        if candidate.is_file():
+            refs.append(normalize_path(review_root, candidate))
+    return refs
+
+
 def _collect_run_projection_inputs(run_id: str, review_root: Path) -> dict[str, Any]:
     summary = load_summary(review_root)
     downstream = _load_downstream_artifacts(review_root, summary)
@@ -435,12 +446,7 @@ def _collect_run_projection_inputs(run_id: str, review_root: Path) -> dict[str, 
         ),
     )
 
-    gate_reports_root = review_root / "gate_reports"
-    gate_reports = [
-        normalize_path(review_root, candidate)
-        for candidate in sorted(gate_reports_root.glob("*.json"))
-        if candidate.is_file()
-    ]
+    gate_reports = _collect_generic_gate_reports(review_root)
     validate_only_artifact, validate_only_warning = _load_validate_only_artifact(
         run_id=run_id,
         review_root=review_root,

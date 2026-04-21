@@ -93,9 +93,9 @@ def validate_only_gates_failure_path(*, owner_run_id: str, error_code: str, revi
     )
 
 
-def _normalize_gate_report_refs(binding: review_nrc_aps_runtime.ReviewRuntimeBinding) -> list[str]:
+def _expected_gate_report_map(binding: review_nrc_aps_runtime.ReviewRuntimeBinding) -> dict[str, str]:
     report_root = (binding.review_root / "gate_reports").resolve()
-    refs: list[str] = []
+    refs: dict[str, str] = {}
     for spec in review_nrc_aps_gate_reports.GATE_REPORT_SPECS:
         candidate = (report_root / spec.report_name).resolve()
         if not candidate.exists() or not candidate.is_file():
@@ -104,8 +104,12 @@ def _normalize_gate_report_refs(binding: review_nrc_aps_runtime.ReviewRuntimeBin
                 f"missing generic gate report: {candidate.name}",
                 status_code=_status_for_error_code(contract.APS_RUNTIME_FAILURE_GATE_REPORTS_MISSING),
             )
-        refs.append(str(candidate))
+        refs[spec.gate_name] = str(candidate)
     return refs
+
+
+def _normalize_gate_report_refs(binding: review_nrc_aps_runtime.ReviewRuntimeBinding) -> list[str]:
+    return list(_expected_gate_report_map(binding).values())
 
 
 def _normalized_gate_results_from_summary(summary: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -129,19 +133,18 @@ def _normalized_gate_results_from_summary(summary: dict[str, Any]) -> dict[str, 
 def _require_consistent_generic_boundary(
     *,
     binding: review_nrc_aps_runtime.ReviewRuntimeBinding,
-    gate_report_refs: list[str],
     normalized_gate_results: dict[str, dict[str, Any]],
 ) -> None:
-    expected = {str(Path(item).resolve()) for item in gate_report_refs}
+    expected = _expected_gate_report_map(binding)
     actual = {
-        str(Path(str(payload.get("report_path") or "")).resolve())
-        for payload in normalized_gate_results.values()
+        gate_name: str(Path(str(payload.get("report_path") or "")).resolve())
+        for gate_name, payload in normalized_gate_results.items()
         if str(payload.get("report_path") or "").strip()
     }
     if actual != expected:
         raise ValidateOnlyGatesError(
             contract.APS_RUNTIME_FAILURE_GATE_REPORTS_MISMATCH,
-            f"summary gate_results report_path set does not match generic gate report refs for run {binding.run_id}",
+            f"summary gate_results report_path map does not match generic gate report refs for run {binding.run_id}",
             status_code=_status_for_error_code(contract.APS_RUNTIME_FAILURE_GATE_REPORTS_MISMATCH),
         )
 
@@ -182,7 +185,6 @@ def _collect_runtime_inputs(binding: review_nrc_aps_runtime.ReviewRuntimeBinding
     normalized_gate_results = _normalized_gate_results_from_summary(summary)
     _require_consistent_generic_boundary(
         binding=binding,
-        gate_report_refs=gate_report_refs,
         normalized_gate_results=normalized_gate_results,
     )
     return summary_path, summary, gate_report_refs, normalized_gate_results

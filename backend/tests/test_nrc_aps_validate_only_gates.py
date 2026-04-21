@@ -233,3 +233,45 @@ def test_refresh_validate_only_gates_fails_closed_on_summary_gate_report_drift(t
     assert failure_path.exists()
     failure_payload = json.loads(failure_path.read_text(encoding="utf-8"))
     assert failure_payload["error_code"] == validate_only_contract.APS_RUNTIME_FAILURE_GATE_REPORTS_MISMATCH
+
+
+def test_refresh_validate_only_gates_fails_closed_on_swapped_summary_gate_bindings(tmp_path: Path) -> None:
+    _storage_root, runtime_root = _create_review_runtime(tmp_path, run_id="run-validate-only-swapped")
+    summary_path = runtime_root / "local_corpus_e2e_summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    gate_names = list(summary["gate_results"].keys())
+    first_gate, second_gate = gate_names[:2]
+    first_path = str(summary["gate_results"][first_gate]["report_path"])
+    second_path = str(summary["gate_results"][second_gate]["report_path"])
+    summary["gate_results"][first_gate]["report_path"] = second_path
+    summary["gate_results"][second_gate]["report_path"] = first_path
+    _write_json(summary_path, summary)
+
+    with pytest.raises(validate_only_runtime.ValidateOnlyGatesError) as excinfo:
+        validate_only_runtime.refresh_validate_only_gates(
+            run_id="run-validate-only-swapped",
+            review_root=runtime_root,
+        )
+
+    assert excinfo.value.code == validate_only_contract.APS_RUNTIME_FAILURE_GATE_REPORTS_MISMATCH
+
+
+def test_review_graph_excludes_validate_only_failure_jsons_from_mapped_refs(tmp_path: Path) -> None:
+    _storage_root, runtime_root = _create_review_runtime(tmp_path, run_id="run-validate-only-failure-graph")
+    summary_path = runtime_root / "local_corpus_e2e_summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    first_gate_name = next(iter(summary["gate_results"].keys()))
+    summary["gate_results"][first_gate_name]["report_path"] = str((runtime_root / "gate_reports" / "wrong.json").resolve())
+    _write_json(summary_path, summary)
+
+    with pytest.raises(validate_only_runtime.ValidateOnlyGatesError):
+        validate_only_runtime.refresh_validate_only_gates(
+            run_id="run-validate-only-failure-graph",
+            review_root=runtime_root,
+        )
+
+    pipeline = build_pipeline_projection("run-validate-only-failure-graph", runtime_root)
+    validate_node = next(node for node in pipeline.nodes if node.projection_id == "validate_only_gates")
+
+    assert validate_node.structured_summary["has_validate_only_artifact"] is False
+    assert all("aps_validate_only_gates_failure_v1.json" not in ref for ref in validate_node.mapped_file_refs)
