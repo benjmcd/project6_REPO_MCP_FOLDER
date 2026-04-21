@@ -8,11 +8,11 @@
   "canonical_status_doc_handoff_path": "docs/nrc_adams/nrc_aps_status_handoff.md",
   "canonical_status_doc_source_path": "docs/nrc_adams/nrc_aps_status_handoff.md",
   "frozen_ceiling": "Upper analytical ceiling through Deterministic Challenge Artifact v1",
-  "next_safe_direction": "continue above Deterministic Challenge Artifact v1 from the restored lower-layer baseline; rerun OCR proof when OCR/corpus behavior changes or when validating a new environment",
+  "next_safe_direction": "from this March 13, 2026 package snapshot, continue above Deterministic Challenge Artifact v1 from the restored lower-layer baseline; current main has since moved above that boundary, so use root docs/nrc_adams/nrc_aps_status_handoff.md for live merged-main posture; rerun OCR proof when OCR/corpus behavior changes or when validating a new environment",
   "manifest_scope": "scoped_current_state_authority_package",
   "is_exhaustive_of_handoff_tree": false,
   "entries_exhaustive_for_manifest_scope": true,
-  "manifest_scope_description": "The entries array is an intentional current-state authority subset for session transfer. It includes package-local control docs, frozen upper analytical code/tests/proof anchors, and explicitly STALE mirrored code surfaces (handoff/backend/*) which are preserved for lineage references only and MUST NOT be trusted as live implementation authority. You must use root backend/ instead.",
+  "manifest_scope_description": "The entries array is an intentional March 13, 2026 package snapshot authority subset for session transfer. It includes package-local control docs, frozen upper analytical code/tests/proof anchors, and explicitly STALE mirrored code surfaces (handoff/backend/*) which are preserved for lineage references only and MUST NOT be trusted as live implementation authority. You must use root backend/ instead.",
   "path_interpretation": "entries.handoff_path values are relative to handoff_root; entries.source_path values are repo-root relative source/provenance paths.",
   "entries": [
     {

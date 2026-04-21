@@ -7,7 +7,7 @@ NRC APS HANDOFF: START HERE
    - Root `README.md` and `REPO_INDEX.md` may reference root `tests/...` and `tools/...` that are not established from current workspace evidence.
    - Code/tests/proof anchors are mirrored copies unless marked otherwise in handoff_manifest.json.
    - If live repo and handoff differ, live repo authority wins.
-   - `handoff/handoff_manifest.json` is intentionally scoped; it is exhaustive for the packaged current-state authority subset, not for every file under `handoff/`.
+   - `handoff/handoff_manifest.json` is intentionally scoped; it is exhaustive for the packaged March 13, 2026 authority subset, not for every file under `handoff/`.
 
 1. Read this package status surface first:
    - handoff/docs/nrc_adams/nrc_aps_status_handoff.md
@@ -99,12 +99,13 @@ NRC APS HANDOFF: START HERE
    - the aggregate-scoped APS gate reports listed above are current for the fresh March 13, 2026 aggregate gate rerun
    - any remaining checked-in report JSONs are carried package snapshots, not automatic proof of current branch truth
 
-9. Next safe direction:
+9. Snapshot-era next safe direction:
    - lower-layer OCR proof is now established in this workspace
-   - the next safe continuation can move above Deterministic Challenge Artifact v1
+   - from this package snapshot, the next safe continuation could move above Deterministic Challenge Artifact v1
+   - current `main` has since moved above that boundary; use root `docs/nrc_adams/nrc_aps_status_handoff.md` for live merged-main posture
    - rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes or when validating a new environment
    - do not reopen the frozen upper analytical layers except for defect-driven work
 
 10. Historical note:
    - handoff/_legacy_flat_copy/ is intentionally historical reference content.
-   - Use this structured handoff root as the current portable authority package.
+   - Use this structured handoff root as the portable March 13, 2026 authority package snapshot, not as current `main` authority.
