@@ -99,7 +99,7 @@ def validate_evidence_report_export_package_gate(
         run_id = str(row.get("run_id") or "").strip()
         if not run_id:
             continue
-        scope = f"run_{run_id}"
+        scope = nrc_aps_evidence_report_export_package.evidence_report_export_package_scope(run_id)
         package_paths = sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_evidence_report_export_package_v1.json"))
         failure_paths = sorted(
             Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_evidence_report_export_package_failure_v1.json")

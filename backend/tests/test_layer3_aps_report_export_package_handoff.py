@@ -234,6 +234,65 @@ def test_materialize_aps_report_export_package_handoff_emits_row_without_runtime
         settings.storage_dir = original_storage_dir
 
 
+def test_materialize_aps_report_export_package_handoff_handles_non_path_safe_run_ids(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        run_id = "run/aps export package:001"
+        session_id, built_run_id, target_id, content_ids = _build_multisource_packaged_session(
+            db,
+            tmp_path,
+            run_id=run_id,
+        )
+        assert built_run_id == run_id
+        materialize_aps_multisource_admission(db, session_id=session_id)
+        db.commit()
+
+        export_refs = [
+            _persist_single_source_export_fixture(
+                tmp_path,
+                run_id=run_id,
+                target_id=target_id,
+                content_id=content_id,
+                variant=f"safe-{index}",
+            )
+            for index, content_id in enumerate(content_ids, start=1)
+        ]
+
+        result = materialize_aps_report_export_package_handoff(db, session_id=session_id)
+        db.commit()
+
+        monkeypatch.setattr(
+            aps_package_gate_module,
+            "_load_candidate_runs",
+            lambda run_ids, limit: [{"run_id": run_id, "status": "completed"}],
+        )
+        gate_report = aps_package_gate_module.validate_evidence_report_export_package_gate(
+            run_ids=[run_id],
+            limit=1,
+            report_path=tmp_path / "evidence_report_export_package_gate_non_path_safe.json",
+            require_runs=True,
+        )
+        rows = _rows_by_kind(db)
+        handoff_row = rows[PACKAGE_KIND_APS_EVIDENCE_REPORT_EXPORT_PACKAGE_HANDOFF]
+        loaded_payload, _package_path = aps_package_module.load_persisted_evidence_report_export_package_artifact(
+            evidence_report_export_package_ref=handoff_row.payload_ref
+        )
+
+        assert gate_report["passed"] is True
+        assert result.output_package.output_package_id == handoff_row.output_package_id
+        assert loaded_payload["owner_run_id"] == run_id
+        assert {
+            entry["evidence_report_export_ref"] for entry in loaded_payload["source_exports"]
+        } == set(export_refs)
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
 def test_materialize_aps_report_export_package_handoff_fails_closed_without_multisource_package(
     tmp_path: Path,
 ) -> None:
