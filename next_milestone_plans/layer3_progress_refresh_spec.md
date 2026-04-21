@@ -31,7 +31,7 @@ Current tracked PR set:
 - `#97`, `#98`, `#99`
 - `#100`, `#101`, `#102`
 - `#106`, `#107`, `#108`, `#109`
-- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`
+- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`
 
 Hard rule:
 - never mark a step as landed on `main` from repo docs alone if the GitHub PR is still open
@@ -176,9 +176,10 @@ The current bounded chain on `main` ends at:
 The current branch/workspace now also carries:
 - the read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze selecting `context_dossier` as the next later shared APS family after the landed package-context milestone
 - the preserved source-branch rule that dossier input must remain paired export-derived context packets rather than package-derived context
+- open PR `#118` now tracks that freeze while it remains unmerged
 
 The next required move beyond current `main` is:
-- land the branch-local read-only `context_dossier` freeze already present in the active checkout
+- land open PR `#118`, which carries the branch-local read-only `context_dossier` freeze already present in the active checkout
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`
@@ -194,7 +195,7 @@ These are not both still open candidates in the same way:
 - `aps_evidence_report_export_package_handoff` is now landed on current `main`
 - package-derived context packet is now landed on current `main` as the next write-enabled shared-family target after that landed handoff boundary, and current `main` also includes the malformed-scoped APS gate hardening follow-up
 - `context_dossier` remains later and not first
-- the current branch-local dossier freeze keeps paired export-derived context packets as the live dossier input branch and must not be refreshed into package-derived dossier input claims
+- the open dossier freeze in PR `#118` keeps paired export-derived context packets as the live dossier input branch and must not be refreshed into package-derived dossier input claims
 
 ## Schedule Guidance
 

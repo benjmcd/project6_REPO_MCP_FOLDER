@@ -64,16 +64,16 @@ Current repo-side facts to preserve:
 - current `main` also includes the post-PR116 docs/progress sync from PR `#117`
 - the current branch/workspace now also carries the read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze selecting `context_dossier` as the next later shared APS family after the landed package-context milestone
 - paired export-derived context packets remain the live dossier input branch; the landed package-derived context handoff must not be presented as dossier input proof
-- no open PR exists yet for the branch-local dossier freeze
-- deterministic remains later and must not be presented as a co-equal current-focus choice with the branch-local `context_dossier` freeze
+- open PR `#118` now carries the branch-local dossier freeze and it is not yet landed on current `main`
+- deterministic remains later and must not be presented as a co-equal current-focus choice with the open `context_dossier` freeze
 
 When rebuilding from a checkout that matches the current branch-local dossier freeze after the package-derived context handoff slice lands:
 - show that slice as completed on `main`
 - show the exact-run gate-hardening follow-up as already landed on `main`
 - show the landed package-derived-context freeze as completed on `main`
 - show the package-derived context handoff slice as `merged`
-- show the current branch-local `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze as `branch_only` until GitHub confirms an open or merged PR
-- use the branch-local `context_dossier` freeze as the current focus that follows the landed package-context boundary
+- show the current branch-local `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze as `open`
+- use the open `context_dossier` freeze as the current focus that follows the landed package-context boundary
 - do not present package-derived context as dossier input proof
 - do not present deterministic as the current focus while `context_dossier` remains the next later shared-family decision
 
