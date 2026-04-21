@@ -158,6 +158,24 @@ function formatEmptyMessage(label, { runId, targetId, detail } = {}) {
     return `No ${escapeHtml(label)} are available for ${context}.${suffix}`;
 }
 
+function renderRuntimeBindingEntries(runInfo) {
+    const binding = runInfo?.runtime_binding || null;
+    return `
+        <div class="layout-entry">
+            <strong>RUNTIME</strong>
+            <span>${escapeHtml(binding?.runtime_label || 'N/A')}</span>
+        </div>
+        <div class="layout-entry">
+            <strong>DB</strong>
+            <span>${escapeHtml(binding?.database_label || 'N/A')}</span>
+        </div>
+        <div class="layout-entry">
+            <strong>STORAGE</strong>
+            <span>${escapeHtml(binding?.storage_label || 'N/A')}</span>
+        </div>
+    `;
+}
+
 function renderScopeContextBar(tabId) {
     const scope = TAB_SCOPE[tabId] || 'document';
     if (scope === 'page') return '';
@@ -1069,6 +1087,7 @@ function renderTraceShell() {
             <strong>RUN</strong>
             <span>${escapeHtml(State.selectedRunId)} (${escapeHtml(runStatus)})</span>
         </div>
+        ${renderRuntimeBindingEntries(runInfo)}
         <div class="layout-entry">
             <strong>ACCESSION NUMBER</strong>
             <span>${escapeHtml(identity.accession_number || 'N/A')}</span>
@@ -1546,6 +1565,7 @@ async function loadTargetDoc(targetId, seq) {
             <strong>RUN</strong>
             <span>${escapeHtml(State.selectedRunId)} (${escapeHtml(runStatus)})</span>
         </div>
+        ${renderRuntimeBindingEntries(runInfo)}
     `;
 
     updateUrlParams('replace');

@@ -26,7 +26,7 @@ from app.schemas.review_nrc_aps import (
     NrcApsWorkbenchCompareTargetsOut,
     NrcApsWorkbenchCompareVariantBindingsOut,
 )
-from app.services.review_nrc_aps_catalog import discover_candidate_runs
+from app.services.review_nrc_aps_catalog import build_runtime_binding_summary, discover_candidate_runs
 from app.services.review_nrc_aps_document_trace import (
     _resolve_document_title,
     _resolve_document_type,
@@ -231,6 +231,7 @@ def discover_workbench_compare_sources(checkout_root: Path | None = None) -> Nrc
             display_label=str(selector_item.display_label or binding.run_id),
             completed_at=selector_item.completed_at,
             variant_kind=variant_kind,
+            runtime_binding=build_runtime_binding_summary(binding),
         )
         if variant_kind == "baseline":
             baseline_runs.append(item)

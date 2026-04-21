@@ -11,6 +11,12 @@ class NrcApsReviewRunSummaryCountersOut(BaseModel):
     failed_count: int = 0
 
 
+class NrcApsReviewRuntimeBindingSummaryOut(BaseModel):
+    runtime_label: str
+    database_label: str | None = None
+    storage_label: str | None = None
+
+
 class NrcApsReviewRunSelectorItemOut(BaseModel):
     run_id: str
     display_label: str | None = None
@@ -21,6 +27,7 @@ class NrcApsReviewRunSelectorItemOut(BaseModel):
     reviewable: bool
     disabled_reason_code: str | None = None
     summary_counters: NrcApsReviewRunSummaryCountersOut = Field(default_factory=NrcApsReviewRunSummaryCountersOut)
+    runtime_binding: NrcApsReviewRuntimeBindingSummaryOut | None = None
 
 
 class NrcApsReviewRunSelectorOut(BaseModel):
@@ -360,6 +367,7 @@ class NrcApsWorkbenchCompareRunSourceItemOut(BaseModel):
     display_label: str
     completed_at: str | None = None
     variant_kind: str
+    runtime_binding: NrcApsReviewRuntimeBindingSummaryOut | None = None
 
 
 class NrcApsWorkbenchCompareBundleSourceItemOut(BaseModel):

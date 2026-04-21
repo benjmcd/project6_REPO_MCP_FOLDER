@@ -573,9 +573,13 @@ function updateRunIdentity(runId) {
     }
     const status = runInfo.status || 'unknown';
     const counters = runInfo.summary_counters || {};
+    const runtimeBinding = runInfo.runtime_binding || null;
     el.innerHTML =
         `<div class="meta-item"><span class="meta-label">Run:</span> ${escapeHtml(runId)}</div>` +
         `<div class="meta-item"><span class="meta-label">Status:</span> ${escapeHtml(status)}</div>` +
+        `<div class="meta-item"><span class="meta-label">Runtime:</span> ${escapeHtml(runtimeBinding?.runtime_label || 'n/a')}</div>` +
+        `<div class="meta-item"><span class="meta-label">DB:</span> ${escapeHtml(runtimeBinding?.database_label || 'n/a')}</div>` +
+        `<div class="meta-item"><span class="meta-label">Storage:</span> ${escapeHtml(runtimeBinding?.storage_label || 'n/a')}</div>` +
         `<div class="meta-item"><span class="meta-label">Selected:</span> ${counters.selected_count ?? 0}</div>` +
         `<div class="meta-item"><span class="meta-label">Failed:</span> ${counters.failed_count ?? 0}</div>`;
     el.classList.remove('hidden');
