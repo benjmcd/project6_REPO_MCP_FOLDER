@@ -207,15 +207,15 @@ Verify whether operators can already tell, from the shipped review/document-trac
 
 ### 2. If Verification Passes
 
+If the shipped review/document-trace/workbench surfaces already make runtime identity and failure states adequately explicit, stop and do not open another lane from this document by default.
+
+### 3. If Verification Fails
+
 Make the next implementation pass a bounded transparency or ergonomics pass:
 
 - improve runtime identity labeling
 - improve empty/missing/not-reviewable messaging
 - add narrow runtime-binding introspection only where the current shipped surface leaves real ambiguity
-
-### 3. If Verification Fails
-
-If the shipped review/document-trace/workbench surfaces already make runtime identity and failure states adequately explicit, stop and do not open another lane from this document by default.
 
 ## Residual Risks
 
