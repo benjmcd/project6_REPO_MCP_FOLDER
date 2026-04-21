@@ -135,6 +135,55 @@ def test_materialize_aps_context_packet_package_handoff_emits_row_without_runtim
         settings.storage_dir = original_storage_dir
 
 
+def test_context_packet_gate_discovers_malformed_scoped_artifact_without_explicit_run_ids(
+    tmp_path: Path,
+) -> None:
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        healthy_run_id = "run-aps-context-healthy"
+        session_id, built_run_id, _target_id, _content_ids = _build_package_context_ready_session(
+            db,
+            tmp_path,
+            run_id=healthy_run_id,
+        )
+        assert built_run_id == healthy_run_id
+        materialize_aps_context_packet_package_handoff(db, session_id=session_id)
+        db.commit()
+
+        malformed_run_id = "run/aps context:mixed"
+        malformed_failure_id = aps_context_contract.derive_failure_context_packet_id(
+            source_locator="mixed-malformed-scoped-artifact",
+            error_code="mixed_malformed_scoped_artifact",
+        )
+        malformed_failure_path = aps_context_module.context_packet_failure_artifact_path(
+            owner_run_id=malformed_run_id,
+            context_packet_id=malformed_failure_id,
+            reports_dir=settings.connector_reports_dir,
+        )
+        malformed_failure_path.parent.mkdir(parents=True, exist_ok=True)
+        malformed_failure_path.write_text("{not-json", encoding="utf-8")
+
+        discovered_runs = aps_context_gate_module._load_candidate_runs(run_ids=None, limit=10)
+        assert len(discovered_runs) == 2
+
+        gate_report = aps_context_gate_module.validate_context_packet_gate(
+            run_ids=None,
+            limit=10,
+            report_path=tmp_path / "context_packet_gate_mixed_malformed_scope.json",
+            require_runs=True,
+        )
+
+        assert gate_report["passed"] is False
+        malformed_check = next(
+            check for check in gate_report["checks"] if str(malformed_failure_path) in check["failure_refs"]
+        )
+        assert aps_context_contract.APS_GATE_FAILURE_FAILURE_SCHEMA in malformed_check["reasons"]
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
 def test_materialize_aps_context_packet_package_handoff_fails_closed_without_export_package_source(
     tmp_path: Path,
 ) -> None:
