@@ -80,10 +80,12 @@ Current repo-side facts to preserve:
 - current `main` now also includes the bounded deterministic challenge review-packet handoff slice from PR `#134`, rooted in `backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py`, plus the narrow review-packet gate hardening in `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`
 - current `main` now also includes the post-PR134 docs/progress sync from PR `#135`
 - current `main` now also includes the landed read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze from PR `#136`, selecting `validate_only_gates` as the exact next verification continuation beyond the landed review-packet handoff
-- the immediate required move is now to represent that validate-only-gates freeze as `merged` and the bounded validate-only execution or report-refresh lane as `planned`, not to restate the already-landed review-packet handoff or widen beyond that boundary
-- `validate_only_gates` is now the landed current-main family choice; later validate-only execution or report refresh remains planned and must not be collapsed into the same state
+- current `main` now also includes the post-PR136 docs/progress sync from PR `#137`
+- current open PR `#138` now carries the bounded validate-only gate-report refresh lane rooted in `backend/app/services/review_nrc_aps_gate_reports.py`, `tools/nrc_aps_refresh_review_gate_reports.py`, `tools/run_nrc_aps_local_corpus_e2e.py`, `backend/tests/test_review_nrc_aps_gate_reports.py`, and `project6.ps1`
+- the immediate required move is now to represent that validate-only-gates freeze as `merged` and the bounded validate-only gate-report refresh lane as `open`, not to restate the already-landed review-packet handoff or widen beyond that boundary
+- `validate_only_gates` is now the landed current-main family choice; the active continuation is the open gate-report refresh lane on PR `#138`
 
-When rebuilding from a checkout that matches current `main` after PR `#136` is merged and before any validate-only execution or report-refresh PR exists:
+When rebuilding from a checkout that matches the current open PR `#138` branch:
 - show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
 - show the exact-run gate-hardening follow-up as already landed on `main`
 - show the landed package-derived-context freeze as completed on `main`
@@ -99,7 +101,8 @@ When rebuilding from a checkout that matches current `main` after PR `#136` is m
 - show the post-PR132 docs/progress closeout from PR `#133` as already landed on `main`
 - show the bounded deterministic challenge review-packet handoff as `merged`
 - show `validate_only_gates` as `merged` from PR `#136`
-- show the bounded validate-only execution or report-refresh lane as `planned`
+- show the post-PR136 docs/progress closeout from PR `#137` as already landed on `main`
+- show the bounded validate-only gate-report refresh lane as `open`
 
 Also update the scheduled refresh task so it no longer:
 - writes or references `current_main_commit`
