@@ -90,7 +90,9 @@ Current repo-side facts to preserve:
 - if the current checkout matches current `main` after PR `#144`, render the dedicated validate-only runtime/report-ref implementation lane as `merged`
 - if no later post-validate-only freeze exists on current `main`, render the current focus as the next freeze decision rather than as another current-main implementation lane
 - if the current checkout matches current `main` after PR `#145`, render `23_GATED_APS_PROMOTION_FREEZE.md` as `merged`
-- if the current checkout matches current `main` after PR `#145`, show promotion as the landed first later APS family beyond the landed dedicated validate-only boundary, keep retrieval cutover later, and do not invent a separate repo-backed post-validate-only top-chain family
+- if the current checkout matches current `main` after PR `#146`, preserve the post-PR145 docs/progress sync as already landed history rather than dropping it from the tracked PR set
+- if the current checkout matches current `main` after PR `#147`, preserve the later APS family settlement closeout as already landed history rather than presenting the packet as merely frozen
+- if the current checkout matches current `main` after PR `#145`, show promotion as the landed first later APS family beyond the landed dedicated validate-only boundary, keep retrieval cutover later during the freeze decision itself, and do not invent a separate repo-backed post-validate-only top-chain family
 - if live repo truth on current `main` already proves the existing promotion governance family sufficient and retrieval cutover already present as a separate parity-proof family, render the later APS family packet as `settled` rather than inventing another next lane
 
 When rebuilding from a checkout that matches current `main` after PR `#144`:
@@ -118,9 +120,12 @@ When rebuilding from a checkout that matches current `main` after PR `#144`:
 - show the dedicated validate-only runtime/report-ref implementation lane from PR `#143` as `merged`
 - show the post-PR143 docs/progress sync from PR `#144` as already landed on `main`
 - if refreshing from a checkout that matches current `main` after PR `#145`, show that freeze as `merged`
+- if refreshing from a checkout that matches current `main` after PR `#146`, keep that docs/progress sync in the tracked GitHub PR set and merged-history wording
+- if refreshing from a checkout that matches current `main` after PR `#147`, keep that settlement closeout in the tracked GitHub PR set and merged-history wording
 
 Current merged-state fact to preserve when present:
-- current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, which selected promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later during the freeze decision itself
+- current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, and the later APS family settlement closeout from PR `#147`
+- the landed freeze from PR `#145` selected promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later during the freeze decision itself
 - live repo truth now also shows the existing promotion governance family already sufficient on current `main`, while retrieval cutover already exists there as a separate validate-only parity-proof family
 
 Also update the scheduled refresh task so it no longer:
