@@ -3,7 +3,7 @@
 Package-local note: this copy is a handoff control surface in the mixed package model. When both repo root and `handoff/` are available, live root authority remains `docs/nrc_adams/nrc_aps_status_handoff.md`.
 
 ## 1. Purpose and truth model
-This document is the canonical package-local status surface for the portable NRC ADAMS APS handoff package as of March 13, 2026.
+This document is the canonical package-local status surface for the portable March 13, 2026 NRC ADAMS APS handoff package snapshot.
 
 Repo truth precedence used here:
 1. live code, tests, scripts, migrations, and repo-contained proof artifacts
@@ -122,8 +122,10 @@ The portable package records the reopened scope, but the authoritative implement
 - They do not seed or generate artifacts.
 - `project6.ps1 -Action prove-nrc-aps-document-processing` is the fresh isolated lower-layer proof runner. It is not validate-only: it builds isolated runtime state, runs lower-layer pytest proof, then invokes the existing validate-only artifact-ingestion and content-index gates against that isolated runtime.
 
-## 8. Next safe continuation
-The next safe continuation is not blocked by lower-layer OCR proof anymore. It is:
+## 8. Snapshot-era next safe continuation
+From the March 13, 2026 package snapshot, the next safe continuation was not blocked by lower-layer OCR proof anymore. It was:
 1. preserve the restored lower-layer baseline and current OCR-enabled proof basis
 2. continue above the frozen analytical ceiling with a single bounded slice
 3. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes or when validating a new environment
+
+Current `main` has since moved above that boundary. Use root `docs/nrc_adams/nrc_aps_status_handoff.md` for the live merged-main continuation posture.

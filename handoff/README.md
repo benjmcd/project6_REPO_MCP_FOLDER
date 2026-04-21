@@ -1,6 +1,6 @@
 # NRC APS Portable Handoff Package
 
-This `handoff/` directory is the portable current-state NRC ADAMS APS package for the frozen upper analytical ceiling through Deterministic Challenge Artifact v1 plus the reopened lower-layer document-processing status surfaces.
+This `handoff/` directory is the portable March 13, 2026 NRC ADAMS APS package snapshot for the frozen upper analytical ceiling through Deterministic Challenge Artifact v1 plus the reopened lower-layer document-processing status surfaces.
 
 It is meant to let a new session determine:
 - the current frozen ceiling
@@ -8,7 +8,7 @@ It is meant to let a new session determine:
 - the authoritative validator/gate semantics
 - the current proof basis
 - the current run-ref/report-ref surfaces
-- the next safe direction above the frozen ceiling
+- the next safe direction that followed from this package snapshot
 
 ## Package truth model
 
@@ -30,7 +30,7 @@ It is meant to let a new session determine:
 ## Manifest coverage semantics
 
 - `handoff/handoff_manifest.json` is intentionally scoped, not exhaustive of every file under `handoff/`.
-- `entries` is exhaustive for the packaged current-state authority subset.
+- `entries` is exhaustive for the packaged snapshot authority subset.
 - `_legacy_flat_copy/` remains historical-only lineage content outside the current authority subset.
 
 ## Current frozen ceiling
@@ -149,7 +149,7 @@ Relevant actions:
 
 ## Next safe direction
 
-OCR-enabled lower-layer proof is now established in this workspace. The next safe direction can move above Deterministic Challenge Artifact v1; rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when changing OCR/corpus behavior or validating a new environment. The OCR adapter now auto-detects the standard Windows Tesseract install path as well as `PATH`/`TESSERACT_CMD`. Do not reopen the frozen upper analytical layers except for defect-driven work.
+From the March 13, 2026 package snapshot, OCR-enabled lower-layer proof was sufficient to continue above Deterministic Challenge Artifact v1. Current `main` has since moved above that boundary; use root `docs/nrc_adams/nrc_aps_status_handoff.md` for the live merged-main continuation posture. Rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when changing OCR/corpus behavior or validating a new environment. The OCR adapter now auto-detects the standard Windows Tesseract install path as well as `PATH`/`TESSERACT_CMD`. Do not reopen the frozen upper analytical layers except for defect-driven work.
 
 ## Historical surfaces
 
