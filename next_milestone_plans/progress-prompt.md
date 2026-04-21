@@ -72,8 +72,10 @@ Current repo-side facts to preserve:
 - current `main` now also includes the bounded deterministic insight handoff implementation slice from PR `#126`, rooted in `backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py` and `backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py`, plus narrow deterministic gate hardening in `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`
 - current `main` now also includes the post-PR126 docs/progress sync from PR `#127`
 - current `main` now also includes the landed read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze from PR `#128`, selecting `deterministic_challenge_artifact` as the next deterministic continuation beyond the landed deterministic-insight boundary
-- the immediate required move is now to open the bounded deterministic challenge handoff lane, not to restate the already-landed deterministic insight handoff or challenge-freeze lanes
-- `deterministic_challenge_artifact` is now the current planned current-focus choice; review-packet and validate-only steps remain later and must not be collapsed into the same state
+- current `main` now also includes the post-PR128 docs/progress sync from PR `#129`
+- current branch now carries open PR `#130`, rooted in `backend/app/services/layer3_aps_deterministic_challenge_artifact_handoff.py`, `backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py`, and `backend/tests/test_layer3_aps_deterministic_challenge_artifact_handoff.py`
+- the immediate required move is now to review and merge open PR `#130`, not to restate the already-landed deterministic insight handoff or challenge-freeze lanes
+- `deterministic_challenge_artifact` is now the current open current-focus choice; review-packet and validate-only steps remain later and must not be collapsed into the same state
 
 When rebuilding from a checkout that matches current `main` after PR `#128` is merged:
 - show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
