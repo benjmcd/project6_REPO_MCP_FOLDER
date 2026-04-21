@@ -35,7 +35,7 @@ Current merged-state note:
 - current `main` now also includes the narrow deterministic challenge gate hardening in `backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py`, and that landed lane still keeps one persisted deterministic insight artifact as the immediate downstream source boundary
 - current `main` already has the live deterministic challenge review-packet contract, runtime, and gate surfaces rooted in `backend/app/services/nrc_aps_deterministic_challenge_review_packet_contract.py`, `backend/app/services/nrc_aps_deterministic_challenge_review_packet.py`, and `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`
 - current `main` already has run-level report-ref registry buckets for deterministic challenge and deterministic challenge review packet in `backend/app/services/connectors_sciencebase.py`
-- current branch now also carries this read-only freeze selecting `deterministic_challenge_review_packet` as the exact next deterministic APS family after the landed deterministic challenge handoff
+- current branch now also carries open PR `#132` for this read-only freeze selecting `deterministic_challenge_review_packet` as the exact next deterministic APS family after the landed deterministic challenge handoff
 
 Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md|artifact|current governing freeze for the landed deterministic challenge boundary`; `R|backend/app/services/layer3_aps_deterministic_challenge_artifact_handoff.py|Current bounded deterministic challenge handoff owner surface on current \`main\`|31-341`; `R|backend/tests/test_layer3_aps_deterministic_challenge_artifact_handoff.py|Current bounded deterministic challenge handoff proof surface on current \`main\`|46-522`; `R|backend/app/services/review_nrc_aps_graph.py|Live downstream graph places deterministic challenge review packet immediately after deterministic challenge and before validate-only gates|38-40;85-88;106-109`; `R|backend/app/services/nrc_aps_deterministic_challenge_review_packet_contract.py|Live deterministic challenge review-packet contract is a single-challenge-artifact projection family with frozen schema, projection identity, and bucket derivation posture|11-18;83-147;150-197`; `R|backend/app/services/nrc_aps_deterministic_challenge_review_packet.py|Live deterministic challenge review-packet runtime loads one persisted challenge artifact, derives a review packet, and persists or validates it fail-closed|47-87;180-390`; `R|backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py|Live review-packet gate validates persisted review-packet artifacts and still resolves candidate files through raw run-scope globbing on current \`main\`|28-64;83-192`; `R|backend/app/services/connectors_sciencebase.py|Current run-level report-ref registry already reserves deterministic challenge and deterministic challenge review packet buckets|2959-2961`
 
@@ -160,7 +160,7 @@ Stop and reopen the freeze instead of improvising if a later continuation requir
 ## Concise readiness judgment
 
 Readiness judgment:
-- This branch-local read-only freeze is the governing carried-forward contract for the bounded choice of `deterministic_challenge_review_packet` as the next APS family after the landed deterministic challenge boundary.
+- This open read-only freeze on PR `#132` is the governing carried-forward contract for the bounded choice of `deterministic_challenge_review_packet` as the next APS family after the landed deterministic challenge boundary.
 
 Reason:
 - current `main` already proves the bounded deterministic challenge handoff and its persisted deterministic challenge artifact boundary
@@ -168,7 +168,7 @@ Reason:
 - the live downstream graph still places deterministic challenge review packet before validate-only gates
 - this read-only freeze therefore settles the next deterministic-family choice narrowly without admitting implementation
 
-What still remains intentionally deferred after this branch-local read-only freeze:
+What still remains intentionally deferred after this open read-only freeze:
 - the later deterministic challenge review-packet handoff lane
 - validate-only top-chain expansion
 - the future workbench route family
