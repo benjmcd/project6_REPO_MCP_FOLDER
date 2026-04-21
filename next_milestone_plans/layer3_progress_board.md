@@ -3,7 +3,7 @@
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
-It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and the now-landed malformed-scoped candidate-discovery closeout beyond that landed package-context boundary, plus the now-landed read-only context-dossier freeze that preserves paired export-derived context packets as dossier inputs, plus the now-landed bounded context-dossier handoff implementation slice and its docs/progress sync on current `main`, plus the now-landed read-only deterministic-insight continuation freeze on current `main` beyond the landed dossier boundary, plus the now-landed bounded deterministic insight handoff implementation slice and narrow deterministic gate hardening beyond that landed freeze, plus the now-landed read-only deterministic-challenge continuation freeze on current `main` beyond that landed deterministic-insight boundary, plus the now-landed bounded deterministic challenge handoff implementation slice, plus the now-landed deterministic challenge review-packet continuation freeze and bounded review-packet handoff implementation slice, plus the now-landed validate-only-gates freeze from PR `#136`, its docs/progress sync from PR `#137`, and the current open validate-only gate-report refresh lane from PR `#138` beyond that landed review-packet boundary.
+It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and the now-landed malformed-scoped candidate-discovery closeout beyond that landed package-context boundary, plus the now-landed read-only context-dossier freeze that preserves paired export-derived context packets as dossier inputs, plus the now-landed bounded context-dossier handoff implementation slice and its docs/progress sync on current `main`, plus the now-landed read-only deterministic-insight continuation freeze on current `main` beyond the landed dossier boundary, plus the now-landed bounded deterministic insight handoff implementation slice and narrow deterministic gate hardening beyond that landed freeze, plus the now-landed read-only deterministic-challenge continuation freeze on current `main` beyond that landed deterministic-insight boundary, plus the now-landed bounded deterministic challenge handoff implementation slice, plus the now-landed deterministic challenge review-packet continuation freeze and bounded review-packet handoff implementation slice, plus the now-landed validate-only-gates freeze from PR `#136`, its docs/progress sync from PR `#137`, and the now-landed bounded validate-only gate-report refresh lane from PR `#138` beyond that landed review-packet boundary.
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger entry through APS multisource admission
 - the now-landed docs-only closeout that followed multisource landing
@@ -20,7 +20,7 @@ It is intentionally scoped to:
 - the now-landed read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze on current `main` beyond the landed deterministic-challenge boundary
 - the now-landed bounded `aps_deterministic_challenge_review_packet_handoff` implementation slice and narrow review-packet gate hardening beyond that landed freeze
 - the now-landed read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze on current `main` beyond the landed deterministic challenge review-packet handoff
-- the current open bounded validate-only gate-report refresh lane beyond that landed freeze
+- the now-landed bounded validate-only gate-report refresh lane beyond that landed freeze
 
 It is not a general whole-repo roadmap.
 It does not replace GitHub PR state.
@@ -41,7 +41,7 @@ As of `2026-04-21`:
 - seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main`
 - valid local authority rule: use a clean checkout whose contents match the artifact state being refreshed; prefer current `main` for merged repo truth and the active branch checkout when a branch-only milestone is declared
 - authoritative remote branch: `project6-origin/main`
-- snapshot base `main` commit at this artifact refresh: `43c3983d10d88c7f76008540b1c102574278bc39`
+- snapshot base `main` commit at this artifact refresh: `e1d965ff0ced469ad6e12a047d08d9038e0412ef`
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the landed export-package first shared-consumer freeze from PR `#106` and its docs-only closeout from PR `#107`
@@ -69,13 +69,13 @@ As of `2026-04-21`:
 - current `main` now also includes the post-PR134 docs/progress sync from PR `#135`
 - current `main` now also includes the read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze from PR `#136`, selecting `validate_only_gates` as the next verification continuation beyond the landed deterministic challenge review-packet handoff while keeping later validate-only execution/report refresh, promotion, retrieval cutover, route/UI, runtime DB, and schema widening out
 - current `main` now also includes the post-PR136 docs/progress sync from PR `#137`
-- current open PR `#138` now carries the bounded validate-only gate-report refresh lane rooted in `backend/app/services/review_nrc_aps_gate_reports.py`, `tools/nrc_aps_refresh_review_gate_reports.py`, `tools/run_nrc_aps_local_corpus_e2e.py`, `backend/tests/test_review_nrc_aps_gate_reports.py`, and `project6.ps1`
+- current `main` now also includes the bounded validate-only gate-report refresh lane from PR `#138`, rooted in `backend/app/services/review_nrc_aps_gate_reports.py`, `tools/nrc_aps_refresh_review_gate_reports.py`, `tools/run_nrc_aps_local_corpus_e2e.py`, `backend/tests/test_review_nrc_aps_gate_reports.py`, and `project6.ps1`
 
 ## Program State Summary
 
-- Done now on `main`: 25 merged milestones from Phase 1A feeder-ledger foundation through the landed APS validate-only-gates continuation freeze and its docs/progress sync
-- Current focus: the open bounded validate-only gate-report refresh lane on PR `#138` beyond the now-landed validate-only-gates freeze
-- Candidate next consumers: the `validate_only_gates` family choice is already landed on current `main`; the active continuation is the open bounded validate-only gate-report refresh lane and broader widening remains later
+- Done now on `main`: 26 merged milestones from Phase 1A feeder-ledger foundation through the landed APS validate-only gate-report refresh lane beyond the validate-only-gates continuation freeze
+- Current focus: no open PR remains inside this bounded Layer 3 / APS packet; any further continuation would require a fresh read-only decision on whether to widen beyond the landed generic `validate_only_gates` gate-report boundary
+- Candidate next consumers: the `validate_only_gates` family choice is already fully landed on current `main` through the bounded gate-report refresh lane; any further validate-only continuation would widen into the still-deferred dedicated validate-only family-specific report-ref/runtime surfaces
 - Deferred but not active: 8 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Status
@@ -107,7 +107,7 @@ As of `2026-04-21`:
 | APS deterministic challenge review-packet continuation freeze | merged | `20_GATED_APS_REVIEW_PACKET_FREEZE.md` | `#132` | Landed read-only freeze selects `deterministic_challenge_review_packet` as the next deterministic continuation beyond the landed deterministic challenge handoff; later write-enabled review-packet handoff and validate-only expansion remain later |
 | APS deterministic challenge review-packet handoff | merged | `20_GATED_APS_REVIEW_PACKET_FREEZE.md` | `#134` | Landed bounded handoff lane is rooted in `layer3_aps_deterministic_challenge_review_packet_handoff.py` and `test_layer3_aps_deterministic_challenge_review_packet_handoff.py`, with narrow adjacent hardening in `nrc_aps_deterministic_challenge_review_packet_gate.py`; validate-only gates remain later |
 | APS validate-only-gates continuation freeze | merged | `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` | `#136`, `#137` | Landed read-only freeze on current `main` from PR `#136`, plus its docs/progress sync from PR `#137`, selects `validate_only_gates` as the next verification continuation beyond the landed deterministic challenge review-packet handoff while making explicit that current `main` still relies on generic gate-report surfaces rather than a dedicated validate-only runtime family |
-| APS validate-only gate-report refresh lane | open | `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` | `#138` | Open bounded validate-only lane is rooted in `review_nrc_aps_gate_reports.py`, `nrc_aps_refresh_review_gate_reports.py`, `run_nrc_aps_local_corpus_e2e.py`, `test_review_nrc_aps_gate_reports.py`, and `project6.ps1`; it refreshes one adopted review runtime's `gate_reports` plus `summary.gate_results` without promotion, retrieval cutover, route/UI, runtime DB, schema, or dedicated validate-only runtime-family widening |
+| APS validate-only gate-report refresh lane | merged | `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` | `#138` | Landed bounded validate-only lane is rooted in `review_nrc_aps_gate_reports.py`, `nrc_aps_refresh_review_gate_reports.py`, `run_nrc_aps_local_corpus_e2e.py`, `test_review_nrc_aps_gate_reports.py`, and `project6.ps1`; it refreshes one adopted review runtime's `gate_reports` plus `summary.gate_results` without promotion, retrieval cutover, route/UI, runtime DB, schema, or dedicated validate-only runtime-family widening |
 
 ## What Is Complete
 
@@ -139,18 +139,20 @@ flowchart LR
     U --> V["APS deterministic-challenge handoff"]
     V --> W["APS deterministic challenge review-packet freeze"]
     W --> X["APS deterministic challenge review-packet handoff"]
+    X --> Y["APS validate-only-gates freeze"]
+    Y --> Z["APS validate-only gate-report refresh"]
 
     classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
     classDef merged2 fill:#d8f5d0,stroke:#2f6b2f,color:#111;
     classDef merged3 fill:#d8f5d0,stroke:#2f6b2f,color:#111;
     class A,B,C,D,E,F,G,H,I,J,K,L,M,N merged;
     class O merged2;
-    class P,Q,R,S,T,U,V,W,X merged3;
+    class P,Q,R,S,T,U,V,W,X,Y,Z merged3;
 ```
 
 ## Next Required Decision
 
-The immediate required move is now to land the open bounded validate-only gate-report refresh lane on PR `#138` beyond the now-landed `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze and the now-landed `deterministic_challenge_review_packet` handoff boundary.
+The immediate required move is no longer to land PR `#138`; that bounded validate-only gate-report refresh lane is now landed on current `main`. Any further continuation from this boundary should start with a fresh read-only decision on whether to admit a dedicated validate-only family-specific report-ref/runtime family or to stop at the landed generic gate-report boundary.
 
 Current bounded selection state:
 - selected first consumer on current `main`: `evidence_report_export_package`
@@ -171,7 +173,8 @@ Current bounded selection state:
 - landed post-PR134 docs/progress sync: PR `#135`
 - landed read-only continuation freeze on current `main`: PR `#136` for `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 - landed post-PR136 docs/progress sync on current `main`: PR `#137`
-- current open continuation target: bounded validate-only gate-report refresh lane on PR `#138`
+- no open continuation target remains inside this bounded packet after PR `#138` landed
+- next planned decision if continuation resumes: whether to freeze a dedicated validate-only family-specific report-ref/runtime lane beyond the landed generic gate-report boundary
 
 Hard rule:
 - do not skip directly to validate-only gates before the bounded deterministic challenge review-packet chain is settled and landed
@@ -182,14 +185,15 @@ The textual section above remains primary if Mermaid rendering is unavailable.
 ```mermaid
 flowchart LR
     A["Current main after review-packet handoff landing"] --> B["Landed validate-only gates freeze"]
-    B --> C["Open validate-only gate report refresh lane (PR #138)"]
+    B --> C["Landed validate-only gate report refresh lane (PR #138)"]
+    C --> D["Planned decision: dedicated validate-only family or stop"]
 
     classDef done fill:#d8f5d0,stroke:#2f6b2f,color:#111;
     classDef next fill:#fff4e6,stroke:#b8860b,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
 
-    class A,B done;
-    class C next;
+    class A,B,C done;
+    class D next;
 ```
 
 ## Deferred Scope
@@ -247,4 +251,4 @@ Refresh this board against:
 - `backend/app/services/review_nrc_aps_tree.py`
 - `backend/app/services/connectors_sciencebase.py`
 - `project6.ps1`
-- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, `#106`, `#107`, `#108`, `#109`, `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, and `#136`
+- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, `#106`, `#107`, `#108`, `#109`, `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, `#136`, `#137`, and `#138`
