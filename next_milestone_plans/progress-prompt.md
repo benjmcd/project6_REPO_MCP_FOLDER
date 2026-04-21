@@ -75,11 +75,11 @@ Current repo-side facts to preserve:
 - current `main` now also includes the post-PR128 docs/progress sync from PR `#129`
 - current `main` now also includes the bounded deterministic challenge handoff implementation slice from PR `#130`, rooted in `backend/app/services/layer3_aps_deterministic_challenge_artifact_handoff.py`, `backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py`, and `backend/tests/test_layer3_aps_deterministic_challenge_artifact_handoff.py`
 - current `main` now also includes the post-PR130 docs/progress sync from PR `#131`
-- current branch now carries open PR `#132` for the read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze selecting `deterministic_challenge_review_packet` as the next deterministic continuation beyond the now-landed deterministic challenge handoff
-- the immediate required move is now to review and merge open PR `#132`, not to restate the already-landed challenge handoff lane
-- `deterministic_challenge_review_packet` is now the current open current-focus choice; validate-only gates remain later and must not be collapsed into the same state
+- current `main` now also includes the landed read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze from PR `#132`, selecting `deterministic_challenge_review_packet` as the next deterministic continuation beyond the now-landed deterministic challenge handoff
+- the immediate required move is now to open the bounded deterministic challenge review-packet handoff lane, not to restate the already-landed challenge handoff or skip straight to validate-only gates
+- `deterministic_challenge_review_packet` is now the current planned current-focus choice; validate-only gates remain later and must not be collapsed into the same state
 
-When rebuilding from a checkout that matches current `main` after PR `#130` is merged:
+When rebuilding from a checkout that matches current `main` after PR `#132` is merged:
 - show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
 - show the exact-run gate-hardening follow-up as already landed on `main`
 - show the landed package-derived-context freeze as completed on `main`
@@ -91,13 +91,9 @@ When rebuilding from a checkout that matches current `main` after PR `#130` is m
 - show the read-only deterministic continuation freeze, rooted in `deterministic_insight_artifact`, as `merged`
 - show the read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze as `merged`
 - show the bounded deterministic challenge handoff as `merged`
-- show the next deterministic challenge review-packet freeze as `planned`
+- show the read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze as `merged`
+- show the next deterministic challenge review-packet handoff as `planned`
 - do not collapse later deterministic steps into the same state as that next planned freeze or its later handoff lane
-
-When rebuilding from a branch checkout that carries the current deterministic challenge review-packet freeze after a PR exists:
-- show the bounded deterministic challenge handoff as `merged`
-- show the read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze as `open`
-- attach PR `#132` as the current open freeze lane
 - keep `validate_only_gates` later
 
 Also update the scheduled refresh task so it no longer:

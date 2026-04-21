@@ -57,7 +57,7 @@ And to the carried-forward Gate D APS deterministic-insight continuation freeze 
 And to the carried-forward Gate D APS deterministic-challenge continuation freeze packet now landed on current `main` for the bounded next deterministic continuation beyond the landed deterministic-insight boundary:
 - `next_milestone_plans/Layer3_planning_docs/19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md`
 
-And to the carried-forward Gate D APS review-packet continuation freeze packet now open on PR `#132` for the bounded next deterministic continuation beyond the landed deterministic-challenge boundary:
+And to the carried-forward Gate D APS review-packet continuation freeze packet now landed on current `main` for the bounded next deterministic continuation beyond the landed deterministic-challenge boundary:
 - `next_milestone_plans/Layer3_planning_docs/20_GATED_APS_REVIEW_PACKET_FREEZE.md`
 
 This README is operational and navigational.
