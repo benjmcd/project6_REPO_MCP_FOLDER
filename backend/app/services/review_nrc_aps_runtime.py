@@ -232,6 +232,54 @@ def resolve_runtime_storage_dir(review_root: Path, summary: dict[str, Any]) -> P
     return None
 
 
+def _explicit_binding(review_root: Path, run_id: str) -> ReviewRuntimeBinding:
+    resolved_root = review_root.resolve()
+    if not resolved_root.exists() or not resolved_root.is_dir():
+        raise FileNotFoundError(f"Review root does not exist: {resolved_root}")
+
+    summary = load_summary(resolved_root)
+    summary_run_id = str(summary.get("run_id") or "").strip()
+    if str(summary.get("schema_id") or "").strip() != "aps.local_corpus_e2e_summary.v1":
+        raise ValueError(f"Review root summary is not aps.local_corpus_e2e_summary.v1: {resolved_root}")
+    if not summary_run_id:
+        raise ValueError(f"Review root summary is missing run_id: {resolved_root}")
+    if summary_run_id != run_id:
+        raise ValueError(f"Review root run_id {summary_run_id} does not match requested run_id {run_id}")
+
+    database_path = resolve_runtime_database_path(resolved_root, summary)
+    if database_path is None:
+        raise FileNotFoundError(f"Review runtime database is missing for run {run_id}: {resolved_root}")
+    storage_dir = resolve_runtime_storage_dir(resolved_root, summary)
+    if storage_dir is None:
+        raise FileNotFoundError(f"Review runtime storage dir is missing for run {run_id}: {resolved_root}")
+
+    return ReviewRuntimeBinding(
+        run_id=run_id,
+        review_root=resolved_root,
+        summary=summary,
+        database_path=database_path.resolve(),
+        storage_dir=storage_dir.resolve(),
+    )
+
+
+def resolve_runtime_binding_for_run(*, run_id: str, review_root: str | Path | None = None) -> ReviewRuntimeBinding:
+    requested_run_id = str(run_id or "").strip()
+    if not requested_run_id:
+        raise ValueError("run_id is required")
+
+    if review_root is not None and str(review_root).strip():
+        return _explicit_binding(Path(str(review_root).strip()), requested_run_id)
+
+    binding = find_runtime_binding_for_run(requested_run_id)
+    if binding is None:
+        raise FileNotFoundError(f"Review root not found for run {requested_run_id}")
+    if binding.database_path is None:
+        raise FileNotFoundError(f"Review runtime database is missing for run {requested_run_id}")
+    if binding.storage_dir is None:
+        raise FileNotFoundError(f"Review runtime storage dir is missing for run {requested_run_id}")
+    return binding
+
+
 def _binding_sort_key(summary: dict[str, Any]) -> tuple[datetime, str]:
     run_detail = summary.get("run_detail") or {}
     for candidate in (

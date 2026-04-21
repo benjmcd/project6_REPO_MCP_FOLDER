@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from app.services import nrc_aps_validate_only_gates as validate_only_runtime
+from app.services import nrc_aps_validate_only_gates_contract as validate_only_contract
 from app.schemas.review_nrc_aps import (
     NrcApsReviewPipelineLayoutEntryOut,
     NrcApsReviewPipelineLayoutOut,
@@ -10,6 +12,20 @@ from app.schemas.review_nrc_aps import (
     NrcApsReviewTreeOut,
 )
 from app.services.review_nrc_aps_runtime import generate_tree_id, load_summary, normalize_path
+
+
+def _validate_only_artifact_entry(run_id: str, review_root: Path) -> tuple[str, str | None]:
+    try:
+        _payload, artifact_path = validate_only_runtime.load_persisted_validate_only_gates_artifact(
+            run_id=run_id,
+            review_root=review_root,
+        )
+    except validate_only_runtime.ValidateOnlyGatesError as exc:
+        if exc.code == validate_only_contract.APS_RUNTIME_FAILURE_ARTIFACT_NOT_FOUND:
+            return "not_persisted", None
+        return f"mismatch:{exc.code}", None
+
+    return "present", normalize_path(review_root, artifact_path)
 
 
 def build_tree_node(root: Path, current_path: Path, file_node_map: dict[str, list[str]]) -> NrcApsReviewTreeNodeOut:
@@ -43,6 +59,7 @@ def build_pipeline_layout(run_id: str, review_root: Path) -> NrcApsReviewPipelin
     summary = load_summary(review_root)
     source_root = str(summary.get("source_root") or "")
     runtime_root = str(review_root)
+    validate_only_state, validate_only_path = _validate_only_artifact_entry(run_id, review_root)
 
     def entry(label: str, value: str, path: str | None = None) -> NrcApsReviewPipelineLayoutEntryOut:
         return NrcApsReviewPipelineLayoutEntryOut(label=label, value=value, path=path)
@@ -69,6 +86,7 @@ def build_pipeline_layout(run_id: str, review_root: Path) -> NrcApsReviewPipelin
         entry("Selected branches", f"{len(summary.get('selected_branch_rows') or [])} branches"),
         entry("Downstream families", f"{len(summary.get('downstream_artifacts') or {})} families"),
         entry("Gate results", f"{len(summary.get('gate_results') or {})} checks"),
+        entry("Validate-only artifact", validate_only_state, validate_only_path),
     ]
 
     return NrcApsReviewPipelineLayoutOut(
