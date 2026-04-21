@@ -51,7 +51,7 @@ def _fallback_run_id_from_artifact_name(name: str) -> str | None:
 
 
 def _artifact_scope_for_run_id(run_id: str) -> str:
-    return f"run_{challenge._safe_scope_token(run_id)}"
+    return contract.safe_path_token(f"run_{challenge._safe_scope_token(run_id)}")
 
 
 def _payload_matches_requested_run(payload: dict[str, Any], run_id: str, owner_run_id: str | None) -> bool:

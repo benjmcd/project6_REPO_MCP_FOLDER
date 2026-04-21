@@ -320,6 +320,37 @@ def test_deterministic_challenge_gate_filters_scope_collisions_by_exact_owner_ru
         settings.storage_dir = original_storage_dir
 
 
+def test_deterministic_challenge_gate_handles_non_ascii_run_ids(
+    tmp_path: Path,
+) -> None:
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        run_id = "run/aps deterministic challenge:\u00e901"
+        failure_path = _write_failure_artifact(
+            owner_run_id=run_id,
+            source_locator="non-ascii-owner-run",
+            error_code="non_ascii_owner_run",
+        )
+
+        discovered_runs = aps_challenge_gate_module._load_candidate_runs(run_ids=None, limit=10)
+        assert [str(row["run_id"]) for row in discovered_runs] == [run_id]
+
+        gate_report = aps_challenge_gate_module.validate_deterministic_challenge_artifact_gate(
+            run_ids=[run_id],
+            limit=1,
+            report_path=tmp_path / "deterministic_challenge_gate_non_ascii.json",
+            require_runs=True,
+        )
+
+        assert gate_report["passed"] is True
+        assert gate_report["checked_runs"] == 1
+        assert gate_report["checks"][0]["failure_refs"] == [str(failure_path)]
+        assert gate_report["checks"][0]["reasons"] == []
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
 def test_deterministic_challenge_gate_fails_closed_on_malformed_scoped_artifact(
     tmp_path: Path,
 ) -> None:
