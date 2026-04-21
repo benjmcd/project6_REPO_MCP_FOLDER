@@ -36,10 +36,12 @@ The UI must not override authority.
   - current focus
   - candidate next consumers
   - deferred scope
+  - deferred activation criteria
 - Mermaid is optional enhancement only.
 - If Mermaid fails, there must be no loss of meaning.
 - If the artifact cannot read refreshed files at render time, the scheduled refresh must rewrite the artifact itself from current manifest data.
 - Do not present candidate next consumers as though they are already the current implementation lane.
+- Do not present a deferred item as a candidate or current focus unless its manifest-declared activation conditions are satisfied.
 
 ## Required Visual Sections
 
@@ -86,6 +88,17 @@ Render these sections in this order:
    - render deferred items as a muted grouped grid or list
    - make it visually obvious these are not in the active lane
 
+7. `Deferred Scope Activation Criteria`
+   - render `deferred_scope_activation_contract`
+   - include the contract purpose and distinction rules before the itemized entries
+   - for each deferred item, render:
+     - current boundary
+     - candidate-next admission requirements
+     - current-focus admission requirements
+     - primary authority surfaces
+   - keep this section below `Deferred Scope`
+   - visually differentiate candidate-next gates from current-focus gates so the stricter threshold for active-lane admission is obvious
+
 ## Visual State Mapping
 
 Use these colors consistently:
@@ -121,6 +134,7 @@ The user should understand this in under ten seconds:
 2. what the current focus is
 3. what the next bounded consumer candidates are
 4. what is still explicitly deferred
+5. what each deferred item would need before it could stop being deferred
 
 If a renderer has to choose between visual flourish and certainty, prefer certainty.
 
