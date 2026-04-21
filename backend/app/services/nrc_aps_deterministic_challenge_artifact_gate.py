@@ -24,38 +24,91 @@ def _read_json(path: Path) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
+def _owner_run_id_from_artifact_payload(payload: dict[str, Any]) -> str | None:
+    source_insight = dict(payload.get("source_deterministic_insight_artifact") or {})
+    owner_run_id = str(source_insight.get("owner_run_id") or "").strip()
+    return owner_run_id or None
+
+
+def _owner_run_id_from_failure_payload(payload: dict[str, Any]) -> str | None:
+    owner_run_id = str(payload.get("owner_run_id") or "").strip()
+    return owner_run_id or None
+
+
+def _fallback_run_id_from_artifact_name(name: str) -> str | None:
+    token = "_aps_deterministic_challenge_artifact_v1.json"
+    failure_token = "_aps_deterministic_challenge_artifact_failure_v1.json"
+    suffix = token if name.endswith(token) else failure_token if name.endswith(failure_token) else None
+    if suffix is None:
+        return None
+    stem = name[: -len(suffix)]
+    if not stem.startswith("run_"):
+        return None
+    parts = stem.split("_")
+    if len(parts) < 3:
+        return None
+    return "_".join(parts[1:-1]).strip() or None
+
+
+def _artifact_scope_for_run_id(run_id: str) -> str:
+    return f"run_{challenge._safe_scope_token(run_id)}"
+
+
+def _payload_matches_requested_run(payload: dict[str, Any], run_id: str, owner_run_id: str | None) -> bool:
+    if not payload:
+        return True
+    return owner_run_id is None or owner_run_id == run_id
+
+
 def _load_candidate_runs(*, run_ids: list[str] | None, limit: int | None) -> list[dict[str, Any]]:
     reports_dir = Path(settings.connector_reports_dir)
     reports_dir.mkdir(parents=True, exist_ok=True)
     normalized_run_ids = [str(item).strip() for item in (run_ids or []) if str(item).strip()]
 
-    def _extract_run_id(name: str) -> str | None:
-        token = "_aps_deterministic_challenge_artifact_v1.json"
-        failure_token = "_aps_deterministic_challenge_artifact_failure_v1.json"
-        suffix = token if name.endswith(token) else failure_token if name.endswith(failure_token) else None
-        if suffix is None:
-            return None
-        stem = name[: -len(suffix)]
-        if not stem.startswith("run_"):
-            return None
-        parts = stem.split("_")
-        if len(parts) < 3:
-            return None
-        return "_".join(parts[1:-1]).strip() or None
-
     if normalized_run_ids:
         return [{"run_id": run_id} for run_id in normalized_run_ids]
 
-    candidates: dict[str, float] = {}
+    payload_candidates: dict[str, float] = {}
+    payload_scopes: set[str] = set()
+    fallback_candidates: dict[str, float] = {}
     for path in reports_dir.glob("*_aps_deterministic_challenge_artifact_v1.json"):
-        run_id = _extract_run_id(path.name)
+        payload = _read_json(path)
+        run_id = _owner_run_id_from_artifact_payload(payload)
         if run_id:
-            candidates[run_id] = max(float(path.stat().st_mtime), float(candidates.get(run_id, 0.0)))
+            payload_candidates[run_id] = max(
+                float(path.stat().st_mtime),
+                float(payload_candidates.get(run_id, 0.0)),
+            )
+            payload_scopes.add(_artifact_scope_for_run_id(run_id))
+            continue
+        fallback_run_id = _fallback_run_id_from_artifact_name(path.name)
+        if fallback_run_id:
+            fallback_candidates[fallback_run_id] = max(
+                float(path.stat().st_mtime),
+                float(fallback_candidates.get(fallback_run_id, 0.0)),
+            )
     for path in reports_dir.glob("*_aps_deterministic_challenge_artifact_failure_v1.json"):
-        run_id = _extract_run_id(path.name)
+        payload = _read_json(path)
+        run_id = _owner_run_id_from_failure_payload(payload)
         if run_id:
-            candidates[run_id] = max(float(path.stat().st_mtime), float(candidates.get(run_id, 0.0)))
+            payload_candidates[run_id] = max(
+                float(path.stat().st_mtime),
+                float(payload_candidates.get(run_id, 0.0)),
+            )
+            payload_scopes.add(_artifact_scope_for_run_id(run_id))
+            continue
+        fallback_run_id = _fallback_run_id_from_artifact_name(path.name)
+        if fallback_run_id:
+            fallback_candidates[fallback_run_id] = max(
+                float(path.stat().st_mtime),
+                float(fallback_candidates.get(fallback_run_id, 0.0)),
+            )
 
+    candidates = dict(payload_candidates)
+    for fallback_run_id, mtime in fallback_candidates.items():
+        if _artifact_scope_for_run_id(fallback_run_id) in payload_scopes:
+            continue
+        candidates[fallback_run_id] = max(float(mtime), float(candidates.get(fallback_run_id, 0.0)))
     ordered = sorted(candidates.items(), key=lambda item: item[1], reverse=True)
     if limit and limit > 0:
         ordered = ordered[: int(limit)]
@@ -88,25 +141,48 @@ def validate_deterministic_challenge_artifact_gate(*, run_ids: list[str] | None 
         run_id = str(row.get("run_id") or "").strip()
         if not run_id:
             continue
-        scope = f"run_{run_id}"
-        artifact_paths = sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_deterministic_challenge_artifact_v1.json"))
-        failure_paths = sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_deterministic_challenge_artifact_failure_v1.json"))
+        scope = _artifact_scope_for_run_id(run_id)
+        matched_artifacts: list[tuple[Path, dict[str, Any]]] = []
+        for artifact_path in sorted(
+            Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_deterministic_challenge_artifact_v1.json")
+        ):
+            artifact_payload = _read_json(artifact_path)
+            if not _payload_matches_requested_run(
+                artifact_payload,
+                run_id,
+                _owner_run_id_from_artifact_payload(artifact_payload),
+            ):
+                continue
+            matched_artifacts.append((artifact_path, artifact_payload))
+        matched_failures: list[tuple[Path, dict[str, Any]]] = []
+        for failure_path in sorted(
+            Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_deterministic_challenge_artifact_failure_v1.json")
+        ):
+            failure_payload = _read_json(failure_path)
+            if not _payload_matches_requested_run(
+                failure_payload,
+                run_id,
+                _owner_run_id_from_failure_payload(failure_payload),
+            ):
+                continue
+            matched_failures.append((failure_path, failure_payload))
         reasons: list[str] = []
-        if not artifact_paths and not failure_paths:
+        if not matched_artifacts and not matched_failures:
             reasons.append(contract.APS_GATE_FAILURE_MISSING_REF)
 
-        for failure_path in failure_paths:
-            failure_payload = _read_json(failure_path)
+        for failure_path, failure_payload in matched_failures:
+            if not failure_path.exists():
+                reasons.append(contract.APS_GATE_FAILURE_UNRESOLVABLE_REF)
+                continue
             if not failure_payload:
                 reasons.append(contract.APS_GATE_FAILURE_FAILURE_SCHEMA)
                 continue
             _validate_failure_payload_schema(failure_payload, reasons)
 
-        for artifact_path in artifact_paths:
+        for artifact_path, artifact_payload in matched_artifacts:
             if not artifact_path.exists():
                 reasons.append(contract.APS_GATE_FAILURE_UNRESOLVABLE_REF)
                 continue
-            artifact_payload = _read_json(artifact_path)
             if not artifact_payload:
                 reasons.append(contract.APS_GATE_FAILURE_ARTIFACT_SCHEMA)
                 continue
@@ -157,8 +233,8 @@ def validate_deterministic_challenge_artifact_gate(*, run_ids: list[str] | None 
         checks.append(
             {
                 "run_id": run_id,
-                "deterministic_challenge_artifact_refs": [str(path) for path in artifact_paths],
-                "failure_refs": [str(path) for path in failure_paths],
+                "deterministic_challenge_artifact_refs": [str(path) for path, _payload in matched_artifacts],
+                "failure_refs": [str(path) for path, _payload in matched_failures],
                 "passed": len(deduped) == 0,
                 "reasons": deduped,
             }
