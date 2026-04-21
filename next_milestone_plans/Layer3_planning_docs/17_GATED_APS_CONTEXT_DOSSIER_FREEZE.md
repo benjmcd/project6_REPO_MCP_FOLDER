@@ -31,7 +31,7 @@ Current-state note:
 - current `main` now includes the bounded export-derived `aps_context_packet_handoff` slice rooted in `backend/app/services/layer3_aps_context_packet_handoff.py` and `backend/tests/test_layer3_aps_context_packet_handoff.py`
 - current `main` now also includes the bounded package-derived `aps_context_packet_package_handoff` slice rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py` and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
 - current `main` also now includes the malformed-scoped fail-closed APS gate hardening follow-up in `backend/app/services/nrc_aps_evidence_report_export_gate.py`, `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`, `backend/app/services/nrc_aps_context_packet_gate.py`, `backend/tests/test_layer3_aps_report_export_handoff.py`, `backend/tests/test_layer3_aps_report_export_package_handoff.py`, and `backend/tests/test_layer3_aps_context_packet_handoff.py`
-- current branch/workspace now carries this read-only freeze selecting `context_dossier` as the next later shared APS family after the landed package-context milestone, while preserving paired export-derived context packets as the live dossier input branch
+- current `main` now includes this read-only freeze selecting `context_dossier` as the next later shared APS family after the landed package-context milestone, while preserving paired export-derived context packets as the live dossier input branch
 
 Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md|artifact|current governing freeze for the landed package-context boundary`; `R|backend/app/services/layer3_aps_context_packet_handoff.py|Current bounded export-derived context handoff owner surface on current \`main\`|29-276`; `R|backend/tests/test_layer3_aps_context_packet_handoff.py|Current bounded export-derived context handoff proof surface on current \`main\`|124-302`; `R|backend/app/services/layer3_aps_context_packet_package_handoff.py|Current bounded package-derived context handoff owner surface on current \`main\`|31-277`; `R|backend/tests/test_layer3_aps_context_packet_package_handoff.py|Current bounded package-derived context handoff proof surface on current \`main\`|38-230`; `R|backend/app/services/nrc_aps_context_packet_contract.py|Live context-packet contract still separates export and package source families|22-29;145-148;181-183`; `R|backend/app/services/nrc_aps_context_dossier_contract.py|Live context-dossier family requires two compatible source packets and one source_family|18-32;237-282`; `R|backend/app/services/nrc_aps_context_dossier.py|Live context-dossier runtime resolves persisted context packets and persists dossier artifacts without changing the source-family compatibility rule|427-520`; `R|backend/app/services/nrc_aps_context_dossier_gate.py|Live dossier gate validates persisted context-packet refs and preserved compatible source-family derivation|85-213`; `R|backend/app/services/review_nrc_aps_graph.py|Live downstream shared graph routes context_dossier from paired export-derived context packets and leaves deterministic after dossier|33-37;63-68;104-109`
 
@@ -151,15 +151,15 @@ Stop and reopen the freeze instead of improvising if a later continuation requir
 ## Concise readiness judgment
 
 Readiness judgment:
-- This freeze is the governing carried-forward contract in the current branch/workspace for the bounded choice of `context_dossier` as the next later shared APS family after the landed package-context milestone.
+- This freeze is the governing carried-forward contract on current `main` for the bounded choice of `context_dossier` as the next later shared APS family after the landed package-context milestone.
 
 Reason:
 - current `main` already proves both the export-derived and package-derived context branches
 - repo truth still routes dossier from paired export-derived context packets
 - the live dossier contract still enforces a single compatible source-family posture across all source packets
-- this branch-local freeze therefore settles the next later shared-family choice narrowly without admitting implementation
+- this landed read-only freeze therefore settles the next later shared-family choice narrowly without admitting implementation
 
-What still remains intentionally deferred after this branch-local freeze:
+What still remains intentionally deferred after this landed read-only freeze:
 - `context_dossier` implementation
 - deterministic and review-packet fan-out
 - the future workbench route family
