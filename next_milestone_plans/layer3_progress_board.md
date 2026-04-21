@@ -33,12 +33,12 @@ As of `2026-04-20`:
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the landed export-package first shared-consumer freeze from PR `#106` and its docs-only closeout from PR `#107`
-- current branch also carries the bounded export-package handoff implementation slice rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`; it is not yet landed on current `main`
+- current branch and open PR `#109` also carry the bounded export-package handoff implementation slice rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`; it is not yet landed on current `main`
 
 ## Program State Summary
 
 - Done now on `main`: 13 merged milestones from Phase 1A feeder-ledger foundation through the APS export-package first shared-consumer freeze
-- Current focus: review and land the current branch's bounded export-package handoff implementation lane
+- Current focus: review and land open PR `#109`, the bounded export-package handoff implementation lane
 - Candidate next consumers: active branch implementation target `evidence_report_export_package`; later-but-not-first `context_dossier`
 - Deferred but not active: 12 explicitly deferred scope items remain out until later freezes admit them
 
@@ -59,7 +59,7 @@ As of `2026-04-20`:
 | APS export-derived context-packet | merged | `13_GATED_APS_CONTEXT_FREEZE.md` | `#97`, `#98`, `#99` | Direct export-derived context path |
 | APS same-run multisource admission | merged | `14_GATED_APS_MULTISOURCE_FREEZE.md` | `#100`, `#101`, `#102` | Implementation and its docs closeout are both landed on `main` |
 | APS export-package first shared-consumer freeze | merged | `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` | `#106` | Landed read-only freeze selects `evidence_report_export_package` as the first downstream shared APS consumer on `main` |
-| APS evidence-report-export-package handoff | branch_only | `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` | branch-local (no PR yet) | Current branch carries the bounded implementation slice rooted in `layer3_aps_report_export_package_handoff.py` |
+| APS evidence-report-export-package handoff | open | `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` | `#109` | Open PR carries the bounded implementation slice rooted in `layer3_aps_report_export_package_handoff.py` |
 
 ## What Is Complete
 
@@ -80,7 +80,7 @@ flowchart LR
     J --> K["APS context-packet handoff"]
     K --> L["APS multisource admission"]
     L --> M["APS export-package first shared-consumer freeze"]
-    M --> N["APS export-package handoff (current branch)"]
+    M --> N["APS export-package handoff (open PR #109)"]
 
     classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
     classDef branch fill:#e7edff,stroke:#4b63b3,color:#111;
@@ -91,22 +91,22 @@ flowchart LR
 
 ## Next Required Decision
 
-The immediate required move is now to review and land the current branch's bounded write-enabled export-package handoff lane.
+The immediate required move is now to review and land open PR `#109`, the bounded write-enabled export-package handoff lane.
 The selection freeze that chose which downstream shared APS family consumes the landed multisource seam first is already landed on `main`.
 
 Current bounded selection state:
 - selected first consumer on current `main`: `evidence_report_export_package`
-- current branch implementation target: `aps_evidence_report_export_package_handoff`
+- open implementation lane: `aps_evidence_report_export_package_handoff` on PR `#109`
 - later but not first: `context_dossier`
 
 Hard rule:
-- do not skip directly to package-derived context or dossier implementation before the current branch's bounded export-package handoff lane lands cleanly
+- do not skip directly to package-derived context or dossier implementation before open PR `#109` lands cleanly
 
 The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current `main` after export-package freeze landing"] --> B["Current branch export-package handoff lane"]
+    A["Current `main` after export-package freeze landing"] --> B["Open PR #109 export-package handoff lane"]
     B --> C["Land bounded export-package handoff lane"]
     C --> D["Evidence-report-export package (selected first consumer)"]
     C --> E["Context dossier (later, not first)"]
@@ -146,4 +146,4 @@ Refresh this board against:
 - `next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
 - `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
 - `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md`
-- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, `#106`, `#107`, and `#108`
+- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, `#106`, `#107`, `#108`, and `#109`

@@ -81,14 +81,14 @@
   "current_snapshot": {
     "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, and the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107.",
     "open_followups": [],
-    "branch_state_summary": "Current branch also carries the bounded APS export-package handoff implementation slice rooted in backend/app/services/layer3_aps_report_export_package_handoff.py and backend/tests/test_layer3_aps_report_export_package_handoff.py; it is not yet landed on current `main`."
+    "branch_state_summary": "Current branch and open PR #109 carry the bounded APS export-package handoff implementation slice rooted in backend/app/services/layer3_aps_report_export_package_handoff.py and backend/tests/test_layer3_aps_report_export_package_handoff.py; it is not yet landed on current `main`."
   },
   "summary_counts": {
     "merged_milestones": 13,
-    "open_milestones": 0,
+    "open_milestones": 1,
     "planned_decisions": 0,
     "deferred_scope_items": 12,
-    "branch_only_milestones": 1
+    "branch_only_milestones": 0
   },
   "artifact_render_contract": {
     "purpose": "Provide a stable view contract for external render surfaces so they do not have to infer layout from prose or depend on runtime JavaScript or Mermaid for critical meaning.",
@@ -647,7 +647,7 @@
     {
       "milestone_id": "aps-export-package-handoff",
       "title": "APS evidence-report-export-package handoff",
-      "main_state": "branch_only",
+      "main_state": "open",
       "governing_docs": [
         "next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md"
       ],
@@ -655,7 +655,15 @@
         "backend/app/services/layer3_aps_report_export_package_handoff.py",
         "backend/tests/test_layer3_aps_report_export_package_handoff.py"
       ],
-      "events": [],
+      "events": [
+        {
+          "pr": 109,
+          "kind": "implementation",
+          "state": "open",
+          "title": "feat(layer3): add export-package handoff slice",
+          "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/109"
+        }
+      ],
       "notes": [
         "Current branch carries the bounded export-package handoff implementation slice governed by the landed first shared-consumer freeze.",
         "This slice is branch-only and not yet landed on current `main`."
@@ -665,13 +673,13 @@
   "next_required_decision": {
     "decision_id": "aps-export-package-handoff",
     "title": "Review and land the bounded export-package handoff implementation lane",
-    "state": "branch_only",
-    "why_now": "Current `main` already includes the landed export-package first shared-consumer freeze from PR #106 and its docs-only closeout from PR #107. Current branch now carries the bounded handoff implementation slice governed by that freeze.",
+    "state": "open",
+    "why_now": "Current `main` already includes the landed export-package first shared-consumer freeze from PR #106 and its docs-only closeout from PR #107. Open PR #109 now carries the bounded handoff implementation slice governed by that freeze.",
     "candidate_families": [
       {
         "id": "evidence-report-export-package",
-        "state": "active-branch-implementation",
-        "reason": "Selected on current `main` as the first downstream shared APS consumer, and it is now the current branch's bounded implementation target."
+        "state": "open-implementation-pr",
+        "reason": "Selected on current `main` as the first downstream shared APS consumer, and PR #109 now carries the bounded implementation slice."
       },
       {
         "id": "context-dossier",
@@ -734,7 +742,8 @@
       102,
       106,
       107,
-      108
+      108,
+      109
     ],
     "repo_paths": [
       "docs/nrc_adams/nrc_aps_status_handoff.md",
