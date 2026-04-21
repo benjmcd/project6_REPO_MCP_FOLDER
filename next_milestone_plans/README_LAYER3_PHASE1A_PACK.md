@@ -54,8 +54,11 @@ And to the carried-forward Gate D APS context-dossier continuation freeze packet
 And to the carried-forward Gate D APS deterministic-insight continuation freeze packet now landed on current `main` for the bounded first deterministic continuation beyond the landed dossier boundary:
 - `next_milestone_plans/Layer3_planning_docs/18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md`
 
-And to the carried-forward Gate D APS deterministic-challenge continuation freeze packet currently carried on this branch for the bounded next deterministic continuation beyond the landed deterministic-insight boundary:
+And to the carried-forward Gate D APS deterministic-challenge continuation freeze packet now landed on current `main` for the bounded next deterministic continuation beyond the landed deterministic-insight boundary:
 - `next_milestone_plans/Layer3_planning_docs/19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md`
+
+And to the branch-local Gate D APS review-packet continuation freeze packet for the bounded next deterministic continuation beyond the landed deterministic-challenge boundary:
+- `next_milestone_plans/Layer3_planning_docs/20_GATED_APS_REVIEW_PACKET_FREEZE.md`
 
 This README is operational and navigational.
 If it conflicts with the stronger frozen control docs, the control docs govern.
