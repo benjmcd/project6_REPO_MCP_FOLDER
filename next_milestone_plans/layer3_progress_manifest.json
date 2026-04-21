@@ -2,17 +2,18 @@
   "artifact_version": 1,
   "artifact_name": "layer3-progress-artifact",
   "artifact_scope": {
-    "lane_name": "Layer3 APS bounded continuation chain through the export-package handoff landing",
+    "lane_name": "Layer3 APS bounded continuation chain through the export-package handoff landing plus the branch-local package-context freeze",
     "repo": "benjmcd/project6_REPO_MCP_FOLDER",
     "authoritative_remote": "project6-origin/main",
-    "authoritative_local_checkout_rule": "Use any clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match current `main`.",
-    "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3-progress-main",
+    "authoritative_local_checkout_rule": "Use a clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match the artifact state being refreshed. Prefer current `main` for merged repo truth, and use the active branch checkout when the manifest declares a branch-only milestone.",
+    "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3-ctxpkt-freeze",
     "snapshot_date": "2026-04-20",
-    "snapshot_base_main_commit": "5107ad15bef43b9aef913f163641bdc28f7b88d8",
-    "snapshot_base_main_commit_source": "git rev-parse project6-origin/main at last artifact refresh before this artifact pack itself merged",
+    "snapshot_base_main_commit": "0f90e6fb8f4613212d4e25fc6e9953ec687909cc",
+    "snapshot_base_main_commit_source": "git rev-parse project6-origin/main at the artifact refresh that produced this snapshot",
     "notes": [
       "This artifact is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.",
-      "This artifact now includes the landed first shared-consumer freeze that selects the first downstream shared APS consumer beyond multisource on current `main`, plus the now-landed bounded export-package handoff implementation slice governed by that freeze.",
+      "This artifact now includes the landed first shared-consumer freeze that selects the first downstream shared APS consumer beyond multisource on current `main`, plus the now-landed bounded export-package handoff implementation slice governed by that freeze and the exact-run export/export-package gate-hardening follow-up on current `main`.",
+      "This branch also carries a read-only package-derived-context freeze that is not yet landed on current `main`.",
       "The dirty root checkout is not authority for this artifact.",
       "GitHub PR state is authority for open vs merged status.",
       "Do not treat snapshot_base_main_commit as a self-updating claim about whatever commit main is on after this artifact file itself merges."
@@ -55,6 +56,8 @@
         "next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md",
         "next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md",
         "next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md",
+        "backend/app/services/nrc_aps_evidence_report_export_gate.py",
+        "backend/app/services/nrc_aps_evidence_report_export_package_gate.py",
         "backend/app/services/layer3_aps_report_export_package_handoff.py",
         "backend/tests/test_layer3_aps_report_export_package_handoff.py"
       ]
@@ -79,16 +82,16 @@
     "branch_only": "The step exists in a branch but is not merged into main."
   },
   "current_snapshot": {
-    "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107, and the landed export-package handoff implementation slice from PR #109.",
+    "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107, the bounded export-package handoff implementation slice from PR #109 plus its docs closeout from PR #110, and the exact-run export/export-package gate-hardening follow-up from PR #111 and PR #112.",
     "open_followups": [],
-    "branch_state_summary": "No active branch-only milestone is currently tracked in this artifact scope."
+    "branch_state_summary": "Current branch carries the read-only `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` freeze selecting package-derived context packet as the next later shared APS family beyond the landed export-package boundary."
   },
   "summary_counts": {
     "merged_milestones": 14,
     "open_milestones": 0,
-    "planned_decisions": 1,
+    "planned_decisions": 0,
     "deferred_scope_items": 12,
-    "branch_only_milestones": 0
+    "branch_only_milestones": 1
   },
   "artifact_render_contract": {
     "purpose": "Provide a stable view contract for external render surfaces so they do not have to infer layout from prose or depend on runtime JavaScript or Mermaid for critical meaning.",
@@ -667,36 +670,56 @@
       ],
       "notes": [
         "The bounded export-package handoff implementation slice is now landed on current `main` under the governing first shared-consumer freeze.",
+        "Current `main` also includes the post-landing docs closeout from PR #110 and the exact-run export/export-package gate-hardening follow-up from PR #111 and PR #112.",
         "This landed slice still does not admit package-derived context, context-dossier, deterministic, route/UI, runtime DB, or schema widening."
+      ]
+    },
+    {
+      "milestone_id": "aps-package-context-freeze",
+      "title": "APS package-derived context continuation freeze",
+      "main_state": "branch_only",
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md"
+      ],
+      "owner_surfaces": [
+        "next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md"
+      ],
+      "events": [],
+      "unlocks": [
+        "aps-package-context-handoff"
+      ],
+      "notes": [
+        "Current branch carries a read-only freeze selecting package-derived context packet as the next later shared APS family beyond the landed export-package boundary.",
+        "This freeze is not yet landed on current `main` and must not be treated as implementation proof."
       ]
     }
   ],
   "next_required_decision": {
     "decision_id": "aps-package-context-freeze",
-    "title": "Freeze the package-derived context-packet continuation from the landed export-package boundary",
-    "state": "planned",
-    "why_now": "Current `main` now includes the bounded export-package handoff implementation slice from PR #109. The live downstream graph places package-derived context packet directly after export_package, while context_dossier remains later and must not skip that boundary.",
+    "title": "Land the branch-local package-derived context continuation freeze on `main`",
+    "state": "branch_only",
+    "why_now": "Current `main` now includes the bounded export-package handoff implementation slice plus the exact-run gate-hardening follow-up. Current branch already carries the read-only freeze that selects package-derived context packet as the next later shared APS family beyond that landed boundary, so the immediate move is to land that freeze on `main` before any implementation opens.",
     "candidate_families": [
       {
         "id": "context-packet-package",
-        "state": "planned-next-freeze",
-        "reason": "Live graph places package-derived context packet directly after export_package, so this is the next later shared-family boundary to settle."
+        "state": "branch_only",
+        "reason": "Live graph places package-derived context packet directly after export_package, and current branch already carries the read-only freeze that settles this as the next later shared-family boundary."
       },
       {
         "id": "context-dossier",
-        "state": "later-not-first",
+        "state": "deferred",
         "reason": "Remains later because it still depends on paired export-derived context packets rather than the newly landed export-package handoff boundary."
       }
     ],
     "must_not_skip": [
-      "Do not skip directly to package-derived context implementation before a fresh freeze admits it.",
+      "Do not skip directly to package-derived context implementation before the branch-local freeze lands cleanly on `main`.",
       "Do not open a direct context-dossier implementation lane before the package-derived-context boundary is settled.",
       "Do not widen route/UI, runtime DB, or schema as part of the next package-derived-context freeze lane."
     ]
   },
   "deferred_scope": [
-    "direct edits to the shared evidence-report-export-package contract/runtime surfaces beyond the landed bounded export-package handoff lane",
-    "package-derived context-packet implementation before a fresh freeze admits it",
+    "direct edits to the shared evidence-report-export-package contract/runtime surfaces beyond the landed bounded export-package handoff and exact-run gate-hardening lane",
+    "package-derived context-packet implementation before the branch-local freeze lands on current `main`",
     "context dossier implementation",
     "deterministic insight artifact continuation",
     "deterministic challenge artifact continuation",
@@ -744,7 +767,10 @@
       106,
       107,
       108,
-      109
+      109,
+      110,
+      111,
+      112
     ],
     "repo_paths": [
       "docs/nrc_adams/nrc_aps_status_handoff.md",
@@ -763,6 +789,9 @@
       "next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md",
+      "backend/app/services/nrc_aps_evidence_report_export_gate.py",
+      "backend/app/services/nrc_aps_evidence_report_export_package_gate.py",
       "next_milestone_plans/progress-ui-spec.md",
       "backend/app/services/layer3_aps_report_export_package_handoff.py",
       "backend/tests/test_layer3_aps_report_export_package_handoff.py",
