@@ -43,6 +43,12 @@ def _artifact_scope_for_run_id(run_id: str) -> str:
     return f"run_{nrc_aps_context_packet._safe_scope_token(run_id)}"
 
 
+def _payload_matches_requested_run(payload: dict[str, Any], run_id: str, owner_run_id: str | None) -> bool:
+    if not payload:
+        return True
+    return owner_run_id is None or owner_run_id == run_id
+
+
 def _load_candidate_runs(*, run_ids: list[str] | None, limit: int | None) -> list[dict[str, Any]]:
     reports_dir = Path(settings.connector_reports_dir)
     reports_dir.mkdir(parents=True, exist_ok=True)
@@ -136,13 +142,21 @@ def validate_context_packet_gate(
         matched_context_packets: list[tuple[Path, dict[str, Any]]] = []
         for context_packet_path in sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_context_packet_v1.json")):
             context_payload = _read_json(context_packet_path)
-            if _owner_run_id_from_context_payload(context_payload) != run_id:
+            if not _payload_matches_requested_run(
+                context_payload,
+                run_id,
+                _owner_run_id_from_context_payload(context_payload),
+            ):
                 continue
             matched_context_packets.append((context_packet_path, context_payload))
         matched_failures: list[tuple[Path, dict[str, Any]]] = []
         for failure_path in sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_context_packet_failure_v1.json")):
             failure_payload = _read_json(failure_path)
-            if _owner_run_id_from_failure_payload(failure_payload) != run_id:
+            if not _payload_matches_requested_run(
+                failure_payload,
+                run_id,
+                _owner_run_id_from_failure_payload(failure_payload),
+            ):
                 continue
             matched_failures.append((failure_path, failure_payload))
         reasons: list[str] = []
