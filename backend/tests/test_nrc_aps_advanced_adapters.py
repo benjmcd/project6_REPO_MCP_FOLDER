@@ -7,6 +7,8 @@ import os
 import tempfile
 
 # Mock optional heavy adapter dependencies before any server-side imports.
+_ORIGINAL_CAMELOT_MODULE = sys.modules.get('camelot')
+_ORIGINAL_PADDLEOCR_MODULE = sys.modules.get('paddleocr')
 mock_camelot = MagicMock()
 sys.modules['camelot'] = mock_camelot
 mock_paddle = MagicMock()
@@ -20,6 +22,18 @@ from app.services import nrc_aps_content_index
 from app.services import nrc_aps_ocr as _real_nrc_aps_ocr
 from app.services import nrc_aps_settings
 import fitz
+
+
+def tearDownModule():
+    if _ORIGINAL_CAMELOT_MODULE is not None:
+        sys.modules['camelot'] = _ORIGINAL_CAMELOT_MODULE
+    else:
+        sys.modules.pop('camelot', None)
+    if _ORIGINAL_PADDLEOCR_MODULE is not None:
+        sys.modules['paddleocr'] = _ORIGINAL_PADDLEOCR_MODULE
+    else:
+        sys.modules.pop('paddleocr', None)
+    nrc_aps_advanced_ocr._PADDLE_ENGINE = None
 
 class TestAdvancedAdapters(unittest.TestCase):
 
