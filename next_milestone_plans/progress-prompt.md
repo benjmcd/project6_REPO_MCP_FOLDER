@@ -6,7 +6,9 @@ Use this prompt when rebuilding the Claude Cowork artifact or its scheduled refr
 Rebuild the Layer3 APS progress artifact so it reflects current repo truth and renders reliably.
 
 Use the clean repo checkout that contains the current artifact files and matches the artifact state you want to refresh.
-For this packet, the current seed checkout is:
+Do not assume `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main` is still the correct checkout just because it was used earlier in this packet's history.
+Prefer a clean checkout that actually contains the current packet files and matches current `project6-origin/main` when refreshing merged-main truth.
+If you need the older authored seed as historical context only, it was:
 `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main`
 
 Read these files in this order:
