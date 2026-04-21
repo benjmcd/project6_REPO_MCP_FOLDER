@@ -168,7 +168,7 @@ Ordered next-decision note:
 - `nrc_aps_frontend_ui_operator_validation_guide.md`
   - broader end-to-end manual validation guide after startup and compare prep succeed
 - `nrc_aps_runtime_db_reconceptualization_and_next_steps.md`
-  - current-state reconceptualization of the NRC APS runtime DB model and the recommended next implementation order
+  - current-state reconceptualization of the NRC APS runtime DB model plus the remaining transparency and data-path follow-up ideas after the now-landed runtime-centric shift
 
 ## Archived Bake-Off Material
 
