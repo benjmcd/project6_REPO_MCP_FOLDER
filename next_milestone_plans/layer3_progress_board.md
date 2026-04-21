@@ -60,13 +60,13 @@ As of `2026-04-21`:
 - current `main` now also includes the post-PR130 docs/progress sync from PR `#131`
 - current `main` now also includes the landed read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze from PR `#132`, selecting `deterministic_challenge_review_packet` as the next deterministic continuation beyond the now-landed deterministic challenge handoff
 - current `main` now also includes the post-PR132 docs/progress sync from PR `#133`
-- current open PR `#134` now contains the bounded deterministic challenge review-packet handoff slice rooted in `backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py`, plus the narrow review-packet gate hardening in `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`
+- current `main` now also includes the bounded deterministic challenge review-packet handoff slice from PR `#134`, rooted in `backend/app/services/layer3_aps_deterministic_challenge_review_packet_handoff.py`, plus the narrow review-packet gate hardening in `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`
 
 ## Program State Summary
 
-- Done now on `main`: 23 merged milestones from Phase 1A feeder-ledger foundation through the landed APS deterministic challenge review-packet continuation freeze
-- Current focus: the open bounded deterministic challenge review-packet handoff lane on PR `#134`
-- Candidate next consumers: `deterministic_challenge_review_packet` is the current open handoff focus on PR `#134`; validate-only gates remain later
+- Done now on `main`: 24 merged milestones from Phase 1A feeder-ledger foundation through the landed APS deterministic challenge review-packet handoff
+- Current focus: the planned read-only validate-only-gates freeze beyond the now-landed deterministic challenge review-packet handoff
+- Candidate next consumers: `validate_only_gates` is the current planned freeze focus beyond the now-landed review-packet handoff; broader widening remains later
 - Deferred but not active: 8 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Status
@@ -96,7 +96,7 @@ As of `2026-04-21`:
 | APS deterministic-challenge continuation freeze | merged | `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` | `#128` | Landed read-only freeze on current `main` selects `deterministic_challenge_artifact` as the next deterministic continuation beyond the landed deterministic-insight boundary without yet admitting implementation, challenge-review-packet fan-out, validate-only expansion, route/UI widening, runtime DB writes, or schema widening |
 | APS deterministic-challenge handoff | merged | `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` | `#130` | Landed bounded implementation slice rooted in `layer3_aps_deterministic_challenge_artifact_handoff.py`, plus narrow deterministic challenge gate hardening in `nrc_aps_deterministic_challenge_artifact_gate.py`; one persisted deterministic insight artifact remains the immediate source boundary and later deterministic fan-out stays out |
 | APS deterministic challenge review-packet continuation freeze | merged | `20_GATED_APS_REVIEW_PACKET_FREEZE.md` | `#132` | Landed read-only freeze selects `deterministic_challenge_review_packet` as the next deterministic continuation beyond the landed deterministic challenge handoff; later write-enabled review-packet handoff and validate-only expansion remain later |
-| APS deterministic challenge review-packet handoff | open | `20_GATED_APS_REVIEW_PACKET_FREEZE.md` | `#134` | Open bounded handoff lane is rooted in `layer3_aps_deterministic_challenge_review_packet_handoff.py` and `test_layer3_aps_deterministic_challenge_review_packet_handoff.py`, with narrow adjacent hardening in `nrc_aps_deterministic_challenge_review_packet_gate.py`; it still keeps validate-only expansion later |
+| APS deterministic challenge review-packet handoff | merged | `20_GATED_APS_REVIEW_PACKET_FREEZE.md` | `#134` | Landed bounded handoff lane is rooted in `layer3_aps_deterministic_challenge_review_packet_handoff.py` and `test_layer3_aps_deterministic_challenge_review_packet_handoff.py`, with narrow adjacent hardening in `nrc_aps_deterministic_challenge_review_packet_gate.py`; validate-only gates remain later |
 
 ## What Is Complete
 
@@ -137,7 +137,7 @@ flowchart LR
 
 ## Next Required Decision
 
-The immediate required move is now to review and merge the open bounded write-enabled `deterministic_challenge_review_packet` handoff lane on PR `#134` beyond the now-landed `deterministic_challenge_artifact` boundary and the now-landed review-packet freeze.
+The immediate required move is now to open the read-only `validate_only_gates` freeze beyond the now-landed `deterministic_challenge_review_packet` handoff boundary.
 
 Current bounded selection state:
 - selected first consumer on current `main`: `evidence_report_export_package`
@@ -154,7 +154,7 @@ Current bounded selection state:
 - landed next freeze target: PR `#128` for `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md`
 - landed bounded handoff implementation: PR `#130` for `deterministic_challenge_artifact`
 - landed next freeze target: PR `#132` for `20_GATED_APS_REVIEW_PACKET_FREEZE.md`
-- current open continuation target: PR `#134` for `deterministic_challenge_review_packet` handoff
+- current planned continuation target: `validate_only_gates` freeze
 - later after that: `validate_only_gates`
 
 Hard rule:
@@ -165,18 +165,16 @@ The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current main after deterministic challenge handoff landing"] --> B["Landed deterministic challenge review-packet freeze"]
-    B --> C["Open deterministic challenge review-packet handoff (PR #134)"]
-    C --> D["Validate-only gates"]
+    A["Current main after review-packet handoff landing"] --> B["Planned validate-only gates freeze"]
+    B --> C["Later validate-only gate execution or refresh"]
 
     classDef done fill:#d8f5d0,stroke:#2f6b2f,color:#111;
-    classDef open fill:#ffd8a8,stroke:#a85f00,color:#111;
+    classDef planned fill:#fff1bf,stroke:#9a6b00,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
 
     class A done;
-    class B done;
-    class C open;
-    class C,D future;
+    class B planned;
+    class B,C future;
 ```
 
 ## Deferred Scope
