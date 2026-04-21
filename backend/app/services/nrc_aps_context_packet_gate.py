@@ -28,35 +28,36 @@ def _read_json(path: Path) -> dict[str, Any]:
     return payload
 
 
+def _owner_run_id_from_context_payload(payload: dict[str, Any]) -> str | None:
+    source_descriptor = dict(payload.get("source_descriptor") or {})
+    owner_run_id = str(source_descriptor.get("owner_run_id") or "").strip()
+    return owner_run_id or None
+
+
+def _owner_run_id_from_failure_payload(payload: dict[str, Any]) -> str | None:
+    owner_run_id = str(payload.get("owner_run_id") or "").strip()
+    return owner_run_id or None
+
+
+def _artifact_scope_for_run_id(run_id: str) -> str:
+    return f"run_{nrc_aps_context_packet._safe_scope_token(run_id)}"
+
+
 def _load_candidate_runs(*, run_ids: list[str] | None, limit: int | None) -> list[dict[str, Any]]:
     reports_dir = Path(settings.connector_reports_dir)
     reports_dir.mkdir(parents=True, exist_ok=True)
     normalized_run_ids = [str(item).strip() for item in (run_ids or []) if str(item).strip()]
-
-    def _extract_run_id(name: str) -> str | None:
-        token = "_aps_context_packet_v1.json"
-        failure_token = "_aps_context_packet_failure_v1.json"
-        suffix = token if name.endswith(token) else failure_token if name.endswith(failure_token) else None
-        if suffix is None:
-            return None
-        stem = name[: -len(suffix)]
-        if not stem.startswith("run_"):
-            return None
-        parts = stem.split("_")
-        if len(parts) < 3:
-            return None
-        return "_".join(parts[1:-1]).strip() or None
 
     if normalized_run_ids:
         return [{"run_id": run_id} for run_id in normalized_run_ids]
 
     candidates: dict[str, float] = {}
     for path in reports_dir.glob("*_aps_context_packet_v1.json"):
-        run_id = _extract_run_id(path.name)
+        run_id = _owner_run_id_from_context_payload(_read_json(path))
         if run_id:
             candidates[run_id] = max(float(path.stat().st_mtime), float(candidates.get(run_id, 0.0)))
     for path in reports_dir.glob("*_aps_context_packet_failure_v1.json"):
-        run_id = _extract_run_id(path.name)
+        run_id = _owner_run_id_from_failure_payload(_read_json(path))
         if run_id:
             candidates[run_id] = max(float(path.stat().st_mtime), float(candidates.get(run_id, 0.0)))
 
@@ -131,25 +132,33 @@ def validate_context_packet_gate(
         run_id = str(row.get("run_id") or "").strip()
         if not run_id:
             continue
-        scope = f"run_{run_id}"
-        context_packet_paths = sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_context_packet_v1.json"))
-        failure_paths = sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_context_packet_failure_v1.json"))
+        scope = _artifact_scope_for_run_id(run_id)
+        matched_context_packets: list[tuple[Path, dict[str, Any]]] = []
+        for context_packet_path in sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_context_packet_v1.json")):
+            context_payload = _read_json(context_packet_path)
+            if _owner_run_id_from_context_payload(context_payload) != run_id:
+                continue
+            matched_context_packets.append((context_packet_path, context_payload))
+        matched_failures: list[tuple[Path, dict[str, Any]]] = []
+        for failure_path in sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_context_packet_failure_v1.json")):
+            failure_payload = _read_json(failure_path)
+            if _owner_run_id_from_failure_payload(failure_payload) != run_id:
+                continue
+            matched_failures.append((failure_path, failure_payload))
         reasons: list[str] = []
-        if not context_packet_paths and not failure_paths:
+        if not matched_context_packets and not matched_failures:
             reasons.append(contract.APS_GATE_FAILURE_MISSING_REF)
 
-        for failure_path in failure_paths:
-            failure_payload = _read_json(failure_path)
+        for failure_path, failure_payload in matched_failures:
             if not failure_payload:
                 reasons.append(contract.APS_GATE_FAILURE_FAILURE_SCHEMA)
                 continue
             _validate_failure_payload_schema(failure_payload, reasons)
 
-        for context_packet_path in context_packet_paths:
+        for context_packet_path, context_payload in matched_context_packets:
             if not context_packet_path.exists():
                 reasons.append(contract.APS_GATE_FAILURE_UNRESOLVABLE_REF)
                 continue
-            context_payload = _read_json(context_packet_path)
             if not context_payload:
                 reasons.append(contract.APS_GATE_FAILURE_CONTEXT_SCHEMA)
                 continue
@@ -196,8 +205,8 @@ def validate_context_packet_gate(
         checks.append(
             {
                 "run_id": run_id,
-                "context_packet_refs": [str(path) for path in context_packet_paths],
-                "failure_refs": [str(path) for path in failure_paths],
+                "context_packet_refs": [str(path) for path, _payload in matched_context_packets],
+                "failure_refs": [str(path) for path, _payload in matched_failures],
                 "passed": len(deduped) == 0,
                 "reasons": deduped,
             }

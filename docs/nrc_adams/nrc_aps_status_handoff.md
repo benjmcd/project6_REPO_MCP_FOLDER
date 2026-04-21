@@ -1,7 +1,7 @@
 # NRC ADAMS APS Status Handoff
 
 ## 1. Purpose and truth model
-This document is the canonical live-repo status surface for the NRC ADAMS APS stack. Last updated April 20, 2026 to reflect the bounded Layer 3 APS export-derived context-packet, multisource, and evidence-report-export-package handoff slices now landed on current `main`, the landed export-package first shared-consumer freeze on current `main`, the narrow export/export-package gate hardening now landed on current `main`, and the package-derived-context freeze now landed on current `main`, on top of the earlier bounded evidence-bundle, citation-pack, evidence-report, and evidence-report-export handoff slices landed on current `main`, the Deterministic Challenge Review Packet v1 closeout, and the narrow Tier2 diagnostics-write closeout.
+This document is the canonical live-repo status surface for the NRC ADAMS APS stack. Last updated April 20, 2026 to reflect the bounded Layer 3 APS export-derived context-packet, multisource, and evidence-report-export-package handoff slices now landed on current `main`, the landed export-package first shared-consumer freeze on current `main`, the narrow export/export-package gate hardening now landed on current `main`, the package-derived-context freeze now landed on current `main`, and the current branch-local package-derived context handoff slice plus narrow context-packet gate hardening now present in this workspace but not yet landed on current `main`, on top of the earlier bounded evidence-bundle, citation-pack, evidence-report, and evidence-report-export handoff slices landed on current `main`, the Deterministic Challenge Review Packet v1 closeout, and the narrow Tier2 diagnostics-write closeout.
 
 Repo truth precedence used here:
 1. live code, tests, scripts, migrations, and repo-contained proof artifacts
@@ -28,6 +28,7 @@ Status wording used below:
 | Bounded Layer 3 APS export-derived context-packet handoff consumer | Present as one additive Layer 3 consumer of the live APS context-packet family; emits `aps_context_packet_handoff` from already-packaged terminal Layer 3 sessions using direct export-derived sources without route/UI widening, runtime DB writes, or APS contract/gate widening. | `backend/app/services/layer3_aps_context_packet_handoff.py`, `backend/tests/test_layer3_aps_context_packet_handoff.py`, `next_milestone_plans/Layer3_planning_docs/13_GATED_APS_CONTEXT_FREEZE.md` |
 | Bounded Layer 3 APS same-run multisource admission consumer | Present as one additive Layer 3 consumer of the live shared-source admission boundary; emits `aps_multisource_admission` from already-packaged terminal Layer 3 sessions using existing durable same-run grouping seams without route/UI widening, runtime DB writes, or schema widening. | `backend/app/services/layer3_aps_multisource.py`, `backend/tests/test_layer3_aps_multisource.py`, `next_milestone_plans/Layer3_planning_docs/14_GATED_APS_MULTISOURCE_FREEZE.md` |
 | Bounded Layer 3 APS evidence-report-export-package handoff consumer | Present as one additive Layer 3 consumer of the live APS evidence-report-export-package family; emits `aps_evidence_report_export_package_handoff` from `aps_multisource_admission` plus matched persisted same-run exports while keeping route/UI, runtime DB, and schema widening out. Current `main` also now includes the narrow export/export-package gate hardening that filters exact embedded run identity under sanitized filename-scope collisions. | `backend/app/services/layer3_aps_report_export_package_handoff.py`, `backend/app/services/nrc_aps_evidence_report_export_gate.py`, `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`, `backend/tests/test_layer3_aps_report_export_handoff.py`, `backend/tests/test_layer3_aps_report_export_package_handoff.py`, `next_milestone_plans/Layer3_planning_docs/15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` |
+| Bounded Layer 3 APS package-derived context handoff consumer | Present in the current branch/workspace only as one additive Layer 3 consumer of the live APS context-packet package family; emits `aps_context_packet_package_handoff` from `aps_evidence_report_export_package_handoff` while keeping route/UI, runtime DB, and schema widening out. The current branch/workspace also now includes the narrow context-packet gate hardening that filters exact owner-run identity under sanitized filename-scope collisions. This branch-local slice is not yet landed on current `main`. | `backend/app/services/layer3_aps_context_packet_package_handoff.py`, `backend/app/services/nrc_aps_context_packet_gate.py`, `backend/tests/test_layer3_aps_context_packet_handoff.py`, `backend/tests/test_layer3_aps_context_packet_package_handoff.py`, `next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` |
 | API/schema wiring for lower-layer controls | Present | `backend/app/schemas/api.py`, `backend/app/api/router.py` |
 | Lower-layer fixture corpus | Present and manifest-driven | `tests/fixtures/nrc_aps_docs/v1/manifest.json`, `tests/support_nrc_aps_doc_corpus.py`, `tests/test_nrc_aps_document_corpus.py`, plus live text/PDF/corrupt/truncated fixtures including `tests/fixtures/nrc_aps_docs/v1/ML17123A319.pdf` |
 | Fresh lower-layer proof runner | Present and current | `tools/run_nrc_aps_document_processing_proof.py`, `project6.ps1 -Action prove-nrc-aps-document-processing`, and `tests/reports/nrc_aps_document_processing_proof_report.json` |
@@ -192,8 +193,9 @@ The next safe continuation is:
 2. treat the bounded Layer 3 APS export-derived context-packet, multisource, and export-package handoff slices plus the landed `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` selection freeze and the merged narrow export/export-package gate hardening as the current additive ceiling extensions on current `main`, not as permission to widen directly into later APS families
 3. current `main` now includes the read-only `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` package-derived-context freeze from the landed export-package boundary; it settles the next later shared-family choice without admitting implementation by itself
 4. treat the landed `aps_evidence_report_export_package_handoff` slice, the merged exact-run gate hardening, and the now-landed `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` freeze as proof that the bounded export-package boundary and the next later shared-family choice are now on current `main`, but not as permission to skip straight into `context_dossier`, deterministic, or route/UI widening
-5. open the bounded write-enabled package-derived context handoff lane from the landed `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` freeze before any broader package-context or later-family widening
-6. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes, and treat `.\project6.ps1 -Action validate-nrc-aps-content-index` plus `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` as the validate-only refresh path for those checked-in reports
+5. current branch/workspace now also carries the bounded package-derived context handoff implementation slice rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py` and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`, plus the narrow context-packet gate hardening in `backend/app/services/nrc_aps_context_packet_gate.py` and `backend/tests/test_layer3_aps_context_packet_handoff.py`, but that branch-local slice is not yet landed on current `main`
+6. land that bounded branch-local package-derived context handoff slice before any broader package-context, `context_dossier`, deterministic, or route/UI widening
+7. rerun `.\project6.ps1 -Action prove-nrc-aps-document-processing -RequireOcr` when OCR/corpus behavior changes, and treat `.\project6.ps1 -Action validate-nrc-aps-content-index` plus `.\project6.ps1 -Action validate-nrc-aps-evidence-bundle` as the validate-only refresh path for those checked-in reports
 
 ## 9. Primary live authority surfaces for this workstream
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
@@ -208,6 +210,8 @@ The next safe continuation is:
 - `backend/app/services/layer3_aps_context_packet_handoff.py`
 - `backend/app/services/layer3_aps_multisource.py`
 - `backend/app/services/layer3_aps_report_export_package_handoff.py`
+- `backend/app/services/layer3_aps_context_packet_package_handoff.py`
+- `backend/app/services/nrc_aps_context_packet_gate.py`
 - `backend/tests/test_layer3_session_entry.py`
 - `backend/tests/test_layer3_typing_entry.py`
 - `backend/tests/test_layer3_package_entry.py`
@@ -218,6 +222,7 @@ The next safe continuation is:
 - `backend/tests/test_layer3_aps_context_packet_handoff.py`
 - `backend/tests/test_layer3_aps_multisource.py`
 - `backend/tests/test_layer3_aps_report_export_package_handoff.py`
+- `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
 - `next_milestone_plans/Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/12_GATED_APS_REPORT_EXPORT_FREEZE.md`
