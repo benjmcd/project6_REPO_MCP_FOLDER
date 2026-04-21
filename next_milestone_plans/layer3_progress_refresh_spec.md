@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the current branch-local package-derived-context freeze that follows that landed boundary.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary.
 
 ## Canonical Inputs
 
@@ -78,7 +78,7 @@ Discovery rule:
 - if multiple clean checkouts exist, prefer the one matching current `main` for merged repo truth, or the one carrying the declared branch-only milestone when the manifest says a branch-only step is in scope
 
 Seed path used when this artifact pack was authored:
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-ctxpkt-freeze`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-post113-docsync`
 
 Do not treat the dirty root checkout at:
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER`
@@ -111,7 +111,7 @@ Any external live artifact or dashboard must also obey:
    - and the now-landed first shared-consumer freeze that sits immediately beyond that landed chain, currently `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md`
    - and the merged exact-run gate-hardening owner surfaces rooted in `backend/app/services/nrc_aps_evidence_report_export_gate.py` and `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`
    - and, when present in the current checkout, the bounded export-package handoff owner surfaces rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
-   - and, when present in the current checkout, the branch-local package-derived-context freeze currently rooted in `next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
+   - and the now-landed package-derived-context freeze rooted in `next_milestone_plans/Layer3_planning_docs/16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
 7. For each milestone:
    - update PR state from GitHub
    - update merge commit from GitHub
@@ -162,7 +162,7 @@ The current bounded chain on `main` ends at:
 - APS export-package handoff implementation slice plus the exact-run export/export-package gate-hardening follow-up
 
 The next required move beyond current `main` is:
-- review and merge open PR `#113` for the package-derived context-packet freeze
+- open the bounded package-derived context handoff lane from the landed freeze
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`
@@ -176,7 +176,7 @@ The later but not first consumer remains:
 These are not both still open candidates in the same way:
 - `evidence_report_export_package` is selected on current `main`
 - `aps_evidence_report_export_package_handoff` is now landed on current `main`
-- package-derived context packet is the next later shared-family freeze target after that landed handoff boundary, and open PR `#113` now carries that read-only freeze
+- package-derived context packet is the next write-enabled shared-family target after that landed handoff boundary, and current `main` now already includes the read-only freeze that settled that choice
 - `context_dossier` remains later and not first
 
 ## Schedule Guidance
