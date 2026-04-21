@@ -23,15 +23,14 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.services.review_nrc_aps_gate_reports import run_gate_reports_for_run
-
-
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
+
+from app.services.review_nrc_aps_gate_reports import run_gate_reports_for_run  # noqa: E402
 
 
 SUMMARY_SCHEMA_ID = "aps.local_corpus_e2e_summary.v1"
