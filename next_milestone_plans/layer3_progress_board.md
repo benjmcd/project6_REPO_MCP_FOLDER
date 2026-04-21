@@ -207,6 +207,7 @@ Primary authority surfaces:
 - `backend/app/services/nrc_aps_evidence_report_export_gate.py`
 - `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`
 - `backend/tests/test_layer3_aps_report_export_package_handoff.py`
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
 
 ### 2. Package-derived context implementation beyond the landed bounded handoff slice
 
@@ -230,6 +231,7 @@ Primary authority surfaces:
 - `backend/app/services/layer3_aps_context_packet_package_handoff.py`
 - `backend/app/services/nrc_aps_context_packet_gate.py`
 - `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
 
 ### 3. Validate-only top-chain expansion
 
