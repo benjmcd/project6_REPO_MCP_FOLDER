@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the current branch's bounded export-package handoff implementation lane governed by that freeze.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze.
 
 ## Canonical Inputs
 
@@ -103,7 +103,7 @@ Any external live artifact or dashboard must also obey:
    - `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
    - `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `14_GATED_APS_MULTISOURCE_FREEZE.md`
    - and the now-landed first shared-consumer freeze that sits immediately beyond that landed chain, currently `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md`
-   - and, when present in the current checkout, the current branch's bounded export-package handoff owner surfaces rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
+  - and, when present in the current checkout, the bounded export-package handoff owner surfaces rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
 7. For each milestone:
    - update PR state from GitHub
    - update merge commit from GitHub
@@ -151,18 +151,15 @@ Do not:
 ## Current Program Boundary
 
 The current bounded chain on `main` ends at:
-- APS export-package first shared-consumer freeze
-
-The current active branch continuation beyond that landed chain is:
-- the bounded export-package handoff implementation lane governed by the now-landed freeze
+- APS export-package handoff implementation slice
 
 The next required move beyond current `main` is:
-- review and land open PR `#109`, the bounded export-package handoff implementation lane
+- freeze the package-derived context-packet continuation from the landed export-package boundary
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`
 
-The current branch's bounded implementation target is:
+The landed bounded implementation target on current `main` is:
 - `aps_evidence_report_export_package_handoff`
 
 The later but not first consumer remains:
@@ -170,8 +167,8 @@ The later but not first consumer remains:
 
 These are not both still open candidates in the same way:
 - `evidence_report_export_package` is selected on current `main`
-- before a GitHub PR exists, the bounded export-package handoff lane can exist as `branch_only`
-- once GitHub confirms the PR exists, that same lane should move to `open`
+- `aps_evidence_report_export_package_handoff` is now landed on current `main`
+- package-derived context packet is the next later shared-family freeze target after that landed handoff boundary
 - `context_dossier` remains later and not first
 
 ## Schedule Guidance
