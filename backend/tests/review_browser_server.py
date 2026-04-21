@@ -12,9 +12,10 @@ from fastapi.staticfiles import StaticFiles
 
 os.environ["DB_INIT_MODE"] = "none"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.api import review_nrc_aps
-from tests.review_browser_fixture import build_review_browser_fixture, install_review_browser_patches
+from review_browser_fixture import build_review_browser_fixture, install_review_browser_patches
 
 
 def create_app() -> FastAPI:
