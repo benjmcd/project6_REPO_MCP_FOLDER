@@ -85,7 +85,7 @@ Current repo-side facts to preserve:
 - current `main` now also includes the post-PR138 docs/progress sync from PR `#139`
 - the immediate required move is no longer to flip validate-only-gates, the bounded gate-report refresh lane, or `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` from branch/open state into merged state; all are now landed on current `main`, and the next bounded move if continuation resumes is the write-enabled dedicated validate-only family-specific report-ref/runtime lane selected by that landed freeze
 - `validate_only_gates` is now the landed current-main family choice through the bounded gate-report refresh lane from PR `#138`
-- if you are rebuilding from the branch that carries open docs-only closeout PR `#141`, keep that follow-up distinct from the already-landed PR `#140` freeze; current focus on that branch is the open docs-only closeout, not the underlying freeze itself
+- current `main` now also includes the post-PR140 docs/progress sync from PR `#141`
 
 When rebuilding from a checkout that matches current `main` after PR `#138`:
 - show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
