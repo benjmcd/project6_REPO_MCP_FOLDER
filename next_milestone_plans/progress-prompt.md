@@ -7,7 +7,7 @@ Rebuild the Layer3 APS progress artifact so it reflects current repo truth and r
 
 Use the clean repo checkout that contains the current artifact files and matches the artifact state you want to refresh.
 For this packet, the current seed checkout is:
-`C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-dins-freeze`
+`C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main`
 
 Read these files in this order:
 1. `next_milestone_plans/layer3_progress_refresh_spec.md`
@@ -68,11 +68,11 @@ Current repo-side facts to preserve:
 - current `main` also includes the post-PR121 docs/progress closeout from PR `#122`
 - current `main` also includes the post-PR122 artifact-state fix from PR `#123`
 - paired export-derived context packets remain the live dossier input branch; the landed package-derived context handoff must not be presented as dossier input proof
-- open PR `#124` now carries the read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze selecting `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary; it has not landed on current `main` yet
-- the immediate required move is now to review and land that open deterministic continuation freeze, not another docs-only restatement of the same milestone
-- `deterministic_insight_artifact` is the current open bounded current-focus choice; later deterministic steps remain later and must not be collapsed into the same state
+- current `main` now also includes the landed read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze from PR `#124`, selecting `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary
+- the immediate required move is now to open the bounded deterministic insight handoff implementation lane, not another docs-only restatement of the same milestone
+- `deterministic_insight_artifact` is the current planned bounded current-focus choice; later deterministic steps remain later and must not be collapsed into the same state
 
-When rebuilding from a checkout that matches the current open-PR state after PR `#124` is open:
+When rebuilding from a checkout that matches current `main` after PR `#124` is merged:
 - show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
 - show the exact-run gate-hardening follow-up as already landed on `main`
 - show the landed package-derived-context freeze as completed on `main`
@@ -81,7 +81,7 @@ When rebuilding from a checkout that matches the current open-PR state after PR 
 - show the bounded `context_dossier` handoff lane from PR `#121` as `merged`
 - show the post-PR121 docs/progress closeout from PR `#122` and the post-PR122 artifact-state fix from PR `#123` as already landed on `main`
 - do not present package-derived context as dossier input proof
-- show the read-only deterministic continuation freeze, rooted in `deterministic_insight_artifact`, as `open` while PR `#124` remains open
+- show the read-only deterministic continuation freeze, rooted in `deterministic_insight_artifact`, as `merged`
 - do not collapse later deterministic steps into the same state as that next freeze decision
 
 Also update the scheduled refresh task so it no longer:

@@ -33,7 +33,7 @@ Current-state note:
 - current `main` now also includes the narrow dossier-gate scope hardening in `backend/app/services/nrc_aps_context_dossier_gate.py`, and that landed lane still keeps paired export-derived context packets as dossier inputs
 - current `main` already has the live deterministic insight runtime, contract, and validate-only gate surfaces rooted in `backend/app/services/nrc_aps_deterministic_insight_artifact_contract.py`, `backend/app/services/nrc_aps_deterministic_insight_artifact.py`, and `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`
 - current `main` already has run-level report-ref registry buckets for deterministic insight, deterministic challenge, and deterministic challenge review packet in `backend/app/services/connectors_sciencebase.py`
-- current branch now also includes this read-only freeze selecting `deterministic_insight_artifact` as the exact next deterministic APS family after the landed dossier handoff; it has not landed on current `main` yet
+- current `main` now also includes this read-only freeze selecting `deterministic_insight_artifact` as the exact next deterministic APS family after the landed dossier handoff
 
 Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md|artifact|current governing freeze for the landed dossier boundary`; `R|backend/app/services/layer3_aps_context_dossier_handoff.py|Current bounded dossier handoff owner surface on current \`main\`|323-427`; `R|backend/tests/test_layer3_aps_context_dossier_handoff.py|Current bounded dossier handoff proof surface on current \`main\`|1-326`; `R|backend/app/services/review_nrc_aps_graph.py|Live downstream graph places deterministic insight immediately after context_dossier and before challenge/review packet/validate-only|37-41;65-68;84-88;106-109`; `R|backend/app/services/nrc_aps_deterministic_insight_artifact_contract.py|Live deterministic insight contract is a single-dossier deterministic rules-only family with frozen rule specs and payload builder|11-20;67-104;201-209;436-460`; `R|backend/app/services/nrc_aps_deterministic_insight_artifact.py|Live deterministic insight runtime loads one persisted dossier, derives a deterministic artifact, and persists or validates it fail-closed|60-92;374-428;491-500`; `R|backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py|Live deterministic insight gate is validate-only and recomputes the deterministic artifact from the persisted dossier|16-18;87-199`; `R|backend/app/services/connectors_sciencebase.py|Current run-level report-ref registry already reserves deterministic insight/challenge/review packet buckets|2947-2961`
 
@@ -155,7 +155,7 @@ Stop and reopen the freeze instead of improvising if a later continuation requir
 ## Concise readiness judgment
 
 Readiness judgment:
-- This branch-local read-only freeze is the governing carried-forward contract for the bounded choice of `deterministic_insight_artifact` as the next APS family after the landed dossier handoff boundary.
+- This now-landed read-only freeze on current `main` is the governing carried-forward contract for the bounded choice of `deterministic_insight_artifact` as the next APS family after the landed dossier handoff boundary.
 
 Reason:
 - current `main` already proves the bounded dossier handoff and its persisted dossier artifact boundary
@@ -163,7 +163,7 @@ Reason:
 - the live downstream graph still places deterministic insight before challenge/review-packet/validate-only
 - this read-only freeze therefore settles the next deterministic-family choice narrowly without admitting implementation
 
-What still remains intentionally deferred after this branch-local read-only freeze:
+What still remains intentionally deferred after this now-landed read-only freeze:
 - Layer 3 deterministic insight handoff implementation on current `main`
 - deterministic challenge and deterministic challenge review-packet fan-out
 - validate-only top-chain expansion
