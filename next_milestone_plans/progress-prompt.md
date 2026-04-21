@@ -64,20 +64,21 @@ Current repo-side facts to preserve:
 - current `main` also includes the post-PR116 docs/progress sync from PR `#117`
 - current `main` now also includes the landed read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze from PR `#118`, selecting `context_dossier` as the next later shared APS family after the landed package-context milestone
 - current `main` also includes the post-PR118 docs/progress closeout from PR `#120`
-- the current branch now carries the bounded `aps_context_dossier_handoff` implementation slice in open PR `#121`, rooted in `backend/app/services/layer3_aps_context_dossier_handoff.py` and `backend/tests/test_layer3_aps_context_dossier_handoff.py`, plus narrow dossier-gate scope hardening in `backend/app/services/nrc_aps_context_dossier_gate.py`
+- current `main` now includes the bounded `aps_context_dossier_handoff` implementation slice from PR `#121`, rooted in `backend/app/services/layer3_aps_context_dossier_handoff.py` and `backend/tests/test_layer3_aps_context_dossier_handoff.py`, plus narrow dossier-gate scope hardening in `backend/app/services/nrc_aps_context_dossier_gate.py`
 - paired export-derived context packets remain the live dossier input branch; the landed package-derived context handoff must not be presented as dossier input proof
-- the immediate required move is now to review and land open PR `#121`, not another freeze-selection pass
-- deterministic remains later and must not be presented as a co-equal current-focus choice with the open `context_dossier` handoff lane
+- the immediate required move is now a fresh read-only freeze for the first deterministic continuation beyond the landed dossier handoff, not another docs-only restatement of the same milestone
+- `deterministic_insight_artifact` is the next bounded current-focus choice; later deterministic steps remain later and must not be collapsed into the same state
 
-When rebuilding from a checkout that matches the current `main` state after the context-dossier freeze lands:
+When rebuilding from a checkout that matches the current `main` state after the context-dossier handoff lands:
 - show that slice as completed on `main`
 - show the exact-run gate-hardening follow-up as already landed on `main`
 - show the landed package-derived-context freeze as completed on `main`
 - show the package-derived context handoff slice as `merged`
 - show the landed `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze as `merged`
-- use the open bounded `context_dossier` handoff lane from PR `#121` as the current milestone focus beyond the landed package-context boundary
+- show the bounded `context_dossier` handoff lane from PR `#121` as `merged`
 - do not present package-derived context as dossier input proof
-- do not present deterministic as the current focus while `context_dossier` remains the open later shared-family implementation lane
+- use a fresh read-only deterministic continuation freeze, rooted in `deterministic_insight_artifact`, as the next milestone focus beyond the landed dossier boundary
+- do not collapse later deterministic steps into the same state as that next freeze decision
 
 Also update the scheduled refresh task so it no longer:
 - writes or references `current_main_commit`
