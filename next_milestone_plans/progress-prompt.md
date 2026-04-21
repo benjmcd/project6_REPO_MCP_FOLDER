@@ -83,14 +83,16 @@ Current repo-side facts to preserve:
 - current `main` now also includes the post-PR136 docs/progress sync from PR `#137`
 - current `main` now also includes the bounded validate-only gate-report refresh lane from PR `#138`, rooted in `backend/app/services/review_nrc_aps_gate_reports.py`, `tools/nrc_aps_refresh_review_gate_reports.py`, `tools/run_nrc_aps_local_corpus_e2e.py`, `backend/tests/test_review_nrc_aps_gate_reports.py`, and `project6.ps1`
 - current `main` now also includes the post-PR138 docs/progress sync from PR `#139`
-- the immediate required move is no longer to flip validate-only-gates, the bounded gate-report refresh lane, `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`, the post-PR140/post-PR141 docs/progress sync, or PR `#143` from branch/open state into merged state; all are now landed on current `main`
-- `validate_only_gates` is now the landed current-main family choice through the bounded gate-report refresh lane from PR `#138`
 - current `main` now also includes the post-PR140 docs/progress sync from PR `#141`
 - current `main` now also includes the post-PR141 docs/progress sync from PR `#142`
-- if the current checkout matches current `main` after PR `#143`, render the dedicated validate-only runtime/report-ref implementation lane as `merged`
-- if no later post-validate-only freeze exists on current `main`, render the current focus as `planned` and explicitly say that any continuation beyond the landed dedicated validate-only boundary requires a fresh read-only freeze before validate-only top-chain expansion, promotion, or retrieval cutover
+- current `main` now also includes the bounded dedicated validate-only runtime/report-ref implementation lane from PR `#143`
+- current `main` now also includes the post-PR143 docs/progress sync from PR `#144`
+- if the current checkout matches current `main` after PR `#144`, render the dedicated validate-only runtime/report-ref implementation lane as `merged`
+- if no later post-validate-only freeze exists on current `main`, render the current focus as the next freeze decision rather than as another current-main implementation lane
+- if the current checkout carries `23_GATED_APS_PROMOTION_FREEZE.md` but GitHub has not yet confirmed a PR for it, render that freeze as `branch_only`
+- if the current checkout carries `23_GATED_APS_PROMOTION_FREEZE.md`, show promotion as the selected first later APS family beyond the landed dedicated validate-only boundary, keep retrieval cutover later, and do not invent a separate repo-backed post-validate-only top-chain family
 
-When rebuilding from a checkout that matches current `main` after PR `#138`:
+When rebuilding from a checkout that matches current `main` after PR `#144`:
 - show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
 - show the exact-run gate-hardening follow-up as already landed on `main`
 - show the landed package-derived-context freeze as completed on `main`
@@ -109,7 +111,15 @@ When rebuilding from a checkout that matches current `main` after PR `#138`:
 - show the post-PR136 docs/progress closeout from PR `#137` as already landed on `main`
 - show the bounded validate-only gate-report refresh lane as `merged`
 - show the post-PR138 docs/progress closeout from PR `#139` as already landed on `main`
-- if refreshing from a checkout that matches current `main` after PR `#140`, show `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` as `merged`
+- show `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` as `merged`
+- show the post-PR140 docs/progress sync from PR `#141` as already landed on `main`
+- show the post-PR141 docs/progress sync from PR `#142` as already landed on `main`
+- show the dedicated validate-only runtime/report-ref implementation lane from PR `#143` as `merged`
+- show the post-PR143 docs/progress sync from PR `#144` as already landed on `main`
+- if refreshing from a branch checkout that carries `23_GATED_APS_PROMOTION_FREEZE.md`, show that freeze as `branch_only` until GitHub confirms an open or merged PR
+
+Current branch-local fact to preserve when present:
+- this branch carries the read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze selecting promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later
 
 Also update the scheduled refresh task so it no longer:
 - writes or references `current_main_commit`
