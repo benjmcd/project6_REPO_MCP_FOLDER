@@ -68,11 +68,11 @@ Current repo-side facts to preserve:
 - current `main` also includes the post-PR121 docs/progress closeout from PR `#122`
 - current `main` also includes the post-PR122 artifact-state fix from PR `#123`
 - paired export-derived context packets remain the live dossier input branch; the landed package-derived context handoff must not be presented as dossier input proof
-- current branch now includes the read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze selecting `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary; it has not landed on current `main` yet
-- the immediate required move is now to land that branch-local deterministic continuation freeze, not another docs-only restatement of the same milestone
-- `deterministic_insight_artifact` is the current branch-local bounded current-focus choice; later deterministic steps remain later and must not be collapsed into the same state
+- open PR `#124` now carries the read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze selecting `deterministic_insight_artifact` as the next deterministic continuation beyond the landed dossier boundary; it has not landed on current `main` yet
+- the immediate required move is now to review and land that open deterministic continuation freeze, not another docs-only restatement of the same milestone
+- `deterministic_insight_artifact` is the current open bounded current-focus choice; later deterministic steps remain later and must not be collapsed into the same state
 
-When rebuilding from a checkout that matches the current branch-local state after the deterministic-insight freeze exists but before any PR is open:
+When rebuilding from a checkout that matches the current open-PR state after PR `#124` is open:
 - show that slice as completed on `main`
 - show the exact-run gate-hardening follow-up as already landed on `main`
 - show the landed package-derived-context freeze as completed on `main`
@@ -81,7 +81,7 @@ When rebuilding from a checkout that matches the current branch-local state afte
 - show the bounded `context_dossier` handoff lane from PR `#121` as `merged`
 - show the post-PR121 docs/progress closeout from PR `#122` and the post-PR122 artifact-state fix from PR `#123` as already landed on `main`
 - do not present package-derived context as dossier input proof
-- show the read-only deterministic continuation freeze, rooted in `deterministic_insight_artifact`, as `branch_only` until GitHub confirms a PR exists
+- show the read-only deterministic continuation freeze, rooted in `deterministic_insight_artifact`, as `open` while PR `#124` remains open
 - do not collapse later deterministic steps into the same state as that next freeze decision
 
 Also update the scheduled refresh task so it no longer:
