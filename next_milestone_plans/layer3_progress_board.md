@@ -3,13 +3,13 @@
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
-It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the current branch-local package-derived-context freeze that follows that landed boundary.
+It tracks the bounded Layer3 Phase1A through APS multisource chain, plus the now-landed first shared-consumer freeze that follows multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary.
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger entry through APS multisource admission
 - the now-landed docs-only closeout that followed multisource landing
 - the landed first shared-consumer freeze that selects the first downstream shared APS consumer beyond multisource
 - the now-landed bounded export-package handoff implementation slice on current `main`
-- the current branch-local package-derived-context freeze that is not yet landed on `main`
+- the now-landed package-derived-context freeze on current `main`
 
 It is not a general whole-repo roadmap.
 It does not replace GitHub PR state.
@@ -27,7 +27,7 @@ Hard rule:
 ## Current Snapshot
 
 As of `2026-04-20`:
-- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-ctxpkt-freeze`
+- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-post113-docsync`
 - valid local authority rule: use a clean checkout whose contents match the artifact state being refreshed; prefer current `main` for merged repo truth and the active branch checkout when a branch-only milestone is declared
 - authoritative remote branch: `project6-origin/main`
 - snapshot base `main` commit at this artifact refresh: `0f90e6fb8f4613212d4e25fc6e9953ec687909cc`
@@ -36,12 +36,12 @@ As of `2026-04-20`:
 - current `main` also includes the landed export-package first shared-consumer freeze from PR `#106` and its docs-only closeout from PR `#107`
 - current `main` also now includes the bounded export-package handoff implementation slice from PR `#109` and its docs-only closeout from PR `#110`, rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
 - current `main` also now includes the exact-run export/export-package gate-hardening follow-up from PR `#111` and PR `#112`
-- open PR `#113` now carries the read-only `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` package-derived-context freeze; it is not yet landed on `main`
+- current `main` now includes the landed `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` package-derived-context freeze from PR `#113`
 
 ## Program State Summary
 
-- Done now on `main`: 14 merged milestones from Phase 1A feeder-ledger foundation through the APS export-package handoff slice
-- Current focus: review and merge open PR `#113` for the package-derived context-packet freeze
+- Done now on `main`: 15 merged milestones from Phase 1A feeder-ledger foundation through the APS package-derived-context freeze
+- Current focus: open the bounded package-derived context handoff lane from the landed freeze
 - Candidate next consumers: package-derived context packet first; later-but-not-first `context_dossier`
 - Deferred but not active: 12 explicitly deferred scope items remain out until later freezes admit them
 
@@ -63,7 +63,7 @@ As of `2026-04-20`:
 | APS same-run multisource admission | merged | `14_GATED_APS_MULTISOURCE_FREEZE.md` | `#100`, `#101`, `#102` | Implementation and its docs closeout are both landed on `main` |
 | APS export-package first shared-consumer freeze | merged | `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` | `#106` | Landed read-only freeze selects `evidence_report_export_package` as the first downstream shared APS consumer on `main` |
 | APS evidence-report-export-package handoff | merged | `15_GATED_APS_EXPORT_PACKAGE_FREEZE.md` | `#109`, `#110`, `#111`, `#112` | Landed bounded implementation slice rooted in `layer3_aps_report_export_package_handoff.py`, plus docs closeout and exact-run export/export-package gate hardening |
-| APS package-derived context continuation freeze | open | `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` | `#113` | Open read-only freeze selects package-derived context packet as the next later shared APS family beyond the landed export-package boundary |
+| APS package-derived context continuation freeze | merged | `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` | `#113` | Landed read-only freeze selects package-derived context packet as the next later shared APS family beyond the landed export-package boundary |
 
 ## What Is Complete
 
@@ -88,43 +88,42 @@ flowchart LR
     N --> O["APS package-derived context freeze"]
 
     classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
-    classDef open fill:#fff4e6,stroke:#b8860b,color:#111;
+    classDef merged2 fill:#d8f5d0,stroke:#2f6b2f,color:#111;
 
     class A,B,C,D,E,F,G,H,I,J,K,L,M,N merged;
-    class O open;
+    class O merged2;
 ```
 
 ## Next Required Decision
 
-The immediate required move is now to review and merge open PR `#113` for the package-derived context-packet freeze.
-The first shared-consumer selection freeze and the bounded export-package handoff implementation slice are both already landed on `main`.
+The immediate required move is now to open the bounded package-derived context-packet handoff lane from the landed freeze.
+The first shared-consumer selection freeze, the bounded export-package handoff implementation slice, and the package-derived-context freeze are all already landed on `main`.
 
 Current bounded selection state:
 - selected first consumer on current `main`: `evidence_report_export_package`
 - landed bounded handoff lane: `aps_evidence_report_export_package_handoff`
-- open next freeze PR: `#113` for `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
-- next later shared-family target after that open freeze lands: package-derived context packet
+- landed next freeze: `#113` for `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
+- next write-enabled target after that landed freeze: package-derived context packet handoff
 - later but not first: `context_dossier`
 
 Hard rule:
-- do not skip directly to package-derived context implementation, `context_dossier`, or deterministic fan-out before open PR `#113` lands cleanly on `main`
+- do not skip directly to `context_dossier` or deterministic fan-out before a bounded package-derived context handoff lane opens from the landed freeze
 
 The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current `main` after export-package handoff landing"] --> B["Open package-context freeze PR #113"]
+    A["Current `main` after package-context freeze landing"] --> B["Open bounded package-context handoff lane"]
     B --> C["Package-derived context packet"]
     B --> D["Context dossier (later, not first)"]
     C --> E["Deterministic chain"]
     D --> F["Later dossier-fed chain"]
 
     classDef next fill:#fff1bf,stroke:#9a6b00,color:#111;
-    classDef open fill:#fff4e6,stroke:#b8860b,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
 
     class A next;
-    class B open;
+    class B next;
     class C,D,E,F future;
 ```
 
@@ -132,7 +131,7 @@ flowchart LR
 
 These remain explicitly out until later freezes admit them:
 - direct shared `evidence_report_export_package` contract/runtime edits beyond the landed bounded export-package handoff and exact-run gate-hardening lane
-- package-derived context-packet implementation before open PR `#113` lands on `main`
+- package-derived context implementation beyond a bounded handoff lane rooted in the landed freeze
 - direct `context_dossier` implementation
 - deterministic insight, deterministic challenge, and review-packet fan-out
 - validate-only top-chain expansion
