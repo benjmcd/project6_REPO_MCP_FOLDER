@@ -6,8 +6,8 @@ Use this prompt when rebuilding the Claude Cowork artifact or its scheduled refr
 Rebuild the Layer3 APS progress artifact so it reflects current repo truth and renders reliably.
 
 Use the clean repo checkout that contains the current artifact files and matches the artifact state you want to refresh.
-For this branch-local packet, the current seed checkout is:
-`C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-ctxpkt-freeze`
+For this packet, the current seed checkout is:
+`C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-post113-docsync`
 
 Read these files in this order:
 1. `next_milestone_plans/layer3_progress_refresh_spec.md`
@@ -58,13 +58,13 @@ Current repo-side facts to preserve:
 - the immediate required move is no longer to choose the first shared consumer; that choice is already settled on current `main` in favor of `evidence_report_export_package`
 - current `main` also includes the bounded export-package handoff implementation slice from PR `#109` and its docs-only closeout from PR `#110`, rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
 - current `main` also includes the exact-run export/export-package gate-hardening follow-up from PR `#111` and `#112`
-- open PR `#113` now carries the read-only `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` freeze selecting package-derived context packet as the next later shared APS family beyond the landed export-package boundary; it is not yet landed on `main`
+- current `main` now includes the landed `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` freeze from PR `#113`, selecting package-derived context packet as the next later shared APS family beyond the landed export-package boundary
 - `context_dossier` remains later and must not be presented as a co-equal current-focus choice with the next package-derived-context freeze
 
 When rebuilding from a checkout that matches current `main` after the export-package handoff slice lands:
 - show that slice as completed on `main`
 - show the exact-run gate-hardening follow-up as already landed on `main`
-- use open PR `#113` as the current focus for the package-derived-context freeze rather than treating that freeze as still branch-only
+- use the bounded package-derived context handoff lane as the current focus that follows the landed freeze
 - do not describe the landed handoff as still open or merely branch-local
 
 Also update the scheduled refresh task so it no longer:
