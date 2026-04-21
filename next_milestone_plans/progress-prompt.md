@@ -55,13 +55,14 @@ Current repo-side facts to preserve:
 - current `main` includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the export-package first shared-consumer freeze and its docs-only closeout from PR `#106` and PR `#107`
 - the immediate required move is no longer to choose the first shared consumer; that choice is already settled on current `main` in favor of `evidence_report_export_package`
-- open PR `#109` now carries the bounded export-package handoff implementation slice rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`; it is not yet landed on current `main`
-- `context_dossier` remains later and must not be presented as a co-equal current-focus choice with the landed export-package boundary
+- current `main` also includes the bounded export-package handoff implementation slice from PR `#109`, rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
+- package-derived context packet is now the next later shared-family freeze target from the landed export-package boundary
+- `context_dossier` remains later and must not be presented as a co-equal current-focus choice with the next package-derived-context freeze
 
-When rebuilding from a branch or PR that already carries the bounded export-package handoff implementation slice:
-- show that slice as the current active open implementation focus
-- keep it visually distinct from merged `main` milestones
-- do not describe it as merely an unresolved future option
+When rebuilding from current `main` after the export-package handoff slice lands:
+- show that slice as completed on `main`
+- use the next package-derived-context freeze as the current focus
+- do not describe the landed handoff as still open or merely branch-local
 
 Also update the scheduled refresh task so it no longer:
 - writes or references `current_main_commit`
