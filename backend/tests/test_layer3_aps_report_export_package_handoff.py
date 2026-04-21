@@ -293,6 +293,86 @@ def test_materialize_aps_report_export_package_handoff_handles_non_path_safe_run
         settings.storage_dir = original_storage_dir
 
 
+def test_evidence_report_export_package_gate_filters_scope_collisions_by_exact_owner_run_id(
+    tmp_path: Path,
+) -> None:
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        run_id = "ab"
+        foreign_run_id = "a/b"
+        session_id, built_run_id, target_id, content_ids = _build_multisource_packaged_session(
+            db,
+            tmp_path,
+            run_id=run_id,
+        )
+        assert built_run_id == run_id
+        materialize_aps_multisource_admission(db, session_id=session_id)
+        db.commit()
+
+        for index, content_id in enumerate(content_ids, start=1):
+            _persist_single_source_export_fixture(
+                tmp_path,
+                run_id=run_id,
+                target_id=target_id,
+                content_id=content_id,
+                variant=f"collision-{index}",
+            )
+
+        materialize_aps_report_export_package_handoff(db, session_id=session_id)
+        db.commit()
+
+        foreign_failure_id = aps_package_contract.derive_failure_package_id(
+            source_locator="foreign-scope-collision",
+            error_code="foreign_scope_collision",
+        )
+        foreign_failure_payload = {
+            "schema_id": "aps.evidence_report_export_package_failure.v999",
+            "schema_version": aps_package_contract.APS_EVIDENCE_REPORT_EXPORT_PACKAGE_SCHEMA_VERSION,
+            "generated_at_utc": "2026-04-20T00:00:00Z",
+            "evidence_report_export_package_id": foreign_failure_id,
+            "owner_run_id": foreign_run_id,
+            "composition_contract_id": aps_package_contract.APS_EVIDENCE_REPORT_EXPORT_PACKAGE_COMPOSITION_CONTRACT_ID,
+            "package_mode": aps_package_contract.APS_EVIDENCE_REPORT_EXPORT_PACKAGE_MODE,
+            "source_request": {
+                "evidence_report_export_ids": None,
+                "evidence_report_export_refs": None,
+                "persist_package": False,
+            },
+            "error_code": "foreign_scope_collision",
+            "error_message": "foreign package artifact under same sanitized scope",
+        }
+        foreign_failure_payload["evidence_report_export_package_checksum"] = aps_package_contract.compute_evidence_report_export_package_checksum(
+            foreign_failure_payload
+        )
+        foreign_failure_path = aps_package_module.evidence_report_export_package_failure_artifact_path(
+            owner_run_id=foreign_run_id,
+            evidence_report_export_package_id=foreign_failure_id,
+            reports_dir=settings.connector_reports_dir,
+        )
+        foreign_failure_path.parent.mkdir(parents=True, exist_ok=True)
+        foreign_failure_path.write_text(
+            json.dumps(foreign_failure_payload, sort_keys=True),
+            encoding="utf-8",
+        )
+
+        discovered_runs = aps_package_gate_module._load_candidate_runs(run_ids=None, limit=10)
+        assert {str(row["run_id"]) for row in discovered_runs} == {run_id, foreign_run_id}
+
+        gate_report = aps_package_gate_module.validate_evidence_report_export_package_gate(
+            run_ids=[run_id],
+            limit=1,
+            report_path=tmp_path / "evidence_report_export_package_gate_scope_collision.json",
+            require_runs=True,
+        )
+        assert gate_report["passed"] is True
+        assert gate_report["checks"][0]["failure_refs"] == []
+        assert len(gate_report["checks"][0]["evidence_report_export_package_refs"]) == 1
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
 def test_materialize_aps_report_export_package_handoff_fails_closed_without_multisource_package(
     tmp_path: Path,
 ) -> None:
