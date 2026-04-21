@@ -34,7 +34,7 @@ Current branch-state note:
 - current `main` now also includes the narrow deterministic-gate hardening in `backend/app/services/nrc_aps_deterministic_insight_artifact_gate.py`, and that landed lane still keeps one persisted deterministic insight artifact as the immediate downstream source boundary
 - current `main` already has the live deterministic challenge runtime, contract, and validate-only gate surfaces rooted in `backend/app/services/nrc_aps_deterministic_challenge_artifact_contract.py`, `backend/app/services/nrc_aps_deterministic_challenge_artifact.py`, and `backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py`
 - current `main` already has run-level report-ref registry buckets for deterministic challenge and deterministic challenge review packet in `backend/app/services/connectors_sciencebase.py`
-- current branch now also includes this read-only freeze selecting `deterministic_challenge_artifact` as the exact next deterministic APS family after the landed deterministic insight handoff
+- current open PR `#128` now carries this read-only freeze selecting `deterministic_challenge_artifact` as the exact next deterministic APS family after the landed deterministic insight handoff
 
 Evidence basis: `A|next_milestone_plans/Layer3_planning_docs/18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md|artifact|current governing freeze for the landed deterministic insight boundary`; `R|backend/app/services/layer3_aps_deterministic_insight_artifact_handoff.py|Current bounded deterministic insight handoff owner surface on current \`main\`|1-313`; `R|backend/tests/test_layer3_aps_deterministic_insight_artifact_handoff.py|Current bounded deterministic insight handoff proof surface on current \`main\`|1-428`; `R|backend/app/services/review_nrc_aps_graph.py|Live downstream graph places deterministic challenge immediately after deterministic insight and before deterministic challenge review packet and validate-only gates|38-40;65-68;85-87;106-109`; `R|backend/app/services/nrc_aps_deterministic_challenge_artifact_contract.py|Live deterministic challenge contract is a single-insight deterministic rules-only family with frozen check specs and payload builder|11-20;76-126;228-240;344-370`; `R|backend/app/services/nrc_aps_deterministic_challenge_artifact.py|Live deterministic challenge runtime loads one persisted insight artifact, derives a deterministic challenge artifact, and persists or validates it fail-closed|47-84;123-283;347-481`; `R|backend/app/services/nrc_aps_deterministic_challenge_artifact_gate.py|Live deterministic challenge gate validates persisted challenge artifacts fail-closed over the current reports dir|1-205`; `R|backend/app/services/connectors_sciencebase.py|Current run-level report-ref registry already reserves deterministic challenge and deterministic challenge review packet buckets|2959-2961`
 
@@ -157,7 +157,7 @@ Stop and reopen the freeze instead of improvising if a later continuation requir
 ## Concise readiness judgment
 
 Readiness judgment:
-- This branch-local read-only freeze is the governing carried-forward contract for the bounded choice of `deterministic_challenge_artifact` as the next APS family after the landed deterministic insight boundary.
+- This open read-only freeze on PR `#128` is the governing carried-forward contract for the bounded choice of `deterministic_challenge_artifact` as the next APS family after the landed deterministic insight boundary.
 
 Reason:
 - current `main` already proves the bounded deterministic insight handoff and its persisted deterministic insight artifact boundary
@@ -165,7 +165,7 @@ Reason:
 - the live downstream graph still places deterministic challenge before challenge review-packet and validate-only
 - this read-only freeze therefore settles the next deterministic-family choice narrowly without admitting implementation
 
-What still remains intentionally deferred after this branch-local read-only freeze:
+What still remains intentionally deferred after this open read-only freeze:
 - the later write-enabled deterministic challenge handoff lane
 - deterministic challenge review-packet fan-out
 - validate-only top-chain expansion
