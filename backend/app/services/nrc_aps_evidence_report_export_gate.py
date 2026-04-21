@@ -26,35 +26,34 @@ def _read_json(path: Path) -> dict[str, Any]:
     return payload
 
 
+def _run_id_from_export_payload(payload: dict[str, Any]) -> str | None:
+    source_report = dict(payload.get("source_evidence_report") or {})
+    source_citation_pack = dict(source_report.get("source_citation_pack") or {})
+    source_bundle = dict(source_citation_pack.get("source_bundle") or {})
+    run_id = str(source_bundle.get("run_id") or "").strip()
+    return run_id or None
+
+
+def _run_id_from_failure_payload(payload: dict[str, Any]) -> str | None:
+    run_id = str(payload.get("run_id") or "").strip()
+    return run_id or None
+
+
 def _load_candidate_runs(*, run_ids: list[str] | None, limit: int | None) -> list[dict[str, Any]]:
     reports_dir = Path(settings.connector_reports_dir)
     reports_dir.mkdir(parents=True, exist_ok=True)
     normalized_run_ids = [str(item).strip() for item in (run_ids or []) if str(item).strip()]
-
-    def _extract_run_id(name: str) -> str | None:
-        token = "_aps_evidence_report_export_v1.json"
-        failure_token = "_aps_evidence_report_export_failure_v1.json"
-        suffix = token if name.endswith(token) else failure_token if name.endswith(failure_token) else None
-        if suffix is None:
-            return None
-        stem = name[: -len(suffix)]
-        if not stem.startswith("run_"):
-            return None
-        parts = stem.split("_")
-        if len(parts) < 3:
-            return None
-        return "_".join(parts[1:-1]).strip() or None
 
     if normalized_run_ids:
         return [{"run_id": run_id} for run_id in normalized_run_ids]
 
     candidates: dict[str, float] = {}
     for path in reports_dir.glob("*_aps_evidence_report_export_v1.json"):
-        run_id = _extract_run_id(path.name)
+        run_id = _run_id_from_export_payload(_read_json(path))
         if run_id:
             candidates[run_id] = max(float(path.stat().st_mtime), float(candidates.get(run_id, 0.0)))
     for path in reports_dir.glob("*_aps_evidence_report_export_failure_v1.json"):
-        run_id = _extract_run_id(path.name)
+        run_id = _run_id_from_failure_payload(_read_json(path))
         if run_id:
             candidates[run_id] = max(float(path.stat().st_mtime), float(candidates.get(run_id, 0.0)))
 
@@ -123,24 +122,35 @@ def validate_evidence_report_export_gate(
         if not run_id:
             continue
         scope = nrc_aps_evidence_report_export.evidence_report_export_scope(run_id)
-        export_paths = sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_evidence_report_export_v1.json"))
-        failure_paths = sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_evidence_report_export_failure_v1.json"))
+        matched_exports: list[tuple[Path, dict[str, Any]]] = []
+        for export_path in sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_evidence_report_export_v1.json")):
+            export_payload = _read_json(export_path)
+            if _run_id_from_export_payload(export_payload) != run_id:
+                continue
+            matched_exports.append((export_path, export_payload))
+        matched_failures: list[tuple[Path, dict[str, Any]]] = []
+        for failure_path in sorted(Path(settings.connector_reports_dir).glob(f"{scope}_*_aps_evidence_report_export_failure_v1.json")):
+            failure_payload = _read_json(failure_path)
+            if _run_id_from_failure_payload(failure_payload) != run_id:
+                continue
+            matched_failures.append((failure_path, failure_payload))
         reasons: list[str] = []
-        if not export_paths and not failure_paths:
+        if not matched_exports and not matched_failures:
             reasons.append(contract.APS_GATE_FAILURE_MISSING_REF)
 
-        for failure_path in failure_paths:
-            failure_payload = _read_json(failure_path)
+        for failure_path, failure_payload in matched_failures:
+            if not failure_path.exists():
+                reasons.append(contract.APS_GATE_FAILURE_UNRESOLVABLE_REF)
+                continue
             if not failure_payload:
                 reasons.append(contract.APS_GATE_FAILURE_FAILURE_SCHEMA)
                 continue
             _validate_failure_payload_schema(failure_payload, reasons)
 
-        for export_path in export_paths:
+        for export_path, export_payload in matched_exports:
             if not export_path.exists():
                 reasons.append(contract.APS_GATE_FAILURE_UNRESOLVABLE_REF)
                 continue
-            export_payload = _read_json(export_path)
             if not export_payload:
                 reasons.append(contract.APS_GATE_FAILURE_EXPORT_SCHEMA)
                 continue
@@ -186,8 +196,8 @@ def validate_evidence_report_export_gate(
         checks.append(
             {
                 "run_id": run_id,
-                "evidence_report_export_refs": [str(path) for path in export_paths],
-                "failure_refs": [str(path) for path in failure_paths],
+                "evidence_report_export_refs": [str(path) for path, _payload in matched_exports],
+                "failure_refs": [str(path) for path, _payload in matched_failures],
                 "passed": len(deduped) == 0,
                 "reasons": deduped,
             }
