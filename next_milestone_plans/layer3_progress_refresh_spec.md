@@ -198,11 +198,11 @@ The current bounded chain on `main` ends at:
 The preserved source-branch rule on current `main` is:
 - dossier input must remain paired export-derived context packets rather than package-derived context
 
-The current planned continuation beyond current `main` is:
-- the read-only deterministic challenge review-packet continuation freeze beyond the now-landed deterministic challenge handoff
+The current open continuation beyond current `main` is:
+- PR `#132`, the read-only deterministic challenge review-packet continuation freeze rooted in `20_GATED_APS_REVIEW_PACKET_FREEZE.md` beyond the now-landed deterministic challenge handoff
 
 The next required move beyond current `main` is:
-- open the read-only deterministic challenge review-packet continuation freeze
+- review and merge PR `#132`
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`
