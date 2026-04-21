@@ -47,8 +47,8 @@ As of `2026-04-20`:
 ## Program State Summary
 
 - Done now on `main`: 17 merged milestones from Phase 1A feeder-ledger foundation through the landed APS context-dossier continuation freeze
-- Current focus: open the bounded `context_dossier` handoff implementation lane while preserving paired export-derived context packets as dossier inputs
-- Candidate next consumers: `context_dossier` is selected and planned now; deterministic remains later
+- Current focus: review and land open PR `#121` for the bounded `context_dossier` handoff implementation lane while preserving paired export-derived context packets as dossier inputs
+- Candidate next consumers: `context_dossier` is the open bounded implementation lane now; deterministic remains later
 - Deferred but not active: 12 explicitly deferred scope items remain out until later freezes admit them
 
 ## Milestone Status
@@ -72,6 +72,7 @@ As of `2026-04-20`:
 | APS package-derived context continuation freeze | merged | `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` | `#113` | Landed read-only freeze selects package-derived context packet as the next later shared APS family beyond the landed export-package boundary |
 | APS package-derived context handoff | merged | `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` | `#115`, `#116`, `#119` | Landed bounded handoff implementation slice; PR `#116` was an earlier hardening pass, and PR `#119` lands the remaining malformed-scoped candidate-discovery closeout |
 | APS context-dossier continuation freeze | merged | `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` | `#118` | Landed read-only freeze preserves paired export-derived context packets as dossier inputs and settles `context_dossier` as the next later shared APS family beyond the landed package-context milestone |
+| APS context-dossier handoff | open | `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` | `#121` | Open bounded implementation slice rooted in `layer3_aps_context_dossier_handoff.py`, with narrow dossier gate hardening; package-derived context stays gating provenance only while paired export-derived context packets remain the dossier input branch |
 
 ## What Is Complete
 
@@ -96,6 +97,7 @@ flowchart LR
     N --> O["APS package-derived context freeze"]
     O --> P["APS package-derived context handoff"]
     P --> Q["APS context-dossier freeze"]
+    Q --> R["APS context-dossier handoff"]
 
     classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
     classDef merged2 fill:#d8f5d0,stroke:#2f6b2f,color:#111;
@@ -104,11 +106,12 @@ flowchart LR
     class A,B,C,D,E,F,G,H,I,J,K,L,M,N merged;
     class O merged2;
     class P,Q merged3;
+    class R next;
 ```
 
 ## Next Required Decision
 
-The immediate required move is now to open the bounded `context_dossier` handoff implementation lane admitted by the now-landed read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze.
+The immediate required move is now to review and land open PR `#121`, which carries the bounded `context_dossier` handoff implementation lane admitted by the now-landed read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze.
 
 Current bounded selection state:
 - selected first consumer on current `main`: `evidence_report_export_package`
@@ -118,7 +121,7 @@ Current bounded selection state:
 - earlier hardening pass on current `main`: PR `#116`
 - landed malformed-scoped candidate-discovery closeout on current `main`: PR `#119`
 - landed read-only continuation freeze: PR `#118` for `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md`
-- next later shared-family target now admitted for implementation planning: `context_dossier`
+- current open bounded implementation lane: PR `#121` for `aps_context_dossier_handoff`
 - dossier input branch must remain paired export-derived context packets
 - later after that: deterministic chain
 
@@ -130,8 +133,8 @@ The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current `main` after context-dossier freeze landing"] --> B["Bounded context-dossier handoff lane"]
-    B --> C["Land dossier handoff implementation"]
+    A["Current `main` after context-dossier freeze landing"] --> B["Open PR #121 dossier handoff lane"]
+    B --> C["Land dossier handoff on `main`"]
     C --> D["Deterministic chain"]
 
     classDef next fill:#fff1bf,stroke:#9a6b00,color:#111;
@@ -146,7 +149,6 @@ flowchart LR
 These remain explicitly out until later freezes admit them:
 - direct shared `evidence_report_export_package` contract/runtime edits beyond the landed bounded export-package handoff and exact-run gate-hardening lane
 - package-derived context implementation beyond a bounded handoff lane rooted in the landed freeze
-- direct `context_dossier` implementation
 - deterministic insight, deterministic challenge, and review-packet fan-out
 - validate-only top-chain expansion
 - route/UI widening
@@ -166,10 +168,13 @@ Refresh this board against:
 - `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
 - `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md`
+- `backend/app/services/layer3_aps_context_dossier_handoff.py`
+- `backend/app/services/nrc_aps_context_dossier_gate.py`
+- `backend/tests/test_layer3_aps_context_dossier_handoff.py`
 - `backend/app/services/nrc_aps_evidence_report_export_gate.py`
 - `backend/app/services/nrc_aps_evidence_report_export_package_gate.py`
 - `backend/app/services/layer3_aps_context_packet_package_handoff.py`
 - `backend/app/services/nrc_aps_context_packet_gate.py`
 - `backend/tests/test_layer3_aps_context_packet_handoff.py`
 - `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
-- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, `#106`, `#107`, `#108`, `#109`, `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, and `#119`
+- GitHub PR state for `#69`, `#70`, `#71`, `#72`, `#73`, `#74`, `#75`, `#77`, `#79`, `#80`, `#81`, `#82`, `#84`, `#85`, `#86`, `#87`, `#88`, `#89`, `#90`, `#91`, `#92`, `#93`, `#94`, `#95`, `#96`, `#97`, `#98`, `#99`, `#100`, `#101`, `#102`, `#106`, `#107`, `#108`, `#109`, `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, and `#121`
