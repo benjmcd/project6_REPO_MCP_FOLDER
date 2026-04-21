@@ -7,7 +7,7 @@ Rebuild the Layer3 APS progress artifact so it reflects current repo truth and r
 
 Use the clean repo checkout that contains the current artifact files and matches the artifact state you want to refresh.
 For this packet, the current seed checkout is:
-`C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-pkgctx-handoff`
+`C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-pkgctx-sync`
 
 Read these files in this order:
 1. `next_milestone_plans/layer3_progress_refresh_spec.md`
@@ -59,20 +59,18 @@ Current repo-side facts to preserve:
 - current `main` also includes the bounded export-package handoff implementation slice from PR `#109` and its docs-only closeout from PR `#110`, rooted in `backend/app/services/layer3_aps_report_export_package_handoff.py` and `backend/tests/test_layer3_aps_report_export_package_handoff.py`
 - current `main` also includes the exact-run export/export-package gate-hardening follow-up from PR `#111` and `#112`
 - current `main` now includes the landed `16_GATED_APS_PACKAGE_CONTEXT_FREEZE.md` freeze from PR `#113`, selecting package-derived context packet as the next later shared APS family beyond the landed export-package boundary
-- the current branch/workspace now carries the bounded package-derived context handoff implementation slice rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py` and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
-- the current branch/workspace also includes the narrow context-packet gate hardening in `backend/app/services/nrc_aps_context_packet_gate.py` and `backend/tests/test_layer3_aps_context_packet_handoff.py`
-- GitHub now confirms open PR `#115` for that slice, so it should render as `open`, not `branch_only`
-- `context_dossier` remains later and must not be presented as a co-equal current-focus choice with the next package-derived-context freeze
+- current `main` now includes the bounded package-derived context handoff implementation slice from PR `#115`, rooted in `backend/app/services/layer3_aps_context_packet_package_handoff.py` and `backend/tests/test_layer3_aps_context_packet_package_handoff.py`
+- current `main` now also includes the malformed-scoped APS gate hardening follow-up from PR `#116` across the export, export-package, and context-packet gates
+- the next required decision is now a planned read-only `context_dossier` freeze
+- deterministic remains later and must not be presented as a co-equal current-focus choice with the next `context_dossier` freeze
 
-When rebuilding from a checkout that matches current `main` after the export-package handoff slice lands:
+When rebuilding from a checkout that matches current `main` after the package-derived context handoff slice lands:
 - show that slice as completed on `main`
 - show the exact-run gate-hardening follow-up as already landed on `main`
 - show the landed package-derived-context freeze as completed on `main`
-
-When rebuilding from the current branch/workspace checkout while PR `#115` is open:
-- show the bounded package-derived context handoff slice as `open`
-- use landing that open slice as the current focus that follows the landed freeze
-- do not describe that open slice as landed on `main` before GitHub confirms the merge
+- show the package-derived context handoff slice as `merged`
+- use the planned `context_dossier` freeze as the current focus that follows the landed package-context boundary
+- do not present deterministic as the current focus while `context_dossier` remains the next later shared-family decision
 
 Also update the scheduled refresh task so it no longer:
 - writes or references `current_main_commit`
