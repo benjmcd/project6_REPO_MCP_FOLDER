@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice and malformed-scoped APS gate hardening follow-up that follow that landed freeze, plus the current branch-local context-dossier freeze beyond that landed package-context boundary.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain, plus the landed first shared-consumer freeze beyond multisource, plus the now-landed bounded export-package handoff implementation slice governed by that freeze, plus the now-landed package-derived-context freeze that follows that landed boundary, plus the now-landed bounded package-derived context handoff implementation slice, plus the still-open malformed-scoped candidate-discovery closeout in PR `#119`, plus the current branch-local context-dossier freeze beyond that landed package-context boundary.
 
 ## Canonical Inputs
 
@@ -31,7 +31,7 @@ Current tracked PR set:
 - `#97`, `#98`, `#99`
 - `#100`, `#101`, `#102`
 - `#106`, `#107`, `#108`, `#109`
-- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`
+- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`
 
 Hard rule:
 - never mark a step as landed on `main` from repo docs alone if the GitHub PR is still open
@@ -171,7 +171,7 @@ Do not:
 
 The current bounded chain on `main` ends at:
 - the landed APS package-derived context handoff slice beyond the landed export-package handoff boundary
-- the malformed-scoped APS gate hardening follow-up that keeps the export, export-package, and context-packet gates fail-closed on malformed scoped artifacts
+- the still-open malformed-scoped candidate-discovery closeout now carried by PR `#119` for the export, export-package, and context-packet gates
 
 The current branch/workspace now also carries:
 - the read-only `17_GATED_APS_CONTEXT_DOSSIER_FREEZE.md` freeze selecting `context_dossier` as the next later shared APS family after the landed package-context milestone
@@ -179,7 +179,7 @@ The current branch/workspace now also carries:
 - open PR `#118` now tracks that freeze while it remains unmerged
 
 The next required move beyond current `main` is:
-- land open PR `#118`, which carries the branch-local read-only `context_dossier` freeze already present in the active checkout
+- land open PR `#119`, which carries the malformed-scoped candidate-discovery closeout for the export, export-package, and context-packet gates, and then return to open PR `#118`
 
 The first selected shared consumer on current `main` is:
 - `evidence_report_export_package`
@@ -193,7 +193,7 @@ The later but not first consumer remains:
 These are not both still open candidates in the same way:
 - `evidence_report_export_package` is selected on current `main`
 - `aps_evidence_report_export_package_handoff` is now landed on current `main`
-- package-derived context packet is now landed on current `main` as the next write-enabled shared-family target after that landed handoff boundary, and current `main` also includes the malformed-scoped APS gate hardening follow-up
+- package-derived context packet is now landed on current `main` as the next write-enabled shared-family target after that landed handoff boundary, but open PR `#119` still carries the remaining malformed-scoped candidate-discovery closeout
 - `context_dossier` remains later and not first
 - the open dossier freeze in PR `#118` keeps paired export-derived context packets as the live dossier input branch and must not be refreshed into package-derived dossier input claims
 
