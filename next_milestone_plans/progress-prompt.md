@@ -83,11 +83,12 @@ Current repo-side facts to preserve:
 - current `main` now also includes the post-PR136 docs/progress sync from PR `#137`
 - current `main` now also includes the bounded validate-only gate-report refresh lane from PR `#138`, rooted in `backend/app/services/review_nrc_aps_gate_reports.py`, `tools/nrc_aps_refresh_review_gate_reports.py`, `tools/run_nrc_aps_local_corpus_e2e.py`, `backend/tests/test_review_nrc_aps_gate_reports.py`, and `project6.ps1`
 - current `main` now also includes the post-PR138 docs/progress sync from PR `#139`
-- the immediate required move is no longer to flip validate-only-gates, the bounded gate-report refresh lane, `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`, or the post-PR140/post-PR141 docs/progress sync from branch/open state into merged state; all are now landed on current `main`, and open PR `#143` now carries the bounded dedicated validate-only family-specific report-ref/runtime implementation lane selected by that landed freeze
+- the immediate required move is no longer to flip validate-only-gates, the bounded gate-report refresh lane, `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`, the post-PR140/post-PR141 docs/progress sync, or PR `#143` from branch/open state into merged state; all are now landed on current `main`
 - `validate_only_gates` is now the landed current-main family choice through the bounded gate-report refresh lane from PR `#138`
 - current `main` now also includes the post-PR140 docs/progress sync from PR `#141`
 - current `main` now also includes the post-PR141 docs/progress sync from PR `#142`
-- if the current checkout also contains `backend/app/services/nrc_aps_validate_only_gates_contract.py`, `backend/app/services/nrc_aps_validate_only_gates.py`, and `backend/app/services/nrc_aps_validate_only_gates_gate.py`, render the dedicated validate-only runtime/report-ref implementation lane as `open` when GitHub confirms open PR `#143`, and only use `branch_only` when no GitHub PR exists yet
+- if the current checkout matches current `main` after PR `#143`, render the dedicated validate-only runtime/report-ref implementation lane as `merged`
+- if no later post-validate-only freeze exists on current `main`, render the current focus as `planned` and explicitly say that any continuation beyond the landed dedicated validate-only boundary requires a fresh read-only freeze before validate-only top-chain expansion, promotion, or retrieval cutover
 
 When rebuilding from a checkout that matches current `main` after PR `#138`:
 - show the bounded `context_dossier` handoff slice from PR `#121` as completed on `main`
