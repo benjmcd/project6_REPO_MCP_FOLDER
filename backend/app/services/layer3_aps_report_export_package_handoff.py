@@ -13,7 +13,6 @@ from app.core.config import settings
 from app.models.models import L3OutputPackage, L3ReconciliationRecord, L3Session, uuid_str
 from app.services import nrc_aps_evidence_report as aps_report
 from app.services import nrc_aps_evidence_report_export as aps_report_export
-from app.services import nrc_aps_evidence_report_export_contract as aps_report_export_contract
 from app.services import nrc_aps_evidence_report_export_package as aps_export_package
 from app.services import nrc_aps_evidence_report_export_package_contract as aps_export_package_contract
 from app.services.layer3_aps_multisource import (
@@ -161,7 +160,7 @@ def _load_source_package_or_raise(
 
 def _candidate_export_paths(*, owner_run_id: str) -> list[Path]:
     reports_dir = Path(settings.connector_reports_dir)
-    scope = f"run_{aps_report_export_contract.safe_path_token(owner_run_id)}"
+    scope = aps_report_export.evidence_report_export_scope(owner_run_id)
     return sorted(reports_dir.glob(f"{scope}_*_aps_evidence_report_export_v1.json"), key=lambda path: path.name)
 
 

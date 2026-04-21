@@ -46,9 +46,10 @@ from test_layer3_aps_handoff import (
 def _build_multisource_packaged_session(
     db,
     tmp_path: Path,
+    *,
+    run_id: str = "run-aps-multi-001",
 ) -> tuple[str, str, str, tuple[str, str]]:
     dataset_version_id = "dv-aps-multi-001"
-    run_id = "run-aps-multi-001"
     target_id = "target-aps-multi-001"
     content_ids = ("content-aps-multi-001", "content-aps-multi-002")
 
