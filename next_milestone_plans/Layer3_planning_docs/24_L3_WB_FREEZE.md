@@ -9,6 +9,11 @@
 ## Lane
 - future workbench route family
 
+## Companion exact-freeze input doc
+- `26_L3_WB_INPUTS.md` records the unresolved exact-freeze inputs for this lane.
+- This doc remains the boundary, dependency, non-goal, and ambiguity-control surface.
+- The companion input doc is planning-only prep and does not itself satisfy activation prerequisites.
+
 ## Why prep is justified now
 - Current `main` already ships adjacent operator consumers, but not a full Layer 3 workbench.
 - Primary planning still treats the broader workbench route family as an explicit open freeze item.
@@ -74,6 +79,7 @@
 - session-scoped workspace model remains authoritative
 - read-only runtime DB boundary remains unchanged
 - active packet remains settled while this doc is only planning
+- companion input prep may narrow unresolved decisions, but activation still requires an explicit later freeze outcome rather than the prep doc by itself
 - later implementation must still freeze exact route naming, editability rules, and API ownership before activation
 
 ## Placeholder owner-surface classes for later activation
