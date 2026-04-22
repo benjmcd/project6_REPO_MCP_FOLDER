@@ -10,7 +10,7 @@
 - future workbench route family
 
 ## Companion exact-freeze input doc
-- `26_L3_WB_INPUTS.md` now records the adopted branch-local trigger and route-family choice for this lane, plus the remaining exact-freeze prep that still must be tightened before activation-readiness.
+- `26_L3_WB_INPUTS.md` now records the adopted branch-local trigger and route-family choice for this lane, the exact owner-surface and proof mapping for implementation-entry prep, and the exact remains-out list that keeps later work narrow.
 - This doc remains the boundary, dependency, non-goal, and ambiguity-control surface.
 - The companion input doc is planning-only prep and does not itself satisfy activation prerequisites.
 
@@ -79,10 +79,10 @@
 - session-scoped workspace model remains authoritative
 - read-only runtime DB boundary remains unchanged
 - active packet remains settled while this doc is only planning
-- the companion input doc now adopts the branch-local operator-insufficiency trigger and additive route-family choice, but activation still requires an explicit later freeze outcome rather than the prep doc by itself
-- later implementation must still freeze exact route/API ownership, proof surfaces, and any file/module-local restatement of editability rules before activation
+- the companion input doc now adopts the branch-local operator-insufficiency trigger and additive route-family choice, and records the exact owner-surface/proof/no-go mapping for implementation-entry prep, but activation still requires an explicit later freeze outcome rather than the prep doc by itself
+- later implementation must still choose exact filenames and subroutes, honor the no-go list, and produce the headed/headless plus backend proof outputs before activation
 
-## Placeholder owner-surface classes for later activation
+## Boundary-level owner-surface classes for later activation
 - repo-confirmed current touchpoints that would likely participate:
   - `backend/main.py`
   - `backend/app/api/router.py`
@@ -102,7 +102,7 @@
 
 ## Later activation prerequisites
 - the adopted branch-local operator-insufficiency trigger and additive route-family choice from `26_L3_WB_INPUTS.md` must remain intact unless a later freeze explicitly reopens them
-- one exact route/API ownership freeze must be chosen; current planning-default route names do not settle final route strings or file/module names
+- one exact file/module-local route/API ownership implementation must still be chosen; current planning-default route names plus the branch-local owner-surface table do not by themselves settle final route strings or file/module names
 - headed Chrome proof that the broader workbench shell loads and exposes the full state machine
 - headless Chrome proof of the same shell and state transitions
 - proof that adjacent review and document-trace surfaces remain unchanged and non-overloaded

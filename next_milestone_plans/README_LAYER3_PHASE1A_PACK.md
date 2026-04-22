@@ -411,7 +411,7 @@ It is the merged planning-only prep doc on current `main` for the deferred `futu
 ### Post-settlement broader workbench exact-input prep doc
 
 This document is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-It is a planning-only companion prep doc for the deferred `future workbench route family`, and it now records the adopted branch-local operator-insufficiency trigger and additive route-family choice plus the remaining owner-surface, state-editability, and proof inputs that still must be tightened before that lane can move toward activation-readiness:
+It is a planning-only companion prep doc for the deferred `future workbench route family`, and it now records the adopted branch-local operator-insufficiency trigger and additive route-family choice plus the exact owner-surface map, proof matrix, and remains-out list that keep a later implementation-entry packet narrow without implying activation:
 - `26_L3_WB_INPUTS.md`
 
 ### Post-settlement qualitative single-item planning-only freeze doc
