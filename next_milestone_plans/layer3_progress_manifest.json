@@ -162,8 +162,16 @@
   },
   "current_snapshot": {
     "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107, the bounded export-package handoff implementation slice from PR #109 plus its docs closeout from PR #110, the exact-run export/export-package gate-hardening follow-up from PR #111 and PR #112, the landed package-derived-context continuation freeze from PR #113, the bounded package-derived context handoff implementation slice from PR #115, the earlier PR #116 hardening pass, the post-PR116 docs/progress sync from PR #117, the landed read-only context-dossier continuation freeze from PR #118, the merged PR #119 malformed-scoped candidate-discovery closeout across the export, export-package, and context-packet gates, the post-PR118 docs/progress sync from PR #120, the bounded context-dossier handoff implementation slice plus narrow dossier-gate scope hardening from PR #121, the post-PR121 docs/progress sync from PR #122, the post-PR122 artifact-state fix from PR #123, the landed read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze from PR #124, the bounded deterministic insight handoff implementation slice plus narrow deterministic gate hardening from PR #126, the post-PR126 docs/progress sync from PR #127, the landed read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze from PR #128, the post-PR128 docs/progress sync from PR #129, the bounded deterministic challenge handoff implementation slice plus narrow deterministic challenge gate hardening from PR #130, the post-PR130 docs/progress sync from PR #131, the landed read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze from PR #132, the post-PR132 docs/progress sync from PR #133, the bounded deterministic challenge review-packet handoff slice plus narrow review-packet gate hardening from PR #134, the post-PR134 docs/progress sync from PR #135, the landed read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze from PR #136, the post-PR136 docs/progress sync from PR #137, the bounded validate-only gate-report refresh lane from PR #138, the post-PR138 docs/progress sync from PR #139, the landed read-only `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` freeze from PR #140, the post-PR140 docs/progress sync from PR #141, and the post-PR141 docs/progress sync from PR #142, plus the bounded dedicated validate-only runtime/report-ref implementation lane from PR #143, plus the post-PR143 docs/progress sync from PR #144. Current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR #145, the post-PR145 docs/progress sync from PR #146, the later APS family settlement closeout from PR #147, and the post-PR147 progress-packet closeout from PR #148. Current `main` also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR #165; they remain deferred-scope prep artifacts and do not reopen the settled packet or change the merged milestone count. Current `main` also includes the post-PR165 docs/progress/front-door sync from PR #166, which aligns the progress artifact, pack front door, and canonical status/index surfaces with those merged planning-only deferred-prep docs without changing the settled packet state. Live repo truth now also shows the existing promotion governance family already sufficient on current `main`, while retrieval cutover already exists there as a separate validate-only parity-proof family; no further later APS family decision or implementation lane is currently justified by default.",
-    "open_followups": [],
-    "branch_state_summary": "This checkout matches the merged-main settled packet through the post-PR147 progress-packet closeout from PR #148, also carries the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR #165 plus the post-PR165 docs/progress/front-door sync from PR #166, and carries no additional unmerged milestone state."
+    "open_followups": [
+      {
+        "pr": 167,
+        "state": "open",
+        "kind": "docs_progress_sync",
+        "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/167",
+        "note": "GitHub still shows the docs/progress sync open; this checkout carries the exact same tree content via local commit 9604a5d3, plus additional branch-only workbench-input prep."
+      }
+    ],
+    "branch_state_summary": "This checkout matches the merged-main settled packet through the post-PR165 docs/progress/front-door sync from PR #166, also carries the exact tree content of the still-open PR #167 docs/progress sync via local commit `9604a5d3`, and also carries branch-only planning-only workbench-input prep rooted in `26_L3_WB_INPUTS.md` plus companion updates to `24_L3_WB_FREEZE.md`, `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, `layer3_progress_refresh_spec.md`, and `progress-prompt.md`. Those latter surfaces are branch-local prep only, not merged-main milestone state."
   },
   "summary_counts": {
     "merged_milestones": 29,
@@ -1375,6 +1383,7 @@
         ],
         "authority_surfaces": [
           "next_milestone_plans/Layer3_planning_docs/24_L3_WB_FREEZE.md",
+          "next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md",
           "frontend_UI_plans/README.md",
           "frontend_UI_plans/wb-compare-spec.md",
           "frontend_UI_plans/wb-compare-contract.md",
@@ -1548,7 +1557,8 @@
       147,
       148,
       165,
-      166
+      166,
+      167
     ],
     "repo_paths": [
       "docs/nrc_adams/nrc_aps_status_handoff.md",
@@ -1612,6 +1622,7 @@
       "next_milestone_plans/Layer3_planning_docs/22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/23_GATED_APS_PROMOTION_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/24_L3_WB_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md",
       "next_milestone_plans/Layer3_planning_docs/25_L3_QUAL1_FREEZE.md",
       "backend/app/services/nrc_aps_validate_only_gates_contract.py",
       "backend/app/services/nrc_aps_validate_only_gates.py",
