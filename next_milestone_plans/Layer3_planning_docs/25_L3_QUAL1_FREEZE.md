@@ -16,10 +16,10 @@
 - This prep can stay service-first and planning-only without reopening runtime DB writes, schema, generic route widening, or APS shared-contract scope.
 
 ## Why activation is not automatic
-- No exact qualitative engine contract is frozen yet.
-- No exact pass-family proof exists yet.
+- No live qualitative single-item pass family exists yet.
 - No exact workbench/controller surface is active yet for this broader breadth.
 - The settled packet still does not nominate broader breadth as an active lane.
+- Even when this checkout carries `27_L3_QUAL1_INPUTS.md`, that companion input doc remains planning-only and does not activate the lane.
 
 ## Axis ranking
 1. qualitative single-item breadth
@@ -93,15 +93,15 @@
 - the selection-commit and session boundary remain authoritative
 - the future broader workbench route family should be frozen before activation so operator control state is not implied ad hoc
 - the combined `24_L3_WB_FREEZE.md` / `26_L3_WB_INPUTS.md` packet now adopts a planning-only operator-insufficiency trigger, additive route-family choice, and minimum typing posture and records the owner-surface, proof, and no-go implementation-entry prep for that broader workbench lane, but that planning-only packet still does not activate the broader workbench lane
+- this checkout may also carry the combined `25_L3_QUAL1_FREEZE.md` / `27_L3_QUAL1_INPUTS.md` packet, which adopts a planning-only qualitative single-item operator task, minimum pass-family contract, owner-surface table, proof matrix, and remains-out list for this axis, but that planning-only packet still does not activate the qualitative lane
 - read-only runtime DB boundary remains unchanged
 - current packet remains settled while this doc is planning-only
 
 ## Later activation prerequisites
-- one exact qualitative single-item operator task must be frozen; this doc does not settle that task yet
-- one exact qualitative pass-family contract must be frozen; this doc does not settle final pass semantics yet
 - service proof for one qualitative single-item pass family
 - proof that the pass stays additive and does not widen APS contracts
 - proof that runtime DB writes, schema widening, and generic route widening remain out
+- exact implementation-local filenames or any later UI shell remain for a later implementation-entry lane
 - if activation also exposes new operator UI, headed plus headless Chrome proof for that UI must be added under the later active lane
 
 ## Exact non-goals
