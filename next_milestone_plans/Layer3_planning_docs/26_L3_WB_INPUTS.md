@@ -20,6 +20,7 @@
 - The two previous blockers for this lane are now resolved on this branch-local planning pass:
   - the lane trigger
   - the route-family choice
+- This branch-local planning pass also adopts the minimum typing posture that primary planning plus ADR-003 already support for later implementation-entry prep, without pretending thresholds, APS document-unit granularity, or typing-conflict presentation are already frozen.
 - A later activation-ready freeze may keep those adopted decisions, narrow them, or explicitly reopen them, but it must do so explicitly.
 
 ## Authority order
@@ -142,7 +143,38 @@ Explicit anti-patterns:
 - do not treat the current `market_*` / analyst-insight alias API family as the owner surface for the broader workbench
 - do not introduce a new frontend framework or component-library dependency unless a later separate decision explicitly proves the repo-native static-shell pattern insufficient
 
-### 4. State editability map
+### 4. Minimum typing posture
+- Freeze one exact minimum typing posture for the broader workbench lane that stays within current primary-planning authority and does not invent activation-grade heuristics.
+- Status:
+  - adopted on this branch-local planning pass
+- Authority guardrails:
+  - primary `source_shape` taxonomy is authoritative for this lane
+  - `analysis_modality` remains distinct from `source_shape`
+  - the secondary supplementary-plan `ContentKind` names are not authority for this lane and must not replace primary `source_shape` values such as `mixed_source_payload` or `bundle_artifact`
+- Adopted default typing posture:
+
+| Primary `source_shape` | Adopted default modality posture | Adopted split or keep posture | Guardrail |
+| --- | --- | --- | --- |
+| `tabular_numeric` | `quantitative` | split/atomic | numeric structure is primary unless a later explicit freeze proves otherwise |
+| `time_series` | `quantitative` | split/atomic | treat as quantitative-first for v1 broader-workbench prep |
+| `document_chunks` | `qualitative` unless strong mixed evidence indicates `hybrid` | keep-adjacent then decide | do not assume purely qualitative from document origin alone |
+| `mixed_source_payload` | `hybrid` | keep-intact first | split only if auditably safe and meaning is preserved |
+| `bundle_artifact` | bounded review first, then `qualitative` or `hybrid` from actual contents | bounded composition first | do not type from artifact label alone |
+
+- Explicit unresolved typing item that remains out of this adopted minimum posture:
+  - `entity_graph` does not receive a branch-local default here because the primary suggested v1 matrix and ADR-003 additional posture do not yet assign a repo-backed default; any later implementation-entry packet must either stay out of `entity_graph` or freeze it explicitly before claiming support
+- Adopted override semantics:
+  - allow override when confidence falls below a later frozen threshold
+  - allow override when splitting would break meaning or must-remain-intact semantics
+  - allow override when the automatic grouping is obviously wrong to the operator
+  - every override must record previous choice, new choice, actor, reason, and whether must-remain-intact status changed
+- Still intentionally unresolved inside this adopted minimum posture:
+  - exact confidence thresholds
+  - exact heuristic precedence when multiple signals conflict
+  - exact APS document-derived unit granularity
+  - exact UI presentation of typing conflicts and ambiguity
+
+### 5. State editability map
 - Freeze one exact editability decision for each required state:
   - `draft_selection`
   - `selection_review`
@@ -168,7 +200,7 @@ Explicit anti-patterns:
 | `reconciled_results` | read-only accepted versus quarantined review |
 | `package_review` | inspect package variants; bounded handoff initiation only if a later active lane explicitly admits it |
 
-### 5. Exact proof matrix
+### 6. Exact proof matrix
 - Freeze one exact proof matrix for the broader workbench shell, its API family, and its adjacent-surface preservation rules.
 - Status:
   - adopted on this branch-local planning pass
@@ -178,6 +210,7 @@ Explicit anti-patterns:
 | Additive workbench page shell load | page-route pattern in `backend/main.py`; page-shell assertions in `backend/tests/test_review_nrc_aps_page.py`, `backend/tests/test_review_nrc_aps_document_trace_page.py`, `backend/tests/test_review_nrc_aps_workbench_compare_page.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_page.py`, `backend/tests/test_analyst_insight_page.py` | one additive Layer 3 page-shell proof showing `/review/layer3` loads through the repo-native static-shell pattern without changing adjacent routes |
 | Additive workbench API family | `backend/app/api/router.py`; API contract proof pattern in `backend/tests/test_review_nrc_aps_workbench_compare_api.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_api.py`, `backend/tests/test_analyst_insight_alias_parity.py` | one additive Layer 3 API contract proof family for `/api/v1/layer3/...` commands and queries without overloading review or analyst-insight owners |
 | State-machine visibility | accepted state list in `24_L3_WB_FREEZE.md`; browser/API proof minimums in `11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md` | one happy-path plus one partial-failure proof covering `draft_selection` -> `selection_review` -> `loading` -> `typing_review` -> `plan_review` -> `pass_monitor` -> `reconciled_results` -> `package_review` |
+| Minimum typing posture | primary typing workflow and suggested v1 matrix from `04_LAYER3_ANALYSIS_UNIT_MODALITY_AND_SET_MODEL.md`; ADR default posture in `decisions/ADR-003_TYPING_RULES_QUANT_QUAL_HYBRID.md` | one proof family showing adopted `source_shape` defaults, override recording, and fail-closed handling for ambiguous or partial typing state without inventing unsupported thresholds |
 | Headless browser proof | isolated browser harness in `backend/tests/review_browser_server.py`, `backend/tests/test_review_browser_server.py`, and `e2e/nrc-aps-review.spec.js` | one headless Chromium proof flow for the broader workbench route using the repo-native isolated browser harness pattern |
 | Headed browser/operator proof | manual operator bring-up and validation docs in `docs/nrc_adams/nrc_aps_ui_launch_runbook.md` and `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md` | one headed Chrome operator proof for the same broader workbench route and state transitions, compared against the headless result rather than treated as optional |
 | Adjacent review/document-trace preservation | existing review/document-trace page and API tests plus operator docs in `frontend_UI_plans/README.md` and `docs/nrc_adams/nrc_aps_ui_launch_runbook.md` | proof that `/review/nrc-aps` and `/review/nrc-aps/document-trace` still behave as review and document-trace, not as Layer 3 controller surfaces |
@@ -186,7 +219,7 @@ Explicit anti-patterns:
 | Fail-closed and provenance hygiene | fail-closed invalid-input patterns in compare/Candidate B API tests; no-local-path assertions in `backend/tests/test_review_browser_server.py` and `e2e/nrc-aps-review.spec.js` | proof that the broader workbench fails closed on missing or partial state, does not leak local filesystem paths, and keeps operator-visible failure states intelligible |
 | No runtime-write, schema, or generic-route widening | current no-go rules from `24_L3_WB_FREEZE.md`, `12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md`, and current repo absence of `/review/layer3` and `/api/v1/layer3/...` | one implementation-entry audit showing no migration files, no schema/model widening, no hidden runtime-write dependency, and no generic redesign of existing review/document-trace/compare/Candidate B routes |
 
-### 6. Preparation rules
+### 7. Preparation rules
 - Freeze the exact same-checkout or validate-only preparation rules that govern this broader workbench family.
 - Freeze the exact bundle-scope versus runtime-scope constraints that still apply when the lane is later activated.
 - Status:
@@ -214,24 +247,25 @@ Explicit anti-patterns:
 - no promotion of package-derived context into dossier truth
 - no generic route-family redesign outside the additive `/review/layer3` plus `/api/v1/layer3/...` family
 - no assumption that React, a client-side router, or a new component library is required for v1
-- no exact final v1 typing-heuristics freeze in this doc; that remains a separate explicit user-freeze item from primary planning
+- no activation-grade typing-threshold, `entity_graph` default, APS document-derived unit granularity, or typing-conflict UI-presentation freeze beyond the adopted minimum typing posture in this doc
 - no qualitative single-item activation or qualitative-engine ambition freeze here; that remains with `25_L3_QUAL1_FREEZE.md`
 
 ## Implementation-entry posture after this pass
 - This branch-local prep packet now makes explicit:
   - the adopted operator-insufficiency trigger
   - the adopted additive route-family choice
+  - the adopted minimum typing posture
   - the exact owner-surface table
   - the recommended state editability map
   - the exact proof matrix
   - the exact remains-out list
-- That is enough to let a later implementation-entry packet stay narrow without guessing the owner surfaces, browser-proof posture, or no-go boundaries.
+- That is enough to let a later implementation-entry packet stay narrow without guessing the owner surfaces, minimum typing defaults, browser-proof posture, or no-go boundaries.
 - It is not enough to claim the lane is active or live.
 
 ## Still not activation-ready
 - no live `/review/layer3` or `/api/v1/layer3/...` route family exists on current `main`
 - no exact workbench implementation module filenames are chosen yet
-- no exact v1 typing heuristics are frozen yet
+- no activation-grade typing thresholds, `entity_graph` default, APS document-derived unit granularity, or typing-conflict UI presentation are frozen yet
 - no headed or headless broader-workbench proof has been produced yet
 - no implementation/status note or machine-checkable proof output exists yet for the broader workbench family
 
