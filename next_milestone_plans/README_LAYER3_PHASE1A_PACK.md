@@ -408,6 +408,12 @@ This document is outside the accepted Phase 1A normative control spine and outsi
 It is the merged planning-only prep doc on current `main` for the deferred `future workbench route family`, and it does not itself activate that lane, reopen the settled packet, or imply route/UI, runtime DB, schema, or shared-contract widening:
 - `24_L3_WB_FREEZE.md`
 
+### Post-settlement broader workbench exact-input prep doc
+
+This document is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+It is a planning-only companion prep doc for the deferred `future workbench route family`, and it now records the adopted branch-local operator-insufficiency trigger, additive route-family choice, and minimum typing posture plus the exact owner-surface map, proof matrix, and remains-out list that keep a later implementation-entry packet narrow without implying activation:
+- `26_L3_WB_INPUTS.md`
+
 ### Post-settlement qualitative single-item planning-only freeze doc
 
 This document is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
