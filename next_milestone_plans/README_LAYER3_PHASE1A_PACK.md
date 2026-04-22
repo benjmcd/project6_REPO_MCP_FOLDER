@@ -420,6 +420,12 @@ This document is outside the accepted Phase 1A normative control spine and outsi
 It is the merged planning-only prep doc on current `main` for the deferred qualitative single-item breadth axis, and it does not itself activate that lane, reopen the settled packet, or imply route/UI, runtime DB, schema, or shared-contract widening:
 - `25_L3_QUAL1_FREEZE.md`
 
+### Branch-local qualitative single-item exact-input prep doc
+
+If a checkout carries additional qualitative single-item companion prep beyond current `main`, that branch-local prep lives here.
+It remains planning-only, does not itself activate the lane, and must not be described as merged-main truth until GitHub and current `main` both confirm it:
+- `27_L3_QUAL1_INPUTS.md`
+
 ## Current use guidance
 
 ### If you are auditing scope
@@ -495,6 +501,14 @@ Start with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/layer3_progress_manifest.json`
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
+
+### If this checkout carries branch-local qualitative single-item companion prep beyond current `main`
+
+Start with:
+- `Layer3_planning_docs/25_L3_QUAL1_FREEZE.md`
+- `Layer3_planning_docs/27_L3_QUAL1_INPUTS.md`
+- `next_milestone_plans/layer3_progress_board.md`
+- `next_milestone_plans/layer3_progress_manifest.json`
 
 ## Residual boundary note
 
