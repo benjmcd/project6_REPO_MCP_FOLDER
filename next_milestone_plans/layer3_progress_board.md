@@ -3,12 +3,13 @@
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
-It tracks the bounded Layer3 Phase1A through APS validate-only runtime/report-ref chain already landed on current `main`, plus the landed `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, and the post-PR147 progress-packet closeout from PR `#148` beyond that landed boundary.
+It tracks the bounded Layer3 Phase1A through APS validate-only runtime/report-ref chain already landed on current `main`, plus the landed `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, the post-PR147 progress-packet closeout from PR `#148`, and the merged planning-only `24_L3_WB_FREEZE.md` / `25_L3_QUAL1_FREEZE.md` deferred-prep docs from PR `#165` beyond that landed boundary.
 
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger foundation through the bounded dedicated validate-only runtime/report-ref implementation lane
 - the landed promotion continuation freeze from PR `#145`, its docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, and the post-PR147 progress-packet closeout from PR `#148`
 - the now-settled later APS family packet immediately beyond the landed dedicated validate-only boundary
+- the merged planning-only deferred-prep docs from PR `#165` that live on current `main` without reopening the settled packet
 
 It is not a general whole-repo roadmap.
 It does not replace GitHub PR state.
