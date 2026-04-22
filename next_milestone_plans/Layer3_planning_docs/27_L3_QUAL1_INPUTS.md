@@ -3,7 +3,7 @@
 ## Status
 - planning-only
 - not active
-- branch-local on `codex/qual1-next`; not merged on current `main`
+- merged on current `main` as deferred-scope prep only
 - companion input doc for `25_L3_QUAL1_FREEZE.md`
 - does not reopen the settled packet or change merged milestone counts
 
@@ -14,18 +14,18 @@
 
 ## Role separation
 - `25_L3_QUAL1_FREEZE.md` remains the boundary, dependency, non-goal, and ambiguity-control doc for this lane.
-- This doc records the exact-freeze inputs and planning decisions captured in this branch-local packet without pretending the lane is active.
+- This doc records the exact-freeze inputs and planning decisions now landed in this merged planning-only packet without pretending the lane is active.
 - This doc does not activate qualitative single-item breadth or change current-`main` state.
 
 ## Decision posture for this pass
 - Freeze-ready recommendations in this doc are limited to what live repo truth plus primary planning already support.
-- This branch-local packet adopts:
+- This merged planning-only packet adopts:
   - one exact operator task
   - one minimum qualitative single-item pass-family contract
   - one exact owner-surface table
   - one exact proof matrix
   - one exact remains-out list
-- This branch-local packet does not freeze route/UI surfaces, exact module filenames, exact heuristic thresholds, or broader qualitative-engine ambition beyond the minimum first slice.
+- This merged planning-only packet does not freeze route/UI surfaces, exact module filenames, exact heuristic thresholds, or broader qualitative-engine ambition beyond the minimum first slice.
 
 ## Authority order
 1. live repo truth on current `main`
@@ -81,7 +81,7 @@
 ## Exact freeze inputs
 ### 1. Exact operator task
 - Status:
-  - adopted in this branch-local planning-only packet
+  - adopted in this merged planning-only packet
 - Adopted operator task:
   - `Run one committed qualitative single-item pass on one qualitative analysis set after typing review and before package entry so the operator can obtain bounded qualitative findings and caveats inside the existing Layer 3 session/package chain without cross-unit synthesis.`
 - Why this task is adopted here:
@@ -96,7 +96,7 @@
 
 ### 2. Minimum qualitative single-item pass-family contract
 - Status:
-  - adopted in this branch-local planning-only packet
+  - adopted in this merged planning-only packet
 - Adopted minimum contract:
   - one session-scoped qualitative `single_item` pass family
   - input must be one committed `L3AnalysisSet` whose `set_type` is `single_item`
@@ -120,7 +120,7 @@
 
 ### 3. Exact owner-surface table
 - Status:
-  - adopted in this branch-local planning-only packet
+  - adopted in this merged planning-only packet
   - exact filenames remain implementation-local once this packet is accepted
 
 | Concern | Exact current touchpoints | Adopted future owner class | Must stay separate from |
@@ -141,7 +141,7 @@ Explicit anti-patterns:
 
 ### 4. Exact proof matrix
 - Status:
-  - adopted in this branch-local planning-only packet
+  - adopted in this merged planning-only packet
 
 | Proof area | Current repo-backed harness or pattern to reuse | Exact later proof requirement |
 | --- | --- | --- |
@@ -154,7 +154,7 @@ Explicit anti-patterns:
 
 ### 5. Preparation rules
 - Status:
-  - adopted in this branch-local planning-only packet
+  - adopted in this merged planning-only packet
 - Adopted preparation rules:
   - keep the first qualitative slice service-first and direct-proof-first
   - preserve the merged planning-only `24_L3_WB_FREEZE.md` / `26_L3_WB_INPUTS.md` packet as boundary context rather than as activation permission
@@ -181,7 +181,7 @@ Explicit anti-patterns:
 - no broad qualitative-engine ambition beyond the minimum single-item slice
 
 ## Implementation-entry posture after this pass
-- This branch-local packet now makes explicit:
+- This merged planning-only packet now makes explicit:
   - one exact operator task
   - one minimum qualitative single-item pass-family contract
   - one exact owner-surface table
