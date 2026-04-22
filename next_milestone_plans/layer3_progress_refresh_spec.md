@@ -81,7 +81,7 @@ Discovery rule:
 - if multiple clean checkouts exist, prefer the one matching current `main` for merged repo truth, or the one carrying the declared open or branch-only milestone when the manifest says a non-merged step is in scope
 
 Seed path used when this artifact pack was authored:
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\doc-sync`
 
 Do not treat the dirty root checkout at:
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER`
@@ -144,6 +144,7 @@ Hard rule:
 - when `next_required_decision.state=settled`, do not invent a planned or open next lane in the artifact
 - do not promote a deferred item into candidate-next or current-focus unless its manifest-declared activation conditions are actually satisfied by refreshed repo truth
 - do not silently omit the deferred activation section when the deferred list is non-empty
+- do not treat merged planning-only deferred-prep docs on current `main` as new milestones or as packet-reopen evidence unless the manifest explicitly promotes them
 
 ## What Not To Do
 
@@ -176,6 +177,7 @@ The current settled state in this checkout is:
 - current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, and the post-PR147 progress-packet closeout from PR `#148`
 - live repo truth now also shows the existing promotion governance family already sufficient on current `main`
 - retrieval cutover already exists on current `main` as a separate validate-only parity-proof family
+- current `main` also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR `#165`, but they remain deferred-scope prep artifacts and do not change the settled packet counts or `next_required_decision`
 - do not invent another later APS family lane unless live repo truth proves a concrete new gap
 
 ## Schedule Guidance

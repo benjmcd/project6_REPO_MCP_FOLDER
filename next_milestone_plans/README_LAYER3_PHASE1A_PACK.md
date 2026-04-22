@@ -372,6 +372,48 @@ This document is outside the accepted Phase 1A normative control spine.
 It is the now-landed read-only freeze on current `main` that selects `deterministic_insight_artifact` as the first deterministic continuation beyond the already-landed dossier boundary, and it does not itself imply that deterministic implementation, challenge/review-packet fan-out, or schema surfaces have landed on current `main`:
 - `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md`
 
+### Post-Phase 1A carried-forward APS deterministic-challenge continuation freeze packet
+
+This document is outside the accepted Phase 1A normative control spine.
+It is the now-landed read-only freeze on current `main` that selects `deterministic_challenge_artifact` as the next deterministic continuation beyond the already-landed deterministic-insight boundary, and it does not itself imply that review-packet, validate-only, or schema surfaces have landed on current `main`:
+- `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md`
+
+### Post-Phase 1A carried-forward APS review-packet continuation freeze packet
+
+This document is outside the accepted Phase 1A normative control spine.
+It is the now-landed read-only freeze on current `main` that selects the bounded deterministic challenge review-packet continuation beyond the already-landed deterministic challenge boundary, and it does not itself imply that validate-only, route/UI, or schema surfaces have landed on current `main`:
+- `20_GATED_APS_REVIEW_PACKET_FREEZE.md`
+
+### Post-Phase 1A carried-forward APS validate-only gates continuation freeze packet
+
+This document is outside the accepted Phase 1A normative control spine.
+It is the now-landed read-only freeze on current `main` that selects the bounded `validate_only_gates` continuation beyond the already-landed review-packet boundary, and it does not itself imply that validate-only runtime/report-ref, route/UI, or schema surfaces have landed on current `main`:
+- `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
+
+### Post-Phase 1A carried-forward APS validate-only runtime continuation freeze packet
+
+This document is outside the accepted Phase 1A normative control spine.
+It is the now-landed read-only freeze on current `main` that selects the bounded dedicated validate-only runtime/report-ref continuation beyond the already-landed `validate_only_gates` boundary, and it does not itself imply that promotion, retrieval cutover, route/UI, or schema surfaces have landed on current `main`:
+- `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`
+
+### Post-Phase 1A carried-forward APS promotion settlement freeze packet
+
+This document is outside the accepted Phase 1A normative control spine.
+It is the now-landed read-only freeze on current `main` that selected promotion as the first later APS family beyond the dedicated validate-only runtime/report-ref boundary before the later APS family packet was settled, and it does not itself imply that broader deferred-scope Layer3 work, runtime DB writes, or schema widening have landed on current `main`:
+- `23_GATED_APS_PROMOTION_FREEZE.md`
+
+### Post-settlement broader workbench planning-only freeze doc
+
+This document is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+It is the merged planning-only prep doc on current `main` for the deferred `future workbench route family`, and it does not itself activate that lane, reopen the settled packet, or imply route/UI, runtime DB, schema, or shared-contract widening:
+- `24_L3_WB_FREEZE.md`
+
+### Post-settlement qualitative single-item planning-only freeze doc
+
+This document is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+It is the merged planning-only prep doc on current `main` for the deferred qualitative single-item breadth axis, and it does not itself activate that lane, reopen the settled packet, or imply route/UI, runtime DB, schema, or shared-contract widening:
+- `25_L3_QUAL1_FREEZE.md`
+
 ## Current use guidance
 
 ### If you are auditing scope
@@ -428,10 +470,24 @@ Start with:
 ### If you are deciding what must happen before bounded later APS-family continuation is allowed
 
 Start with:
-- `Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md`
-- `Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md`
-- `Layer3_planning_docs/10_GATED_APS_CITATION_FREEZE.md`
-- `Layer3_planning_docs/11_GATED_APS_REPORT_FREEZE.md`
+- `Layer3_planning_docs/20_GATED_APS_REVIEW_PACKET_FREEZE.md`
+- `Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
+- `Layer3_planning_docs/22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`
+- `Layer3_planning_docs/23_GATED_APS_PROMOTION_FREEZE.md`
+- `next_milestone_plans/layer3_progress_board.md`
+- `next_milestone_plans/layer3_progress_manifest.json`
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
+
+Current answer:
+- no further later APS-family decision or implementation lane is justified by default from current `main`
+
+### If you are deciding what deferred broader Layer3 planning-only prep now exists on current `main`
+
+Start with:
+- `Layer3_planning_docs/24_L3_WB_FREEZE.md`
+- `Layer3_planning_docs/25_L3_QUAL1_FREEZE.md`
+- `next_milestone_plans/layer3_progress_board.md`
+- `next_milestone_plans/layer3_progress_manifest.json`
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 
 ## Residual boundary note
