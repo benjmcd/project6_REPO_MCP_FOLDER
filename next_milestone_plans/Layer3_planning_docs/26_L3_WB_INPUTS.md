@@ -280,7 +280,6 @@ Explicit anti-patterns:
 - The state-boundary defaults already written in `24_L3_WB_FREEZE.md` should remain the working default until a later explicit freeze says otherwise.
 - Headed and headless Chrome proof should remain mandatory later-lane proof, not optional follow-up.
 - Exact wrapper class names, exact module filenames, and exact component-library choice remain implementation-local even with this planning-only prep packet landed on current `main`.
-- Exact wrapper class names, exact module filenames, and exact component-library choice remain implementation-local even with this planning-only prep packet landed on current `main`.
 
 ## Exact remains-out list
 - no live implementation of `/review/layer3` or `/api/v1/layer3/...` in this pass
