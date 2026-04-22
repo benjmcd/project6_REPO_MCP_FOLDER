@@ -311,7 +311,7 @@ Current-focus admission requires:
 
 Primary authority surfaces:
 - `next_milestone_plans/Layer3_planning_docs/25_L3_QUAL1_FREEZE.md`
-- `next_milestone_plans/Layer3_planning_docs/27_L3_QUAL1_INPUTS.md` when present in the current checkout
+- `next_milestone_plans/Layer3_planning_docs/27_L3_QUAL1_INPUTS.md`
 - `next_milestone_plans/README_LAYER3_PHASE1A_PACK.md`
 - `next_milestone_plans/layer3_progress_manifest.json`
 - `next_milestone_plans/layer3_progress_board.md`
@@ -396,7 +396,7 @@ Refresh this board against:
 - `next_milestone_plans/README_LAYER3_PHASE1A_PACK.md`
 - `next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
 - `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
-- `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `26_L3_WB_INPUTS.md`, plus `27_L3_QUAL1_INPUTS.md` when present in the current checkout
+- `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `27_L3_QUAL1_INPUTS.md`
 - `backend/app/services/review_nrc_aps_graph.py`
 - `backend/app/services/nrc_aps_validate_only_gates_contract.py`
 - `backend/app/services/nrc_aps_validate_only_gates.py`
