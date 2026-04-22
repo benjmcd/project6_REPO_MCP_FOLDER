@@ -50,6 +50,7 @@ As of `2026-04-22`:
 - current `main` now also includes the post-PR165 docs/progress/front-door sync from PR `#166`, which aligns the progress artifact, pack front door, and canonical status/index surfaces with the merged planning-only deferred-prep docs without changing the settled packet state
 - current `main` now also includes the merged broader-workbench implementation-entry prep packet from PR `#168`, the post-PR168 current-main closeout from PR `#169`, and the post-PR169 duplicate-default cleanup from PR `#170`; together they land and finalize `26_L3_WB_INPUTS.md` plus companion updates to `24_L3_WB_FREEZE.md`, `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet without changing the settled packet state or merged milestone count
 - this checkout now also carries branch-local planning-only qualitative single-item companion prep rooted in `27_L3_QUAL1_INPUTS.md` plus companion updates to `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet; that branch-local prep is not merged on current `main` and does not change the settled packet state or merged milestone count
+- GitHub now also shows that branch-local qualitative companion packet as open PR `#172`, so the open review follow-up must remain visible in this checkout until both GitHub and current `main` confirm it
 
 ## Program State Summary
 
@@ -60,6 +61,7 @@ As of `2026-04-22`:
 - Current `main` also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR `#165`, plus the post-PR165 docs/progress/front-door sync from PR `#166`; those landed docs prepare deferred-scope work and align artifact/front-door surfaces only, without changing the 29 merged milestone count or reopening the settled packet
 - Current `main` also includes the merged broader-workbench implementation-entry prep packet from PR `#168`, the post-PR168 current-main closeout from PR `#169`, and the post-PR169 duplicate-default cleanup from PR `#170`; together they land and finalize `26_L3_WB_INPUTS.md` plus companion updates to `24_L3_WB_FREEZE.md`, `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet, and they still remain planning-only deferred-scope prep rather than an active lane
 - This checkout also carries branch-local `27_L3_QUAL1_INPUTS.md` companion prep plus companion updates to `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet; that branch-local prep remains planning-only and does not change merged milestone counts or reopen the settled packet
+- Open follow-up now visible on GitHub: PR `#172` (`codex/qual1-next` -> `main`) is the current review artifact for that branch-local qualitative companion packet while it remains unmerged
 
 ## Milestone Table
 
