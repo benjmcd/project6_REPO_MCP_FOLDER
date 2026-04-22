@@ -240,6 +240,7 @@ Explicit anti-patterns:
 - no broad rewrite of `backend/main.py`; any later workbench entry should be additive and route-local
 - no broad rewrite of `backend/app/api/review_nrc_aps.py`; existing review/document-trace/workbench-compare/Candidate B APIs remain adjacent surfaces
 - no takeover of `backend/app/api/market_data_integration.py`, `market_data_validation.py`, or `market_insight_ai.py` as the broader workbench owner
+- no replacement of the primary `source_shape` taxonomy with supplementary `ContentKind` naming; any later reconciliation must be frozen explicitly before implementation claims support for it
 - no rewrite of existing `backend/app/review_ui/static/index.html`, `document_trace.html`, `workbench_compare.html`, `candidate_b_trace.html`, or `analyst_insight.html` into the broader workbench shell
 - no migrations, no `backend/alembic/versions/*` additions, and no DB-init behavior change
 - no schema/model widening and no runtime DB write dependency
@@ -289,9 +290,13 @@ Explicit anti-patterns:
 - primary planning:
   - `01_LAYER3_OPERATOR_USE_MODEL_AND_SYSTEM_BOUNDARY.md`
   - `03_LAYER3_SESSION_LEDGER_AND_WORKSPACE_MODEL.md`
+  - `04_LAYER3_ANALYSIS_UNIT_MODALITY_AND_SET_MODEL.md`
   - `08_LAYER3_UI_WORKBENCH_AND_API_SURFACE.md`
   - `11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md`
   - `12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md`
+- linked ADR and naming authority:
+  - `decisions/ADR-003_TYPING_RULES_QUANT_QUAL_HYBRID.md`
+  - `00C_LAYER3_GLOSSARY_AND_NAMING_MAP.md`
 - current repo truth:
   - `backend/main.py`
   - `backend/app/api/router.py`
