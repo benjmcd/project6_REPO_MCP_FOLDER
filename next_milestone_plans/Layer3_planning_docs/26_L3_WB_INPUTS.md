@@ -8,17 +8,19 @@
 
 ## Lane
 - future workbench route family
-- purpose: exact-freeze input preparation only
+- purpose: exact-freeze input preparation and branch-local decision capture only
 
 ## Role separation
 - `24_L3_WB_FREEZE.md` remains the boundary, dependency, non-goal, and ambiguity-control doc for this lane.
-- This doc records the exact-freeze inputs that must be frozen before activation or implementation prep can honestly begin.
+- This doc records the exact-freeze inputs and the branch-local planning decisions that can now be adopted without pretending the lane is active.
 - This doc does not itself activate the lane.
 
 ## Decision posture for this pass
 - Freeze-ready recommendations in this doc are limited to what live repo truth plus primary planning already support.
-- Anything marked `needs explicit confirmation` is not frozen here, even if a recommended default is given.
-- A later activation-ready freeze may adopt these recommendations, narrow them, or reject them, but it must do so explicitly.
+- The two previous blockers for this lane are now resolved on this branch-local planning pass:
+  - the lane trigger
+  - the route-family choice
+- A later activation-ready freeze may keep those adopted decisions, narrow them, or explicitly reopen them, but it must do so explicitly.
 
 ## Authority order
 1. live repo truth on current `main`
@@ -47,15 +49,18 @@
   - one exact operator workflow insufficiency in the currently shipped review/document-trace/workbench-compare/Candidate B/analyst-insight posture
   - or one exact product requirement that justifies the broader workbench even without a proven current insufficiency
 - Status:
-  - needs explicit confirmation
-- Repo-confirmed operator insufficiency:
-  - Not established in inspected materials.
-- Freeze-ready default if the product-requirement path is chosen:
-  - `The broader workbench exists to provide one additive operator/controller surface for the full Layer 3 session lifecycle beyond the currently shipped adjacent review, document-trace, Workbench Compare, Candidate B Trace, and analyst-insight surfaces.`
-- Freeze-ready default if the operator-insufficiency path is chosen:
+  - adopted on this branch-local planning pass
+- Adopted trigger path:
+  - operator-insufficiency path
+- Adopted exact trigger statement:
   - `The currently shipped adjacent surfaces are insufficient because no single live surface owns the full selection-commit -> loading -> typing-review -> plan-review -> pass-monitor -> reconciled-results -> package-review lifecycle as one operator controller.`
-- Blocking note:
-  - one of those two trigger paths still must be explicitly chosen later; this doc does not choose it.
+- Evidence for the adopted trigger:
+  - current `main` ships separate review, document-trace, Workbench Compare, Candidate B Trace, and analyst-insight pages rather than one broader controller route family
+  - current `main` ships review-shell API surfaces under `/api/v1/review/nrc-aps/...`, but no broader `/api/v1/layer3/...` family
+  - current review graph truth still ends at `validate_only_gates`; it does not already encode a broader Layer 3 controller/workbench lane
+  - primary planning says the broader workbench is a new stateful operator surface rather than a claim that the current analyst-insight page already covers the full workflow
+- Non-adopted alternative:
+  - a product-requirement path may still be chosen later only if a later freeze explicitly reopens the trigger decision
 
 ### 2. Route-family choice
 - Freeze one exact route-family choice:
@@ -67,14 +72,18 @@
   - relabeling `/review/nrc-aps/workbench-compare` as the broader workbench
   - relabeling `/review/nrc-aps/candidate-b-trace` as the broader workbench
 - Status:
-  - freeze-ready recommendation present
-  - still needs explicit confirmation because primary planning classifies the exact final route family as an open question
-- Recommended default:
-  - use a new additive route family rooted at `/review/layer3` plus `/api/v1/layer3/...`
-- Why this is the recommended default:
+  - adopted on this branch-local planning pass
+- Adopted route-family choice:
+  - UI root: `/review/layer3`
+  - API root: `/api/v1/layer3/...`
+- Why this route family is adopted here:
   - primary planning already recommends a new route family rather than pretending `/review/analyst-insight` is already the full workbench
   - current analyst-insight is a stable, separately documented, separately tested product surface with alias-backed APIs
   - current review/document-trace/workbench-compare/Candidate B Trace surfaces are already live, adjacent, and separately tested, so overloading them would blur current repo truth
+  - the user delegated continuation discretion for the next planning step, which is enough to choose the narrowest supported branch-local route-family decision here
+- Still unresolved within this adopted route family:
+  - exact subroute layout
+  - exact module and file names
 
 ### 3. Owner-surface class
 - Freeze one exact owner-surface class for:
@@ -163,30 +172,26 @@
   - treat current review/document-trace runtime DBs as read-only evidence-plane surfaces unless a separate later lane explicitly reopens that boundary
 
 ## Recommended defaults not yet frozen
-- The recommended planning default remains a new additive workbench family rather than pretending `/review/analyst-insight` is already the full broader workbench.
 - The broader workbench should remain separate from the currently shipped review, document-trace, Workbench Compare, and Candidate B Trace surfaces.
 - The state-boundary defaults already written in `24_L3_WB_FREEZE.md` should remain the working default until a later explicit freeze says otherwise.
 - Headed and headless Chrome proof should remain mandatory later-lane proof, not optional follow-up.
 
 ## Freeze-ready subset vs still-blocking subset
 ### Freeze-ready now
-- recommended route-family choice
+- adopted operator-insufficiency trigger
+- adopted additive route-family choice
 - recommended owner-surface class
 - recommended state editability map
 - recommended minimum proof contract
 - recommended preparation rules
 
 ### Still blocking
-- one exact lane trigger choice:
-  - operator-insufficiency path
-  - or product-requirement path
-- explicit confirmation that the recommended new additive route family should be adopted rather than an analyst-insight evolution
+- one exact owner-surface table
+- one exact proof matrix
+- one exact remains-out list for any later activation-ready freeze or implementation-entry packet
 
 ## Exact next-pass outputs
-- one exact trigger statement
-- one exact route-family statement
 - one exact owner-surface table
-- one exact state editability table
 - one exact proof matrix
 - one exact remains-out list
 
