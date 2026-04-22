@@ -3,24 +3,25 @@
 ## Status
 - planning-only
 - not active
+- merged on current `main` as deferred-scope prep only
 - companion input doc for `24_L3_WB_FREEZE.md`
 - does not reopen the settled packet or change merged milestone counts
 
 ## Lane
 - future workbench route family
-- purpose: exact-freeze input preparation and branch-local decision capture only
+- purpose: exact-freeze input preparation and planning decision capture only
 
 ## Role separation
 - `24_L3_WB_FREEZE.md` remains the boundary, dependency, non-goal, and ambiguity-control doc for this lane.
-- This doc records the exact-freeze inputs and the branch-local planning decisions that can now be adopted without pretending the lane is active.
+- This doc records the exact-freeze inputs and the planning decisions now landed on current `main` without pretending the lane is active.
 - This doc does not itself activate the lane.
 
 ## Decision posture for this pass
 - Freeze-ready recommendations in this doc are limited to what live repo truth plus primary planning already support.
-- The two previous blockers for this lane are now resolved on this branch-local planning pass:
+- The two previous blockers for this lane are now resolved in this planning-only packet:
   - the lane trigger
   - the route-family choice
-- This branch-local planning pass also adopts the minimum typing posture that primary planning plus ADR-003 already support for later implementation-entry prep, without pretending thresholds, APS document-unit granularity, or typing-conflict presentation are already frozen.
+- This planning-only packet also adopts the minimum typing posture that primary planning plus ADR-003 already support for later implementation-entry prep, without pretending thresholds, APS document-unit granularity, or typing-conflict presentation are already frozen.
 - A later activation-ready freeze may keep those adopted decisions, narrow them, or explicitly reopen them, but it must do so explicitly.
 
 ## Authority order
@@ -106,7 +107,7 @@
 
 ## Repo-confirmed controller-to-service connection map
 - Future broader-workbench route/API layers should default to orchestrating the already-landed internal Layer 3 owner-service chain rather than inventing new write-side cores.
-- Branch-local default connection map:
+- Default connection map for later implementation entry:
 
 | Workbench concern | Current repo-confirmed service surface | Connection rule |
 | --- | --- | --- |
@@ -127,7 +128,7 @@
   - one exact operator workflow insufficiency in the currently shipped review/document-trace/workbench-compare/Candidate B/analyst-insight posture
   - or one exact product requirement that justifies the broader workbench even without a proven current insufficiency
 - Status:
-  - adopted on this branch-local planning pass
+  - adopted in this planning-only packet on current `main`
 - Adopted trigger path:
   - operator-insufficiency path
 - Adopted exact trigger statement:
@@ -150,7 +151,7 @@
   - relabeling `/review/nrc-aps/workbench-compare` as the broader workbench
   - relabeling `/review/nrc-aps/candidate-b-trace` as the broader workbench
 - Status:
-  - adopted on this branch-local planning pass
+  - adopted in this planning-only packet on current `main`
 - Adopted route-family choice:
   - UI root: `/review/layer3`
   - API root: `/api/v1/layer3/...`
@@ -158,7 +159,7 @@
   - primary planning already recommends a new route family rather than pretending `/review/analyst-insight` is already the full workbench
   - current analyst-insight is a stable, separately documented, separately tested product surface with alias-backed APIs
   - current review/document-trace/workbench-compare/Candidate B Trace surfaces are already live, adjacent, and separately tested, so overloading them would blur current repo truth
-  - the user delegated continuation discretion for the next planning step, which is enough to choose the narrowest supported branch-local route-family decision here
+  - this adopted route family stays additive, matches current primary-planning defaults, and avoids overloading any existing live owner surface
 - Still unresolved within this adopted route family:
   - exact subroute layout
   - exact module and file names
@@ -166,7 +167,7 @@
 ### 3. Exact owner-surface table
 - Freeze one exact owner-surface mapping for the broader workbench page shell, API/router family, service/orchestration family, and proof surfaces.
 - Status:
-  - adopted on this branch-local planning pass
+  - adopted in this planning-only packet on current `main`
   - exact filenames remain implementation-local once this packet is accepted
 
 | Concern | Exact current touchpoints | Adopted future owner class | Must stay separate from |
@@ -190,7 +191,7 @@ Explicit anti-patterns:
 ### 4. Minimum typing posture
 - Freeze one exact minimum typing posture for the broader workbench lane that stays within current primary-planning authority and does not invent activation-grade heuristics.
 - Status:
-  - adopted on this branch-local planning pass
+  - adopted in this planning-only packet on current `main`
 - Authority guardrails:
   - primary `source_shape` taxonomy is authoritative for this lane
   - `analysis_modality` remains distinct from `source_shape`
@@ -206,7 +207,7 @@ Explicit anti-patterns:
 | `bundle_artifact` | bounded review first, then `qualitative` or `hybrid` from actual contents | bounded composition first | do not type from artifact label alone |
 
 - Explicit unresolved typing item that remains out of this adopted minimum posture:
-  - `entity_graph` does not receive a branch-local default here because the primary suggested v1 matrix and ADR-003 additional posture do not yet assign a repo-backed default; any later implementation-entry packet must either stay out of `entity_graph` or freeze it explicitly before claiming support
+  - `entity_graph` does not receive a default here because the primary suggested v1 matrix and ADR-003 additional posture do not yet assign a repo-backed default; any later implementation-entry packet must either stay out of `entity_graph` or freeze it explicitly before claiming support
 - Adopted override semantics:
   - allow override when confidence falls below a later frozen threshold
   - allow override when splitting would break meaning or must-remain-intact semantics
@@ -247,7 +248,7 @@ Explicit anti-patterns:
 ### 6. Exact proof matrix
 - Freeze one exact proof matrix for the broader workbench shell, its API family, and its adjacent-surface preservation rules.
 - Status:
-  - adopted on this branch-local planning pass
+  - adopted in this planning-only packet on current `main`
 
 | Proof area | Current repo-backed harness or pattern to reuse | Exact later proof requirement |
 | --- | --- | --- |
@@ -278,7 +279,8 @@ Explicit anti-patterns:
 - The broader workbench should remain separate from the currently shipped review, document-trace, Workbench Compare, and Candidate B Trace surfaces.
 - The state-boundary defaults already written in `24_L3_WB_FREEZE.md` should remain the working default until a later explicit freeze says otherwise.
 - Headed and headless Chrome proof should remain mandatory later-lane proof, not optional follow-up.
-- Exact wrapper class names, exact module filenames, and exact component-library choice remain implementation-local once this branch-local prep packet is accepted.
+- Exact wrapper class names, exact module filenames, and exact component-library choice remain implementation-local even with this planning-only prep packet landed on current `main`.
+- Exact wrapper class names, exact module filenames, and exact component-library choice remain implementation-local even with this planning-only prep packet landed on current `main`.
 
 ## Exact remains-out list
 - no live implementation of `/review/layer3` or `/api/v1/layer3/...` in this pass
@@ -298,7 +300,7 @@ Explicit anti-patterns:
 - no qualitative single-item activation or qualitative-engine ambition freeze here; that remains with `25_L3_QUAL1_FREEZE.md`
 
 ## Implementation-entry posture after this pass
-- This branch-local prep packet now makes explicit:
+- This planning-only prep packet now makes explicit:
   - the adopted operator-insufficiency trigger
   - the adopted additive route-family choice
   - the adopted minimum typing posture

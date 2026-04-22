@@ -92,7 +92,7 @@
 ## Dependencies
 - the selection-commit and session boundary remain authoritative
 - the future broader workbench route family should be frozen before activation so operator control state is not implied ad hoc
-- the combined `24_L3_WB_FREEZE.md` / `26_L3_WB_INPUTS.md` packet now adopts a branch-local operator-insufficiency trigger, additive route-family choice, and minimum typing posture and records the owner-surface, proof, and no-go implementation-entry prep for that broader workbench lane, but that planning-only packet still does not activate the broader workbench lane
+- the combined `24_L3_WB_FREEZE.md` / `26_L3_WB_INPUTS.md` packet now adopts a planning-only operator-insufficiency trigger, additive route-family choice, and minimum typing posture and records the owner-surface, proof, and no-go implementation-entry prep for that broader workbench lane, but that planning-only packet still does not activate the broader workbench lane
 - read-only runtime DB boundary remains unchanged
 - current packet remains settled while this doc is planning-only
 

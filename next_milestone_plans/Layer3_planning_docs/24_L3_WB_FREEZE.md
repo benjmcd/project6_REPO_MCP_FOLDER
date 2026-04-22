@@ -10,7 +10,7 @@
 - future workbench route family
 
 ## Companion exact-freeze input doc
-- `26_L3_WB_INPUTS.md` now records the adopted branch-local trigger and route-family choice for this lane, the adopted minimum typing posture, the exact owner-surface and proof mapping for implementation-entry prep, and the exact remains-out list that keeps later work narrow.
+- `26_L3_WB_INPUTS.md` now records the adopted planning-only trigger and route-family choice for this lane, the adopted minimum typing posture, the exact owner-surface and proof mapping for implementation-entry prep, and the exact remains-out list that keeps later work narrow.
 - This doc remains the boundary, dependency, non-goal, and ambiguity-control surface.
 - The companion input doc is planning-only prep and does not itself satisfy activation prerequisites.
 
@@ -20,8 +20,8 @@
 - This prep can stay additive and planning-only without reopening APS packet state, runtime DB boundaries, schema, or generic route widening.
 
 ## Why activation is not automatic
-- An exact branch-local route-family choice is now recorded in `26_L3_WB_INPUTS.md`, but no live route family is active yet.
-- Only a minimum branch-local typing posture is now recorded in `26_L3_WB_INPUTS.md`; activation-grade thresholds, `entity_graph` defaults, APS document-unit granularity, and typing-conflict presentation remain unfrozen.
+- An exact planning-only route-family choice is now recorded in `26_L3_WB_INPUTS.md`, but no live route family is active yet.
+- Only a minimum planning-only typing posture is now recorded in `26_L3_WB_INPUTS.md`; activation-grade thresholds, `entity_graph` defaults, APS document-unit granularity, and typing-conflict presentation remain unfrozen.
 - No exact shell or state-transition proof exists yet for the broader workbench.
 - No headed plus headless Chrome proof exists yet for the future broader workbench family.
 - The active packet is still settled and does not nominate this as an active lane.
@@ -80,7 +80,7 @@
 - session-scoped workspace model remains authoritative
 - read-only runtime DB boundary remains unchanged
 - active packet remains settled while this doc is only planning
-- the companion input doc now adopts the branch-local operator-insufficiency trigger, additive route-family choice, and minimum typing posture, and records the exact owner-surface/proof/no-go mapping for implementation-entry prep, but activation still requires an explicit later freeze outcome rather than the prep doc by itself
+- the companion input doc now adopts the planning-only operator-insufficiency trigger, additive route-family choice, and minimum typing posture, and records the exact owner-surface/proof/no-go mapping for implementation-entry prep, but activation still requires an explicit later freeze outcome rather than the prep doc by itself
 - later implementation must still choose exact filenames and subroutes, honor the no-go list, and produce the headed/headless plus backend proof outputs before activation
 
 ## Boundary-level owner-surface classes for later activation
@@ -102,9 +102,9 @@
 - `backend/app/services/review_nrc_aps_runtime_db.py`
 
 ## Later activation prerequisites
-- the adopted branch-local operator-insufficiency trigger and additive route-family choice from `26_L3_WB_INPUTS.md` must remain intact unless a later freeze explicitly reopens them
+- the adopted planning-only operator-insufficiency trigger and additive route-family choice from `26_L3_WB_INPUTS.md` must remain intact unless a later freeze explicitly reopens them
 - the adopted minimum typing posture from `26_L3_WB_INPUTS.md` must remain inside the primary `source_shape != analysis_modality` boundary, and any later threshold, `entity_graph`, granularity, or UI-presentation choices must be frozen explicitly rather than assumed ad hoc
-- one exact file/module-local route/API ownership implementation must still be chosen; current planning-default route names plus the branch-local owner-surface table do not by themselves settle final route strings or file/module names
+- one exact file/module-local route/API ownership implementation must still be chosen; current planning-default route names plus the owner-surface table in `26_L3_WB_INPUTS.md` do not by themselves settle final route strings or file/module names
 - headed Chrome proof that the broader workbench shell loads and exposes the full state machine
 - headless Chrome proof of the same shell and state transitions
 - proof that typing review and override behavior follow the adopted minimum typing posture and record auditable override state
