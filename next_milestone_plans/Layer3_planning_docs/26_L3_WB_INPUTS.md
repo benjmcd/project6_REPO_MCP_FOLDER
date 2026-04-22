@@ -43,6 +43,42 @@
 - current Workbench Compare and Candidate B Trace remain additive consumer surfaces, not Layer 3 controller truth.
 - current analyst-insight remains a separate deterministic product surface, not the broader Layer 3 workbench.
 
+## Repo-confirmed implementation-entry map
+- current page-route registration pattern for adjacent operator surfaces lives in `backend/main.py`
+- current shared API include pattern lives in `backend/app/api/router.py`
+- current review/document-trace/workbench-compare/Candidate B API ownership lives in `backend/app/api/review_nrc_aps.py`
+- current analyst-insight alias API ownership lives in:
+  - `backend/app/api/market_data_integration.py`
+  - `backend/app/api/market_data_validation.py`
+  - `backend/app/api/market_insight_ai.py`
+- current review-family static shell pattern lives under `backend/app/review_ui/static/` with one HTML/CSS/JS asset set per page family
+- current adjacent service/orchestration examples live in:
+  - `backend/app/services/review_nrc_aps_graph.py`
+  - `backend/app/services/review_nrc_aps_workbench_compare.py`
+  - `backend/app/services/review_nrc_aps_candidate_b_trace.py`
+- current isolated browser-proof harness lives in:
+  - `backend/tests/review_browser_server.py`
+  - `backend/tests/test_review_browser_server.py`
+  - `e2e/nrc-aps-review.spec.js`
+  - `playwright.config.js`
+  - `.github/workflows/playwright.yml`
+- current page/API regression pattern for adjacent surfaces lives in:
+  - `backend/tests/test_review_nrc_aps_page.py`
+  - `backend/tests/test_review_nrc_aps_document_trace_page.py`
+  - `backend/tests/test_review_nrc_aps_workbench_compare_page.py`
+  - `backend/tests/test_review_nrc_aps_workbench_compare_api.py`
+  - `backend/tests/test_review_nrc_aps_candidate_b_trace_page.py`
+  - `backend/tests/test_review_nrc_aps_candidate_b_trace_api.py`
+  - `backend/tests/test_analyst_insight_page.py`
+  - `backend/tests/test_analyst_insight_alias_parity.py`
+
+## Repo-confirmed dependency posture
+- repo-native web entry uses `FastAPI`, `APIRouter`, and `StaticFiles`; no current-main evidence requires a new web stack for this lane
+- adjacent operator pages use repo-native static HTML/CSS/JS assets under the shared `/review/nrc-aps/static` mount
+- adjacent page/API regression proof uses `pytest` plus `fastapi.testclient.TestClient`
+- repo-native browser regression proof uses Playwright Chromium plus the isolated `review_browser_server` harness
+- no current-main evidence justifies assuming React, a client-side router, or a new component library for the first additive workbench slice
+
 ## Exact freeze inputs
 ### 1. Lane trigger
 - Freeze one exact trigger for why this lane should exist next:
@@ -85,22 +121,26 @@
   - exact subroute layout
   - exact module and file names
 
-### 3. Owner-surface class
-- Freeze one exact owner-surface class for:
-  - the broader workbench page shell
-  - the broader workbench API/router surface
-  - the validation/proof surfaces
-- Exact file and module names remain unresolved here.
+### 3. Exact owner-surface table
+- Freeze one exact owner-surface mapping for the broader workbench page shell, API/router family, service/orchestration family, and proof surfaces.
 - Status:
-  - freeze-ready recommendation present
-  - exact filenames remain implementation-local once the route family is explicitly confirmed
-- Recommended owner-surface class:
-  - one new broader-workbench page shell served as its own route family rather than as an extension of the current review/document-trace page shells
-  - one new Layer 3 API router/module family mounted through `backend/app/api/router.py`
-  - one new validation/proof surface family for broader-workbench shell and operator-flow proof
-- Explicit anti-patterns:
-  - do not extend `review_nrc_aps.router` as though the broader workbench were just another review/document-trace consumer endpoint
-  - do not treat the current `market_*` / analyst-insight alias API family as the owner surface for the broader workbench
+  - adopted on this branch-local planning pass
+  - exact filenames remain implementation-local once this packet is accepted
+
+| Concern | Exact current touchpoints | Adopted future owner class | Must stay separate from |
+| --- | --- | --- | --- |
+| UI route registration | `backend/main.py` | one additive broader-workbench page route entry rooted at `/review/layer3` | existing `/review/nrc-aps`, `/review/nrc-aps/document-trace`, `/review/nrc-aps/workbench-compare`, `/review/nrc-aps/candidate-b-trace`, `/review/analyst-insight` page handlers |
+| Static page shell assets | `backend/app/review_ui/static/index.html`, `document_trace.html`, `workbench_compare.html`, `candidate_b_trace.html`, `analyst_insight.html` and their paired CSS/JS assets | one additive Layer 3 shell asset family under `backend/app/review_ui/static/` using the repo-native static mount pattern | overloading existing review/document-trace/workbench-compare/Candidate B/analyst-insight assets as the Layer 3 owner shell |
+| API include point | `backend/app/api/router.py` | one additive Layer 3 router include rooted at `/api/v1/layer3/...` | folding broader workbench ownership into the existing review or analyst-insight includes |
+| API module family | `backend/app/api/review_nrc_aps.py`, `backend/app/api/market_data_integration.py`, `backend/app/api/market_data_validation.py`, `backend/app/api/market_insight_ai.py` | one additive `app.api.layer3` module family for session/controller commands and queries | treating `review_nrc_aps.router` or the `market_*` alias routers as the owner surface for the broader workbench |
+| Service/orchestration family | `backend/app/services/review_nrc_aps_graph.py`, `backend/app/services/review_nrc_aps_workbench_compare.py`, `backend/app/services/review_nrc_aps_candidate_b_trace.py` | one additive Layer 3 controller/service family under `backend/app/services/` | reusing compare, Candidate B, or analyst-insight helper services as though they were the full workbench controller |
+| Backend page/API proof | `backend/tests/test_review_nrc_aps_page.py`, `backend/tests/test_review_nrc_aps_document_trace_page.py`, `backend/tests/test_review_nrc_aps_workbench_compare_page.py`, `backend/tests/test_review_nrc_aps_workbench_compare_api.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_page.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_api.py`, `backend/tests/test_analyst_insight_page.py`, `backend/tests/test_analyst_insight_alias_parity.py` | one additive Layer 3 test family under `backend/tests/` for page, API, and service proof | rewriting adjacent page/API tests as if those surfaces had become Layer 3 |
+| Browser/operator proof | `backend/tests/review_browser_server.py`, `backend/tests/test_review_browser_server.py`, `e2e/nrc-aps-review.spec.js`, `playwright.config.js`, `.github/workflows/playwright.yml` | one additive Layer 3 browser proof family reusing the repo-native isolated browser harness pattern | claiming browser proof from adjacent review/compare/Candidate B flows alone |
+
+Explicit anti-patterns:
+- do not extend `review_nrc_aps.router` as though the broader workbench were just another review/document-trace consumer endpoint
+- do not treat the current `market_*` / analyst-insight alias API family as the owner surface for the broader workbench
+- do not introduce a new frontend framework or component-library dependency unless a later separate decision explicitly proves the repo-native static-shell pattern insufficient
 
 ### 4. State editability map
 - Freeze one exact editability decision for each required state:
@@ -128,38 +168,23 @@
 | `reconciled_results` | read-only accepted versus quarantined review |
 | `package_review` | inspect package variants; bounded handoff initiation only if a later active lane explicitly admits it |
 
-### 5. Proof contract
-- Freeze one exact headed Chrome operator flow.
-- Freeze one exact headless Chrome proof flow for the same shell and state transitions.
-- Freeze one exact adjacent-surface preservation requirement for:
-  - review
-  - document-trace
-  - Workbench Compare
-  - Candidate B Trace
-  - analyst-insight
-- Freeze one exact proof that Candidate B remains bundle-scoped and non-admitted unless a later separate lane explicitly reopens that boundary.
-- Freeze one exact proof that runtime DB writes, schema widening, and generic route widening remain out.
+### 5. Exact proof matrix
+- Freeze one exact proof matrix for the broader workbench shell, its API family, and its adjacent-surface preservation rules.
 - Status:
-  - freeze-ready recommendation present
-- Recommended minimum proof contract:
-  - headed Chrome and headless Chrome both cover one broader-workbench shell path through:
-    - route load
-    - `draft_selection`
-    - `selection_review`
-    - `loading`
-    - `typing_review`
-    - `plan_review`
-    - `pass_monitor`
-    - `reconciled_results`
-    - `package_review`
-  - both proof paths must show intelligible failure or partial-state visibility where the state machine expects it
-  - both proof paths must verify that:
-    - `/review/nrc-aps` still behaves as review
-    - `/review/nrc-aps/document-trace` still behaves as document-trace
-    - `/review/nrc-aps/workbench-compare` still behaves as compare
-    - `/review/nrc-aps/candidate-b-trace` still behaves as bundle-scoped Candidate B inspection
-    - `/review/analyst-insight` still behaves as the narrow deterministic product surface
-  - both proof paths must verify no hidden runtime-write, schema, or generic route widening dependency
+  - adopted on this branch-local planning pass
+
+| Proof area | Current repo-backed harness or pattern to reuse | Exact later proof requirement |
+| --- | --- | --- |
+| Additive workbench page shell load | page-route pattern in `backend/main.py`; page-shell assertions in `backend/tests/test_review_nrc_aps_page.py`, `backend/tests/test_review_nrc_aps_document_trace_page.py`, `backend/tests/test_review_nrc_aps_workbench_compare_page.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_page.py`, `backend/tests/test_analyst_insight_page.py` | one additive Layer 3 page-shell proof showing `/review/layer3` loads through the repo-native static-shell pattern without changing adjacent routes |
+| Additive workbench API family | `backend/app/api/router.py`; API contract proof pattern in `backend/tests/test_review_nrc_aps_workbench_compare_api.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_api.py`, `backend/tests/test_analyst_insight_alias_parity.py` | one additive Layer 3 API contract proof family for `/api/v1/layer3/...` commands and queries without overloading review or analyst-insight owners |
+| State-machine visibility | accepted state list in `24_L3_WB_FREEZE.md`; browser/API proof minimums in `11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md` | one happy-path plus one partial-failure proof covering `draft_selection` -> `selection_review` -> `loading` -> `typing_review` -> `plan_review` -> `pass_monitor` -> `reconciled_results` -> `package_review` |
+| Headless browser proof | isolated browser harness in `backend/tests/review_browser_server.py`, `backend/tests/test_review_browser_server.py`, and `e2e/nrc-aps-review.spec.js` | one headless Chromium proof flow for the broader workbench route using the repo-native isolated browser harness pattern |
+| Headed browser/operator proof | manual operator bring-up and validation docs in `docs/nrc_adams/nrc_aps_ui_launch_runbook.md` and `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md` | one headed Chrome operator proof for the same broader workbench route and state transitions, compared against the headless result rather than treated as optional |
+| Adjacent review/document-trace preservation | existing review/document-trace page and API tests plus operator docs in `frontend_UI_plans/README.md` and `docs/nrc_adams/nrc_aps_ui_launch_runbook.md` | proof that `/review/nrc-aps` and `/review/nrc-aps/document-trace` still behave as review and document-trace, not as Layer 3 controller surfaces |
+| Workbench Compare and Candidate B boundary preservation | `backend/tests/test_review_nrc_aps_workbench_compare_page.py`, `backend/tests/test_review_nrc_aps_workbench_compare_api.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_page.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_api.py`, `e2e/nrc-aps-review.spec.js` | proof that compare remains compare, Candidate B Trace remains bundle-scoped inspection, and Candidate B is not admitted into runtime Layer 3 truth |
+| Analyst-insight preservation | `backend/tests/test_analyst_insight_page.py`, `backend/tests/test_analyst_insight_alias_parity.py`, `docs/analyst_insight/analyst_insight_status_handoff.md` | proof that `/review/analyst-insight` and `/api/v1/analyst-insight/...` remain the narrow deterministic product surface rather than becoming the broader workbench owner |
+| Fail-closed and provenance hygiene | fail-closed invalid-input patterns in compare/Candidate B API tests; no-local-path assertions in `backend/tests/test_review_browser_server.py` and `e2e/nrc-aps-review.spec.js` | proof that the broader workbench fails closed on missing or partial state, does not leak local filesystem paths, and keeps operator-visible failure states intelligible |
+| No runtime-write, schema, or generic-route widening | current no-go rules from `24_L3_WB_FREEZE.md`, `12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md`, and current repo absence of `/review/layer3` and `/api/v1/layer3/...` | one implementation-entry audit showing no migration files, no schema/model widening, no hidden runtime-write dependency, and no generic redesign of existing review/document-trace/compare/Candidate B routes |
 
 ### 6. Preparation rules
 - Freeze the exact same-checkout or validate-only preparation rules that govern this broader workbench family.
@@ -175,25 +200,40 @@
 - The broader workbench should remain separate from the currently shipped review, document-trace, Workbench Compare, and Candidate B Trace surfaces.
 - The state-boundary defaults already written in `24_L3_WB_FREEZE.md` should remain the working default until a later explicit freeze says otherwise.
 - Headed and headless Chrome proof should remain mandatory later-lane proof, not optional follow-up.
+- Exact wrapper class names, exact module filenames, and exact component-library choice remain implementation-local once this branch-local prep packet is accepted.
 
-## Freeze-ready subset vs still-blocking subset
-### Freeze-ready now
-- adopted operator-insufficiency trigger
-- adopted additive route-family choice
-- recommended owner-surface class
-- recommended state editability map
-- recommended minimum proof contract
-- recommended preparation rules
+## Exact remains-out list
+- no live implementation of `/review/layer3` or `/api/v1/layer3/...` in this pass
+- no broad rewrite of `backend/main.py`; any later workbench entry should be additive and route-local
+- no broad rewrite of `backend/app/api/review_nrc_aps.py`; existing review/document-trace/workbench-compare/Candidate B APIs remain adjacent surfaces
+- no takeover of `backend/app/api/market_data_integration.py`, `market_data_validation.py`, or `market_insight_ai.py` as the broader workbench owner
+- no rewrite of existing `backend/app/review_ui/static/index.html`, `document_trace.html`, `workbench_compare.html`, `candidate_b_trace.html`, or `analyst_insight.html` into the broader workbench shell
+- no migrations, no `backend/alembic/versions/*` additions, and no DB-init behavior change
+- no schema/model widening and no runtime DB write dependency
+- no Candidate B runtime admission or compare-surface ownership shift
+- no promotion of package-derived context into dossier truth
+- no generic route-family redesign outside the additive `/review/layer3` plus `/api/v1/layer3/...` family
+- no assumption that React, a client-side router, or a new component library is required for v1
+- no exact final v1 typing-heuristics freeze in this doc; that remains a separate explicit user-freeze item from primary planning
+- no qualitative single-item activation or qualitative-engine ambition freeze here; that remains with `25_L3_QUAL1_FREEZE.md`
 
-### Still blocking
-- one exact owner-surface table
-- one exact proof matrix
-- one exact remains-out list for any later activation-ready freeze or implementation-entry packet
+## Implementation-entry posture after this pass
+- This branch-local prep packet now makes explicit:
+  - the adopted operator-insufficiency trigger
+  - the adopted additive route-family choice
+  - the exact owner-surface table
+  - the recommended state editability map
+  - the exact proof matrix
+  - the exact remains-out list
+- That is enough to let a later implementation-entry packet stay narrow without guessing the owner surfaces, browser-proof posture, or no-go boundaries.
+- It is not enough to claim the lane is active or live.
 
-## Exact next-pass outputs
-- one exact owner-surface table
-- one exact proof matrix
-- one exact remains-out list
+## Still not activation-ready
+- no live `/review/layer3` or `/api/v1/layer3/...` route family exists on current `main`
+- no exact workbench implementation module filenames are chosen yet
+- no exact v1 typing heuristics are frozen yet
+- no headed or headless broader-workbench proof has been produced yet
+- no implementation/status note or machine-checkable proof output exists yet for the broader workbench family
 
 ## Exact non-goals
 - no activation decision in this doc
