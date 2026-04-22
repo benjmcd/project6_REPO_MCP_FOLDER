@@ -9,7 +9,7 @@ Use it together with:
 - `next_milestone_plans/progress-ui-spec.md`
 
 This spec is intentionally scoped to the bounded Layer3 Phase1A through APS dedicated validate-only runtime/report-ref chain already landed on current `main`, plus the landed `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, the post-PR147 progress-packet closeout from PR `#148`, the merged planning-only `24_L3_WB_FREEZE.md` / `25_L3_QUAL1_FREEZE.md` deferred-prep docs from PR `#165`, and the post-PR165 docs/progress/front-door sync from PR `#166` beyond that landed boundary.
-If the current checkout also carries the exact tree content of the still-open docs/progress sync from PR `#167` or the branch-only `26_L3_WB_INPUTS.md` companion prep, preserve them as open or branch-local prep rather than rewriting them into merged-main history.
+If the current checkout also carries the exact tree content of the still-open docs/progress sync from PR `#167` or the branch-only `26_L3_WB_INPUTS.md` companion prep, preserve them as open or branch-local prep rather than rewriting them into merged-main history. That branch-local `26` prep may now include adopted trigger/route-family decisions plus owner-surface, proof, and remains-out implementation-entry prep; keep those as branch-local until merged.
 
 ## Canonical Inputs
 
@@ -131,7 +131,7 @@ Any external live artifact or dashboard must also obey:
    - do not hide it from active artifact surfaces if the manifest declares it
 17. If the current checkout carries branch-local planning-only prep or docs/progress sync beyond current `main`:
    - keep a GitHub-backed docs/progress sync open while GitHub still shows the PR open, even if equivalent content is already present locally
-   - keep branch-local planning-only companion docs such as `26_L3_WB_INPUTS.md` as branch-local prep rather than merged milestone history
+   - keep branch-local planning-only companion docs such as `26_L3_WB_INPUTS.md` as branch-local prep rather than merged milestone history, even when they become implementation-entry-specific enough to freeze owner/proof/no-go guidance
    - do not let either change settled packet counts unless both GitHub state and current `main` repo truth warrant it
 
 ## State Mapping Rules
@@ -188,7 +188,7 @@ The current settled state in this checkout is:
 - current `main` also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR `#165`, but they remain deferred-scope prep artifacts and do not change the settled packet counts or `next_required_decision`
 - current `main` also includes the post-PR165 docs/progress/front-door sync from PR `#166`, which aligns the progress artifact, pack front door, and canonical status/index surfaces with those merged planning-only deferred-prep docs without changing the settled packet state
 - if the current checkout also carries the exact tree content of the still-open docs/progress sync from PR `#167`, keep it as open follow-up state rather than rewriting it into merged-main history
-- if `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md` is present in the current checkout, preserve it as a planning-only companion input doc for the deferred future workbench route family rather than as a merged milestone, packet-reopen signal, or active lane
+- if `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md` is present in the current checkout, preserve it as a planning-only companion input doc for the deferred future workbench route family rather than as a merged milestone, packet-reopen signal, or active lane, even if it now freezes branch-local trigger/route-family/owner/proof/no-go implementation-entry prep
 - do not invent another later APS family lane unless live repo truth proves a concrete new gap
 
 ## Schedule Guidance
