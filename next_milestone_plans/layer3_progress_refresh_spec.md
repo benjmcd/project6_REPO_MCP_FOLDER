@@ -8,7 +8,7 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS dedicated validate-only runtime/report-ref chain already landed on current `main`, plus the landed `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, the post-PR147 progress-packet closeout from PR `#148`, and the merged planning-only `24_L3_WB_FREEZE.md` / `25_L3_QUAL1_FREEZE.md` deferred-prep docs from PR `#165` beyond that landed boundary.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS dedicated validate-only runtime/report-ref chain already landed on current `main`, plus the landed `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, the post-PR147 progress-packet closeout from PR `#148`, the merged planning-only `24_L3_WB_FREEZE.md` / `25_L3_QUAL1_FREEZE.md` deferred-prep docs from PR `#165`, and the post-PR165 docs/progress/front-door sync from PR `#166` beyond that landed boundary.
 
 ## Canonical Inputs
 
@@ -31,7 +31,7 @@ Current tracked PR set:
 - `#97`, `#98`, `#99`
 - `#100`, `#101`, `#102`
 - `#106`, `#107`, `#108`, `#109`
-- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#125`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, `#136`, `#137`, `#138`, `#139`, `#140`, `#141`, `#142`, `#143`, `#144`, `#145`, `#146`, `#147`, `#148`, `#165`
+- `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#125`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, `#136`, `#137`, `#138`, `#139`, `#140`, `#141`, `#142`, `#143`, `#144`, `#145`, `#146`, `#147`, `#148`, `#165`, `#166`
 
 Hard rule:
 - never mark a step as landed on `main` from repo docs alone if the GitHub PR is still open
@@ -83,7 +83,7 @@ Discovery rule:
 - if multiple clean checkouts exist, prefer the one matching current `main` for merged repo truth, or the one carrying the declared open or branch-only milestone when the manifest says a non-merged step is in scope
 
 Seed path used when this artifact pack was authored:
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\doc-sync`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\doc-pr166`
 
 Do not treat the dirty root checkout at:
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER`
@@ -180,6 +180,7 @@ The current settled state in this checkout is:
 - live repo truth now also shows the existing promotion governance family already sufficient on current `main`
 - retrieval cutover already exists on current `main` as a separate validate-only parity-proof family
 - current `main` also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR `#165`, but they remain deferred-scope prep artifacts and do not change the settled packet counts or `next_required_decision`
+- current `main` also includes the post-PR165 docs/progress/front-door sync from PR `#166`, which aligns the progress artifact, pack front door, and canonical status/index surfaces with those merged planning-only deferred-prep docs without changing the settled packet state
 - do not invent another later APS family lane unless live repo truth proves a concrete new gap
 
 ## Schedule Guidance
