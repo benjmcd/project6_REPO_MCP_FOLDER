@@ -100,7 +100,9 @@ Current repo-side facts to preserve:
 - if the current checkout matches current `main` after PR `#148`, preserve the post-PR147 progress-packet closeout as already landed history and keep the tracked PR set and snapshot base aligned with that merged-main state
 - if the current checkout matches current `main` after PR `#165`, preserve the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs as deferred-scope prep on current `main` rather than promoting them into merged milestones or packet-reopen evidence
 - if the current checkout matches current `main` after PR `#166`, preserve the post-PR165 docs/progress/front-door sync as already landed history and keep the artifact, pack front door, and canonical status/index surfaces aligned with those merged planning-only deferred-prep docs
+- if GitHub still shows PR `#167` open, keep that docs/progress sync as open follow-up state even when the current checkout already carries equivalent content locally; do not rewrite it into merged-main history
 - if `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md` is present in the current checkout, preserve it as a planning-only companion input doc for the deferred future workbench route family rather than promoting it into merged milestones, packet-reopen evidence, or an active lane
+- if the current checkout also carries branch-local `26_L3_WB_INPUTS.md` companion prep plus associated companion-doc edits, keep them branch-local and planning-only rather than folded into current merged-state facts
 - if the current checkout matches current `main` after PR `#145`, show promotion as the landed first later APS family beyond the landed dedicated validate-only boundary, keep retrieval cutover later during the freeze decision itself, and do not invent a separate repo-backed post-validate-only top-chain family
 - if live repo truth on current `main` already proves the existing promotion governance family sufficient and retrieval cutover already present as a separate parity-proof family, render the later APS family packet as `settled` rather than inventing another next lane
 
@@ -141,6 +143,7 @@ Current merged-state fact to preserve when present:
 - current `main` now also includes the post-PR147 progress-packet closeout from PR `#148`, which keeps the settled later APS family packet and its tracked PR history aligned with merged repo truth
 - current `main` now also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR `#165`, but they remain deferred-scope prep artifacts and do not reopen the settled packet or change the merged milestone count
 - current `main` now also includes the post-PR165 docs/progress/front-door sync from PR `#166`, which aligns the progress artifact, pack front door, and canonical status/index surfaces with those merged planning-only deferred-prep docs without changing the settled packet state
+- if PR `#167` remains open, keep it out of current merged-state facts even if the current checkout already carries equivalent docs/progress content
 - the landed freeze from PR `#145` selected promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later during the freeze decision itself
 - live repo truth now also shows the existing promotion governance family already sufficient on current `main`, while retrieval cutover already exists there as a separate validate-only parity-proof family
 
