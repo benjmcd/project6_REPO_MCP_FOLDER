@@ -98,6 +98,7 @@ Current repo-side facts to preserve:
 - if the current checkout matches current `main` after PR `#146`, preserve the post-PR145 docs/progress sync as already landed history rather than dropping it from the tracked PR set
 - if the current checkout matches current `main` after PR `#147`, preserve the later APS family settlement closeout as already landed history rather than presenting the packet as merely frozen
 - if the current checkout matches current `main` after PR `#148`, preserve the post-PR147 progress-packet closeout as already landed history and keep the tracked PR set and snapshot base aligned with that merged-main state
+- if the current checkout matches current `main` after PR `#165`, preserve the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs as deferred-scope prep on current `main` rather than promoting them into merged milestones or packet-reopen evidence
 - if the current checkout matches current `main` after PR `#145`, show promotion as the landed first later APS family beyond the landed dedicated validate-only boundary, keep retrieval cutover later during the freeze decision itself, and do not invent a separate repo-backed post-validate-only top-chain family
 - if live repo truth on current `main` already proves the existing promotion governance family sufficient and retrieval cutover already present as a separate parity-proof family, render the later APS family packet as `settled` rather than inventing another next lane
 
@@ -129,10 +130,12 @@ When rebuilding from a checkout that matches current `main` after PR `#144`:
 - if refreshing from a checkout that matches current `main` after PR `#146`, keep that docs/progress sync in the tracked GitHub PR set and merged-history wording
 - if refreshing from a checkout that matches current `main` after PR `#147`, keep that settlement closeout in the tracked GitHub PR set and merged-history wording
 - if refreshing from a checkout that matches current `main` after PR `#148`, keep that progress-packet closeout in the tracked GitHub PR set and merged-history wording, and refresh the snapshot base to that merged-main commit instead of leaving an older pre-PR148 base
+- if refreshing from a checkout that matches current `main` after PR `#165`, keep the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs visible as deferred-scope prep only, without counting them as merged milestones or inventing an active lane
 
 Current merged-state fact to preserve when present:
 - current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, and the later APS family settlement closeout from PR `#147`
 - current `main` now also includes the post-PR147 progress-packet closeout from PR `#148`, which keeps the settled later APS family packet and its tracked PR history aligned with merged repo truth
+- current `main` now also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR `#165`, but they remain deferred-scope prep artifacts and do not reopen the settled packet or change the merged milestone count
 - the landed freeze from PR `#145` selected promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later during the freeze decision itself
 - live repo truth now also shows the existing promotion governance family already sufficient on current `main`, while retrieval cutover already exists there as a separate validate-only parity-proof family
 
