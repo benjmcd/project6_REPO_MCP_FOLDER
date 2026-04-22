@@ -19,7 +19,7 @@
 - No live qualitative single-item pass family exists yet.
 - No exact workbench/controller surface is active yet for this broader breadth.
 - The settled packet still does not nominate broader breadth as an active lane.
-- Even when this checkout carries `27_L3_QUAL1_INPUTS.md`, that companion input doc remains planning-only and does not activate the lane.
+- Even with merged `27_L3_QUAL1_INPUTS.md` on current `main`, that companion input doc remains planning-only and does not activate the lane.
 
 ## Axis ranking
 1. qualitative single-item breadth
@@ -93,7 +93,7 @@
 - the selection-commit and session boundary remain authoritative
 - the future broader workbench route family should be frozen before activation so operator control state is not implied ad hoc
 - the combined `24_L3_WB_FREEZE.md` / `26_L3_WB_INPUTS.md` packet now adopts a planning-only operator-insufficiency trigger, additive route-family choice, and minimum typing posture and records the owner-surface, proof, and no-go implementation-entry prep for that broader workbench lane, but that planning-only packet still does not activate the broader workbench lane
-- this checkout may also carry the combined `25_L3_QUAL1_FREEZE.md` / `27_L3_QUAL1_INPUTS.md` packet, which adopts a planning-only qualitative single-item operator task, minimum pass-family contract, owner-surface table, proof matrix, and remains-out list for this axis, but that planning-only packet still does not activate the qualitative lane
+- the combined `25_L3_QUAL1_FREEZE.md` / `27_L3_QUAL1_INPUTS.md` packet on current `main` now adopts a planning-only qualitative single-item operator task, minimum pass-family contract, owner-surface table, proof matrix, and remains-out list for this axis, but that planning-only packet still does not activate the qualitative lane
 - read-only runtime DB boundary remains unchanged
 - current packet remains settled while this doc is planning-only
 
