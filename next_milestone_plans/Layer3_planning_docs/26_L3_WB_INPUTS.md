@@ -47,6 +47,12 @@
 ## Repo-confirmed implementation-entry map
 - current page-route registration pattern for adjacent operator surfaces lives in `backend/main.py`
 - current shared API include pattern lives in `backend/app/api/router.py`
+- current durable Layer 3 model ownership already landed on current `main` lives in `backend/app/models/models.py`
+- current manual Layer 3 migration chain already landed on current `main` lives in:
+  - `backend/alembic/versions/0012_layer3_session_entry.py`
+  - `backend/alembic/versions/0013_layer3_typing_entry.py`
+  - `backend/alembic/versions/0014_layer3_pass_entry.py`
+  - `backend/alembic/versions/0015_layer3_package_entry.py`
 - current review/document-trace/workbench-compare/Candidate B API ownership lives in `backend/app/api/review_nrc_aps.py`
 - current analyst-insight alias API ownership lives in:
   - `backend/app/api/market_data_integration.py`
@@ -57,6 +63,16 @@
   - `backend/app/services/review_nrc_aps_graph.py`
   - `backend/app/services/review_nrc_aps_workbench_compare.py`
   - `backend/app/services/review_nrc_aps_candidate_b_trace.py`
+- current internal Layer 3 owner-service chain already landed on current `main` lives in:
+  - `backend/app/services/layer3_session_entry.py`
+  - `backend/app/services/layer3_typing_entry.py`
+  - `backend/app/services/layer3_pass_entry.py`
+  - `backend/app/services/layer3_package_entry.py`
+- current direct Layer 3 service proof surfaces already landed on current `main` live in:
+  - `backend/tests/test_layer3_session_entry.py`
+  - `backend/tests/test_layer3_typing_entry.py`
+  - `backend/tests/test_layer3_pass_entry.py`
+  - `backend/tests/test_layer3_package_entry.py`
 - current isolated browser-proof harness lives in:
   - `backend/tests/review_browser_server.py`
   - `backend/tests/test_review_browser_server.py`
@@ -78,7 +94,32 @@
 - adjacent operator pages use repo-native static HTML/CSS/JS assets under the shared `/review/nrc-aps/static` mount
 - adjacent page/API regression proof uses `pytest` plus `fastapi.testclient.TestClient`
 - repo-native browser regression proof uses Playwright Chromium plus the isolated `review_browser_server` harness
+- current internal Layer 3 owner services already depend on:
+  - SQLAlchemy `Session`
+  - `app.models.models` Layer 3 ledger and downstream Layer 3 objects
+  - `app.core.config.settings`
+  - `app.services.analysis` and `app.services.dataframe_io` for the currently landed quantitative pass-entry slice
+  - `pandas` for the currently landed quantitative associated-cohort shaping path inside `layer3_pass_entry.py`
+- current-main evidence does not justify a new migration, schema expansion, or replacement persistence layer for workbench/controller entry by itself
 - no current-main evidence justifies assuming React, a client-side router, or a new component library for the first additive workbench slice
+- no current-main evidence justifies re-implementing the landed Layer 3 ledger, typing, pass, or package core logic inside future route handlers or static browser code
+
+## Repo-confirmed controller-to-service connection map
+- Future broader-workbench route/API layers should default to orchestrating the already-landed internal Layer 3 owner-service chain rather than inventing new write-side cores.
+- Branch-local default connection map:
+
+| Workbench concern | Current repo-confirmed service surface | Connection rule |
+| --- | --- | --- |
+| selection commit | `backend/app/services/layer3_session_entry.py::commit_selection(...)` | future controller/API entry should create the durable session and selection manifest through the landed owner service, not through route-local DB mutation |
+| descriptor expansion and loading closure | `backend/app/services/layer3_session_entry.py::expand_descriptors(...)`, `record_retrieval_event(...)`, `finalize_session(...)` | future controller/API entry should drive loading through the landed Phase 1A service flow and preserve its session summary semantics |
+| typing/unit materialization | `backend/app/services/layer3_typing_entry.py::materialize_typing_entry(...)` | future controller/API entry should invoke the landed typing/unit owner service and keep its fail-closed unsupported-shape behavior intact |
+| plan/pass entry | `backend/app/services/layer3_pass_entry.py::materialize_pass_entry(...)` | future controller/API entry should invoke the landed pass-entry owner service and keep its quantitative single-item / associated-cohort bounded semantics intact unless a later freeze reopens them |
+| package/reconciliation entry | `backend/app/services/layer3_package_entry.py::materialize_package_entry(...)` | future controller/API entry should invoke the landed package-entry owner service and keep its current package-kind/provenance rules intact unless a later freeze reopens them |
+
+- Connection anti-patterns:
+  - no route-local reimplementation of session, typing, pass, or package persistence rules
+  - no browser-only state machine that diverges from the landed owner-service chain
+  - no hidden route/API shortcut that bypasses the landed direct service proof surfaces
 
 ## Exact freeze inputs
 ### 1. Lane trigger
@@ -132,15 +173,18 @@
 | --- | --- | --- | --- |
 | UI route registration | `backend/main.py` | one additive broader-workbench page route entry rooted at `/review/layer3` | existing `/review/nrc-aps`, `/review/nrc-aps/document-trace`, `/review/nrc-aps/workbench-compare`, `/review/nrc-aps/candidate-b-trace`, `/review/analyst-insight` page handlers |
 | Static page shell assets | `backend/app/review_ui/static/index.html`, `document_trace.html`, `workbench_compare.html`, `candidate_b_trace.html`, `analyst_insight.html` and their paired CSS/JS assets | one additive Layer 3 shell asset family under `backend/app/review_ui/static/` using the repo-native static mount pattern | overloading existing review/document-trace/workbench-compare/Candidate B/analyst-insight assets as the Layer 3 owner shell |
+| Durable model family | `backend/app/models/models.py` | existing Layer 3 ledger and downstream Layer 3 model family remain the persistence owner surface for workbench/controller entry | inventing a parallel browser-local or route-local persistence model for Layer 3 state |
+| Migration and schema family | `backend/alembic/versions/0012_layer3_session_entry.py`, `0013_layer3_typing_entry.py`, `0014_layer3_pass_entry.py`, `0015_layer3_package_entry.py` | no new migration or schema owner surface is admitted by default for workbench/controller entry | treating the additive route/workbench lane as implicit permission to widen schema |
 | API include point | `backend/app/api/router.py` | one additive Layer 3 router include rooted at `/api/v1/layer3/...` | folding broader workbench ownership into the existing review or analyst-insight includes |
 | API module family | `backend/app/api/review_nrc_aps.py`, `backend/app/api/market_data_integration.py`, `backend/app/api/market_data_validation.py`, `backend/app/api/market_insight_ai.py` | one additive `app.api.layer3` module family for session/controller commands and queries | treating `review_nrc_aps.router` or the `market_*` alias routers as the owner surface for the broader workbench |
-| Service/orchestration family | `backend/app/services/review_nrc_aps_graph.py`, `backend/app/services/review_nrc_aps_workbench_compare.py`, `backend/app/services/review_nrc_aps_candidate_b_trace.py` | one additive Layer 3 controller/service family under `backend/app/services/` | reusing compare, Candidate B, or analyst-insight helper services as though they were the full workbench controller |
-| Backend page/API proof | `backend/tests/test_review_nrc_aps_page.py`, `backend/tests/test_review_nrc_aps_document_trace_page.py`, `backend/tests/test_review_nrc_aps_workbench_compare_page.py`, `backend/tests/test_review_nrc_aps_workbench_compare_api.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_page.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_api.py`, `backend/tests/test_analyst_insight_page.py`, `backend/tests/test_analyst_insight_alias_parity.py` | one additive Layer 3 test family under `backend/tests/` for page, API, and service proof | rewriting adjacent page/API tests as if those surfaces had become Layer 3 |
+| Service/orchestration family | `backend/app/services/review_nrc_aps_graph.py`, `backend/app/services/review_nrc_aps_workbench_compare.py`, `backend/app/services/review_nrc_aps_candidate_b_trace.py`, `backend/app/services/layer3_session_entry.py`, `backend/app/services/layer3_typing_entry.py`, `backend/app/services/layer3_pass_entry.py`, `backend/app/services/layer3_package_entry.py` | one additive Layer 3 controller/service family under `backend/app/services/` that orchestrates the already-landed internal Layer 3 owner-service chain rather than replacing it | reusing compare, Candidate B, or analyst-insight helper services as though they were the full workbench controller, or duplicating landed Layer 3 core logic inside a new controller |
+| Backend page/API proof | `backend/tests/test_review_nrc_aps_page.py`, `backend/tests/test_review_nrc_aps_document_trace_page.py`, `backend/tests/test_review_nrc_aps_workbench_compare_page.py`, `backend/tests/test_review_nrc_aps_workbench_compare_api.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_page.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_api.py`, `backend/tests/test_analyst_insight_page.py`, `backend/tests/test_analyst_insight_alias_parity.py`, `backend/tests/test_layer3_session_entry.py`, `backend/tests/test_layer3_typing_entry.py`, `backend/tests/test_layer3_pass_entry.py`, `backend/tests/test_layer3_package_entry.py` | one additive Layer 3 test family under `backend/tests/` for page, API, controller, and direct service proof | rewriting adjacent page/API tests as if those surfaces had become Layer 3, or dropping direct service proof for the already-landed core Layer 3 chain |
 | Browser/operator proof | `backend/tests/review_browser_server.py`, `backend/tests/test_review_browser_server.py`, `e2e/nrc-aps-review.spec.js`, `playwright.config.js`, `.github/workflows/playwright.yml` | one additive Layer 3 browser proof family reusing the repo-native isolated browser harness pattern | claiming browser proof from adjacent review/compare/Candidate B flows alone |
 
 Explicit anti-patterns:
 - do not extend `review_nrc_aps.router` as though the broader workbench were just another review/document-trace consumer endpoint
 - do not treat the current `market_*` / analyst-insight alias API family as the owner surface for the broader workbench
+- do not re-implement landed Layer 3 ledger, typing, pass, or package persistence rules inside future route handlers, browser code, or thin API wrappers; the future controller layer should orchestrate the landed owner-service chain unless a later freeze explicitly reassigns ownership
 - do not introduce a new frontend framework or component-library dependency unless a later separate decision explicitly proves the repo-native static-shell pattern insufficient
 
 ### 4. Minimum typing posture
@@ -209,6 +253,7 @@ Explicit anti-patterns:
 | --- | --- | --- |
 | Additive workbench page shell load | page-route pattern in `backend/main.py`; page-shell assertions in `backend/tests/test_review_nrc_aps_page.py`, `backend/tests/test_review_nrc_aps_document_trace_page.py`, `backend/tests/test_review_nrc_aps_workbench_compare_page.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_page.py`, `backend/tests/test_analyst_insight_page.py` | one additive Layer 3 page-shell proof showing `/review/layer3` loads through the repo-native static-shell pattern without changing adjacent routes |
 | Additive workbench API family | `backend/app/api/router.py`; API contract proof pattern in `backend/tests/test_review_nrc_aps_workbench_compare_api.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_api.py`, `backend/tests/test_analyst_insight_alias_parity.py` | one additive Layer 3 API contract proof family for `/api/v1/layer3/...` commands and queries without overloading review or analyst-insight owners |
+| Internal Layer 3 service orchestration | `backend/app/services/layer3_session_entry.py`, `backend/app/services/layer3_typing_entry.py`, `backend/app/services/layer3_pass_entry.py`, `backend/app/services/layer3_package_entry.py` plus `backend/tests/test_layer3_session_entry.py`, `backend/tests/test_layer3_typing_entry.py`, `backend/tests/test_layer3_pass_entry.py`, `backend/tests/test_layer3_package_entry.py` | one implementation-entry proof family showing the future controller/API layer delegates into the landed Layer 3 core owner services instead of duplicating ledger, typing, pass, or package logic |
 | State-machine visibility | accepted state list in `24_L3_WB_FREEZE.md`; browser/API proof minimums in `11_LAYER3_VALIDATION_PROOF_AND_DECISION_GATES.md` | one happy-path plus one partial-failure proof covering `draft_selection` -> `selection_review` -> `loading` -> `typing_review` -> `plan_review` -> `pass_monitor` -> `reconciled_results` -> `package_review` |
 | Minimum typing posture | primary typing workflow and suggested v1 matrix from `04_LAYER3_ANALYSIS_UNIT_MODALITY_AND_SET_MODEL.md`; ADR default posture in `decisions/ADR-003_TYPING_RULES_QUANT_QUAL_HYBRID.md` | one proof family showing adopted `source_shape` defaults, override recording, and fail-closed handling for ambiguous or partial typing state without inventing unsupported thresholds |
 | Headless browser proof | isolated browser harness in `backend/tests/review_browser_server.py`, `backend/tests/test_review_browser_server.py`, and `e2e/nrc-aps-review.spec.js` | one headless Chromium proof flow for the broader workbench route using the repo-native isolated browser harness pattern |
@@ -241,6 +286,7 @@ Explicit anti-patterns:
 - no broad rewrite of `backend/app/api/review_nrc_aps.py`; existing review/document-trace/workbench-compare/Candidate B APIs remain adjacent surfaces
 - no takeover of `backend/app/api/market_data_integration.py`, `market_data_validation.py`, or `market_insight_ai.py` as the broader workbench owner
 - no replacement of the primary `source_shape` taxonomy with supplementary `ContentKind` naming; any later reconciliation must be frozen explicitly before implementation claims support for it
+- no duplication of the landed internal Layer 3 owner-service chain inside future route handlers, API wrappers, or browser state code; later work should compose around `layer3_session_entry`, `layer3_typing_entry`, `layer3_pass_entry`, and `layer3_package_entry` unless a later freeze explicitly changes that ownership
 - no rewrite of existing `backend/app/review_ui/static/index.html`, `document_trace.html`, `workbench_compare.html`, `candidate_b_trace.html`, or `analyst_insight.html` into the broader workbench shell
 - no migrations, no `backend/alembic/versions/*` additions, and no DB-init behavior change
 - no schema/model widening and no runtime DB write dependency
@@ -300,7 +346,16 @@ Explicit anti-patterns:
 - current repo truth:
   - `backend/main.py`
   - `backend/app/api/router.py`
+  - `backend/app/models/models.py`
+  - `backend/alembic/versions/0012_layer3_session_entry.py`
+  - `backend/alembic/versions/0013_layer3_typing_entry.py`
+  - `backend/alembic/versions/0014_layer3_pass_entry.py`
+  - `backend/alembic/versions/0015_layer3_package_entry.py`
   - `backend/app/api/review_nrc_aps.py`
+  - `backend/app/services/layer3_session_entry.py`
+  - `backend/app/services/layer3_typing_entry.py`
+  - `backend/app/services/layer3_pass_entry.py`
+  - `backend/app/services/layer3_package_entry.py`
   - `backend/app/services/review_nrc_aps_graph.py`
   - `docs/analyst_insight/analyst_insight_status_handoff.md`
   - `frontend_UI_plans/README.md`
