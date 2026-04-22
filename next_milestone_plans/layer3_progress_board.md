@@ -25,11 +25,11 @@ Hard rule:
 
 ## Current Snapshot
 
-As of `2026-04-21`:
-- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-progress-main`
+As of `2026-04-22`:
+- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\doc-sync`
 - valid local authority rule: use a clean checkout whose contents match the artifact state being refreshed; prefer current `main` for merged repo truth and the active branch checkout when an open or branch-only milestone is declared
 - authoritative remote branch: `project6-origin/main`
-- snapshot base `main` commit at this artifact refresh: `0a5a78dc5af7601cca97f347bce9e86408968739`
+- snapshot base `main` commit at this artifact refresh: `d61b20c5f0492d757548452e7fd8064ea9855422`
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the landed export-package first shared-consumer freeze from PR `#106` and its docs-only closeout from PR `#107`
@@ -43,7 +43,7 @@ As of `2026-04-21`:
 - current `main` now includes the landed validate-only-gates continuation freeze from PR `#136`, the post-PR136 docs/progress sync from PR `#137`, the bounded validate-only gate-report refresh lane from PR `#138`, and the post-PR138 docs/progress sync from PR `#139`
 - current `main` now includes the landed dedicated validate-only runtime/report-ref continuation freeze from PR `#140`, the post-PR140 docs/progress sync from PR `#141`, the post-PR141 docs/progress sync from PR `#142`, the bounded dedicated validate-only runtime/report-ref implementation lane from PR `#143`, and the post-PR143 docs/progress sync from PR `#144`
 - current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, and the post-PR147 progress-packet closeout from PR `#148`
-- current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, selecting promotion as the first later APS family beyond the landed dedicated validate-only runtime/report-ref boundary while keeping retrieval cutover later during the freeze decision itself
+- current `main` now also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR `#165`; they remain deferred-scope preparation artifacts and do not reopen the settled packet or change the merged milestone count
 
 ## Program State Summary
 
@@ -51,6 +51,7 @@ As of `2026-04-21`:
 - Current focus: the bounded later APS family packet beyond the landed dedicated validate-only runtime/report-ref boundary is now settled on current `main` and tracked through the post-PR147 progress-packet closeout from PR `#148`; no further later APS family decision or implementation lane is currently justified by default
 - Candidate next consumers: none active in this bounded packet; promotion governance is already sufficient on current `main`, and retrieval cutover already exists there as a separate validate-only parity-proof family
 - Deferred but not active: 8 explicitly deferred scope items remain out until later freezes admit them; see the activation-criteria section below for the exact candidate-next and current-focus gates
+- Current `main` also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR `#165`; they prepare deferred-scope work only and do not change the 29 merged milestone count or reopen the settled packet
 
 ## Milestone Table
 
@@ -275,6 +276,7 @@ Current-focus admission requires:
 - preservation of current Candidate B bundle-scoped, non-admitted boundaries unless the freeze explicitly reopens them
 
 Primary authority surfaces:
+- `next_milestone_plans/Layer3_planning_docs/24_L3_WB_FREEZE.md`
 - `frontend_UI_plans/README.md`
 - `frontend_UI_plans/wb-compare-spec.md`
 - `frontend_UI_plans/wb-compare-contract.md`
@@ -299,6 +301,7 @@ Current-focus admission requires:
 - explicit control of route/UI widening, runtime DB writes, and schema widening unless the same freeze admits them
 
 Primary authority surfaces:
+- `next_milestone_plans/Layer3_planning_docs/25_L3_QUAL1_FREEZE.md`
 - `next_milestone_plans/README_LAYER3_PHASE1A_PACK.md`
 - `next_milestone_plans/layer3_progress_manifest.json`
 - `next_milestone_plans/layer3_progress_board.md`
@@ -383,7 +386,7 @@ Refresh this board against:
 - `next_milestone_plans/README_LAYER3_PHASE1A_PACK.md`
 - `next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
 - `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
-- `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `23_GATED_APS_PROMOTION_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `25_L3_QUAL1_FREEZE.md`
 - `backend/app/services/review_nrc_aps_graph.py`
 - `backend/app/services/nrc_aps_validate_only_gates_contract.py`
 - `backend/app/services/nrc_aps_validate_only_gates.py`
