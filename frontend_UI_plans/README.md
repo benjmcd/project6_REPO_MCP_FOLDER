@@ -70,12 +70,13 @@ For the live UI and API behavior, the canonical implementation source of truth i
 
 The files in this folder are reference material, not the live implementation surface.
 
+For canonical operator bring-up of the shipped review/document-trace/workbench/Candidate B Trace surfaces, start with [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/docs/nrc_adams/nrc_aps_ui_launch_runbook.md).
+
 Important runtime-fixture note:
 
 - Several retained docs in this folder cite March 2026 `lc_e2e` runtime examples under `backend\app\storage_test_runtime\lc_e2e\...`.
-- The root-local branch now carries an adopted review/runtime fixture at `backend\app\storage_test_runtime\lc_e2e\20260327_062011`.
-- That adopted runtime now backs the validate-only root T8 review/document-trace bundle.
-- Historical runtime references in this folder remain historical unless a given doc explicitly says it was revalidated against the adopted root-local runtime.
+- Current clean `main` does not guarantee that a populated local review runtime is already present under the checkout's allowlisted review-runtime roots.
+- Treat runtime paths in this folder as operator-provided or historically referenced unless a given doc explicitly says they were revalidated in the current checkout.
 
 Important implementation-scope note:
 
@@ -117,9 +118,10 @@ Ordered next-decision note:
 - if Candidate B remains bundle-scoped, operator ergonomics should improve only where justified
 - documentation closeout is now landed for the active UI/operator front doors:
   - `frontend_UI_plans/README.md` remains the front-door index
-  - `nrc_aps_review_ui_startup_and_smoke_test.md` owns explicit backend binding and route bring-up
+  - `docs/nrc_adams/nrc_aps_ui_launch_runbook.md` owns the canonical launch contract
+  - `nrc_aps_review_ui_startup_and_smoke_test.md` is the concise startup walkthrough layered on top of that launch contract
   - `wb-compare-validation.md` owns same-checkout prep, `tools/validate_wb_prep.py`, and populated compare + Candidate B Trace validation
-  - `nrc_aps_frontend_ui_operator_validation_guide.md` owns the broader manual validation pass after startup and prep succeed
+  - `nrc_aps_frontend_ui_operator_validation_guide.md` owns the broader manual validation pass after launch and prep succeed
 
 ## Retained Documents
 
@@ -164,9 +166,9 @@ Ordered next-decision note:
 - `wb-compare-validation.md`
   - canonical same-checkout prep and populated compare/Candidate B Trace validation flow
 - `nrc_aps_review_ui_startup_and_smoke_test.md`
-  - explicit backend binding, startup, and route-reachability guide for the review/document-trace/compare surfaces
+  - concise startup walkthrough for the review/document-trace/compare surfaces, layered on top of the root launch runbook
 - `nrc_aps_frontend_ui_operator_validation_guide.md`
-  - broader end-to-end manual validation guide after startup and compare prep succeed
+  - broader end-to-end manual validation guide after launch and compare prep succeed
 - `nrc_aps_runtime_db_reconceptualization_and_next_steps.md`
   - current-state reconceptualization of the NRC APS runtime DB model after the now-landed runtime-centric shift and transparency pass, plus the already-landed document-trace guardrails around large-doc rendering and audited data paths, with only further evidence-driven optimization left as an optional later step
 

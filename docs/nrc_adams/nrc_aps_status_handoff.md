@@ -169,10 +169,11 @@ Important correction:
 - `project6.ps1 -Action prove-nrc-aps-document-processing` is now the fresh isolated lower-layer proof runner for this reopened workstream. It is not a validate-only action: it builds isolated runtime state, runs lower-layer pytest proof, then invokes the existing validate-only artifact-ingestion and content-index gates against that isolated runtime.
 - OCR success paths remain environment-dependent because Tesseract is not bundled in the repo, but the current workspace now has a passing OCR-enabled proof run.
 - For the shipped review/document-trace/workbench/Candidate B Trace operator flow on current `main`, use:
-  - `frontend_UI_plans/README.md` as the front-door index
-  - `frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md` for explicit backend binding and route bring-up
+  - `docs/nrc_adams/nrc_aps_ui_launch_runbook.md` for the canonical launch contract
+  - `frontend_UI_plans/README.md` as the retained reference index
+  - `frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md` for the concise startup walkthrough layered on top of the launch runbook
   - `frontend_UI_plans/wb-compare-validation.md` for same-checkout prep and the `tools/validate_wb_prep.py` readiness gate
-  - `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md` for the broader manual validation pass after startup and prep succeed
+  - `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md` for the broader manual validation pass after launch and prep succeed
   - `playwright.config.js`, `.github/workflows/playwright.yml`, `backend/tests/review_browser_server.py`, `backend/tests/test_review_browser_server.py`, and `e2e/nrc-aps-review.spec.js` for the repo-native review-browser regression lane
 
 ## 7. Current explicit limits

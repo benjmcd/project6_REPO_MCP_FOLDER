@@ -4,7 +4,8 @@
 > - [nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md) (Accepted 7A Truth)
 > - [nrc_aps_authority_matrix.md](docs/nrc_adams/nrc_aps_authority_matrix.md) (Repo-wide Authority Map)
 > - [nrc_aps_reader_path.md](docs/nrc_adams/nrc_aps_reader_path.md) (Navigational Guide)
-> - [frontend_UI_plans/README.md](frontend_UI_plans/README.md) (Review UI / Document Trace / Workbench Compare / Candidate B Trace operator front door)
+> - [nrc_aps_ui_launch_runbook.md](docs/nrc_adams/nrc_aps_ui_launch_runbook.md) (Canonical review/document-trace/workbench/Candidate B Trace launch contract)
+> - [frontend_UI_plans/README.md](frontend_UI_plans/README.md) (Review UI / Document Trace / Workbench Compare / Candidate B Trace retained operator/reference front door)
 > - [docs/onlook-ops.md](docs/onlook-ops.md) (Onlook testing / troubleshooting / audit / operator front door)
 > - [postgres_status_handoff.md](docs/postgres/postgres_status_handoff.md) (PostgreSQL Tier1 Status)
 >
@@ -319,6 +320,7 @@ py -3.12 tools\run_attached_dataset_eval.py --method-name cross_correlation --da
 ## Key docs
 - [docs/analyst_insight/analyst_insight_status_handoff.md](docs/analyst_insight/analyst_insight_status_handoff.md)
 - [docs/nrc_adams/nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md)
+- [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](docs/nrc_adams/nrc_aps_ui_launch_runbook.md)
 - [SCIENCEBASE_PILOT_RUNBOOK.md](SCIENCEBASE_PILOT_RUNBOOK.md)
 - [METHOD_AWARE_FRAMEWORK_CHANGELOG.md](METHOD_AWARE_FRAMEWORK_CHANGELOG.md)
 - [REPO_INDEX.md](REPO_INDEX.md)
