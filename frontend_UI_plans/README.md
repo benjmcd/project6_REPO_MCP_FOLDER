@@ -116,7 +116,7 @@ Ordered next-decision note:
 - only reopen a wider Candidate B runtime-admission program if a concrete operator/product requirement proves the shipped bundle-scoped model insufficient
 - same-checkout prepared-state workflow hardening is now landed through the validate-only prep gate and canonical prep sequence
 - if Candidate B remains bundle-scoped, operator ergonomics should improve only where justified
-- current `main` also includes the merged planning-only `next_milestone_plans/Layer3_planning_docs/24_L3_WB_FREEZE.md` doc from PR `#165`, which records the future broader workbench route family as a deferred additive lane; it does not rename, replace, or activate the currently shipped review/document-trace/workbench/Candidate B surfaces
+- current `main` also includes the merged planning-only broader-workbench prep packet rooted in `next_milestone_plans/Layer3_planning_docs/24_L3_WB_FREEZE.md` from PR `#165` and `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md` from PR `#168`; that deferred additive lane still does not rename, replace, or activate the currently shipped review/document-trace/workbench/Candidate B surfaces
 - documentation closeout is now landed for the active UI/operator front doors:
   - `frontend_UI_plans/README.md` remains the front-door index
   - `docs/nrc_adams/nrc_aps_ui_launch_runbook.md` owns the canonical launch contract
