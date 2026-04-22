@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document is the operational reference for bringing up the NRC APS review UI, the separate Document Trace UI, and the separate Workbench Compare UI against an explicit local runtime on a chosen port.
+This document is the concise operational walkthrough for bringing up the NRC APS review UI, the separate Document Trace UI, and the separate Workbench Compare UI against an explicit local runtime on a chosen port.
 
 Use this when you need to:
 
@@ -14,7 +14,7 @@ Use this when you need to:
 - switch between discovered summary-backed review runtimes from the UI without restarting the backend
 - confirm the basic frontend/API path is working before deeper validation
 
-This is a startup and smoke-test guide, not an implementation spec.
+This is a startup and smoke-test walkthrough, not the root launch authority and not an implementation spec.
 
 ## Document Role
 
@@ -24,13 +24,20 @@ Use this guide to:
 - start the backend on a known port
 - prove basic route and page-shell reachability for the review, Document Trace, and Workbench Compare surfaces
 
+Use [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/docs/nrc_adams/nrc_aps_ui_launch_runbook.md) first for:
+
+- the canonical launch contract
+- current-main preconditions
+- allowlisted runtime-discovery rules
+- the authoritative distinction between launch, compare prep, and broader operator validation
+
 Use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for:
 
 - same-checkout prep
 - `tools/validate_wb_prep.py`
 - populated Workbench Compare and Candidate B Trace follow-through
 
-Use [frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md) for the broader manual validation pass after startup and prep succeed.
+Use [frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md) for the broader manual validation pass after launch and prep succeed.
 
 ## Canonical Source Of Truth
 
@@ -46,6 +53,7 @@ The live implementation authority for the UI routes and startup surface is:
 - [backend/app/review_ui/static/workbench_compare.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/workbench_compare.js)
 - [backend/app/review_ui/static/candidate_b_trace.html](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/candidate_b_trace.html)
 - [backend/app/review_ui/static/candidate_b_trace.js](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/backend/app/review_ui/static/candidate_b_trace.js)
+- [tools/nrc_ui_launch.py](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/tools/nrc_ui_launch.py)
 - [project6.ps1](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/project6.ps1)
 
 This file is an operational reference layered on top of those sources.
@@ -73,98 +81,62 @@ Workbench-compare scope note:
 
 ## Preconditions
 
-- Run from the repo root:
-  - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER`
+- Run from the repo or worktree root you intend to serve from.
 - Use a runtime that already exists on disk and already contains:
   - `lc.db`
   - `storage\`
   - `local_corpus_e2e_summary.json` with `"passed": true`
+- Current `main` does not guarantee that a populated local review runtime is already present under the checkout's allowlisted roots.
+- If you are launching from a worktree, the shell-neutral helper can also discover and bind the shared repo-root review-runtime root when it exists.
+- If no allowlisted runtime exists yet, stop and follow [docs/nrc_adams/local_corpus_e2e_runbook.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/docs/nrc_adams/local_corpus_e2e_runbook.md) or another approved restore path before using this walkthrough.
 - Prefer a dedicated port for UI validation so you do not collide with another local API process.
 
 ## Step 1: Identify The Runtime You Want To Serve
 
 Do not guess the runtime path and do not rely on `backend/.env` to pick one for you.
 
-From the repo root, run:
+From the repo or worktree root, run:
 
-```powershell
-@'
-from pathlib import Path
-import json
-
-root = Path(r"C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e")
-candidates = []
-for path in root.iterdir():
-    if not path.is_dir():
-        continue
-    summary = path / "local_corpus_e2e_summary.json"
-    if not summary.exists():
-        continue
-    try:
-        payload = json.loads(summary.read_text(encoding="utf-8"))
-    except Exception:
-        continue
-    if payload.get("passed") is True:
-        candidates.append((path.name, str(payload.get("run_id") or ""), path))
-
-if not candidates:
-    raise SystemExit("No successful local-corpus runtime found.")
-
-name, run_id, path = sorted(candidates, reverse=True)[0]
-print(f"runtime_dir={path}")
-print(f"run_id={run_id}")
-print(f"database={path / 'lc.db'}")
-print(f"storage={path / 'storage'}")
-'@ | python -
+```text
+python ./tools/nrc_ui_launch.py discover
 ```
 
-Record the printed values. You will use them in the next steps.
+This is the copy-pasteable discovery command for both PowerShell and `cmd`.
 
 ## Step 2: Start A Dedicated API Instance With Explicit Binding
 
 This is the preferred path for frontend/UI validation because it makes the runtime binding explicit.
 
-From the repo root, set the runtime values you just discovered:
+From the repo or worktree root, launch the latest reviewable runtime on the default port `8098`:
 
-```powershell
-$RuntimeDb = "C:\ABSOLUTE\PATH\TO\lc.db"
-$RuntimeStorage = "C:\ABSOLUTE\PATH\TO\storage"
-$Port = 8098
-```
-
-Then launch the backend from the repo's backend directory:
-
-```powershell
-$env:DATABASE_URL = "sqlite:///$($RuntimeDb -replace '\\','/')"
-$env:STORAGE_DIR = $RuntimeStorage
-$env:DB_INIT_MODE = "none"
-py -3.11 -m uvicorn main:app --host 127.0.0.1 --port $Port --app-dir "C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend"
+```text
+python ./tools/nrc_ui_launch.py serve --latest
 ```
 
 Important rules:
 
 - Keep this terminal open while you are using the UI.
 - This path is preferred over relying on `backend/.env` because it prevents silent fallback to an older runtime.
-- `DB_INIT_MODE=none` is intentional here because the runtime DB already exists.
+- The helper binds `DB_INIT_MODE=none`, the selected runtime database, and the selected runtime-root search path for you.
 - Once the backend is up, the review/document-trace run selector can switch across discovered summary-backed runtimes without restarting the process, as long as those runtimes live under the allowlisted review-runtime roots.
 
 ## Step 3: Confirm The Server Is Bound To The Intended Runtime
 
-In a second terminal, verify the API is up:
+In a second terminal, verify the launch:
 
-```powershell
-python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8098/health').read().decode())"
+```text
+python ./tools/nrc_ui_launch.py verify --latest
 ```
 
-Then confirm the run list is populated:
-
-```powershell
-python -c "import urllib.request, json; data=json.loads(urllib.request.urlopen('http://127.0.0.1:8098/api/v1/review/nrc-aps/runs').read().decode()); print('runs=', len(data.get('runs', [])), 'default=', data.get('default_run_id'))"
-```
-
-If this returns zero runs, do not trust the UI. Fix the runtime binding first.
+If this fails, do not trust the UI. Fix the runtime binding first.
 
 ## Step 4: Open The UI
+
+If you want the URLs printed directly from the same shell-neutral helper, run:
+
+```text
+python ./tools/nrc_ui_launch.py urls
+```
 
 Main review UI:
 
@@ -187,6 +159,11 @@ Candidate B Trace UI:
 If you want to open Document Trace directly for a specific run:
 
 - `http://127.0.0.1:8098/review/nrc-aps/document-trace?run_id=<RUN_ID>`
+
+Important:
+
+- the numbered bring-up steps above are copy-pasteable as written
+- the direct route examples below with `<RUN_ID>`, `<BUNDLE_ID>`, or `<FIXTURE_ID>` are parameterized follow-up URLs, not the canonical launch commands
 
 ## Step 5: Basic UI Smoke Checklist
 
@@ -226,7 +203,10 @@ On `/review/nrc-aps/candidate-b-trace` after same-checkout prep:
 - `summary`, `raw_json`, and `raw_markdown` tabs render or degrade explicitly
 - no raw local filesystem paths are displayed in the UI
 
-## Step 6: Minimal API Cross-Checks
+## Step 6: Optional Parameterized API Cross-Checks
+
+These are intentional follow-up checks after launch succeeds.
+They require replacing `<RUN_ID>` and `<TARGET_ID>` with actual values from the running UI/API session.
 
 After the UI is open, these are the minimum useful API checks:
 
