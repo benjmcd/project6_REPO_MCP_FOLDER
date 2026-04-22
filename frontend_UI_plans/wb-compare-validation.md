@@ -11,10 +11,16 @@ It must not trigger new Candidate B runs or seed runtime artifacts during normal
 
 This is the canonical same-checkout prep and populated compare-validation document for the shipped Option 1 flow.
 
+Use [docs/nrc_adams/nrc_aps_ui_launch_runbook.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/docs/nrc_adams/nrc_aps_ui_launch_runbook.md) for:
+
+- the canonical launch contract
+- current-main runtime preconditions
+- explicit backend binding rules
+
 Use [frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md) for:
 
-- explicit backend binding
-- route bring-up
+- the concise startup walkthrough
+- route/page-shell bring-up
 - shell-level reachability checks
 
 Use this document for:
@@ -24,7 +30,7 @@ Use this document for:
 - populated Workbench Compare validation
 - Candidate B Trace follow-through from compare
 
-Use [frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md) for the broader manual validation pass after startup and prep succeed.
+Use [frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md) for the broader manual validation pass after launch and prep succeed.
 
 ## 2. Canonical Validation Sources
 
