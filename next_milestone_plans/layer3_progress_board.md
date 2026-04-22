@@ -46,7 +46,7 @@ As of `2026-04-22`:
 - current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, and the post-PR147 progress-packet closeout from PR `#148`
 - current `main` now also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR `#165`; they remain deferred-scope preparation artifacts and do not reopen the settled packet or change the merged milestone count
 - current `main` now also includes the post-PR165 docs/progress/front-door sync from PR `#166`, which aligns the progress artifact, pack front door, and canonical status/index surfaces with the merged planning-only deferred-prep docs without changing the settled packet state
-- this checkout also carries the exact tree content of the still-open docs/progress sync from PR `#167` via local commit `9604a5d3`, plus branch-only planning-only workbench-input prep rooted in `26_L3_WB_INPUTS.md`; that prep now includes the adopted trigger, additive route-family choice, owner-surface map, proof matrix, and remains-out list for later implementation entry, but it remains branch-local prep only, not merged-main history
+- this checkout also carries the exact tree content of the still-open docs/progress sync from PR `#167` via local commit `9604a5d3`, plus branch-only planning-only workbench-input prep rooted in `26_L3_WB_INPUTS.md`; that prep now includes the adopted trigger, additive route-family choice, minimum typing posture, owner-surface map, proof matrix, and remains-out list for later implementation entry, but it remains branch-local prep only, not merged-main history
 
 ## Program State Summary
 
@@ -55,7 +55,7 @@ As of `2026-04-22`:
 - Candidate next consumers: none active in this bounded packet; promotion governance is already sufficient on current `main`, and retrieval cutover already exists there as a separate validate-only parity-proof family
 - Deferred but not active: 8 explicitly deferred scope items remain out until later freezes admit them; see the activation-criteria section below for the exact candidate-next and current-focus gates
 - Current `main` also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR `#165`, plus the post-PR165 docs/progress/front-door sync from PR `#166`; those landed docs prepare deferred-scope work and align artifact/front-door surfaces only, without changing the 29 merged milestone count or reopening the settled packet
-- This checkout also carries the exact tree content of the still-open PR `#167` docs/progress sync plus branch-only planning-only workbench-input prep rooted in `26_L3_WB_INPUTS.md`; that branch-local prep now reaches owner/proof/no-go implementation-entry specificity, but neither it nor the open docs/progress sync changes the merged milestone count or the settled packet state until GitHub and current `main` both confirm them
+- This checkout also carries the exact tree content of the still-open PR `#167` docs/progress sync plus branch-only planning-only workbench-input prep rooted in `26_L3_WB_INPUTS.md`; that branch-local prep now reaches typing/owner/proof/no-go implementation-entry specificity, but neither it nor the open docs/progress sync changes the merged milestone count or the settled packet state until GitHub and current `main` both confirm them
 
 ## Milestone Table
 

@@ -168,10 +168,10 @@
         "state": "open",
         "kind": "docs_progress_sync",
         "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/167",
-        "note": "GitHub still shows the docs/progress sync open; this checkout carries the exact same tree content via local commit 9604a5d3, plus additional branch-only workbench-input prep that now includes the adopted trigger, additive route family, owner-surface map, proof matrix, and remains-out list."
+        "note": "GitHub still shows the docs/progress sync open; this checkout carries the exact same tree content via local commit 9604a5d3, plus additional branch-only workbench-input prep that now includes the adopted trigger, additive route family, minimum typing posture, owner-surface map, proof matrix, and remains-out list."
       }
     ],
-    "branch_state_summary": "This checkout matches the merged-main settled packet through the post-PR165 docs/progress/front-door sync from PR #166, also carries the exact tree content of the still-open PR #167 docs/progress sync via local commit `9604a5d3`, and also carries branch-only planning-only workbench-input prep rooted in `26_L3_WB_INPUTS.md` plus companion updates to `24_L3_WB_FREEZE.md`, `25_L3_QUAL1_FREEZE.md`, and `README_LAYER3_PHASE1A_PACK.md`. That branch-local prep now includes the adopted trigger, additive route-family choice, exact owner-surface map, exact proof matrix, and exact remains-out list for a later implementation-entry packet. Those surfaces are branch-local prep only, not merged-main milestone state."
+    "branch_state_summary": "This checkout matches the merged-main settled packet through the post-PR165 docs/progress/front-door sync from PR #166, also carries the exact tree content of the still-open PR #167 docs/progress sync via local commit `9604a5d3`, and also carries branch-only planning-only workbench-input prep rooted in `26_L3_WB_INPUTS.md` plus companion updates to `24_L3_WB_FREEZE.md`, `25_L3_QUAL1_FREEZE.md`, and `README_LAYER3_PHASE1A_PACK.md`. That branch-local prep now includes the adopted trigger, additive route-family choice, minimum typing posture, exact owner-surface map, exact proof matrix, and exact remains-out list for a later implementation-entry packet. Those surfaces are branch-local prep only, not merged-main milestone state."
   },
   "summary_counts": {
     "merged_milestones": 29,
