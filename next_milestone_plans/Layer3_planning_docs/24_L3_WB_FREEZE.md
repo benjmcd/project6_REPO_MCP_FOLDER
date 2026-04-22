@@ -10,7 +10,7 @@
 - future workbench route family
 
 ## Companion exact-freeze input doc
-- `26_L3_WB_INPUTS.md` records the unresolved exact-freeze inputs for this lane.
+- `26_L3_WB_INPUTS.md` now records the adopted branch-local trigger and route-family choice for this lane, plus the remaining exact-freeze prep that still must be tightened before activation-readiness.
 - This doc remains the boundary, dependency, non-goal, and ambiguity-control surface.
 - The companion input doc is planning-only prep and does not itself satisfy activation prerequisites.
 
@@ -20,7 +20,7 @@
 - This prep can stay additive and planning-only without reopening APS packet state, runtime DB boundaries, schema, or generic route widening.
 
 ## Why activation is not automatic
-- No exact route-family freeze is active yet.
+- An exact branch-local route-family choice is now recorded in `26_L3_WB_INPUTS.md`, but no live route family is active yet.
 - No exact shell or state-transition proof exists yet for the broader workbench.
 - No headed plus headless Chrome proof exists yet for the future broader workbench family.
 - The active packet is still settled and does not nominate this as an active lane.
@@ -79,8 +79,8 @@
 - session-scoped workspace model remains authoritative
 - read-only runtime DB boundary remains unchanged
 - active packet remains settled while this doc is only planning
-- companion input prep may narrow unresolved decisions, but activation still requires an explicit later freeze outcome rather than the prep doc by itself
-- later implementation must still freeze exact route naming, editability rules, and API ownership before activation
+- the companion input doc now adopts the branch-local operator-insufficiency trigger and additive route-family choice, but activation still requires an explicit later freeze outcome rather than the prep doc by itself
+- later implementation must still freeze exact route/API ownership, proof surfaces, and any file/module-local restatement of editability rules before activation
 
 ## Placeholder owner-surface classes for later activation
 - repo-confirmed current touchpoints that would likely participate:
@@ -101,7 +101,7 @@
 - `backend/app/services/review_nrc_aps_runtime_db.py`
 
 ## Later activation prerequisites
-- one exact operator workflow insufficiency or one exact product requirement must be frozen so this lane is not activated by conceptual neatness alone
+- the adopted branch-local operator-insufficiency trigger and additive route-family choice from `26_L3_WB_INPUTS.md` must remain intact unless a later freeze explicitly reopens them
 - one exact route/API ownership freeze must be chosen; current planning-default route names do not settle final route strings or file/module names
 - headed Chrome proof that the broader workbench shell loads and exposes the full state machine
 - headless Chrome proof of the same shell and state transitions
