@@ -92,6 +92,7 @@
 ## Dependencies
 - the selection-commit and session boundary remain authoritative
 - the future broader workbench route family should be frozen before activation so operator control state is not implied ad hoc
+- the companion prep doc `26_L3_WB_INPUTS.md` does not itself satisfy that broader workbench dependency; it is input prep only until a later freeze outcome is explicitly adopted
 - read-only runtime DB boundary remains unchanged
 - current packet remains settled while this doc is planning-only
 

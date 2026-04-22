@@ -63,6 +63,7 @@ Read these files first:
 When present in the current checkout, also read:
 - `next_milestone_plans/Layer3_planning_docs/23_GATED_APS_PROMOTION_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/24_L3_WB_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md`
 - `next_milestone_plans/Layer3_planning_docs/25_L3_QUAL1_FREEZE.md`
 - `backend/app/services/nrc_aps_promotion_gate.py`
 - `tests/test_nrc_aps_promotion_gate.py`
@@ -181,6 +182,7 @@ The current settled state in this checkout is:
 - retrieval cutover already exists on current `main` as a separate validate-only parity-proof family
 - current `main` also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR `#165`, but they remain deferred-scope prep artifacts and do not change the settled packet counts or `next_required_decision`
 - current `main` also includes the post-PR165 docs/progress/front-door sync from PR `#166`, which aligns the progress artifact, pack front door, and canonical status/index surfaces with those merged planning-only deferred-prep docs without changing the settled packet state
+- if `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md` is present in the current checkout, preserve it as a planning-only companion input doc for the deferred future workbench route family rather than as a merged milestone, packet-reopen signal, or active lane
 - do not invent another later APS family lane unless live repo truth proves a concrete new gap
 
 ## Schedule Guidance
