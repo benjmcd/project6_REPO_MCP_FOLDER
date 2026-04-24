@@ -460,6 +460,7 @@ Workbench/Controller:
 
 - The broader repo-planned operator surface that would own the end-to-end Layer 3 lifecycle beyond the bounded first-slice shell/API.
 - Current main already ships the bounded PR #184 /review/layer3 and /api/v1/layer3/... first-slice route/API.
+- Current main also includes post-PR184 closeouts through PR #189 that preserve response-envelope, blocked Gate B error, Gate C authority-rail count/source-context, and progress-tracking accuracy without expanding that bounded first-slice scope.
 - Those same route families remain the adopted candidate location for later explicitly frozen workbench slices, but the full target workbench is not active merely because the bounded first slice exists.
 
 7. User Intent Entry
@@ -1204,7 +1205,7 @@ Implication:
 
 - This is the target operator workflow implied by the mockups.
 - Current repo-live backend assets cover meaningful parts of the chain.
-- Current repo-live UI exposes the bounded PR #184 /review/layer3 first-slice workbench, but not this full end-to-end target workflow.
+- Current repo-live UI exposes the bounded PR #184 /review/layer3 first-slice workbench, with post-implementation closeouts through PR #189, but not this full end-to-end target workflow.
 
 23D.2 Frontend / UI Presentation Model
 
@@ -1510,7 +1511,7 @@ Implications that must be addressed before frontend implementation:
 
 Frontend contradictions or target-vs-live gaps:
 
-- The mockup shows a full Layer 3 workbench; the live repo currently ships only the bounded PR #184 /review/layer3 first-slice shell/API.
+- The mockup shows a full Layer 3 workbench; the live repo currently ships only the bounded PR #184 /review/layer3 first-slice shell/API plus closeouts through PR #189.
 - The mockup shows a broad staged workflow; live adjacent pages are separate NRC APS/Analyst Insight surfaces, not the unified Layer 3 operator route.
 - The mockup implies direct user operation across several Layer 3 gates; current live UI does not expose full Gate B, Gate C, plan review, pass monitor, reconciliation, and package review as one end-to-end operator workflow.
 - The mockup's later-stage visual presentation remains less concrete than early-stage entry/retrieval/gate visuals. Later stage UI should not be over-specified from the current images alone.
@@ -2092,7 +2093,7 @@ Authority boundary:
 
 Recommended posture:
 
-Treat PR #184 as the already-landed narrow /review/layer3 plus /api/v1/layer3/... first slice. Any later slice should remain explicitly frozen, UI-led but API-backed, compose around existing Layer 3 backend owner services, reuse repo-proven token/query retrieval first unless a later freeze admits more, and keep schema widening, runtime DB writes, RAG/vector claims, qualitative execution, hybrid execution, automated handoff, and broad adjacent-surface rewrites out of scope by default.
+Treat PR #184 as the already-landed narrow /review/layer3 plus /api/v1/layer3/... first slice, with closeout/correction passes through PR #189 that do not expand its scope. Any later slice should remain explicitly frozen, UI-led but API-backed, compose around existing Layer 3 backend owner services, reuse repo-proven token/query retrieval first unless a later freeze admits more, and keep schema widening, runtime DB writes, RAG/vector claims, qualitative execution, hybrid execution, automated handoff, and broad adjacent-surface rewrites out of scope by default.
 
 | Item | Problem / situation summary | Recommended decision options | Reasoning |
 |---|---|---|---|
