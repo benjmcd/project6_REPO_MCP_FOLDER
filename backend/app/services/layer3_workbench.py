@@ -1,0 +1,698 @@
+from __future__ import annotations
+
+import hashlib
+import json
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any
+
+from sqlalchemy.orm import Session
+
+from app.models.models import (
+    L3AnalysisGroup,
+    L3AnalysisSet,
+    L3AnalysisUnit,
+    L3MaterialSnapshot,
+    L3SelectionManifest,
+    L3Session,
+    L3TypingRecord,
+    uuid_str,
+)
+from app.services.layer3_session_entry import (
+    SessionEntryRequest,
+    SnapshotMaterial,
+    commit_selection,
+    expand_descriptors,
+    finalize_session,
+    record_retrieval_event,
+)
+from app.services.layer3_typing_entry import (
+    SUPPORTED_TYPING_RULES,
+    Layer3TypingEntryError,
+    materialize_typing_entry,
+)
+
+SCHEMA_VERSION = 1
+ROUTE = "/review/layer3"
+API_ROOT = "/api/v1/layer3"
+SUPPORTED_SOURCE_CLASSES = ("dataset_version", "aps_content_document")
+UNSUPPORTED_SOURCE_CLASSES = (
+    "rag_vector_index",
+    "arbitrary_local_directory",
+    "broad_file_upload",
+    "web_connector",
+    "unbounded_runtime_db",
+)
+GATE_LABELS = ("intent", "sources", "gate_b", "gate_c", "plan", "execution", "results", "package")
+ACTIVE_GATES = ("intent", "sources", "gate_b", "gate_c")
+DOWNSTREAM_UNAVAILABLE = ("plan", "execution", "results", "package")
+GATE_B_DECISIONS = ("approved", "denied", "isolated", "flagged")
+
+
+@dataclass(frozen=True)
+class Layer3WorkbenchError(ValueError):
+    error_code: str
+    message: str
+    status: str = "invalid"
+    http_status: int = 400
+    recoverable: bool = True
+    blocked_fields: list[str] = field(default_factory=list)
+    next_allowed_actions: list[str] = field(default_factory=list)
+
+
+def _utcnow_iso() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _json_clone(value: Any) -> Any:
+    return json.loads(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False))
+
+
+def _stable_id(prefix: str, payload: Any) -> str:
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return f"{prefix}-{hashlib.sha256(encoded).hexdigest()[:16]}"
+
+
+def _base_response(schema_id: str, *, request_id: str | None = None, status: str = "ok") -> dict[str, Any]:
+    return {
+        "schema_id": schema_id,
+        "schema_version": SCHEMA_VERSION,
+        "request_id": request_id or uuid_str(),
+        "server_time": _utcnow_iso(),
+        "status": status,
+    }
+
+
+def workbench_error_response(exc: Layer3WorkbenchError, *, request_id: str | None = None) -> dict[str, Any]:
+    return {
+        **_base_response("layer3.workbench_error.v1", request_id=request_id, status=exc.status),
+        "error_code": exc.error_code,
+        "message": exc.message,
+        "recoverable": exc.recoverable,
+        "blocked_fields": list(exc.blocked_fields),
+        "next_allowed_actions": list(exc.next_allowed_actions),
+    }
+
+
+def _authority_rail(
+    *,
+    session_id: str | None = None,
+    preflight_id: str | None = None,
+    source_set_id: str | None = None,
+    current_gate: str = "intent",
+    persistence_mode: str = "not_committed",
+    source_classes: list[str] | None = None,
+    counts: dict[str, int] | None = None,
+    typing_status: str = "not_started",
+    browser_only_state: list[str] | None = None,
+) -> dict[str, Any]:
+    gate_counts = counts or {}
+    return {
+        "schema_id": "layer3.authority_rail.v1",
+        "schema_version": SCHEMA_VERSION,
+        "session_id": session_id or "none",
+        "preflight_id": preflight_id or "none",
+        "source_set_id": source_set_id or "none",
+        "current_gate": current_gate,
+        "persistence_mode": persistence_mode,
+        "source_authority": {
+            "source_classes": list(source_classes or []),
+            "runtime_label": None,
+            "database_label": None,
+            "storage_label": None,
+        },
+        "approved_material_count": gate_counts.get("approved", 0),
+        "denied_material_count": gate_counts.get("denied", 0),
+        "isolated_material_count": gate_counts.get("isolated", 0),
+        "flagged_material_count": gate_counts.get("flagged", 0),
+        "typing_status": typing_status,
+        "downstream_unavailable": list(DOWNSTREAM_UNAVAILABLE),
+        "browser_only_state": list(browser_only_state or []),
+    }
+
+
+def bootstrap() -> dict[str, Any]:
+    return {
+        **_base_response("layer3.workbench_bootstrap.v1"),
+        "route": ROUTE,
+        "api_root": API_ROOT,
+        "supported_source_classes": list(SUPPORTED_SOURCE_CLASSES),
+        "preview_only_source_classes": [],
+        "unsupported_source_classes": list(UNSUPPORTED_SOURCE_CLASSES),
+        "gate_labels": list(GATE_LABELS),
+        "active_gate_labels": list(ACTIVE_GATES),
+        "unavailable_gate_labels": list(DOWNSTREAM_UNAVAILABLE),
+        "features": {
+            "analysis_execution": False,
+            "qualitative_execution": False,
+            "hybrid_execution": False,
+            "rag_vector_retrieval": False,
+            "package_review": False,
+            "handoff": False,
+            "runtime_snapshot_db_writes": False,
+            "schema_widening": False,
+            "typing_override_enabled": False,
+        },
+        "authority_rail": _authority_rail(
+            current_gate="intent",
+            browser_only_state=["expanded_rows", "hidden_uncommitted_candidates", "selected_tab"],
+        ),
+    }
+
+
+def _manual_constraints(payload: dict[str, Any]) -> dict[str, Any]:
+    value = payload.get("manual_constraints") or {}
+    return value if isinstance(value, dict) else {}
+
+
+def _requested_source_classes(manual_constraints: dict[str, Any]) -> list[str]:
+    source_classes = manual_constraints.get("source_classes") or []
+    if not source_classes:
+        return list(SUPPORTED_SOURCE_CLASSES)
+    return [str(item) for item in source_classes]
+
+
+def _unsupported_requested(classes: list[str]) -> list[str]:
+    return [item for item in classes if item not in SUPPORTED_SOURCE_CLASSES]
+
+
+def preflight(payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or uuid_str())
+    intent = str(payload.get("natural_language_intent") or "").strip()
+    manual_constraints = _manual_constraints(payload)
+    if not intent:
+        raise Layer3WorkbenchError(
+            "empty_intent",
+            "Natural-language intent is required before source selection.",
+            status="blocked",
+            blocked_fields=["natural_language_intent"],
+            next_allowed_actions=["edit_intent"],
+        )
+    if manual_constraints.get("conflict") is True or manual_constraints.get("conflicts"):
+        raise Layer3WorkbenchError(
+            "conflicting_constraints",
+            "Manual constraints declare a conflict that must be resolved before source selection.",
+            status="blocked",
+            blocked_fields=["manual_constraints"],
+            next_allowed_actions=["edit_constraints"],
+        )
+    source_classes = _requested_source_classes(manual_constraints)
+    unsupported = _unsupported_requested(source_classes)
+    if unsupported:
+        raise Layer3WorkbenchError(
+            "unsupported_source_class",
+            f"Unsupported source class requested: {', '.join(unsupported)}.",
+            status="blocked",
+            blocked_fields=["manual_constraints.source_classes"],
+            next_allowed_actions=["choose_supported_sources"],
+        )
+    normalized = {
+        "intent_text": " ".join(intent.split()),
+        "manual_constraints": _json_clone(manual_constraints),
+    }
+    preflight_id = _stable_id("preflight", normalized)
+    return {
+        **_base_response("layer3.preflight_result.v1", request_id=request_id),
+        "preflight_id": preflight_id,
+        "normalized_intent": normalized,
+        "blockers": [],
+        "warnings": [],
+        "eligible_for_source_selection": True,
+        "authority_rail": _authority_rail(
+            preflight_id=preflight_id,
+            current_gate="sources",
+            persistence_mode="preview_only",
+            source_classes=source_classes,
+        ),
+    }
+
+
+def source_preview(payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or uuid_str())
+    preflight_id = str(payload.get("preflight_id") or "").strip()
+    if not preflight_id:
+        raise Layer3WorkbenchError("empty_intent", "preflight_id is required for source preview.", status="blocked")
+    requested = [str(item) for item in payload.get("selected_source_classes") or SUPPORTED_SOURCE_CLASSES]
+    unsupported = _unsupported_requested(requested)
+    if unsupported:
+        raise Layer3WorkbenchError(
+            "unsupported_source_class",
+            f"Unsupported source class requested: {', '.join(unsupported)}.",
+            status="blocked",
+            blocked_fields=["selected_source_classes"],
+            next_allowed_actions=["choose_supported_sources"],
+        )
+    candidates = []
+    for source_class in requested:
+        short_id = _stable_id("src", {"preflight_id": preflight_id, "source_class": source_class}).split("-", 1)[1]
+        candidates.append(
+            {
+                "source_candidate_id": f"src-{source_class}-{short_id}",
+                "source_class": source_class,
+                "source_label": source_class.replace("_", " ").title(),
+                "source_ref": f"{source_class}:preview:{short_id}",
+                "source_authority": "repo_supported",
+                "eligible_for_material_preview": True,
+                "unavailable_reason": None,
+            }
+        )
+    source_set_id = _stable_id("source-set", [item["source_candidate_id"] for item in candidates])
+    return {
+        **_base_response("layer3.source_preview_result.v1", request_id=request_id),
+        "source_set_id": source_set_id,
+        "source_candidates": candidates,
+        "unsupported_sources": [],
+        "authority_rail": _authority_rail(
+            preflight_id=preflight_id,
+            source_set_id=source_set_id,
+            current_gate="gate_b",
+            persistence_mode="preview_only",
+            source_classes=requested,
+        ),
+    }
+
+
+def _source_class_from_source_candidate_id(source_candidate_id: str) -> str | None:
+    for source_class in SUPPORTED_SOURCE_CLASSES:
+        if source_candidate_id.startswith(f"src-{source_class}-"):
+            return source_class
+    return None
+
+
+def _source_class_from_material_candidate_id(candidate_id: str) -> str | None:
+    for source_class in SUPPORTED_SOURCE_CLASSES:
+        if candidate_id.startswith(f"mat-{source_class}-"):
+            return source_class
+    return None
+
+
+def material_preview(payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or uuid_str())
+    source_ids = [str(item) for item in payload.get("source_candidate_ids") or []]
+    if not source_ids:
+        raise Layer3WorkbenchError("no_source_candidates", "At least one source candidate is required.", status="blocked")
+    terms = [str(item) for item in (payload.get("query_basis") or {}).get("terms") or []]
+    query_label = ", ".join(terms) if terms else "operator_intent"
+    candidates = []
+    for source_id in source_ids:
+        source_class = _source_class_from_source_candidate_id(source_id)
+        if source_class is None:
+            raise Layer3WorkbenchError("invalid_material_candidate", f"Unknown source candidate: {source_id}.")
+        short_id = _stable_id("mat", {"source_id": source_id, "query_basis": query_label}).split("-", 1)[1]
+        planning_shape = "tabular_numeric" if source_class == "dataset_version" else "document_chunks"
+        candidates.append(
+            {
+                "candidate_id": f"mat-{source_class}-{short_id}",
+                "source_label": source_class.replace("_", " ").title(),
+                "source_class": source_class,
+                "source_ref": f"{source_class}:preview:{short_id}",
+                "owner_service_source_shape": source_class,
+                "planning_shape_family": planning_shape,
+                "query_basis": query_label,
+                "validation_status": "valid",
+                "duplicate_status": "unique",
+                "size_or_unit_count": 1,
+                "preview_payload_ref": None,
+                "provenance_ref": f"layer3-preview:{short_id}",
+                "current_decision_state": "candidate",
+            }
+        )
+    preview_id = _stable_id("material-preview", [item["candidate_id"] for item in candidates])
+    return {
+        **_base_response("layer3.material_preview_result.v1", request_id=request_id),
+        "material_preview_id": preview_id,
+        "material_candidates": candidates,
+        "partial_retrieval": False,
+        "authority_rail": _authority_rail(
+            preflight_id=str(payload.get("preflight_id") or "none"),
+            source_set_id=str(payload.get("source_set_id") or "none"),
+            current_gate="gate_b",
+            persistence_mode="preview_only",
+            source_classes=sorted({item["source_class"] for item in candidates}),
+        ),
+    }
+
+
+def _gate_b_counts(decisions: list[dict[str, Any]]) -> dict[str, int]:
+    return {decision: sum(1 for item in decisions if item["decision"] == decision) for decision in GATE_B_DECISIONS}
+
+
+def _candidate_decision_manifest(decisions: list[dict[str, Any]]) -> dict[str, Any]:
+    return {"schema_id": "layer3.gate_b_decision_manifest.v1", "schema_version": SCHEMA_VERSION, "items": _json_clone(decisions)}
+
+
+def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or uuid_str())
+    raw_decisions = payload.get("candidate_decisions") or []
+    if not isinstance(raw_decisions, list) or not raw_decisions:
+        raise Layer3WorkbenchError("no_approved_material", "At least one Gate B decision is required.", status="blocked")
+
+    decisions: list[dict[str, Any]] = []
+    for raw in raw_decisions:
+        if not isinstance(raw, dict):
+            raise Layer3WorkbenchError("invalid_material_candidate", "Gate B decision entries must be objects.")
+        candidate_id = str(raw.get("candidate_id") or "").strip()
+        source_class = _source_class_from_material_candidate_id(candidate_id)
+        decision = str(raw.get("decision") or "").strip()
+        reason = str(raw.get("operator_reason") or "").strip()
+        if source_class is None:
+            raise Layer3WorkbenchError("invalid_material_candidate", f"Unknown material candidate: {candidate_id}.")
+        if decision not in GATE_B_DECISIONS:
+            raise Layer3WorkbenchError("invalid_material_candidate", f"Unsupported Gate B decision: {decision}.")
+        if decision in {"denied", "isolated", "flagged"} and not reason:
+            raise Layer3WorkbenchError(
+                "invalid_material_candidate",
+                f"Decision '{decision}' requires an operator reason.",
+                blocked_fields=["candidate_decisions.operator_reason"],
+            )
+        decision_basis = raw.get("decision_basis") if isinstance(raw.get("decision_basis"), dict) else {}
+        decisions.append(
+            {
+                "candidate_id": candidate_id,
+                "source_class": source_class,
+                "decision": decision,
+                "operator_reason": reason,
+                "decision_basis": _json_clone(decision_basis),
+            }
+        )
+
+    approved = [item for item in decisions if item["decision"] == "approved"]
+    if not approved:
+        raise Layer3WorkbenchError(
+            "no_approved_material",
+            "At least one material candidate must be approved before Gate C.",
+            status="blocked",
+            next_allowed_actions=["approve_material", "revise_sources"],
+        )
+
+    counts = _gate_b_counts(decisions)
+    decision_manifest = _candidate_decision_manifest(decisions)
+    manifest_items = []
+    for item in approved:
+        short_id = hashlib.sha256(item["candidate_id"].encode("utf-8")).hexdigest()[:12]
+        manifest_items.append(
+            {
+                "source_plane": f"plane_{item['source_class']}_{short_id}",
+                "descriptor_type": item["source_class"],
+                "selector_payload": {
+                    "candidate_id": item["candidate_id"],
+                    "source_ref": item["decision_basis"].get("source_ref", item["candidate_id"]),
+                },
+                "selection_basis": {
+                    "candidate_id": item["candidate_id"],
+                    "query_basis": item["decision_basis"].get("query_basis", "operator_intent"),
+                    "provenance_ref": item["decision_basis"].get("provenance_ref", "layer3-preview"),
+                    "gate_b_decision": "approved",
+                },
+                "expansion_reason": "gate_b_approved_material",
+            }
+        )
+
+    session, manifest = commit_selection(
+        db,
+        SessionEntryRequest(
+            manifest_items=manifest_items,
+            source_plane_hints={
+                "preflight_id": payload.get("preflight_id"),
+                "source_set_id": payload.get("source_set_id"),
+                "source_classes": sorted({item["source_class"] for item in approved}),
+            },
+            commit_reason=str(payload.get("commit_reason") or "operator_gate_b_decision"),
+            entry_route_context={"route": ROUTE, "api_root": API_ROOT, "slice": "workbench_first_slice"},
+            operator_context={"actor": payload.get("actor") or "operator", "layer3_gate_b_decision_manifest_v1": decision_manifest},
+            summary={"current_gate": "gate_c", "gate_b_summary_v1": counts},
+        ),
+    )
+    descriptors = expand_descriptors(db, session=session, manifest=manifest)
+    for descriptor, item in zip(descriptors, approved, strict=True):
+        record_retrieval_event(
+            db,
+            session=session,
+            descriptor=descriptor,
+            outcome="loaded",
+            reason_code="gate_b_approved_preview_material",
+            loaded_materials=[
+                SnapshotMaterial(
+                    source_shape=item["source_class"],
+                    source_identity={"candidate_id": item["candidate_id"], "source_class": item["source_class"]},
+                    source_provenance=item["decision_basis"],
+                    payload={"candidate_id": item["candidate_id"], "source_class": item["source_class"], "decision": "approved"},
+                    load_summary={"loaded_records": 1, "failed_records": 0, "preview_material": True},
+                )
+            ],
+        )
+    finalize_session(db, session=session)
+    db.commit()
+    return {
+        **_base_response("layer3.gate_b_decision_result.v1", request_id=request_id),
+        "session_id": session.session_id,
+        "selection_manifest_id": manifest.selection_manifest_id,
+        "gate_b_decision_manifest_id": _stable_id("gate-b", decision_manifest),
+        "approved_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "approved"],
+        "denied_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "denied"],
+        "isolated_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "isolated"],
+        "flagged_candidate_ids": [item["candidate_id"] for item in decisions if item["decision"] == "flagged"],
+        "next_state": "gate_c_preview_ready",
+        "authority_rail": _authority_rail(
+            session_id=session.session_id,
+            preflight_id=str(payload.get("preflight_id") or "none"),
+            source_set_id=str(payload.get("source_set_id") or "none"),
+            current_gate="gate_c",
+            persistence_mode="durable_layer3_control",
+            source_classes=sorted({item["source_class"] for item in approved}),
+            counts=counts,
+        ),
+    }
+
+
+def _load_session(db: Session, session_id: str) -> L3Session:
+    session = db.get(L3Session, session_id)
+    if session is None:
+        raise Layer3WorkbenchError("session_not_found", f"Layer 3 session '{session_id}' was not found.", http_status=404)
+    return session
+
+
+def _snapshot_projection(snapshot: L3MaterialSnapshot) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    rule = SUPPORTED_TYPING_RULES.get(snapshot.source_shape)
+    if rule is None:
+        return None, {
+            "material_snapshot_id": snapshot.material_snapshot_id,
+            "owner_service_source_shape": snapshot.source_shape,
+            "reason": "unsupported_typing_shape",
+        }
+    return {
+        "typing_record_id": None,
+        "material_snapshot_id": snapshot.material_snapshot_id,
+        "owner_service_source_shape": snapshot.source_shape,
+        "planning_shape_family": rule.planning_shape_family,
+        "candidate_modalities": list(rule.candidate_modalities),
+        "chosen_modality": rule.chosen_modality,
+        "confidence": rule.confidence,
+        "authoritative": False,
+    }, None
+
+
+def _serialize_typing_record(record: L3TypingRecord) -> dict[str, Any]:
+    basis = record.typing_basis_json or {}
+    return {
+        "typing_record_id": record.typing_record_id,
+        "material_snapshot_id": record.material_snapshot_id,
+        "owner_service_source_shape": basis.get("source_shape"),
+        "planning_shape_family": basis.get("planning_shape_family"),
+        "candidate_modalities": list(record.candidate_modalities_json or []),
+        "chosen_modality": record.chosen_modality,
+        "confidence": record.confidence,
+        "authoritative": True,
+    }
+
+
+def _serialize_analysis_unit(unit: L3AnalysisUnit) -> dict[str, Any]:
+    return {
+        "analysis_unit_id": unit.analysis_unit_id,
+        "unit_kind": unit.unit_kind,
+        "analysis_modality": unit.analysis_modality,
+        "member_snapshot_ids": list(unit.member_snapshot_ids_json or []),
+        "typing_record_ids": list(unit.typing_record_ids_json or []),
+        "must_remain_intact": unit.must_remain_intact,
+        "authoritative": True,
+    }
+
+
+def _serialize_analysis_group(group: L3AnalysisGroup) -> dict[str, Any]:
+    return {
+        "analysis_group_id": group.analysis_group_id,
+        "analysis_modality": group.analysis_modality,
+        "analysis_unit_ids": list(group.analysis_unit_ids_json or []),
+        "status": group.status,
+        "typing_basis": group.typing_basis_json or {},
+    }
+
+
+def _serialize_analysis_set(analysis_set: L3AnalysisSet) -> dict[str, Any]:
+    return {
+        "analysis_set_id": analysis_set.analysis_set_id,
+        "analysis_group_ids": list(analysis_set.analysis_group_ids_json or []),
+        "analysis_unit_ids": list(analysis_set.analysis_unit_ids_json or []),
+        "set_type": analysis_set.set_type,
+        "formation_basis": analysis_set.formation_basis_json or {},
+    }
+
+
+def gate_c_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or uuid_str())
+    session_id = str(payload.get("session_id") or "").strip()
+    if not session_id:
+        raise Layer3WorkbenchError("session_not_found", "session_id is required for Gate C preview.", http_status=404)
+    _load_session(db, session_id)
+    commit_typing = bool(payload.get("commit_typing"))
+    try:
+        if commit_typing:
+            result = materialize_typing_entry(db, session_id=session_id)
+            db.commit()
+            typing_records = [_serialize_typing_record(record) for record in result.typing_records]
+            analysis_units = [_serialize_analysis_unit(unit) for unit in result.analysis_units]
+            analysis_groups = [_serialize_analysis_group(group) for group in result.analysis_groups]
+            analysis_sets = [_serialize_analysis_set(analysis_set) for analysis_set in result.analysis_sets]
+            typing_status = "committed"
+        else:
+            snapshots = (
+                db.query(L3MaterialSnapshot)
+                .filter(L3MaterialSnapshot.session_id == session_id)
+                .order_by(L3MaterialSnapshot.material_snapshot_id.asc())
+                .all()
+            )
+            if not snapshots:
+                raise Layer3WorkbenchError(
+                    "typing_not_ready",
+                    f"Layer 3 session '{session_id}' has no material snapshots to type.",
+                    status="blocked",
+                )
+            typing_records = []
+            unsupported_material = []
+            for snapshot in snapshots:
+                projection, unsupported = _snapshot_projection(snapshot)
+                if projection is not None:
+                    typing_records.append(projection)
+                if unsupported is not None:
+                    unsupported_material.append(unsupported)
+            analysis_units = [
+                {
+                    "analysis_unit_id": None,
+                    "unit_kind": "atomic",
+                    "analysis_modality": record["chosen_modality"],
+                    "member_snapshot_ids": [record["material_snapshot_id"]],
+                    "typing_record_ids": [],
+                    "must_remain_intact": False,
+                    "authoritative": False,
+                }
+                for record in typing_records
+            ]
+            analysis_groups = []
+            analysis_sets = []
+            typing_status = "previewed" if typing_records else "unavailable"
+            return {
+                **_base_response("layer3.gate_c_preview_result.v1", request_id=request_id),
+                "session_id": session_id,
+                "typing_records": typing_records,
+                "analysis_units": analysis_units,
+                "analysis_groups": analysis_groups,
+                "analysis_sets": analysis_sets,
+                "unsupported_material": unsupported_material,
+                "override_allowed": False,
+                "next_state": "first_slice_complete" if typing_records and not unsupported_material else "blocked_typing_unavailable",
+                "authority_rail": _authority_rail(
+                    session_id=session_id,
+                    current_gate="complete" if typing_records and not unsupported_material else "gate_c",
+                    persistence_mode="durable_layer3_control",
+                    typing_status=typing_status,
+                ),
+            }
+    except Layer3WorkbenchError:
+        raise
+    except Layer3TypingEntryError as exc:
+        detail = str(exc)
+        code = "typing_already_materialized" if "already has" in detail else "typing_not_ready"
+        raise Layer3WorkbenchError(code, detail, status="blocked", http_status=409) from exc
+
+    return {
+        **_base_response("layer3.gate_c_preview_result.v1", request_id=request_id),
+        "session_id": session_id,
+        "typing_records": typing_records,
+        "analysis_units": analysis_units,
+        "analysis_groups": analysis_groups,
+        "analysis_sets": analysis_sets,
+        "unsupported_material": [],
+        "override_allowed": False,
+        "next_state": "first_slice_complete",
+        "authority_rail": _authority_rail(
+            session_id=session_id,
+            current_gate="complete",
+            persistence_mode="durable_layer3_control",
+            typing_status=typing_status,
+        ),
+    }
+
+
+def gate_c_override_unavailable(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **_base_response(
+            "layer3.typing_override_unavailable.v1",
+            request_id=str(payload.get("client_request_id") or uuid_str()),
+            status="unavailable",
+        ),
+        "error_code": "override_unavailable",
+        "message": "Typing override is not enabled in this first slice.",
+        "recoverable": False,
+        "next_allowed_actions": ["review_typing", "finish_first_slice"],
+    }
+
+
+def _gate_b_summary_from_session(session: L3Session) -> dict[str, int]:
+    summary = session.summary_json or {}
+    counts = summary.get("gate_b_summary_v1")
+    if isinstance(counts, dict):
+        return {decision: int(counts.get(decision, 0)) for decision in GATE_B_DECISIONS}
+    decisions = ((session.operator_context_json or {}).get("layer3_gate_b_decision_manifest_v1") or {}).get("items") or []
+    return _gate_b_counts([item for item in decisions if isinstance(item, dict)])
+
+
+def session_summary(db: Session, session_id: str) -> dict[str, Any]:
+    session = _load_session(db, session_id)
+    manifest = (
+        db.query(L3SelectionManifest)
+        .filter(L3SelectionManifest.session_id == session_id)
+        .order_by(L3SelectionManifest.committed_at.desc())
+        .first()
+    )
+    if manifest is None:
+        raise Layer3WorkbenchError("session_not_found", f"Layer 3 session '{session_id}' has no selection manifest.", http_status=404)
+
+    typing_record_count = db.query(L3TypingRecord).filter(L3TypingRecord.session_id == session_id).count()
+    analysis_unit_count = db.query(L3AnalysisUnit).filter(L3AnalysisUnit.session_id == session_id).count()
+    analysis_group_count = db.query(L3AnalysisGroup).filter(L3AnalysisGroup.session_id == session_id).count()
+    analysis_set_count = db.query(L3AnalysisSet).filter(L3AnalysisSet.session_id == session_id).count()
+    gate_b_counts = _gate_b_summary_from_session(session)
+    typing_committed = typing_record_count > 0
+
+    return {
+        **_base_response("layer3.workbench_session_summary.v1"),
+        "session_id": session_id,
+        "selection_manifest_id": manifest.selection_manifest_id,
+        "current_gate": "complete" if typing_committed else "gate_c",
+        "gate_b_summary": gate_b_counts,
+        "gate_c_summary": {
+            "typing_committed": typing_committed,
+            "typing_record_count": typing_record_count,
+            "analysis_unit_count": analysis_unit_count,
+            "analysis_group_count": analysis_group_count,
+            "analysis_set_count": analysis_set_count,
+        },
+        "downstream_unavailable": list(DOWNSTREAM_UNAVAILABLE),
+        "authority_rail": _authority_rail(
+            session_id=session_id,
+            current_gate="complete" if typing_committed else "gate_c",
+            persistence_mode="durable_layer3_control",
+            counts=gate_b_counts,
+            typing_status="committed" if typing_committed else "previewed",
+        ),
+    }
