@@ -144,6 +144,62 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert summary.json()["gate_c_summary"]["typing_committed"] is False
 
 
+def test_layer3_api_gate_c_commit_typing_materializes_once_when_explicit(client: TestClient) -> None:
+    preflight, source, material = _prepare_material(client)
+    first = material["material_candidates"][0]
+    gate_b = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": "api-gate-b-commit",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": first["candidate_id"],
+                    "decision": "approved",
+                    "operator_reason": "",
+                    "decision_basis": {
+                        "source_ref": first["source_ref"],
+                        "query_basis": first["query_basis"],
+                        "provenance_ref": first["provenance_ref"],
+                    },
+                },
+            ],
+            "actor": "pytest",
+        },
+    ).json()
+
+    committed = client.post(
+        "/api/v1/layer3/gate-c/preview",
+        json={
+            "client_request_id": "api-gate-c-commit",
+            "session_id": gate_b["session_id"],
+            "commit_typing": True,
+        },
+    )
+    assert committed.status_code == 200
+    committed_body = committed.json()
+    assert committed_body["typing_records"][0]["authoritative"] is True
+    assert committed_body["analysis_units"][0]["authoritative"] is True
+    assert committed_body["authority_rail"]["typing_status"] == "committed"
+
+    summary = client.get(f"/api/v1/layer3/session/{gate_b['session_id']}")
+    assert summary.status_code == 200
+    assert summary.json()["gate_c_summary"]["typing_committed"] is True
+
+    duplicate = client.post(
+        "/api/v1/layer3/gate-c/preview",
+        json={
+            "client_request_id": "api-gate-c-commit-duplicate",
+            "session_id": gate_b["session_id"],
+            "commit_typing": True,
+        },
+    )
+    assert duplicate.status_code == 409
+    assert duplicate.json()["error_code"] == "typing_already_materialized"
+
+
 def test_layer3_api_error_shape_and_override_unavailable(client: TestClient) -> None:
     blocked = client.post(
         "/api/v1/layer3/preflight",
