@@ -76,12 +76,12 @@ Mockup-observed:
 Repo-confirmed implemented:
 
 - Confirmed in project6-origin/main source code, tests, migrations, or live route/static registrations.
-- Examples: Layer 3 backend tables, layer3_session_entry.py, layer3_typing_entry.py, layer3_pass_entry.py, layer3_package_entry.py, APS handoff service family, Analyst Insight page, and adjacent NRC APS review UI routes.
+- Examples: Layer 3 backend tables, layer3_session_entry.py, layer3_typing_entry.py, layer3_pass_entry.py, layer3_package_entry.py, the bounded PR #184 /review/layer3 plus /api/v1/layer3/... first-slice shell/API, APS handoff service family, Analyst Insight page, and adjacent NRC APS review UI routes.
 
 Repo-confirmed planning-only:
 
 - Present in current-main planning docs but explicitly not active implementation.
-- Examples: the broader workbench route family rooted at /review/layer3 and /api/v1/layer3/..., the workbench state machine, and qualitative single-item execution prep.
+- Examples: the broader end-to-end workbench beyond the bounded /review/layer3 and /api/v1/layer3/... first-slice shell/API, the full workbench state machine, and qualitative single-item execution prep.
 
 Inference:
 
@@ -100,8 +100,8 @@ Do not treat this specification as activation permission for the entire mockup.
 
 Future planning should obey these constraints:
 
-- Do not claim /review/layer3 exists until a route is actually added and tested.
-- Do not claim /api/v1/layer3/... exists until a router is actually added and tested.
+- Do not claim the full mockup workbench exists merely because the bounded first-slice /review/layer3 route is now added and tested.
+- Do not claim the full mockup API exists merely because the bounded first-slice /api/v1/layer3/... router is now added and tested.
 - Do not relabel /review/analyst-insight as the broader Layer 3 workbench.
 - Do not relabel Workbench Compare or Candidate B Trace as the broader Layer 3 workbench.
 - Do not treat RAG/vector/semantic search as repo-live implementation until a concrete service and proof exist.
@@ -1174,7 +1174,7 @@ These diagrams are additive planning aids. They do not replace the prose require
 Reading rules:
 
 - "Repo-live" means confirmed in project6-origin/main during this planning review.
-- "Planning-only" means present in repo planning docs but not active implementation.
+- "Planning-only" means present in repo planning docs but not active implementation, except where later repo truth explicitly marks a bounded slice live.
 - "Target" means mockup/spec intent that still needs implementation scoping.
 - Dashed arrows represent deferred, conditional, or future-scope relationships.
 - These diagrams are Mermaid source blocks so they remain readable as plain text and can render in Mermaid-capable viewers.
@@ -1203,13 +1203,13 @@ Implication:
 
 - This is the target operator workflow implied by the mockups.
 - Current repo-live backend assets cover meaningful parts of the chain.
-- Current repo-live UI does not expose this as one live /review/layer3 workbench.
+- Current repo-live UI exposes the bounded PR #184 /review/layer3 first-slice workbench, but not this full end-to-end target workflow.
 
 23D.2 Frontend / UI Presentation Model
 
 ```mermaid
 flowchart TB
-    Shell["Target /review/layer3 workbench shell<br/>not live today"] --> Header["Top navigation and session/status strip"]
+    Shell["Bounded /review/layer3 first-slice shell is live<br/>full target workbench is not live"] --> Header["Top navigation and session/status strip"]
     Shell --> Main["Primary workbench area"]
     Shell --> Side["Action / Event / Context panels"]
 
@@ -1243,8 +1243,9 @@ flowchart TB
     RepoLive["Repo-live confirmed"] --> LiveBackend["Layer 3 backend model/service spine"]
     RepoLive --> LiveAdjacentUI["Adjacent NRC APS and Analyst Insight UI surfaces"]
     RepoLive --> LiveRetrieval["Token/query APS retrieval evidence"]
+    RepoLive --> LiveFirstSlice["Bounded /review/layer3 plus /api/v1/layer3 first-slice shell/API"]
 
-    PlanningOnly["Repo-live planning-only"] --> PlannedRoute["/review/layer3 plus /api/v1/layer3/... route family"]
+    PlanningOnly["Repo-live planning-only"] --> PlannedRoute["Later slices on /review/layer3 plus /api/v1/layer3/... route family"]
     PlanningOnly --> PlannedWorkbench["Broader workbench state machine"]
     PlanningOnly --> PlannedQual["Qualitative single-item prep"]
 
@@ -1256,7 +1257,7 @@ flowchart TB
     Unresolved --> Semantics["Gate B, typing, pass, package, and handoff semantics"]
     Unresolved --> Proof["Fixtures, proofs, runtime/write boundaries"]
 
-    PlannedRoute -.-> RouteGuard["Not live until implemented and tested"]
+    PlannedRoute -.-> RouteGuard["Bounded first slice is live<br/>full workbench requires later freeze"]
     RouteGuard -.-> TargetUI
     TargetUI -.-> PromotionGuard["Must not be promoted from mockup alone"]
     PromotionGuard -.-> RepoLive
@@ -1336,16 +1337,16 @@ Implication:
 
 24. Future UI Route And API Shape
 
-Repo-live planning-only default:
+Repo-live route/API posture:
 
 - UI root: /review/layer3
 - API root: /api/v1/layer3/...
 
 Current repo-live status:
 
-- No live /review/layer3 route exists.
-- No live /api/v1/layer3/... API family exists.
-- No live FastAPI /layer3 prefix exists.
+- Bounded PR #184 /review/layer3 route exists.
+- Bounded PR #184 /api/v1/layer3/... API family exists.
+- No broader end-to-end workbench route/API exists beyond the bounded first-slice shell/API.
 
 Implementation design requirement:
 
@@ -1483,9 +1484,9 @@ Planning implication:
 Repo-live frontend/UI state:
 
 - Live adjacent pages exist for NRC APS review, document trace, workbench compare, Candidate B trace, and Analyst Insight.
-- Repo-live route evidence does not show a live /review/layer3 page.
-- Repo-live route evidence does not show a live /api/v1/layer3/... route family.
-- Current planning docs preserve /review/layer3 plus /api/v1/layer3/... as a planning-only future route-family direction, not as active implementation.
+- Repo-live route evidence now shows a bounded /review/layer3 first-slice page.
+- Repo-live API evidence now shows a bounded /api/v1/layer3/... first-slice family.
+- Current planning docs preserve /review/layer3 plus /api/v1/layer3/... as the bounded first-slice route/API and as the candidate route family for later slices, not as proof that the full mockup workbench is active.
 
 Mockup target-state:
 
@@ -1495,7 +1496,7 @@ Mockup target-state:
 
 Implications that must be addressed before frontend implementation:
 
-- Decide whether /review/layer3 is the canonical future workbench entry route, and whether /api/v1/layer3/... is the canonical API family for that page.
+- Decide whether the bounded /review/layer3 and /api/v1/layer3/... first-slice route/API remain the canonical route/API family for later end-to-end workbench slices.
 - Decide whether the visual diagram language becomes the production UI itself, a navigational map inside a conventional workbench, onboarding/help content, or a planning-only explanatory artifact.
 - Decide how the primary layout should behave in actual use: staged horizontal flow, vertical stepper, tabbed workbench, split-pane review surface, canvas/map plus detail panel, or another explicit layout.
 - Decide whether the side Action/Event/Context panels are always visible, collapsible, stage-specific, modal, or only explanatory.
@@ -1508,7 +1509,7 @@ Implications that must be addressed before frontend implementation:
 
 Frontend contradictions or target-vs-live gaps:
 
-- The mockup shows a full Layer 3 workbench; the live repo does not currently ship /review/layer3.
+- The mockup shows a full Layer 3 workbench; the live repo currently ships only the bounded PR #184 /review/layer3 first-slice shell/API.
 - The mockup shows a broad staged workflow; live adjacent pages are separate NRC APS/Analyst Insight surfaces, not the unified Layer 3 operator route.
 - The mockup implies direct user operation across several Layer 3 gates; current live UI does not expose full Gate B, Gate C, plan review, pass monitor, reconciliation, and package review as one end-to-end operator workflow.
 - The mockup's later-stage visual presentation remains less concrete than early-stage entry/retrieval/gate visuals. Later stage UI should not be over-specified from the current images alone.
@@ -1530,7 +1531,7 @@ Repo-live backend state:
 - Current main contains Layer 3 models for sessions, selection manifests, descriptors, retrieval events, material snapshots, typing records, analysis units/groups/sets, analysis plans, pass runs, reconciliation records, and output packages.
 - Current main contains Layer 3 service entry points for session/selection, typing, pass, package, and APS handoff families.
 - Current main contains adjacent NRC APS review and Analyst Insight API/UI surfaces.
-- Current main does not prove an active public /api/v1/layer3/... API family for the mockup workbench.
+- Current main proves a bounded public /api/v1/layer3/... API family for the PR #184 first-slice workbench, but not the full mockup workbench API.
 
 Mockup target-state:
 
@@ -1704,8 +1705,8 @@ User decisions needed:
 
 These are not repo bugs by themselves, but they are important planning gaps:
 
-- The absence of /review/layer3 is expected under the current planning-only route-family posture, but it blocks claiming the mockup UI is live.
-- The absence of /api/v1/layer3/... is expected under current planning-only route-family posture, but it blocks building a public workbench page without a route/API activation decision.
+- The bounded /review/layer3 first-slice route is live, but its presence does not make the full mockup UI live.
+- The bounded /api/v1/layer3/... first-slice API family is live, but its presence does not make the full mockup API/workflow live.
 - The absence of proven repo-live RAG/vector/semantic retrieval is not a contradiction if first-slice retrieval is token/query based, but it is a contradiction if the implementation plan claims semantic retrieval.
 - The absence of live qualitative/hybrid execution is not a contradiction if those lanes remain deferred, but it is a contradiction if first-slice UI exposes them as operational.
 - Existing NRC APS, Workbench Compare, Candidate B Trace, Document Trace, and Analyst Insight pages are relevant adjacent surfaces, but they are not equivalent to the full Layer 3 mockup workbench.
@@ -1714,8 +1715,8 @@ These are not repo bugs by themselves, but they are important planning gaps:
 
 Before implementation planning proceeds, the user or planning doc should answer these directly:
 
-1. Is /review/layer3 the accepted future UI entry route?
-2. Is /api/v1/layer3/... the accepted future public API route family?
+1. Should the bounded /review/layer3 first-slice route remain the accepted UI entry route for later end-to-end workbench slices?
+2. Should the bounded /api/v1/layer3/... first-slice API family remain the accepted public API family for later end-to-end workbench slices?
 3. What is the first active implementation slice?
 4. Is the first slice UI-only, backend-only, service-first, API-first, or combined?
 5. Which mockup stages are explicitly out of scope for the first slice?
@@ -1741,7 +1742,7 @@ The safest interpretation is:
 
 - Treat the mockups as target-state product/UX intent.
 - Treat current Layer 3 backend models/services as real implementation assets where repo-live evidence confirms them.
-- Treat /review/layer3 and /api/v1/layer3/... as planning-only future route-family choices until a later implementation plan explicitly activates them.
+- Treat /review/layer3 and /api/v1/layer3/... as the bounded PR #184 first-slice route/API and as the candidate route/API family for later explicitly frozen slices, not as automatic activation of the full mockup workflow.
 - Treat RAG/vector/semantic retrieval, qualitative execution, and hybrid execution as unresolved/deferred unless explicitly scoped into a slice.
 - Treat adjacent NRC APS and Analyst Insight pages as integration/compatibility constraints, not as the workbench itself.
 - Start implementation with one narrow slice and direct proof, then expand only after each boundary is frozen and verified.
@@ -1778,7 +1779,7 @@ Implication for this mockup spec:
 
 Overclaim guard:
 
-- Do not promote /review/layer3 or /api/v1/layer3/... to live/current focus from this spec alone.
+- Do not use this spec alone to promote /review/layer3 or /api/v1/layer3/... beyond the bounded PR #184 first-slice live scope.
 - Do not promote RAG/vector/semantic retrieval to repo-live implementation from this spec alone.
 - Do not promote qualitative or hybrid execution to active implementation from this spec alone.
 - Do not treat mockup visual completeness as implementation readiness until section 28A.10 questions are answered or intentionally deferred.
@@ -2044,7 +2045,7 @@ This section lists everything still unaddressed, unclear, or insufficiently spec
 30.32 Exact implementation technology
 
 - Current planning says no current-main evidence requires React, a client-side router, or a new component library.
-- Exact frontend stack for /review/layer3 remains unresolved.
+- Exact frontend stack beyond the current bounded static /review/layer3 first-slice shell remains unresolved for later broader workbench slices.
 
 30.33 Test fixtures and proof data
 
@@ -2083,14 +2084,14 @@ Authority boundary:
 
 - This section is a decision aid for future planning.
 - It does not activate implementation.
-- It does not make /review/layer3 or /api/v1/layer3/... live.
+- It does not expand the bounded PR #184 /review/layer3 and /api/v1/layer3/... first-slice shell/API into the full mockup workbench.
 - It does not authorize RAG/vector retrieval, qualitative execution, hybrid execution, runtime DB writes, schema widening, route/UI widening, or broad downstream handoff.
 - If any recommended default conflicts with a later explicit freeze, implementation plan, or repo-confirmed constraint, the later explicit authority must win.
 - Option 1 is the recommended/default decision. Option 2 is the next-best fallback. Option 3 is the third-best or highest-risk acceptable alternative, usually suitable only if explicitly frozen later.
 
 Recommended posture:
 
-Use a narrow, explicitly frozen /review/layer3 plus /api/v1/layer3/... workbench slice only after activation. The first slice should be UI-led but API-backed, compose around existing Layer 3 backend owner services, reuse repo-proven token/query retrieval first, and keep schema widening, runtime DB writes, RAG/vector claims, qualitative execution, hybrid execution, automated handoff, and broad adjacent-surface rewrites out of scope by default.
+Treat PR #184 as the already-landed narrow /review/layer3 plus /api/v1/layer3/... first slice. Any later slice should remain explicitly frozen, UI-led but API-backed, compose around existing Layer 3 backend owner services, reuse repo-proven token/query retrieval first unless a later freeze admits more, and keep schema widening, runtime DB writes, RAG/vector claims, qualitative execution, hybrid execution, automated handoff, and broad adjacent-surface rewrites out of scope by default.
 
 | Item | Problem / situation summary | Recommended decision options | Reasoning |
 |---|---|---|---|
