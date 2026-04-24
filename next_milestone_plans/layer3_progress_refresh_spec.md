@@ -8,8 +8,8 @@ Use it together with:
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/progress-ui-spec.md`
 
-This spec is intentionally scoped to the bounded Layer3 Phase1A through APS dedicated validate-only runtime/report-ref chain already landed on current `main`, plus the landed `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, the post-PR147 progress-packet closeout from PR `#148`, the merged planning-only `24_L3_WB_FREEZE.md` / `25_L3_QUAL1_FREEZE.md` deferred-prep docs from PR `#165`, the post-PR165 docs/progress/front-door sync from PR `#166`, the merged broader-workbench implementation-entry prep packet from PR `#168`, the post-PR168 current-main closeout from PR `#169`, the post-PR169 duplicate-default cleanup from PR `#170`, the merged qualitative single-item input packet from PR `#172`, and the post-PR172 deferred-prep front-door tightening from PR `#174` beyond that landed boundary.
-If a future checkout carries additional planning-only workbench prep beyond current `main`, preserve it as branch-local until GitHub and current `main` both confirm it. The current `main` version of `26_L3_WB_INPUTS.md` is already merged planning-only prep rather than an open review state.
+This spec is intentionally scoped to the bounded Layer3 Phase1A through APS dedicated validate-only runtime/report-ref chain already landed on current `main`, plus the landed `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, the post-PR147 progress-packet closeout from PR `#148`, the merged planning-only `24_L3_WB_FREEZE.md` / `25_L3_QUAL1_FREEZE.md` deferred-prep docs from PR `#165`, the post-PR165 docs/progress/front-door sync from PR `#166`, the merged broader-workbench implementation-entry prep packet from PR `#168`, the post-PR168 current-main closeout from PR `#169`, the post-PR169 duplicate-default cleanup from PR `#170`, the merged qualitative single-item input packet from PR `#172`, the post-PR172 deferred-prep front-door tightening from PR `#174`, and the planning-only `28_L3_WB_FIRST_SLICE_FREEZE.md` first-slice setup target beyond that landed boundary.
+If a future checkout carries additional planning-only workbench prep beyond current `main`, preserve it as branch-local until GitHub and current `main` both confirm it. The current `main` version of `26_L3_WB_INPUTS.md` is already merged planning-only prep rather than an open review state; `28_L3_WB_FIRST_SLICE_FREEZE.md`, when present, must also remain planning-only setup rather than an active route/API claim unless GitHub and current `main` confirm a later implementation lane.
 If a future checkout carries additional planning-only qualitative single-item companion prep beyond current `main`, preserve it as branch-local until GitHub and current `main` both confirm it. The current `main` version of `27_L3_QUAL1_INPUTS.md` is already merged planning-only prep rather than an open review state.
 
 ## Canonical Inputs
@@ -67,6 +67,7 @@ When present in the current checkout, also read:
 - `next_milestone_plans/Layer3_planning_docs/23_GATED_APS_PROMOTION_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/24_L3_WB_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md`
+- `next_milestone_plans/Layer3_planning_docs/28_L3_WB_FIRST_SLICE_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/25_L3_QUAL1_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/27_L3_QUAL1_INPUTS.md`
 - `backend/app/services/nrc_aps_promotion_gate.py`
@@ -88,7 +89,7 @@ Discovery rule:
 - if multiple clean checkouts exist, prefer the one matching current `main` for merged repo truth, or the one carrying the declared open or branch-only milestone when the manifest says a non-merged step is in scope
 
 Seed path used when this artifact pack was authored:
-- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\qual1-settle`
+- `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\l3activate`
 
 Do not treat the dirty root checkout at:
 - `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER`
@@ -134,7 +135,7 @@ Any external live artifact or dashboard must also obey:
    - do not hide it from active artifact surfaces if the manifest declares it
 17. If the current checkout carries branch-local planning-only prep or docs/progress sync beyond current `main`:
    - keep a GitHub-backed open planning or docs/progress follow-up visible while GitHub still shows the PR open, even if equivalent content is already present locally
-   - keep any additional branch-local planning-only companion updates, including future revisions to `26_L3_WB_INPUTS.md` or a branch-local `27_L3_QUAL1_INPUTS.md`, as branch-local prep rather than merged milestone history until GitHub and current `main` both confirm them
+   - keep any additional branch-local planning-only companion updates, including future revisions to `26_L3_WB_INPUTS.md`, `28_L3_WB_FIRST_SLICE_FREEZE.md`, or a branch-local `27_L3_QUAL1_INPUTS.md`, as branch-local prep rather than merged milestone history until GitHub and current `main` both confirm them
    - do not let either change settled packet counts unless both GitHub state and current `main` repo truth warrant it
 
 ## State Mapping Rules
@@ -194,6 +195,7 @@ The current settled state in this checkout is:
 - keep the PR `#169` closeout visible as landed current-main history rather than treating the broader workbench packet as merely frozen at PR `#168`
 - keep the PR `#170` duplicate-default cleanup visible as landed current-main history rather than leaving the current-main packet one correction behind
 - if `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md` is present in the current checkout, preserve it as a planning-only companion input doc for the deferred future workbench route family rather than as a merged milestone, packet-reopen signal, or active lane, even if it now freezes planning-only trigger/route-family/typing/owner/proof/no-go implementation-entry prep
+- if `next_milestone_plans/Layer3_planning_docs/28_L3_WB_FIRST_SLICE_FREEZE.md` is present in the current checkout, preserve it as planning-only first-slice setup for the deferred future workbench route family rather than as a merged milestone, packet-reopen signal, live `/review/layer3` route claim, or live `/api/v1/layer3/...` API claim
 - current `main` also includes the merged qualitative single-item input packet from PR `#172`; together `27_L3_QUAL1_INPUTS.md` plus companion updates to `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet remain planning-only deferred-scope prep rather than an active lane
 - if `next_milestone_plans/Layer3_planning_docs/27_L3_QUAL1_INPUTS.md` is present in the current checkout and the checkout matches current `main` after PR `#172`, preserve it as a merged planning-only companion input doc for the deferred qualitative single-item breadth axis rather than as a merged milestone, packet-reopen signal, or an active lane
 - current `main` also includes the post-PR172 deferred-prep front-door tightening from PR `#174`, which carries the merged workbench and qualitative companion prep into the remaining current-main status/front-door surfaces without changing the settled packet state

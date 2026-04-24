@@ -14,6 +14,7 @@
 ## Role separation
 - `24_L3_WB_FREEZE.md` remains the boundary, dependency, non-goal, and ambiguity-control doc for this lane.
 - This doc records the exact-freeze inputs and the planning decisions now landed on current `main` without pretending the lane is active.
+- `28_L3_WB_FIRST_SLICE_FREEZE.md` consumes this doc's trigger, route-family, typing, owner-surface, proof, and no-go decisions into a narrower first-slice implementation-entry setup target.
 - This doc does not itself activate the lane.
 
 ## Decision posture for this pass

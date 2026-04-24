@@ -11,8 +11,9 @@
 
 ## Companion exact-freeze input doc
 - `26_L3_WB_INPUTS.md` now records the adopted planning-only trigger and route-family choice for this lane, the adopted minimum typing posture, the exact owner-surface and proof mapping for implementation-entry prep, and the exact remains-out list that keeps later work narrow.
+- `28_L3_WB_FIRST_SLICE_FREEZE.md` now records the planning-only first-slice setup target for `/review/layer3` plus `/api/v1/layer3/...`, including exact default owner files, UI layout posture, Gate B/Gate C semantics, proof requirements, and stop conditions for a later implementation pass.
 - This doc remains the boundary, dependency, non-goal, and ambiguity-control surface.
-- The companion input doc is planning-only prep and does not itself satisfy activation prerequisites.
+- The companion input/setup docs are planning-only prep and do not themselves satisfy activation prerequisites.
 
 ## Why prep is justified now
 - Current `main` already ships adjacent operator consumers, but not a full Layer 3 workbench.
@@ -21,6 +22,7 @@
 
 ## Why activation is not automatic
 - An exact planning-only route-family choice is now recorded in `26_L3_WB_INPUTS.md`, but no live route family is active yet.
+- A first-slice setup target is now recorded in `28_L3_WB_FIRST_SLICE_FREEZE.md`, but no code, page route, API router, browser proof, or backend proof from that target is active yet.
 - Only a minimum planning-only typing posture is now recorded in `26_L3_WB_INPUTS.md`; activation-grade thresholds, `entity_graph` defaults, APS document-unit granularity, and typing-conflict presentation remain unfrozen.
 - No exact shell or state-transition proof exists yet for the broader workbench.
 - No headed plus headless Chrome proof exists yet for the future broader workbench family.
@@ -81,17 +83,22 @@
 - read-only runtime DB boundary remains unchanged
 - active packet remains settled while this doc is only planning
 - the companion input doc now adopts the planning-only operator-insufficiency trigger, additive route-family choice, and minimum typing posture, and records the exact owner-surface/proof/no-go mapping for implementation-entry prep, but activation still requires an explicit later freeze outcome rather than the prep doc by itself
-- later implementation must still choose exact filenames and subroutes, honor the no-go list, and produce the headed/headless plus backend proof outputs before activation
+- later implementation must use the default filenames and route/API roots in `28_L3_WB_FIRST_SLICE_FREEZE.md` or explicitly supersede them before coding, honor the no-go list, and produce the headed/headless plus backend proof outputs before activation
 
 ## Boundary-level owner-surface classes for later activation
 - repo-confirmed current touchpoints that would likely participate:
   - `backend/main.py`
   - `backend/app/api/router.py`
-- planning-only owner classes, with exact filenames still unresolved:
-  - one Layer 3 workbench API module or equivalent router surface
-  - one broader workbench page shell plus supporting static assets
-  - backend API and page proof surfaces for the broader workbench family
-  - one headed plus headless browser proof surface for the broader workbench family
+- planning-only first-slice default owner surfaces are now narrowed in `28_L3_WB_FIRST_SLICE_FREEZE.md`:
+  - `backend/app/api/layer3.py`
+  - `backend/app/services/layer3_workbench.py`
+  - `backend/app/review_ui/static/layer3.html`
+  - `backend/app/review_ui/static/layer3.css`
+  - `backend/app/review_ui/static/layer3.js`
+  - `backend/tests/test_layer3_workbench.py`
+  - `backend/tests/test_layer3_api.py`
+  - `backend/tests/test_layer3_page.py`
+  - `e2e/layer3-workbench.spec.js`
 
 ## Adjacent surfaces that must remain separate
 - `backend/app/review_ui/static/review.js`
@@ -103,8 +110,9 @@
 
 ## Later activation prerequisites
 - the adopted planning-only operator-insufficiency trigger and additive route-family choice from `26_L3_WB_INPUTS.md` must remain intact unless a later freeze explicitly reopens them
+- the first-slice owner-surface, UI layout, Gate B/Gate C, proof, and stop-condition defaults from `28_L3_WB_FIRST_SLICE_FREEZE.md` must remain intact unless a later freeze explicitly reopens them
 - the adopted minimum typing posture from `26_L3_WB_INPUTS.md` must remain inside the primary `source_shape != analysis_modality` boundary, and any later threshold, `entity_graph`, granularity, or UI-presentation choices must be frozen explicitly rather than assumed ad hoc
-- one exact file/module-local route/API ownership implementation must still be chosen; current planning-default route names plus the owner-surface table in `26_L3_WB_INPUTS.md` do not by themselves settle final route strings or file/module names
+- the default file/module-local route/API ownership implementation from `28_L3_WB_FIRST_SLICE_FREEZE.md` must be used or explicitly superseded before coding; current planning-default route names plus the owner-surface table in `26_L3_WB_INPUTS.md` do not by themselves make the route/API live
 - headed Chrome proof that the broader workbench shell loads and exposes the full state machine
 - headless Chrome proof of the same shell and state transitions
 - proof that typing review and override behavior follow the adopted minimum typing posture and record auditable override state
