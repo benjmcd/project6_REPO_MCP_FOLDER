@@ -1,0 +1,167 @@
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+os.environ["DB_INIT_MODE"] = "none"
+
+BACKEND = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(BACKEND))
+
+from app.api.deps import get_db
+from app.core.config import bootstrap_storage_tree, settings
+from app.db.session import Base
+from main import app
+
+
+@pytest.fixture()
+def client(tmp_path, monkeypatch):
+    storage_dir = tmp_path / "storage"
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    bootstrap_storage_tree(storage_dir)
+    engine = create_engine(
+        "sqlite:///:memory:",
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
+
+    def override_get_db():
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        yield TestClient(app)
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+
+def _prepare_material(client: TestClient) -> tuple[dict, dict, dict]:
+    preflight = client.post(
+        "/api/v1/layer3/preflight",
+        json={
+            "client_request_id": "api-preflight",
+            "natural_language_intent": "Review deterministic Layer 3 source material.",
+            "manual_constraints": {"source_classes": ["dataset_version", "aps_content_document"]},
+        },
+    ).json()
+    source = client.post(
+        "/api/v1/layer3/source-preview",
+        json={
+            "client_request_id": "api-source",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version", "aps_content_document"],
+        },
+    ).json()
+    material = client.post(
+        "/api/v1/layer3/material-preview",
+        json={
+            "client_request_id": "api-material",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "source_candidate_ids": [item["source_candidate_id"] for item in source["source_candidates"]],
+            "query_basis": {"terms": ["deterministic", "source"]},
+        },
+    ).json()
+    return preflight, source, material
+
+
+def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
+    bootstrap = client.get("/api/v1/layer3/bootstrap")
+    assert bootstrap.status_code == 200
+    assert bootstrap.json()["features"]["handoff"] is False
+
+    preflight, source, material = _prepare_material(client)
+    assert preflight["status"] == "ok"
+    assert source["authority_rail"]["current_gate"] == "gate_b"
+    assert len(material["material_candidates"]) == 2
+
+    first, second = material["material_candidates"]
+    gate_b = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": "api-gate-b",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": first["candidate_id"],
+                    "decision": "approved",
+                    "operator_reason": "",
+                    "decision_basis": {
+                        "source_ref": first["source_ref"],
+                        "query_basis": first["query_basis"],
+                        "provenance_ref": first["provenance_ref"],
+                    },
+                },
+                {
+                    "candidate_id": second["candidate_id"],
+                    "decision": "denied",
+                    "operator_reason": "Not in first-slice scope.",
+                    "decision_basis": {
+                        "source_ref": second["source_ref"],
+                        "query_basis": second["query_basis"],
+                        "provenance_ref": second["provenance_ref"],
+                    },
+                },
+            ],
+            "actor": "pytest",
+        },
+    )
+    assert gate_b.status_code == 200
+    gate_b_body = gate_b.json()
+    assert gate_b_body["authority_rail"]["approved_material_count"] == 1
+    assert gate_b_body["authority_rail"]["denied_material_count"] == 1
+
+    gate_c = client.post(
+        "/api/v1/layer3/gate-c/preview",
+        json={
+            "client_request_id": "api-gate-c",
+            "session_id": gate_b_body["session_id"],
+            "commit_typing": False,
+        },
+    )
+    assert gate_c.status_code == 200
+    assert gate_c.json()["override_allowed"] is False
+    assert gate_c.json()["typing_records"][0]["authoritative"] is False
+
+    summary = client.get(f"/api/v1/layer3/session/{gate_b_body['session_id']}")
+    assert summary.status_code == 200
+    assert summary.json()["gate_c_summary"]["typing_committed"] is False
+
+
+def test_layer3_api_error_shape_and_override_unavailable(client: TestClient) -> None:
+    blocked = client.post(
+        "/api/v1/layer3/preflight",
+        json={
+            "client_request_id": "api-blocked",
+            "natural_language_intent": "",
+            "manual_constraints": {},
+        },
+    )
+    assert blocked.status_code == 400
+    assert blocked.json()["schema_id"] == "layer3.workbench_error.v1"
+    assert blocked.json()["error_code"] == "empty_intent"
+    assert "detail" not in blocked.json()
+
+    override = client.post(
+        "/api/v1/layer3/gate-c/override",
+        json={"client_request_id": "api-override", "session_id": "missing"},
+    )
+    assert override.status_code == 409
+    assert override.json()["schema_id"] == "layer3.typing_override_unavailable.v1"
+    assert override.json()["error_code"] == "override_unavailable"

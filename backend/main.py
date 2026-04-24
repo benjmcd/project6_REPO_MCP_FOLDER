@@ -46,6 +46,7 @@ bootstrap_storage_tree()
 app.mount('/storage', StaticFiles(directory=settings.storage_dir), name='storage')
 review_ui_static_dir = Path(__file__).resolve().parent / "app" / "review_ui" / "static"
 app.mount('/review/nrc-aps/static', StaticFiles(directory=review_ui_static_dir), name='review_ui_static')
+app.mount('/review/layer3/static', StaticFiles(directory=review_ui_static_dir), name='layer3_ui_static')
 
 
 @app.get('/review/nrc-aps', response_class=HTMLResponse)
@@ -70,6 +71,12 @@ def review_nrc_aps_workbench_compare_page() -> HTMLResponse:
 def review_nrc_aps_candidate_b_trace_page() -> HTMLResponse:
     candidate_b_trace_file = review_ui_static_dir / "candidate_b_trace.html"
     return HTMLResponse(content=candidate_b_trace_file.read_text(encoding="utf-8"))
+
+
+@app.get('/review/layer3', response_class=HTMLResponse)
+def layer3_workbench_page() -> HTMLResponse:
+    layer3_file = review_ui_static_dir / "layer3.html"
+    return HTMLResponse(content=layer3_file.read_text(encoding="utf-8"))
 
 
 @app.get('/review/analyst-insight', response_class=HTMLResponse)
