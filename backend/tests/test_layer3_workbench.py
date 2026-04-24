@@ -17,6 +17,8 @@ sys.path.insert(0, str(BACKEND))
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
 from app.models.models import (
+    L3AnalysisGroup,
+    L3AnalysisSet,
     L3AnalysisUnit,
     L3MaterialSnapshot,
     L3SelectionManifest,
@@ -206,6 +208,30 @@ def test_gate_c_preview_is_non_authoritative_and_override_is_unavailable(db_sess
     assert db_session.query(L3AnalysisUnit).count() == 0
     assert override["status"] == "unavailable"
     assert override["error_code"] == "override_unavailable"
+
+
+def test_gate_c_commit_typing_materializes_owner_service_records(db_session) -> None:
+    preflight, source, material = _preflight_source_material()
+    gate_b = layer3_workbench.gate_b_decision(db_session, _gate_b_payload(preflight, source, material))
+
+    committed = layer3_workbench.gate_c_preview(
+        db_session,
+        {"client_request_id": "req-gate-c-commit", "session_id": gate_b["session_id"], "commit_typing": True},
+    )
+
+    assert committed["next_state"] == "first_slice_complete"
+    assert committed["override_allowed"] is False
+    assert committed["typing_records"][0]["authoritative"] is True
+    assert committed["analysis_units"][0]["authoritative"] is True
+    assert db_session.query(L3TypingRecord).count() == 1
+    assert db_session.query(L3AnalysisUnit).count() == 1
+    assert db_session.query(L3AnalysisGroup).count() == 1
+    assert db_session.query(L3AnalysisSet).count() == 1
+
+    summary = layer3_workbench.session_summary(db_session, gate_b["session_id"])
+    assert summary["current_gate"] == "complete"
+    assert summary["gate_c_summary"]["typing_committed"] is True
+    assert summary["authority_rail"]["typing_status"] == "committed"
 
 
 def test_session_summary_reflects_gate_b_counts_without_overclaiming_typing_commit(db_session) -> None:
