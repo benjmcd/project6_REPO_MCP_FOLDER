@@ -68,6 +68,8 @@ When present in the current checkout, also read:
 - `next_milestone_plans/Layer3_planning_docs/24_L3_WB_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md`
 - `next_milestone_plans/Layer3_planning_docs/28_L3_WB_FIRST_SLICE_FREEZE.md`
+- `next_milestone_plans/layer3-mockups/mockup-spec.txt`
+- `next_milestone_plans/layer3-mockups/assets.md`
 - `next_milestone_plans/Layer3_planning_docs/25_L3_QUAL1_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/27_L3_QUAL1_INPUTS.md`
 - `backend/app/services/nrc_aps_promotion_gate.py`

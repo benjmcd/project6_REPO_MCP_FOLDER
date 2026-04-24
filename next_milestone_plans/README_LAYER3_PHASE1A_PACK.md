@@ -420,6 +420,13 @@ This document is outside the accepted Phase 1A normative control spine and outsi
 It is the merged planning-only first-slice setup doc from PR `#178` for the deferred `future workbench route family`; it narrows the later additive `/review/layer3` plus `/api/v1/layer3/...` implementation-entry target through Gate C typing review without making those routes live or activating downstream execution, package review, qualitative, hybrid, RAG/vector, runtime snapshot DB write, schema, or handoff scope:
 - `28_L3_WB_FIRST_SLICE_FREEZE.md`
 
+### Broader workbench mockup source mirror
+
+These files are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+They mirror the text mockup/spec artifact and record the local visual asset hashes that informed the first-slice setup doc. They are planning input only; they do not make the visual assets implementation dependencies or override current repo truth:
+- `layer3-mockups/mockup-spec.txt`
+- `layer3-mockups/assets.md`
+
 ### Post-settlement qualitative single-item planning-only freeze doc
 
 This document is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
