@@ -3,13 +3,13 @@
 ## Purpose
 
 This file is the human-facing companion to `next_milestone_plans/layer3_progress_manifest.json`.
-It tracks the bounded Layer3 Phase1A through APS validate-only runtime/report-ref chain already landed on current `main`, plus the landed `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, the post-PR147 progress-packet closeout from PR `#148`, the merged planning-only `24_L3_WB_FREEZE.md` / `25_L3_QUAL1_FREEZE.md` deferred-prep docs from PR `#165`, the post-PR165 docs/progress/front-door sync from PR `#166`, the merged broader-workbench implementation-entry prep packet from PR `#168`, the post-PR168 current-main closeout from PR `#169`, the post-PR169 duplicate-default cleanup from PR `#170`, the merged qualitative single-item input packet from PR `#172`, the post-PR172 deferred-prep front-door tightening from PR `#174`, and the planning-only `28_L3_WB_FIRST_SLICE_FREEZE.md` first-slice setup target beyond that landed boundary.
+It tracks the bounded Layer3 Phase1A through APS validate-only runtime/report-ref chain already landed on current `main`, plus the landed `23_GATED_APS_PROMOTION_FREEZE.md` continuation freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, the post-PR147 progress-packet closeout from PR `#148`, the merged planning-only `24_L3_WB_FREEZE.md` / `25_L3_QUAL1_FREEZE.md` deferred-prep docs from PR `#165`, the post-PR165 docs/progress/front-door sync from PR `#166`, the merged broader-workbench implementation-entry prep packet from PR `#168`, the post-PR168 current-main closeout from PR `#169`, the post-PR169 duplicate-default cleanup from PR `#170`, the merged qualitative single-item input packet from PR `#172`, the post-PR172 deferred-prep front-door tightening from PR `#174`, and the merged planning-only `28_L3_WB_FIRST_SLICE_FREEZE.md` first-slice setup target from PR `#178` beyond that landed boundary.
 
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger foundation through the bounded dedicated validate-only runtime/report-ref implementation lane
 - the landed promotion continuation freeze from PR `#145`, its docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, and the post-PR147 progress-packet closeout from PR `#148`
 - the now-settled later APS family packet immediately beyond the landed dedicated validate-only boundary
-- the merged planning-only deferred-prep docs from PR `#165`, the post-PR165 docs/progress/front-door sync from PR `#166`, the merged broader-workbench implementation-entry prep packet from PR `#168`, the post-PR168 current-main closeout from PR `#169`, the post-PR169 duplicate-default cleanup from PR `#170`, the merged qualitative single-item input packet from PR `#172`, the post-PR172 deferred-prep front-door tightening from PR `#174`, and the planning-only first-slice setup target in `28_L3_WB_FIRST_SLICE_FREEZE.md`, all without reopening the settled packet
+- the merged planning-only deferred-prep docs from PR `#165`, the post-PR165 docs/progress/front-door sync from PR `#166`, the merged broader-workbench implementation-entry prep packet from PR `#168`, the post-PR168 current-main closeout from PR `#169`, the post-PR169 duplicate-default cleanup from PR `#170`, the merged qualitative single-item input packet from PR `#172`, the post-PR172 deferred-prep front-door tightening from PR `#174`, and the merged planning-only first-slice setup target in `28_L3_WB_FIRST_SLICE_FREEZE.md` from PR `#178`, all without reopening the settled packet
 
 If a future checkout carries additional qualitative single-item companion prep beyond current `main`, preserve that future prep as branch-local rather than merged-main history. The current `main` version of `27_L3_QUAL1_INPUTS.md` is already merged planning-only prep rather than an open review state.
 
@@ -32,7 +32,7 @@ As of `2026-04-24`:
 - seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\l3activate`
 - valid local authority rule: use a clean checkout whose contents match the artifact state being refreshed; prefer current `main` for merged repo truth and the active branch checkout when an open or branch-only milestone is declared
 - authoritative remote branch: `project6-origin/main`
-- snapshot base `main` commit at this artifact refresh: `280286fda06af543a70860a96f06a2ac1cda64c0`
+- snapshot base `main` commit at this artifact refresh: `1b492c536f2bdb20c542c121250343b6466e24f6`
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the landed export-package first shared-consumer freeze from PR `#106` and its docs-only closeout from PR `#107`
@@ -51,7 +51,7 @@ As of `2026-04-24`:
 - current `main` now also includes the merged broader-workbench implementation-entry prep packet from PR `#168`, the post-PR168 current-main closeout from PR `#169`, and the post-PR169 duplicate-default cleanup from PR `#170`; together they land and finalize `26_L3_WB_INPUTS.md` plus companion updates to `24_L3_WB_FREEZE.md`, `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet without changing the settled packet state or merged milestone count
 - current `main` now also includes the merged qualitative single-item input packet from PR `#172`; together `27_L3_QUAL1_INPUTS.md` plus companion updates to `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet remain planning-only deferred-scope prep and do not change the settled packet state or merged milestone count
 - current `main` now also includes the post-PR172 deferred-prep front-door tightening from PR `#174`, which carries the merged workbench and qualitative companion prep into the remaining current-main status/front-door surfaces without changing the settled packet state or merged milestone count
-- this refresh also includes `28_L3_WB_FIRST_SLICE_FREEZE.md` as planning-only first-slice setup for the deferred future workbench route family; it narrows the later `/review/layer3` plus `/api/v1/layer3/...` target but does not make those routes live or change the settled packet state
+- current `main` now also includes the merged planning-only `28_L3_WB_FIRST_SLICE_FREEZE.md` first-slice setup target from PR `#178`; it narrows the later `/review/layer3` plus `/api/v1/layer3/...` target but does not make those routes live or change the settled packet state
 
 ## Program State Summary
 
@@ -63,7 +63,7 @@ As of `2026-04-24`:
 - Current `main` also includes the merged broader-workbench implementation-entry prep packet from PR `#168`, the post-PR168 current-main closeout from PR `#169`, and the post-PR169 duplicate-default cleanup from PR `#170`; together they land and finalize `26_L3_WB_INPUTS.md` plus companion updates to `24_L3_WB_FREEZE.md`, `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet, and they still remain planning-only deferred-scope prep rather than an active lane
 - Current `main` also includes the merged qualitative single-item input packet from PR `#172`; together `27_L3_QUAL1_INPUTS.md` plus companion updates to `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet remain planning-only deferred-scope prep rather than an active lane
 - Current `main` also includes the post-PR172 deferred-prep front-door tightening from PR `#174`, which keeps the merged deferred-prep packet phrased consistently across the remaining current-main front-door/status surfaces without changing the settled packet state or merged milestone count
-- This refresh also records `28_L3_WB_FIRST_SLICE_FREEZE.md` as planning-only first-slice setup for the future workbench route family; it does not change the 29 merged milestone count, does not create a planned/open milestone by itself, and does not make `/review/layer3` or `/api/v1/layer3/...` live
+- Current `main` now also includes the merged planning-only `28_L3_WB_FIRST_SLICE_FREEZE.md` first-slice setup target from PR `#178`; it does not change the 29 merged milestone count, does not create a planned/open milestone by itself, and does not make `/review/layer3` or `/api/v1/layer3/...` live
 
 ## Milestone Table
 
