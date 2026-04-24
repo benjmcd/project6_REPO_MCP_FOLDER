@@ -417,14 +417,28 @@ It is the merged planning-only companion prep doc on current `main` for the defe
 ### Broader workbench first-slice setup freeze doc
 
 This document is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-It is the merged planning-only first-slice setup doc from PR `#178` for the deferred `future workbench route family`; it narrows the later additive `/review/layer3` plus `/api/v1/layer3/...` implementation-entry target through Gate C typing review without making those routes live or activating downstream execution, package review, qualitative, hybrid, RAG/vector, runtime snapshot DB write, schema, or handoff scope:
+It is the merged first-slice setup doc from PR `#178` for the `future workbench route family`; it narrowed the later additive `/review/layer3` plus `/api/v1/layer3/...` implementation-entry target through Gate C typing review before PR `#184` implemented that bounded first slice. It remains the governing scope/no-go contract and does not activate downstream execution, package review, qualitative, hybrid, RAG/vector, runtime snapshot DB write, schema, or handoff scope:
 - `28_L3_WB_FIRST_SLICE_FREEZE.md`
 
 ### Broader workbench first-slice API/state contract
 
 This document is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-It is the merged planning-only API/state companion from PR `#182` for the deferred `future workbench route family`; it freezes endpoint, DTO, Gate B persistence, Gate C override, authority-rail, browser-state, and proof expectations for a later `/review/layer3` plus `/api/v1/layer3/...` implementation pass without making those routes live or changing the no-go list:
+It is the merged API/state companion from PR `#182` for the `future workbench route family`; it froze endpoint, DTO, Gate B persistence, Gate C override, authority-rail, browser-state, and proof expectations for the later PR `#184` `/review/layer3` plus `/api/v1/layer3/...` implementation pass. It remains the governing API/state contract and does not change the no-go list:
 - `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md`
+
+### Broader workbench first-slice implementation
+
+This implementation is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+It is the bounded first-slice workbench implementation from PR `#184`; it makes `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source preview, material preview, Gate B decision recording, Gate C non-authoritative typing preview, explicit Gate C override unavailability, and session summary:
+- `backend/app/api/layer3.py`
+- `backend/app/services/layer3_workbench.py`
+- `backend/app/review_ui/static/layer3.html`
+- `backend/app/review_ui/static/layer3.css`
+- `backend/app/review_ui/static/layer3.js`
+- `backend/tests/test_layer3_workbench.py`
+- `backend/tests/test_layer3_api.py`
+- `backend/tests/test_layer3_page.py`
+- `e2e/layer3-workbench.spec.js`
 
 ### Broader workbench mockup source mirror
 
@@ -536,10 +550,10 @@ Start with:
 - `next_milestone_plans/layer3_progress_manifest.json`
 
 Current answer:
-- first-slice setup is planning-only
-- default target is an additive `/review/layer3` page plus `/api/v1/layer3/...` API family
-- first implementation should stop at intent/preflight, deterministic source selection, material preview, Gate B material review, and Gate C typing review
-- first implementation should use `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` as the endpoint, DTO, state, persistence, browser-state, and proof contract
+- first-slice setup and API/state contract docs were planning-only when PR `#178` and PR `#182` landed, but PR `#184` now implements that bounded first slice on current `main`
+- the live first-slice surface is an additive `/review/layer3` page plus `/api/v1/layer3/...` API family
+- the live first implementation stops at intent/preflight, deterministic source selection, material preview, Gate B material review, Gate C non-authoritative typing preview, explicit Gate C override unavailability, and session summary
+- the implementation uses `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` as the endpoint, DTO, state, persistence, browser-state, and proof contract
 - downstream plan, execution, results, package review, qualitative, hybrid, RAG/vector, runtime snapshot DB writes, schema widening, and handoff remain unavailable unless separately activated
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`

@@ -1,16 +1,17 @@
 # 29 L3 Workbench First Slice API And State Contract
 
 ## Status
-- planning-only
-- not active implementation
+- implemented first-slice API/state contract on current `main` by PR `#184`
 - companion contract for `28_L3_WB_FIRST_SLICE_FREEZE.md`
 - does not reopen the settled APS packet
 - does not change merged milestone counts by itself
-- does not activate or make `/review/layer3` or `/api/v1/layer3/...` live
+- `/review/layer3` and `/api/v1/layer3/...` are live only for the bounded first-slice workbench
 - does not admit schema widening, runtime snapshot DB writes, RAG/vector retrieval, qualitative execution, hybrid execution, package review, or handoff scope
 
+Planning-history note: PR `#182` landed this document as planning-only endpoint/state contract detail and did not activate the route/API by itself. PR `#184` later implemented the bounded first-slice page/API under this contract while preserving the same no-go list.
+
 ## Purpose
-Freeze the endpoint, DTO, state, persistence, and proof contract for the first Layer 3 workbench implementation slice before any code branch builds `/review/layer3` or `/api/v1/layer3/...`.
+Freeze the endpoint, DTO, state, persistence, and proof contract for the first Layer 3 workbench implementation slice. This contract was written before PR `#184` built `/review/layer3` and `/api/v1/layer3/...`; after PR `#184`, it governs the landed bounded first-slice API/state surface and its no-go boundaries.
 
 `28_L3_WB_FIRST_SLICE_FREEZE.md` freezes the first-slice scope. This document freezes the API and state contract under that scope so implementation can proceed without inventing endpoint shapes, browser-only authority, or ad hoc persistence while coding.
 
@@ -28,8 +29,8 @@ Freeze the endpoint, DTO, state, persistence, and proof contract for the first L
 This file is subordinate to the no-go list in `28_L3_WB_FIRST_SLICE_FREEZE.md`. If this file appears to admit a wider scope, the narrower no-go list wins.
 
 ## Repo-Confirmed Starting Truth
-- Current `main` does not ship `/review/layer3`.
-- Current `main` does not ship `/api/v1/layer3/...`.
+- Current `main` ships `/review/layer3` only for the bounded first-slice workbench.
+- Current `main` ships `/api/v1/layer3/...` only for the bounded first-slice workbench API family.
 - Current `main` already ships Layer 3 owner services for session, typing, pass, and package entry.
 - Current `main` already has model surfaces for session, selection manifest, descriptor, retrieval event, material snapshot, typing record, analysis unit/group/set, pass run, reconciliation record, and output package.
 - Current `main` has JSON-bearing fields that may carry bounded first-slice control state without a migration if the contract is explicit.
