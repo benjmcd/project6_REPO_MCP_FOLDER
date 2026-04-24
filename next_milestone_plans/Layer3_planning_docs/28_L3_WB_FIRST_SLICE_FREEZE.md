@@ -19,8 +19,11 @@ This doc exists so a later code pass can start from an exact, bounded target rat
 3. `next_milestone_plans/layer3_progress_board.md`
 4. `24_L3_WB_FREEZE.md`
 5. `26_L3_WB_INPUTS.md`
-6. `next_milestone_plans/layer3-mockups/mockup-spec.txt`
-7. `next_milestone_plans/layer3-mockups/assets.md`
+6. `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md`, for endpoint, DTO, state, and persistence details only
+7. `next_milestone_plans/layer3-mockups/mockup-spec.txt`
+8. `next_milestone_plans/layer3-mockups/assets.md`
+
+The API/state companion contract is subordinate to this freeze's first-slice scope and no-go list. It must not be used to make `/review/layer3` or `/api/v1/layer3/...` live without a later implementation pass.
 
 The repo-tracked mockup spec mirror is design intent and planning input. It is not repo-live implementation truth.
 
