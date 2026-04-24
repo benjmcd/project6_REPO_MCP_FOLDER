@@ -19,9 +19,12 @@ This doc exists so a later code pass can start from an exact, bounded target rat
 3. `next_milestone_plans/layer3_progress_board.md`
 4. `24_L3_WB_FREEZE.md`
 5. `26_L3_WB_INPUTS.md`
-6. operator-local mockup/spec planning file `doc_spec_file_layer3_preplanning.txt`
+6. `next_milestone_plans/layer3-mockups/mockup-spec.txt`
+7. `next_milestone_plans/layer3-mockups/assets.md`
 
-The operator-local mockup/spec is design intent and planning input. It is not repo-live implementation truth.
+The repo-tracked mockup spec mirror is design intent and planning input. It is not repo-live implementation truth.
+
+The asset inventory records the operator-local visual assets that informed the spec by path, size, timestamp, and SHA-256. It does not make the bitmap or SVG assets implementation dependencies.
 
 ## Repo-confirmed starting truth
 - current `main` ships adjacent review, document-trace, Workbench Compare, Candidate B Trace, and analyst-insight surfaces
