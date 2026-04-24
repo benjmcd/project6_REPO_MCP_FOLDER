@@ -497,7 +497,9 @@ Current answer:
 
 Start with:
 - `Layer3_planning_docs/24_L3_WB_FREEZE.md`
+- `Layer3_planning_docs/26_L3_WB_INPUTS.md`
 - `Layer3_planning_docs/25_L3_QUAL1_FREEZE.md`
+- `Layer3_planning_docs/27_L3_QUAL1_INPUTS.md`
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/layer3_progress_manifest.json`
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
