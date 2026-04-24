@@ -429,7 +429,7 @@ It is the merged API/state companion from PR `#182` for the `future workbench ro
 ### Broader workbench first-slice implementation
 
 This implementation is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-It is the bounded first-slice workbench implementation from PR `#184`; it makes `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source preview, material preview, Gate B decision recording, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, and session summary:
+It is the bounded first-slice workbench implementation from PR `#184`, with post-implementation status/cohesion/explicit-Gate-C-typing/review-feedback closeouts through PR `#189`; it makes `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source preview, material preview, Gate B decision recording, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, and session summary:
 - `backend/main.py`
 - `backend/app/api/router.py`
 - `backend/app/api/layer3.py`
@@ -552,7 +552,7 @@ Start with:
 - `next_milestone_plans/layer3_progress_manifest.json`
 
 Current answer:
-- first-slice setup and API/state contract docs were planning-only when PR `#178` and PR `#182` landed, but PR `#184` now implements that bounded first slice on current `main`
+- first-slice setup and API/state contract docs were planning-only when PR `#178` and PR `#182` landed, but PR `#184` now implements that bounded first slice on current `main`, with closeout/correction passes through PR `#189`
 - the live first-slice surface is an additive `/review/layer3` page plus `/api/v1/layer3/...` API family
 - the live first implementation stops at intent/preflight, deterministic source selection, material preview, Gate B material review, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, and session summary
 - the implementation uses `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` as the endpoint, DTO, state, persistence, browser-state, and proof contract
