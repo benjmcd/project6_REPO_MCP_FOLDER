@@ -417,7 +417,7 @@ It is the merged planning-only companion prep doc on current `main` for the defe
 ### Broader workbench first-slice setup freeze doc
 
 This document is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-It is the planning-only first-slice setup doc for the deferred `future workbench route family`; it narrows the later additive `/review/layer3` plus `/api/v1/layer3/...` implementation-entry target through Gate C typing review without making those routes live or activating downstream execution, package review, qualitative, hybrid, RAG/vector, runtime snapshot DB write, schema, or handoff scope:
+It is the merged planning-only first-slice setup doc from PR `#178` for the deferred `future workbench route family`; it narrows the later additive `/review/layer3` plus `/api/v1/layer3/...` implementation-entry target through Gate C typing review without making those routes live or activating downstream execution, package review, qualitative, hybrid, RAG/vector, runtime snapshot DB write, schema, or handoff scope:
 - `28_L3_WB_FIRST_SLICE_FREEZE.md`
 
 ### Post-settlement qualitative single-item planning-only freeze doc
