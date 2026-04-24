@@ -458,8 +458,9 @@ Insights/Facts/Data Generated:
 
 Workbench/Controller:
 
-- The broader repo-planned operator surface that would own the end-to-end Layer 3 lifecycle.
-- Current repo planning points to a future UI route family at /review/layer3 and API family at /api/v1/layer3/...
+- The broader repo-planned operator surface that would own the end-to-end Layer 3 lifecycle beyond the bounded first-slice shell/API.
+- Current main already ships the bounded PR #184 /review/layer3 and /api/v1/layer3/... first-slice route/API.
+- Those same route families remain the adopted candidate location for later explicitly frozen workbench slices, but the full target workbench is not active merely because the bounded first slice exists.
 
 7. User Intent Entry
 
@@ -801,7 +802,7 @@ Current repo-live limitation:
 
 14. Typing Review And Operator Overrides
 
-The repo-live planning-only workbench docs define typing_review as a bounded override-only review state.
+The broader workbench planning docs define typing_review as a bounded override-only review state. The bounded PR #184 first-slice route/API does not make the full typing_review workflow active by itself.
 
 Expected UI behavior:
 
@@ -915,7 +916,7 @@ Mockup intent:
 
 Repo-live planning alignment:
 
-- The planning-only workbench state machine includes plan_review.
+- The broader workbench planning state machine includes plan_review. The bounded PR #184 first-slice route/API does not make the full plan_review/approval workflow active by itself.
 - plan_review is defined as bounded approve/reject only, with no execution side effects during review.
 - L3AnalysisPlan has approved_by_operator and approved_at fields.
 
