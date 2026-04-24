@@ -1,12 +1,14 @@
 # 28 L3 Workbench First Slice Freeze
 
 ## Status
-- planning-only
-- not active implementation
+- implemented first slice on current `main` by PR `#184`
 - first-slice setup freeze for the deferred `future workbench route family`
 - does not reopen the settled APS packet
 - does not change merged milestone counts by itself
-- does not make `/review/layer3` or `/api/v1/layer3/...` live
+- `/review/layer3` and `/api/v1/layer3/...` are live only for the bounded first-slice workbench
+- downstream plan review, execution, results, package review, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and handoff scope remain unavailable unless a later freeze explicitly admits them
+
+Planning-history note: PR `#178` landed this document as planning-only and did not make the route/API live by itself. PR `#184` later implemented the bounded first slice under this document's scope and no-go contract.
 
 ## Purpose
 Freeze the narrowest implementation-entry shape that can turn the Layer 3 mockup intent into a usable repo-native workbench without treating the whole mockup set as implementation scope.
@@ -23,16 +25,16 @@ This doc exists so a later code pass can start from an exact, bounded target rat
 7. `next_milestone_plans/layer3-mockups/mockup-spec.txt`
 8. `next_milestone_plans/layer3-mockups/assets.md`
 
-The API/state companion contract is subordinate to this freeze's first-slice scope and no-go list. It must not be used to make `/review/layer3` or `/api/v1/layer3/...` live without a later implementation pass.
+The API/state companion contract is subordinate to this freeze's first-slice scope and no-go list. After PR `#184`, it must not be used to expand `/review/layer3` or `/api/v1/layer3/...` beyond the bounded first-slice implementation without a later implementation pass.
 
 The repo-tracked mockup spec mirror is design intent and planning input. It is not repo-live implementation truth.
 
 The asset inventory records the operator-local visual assets that informed the spec by path, size, timestamp, and SHA-256. It does not make the bitmap or SVG assets implementation dependencies.
 
 ## Repo-confirmed starting truth
-- current `main` ships adjacent review, document-trace, Workbench Compare, Candidate B Trace, and analyst-insight surfaces
-- current `main` does not ship `/review/layer3`
-- current `main` does not ship `/api/v1/layer3/...`
+- current `main` ships adjacent review, document-trace, Workbench Compare, Candidate B Trace, analyst-insight, and bounded Layer 3 first-slice workbench surfaces
+- current `main` ships `/review/layer3` only for the bounded first-slice workbench
+- current `main` ships `/api/v1/layer3/...` only for the bounded first-slice workbench API family
 - current `main` already includes Layer 3 owner services for session, typing, pass, and package entry
 - current `main` already includes Layer 3 model and migration surfaces
 - current `main` does not require React, a client-side router, a new component library, schema widening, or runtime snapshot DB writes for a first additive workbench slice
