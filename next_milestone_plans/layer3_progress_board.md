@@ -29,7 +29,7 @@ Hard rule:
 ## Current Snapshot
 
 As of `2026-04-24`:
-- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\l3activate`
+- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3activate`
 - valid local authority rule: use a clean checkout whose contents match the artifact state being refreshed; prefer current `main` for merged repo truth and the active branch checkout when an open or branch-only milestone is declared
 - authoritative remote branch: `project6-origin/main`
 - snapshot base `main` commit at this artifact refresh: `1b492c536f2bdb20c542c121250343b6466e24f6`
