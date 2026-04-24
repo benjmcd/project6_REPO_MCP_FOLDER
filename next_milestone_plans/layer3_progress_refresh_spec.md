@@ -50,6 +50,7 @@ Read these files first:
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 - `next_milestone_plans/README_LAYER3_PHASE1A_PACK.md`
 - `next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
+- `next_milestone_plans/Layer3_planning_docs/02_PHASE1A_IMPLEMENTATION_PREP_SPEC_REV2.md`
 - `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
 - `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`
 - `backend/app/services/review_nrc_aps_graph.py`
