@@ -204,6 +204,9 @@ def test_gate_c_preview_is_non_authoritative_and_override_is_unavailable(db_sess
     assert preview["override_allowed"] is False
     assert preview["typing_records"][0]["authoritative"] is False
     assert preview["analysis_units"][0]["authoritative"] is False
+    assert preview["authority_rail"]["approved_material_count"] == 1
+    assert preview["authority_rail"]["flagged_material_count"] == 1
+    assert preview["authority_rail"]["source_authority"]["source_classes"] == ["dataset_version"]
     assert db_session.query(L3TypingRecord).count() == 0
     assert db_session.query(L3AnalysisUnit).count() == 0
     assert override["status"] == "unavailable"
@@ -223,6 +226,9 @@ def test_gate_c_commit_typing_materializes_owner_service_records(db_session) -> 
     assert committed["override_allowed"] is False
     assert committed["typing_records"][0]["authoritative"] is True
     assert committed["analysis_units"][0]["authoritative"] is True
+    assert committed["authority_rail"]["approved_material_count"] == 1
+    assert committed["authority_rail"]["flagged_material_count"] == 1
+    assert committed["authority_rail"]["source_authority"]["source_classes"] == ["dataset_version"]
     assert db_session.query(L3TypingRecord).count() == 1
     assert db_session.query(L3AnalysisUnit).count() == 1
     assert db_session.query(L3AnalysisGroup).count() == 1
