@@ -1,0 +1,2134 @@
+Layer 3 Mockup Preplanning Specification
+
+Status: pre-implementation design/specification draft
+Primary mockup folder: C:\Users\benny\Downloads\layer3mockups
+Repo comparison authority: project6-origin/main at baa8ae7dd19373829fb2cf5e0954c823568e9f05
+Authority recheck: project6-origin refs/heads/main matched the local project6-origin/main ref during this review.
+Write scope: this file only.
+
+1. Purpose
+
+This document captures the intended Layer 3 frontend, workflow, and backend interaction model expressed by the current mockups in C:\Users\benny\Downloads\layer3mockups.
+
+The goal is to convert the diagrams into a comprehensive planning artifact so that future implementation work does not have to infer core intent from visual layout alone.
+
+This file is not a final implementation plan. It is a design/specification bridge between:
+
+- the mockup-visible intended user workflow,
+- the current repo-live Layer 3 backend and adjacent UI state,
+- the current repo-live planning-only broader-workbench direction,
+- the items that remain uncommunicated, under-specified, or intentionally unresolved.
+
+2. Source Artifacts Reviewed
+
+The mockup set currently consists of:
+
+- layer3_mockup_file.svg
+  - Draw.io SVG containing the full canvas.
+  - Canvas size: 26350px by 20900px.
+  - Contains both overview-level and detailed userflow mockups.
+
+- big_layer3-overview_bigview1.png
+  - Overview image for the planned Layer 3 architecture/workflow.
+  - Shows the high-level Layer 3 split into Sublayer 3A, Sublayer 3B, and Sublayer 3C.
+
+- userflow/layer3_user-flow-overview1.png
+  - Userflow overview image.
+
+- userflow/layer3_user-flow-overview2.png
+  - Alternate userflow overview image with equivalent content.
+
+- clear-screenshots/*
+  - Cropped/zoomed screenshots of portions of layer3_mockup_file.svg.
+  - Used as a readability fallback for exact text and visual state.
+
+The SVG and screenshots were treated as the primary source for mockup intent. The repo was treated only as implementation/current-state authority.
+
+3. Scope Of This Spec
+
+This spec covers:
+
+- the intended Layer 3 user-facing workflow,
+- the conceptual UI states shown or implied in the mockups,
+- the source/intake/search/retrieval flow,
+- Gate B material intake and session scoping,
+- Gate C typing, unit/group/set formation,
+- Sublayer 3C analysis execution environments,
+- qualitative, quantitative/deterministic, and hybrid/mixed analysis planes,
+- generated insight/fact/data outputs,
+- the frontend/UI layout and presentation intent visible in the mockups,
+- current repo-live overlap,
+- current repo-live conflicts and gaps,
+- unresolved design, product, backend, UX, and validation questions.
+
+This spec does not claim that every workflow element is implemented today. It explicitly separates mockup intent from repo-live state.
+
+3A. Authority And Claim Classification
+
+Every future use of this document should preserve the following claim classes.
+
+Mockup-observed:
+
+- Directly visible in layer3_mockup_file.svg or the exported PNG screenshots.
+- These claims describe intended design, not implemented repo behavior.
+- Examples: natural-language input, manual/custom specification, RAG/vector/semantic retrieval, Gate B ingress objects, approve/deny/isolate review, Post-3A/Pre-3B storage, Gate C typing, qualitative/quantitative/hybrid planes, and insight/fact/data outputs.
+
+Repo-confirmed implemented:
+
+- Confirmed in project6-origin/main source code, tests, migrations, or live route/static registrations.
+- Examples: Layer 3 backend tables, layer3_session_entry.py, layer3_typing_entry.py, layer3_pass_entry.py, layer3_package_entry.py, APS handoff service family, Analyst Insight page, and adjacent NRC APS review UI routes.
+
+Repo-confirmed planning-only:
+
+- Present in current-main planning docs but explicitly not active implementation.
+- Examples: the broader workbench route family rooted at /review/layer3 and /api/v1/layer3/..., the workbench state machine, and qualitative single-item execution prep.
+
+Inference:
+
+- A reasonable connection between mockup intent and repo surfaces.
+- Must not be treated as implementation fact without later proof.
+- Examples: mapping Gate B to L3SelectionManifest/L3MaterialSnapshot, mapping Gate C to L3TypingRecord/L3AnalysisUnit/L3AnalysisSet, and mapping generated outputs to L3OutputPackage variants.
+
+Unspecified:
+
+- Needed for implementation but not explicitly defined in the mockup or repo-live planning docs.
+- Must remain in the unresolved section until a later decision freezes it.
+
+3B. Anti-Assumption Rules For Future Planning
+
+Do not treat this specification as activation permission for the entire mockup.
+
+Future planning should obey these constraints:
+
+- Do not claim /review/layer3 exists until a route is actually added and tested.
+- Do not claim /api/v1/layer3/... exists until a router is actually added and tested.
+- Do not relabel /review/analyst-insight as the broader Layer 3 workbench.
+- Do not relabel Workbench Compare or Candidate B Trace as the broader Layer 3 workbench.
+- Do not treat RAG/vector/semantic search as repo-live implementation until a concrete service and proof exist.
+- Do not treat qualitative or hybrid execution as active merely because qualitative/hybrid vocabulary exists.
+- Do not collapse source_shape and analysis_modality into one concept.
+- Do not implement browser-local persistence as a replacement for the landed Layer 3 owner services.
+- Do not write to NRC APS review/document-trace runtime DBs as part of Layer 3 workbench flow unless a later lane explicitly admits that boundary change.
+- Do not broaden schema, migrations, shared APS contracts, or existing review routes unless a later freeze explicitly requires it.
+- Do not convert the mockup's illustrative visual clusters into required UI layout details unless a later visual spec confirms they are semantic.
+
+3C. Mockup-To-Spec Traceability Matrix
+
+The current specification covers the visible mockup elements as follows:
+
+| Mockup-observed item | Spec coverage | Current status |
+| --- | --- | --- |
+| User Natural Language Query Input | Sections 7, 8, 30.2 | Intent confirmed, implementation unspecified |
+| User Manual/Custom Specification | Sections 7, 8, 30.3 | Intent confirmed, data model unspecified |
+| Confirm/Submit Button | Sections 7, 23, 29A | Intent confirmed, exact submit contract unspecified |
+| Action/Event 1 submit | Sections 7, 8B, 23, 23A | Covered as draft_selection -> selection_review trigger |
+| Action/Event 2 retrieval/discovery | Sections 8B, 9, 10, 23A | Covered as source discovery/loading into Gate B, retrieval engine unresolved |
+| Action/Event 3 approve/deny/isolate | Sections 8B, 10, 11, 30.9 | Covered as Gate B review action, durable states unresolved |
+| Action/Event 4 freeze/validate/load to Gate C | Sections 8B, 12, 13, 23A | Covered as Post-3A/Pre-3B materialization, exact storage unresolved |
+| Action/Event 5 configure/orchestrate analysis | Sections 8B, 19, 23A, 30.19 | Covered as plan_review/orchestration, fields unresolved |
+| Action/Event 6 output insights/facts/data | Sections 8B, 21, 23C, 30.22, 30.23 | Covered as output generation, taxonomy/trace UI unresolved |
+| RAG/vector embedding/semantic search | Sections 9, 30.7 | Intent confirmed, repo-live implementation not confirmed |
+| Upstream feeder and/or DB | Sections 9, 10, 30.5 | Covered, exact source picker unresolved |
+| Specified local directories/uploads | Sections 9, 30.6 | Covered, security/retention unresolved |
+| Other chooseable sources/connectors/options | Sections 9, 30.5 | Covered, connector model unresolved |
+| Sublayer 3A / Material Intake & Session Scoping | Sections 10, 11, 12 | Covered and mapped to backend owner services |
+| Gate B / Session Entry / Material Ledger | Sections 10, 11, 23A | Covered as durable material/session boundary |
+| Gate B Ingress Object #n | Sections 11, 21, 30.23 | Covered as repeated material/object concept |
+| Approve/deny/remove/isolate | Sections 10, 11, 30.9 | Covered but exact durable states unresolved |
+| Post-3A / Pre-3B storage | Section 12 | Covered, exact storage/retention unresolved |
+| Sublayer 3B / Gate C | Sections 13, 14 | Covered and mapped to typing/unit/group/set backend |
+| Typing + Unit/Group/Set Formation | Sections 13, 14, 23A | Covered with current repo limitations |
+| User orchestration/configuration | Section 19, 30.19 | Covered, explicitly unresolved in detail |
+| Qualitative plane | Section 17, 30.17 | Covered as target/planning-only beyond typing |
+| Quantitative/deterministic plane | Section 16 | Covered and mapped to current quantitative backend |
+| Hybrid/mixed plane | Section 18, 30.18 | Covered as target/deferred |
+| Analysis Execution Environments | Sections 15, 20 | Covered, orchestration still open |
+| Insights/Facts/Data Generated | Sections 21, 30.22, 30.23 | Covered, output taxonomy unresolved |
+| Output saved/frozen/handed off | Sections 21, 22 | Covered and mapped to package/handoff chain |
+| Browser-like dark workbench shell | Section 5A | Presentation intent observed, not final route/component proof |
+| Stacked query/manual-spec entry panels | Sections 5A, 7, 8A | Layout intent observed, exact controls unresolved |
+| Dashed sublayer columns and left-to-right arrows | Sections 5A, 10, 13, 15, 23 | Semantic flow observed, exact responsive behavior unresolved |
+| Color-coded ingress-object chips/cards | Sections 5A, 11, 13, 30.31 | Visual grouping observed, exact color semantics unresolved |
+| Analysis-plane panels with input list, execution note, and output grid | Sections 5A, 15, 20, 21 | Presentation pattern observed, execution UI details unresolved |
+| Side explanatory Action/Event panels | Section 5A | Observed as mockup annotation/presentation aid, not proven in-app UI |
+| Repeated compact intent/source panel in later slides | Section 5A | Observed as persistent context/reference pattern, not finalized navigation |
+
+4. Design Intent Summary
+
+Layer 3 is intended to be a user-facing analytical workbench/controller that lets an operator express an investigative or analytical objective, gather and approve relevant materials, transform those materials into typed analysis-ready units, configure how analysis should be orchestrated, run analysis across one or more analysis planes, and inspect generated insights/facts/data with provenance back to the original ingress objects.
+
+The intended user experience is not just a static report viewer. It is a stateful operator workflow with multiple review/approval boundaries.
+
+The core user-facing loop is:
+
+1. User states what they want to investigate.
+2. User optionally gives manual/custom source and topic constraints.
+3. System retrieves or locates relevant data/content/files.
+4. User reviews and accepts/rejects/isolates retrieved material.
+5. Accepted material is stored/frozen as session material.
+6. System types and groups the material into analysis units, groups, and sets.
+7. User reviews or configures the planned analysis.
+8. Analysis planes execute.
+9. Outputs are validated, frozen, and displayed as insights/facts/data tied to ingress objects.
+10. Outputs can be packaged, reviewed, and handed off downstream.
+
+5. Mockup Set Structure
+
+The user described two intended mockup sets:
+
+Mockup Set #1:
+
+- Purpose: communicate the general Layer 3 frontend/UI model.
+- Focus: how the UI should look, what major workflow stages exist, what the operator should be able to interact with, and how the main system parts connect.
+- Intended use: high-level explanation and design alignment.
+
+Mockup Set #2:
+
+- Purpose: communicate how the Layer 3 UI/workflow behaves for a specific scenario/use case.
+- Focus: concrete user query, concrete source categories, concrete retrieval/intake/analysis flow.
+- Intended use: scenario validation and implementation-entry clarification.
+
+The existing mockups already contain both general and scenario-specific elements, but the split between Set #1 and Set #2 is not yet fully formalized as separate deliverables.
+
+5A. Frontend / UI Layout And Presentation Intent
+
+Status:
+
+- This section captures what the mockups visually communicate about how the Layer 3 frontend should look and feel in use.
+- It is mockup-observed design intent, not a live implementation claim.
+- It does not require pixel-perfect reproduction of the diagrams.
+- It does not choose a final frontend framework, component library, responsive breakpoint system, CSS implementation, or browser route.
+- It should be used to guide future UI planning so the mockups are not reduced to only backend workflow/state-machine semantics.
+
+Overall presentation model:
+
+- Layer 3 is visualized as an operator workbench, not as a marketing/landing page and not as a passive report viewer.
+- The UI is shown in a browser-like shell with a dark workspace background, a large central work area, and high-contrast panels.
+- The main experience is a workflow surface: the user sees where they are in the process, what material is moving forward, what review/approval boundary comes next, and which analysis plane will receive which material.
+- The mockups favor a spatial, diagrammatic layout where major Layer 3 stages are visible together, connected by arrows and grouped inside sublayer boundaries.
+- The UI should communicate state and data flow visually, but the final implementation may translate the canvas into a scrollable, tabbed, stepped, split-pane, or dashboard-like interface if that is more usable.
+
+Observed high-level layout:
+
+- A top-level "Layer 3" context frames the whole workflow.
+- The core flow reads mostly left-to-right:
+  - Pre-3A intent/source setup.
+  - Sublayer 3A / Gate B material intake and session scoping.
+  - Sublayer 3B / Gate C typing and unit/group/set formation.
+  - Sublayer 3C analysis execution environments.
+  - Generated insights/facts/data and downstream output/package concepts.
+- Vertical grouping is also important:
+  - User input panels are stacked vertically.
+  - Gate B ingress objects are grouped in a ledger-like grid.
+  - Gate C typed material is grouped by quantitative, qualitative, and hybrid/mixed categories.
+  - Analysis planes are stacked as separate execution environments.
+- Dashed outer boundaries visually distinguish sublayers, gates, and execution regions from ordinary object cards.
+- Arrows represent progression, routing, and dependency. They should not be treated as decorative only.
+
+Initial intent-entry screen:
+
+- The first visible user-facing screen is a centered panel inside a dark browser/workbench shell.
+- It contains two large input sections:
+  - "User Natural Language Query Input".
+  - "User Manual/Custom Specification".
+- The sections are separated by an "OR" label in the mockup.
+- The action text explicitly leaves open whether the user may use natural-language input, manual/custom input, or both together.
+- Therefore, the final UI must not hard-code mutual exclusivity unless a later product decision chooses it.
+- The natural-language area should present a large prompt/query field with example text and enough space for contextual intent.
+- The manual/custom area should present selectable or editable source/topic/focus chips rather than a plain text-only field, because the mockup shows many small keyword/source tiles.
+- The confirm/submit action sits below the two entry modes and visually commits the user's selected intent/source posture.
+
+Specific scenario presentation:
+
+- The scenario mockup shows a concrete query about federal infrastructure spending, semiconductor production facilities, domestic auto manufacturing investments, import dependency, and labor-market shifts.
+- The scenario mockup also shows many manually chosen source/topic tiles.
+- This implies the UI should support a dense but readable multi-source selection layout.
+- Source/topic selections should be visibly inspectable before submission.
+- The UI should distinguish example/placeholder content from user-entered or selected session content.
+- The source-selection area should be able to represent government agencies, industry associations, companies, report families, trade/labor data, policy concepts, and project/run artifacts in one surface.
+
+Pre-3A / source-plane presentation:
+
+- Pre-3A is shown as an early zone before committed Layer 3 material intake.
+- Upstream feeders and/or DBs are shown as separate source boxes feeding toward Sublayer 3A.
+- A future UI should make source origin visible before material is admitted into the session.
+- Source origin can be presented as source cards, connector rows, filters, or grouped sections, but the operator should be able to tell whether material came from:
+  - upstream feeders/storages/DBs,
+  - local directories or uploaded files,
+  - chooseable connectors/options,
+  - existing project run artifacts,
+  - or manually selected source/topic constraints.
+- The mockup does not define exact source-picker controls, authentication handling, local file browser behavior, upload retention, or connector configuration.
+
+Sublayer 3A / Gate B presentation:
+
+- Sublayer 3A is shown as a bounded region labeled "Material Intake & Session Scoping".
+- Gate B is shown as "Session Entry / Material Ledger".
+- Ingress objects are shown as repeated compact chips/cards in a grid-like material ledger.
+- The repeated "Gate B Ingress Object #n" visual pattern implies the operator should be able to review many candidate materials at once.
+- The UI should support scan-friendly material review with enough metadata to decide approve, deny, remove, isolate, or keep for later review.
+- Color outlines appear to group ingress objects. The diagrams suggest grouping by later type/category/route, but the exact color semantics are not frozen.
+- The material ledger should not be a purely visual list; it must connect to durable session/material identity if implemented.
+- The mockup does not define whether Gate B object cards are table rows, cards, chips, graph nodes, or a mixed presentation.
+
+Post-3A / Pre-3B presentation:
+
+- The mockup labels a transition where approved material is saved/frozen into a temp/local/dedicated Layer 3 DB/storage before Gate C.
+- The UI should make this transition visible as a state change rather than silently moving items forward.
+- The operator should be able to distinguish candidate material from approved/frozen session material.
+- Future UI should show validation status for material before Gate C receives it.
+- Exact status labels, progress indicators, failure states, and retry/reopen behavior remain unresolved.
+
+Sublayer 3B / Gate C presentation:
+
+- Sublayer 3B is shown as a bounded typing and formation region.
+- Gate C is shown as "Typing + Set Formation".
+- Typed material appears in separate grouped panels:
+  - Quantitative Data.
+  - Qualitative Data.
+  - Hybrid/Mixed Data.
+- The grouping implies that the UI should show both source material and its typed analysis-readiness classification.
+- Gate C should help the operator understand how ingress objects became analysis units, groups, and sets.
+- The UI should expose ambiguous or unsupported typing instead of silently placing material into a plane.
+- The mockup does not define the exact unit/group/set visualization. It could be grouped cards, tables, nested chips, graph lanes, or a dedicated relationship view.
+
+Sublayer 3C / analysis-plane presentation:
+
+- Sublayer 3C is shown as a large analysis execution region containing separate analysis environment/container/plane panels.
+- At minimum, the mockup shows:
+  - Quantitative and/or deterministic analysis plane.
+  - Qualitative data analysis plane.
+  - Hybrid/mixed plane in the broader overview.
+- Each analysis plane is visually structured as:
+  - an input/object list on the left,
+  - a middle execution/process note or orchestration block,
+  - an output grid/list on the right.
+- This suggests a future UI should preserve the operator's ability to see which typed objects feed which analysis process and which outputs are produced from that process.
+- The diagrams do not fully specify the controls inside the orchestration block.
+- The final UI must not imply that qualitative or hybrid execution is live unless a later implementation lane activates it.
+
+Output presentation:
+
+- Outputs are shown as repeated cards labeled "Insights/Facts/Data Generated (specific to Ingress Object #n)".
+- This implies output cards should retain traceability back to the ingress objects and analysis plane that produced them.
+- The UI should not present outputs as free-floating narrative with no provenance.
+- Output presentation should distinguish at least:
+  - generated insight/fact/data cards,
+  - validation/verification state,
+  - caveats or unsupported claims,
+  - package/handoff readiness where applicable.
+- The mockup does not define the final taxonomy of insight, fact, datum, finding, caveat, contradiction, warning, or output package.
+
+Progressive disclosure and navigation:
+
+- The mockups show multiple workflow stages simultaneously, which is useful for explanation.
+- Later slides preserve a condensed version of the original intent-entry panel above the active flow, suggesting that session intent and selected source posture should remain visible or recoverable while the operator works downstream.
+- A production UI may need progressive disclosure to avoid an oversized canvas becoming difficult to operate.
+- Acceptable implementation patterns could include:
+  - a full-workflow overview with clickable stage regions,
+  - a stepper/state-machine navigation around draft_selection through package_review,
+  - split panes where current-stage details appear alongside a compact workflow map,
+  - a persistent session-context header or collapsible intent/source summary,
+  - tabs for Gate B ledger, Gate C typing, plan review, execution, results, and package review.
+- Any such implementation should preserve the mockup's core intent: the operator can see how user intent becomes material, how material becomes typed analysis units, how units feed analysis planes, and how outputs trace back.
+
+Explanatory panels and annotations:
+
+- Later userflow screenshots show large side panels containing Action/Event explanatory text.
+- Those panels are valuable evidence for workflow semantics and userflow explanation.
+- They should not automatically be treated as required production UI panels.
+- A future production UI may translate this explanatory content into:
+  - contextual help,
+  - onboarding/tooltips,
+  - state descriptions,
+  - audit/progress summaries,
+  - or non-production documentation outside the app.
+- If these panels become part of the live UI, the implementation should distinguish explanatory copy from operator controls and durable session data.
+- The label "(Triggered by user interaction)" should remain descriptive context for action arrows unless a later design decision turns it into a visible event/state label.
+
+What appears semantic versus illustrative:
+
+- Semantic or likely-semantic visual elements:
+  - stage ordering from input to retrieval/intake to typing to analysis to output,
+  - sublayer/gate boundaries,
+  - ingress-object repetition,
+  - grouping by quantitative/qualitative/hybrid categories,
+  - arrows showing material and output flow,
+  - separate analysis plane containers,
+  - output cards tied to ingress objects,
+  - continued visibility or recoverability of submitted user intent and source posture during later workflow stages.
+- Potentially illustrative or not-yet-semantic elements:
+  - exact pixel spacing,
+  - exact panel sizes,
+  - exact number of visible ingress-object chips,
+  - exact color palette,
+  - browser chrome details,
+  - side explanatory Action/Event panels as always-visible production UI,
+  - canvas position labels such as Top-Left, Bottom-Left, and Scaffold,
+  - whether every plane must be visible on one screen at all times.
+- The final UI should preserve semantic relationships while allowing implementation-specific layout improvements.
+
+Presentation constraints for future implementation planning:
+
+- The first implemented UI slice should be additive and should not replace adjacent review/document-trace/workbench-compare/Candidate B/Analyst Insight pages.
+- The UI should not become a browser-only state machine; visible state must map to backend owner services or explicit planning-only placeholders.
+- The UI should be dense enough for operator review, because the mockup shows many objects and source tiles.
+- The UI should be readable enough that each state boundary is obvious; if the canvas model becomes too large, use navigation, panels, or zoomable/scrollable regions.
+- Headed and headless browser proof should be required for any live UI implementation.
+- Accessibility, keyboard navigation, responsive layout, and final visual design system remain unresolved and must be specified before implementation-grade UI work.
+
+6. Core Terminology
+
+Layer 3:
+
+- The overall user-facing analysis/workbench layer.
+- Includes frontend/UI, session orchestration, material intake, typing, analysis execution, output generation, and backend persistence/handoff.
+
+Pre-3A:
+
+- The state before material is committed into Layer 3 session intake.
+- In the mockup this includes user intent entry, manual/custom specification, and initial source discovery.
+
+Gate A(?):
+
+- Shown in the mockup as uncertain.
+- Appears to represent an early pre-intake boundary before Gate B.
+- Not yet clearly defined enough to treat as a durable architecture term.
+
+Source-plane Material Intake:
+
+- Exact visible mockup label: "( Source-plane Material Intake )".
+- Appears to name the early source-discovery and material-intake zone before or around Sublayer 3A / Gate B.
+- Should not be treated as a separate implemented service or durable route until a later planning pass defines whether it is a UI section name, architectural layer, or descriptive label.
+
+Sublayer 3A:
+
+- Material Intake & Session Scoping.
+- Mockup labels this as the area where retrieved/located data/content/files enter Layer 3 for review and session scoping.
+
+Gate B:
+
+- Session Entry / Material Ledger.
+- The operator-facing and backend-facing boundary where retrieved material becomes session-scoped material.
+- The mockup repeatedly labels items as "Gate B Ingress Object #n".
+
+Ingress Object:
+
+- A material item entering the session through Gate B.
+- Could be a file, dataset, document, connector result, local upload, run artifact, collection, or other retrieved object.
+
+Post-3A / Pre-3B:
+
+- Frozen/saved state after Gate B approval and before Gate C typing.
+- Mockup describes this as temp/local/dedicated Layer 3 DB/storage.
+
+Session-scoped Materials / Material Snapshots:
+
+- Exact visible mockup label: "Session-scoped Materials / Material Snapshots".
+- Represents material that has been admitted into the Layer 3 session boundary and frozen/saved enough to be referenced downstream.
+- Repo-live backend maps most closely to L3MaterialSnapshot, but the mockup label should remain broader until retention, storage, and snapshot semantics are finalized.
+
+Sublayer 3B:
+
+- Typing, Unit/Group/Set Formation.
+- The point where material is classified and prepared for analysis.
+
+Gate C:
+
+- Typing + Set Formation boundary.
+- Converts accepted material snapshots into analysis records, units, groups, and sets.
+
+Sublayer 3C:
+
+- Analysis Execution Environments.
+- Includes quantitative/deterministic, qualitative, and hybrid/mixed analysis environments/containers/planes.
+
+Analysis Plane:
+
+- A type-specific execution environment.
+- Mockup includes:
+  - Quantitative and/or deterministic plane.
+  - Qualitative data analysis plane.
+  - Hybrid/mixed data plane.
+
+Insights/Facts/Data Generated:
+
+- Output objects produced after analysis is executed, validated/verified, finalized, saved/frozen, and handed off.
+- Mockup shows outputs as specific to Ingress Object #n.
+
+Workbench/Controller:
+
+- The broader repo-planned operator surface that would own the end-to-end Layer 3 lifecycle.
+- Current repo planning points to a future UI route family at /review/layer3 and API family at /api/v1/layer3/...
+
+7. User Intent Entry
+
+The first visible workflow element is user intent entry.
+
+The mockup provides two input modes:
+
+1. User Natural Language Query Input.
+2. User Manual/Custom Specification.
+
+Natural language query input:
+
+- Exact visible helper label: "User types what they [want/intend] to [do/investigate/analyze/etc] in this box/container".
+- The user types what they want/intend to do, investigate, analyze, compare, explore, or determine.
+- The query explains/contextualizes/articulates the user's goals while working within Layer 3 or a specific part of Layer 3.
+- The query can reference existing data sources, named runs, uploaded files, selected files, or other possible/plausible sources.
+
+Manual/custom specification:
+
+- Exact visible helper label: "User manually chooses the specific keywords, topics/focuses/themes, etc. that they want to include/fetch/retrieve and utilize within this layer".
+- The user manually chooses specific keywords, topics, focuses, themes, source categories, or constraints.
+- This is not just free text. It is intended to let the user explicitly steer what should be included, fetched, retrieved, or used.
+- The mockup implies this can be used instead of, or possibly alongside, natural language query input.
+
+Confirm/Submit behavior:
+
+- A Confirm/Submit button finalizes the initial intent submission.
+- The button may submit either the natural-language query, the manual/custom specification, or both together if the final design allows combined use.
+
+Design requirement:
+
+- The UI should make it clear whether natural-language and manual/custom modes are mutually exclusive, complementary, or merged into one intent packet.
+- The UI should preserve the submitted intent as part of the session record.
+
+8. Specific Scenario Captured In The Mockups
+
+The specific-use-case screenshots include an example query conceptually similar to:
+
+- Use relevant data/info/content from NRC APS.
+- Include data/content/files from a specific run, uploaded/selected files, or other possible sources.
+- Determine x, y, and z.
+
+The scenario examples also reference a policy/economic analysis domain around:
+
+- federal infrastructure spending,
+- semiconductor production,
+- auto manufacturing investment/production,
+- import dependency,
+- labor market shifts,
+- strategic industry impacts.
+
+Manual/custom source/topic examples visible or inferred from the screenshots include:
+
+- Department of Commerce.
+- NSC/OSTP.
+- Auto manufacturing investment/production.
+- SEC earnings reports.
+- Census import/export data.
+- Taiwan/Korea semiconductor trade.
+- BLS/DOL/NSF workforce data.
+- UAW/NAM workforce or industry sources.
+- NRC APS or project-specific data.
+- Selected/uploaded/local files.
+- Named prior runs or run artifacts.
+
+Scenario-level requirement:
+
+- The workbench should support a mixed source-selection posture where official/government sources, project-native connector artifacts, local/user-provided files, and existing run outputs can be considered in one session.
+
+8A. Complete Mockup-Observed Example Query And Tag Inventory
+
+This section records the example text and tags directly observed in the SVG extraction. Exact observed spelling is preserved as evidence of the current visual artifact. When an observed spelling appears to be a typo, this section keeps the observed text and adds a normalized-reading note only where needed. Normalized readings are not implementation authority by themselves.
+
+Extraction handling note:
+
+- Decorative quotation marks around some source names are not treated as semantic implementation requirements.
+- Repeated labels such as "Gate B Ingress Object #2" through "Gate B Ingress Object #20" are represented by the "Gate B Ingress Object #n" term unless a later mockup differentiates their behavior.
+- Canvas/layout labels such as "Top-Left", "Bottom-Left", "Scaffold", "Example", "Example:", "Example(s):", and "OR" were observed but are not treated as product vocabulary unless later design work assigns them semantic meaning.
+- The label "(Triggered by user interaction)" is treated as descriptive context for the action/event arrows, not as a separate state or persisted object.
+
+Observed example natural-language query:
+
+- "I want to analyze federal infrastructure spending on semiconductor production facilities and see if we can correlate it with domestic auto manufacturing investments, import dependency, and/or labor market shifts in the automotive sector."
+
+Observed generic example query:
+
+- "Let's use any relevant data/info/content from the NRC APS, as well as the data/content/files/etc from [Insert name of specific run, uploaded/selected files, or whatever else might be possible/plausible/applciable], and try to determine x, y, and z."
+  - Normalized reading: "applicable".
+
+Observed manual/custom tag/source examples:
+
+- AGA, Association of Global Automakers, Investment Report.
+- Auto Industry Capital Expenditure, CapEx, CapEx Report, Plant Expansion.
+- Auto Industry Supply Chain, IHS Markit, AutoForecast Solutions.
+- Auto Manufacturing Investment, Auto Production, Auto Manufacturing.
+- Balance of Trade, Report, CBP, Customs and Border Protection, Import Declarations.
+- BLS, Employment Data, Semiconductor, Auto, Sector.
+- Census Bureau, Import Data, Export Data, BEA, Bureau of Economic Analysis.
+- Department of Labor, DOL, Semiconfuctor, Job Growth, Report.
+  - Normalized reading: "Semiconductor".
+- Dept. of Commerce.
+- DOE, AMO, Report.
+- Keyword/Tag/Topic/Focus/Name/etc.
+- Korea, Korea Customs Service, Samsung, Export Trends, Semiconductor Report, WSTS.
+- NAM, National Association of Manfufacturers, Workforce, Workforce Data.
+  - Normalized reading: "National Association of Manufacturers".
+- NHTSTA, EV, EV Mandate, EV Regulation, Report, Regulation.
+  - Normalized reading: likely "NHTSA", but the mockup text says "NHTSTA".
+- NIST, National Institute of Standards and Technology, Supply Chain.
+- NSC, OSTP.
+- NSF, National Science Foundation, STEM, Workforce, Report.
+- Policy, Subsidies, Incentives, etc.
+- SEC, Earnings Report, Ford, GM, Tesla, Toyota, USA, Rivian.
+- Semiconductor Investment, Semiconductor Capacity, Semiconductor Infrastructure.
+- Semiconductor, Semiconductor Policy, Semiconductor Production.
+- State Economic Development Agencies.
+- Taiwan, Semiconductor, Trade Statistics, Semiconductor Manufacturing, TSMC, Export Data.
+- UAW, United Auto Workers, Report, Workforce, Workforce Trend, Trends.
+
+Planning implications from the observed inventory:
+
+- The intended manual/custom input is not only a keyword list; it mixes organizations, agencies, companies, reports, source families, industries, policy concepts, economic indicators, and source systems.
+- The source model likely needs typed facets rather than one flat string list.
+- At minimum, a future design should distinguish source authority, source type, topic/focus, organization/entity, geography, industry/sector, document/report type, and metric/evidence target.
+- The scenario is broader than NRC APS alone; NRC APS is one possible feeder among multiple economic, policy, corporate, trade, and labor data sources.
+
+8B. Mockup-Observed Action/Event Sequence
+
+Status:
+
+- This section enumerates the action/event sequence directly visible in the mockup text.
+- It is a workflow-intent summary, not a final API contract or implementation claim.
+- The sequence should guide future UI planning, state-machine mapping, and proof selection, but each action still needs implementation-grade controls, data contracts, and failure behavior before coding.
+
+Action/Event 1: user submits intent/specification
+
+- Trigger: the user clicks the "Confirm/Submit Button".
+- Input source: user natural-language query, manual/custom specification, or possibly both together.
+- Current specificity boundary: the mockup explicitly leaves open whether natural-language and manual/custom inputs are exclusive, alternative, or combinable.
+- Planning mapping: draft intent/source posture should move toward a committed session/selection-review boundary only after user confirmation.
+
+Action/Event 2: retrieval/discovery locates candidate material
+
+- Mockup text names RAG, vector embedding, semantic search, and other adequate/optimal/feasible methods.
+- Candidate material may come from upstream feeders/storages/DBs, specified local directories/uploaded files, or other chooseable sources/directories/connectors/options.
+- Output of this action ends up in Sublayer 3A / Gate B for material intake and session scoping.
+- Current specificity boundary: repo-live proof currently supports token/query search over materialized APS retrieval chunks, not a confirmed Layer 3 RAG/vector/semantic implementation.
+
+Action/Event 3: user reviews and admits or excludes loaded material
+
+- The user confirms/approves the list of files/data/etc. loaded into Sublayer 3A / Gate B.
+- The user may also deny, remove, isolate, or otherwise exclude material.
+- Planning mapping: this is the user-facing Gate B review boundary.
+- Current specificity boundary: deny/remove/isolate are mockup-observed actions, but their exact durable-state meanings are not finalized.
+
+Action/Event 4: approved material is frozen and moved toward Gate C
+
+- Approved retrieved material is loaded, initialized, stored, saved, or otherwise frozen in a temp/local/dedicated Layer 3 DB/storage.
+- The mockup names this as a Post-3A / Pre-3B state.
+- Each file or collection is verified/validated before being loaded/initialized into Sublayer 3B / Gate C.
+- Planning mapping: this corresponds to session-scoped material snapshots and loading closure before typing/unit/group/set formation.
+- Current specificity boundary: exact storage, retention, validation, immutability, and cleanup behavior remain unresolved.
+
+Action/Event 5: user configures/orchestrates analysis execution
+
+- After material is loaded into Sublayer 3B / Gate C, the user configures/specifies how analysis should be orchestrated, conducted, organized, or executed.
+- This applies to qualitative, quantitative/deterministic, and hybrid/mixed analysis environments/containers/planes individually and together as a whole.
+- The configuration must happen before files/data/content are fed into the analysis environments.
+- The user authorizes/finalizes this configuration through another confirmation/authorization action.
+- The mockup explicitly says this step is uniquely significant and not yet fully fleshed out.
+- Planning mapping: this corresponds most closely to plan_review and analysis-plan approval.
+- Current specificity boundary: exact orchestration fields, per-plane controls, defaults, validation rules, and rejection behavior are not yet defined.
+
+Action/Event 6: analysis produces validated/finalized outputs
+
+- Insights/facts/data are outputted, produced, or organized after the respective analysis environments execute, validate/verify, and finalize.
+- Outputs are shown as specific to ingress objects.
+- Planning mapping: this corresponds to reconciled_results and package_review surfaces, plus output provenance back to ingress objects, analysis units, sets, and pass runs.
+- Current specificity boundary: output taxonomy, trace UI, package review behavior, and downstream handoff triggers are not finalized.
+
+9. Source Discovery And Retrieval
+
+After Confirm/Submit, the mockup says retrieval/discovery should use:
+
+- RAG,
+- vector embedding,
+- semantic search,
+- other adequate/optimal/feasible retrieval methods,
+- upstream feeders/storages/DBs,
+- specified local directories,
+- uploaded files,
+- existing chooseable sources/directories/connectors/options.
+
+Mockup-derived requirement:
+
+- Retrieval should be driven by the user's intent packet.
+- Retrieval should not silently become final session material.
+- Retrieval results should enter Sublayer 3A / Gate B for review.
+
+Repo-live comparison:
+
+- Current repo-live retrieval confirmed during audit is token/query based over materialized APS retrieval chunks.
+- Current retrieval read path fails closed when the retrieval plane is not materialized.
+- Current repo-live state does not prove a vector/RAG/semantic retrieval implementation for this Layer 3 workbench.
+
+Spec implication:
+
+- RAG/vector/semantic retrieval is an intended capability, not a confirmed live implementation.
+- Any implementation plan must choose whether first-slice retrieval uses current token retrieval, a new vector/RAG service, or a staged hybrid approach.
+
+10. Sublayer 3A / Gate B: Material Intake And Session Scoping
+
+Gate B is the first major durable Layer 3 boundary in the mockup.
+
+Input to Gate B:
+
+- retrieved data,
+- files,
+- connector results,
+- upstream DB/storage records,
+- local directory files,
+- uploaded files,
+- selected existing run artifacts,
+- source collections.
+
+Operator action at Gate B:
+
+- User confirms/approves loaded files/data/content.
+- User can deny/remove/isolate specific items.
+- User can decide which materials should proceed into the session.
+
+Backend requirement:
+
+- Approved material should be saved/frozen to a temp/local/dedicated Layer 3 DB/storage.
+- Each file or collection should be verified/validated.
+- Each accepted item should have stable identity and provenance.
+- Each accepted item should be traceable to the initial intent and source discovery path.
+
+Repo-live mapping:
+
+- L3Session maps to the durable session.
+- L3SelectionManifest maps to the committed source/selection manifest.
+- L3Descriptor maps to expanded selected source descriptors.
+- L3RetrievalEvent maps to retrieval/load events and outcomes.
+- L3MaterialSnapshot maps to saved/frozen material snapshots.
+- layer3_session_entry.py owns commit_selection, expand_descriptors, record_retrieval_event, and finalize_session.
+
+Important distinction:
+
+- Repo-live backend has the core owner-service chain for this.
+- Repo-live UI does not yet expose this as a full operator Gate B material review surface.
+
+11. Gate B Ingress Object Model
+
+The mockup repeatedly shows "Gate B Ingress Object #1" through many numbered objects.
+
+This implies:
+
+- A session can include many ingress objects.
+- Ingress objects are visually listed or grouped.
+- Ingress objects may have different source types.
+- Ingress objects can feed later analysis planes separately or in grouped form.
+- Generated outputs may remain tied to a specific ingress object.
+
+Minimum ingress object fields likely needed:
+
+- ingress_object_id,
+- session_id,
+- source_type,
+- source_label,
+- source_ref,
+- source_identity,
+- retrieval_method,
+- retrieval_query_or_selector,
+- checksum or content hash,
+- material_snapshot_ref,
+- approval_status,
+- isolation/quarantine status,
+- validation status,
+- warnings/errors,
+- user-visible title/summary,
+- created_at / accepted_at / frozen_at timestamps.
+
+Unresolved:
+
+- Whether "deny", "remove", and "isolate" are distinct durable states or UI aliases for one exclusion/quarantine mechanism.
+
+12. Post-3A / Pre-3B Frozen State
+
+The mockup explicitly describes a saved/frozen state after approved files/data are accepted and before Gate C.
+
+Expected behavior:
+
+- Accepted material is stored in a dedicated session workspace.
+- Material is immutable or versioned once frozen.
+- Validation occurs before typing.
+- Failed or partial materials are preserved with failure state rather than silently disappearing.
+
+Repo-live mapping:
+
+- layer3_session_entry.py persists material payloads under artifact storage / layer3.
+- finalize_session records summary/closure state.
+- Existing planning docs treat runtime DBs for review/document-trace as read-only evidence-plane surfaces.
+
+Design constraint:
+
+- Future UI/controller work should not write into review/document-trace runtime DBs unless a separate lane explicitly reopens that boundary.
+
+13. Sublayer 3B / Gate C: Typing, Unit, Group, And Set Formation
+
+Gate C prepares frozen material for analysis.
+
+Mockup intent:
+
+- Loaded/initialized Gate B material enters Gate C.
+- System performs typing.
+- System forms units, groups, and sets.
+- User can review the resulting organization before analysis execution.
+
+Repo-live mapping:
+
+- L3TypingRecord stores typed material snapshot decisions.
+- L3AnalysisUnit stores atomic analysis units.
+- L3AnalysisGroup stores grouped analysis units.
+- L3AnalysisSet stores analysis-ready sets.
+- layer3_typing_entry.py owns typing/unit/group/set materialization.
+
+Current repo-live support:
+
+- dataset_version is typed as quantitative.
+- aps_content_document is typed as qualitative with document_chunks planning shape.
+- qualitative groups/sets can be formed during typing.
+- hybrid is present as a vocabulary/modality but not fully active as an execution plane.
+
+Current repo-live limitation:
+
+- Typing support is narrower than the mockup's broader source universe.
+- Activation-grade thresholds, entity graph defaults, APS document-unit granularity, and typing conflict UI presentation are not frozen.
+
+14. Typing Review And Operator Overrides
+
+The repo-live planning-only workbench docs define typing_review as a bounded override-only review state.
+
+Expected UI behavior:
+
+- Display each accepted ingress object/material snapshot.
+- Display inferred source_shape.
+- Display candidate analysis modalities.
+- Display chosen analysis modality.
+- Display unit/group/set assignment.
+- Show whether the item is quantitative, qualitative, hybrid, or unsupported.
+- Allow bounded operator override when automatic typing/grouping is obviously wrong or would break meaning.
+
+Expected backend behavior:
+
+- Overrides must be recorded, not silently replacing automated typing.
+- Override reason should be required.
+- Previous automated basis should remain inspectable.
+- Ambiguous typing must fail closed or remain in review, not proceed silently.
+
+15. Sublayer 3C: Analysis Execution Environments
+
+The mockup defines Sublayer 3C as Analysis Execution Environments.
+
+It contains at least three conceptual analysis planes:
+
+- Quantitative and/or deterministic.
+- Qualitative.
+- Hybrid/mixed.
+
+The mockup shows data/content flowing from Gate C into the appropriate plane(s), then outputs being generated and organized.
+
+Important mockup note:
+
+- The process/orchestration/machinations/steps behind analysis execution have not yet been adequately conceptualized/determined.
+
+Spec consequence:
+
+- This document should not pretend the analysis orchestration model is fully settled.
+- It should preserve the need for a later design pass on plane orchestration, execution semantics, and output generation.
+
+16. Quantitative / Deterministic Plane
+
+Mockup label:
+
+- "Quantitative (and/or/AKA 'Deterministic') Environment/Container/Plane"
+
+Repo-live mapping:
+
+- layer3_pass_entry.py supports bounded quantitative pass execution.
+- Current supported wrapped quantitative methods include cross-correlation, decomposition, and structural break.
+- Current pass entry creates L3AnalysisPlan and L3PassRun records.
+- Current analysis_plan.approved_by_operator starts false and approved_at starts null.
+
+Current repo-live limitation:
+
+- The UI does not yet expose an operator plan approval step for Layer 3.
+- The pass-entry service currently handles quantitative paths and excludes qualitative sets from the quantitative run path.
+
+17. Qualitative Plane
+
+Mockup label:
+
+- "Qualitative Data Analysis Environment/Container/Plane"
+
+Repo-live mapping:
+
+- Gate C typing can type aps_content_document material as qualitative.
+- Qualitative analysis units/groups/sets can be formed.
+- Planning docs now define a future qualitative single-item slice.
+
+Current repo-live limitation:
+
+- No live qualitative single-item pass family exists on current main.
+- No qualitative proof outputs have been produced for the future qualitative lane.
+- Route/UI should remain out of the first qualitative service-first slice unless a later lane admits it.
+
+Implication:
+
+- The mockup's qualitative analysis plane is directionally aligned with planning, but it is not fully implemented as an execution plane.
+
+18. Hybrid / Mixed Plane
+
+Mockup label:
+
+- "Hybrid/Mixed Data"
+
+Repo-live mapping:
+
+- hybrid exists as a modality vocabulary in typing planning/current code.
+- Planning docs identify hybrid as deferred.
+
+Current repo-live limitation:
+
+- No active hybrid single-item execution lane exists.
+- No active cohort, comparative, or cross-modal hybrid orchestration lane exists.
+
+Implication:
+
+- The mockup's hybrid/mixed plane is a target concept and should be treated as future scope unless a later freeze explicitly activates it.
+
+19. Orchestration And Plan Review
+
+The mockup makes orchestration especially important.
+
+Mockup intent:
+
+- After Gate C loads/initializes everything, the user must configure/specify how analysis should be orchestrated/conducted/organized/executed.
+- This applies to each analysis environment/container/plane individually and all together as a whole.
+- Configuration is required before any files/data/content are fed into qualitative, quantitative, or hybrid/mixed planes.
+- Finalization/authorization happens only after the user clicks another confirmation/authorization button.
+- This configuration shapes how analysis is conducted and what is produced.
+
+Repo-live planning alignment:
+
+- The planning-only workbench state machine includes plan_review.
+- plan_review is defined as bounded approve/reject only, with no execution side effects during review.
+- L3AnalysisPlan has approved_by_operator and approved_at fields.
+
+Current gap:
+
+- No live UI/API exposes the full plan_review/approval workflow.
+- The minimum fields required for orchestration configuration are not yet defined in the mockups.
+
+20. Analysis Execution And Monitoring
+
+Expected flow:
+
+- Once the plan is approved, execution begins.
+- The UI enters pass_monitor or equivalent.
+- The operator can inspect status.
+- Rerun behavior is allowed only if a later lane explicitly permits it.
+- Partial failure should be visible and preserved.
+
+Repo-live mapping:
+
+- L3PassRun stores pass run status and output references.
+- layer3_pass_entry.py updates session state and pass summaries.
+- layer3_package_entry.py later reconciles pass outputs.
+
+Design constraint:
+
+- Execution should not begin during plan review.
+- Execution should not rely on browser-only state.
+- Execution must be recoverable/auditable from backend state.
+
+21. Output Generation
+
+Mockup label:
+
+- "Insights/Facts/Data Generated (specific to Ingress Object #n)"
+
+Mockup description:
+
+- Data investigation/exploration/analysis is conducted/executed.
+- Outputs/products are verified/validated.
+- Outputs/products are saved/frozen/handed off.
+- Purpose is insight/fact generation/determination.
+
+Expected output behavior:
+
+- Outputs must be tied to source ingress objects, analysis units, analysis sets, pass runs, and package records.
+- Outputs must distinguish findings, facts, insights, caveats, warnings, contradictions, and unsupported claims.
+- Outputs should show provenance, not just final narrative.
+- Outputs should be inspectable before handoff.
+
+Repo-live mapping:
+
+- layer3_package_entry.py creates canonical_internal, user_facing, and review_facing packages.
+- L3ReconciliationRecord records reconciliation state.
+- L3OutputPackage records output packages.
+- APS handoff services carry bounded packages into APS artifact families.
+
+22. Package Review And Downstream Handoff
+
+Repo-live planning alignment:
+
+- The future workbench state machine includes package_review.
+- package_review is inspect package variants; bounded handoff initiation only if a later active lane explicitly admits it.
+
+Repo-live backend:
+
+- Gate D package entry is implemented.
+- Multiple bounded APS handoff services are implemented.
+- The Layer 3 progress board shows a completed chain through many APS handoff families.
+
+Design requirement:
+
+- The UI should not collapse "generated outputs" and "handoff packages" into the same concept.
+- The operator should be able to see what is canonical internal, user-facing, review-facing, and downstream handoff-specific.
+
+23. Proposed Workbench State Machine
+
+Current repo-live planning docs already define a future broader workbench state machine. It maps well to the mockups:
+
+1. draft_selection
+   - User enters natural-language query and/or manual specification.
+   - Editable.
+   - No durable Layer 3 session yet.
+
+2. selection_review
+   - User reviews selected/retrieved candidate sources before commit.
+   - Review plus commit only.
+   - No silent mutation after commit.
+
+3. loading
+   - System retrieves/loads/validates/freeze material.
+   - Read-only progress visibility.
+
+4. typing_review
+   - System shows typed units/groups/sets.
+   - Operator can perform bounded override-only review.
+
+5. plan_review
+   - Operator reviews/approves/rejects bounded plan.
+   - No execution side effects during review.
+
+6. pass_monitor
+   - Execution status, warnings, errors, and pass output visibility.
+   - Rerun only where a later lane explicitly allows it.
+
+7. reconciled_results
+   - Read-only accepted versus quarantined output review.
+
+8. package_review
+   - Inspect package variants.
+   - Bounded handoff initiation only if a later active lane explicitly admits it.
+
+23A. State-To-Action And Data Contract
+
+This is a planning contract, not a live API claim.
+
+| State | Operator action | System action | Durable state expected | Must not happen |
+| --- | --- | --- | --- | --- |
+| draft_selection | Enter natural-language intent, manual/custom specification, or both | Validate draft shape only | Draft intent packet, not yet a Layer 3 session | No material persistence, no retrieval side effects unless explicitly preview-only |
+| selection_review | Review candidate source selectors and submit/commit | Create session and selection manifest through owner service | L3Session and L3SelectionManifest | No silent mutation after commit |
+| loading | Watch retrieval/materialization progress | Expand descriptors, record retrieval events, persist approved material snapshots, finalize loading closure | L3Descriptor, L3RetrievalEvent, L3MaterialSnapshot, session closure summary | No operator data edits, no browser-only state |
+| typing_review | Inspect/override typing and grouping | Materialize typing records, units, groups, sets | L3TypingRecord, L3AnalysisUnit, L3AnalysisGroup, L3AnalysisSet | No unsupported typing silently admitted |
+| plan_review | Approve/reject bounded analysis plan | Build plan but do not execute until approved | L3AnalysisPlan with auditable approval state | No execution side effects before approval |
+| pass_monitor | Inspect execution status | Execute admitted pass runs and persist outputs/warnings/errors | L3PassRun and analysis artifacts/caveats | No hidden rerun/branch behavior |
+| reconciled_results | Inspect accepted vs warning/quarantined results | Reconcile pass outputs and caveats | L3ReconciliationRecord candidate state | No loss of failed/excluded provenance |
+| package_review | Inspect package variants and optionally initiate allowed handoff | Create package variants and, if admitted, handoff packages | L3OutputPackage and downstream handoff packages | No automatic broad handoff without explicit admission |
+
+23B. Minimum Conceptual Data Objects For Future API Planning
+
+These objects are not final schemas. They are planning anchors to prevent under-specified API work.
+
+IntentPacket:
+
+- session_draft_id
+- natural_language_query
+- manual_specification
+- combined_input_mode
+- requested_sources
+- excluded_sources
+- user_context
+- created_by
+- created_at
+
+ManualSpecification:
+
+- keywords
+- topics
+- agencies
+- organizations
+- companies
+- sectors
+- geographies
+- date_ranges
+- report_types
+- metrics_or_evidence_targets
+- named_runs
+- uploaded_files
+- local_directory_refs
+- connector_refs
+
+SourceCandidate:
+
+- candidate_id
+- source_family
+- source_label
+- source_authority
+- source_ref
+- discovery_method
+- matched_terms
+- semantic_or_retrieval_score
+- retrieval_explanation
+- risk_or_warning_flags
+- proposed_action
+
+MaterialLedgerItem:
+
+- ingress_object_id
+- descriptor_id
+- material_snapshot_id
+- source_shape
+- source_identity
+- approval_status
+- isolation_status
+- validation_status
+- checksum
+- storage_ref
+- display_title
+- provenance_summary
+- warnings
+
+TypingReviewItem:
+
+- typing_record_id
+- material_snapshot_id
+- source_shape
+- planning_shape_family
+- candidate_modalities
+- chosen_modality
+- unit_ids
+- group_ids
+- set_ids
+- override_allowed
+- override_reason
+- ambiguity_flags
+
+AnalysisPlanReview:
+
+- analysis_plan_id
+- session_id
+- admitted_set_ids
+- excluded_set_ids
+- plane_assignments
+- method_or_engine_choices
+- parameters
+- expected_outputs
+- known_caveats
+- approved_by_operator
+- approved_at
+
+GeneratedOutput:
+
+- output_id
+- session_id
+- ingress_object_ids
+- analysis_unit_ids
+- analysis_set_ids
+- pass_run_id
+- output_kind
+- claim_text_or_payload_ref
+- evidence_refs
+- caveats
+- validation_status
+- package_refs
+
+23C. Output And Provenance Contract
+
+Future planning should require every generated output to answer:
+
+- What user intent caused this output to be generated?
+- Which source candidate or manual specification admitted the underlying material?
+- Which Gate B ingress object(s) contributed material?
+- Which material snapshot(s) were analyzed?
+- Which typing record(s), unit(s), group(s), and set(s) were involved?
+- Which analysis plane produced it?
+- Which pass run or execution event produced it?
+- What validation, warning, caveat, contradiction, or unsupported-state flags apply?
+- Which package variant contains it?
+- Whether it is user-facing, review-facing, canonical-internal, or downstream-handoff-only.
+
+23D. Planning Diagrams
+
+Purpose:
+
+These diagrams are additive planning aids. They do not replace the prose requirements, unresolved items, or repo-live comparison sections. If a diagram appears more specific than the surrounding prose, the prose and explicit unresolved items remain authoritative.
+
+Reading rules:
+
+- "Repo-live" means confirmed in project6-origin/main during this planning review.
+- "Planning-only" means present in repo planning docs but not active implementation.
+- "Target" means mockup/spec intent that still needs implementation scoping.
+- Dashed arrows represent deferred, conditional, or future-scope relationships.
+- These diagrams are Mermaid source blocks so they remain readable as plain text and can render in Mermaid-capable viewers.
+
+23D.1 End-To-End Target Workbench Flow
+
+```mermaid
+flowchart LR
+    A["Intent entry<br/>natural language or manual spec"] --> B["Source selection<br/>connectors, database, local, or fixture"]
+    B --> C["Retrieval / material discovery"]
+    C --> D["Gate B<br/>approve, deny, isolate, or flag material"]
+    D --> E["Post-3A frozen material"]
+    E --> F["Gate C typing<br/>source_shape plus analysis_modality"]
+    F --> G["Plan review"]
+    G --> H["Pass monitor"]
+    H --> I["Reconciled results"]
+    I --> J["Package review"]
+    J --> K["Downstream handoff"]
+
+    C -.-> C1["Repo-live proof<br/>token/query APS chunks"]
+    C -.-> C2["Future unless scoped<br/>RAG/vector/semantic retrieval"]
+    F -.-> F1["Future unless scoped<br/>qualitative and hybrid execution breadth"]
+```
+
+Implication:
+
+- This is the target operator workflow implied by the mockups.
+- Current repo-live backend assets cover meaningful parts of the chain.
+- Current repo-live UI does not expose this as one live /review/layer3 workbench.
+
+23D.2 Frontend / UI Presentation Model
+
+```mermaid
+flowchart TB
+    Shell["Target /review/layer3 workbench shell<br/>not live today"] --> Header["Top navigation and session/status strip"]
+    Shell --> Main["Primary workbench area"]
+    Shell --> Side["Action / Event / Context panels"]
+
+    Main --> StageMap["Stage map, stepper, or flow canvas"]
+    Main --> ActivePanel["Active stage detail panel"]
+    Main --> EvidencePanel["Evidence, material, result, or package panes"]
+
+    Side --> ActionLog["Operator actions"]
+    Side --> EventLog["System events and warnings"]
+    Side --> ContextSummary["Intent/source/session context"]
+
+    Adjacent["Repo-live adjacent pages"] -.-> Shell
+    Adjacent -.-> Boundary["Compatibility constraints<br/>not workbench owners"]
+    Adjacent --> NRC["/review/nrc-aps"]
+    Adjacent --> Trace["/review/nrc-aps/document-trace"]
+    Adjacent --> Compare["/review/nrc-aps/workbench-compare"]
+    Adjacent --> Candidate["/review/nrc-aps/candidate-b-trace"]
+    Adjacent --> Analyst["/review/analyst-insight"]
+```
+
+Implication:
+
+- The mockups support a workbench-style UI with persistent context and stage-specific detail.
+- Exact component pattern remains unresolved: canvas, stepper, tabs, split-pane, or another explicit layout.
+- Adjacent repo-live pages should remain adjacent surfaces unless a later freeze explicitly changes ownership.
+
+23D.3 Repo-Live, Planning-Only, And Target-State Boundary
+
+```mermaid
+flowchart TB
+    RepoLive["Repo-live confirmed"] --> LiveBackend["Layer 3 backend model/service spine"]
+    RepoLive --> LiveAdjacentUI["Adjacent NRC APS and Analyst Insight UI surfaces"]
+    RepoLive --> LiveRetrieval["Token/query APS retrieval evidence"]
+
+    PlanningOnly["Repo-live planning-only"] --> PlannedRoute["/review/layer3 plus /api/v1/layer3/... route family"]
+    PlanningOnly --> PlannedWorkbench["Broader workbench state machine"]
+    PlanningOnly --> PlannedQual["Qualitative single-item prep"]
+
+    Target["Mockup/spec target-state"] --> TargetUI["Unified operator Layer 3 workbench"]
+    Target --> TargetRetrieval["Possible RAG/vector/semantic retrieval"]
+    Target --> TargetBreadth["Qualitative, hybrid, comparative, or cross-modal breadth"]
+
+    Unresolved["User/product decisions still required"] --> Slice["First active implementation slice"]
+    Unresolved --> Semantics["Gate B, typing, pass, package, and handoff semantics"]
+    Unresolved --> Proof["Fixtures, proofs, runtime/write boundaries"]
+
+    PlannedRoute -.-> RouteGuard["Not live until implemented and tested"]
+    RouteGuard -.-> TargetUI
+    TargetUI -.-> PromotionGuard["Must not be promoted from mockup alone"]
+    PromotionGuard -.-> RepoLive
+```
+
+Implication:
+
+- The planning work is coherent only if these authority classes stay separate.
+- The external mockup spec is target-state planning input, not repo-tracked implementation truth.
+
+23D.4 Backend Owner-Service Composition
+
+```mermaid
+flowchart TB
+    FutureUI["Future UI/API/controller slice"] --> SessionSvc["layer3_session_entry<br/>session, descriptors, retrieval events, material snapshots"]
+    FutureUI --> TypingSvc["layer3_typing_entry<br/>typing records, units, groups, sets"]
+    FutureUI --> PassSvc["layer3_pass_entry<br/>analysis plan and pass runs"]
+    FutureUI --> PackageSvc["layer3_package_entry<br/>reconciliation and output packages"]
+    FutureUI --> APSHandoff["layer3_aps_* handoff services<br/>bounded downstream families"]
+
+    SessionSvc --> Models["L3Session, L3SelectionManifest, L3Descriptor, L3RetrievalEvent, L3MaterialSnapshot"]
+    TypingSvc --> Models2["L3TypingRecord, L3AnalysisUnit, L3AnalysisGroup, L3AnalysisSet"]
+    PassSvc --> Models3["L3AnalysisPlan, L3PassRun"]
+    PackageSvc --> Models4["L3ReconciliationRecord, L3OutputPackage"]
+
+    Guard["Implementation guard<br/>do not duplicate persistence/state rules in browser or route handlers"] -.-> FutureUI
+```
+
+Implication:
+
+- Future implementation should compose around existing owner services where they exist.
+- Browser state should display and drive backend-owned state; it should not become a parallel canonical state machine.
+
+23D.5 Output Provenance Chain
+
+```mermaid
+flowchart LR
+    Intent["User intent"] --> Source["Source candidate or manual spec"]
+    Source --> Ingress["Gate B ingress object"]
+    Ingress --> Snapshot["Material snapshot"]
+    Snapshot --> Typing["Typing record"]
+    Typing --> UnitSet["Analysis unit / group / set"]
+    UnitSet --> Plan["Analysis plan"]
+    Plan --> Pass["Pass run or execution event"]
+    Pass --> Output["Generated output"]
+    Output --> Package["Output package"]
+    Package --> Handoff["Downstream handoff"]
+
+    Output --> Flags["Validation status, warnings, caveats, contradictions, unsupported claims"]
+    Output --> Evidence["Evidence refs and source trace"]
+```
+
+Implication:
+
+- Every user-facing output should be traceable back to ingress material and the user intent that caused it.
+- Output review should distinguish final narrative from proof, caveat, warning, and unsupported-state metadata.
+
+23D.6 Activation And Progress-Artifact Gate
+
+```mermaid
+flowchart TD
+    Spec["External mockup spec<br/>Downloads layer3mockups"] --> Clarify["Answer or defer section 28A.10 decisions"]
+    Clarify --> Decision{"Is one narrow slice explicitly frozen?"}
+    Decision -->|No| Deferred["Keep as target-state / planning-only"]
+    Decision -->|Yes| Contracts["Define route/API/data/proof contracts"]
+    Contracts --> Implement["Implement bounded slice"]
+    Implement --> Verify["Direct backend proof<br/>plus headed/headless browser proof if UI touched"]
+    Verify --> RepoEvidence{"Repo/GitHub evidence confirms lane?"}
+    RepoEvidence -->|No| NoProgress["Do not update milestone/current-focus state"]
+    RepoEvidence -->|Yes| Progress["Update repo progress packet and live artifact surfaces"]
+```
+
+Implication:
+
+- This external file does not update repo milestone counts or current focus by itself.
+- The repo progress packet should change only when repo-tracked evidence or an explicitly frozen implementation lane justifies it.
+
+24. Future UI Route And API Shape
+
+Repo-live planning-only default:
+
+- UI root: /review/layer3
+- API root: /api/v1/layer3/...
+
+Current repo-live status:
+
+- No live /review/layer3 route exists.
+- No live /api/v1/layer3/... API family exists.
+- No live FastAPI /layer3 prefix exists.
+
+Implementation design requirement:
+
+- The future route family should be additive.
+- It should not rewrite or overload:
+  - /review/nrc-aps
+  - /review/nrc-aps/document-trace
+  - /review/nrc-aps/workbench-compare
+  - /review/nrc-aps/candidate-b-trace
+  - /review/analyst-insight
+
+25. Relationship To Existing UI Surfaces
+
+Existing adjacent UI surfaces:
+
+- /review/nrc-aps
+  - NRC APS review graph/tree/details surface.
+
+- /review/nrc-aps/document-trace
+  - Document trace and provenance inspection surface.
+
+- /review/nrc-aps/workbench-compare
+  - Compare surface.
+
+- /review/nrc-aps/candidate-b-trace
+  - Candidate B inspection/trace surface.
+
+- /review/analyst-insight
+  - Deterministic integration, validation, and insight demo/product surface.
+
+Important boundary:
+
+- These surfaces are adjacent consumers or deterministic product surfaces.
+- They are not the broader Layer 3 operator controller.
+- They should be preserved rather than relabeled as the Layer 3 workbench.
+
+26. Analyst Insight Boundary
+
+Current repo-live Analyst Insight status:
+
+- Live at /review/analyst-insight.
+- Uses analyst-insight-facing alias routes.
+- Backed by deterministic market-pipeline service logic.
+- Stages are integration/cross-reference, validation/anomaly detection, and deterministic insight.
+- Legacy market-pipeline routes remain supported.
+
+Boundary:
+
+- Analyst Insight is useful as a deterministic helper/product surface.
+- It is not the full Layer 3 workbench.
+- It should not be treated as the owner of the broader selection -> loading -> typing -> plan -> pass -> package lifecycle.
+
+27. Backend Owner-Service Mapping
+
+Future Layer 3 workbench/API should compose around existing owner services:
+
+- selection commit:
+  - backend/app/services/layer3_session_entry.py::commit_selection
+
+- descriptor expansion/loading closure:
+  - expand_descriptors
+  - record_retrieval_event
+  - finalize_session
+
+- typing/unit/group/set formation:
+  - backend/app/services/layer3_typing_entry.py::materialize_typing_entry
+
+- plan/pass entry:
+  - backend/app/services/layer3_pass_entry.py::materialize_pass_entry
+
+- package/reconciliation/output packages:
+  - backend/app/services/layer3_package_entry.py::materialize_package_entry
+
+- APS handoff chain:
+  - backend/app/services/layer3_aps_*.py services.
+
+Constraint:
+
+- Future route handlers should not duplicate session, typing, pass, or package persistence rules.
+- Browser code should not become a parallel state machine.
+
+28. Current Repo-Live Implementation Summary
+
+Implemented or strongly present on project6-origin/main:
+
+- Layer 3 session/selection/material backend.
+- Gate C typing/unit/group/set backend.
+- Quantitative pass-entry backend.
+- Gate D package-entry backend.
+- APS handoff chain.
+- Analyst Insight deterministic UI and alias routes.
+- Adjacent NRC APS review/document-trace/workbench-compare/Candidate B UI surfaces.
+- Planning-only broader workbench route-family docs.
+- Planning-only qualitative single-item docs.
+
+Not currently live:
+
+- /review/layer3 UI.
+- /api/v1/layer3/... API.
+- Full user-facing Gate B material approval UI.
+- Full user-facing Gate C typing review UI.
+- Full user-facing plan_review approval UI.
+- Full operator pass_monitor/reconciled_results/package_review UI.
+- Any proven repo-live Layer 3 RAG/vector/semantic retrieval implementation.
+- A live qualitative execution plane.
+- A live hybrid/mixed execution plane.
+
+28A. Repo-Live Implications, Contradictions, Ambiguities, And Implementation Preconditions
+
+Purpose:
+
+This section centralizes the implications created by comparing the mockup/spec target state against the current repo-live implementation state on project6-origin/main. It is meant to prevent later planning from silently treating a visualized target-state idea as already implemented, or treating a repo-live adjacent surface as if it were the full Layer 3 workbench.
+
+Evidence and authority boundary:
+
+- Repo-live authority for this comparison is project6-origin/main, which was checked against remote main during this pass.
+- Mockup authority is the observed content in C:\Users\benny\Downloads\layer3mockups, as captured in this spec.
+- Existing planning authority is the Layer 3 planning/freezing material already in the repo, especially the planning-only broader-workbench and qualitative single-item packets.
+- A "contradiction" in this section means a current target-state versus live-state mismatch that must be resolved or intentionally deferred before implementation. It does not automatically mean the repo is wrong.
+- An "ambiguity" means the mockup/spec shows intent but does not yet define enough product, data, UX, API, persistence, or proof detail for implementation without a further decision.
+- An "implementation precondition" means a decision, contract, fixture, proof, or scope boundary that should exist before code changes begin.
+
+28A.1 High-level implication
+
+The mockups describe a broad operator-facing Layer 3 workbench that spans intent entry, source selection, retrieval, material approval, typing/classification, planning, execution monitoring, reconciliation, output packaging, and downstream handoff. The current repo already has a substantial backend Layer 3 spine and adjacent review UI surfaces, but it does not yet expose the full mockup workflow as a live public Layer 3 UI/API route family.
+
+Planning implication:
+
+- Future work should be framed as activating a narrow slice of the target workbench, not as "finishing Layer 3" in one pass.
+- The first active implementation plan must state exactly which visible mockup stage is in scope and which stages remain target-state design only.
+- The backend should be composed around existing Layer 3 owner services/models where possible rather than creating a browser-only workflow or duplicating persistence logic.
+
+28A.2 Frontend/UI implications
+
+Repo-live frontend/UI state:
+
+- Live adjacent pages exist for NRC APS review, document trace, workbench compare, Candidate B trace, and Analyst Insight.
+- Repo-live route evidence does not show a live /review/layer3 page.
+- Repo-live route evidence does not show a live /api/v1/layer3/... route family.
+- Current planning docs preserve /review/layer3 plus /api/v1/layer3/... as a planning-only future route-family direction, not as active implementation.
+
+Mockup target-state:
+
+- The mockups present a dedicated Layer 3 workbench experience with visible staged flow, action/event areas, context panels, and stage-specific operator decisions.
+- The UI appears intended to be an operational workbench rather than only a static explanation diagram, but the exact production layout/component model remains under-specified.
+- The mockups show or imply persistent operator context, side explanations, source/material review, gate progression, typing review, plan review, pass monitoring, and output/package review.
+
+Implications that must be addressed before frontend implementation:
+
+- Decide whether /review/layer3 is the canonical future workbench entry route, and whether /api/v1/layer3/... is the canonical API family for that page.
+- Decide whether the visual diagram language becomes the production UI itself, a navigational map inside a conventional workbench, onboarding/help content, or a planning-only explanatory artifact.
+- Decide how the primary layout should behave in actual use: staged horizontal flow, vertical stepper, tabbed workbench, split-pane review surface, canvas/map plus detail panel, or another explicit layout.
+- Decide whether the side Action/Event/Context panels are always visible, collapsible, stage-specific, modal, or only explanatory.
+- Decide which user interactions must be supported in the first slice: click stage, inspect source, approve material, deny material, isolate material, edit typing, approve plan, run pass, pause/cancel pass, inspect output, export package, or hand off downstream.
+- Decide what route/page should own operator history and session continuity. The mockup implies persistent context; the live UI state has adjacent pages with separate purposes.
+- Decide how much of the mockup's explanatory text belongs in the app. Production UI should not depend on large explanatory paragraphs if the operator workflow can be represented through controls, labels, status, and proof surfaces.
+- Decide responsive behavior. The mockups appear desktop/workbench oriented; mobile/tablet behavior is not defined.
+- Decide accessibility behavior for graph/canvas-like layouts, especially keyboard navigation, focus order, nonvisual stage summaries, and error/status announcement.
+- Decide whether the implementation should reuse the current static review UI pattern under backend/app/review_ui/static or introduce a different frontend structure. That decision must be scoped; it should not accidentally redesign adjacent review pages.
+
+Frontend contradictions or target-vs-live gaps:
+
+- The mockup shows a full Layer 3 workbench; the live repo does not currently ship /review/layer3.
+- The mockup shows a broad staged workflow; live adjacent pages are separate NRC APS/Analyst Insight surfaces, not the unified Layer 3 operator route.
+- The mockup implies direct user operation across several Layer 3 gates; current live UI does not expose full Gate B, Gate C, plan review, pass monitor, reconciliation, and package review as one end-to-end operator workflow.
+- The mockup's later-stage visual presentation remains less concrete than early-stage entry/retrieval/gate visuals. Later stage UI should not be over-specified from the current images alone.
+
+Frontend implementation preconditions:
+
+- Freeze the first route/page owner and static asset location.
+- Freeze the first in-scope UI state machine and explicitly mark out-of-scope stages.
+- Define the API payloads the UI will read/write for the slice.
+- Define empty, partial, failed, and blocked states before building the page.
+- Define one fixture or proof scenario tied to the mockups.
+- Test any UI slice in both headed Chrome and headless Chromium, and compare the results.
+- Prove adjacent pages still load and remain semantically separate if shared assets/routes are touched.
+
+28A.3 Backend/API implications
+
+Repo-live backend state:
+
+- Current main contains Layer 3 models for sessions, selection manifests, descriptors, retrieval events, material snapshots, typing records, analysis units/groups/sets, analysis plans, pass runs, reconciliation records, and output packages.
+- Current main contains Layer 3 service entry points for session/selection, typing, pass, package, and APS handoff families.
+- Current main contains adjacent NRC APS review and Analyst Insight API/UI surfaces.
+- Current main does not prove an active public /api/v1/layer3/... API family for the mockup workbench.
+
+Mockup target-state:
+
+- The mockups imply that operator actions commit or transition durable backend state.
+- The mockups imply that retrieval, source review, gate decisions, typing, planning, execution, reconciliation, outputs, and packaging are connected in one orchestrated workflow.
+- The mockups imply backend support for both machine-generated suggestions and human review/override.
+
+Implications that must be addressed before backend/API implementation:
+
+- Define the first public API contract only after the first active UI/backend slice is chosen.
+- Bind each UI stage to an existing owner service/model where a repo-live owner exists.
+- Do not duplicate session, material, typing, pass, or package persistence rules inside route handlers or browser state.
+- Decide whether the first slice writes durable state, runs validate-only proof, or uses fixture/read-only state.
+- Decide exact lifecycle states for selection, retrieval, material review, typing review, plan review, pass execution, reconciliation, package review, and handoff.
+- Define idempotency/retry behavior for operator actions, especially approve/deny/isolate, typing override, plan approval, execution start, and package generation.
+- Define audit records for human decisions and machine suggestions.
+- Define authorization/role expectations if the workflow will support more than one operator role.
+- Define how failures propagate: retrieval unavailable, empty material set, partial source load, typing conflict, plan invalid, pass failure, reconciliation mismatch, package export failure, or downstream handoff failure.
+- Define whether schema/model widening is allowed for the first slice. Existing planning docs have repeatedly treated schema/model widening as out of scope unless explicitly admitted.
+
+Backend contradictions or target-vs-live gaps:
+
+- The backend has a substantial Layer 3 spine, but the full UI-facing orchestration contract is not live.
+- The mockup implies one connected operator workflow, while current repo state has backend service families plus adjacent UI surfaces rather than a single public Layer 3 workbench API.
+- The mockup implies qualitative and hybrid modes, while current main treats qualitative single-item work as planning-only and does not prove a live qualitative/hybrid execution plane.
+- The mockup implies user-facing package review and handoff choices, while the current spec still needs exact package/handoff UX and trigger definitions.
+
+Backend implementation preconditions:
+
+- Choose the first active backend slice and name its owner service(s).
+- Confirm whether the slice is service-first, API-first, UI-first, or combined.
+- Define request/response schemas before adding routes.
+- Define durable state transitions and allowed transitions.
+- Define proof fixtures that do not rely on shared seeded runtime state unless explicitly accepted.
+- Preserve fail-closed behavior for empty or missing runtime state.
+- Keep validate-* behavior validate-only, with no seeding or artifact generation as a side effect.
+- Prove no schema/model widening occurs unless the implementation plan explicitly activates it.
+
+28A.4 Retrieval implications
+
+Repo-live retrieval state:
+
+- Current evidence supports token/query search over materialized APS retrieval chunks.
+- Current evidence supports fail-closed behavior when the retrieval plane is not materialized.
+- Current evidence does not prove a repo-live Layer 3 vector/RAG/semantic retrieval implementation.
+
+Mockup target-state:
+
+- The mockups and surrounding language imply RAG/vector/semantic retrieval as a desired or possible Layer 3 capability.
+- The UI intent appears to require retrieval explainability, not just opaque result lists.
+
+Implications:
+
+- Do not implement or document first-slice retrieval as RAG/vector/semantic unless that engine is explicitly chosen and implemented.
+- If the first slice reuses token/query retrieval, the UI text and API names should not claim semantic/vector behavior.
+- If vector/RAG retrieval is required, that must become a distinct backend scope item with indexing, ranking, explainability, persistence, fallback, and proof definitions.
+- A hybrid retrieval plan would need explicit precedence rules, score normalization, explanation fields, and failure behavior.
+
+User decisions needed:
+
+- Is token/query retrieval sufficient for the first slice?
+- Is vector/RAG/semantic retrieval required before the mockup workflow is considered representative?
+- Should retrieval results show term matches, chunk provenance, semantic rationale, confidence, source quality, or all of these?
+- What should happen when retrieval returns nothing or only weak matches?
+
+28A.5 Qualitative, quantitative, and hybrid execution implications
+
+Repo-live state:
+
+- Current main has quantitative/pass-entry-oriented Layer 3 backend support.
+- Current main has planning-only qualitative single-item preparation.
+- Current main does not prove a live qualitative execution plane or hybrid/mixed execution plane.
+
+Mockup target-state:
+
+- The mockups visualize or imply quantitative, qualitative, and hybrid/mixed analysis paths.
+- The exact operator-visible difference among these modes is not fully specified.
+
+Implications:
+
+- Do not treat qualitative or hybrid execution as available just because the mockup visualizes it.
+- If the first slice is quantitative/workbench oriented, qualitative and hybrid controls should be hidden, disabled with accurate status, or omitted.
+- If qualitative single-item work becomes the first slice, it should stay service-first unless a separate UI/API activation is frozen.
+- If hybrid execution is needed, the spec needs a clear contract for how quantitative and qualitative outputs are reconciled.
+
+User decisions needed:
+
+- Which analysis modality is first: quantitative, qualitative single-item, hybrid, or UI shell without execution?
+- What makes a material eligible for each modality?
+- How should the UI show modality selection, incompatibility, and conflict?
+- What output taxonomy applies across modalities?
+
+28A.6 Source, material, and Gate B implications
+
+Repo-live state:
+
+- Current backend maps well to session/selection/material concepts.
+- Current live UI does not expose the full mockup-style Gate B material approval workbench.
+
+Mockup target-state:
+
+- The mockups imply source selection, retrieved material display, approval/denial/isolation, and post-3A storage.
+
+Implications:
+
+- The source picker cannot be implemented generically until allowed source classes and connectors are defined.
+- Gate B actions need durable, auditable semantics before UI controls are built.
+- "Remove", "deny", "isolate", "approve", and "flag" should not be treated as interchangeable.
+- Post-3A storage needs retention and visibility rules before the UI claims material has been permanently admitted.
+
+User decisions needed:
+
+- Which sources are allowed first: APS DB, upstream feeder, local files, uploads, external connectors, or fixture-only?
+- What is the exact difference between deny, remove, isolate, and flag?
+- Can denied/isolate material be recovered?
+- Who or what can override a Gate B decision?
+- What proof is required for material to be considered admitted?
+
+28A.7 Typing/Gate C implications
+
+Repo-live state:
+
+- Current backend supports typing records and analysis unit/group/set structures.
+- Planning docs preserve source_shape versus analysis_modality separation.
+- Current live UI does not expose a full user-facing Gate C typing review workflow.
+
+Mockup target-state:
+
+- The mockups imply typing/classification review and later use of typed material by planning/execution.
+
+Implications:
+
+- The UI must not collapse source shape, analysis modality, and operator intent into one label.
+- Type suggestions need confidence, provenance, override rules, and audit behavior.
+- Unit/group/set visualization remains unresolved and should not be hand-waved as a simple table unless that is chosen.
+
+User decisions needed:
+
+- What is the minimum first-v1 typing taxonomy?
+- Which typing fields are operator-editable?
+- What conflicts or low-confidence states should block plan approval?
+- How should unit/group/set membership be displayed and edited?
+
+28A.8 Plan review, pass monitoring, reconciliation, and package implications
+
+Repo-live state:
+
+- Current backend has analysis plan, pass run, reconciliation, and output package model/service support.
+- Current live UI does not expose the full mockup-style plan review, pass monitor, reconciled results, and package review workflow.
+
+Mockup target-state:
+
+- The mockups imply that the operator can inspect and approve plans, monitor execution, review reconciled outputs, and decide what to package or hand off.
+
+Implications:
+
+- Plan approval must be a real boundary if execution should not start automatically.
+- Pass monitoring needs real backend pass state, not simulated browser status.
+- Reconciliation needs clear definitions for conflict, caveat, unsupported claim, and accepted finding.
+- Package review needs a taxonomy of package variants, included artifacts, excluded artifacts, provenance requirements, and downstream trigger behavior.
+
+User decisions needed:
+
+- What fields must appear before a plan can be approved?
+- Can a running pass be paused, cancelled, retried, or resumed?
+- What reconciliation statuses exist?
+- What output/package types exist in first implementation?
+- Which downstream handoff triggers are manual, automatic, blocked, or deferred?
+
+28A.9 Explicit non-errors that still require planning decisions
+
+These are not repo bugs by themselves, but they are important planning gaps:
+
+- The absence of /review/layer3 is expected under the current planning-only route-family posture, but it blocks claiming the mockup UI is live.
+- The absence of /api/v1/layer3/... is expected under current planning-only route-family posture, but it blocks building a public workbench page without a route/API activation decision.
+- The absence of proven repo-live RAG/vector/semantic retrieval is not a contradiction if first-slice retrieval is token/query based, but it is a contradiction if the implementation plan claims semantic retrieval.
+- The absence of live qualitative/hybrid execution is not a contradiction if those lanes remain deferred, but it is a contradiction if first-slice UI exposes them as operational.
+- Existing NRC APS, Workbench Compare, Candidate B Trace, Document Trace, and Analyst Insight pages are relevant adjacent surfaces, but they are not equivalent to the full Layer 3 mockup workbench.
+
+28A.10 Minimum clarification set before the next implementation plan
+
+Before implementation planning proceeds, the user or planning doc should answer these directly:
+
+1. Is /review/layer3 the accepted future UI entry route?
+2. Is /api/v1/layer3/... the accepted future public API route family?
+3. What is the first active implementation slice?
+4. Is the first slice UI-only, backend-only, service-first, API-first, or combined?
+5. Which mockup stages are explicitly out of scope for the first slice?
+6. Is retrieval token/query for now, vector/RAG/semantic, or a staged hybrid?
+7. Which source classes are allowed in the first slice?
+8. What are the durable meanings of approve, deny, remove, isolate, and flag?
+9. What is the minimum typing taxonomy?
+10. Which typing fields are operator-editable?
+11. What blocks plan approval?
+12. What pass states exist?
+13. What reconciliation statuses exist?
+14. What output/package types exist?
+15. What downstream handoff triggers exist?
+16. Which adjacent pages must be proven unchanged?
+17. What test fixture represents the mockup scenario?
+18. What empty/partial/failure states must be proven?
+19. Are schema/model changes allowed, or explicitly forbidden for the first slice?
+20. Are runtime DB writes allowed, or explicitly forbidden for the first slice?
+
+28A.11 Implementation posture implied by this comparison
+
+The safest interpretation is:
+
+- Treat the mockups as target-state product/UX intent.
+- Treat current Layer 3 backend models/services as real implementation assets where repo-live evidence confirms them.
+- Treat /review/layer3 and /api/v1/layer3/... as planning-only future route-family choices until a later implementation plan explicitly activates them.
+- Treat RAG/vector/semantic retrieval, qualitative execution, and hybrid execution as unresolved/deferred unless explicitly scoped into a slice.
+- Treat adjacent NRC APS and Analyst Insight pages as integration/compatibility constraints, not as the workbench itself.
+- Start implementation with one narrow slice and direct proof, then expand only after each boundary is frozen and verified.
+
+28B. Repo Progress Artifact Alignment
+
+Purpose:
+
+This section records how this external mockup-preplanning spec should relate to the repo's live Layer 3 progress/control packet. It exists to prevent this file from being mistaken for a merged repo milestone, an active implementation lane, or a source of current live-route truth.
+
+Canonical repo progress/control packet:
+
+- next_milestone_plans/layer3_progress_manifest.json
+- next_milestone_plans/layer3_progress_board.md
+- next_milestone_plans/layer3_progress_refresh_spec.md
+- next_milestone_plans/progress-prompt.md
+
+Current audit result:
+
+- The canonical packet exists on project6-origin/main.
+- It is intentionally scoped to repo-tracked Layer 3 progress, settled APS-family state, deferred scope, and deferred activation criteria.
+- It already represents the broader workbench route family as deferred/planning-only rather than active.
+- It already represents broader qualitative, hybrid, comparative, or cross-modal Layer 3 breadth as deferred rather than active.
+- It already treats runtime DB writes, schema widening, and route/UI widening as deferred unless later activation criteria are met.
+- The manifest-declared refresh repo paths were checked during this pass; declared paths exist on project6-origin/main.
+
+Implication for this mockup spec:
+
+- This file should be treated as operator-local planning input and target-state clarification, not as repo-live implementation truth.
+- This file should not by itself update milestone counts, current focus, candidate-next consumers, or active-lane state in the repo progress artifact.
+- This file should not be added to the repo progress manifest refresh inputs while it remains outside the repo under C:\Users\benny\Downloads\layer3mockups.
+- If this mockup-preplanning spec is later moved into the repo as a tracked planning artifact, then the progress/control packet can be re-audited to decide whether to add that tracked path to refresh_inputs.repo_paths and the human-facing board refresh list.
+- If a later implementation plan uses this spec to activate a route/API/UI/backend slice, then the progress artifact should be updated only after that lane is explicitly frozen, scoped, and backed by repo/GitHub evidence.
+
+Overclaim guard:
+
+- Do not promote /review/layer3 or /api/v1/layer3/... to live/current focus from this spec alone.
+- Do not promote RAG/vector/semantic retrieval to repo-live implementation from this spec alone.
+- Do not promote qualitative or hybrid execution to active implementation from this spec alone.
+- Do not treat mockup visual completeness as implementation readiness until section 28A.10 questions are answered or intentionally deferred.
+- Do not treat external local file presence as a repo-tracked artifact unless Git confirms it in the repository.
+
+29. Validation And Proof Expectations For Future Implementation
+
+Future implementation should prove:
+
+- the page shell loads,
+- the state machine is visible,
+- selection commit creates durable backend state,
+- loading uses backend owner services,
+- Gate B approval/rejection/isolation is recorded,
+- typing review displays source_shape and analysis_modality,
+- overrides are bounded and auditable,
+- plan review does not execute until approved,
+- pass monitor reflects backend pass state,
+- outputs are tied to ingress objects and pass/package records,
+- adjacent surfaces still behave as adjacent surfaces,
+- no runtime DB writes are introduced accidentally,
+- no schema/model widening occurs unless explicitly admitted,
+- missing/empty/partial runtime state fails closed,
+- local filesystem paths are not leaked into operator-visible proof surfaces.
+
+Browser proof expectation:
+
+- Future UI work should be tested in both headed Chrome and headless Chromium, with results compared.
+
+29A. Adequacy Checklist For Using This Spec In Planning
+
+Before this spec is used as the basis for a concrete implementation plan, the planning pass should answer these checks explicitly:
+
+- Which claims in the plan are mockup-observed?
+- Which claims are repo-confirmed implemented?
+- Which claims are repo-confirmed planning-only?
+- Which claims are inferences?
+- Which claims remain unspecified and should not be implemented yet?
+- What is the smallest active slice being proposed?
+- Which existing owner services will the slice compose around?
+- Which files are owner surfaces?
+- Which files are explicitly not owner surfaces?
+- Does the slice add /review/layer3, /api/v1/layer3/..., both, or neither?
+- Does the slice avoid rewriting adjacent pages?
+- Does the slice avoid runtime DB writes?
+- Does the slice avoid schema/model widening unless explicitly admitted?
+- Does the slice avoid broad qualitative/hybrid activation unless explicitly frozen?
+- Have the implications in section 28A been resolved, explicitly deferred, or converted into scoped implementation preconditions?
+- Has section 28B been checked so repo progress artifacts are updated only when repo-tracked evidence or an explicitly frozen lane justifies it?
+- Does the slice include direct backend proof?
+- Does the slice include headed and headless browser proof if UI is touched?
+- Does the slice include empty/partial/failure proof?
+- Does the slice preserve source_shape versus analysis_modality separation?
+- Does the slice preserve generated-output provenance back to ingress objects?
+
+29B. Current Spec Adequacy Boundary
+
+This document is adequate as a planning bridge only under these limits:
+
+- It captures currently observed mockup intent and repo-live comparison.
+- It does not complete product decisions the mockup has not made.
+- It does not finalize UI component design.
+- It does not define final API schemas.
+- It does not activate deferred repo planning lanes.
+- It does not replace implementation-entry freeze docs.
+- It does not prove runtime behavior.
+- It should be updated whenever new mockups, source files, or implementation decisions appear.
+
+30. Dedicated Unaddressed / Unclear / Still-To-Be-Specified Section
+
+This section lists everything still unaddressed, unclear, or insufficiently specified based on the mockups and repo comparison.
+
+30.1 Gate A / Pre-3A boundary
+
+- Gate A is visible as "Gate A(?)" but not defined.
+- It is unclear whether Gate A is:
+  - the intent-entry boundary,
+  - the source-discovery boundary,
+  - a preflight validation stage,
+  - a future planning artifact,
+  - or a placeholder label that should be removed.
+
+30.2 Natural language handling
+
+- It is unclear whether natural-language input should be handled by:
+  - deterministic parsing,
+  - LLM planning,
+  - search query generation,
+  - operator-reviewed query decomposition,
+  - or a hybrid flow.
+- It is unclear what the system may infer without user approval.
+
+30.3 Manual/custom specification structure
+
+- The exact data model for manual specification is not defined.
+- Open fields include:
+  - keywords,
+  - topics,
+  - source categories,
+  - date ranges,
+  - organizations,
+  - named runs,
+  - uploaded files,
+  - local directories,
+  - connector choices,
+  - exclusions,
+  - priority weights.
+
+30.4 Combined input mode
+
+- The mockup allows the possibility of using natural-language and manual/custom inputs together.
+- It is not yet specified whether combined use means:
+  - manual input constrains natural language,
+  - manual input supplements natural language,
+  - manual input overrides natural language,
+  - or both are stored as separate intent components.
+
+30.5 Source picker and connector model
+
+- The mockup references upstream feeders, storage, DBs, directories, uploads, and other connectors/options.
+- Exact source picker UX is not defined.
+- Exact connector eligibility and authorization rules are not defined.
+
+30.6 Local directory and upload handling
+
+- The mockup allows specified local directories and/or uploaded files.
+- Security, path disclosure, sandboxing, retention, checksum, and file-size rules are not specified.
+
+30.7 Retrieval implementation
+
+- RAG/vector/semantic search is desired in the mockup.
+- Repo-live proof currently supports token/query search over materialized retrieval chunks.
+- The first implementation slice must choose the retrieval engine and ranking/explanation model.
+
+30.8 Retrieval result explainability
+
+- The UI should likely show why each item was retrieved.
+- Exact explanation fields are not defined.
+- Open choices include matched tokens, semantic score, connector metadata, user-source match, or model-generated rationale.
+
+30.9 Gate B approve/deny/remove/isolate semantics
+
+- The mockup names confirm/approve, deny/remove/isolate.
+- It is unclear whether deny, remove, and isolate are separate durable states.
+- It is unclear whether isolated material remains available for later review or is excluded from all downstream flows.
+
+30.10 Material ledger UI
+
+- The exact Gate B ledger table/card layout is not defined.
+- Needed fields likely include title, source, type, status, provenance, validation state, warnings, and actions.
+
+30.11 Material validation rules
+
+- The mockup says each file or collection is verified/validated.
+- Exact validation criteria are not specified.
+- Validation may differ by source type.
+
+30.12 Post-3A storage model
+
+- The mockup says temp/local/dedicated Layer 3 DB/storage.
+- Exact persistence, retention, cleanup, and immutability rules are not specified.
+
+30.13 Typing taxonomy
+
+- Repo planning distinguishes source_shape from analysis_modality.
+- The mockup does not define source_shape values.
+- Activation-grade thresholds and conflict UI remain unresolved.
+
+30.14 Typing overrides
+
+- The mockup implies user control but does not define override mechanics.
+- Required override reason, audit trail, allowed override values, and rollback behavior are not specified.
+
+30.15 Unit/group/set visualization
+
+- The mockup shows Gate C at a high level.
+- Exact visualization for units, groups, sets, and their relationships is not defined.
+
+30.16 Quantitative plane execution
+
+- Current backend supports bounded quantitative pass paths.
+- The UI fields for selecting methods, parameters, cohorts, and constraints are not specified.
+
+30.17 Qualitative plane execution
+
+- The mockup includes qualitative analysis.
+- Repo planning has qualitative single-item prep only.
+- Exact qualitative engine, result schema, admissibility gate, and UI are not active or fully specified.
+
+30.18 Hybrid/mixed execution
+
+- The mockup includes hybrid/mixed data.
+- Execution semantics, admissibility, grouping, and output reconciliation are not specified.
+
+30.19 Orchestration configuration
+
+- The mockup identifies orchestration as uniquely significant.
+- The minimum required orchestration fields are not specified.
+- It is unclear how global session-level orchestration relates to per-plane orchestration.
+
+30.20 Plan approval
+
+- Repo backend has approved_by_operator and approved_at.
+- The exact UI/API action for approve/reject is not live.
+- Rejection behavior is not specified.
+
+30.21 Execution control
+
+- It is unclear whether the user can pause, cancel, retry, rerun, or branch an analysis.
+- It is unclear which actions are allowed after partial failure.
+
+30.22 Output taxonomy
+
+- "Insights/Facts/Data" is visible in the mockup.
+- Exact distinctions between insight, fact, datum, finding, caveat, contradiction, and generated output are not fully defined.
+
+30.23 Output-to-ingress traceability
+
+- The mockup shows output specific to Ingress Object #n.
+- Exact trace UI and backend reference structure are not specified.
+
+30.24 Package review behavior
+
+- Repo backend has package variants.
+- The future UI for canonical_internal, user_facing, review_facing, and APS handoff package review is not defined.
+
+30.25 Downstream handoff triggers
+
+- It is unclear when the user can initiate handoff.
+- It is unclear which handoffs are automatic, manual, blocked, or review-only.
+
+30.26 User roles and permissions
+
+- Operator permissions are not specified.
+- It is unclear who can approve material, override typing, approve plans, execute passes, or initiate handoff.
+
+30.27 Multi-user and collaboration behavior
+
+- It is unclear whether Layer 3 sessions are single-user, shared, lockable, or collaboratively editable.
+
+30.28 Error and partial-failure UX
+
+- The mockup does not fully define failure states.
+- Future UI should specify empty state, partial retrieval failure, unsupported source, invalid file, failed typing, failed pass, and handoff-blocked behavior.
+
+30.29 Performance and scale
+
+- The mockup shows many ingress objects.
+- Performance constraints for large sessions, large files, many chunks, and long-running analyses are not specified.
+
+30.30 Accessibility and responsive layout
+
+- The mockup is visual/conceptual.
+- Section 5A captures the visible layout/presentation intent, but it does not resolve implementation-grade accessibility or responsive behavior.
+- Accessibility, keyboard behavior, screen-reader text, contrast, and responsive layout are not specified.
+
+30.31 Visual design system
+
+- Section 5A captures observed presentation patterns for colors, lane shapes, arrows, object cards, and repeated object clusters.
+- Those patterns are not yet formalized as a final design system.
+- It is unclear which visual elements are semantic and which are illustrative.
+
+30.32 Exact implementation technology
+
+- Current planning says no current-main evidence requires React, a client-side router, or a new component library.
+- Exact frontend stack for /review/layer3 remains unresolved.
+
+30.33 Test fixtures and proof data
+
+- The exact happy-path and partial-failure proof fixtures are not specified.
+- The specific scenario mockup should be converted into at least one deterministic test fixture before implementation.
+
+30.34 Relation to current Analyst Insight page
+
+- Analyst Insight should remain a deterministic product/helper surface.
+- It is unresolved whether the future Layer 3 workbench will call Analyst Insight services, link to the page, embed results, or keep it fully separate.
+
+30.35 Relationship to Workbench Compare and Candidate B Trace
+
+- Current planning says those are adjacent surfaces, not Layer 3 control truth.
+- It is unresolved exactly how the future Layer 3 workbench should link to or consume them.
+
+30.36 Naming finalization
+
+- Terms like Sublayer 3A, Gate B, Gate C, Sublayer 3C, Pre-3A, Gate A, ingress object, material snapshot, and analysis plane need a final glossary before implementation.
+
+30.37 Activation scope
+
+- Current repo-live planning keeps broader workbench and qualitative single-item as planning-only/deferred.
+- A future implementation pass must explicitly activate a narrow slice rather than treating this spec as automatic permission to implement all mockup concepts at once.
+
+30.38 UI context persistence and explanatory overlays
+
+- Later userflow slides show a compact retained intent/source panel above downstream workflow areas.
+- The same slides also show side Action/Event explanatory panels.
+- It is unresolved whether these should become live UI elements, collapsible context/help panels, onboarding/documentation artifacts, or non-production explanation only.
+- A future UI plan should decide how much submitted intent/source context remains visible during Gate B, Gate C, plan review, execution, and output review without overcrowding the workbench.
+
+31. Recommended Planning Defaults For Unresolved Items
+
+Authority boundary:
+
+- This section is a decision aid for future planning.
+- It does not activate implementation.
+- It does not make /review/layer3 or /api/v1/layer3/... live.
+- It does not authorize RAG/vector retrieval, qualitative execution, hybrid execution, runtime DB writes, schema widening, route/UI widening, or broad downstream handoff.
+- If any recommended default conflicts with a later explicit freeze, implementation plan, or repo-confirmed constraint, the later explicit authority must win.
+- Option 1 is the recommended/default decision. Option 2 is the next-best fallback. Option 3 is the third-best or highest-risk acceptable alternative, usually suitable only if explicitly frozen later.
+
+Recommended posture:
+
+Use a narrow, explicitly frozen /review/layer3 plus /api/v1/layer3/... workbench slice only after activation. The first slice should be UI-led but API-backed, compose around existing Layer 3 backend owner services, reuse repo-proven token/query retrieval first, and keep schema widening, runtime DB writes, RAG/vector claims, qualitative execution, hybrid execution, automated handoff, and broad adjacent-surface rewrites out of scope by default.
+
+| Item | Problem / situation summary | Recommended decision options | Reasoning |
+|---|---|---|---|
+| 30.1 Gate A / Pre-3A | Gate A is visible as "Gate A(?)" but has no stable semantic role. | 1 = intent intake plus preflight validation. 2 = source-discovery gate. 3 = remove or rename until frozen. | 1 gives the label a useful boundary without making it execution logic. 2 is plausible but too narrow because source discovery is only one part of pre-3A. 3 avoids false meaning but loses continuity with the mockups. |
+| 30.2 Natural language handling | Natural-language input could cause hidden inference if not bounded. | 1 = LLM or parser may propose query decomposition, but operator must review and approve. 2 = deterministic parsing only. 3 = freeform LLM planning. | 1 preserves utility while keeping operator authority explicit. 2 is safer but likely underpowered. 3 is flexible but risks unreviewed assumptions becoming workflow truth. |
+| 30.3 Manual/custom specification structure | Manual input has no implementation-grade model. | 1 = structured IntentSpec with keywords, topics, source classes, dates, orgs, runs, uploads, directories, connectors, exclusions, and weights. 2 = minimal key/value form. 3 = freeform notes. | 1 is API-ready and testable. 2 reduces build cost but loses specificity. 3 is flexible but weak for validation, comparison, and repeatability. |
+| 30.4 Combined input mode | Natural and manual inputs may overlap or conflict. | 1 = store natural-language intent and manual constraints separately, with manual constraints overriding conflicts. 2 = merge into one normalized spec. 3 = require one input mode only. | 1 preserves provenance and conflict handling. 2 simplifies downstream state but hides source of truth. 3 reduces ambiguity but limits the intended combined workflow. |
+| 30.5 Source picker and connector model | Source classes are broad and authorization rules are undefined. | 1 = allowlisted repo-supported sources and deterministic fixtures first. 2 = configurable connector registry. 3 = open connector/source picker. | 1 minimizes security and scope risk. 2 is scalable but needs governance. 3 is premature because eligibility, authorization, and failure behavior are not frozen. |
+| 30.6 Local directory and upload handling | Local paths and uploads create security, retention, and reproducibility risks. | 1 = uploads or repo-approved fixtures only; no arbitrary local directory picker in first slice. 2 = sandboxed directory allowlist. 3 = full local directory picker. | 1 is safest and easiest to test without path leakage. 2 may be viable later with policy. 3 creates avoidable IO, privacy, and portability risks. |
+| 30.7 Retrieval implementation | Mockup wants RAG/vector/semantic retrieval, but repo-live proof supports token/query retrieval. | 1 = token/query retrieval first with an adapter boundary for future vector/RAG. 2 = staged hybrid token plus vector pilot. 3 = full RAG/vector first. | 1 matches repo-confirmed capability and avoids overclaiming. 2 is useful if a separate retrieval lane is frozen. 3 should wait because indexing, scoring, explainability, and fallback behavior are not specified. |
+| 30.8 Retrieval result explainability | The UI needs to explain why items were retrieved. | 1 = matched terms, source/run/chunk provenance, validation status, and source metadata. 2 = add normalized ranking score. 3 = add model-generated rationale. | 1 is evidence-grounded and testable. 2 helps ranking but needs calibration. 3 can be useful later but risks unsupported rationale unless tightly controlled. |
+| 30.9 Gate B approve/deny/remove/isolate semantics | Gate B actions are named but not durable-state defined. | 1 = durable approved, denied, isolated, and flagged states; remove only hides uncommitted candidates. 2 = merge deny and remove. 3 = only approve/reject. | 1 preserves the mockup's workflow nuance. 2 simplifies but loses distinction between exclusion and UI cleanup. 3 is too coarse for audit and downstream admissibility. |
+| 30.10 Material ledger UI | Gate B material review layout and fields are unresolved. | 1 = dense table with detail drawer. 2 = card grid with filters. 3 = diagram/lane-only view. | 1 scales and supports audit fields. 2 is visually clear but less dense. 3 matches the diagram style but is weak for real operator review. |
+| 30.11 Material validation rules | "Verified/validated" is visible but criteria are unspecified. | 1 = validate parseability, checksum, provenance, authorization, duplicate status, size, source type, and admissibility. 2 = parseability plus provenance only. 3 = manual validation label. | 1 makes validation meaningful and fail-closed. 2 is a lower-cost partial proof. 3 is subjective and should not drive downstream gates. |
+| 30.12 Post-3A storage model | Mockup says temp/local/dedicated storage, but persistence semantics are unclear. | 1 = immutable session material snapshots and artifact refs using existing owner concepts. 2 = ephemeral session cache. 3 = new DB tables. | 1 fits current backend direction without widening schema by default. 2 is safer but less durable. 3 may be needed later but should require an explicit schema lane. |
+| 30.13 Typing taxonomy | source_shape and analysis_modality must not be conflated. | 1 = freeze a minimum taxonomy with separate source_shape and analysis_modality axes. 2 = modality-only taxonomy. 3 = freeform operator tags. | 1 matches repo planning and supports validation. 2 is simpler but loses source-shape semantics. 3 is flexible but hard to test and govern. |
+| 30.14 Typing overrides | Operator control is implied but override mechanics are undefined. | 1 = bounded override with required reason, actor, timestamp, before/after values, and rollback record. 2 = admin-only override. 3 = no overrides in first slice. | 1 supports real review while preserving auditability. 2 is safer but restrictive. 3 avoids complexity but weakens operator correction. |
+| 30.15 Unit/group/set visualization | Gate C relationship visualization is high-level only. | 1 = lane/table view with expandable unit/group/set relationships. 2 = simple graph view. 3 = text-only summary. | 1 balances visual clarity, responsiveness, and testability. 2 is expressive but heavier. 3 is safe but under-visualizes the mockup intent. |
+| 30.16 Quantitative plane execution | Backend supports bounded quantitative paths, but UI method/parameter controls are unspecified. | 1 = preset-based quantitative pass first. 2 = limited parameter form. 3 = full method editor. | 1 uses proven backend surfaces and controls scope. 2 is useful after the preset path is stable. 3 is too broad for the first slice. |
+| 30.17 Qualitative plane execution | Mockup includes qualitative analysis, but repo has planning-only qualitative prep. | 1 = keep qualitative execution deferred or disabled in the first UI. 2 = service-first qualitative single-item slice in a separate freeze. 3 = full qualitative UI. | 1 avoids overclaiming. 2 aligns with planning if explicitly activated. 3 is premature because engine, schema, proof, and UI are not frozen. |
+| 30.18 Hybrid/mixed execution | Hybrid semantics, admissibility, and reconciliation are unspecified. | 1 = defer entirely. 2 = show planned/unavailable state. 3 = internal-only prototype. | 1 is cleanest and avoids false affordances. 2 can set expectations but may clutter. 3 risks ungoverned scope unless separately frozen. |
+| 30.19 Orchestration configuration | Global versus per-plane orchestration is unclear. | 1 = minimum config covering objective, source set, retrieval mode, typing policy, pass preset, package target, and stop conditions. 2 = per-stage config only. 3 = fully configurable orchestration. | 1 is enough for a real workflow without overbuilding. 2 is narrower but fragmented. 3 creates avoidable complexity and proof burden. |
+| 30.20 Plan approval | Approval/rejection behavior is not live or fully specified. | 1 = explicit approve/reject with blockers for no material, validation errors, unsupported typing, or missing config. 2 = auto-approve if checks pass. 3 = omit plan approval in first slice. | 1 preserves operator authority. 2 is efficient but risky. 3 weakens the mockup's gated workflow. |
+| 30.21 Execution control | Pause, cancel, retry, rerun, and branch semantics are unresolved. | 1 = cancel before execution and retry failed idempotent steps. 2 = rerun same config. 3 = full pause/branch controls. | 1 is bounded and testable. 2 is useful but needs stronger state tracking. 3 implies complex job orchestration and should wait. |
+| 30.22 Output taxonomy | Insights, facts, and data are visible but not distinguished. | 1 = define datum, fact, finding, insight, caveat, contradiction, and generated narrative. 2 = finding, evidence, and caveat only. 3 = keep mockup labels only. | 1 is precise and traceable. 2 is simpler but less expressive. 3 preserves visuals but leaves output semantics ambiguous. |
+| 30.23 Output-to-ingress traceability | Outputs must map back to ingress object(s), but structure is undefined. | 1 = trace each output to ingress object, material snapshot, unit/group/set, pass, and package. 2 = trace to material snapshot only. 3 = narrative citations only. | 1 best supports audit and provenance. 2 is easier but incomplete. 3 is insufficient for the planned workflow. |
+| 30.24 Package review behavior | Package variants exist, but UI review is undefined. | 1 = package variant tabs with canonical_internal as source of truth. 2 = single package view with export options. 3 = backend-only package first. | 1 matches backend package concepts. 2 is simpler but less explicit. 3 defers too much of the operator workflow. |
+| 30.25 Downstream handoff triggers | Handoff timing and automation are unclear. | 1 = manual handoff only after package approval and validation. 2 = manual draft handoff preview before approval. 3 = automatic handoff. | 1 is safest and auditable. 2 can help review but needs clear labeling. 3 is too risky for first activation. |
+| 30.26 User roles and permissions | Approval and execution permissions are unspecified. | 1 = single operator role first. 2 = operator plus read-only viewer. 3 = full RBAC. | 1 minimizes scope. 2 is practical soon if visibility is needed. 3 is premature without a role policy. |
+| 30.27 Multi-user and collaboration behavior | Shared editing and locking are unresolved. | 1 = single-user locked sessions. 2 = shared read-only sessions. 3 = real-time collaborative editing. | 1 avoids state conflicts. 2 adds visibility with low risk. 3 is high complexity and not necessary for first slice. |
+| 30.28 Error and partial-failure UX | Failure states are not fully defined. | 1 = define empty, partial retrieval, unsupported source, invalid file, failed typing, failed pass, and handoff-blocked states. 2 = generic error banner plus logs. 3 = backend errors only. | 1 is production-grade and testable. 2 is an acceptable temporary fallback. 3 is poor operator UX. |
+| 30.29 Performance and scale | Large sessions, files, chunks, and analyses may overload the UI. | 1 = first-slice limits, virtualized ledgers, and async status. 2 = hard small limits only. 3 = no explicit constraints yet. | 1 balances usability and realism. 2 is safe but limiting. 3 invites avoidable failures. |
+| 30.30 Accessibility and responsive layout | Mockups do not define accessible or responsive behavior. | 1 = keyboard access, semantic HTML, contrast, non-color status labels, and responsive stacked layout. 2 = basic contrast and responsive layout only. 3 = defer accessibility. | 1 should be baseline for production UI. 2 is weaker but better than none. 3 creates predictable debt. |
+| 30.31 Visual design system | Semantic versus illustrative visual elements are unresolved. | 1 = preserve gates, lanes, cards, arrows, and clusters semantically but not literally. 2 = recreate mockup closely. 3 = conventional dashboard only. | 1 captures intent while allowing a robust UI. 2 may overfit diagram artifacts. 3 may lose the workflow language the mockups communicate. |
+| 30.32 Exact implementation technology | Current repo does not require React or a new component library. | 1 = existing static review-UI pattern first. 2 = small vanilla module architecture. 3 = new React route/component library. | 1 fits repo patterns and minimizes blast radius. 2 improves structure with limited scope. 3 should require explicit activation for a richer app shell. |
+| 30.33 Test fixtures and proof data | Happy-path and failure proof fixtures are unspecified. | 1 = convert the scenario mockup into deterministic happy-path, empty, partial, and failure fixtures. 2 = happy-path fixture only. 3 = manual QA only. | 1 provides real planning proof. 2 is a start but insufficient. 3 is not adequate for this workflow. |
+| 30.34 Relation to current Analyst Insight page | Analyst Insight may be confused with Layer 3 workbench ownership. | 1 = treat Analyst Insight as adjacent/helper service; do not embed page first. 2 = link or deep-link to it. 3 = merge it into Layer 3. | 1 preserves ownership boundaries. 2 is useful as a bridge. 3 muddies existing surface responsibilities. |
+| 30.35 Relationship to Workbench Compare and Candidate B Trace | Adjacent surfaces could be mistaken for Layer 3 control truth. | 1 = link or deep-link only in first slice. 2 = consume selected outputs through scoped APIs. 3 = fold them into the workbench. | 1 preserves separation. 2 can follow if explicitly scoped. 3 is broad route/UI widening. |
+| 30.36 Naming finalization | Terms need a stable glossary before implementation. | 1 = freeze glossary before implementation. 2 = freeze only first-slice terms. 3 = let names evolve in code. | 1 best protects doc and code coherence. 2 is leaner if schedule is constrained. 3 creates drift and later migration cost. |
+| 30.37 Activation scope | The spec could be mistaken as permission to build every mockup concept. | 1 = explicitly freeze one narrow slice before coding. 2 = freeze two parallel slices only if ownership and proofs are disjoint. 3 = treat full mockup as implementation scope. | 1 is safest and aligns with progress artifacts. 2 can work with strong separation but raises coordination cost. 3 would almost certainly create scope creep and tech debt. |
+| 30.38 UI context persistence and explanatory overlays | Retained context and Action/Event explanations may either help or overcrowd live UI. | 1 = compact persistent context rail plus collapsible help/explanation panels. 2 = persistent full context panel. 3 = keep explanations in docs only. | 1 balances orientation and usability. 2 keeps context visible but may crowd the workbench. 3 avoids clutter but loses in-flow guidance from the userflow slides. |
