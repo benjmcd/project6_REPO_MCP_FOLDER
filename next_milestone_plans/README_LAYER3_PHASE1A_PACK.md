@@ -414,6 +414,12 @@ This document is outside the accepted Phase 1A normative control spine and outsi
 It is the merged planning-only companion prep doc on current `main` for the deferred `future workbench route family`, and it now records the adopted planning-only operator-insufficiency trigger, additive route-family choice, and minimum typing posture plus the exact owner-surface map, proof matrix, and remains-out list that keep a later implementation-entry packet narrow without implying activation:
 - `26_L3_WB_INPUTS.md`
 
+### Broader workbench first-slice setup freeze doc
+
+This document is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+It is the planning-only first-slice setup doc for the deferred `future workbench route family`; it narrows the later additive `/review/layer3` plus `/api/v1/layer3/...` implementation-entry target through Gate C typing review without making those routes live or activating downstream execution, package review, qualitative, hybrid, RAG/vector, runtime snapshot DB write, schema, or handoff scope:
+- `28_L3_WB_FIRST_SLICE_FREEZE.md`
+
 ### Post-settlement qualitative single-item planning-only freeze doc
 
 This document is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
@@ -498,11 +504,27 @@ Current answer:
 Start with:
 - `Layer3_planning_docs/24_L3_WB_FREEZE.md`
 - `Layer3_planning_docs/26_L3_WB_INPUTS.md`
+- `Layer3_planning_docs/28_L3_WB_FIRST_SLICE_FREEZE.md`
 - `Layer3_planning_docs/25_L3_QUAL1_FREEZE.md`
 - `Layer3_planning_docs/27_L3_QUAL1_INPUTS.md`
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/layer3_progress_manifest.json`
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
+
+### If you are deciding the first Layer 3 workbench implementation slice
+
+Start with:
+- `Layer3_planning_docs/24_L3_WB_FREEZE.md`
+- `Layer3_planning_docs/26_L3_WB_INPUTS.md`
+- `Layer3_planning_docs/28_L3_WB_FIRST_SLICE_FREEZE.md`
+- `next_milestone_plans/layer3_progress_board.md`
+- `next_milestone_plans/layer3_progress_manifest.json`
+
+Current answer:
+- first-slice setup is planning-only
+- default target is an additive `/review/layer3` page plus `/api/v1/layer3/...` API family
+- first implementation should stop at intent/preflight, deterministic source selection, material preview, Gate B material review, and Gate C typing review
+- downstream plan, execution, results, package review, qualitative, hybrid, RAG/vector, runtime snapshot DB writes, schema widening, and handoff remain unavailable unless separately activated
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 

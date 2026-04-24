@@ -211,7 +211,7 @@ Current settled posture:
 3. retrieval cutover already exists on current `main` as a separate validate-only parity-proof family rooted in `backend/app/services/aps_retrieval_plane_cutover_validation.py`, `backend/tests/test_aps_retrieval_plane_cutover_validation.py`, `backend/tests/test_aps_retrieval_plane_cutover_gate.py`, `tools/nrc_aps_retrieval_cutover_gate.py`, and `project6.ps1`
 4. no further later APS family decision or implementation lane is currently justified by default from this merged-main state
 5. do not invent another later APS family lane unless live repo truth proves a concrete gap in the promotion or retrieval-cutover surfaces
-6. current `main` also includes the merged planning-only deferred-scope prep packet rooted in `24_L3_WB_FREEZE.md`, `25_L3_QUAL1_FREEZE.md`, `26_L3_WB_INPUTS.md`, and `27_L3_QUAL1_INPUTS.md` from PR `#165`, `#168`, and `#172`, but those docs remain planning-only prep artifacts and do not reopen or extend the settled later APS family packet
+6. current `main` also includes the merged planning-only deferred-scope prep packet rooted in `24_L3_WB_FREEZE.md`, `25_L3_QUAL1_FREEZE.md`, `26_L3_WB_INPUTS.md`, and `27_L3_QUAL1_INPUTS.md` from PR `#165`, `#168`, and `#172`; this refresh also includes `28_L3_WB_FIRST_SLICE_FREEZE.md` as planning-only first-slice setup for the future workbench route family, but these docs remain planning-only prep artifacts and do not reopen or extend the settled later APS family packet
 
 Operational refresh rule:
 - preserve the restored lower-layer baseline and current OCR-enabled proof basis
