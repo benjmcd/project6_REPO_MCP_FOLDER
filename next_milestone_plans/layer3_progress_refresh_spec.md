@@ -68,6 +68,7 @@ When present in the current checkout, also read:
 - `next_milestone_plans/Layer3_planning_docs/24_L3_WB_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md`
 - `next_milestone_plans/Layer3_planning_docs/28_L3_WB_FIRST_SLICE_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md`
 - `next_milestone_plans/layer3-mockups/mockup-spec.txt`
 - `next_milestone_plans/layer3-mockups/assets.md`
 - `next_milestone_plans/Layer3_planning_docs/25_L3_QUAL1_FREEZE.md`
@@ -198,6 +199,7 @@ The current settled state in this checkout is:
 - keep the PR `#170` duplicate-default cleanup visible as landed current-main history rather than leaving the current-main packet one correction behind
 - if `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md` is present in the current checkout, preserve it as a planning-only companion input doc for the deferred future workbench route family rather than as a merged milestone, packet-reopen signal, or active lane, even if it now freezes planning-only trigger/route-family/typing/owner/proof/no-go implementation-entry prep
 - current `main` also includes the merged planning-only `28_L3_WB_FIRST_SLICE_FREEZE.md` first-slice setup target from PR `#178`; preserve it as deferred-scope setup rather than as a merged milestone, packet-reopen signal, live `/review/layer3` route claim, or live `/api/v1/layer3/...` API claim
+- if `next_milestone_plans/Layer3_planning_docs/29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` is present in the current checkout, preserve it as a planning-only endpoint/state companion for the deferred first-slice workbench target rather than as a merged milestone, active lane, live route/API claim, or schema/runtime widening signal
 - current `main` also includes the merged qualitative single-item input packet from PR `#172`; together `27_L3_QUAL1_INPUTS.md` plus companion updates to `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet remain planning-only deferred-scope prep rather than an active lane
 - if `next_milestone_plans/Layer3_planning_docs/27_L3_QUAL1_INPUTS.md` is present in the current checkout and the checkout matches current `main` after PR `#172`, preserve it as a merged planning-only companion input doc for the deferred qualitative single-item breadth axis rather than as a merged milestone, packet-reopen signal, or an active lane
 - current `main` also includes the post-PR172 deferred-prep front-door tightening from PR `#174`, which carries the merged workbench and qualitative companion prep into the remaining current-main status/front-door surfaces without changing the settled packet state

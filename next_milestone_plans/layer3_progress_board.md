@@ -52,6 +52,7 @@ As of `2026-04-24`:
 - current `main` now also includes the merged qualitative single-item input packet from PR `#172`; together `27_L3_QUAL1_INPUTS.md` plus companion updates to `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet remain planning-only deferred-scope prep and do not change the settled packet state or merged milestone count
 - current `main` now also includes the post-PR172 deferred-prep front-door tightening from PR `#174`, which carries the merged workbench and qualitative companion prep into the remaining current-main status/front-door surfaces without changing the settled packet state or merged milestone count
 - current `main` now also includes the merged planning-only `28_L3_WB_FIRST_SLICE_FREEZE.md` first-slice setup target from PR `#178`; it narrows the later `/review/layer3` plus `/api/v1/layer3/...` target but does not make those routes live or change the settled packet state
+- the artifact now also tracks `next_milestone_plans/Layer3_planning_docs/29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` as a planning-only endpoint/state companion for that first-slice target; it freezes DTO, persistence, authority-rail, browser-state, and proof expectations without making the route/API live
 - the artifact also tracks `next_milestone_plans/layer3-mockups/mockup-spec.txt` and `next_milestone_plans/layer3-mockups/assets.md` as mockup source context only; they do not change the settled packet state, merged milestone count, live route/API state, or binary asset dependency posture
 
 ## Program State Summary
@@ -65,6 +66,7 @@ As of `2026-04-24`:
 - Current `main` also includes the merged qualitative single-item input packet from PR `#172`; together `27_L3_QUAL1_INPUTS.md` plus companion updates to `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet remain planning-only deferred-scope prep rather than an active lane
 - Current `main` also includes the post-PR172 deferred-prep front-door tightening from PR `#174`, which keeps the merged deferred-prep packet phrased consistently across the remaining current-main front-door/status surfaces without changing the settled packet state or merged milestone count
 - Current `main` now also includes the merged planning-only `28_L3_WB_FIRST_SLICE_FREEZE.md` first-slice setup target from PR `#178`; it does not change the 29 merged milestone count, does not create a planned/open milestone by itself, and does not make `/review/layer3` or `/api/v1/layer3/...` live
+- The first-slice API/state contract companion freezes implementation-entry endpoint and state details for a later code lane only; it does not create a merged milestone, planned/open milestone, or live route/API claim by itself
 - The repo-tracked mockup source mirror and visual-asset inventory are source context only; they preserve the planning input behind the first-slice setup without activating implementation scope or importing the binary/SVG mockup files as runtime dependencies
 
 ## Milestone Table
@@ -279,6 +281,7 @@ Current boundary:
 - current `main` already ships additive `/review/nrc-aps/workbench-compare` and `/review/nrc-aps/candidate-b-trace` surfaces, plus the same-checkout prep gate and browser coverage
 - future workbench-route work therefore means a new additive workbench family beyond the shipped compare and Candidate B Trace posture, not a restatement of already-landed routes
 - `28_L3_WB_FIRST_SLICE_FREEZE.md` narrows the first implementation-entry target to a planning-only `/review/layer3` plus `/api/v1/layer3/...` slice through intent/preflight, deterministic source selection, material preview, Gate B material review, and Gate C typing review; it does not activate the route/API or downstream execution/package scope by itself
+- `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` freezes the endpoint, DTO, Gate B persistence, Gate C override, authority-rail, browser-state, and proof contract for that later first-slice implementation while preserving the same no-go list
 
 Candidate-next admission requires:
 - browser/operator validation or a concrete product requirement proving that the shipped review/document-trace/workbench/Candidate B surfaces are insufficient
@@ -295,6 +298,7 @@ Primary authority surfaces:
 - `next_milestone_plans/Layer3_planning_docs/24_L3_WB_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md`
 - `next_milestone_plans/Layer3_planning_docs/28_L3_WB_FIRST_SLICE_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md`
 - `frontend_UI_plans/README.md`
 - `frontend_UI_plans/wb-compare-spec.md`
 - `frontend_UI_plans/wb-compare-contract.md`
@@ -406,7 +410,7 @@ Refresh this board against:
 - `next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
 - `next_milestone_plans/Layer3_planning_docs/02_PHASE1A_IMPLEMENTATION_PREP_SPEC_REV2.md`
 - `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
-- `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `28_L3_WB_FIRST_SLICE_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md`
 - `backend/app/services/review_nrc_aps_graph.py`
 - `backend/app/services/nrc_aps_validate_only_gates_contract.py`
 - `backend/app/services/nrc_aps_validate_only_gates.py`
