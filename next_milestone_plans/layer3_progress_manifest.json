@@ -6,7 +6,7 @@
     "repo": "benjmcd/project6_REPO_MCP_FOLDER",
     "authoritative_remote": "project6-origin/main",
     "authoritative_local_checkout_rule": "Use a clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match the artifact state being refreshed. Prefer current `main` for merged repo truth, and use the active branch checkout when the manifest declares an open or branch-only milestone.",
-    "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/l3activate",
+    "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3activate",
     "snapshot_date": "2026-04-24",
     "snapshot_base_main_commit": "1b492c536f2bdb20c542c121250343b6466e24f6",
     "snapshot_base_main_commit_source": "git rev-parse project6-origin/main at the artifact refresh that produced this snapshot",
