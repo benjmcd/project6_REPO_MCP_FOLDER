@@ -88,10 +88,12 @@ from app.services.transforms import apply_transformations, recommend_transformat
 from app.api import market_data_integration
 from app.api import market_data_validation
 from app.api import market_insight_ai
+from app.api import layer3
 from app.api import review_nrc_aps
 
 api_router = APIRouter()
 api_router.include_router(review_nrc_aps.router, prefix="/review/nrc-aps", tags=["review_nrc_aps"])
+api_router.include_router(layer3.router, prefix="/layer3", tags=["layer3_workbench"])
 api_router.include_router(market_data_integration.router)
 api_router.include_router(market_data_validation.router)
 api_router.include_router(market_insight_ai.router)

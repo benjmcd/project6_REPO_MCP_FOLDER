@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layer 3 Workbench</title>
+    <script>
+        (function () {
+            const storageKey = 'nrc_aps_review_theme';
+            let preference = 'system';
+            try {
+                preference = localStorage.getItem(storageKey) || 'system';
+            } catch (error) {
+                preference = 'system';
+            }
+            const prefersDark = typeof window.matchMedia === 'function'
+                && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const resolvedTheme = preference === 'dark' ? 'dark' : preference === 'light' ? 'light' : (prefersDark ? 'dark' : 'light');
+            document.documentElement.dataset.theme = resolvedTheme;
+            document.documentElement.dataset.themePreference = preference;
+        }());
+    </script>
+    <link rel="stylesheet" href="/review/layer3/static/review.css">
+    <link rel="stylesheet" href="/review/layer3/static/layer3.css">
+</head>
+<body>
+    <header class="app-header layer3-header">
+        <div class="header-left layer3-header-left">
+            <a href="/review/nrc-aps" class="back-link" aria-label="Back to Pipeline Review">&larr; Back</a>
+            <h1>Layer 3 Workbench</h1>
+        </div>
+        <div class="header-right">
+            <label for="theme-selector">Theme:</label>
+            <select id="theme-selector">
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+        </div>
+    </header>
+
+    <main class="app-body layer3-body">
+        <aside class="layer3-stepper" aria-label="Layer 3 workflow">
+            <button class="step-chip active" data-step="intent" type="button">Intent</button>
+            <button class="step-chip active" data-step="sources" type="button">Sources</button>
+            <button class="step-chip active" data-step="gate_b" type="button">Gate B</button>
+            <button class="step-chip active" data-step="gate_c" type="button">Gate C</button>
+            <button class="step-chip unavailable" data-step="plan" type="button" disabled>Plan</button>
+            <button class="step-chip unavailable" data-step="execution" type="button" disabled>Execution</button>
+            <button class="step-chip unavailable" data-step="results" type="button" disabled>Results</button>
+            <button class="step-chip unavailable" data-step="package" type="button" disabled>Package</button>
+        </aside>
+
+        <section class="layer3-workspace" aria-label="Layer 3 first slice">
+            <section class="authority-rail" id="authority-rail" aria-label="Authority rail"></section>
+
+            <section class="workband intent-band" aria-labelledby="intent-heading">
+                <div class="section-heading">
+                    <h2 id="intent-heading">Intent</h2>
+                    <span class="status-pill preview">Preview only</span>
+                </div>
+                <form id="intent-form" class="intent-form">
+                    <label for="layer3-intent">Operator intent</label>
+                    <textarea id="layer3-intent" name="layer3-intent" rows="4">Review deterministic dataset and APS document material for bounded Layer 3 typing.</textarea>
+                    <fieldset class="source-fieldset">
+                        <legend>Source classes</legend>
+                        <label><input type="checkbox" name="source-class" value="dataset_version" checked> Dataset version</label>
+                        <label><input type="checkbox" name="source-class" value="aps_content_document" checked> APS content document</label>
+                    </fieldset>
+                    <button id="run-preflight" class="primary-btn" type="submit">Run Preflight</button>
+                </form>
+            </section>
+
+            <section class="workband material-band" aria-labelledby="material-heading">
+                <div class="section-heading">
+                    <h2 id="material-heading">Gate B Material Ledger</h2>
+                    <button id="gate-b-submit" class="primary-btn" type="button" disabled>Commit Gate B</button>
+                </div>
+                <div class="filter-row">
+                    <label for="material-filter">Filter</label>
+                    <input id="material-filter" type="search" placeholder="status, source, candidate">
+                </div>
+                <div class="table-wrap">
+                    <table class="material-table">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Source</th>
+                                <th>Shape</th>
+                                <th>Status</th>
+                                <th>Decision</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody id="material-ledger-body">
+                            <tr><td colspan="6" class="empty-cell">No material preview loaded.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="workband gatec-band" aria-labelledby="gatec-heading">
+                <div class="section-heading">
+                    <h2 id="gatec-heading">Gate C Typing Review</h2>
+                    <button id="gate-c-preview" class="primary-btn" type="button" disabled>Preview Gate C</button>
+                </div>
+                <div id="gate-c-panel" class="gate-c-panel">
+                    <div class="empty-panel">No committed Gate B session yet.</div>
+                </div>
+            </section>
+        </section>
+
+        <aside class="context-panel" aria-label="Context and blockers">
+            <section>
+                <h2>Context</h2>
+                <dl id="context-list" class="context-list"></dl>
+            </section>
+            <section>
+                <h2>Events</h2>
+                <ol id="event-list" class="event-list"></ol>
+            </section>
+            <section>
+                <h2>Unavailable</h2>
+                <ul id="unavailable-list" class="unavailable-list"></ul>
+            </section>
+        </aside>
+    </main>
+
+    <script src="/review/layer3/static/layer3.js"></script>
+</body>
+</html>
