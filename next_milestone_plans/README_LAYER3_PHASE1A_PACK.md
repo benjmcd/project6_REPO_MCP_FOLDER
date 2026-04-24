@@ -420,6 +420,12 @@ This document is outside the accepted Phase 1A normative control spine and outsi
 It is the merged planning-only first-slice setup doc from PR `#178` for the deferred `future workbench route family`; it narrows the later additive `/review/layer3` plus `/api/v1/layer3/...` implementation-entry target through Gate C typing review without making those routes live or activating downstream execution, package review, qualitative, hybrid, RAG/vector, runtime snapshot DB write, schema, or handoff scope:
 - `28_L3_WB_FIRST_SLICE_FREEZE.md`
 
+### Broader workbench first-slice API/state contract
+
+This document is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+It is the planning-only API/state companion for the deferred `future workbench route family`; it freezes endpoint, DTO, Gate B persistence, Gate C override, authority-rail, browser-state, and proof expectations for a later `/review/layer3` plus `/api/v1/layer3/...` implementation pass without making those routes live or changing the no-go list:
+- `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md`
+
 ### Broader workbench mockup source mirror
 
 These files are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
@@ -512,6 +518,7 @@ Start with:
 - `Layer3_planning_docs/24_L3_WB_FREEZE.md`
 - `Layer3_planning_docs/26_L3_WB_INPUTS.md`
 - `Layer3_planning_docs/28_L3_WB_FIRST_SLICE_FREEZE.md`
+- `Layer3_planning_docs/29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md`
 - `Layer3_planning_docs/25_L3_QUAL1_FREEZE.md`
 - `Layer3_planning_docs/27_L3_QUAL1_INPUTS.md`
 - `next_milestone_plans/layer3_progress_board.md`
@@ -524,6 +531,7 @@ Start with:
 - `Layer3_planning_docs/24_L3_WB_FREEZE.md`
 - `Layer3_planning_docs/26_L3_WB_INPUTS.md`
 - `Layer3_planning_docs/28_L3_WB_FIRST_SLICE_FREEZE.md`
+- `Layer3_planning_docs/29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md`
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/layer3_progress_manifest.json`
 
@@ -531,6 +539,7 @@ Current answer:
 - first-slice setup is planning-only
 - default target is an additive `/review/layer3` page plus `/api/v1/layer3/...` API family
 - first implementation should stop at intent/preflight, deterministic source selection, material preview, Gate B material review, and Gate C typing review
+- first implementation should use `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` as the endpoint, DTO, state, persistence, browser-state, and proof contract
 - downstream plan, execution, results, package review, qualitative, hybrid, RAG/vector, runtime snapshot DB writes, schema widening, and handoff remain unavailable unless separately activated
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
