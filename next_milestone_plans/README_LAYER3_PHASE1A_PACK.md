@@ -423,7 +423,7 @@ It is the merged planning-only first-slice setup doc from PR `#178` for the defe
 ### Broader workbench first-slice API/state contract
 
 This document is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-It is the planning-only API/state companion for the deferred `future workbench route family`; it freezes endpoint, DTO, Gate B persistence, Gate C override, authority-rail, browser-state, and proof expectations for a later `/review/layer3` plus `/api/v1/layer3/...` implementation pass without making those routes live or changing the no-go list:
+It is the merged planning-only API/state companion from PR `#182` for the deferred `future workbench route family`; it freezes endpoint, DTO, Gate B persistence, Gate C override, authority-rail, browser-state, and proof expectations for a later `/review/layer3` plus `/api/v1/layer3/...` implementation pass without making those routes live or changing the no-go list:
 - `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md`
 
 ### Broader workbench mockup source mirror
