@@ -2,7 +2,7 @@
 
 ## Status
 - planning-only
-- not active
+- not active for the broader end-to-end workbench beyond the bounded PR `#184` first-slice shell/API
 - merged on current `main` as deferred-scope prep only
 - companion input doc for `24_L3_WB_FREEZE.md`
 - does not reopen the settled packet or change merged milestone counts
@@ -15,7 +15,7 @@
 - `24_L3_WB_FREEZE.md` remains the boundary, dependency, non-goal, and ambiguity-control doc for this lane.
 - This doc records the exact-freeze inputs and the planning decisions now landed on current `main` without pretending the lane is active.
 - `28_L3_WB_FIRST_SLICE_FREEZE.md` consumes this doc's trigger, route-family, typing, owner-surface, proof, and no-go decisions into a narrower first-slice implementation-entry setup target.
-- This doc does not itself activate the lane.
+- This doc did not itself activate the lane when landed. PR `#184` later activated only the bounded first-slice workbench under `28_L3_WB_FIRST_SLICE_FREEZE.md` and `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md`.
 
 ## Decision posture for this pass
 - Freeze-ready recommendations in this doc are limited to what live repo truth plus primary planning already support.
@@ -40,8 +40,8 @@
   - `/review/nrc-aps/candidate-b-trace`
   - `/review/analyst-insight`
 - current `main` already ships review-shell API surfaces under `/api/v1/review/nrc-aps/...`.
-- current `main` does not yet ship a broader Layer 3 workbench page family rooted at `/review/layer3`.
-- current `main` does not yet ship a broader Layer 3 API family rooted at `/api/v1/layer3/...`.
+- current `main` now ships `/review/layer3` and `/api/v1/layer3/...` only for the bounded PR `#184` first-slice workbench.
+- current `main` does not yet ship the broader end-to-end Layer 3 workbench page/API family beyond that bounded first-slice shell/API.
 - current review graph truth still ends at `validate_only_gates`; it does not already encode a broader Layer 3 controller/workbench lane.
 - current Workbench Compare and Candidate B Trace remain additive consumer surfaces, not Layer 3 controller truth.
 - current analyst-insight remains a separate deterministic product surface, not the broader Layer 3 workbench.
@@ -264,7 +264,7 @@ Explicit anti-patterns:
 | Workbench Compare and Candidate B boundary preservation | `backend/tests/test_review_nrc_aps_workbench_compare_page.py`, `backend/tests/test_review_nrc_aps_workbench_compare_api.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_page.py`, `backend/tests/test_review_nrc_aps_candidate_b_trace_api.py`, `e2e/nrc-aps-review.spec.js` | proof that compare remains compare, Candidate B Trace remains bundle-scoped inspection, and Candidate B is not admitted into runtime Layer 3 truth |
 | Analyst-insight preservation | `backend/tests/test_analyst_insight_page.py`, `backend/tests/test_analyst_insight_alias_parity.py`, `docs/analyst_insight/analyst_insight_status_handoff.md` | proof that `/review/analyst-insight` and `/api/v1/analyst-insight/...` remain the narrow deterministic product surface rather than becoming the broader workbench owner |
 | Fail-closed and provenance hygiene | fail-closed invalid-input patterns in compare/Candidate B API tests; no-local-path assertions in `backend/tests/test_review_browser_server.py` and `e2e/nrc-aps-review.spec.js` | proof that the broader workbench fails closed on missing or partial state, does not leak local filesystem paths, and keeps operator-visible failure states intelligible |
-| No runtime-write, schema, or generic-route widening | current no-go rules from `24_L3_WB_FREEZE.md`, `12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md`, and current repo absence of `/review/layer3` and `/api/v1/layer3/...` | one implementation-entry audit showing no migration files, no schema/model widening, no hidden runtime-write dependency, and no generic redesign of existing review/document-trace/compare/Candidate B routes |
+| No runtime-write, schema, or generic-route widening | current no-go rules from `24_L3_WB_FREEZE.md`, `28_L3_WB_FIRST_SLICE_FREEZE.md`, `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md`, `12_LAYER3_ROADMAP_PHASES_AND_OPEN_QUESTIONS.md`, and the bounded PR `#184` first-slice route/API scope | one implementation-entry audit showing no migration files, no schema/model widening, no hidden runtime-write dependency, and no generic redesign of existing review/document-trace/compare/Candidate B routes |
 
 ### 7. Preparation rules
 - Freeze the exact same-checkout or validate-only preparation rules that govern this broader workbench family.
@@ -283,7 +283,7 @@ Explicit anti-patterns:
 - Exact wrapper class names, exact module filenames, and exact component-library choice remain implementation-local even with this planning-only prep packet landed on current `main`.
 
 ## Exact remains-out list
-- no live implementation of `/review/layer3` or `/api/v1/layer3/...` in this pass
+- no live broader implementation beyond the bounded PR `#184` `/review/layer3` and `/api/v1/layer3/...` first-slice shell/API in this pass
 - no broad rewrite of `backend/main.py`; any later workbench entry should be additive and route-local
 - no broad rewrite of `backend/app/api/review_nrc_aps.py`; existing review/document-trace/workbench-compare/Candidate B APIs remain adjacent surfaces
 - no takeover of `backend/app/api/market_data_integration.py`, `market_data_validation.py`, or `market_insight_ai.py` as the broader workbench owner
@@ -312,7 +312,7 @@ Explicit anti-patterns:
 - It is not enough to claim the lane is active or live.
 
 ## Still not activation-ready
-- no live `/review/layer3` or `/api/v1/layer3/...` route family exists on current `main`
+- no broader end-to-end `/review/layer3` or `/api/v1/layer3/...` route family exists on current `main` beyond the bounded PR `#184` first-slice shell/API
 - no exact workbench implementation module filenames are chosen yet
 - no activation-grade typing thresholds, `entity_graph` default, APS document-derived unit granularity, or typing-conflict UI presentation are frozen yet
 - no headed or headless broader-workbench proof has been produced yet

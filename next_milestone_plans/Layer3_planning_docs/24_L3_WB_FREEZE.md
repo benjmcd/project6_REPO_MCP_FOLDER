@@ -2,7 +2,7 @@
 
 ## Status
 - planning-only
-- not active
+- not active for the broader end-to-end workbench beyond the bounded PR `#184` first-slice shell/API
 - prepared from settled current-main posture
 - active manifest, board, and status docs remain settled unless reopened separately
 
@@ -11,18 +11,19 @@
 
 ## Companion exact-freeze input doc
 - `26_L3_WB_INPUTS.md` now records the adopted planning-only trigger and route-family choice for this lane, the adopted minimum typing posture, the exact owner-surface and proof mapping for implementation-entry prep, and the exact remains-out list that keeps later work narrow.
-- `28_L3_WB_FIRST_SLICE_FREEZE.md` now records the planning-only first-slice setup target for `/review/layer3` plus `/api/v1/layer3/...`, including exact default owner files, UI layout posture, Gate B/Gate C semantics, proof requirements, and stop conditions for a later implementation pass.
+- `28_L3_WB_FIRST_SLICE_FREEZE.md` recorded the planning-only first-slice setup target for `/review/layer3` plus `/api/v1/layer3/...` before PR `#184`, including exact default owner files, UI layout posture, Gate B/Gate C semantics, proof requirements, and stop conditions.
+- After PR `#184`, `28_L3_WB_FIRST_SLICE_FREEZE.md` and `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` govern the bounded live first-slice shell/API only.
 - This doc remains the boundary, dependency, non-goal, and ambiguity-control surface.
-- The companion input/setup docs are planning-only prep and do not themselves satisfy activation prerequisites.
+- The companion input/setup docs did not themselves satisfy activation prerequisites when landed; PR `#184` later activated only the bounded first slice and did not activate the broader end-to-end workbench.
 
 ## Why prep is justified now
-- Current `main` already ships adjacent operator consumers, but not a full Layer 3 workbench.
+- Current `main` already ships adjacent operator consumers and the bounded PR `#184` Layer 3 first-slice workbench, but not a full Layer 3 workbench.
 - Primary planning still treats the broader workbench route family as an explicit open freeze item.
 - This prep can stay additive and planning-only without reopening APS packet state, runtime DB boundaries, schema, or generic route widening.
 
 ## Why activation is not automatic
-- An exact planning-only route-family choice is now recorded in `26_L3_WB_INPUTS.md`, but no live route family is active yet.
-- A first-slice setup target is now recorded in `28_L3_WB_FIRST_SLICE_FREEZE.md`, but no code, page route, API router, browser proof, or backend proof from that target is active yet.
+- An exact planning-only route-family choice is recorded in `26_L3_WB_INPUTS.md`; PR `#184` later made only the bounded first-slice `/review/layer3` and `/api/v1/layer3/...` shell/API live.
+- The first-slice setup target in `28_L3_WB_FIRST_SLICE_FREEZE.md` is now implemented only through the PR `#184` first-slice scope; downstream plan, execution, results, package review, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and handoff remain inactive.
 - Only a minimum planning-only typing posture is now recorded in `26_L3_WB_INPUTS.md`; activation-grade thresholds, `entity_graph` defaults, APS document-unit granularity, and typing-conflict presentation remain unfrozen.
 - No exact shell or state-transition proof exists yet for the broader workbench.
 - No headed plus headless Chrome proof exists yet for the future broader workbench family.
