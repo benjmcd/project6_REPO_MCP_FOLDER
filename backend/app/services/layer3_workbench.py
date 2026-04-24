@@ -472,6 +472,29 @@ def _load_session(db: Session, session_id: str) -> L3Session:
     return session
 
 
+def _source_classes_from_latest_manifest(db: Session, session_id: str) -> list[str]:
+    manifest = (
+        db.query(L3SelectionManifest)
+        .filter(L3SelectionManifest.session_id == session_id)
+        .order_by(L3SelectionManifest.committed_at.desc())
+        .first()
+    )
+    if manifest is None:
+        return []
+    hints = manifest.source_plane_hints_json or {}
+    hinted_classes = hints.get("source_classes")
+    if isinstance(hinted_classes, list):
+        return sorted({str(item) for item in hinted_classes if item is not None and str(item).strip()})
+    items = (manifest.manifest_json or {}).get("items") or []
+    return sorted(
+        {
+            str(item.get("descriptor_type"))
+            for item in items
+            if isinstance(item, dict) and str(item.get("descriptor_type") or "").strip()
+        }
+    )
+
+
 def _snapshot_projection(snapshot: L3MaterialSnapshot) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
     rule = SUPPORTED_TYPING_RULES.get(snapshot.source_shape)
     if rule is None:
@@ -543,7 +566,9 @@ def gate_c_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     session_id = str(payload.get("session_id") or "").strip()
     if not session_id:
         raise Layer3WorkbenchError("session_not_found", "session_id is required for Gate C preview.", http_status=404)
-    _load_session(db, session_id)
+    session = _load_session(db, session_id)
+    gate_b_counts = _gate_b_summary_from_session(session)
+    source_classes = _source_classes_from_latest_manifest(db, session_id)
     commit_typing = bool(payload.get("commit_typing"))
     try:
         if commit_typing:
@@ -604,6 +629,8 @@ def gate_c_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                     session_id=session_id,
                     current_gate="complete" if typing_records and not unsupported_material else "gate_c",
                     persistence_mode="durable_layer3_control",
+                    source_classes=source_classes,
+                    counts=gate_b_counts,
                     typing_status=typing_status,
                 ),
             }
@@ -628,6 +655,8 @@ def gate_c_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             session_id=session_id,
             current_gate="complete",
             persistence_mode="durable_layer3_control",
+            source_classes=source_classes,
+            counts=gate_b_counts,
             typing_status=typing_status,
         ),
     }

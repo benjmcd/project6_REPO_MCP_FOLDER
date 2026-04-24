@@ -113,6 +113,7 @@ All non-`ok` responses must use this shape:
   "schema_id": "layer3.workbench_error.v1",
   "schema_version": 1,
   "request_id": "string",
+  "server_time": "ISO-8601 timestamp",
   "status": "blocked | invalid | unavailable | conflict | failed",
   "error_code": "string",
   "message": "string",
@@ -151,6 +152,9 @@ Required response:
 {
   "schema_id": "layer3.workbench_bootstrap.v1",
   "schema_version": 1,
+  "request_id": "string",
+  "server_time": "ISO-8601 timestamp",
+  "status": "ok",
   "route": "/review/layer3",
   "api_root": "/api/v1/layer3",
   "supported_source_classes": ["dataset_version", "aps_content_document"],
@@ -217,6 +221,9 @@ Response:
 {
   "schema_id": "layer3.preflight_result.v1",
   "schema_version": 1,
+  "request_id": "string",
+  "server_time": "ISO-8601 timestamp",
+  "status": "ok",
   "preflight_id": "stable_hash_or_uuid",
   "normalized_intent": {
     "intent_text": "string",
@@ -253,6 +260,9 @@ Response:
 {
   "schema_id": "layer3.source_preview_result.v1",
   "schema_version": 1,
+  "request_id": "string",
+  "server_time": "ISO-8601 timestamp",
+  "status": "ok",
   "source_set_id": "stable_hash_or_uuid",
   "source_candidates": [
     {
@@ -299,6 +309,9 @@ Response:
 {
   "schema_id": "layer3.material_preview_result.v1",
   "schema_version": 1,
+  "request_id": "string",
+  "server_time": "ISO-8601 timestamp",
+  "status": "ok",
   "material_preview_id": "stable_hash_or_uuid",
   "material_candidates": [
     {
@@ -360,6 +373,9 @@ Response:
 {
   "schema_id": "layer3.gate_b_decision_result.v1",
   "schema_version": 1,
+  "request_id": "string",
+  "server_time": "ISO-8601 timestamp",
+  "status": "ok",
   "session_id": "string",
   "selection_manifest_id": "string",
   "gate_b_decision_manifest_id": "stable_hash",
@@ -367,10 +383,12 @@ Response:
   "denied_candidate_ids": [],
   "isolated_candidate_ids": [],
   "flagged_candidate_ids": [],
-  "next_state": "gate_c_preview_ready | blocked_no_approved_material",
+  "next_state": "gate_c_preview_ready",
   "authority_rail": {}
 }
 ```
+
+Blocked Gate B outcomes are not success-state sessions. If no candidate is approved, the endpoint must return `layer3.workbench_error.v1` with `status: "blocked"` and `error_code: "no_approved_material"` and must not include `session_id` or `selection_manifest_id`.
 
 Persistence mapping:
 
@@ -413,6 +431,9 @@ Response:
 {
   "schema_id": "layer3.gate_c_preview_result.v1",
   "schema_version": 1,
+  "request_id": "string",
+  "server_time": "ISO-8601 timestamp",
+  "status": "ok",
   "session_id": "string",
   "typing_records": [],
   "analysis_units": [],
@@ -440,6 +461,8 @@ The endpoint may return:
 {
   "schema_id": "layer3.typing_override_unavailable.v1",
   "schema_version": 1,
+  "request_id": "string",
+  "server_time": "ISO-8601 timestamp",
   "status": "unavailable",
   "error_code": "override_unavailable",
   "message": "Typing override is not enabled in this first slice.",
@@ -496,6 +519,9 @@ Required response:
 {
   "schema_id": "layer3.workbench_session_summary.v1",
   "schema_version": 1,
+  "request_id": "string",
+  "server_time": "ISO-8601 timestamp",
+  "status": "ok",
   "session_id": "string",
   "selection_manifest_id": "string",
   "current_gate": "gate_b | gate_c | complete",

@@ -79,12 +79,23 @@ def _prepare_material(client: TestClient) -> tuple[dict, dict, dict]:
     return preflight, source, material
 
 
+def _assert_common_response_envelope(body: dict) -> None:
+    assert body["schema_id"].startswith("layer3.")
+    assert body["schema_version"] == 1
+    assert body["request_id"]
+    assert body["server_time"].endswith("Z")
+    assert body["status"]
+
+
 def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     bootstrap = client.get("/api/v1/layer3/bootstrap")
     assert bootstrap.status_code == 200
-    assert bootstrap.json()["features"]["handoff"] is False
+    bootstrap_body = bootstrap.json()
+    assert bootstrap_body["features"]["handoff"] is False
 
     preflight, source, material = _prepare_material(client)
+    for response_body in (bootstrap_body, preflight, source, material):
+        _assert_common_response_envelope(response_body)
     assert preflight["status"] == "ok"
     assert source["authority_rail"]["current_gate"] == "gate_b"
     assert len(material["material_candidates"]) == 2
@@ -124,6 +135,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     )
     assert gate_b.status_code == 200
     gate_b_body = gate_b.json()
+    _assert_common_response_envelope(gate_b_body)
     assert gate_b_body["authority_rail"]["approved_material_count"] == 1
     assert gate_b_body["authority_rail"]["denied_material_count"] == 1
 
@@ -136,12 +148,55 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         },
     )
     assert gate_c.status_code == 200
-    assert gate_c.json()["override_allowed"] is False
-    assert gate_c.json()["typing_records"][0]["authoritative"] is False
+    gate_c_body = gate_c.json()
+    _assert_common_response_envelope(gate_c_body)
+    assert gate_c_body["override_allowed"] is False
+    assert gate_c_body["typing_records"][0]["authoritative"] is False
+    assert gate_c_body["authority_rail"]["approved_material_count"] == 1
+    assert gate_c_body["authority_rail"]["denied_material_count"] == 1
+    assert gate_c_body["authority_rail"]["source_authority"]["source_classes"] == ["dataset_version"]
 
     summary = client.get(f"/api/v1/layer3/session/{gate_b_body['session_id']}")
     assert summary.status_code == 200
-    assert summary.json()["gate_c_summary"]["typing_committed"] is False
+    summary_body = summary.json()
+    _assert_common_response_envelope(summary_body)
+    assert summary_body["gate_c_summary"]["typing_committed"] is False
+
+
+def test_layer3_api_gate_b_no_approved_material_is_blocked_error(client: TestClient) -> None:
+    preflight, source, material = _prepare_material(client)
+    first = material["material_candidates"][0]
+
+    blocked = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": "api-gate-b-no-approved",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": first["candidate_id"],
+                    "decision": "denied",
+                    "operator_reason": "Not approved for this first-slice session.",
+                    "decision_basis": {
+                        "source_ref": first["source_ref"],
+                        "query_basis": first["query_basis"],
+                        "provenance_ref": first["provenance_ref"],
+                    },
+                },
+            ],
+            "actor": "pytest",
+        },
+    )
+
+    assert blocked.status_code == 400
+    body = blocked.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.workbench_error.v1"
+    assert body["status"] == "blocked"
+    assert body["error_code"] == "no_approved_material"
+    assert "session_id" not in body
 
 
 def test_layer3_api_gate_c_commit_typing_materializes_once_when_explicit(client: TestClient) -> None:
@@ -180,8 +235,11 @@ def test_layer3_api_gate_c_commit_typing_materializes_once_when_explicit(client:
     )
     assert committed.status_code == 200
     committed_body = committed.json()
+    _assert_common_response_envelope(committed_body)
     assert committed_body["typing_records"][0]["authoritative"] is True
     assert committed_body["analysis_units"][0]["authoritative"] is True
+    assert committed_body["authority_rail"]["approved_material_count"] == 1
+    assert committed_body["authority_rail"]["source_authority"]["source_classes"] == ["dataset_version"]
     assert committed_body["authority_rail"]["typing_status"] == "committed"
 
     summary = client.get(f"/api/v1/layer3/session/{gate_b['session_id']}")
