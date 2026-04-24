@@ -73,6 +73,7 @@
         "docs/nrc_adams/nrc_aps_status_handoff.md",
         "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
         "next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md",
+        "next_milestone_plans/Layer3_planning_docs/02_PHASE1A_IMPLEMENTATION_PREP_SPEC_REV2.md",
         "next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md",
         "next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md",
         "next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md",
@@ -266,6 +267,7 @@
       "main_state": "merged",
       "governing_docs": [
         "next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md",
+        "next_milestone_plans/Layer3_planning_docs/02_PHASE1A_IMPLEMENTATION_PREP_SPEC_REV2.md",
         "next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md"
       ],
       "owner_surfaces": [
@@ -277,7 +279,7 @@
           "pr": 69,
           "kind": "implementation-foundation",
           "state": "merged",
-          "merge_commit": "57b8b7eb8cc6f24189dd6f0d8153486aaa84f142",
+          "merge_commit": "57b8b7eb8cc6f24189dd6f0d887a2097d7e38323",
           "title": "Layer3 Phase 1A feeder-ledger slice and closure pack",
           "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/pull/69"
         }
@@ -1567,6 +1569,7 @@
       "docs/nrc_adams/nrc_aps_status_handoff.md",
       "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
       "next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md",
+      "next_milestone_plans/Layer3_planning_docs/02_PHASE1A_IMPLEMENTATION_PREP_SPEC_REV2.md",
       "next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md",
       "next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/05_GATEC_IMPLEMENTATION_FREEZE.md",
