@@ -60,6 +60,9 @@ PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
 PLAN_PREVIEW_IDENTITY_SCHEMA_ID = "layer3.plan_preview_identity.v1"
 EXECUTION_READINESS_SCHEMA_ID = "layer3.execution_readiness_contract.v1"
+EXECUTION_SELECTION_SCHEMA_ID = "layer3.execution_selection.v1"
+EXECUTION_SELECTION_STATE_SCHEMA_ID = "layer3.execution_selection_state.v1"
+EXECUTION_SELECTION_STATE = "execution_selected_not_started"
 STATE_MODEL_SCHEMA_ID = "layer3.workbench_state_model.v1"
 PLAN_REVISION_DECISIONS = frozenset({"reject_current_preview", "request_revision"})
 PLAN_REVISION_STATE_BY_DECISION = {
@@ -93,6 +96,30 @@ PLAN_REVISION_FORBIDDEN_FIELDS = PLAN_APPROVAL_FORBIDDEN_FIELDS | frozenset(
         "vector_plan",
     }
 )
+EXECUTION_SELECTION_FORBIDDEN_FIELDS = frozenset(
+    {
+        "execute",
+        "execution",
+        "run",
+        "run_analysis",
+        "start_execution",
+        "analysis_run_id",
+        "analysis_run_ids",
+        "result_review",
+        "results",
+        "package",
+        "package_review",
+        "handoff",
+        "artifact_manifest",
+        "local_upload",
+        "local_directory",
+        "rag_plan",
+        "vector_plan",
+        "qualitative_plan",
+        "hybrid_plan",
+    }
+)
+EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE = ("analysis_execution", "results", "package", "handoff")
 PLAN_PREVIEW_HASH_INCLUDED_INPUTS = (
     "session_id",
     "committed_gate_b_material_and_source_ids",
@@ -120,6 +147,7 @@ READINESS_REQUIRED_GATES = (
     "approved-plan-correction",
     "output-taxonomy",
     "source-breadth",
+    "execution-selection",
     "browser-proof",
 )
 READINESS_IMPLEMENTED_GATES = (
@@ -128,6 +156,7 @@ READINESS_IMPLEMENTED_GATES = (
     "preview-hash",
     "idempotency",
     "concurrency",
+    "execution-selection",
 )
 READINESS_DEFERRED_GATES = (
     "revision-recovery",
@@ -275,8 +304,14 @@ def _workbench_state_model() -> dict[str, Any]:
             {
                 "state": "plan_approved",
                 "authority_source": "l3_analysis_plan_approval_only",
+                "allowed_next_actions": ["execution_select"],
+                "forbidden_downstream_actions": ["analysis_execution", "results", "package", "handoff"],
+            },
+            {
+                "state": EXECUTION_SELECTION_STATE,
+                "authority_source": "server_created_l3_pass_run_shell",
                 "allowed_next_actions": [],
-                "forbidden_downstream_actions": ["execution", "results", "package"],
+                "forbidden_downstream_actions": ["analysis_execution", "results", "package", "handoff"],
             },
             {
                 "state": "plan_rejected",
@@ -328,6 +363,9 @@ def readiness_contract() -> dict[str, Any]:
         **_base_response(EXECUTION_READINESS_SCHEMA_ID),
         "execution_admitted": False,
         "execution_enabled": False,
+        "execution_selection_admitted": True,
+        "execution_selection_endpoint": f"{API_ROOT}/execution/select",
+        "analysis_execution_admitted": False,
         "readiness_state": "execution_readiness_blocked",
         "required_gates": list(READINESS_REQUIRED_GATES),
         "implemented_gates": list(READINESS_IMPLEMENTED_GATES),
@@ -338,17 +376,20 @@ def readiness_contract() -> dict[str, Any]:
             "schema_id": "layer3.idempotency_contract.v1",
             "client_request_id_supported": True,
             "client_request_id_required_current_slice": False,
+            "client_request_id_required_for_execution_selection": True,
             "duplicate_plan_approval": "returns existing approved-plan conflict; no duplicate L3AnalysisPlan",
             "duplicate_plan_revision": "returns existing revision-control conflict; no duplicate revision-control state",
+            "duplicate_execution_selection": "same client_request_id and same approved plan returns existing selection; conflicts fail closed",
             "duplicate_without_client_request_id": "server-authoritative state conflicts still prevent duplicate durable approval or revision-control state",
-            "future_execution": "not admitted until separately frozen",
+            "analysis_execution": "not admitted until separately frozen",
         },
         "concurrency_contract": {
             "schema_id": "layer3.concurrency_contract.v1",
             "approval_revision_mutual_exclusion": True,
             "server_authority": "durable_session_row_lock_or_equivalent_transaction",
             "browser_in_flight_lock_is_authoritative": False,
-            "future_execution_requires_separate_locking_freeze": True,
+            "execution_selection_uses_session_and_plan_locks": True,
+            "analysis_execution_requires_separate_locking_freeze": True,
         },
         "deferred_decisions": {
             "schema_id": "layer3.deferred_execution_decisions.v1",
@@ -374,6 +415,7 @@ def bootstrap() -> dict[str, Any]:
         "features": {
             "plan_preview": True,
             "plan_approval": True,
+            "execution_selection": True,
             "analysis_execution": False,
             "qualitative_execution": False,
             "hybrid_execution": False,
@@ -388,6 +430,9 @@ def bootstrap() -> dict[str, Any]:
             "schema_id": EXECUTION_READINESS_SCHEMA_ID,
             "execution_admitted": False,
             "execution_enabled": False,
+            "execution_selection_admitted": True,
+            "execution_selection_endpoint": f"{API_ROOT}/execution/select",
+            "analysis_execution_admitted": False,
             "readiness_state": "execution_readiness_blocked",
             "readiness_endpoint": f"{API_ROOT}/readiness",
         },
@@ -1456,6 +1501,371 @@ def plan_revision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _execution_selection_from_session(session: L3Session | None) -> dict[str, Any] | None:
+    if session is None:
+        return None
+    selection = (session.summary_json or {}).get("execution_selection")
+    if not isinstance(selection, dict):
+        return None
+    if selection.get("schema_id") != EXECUTION_SELECTION_STATE_SCHEMA_ID:
+        return None
+    return selection
+
+
+def _execution_selection_pass_runs(db: Session, *, session_id: str) -> list[L3PassRun]:
+    return (
+        db.query(L3PassRun)
+        .filter(L3PassRun.session_id == session_id)
+        .order_by(L3PassRun.created_at.asc(), L3PassRun.pass_run_id.asc())
+        .all()
+    )
+
+
+def _execution_selection_response(
+    *,
+    request_id: str,
+    status: str,
+    session_id: str,
+    analysis_plan_id: str,
+    preview_id: str,
+    preview_hash: str,
+    pass_runs: list[L3PassRun],
+) -> dict[str, Any]:
+    return {
+        **_base_response(EXECUTION_SELECTION_SCHEMA_ID, request_id=request_id, status=status),
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "preview_identity": _preview_identity(preview_id=preview_id, preview_hash=preview_hash),
+        "pass_run_ids": [pass_run.pass_run_id for pass_run in pass_runs],
+        "pass_run_count": len(pass_runs),
+        "execution_started": False,
+        "analysis_run_ids": [],
+        "downstream_unavailable": list(EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE),
+        "next_state": EXECUTION_SELECTION_STATE,
+    }
+
+
+def _execution_selection_summary(db: Session, *, session_id: str) -> dict[str, Any]:
+    session = db.query(L3Session).filter(L3Session.session_id == session_id).first()
+    selection = _execution_selection_from_session(session)
+    pass_runs = _execution_selection_pass_runs(db, session_id=session_id)
+    if selection is not None:
+        return {
+            "schema_id": "layer3.execution_selection_readiness.v1",
+            "available": False,
+            "selected": True,
+            "state": selection.get("state"),
+            "blocked_reason": "execution_selection_already_exists",
+            "analysis_plan_id": selection.get("analysis_plan_id"),
+            "source_preview_id": selection.get("source_preview_id"),
+            "source_preview_hash": selection.get("source_preview_hash"),
+            "pass_run_ids": [pass_run.pass_run_id for pass_run in pass_runs],
+            "pass_run_count": len(pass_runs),
+            "execution_started": False,
+            "analysis_run_ids": [],
+            "downstream_unavailable": list(EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE),
+            "selected_at": selection.get("selected_at"),
+        }
+
+    analysis_plan_id = None
+    source_preview_id = None
+    source_preview_hash = None
+    if (revision_control := _plan_revision_control(db, session_id=session_id)) is not None:
+        blocked_reason = str(revision_control.get("state") or "plan_revision_recorded")
+    else:
+        approved_plans = (
+            db.query(L3AnalysisPlan)
+            .filter(
+                L3AnalysisPlan.session_id == session_id,
+                L3AnalysisPlan.status == "approved",
+                L3AnalysisPlan.approved_by_operator.is_(True),
+            )
+            .all()
+        )
+        if not approved_plans:
+            blocked_reason = "no_approved_plan"
+        elif len(approved_plans) > 1:
+            blocked_reason = "multiple_approved_plans"
+        elif pass_runs:
+            blocked_reason = "pass_runs_already_exist"
+        else:
+            approved_plan = approved_plans[0]
+            plan_json = approved_plan.plan_json or {}
+            analysis_plan_id = approved_plan.analysis_plan_id
+            source_preview_id = plan_json.get("source_preview_id")
+            source_preview_hash = plan_json.get("source_preview_hash")
+            blocked_reason = None
+
+    return {
+        "schema_id": "layer3.execution_selection_readiness.v1",
+        "available": blocked_reason is None,
+        "selected": False,
+        "state": None,
+        "blocked_reason": blocked_reason,
+        "analysis_plan_id": analysis_plan_id,
+        "source_preview_id": source_preview_id,
+        "source_preview_hash": source_preview_hash,
+        "pass_run_ids": [],
+        "pass_run_count": len(pass_runs),
+        "execution_started": False,
+        "analysis_run_ids": [],
+        "downstream_unavailable": list(EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE),
+        "selected_at": None,
+    }
+
+
+def execution_selection(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or "").strip()
+    if not request_id:
+        raise Layer3WorkbenchError(
+            "client_request_id_required",
+            "client_request_id is required for execution selection.",
+            status="invalid",
+            blocked_fields=["client_request_id"],
+            next_allowed_actions=["submit_idempotent_execution_selection"],
+        )
+
+    session_id = str(payload.get("session_id") or "").strip()
+    analysis_plan_id = str(payload.get("analysis_plan_id") or "").strip()
+    preview_id = str(payload.get("preview_id") or "").strip()
+    preview_hash = str(payload.get("preview_hash") or "").strip()
+    missing = [
+        field
+        for field, value in (
+            ("session_id", session_id),
+            ("analysis_plan_id", analysis_plan_id),
+            ("preview_id", preview_id),
+            ("preview_hash", preview_hash),
+        )
+        if not value
+    ]
+    if missing:
+        raise Layer3WorkbenchError(
+            "missing_execution_selection_fields",
+            f"Execution selection is missing required fields: {', '.join(missing)}.",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_execution_selection_request"],
+        )
+
+    forbidden = sorted(key for key in EXECUTION_SELECTION_FORBIDDEN_FIELDS if key in payload)
+    if forbidden:
+        raise Layer3WorkbenchError(
+            "analysis_execution_not_admitted",
+            f"Execution selection request includes non-admitted fields: {', '.join(forbidden)}.",
+            status="invalid",
+            blocked_fields=forbidden,
+            next_allowed_actions=["submit_selection_only_request"],
+        )
+
+    session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
+    if session is None:
+        raise Layer3WorkbenchError("session_not_found", f"Layer 3 session '{session_id}' was not found.", http_status=404)
+
+    revision_control = _plan_revision_control_from_session(session)
+    if revision_control is not None:
+        raise Layer3WorkbenchError(
+            str(revision_control.get("state") or "plan_revision_recorded"),
+            f"Layer 3 session '{session_id}' already has a plan revision-control decision.",
+            status="conflict",
+            http_status=409,
+        )
+
+    approved_plans = (
+        db.query(L3AnalysisPlan)
+        .filter(
+            L3AnalysisPlan.session_id == session_id,
+            L3AnalysisPlan.status == "approved",
+            L3AnalysisPlan.approved_by_operator.is_(True),
+        )
+        .with_for_update()
+        .order_by(L3AnalysisPlan.created_at.desc(), L3AnalysisPlan.analysis_plan_id.asc())
+        .all()
+    )
+    if len(approved_plans) == 0:
+        raise Layer3WorkbenchError(
+            "no_approved_plan",
+            f"Layer 3 session '{session_id}' has no current approved analysis plan.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["approve_current_plan"],
+        )
+    if len(approved_plans) > 1:
+        raise Layer3WorkbenchError(
+            "multiple_approved_plans",
+            f"Layer 3 session '{session_id}' has multiple approved analysis plans.",
+            status="conflict",
+            http_status=409,
+        )
+    approved_plan = approved_plans[0]
+
+    existing_selection = _execution_selection_from_session(session)
+    existing_pass_runs = _execution_selection_pass_runs(db, session_id=session_id)
+    if existing_selection is not None:
+        stored_pass_run_ids = list(existing_selection.get("pass_run_ids_json") or [])
+        existing_pass_run_ids = [pass_run.pass_run_id for pass_run in existing_pass_runs]
+        if stored_pass_run_ids != existing_pass_run_ids:
+            raise Layer3WorkbenchError(
+                "execution_selection_inconsistent",
+                f"Layer 3 session '{session_id}' has inconsistent execution-selection shell state.",
+                status="conflict",
+                http_status=409,
+            )
+        if str(existing_selection.get("client_request_id") or "") == request_id:
+            if (
+                str(existing_selection.get("analysis_plan_id") or "") == analysis_plan_id
+                and str(existing_selection.get("source_preview_id") or "") == preview_id
+                and str(existing_selection.get("source_preview_hash") or "") == preview_hash
+            ):
+                return _execution_selection_response(
+                    request_id=request_id,
+                    status="already_selected",
+                    session_id=session_id,
+                    analysis_plan_id=analysis_plan_id,
+                    preview_id=preview_id,
+                    preview_hash=preview_hash,
+                    pass_runs=existing_pass_runs,
+                )
+            raise Layer3WorkbenchError(
+                "idempotency_conflict",
+                "client_request_id already selected execution for a different approved plan or preview identity.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["client_request_id"],
+            )
+        raise Layer3WorkbenchError(
+            "execution_selection_already_exists",
+            f"Layer 3 session '{session_id}' already has an execution selection.",
+            status="conflict",
+            http_status=409,
+        )
+    if existing_pass_runs:
+        raise Layer3WorkbenchError(
+            "pass_runs_already_exist",
+            f"Layer 3 session '{session_id}' already has pass runs.",
+            status="conflict",
+            http_status=409,
+        )
+
+    if approved_plan.analysis_plan_id != analysis_plan_id:
+        raise Layer3WorkbenchError(
+            "approved_plan_mismatch",
+            "Execution selection must reference the current approved analysis plan.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["analysis_plan_id"],
+        )
+
+    plan_json = approved_plan.plan_json or {}
+    stored_preview_id = str(plan_json.get("source_preview_id") or "").strip()
+    stored_preview_hash = str(plan_json.get("source_preview_hash") or "").strip()
+    if preview_id != stored_preview_id or preview_hash != stored_preview_hash:
+        raise Layer3WorkbenchError(
+            "preview_mismatch",
+            "Execution selection must reference the approved plan preview id and hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["preview_id", "preview_hash"],
+            next_allowed_actions=["refresh_plan_preview"],
+        )
+
+    approved_set_ids = [str(item) for item in (approved_plan.analysis_set_ids_json or []) if str(item)]
+    planned_passes = [item for item in (plan_json.get("planned_passes_json") or []) if isinstance(item, dict)]
+    if not approved_set_ids or not planned_passes:
+        raise Layer3WorkbenchError(
+            "no_admissible_plan",
+            f"Layer 3 session '{session_id}' has no approved analysis sets for execution selection.",
+            status="blocked",
+            http_status=409,
+        )
+
+    planned_by_set_id = {str(item.get("analysis_set_id") or ""): item for item in planned_passes}
+    selected_planned_passes: list[dict[str, Any]] = []
+    for analysis_set_id in approved_set_ids:
+        planned_pass = planned_by_set_id.get(analysis_set_id)
+        if planned_pass is None:
+            raise Layer3WorkbenchError(
+                "approved_plan_malformed",
+                f"Approved plan '{analysis_plan_id}' is missing a planned pass for analysis set '{analysis_set_id}'.",
+                status="conflict",
+                http_status=409,
+            )
+        if not str(planned_pass.get("pass_type") or "").strip():
+            raise Layer3WorkbenchError(
+                "approved_plan_malformed",
+                f"Approved plan '{analysis_plan_id}' has a planned pass without pass_type.",
+                status="conflict",
+                http_status=409,
+            )
+        selected_planned_passes.append(planned_pass)
+
+    selected_at = _utcnow_iso()
+    pass_runs: list[L3PassRun] = []
+    for planned_pass in selected_planned_passes:
+        pass_run_id = uuid_str()
+        pass_run = L3PassRun(
+            pass_run_id=pass_run_id,
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            analysis_set_id=str(planned_pass.get("analysis_set_id")),
+            pass_type=str(planned_pass.get("pass_type")),
+            engine_family=str(planned_pass.get("engine_family") or "wrapped_quantitative_analysis"),
+            status="selected_not_started",
+            started_at=None,
+            completed_at=None,
+            input_payload_ref=f"layer3://execution-selection/{pass_run_id}/input",
+            output_payload_ref=None,
+            summary_json={
+                "schema_id": "layer3.pass_run_shell_summary.v1",
+                "execution_selection_schema_id": EXECUTION_SELECTION_SCHEMA_ID,
+                "selection_state": EXECUTION_SELECTION_STATE,
+                "client_request_id": request_id,
+                "analysis_plan_id": analysis_plan_id,
+                "source_preview_id": preview_id,
+                "source_preview_hash": preview_hash,
+                "execution_started": False,
+                "analysis_run_id": None,
+                "downstream_unavailable": list(EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE),
+                "planned_pass": _json_clone(planned_pass),
+                "selected_at": selected_at,
+            },
+            created_at=datetime.now(timezone.utc),
+        )
+        db.add(pass_run)
+        pass_runs.append(pass_run)
+
+    db.flush()
+    session.summary_json = {
+        **_json_clone(session.summary_json),
+        "execution_selection": {
+            "schema_id": EXECUTION_SELECTION_STATE_SCHEMA_ID,
+            "state": EXECUTION_SELECTION_STATE,
+            "client_request_id": request_id,
+            "analysis_plan_id": analysis_plan_id,
+            "source_preview_id": preview_id,
+            "source_preview_hash": preview_hash,
+            "pass_run_ids_json": [pass_run.pass_run_id for pass_run in pass_runs],
+            "pass_run_count": len(pass_runs),
+            "execution_started": False,
+            "analysis_run_ids_json": [],
+            "downstream_unavailable": list(EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE),
+            "operator_reason_recorded": bool(str(payload.get("operator_reason") or "").strip()),
+            "selected_at": selected_at,
+        },
+    }
+    db.commit()
+
+    return _execution_selection_response(
+        request_id=request_id,
+        status="selected_not_started",
+        session_id=session_id,
+        analysis_plan_id=analysis_plan_id,
+        preview_id=preview_id,
+        preview_hash=preview_hash,
+        pass_runs=pass_runs,
+    )
+
+
 def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     session = _load_session(db, session_id)
     manifest = (
@@ -1476,8 +1886,14 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     plan_preview_readiness = _plan_preview_readiness(db, session_id=session_id, include_owner_service=True)
     plan_approval_readiness = _plan_approval_summary(db, session_id=session_id)
     plan_revision_readiness = _plan_revision_summary(db, session_id=session_id)
-    current_gate = "plan" if typing_committed else "gate_c"
-    downstream_unavailable = PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE if typing_committed else DOWNSTREAM_UNAVAILABLE
+    execution_selection_readiness = _execution_selection_summary(db, session_id=session_id)
+    selection_active = bool(execution_selection_readiness["selected"])
+    current_gate = "execution" if selection_active else ("plan" if typing_committed else "gate_c")
+    downstream_unavailable = (
+        EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE
+        if selection_active
+        else (PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE if typing_committed else DOWNSTREAM_UNAVAILABLE)
+    )
 
     return {
         **_base_response("layer3.workbench_session_summary.v1"),
@@ -1495,6 +1911,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "plan_preview": plan_preview_readiness,
         "plan_approval": plan_approval_readiness,
         "plan_revision": plan_revision_readiness,
+        "execution_selection": execution_selection_readiness,
         "downstream_unavailable": list(downstream_unavailable),
         "authority_rail": _authority_rail(
             session_id=session_id,
