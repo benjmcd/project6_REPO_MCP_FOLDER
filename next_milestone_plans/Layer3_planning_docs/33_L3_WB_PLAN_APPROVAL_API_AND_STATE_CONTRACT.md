@@ -5,7 +5,7 @@
 - planning-only API/state companion for `32_L3_WB_PLAN_APPROVAL_FREEZE.md`
 - not active implementation by itself
 - subordinate to the plan-preview contract unless this document explicitly narrows a later implementation pass
-- implementation binding: PR `#199`, when merged, implements this contract through `/api/v1/layer3/plan/approve` and the existing `/review/layer3` plan panel
+- implementation binding: PR `#199` implements this contract through `/api/v1/layer3/plan/approve` and the existing `/review/layer3` plan panel
 
 This document freezes the API, DTO, browser-state, persistence, and proof contract for a plan-approval slice. It does not activate execution, results, package review, handoff, schema widening, runtime DB writes, qualitative/hybrid/RAG/vector execution, or hidden natural-language/LLM planning.
 
