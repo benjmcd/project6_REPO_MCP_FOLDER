@@ -27,7 +27,9 @@
     "next_milestone_plans/layer3_progress_manifest.json",
     "next_milestone_plans/layer3_progress_board.md",
     "next_milestone_plans/layer3-mockups/mockup-spec.txt",
-    "docs/nrc_adams/nrc_aps_status_handoff.md"
+    "docs/nrc_adams/nrc_aps_status_handoff.md",
+    "next_milestone_plans/Layer3_planning_docs/38_L3_WB_EXECUTION_SELECTION_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/39_L3_WB_EXECUTION_SELECTION_API_AND_STATE_CONTRACT.md"
   ],
   "current_live_workbench_boundary": {
     "live_bounded": [
@@ -38,6 +40,7 @@
       "read-only readiness proof"
     ],
     "not_live": [
+      "execution selection/pass-run shell governance",
       "L3PassRun creation from workbench",
       "analysis execution",
       "results review",
@@ -82,22 +85,27 @@
     {
       "gate_id": "revision-recovery",
       "decision": "The return path from plan_revision_requested to an approvable preview must be explicitly frozen.",
-      "status": "decision_required_before_execution"
+      "status": "frozen_for_execution_selection_as_non_executable_until_new_approved_plan_or_later_refresh_freeze"
     },
     {
       "gate_id": "approved-plan-correction",
       "decision": "Approved-plan cancellation or supersession must be explicitly frozen or remain unavailable.",
-      "status": "decision_required_before_execution"
+      "status": "frozen_for_execution_selection_as_unavailable"
     },
     {
       "gate_id": "output-taxonomy",
       "decision": "Datum/fact/finding/insight/caveat/result/package terms must be defined or deferred before results UI.",
-      "status": "decision_required_before_results_or_package_ui"
+      "status": "deferred_because_execution_selection_creates_no_results_or_package_ui"
     },
     {
       "gate_id": "source-breadth",
       "decision": "RAG/vector/upload/local-directory/qualitative/hybrid scope must be explicitly admitted or remain unavailable.",
-      "status": "decision_required_before_source_or_execution_expansion"
+      "status": "frozen_for_execution_selection_as_current_approved_plan_sources_only"
+    },
+    {
+      "gate_id": "execution-selection",
+      "decision": "The next eligible implementation may create selected/not-started L3PassRun shell rows only after approved-plan and preview-hash validation.",
+      "status": "defined_in_38_39_contract_no_analysis_execution"
     }
   ],
   "validation_commands": [
@@ -133,6 +141,9 @@
     "RAG/vector execution is live",
     "runtime DB writes are live",
     "schema widening is live",
-    "full mockup is live"
+    "full mockup is live",
+    "execution selection is live",
+    "analysis execution is live",
+    "pass-run shell execution has started"
   ]
 }
