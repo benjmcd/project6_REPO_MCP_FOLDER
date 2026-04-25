@@ -98,6 +98,24 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap.status_code == 200
     bootstrap_body = bootstrap.json()
     assert bootstrap_body["features"]["handoff"] is False
+    assert bootstrap_body["execution_readiness"]["execution_admitted"] is False
+    assert bootstrap_body["execution_readiness"]["readiness_endpoint"] == "/api/v1/layer3/readiness"
+
+    readiness = client.get("/api/v1/layer3/readiness")
+    assert readiness.status_code == 200
+    readiness_body = readiness.json()
+    _assert_common_response_envelope(readiness_body)
+    assert readiness_body["schema_id"] == "layer3.execution_readiness_contract.v1"
+    assert readiness_body["execution_admitted"] is False
+    assert readiness_body["execution_enabled"] is False
+    assert readiness_body["readiness_state"] == "execution_readiness_blocked"
+    assert readiness_body["preview_hash_contract"]["schema_id"] == "layer3.plan_preview_hash.v1"
+    assert readiness_body["idempotency_contract"]["client_request_id_supported"] is True
+    assert readiness_body["idempotency_contract"]["client_request_id_required_current_slice"] is False
+    assert "preview-hash" in readiness_body["implemented_gates"]
+    assert "revision-recovery" in readiness_body["deferred_gates"]
+    states = {item["state"] for item in readiness_body["state_model"]["states"]}
+    assert {"plan_preview_ready", "plan_approved", "plan_revision_requested", "execution_readiness_blocked"} <= states
 
     preflight, source, material = _prepare_material(client)
     for response_body in (bootstrap_body, preflight, source, material):
@@ -341,6 +359,15 @@ def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_sess
     assert body["schema_id"] == "layer3.plan_preview_result.v1"
     assert body["preview_only"] is True
     assert body["preview_hash"]
+    assert body["preview_identity"] == {
+        "schema_id": "layer3.plan_preview_identity.v1",
+        "preview_id": body["preview_id"],
+        "preview_hash": body["preview_hash"],
+        "preview_hash_schema_id": "layer3.plan_preview_hash.v1",
+        "authority_source": "server_owner_service_preview",
+        "stale_preview_writes_blocked": True,
+        "mismatch_error_code": "preview_mismatch",
+    }
     assert body["next_state"] == "plan_preview_ready"
     assert body["authority_rail"]["current_gate"] == "plan"
     assert body["authority_rail"]["execution_enabled"] is False
@@ -349,6 +376,9 @@ def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_sess
     assert body["plan_preview"]["would_create_analysis_plan"] is False
     assert body["plan_preview"]["would_create_pass_runs"] is False
     assert body["plan_preview"]["would_execute_passes"] is False
+    assert body["plan_preview"]["preview_hash_contract"]["schema_id"] == "layer3.plan_preview_hash.v1"
+    assert body["plan_preview"]["preview_hash_contract"]["mismatch_error_code"] == "preview_mismatch"
+    assert body["plan_preview"]["owner_service_basis"]["preview_hash_schema_id"] == "layer3.plan_preview_hash.v1"
     assert len(body["plan_preview"]["admitted_sets"]) == 1
     assert len(body["plan_preview"]["planned_passes"]) == 1
 

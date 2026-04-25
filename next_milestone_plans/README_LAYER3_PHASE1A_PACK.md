@@ -65,10 +65,12 @@ And to the bounded Gate D APS review-packet handoff lane now landed on current `
 - `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`
 - `backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py`
 
-And, on this branch only, to the Layer 3 workbench execution-readiness packet that must remain planning-only unless a later PR merges it:
+And to the Layer 3 workbench execution-readiness packet from PR `#212`, which remains planning-only and does not admit execution:
 - `next_milestone_plans/Layer3_planning_docs/36_L3_WB_EXECUTION_READINESS_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/37_L3_WB_STATE_HASH_IDEMPOTENCY_CONTRACT.md`
 - `next_milestone_plans/layer3_workbench_proof_manifest.json`
+
+This active branch may add only read-only implementation-readiness proof around that packet, such as `/api/v1/layer3/readiness`, plan-preview identity/hash metadata, or approval/revision serialization checks. It still must not create pass runs, run analysis, write result/package/handoff artifacts, widen schema/runtime DB behavior, or admit qualitative/hybrid/RAG/vector execution.
 
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
@@ -646,7 +648,7 @@ Current answer:
 
 No functional next workbench implementation beyond revision-control is selected by this pack. The next functional pass must start with a new freeze/API-state contract before adding execution, approved-plan supersession, results/package/handoff, runtime DB/schema widening, or qualitative/hybrid/RAG/vector/LLM planning.
 
-### If you are auditing the branch-local Layer 3 workbench execution-readiness packet
+### If you are auditing the Layer 3 workbench execution-readiness packet
 
 Start with:
 - `Layer3_planning_docs/36_L3_WB_EXECUTION_READINESS_FREEZE.md`
@@ -659,10 +661,11 @@ Start with:
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 
 Current answer:
-- this branch-local packet is execution-readiness planning only
+- PR `#212` landed this packet as execution-readiness planning only
 - it adds proof/readiness, state, preview-hash, idempotency, concurrency, revision-recovery, approved-plan-correction, output-taxonomy, and source-breadth gates before any later execution branch
 - it does not make execution, `L3PassRun`, analysis execution, results/package/handoff, approved-plan supersession, runtime DB/schema widening, qualitative/hybrid/RAG/vector execution, local upload ingestion, or full mockup activation live
-- browser proof is not required for this docs-only readiness packet because no runtime UI behavior changes, but any future UI or execution slice must run headed and headless browser proof when browser behavior changes
+- this active branch may add only read-only readiness proof around that packet, such as `/api/v1/layer3/readiness`, plan-preview identity/hash metadata, or approval/revision serialization checks
+- browser proof is not required for a backend-only readiness metadata slice because no rendered UI behavior changes, but any future UI or execution slice must run headed and headless browser proof when browser behavior changes
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 

@@ -20,7 +20,12 @@ from app.models.models import (
     L3TypingRecord,
     uuid_str,
 )
-from app.services.layer3_pass_entry import Layer3PassEntryError, approve_pass_entry_plan, preview_pass_entry
+from app.services.layer3_pass_entry import (
+    PLAN_PREVIEW_HASH_SCHEMA_ID,
+    Layer3PassEntryError,
+    approve_pass_entry_plan,
+    preview_pass_entry,
+)
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
     SnapshotMaterial,
@@ -53,6 +58,9 @@ PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 GATE_B_DECISIONS = ("approved", "denied", "isolated", "flagged")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
+PLAN_PREVIEW_IDENTITY_SCHEMA_ID = "layer3.plan_preview_identity.v1"
+EXECUTION_READINESS_SCHEMA_ID = "layer3.execution_readiness_contract.v1"
+STATE_MODEL_SCHEMA_ID = "layer3.workbench_state_model.v1"
 PLAN_REVISION_DECISIONS = frozenset({"reject_current_preview", "request_revision"})
 PLAN_REVISION_STATE_BY_DECISION = {
     "reject_current_preview": "plan_rejected",
@@ -84,6 +92,49 @@ PLAN_REVISION_FORBIDDEN_FIELDS = PLAN_APPROVAL_FORBIDDEN_FIELDS | frozenset(
         "rag_plan",
         "vector_plan",
     }
+)
+PLAN_PREVIEW_HASH_INCLUDED_INPUTS = (
+    "session_id",
+    "committed_gate_b_material_and_source_ids",
+    "committed_gate_c_analysis_set_unit_group_ids",
+    "owner_service_plan_version",
+    "admissible_and_excluded_set_payloads",
+    "planned_pass_payloads",
+    "deterministic_warning_codes",
+)
+PLAN_PREVIEW_HASH_EXCLUDED_INPUTS = (
+    "browser_render_order",
+    "local_ui_labels",
+    "non_semantic_timestamps",
+    "collapsed_or_expanded_ui_state",
+    "non_authoritative_explanatory_text",
+    "unpersisted_generated_alternatives",
+)
+READINESS_REQUIRED_GATES = (
+    "proof-manifest",
+    "state-model",
+    "preview-hash",
+    "idempotency",
+    "concurrency",
+    "revision-recovery",
+    "approved-plan-correction",
+    "output-taxonomy",
+    "source-breadth",
+    "browser-proof",
+)
+READINESS_IMPLEMENTED_GATES = (
+    "proof-manifest",
+    "state-model",
+    "preview-hash",
+    "idempotency",
+    "concurrency",
+)
+READINESS_DEFERRED_GATES = (
+    "revision-recovery",
+    "approved-plan-correction",
+    "output-taxonomy",
+    "source-breadth",
+    "browser-proof",
 )
 
 
@@ -174,6 +225,141 @@ def _authority_rail(
     }
 
 
+def _workbench_state_model() -> dict[str, Any]:
+    return {
+        "schema_id": STATE_MODEL_SCHEMA_ID,
+        "authority_order": [
+            "durable_layer3_session_state",
+            "committed_gate_b_and_gate_c_decisions",
+            "server_owner_service_preview",
+            "persisted_approval_or_revision_control_state",
+            "browser_display_cache_only",
+        ],
+        "states": [
+            {
+                "state": "intent_preflight_ready",
+                "authority_source": "server_preflight_validation",
+                "allowed_next_actions": ["source_preview"],
+                "forbidden_downstream_actions": ["plan", "execution", "results", "package"],
+            },
+            {
+                "state": "source_preview_ready",
+                "authority_source": "server_source_preview",
+                "allowed_next_actions": ["material_preview"],
+                "forbidden_downstream_actions": ["plan", "execution", "results", "package"],
+            },
+            {
+                "state": "material_preview_ready",
+                "authority_source": "server_material_preview",
+                "allowed_next_actions": ["gate_b_decision"],
+                "forbidden_downstream_actions": ["plan", "execution", "results", "package"],
+            },
+            {
+                "state": "gate_b_committed",
+                "authority_source": "l3_session_and_l3_selection_manifest",
+                "allowed_next_actions": ["gate_c_preview", "gate_c_commit"],
+                "forbidden_downstream_actions": ["execution", "results", "package"],
+            },
+            {
+                "state": "gate_c_typing_committed",
+                "authority_source": "l3_typing_record_and_l3_analysis_set",
+                "allowed_next_actions": ["plan_preview"],
+                "forbidden_downstream_actions": ["execution", "results", "package"],
+            },
+            {
+                "state": "plan_preview_ready",
+                "authority_source": "server_owner_service_preview",
+                "allowed_next_actions": ["plan_approve", "plan_reject", "plan_request_revision"],
+                "forbidden_downstream_actions": ["execution", "results", "package"],
+            },
+            {
+                "state": "plan_approved",
+                "authority_source": "l3_analysis_plan_approval_only",
+                "allowed_next_actions": [],
+                "forbidden_downstream_actions": ["execution", "results", "package"],
+            },
+            {
+                "state": "plan_rejected",
+                "authority_source": "l3_session_summary_plan_revision_control",
+                "allowed_next_actions": [],
+                "forbidden_downstream_actions": ["approval", "execution", "results", "package"],
+            },
+            {
+                "state": "plan_revision_requested",
+                "authority_source": "l3_session_summary_plan_revision_control",
+                "allowed_next_actions": [],
+                "forbidden_downstream_actions": ["approval", "execution", "results", "package"],
+            },
+            {
+                "state": "execution_readiness_blocked",
+                "authority_source": "layer3_execution_readiness_contract",
+                "allowed_next_actions": ["resolve_deferred_readiness_gates"],
+                "forbidden_downstream_actions": ["execution", "results", "package"],
+            },
+        ],
+    }
+
+
+def _plan_preview_hash_contract() -> dict[str, Any]:
+    return {
+        "schema_id": PLAN_PREVIEW_HASH_SCHEMA_ID,
+        "authority_source": "server_owner_service_preview",
+        "included_inputs": list(PLAN_PREVIEW_HASH_INCLUDED_INPUTS),
+        "excluded_inputs": list(PLAN_PREVIEW_HASH_EXCLUDED_INPUTS),
+        "mismatch_error_code": "preview_mismatch",
+        "mismatch_rule": "fail_closed_no_execution_or_artifact_writes",
+    }
+
+
+def _preview_identity(*, preview_id: str, preview_hash: str) -> dict[str, Any]:
+    return {
+        "schema_id": PLAN_PREVIEW_IDENTITY_SCHEMA_ID,
+        "preview_id": preview_id,
+        "preview_hash": preview_hash,
+        "preview_hash_schema_id": PLAN_PREVIEW_HASH_SCHEMA_ID,
+        "authority_source": "server_owner_service_preview",
+        "stale_preview_writes_blocked": True,
+        "mismatch_error_code": "preview_mismatch",
+    }
+
+
+def readiness_contract() -> dict[str, Any]:
+    return {
+        **_base_response(EXECUTION_READINESS_SCHEMA_ID),
+        "execution_admitted": False,
+        "execution_enabled": False,
+        "readiness_state": "execution_readiness_blocked",
+        "required_gates": list(READINESS_REQUIRED_GATES),
+        "implemented_gates": list(READINESS_IMPLEMENTED_GATES),
+        "deferred_gates": list(READINESS_DEFERRED_GATES),
+        "state_model": _workbench_state_model(),
+        "preview_hash_contract": _plan_preview_hash_contract(),
+        "idempotency_contract": {
+            "schema_id": "layer3.idempotency_contract.v1",
+            "client_request_id_supported": True,
+            "client_request_id_required_current_slice": False,
+            "duplicate_plan_approval": "returns existing approved-plan conflict; no duplicate L3AnalysisPlan",
+            "duplicate_plan_revision": "returns existing revision-control conflict; no duplicate revision-control state",
+            "duplicate_without_client_request_id": "server-authoritative state conflicts still prevent duplicate durable approval or revision-control state",
+            "future_execution": "not admitted until separately frozen",
+        },
+        "concurrency_contract": {
+            "schema_id": "layer3.concurrency_contract.v1",
+            "approval_revision_mutual_exclusion": True,
+            "server_authority": "durable_session_row_lock_or_equivalent_transaction",
+            "browser_in_flight_lock_is_authoritative": False,
+            "future_execution_requires_separate_locking_freeze": True,
+        },
+        "deferred_decisions": {
+            "schema_id": "layer3.deferred_execution_decisions.v1",
+            "revision_recovery": "requires later freeze",
+            "approved_plan_correction": "requires later freeze",
+            "output_taxonomy": "requires later freeze before results or package UI",
+            "source_breadth": "requires later freeze before RAG/vector/upload/local-directory expansion",
+        },
+    }
+
+
 def bootstrap() -> dict[str, Any]:
     return {
         **_base_response("layer3.workbench_bootstrap.v1"),
@@ -197,6 +383,13 @@ def bootstrap() -> dict[str, Any]:
             "runtime_snapshot_db_writes": False,
             "schema_widening": False,
             "typing_override_enabled": False,
+        },
+        "execution_readiness": {
+            "schema_id": EXECUTION_READINESS_SCHEMA_ID,
+            "execution_admitted": False,
+            "execution_enabled": False,
+            "readiness_state": "execution_readiness_blocked",
+            "readiness_endpoint": f"{API_ROOT}/readiness",
         },
         "authority_rail": _authority_rail(
             current_gate="intent",
@@ -954,6 +1147,7 @@ def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         "plan_version": PLAN_PREVIEW_SCOPE,
         "owner_plan_version": owner_preview.owner_service_basis["owner_plan_version"],
         "preview_hash": owner_preview.preview_hash,
+        "preview_hash_contract": _plan_preview_hash_contract(),
         "approval_ready": True,
         "would_create_analysis_plan": False,
         "would_create_pass_runs": False,
@@ -971,6 +1165,7 @@ def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         "next_state": "plan_preview_ready",
         "preview_id": preview_id,
         "preview_hash": owner_preview.preview_hash,
+        "preview_identity": _preview_identity(preview_id=preview_id, preview_hash=owner_preview.preview_hash),
         "preview_only": True,
         "authority_rail": _authority_rail(
             session_id=session_id,
@@ -1028,6 +1223,17 @@ def plan_approval(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             status="invalid",
             blocked_fields=forbidden,
             next_allowed_actions=["submit_approval_only_request"],
+        )
+    session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
+    if session is None:
+        raise Layer3WorkbenchError("session_not_found", f"Layer 3 session '{session_id}' was not found.", http_status=404)
+    existing_control = _plan_revision_control_from_session(session)
+    if existing_control is not None:
+        raise Layer3WorkbenchError(
+            str(existing_control.get("state") or "plan_revision_recorded"),
+            f"Layer 3 session '{session_id}' already has a plan revision-control decision.",
+            status="conflict",
+            http_status=409,
         )
     existing_plan = _latest_analysis_plan(db, session_id=session_id)
     if existing_plan is not None:
