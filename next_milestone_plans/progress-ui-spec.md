@@ -45,7 +45,7 @@ The UI must not override authority.
 - Do not present candidate next consumers as though they are already the current implementation lane.
 - Do not present a deferred item as a candidate or current focus unless its manifest-declared activation conditions are satisfied.
 - Render `layer3_workbench_current_decision` separately from `next_required_decision`; the later APS family settlement is not itself a workbench execution or next-slice admission.
-- Render `layer3_workbench_slices` as a structured workbench register; do not make users infer PR `#184`, `#194`, `#199`, `#205`, `#207`, `#212`, `#213`, `#216`, `#218`, `#222`, docs `44`/`45`, the PR `#227` result-review implementation state, docs `46`/`47` result-review UI planning state, or PR `#232` result-review UI implementation state only from prose.
+- Render `layer3_workbench_slices` as a structured workbench register; do not make users infer PR `#184`, `#194`, `#199`, `#205`, `#207`, `#212`, `#213`, `#216`, `#218`, `#222`, docs `44`/`45`, the PR `#227` result-review implementation state, docs `46`/`47` result-review UI planning state, PR `#232` result-review UI implementation state, or docs `48`/`49` package-review preview planning state only from prose.
 
 ## Required Visual Sections
 
@@ -86,7 +86,7 @@ Render these sections in this order:
      - governing docs
      - key PRs
      - exact live scope or explicit non-goals
-   - render docs `46`/`47` as planning-only result-review UI governance and PR `#232` as the separate live bounded `/review/layer3` result-review UI implementation
+   - render docs `46`/`47` as planning-only result-review UI governance, PR `#232` as the separate live bounded `/review/layer3` result-review UI implementation, and docs `48`/`49` as planning-only package-review preview governance with no live package construction or handoff
    - keep the register visually separate from the APS milestone table because it is a workbench lineage overlay, not a 29-milestone APS count change
 
 5. `Completed Chain`
