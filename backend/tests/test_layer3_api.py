@@ -20,7 +20,7 @@ sys.path.insert(0, str(TESTS))
 from app.api.deps import get_db
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
-from app.models.models import AnalysisRun, L3AnalysisPlan, L3PassRun
+from app.models.models import AnalysisArtifact, AnalysisRun, L3AnalysisPlan, L3PassRun
 from main import app
 from test_layer3_pass_entry import _build_quant_ready_session
 
@@ -127,12 +127,37 @@ def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
     return session_id, preview_body, approval.json()
 
 
+def _select_quant_pass(
+    client: TestClient,
+    tmp_path,
+    *,
+    request_id: str = "api-analysis-execution-selection",
+) -> tuple[str, dict, dict, dict]:
+    session_id, preview_body, approval_body = _approve_quant_plan(client, tmp_path)
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": request_id,
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert selection.status_code == 200
+    return session_id, preview_body, approval_body, selection.json()
+
+
 def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     bootstrap = client.get("/api/v1/layer3/bootstrap")
     assert bootstrap.status_code == 200
     bootstrap_body = bootstrap.json()
     assert bootstrap_body["features"]["handoff"] is False
+    assert bootstrap_body["features"]["analysis_execution_start"] is True
+    assert bootstrap_body["features"]["analysis_execution"] is False
     assert bootstrap_body["execution_readiness"]["execution_admitted"] is False
+    assert bootstrap_body["execution_readiness"]["analysis_execution_start_admitted"] is True
+    assert bootstrap_body["execution_readiness"]["analysis_execution_start_endpoint"] == "/api/v1/layer3/execution/start"
     assert bootstrap_body["execution_readiness"]["readiness_endpoint"] == "/api/v1/layer3/readiness"
 
     readiness = client.get("/api/v1/layer3/readiness")
@@ -142,14 +167,17 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["schema_id"] == "layer3.execution_readiness_contract.v1"
     assert readiness_body["execution_admitted"] is False
     assert readiness_body["execution_enabled"] is False
+    assert readiness_body["analysis_execution_start_admitted"] is True
+    assert readiness_body["analysis_execution_start_endpoint"] == "/api/v1/layer3/execution/start"
     assert readiness_body["readiness_state"] == "execution_readiness_blocked"
     assert readiness_body["preview_hash_contract"]["schema_id"] == "layer3.plan_preview_hash.v1"
     assert readiness_body["idempotency_contract"]["client_request_id_supported"] is True
     assert readiness_body["idempotency_contract"]["client_request_id_required_current_slice"] is False
     assert "preview-hash" in readiness_body["implemented_gates"]
+    assert "analysis-execution-start" in readiness_body["implemented_gates"]
     assert "revision-recovery" in readiness_body["deferred_gates"]
     states = {item["state"] for item in readiness_body["state_model"]["states"]}
-    assert {"plan_preview_ready", "plan_approved", "plan_revision_requested", "execution_readiness_blocked"} <= states
+    assert {"plan_preview_ready", "plan_approved", "plan_revision_requested", "execution_pass_completed", "execution_readiness_blocked"} <= states
 
     preflight, source, material = _prepare_material(client)
     for response_body in (bootstrap_body, preflight, source, material):
@@ -792,7 +820,7 @@ def test_layer3_api_execution_selection_creates_only_pass_run_shells(client: Tes
     assert selection_body["next_state"] == "execution_selected_not_started"
     assert selection_body["execution_started"] is False
     assert selection_body["analysis_run_ids"] == []
-    assert selection_body["downstream_unavailable"] == ["analysis_execution", "results", "package", "handoff"]
+    assert selection_body["downstream_unavailable"] == ["results", "package", "handoff"]
     assert len(selection_body["pass_run_ids"]) == 1
 
     duplicate = client.post(
@@ -910,6 +938,235 @@ def test_layer3_api_execution_selection_prechecks_fail_closed(client: TestClient
     try:
         assert db.query(L3PassRun).count() == 0
         assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_analysis_execution_start_runs_selected_pass_once(client: TestClient, tmp_path) -> None:
+    session_id, preview_body, approval_body, selection_body = _select_quant_pass(
+        client,
+        tmp_path,
+        request_id="api-analysis-execution-selection-success",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    start = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-analysis-execution-start-success",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "execution_mode": "synchronous_single_pass",
+            "operator_reason": "Start the selected quantitative pass only.",
+        },
+    )
+    assert start.status_code == 200
+    start_body = start.json()
+    _assert_common_response_envelope(start_body)
+    assert start_body["schema_id"] == "layer3.analysis_execution_start.v1"
+    assert start_body["status"] in {"completed", "completed_with_warnings"}
+    assert start_body["pass_run_id"] == pass_run_id
+    assert start_body["execution_started"] is True
+    assert start_body["analysis_run_id"]
+    assert start_body["pass_run_status"] == start_body["status"]
+    assert start_body["output_payload_ref"]
+    assert start_body["downstream_unavailable"] == ["results", "package", "handoff"]
+
+    duplicate = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-analysis-execution-start-success",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert duplicate.status_code == 200
+    duplicate_body = duplicate.json()
+    assert duplicate_body["status"] == "already_completed"
+    assert duplicate_body["analysis_run_id"] == start_body["analysis_run_id"]
+
+    conflicting_retry = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-analysis-execution-start-conflict",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert conflicting_retry.status_code == 409
+    assert conflicting_retry.json()["error_code"] == "analysis_execution_already_started"
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200
+    summary_body = summary.json()
+    assert summary_body["current_gate"] == "execution"
+    assert summary_body["execution_selection"]["execution_started"] is True
+    assert summary_body["execution_selection"]["analysis_run_ids"] == [start_body["analysis_run_id"]]
+    assert summary_body["execution_selection"]["pass_run_statuses"][pass_run_id] == start_body["status"]
+    assert summary_body["downstream_unavailable"] == ["results", "package", "handoff"]
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3AnalysisPlan).count() == 1
+        assert db.query(L3PassRun).count() == 1
+        assert db.query(AnalysisRun).count() == 1
+        assert db.query(AnalysisArtifact).count() >= 1
+        stored_pass = db.query(L3PassRun).one()
+        assert stored_pass.status in {"completed", "completed_with_warnings"}
+        assert stored_pass.started_at is not None
+        assert stored_pass.completed_at is not None
+        assert stored_pass.summary_json["execution_started"] is True
+        assert stored_pass.summary_json["analysis_run_id"] == start_body["analysis_run_id"]
+        assert stored_pass.summary_json["analysis_execution_start"]["client_request_id"] == "api-analysis-execution-start-success"
+        assert Path(stored_pass.output_payload_ref).exists()
+    finally:
+        db.close()
+
+
+def test_layer3_api_analysis_execution_start_prechecks_fail_closed(client: TestClient, tmp_path) -> None:
+    session_id, preview_body, approval_body = _approve_quant_plan(client, tmp_path)
+
+    missing_request_id = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": "missing-pass-run",
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert missing_request_id.status_code == 400
+    assert missing_request_id.json()["error_code"] == "client_request_id_required"
+
+    missing_selection = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-analysis-execution-start-no-selection",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": "missing-pass-run",
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert missing_selection.status_code == 409
+    assert missing_selection.json()["error_code"] == "execution_selection_required"
+
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": "api-analysis-execution-precheck-selection",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert selection.status_code == 200
+    pass_run_id = selection.json()["pass_run_ids"][0]
+
+    forbidden = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-analysis-execution-start-forbidden",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "package_review": True,
+            "run_all": True,
+        },
+    )
+    assert forbidden.status_code == 400
+    assert forbidden.json()["error_code"] == "analysis_execution_start_scope_not_admitted"
+    assert set(forbidden.json()["blocked_fields"]) == {"package_review", "run_all"}
+
+    unknown_forbidden = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-analysis-execution-start-unknown-forbidden",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "results": True,
+            "artifact_manifest": {"requested": True},
+            "source_expansion": "rag",
+            "schema_widening": True,
+        },
+    )
+    assert unknown_forbidden.status_code == 400
+    assert unknown_forbidden.json()["error_code"] == "analysis_execution_start_scope_not_admitted"
+    assert set(unknown_forbidden.json()["blocked_fields"]) == {
+        "artifact_manifest",
+        "results",
+        "schema_widening",
+        "source_expansion",
+    }
+
+    stale_preview = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-analysis-execution-start-stale-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": "stale-preview-hash",
+        },
+    )
+    assert stale_preview.status_code == 409
+    assert stale_preview.json()["error_code"] == "preview_mismatch"
+
+    unselected_pass = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-analysis-execution-start-unselected",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": "unselected-pass-run",
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert unselected_pass.status_code == 409
+    assert unselected_pass.json()["error_code"] == "pass_run_not_selected"
+
+    unsupported_mode = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-analysis-execution-start-unsupported-mode",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "execution_mode": "background_batch",
+        },
+    )
+    assert unsupported_mode.status_code == 400
+    assert unsupported_mode.json()["error_code"] == "unsupported_execution_mode"
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3PassRun).count() == 1
+        assert db.query(AnalysisRun).count() == 0
+        stored_pass = db.query(L3PassRun).one()
+        assert stored_pass.status == "selected_not_started"
+        assert stored_pass.summary_json["analysis_run_id"] is None
+        assert stored_pass.output_payload_ref is None
     finally:
         db.close()
 
