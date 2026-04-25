@@ -429,7 +429,7 @@ It is the merged API/state companion from PR `#182` for the `future workbench ro
 ### Broader workbench second-slice plan-preview freeze docs
 
 These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-They freeze the next planning-only workbench slice after the landed first-slice shell/API: a read-only plan-preview step after explicit Gate C typing commit. They do not activate execution, results, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, or broader route/UI scope:
+They were merged as planning-only docs in PR `#191` and freeze the next workbench slice after the landed first-slice shell/API: a read-only plan-preview step after explicit Gate C typing commit. They do not activate execution, results, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, or broader route/UI scope:
 - `30_L3_WB_PLAN_PREVIEW_FREEZE.md`
 - `31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md`
 
