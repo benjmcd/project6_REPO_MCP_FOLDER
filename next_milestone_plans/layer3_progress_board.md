@@ -29,10 +29,10 @@ Hard rule:
 ## Current Snapshot
 
 As of `2026-04-25`:
-- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-pr-tracking-sync`
+- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-proof-sync`
 - valid local authority rule: use a clean checkout whose contents match the artifact state being refreshed; prefer current `main` for merged repo truth and the active branch checkout when an open or branch-only milestone is declared
 - authoritative remote branch: `project6-origin/main`
-- snapshot base `main` commit at this artifact refresh: `5b8c6a7678bd2cdd6fb2b39b27f294469fbef9e0`
+- snapshot base `main` commit at this artifact refresh: `7b68c9d8d0d9105ef693f43a5b065d0aab5b70e6`
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the landed export-package first shared-consumer freeze from PR `#106` and its docs-only closeout from PR `#107`
