@@ -1,30 +1,30 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, planning-only package-review preview governance, and branch-only read-only package-preview implementation candidate",
+  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, planning-only package-review preview governance, and merged read-only package-review preview implementation from PR #235",
   "scope": {
-    "source_branch": "codex/l3-package-preview-impl",
-    "merged_pr": "#234",
-    "merge_commit": "8bf4909827a4aa1027a64d13bcdacbffd9383af9",
+    "source_branch": "codex/l3-pr235-postmerge-sync",
+    "merged_pr": "#235",
+    "merge_commit": "6bca17c21d1d871d23c621ab5bd6dd52143f55a1",
     "base_remote": "project6-origin/main",
-    "base_commit": "8bf49098",
-    "source_base_commit": "8bf4909827a4aa1027a64d13bcdacbffd9383af9",
-    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #234 planning-only docs 48/49 package-review preview governance, and the branch-only read-only package-preview implementation candidate.",
+    "base_commit": "6bca17c2",
+    "source_base_commit": "6bca17c21d1d871d23c621ab5bd6dd52143f55a1",
+    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #234 planning-only docs 48/49 package-review preview governance, and the PR #235 read-only package-review preview implementation.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "Current main through PR #234 includes the bounded read-only /api/v1/layer3/execution/result/status endpoint, the bounded /api/v1/layer3/execution/result/review endpoint for one terminal selected pass, /review/layer3 UI controls to refresh session state, inspect result/status, and submit one bounded review decision, plus planning-only docs 48/49 package-review preview governance. Branch codex/l3-package-preview-impl adds a read-only package-review preview endpoint and panel as an implementation candidate only. It does not add package construction, package-review submit/commit, handoff/export, rerun/recovery, runtime DB/schema widening, source expansion, qualitative/hybrid/RAG/vector execution, local upload/directory ingestion, or full mockup activation.",
-    "latest_implementation_pr": "#232",
-    "latest_implementation_branch": "codex/l3-result-review-ui-impl",
-    "latest_implementation_summary": "PR #232 adds bounded /review/layer3 result-review UI behavior: session refresh, selected-pass result/status inspection, and one result-review submission through existing backend endpoints while preserving package/handoff/rerun/source/schema/runtime/full-mockup no-go boundaries.",
+    "live_behavior_change_summary": "Current main through PR #235 includes the bounded read-only /api/v1/layer3/execution/result/status endpoint, the bounded /api/v1/layer3/execution/result/review endpoint for one terminal selected pass, /review/layer3 UI controls to refresh session state, inspect result/status, submit one bounded review decision, and inspect read-only package-review preview candidates after an approved result review. It does not add package construction, package-review submit/commit, handoff/export, rerun/recovery, runtime DB/schema widening, source expansion, qualitative/hybrid/RAG/vector execution, local upload/directory ingestion, or full mockup activation.",
+    "latest_implementation_pr": "#235",
+    "latest_implementation_branch": "codex/l3-package-preview-impl",
+    "latest_implementation_summary": "PR #235 adds bounded read-only package-review preview behavior: POST /api/v1/layer3/package/review/preview plus /review/layer3 inspection after approved selected-pass result review, while preserving package construction, package-review submit/commit, handoff/export, rerun/recovery, source/schema/runtime/full-mockup no-go boundaries.",
     "latest_planning_pr": "#226",
     "latest_planning_branch": "codex/l3-result-review-freeze",
     "latest_planning_summary": "Docs 44/45 add planning-only governance for the bounded selected-pass result-review decision after PR #222 result/status authority; by themselves they do not implement a result-review endpoint or package/handoff behavior.",
     "latest_planning_live_behavior_change": false,
     "latest_planning_behavior_summary": "Docs 44/45 are documentation/control only; merging them changes planning authority but not runtime API, UI, database, execution, package, or handoff behavior.",
-    "latest_implementation_merge_commit": "f11dd5f5dc0db91e750ec3d2aa3bb210e8aec12e",
+    "latest_implementation_merge_commit": "6bca17c21d1d871d23c621ab5bd6dd52143f55a1",
     "latest_planning_base_commit": "9d78c5df1317",
-    "latest_branch_only_implementation_branch": "codex/l3-package-preview-impl",
+    "latest_branch_only_implementation_branch": "none active after PR #235",
     "latest_branch_only_implementation_pr": "none",
-    "latest_branch_only_implementation_summary": "Branch-only bounded read-only package-review preview candidate: adds POST /api/v1/layer3/package/review/preview plus /review/layer3 inspection after approved selected-pass result review, without package construction, package rows, payload files, materialize_package_entry(...) calls, package-review submit/commit, handoff/export, rerun/recovery, source/schema/runtime widening, or full mockup activation.",
+    "latest_branch_only_implementation_summary": "No active branch-only Layer 3 package-review preview implementation candidate remains after PR #235 merged; future package construction or submit/commit work requires a separate freeze.",
     "latest_ui_planning_pr": "#230",
     "latest_ui_planning_branch": "codex/l3-result-review-ui-freeze",
     "latest_ui_planning_summary": "PR #230 adds docs 46/47 to freeze the /review/layer3 result-review presentation/control boundary over existing backend selected-pass result/status and result-review state; by itself it does not make UI behavior live.",
@@ -39,7 +39,9 @@
     "latest_package_review_planning_summary": "Docs 48/49 freeze only read-only package-review readiness/preview governance after an approved selected-pass result review. They do not make package review, package construction, L3OutputPackage/L3ReconciliationRecord creation, materialize_package_entry(...) as-is admission, package payloads, handoff/export, rerun/recovery, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation live.",
     "latest_package_review_planning_live_behavior_change": false,
     "latest_package_review_implementation_branch": "codex/l3-package-preview-impl",
-    "latest_package_review_implementation_summary": "Branch-only read-only package-review preview endpoint and UI panel over current main after PR #234; merge required before current-main live classification."
+    "latest_package_review_implementation_summary": "PR #235 merged the read-only package-review preview endpoint and UI panel over current main after PR #234; current-main live classification is limited to preview inspection only.",
+    "latest_package_review_implementation_pr": "#235",
+    "latest_package_review_implementation_merge_commit": "6bca17c21d1d871d23c621ab5bd6dd52143f55a1"
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -86,7 +88,9 @@
       "bounded selected-pass result-review endpoint",
       "one operator result-review decision recorded against existing L3PassRun/L3Session JSON summaries",
       "bounded result-review UI presentation/control",
-      "session refresh, selected-pass result/status inspection, and one result-review submission on /review/layer3"
+      "session refresh, selected-pass result/status inspection, and one result-review submission on /review/layer3",
+      "bounded read-only package-review preview endpoint",
+      "read-only /review/layer3 package-preview inspection after approved selected-pass result review"
     ],
     "not_live": [
       "general analysis execution beyond the PR #218 one selected-pass execution-start boundary",
@@ -120,12 +124,9 @@
       "result-review UI freeze/state contract from docs 46/47 governs the PR #232 bounded /review/layer3 presentation/control implementation; by itself it does not add rendered UI behavior",
       "package-review preview freeze/API-state contract from docs 48/49 governs only a read-only package-review readiness/preview step after approved selected-pass result review; by itself it does not add package review, package construction, package rows, package payloads, or handoff/export behavior"
     ],
-    "branch_only_candidate": [
-      "codex/l3-package-preview-impl adds branch-only read-only POST /api/v1/layer3/package/review/preview",
-      "codex/l3-package-preview-impl adds branch-only /review/layer3 package-preview inspection after approved selected-pass result review"
-    ],
+    "branch_only_candidate": [],
     "still_forbidden_after_pr_227": [
-      "package review",
+      "package-review submit/commit and package construction",
       "handoff/export",
       "batch or multi-pass execution",
       "approved-plan supersession",
@@ -161,7 +162,7 @@
     "still_forbidden_after_pr_232": [
       "UI behavior beyond PR #232 bounded session refresh, selected-pass result/status inspection, and one result-review submission",
       "execution selection/start UI",
-      "package review",
+      "package-review submit/commit and package construction",
       "handoff/export",
       "rerun/recovery",
       "result-review amendment or supersession",
@@ -195,7 +196,7 @@
       "RAG/vector execution",
       "full mockup activation"
     ],
-    "still_forbidden_after_package_review_preview_impl_candidate": [
+    "still_forbidden_after_package_review_preview_impl": [
       "package review as a submit/commit action",
       "package construction",
       "L3OutputPackage row creation",
@@ -203,7 +204,7 @@
       "AnalysisArtifact creation from package preview",
       "materialize_package_entry(...) call from /review/layer3",
       "package payload file writes",
-      "package-review decision persistence",
+      "package-review submit/commit decision persistence",
       "handoff/export",
       "APS handoff behavior",
       "rerun/recovery/cancellation/retry behavior",
@@ -297,8 +298,8 @@
     },
     {
       "gate_id": "package-review-preview-implementation",
-      "decision": "The branch-only implementation may expose a read-only package-review preview endpoint and UI inspection panel after one approved selected-pass result review, while preserving no package construction, package rows, package payloads, materialize_package_entry(...) call, package-review submit/commit, handoff/export, rerun/recovery, source/schema/runtime widening, execution selection/start UI, and full mockup activation.",
-      "status": "branch_only_candidate_on_codex_l3_package_preview_impl"
+      "decision": "PR #235 exposes a read-only package-review preview endpoint and UI inspection panel after one approved selected-pass result review, while preserving no package construction, package rows, package payloads, materialize_package_entry(...) call, package-review submit/commit, handoff/export, rerun/recovery, source/schema/runtime widening, execution selection/start UI, and full mockup activation.",
+      "status": "implemented_by_pr_235_as_bounded_read_only_package_review_preview_on_main"
     }
   ],
   "validation_commands": [
@@ -332,7 +333,7 @@
     },
     {
       "command": "python -m pytest .\\backend\\tests\\test_layer3_api.py -q",
-      "purpose": "Verify the branch-only package-review preview backend endpoint and read-only/no-write prechecks; passed with 25 passed, 3 warnings."
+      "purpose": "Verify the PR #235 package-review preview backend endpoint and read-only/no-write prechecks; passed with 25 passed, 3 warnings."
     },
     {
       "command": "python -m pytest .\\backend\\tests\\test_layer3_page.py -q",
@@ -340,22 +341,22 @@
     },
     {
       "command": "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest $tests -q",
-      "purpose": "Verify the complete focused Layer 3 backend/page/service family after the branch-only package-preview implementation candidate; passed with 131 passed, 3 warnings."
+      "purpose": "Verify the complete focused Layer 3 backend/page/service family after the PR #235 package-preview implementation; passed with 131 passed, 3 warnings."
     },
     {
       "command": "$env:PLAYWRIGHT_PYTHON='python'; npx playwright test layer3-workbench.spec.js --project=chromium",
-      "purpose": "Headless Chromium proof for the branch-only /review/layer3 package-preview inspection UI; passed with 5 passed."
+      "purpose": "Headless Chromium proof for the PR #235 /review/layer3 package-preview inspection UI; passed with 5 passed."
     },
     {
       "command": "$env:PLAYWRIGHT_PYTHON='python'; npx playwright test layer3-workbench.spec.js --project=chromium --headed",
-      "purpose": "Headed Chromium proof for the branch-only /review/layer3 package-preview inspection UI; passed with 5 passed."
+      "purpose": "Headed Chromium proof for the PR #235 /review/layer3 package-preview inspection UI; passed with 5 passed."
     },
     {
       "command": "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null; python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null; git diff --check",
-      "purpose": "Validate JSON manifests and whitespace/diff hygiene after the branch-only package-preview implementation progress/proof/status sync; passed with CRLF warnings only."
+      "purpose": "Validate JSON manifests and whitespace/diff hygiene after the PR #235 package-preview implementation progress/proof/status sync; passed with CRLF warnings only."
     }
   ],
-  "browser_proof_rule": "Rendered /review/layer3 behavior changed in this branch-only package-preview implementation candidate, so both headed and headless Chrome proof are required. The branch reran both local Layer 3 workbench e2e modes plus the focused Layer 3 test family before landing or PR review.",
+  "browser_proof_rule": "Rendered /review/layer3 behavior changed in the PR #235 package-preview implementation, so both headed and headless Chrome proof were required and passed before merge.",
   "no_go_scan_terms": [
     "package review is live",
     "handoff is live",
@@ -445,11 +446,23 @@
       "full mockup activation"
     ]
   },
-  "package_review_preview_impl_candidate_proof": {
+  "post_package_review_preview_docs_proof": {
+    "sync_branch": "codex/l3-package-review-freeze",
+    "base_commit": "38cd92a7",
+    "base_source": "project6-origin/main after merged PR #233 result-review UI docs/progress sync",
+    "scope": "Docs/control only: add planning-only package-review preview governance in docs 48/49 and align progress/status/proof surfaces. No runtime API, UI, schema, package, handoff, or source-ingestion implementation changes.",
+    "commands": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null; python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null; git diff --check -> passed with CRLF warnings only",
+      "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3_*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest $tests -q -> 129 passed, 3 warnings"
+    ],
+    "browser_proof": "Not run for this packet because it changes docs/progress/proof/status surfaces only and does not change rendered /review/layer3 UI behavior; headed and headless Chrome remain required for any later rendered UI implementation.",
+    "no_go_scan": "Package-review/package-construction live-claim scan found only intentional guard strings inside no_go_scan_terms, not prose claims that package review is live."
+  },
+  "package_review_preview_impl_proof": {
     "implementation_branch": "codex/l3-package-preview-impl",
-    "base_commit": "8bf49098",
-    "base_source": "project6-origin/main after merged PR #234 package-review preview docs/control packet",
-    "scope": "Branch-only read-only implementation candidate: add POST /api/v1/layer3/package/review/preview, readiness/bootstrap state, and /review/layer3 package-preview inspection after approved selected-pass result review. No package construction, package-review submit/commit, package rows, payload files, materialize_package_entry(...) call, handoff/export, rerun/recovery, source/schema/runtime widening, execution selection/start UI, or full mockup activation.",
+    "base_commit": "6bca17c2",
+    "base_source": "project6-origin/main after merged PR #235 package-review preview implementation",
+    "scope": "Current-main read-only implementation from PR #235: add POST /api/v1/layer3/package/review/preview, readiness/bootstrap state, and /review/layer3 package-preview inspection after approved selected-pass result review. No package construction, package-review submit/commit, package rows, payload files, materialize_package_entry(...) call, handoff/export, rerun/recovery, source/schema/runtime widening, execution selection/start UI, or full mockup activation.",
     "commands": [
       "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -> 25 passed, 3 warnings",
       "python -m pytest .\\backend\\tests\\test_layer3_page.py -q -> 3 passed, 3 warnings",
@@ -458,7 +471,7 @@
       "$env:PLAYWRIGHT_PYTHON='python'; npx playwright test layer3-workbench.spec.js --project=chromium --headed -> 5 passed"
     ],
     "no_write_proof": "Backend tests assert unchanged counts for L3AnalysisPlan, L3PassRun, AnalysisRun, AnalysisArtifact, L3OutputPackage, and L3ReconciliationRecord around package-preview inspection.",
-    "browser_proof": "Both local Playwright modes passed against the branch-only package-preview UI: headless Chromium 5 passed and headed Chromium 5 passed.",
+    "browser_proof": "Both local Playwright modes passed for the PR #235 package-preview UI: headless Chromium 5 passed and headed Chromium 5 passed.",
     "no_go_preserved": [
       "package construction",
       "package-review submit/commit",
@@ -474,18 +487,8 @@
       "qualitative/hybrid/RAG/vector execution",
       "local upload/directory ingestion",
       "full mockup activation"
-    ]
-  },
-  "post_package_review_preview_docs_proof": {
-    "sync_branch": "codex/l3-package-review-freeze",
-    "base_commit": "38cd92a7",
-    "base_source": "project6-origin/main after merged PR #233 result-review UI docs/progress sync",
-    "scope": "Docs/control only: add planning-only package-review preview governance in docs 48/49 and align progress/status/proof surfaces. No runtime API, UI, schema, package, handoff, or source-ingestion implementation changes.",
-    "commands": [
-      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null; python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null; git diff --check -> passed with CRLF warnings only",
-      "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3_*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest $tests -q -> 129 passed, 3 warnings"
     ],
-    "browser_proof": "Not run for this packet because it changes docs/progress/proof/status surfaces only and does not change rendered /review/layer3 UI behavior; headed and headless Chrome remain required for any later rendered UI implementation.",
-    "no_go_scan": "Package-review/package-construction live-claim scan found only intentional guard strings inside no_go_scan_terms, not prose claims that package review is live."
+    "merged_pr": "#235",
+    "merge_commit": "6bca17c21d1d871d23c621ab5bd6dd52143f55a1"
   }
 }

@@ -112,7 +112,7 @@ And to the Layer 3 workbench package-review preview freeze packet, which is plan
 - `next_milestone_plans/Layer3_planning_docs/48_L3_WB_PACKAGE_REVIEW_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/49_L3_WB_PACKAGE_REVIEW_API_AND_STATE_CONTRACT.md`
 
-The package-review preview packet was merged as planning-only PR `#234` after PR `#232`. It allows only a read-only package-review readiness/preview step after one selected-pass result-review decision is already recorded as `approved`. The active `codex/l3-package-preview-impl` branch contains a bounded implementation candidate for that read-only step, but until merged it remains branch-only. It explicitly does not create `L3OutputPackage` or `L3ReconciliationRecord` rows, does not call `materialize_package_entry(...)` as-is, and does not admit package-review submission, package payload writes, handoff/export, rerun/recovery, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+The package-review preview packet was merged as planning-only PR `#234` after PR `#232`. PR `#235` now implements only that read-only package-review readiness/preview step after one selected-pass result-review decision is already recorded as `approved`. It explicitly does not create `L3OutputPackage` or `L3ReconciliationRecord` rows, does not call `materialize_package_entry(...)` as-is, and does not admit package-review submission, package payload writes, handoff/export, rerun/recovery, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
@@ -545,7 +545,7 @@ They freeze the `/review/layer3` result-review presentation and bounded UI contr
 ### Broader workbench package-review preview planning-only freeze docs
 
 These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-They freeze the next eligible planning boundary after merged PR `#232` as read-only package-review readiness/preview after an approved selected-pass result review. PR `#234` makes that governance current-main planning/control state only. The `codex/l3-package-preview-impl` branch implements the read-only preview as a branch-only candidate. Neither the docs nor the branch candidate make package review submission, package construction, `L3OutputPackage` or `L3ReconciliationRecord` creation, `materialize_package_entry(...)` as-is admission, package payload writes, handoff/export, rerun/recovery, approved-plan supersession, runtime DB/schema widening, source expansion, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation live:
+They freeze the next eligible planning boundary after merged PR `#232` as read-only package-review readiness/preview after an approved selected-pass result review. PR `#234` makes that governance current-main planning/control state, and PR `#235` implements only the bounded read-only preview. Neither the docs nor PR `#235` make package review submission, package construction, `L3OutputPackage` or `L3ReconciliationRecord` creation, `materialize_package_entry(...)` as-is admission, package payload writes, handoff/export, rerun/recovery, approved-plan supersession, runtime DB/schema widening, source expansion, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation live:
 - `48_L3_WB_PACKAGE_REVIEW_FREEZE.md`
 - `49_L3_WB_PACKAGE_REVIEW_API_AND_STATE_CONTRACT.md`
 
@@ -841,7 +841,7 @@ Read the docs as planning-only UI governance and PR `#232` as the separate bound
 - they do not admit execution selection/start UI, package review, handoff/export, rerun/recovery, new backend endpoints by default, runtime DB/schema widening, source-breadth expansion, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation
 - browser proof with both headed and headless Chrome is required when rendered UI behavior changes
 
-### If you are auditing the package-review preview planning packet or implementation candidate
+### If you are auditing the package-review preview planning packet or PR `#235` implementation
 
 Start with:
 - `Layer3_planning_docs/48_L3_WB_PACKAGE_REVIEW_FREEZE.md`
@@ -854,12 +854,12 @@ Start with:
 - `next_milestone_plans/layer3_progress_manifest.json`
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 
-Read the docs as planning-only package-review preview governance and the active branch as a separate branch-only implementation candidate:
-- current `main` after PR `#234` has docs `48`/`49` as planning/control only
-- branch `codex/l3-package-preview-impl` may expose only read-only package-review preview/readiness after approved selected-pass result review
-- the candidate may inspect package candidate families and owner-service compatibility but must not call `materialize_package_entry(...)`
+Read the docs as planning-only package-review preview governance and PR `#235` as the separate bounded read-only implementation:
+- current `main` after PR `#235` has docs `48`/`49` as planning/control and also has the read-only preview endpoint/UI implementation
+- PR `#235` exposes only read-only package-review preview/readiness after approved selected-pass result review
+- the implementation may inspect package candidate families and owner-service compatibility but must not call `materialize_package_entry(...)`
 - it does not admit package construction, package-review submission, `L3OutputPackage`, `L3ReconciliationRecord`, `AnalysisArtifact`, package payload writes, handoff/export, rerun/recovery, runtime DB/schema widening, source-breadth expansion, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, execution selection/start UI, or full mockup activation
-- browser proof with both headed and headless Chrome is required because the branch changes rendered `/review/layer3` behavior
+- browser proof with both headed and headless Chrome was required and passed because PR `#235` changes rendered `/review/layer3` behavior
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 
