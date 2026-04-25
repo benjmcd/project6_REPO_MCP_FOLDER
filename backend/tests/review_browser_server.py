@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -21,7 +22,7 @@ from app.api import layer3, review_nrc_aps
 from app.api.deps import get_db
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
-from app.models.models import Dataset, DatasetVersion, VariableDefinition, VariableProfile, uuid_str
+from app.models.models import AnalysisArtifact, AnalysisRun, Dataset, DatasetVersion, VariableDefinition, VariableProfile, uuid_str
 from app.services import layer3_pass_entry as layer3_pass_entry_module
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
@@ -49,7 +50,38 @@ def _install_layer3_browser_patches() -> None:
             },
         }
 
+    def _run_analysis(db, *, dataset_version_id, method_name, goal_type=None, parameters=None, annotation_window_id=None):
+        now = datetime.now(timezone.utc)
+        run = AnalysisRun(
+            analysis_run_id=uuid_str(),
+            dataset_version_id=dataset_version_id,
+            method_name=method_name,
+            goal_type=goal_type,
+            status="completed",
+            route_reason="browser harness deterministic quantitative run",
+            parameters_json=parameters or {},
+            window_scope_json={"annotation_window_id": annotation_window_id} if annotation_window_id else {},
+            started_at=now,
+            completed_at=now,
+        )
+        db.add(run)
+        db.flush()
+        db.add(
+            AnalysisArtifact(
+                artifact_id=uuid_str(),
+                analysis_run_id=run.analysis_run_id,
+                artifact_type="summary_json",
+                title="Browser harness deterministic output",
+                storage_ref=f"layer3-browser://artifact/{run.analysis_run_id}/summary.json",
+                summary="Deterministic Layer 3 browser harness output.",
+                metadata_json={"source": "review_browser_server", "method_name": method_name},
+            )
+        )
+        db.flush()
+        return run
+
     layer3_pass_entry_module.recommend_analysis = _recommend_analysis
+    layer3_pass_entry_module.run_analysis = _run_analysis
 
 
 def _seed_browser_dataset_version(db, temp_path: Path, *, seed_id: str, dataset_id: str, dataset_version_id: str) -> Path:
