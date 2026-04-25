@@ -102,6 +102,12 @@ The result-review packet freezes the next eligible planning boundary after PR `#
 
 PR `#227` now implements that packet on current `main`. It adds only `POST /api/v1/layer3/execution/result/review` and records one selected-pass operator review decision in existing `L3PassRun`/`L3Session` JSON summaries. It does not add package review, handoff/export, rerun/recovery, new plan/pass/run/package/reconciliation rows, schema/runtime widening, UI changes, local upload/directory ingestion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
+And to the Layer 3 workbench result-review UI freeze packet, which is planning-only and does not make UI behavior live by itself:
+- `next_milestone_plans/Layer3_planning_docs/46_L3_WB_RESULT_REVIEW_UI_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/47_L3_WB_RESULT_REVIEW_UI_STATE_CONTRACT.md`
+
+The result-review UI packet freezes the future `/review/layer3` presentation/control boundary for current backend result-review state after PR `#227`. It may guide a later UI implementation that renders server-authoritative selected-pass result/status and result-review state and submits one bounded result-review decision, but it still does not admit execution selection/start UI, package review, handoff/export, rerun/recovery, new backend endpoints by default, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
@@ -523,6 +529,13 @@ They freeze the next eligible planning boundary after merged PR `#222` as one bo
 - `44_L3_WB_RESULT_REVIEW_FREEZE.md`
 - `45_L3_WB_RESULT_REVIEW_API_AND_STATE_CONTRACT.md`
 
+### Broader workbench result-review UI planning-only freeze docs
+
+These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+They freeze the future `/review/layer3` result-review presentation and bounded UI control surface after the merged PR `#227` backend result-review endpoint. They do not make UI behavior live by themselves and do not admit execution selection/start UI, package review, handoff/export, rerun/recovery, new backend endpoints by default, runtime DB/schema widening, source expansion, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation:
+- `46_L3_WB_RESULT_REVIEW_UI_FREEZE.md`
+- `47_L3_WB_RESULT_REVIEW_UI_STATE_CONTRACT.md`
+
 ### Broader workbench mockup source mirror
 
 These files are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
@@ -795,6 +808,25 @@ Current answer:
 - they do not implement `/api/v1/layer3/execution/result/review` by themselves
 - they do not admit package review, handoff/export, rerun/recovery, runtime DB/schema widening, source-breadth expansion, UI changes by themselves, qualitative/hybrid/RAG/vector execution, local upload/directory ingestion, or full mockup activation
 - browser proof is required only if a later implementation changes rendered UI behavior
+
+### If you are auditing the Layer 3 workbench result-review UI freeze packet
+
+Start with:
+- `Layer3_planning_docs/46_L3_WB_RESULT_REVIEW_UI_FREEZE.md`
+- `Layer3_planning_docs/47_L3_WB_RESULT_REVIEW_UI_STATE_CONTRACT.md`
+- `Layer3_planning_docs/44_L3_WB_RESULT_REVIEW_FREEZE.md`
+- `Layer3_planning_docs/45_L3_WB_RESULT_REVIEW_API_AND_STATE_CONTRACT.md`
+- `next_milestone_plans/layer3_workbench_proof_manifest.json`
+- `next_milestone_plans/layer3_progress_board.md`
+- `next_milestone_plans/layer3_progress_manifest.json`
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
+
+Read them as planning-only UI governance:
+- they start from current backend result-review behavior after PR `#227`
+- they select only a future `/review/layer3` presentation/control boundary for server-authoritative selected-pass result/status and result-review state
+- they do not implement UI behavior by themselves
+- they do not admit execution selection/start UI, package review, handoff/export, rerun/recovery, new backend endpoints by default, runtime DB/schema widening, source-breadth expansion, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation
+- browser proof with both headed and headless Chrome is required when a later implementation changes rendered UI behavior
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 
