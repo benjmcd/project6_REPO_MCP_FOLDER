@@ -4,9 +4,8 @@ import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import pandas as pd
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -25,8 +24,6 @@ from app.models.models import (
     VariableProfile,
     uuid_str,
 )
-from app.services.analysis import recommend_analysis, run_analysis
-from app.services.dataframe_io import load_version_dataframe, persist_dataframe_as_version_rows
 from app.services.layer3_session_entry import (
     SESSION_STATUS_COMPLETED,
     SESSION_STATUS_COMPLETED_WITH_WARNINGS,
@@ -37,6 +34,22 @@ from app.services.layer3_typing_entry import (
     SET_TYPE_ASSOCIATED_COHORT,
     SET_TYPE_SINGLE_ITEM,
 )
+
+if TYPE_CHECKING:
+    import pandas as pd
+
+
+def recommend_analysis(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    from app.services.analysis import recommend_analysis as _recommend_analysis
+
+    return _recommend_analysis(*args, **kwargs)
+
+
+def run_analysis(*args: Any, **kwargs: Any) -> Any:
+    from app.services.analysis import run_analysis as _run_analysis
+
+    return _run_analysis(*args, **kwargs)
+
 
 SESSION_STATUS_ACTIVE_PLANNING = "active_planning"
 SESSION_STATUS_ACTIVE_EXECUTION = "active_execution"
@@ -280,6 +293,10 @@ def _prepare_cohort_candidate(
     unit_by_id: dict[str, L3AnalysisUnit],
     snapshot_by_id: dict[str, L3MaterialSnapshot],
 ) -> tuple[_PreparedCohortCandidate | None, str | None]:
+    import pandas as pd
+
+    from app.services.dataframe_io import load_version_dataframe
+
     if analysis_modality != MODALITY_QUANTITATIVE:
         return None, "cohort_not_quantitative"
     if len(analysis_unit_ids) < 2:
@@ -793,6 +810,8 @@ def _persist_cohort_dataset_version(
     pass_run_id: str,
     prepared_cohort: _PreparedCohortCandidate,
 ) -> tuple[str, str]:
+    from app.services.dataframe_io import persist_dataframe_as_version_rows
+
     dataset = Dataset(
         name=f"L3 cohort {analysis_set_id}",
         description="Derived Gate C quantitative associated cohort input",
