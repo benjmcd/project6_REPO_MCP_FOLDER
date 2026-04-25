@@ -33,7 +33,7 @@ As of `2026-04-25`:
 - seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\pr218-postmerge-audit`
 - valid local authority rule: use a clean checkout whose contents match the artifact state being refreshed; prefer current `main` for merged repo truth and the active branch checkout only when an open or branch-only milestone is explicitly declared
 - authoritative remote branch: `project6-origin/main`
-- snapshot current `main` commit at this artifact refresh: `587cb859d129dac5f80d165f640221995c6c7640`
+- snapshot PR `#218` merge commit used as the source base for this post-merge artifact refresh: `587cb859d129dac5f80d165f640221995c6c7640`
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the landed export-package first shared-consumer freeze from PR `#106` and its docs-only closeout from PR `#107`
