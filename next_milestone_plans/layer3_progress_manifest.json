@@ -9,7 +9,7 @@
     "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/pr218-postmerge-audit",
     "snapshot_date": "2026-04-25",
     "snapshot_base_main_commit": "587cb859d129dac5f80d165f640221995c6c7640",
-    "snapshot_base_main_commit_source": "git rev-parse project6-origin/main after PR #218 merged",
+    "snapshot_base_main_commit_source": "PR #218 merge commit used as the source base for the PR #219 post-merge docs/proof sync",
     "notes": [
       "This artifact is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.",
       "This artifact now includes the landed first shared-consumer freeze that selects the first downstream shared APS consumer beyond multisource on current `main`, plus the now-landed bounded export-package handoff implementation slice governed by that freeze and the exact-run export/export-package gate-hardening follow-up on current `main`.",
