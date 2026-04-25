@@ -14,7 +14,7 @@ from main import app
 client = TestClient(app)
 
 
-def test_layer3_page_route_serves_first_slice_shell() -> None:
+def test_layer3_page_route_serves_workbench_shell() -> None:
     response = client.get("/review/layer3")
 
     assert response.status_code == 200
@@ -26,6 +26,7 @@ def test_layer3_page_route_serves_first_slice_shell() -> None:
     assert 'id="gate-c-panel"' in response.text
     assert 'id="plan-panel"' in response.text
     assert 'id="plan-preview"' in response.text
+    assert 'id="plan-approve"' in response.text
     assert 'href="/review/layer3/static/layer3.css"' in response.text
     assert 'src="/review/layer3/static/layer3.js"' in response.text
     assert "Plan</button>" in response.text
@@ -45,6 +46,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "postJson('/gate-b/decision'" in js.text
     assert "postJson('/gate-c/preview'" in js.text
     assert "postJson('/plan/preview'" in js.text
+    assert "postJson('/plan/approve'" in js.text
 
 
 def test_layer3_shell_does_not_remove_adjacent_review_pages() -> None:

@@ -9,6 +9,7 @@ const State = {
     gateB: null,
     gateC: null,
     planPreview: null,
+    planApproval: null,
     gateBDecisions: {},
     materialFilter: '',
     events: [],
@@ -29,6 +30,7 @@ const elements = {
     gateCPanel: document.getElementById('gate-c-panel'),
     planStep: document.getElementById('plan-step-chip'),
     planPreview: document.getElementById('plan-preview'),
+    planApprove: document.getElementById('plan-approve'),
     planPanel: document.getElementById('plan-panel'),
     contextList: document.getElementById('context-list'),
     eventList: document.getElementById('event-list'),
@@ -128,7 +130,7 @@ function renderUnavailable(labels) {
 }
 
 function currentAuthorityRail() {
-    return State.planPreview?.authority_rail || State.gateC?.authority_rail || State.gateB?.authority_rail
+    return State.planApproval?.authority_rail || State.planPreview?.authority_rail || State.gateC?.authority_rail || State.gateB?.authority_rail
         || State.materialPreview?.authority_rail || State.sourcePreview?.authority_rail || State.preflight?.authority_rail
         || State.bootstrap?.authority_rail;
 }
@@ -142,6 +144,7 @@ function renderContext() {
         material_preview_id: State.materialPreview?.material_preview_id || 'none',
         session_id: State.gateB?.session_id || 'none',
         plan_preview_id: State.planPreview?.preview_id || 'none',
+        analysis_plan_id: State.planApproval?.analysis_plan_id || 'none',
     };
     elements.contextList.innerHTML = Object.entries(context)
         .map(([key, value]) => `
@@ -337,7 +340,54 @@ function canPlanPreview() {
     return Boolean(State.gateB?.session_id && State.gateC?.authority_rail?.typing_status === 'committed');
 }
 
+function canPlanApprove() {
+    return Boolean(
+        State.gateB?.session_id
+        && State.planPreview?.schema_id === 'layer3.plan_preview_result.v1'
+        && State.planPreview?.preview_id
+        && State.planPreview?.preview_hash
+        && !State.planApproval
+    );
+}
+
 function renderPlanPanel() {
+    if (State.planApproval) {
+        const approved = State.planApproval.approved_plan || {};
+        const approvedSets = approved.approved_sets || [];
+        const excluded = approved.excluded_sets || [];
+        const planned = approved.planned_passes || [];
+        const warningRows = (approved.warnings || []).length
+            ? approved.warnings.map((item) => `<li>${escapeHtml(item.reason_code)}: ${escapeHtml(item.message)}</li>`).join('')
+            : '<li>No warnings.</li>';
+        const plannedRows = planned.length
+            ? planned.map((item) => `
+                <li>
+                    <code>${escapeHtml(item.analysis_set_id)}</code>
+                    ${escapeHtml(item.pass_type)} / ${escapeHtml(item.pass_scope)}
+                    (${escapeHtml(item.selected_method_name || item.method_family)})
+                </li>
+            `).join('')
+            : '<li>No planned passes.</li>';
+        elements.planPanel.innerHTML = `
+            <div class="plan-summary-grid">
+                <div class="plan-summary-card"><strong>Approval</strong>approved</div>
+                <div class="plan-summary-card"><strong>Plan ID</strong><code>${escapeHtml(State.planApproval.analysis_plan_id)}</code></div>
+                <div class="plan-summary-card"><strong>Approved Sets</strong>${approvedSets.length}</div>
+                <div class="plan-summary-card"><strong>Excluded</strong>${excluded.length}</div>
+                <div class="plan-summary-card"><strong>Execution</strong>${escapeHtml(State.planApproval.execution_started ? 'started' : 'not started')}</div>
+            </div>
+            <div class="plan-preview-grid">
+                <section class="plan-list"><h3>Approved Passes</h3><ul>${plannedRows}</ul></section>
+                <section class="plan-list"><h3>Approval Basis</h3><ul>
+                    <li>Approved at: ${escapeHtml(State.planApproval.approved_at)}</li>
+                    <li>Preview: <code>${escapeHtml(approved.source_preview_id)}</code></li>
+                    <li>Owner mode: ${escapeHtml(approved.owner_service_basis?.mode)}</li>
+                </ul></section>
+                <section class="plan-list"><h3>Warnings</h3><ul class="warning-list">${warningRows}</ul></section>
+            </div>
+        `;
+        return;
+    }
     const body = State.planPreview;
     if (!body) {
         elements.planPanel.innerHTML = canPlanPreview()
@@ -408,7 +458,8 @@ function setGateControls() {
     elements.gateBSubmit.disabled = !(State.materialPreview?.material_candidates || []).length;
     elements.gateCPreview.disabled = !State.gateB?.session_id || gateCCommitted;
     elements.gateCCommit.disabled = !State.gateB?.session_id || gateCCommitted;
-    elements.planPreview.disabled = !canPlanPreview();
+    elements.planPreview.disabled = !canPlanPreview() || Boolean(State.planApproval);
+    elements.planApprove.disabled = !canPlanApprove();
     elements.planStep.disabled = !canPlanPreview();
     elements.planStep.classList.toggle('active', canPlanPreview());
     elements.planStep.classList.toggle('unavailable', !canPlanPreview());
@@ -461,6 +512,7 @@ async function runPreflightFlow(event) {
         State.gateB = null;
         State.gateC = null;
         State.planPreview = null;
+        State.planApproval = null;
         addEvent('Material preview loaded.');
         renderAll();
     } catch (error) {
@@ -490,6 +542,7 @@ async function commitGateB() {
         });
         State.gateC = null;
         State.planPreview = null;
+        State.planApproval = null;
         addEvent(`Gate B committed session ${State.gateB.session_id}.`);
         renderAll();
     } catch (error) {
@@ -512,6 +565,7 @@ async function previewGateC() {
             commit_typing: false,
         });
         State.planPreview = null;
+        State.planApproval = null;
         addEvent('Gate C typing preview loaded.');
         renderAll();
     } catch (error) {
@@ -533,6 +587,7 @@ async function commitGateC() {
             commit_typing: true,
         });
         State.planPreview = null;
+        State.planApproval = null;
         addEvent('Gate C typing committed.');
         renderAll();
     } catch (error) {
@@ -554,6 +609,7 @@ async function previewPlan() {
             include_exclusions: true,
             preview_scope: 'owner_service_default',
         });
+        State.planApproval = null;
         addEvent('Plan preview loaded.');
         renderAll();
     } catch (error) {
@@ -567,6 +623,29 @@ async function previewPlan() {
         renderAll();
     } finally {
         setBusy(elements.planPreview, false, 'Preview Plan');
+        setGateControls();
+    }
+}
+
+async function approvePlan() {
+    if (!canPlanApprove()) return;
+    setBusy(elements.planApprove, true, 'Approve Plan');
+    try {
+        State.planApproval = await postJson('/plan/approve', {
+            schema_id: 'layer3.plan_approval_request.v1',
+            client_request_id: requestId(),
+            session_id: State.gateB.session_id,
+            preview_id: State.planPreview.preview_id,
+            preview_hash: State.planPreview.preview_hash,
+            operator_confirmation: true,
+            approval_scope: 'owner_service_default',
+        });
+        addEvent('Plan approved. Execution has not started.');
+        renderAll();
+    } catch (error) {
+        addEvent(`Plan approval blocked: ${error.message}`);
+    } finally {
+        setBusy(elements.planApprove, false, 'Approve Plan');
         setGateControls();
     }
 }
@@ -603,6 +682,7 @@ elements.gateBSubmit.addEventListener('click', commitGateB);
 elements.gateCPreview.addEventListener('click', previewGateC);
 elements.gateCCommit.addEventListener('click', commitGateC);
 elements.planPreview.addEventListener('click', previewPlan);
+elements.planApprove.addEventListener('click', approvePlan);
 elements.materialFilter.addEventListener('input', (event) => {
     State.materialFilter = event.target.value;
     renderMaterialLedger();

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -55,6 +56,7 @@ SESSION_STATUS_ACTIVE_PLANNING = "active_planning"
 SESSION_STATUS_ACTIVE_EXECUTION = "active_execution"
 
 PLAN_STATUS_FORMED = "formed"
+PLAN_STATUS_APPROVED = "approved"
 
 PASS_TYPE_SINGLE_ITEM = "single_item"
 ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS = "wrapped_quantitative_analysis"
@@ -143,12 +145,25 @@ class Layer3PassEntryResult:
 @dataclass(frozen=True)
 class Layer3PassEntryPreviewResult:
     session_id: str
+    preview_hash: str
     admitted_sets: tuple[dict[str, Any], ...]
     excluded_sets: tuple[dict[str, Any], ...]
     planned_passes: tuple[dict[str, Any], ...]
     warnings: tuple[dict[str, Any], ...]
     owner_service_basis: dict[str, Any]
     owner_plan_payload: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class Layer3PassEntryApprovalResult:
+    analysis_plan: L3AnalysisPlan
+    source_preview_id: str | None
+    source_preview_hash: str
+    approved_sets: tuple[dict[str, Any], ...]
+    excluded_sets: tuple[dict[str, Any], ...]
+    planned_passes: tuple[dict[str, Any], ...]
+    warnings: tuple[dict[str, Any], ...]
+    owner_service_basis: dict[str, Any]
 
 
 def _utcnow() -> datetime:
@@ -171,6 +186,10 @@ def _stable_json_bytes(value: Any) -> bytes:
 
 def _json_clone(value: Any) -> Any:
     return json.loads(_stable_json_bytes(value).decode("utf-8"))
+
+
+def _stable_hash(value: Any) -> str:
+    return hashlib.sha256(_stable_json_bytes(value)).hexdigest()
 
 
 def _layer3_artifact_dir() -> Path:
@@ -702,10 +721,81 @@ def _preview_planned_pass(candidate: _AdmittedSetCandidate) -> dict[str, Any]:
     return result
 
 
-def preview_pass_entry(db: Session, *, session_id: str) -> Layer3PassEntryPreviewResult:
-    """Return the Gate C pass-entry plan basis without materializing or executing it."""
+def _approval_admitted_entry(item: dict[str, Any]) -> dict[str, Any]:
+    result = dict(item)
+    result["readiness"] = "approved"
+    return result
 
-    _load_session_or_raise(db, session_id=session_id)
+
+def _preview_result_from_basis(
+    *,
+    session_id: str,
+    admitted: list[_AdmittedSetCandidate],
+    excluded: list[dict[str, Any]],
+    analysis_sets: list[L3AnalysisSet],
+    unit_by_id: dict[str, L3AnalysisUnit],
+    snapshot_by_id: dict[str, L3MaterialSnapshot],
+) -> Layer3PassEntryPreviewResult:
+    plan_payload = _plan_payload(admitted, excluded)
+    analysis_set_by_id = {analysis_set.analysis_set_id: analysis_set for analysis_set in analysis_sets}
+    admitted_sets = tuple(_preview_admitted_entry(candidate) for candidate in admitted)
+    excluded_sets = tuple(
+        _preview_excluded_entry(
+            item,
+            analysis_set_by_id=analysis_set_by_id,
+            unit_by_id=unit_by_id,
+            snapshot_by_id=snapshot_by_id,
+        )
+        for item in excluded
+    )
+    planned_passes = tuple(_preview_planned_pass(candidate) for candidate in admitted)
+    warnings = []
+    if excluded:
+        warnings.append(
+            {
+                "reason_code": "partial_plan_preview",
+                "message": "Some analysis sets are excluded by the current Gate C pass-entry rules.",
+                "excluded_set_count": len(excluded),
+            }
+        )
+    owner_service_basis = {
+        "service": "backend/app/services/layer3_pass_entry.py",
+        "mode": "read_only_preview",
+        "source_gate": plan_payload["source_gate"],
+        "owner_plan_version": PLAN_VERSION,
+    }
+    preview_basis = {
+        "session_id": session_id,
+        "admitted_sets": admitted_sets,
+        "excluded_sets": excluded_sets,
+        "planned_passes": planned_passes,
+        "warnings": tuple(warnings),
+        "owner_service_basis": owner_service_basis,
+        "owner_plan_payload": plan_payload,
+    }
+    return Layer3PassEntryPreviewResult(
+        session_id=session_id,
+        preview_hash=_stable_hash(preview_basis),
+        admitted_sets=admitted_sets,
+        excluded_sets=excluded_sets,
+        planned_passes=planned_passes,
+        warnings=tuple(warnings),
+        owner_service_basis=owner_service_basis,
+        owner_plan_payload=_json_clone(plan_payload),
+    )
+
+
+def _load_admitted_preview_basis(
+    db: Session,
+    *,
+    session_id: str,
+) -> tuple[
+    L3Session,
+    list[_AdmittedSetCandidate],
+    list[dict[str, Any]],
+    Layer3PassEntryPreviewResult,
+]:
+    session = _load_session_or_raise(db, session_id=session_id)
     _ensure_session_not_yet_passed(db, session_id=session_id)
     analysis_sets, unit_by_id, snapshot_by_id = _load_sets_units_and_snapshots(db, session_id=session_id)
     admitted, excluded = _classify_sets(
@@ -718,39 +808,94 @@ def preview_pass_entry(db: Session, *, session_id: str) -> Layer3PassEntryPrevie
         raise Layer3PassEntryError(
             f"Layer 3 session '{session_id}' has no admissible analysis sets for Gate C pass entry"
         )
-
-    plan_payload = _plan_payload(admitted, excluded)
-    analysis_set_by_id = {analysis_set.analysis_set_id: analysis_set for analysis_set in analysis_sets}
-    warnings = []
-    if excluded:
-        warnings.append(
-            {
-                "reason_code": "partial_plan_preview",
-                "message": "Some analysis sets are excluded by the current Gate C pass-entry rules.",
-                "excluded_set_count": len(excluded),
-            }
-        )
-    return Layer3PassEntryPreviewResult(
+    preview = _preview_result_from_basis(
         session_id=session_id,
-        admitted_sets=tuple(_preview_admitted_entry(candidate) for candidate in admitted),
-        excluded_sets=tuple(
-            _preview_excluded_entry(
-                item,
-                analysis_set_by_id=analysis_set_by_id,
-                unit_by_id=unit_by_id,
-                snapshot_by_id=snapshot_by_id,
-            )
-            for item in excluded
-        ),
-        planned_passes=tuple(_preview_planned_pass(candidate) for candidate in admitted),
-        warnings=tuple(warnings),
-        owner_service_basis={
-            "service": "backend/app/services/layer3_pass_entry.py",
-            "mode": "read_only_preview",
-            "source_gate": plan_payload["source_gate"],
-            "owner_plan_version": PLAN_VERSION,
+        admitted=admitted,
+        excluded=excluded,
+        analysis_sets=analysis_sets,
+        unit_by_id=unit_by_id,
+        snapshot_by_id=snapshot_by_id,
+    )
+    return session, admitted, excluded, preview
+
+
+def preview_pass_entry(db: Session, *, session_id: str) -> Layer3PassEntryPreviewResult:
+    """Return the Gate C pass-entry plan basis without materializing or executing it."""
+
+    _, _, _, preview = _load_admitted_preview_basis(db, session_id=session_id)
+    return preview
+
+
+def approve_pass_entry_plan(
+    db: Session,
+    *,
+    session_id: str,
+    preview_hash: str | None = None,
+    source_preview_id: str | None = None,
+    approved_by_operator: bool = True,
+) -> Layer3PassEntryApprovalResult:
+    """Persist operator approval of the current pass-entry plan without executing it."""
+
+    if not approved_by_operator:
+        raise Layer3PassEntryError("operator confirmation is required for Layer 3 plan approval")
+
+    session, admitted, excluded, preview = _load_admitted_preview_basis(db, session_id=session_id)
+    if preview_hash is not None and preview_hash != preview.preview_hash:
+        raise Layer3PassEntryError("Layer 3 plan approval preview hash mismatch")
+
+    approved_at = _utcnow()
+    owner_service_basis = {
+        **_json_clone(preview.owner_service_basis),
+        "mode": "operator_approved_plan_only",
+        "source_gate": "plan_approval",
+    }
+    approved_plan_json = {
+        **_json_clone(preview.owner_plan_payload),
+        "approval_only": True,
+        "execution_started": False,
+        "source_preview_id": source_preview_id,
+        "source_preview_hash": preview.preview_hash,
+        "approved_by_operator": True,
+        "approved_at": _utc_isoformat(approved_at),
+        "approved_sets_json": [_approval_admitted_entry(item) for item in preview.admitted_sets],
+        "warnings_json": [dict(item) for item in preview.warnings],
+        "owner_service_basis": owner_service_basis,
+    }
+    analysis_plan = L3AnalysisPlan(
+        analysis_plan_id=uuid_str(),
+        session_id=session_id,
+        analysis_set_ids_json=[candidate.analysis_set.analysis_set_id for candidate in admitted],
+        status=PLAN_STATUS_APPROVED,
+        approved_by_operator=True,
+        approved_at=approved_at,
+        plan_json=approved_plan_json,
+        created_at=approved_at,
+    )
+    db.add(analysis_plan)
+    session.summary_json = {
+        **_json_clone(session.summary_json),
+        "plan_approval": {
+            "analysis_plan_id": analysis_plan.analysis_plan_id,
+            "approved_set_count": len(admitted),
+            "excluded_set_count": len(excluded),
+            "planned_pass_count": len(preview.planned_passes),
+            "source_preview_id": source_preview_id,
+            "source_preview_hash": preview.preview_hash,
+            "source_gate": preview.owner_plan_payload.get("source_gate"),
+            "approval_only": True,
+            "execution_started": False,
         },
-        owner_plan_payload=_json_clone(plan_payload),
+    }
+    db.flush()
+    return Layer3PassEntryApprovalResult(
+        analysis_plan=analysis_plan,
+        source_preview_id=source_preview_id,
+        source_preview_hash=preview.preview_hash,
+        approved_sets=tuple(_approval_admitted_entry(item) for item in preview.admitted_sets),
+        excluded_sets=tuple(dict(item) for item in preview.excluded_sets),
+        planned_passes=tuple(dict(item) for item in preview.planned_passes),
+        warnings=tuple(dict(item) for item in preview.warnings),
+        owner_service_basis=owner_service_basis,
     )
 
 

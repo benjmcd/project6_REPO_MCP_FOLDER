@@ -20,7 +20,7 @@ from app.models.models import (
     L3TypingRecord,
     uuid_str,
 )
-from app.services.layer3_pass_entry import Layer3PassEntryError, preview_pass_entry
+from app.services.layer3_pass_entry import Layer3PassEntryError, approve_pass_entry_plan, preview_pass_entry
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
     SnapshotMaterial,
@@ -52,6 +52,21 @@ DOWNSTREAM_UNAVAILABLE = ("plan", "execution", "results", "package")
 PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 GATE_B_DECISIONS = ("approved", "denied", "isolated", "flagged")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
+PLAN_APPROVAL_SCOPE = "owner_service_default"
+PLAN_APPROVAL_FORBIDDEN_FIELDS = frozenset(
+    {
+        "execute",
+        "execution",
+        "run",
+        "run_analysis",
+        "package",
+        "package_review",
+        "handoff",
+        "plan_edits",
+        "natural_language_plan",
+        "llm_plan",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -154,6 +169,7 @@ def bootstrap() -> dict[str, Any]:
         "unavailable_gate_labels": list(DOWNSTREAM_UNAVAILABLE),
         "features": {
             "plan_preview": True,
+            "plan_approval": True,
             "analysis_execution": False,
             "qualitative_execution": False,
             "hybrid_execution": False,
@@ -734,6 +750,53 @@ def _plan_preview_readiness(db: Session, *, session_id: str, include_owner_servi
     }
 
 
+def _approved_analysis_plan(db: Session, *, session_id: str) -> L3AnalysisPlan | None:
+    return (
+        db.query(L3AnalysisPlan)
+        .filter(L3AnalysisPlan.session_id == session_id)
+        .order_by(L3AnalysisPlan.created_at.desc(), L3AnalysisPlan.analysis_plan_id.asc())
+        .first()
+    )
+
+
+def _plan_approval_summary(db: Session, *, session_id: str) -> dict[str, Any]:
+    analysis_plan = _approved_analysis_plan(db, session_id=session_id)
+    pass_run_count = db.query(L3PassRun).filter(L3PassRun.session_id == session_id).count()
+    if analysis_plan is None:
+        preview = _plan_preview_readiness(db, session_id=session_id, include_owner_service=True)
+        return {
+            "schema_id": "layer3.plan_approval_readiness.v1",
+            "available": preview["available"],
+            "approved": False,
+            "blocked_reason": preview["blocked_reason"],
+            "analysis_plan_id": None,
+            "plan_status": None,
+            "approved_by_operator": False,
+            "approved_at": None,
+            "approved_set_count": preview["admitted_set_count"],
+            "excluded_set_count": preview["excluded_set_count"],
+            "planned_pass_count": preview["planned_pass_count"],
+            "pass_run_count": pass_run_count,
+        }
+    plan_json = analysis_plan.plan_json or {}
+    return {
+        "schema_id": "layer3.plan_approval_readiness.v1",
+        "available": False,
+        "approved": bool(analysis_plan.approved_by_operator),
+        "blocked_reason": "plan_already_approved",
+        "analysis_plan_id": analysis_plan.analysis_plan_id,
+        "plan_status": analysis_plan.status,
+        "approved_by_operator": bool(analysis_plan.approved_by_operator),
+        "approved_at": _utcnow_iso() if analysis_plan.approved_at is None else analysis_plan.approved_at.isoformat(),
+        "approved_set_count": len(analysis_plan.analysis_set_ids_json or []),
+        "excluded_set_count": len(plan_json.get("excluded_sets_json") or []),
+        "planned_pass_count": len(plan_json.get("planned_passes_json") or []),
+        "pass_run_count": pass_run_count,
+        "approval_only": bool(plan_json.get("approval_only")),
+        "execution_started": bool(plan_json.get("execution_started")),
+    }
+
+
 def _source_classes_from_plan_preview(plan_preview: dict[str, Any]) -> list[str]:
     source_classes = set()
     for collection_name in ("admitted_sets", "excluded_sets"):
@@ -763,6 +826,26 @@ def _plan_preview_error(exc: Layer3PassEntryError) -> Layer3WorkbenchError:
         http_status=500,
         recoverable=False,
     )
+
+
+def _plan_approval_error(exc: Layer3PassEntryError) -> Layer3WorkbenchError:
+    message = str(exc)
+    if "preview hash mismatch" in message:
+        return Layer3WorkbenchError("preview_mismatch", message, status="conflict", http_status=409)
+    if "operator confirmation" in message:
+        return Layer3WorkbenchError(
+            "operator_confirmation_required",
+            message,
+            status="blocked",
+            http_status=400,
+            blocked_fields=["operator_confirmation"],
+            next_allowed_actions=["confirm_plan_approval"],
+        )
+    if "already has analysis plans" in message:
+        return Layer3WorkbenchError("plan_already_approved", message, status="conflict", http_status=409)
+    if "already has pass runs" in message:
+        return Layer3WorkbenchError("pass_runs_already_exist", message, status="conflict", http_status=409)
+    return _plan_preview_error(exc)
 
 
 def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
@@ -802,6 +885,8 @@ def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         "schema_id": "layer3.plan_preview_payload.v1",
         "plan_version": PLAN_PREVIEW_SCOPE,
         "owner_plan_version": owner_preview.owner_service_basis["owner_plan_version"],
+        "preview_hash": owner_preview.preview_hash,
+        "approval_ready": True,
         "would_create_analysis_plan": False,
         "would_create_pass_runs": False,
         "would_execute_passes": False,
@@ -817,6 +902,7 @@ def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         "session_id": session_id,
         "next_state": "plan_preview_ready",
         "preview_id": preview_id,
+        "preview_hash": owner_preview.preview_hash,
         "preview_only": True,
         "authority_rail": _authority_rail(
             session_id=session_id,
@@ -828,6 +914,143 @@ def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             downstream_unavailable=PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE,
         ),
         "plan_preview": plan_preview_payload,
+    }
+
+
+def _approved_set_payload(item: dict[str, Any]) -> dict[str, Any]:
+    return {**_json_clone(item), "readiness": "approved"}
+
+
+def _approved_planned_pass_payload(item: dict[str, Any]) -> dict[str, Any]:
+    payload = _json_clone(item)
+    payload.pop("preview_only", None)
+    payload["approval_only"] = True
+    payload["execution_status"] = "not_started"
+    return payload
+
+
+def plan_approval(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or uuid_str())
+    session_id = str(payload.get("session_id") or "").strip()
+    if not session_id:
+        raise Layer3WorkbenchError("session_not_found", "session_id is required for plan approval.", http_status=404)
+
+    if not bool(payload.get("operator_confirmation")):
+        raise Layer3WorkbenchError(
+            "operator_confirmation_required",
+            "operator_confirmation must be true before plan approval is persisted.",
+            status="blocked",
+            blocked_fields=["operator_confirmation"],
+            next_allowed_actions=["confirm_plan_approval"],
+        )
+    approval_scope = str(payload.get("approval_scope") or PLAN_APPROVAL_SCOPE).strip()
+    if approval_scope != PLAN_APPROVAL_SCOPE:
+        raise Layer3WorkbenchError(
+            "unsupported_approval_scope",
+            f"Unsupported plan approval scope: {approval_scope}.",
+            status="invalid",
+            blocked_fields=["approval_scope"],
+            next_allowed_actions=["use_owner_service_default"],
+        )
+    forbidden = sorted(key for key in PLAN_APPROVAL_FORBIDDEN_FIELDS if key in payload)
+    if forbidden:
+        raise Layer3WorkbenchError(
+            "execution_not_admitted",
+            f"Plan approval request includes non-admitted fields: {', '.join(forbidden)}.",
+            status="invalid",
+            blocked_fields=forbidden,
+            next_allowed_actions=["submit_approval_only_request"],
+        )
+    if _approved_analysis_plan(db, session_id=session_id) is not None:
+        raise Layer3WorkbenchError(
+            "plan_already_approved",
+            f"Layer 3 session '{session_id}' already has an approved analysis plan.",
+            status="conflict",
+            http_status=409,
+        )
+    if db.query(L3PassRun).filter(L3PassRun.session_id == session_id).count() > 0:
+        raise Layer3WorkbenchError(
+            "pass_runs_already_exist",
+            f"Layer 3 session '{session_id}' already has pass runs.",
+            status="conflict",
+            http_status=409,
+        )
+
+    expected_preview = plan_preview(
+        db,
+        {
+            "client_request_id": request_id,
+            "session_id": session_id,
+            "preview_scope": PLAN_PREVIEW_SCOPE,
+        },
+    )
+    preview_id = str(payload.get("preview_id") or "").strip()
+    preview_hash = str(payload.get("preview_hash") or "").strip()
+    if preview_id != expected_preview["preview_id"] or preview_hash != expected_preview["preview_hash"]:
+        raise Layer3WorkbenchError(
+            "preview_mismatch",
+            "Plan approval must reference the current server-recomputed preview id and hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["preview_id", "preview_hash"],
+            next_allowed_actions=["refresh_plan_preview"],
+        )
+
+    try:
+        approved = approve_pass_entry_plan(
+            db,
+            session_id=session_id,
+            preview_hash=preview_hash,
+            source_preview_id=preview_id,
+            approved_by_operator=True,
+        )
+        db.commit()
+    except Layer3PassEntryError as exc:
+        db.rollback()
+        raise _plan_approval_error(exc) from exc
+
+    session = _load_session(db, session_id)
+    gate_b_counts = _gate_b_summary_from_session(session)
+    approved_sets = [_approved_set_payload(item) for item in approved.approved_sets]
+    planned_passes = [_approved_planned_pass_payload(item) for item in approved.planned_passes]
+    approved_plan = {
+        "schema_id": "layer3.approved_plan_payload.v1",
+        "plan_version": PLAN_APPROVAL_SCOPE,
+        "source_preview_id": approved.source_preview_id,
+        "source_preview_hash": approved.source_preview_hash,
+        "would_create_pass_runs": False,
+        "would_execute_passes": False,
+        "approved_sets": approved_sets,
+        "excluded_sets": [dict(item) for item in approved.excluded_sets],
+        "planned_passes": planned_passes,
+        "warnings": [dict(item) for item in approved.warnings],
+        "owner_service_basis": dict(approved.owner_service_basis),
+    }
+    return {
+        **_base_response("layer3.plan_approval_result.v1", request_id=request_id),
+        "session_id": session_id,
+        "next_state": "plan_approved",
+        "approval_only": True,
+        "execution_started": False,
+        "analysis_plan_id": approved.analysis_plan.analysis_plan_id,
+        "plan_status": approved.analysis_plan.status,
+        "approved_by_operator": bool(approved.analysis_plan.approved_by_operator),
+        "approved_at": approved.analysis_plan.approved_at.isoformat() if approved.analysis_plan.approved_at else None,
+        "authority_rail": _authority_rail(
+            session_id=session_id,
+            current_gate="plan",
+            persistence_mode="approved_plan",
+            source_classes=_source_classes_from_plan_preview(
+                {
+                    "admitted_sets": approved_sets,
+                    "excluded_sets": approved_plan["excluded_sets"],
+                }
+            ),
+            counts=gate_b_counts,
+            typing_status="committed",
+            downstream_unavailable=PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE,
+        ),
+        "approved_plan": approved_plan,
     }
 
 
@@ -849,6 +1072,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     gate_b_counts = _gate_b_summary_from_session(session)
     typing_committed = typing_record_count > 0
     plan_preview_readiness = _plan_preview_readiness(db, session_id=session_id, include_owner_service=True)
+    plan_approval_readiness = _plan_approval_summary(db, session_id=session_id)
     current_gate = "plan" if typing_committed else "gate_c"
     downstream_unavailable = PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE if typing_committed else DOWNSTREAM_UNAVAILABLE
 
@@ -866,6 +1090,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
             "analysis_set_count": analysis_set_count,
         },
         "plan_preview": plan_preview_readiness,
+        "plan_approval": plan_approval_readiness,
         "downstream_unavailable": list(downstream_unavailable),
         "authority_rail": _authority_rail(
             session_id=session_id,

@@ -22,6 +22,7 @@ from app.api.deps import get_db
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
 from review_browser_fixture import build_review_browser_fixture, install_review_browser_patches
+from test_layer3_pass_entry import _build_quant_ready_session
 
 
 def create_app() -> FastAPI:
@@ -83,5 +84,14 @@ def create_app() -> FastAPI:
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.post("/__test/layer3/seed-quant")
+    def seed_layer3_quant() -> dict[str, str]:
+        db = SessionLocal()
+        try:
+            session_id, _, _ = _build_quant_ready_session(db, temp_path)
+            return {"session_id": session_id}
+        finally:
+            db.close()
 
     return app
