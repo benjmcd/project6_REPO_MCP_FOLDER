@@ -30,7 +30,7 @@ from app.models.models import (
 )
 from app.services import layer3_pass_entry as layer3_pass_entry_module
 from app.services.dataframe_io import load_version_dataframe
-from app.services.layer3_pass_entry import Layer3PassEntryError, materialize_pass_entry
+from app.services.layer3_pass_entry import Layer3PassEntryError, materialize_pass_entry, preview_pass_entry
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
     SnapshotMaterial,
@@ -531,6 +531,58 @@ def _build_non_timeseries_quant_ready_session(db, tmp_path: Path) -> tuple[str, 
     materialize_typing_entry(db, session_id=session.session_id)
     db.commit()
     return session.session_id, phase1a_status, phase1a_completed_at
+
+
+def test_gatec_pass_entry_preview_is_read_only_for_quantitative_single_item(tmp_path):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, phase1a_status, phase1a_completed_at = _build_quant_ready_session(db, tmp_path)
+
+        preview = preview_pass_entry(db, session_id=session_id)
+
+        assert preview.session_id == session_id
+        assert len(preview.admitted_sets) == 1
+        assert preview.admitted_sets[0]["readiness"] == "admitted"
+        assert preview.admitted_sets[0]["analysis_modality"] == "quantitative"
+        assert preview.planned_passes[0]["pass_type"] == "single_item"
+        assert preview.planned_passes[0]["pass_scope"] == "quantitative_single_item_dataset_version"
+        assert preview.planned_passes[0]["execution_status"] == "not_started"
+        assert preview.owner_service_basis["mode"] == "read_only_preview"
+        assert preview.owner_plan_payload["plan_version"] == "gatec_pass_entry_v1"
+
+        session = db.get(L3Session, session_id)
+        assert session.status == phase1a_status
+        assert _utc_isoformat(session.completed_at) == _utc_isoformat(phase1a_completed_at)
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_gatec_pass_entry_preview_reports_exclusions_without_materializing(tmp_path):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, phase1a_status, phase1a_completed_at = _build_mixed_ready_session(db, tmp_path)
+
+        preview = preview_pass_entry(db, session_id=session_id)
+
+        assert len(preview.admitted_sets) == 1
+        assert len(preview.excluded_sets) == 1
+        assert preview.excluded_sets[0]["reason_code"] == "cohort_not_quantitative"
+        assert preview.warnings[0]["reason_code"] == "partial_plan_preview"
+        session = db.get(L3Session, session_id)
+        assert session.status == phase1a_status
+        assert _utc_isoformat(session.completed_at) == _utc_isoformat(phase1a_completed_at)
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        settings.storage_dir = original_storage_dir
 
 
 def test_gatec_pass_entry_executes_quantitative_single_item_and_preserves_loading_closure(tmp_path):

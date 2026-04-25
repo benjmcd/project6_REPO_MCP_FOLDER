@@ -8,6 +8,7 @@ const State = {
     materialPreview: null,
     gateB: null,
     gateC: null,
+    planPreview: null,
     gateBDecisions: {},
     materialFilter: '',
     events: [],
@@ -24,7 +25,11 @@ const elements = {
     materialFilter: document.getElementById('material-filter'),
     gateBSubmit: document.getElementById('gate-b-submit'),
     gateCPreview: document.getElementById('gate-c-preview'),
+    gateCCommit: document.getElementById('gate-c-commit'),
     gateCPanel: document.getElementById('gate-c-panel'),
+    planStep: document.getElementById('plan-step-chip'),
+    planPreview: document.getElementById('plan-preview'),
+    planPanel: document.getElementById('plan-panel'),
     contextList: document.getElementById('context-list'),
     eventList: document.getElementById('event-list'),
     unavailableList: document.getElementById('unavailable-list'),
@@ -122,6 +127,12 @@ function renderUnavailable(labels) {
         .join('');
 }
 
+function currentAuthorityRail() {
+    return State.planPreview?.authority_rail || State.gateC?.authority_rail || State.gateB?.authority_rail
+        || State.materialPreview?.authority_rail || State.sourcePreview?.authority_rail || State.preflight?.authority_rail
+        || State.bootstrap?.authority_rail;
+}
+
 function renderContext() {
     const context = {
         route: State.bootstrap?.route || '/review/layer3',
@@ -130,6 +141,7 @@ function renderContext() {
         source_set_id: State.sourcePreview?.source_set_id || 'none',
         material_preview_id: State.materialPreview?.material_preview_id || 'none',
         session_id: State.gateB?.session_id || 'none',
+        plan_preview_id: State.planPreview?.preview_id || 'none',
     };
     elements.contextList.innerHTML = Object.entries(context)
         .map(([key, value]) => `
@@ -142,8 +154,7 @@ function renderContext() {
 }
 
 function renderAuthority(rail) {
-    const current = rail || State.gateC?.authority_rail || State.gateB?.authority_rail || State.materialPreview?.authority_rail
-        || State.sourcePreview?.authority_rail || State.preflight?.authority_rail || State.bootstrap?.authority_rail;
+    const current = rail || currentAuthorityRail();
     if (!current) return;
 
     const items = {
@@ -322,6 +333,69 @@ function renderGateCPanel() {
     elements.gateCPanel.innerHTML = [...cards, ...unsupportedRows].join('');
 }
 
+function canPlanPreview() {
+    return Boolean(State.gateB?.session_id && State.gateC?.authority_rail?.typing_status === 'committed');
+}
+
+function renderPlanPanel() {
+    const body = State.planPreview;
+    if (!body) {
+        elements.planPanel.innerHTML = canPlanPreview()
+            ? '<div class="empty-panel">Plan preview is ready to request.</div>'
+            : '<div class="empty-panel">Commit Gate C typing before plan preview.</div>';
+        return;
+    }
+    if (body.schema_id === 'layer3.workbench_error.v1') {
+        elements.planPanel.innerHTML = `
+            <div class="plan-list">
+                <h3>Plan Preview Blocked</h3>
+                <ul>
+                    <li><strong>${escapeHtml(body.error_code)}</strong>: ${escapeHtml(body.message)}</li>
+                    ${(body.next_allowed_actions || []).map((action) => `<li>${escapeHtml(action)}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+        return;
+    }
+    const preview = body.plan_preview || {};
+    const admitted = preview.admitted_sets || [];
+    const excluded = preview.excluded_sets || [];
+    const planned = preview.planned_passes || [];
+    const warnings = preview.warnings || [];
+    const plannedRows = planned.length
+        ? planned.map((item) => `
+            <li>
+                <code>${escapeHtml(item.analysis_set_id)}</code>
+                ${escapeHtml(item.pass_type)} / ${escapeHtml(item.pass_scope)}
+                (${escapeHtml(item.selected_method_name || item.method_family)})
+            </li>
+        `).join('')
+        : '<li>No planned passes.</li>';
+    const admittedRows = admitted.length
+        ? admitted.map((item) => `<li><code>${escapeHtml(item.analysis_set_id)}</code> ${escapeHtml(item.readiness)} ${escapeHtml(item.analysis_modality)}</li>`).join('')
+        : '<li>No admitted sets.</li>';
+    const excludedRows = excluded.length
+        ? excluded.map((item) => `<li><code>${escapeHtml(item.analysis_set_id)}</code> ${escapeHtml(item.reason_code)}</li>`).join('')
+        : '<li>No excluded sets.</li>';
+    const warningRows = warnings.length
+        ? warnings.map((item) => `<li>${escapeHtml(item.reason_code)}: ${escapeHtml(item.message)}</li>`).join('')
+        : '<li>No warnings.</li>';
+    elements.planPanel.innerHTML = `
+        <div class="plan-summary-grid">
+            <div class="plan-summary-card"><strong>Preview</strong>${escapeHtml(body.preview_only ? 'preview only' : 'unknown')}</div>
+            <div class="plan-summary-card"><strong>Admitted</strong>${admitted.length}</div>
+            <div class="plan-summary-card"><strong>Excluded</strong>${excluded.length}</div>
+            <div class="plan-summary-card"><strong>Passes</strong>${planned.length}</div>
+        </div>
+        <div class="plan-preview-grid">
+            <section class="plan-list"><h3>Planned Passes</h3><ul>${plannedRows}</ul></section>
+            <section class="plan-list"><h3>Admitted Sets</h3><ul>${admittedRows}</ul></section>
+            <section class="plan-list"><h3>Exclusions</h3><ul>${excludedRows}</ul></section>
+            <section class="plan-list"><h3>Warnings</h3><ul class="warning-list">${warningRows}</ul></section>
+        </div>
+    `;
+}
+
 function setBusy(button, busy, label) {
     button.disabled = busy;
     if (label) {
@@ -330,15 +404,23 @@ function setBusy(button, busy, label) {
 }
 
 function setGateControls() {
+    const gateCCommitted = State.gateC?.authority_rail?.typing_status === 'committed';
     elements.gateBSubmit.disabled = !(State.materialPreview?.material_candidates || []).length;
-    elements.gateCPreview.disabled = !State.gateB?.session_id;
+    elements.gateCPreview.disabled = !State.gateB?.session_id || gateCCommitted;
+    elements.gateCCommit.disabled = !State.gateB?.session_id || gateCCommitted;
+    elements.planPreview.disabled = !canPlanPreview();
+    elements.planStep.disabled = !canPlanPreview();
+    elements.planStep.classList.toggle('active', canPlanPreview());
+    elements.planStep.classList.toggle('unavailable', !canPlanPreview());
 }
 
 function renderAll() {
     renderAuthority();
+    renderUnavailable(currentAuthorityRail()?.downstream_unavailable || State.bootstrap?.unavailable_gate_labels);
     renderContext();
     renderMaterialLedger();
     renderGateCPanel();
+    renderPlanPanel();
     setGateControls();
 }
 
@@ -378,6 +460,7 @@ async function runPreflightFlow(event) {
         initializeGateBDecisions();
         State.gateB = null;
         State.gateC = null;
+        State.planPreview = null;
         addEvent('Material preview loaded.');
         renderAll();
     } catch (error) {
@@ -406,6 +489,7 @@ async function commitGateB() {
             actor: 'operator',
         });
         State.gateC = null;
+        State.planPreview = null;
         addEvent(`Gate B committed session ${State.gateB.session_id}.`);
         renderAll();
     } catch (error) {
@@ -418,6 +502,7 @@ async function commitGateB() {
 
 async function previewGateC() {
     if (!State.gateB?.session_id) return;
+    if (State.gateC?.authority_rail?.typing_status === 'committed') return;
     setBusy(elements.gateCPreview, true, 'Preview Gate C');
     try {
         State.gateC = await postJson('/gate-c/preview', {
@@ -426,12 +511,62 @@ async function previewGateC() {
             session_id: State.gateB.session_id,
             commit_typing: false,
         });
+        State.planPreview = null;
         addEvent('Gate C typing preview loaded.');
         renderAll();
     } catch (error) {
         addEvent(`Gate C blocked: ${error.message}`);
     } finally {
         setBusy(elements.gateCPreview, false, 'Preview Gate C');
+        setGateControls();
+    }
+}
+
+async function commitGateC() {
+    if (!State.gateB?.session_id) return;
+    setBusy(elements.gateCCommit, true, 'Commit Gate C Typing');
+    try {
+        State.gateC = await postJson('/gate-c/preview', {
+            schema_id: 'layer3.gate_c_preview_request.v1',
+            client_request_id: requestId(),
+            session_id: State.gateB.session_id,
+            commit_typing: true,
+        });
+        State.planPreview = null;
+        addEvent('Gate C typing committed.');
+        renderAll();
+    } catch (error) {
+        addEvent(`Gate C commit blocked: ${error.message}`);
+    } finally {
+        setBusy(elements.gateCCommit, false, 'Commit Gate C Typing');
+        setGateControls();
+    }
+}
+
+async function previewPlan() {
+    if (!canPlanPreview()) return;
+    setBusy(elements.planPreview, true, 'Preview Plan');
+    try {
+        State.planPreview = await postJson('/plan/preview', {
+            schema_id: 'layer3.plan_preview_request.v1',
+            client_request_id: requestId(),
+            session_id: State.gateB.session_id,
+            include_exclusions: true,
+            preview_scope: 'owner_service_default',
+        });
+        addEvent('Plan preview loaded.');
+        renderAll();
+    } catch (error) {
+        State.planPreview = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'plan_preview_request_failed',
+            message: error.message,
+            next_allowed_actions: [],
+        };
+        addEvent(`Plan preview blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        setBusy(elements.planPreview, false, 'Preview Plan');
         setGateControls();
     }
 }
@@ -466,6 +601,8 @@ if (systemThemeQuery) {
 elements.intentForm.addEventListener('submit', runPreflightFlow);
 elements.gateBSubmit.addEventListener('click', commitGateB);
 elements.gateCPreview.addEventListener('click', previewGateC);
+elements.gateCCommit.addEventListener('click', commitGateC);
+elements.planPreview.addEventListener('click', previewPlan);
 elements.materialFilter.addEventListener('input', (event) => {
     State.materialFilter = event.target.value;
     renderMaterialLedger();

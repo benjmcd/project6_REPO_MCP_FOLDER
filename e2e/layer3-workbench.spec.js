@@ -5,12 +5,18 @@ async function expectJson(response) {
   return response.json();
 }
 
+async function expectJsonStatus(response, status) {
+  expect(response.status()).toBe(status);
+  return response.json();
+}
+
 test('Layer 3 workbench completes the first-slice operator path without enabling downstream gates', async ({ page }) => {
   const bootstrapResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/bootstrap'));
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   const bootstrap = await expectJson(await bootstrapResponsePromise);
 
   expect(bootstrap.features.analysis_execution).toBe(false);
+  expect(bootstrap.features.plan_preview).toBe(true);
   expect(bootstrap.features.rag_vector_retrieval).toBe(false);
   expect(bootstrap.features.typing_override_enabled).toBe(false);
 
@@ -63,6 +69,27 @@ test('Layer 3 workbench completes the first-slice operator path without enabling
 
   await expect(page.locator('#gate-c-panel .typing-card')).toHaveCount(1);
   await expect(page.locator('#gate-c-panel')).toContainText('Authoritative: no');
+  await expect(page.locator('[data-step="plan"]')).toBeDisabled();
+
+  const gateCCommitResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/gate-c/preview'));
+  await page.locator('#gate-c-commit').click();
+  const gateCCommit = await expectJson(await gateCCommitResponsePromise);
+  expect(gateCCommit.next_state).toBe('plan_preview_ready');
+  expect(gateCCommit.typing_records[0].authoritative).toBe(true);
+
+  await expect(page.locator('#gate-c-panel')).toContainText('Authoritative: yes');
+  await expect(page.locator('#gate-c-preview')).toBeDisabled();
+  await expect(page.locator('[data-step="plan"]')).toBeEnabled();
+  await expect(page.locator('#plan-preview')).toBeEnabled();
+
+  const planPreviewResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/plan/preview'));
+  await page.locator('#plan-preview').click();
+  const planPreview = await expectJsonStatus(await planPreviewResponsePromise, 409);
+  expect(planPreview.error_code).toBe('no_admissible_plan');
+
+  await expect(page.locator('#plan-panel')).toContainText('Plan Preview Blocked');
+  await expect(page.locator('#plan-panel')).toContainText('no_admissible_plan');
   await expect(page.locator('#unavailable-list')).toContainText('package');
   await expect(page.locator('[data-step="execution"]')).toBeDisabled();
+  await expect(page.locator('[data-step="package"]')).toBeDisabled();
 });

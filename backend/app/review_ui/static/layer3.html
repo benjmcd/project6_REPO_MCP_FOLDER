@@ -45,7 +45,7 @@
             <button class="step-chip active" data-step="sources" type="button">Sources</button>
             <button class="step-chip active" data-step="gate_b" type="button">Gate B</button>
             <button class="step-chip active" data-step="gate_c" type="button">Gate C</button>
-            <button class="step-chip unavailable" data-step="plan" type="button" disabled>Plan</button>
+            <button id="plan-step-chip" class="step-chip unavailable" data-step="plan" type="button" disabled>Plan</button>
             <button class="step-chip unavailable" data-step="execution" type="button" disabled>Execution</button>
             <button class="step-chip unavailable" data-step="results" type="button" disabled>Results</button>
             <button class="step-chip unavailable" data-step="package" type="button" disabled>Package</button>
@@ -102,10 +102,26 @@
             <section class="workband gatec-band" aria-labelledby="gatec-heading">
                 <div class="section-heading">
                     <h2 id="gatec-heading">Gate C Typing Review</h2>
-                    <button id="gate-c-preview" class="primary-btn" type="button" disabled>Preview Gate C</button>
+                    <div class="action-row">
+                        <button id="gate-c-preview" class="secondary-btn" type="button" disabled>Preview Gate C</button>
+                        <button id="gate-c-commit" class="primary-btn" type="button" disabled>Commit Gate C Typing</button>
+                    </div>
                 </div>
                 <div id="gate-c-panel" class="gate-c-panel">
                     <div class="empty-panel">No committed Gate B session yet.</div>
+                </div>
+            </section>
+
+            <section class="workband plan-band" aria-labelledby="plan-heading">
+                <div class="section-heading">
+                    <div>
+                        <h2 id="plan-heading">Plan Preview</h2>
+                        <span class="status-pill preview">Preview only</span>
+                    </div>
+                    <button id="plan-preview" class="primary-btn" type="button" disabled>Preview Plan</button>
+                </div>
+                <div id="plan-panel" class="plan-panel">
+                    <div class="empty-panel">Commit Gate C typing before plan preview.</div>
                 </div>
             </section>
         </section>

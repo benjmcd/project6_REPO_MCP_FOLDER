@@ -429,14 +429,14 @@ It is the merged API/state companion from PR `#182` for the `future workbench ro
 ### Broader workbench second-slice plan-preview freeze docs
 
 These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-They were merged as planning-only docs in PR `#191` and freeze the next workbench slice after the landed first-slice shell/API: a read-only plan-preview step after explicit Gate C typing commit. They do not activate execution, results, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, or broader route/UI scope:
+They were merged as planning docs in PR `#191` and govern the PR `#194` workbench slice after the landed first-slice shell/API: a read-only plan-preview step after explicit Gate C typing commit. PR `#194` implements that bounded endpoint/UI state without activating execution, results, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, or broader route/UI scope:
 - `30_L3_WB_PLAN_PREVIEW_FREEZE.md`
 - `31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md`
 
-### Broader workbench first-slice implementation
+### Broader workbench first-slice and plan-preview implementation
 
 This implementation is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-It is the bounded first-slice workbench implementation from PR `#184`, with post-implementation status/cohesion/explicit-Gate-C-typing/review-feedback closeouts through PR `#189`; it makes `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source preview, material preview, Gate B decision recording, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, and session summary:
+It is the bounded first-slice workbench implementation from PR `#184`, with post-implementation status/cohesion/explicit-Gate-C-typing/review-feedback closeouts through PR `#190`; PR `#194` then adds read-only plan preview after explicit Gate C typing commit. Together they make `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source preview, material preview, Gate B decision recording, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, session summary, and read-only plan preview:
 - `backend/main.py`
 - `backend/app/api/router.py`
 - `backend/app/api/layer3.py`
@@ -579,8 +579,8 @@ Start with:
 - `e2e/layer3-workbench.spec.js`
 
 Current answer:
-- the next adequate implementation slice is read-only plan preview after explicit Gate C typing commit
-- plan preview must compose around the landed pass-entry owner service rather than duplicating pass-entry classification in route or browser code
+- the next adequate implementation slice after the landed first-slice shell/API was read-only plan preview after explicit Gate C typing commit; PR `#194` implements that slice
+- plan preview composes around the landed pass-entry owner service through a read-only helper rather than duplicating pass-entry classification in route or browser code
 - execution, results, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and hidden LLM planning remain out of scope
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`

@@ -76,7 +76,7 @@ Mockup-observed:
 Repo-confirmed implemented:
 
 - Confirmed in project6-origin/main source code, tests, migrations, or live route/static registrations.
-- Examples: Layer 3 backend tables, layer3_session_entry.py, layer3_typing_entry.py, layer3_pass_entry.py, layer3_package_entry.py, the bounded PR #184 /review/layer3 plus /api/v1/layer3/... first-slice shell/API, APS handoff service family, Analyst Insight page, and adjacent NRC APS review UI routes.
+- Examples: Layer 3 backend tables, layer3_session_entry.py, layer3_typing_entry.py, layer3_pass_entry.py, layer3_package_entry.py, the bounded PR #184 /review/layer3 plus /api/v1/layer3/... first-slice shell/API, the PR #194 read-only plan-preview endpoint/UI step after committed Gate C typing, APS handoff service family, Analyst Insight page, and adjacent NRC APS review UI routes.
 
 Repo-confirmed planning-only:
 
@@ -460,7 +460,7 @@ Workbench/Controller:
 
 - The broader repo-planned operator surface that would own the end-to-end Layer 3 lifecycle beyond the bounded first-slice shell/API.
 - Current main already ships the bounded PR #184 /review/layer3 and /api/v1/layer3/... first-slice route/API.
-- Current main also includes post-PR184 closeouts through PR #190 that preserve response-envelope, blocked Gate B error, Gate C authority-rail count/source-context, and progress-tracking accuracy without expanding that bounded first-slice scope.
+- Current main also includes post-PR184 closeouts through PR #190 that preserve response-envelope, blocked Gate B error, Gate C authority-rail count/source-context, and progress-tracking accuracy without expanding that bounded first-slice scope; PR #194 then adds only the read-only plan-preview step after explicit Gate C typing commit.
 - Those same route families remain the adopted candidate location for later explicitly frozen workbench slices, but the full target workbench is not active merely because the bounded first slice exists.
 
 7. User Intent Entry
@@ -803,7 +803,7 @@ Current repo-live limitation:
 
 14. Typing Review And Operator Overrides
 
-The broader workbench planning docs define typing_review as a bounded override-only review state. The bounded PR #184 first-slice route/API does not make the full typing_review workflow active by itself.
+The broader workbench planning docs define typing_review as a bounded override-only review state. The bounded PR #184 first-slice route/API plus PR #194 read-only plan-preview step do not make the full typing_review workflow active by themselves.
 
 Expected UI behavior:
 
@@ -917,7 +917,7 @@ Mockup intent:
 
 Repo-live planning alignment:
 
-- The broader workbench planning state machine includes plan_review. The bounded PR #184 first-slice route/API does not make the full plan_review/approval workflow active by itself.
+- The broader workbench planning state machine includes plan_review. PR #194 makes only read-only plan preview live after explicit Gate C typing commit; it does not make the full plan_review approval, execution, results, or package workflow active by itself.
 - plan_review is defined as bounded approve/reject only, with no execution side effects during review.
 - L3AnalysisPlan has approved_by_operator and approved_at fields.
 
@@ -1205,7 +1205,7 @@ Implication:
 
 - This is the target operator workflow implied by the mockups.
 - Current repo-live backend assets cover meaningful parts of the chain.
-- Current repo-live UI exposes the bounded PR #184 /review/layer3 first-slice workbench, with post-implementation closeouts through PR #190, but not this full end-to-end target workflow.
+- Current repo-live UI exposes the bounded PR #184 /review/layer3 first-slice workbench, with post-implementation closeouts through PR #190, plus the PR #194 read-only plan-preview step after committed Gate C typing, but not this full end-to-end target workflow.
 
 23D.2 Frontend / UI Presentation Model
 
@@ -1348,7 +1348,8 @@ Current repo-live status:
 
 - Bounded PR #184 /review/layer3 route exists.
 - Bounded PR #184 /api/v1/layer3/... API family exists.
-- No broader end-to-end workbench route/API exists beyond the bounded first-slice shell/API.
+- Bounded PR #194 /api/v1/layer3/plan/preview and gated plan-preview UI state exist after explicit Gate C typing commit.
+- No broader end-to-end workbench route/API exists beyond the bounded first-slice shell/API plus read-only plan-preview step.
 
 Implementation design requirement:
 
@@ -1511,9 +1512,9 @@ Implications that must be addressed before frontend implementation:
 
 Frontend contradictions or target-vs-live gaps:
 
-- The mockup shows a full Layer 3 workbench; the live repo currently ships only the bounded PR #184 /review/layer3 first-slice shell/API plus closeouts through PR #190.
+- The mockup shows a full Layer 3 workbench; the live repo currently ships only the bounded PR #184 /review/layer3 first-slice shell/API plus closeouts through PR #190 and the PR #194 read-only plan-preview step.
 - The mockup shows a broad staged workflow; live adjacent pages are separate NRC APS/Analyst Insight surfaces, not the unified Layer 3 operator route.
-- The mockup implies direct user operation across several Layer 3 gates; current live UI does not expose full Gate B, Gate C, plan review, pass monitor, reconciliation, and package review as one end-to-end operator workflow.
+- The mockup implies direct user operation across several Layer 3 gates; current live UI exposes the bounded first-slice flow plus read-only plan preview, but still does not expose full Gate B, Gate C, plan approval, pass monitor, reconciliation, and package review as one end-to-end operator workflow.
 - The mockup's later-stage visual presentation remains less concrete than early-stage entry/retrieval/gate visuals. Later stage UI should not be over-specified from the current images alone.
 
 Frontend implementation preconditions:
@@ -1533,7 +1534,7 @@ Repo-live backend state:
 - Current main contains Layer 3 models for sessions, selection manifests, descriptors, retrieval events, material snapshots, typing records, analysis units/groups/sets, analysis plans, pass runs, reconciliation records, and output packages.
 - Current main contains Layer 3 service entry points for session/selection, typing, pass, package, and APS handoff families.
 - Current main contains adjacent NRC APS review and Analyst Insight API/UI surfaces.
-- Current main proves a bounded public /api/v1/layer3/... API family for the PR #184 first-slice workbench, but not the full mockup workbench API.
+- Current main proves a bounded public /api/v1/layer3/... API family for the PR #184 first-slice workbench plus PR #194 read-only plan preview, but not the full mockup workbench API.
 
 Mockup target-state:
 
@@ -1744,7 +1745,7 @@ The safest interpretation is:
 
 - Treat the mockups as target-state product/UX intent.
 - Treat current Layer 3 backend models/services as real implementation assets where repo-live evidence confirms them.
-- Treat /review/layer3 and /api/v1/layer3/... as the bounded PR #184 first-slice route/API and as the candidate route/API family for later explicitly frozen slices, not as automatic activation of the full mockup workflow.
+- Treat /review/layer3 and /api/v1/layer3/... as the bounded PR #184 first-slice route/API plus PR #194 read-only plan-preview step, and as the candidate route/API family for later explicitly frozen slices, not as automatic activation of the full mockup workflow.
 - Treat RAG/vector/semantic retrieval, qualitative execution, and hybrid execution as unresolved/deferred unless explicitly scoped into a slice.
 - Treat adjacent NRC APS and Analyst Insight pages as integration/compatibility constraints, not as the workbench itself.
 - Start implementation with one narrow slice and direct proof, then expand only after each boundary is frozen and verified.
@@ -1781,7 +1782,7 @@ Implication for this mockup spec:
 
 Overclaim guard:
 
-- Do not use this spec alone to promote /review/layer3 or /api/v1/layer3/... beyond the bounded PR #184 first-slice live scope.
+- Do not use this spec alone to promote /review/layer3 or /api/v1/layer3/... beyond the bounded PR #184 first-slice live scope plus PR #194 read-only plan-preview step.
 - Do not promote RAG/vector/semantic retrieval to repo-live implementation from this spec alone.
 - Do not promote qualitative or hybrid execution to active implementation from this spec alone.
 - Do not treat mockup visual completeness as implementation readiness until section 28A.10 questions are answered or intentionally deferred.
@@ -2086,14 +2087,14 @@ Authority boundary:
 
 - This section is a decision aid for future planning.
 - It does not activate implementation.
-- It does not expand the bounded PR #184 /review/layer3 and /api/v1/layer3/... first-slice shell/API into the full mockup workbench.
+- It does not expand the bounded PR #184 /review/layer3 and /api/v1/layer3/... first-slice shell/API plus PR #194 read-only plan-preview step into the full mockup workbench.
 - It does not authorize RAG/vector retrieval, qualitative execution, hybrid execution, runtime DB writes, schema widening, route/UI widening, or broad downstream handoff.
 - If any recommended default conflicts with a later explicit freeze, implementation plan, or repo-confirmed constraint, the later explicit authority must win.
 - Option 1 is the recommended/default decision. Option 2 is the next-best fallback. Option 3 is the third-best or highest-risk acceptable alternative, usually suitable only if explicitly frozen later.
 
 Recommended posture:
 
-Treat PR #184 as the already-landed narrow /review/layer3 plus /api/v1/layer3/... first slice, with closeout/correction passes through PR #190 that do not expand its scope. PR #191 added 30_L3_WB_PLAN_PREVIEW_FREEZE.md and 31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md as planning-only docs that narrow the next possible slice to plan preview after explicit Gate C typing commit; they do not make plan preview live by themselves. PR #192 records that merged state in progress/control metadata without expanding live scope. Any later implementation slice should remain explicitly frozen, UI-led but API-backed, compose around existing Layer 3 backend owner services, reuse repo-proven token/query retrieval first unless a later freeze admits more, and keep schema widening, runtime DB writes, RAG/vector claims, qualitative execution, hybrid execution, automated handoff, downstream execution/results/package review, and broad adjacent-surface rewrites out of scope by default.
+Treat PR #184 as the already-landed narrow /review/layer3 plus /api/v1/layer3/... first slice, with closeout/correction passes through PR #190 that do not expand its scope. PR #191 added 30_L3_WB_PLAN_PREVIEW_FREEZE.md and 31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md as planning docs that narrow the next possible slice to plan preview after explicit Gate C typing commit; PRs #192 and #193 record progress/tracked-metadata state without expanding live scope. PR #194 implements that next slice as read-only plan preview only, using the owner-service preview path without materializing plan/pass rows. Any later implementation slice should remain explicitly frozen, UI-led but API-backed, compose around existing Layer 3 backend owner services, reuse repo-proven token/query retrieval first unless a later freeze admits more, and keep schema widening, runtime DB writes, RAG/vector claims, qualitative execution, hybrid execution, automated handoff, downstream execution/results/package review, and broad adjacent-surface rewrites out of scope by default.
 
 | Item | Problem / situation summary | Recommended decision options | Reasoning |
 |---|---|---|---|

@@ -13,12 +13,16 @@ from sqlalchemy.pool import StaticPool
 os.environ["DB_INIT_MODE"] = "none"
 
 BACKEND = Path(__file__).resolve().parents[1]
+TESTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(BACKEND))
+sys.path.insert(0, str(TESTS))
 
 from app.api.deps import get_db
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
+from app.models.models import AnalysisRun, L3AnalysisPlan, L3PassRun
 from main import app
+from test_layer3_pass_entry import _build_quant_ready_session
 
 
 @pytest.fixture()
@@ -43,8 +47,10 @@ def client(tmp_path, monkeypatch):
             db.close()
 
     app.dependency_overrides[get_db] = override_get_db
+    test_client = TestClient(app)
+    test_client.layer3_session_factory = SessionLocal
     try:
-        yield TestClient(app)
+        yield test_client
     finally:
         app.dependency_overrides.pop(get_db, None)
 
@@ -256,6 +262,89 @@ def test_layer3_api_gate_c_commit_typing_materializes_once_when_explicit(client:
     )
     assert duplicate.status_code == 409
     assert duplicate.json()["error_code"] == "typing_already_materialized"
+
+
+def test_layer3_api_plan_preview_is_blocked_before_gate_c_commit(client: TestClient) -> None:
+    preflight, source, material = _prepare_material(client)
+    first = material["material_candidates"][0]
+    gate_b = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": "api-gate-b-plan-blocked",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": first["candidate_id"],
+                    "decision": "approved",
+                    "operator_reason": "",
+                    "decision_basis": {
+                        "source_ref": first["source_ref"],
+                        "query_basis": first["query_basis"],
+                        "provenance_ref": first["provenance_ref"],
+                    },
+                },
+            ],
+            "actor": "pytest",
+        },
+    ).json()
+
+    blocked = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-plan-before-gate-c",
+            "session_id": gate_b["session_id"],
+        },
+    )
+
+    assert blocked.status_code == 409
+    body = blocked.json()
+    _assert_common_response_envelope(body)
+    assert body["error_code"] == "gate_c_not_committed"
+    assert body["status"] == "blocked"
+
+
+def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_session(client: TestClient, tmp_path) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-plan-preview-success",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    )
+
+    assert preview.status_code == 200
+    body = preview.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.plan_preview_result.v1"
+    assert body["preview_only"] is True
+    assert body["next_state"] == "plan_preview_ready"
+    assert body["authority_rail"]["current_gate"] == "plan"
+    assert body["authority_rail"]["execution_enabled"] is False
+    assert body["authority_rail"]["package_review_enabled"] is False
+    assert body["authority_rail"]["downstream_unavailable"] == ["execution", "results", "package"]
+    assert body["plan_preview"]["would_create_analysis_plan"] is False
+    assert body["plan_preview"]["would_create_pass_runs"] is False
+    assert body["plan_preview"]["would_execute_passes"] is False
+    assert len(body["plan_preview"]["admitted_sets"]) == 1
+    assert len(body["plan_preview"]["planned_passes"]) == 1
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
 
 
 def test_layer3_api_error_shape_and_override_unavailable(client: TestClient) -> None:
