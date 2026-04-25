@@ -81,6 +81,11 @@ def post_plan_revise(payload: dict[str, Any], db: Session = Depends(get_db)) -> 
     return _json_or_error(lambda: layer3_workbench.plan_revision(db, payload))
 
 
+@router.post("/execution/select", response_model=None)
+def post_execution_select(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.execution_selection(db, payload))
+
+
 @router.get("/session/{session_id}", response_model=None)
 def get_session_summary(session_id: str, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.session_summary(db, session_id))
