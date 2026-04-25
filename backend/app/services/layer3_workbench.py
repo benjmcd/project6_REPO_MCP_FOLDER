@@ -150,6 +150,18 @@ ANALYSIS_EXECUTION_START_FORBIDDEN_FIELDS = frozenset(
         "schema_migration",
     }
 )
+ANALYSIS_EXECUTION_START_ALLOWED_FIELDS = frozenset(
+    {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "execution_mode",
+        "operator_reason",
+    }
+)
 EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 ANALYSIS_EXECUTION_START_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 PLAN_PREVIEW_HASH_INCLUDED_INPUTS = (
@@ -2024,13 +2036,16 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
             next_allowed_actions=["submit_complete_analysis_execution_start_request"],
         )
 
+    unknown = sorted(key for key in payload if key not in ANALYSIS_EXECUTION_START_ALLOWED_FIELDS)
     forbidden = sorted(key for key in ANALYSIS_EXECUTION_START_FORBIDDEN_FIELDS if key in payload)
-    if forbidden:
+    blocked_payload_fields = sorted(set(unknown) | set(forbidden))
+    if blocked_payload_fields:
+        blocked_text = ", ".join(blocked_payload_fields)
         raise Layer3WorkbenchError(
             "analysis_execution_start_scope_not_admitted",
-            f"Analysis execution start request includes non-admitted fields: {', '.join(forbidden)}.",
+            f"Analysis execution start request includes non-admitted fields: {blocked_text}.",
             status="invalid",
-            blocked_fields=forbidden,
+            blocked_fields=blocked_payload_fields,
             next_allowed_actions=["submit_single_pass_execution_start_request"],
         )
     execution_mode = str(payload.get("execution_mode") or "synchronous_single_pass").strip()
