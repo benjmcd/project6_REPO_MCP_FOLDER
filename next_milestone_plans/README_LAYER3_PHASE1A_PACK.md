@@ -86,6 +86,14 @@ And to the Layer 3 workbench analysis-execution-start freeze packet from PR `#21
 
 PR `#217` freezes the next eligible implementation boundary as one selected-pass-run wrapped quantitative execution start from an existing PR `#216` selected/not-started shell. It still must not call `materialize_pass_entry(...)` as-is, create new `L3AnalysisPlan` or `L3PassRun` rows, run batch execution, enable result/package/handoff state, reopen or supersede approved plans, widen runtime DB/schema behavior, expand source breadth, change UI, or activate qualitative/hybrid/RAG/vector/full mockup behavior.
 
+PR `#218` implements only that bounded analysis-execution-start boundary: `POST /api/v1/layer3/execution/start` executes one existing selected/not-started single-item wrapped quantitative `L3PassRun` shell, creates exactly one wrapped quantitative `AnalysisRun` plus selected-pass output metadata, preserves `client_request_id` idempotency, and still does not make result review, package review, handoff, source expansion, runtime DB/schema widening, UI changes, qualitative/hybrid/RAG/vector execution, or full mockup activation live.
+
+And to PR `#221`'s Layer 3 workbench result/status freeze packet, which is planning-only and does not make result/status inspection, result review, package review, or handoff live by itself:
+- `next_milestone_plans/Layer3_planning_docs/42_L3_WB_RESULT_STATUS_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/43_L3_WB_RESULT_STATUS_API_AND_STATE_CONTRACT.md`
+
+The result/status packet freezes the next eligible implementation boundary after PR `#218` as read-only status and execution-proof inspection for one terminal selected pass. It still must not create or rerun analysis, write result/package/handoff artifacts, approve or reject results, reopen or supersede approved plans, widen runtime DB/schema behavior, expand source breadth, change UI unless separately implemented and browser-proven, or activate qualitative/hybrid/RAG/vector/full mockup behavior.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
@@ -468,10 +476,10 @@ PR `#203` freezes the fourth workbench slice as planning-only governance for exp
 - `34_L3_WB_PLAN_REVISION_FREEZE.md`
 - `35_L3_WB_PLAN_REVISION_API_AND_STATE_CONTRACT.md`
 
-### Broader workbench first-slice through execution-selection implementation
+### Broader workbench first-slice through analysis-execution-start implementation
 
 This implementation is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-It is the bounded first-slice workbench implementation from PR `#184`, with post-implementation status/cohesion/explicit-Gate-C-typing/review-feedback closeouts through PR `#190`; PR `#194` then adds read-only plan preview after explicit Gate C typing commit, PRs `#195`/`#196` record proof/board metadata for that state, PR `#198` freezes plan approval, PR `#199` adds approval-only `L3AnalysisPlan` persistence, PR `#205` adds pre-approval plan-revision control, PR `#207` hardens revision submission with serialized backend decision writes and shared UI in-flight locking, PR `#213` adds read-only readiness proof, and PR `#216` adds bounded execution-selection/pass-run shell creation only. PR `#217` is adjacent planning-only analysis-execution-start governance, not live behavior. PR `#206` and PRs `#208`/`#209`/`#210`/`#211` are docs/control or docs/progress cohesion syncs for that same bounded revision state, not new functional slices. Together they make `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source preview, material preview, Gate B decision recording, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, session summary, read-only plan preview, approval-only plan persistence, revision-control for the current server-backed preview before approval, read-only readiness proof, and selected/not-started `L3PassRun` shell creation from an approved, hash-matched plan:
+It is the bounded first-slice workbench implementation from PR `#184`, with post-implementation status/cohesion/explicit-Gate-C-typing/review-feedback closeouts through PR `#190`; PR `#194` then adds read-only plan preview after explicit Gate C typing commit, PRs `#195`/`#196` record proof/board metadata for that state, PR `#198` freezes plan approval, PR `#199` adds approval-only `L3AnalysisPlan` persistence, PR `#205` adds pre-approval plan-revision control, PR `#207` hardens revision submission with serialized backend decision writes and shared UI in-flight locking, PR `#213` adds read-only readiness proof, PR `#216` adds bounded execution-selection/pass-run shell creation only, PR `#217` adds adjacent planning-only analysis-execution-start governance, and PR `#218` implements that governance only as one selected-pass wrapped quantitative execution-start boundary. PR `#206` and PRs `#208`/`#209`/`#210`/`#211` are docs/control or docs/progress cohesion syncs for that same bounded revision state, not new functional slices. Together they make `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source preview, material preview, Gate B decision recording, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, session summary, read-only plan preview, approval-only plan persistence, revision-control for the current server-backed preview before approval, read-only readiness proof, selected/not-started `L3PassRun` shell creation from an approved, hash-matched plan, and one selected-pass wrapped quantitative analysis-execution-start:
 - `backend/main.py`
 - `backend/app/api/router.py`
 - `backend/app/api/layer3.py`
@@ -489,9 +497,16 @@ It is the bounded first-slice workbench implementation from PR `#184`, with post
 ### Broader workbench analysis-execution-start planning-only freeze docs
 
 These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-PR `#217` freezes the next eligible implementation boundary after PR `#216` as one selected-pass-run wrapped quantitative execution start from an existing selected/not-started `L3PassRun` shell. These docs do not make analysis execution live and do not admit `materialize_pass_entry(...)` as-is, new plan/pass-run shell creation, batch execution, result/package/handoff, approved-plan supersession, runtime DB/schema widening, source expansion, UI change, qualitative/hybrid/RAG/vector execution, or full mockup activation:
+PR `#217` freezes the next eligible implementation boundary after PR `#216` as one selected-pass-run wrapped quantitative execution start from an existing selected/not-started `L3PassRun` shell. These docs did not make analysis execution live by themselves, and they remain the governing scope contract for the PR `#218` bounded implementation. They do not admit `materialize_pass_entry(...)` as-is, new plan/pass-run shell creation, batch execution, result/package/handoff, approved-plan supersession, runtime DB/schema widening, source expansion, UI change, qualitative/hybrid/RAG/vector execution, or full mockup activation:
 - `40_L3_WB_ANALYSIS_EXECUTION_START_FREEZE.md`
 - `41_L3_WB_ANALYSIS_EXECUTION_START_API_AND_STATE_CONTRACT.md`
+
+### Broader workbench result/status planning-only freeze docs
+
+These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+They freeze the next eligible implementation boundary after merged PR `#218` as read-only selected-pass result/status inspection. They do not make result/status inspection live by themselves and do not admit result review, result approval/rejection, package review, handoff, rerun/recovery, approved-plan supersession, runtime DB/schema widening, source expansion, UI change, qualitative/hybrid/RAG/vector execution, or full mockup activation:
+- `42_L3_WB_RESULT_STATUS_FREEZE.md`
+- `43_L3_WB_RESULT_STATUS_API_AND_STATE_CONTRACT.md`
 
 ### Broader workbench mockup source mirror
 
@@ -603,7 +618,7 @@ Start with:
 - `next_milestone_plans/layer3_progress_manifest.json`
 
 Current answer:
-- first-slice setup and API/state contract docs were planning-only when PR `#178` and PR `#182` landed, but PR `#184` now implements that bounded first slice on current `main`, with closeout/correction passes through PR `#189`
+- first-slice setup and API/state contract docs were planning-only when PR `#178` and PR `#182` landed, but PR `#184` now implements that bounded first slice on current `main`, with closeout/correction passes through PR `#190`
 - the live first-slice surface is an additive `/review/layer3` page plus `/api/v1/layer3/...` API family
 - the live first implementation stops at intent/preflight, deterministic source selection, material preview, Gate B material review, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, and session summary
 - the implementation uses `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` as the endpoint, DTO, state, persistence, browser-state, and proof contract
@@ -669,7 +684,7 @@ Current answer:
 - already approved plans remain terminal for this slice; reopening, replacing, or superseding them requires a later freeze
 - execution, results review, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and hidden LLM planning remain out of scope
 
-No analysis-execution workbench implementation beyond selected/not-started execution-selection shells is live. Docs `40`/`41` now select the next implementation boundary as planning-only: one selected-pass-run wrapped quantitative execution start from an existing PR `#216` shell. A later implementation must still prove that it does not call `materialize_pass_entry(...)` as-is, create new `L3AnalysisPlan` or `L3PassRun` rows, run batch execution, add approved-plan supersession, results/package/handoff, runtime DB/schema widening, source expansion, UI/full-mockup activation, or qualitative/hybrid/RAG/vector/LLM planning.
+Merged PR `#218` makes only one selected-pass wrapped quantitative analysis-execution-start boundary live after PR `#216` execution-selection shell creation. It still does not make broad analysis execution, result review, package review, handoff, approved-plan supersession, runtime DB/schema widening, source expansion, UI/full-mockup activation, or qualitative/hybrid/RAG/vector/LLM planning live. PR `#221` docs `42`/`43` now freeze the next implementation boundary as planning-only read-only result/status inspection for one terminal selected pass.
 
 ### If you are auditing the Layer 3 workbench execution-readiness packet
 
@@ -724,8 +739,27 @@ Start with:
 Current answer:
 - PR `#217` lands this packet as planning-only
 - it selects one selected-pass-run wrapped quantitative execution-start boundary, not broad execution
-- it starts from PR `#216` selected/not-started `L3PassRun` shells and requires a later implementation before any `AnalysisRun` is created
+- it starts from PR `#216` selected/not-started `L3PassRun` shells, and PR `#218` is the later bounded implementation that creates exactly one wrapped quantitative `AnalysisRun` for one existing selected pass
 - it does not admit result/package/handoff artifacts, approved-plan supersession, runtime DB/schema widening, source-breadth expansion, UI changes, qualitative/hybrid/RAG/vector execution, or full mockup activation
+- browser proof is required only if a later implementation changes rendered UI behavior
+
+### If you are auditing the Layer 3 workbench result/status freeze packet
+
+Start with:
+- `Layer3_planning_docs/42_L3_WB_RESULT_STATUS_FREEZE.md`
+- `Layer3_planning_docs/43_L3_WB_RESULT_STATUS_API_AND_STATE_CONTRACT.md`
+- `Layer3_planning_docs/40_L3_WB_ANALYSIS_EXECUTION_START_FREEZE.md`
+- `Layer3_planning_docs/41_L3_WB_ANALYSIS_EXECUTION_START_API_AND_STATE_CONTRACT.md`
+- `next_milestone_plans/layer3_workbench_proof_manifest.json`
+- `next_milestone_plans/layer3_progress_board.md`
+- `next_milestone_plans/layer3_progress_manifest.json`
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
+
+Current answer:
+- PR `#221` docs `42`/`43` are planning-only result/status governance after merged PR `#218`
+- they select read-only selected-pass status and execution-proof inspection as the next eligible boundary, not result review
+- they do not implement `/api/v1/layer3/execution/result/status` by themselves
+- they do not admit result approval/rejection, package review, handoff, rerun/recovery, runtime DB/schema widening, source-breadth expansion, UI changes, qualitative/hybrid/RAG/vector execution, or full mockup activation
 - browser proof is required only if a later implementation changes rendered UI behavior
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
