@@ -885,11 +885,13 @@ def test_layer3_api_execution_selection_prechecks_fail_closed(client: TestClient
             "analysis_plan_id": approval_body["analysis_plan_id"],
             "preview_id": preview_body["preview_id"],
             "preview_hash": preview_body["preview_hash"],
+            "execution": {"start": True},
             "run_analysis": True,
         },
     )
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "analysis_execution_not_admitted"
+    assert set(forbidden.json()["blocked_fields"]) == {"execution", "run_analysis"}
 
     stale_preview = client.post(
         "/api/v1/layer3/execution/select",
