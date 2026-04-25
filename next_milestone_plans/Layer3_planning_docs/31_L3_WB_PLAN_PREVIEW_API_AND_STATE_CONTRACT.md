@@ -2,7 +2,7 @@
 
 ## Status
 
-- planning-only API/state companion for `30_L3_WB_PLAN_PREVIEW_FREEZE.md`
+- planning-only API/state companion for `30_L3_WB_PLAN_PREVIEW_FREEZE.md`, merged by PR `#191`
 - not active implementation by itself
 - subordinate to the first-slice no-go list unless this contract explicitly narrows a later implementation pass
 
