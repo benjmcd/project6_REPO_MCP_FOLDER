@@ -100,6 +100,8 @@ And to the Layer 3 workbench result-review freeze packet, which is planning-only
 
 The result-review packet freezes the next eligible planning boundary after PR `#222` as one bounded operator review decision for one terminal selected pass that already satisfies result/status authority. It still must not create package artifacts, package review state, handoff/export state, rerun/recovery behavior, new execution runs, new plan/pass/run/artifact/package/reconciliation rows, source expansion, schema/runtime widening, UI changes by itself, local upload/directory ingestion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
+Branch `codex/l3-result-review-impl` now contains the bounded backend implementation candidate for that packet. It adds only `POST /api/v1/layer3/execution/result/review`, records one selected-pass operator review decision in existing `L3PassRun`/`L3Session` JSON summaries, and remains branch-only until its implementation PR is opened, checked, merged, and re-audited on current `main`. It does not add package review, handoff/export, rerun/recovery, new plan/pass/run/package/reconciliation rows, schema/runtime widening, UI changes, local upload/directory ingestion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
