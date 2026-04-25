@@ -1,13 +1,13 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded execution-selection shell implementation plus PR #218 bounded analysis-execution-start implementation candidate",
+  "status": "current-main readiness proof plus bounded execution-selection shell implementation plus merged PR #218 bounded analysis-execution-start implementation",
   "scope": {
-    "source_branch": "codex/l3-exec-start",
-    "merged_pr": "#213",
-    "merge_commit": "b7bcea3d0c5b555ff8c064b1ee8128cd9903e994",
+    "source_branch": "project6-origin/main",
+    "merged_pr": "#218",
+    "merge_commit": "587cb859d129dac5f80d165f640221995c6c7640",
     "base_remote": "project6-origin/main",
-    "base_commit": "e4567aa2222af59c462dd219947b7b8fc7c78dad",
+    "base_commit": "587cb859d129dac5f80d165f640221995c6c7640",
     "source_base_commit": "e4567aa2222af59c462dd219947b7b8fc7c78dad",
     "purpose": "Define, prove, and track readiness gates, bounded execution-selection shell behavior, and the PR #218 selected-pass analysis-execution-start implementation boundary.",
     "live_behavior_change": true,
@@ -17,7 +17,8 @@
     "latest_implementation_summary": "PR #218 adds only the bounded selected-pass analysis-execution-start endpoint and helper for one existing selected/not-started single-item wrapped quantitative L3PassRun shell; it creates no new L3AnalysisPlan or L3PassRun rows and keeps result/package/handoff/source/schema/UI scope out.",
     "latest_planning_pr": "#217",
     "latest_planning_branch": "codex/l3-analysis-exec-freeze",
-    "latest_planning_summary": "PR #217 adds docs 40/41 as planning-only governance for a future single selected-pass-run wrapped quantitative analysis-execution-start endpoint; it does not implement execution."
+    "latest_planning_summary": "PR #217 adds docs 40/41 as planning-only governance for a future single selected-pass-run wrapped quantitative analysis-execution-start endpoint; it does not implement execution.",
+    "latest_implementation_merge_commit": "587cb859d129dac5f80d165f640221995c6c7640"
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -47,7 +48,9 @@
       "pre-approval plan revision-control",
       "read-only readiness proof",
       "bounded execution-selection/pass-run shell endpoint",
-      "selected/not-started L3PassRun shell creation from approved hash-matched plans"
+      "selected/not-started L3PassRun shell creation from approved hash-matched plans",
+      "bounded selected-pass analysis-execution-start endpoint",
+      "one wrapped quantitative AnalysisRun creation from an existing selected/not-started L3PassRun shell"
     ],
     "not_live": [
       "general analysis execution beyond the PR #218 one selected-pass execution-start boundary",
@@ -68,9 +71,7 @@
     "planning_only": [
       "analysis-execution-start freeze/API-state contract from PR #217 remains the governing scope contract for the PR #218 bounded implementation"
     ],
-    "branch_only_candidate": [
-      "PR #218 bounded selected-pass analysis-execution-start implementation until merged"
-    ],
+    "branch_only_candidate": [],
     "still_forbidden_after_pr_218": [
       "result review",
       "package review",
