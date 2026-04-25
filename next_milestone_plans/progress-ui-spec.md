@@ -135,6 +135,7 @@ Use these colors consistently:
 - `branch_only`: blue or other clearly non-main state
 - `branch_local_planning_only`: blue-lavender or other clearly non-main, non-live planning state
 - `branch_local_live_bounded_read_only`: cyan-blue or other clearly non-main, read-only live-branch state
+- `merged_live_bounded_read_only`: green-blue or other clearly current-main, read-only live bounded state
 
 State labels should remain visible in text, not color alone.
 

@@ -70,7 +70,7 @@ And to the Layer 3 workbench execution-readiness packet from PR `#212`, which re
 - `next_milestone_plans/Layer3_planning_docs/37_L3_WB_STATE_HASH_IDEMPOTENCY_CONTRACT.md`
 - `next_milestone_plans/layer3_workbench_proof_manifest.json`
 
-This active branch may add only read-only implementation-readiness proof around that packet, such as `/api/v1/layer3/readiness`, plan-preview identity/hash metadata, or approval/revision serialization checks. It still must not create pass runs, run analysis, write result/package/handoff artifacts, widen schema/runtime DB behavior, or admit qualitative/hybrid/RAG/vector execution.
+PR `#213` adds only read-only implementation-readiness proof around that packet, including `/api/v1/layer3/readiness`, plan-preview identity/hash metadata, and approval/revision serialization checks. It still must not create pass runs, run analysis, write result/package/handoff artifacts, widen schema/runtime DB behavior, or admit qualitative/hybrid/RAG/vector execution.
 
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
@@ -450,14 +450,14 @@ They were merged as planning docs in PR `#198` and freeze the third workbench sl
 ### Broader workbench fourth-slice plan-revision freeze docs
 
 These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-PR `#203` freezes the fourth workbench slice as planning-only governance for explicit operator rejection and revision-request semantics against the current server-backed plan preview before approval, and PR `#204` corrects the associated deferred-scope count metadata. These docs govern the PR `#205` implementation and the PR `#207` submission-hardening follow-up; PR `#206` records the post-PR205 docs/control state, and PRs `#208`/`#209` record post-hardening docs/progress cohesion only. None of these docs-only or hardening follow-ups reopen or supersede already approved plans, call `materialize_pass_entry(...)`, create `L3PassRun`, run analysis, write manifests, enable results/package/handoff, widen runtime DB/schema behavior, or admit qualitative/hybrid/RAG/vector/LLM planning:
+PR `#203` freezes the fourth workbench slice as planning-only governance for explicit operator rejection and revision-request semantics against the current server-backed plan preview before approval, and PR `#204` corrects the associated deferred-scope count metadata. These docs govern the PR `#205` implementation and the PR `#207` submission-hardening follow-up; PR `#206` records the post-PR205 docs/control state, and PRs `#208`/`#209`/`#210`/`#211` record post-hardening docs/progress cohesion only. None of these docs-only or hardening follow-ups reopen or supersede already approved plans, call `materialize_pass_entry(...)`, create `L3PassRun`, run analysis, write manifests, enable results/package/handoff, widen runtime DB/schema behavior, or admit qualitative/hybrid/RAG/vector/LLM planning:
 - `34_L3_WB_PLAN_REVISION_FREEZE.md`
 - `35_L3_WB_PLAN_REVISION_API_AND_STATE_CONTRACT.md`
 
 ### Broader workbench first-slice, plan-preview, plan-approval, and plan-revision implementation
 
 This implementation is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-It is the bounded first-slice workbench implementation from PR `#184`, with post-implementation status/cohesion/explicit-Gate-C-typing/review-feedback closeouts through PR `#190`; PR `#194` then adds read-only plan preview after explicit Gate C typing commit, PRs `#195`/`#196` record proof/board metadata for that state, PR `#198` freezes plan approval, PR `#199` adds approval-only `L3AnalysisPlan` persistence, PR `#205` adds pre-approval plan-revision control, and PR `#207` hardens revision submission with serialized backend decision writes and shared UI in-flight locking. PR `#206` and PRs `#208`/`#209` are docs/control or docs/progress cohesion syncs for that same bounded revision state, not new functional slices. Together they make `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source preview, material preview, Gate B decision recording, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, session summary, read-only plan preview, approval-only plan persistence, and revision-control for the current server-backed preview before approval:
+It is the bounded first-slice workbench implementation from PR `#184`, with post-implementation status/cohesion/explicit-Gate-C-typing/review-feedback closeouts through PR `#190`; PR `#194` then adds read-only plan preview after explicit Gate C typing commit, PRs `#195`/`#196` record proof/board metadata for that state, PR `#198` freezes plan approval, PR `#199` adds approval-only `L3AnalysisPlan` persistence, PR `#205` adds pre-approval plan-revision control, and PR `#207` hardens revision submission with serialized backend decision writes and shared UI in-flight locking. PR `#206` and PRs `#208`/`#209`/`#210`/`#211` are docs/control or docs/progress cohesion syncs for that same bounded revision state, not new functional slices. Together they make `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source preview, material preview, Gate B decision recording, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, session summary, read-only plan preview, approval-only plan persistence, and revision-control for the current server-backed preview before approval:
 - `backend/main.py`
 - `backend/app/api/router.py`
 - `backend/app/api/layer3.py`
@@ -641,7 +641,7 @@ Start with:
 - `e2e/layer3-workbench.spec.js`
 
 Current answer:
-- the fourth slice is now live only as bounded revision-control through PR `#205`, with PR `#207` hardening the same bounded behavior rather than adding a new functional slice; PR `#206` and PRs `#208`/`#209` are docs/control or docs/progress cohesion syncs only
+- the fourth slice is now live only as bounded revision-control through PR `#205`, with PR `#207` hardening the same bounded behavior rather than adding a new functional slice; PR `#206` and PRs `#208`/`#209`/`#210`/`#211` are docs/control or docs/progress cohesion syncs only
 - it admits explicit operator rejection and revision request against the current server-backed preview before approval
 - already approved plans remain terminal for this slice; reopening, replacing, or superseding them requires a later freeze
 - execution, results review, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and hidden LLM planning remain out of scope
@@ -664,7 +664,7 @@ Current answer:
 - PR `#212` landed this packet as execution-readiness planning only
 - it adds proof/readiness, state, preview-hash, idempotency, concurrency, revision-recovery, approved-plan-correction, output-taxonomy, and source-breadth gates before any later execution branch
 - it does not make execution, `L3PassRun`, analysis execution, results/package/handoff, approved-plan supersession, runtime DB/schema widening, qualitative/hybrid/RAG/vector execution, local upload ingestion, or full mockup activation live
-- this active branch may add only read-only readiness proof around that packet, such as `/api/v1/layer3/readiness`, plan-preview identity/hash metadata, or approval/revision serialization checks
+- PR `#213` adds only read-only readiness proof around that packet, including `/api/v1/layer3/readiness`, plan-preview identity/hash metadata, and approval/revision serialization checks
 - browser proof is not required for a backend-only readiness metadata slice because no rendered UI behavior changes, but any future UI or execution slice must run headed and headless browser proof when browser behavior changes
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
