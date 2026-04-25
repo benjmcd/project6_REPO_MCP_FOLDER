@@ -118,6 +118,7 @@ def test_bootstrap_is_explicit_about_first_slice_limits() -> None:
     assert result["api_root"] == "/api/v1/layer3"
     assert result["features"]["analysis_execution"] is False
     assert result["features"]["plan_preview"] is True
+    assert result["features"]["execution_result_review"] is True
     assert result["features"]["rag_vector_retrieval"] is False
     assert result["features"]["typing_override_enabled"] is False
     assert result["unavailable_gate_labels"] == ["plan", "execution", "results", "package"]
