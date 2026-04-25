@@ -10,6 +10,95 @@ async function expectJsonStatus(response, status) {
   return response.json();
 }
 
+function requestId(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function expectOnlyPayloadKeys(payload, allowedKeys) {
+  expect(Object.keys(payload).sort()).toEqual([...allowedKeys].sort());
+}
+
+async function prepareExecutedLayer3Session(request) {
+  const seed = await expectJson(await request.post('/__test/layer3/seed-quant'));
+  const planPreview = await expectJson(await request.post('/api/v1/layer3/plan/preview', {
+    data: {
+      schema_id: 'layer3.plan_preview_request.v1',
+      client_request_id: requestId('plan-preview'),
+      session_id: seed.session_id,
+      include_exclusions: true,
+      preview_scope: 'owner_service_default',
+    },
+  }));
+  const approval = await expectJson(await request.post('/api/v1/layer3/plan/approve', {
+    data: {
+      schema_id: 'layer3.plan_approval_request.v1',
+      client_request_id: requestId('plan-approve'),
+      session_id: seed.session_id,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+      operator_confirmation: true,
+      approval_scope: 'owner_service_default',
+    },
+  }));
+  const selection = await expectJson(await request.post('/api/v1/layer3/execution/select', {
+    data: {
+      client_request_id: requestId('execution-select'),
+      session_id: seed.session_id,
+      analysis_plan_id: approval.analysis_plan_id,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+      operator_reason: 'browser harness selected pass setup',
+    },
+  }));
+  const passRunId = selection.pass_run_ids[0];
+  const start = await expectJson(await request.post('/api/v1/layer3/execution/start', {
+    data: {
+      client_request_id: requestId('execution-start'),
+      session_id: seed.session_id,
+      analysis_plan_id: approval.analysis_plan_id,
+      pass_run_id: passRunId,
+      preview_id: planPreview.preview_id,
+      preview_hash: planPreview.preview_hash,
+      execution_mode: 'synchronous_single_pass',
+      operator_reason: 'browser harness terminal pass setup',
+    },
+  }));
+
+  expect(selection.pass_run_ids).toHaveLength(1);
+  expect(['completed', 'completed_with_warnings', 'failed']).toContain(start.pass_run_status);
+  return { seed, planPreview, approval, selection, start, passRunId };
+}
+
+async function attachSessionToWorkbench(page, sessionId) {
+  await page.evaluate((session_id) => {
+    State.gateB = {
+      session_id,
+      authority_rail: {
+        session_id,
+        current_gate: 'execution',
+        persistence_mode: 'durable_layer3_control',
+        source_authority: { source_classes: ['dataset_version'] },
+        approved_material_count: 1,
+        denied_material_count: 0,
+        isolated_material_count: 0,
+        flagged_material_count: 0,
+        typing_status: 'committed',
+        execution_enabled: false,
+        package_review_enabled: false,
+        downstream_unavailable: ['results', 'package', 'handoff'],
+      },
+    };
+    State.gateC = {
+      authority_rail: State.gateB.authority_rail,
+    };
+    State.planPreview = null;
+    State.planApproval = null;
+    State.planRevision = null;
+    clearResultReviewState();
+    renderAll();
+  }, sessionId);
+}
+
 test('Layer 3 workbench completes the first-slice operator path without enabling downstream gates', async ({ page }) => {
   const bootstrapResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/bootstrap'));
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
@@ -26,6 +115,12 @@ test('Layer 3 workbench completes the first-slice operator path without enabling
   await expect(page.locator('[data-step="execution"]')).toBeDisabled();
   await expect(page.locator('[data-step="results"]')).toBeDisabled();
   await expect(page.locator('[data-step="package"]')).toBeDisabled();
+  await expect(page.locator('#result-review-refresh')).toBeDisabled();
+  await expect(page.locator('#result-status-inspect')).toBeDisabled();
+  await expect(page.locator('#result-review-submit')).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Start Execution' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Rerun' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Export' })).toHaveCount(0);
   await expect(page.locator('#unavailable-list')).toContainText('plan');
   await expect(page.locator('#unavailable-list')).toContainText('execution');
 
@@ -167,6 +262,107 @@ test('Layer 3 workbench approves an admissible plan without starting execution',
   await expect(page.locator('[data-step="package"]')).toBeDisabled();
   await expect(page.locator('#unavailable-list')).toContainText('execution');
   await expect(page.locator('#unavailable-list')).toContainText('package');
+});
+
+test('Layer 3 workbench records selected-pass result review only after status authority', async ({ page, request }) => {
+  const setup = await prepareExecutedLayer3Session(request);
+
+  const bootstrapResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/bootstrap'));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expectJson(await bootstrapResponsePromise);
+  await attachSessionToWorkbench(page, setup.seed.session_id);
+
+  await expect(page.locator('#result-review-refresh')).toBeEnabled();
+  await expect(page.locator('#result-status-inspect')).toBeDisabled();
+  await expect(page.locator('#result-review-submit')).toBeDisabled();
+
+  const summaryResponsePromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${setup.seed.session_id}`));
+  await page.locator('#result-review-refresh').click();
+  const summary = await expectJson(await summaryResponsePromise);
+  expect(summary.execution_selection.selected).toBe(true);
+  expect(summary.execution_selection.pass_run_ids).toEqual([setup.passRunId]);
+  expect(summary.execution_selection.analysis_plan_id).toBe(setup.approval.analysis_plan_id);
+
+  await expect(page.locator('#result-status-inspect')).toBeEnabled();
+  await expect(page.locator('#result-review-submit')).toBeDisabled();
+  await expect(page.locator('[data-step="execution"]')).toBeEnabled();
+  await expect(page.locator('[data-step="results"]')).toBeEnabled();
+  await expect(page.locator('[data-step="package"]')).toBeDisabled();
+
+  const statusRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/execution/result/status'));
+  const statusResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/execution/result/status'));
+  await page.locator('#result-status-inspect').click();
+  const statusRequest = await statusRequestPromise;
+  const statusPayload = statusRequest.postDataJSON();
+  const expectedStatusKeys = [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'operator_view_mode',
+  ];
+  if (statusPayload.analysis_run_id) expectedStatusKeys.push('analysis_run_id');
+  expectOnlyPayloadKeys(statusPayload, expectedStatusKeys);
+  expect(statusPayload.session_id).toBe(setup.seed.session_id);
+  expect(statusPayload.analysis_plan_id).toBe(setup.approval.analysis_plan_id);
+  expect(statusPayload.pass_run_id).toBe(setup.passRunId);
+  expect(statusPayload.preview_id).toBe(setup.planPreview.preview_id);
+  expect(statusPayload.preview_hash).toBe(setup.planPreview.preview_hash);
+  expect(statusPayload.operator_view_mode).toBe('status_only');
+  expect(statusPayload).not.toHaveProperty('package');
+  expect(statusPayload).not.toHaveProperty('handoff');
+  expect(statusPayload).not.toHaveProperty('rerun');
+  expect(statusPayload).not.toHaveProperty('pass_run_ids');
+
+  const status = await expectJson(await statusResponsePromise);
+  expect(status.result_status_available).toBe(true);
+  await expect(page.locator('#result-review-panel')).toContainText('result_review_ui_review_ready');
+
+  await page.locator('#result-review-decision').selectOption('changes_requested');
+  await expect(page.locator('#result-review-submit')).toBeDisabled();
+  await page.locator('#result-review-notes').fill('Operator requires a follow-up caveat before packaging.');
+  await expect(page.locator('#result-review-submit')).toBeEnabled();
+
+  const reviewRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/execution/result/review'));
+  const reviewResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/execution/result/review'));
+  await page.locator('#result-review-submit').click();
+  const reviewRequest = await reviewRequestPromise;
+  const reviewPayload = reviewRequest.postDataJSON();
+  const expectedReviewKeys = [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'operator_decision',
+    'review_notes',
+  ];
+  if (reviewPayload.analysis_run_id) expectedReviewKeys.push('analysis_run_id');
+  expectOnlyPayloadKeys(reviewPayload, expectedReviewKeys);
+  expect(reviewPayload.operator_decision).toBe('changes_requested');
+  expect(reviewPayload.review_notes).toContain('follow-up caveat');
+  expect(reviewPayload).not.toHaveProperty('package');
+  expect(reviewPayload).not.toHaveProperty('handoff');
+  expect(reviewPayload).not.toHaveProperty('rerun');
+  expect(reviewPayload).not.toHaveProperty('pass_run_ids');
+  expect(reviewPayload).not.toHaveProperty('artifact_manifest');
+
+  const review = await expectJson(await reviewResponsePromise);
+  expect(review.status).toBe('recorded');
+  expect(review.operator_decision).toBe('changes_requested');
+  expect(review.package_review_enabled).toBe(false);
+  expect(review.handoff_enabled).toBe(false);
+  expect(review.downstream_unavailable).toEqual(['package', 'handoff', 'package_review']);
+
+  await expect(page.locator('#result-review-panel')).toContainText('result_review_ui_recorded');
+  await expect(page.locator('#result-review-panel')).toContainText('changes_requested');
+  await expect(page.locator('#result-review-panel')).toContainText('package');
+  await expect(page.locator('#result-review-panel')).toContainText('handoff');
+  await expect(page.locator('#result-review-submit')).toBeDisabled();
+  await expect(page.locator('[data-step="package"]')).toBeDisabled();
 });
 
 test('Layer 3 workbench can request plan revision without starting execution', async ({ page, request }) => {

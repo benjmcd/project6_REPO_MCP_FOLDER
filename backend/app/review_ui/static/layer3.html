@@ -46,9 +46,9 @@
             <button class="step-chip active" data-step="gate_b" type="button">Gate B</button>
             <button class="step-chip active" data-step="gate_c" type="button">Gate C</button>
             <button id="plan-step-chip" class="step-chip unavailable" data-step="plan" type="button" disabled>Plan</button>
-            <button class="step-chip unavailable" data-step="execution" type="button" disabled>Execution</button>
-            <button class="step-chip unavailable" data-step="results" type="button" disabled>Results</button>
-            <button class="step-chip unavailable" data-step="package" type="button" disabled>Package</button>
+            <button id="execution-step-chip" class="step-chip unavailable" data-step="execution" type="button" disabled>Execution</button>
+            <button id="results-step-chip" class="step-chip unavailable" data-step="results" type="button" disabled>Results</button>
+            <button id="package-step-chip" class="step-chip unavailable" data-step="package" type="button" disabled>Package</button>
         </aside>
 
         <section class="layer3-workspace" aria-label="Layer 3 first slice">
@@ -128,6 +128,36 @@
                 <div id="plan-panel" class="plan-panel">
                     <div class="empty-panel">Commit Gate C typing before plan preview.</div>
                 </div>
+            </section>
+
+            <section class="workband result-review-band" aria-labelledby="result-review-heading">
+                <div class="section-heading">
+                    <div>
+                        <h2 id="result-review-heading">Result Review</h2>
+                        <span class="status-pill preview">Selected pass only</span>
+                    </div>
+                    <div class="action-row">
+                        <button id="result-review-refresh" class="secondary-btn" type="button" disabled>Refresh Session State</button>
+                        <button id="result-status-inspect" class="secondary-btn" type="button" disabled>Inspect Result Status</button>
+                    </div>
+                </div>
+                <form id="result-review-form" class="result-review-form">
+                    <div id="result-review-panel" class="result-review-panel">
+                        <div class="empty-panel">No server-authoritative selected pass is available.</div>
+                    </div>
+                    <div class="result-review-controls" aria-label="Result review controls">
+                        <label for="result-review-decision">Decision</label>
+                        <select id="result-review-decision" disabled>
+                            <option value="approved">Approved</option>
+                            <option value="changes_requested">Changes requested</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="blocked">Blocked</option>
+                        </select>
+                        <label for="result-review-notes">Notes</label>
+                        <textarea id="result-review-notes" rows="3" placeholder="Required for changes requested, rejected, or blocked decisions." disabled></textarea>
+                        <button id="result-review-submit" class="primary-btn" type="submit" disabled>Submit Result Review</button>
+                    </div>
+                </form>
             </section>
         </section>
 
