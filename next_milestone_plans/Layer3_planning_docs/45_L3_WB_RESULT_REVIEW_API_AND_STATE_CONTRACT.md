@@ -2,7 +2,7 @@
 
 Status: governing API/state companion for `44_L3_WB_RESULT_REVIEW_FREEZE.md`.
 
-Post-freeze status note: PR `#227` later implemented this backend result-review API/state boundary on current `main`. This document remains the backend contract for selected-pass result review; it does not make UI behavior, package review, handoff/export, rerun/recovery, source/schema/runtime widening, or full mockup behavior live. Docs `46`/`47` separately freeze a future result-review UI presentation/state boundary.
+Post-freeze status note: PR `#227` later implemented this backend result-review API/state boundary on current `main`; PR `#232` later implemented the separately frozen bounded result-review UI presentation/control surface. This document remains the backend contract for selected-pass result review; it does not make package review, handoff/export, rerun/recovery, source/schema/runtime widening, or full mockup behavior live.
 
 This document defines the route, state, write boundary, response contract, and proof requirements for a future selected-pass result-review implementation. It does not make result review live by itself and does not admit package review, handoff, rerun/recovery, source expansion, schema/runtime widening, UI/full mockup activation, or qualitative/hybrid/RAG/vector execution.
 
