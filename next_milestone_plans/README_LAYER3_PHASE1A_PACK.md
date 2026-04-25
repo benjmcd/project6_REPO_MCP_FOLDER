@@ -443,14 +443,14 @@ They were merged as planning docs in PR `#198` and freeze the third workbench sl
 ### Broader workbench fourth-slice plan-revision freeze docs
 
 These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-PR `#203` freezes the fourth workbench slice as planning-only governance for explicit operator rejection and revision-request semantics against the current server-backed plan preview before approval, and PR `#204` corrects the associated deferred-scope count metadata. These docs govern the PR `#205` implementation but do not by themselves reopen or supersede already approved plans, call `materialize_pass_entry(...)`, create `L3PassRun`, run analysis, write manifests, enable results/package/handoff, widen runtime DB/schema behavior, or admit qualitative/hybrid/RAG/vector/LLM planning:
+PR `#203` freezes the fourth workbench slice as planning-only governance for explicit operator rejection and revision-request semantics against the current server-backed plan preview before approval, and PR `#204` corrects the associated deferred-scope count metadata. These docs govern the PR `#205` implementation and the PR `#207` submission-hardening follow-up, but do not by themselves reopen or supersede already approved plans, call `materialize_pass_entry(...)`, create `L3PassRun`, run analysis, write manifests, enable results/package/handoff, widen runtime DB/schema behavior, or admit qualitative/hybrid/RAG/vector/LLM planning:
 - `34_L3_WB_PLAN_REVISION_FREEZE.md`
 - `35_L3_WB_PLAN_REVISION_API_AND_STATE_CONTRACT.md`
 
 ### Broader workbench first-slice, plan-preview, plan-approval, and plan-revision implementation
 
 This implementation is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-It is the bounded first-slice workbench implementation from PR `#184`, with post-implementation status/cohesion/explicit-Gate-C-typing/review-feedback closeouts through PR `#190`; PR `#194` then adds read-only plan preview after explicit Gate C typing commit, PRs `#195`/`#196` record proof/board metadata for that state, PR `#198` freezes plan approval, PR `#199` adds approval-only `L3AnalysisPlan` persistence, and PR `#205` adds pre-approval plan-revision control. Together they make `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source preview, material preview, Gate B decision recording, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, session summary, read-only plan preview, approval-only plan persistence, and revision-control for the current server-backed preview before approval:
+It is the bounded first-slice workbench implementation from PR `#184`, with post-implementation status/cohesion/explicit-Gate-C-typing/review-feedback closeouts through PR `#190`; PR `#194` then adds read-only plan preview after explicit Gate C typing commit, PRs `#195`/`#196` record proof/board metadata for that state, PR `#198` freezes plan approval, PR `#199` adds approval-only `L3AnalysisPlan` persistence, PR `#205` adds pre-approval plan-revision control, and PR `#207` hardens revision submission with serialized backend decision writes and shared UI in-flight locking. Together they make `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source preview, material preview, Gate B decision recording, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, session summary, read-only plan preview, approval-only plan persistence, and revision-control for the current server-backed preview before approval:
 - `backend/main.py`
 - `backend/app/api/router.py`
 - `backend/app/api/layer3.py`
@@ -634,7 +634,7 @@ Start with:
 - `e2e/layer3-workbench.spec.js`
 
 Current answer:
-- the fourth slice is now live only as bounded revision-control through PR `#205`
+- the fourth slice is now live only as bounded revision-control through PR `#205`, with PR `#207` hardening the same bounded behavior rather than adding a new functional slice
 - it admits explicit operator rejection and revision request against the current server-backed preview before approval
 - already approved plans remain terminal for this slice; reopening, replacing, or superseding them requires a later freeze
 - execution, results review, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and hidden LLM planning remain out of scope
