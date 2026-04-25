@@ -21,6 +21,7 @@ from app.api.deps import get_db
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
 from app.models.models import AnalysisArtifact, AnalysisRun, L3AnalysisPlan, L3PassRun
+from app.services import layer3_pass_entry as layer3_pass_entry_module
 from main import app
 from test_layer3_pass_entry import _build_quant_ready_session
 
@@ -154,10 +155,13 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     bootstrap_body = bootstrap.json()
     assert bootstrap_body["features"]["handoff"] is False
     assert bootstrap_body["features"]["analysis_execution_start"] is True
+    assert bootstrap_body["features"]["execution_result_status"] is True
     assert bootstrap_body["features"]["analysis_execution"] is False
     assert bootstrap_body["execution_readiness"]["execution_admitted"] is False
     assert bootstrap_body["execution_readiness"]["analysis_execution_start_admitted"] is True
     assert bootstrap_body["execution_readiness"]["analysis_execution_start_endpoint"] == "/api/v1/layer3/execution/start"
+    assert bootstrap_body["execution_readiness"]["execution_result_status_admitted"] is True
+    assert bootstrap_body["execution_readiness"]["execution_result_status_endpoint"] == "/api/v1/layer3/execution/result/status"
     assert bootstrap_body["execution_readiness"]["readiness_endpoint"] == "/api/v1/layer3/readiness"
 
     readiness = client.get("/api/v1/layer3/readiness")
@@ -169,15 +173,26 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["execution_enabled"] is False
     assert readiness_body["analysis_execution_start_admitted"] is True
     assert readiness_body["analysis_execution_start_endpoint"] == "/api/v1/layer3/execution/start"
+    assert readiness_body["execution_result_status_admitted"] is True
+    assert readiness_body["execution_result_status_endpoint"] == "/api/v1/layer3/execution/result/status"
     assert readiness_body["readiness_state"] == "execution_readiness_blocked"
     assert readiness_body["preview_hash_contract"]["schema_id"] == "layer3.plan_preview_hash.v1"
     assert readiness_body["idempotency_contract"]["client_request_id_supported"] is True
     assert readiness_body["idempotency_contract"]["client_request_id_required_current_slice"] is False
     assert "preview-hash" in readiness_body["implemented_gates"]
     assert "analysis-execution-start" in readiness_body["implemented_gates"]
+    assert "result-status" in readiness_body["implemented_gates"]
     assert "revision-recovery" in readiness_body["deferred_gates"]
     states = {item["state"] for item in readiness_body["state_model"]["states"]}
-    assert {"plan_preview_ready", "plan_approved", "plan_revision_requested", "execution_pass_completed", "execution_readiness_blocked"} <= states
+    assert {
+        "plan_preview_ready",
+        "plan_approved",
+        "plan_revision_requested",
+        "execution_pass_completed",
+        "execution_result_status_available",
+        "execution_result_status_missing_output",
+        "execution_readiness_blocked",
+    } <= states
 
     preflight, source, material = _prepare_material(client)
     for response_body in (bootstrap_body, preflight, source, material):
@@ -1028,6 +1043,299 @@ def test_layer3_api_analysis_execution_start_runs_selected_pass_once(client: Tes
         assert stored_pass.summary_json["analysis_run_id"] == start_body["analysis_run_id"]
         assert stored_pass.summary_json["analysis_execution_start"]["client_request_id"] == "api-analysis-execution-start-success"
         assert Path(stored_pass.output_payload_ref).exists()
+    finally:
+        db.close()
+
+
+def test_layer3_api_execution_result_status_reads_terminal_pass_without_writes(client: TestClient, tmp_path) -> None:
+    session_id, preview_body, approval_body, selection_body = _select_quant_pass(
+        client,
+        tmp_path,
+        request_id="api-result-status-selection-success",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    start = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-result-status-start-success",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert start.status_code == 200
+    start_body = start.json()
+
+    db = client.layer3_session_factory()
+    try:
+        stored_pass = db.query(L3PassRun).one()
+        pass_summary_before = dict(stored_pass.summary_json)
+        output_payload_ref_before = stored_pass.output_payload_ref
+        counts_before = {
+            "plans": db.query(L3AnalysisPlan).count(),
+            "passes": db.query(L3PassRun).count(),
+            "runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+        }
+    finally:
+        db.close()
+
+    status = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "client_request_id": "api-result-status-read",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "operator_view_mode": "status_only",
+        },
+    )
+    assert status.status_code == 200
+    status_body = status.json()
+    _assert_common_response_envelope(status_body)
+    assert status_body["schema_id"] == "layer3.execution_result_status.v1"
+    assert status_body["status"] == "available"
+    assert status_body["session_id"] == session_id
+    assert status_body["analysis_plan_id"] == approval_body["analysis_plan_id"]
+    assert status_body["pass_run_id"] == pass_run_id
+    assert status_body["preview_identity"]["preview_id"] == preview_body["preview_id"]
+    assert status_body["preview_identity"]["preview_hash"] == preview_body["preview_hash"]
+    assert status_body["execution_started"] is True
+    assert status_body["analysis_run_id"] == start_body["analysis_run_id"]
+    assert status_body["analysis_run_status"] in {"completed", "completed_with_warnings"}
+    assert status_body["pass_run_status"] == start_body["pass_run_status"]
+    assert status_body["output_payload_ref"] == output_payload_ref_before
+    assert status_body["output_metadata_summary"]["present"] is True
+    assert status_body["output_metadata_summary"]["readable"] is True
+    assert status_body["output_metadata_summary"]["analysis_run_id"] == start_body["analysis_run_id"]
+    assert status_body["output_metadata_summary"]["artifact_count"] >= 1
+    assert status_body["output_metadata_error"] is None
+    assert status_body["result_status_available"] is True
+    assert status_body["result_review_enabled"] is False
+    assert status_body["package_review_enabled"] is False
+    assert status_body["handoff_enabled"] is False
+    assert status_body["downstream_unavailable"] == ["result_review", "package", "handoff"]
+    assert status_body["next_state"] == "execution_result_status_available"
+    assert status_body["operator_view_mode"] == "status_only"
+
+    duplicate = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert duplicate.status_code == 200
+    assert duplicate.json()["analysis_run_id"] == start_body["analysis_run_id"]
+
+    db = client.layer3_session_factory()
+    try:
+        stored_pass = db.query(L3PassRun).one()
+        assert stored_pass.summary_json == pass_summary_before
+        assert stored_pass.output_payload_ref == output_payload_ref_before
+        assert {
+            "plans": db.query(L3AnalysisPlan).count(),
+            "passes": db.query(L3PassRun).count(),
+            "runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+        } == counts_before
+    finally:
+        db.close()
+
+
+def test_layer3_api_execution_result_status_prechecks_fail_closed(client: TestClient, tmp_path) -> None:
+    session_id, preview_body, approval_body, selection_body = _select_quant_pass(
+        client,
+        tmp_path,
+        request_id="api-result-status-precheck-selection",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    not_started = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert not_started.status_code == 409
+    assert not_started.json()["error_code"] == "analysis_execution_start_required"
+
+    forbidden = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "result_review": {"approve": True},
+            "package_review": True,
+            "rerun": True,
+        },
+    )
+    assert forbidden.status_code == 400
+    assert forbidden.json()["error_code"] == "execution_result_status_scope_not_admitted"
+    assert set(forbidden.json()["blocked_fields"]) == {"package_review", "rerun", "result_review"}
+
+    unsupported_view = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_view_mode": "review_and_package",
+        },
+    )
+    assert unsupported_view.status_code == 400
+    assert unsupported_view.json()["error_code"] == "unsupported_execution_result_status_view_mode"
+
+    stale_preview = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": "stale-preview-hash",
+        },
+    )
+    assert stale_preview.status_code == 409
+    assert stale_preview.json()["error_code"] == "preview_mismatch"
+
+    start = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-result-status-precheck-start",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert start.status_code == 200
+
+    mismatched_analysis_run = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": "wrong-analysis-run",
+        },
+    )
+    assert mismatched_analysis_run.status_code == 409
+    assert mismatched_analysis_run.json()["error_code"] == "analysis_run_mismatch"
+
+    db = client.layer3_session_factory()
+    try:
+        stored_pass = db.query(L3PassRun).one()
+        stored_pass.output_payload_ref = None
+        db.commit()
+    finally:
+        db.close()
+
+    missing_output = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert missing_output.status_code == 200
+    missing_output_body = missing_output.json()
+    assert missing_output_body["status"] == "missing_output_metadata"
+    assert missing_output_body["result_status_available"] is False
+    assert missing_output_body["output_metadata_summary"] is None
+    assert missing_output_body["output_metadata_error"] == "output_payload_ref_missing"
+    assert missing_output_body["result_review_enabled"] is False
+    assert missing_output_body["package_review_enabled"] is False
+    assert missing_output_body["handoff_enabled"] is False
+    assert missing_output_body["next_state"] == "execution_result_status_missing_output"
+
+
+def test_layer3_api_execution_result_status_reads_failed_terminal_pass(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    def fail_run_analysis(*args, **kwargs):
+        raise RuntimeError("analysis exploded")
+
+    monkeypatch.setattr(layer3_pass_entry_module, "run_analysis", fail_run_analysis)
+    session_id, preview_body, approval_body, selection_body = _select_quant_pass(
+        client,
+        tmp_path,
+        request_id="api-result-status-failed-selection",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    start = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-result-status-failed-start",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert start.status_code == 200
+    assert start.json()["status"] == "failed"
+
+    status = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert status.status_code == 200
+    status_body = status.json()
+    assert status_body["schema_id"] == "layer3.execution_result_status.v1"
+    assert status_body["status"] == "failed"
+    assert status_body["pass_run_status"] == "failed"
+    assert status_body["analysis_run_id"] is None
+    assert status_body["analysis_run_status"] is None
+    assert status_body["output_payload_ref"] is None
+    assert status_body["output_metadata_error"] == "output_payload_ref_missing"
+    assert status_body["result_status_available"] is False
+    assert status_body["error_present"] is True
+    assert status_body["error_message"] == "analysis exploded"
+    assert status_body["result_review_enabled"] is False
+    assert status_body["package_review_enabled"] is False
+    assert status_body["handoff_enabled"] is False
+    assert status_body["next_state"] == "execution_result_status_blocked"
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3PassRun).count() == 1
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
     finally:
         db.close()
 
