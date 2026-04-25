@@ -11,6 +11,7 @@ const State = {
     planPreview: null,
     planApproval: null,
     planRevision: null,
+    planRevisionPending: false,
     gateBDecisions: {},
     materialFilter: '',
     events: [],
@@ -352,6 +353,7 @@ function canPlanApprove() {
         && State.planPreview?.preview_hash
         && !State.planApproval
         && !State.planRevision
+        && !State.planRevisionPending
     );
 }
 
@@ -363,6 +365,7 @@ function canPlanRevise() {
         && State.planPreview?.preview_hash
         && !State.planApproval
         && !State.planRevision
+        && !State.planRevisionPending
     );
 }
 
@@ -497,7 +500,7 @@ function setGateControls() {
     elements.gateBSubmit.disabled = !(State.materialPreview?.material_candidates || []).length;
     elements.gateCPreview.disabled = !State.gateB?.session_id || gateCCommitted;
     elements.gateCCommit.disabled = !State.gateB?.session_id || gateCCommitted;
-    elements.planPreview.disabled = !canPlanPreview() || Boolean(State.planApproval) || Boolean(State.planRevision);
+    elements.planPreview.disabled = !canPlanPreview() || Boolean(State.planApproval) || Boolean(State.planRevision) || State.planRevisionPending;
     elements.planReject.disabled = !canPlanRevise();
     elements.planRequestRevision.disabled = !canPlanRevise();
     elements.planApprove.disabled = !canPlanApprove();
@@ -700,7 +703,9 @@ async function revisePlan(operatorDecision) {
     if (!canPlanRevise()) return;
     const button = operatorDecision === 'reject_current_preview' ? elements.planReject : elements.planRequestRevision;
     const label = operatorDecision === 'reject_current_preview' ? 'Reject Plan' : 'Request Revision';
+    State.planRevisionPending = true;
     setBusy(button, true, label);
+    setGateControls();
     try {
         State.planRevision = await postJson('/plan/revise', {
             schema_id: 'layer3.plan_revision_request.v1',
@@ -715,6 +720,7 @@ async function revisePlan(operatorDecision) {
     } catch (error) {
         addEvent(`Plan revision blocked: ${error.message}`);
     } finally {
+        State.planRevisionPending = false;
         setBusy(button, false, label);
         setGateControls();
     }

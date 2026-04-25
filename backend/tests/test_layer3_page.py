@@ -50,6 +50,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "postJson('/plan/preview'" in js.text
     assert "postJson('/plan/revise'" in js.text
     assert "postJson('/plan/approve'" in js.text
+    assert "planRevisionPending" in js.text
+    assert "State.planRevisionPending = true" in js.text
 
 
 def test_layer3_shell_does_not_remove_adjacent_review_pages() -> None:
