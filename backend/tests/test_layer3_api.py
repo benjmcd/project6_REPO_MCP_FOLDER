@@ -93,6 +93,40 @@ def _assert_common_response_envelope(body: dict) -> None:
     assert body["status"]
 
 
+def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-execution-selection-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    )
+    assert preview.status_code == 200
+    preview_body = preview.json()
+
+    approval = client.post(
+        "/api/v1/layer3/plan/approve",
+        json={
+            "client_request_id": "api-execution-selection-approval",
+            "session_id": session_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+        },
+    )
+    assert approval.status_code == 200
+    return session_id, preview_body, approval.json()
+
+
 def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     bootstrap = client.get("/api/v1/layer3/bootstrap")
     assert bootstrap.status_code == 200
@@ -730,6 +764,253 @@ def test_layer3_api_plan_approval_rejects_confirmation_and_preview_mismatch(clie
     db = client.layer3_session_factory()
     try:
         assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_execution_selection_creates_only_pass_run_shells(client: TestClient, tmp_path) -> None:
+    session_id, preview_body, approval_body = _approve_quant_plan(client, tmp_path)
+
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": "api-execution-selection-success",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_reason": "Select the approved plan without starting analysis.",
+        },
+    )
+    assert selection.status_code == 200
+    selection_body = selection.json()
+    _assert_common_response_envelope(selection_body)
+    assert selection_body["schema_id"] == "layer3.execution_selection.v1"
+    assert selection_body["status"] == "selected_not_started"
+    assert selection_body["next_state"] == "execution_selected_not_started"
+    assert selection_body["execution_started"] is False
+    assert selection_body["analysis_run_ids"] == []
+    assert selection_body["downstream_unavailable"] == ["analysis_execution", "results", "package", "handoff"]
+    assert len(selection_body["pass_run_ids"]) == 1
+
+    duplicate = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": "api-execution-selection-success",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert duplicate.status_code == 200
+    duplicate_body = duplicate.json()
+    assert duplicate_body["status"] == "already_selected"
+    assert duplicate_body["pass_run_ids"] == selection_body["pass_run_ids"]
+
+    conflicting_duplicate = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": "api-execution-selection-success",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": "different-preview-hash",
+        },
+    )
+    assert conflicting_duplicate.status_code == 409
+    assert conflicting_duplicate.json()["error_code"] == "idempotency_conflict"
+
+    different_request = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": "api-execution-selection-second-request",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert different_request.status_code == 409
+    assert different_request.json()["error_code"] == "execution_selection_already_exists"
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200
+    summary_body = summary.json()
+    assert summary_body["current_gate"] == "execution"
+    assert summary_body["execution_selection"]["selected"] is True
+    assert summary_body["execution_selection"]["state"] == "execution_selected_not_started"
+    assert summary_body["execution_selection"]["pass_run_ids"] == selection_body["pass_run_ids"]
+    assert summary_body["execution_selection"]["execution_started"] is False
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3PassRun).count() == 1
+        assert db.query(AnalysisRun).count() == 0
+        stored_pass = db.query(L3PassRun).one()
+        assert stored_pass.status == "selected_not_started"
+        assert stored_pass.started_at is None
+        assert stored_pass.completed_at is None
+        assert stored_pass.output_payload_ref is None
+        assert stored_pass.summary_json["execution_started"] is False
+        assert stored_pass.summary_json["analysis_run_id"] is None
+        assert stored_pass.summary_json["client_request_id"] == "api-execution-selection-success"
+        assert db.query(L3AnalysisPlan).count() == 1
+    finally:
+        db.close()
+
+
+def test_layer3_api_execution_selection_prechecks_fail_closed(client: TestClient, tmp_path) -> None:
+    session_id, preview_body, approval_body = _approve_quant_plan(client, tmp_path)
+
+    missing_request_id = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert missing_request_id.status_code == 400
+    assert missing_request_id.json()["error_code"] == "client_request_id_required"
+
+    forbidden = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": "api-execution-selection-forbidden",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "execution": {"start": True},
+            "run_analysis": True,
+        },
+    )
+    assert forbidden.status_code == 400
+    assert forbidden.json()["error_code"] == "analysis_execution_not_admitted"
+    assert set(forbidden.json()["blocked_fields"]) == {"execution", "run_analysis"}
+
+    stale_preview = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": "api-execution-selection-stale-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": "stale-preview-hash",
+        },
+    )
+    assert stale_preview.status_code == 409
+    assert stale_preview.json()["error_code"] == "preview_mismatch"
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
+@pytest.mark.parametrize(
+    ("operator_decision", "expected_error"),
+    [
+        ("reject_current_preview", "plan_rejected"),
+        ("request_revision", "plan_revision_requested"),
+    ],
+)
+def test_layer3_api_execution_selection_rejects_revision_control_states(
+    client: TestClient,
+    tmp_path,
+    operator_decision: str,
+    expected_error: str,
+) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": f"api-execution-selection-{operator_decision}-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    ).json()
+    revision = client.post(
+        "/api/v1/layer3/plan/revise",
+        json={
+            "client_request_id": f"api-execution-selection-{operator_decision}-revision",
+            "session_id": session_id,
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+            "operator_decision": operator_decision,
+        },
+    )
+    assert revision.status_code == 200
+
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": f"api-execution-selection-{operator_decision}",
+            "session_id": session_id,
+            "analysis_plan_id": "missing-approved-plan",
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+        },
+    )
+    assert selection.status_code == 409
+    assert selection.json()["error_code"] == expected_error
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_execution_selection_rejects_multiple_approved_plans(client: TestClient, tmp_path) -> None:
+    session_id, preview_body, approval_body = _approve_quant_plan(client, tmp_path)
+    db = client.layer3_session_factory()
+    try:
+        stored_plan = db.query(L3AnalysisPlan).one()
+        db.add(
+            L3AnalysisPlan(
+                analysis_plan_id="manual-second-approved-plan",
+                session_id=session_id,
+                analysis_set_ids_json=list(stored_plan.analysis_set_ids_json),
+                status="approved",
+                approved_by_operator=True,
+                approved_at=stored_plan.approved_at,
+                plan_json=dict(stored_plan.plan_json),
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": "api-execution-selection-multiple-plans",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert selection.status_code == 409
+    assert selection.json()["error_code"] == "multiple_approved_plans"
+
+    db = client.layer3_session_factory()
+    try:
         assert db.query(L3PassRun).count() == 0
         assert db.query(AnalysisRun).count() == 0
     finally:
