@@ -38,6 +38,8 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="result-review-decision"' in response.text
     assert 'id="result-review-notes"' in response.text
     assert 'id="result-review-submit"' in response.text
+    assert 'id="package-review-preview-panel"' in response.text
+    assert 'id="package-review-preview-inspect"' in response.text
     assert 'href="/review/layer3/static/layer3.css"' in response.text
     assert 'src="/review/layer3/static/layer3.js"' in response.text
     assert "Plan</button>" in response.text
@@ -59,6 +61,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "postJson('/plan/preview'" in js.text
     assert "postJson('/plan/revise'" in js.text
     assert "postJson('/plan/approve'" in js.text
+    assert "postJson('/package/review/preview'" in js.text
     assert "getJson(`/session/${encodeURIComponent(sessionId)}`)" in js.text
     assert "postJson('/execution/result/status'" in js.text
     assert "postJson('/execution/result/review'" in js.text

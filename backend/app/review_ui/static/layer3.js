@@ -18,6 +18,9 @@ const State = {
     resultReview: null,
     resultReviewError: null,
     resultReviewPending: false,
+    packageReviewPreview: null,
+    packageReviewPreviewError: null,
+    packageReviewPreviewPending: false,
     gateBDecisions: {},
     materialFilter: '',
     events: [],
@@ -52,6 +55,8 @@ const elements = {
     resultReviewDecision: document.getElementById('result-review-decision'),
     resultReviewNotes: document.getElementById('result-review-notes'),
     resultReviewSubmit: document.getElementById('result-review-submit'),
+    packageReviewPreviewInspect: document.getElementById('package-review-preview-inspect'),
+    packageReviewPreviewPanel: document.getElementById('package-review-preview-panel'),
     contextList: document.getElementById('context-list'),
     eventList: document.getElementById('event-list'),
     unavailableList: document.getElementById('unavailable-list'),
@@ -152,15 +157,17 @@ function renderUnavailable(labels) {
 }
 
 function currentAuthorityRail() {
-    return State.sessionSummary?.authority_rail || State.resultReview?.authority_rail || State.resultStatus?.authority_rail
+    return State.packageReviewPreview?.authority_rail || State.sessionSummary?.authority_rail || State.resultReview?.authority_rail || State.resultStatus?.authority_rail
         || State.planApproval?.authority_rail || State.planRevision?.authority_rail || State.planPreview?.authority_rail || State.gateC?.authority_rail || State.gateB?.authority_rail
         || State.materialPreview?.authority_rail || State.sourcePreview?.authority_rail || State.preflight?.authority_rail
         || State.bootstrap?.authority_rail;
 }
 
 function currentDownstreamUnavailable() {
-    return State.resultReview?.downstream_unavailable
+    return State.packageReviewPreview?.downstream_unavailable
+        || State.resultReview?.downstream_unavailable
         || State.resultStatus?.downstream_unavailable
+        || State.sessionSummary?.package_review_preview?.downstream_unavailable
         || State.sessionSummary?.execution_result_review?.downstream_unavailable
         || State.sessionSummary?.analysis_execution_start?.downstream_unavailable
         || State.sessionSummary?.downstream_unavailable
@@ -182,6 +189,7 @@ function renderContext() {
         pass_run_id: selectedResultAuthority()?.passRunId || State.resultStatus?.pass_run_id || 'none',
         result_status: State.resultStatus?.status || State.resultStatusError?.error_code || 'none',
         result_review: recordedResultReview()?.review_state || State.resultReview?.review_state || State.resultReviewError?.error_code || 'none',
+        package_preview: State.packageReviewPreview?.next_state || State.packageReviewPreviewError?.error_code || State.sessionSummary?.package_review_preview?.state || 'none',
     };
     elements.contextList.innerHTML = Object.entries(context)
         .map(([key, value]) => `
@@ -248,6 +256,9 @@ function clearResultReviewState({ keepSummary = false } = {}) {
     State.resultReview = null;
     State.resultReviewError = null;
     State.resultReviewPending = false;
+    State.packageReviewPreview = null;
+    State.packageReviewPreviewError = null;
+    State.packageReviewPreviewPending = false;
 }
 
 function selectedResultAuthority() {
@@ -301,13 +312,20 @@ function recordedResultReview() {
     return null;
 }
 
+function recordedApprovedResultReview() {
+    const review = recordedResultReview();
+    return review && review.review_state === 'execution_result_review_approved' && review.operator_decision === 'approved'
+        ? review
+        : null;
+}
+
 function canRefreshSessionSummary() {
-    return Boolean(currentSessionId() && !State.resultReviewPending);
+    return Boolean(currentSessionId() && !State.resultReviewPending && !State.packageReviewPreviewPending);
 }
 
 function canInspectResultStatus() {
     const authority = selectedResultAuthority();
-    return Boolean(hasResultAuthorityIdentity(authority) && authority.selected && authority.terminal && !State.resultReviewPending);
+    return Boolean(hasResultAuthorityIdentity(authority) && authority.selected && authority.terminal && !State.resultReviewPending && !State.packageReviewPreviewPending);
 }
 
 function reviewDecisionNeedsNotes() {
@@ -325,6 +343,18 @@ function canSubmitResultReview() {
         && !recordedResultReview()
         && !State.resultReviewPending
         && (!reviewDecisionNeedsNotes() || notes)
+    );
+}
+
+function canInspectPackageReviewPreview() {
+    const authority = selectedResultAuthority();
+    return Boolean(
+        hasResultAuthorityIdentity(authority)
+        && authority.selected
+        && authority.terminal
+        && recordedApprovedResultReview()
+        && !State.resultReviewPending
+        && !State.packageReviewPreviewPending
     );
 }
 
@@ -749,6 +779,76 @@ function renderResultReviewPanel() {
     `;
 }
 
+function packageReviewPanelState() {
+    if (State.packageReviewPreviewPending) {
+        return { label: 'package_review_preview_inspecting', pill: 'preview', message: 'Inspecting read-only package-review readiness.' };
+    }
+    if (State.packageReviewPreview?.package_review_preview_enabled === true) {
+        return { label: State.packageReviewPreview.next_state || 'package_review_preview_ready', pill: 'ok', message: 'Read-only package-review preview is available.' };
+    }
+    if (State.packageReviewPreviewError) {
+        return { label: 'package_review_preview_blocked', pill: 'blocked', message: 'Server authority rejected or blocked package-review preview.' };
+    }
+    if (recordedApprovedResultReview()) {
+        return { label: 'package_review_preview_unavailable', pill: 'preview', message: 'Approved result review can be inspected for package-preview readiness.' };
+    }
+    return { label: 'package_review_preview_unavailable', pill: 'blocked', message: 'Package preview requires an approved selected-pass result review.' };
+}
+
+function renderPackageReviewPreviewPanel() {
+    const preview = State.packageReviewPreview || {};
+    const panelState = packageReviewPanelState();
+    const review = recordedApprovedResultReview() || {};
+    const compatibility = preview.package_owner_compatibility || {};
+    const candidateKinds = Array.isArray(preview.candidate_package_kinds) ? preview.candidate_package_kinds : [];
+    const candidateRows = candidateKinds.length
+        ? candidateKinds.map((candidate) => `
+            <li>
+                <code>${escapeHtml(candidate.package_kind)}</code>
+                ${candidate.preview_only ? '<span class="status-pill preview">preview only</span>' : ''}
+            </li>
+        `).join('')
+        : '<li>No package candidates loaded.</li>';
+    const error = State.packageReviewPreviewError;
+    elements.packageReviewPreviewPanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Preview Authority</strong>
+                <ul>
+                    ${fieldItem('session', preview.session_id || currentSessionId(), { code: true })}
+                    ${fieldItem('analysis plan', preview.analysis_plan_id || selectedResultAuthority().analysisPlanId, { code: true })}
+                    ${fieldItem('pass run', preview.pass_run_id || selectedResultAuthority().passRunId, { code: true })}
+                    ${fieldItem('result review', preview.result_review_record_ref || review.review_record_ref, { code: true })}
+                    ${fieldItem('review state', preview.result_review_state || review.review_state)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Candidate Families</strong>
+                <ul>${candidateRows}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Owner Compatibility</strong>
+                <ul>
+                    ${fieldItem('status', compatibility.status)}
+                    ${fieldItem('preview projection', compatibility.preview_candidate_projection_compatible)}
+                    ${fieldItem('construction compatible', compatibility.construction_compatible_with_current_workbench_state)}
+                    ${fieldItem('materialize callable', compatibility.materialize_package_entry_callable)}
+                    ${fieldItem('missing inputs', Array.isArray(compatibility.missing_owner_service_inputs) ? compatibility.missing_owner_service_inputs.join(', ') : null)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Disabled Downstream</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(preview.downstream_unavailable || ['package_commit', 'package_review_submit', 'handoff', 'export'])}</div>
+            </section>
+            ${renderErrorCard(error)}
+        </div>
+    `;
+}
+
 function setBusy(button, busy, label) {
     button.disabled = busy;
     if (label) {
@@ -766,7 +866,7 @@ function setGateControls() {
     const gateCCommitted = State.gateC?.authority_rail?.typing_status === 'committed';
     const authority = selectedResultAuthority();
     const reviewRecorded = Boolean(recordedResultReview());
-    const resultReviewControlsEnabled = Boolean(State.resultStatus?.result_status_available === true && !reviewRecorded && !State.resultReviewPending);
+    const resultReviewControlsEnabled = Boolean(State.resultStatus?.result_status_available === true && !reviewRecorded && !State.resultReviewPending && !State.packageReviewPreviewPending);
     elements.gateBSubmit.disabled = !(State.materialPreview?.material_candidates || []).length;
     elements.gateCPreview.disabled = !State.gateB?.session_id || gateCCommitted;
     elements.gateCCommit.disabled = !State.gateB?.session_id || gateCCommitted;
@@ -779,6 +879,7 @@ function setGateControls() {
     elements.resultReviewDecision.disabled = !resultReviewControlsEnabled;
     elements.resultReviewNotes.disabled = !resultReviewControlsEnabled;
     elements.resultReviewSubmit.disabled = !canSubmitResultReview();
+    elements.packageReviewPreviewInspect.disabled = !canInspectPackageReviewPreview();
     setStepChip(elements.planStep, canPlanPreview());
     setStepChip(elements.executionStep, Boolean(State.sessionSummary?.execution_selection?.selected));
     setStepChip(elements.resultsStep, Boolean(authority.selected && authority.terminal));
@@ -793,6 +894,7 @@ function renderAll() {
     renderGateCPanel();
     renderPlanPanel();
     renderResultReviewPanel();
+    renderPackageReviewPreviewPanel();
     setGateControls();
 }
 
@@ -829,6 +931,25 @@ function resultReviewPayload(authority = selectedResultAuthority()) {
     return payload;
 }
 
+function packageReviewPreviewPayload(authority = selectedResultAuthority()) {
+    const review = recordedApprovedResultReview();
+    const payload = {
+        client_request_id: requestId(),
+        session_id: authority.sessionId,
+        analysis_plan_id: authority.analysisPlanId,
+        pass_run_id: authority.passRunId,
+        preview_id: authority.previewId,
+        preview_hash: authority.previewHash,
+    };
+    if (authority.analysisRunId) {
+        payload.analysis_run_id = authority.analysisRunId;
+    }
+    if (review?.review_record_ref) {
+        payload.result_review_record_ref = review.review_record_ref;
+    }
+    return payload;
+}
+
 async function refreshSessionSummary() {
     const sessionId = currentSessionId();
     if (!sessionId) return;
@@ -841,6 +962,7 @@ async function refreshSessionSummary() {
         }
         State.resultStatusError = null;
         State.resultReviewError = null;
+        State.packageReviewPreviewError = null;
         addEvent('Session state refreshed.');
         renderAll();
     } catch (error) {
@@ -864,6 +986,8 @@ async function inspectResultStatus() {
         State.resultStatus = await postJson('/execution/result/status', resultStatusPayload());
         State.resultStatusError = null;
         State.resultReviewError = null;
+        State.packageReviewPreview = null;
+        State.packageReviewPreviewError = null;
         addEvent('Result/status authority loaded.');
         renderAll();
     } catch (error) {
@@ -880,6 +1004,32 @@ async function inspectResultStatus() {
     }
 }
 
+async function inspectPackageReviewPreview() {
+    if (!canInspectPackageReviewPreview()) return;
+    State.packageReviewPreviewPending = true;
+    State.packageReviewPreviewError = null;
+    renderAll();
+    setBusy(elements.packageReviewPreviewInspect, true, 'Inspect Package Preview');
+    try {
+        State.packageReviewPreview = await postJson('/package/review/preview', packageReviewPreviewPayload());
+        State.packageReviewPreviewError = null;
+        addEvent('Package review preview loaded.');
+        renderAll();
+    } catch (error) {
+        State.packageReviewPreviewError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'package_review_preview_request_failed',
+            message: error.message,
+        };
+        addEvent(`Package preview blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.packageReviewPreviewPending = false;
+        setBusy(elements.packageReviewPreviewInspect, false, 'Inspect Package Preview');
+        renderAll();
+    }
+}
+
 async function submitResultReview(event) {
     event.preventDefault();
     if (!canSubmitResultReview()) return;
@@ -890,6 +1040,8 @@ async function submitResultReview(event) {
     try {
         State.resultReview = await postJson('/execution/result/review', resultReviewPayload());
         State.resultReviewError = null;
+        State.packageReviewPreview = null;
+        State.packageReviewPreviewError = null;
         addEvent('Result review recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.resultReview.session_id)}`);
@@ -1164,6 +1316,7 @@ elements.planApprove.addEventListener('click', approvePlan);
 elements.resultReviewRefresh.addEventListener('click', refreshSessionSummary);
 elements.resultStatusInspect.addEventListener('click', inspectResultStatus);
 elements.resultReviewForm.addEventListener('submit', submitResultReview);
+elements.packageReviewPreviewInspect.addEventListener('click', inspectPackageReviewPreview);
 elements.resultReviewDecision.addEventListener('change', setGateControls);
 elements.resultReviewNotes.addEventListener('input', setGateControls);
 elements.materialFilter.addEventListener('input', (event) => {
