@@ -10,14 +10,17 @@ from sqlalchemy.orm import Session
 
 from app.models.models import (
     L3AnalysisGroup,
+    L3AnalysisPlan,
     L3AnalysisSet,
     L3AnalysisUnit,
     L3MaterialSnapshot,
+    L3PassRun,
     L3SelectionManifest,
     L3Session,
     L3TypingRecord,
     uuid_str,
 )
+from app.services.layer3_pass_entry import Layer3PassEntryError, preview_pass_entry
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
     SnapshotMaterial,
@@ -46,7 +49,9 @@ UNSUPPORTED_SOURCE_CLASSES = (
 GATE_LABELS = ("intent", "sources", "gate_b", "gate_c", "plan", "execution", "results", "package")
 ACTIVE_GATES = ("intent", "sources", "gate_b", "gate_c")
 DOWNSTREAM_UNAVAILABLE = ("plan", "execution", "results", "package")
+PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 GATE_B_DECISIONS = ("approved", "denied", "isolated", "flagged")
+PLAN_PREVIEW_SCOPE = "owner_service_default"
 
 
 @dataclass(frozen=True)
@@ -105,6 +110,9 @@ def _authority_rail(
     counts: dict[str, int] | None = None,
     typing_status: str = "not_started",
     browser_only_state: list[str] | None = None,
+    downstream_unavailable: list[str] | tuple[str, ...] | None = None,
+    execution_enabled: bool = False,
+    package_review_enabled: bool = False,
 ) -> dict[str, Any]:
     gate_counts = counts or {}
     return {
@@ -126,7 +134,9 @@ def _authority_rail(
         "isolated_material_count": gate_counts.get("isolated", 0),
         "flagged_material_count": gate_counts.get("flagged", 0),
         "typing_status": typing_status,
-        "downstream_unavailable": list(DOWNSTREAM_UNAVAILABLE),
+        "execution_enabled": execution_enabled,
+        "package_review_enabled": package_review_enabled,
+        "downstream_unavailable": list(downstream_unavailable or DOWNSTREAM_UNAVAILABLE),
         "browser_only_state": list(browser_only_state or []),
     }
 
@@ -143,6 +153,7 @@ def bootstrap() -> dict[str, Any]:
         "active_gate_labels": list(ACTIVE_GATES),
         "unavailable_gate_labels": list(DOWNSTREAM_UNAVAILABLE),
         "features": {
+            "plan_preview": True,
             "analysis_execution": False,
             "qualitative_execution": False,
             "hybrid_execution": False,
@@ -650,14 +661,15 @@ def gate_c_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         "analysis_sets": analysis_sets,
         "unsupported_material": [],
         "override_allowed": False,
-        "next_state": "first_slice_complete",
+        "next_state": "plan_preview_ready",
         "authority_rail": _authority_rail(
             session_id=session_id,
-            current_gate="complete",
+            current_gate="plan",
             persistence_mode="durable_layer3_control",
             source_classes=source_classes,
             counts=gate_b_counts,
             typing_status=typing_status,
+            downstream_unavailable=PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE,
         ),
     }
 
@@ -685,6 +697,140 @@ def _gate_b_summary_from_session(session: L3Session) -> dict[str, int]:
     return _gate_b_counts([item for item in decisions if isinstance(item, dict)])
 
 
+def _plan_preview_readiness(db: Session, *, session_id: str, include_owner_service: bool = False) -> dict[str, Any]:
+    typing_record_count = db.query(L3TypingRecord).filter(L3TypingRecord.session_id == session_id).count()
+    analysis_set_count = db.query(L3AnalysisSet).filter(L3AnalysisSet.session_id == session_id).count()
+    analysis_plan_count = db.query(L3AnalysisPlan).filter(L3AnalysisPlan.session_id == session_id).count()
+    pass_run_count = db.query(L3PassRun).filter(L3PassRun.session_id == session_id).count()
+    blocked_reason = None
+    admitted_set_count = None
+    excluded_set_count = None
+    planned_pass_count = None
+    if typing_record_count == 0:
+        blocked_reason = "gate_c_not_committed"
+    elif analysis_set_count == 0:
+        blocked_reason = "no_analysis_sets"
+    elif analysis_plan_count > 0 or pass_run_count > 0:
+        blocked_reason = "plan_already_materialized"
+    elif include_owner_service:
+        try:
+            owner_preview = preview_pass_entry(db, session_id=session_id)
+            admitted_set_count = len(owner_preview.admitted_sets)
+            excluded_set_count = len(owner_preview.excluded_sets)
+            planned_pass_count = len(owner_preview.planned_passes)
+        except Layer3PassEntryError as exc:
+            blocked_reason = _plan_preview_error(exc).error_code
+    return {
+        "schema_id": "layer3.plan_preview_readiness.v1",
+        "available": blocked_reason is None,
+        "blocked_reason": blocked_reason,
+        "typing_record_count": typing_record_count,
+        "analysis_set_count": analysis_set_count,
+        "analysis_plan_count": analysis_plan_count,
+        "pass_run_count": pass_run_count,
+        "admitted_set_count": admitted_set_count,
+        "excluded_set_count": excluded_set_count,
+        "planned_pass_count": planned_pass_count,
+    }
+
+
+def _source_classes_from_plan_preview(plan_preview: dict[str, Any]) -> list[str]:
+    source_classes = set()
+    for collection_name in ("admitted_sets", "excluded_sets"):
+        for item in plan_preview.get(collection_name) or []:
+            source_summary = item.get("source_summary") if isinstance(item, dict) else {}
+            for source_class in (source_summary or {}).get("source_classes") or []:
+                source_classes.add(str(source_class))
+    return sorted(source_classes)
+
+
+def _plan_preview_error(exc: Layer3PassEntryError) -> Layer3WorkbenchError:
+    message = str(exc)
+    if "was not found" in message:
+        return Layer3WorkbenchError("session_not_found", message, http_status=404)
+    if "must be finalized" in message:
+        return Layer3WorkbenchError("gate_c_not_committed", message, status="blocked", http_status=409)
+    if "already has analysis plans" in message or "already has pass runs" in message:
+        return Layer3WorkbenchError("plan_already_materialized", message, status="conflict", http_status=409)
+    if "has no analysis sets" in message:
+        return Layer3WorkbenchError("no_analysis_sets", message, status="blocked", http_status=409)
+    if "has no admissible analysis sets" in message:
+        return Layer3WorkbenchError("no_admissible_plan", message, status="blocked", http_status=409)
+    return Layer3WorkbenchError(
+        "owner_service_error",
+        message,
+        status="failed",
+        http_status=500,
+        recoverable=False,
+    )
+
+
+def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or uuid_str())
+    session_id = str(payload.get("session_id") or "").strip()
+    if not session_id:
+        raise Layer3WorkbenchError("session_not_found", "session_id is required for plan preview.", http_status=404)
+
+    preview_scope = str(payload.get("preview_scope") or PLAN_PREVIEW_SCOPE).strip()
+    if preview_scope != PLAN_PREVIEW_SCOPE:
+        raise Layer3WorkbenchError(
+            "unsupported_preview_scope",
+            f"Unsupported plan preview scope: {preview_scope}.",
+            status="invalid",
+            blocked_fields=["preview_scope"],
+            next_allowed_actions=["use_owner_service_default"],
+        )
+
+    session = _load_session(db, session_id)
+    gate_b_counts = _gate_b_summary_from_session(session)
+    readiness = _plan_preview_readiness(db, session_id=session_id)
+    if not readiness["available"]:
+        raise Layer3WorkbenchError(
+            readiness["blocked_reason"],
+            f"Layer 3 session '{session_id}' is not ready for plan preview: {readiness['blocked_reason']}.",
+            status="blocked" if readiness["blocked_reason"] != "plan_already_materialized" else "conflict",
+            http_status=409,
+            next_allowed_actions=["commit_gate_c_typing"] if readiness["blocked_reason"] == "gate_c_not_committed" else [],
+        )
+
+    try:
+        owner_preview = preview_pass_entry(db, session_id=session_id)
+    except Layer3PassEntryError as exc:
+        raise _plan_preview_error(exc) from exc
+
+    plan_preview_payload = {
+        "schema_id": "layer3.plan_preview_payload.v1",
+        "plan_version": PLAN_PREVIEW_SCOPE,
+        "owner_plan_version": owner_preview.owner_service_basis["owner_plan_version"],
+        "would_create_analysis_plan": False,
+        "would_create_pass_runs": False,
+        "would_execute_passes": False,
+        "admitted_sets": [dict(item) for item in owner_preview.admitted_sets],
+        "excluded_sets": [dict(item) for item in owner_preview.excluded_sets],
+        "planned_passes": [dict(item) for item in owner_preview.planned_passes],
+        "warnings": [dict(item) for item in owner_preview.warnings],
+        "owner_service_basis": dict(owner_preview.owner_service_basis),
+    }
+    preview_id = _stable_id("plan-preview", {"session_id": session_id, "plan_preview": plan_preview_payload})
+    return {
+        **_base_response("layer3.plan_preview_result.v1", request_id=request_id),
+        "session_id": session_id,
+        "next_state": "plan_preview_ready",
+        "preview_id": preview_id,
+        "preview_only": True,
+        "authority_rail": _authority_rail(
+            session_id=session_id,
+            current_gate="plan",
+            persistence_mode="preview_only",
+            source_classes=_source_classes_from_plan_preview(plan_preview_payload),
+            counts=gate_b_counts,
+            typing_status="committed",
+            downstream_unavailable=PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE,
+        ),
+        "plan_preview": plan_preview_payload,
+    }
+
+
 def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     session = _load_session(db, session_id)
     manifest = (
@@ -702,12 +848,15 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     analysis_set_count = db.query(L3AnalysisSet).filter(L3AnalysisSet.session_id == session_id).count()
     gate_b_counts = _gate_b_summary_from_session(session)
     typing_committed = typing_record_count > 0
+    plan_preview_readiness = _plan_preview_readiness(db, session_id=session_id, include_owner_service=True)
+    current_gate = "plan" if typing_committed else "gate_c"
+    downstream_unavailable = PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE if typing_committed else DOWNSTREAM_UNAVAILABLE
 
     return {
         **_base_response("layer3.workbench_session_summary.v1"),
         "session_id": session_id,
         "selection_manifest_id": manifest.selection_manifest_id,
-        "current_gate": "complete" if typing_committed else "gate_c",
+        "current_gate": current_gate,
         "gate_b_summary": gate_b_counts,
         "gate_c_summary": {
             "typing_committed": typing_committed,
@@ -716,12 +865,14 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
             "analysis_group_count": analysis_group_count,
             "analysis_set_count": analysis_set_count,
         },
-        "downstream_unavailable": list(DOWNSTREAM_UNAVAILABLE),
+        "plan_preview": plan_preview_readiness,
+        "downstream_unavailable": list(downstream_unavailable),
         "authority_rail": _authority_rail(
             session_id=session_id,
-            current_gate="complete" if typing_committed else "gate_c",
+            current_gate=current_gate,
             persistence_mode="durable_layer3_control",
             counts=gate_b_counts,
             typing_status="committed" if typing_committed else "previewed",
+            downstream_unavailable=downstream_unavailable,
         ),
     }

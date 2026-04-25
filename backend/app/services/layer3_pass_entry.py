@@ -127,6 +127,17 @@ class Layer3PassEntryResult:
     pass_runs: tuple[L3PassRun, ...]
 
 
+@dataclass(frozen=True)
+class Layer3PassEntryPreviewResult:
+    session_id: str
+    admitted_sets: tuple[dict[str, Any], ...]
+    excluded_sets: tuple[dict[str, Any], ...]
+    planned_passes: tuple[dict[str, Any], ...]
+    warnings: tuple[dict[str, Any], ...]
+    owner_service_basis: dict[str, Any]
+    owner_plan_payload: dict[str, Any]
+
+
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -600,6 +611,130 @@ def _plan_payload(
         if any(candidate.pass_type == PASS_TYPE_ASSOCIATED_COHORT for candidate in admitted)
         else SOURCE_GATE_PASS_FREEZE,
     }
+
+
+def _candidate_source_summary(candidate: _AdmittedSetCandidate) -> dict[str, Any]:
+    return {
+        "source_classes": sorted({snapshot.source_shape for snapshot in candidate.snapshots}),
+        "source_material_count": len(candidate.snapshots),
+    }
+
+
+def _preview_admitted_entry(candidate: _AdmittedSetCandidate) -> dict[str, Any]:
+    return {
+        "analysis_set_id": candidate.analysis_set.analysis_set_id,
+        "analysis_unit_ids": [unit.analysis_unit_id for unit in candidate.analysis_units],
+        "material_snapshot_ids": [snapshot.material_snapshot_id for snapshot in candidate.snapshots],
+        "analysis_modality": candidate.analysis_set.formation_basis_json.get("analysis_modality"),
+        "pass_type": candidate.pass_type,
+        "pass_scope": candidate.pass_scope,
+        "readiness": "admitted",
+        "source_summary": _candidate_source_summary(candidate),
+    }
+
+
+def _preview_excluded_entry(
+    excluded: dict[str, Any],
+    *,
+    analysis_set_by_id: dict[str, L3AnalysisSet],
+    unit_by_id: dict[str, L3AnalysisUnit],
+    snapshot_by_id: dict[str, L3MaterialSnapshot],
+) -> dict[str, Any]:
+    analysis_set_id = str(excluded.get("analysis_set_id") or "")
+    analysis_set = analysis_set_by_id.get(analysis_set_id)
+    analysis_unit_ids = list(analysis_set.analysis_unit_ids_json or []) if analysis_set is not None else []
+    snapshot_ids: list[str] = []
+    source_classes: set[str] = set()
+    for analysis_unit_id in analysis_unit_ids:
+        analysis_unit = unit_by_id.get(analysis_unit_id)
+        if analysis_unit is None:
+            continue
+        for snapshot_id in list(analysis_unit.member_snapshot_ids_json or []):
+            snapshot_ids.append(snapshot_id)
+            snapshot = snapshot_by_id.get(snapshot_id)
+            if snapshot is not None:
+                source_classes.add(snapshot.source_shape)
+    return {
+        "analysis_set_id": analysis_set_id,
+        "reason_code": excluded.get("reason_code"),
+        "analysis_modality": excluded.get("analysis_modality"),
+        "set_type": excluded.get("set_type"),
+        "analysis_unit_ids": analysis_unit_ids,
+        "material_snapshot_ids": snapshot_ids,
+        "source_summary": {
+            "source_classes": sorted(source_classes),
+            "source_material_count": len(snapshot_ids),
+        },
+    }
+
+
+def _preview_planned_pass(candidate: _AdmittedSetCandidate) -> dict[str, Any]:
+    result = {
+        "pass_type": candidate.pass_type,
+        "pass_scope": candidate.pass_scope,
+        "analysis_set_id": candidate.analysis_set.analysis_set_id,
+        "method_family": "repo_supported_quantitative",
+        "selected_method_name": candidate.selected_method_name,
+        "execution_status": "not_started",
+        "preview_only": True,
+    }
+    if candidate.dataset_version_id is not None:
+        result["dataset_version_id"] = candidate.dataset_version_id
+    if candidate.prepared_cohort is not None:
+        result["source_dataset_version_ids"] = list(candidate.prepared_cohort.source_dataset_version_ids)
+    return result
+
+
+def preview_pass_entry(db: Session, *, session_id: str) -> Layer3PassEntryPreviewResult:
+    """Return the Gate C pass-entry plan basis without materializing or executing it."""
+
+    _load_session_or_raise(db, session_id=session_id)
+    _ensure_session_not_yet_passed(db, session_id=session_id)
+    analysis_sets, unit_by_id, snapshot_by_id = _load_sets_units_and_snapshots(db, session_id=session_id)
+    admitted, excluded = _classify_sets(
+        db,
+        analysis_sets=analysis_sets,
+        unit_by_id=unit_by_id,
+        snapshot_by_id=snapshot_by_id,
+    )
+    if not admitted:
+        raise Layer3PassEntryError(
+            f"Layer 3 session '{session_id}' has no admissible analysis sets for Gate C pass entry"
+        )
+
+    plan_payload = _plan_payload(admitted, excluded)
+    analysis_set_by_id = {analysis_set.analysis_set_id: analysis_set for analysis_set in analysis_sets}
+    warnings = []
+    if excluded:
+        warnings.append(
+            {
+                "reason_code": "partial_plan_preview",
+                "message": "Some analysis sets are excluded by the current Gate C pass-entry rules.",
+                "excluded_set_count": len(excluded),
+            }
+        )
+    return Layer3PassEntryPreviewResult(
+        session_id=session_id,
+        admitted_sets=tuple(_preview_admitted_entry(candidate) for candidate in admitted),
+        excluded_sets=tuple(
+            _preview_excluded_entry(
+                item,
+                analysis_set_by_id=analysis_set_by_id,
+                unit_by_id=unit_by_id,
+                snapshot_by_id=snapshot_by_id,
+            )
+            for item in excluded
+        ),
+        planned_passes=tuple(_preview_planned_pass(candidate) for candidate in admitted),
+        warnings=tuple(warnings),
+        owner_service_basis={
+            "service": "backend/app/services/layer3_pass_entry.py",
+            "mode": "read_only_preview",
+            "source_gate": plan_payload["source_gate"],
+            "owner_plan_version": PLAN_VERSION,
+        },
+        owner_plan_payload=_json_clone(plan_payload),
+    )
 
 
 def _materialize_analysis_plan(

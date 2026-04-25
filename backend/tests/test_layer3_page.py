@@ -24,6 +24,8 @@ def test_layer3_page_route_serves_first_slice_shell() -> None:
     assert 'id="intent-form"' in response.text
     assert 'id="material-ledger-body"' in response.text
     assert 'id="gate-c-panel"' in response.text
+    assert 'id="plan-panel"' in response.text
+    assert 'id="plan-preview"' in response.text
     assert 'href="/review/layer3/static/layer3.css"' in response.text
     assert 'src="/review/layer3/static/layer3.js"' in response.text
     assert "Plan</button>" in response.text
@@ -42,6 +44,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "const API_ROOT = '/api/v1/layer3';" in js.text
     assert "postJson('/gate-b/decision'" in js.text
     assert "postJson('/gate-c/preview'" in js.text
+    assert "postJson('/plan/preview'" in js.text
 
 
 def test_layer3_shell_does_not_remove_adjacent_review_pages() -> None:

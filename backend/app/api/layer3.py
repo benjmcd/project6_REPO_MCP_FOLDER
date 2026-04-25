@@ -61,6 +61,11 @@ def post_gate_c_override(payload: dict[str, Any]) -> JSONResponse:
     )
 
 
+@router.post("/plan/preview", response_model=None)
+def post_plan_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.plan_preview(db, payload))
+
+
 @router.get("/session/{session_id}", response_model=None)
 def get_session_summary(session_id: str, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.session_summary(db, session_id))
