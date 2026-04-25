@@ -65,6 +65,11 @@ And to the bounded Gate D APS review-packet handoff lane now landed on current `
 - `backend/app/services/nrc_aps_deterministic_challenge_review_packet_gate.py`
 - `backend/tests/test_layer3_aps_deterministic_challenge_review_packet_handoff.py`
 
+And, on this branch only, to the Layer 3 workbench execution-readiness packet that must remain planning-only unless a later PR merges it:
+- `next_milestone_plans/Layer3_planning_docs/36_L3_WB_EXECUTION_READINESS_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/37_L3_WB_STATE_HASH_IDEMPOTENCY_CONTRACT.md`
+- `next_milestone_plans/layer3_workbench_proof_manifest.json`
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
@@ -640,6 +645,24 @@ Current answer:
 - execution, results review, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and hidden LLM planning remain out of scope
 
 No functional next workbench implementation beyond revision-control is selected by this pack. The next functional pass must start with a new freeze/API-state contract before adding execution, approved-plan supersession, results/package/handoff, runtime DB/schema widening, or qualitative/hybrid/RAG/vector/LLM planning.
+
+### If you are auditing the branch-local Layer 3 workbench execution-readiness packet
+
+Start with:
+- `Layer3_planning_docs/36_L3_WB_EXECUTION_READINESS_FREEZE.md`
+- `Layer3_planning_docs/37_L3_WB_STATE_HASH_IDEMPOTENCY_CONTRACT.md`
+- `next_milestone_plans/layer3_workbench_proof_manifest.json`
+- `Layer3_planning_docs/34_L3_WB_PLAN_REVISION_FREEZE.md`
+- `Layer3_planning_docs/35_L3_WB_PLAN_REVISION_API_AND_STATE_CONTRACT.md`
+- `next_milestone_plans/layer3_progress_board.md`
+- `next_milestone_plans/layer3_progress_manifest.json`
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
+
+Current answer:
+- this branch-local packet is execution-readiness planning only
+- it adds proof/readiness, state, preview-hash, idempotency, concurrency, revision-recovery, approved-plan-correction, output-taxonomy, and source-breadth gates before any later execution branch
+- it does not make execution, `L3PassRun`, analysis execution, results/package/handoff, approved-plan supersession, runtime DB/schema widening, qualitative/hybrid/RAG/vector execution, local upload ingestion, or full mockup activation live
+- browser proof is not required for this docs-only readiness packet because no runtime UI behavior changes, but any future UI or execution slice must run headed and headless browser proof when browser behavior changes
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 
