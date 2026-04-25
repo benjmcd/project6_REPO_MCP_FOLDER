@@ -1,20 +1,23 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded execution-selection shell implementation; analysis execution remains unavailable",
+  "status": "current-main readiness proof plus bounded execution-selection shell implementation plus planning-only analysis-execution-start freeze; analysis execution remains unavailable until a later implementation PR",
   "scope": {
     "source_branch": "codex/l3-state-proof",
     "merged_pr": "#213",
     "merge_commit": "b7bcea3d0c5b555ff8c064b1ee8128cd9903e994",
     "base_remote": "project6-origin/main",
-    "base_commit": "b7bcea3d0c5b555ff8c064b1ee8128cd9903e994",
+    "base_commit": "34570e6e7f5671a081072a044cca941b4f2d6126",
     "source_base_commit": "2070eae0bce9c8840c36aa369b0fcd1db0162e1f",
-    "purpose": "Define, prove, and track the readiness gates plus the bounded execution-selection shell boundary before any later Layer 3 workbench analysis execution implementation is selected.",
+    "purpose": "Define, prove, and track the readiness gates, bounded execution-selection shell boundary, and planning-only analysis-execution-start freeze before any Layer 3 workbench analysis execution implementation is admitted.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "PR #213 adds read-only readiness proof; PR #216 adds only selected/not-started L3PassRun shell creation through /api/v1/layer3/execution/select. Analysis execution, results, package, handoff, runtime DB/schema widening, source expansion, and full mockup activation remain unavailable.",
+    "live_behavior_change_summary": "PR #213 adds read-only readiness proof; PR #216 adds only selected/not-started L3PassRun shell creation through /api/v1/layer3/execution/select; PR #217 adds planning-only docs 40/41 for a future one selected-pass-run analysis-execution-start boundary. Analysis execution, results, package, handoff, runtime DB/schema widening, source expansion, and full mockup activation remain unavailable.",
     "latest_implementation_pr": "#216",
     "latest_implementation_branch": "codex/l3-execution-selection-impl",
-    "latest_implementation_summary": "PR #216 adds only the bounded execution-selection shell endpoint and selected/not-started L3PassRun shell creation from an approved, hash-matched plan."
+    "latest_implementation_summary": "PR #216 adds only the bounded execution-selection shell endpoint and selected/not-started L3PassRun shell creation from an approved, hash-matched plan.",
+    "latest_planning_pr": "#217",
+    "latest_planning_branch": "codex/l3-analysis-exec-freeze",
+    "latest_planning_summary": "PR #217 adds docs 40/41 as planning-only governance for a future single selected-pass-run wrapped quantitative analysis-execution-start endpoint; it does not implement execution."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -32,7 +35,9 @@
     "next_milestone_plans/layer3-mockups/mockup-spec.txt",
     "docs/nrc_adams/nrc_aps_status_handoff.md",
     "next_milestone_plans/Layer3_planning_docs/38_L3_WB_EXECUTION_SELECTION_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/39_L3_WB_EXECUTION_SELECTION_API_AND_STATE_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/39_L3_WB_EXECUTION_SELECTION_API_AND_STATE_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/40_L3_WB_ANALYSIS_EXECUTION_START_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/41_L3_WB_ANALYSIS_EXECUTION_START_API_AND_STATE_CONTRACT.md"
   ],
   "current_live_workbench_boundary": {
     "live_bounded": [
@@ -57,7 +62,13 @@
       "RAG/vector execution",
       "local upload or local-directory ingestion",
       "hidden LLM planning",
-      "full mockup activation"
+      "full mockup activation",
+      "POST /api/v1/layer3/execution/start or equivalent selected-pass-run execution endpoint",
+      "single selected-pass-run AnalysisRun creation from workbench shells",
+      "multi-pass or batch analysis execution"
+    ],
+    "planning_only": [
+      "analysis-execution-start freeze/API-state contract for one future selected-pass-run wrapped quantitative execution start from PR #216 shells"
     ]
   },
   "readiness_gates": [
@@ -110,12 +121,21 @@
       "gate_id": "execution-selection",
       "decision": "The next eligible implementation may create selected/not-started L3PassRun shell rows only after approved-plan and preview-hash validation.",
       "status": "implemented_by_pr_216_selected_not_started_l3_pass_run_shells_no_analysis_execution"
+    },
+    {
+      "gate_id": "analysis-execution-start",
+      "decision": "The next eligible execution implementation must execute at most one existing selected/not-started L3PassRun shell through wrapped quantitative analysis, and must not call materialize_pass_entry(...) as-is or open result/package/handoff/source/schema/UI scope.",
+      "status": "defined_by_pr_217_docs_40_41_planning_only_no_live_execution"
     }
   ],
   "validation_commands": [
     {
       "command": "python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json",
       "purpose": "Validate proof/readiness manifest JSON syntax."
+    },
+    {
+      "command": "python -m json.tool next_milestone_plans/layer3_progress_manifest.json",
+      "purpose": "Validate progress manifest JSON syntax after adding the analysis-execution-start planning record."
     },
     {
       "command": "python -m py_compile backend/app/api/layer3.py backend/app/services/layer3_workbench.py backend/app/services/layer3_pass_entry.py",
@@ -154,6 +174,11 @@
     "pass-run shell execution has started",
     "execution selection runs analysis",
     "execution selection writes artifacts",
-    "execution selection enables results/package/handoff"
+    "execution selection enables results/package/handoff",
+    "analysis execution start is live",
+    "execution start enables result review",
+    "execution start enables package review",
+    "execution start enables handoff",
+    "execution start runs all selected pass runs"
   ]
 }
