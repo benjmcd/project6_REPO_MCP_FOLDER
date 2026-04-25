@@ -99,6 +99,7 @@ PLAN_REVISION_FORBIDDEN_FIELDS = PLAN_APPROVAL_FORBIDDEN_FIELDS | frozenset(
 EXECUTION_SELECTION_FORBIDDEN_FIELDS = frozenset(
     {
         "execute",
+        "execution",
         "run",
         "run_analysis",
         "start_execution",
