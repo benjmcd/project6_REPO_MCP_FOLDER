@@ -137,6 +137,7 @@ test('Layer 3 workbench approves an admissible plan without starting execution',
     };
     State.planPreview = null;
     State.planApproval = null;
+    State.planRevision = null;
     renderAll();
   }, seed.session_id);
 
@@ -160,6 +161,87 @@ test('Layer 3 workbench approves an admissible plan without starting execution',
 
   await expect(page.locator('#plan-panel')).toContainText('approved');
   await expect(page.locator('#plan-panel')).toContainText('not started');
+  await expect(page.locator('#plan-approve')).toBeDisabled();
+  await expect(page.locator('[data-step="execution"]')).toBeDisabled();
+  await expect(page.locator('[data-step="results"]')).toBeDisabled();
+  await expect(page.locator('[data-step="package"]')).toBeDisabled();
+  await expect(page.locator('#unavailable-list')).toContainText('execution');
+  await expect(page.locator('#unavailable-list')).toContainText('package');
+});
+
+test('Layer 3 workbench can request plan revision without starting execution', async ({ page, request }) => {
+  const seed = await expectJson(await request.post('/__test/layer3/seed-quant'));
+
+  const bootstrapResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/bootstrap'));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expectJson(await bootstrapResponsePromise);
+
+  await page.evaluate((sessionId) => {
+    State.gateB = {
+      session_id: sessionId,
+      authority_rail: {
+        session_id: sessionId,
+        current_gate: 'plan',
+        persistence_mode: 'durable_layer3_control',
+        source_authority: { source_classes: ['dataset_version'] },
+        approved_material_count: 1,
+        denied_material_count: 0,
+        isolated_material_count: 0,
+        flagged_material_count: 0,
+        typing_status: 'committed',
+        execution_enabled: false,
+        package_review_enabled: false,
+        downstream_unavailable: ['execution', 'results', 'package'],
+      },
+    };
+    State.gateC = {
+      authority_rail: {
+        session_id: sessionId,
+        current_gate: 'plan',
+        persistence_mode: 'durable_layer3_control',
+        source_authority: { source_classes: ['dataset_version'] },
+        approved_material_count: 1,
+        denied_material_count: 0,
+        isolated_material_count: 0,
+        flagged_material_count: 0,
+        typing_status: 'committed',
+        execution_enabled: false,
+        package_review_enabled: false,
+        downstream_unavailable: ['execution', 'results', 'package'],
+      },
+    };
+    State.planPreview = null;
+    State.planApproval = null;
+    State.planRevision = null;
+    renderAll();
+  }, seed.session_id);
+
+  await expect(page.locator('#plan-preview')).toBeEnabled();
+  await expect(page.locator('#plan-reject')).toBeDisabled();
+  await expect(page.locator('#plan-request-revision')).toBeDisabled();
+
+  const planPreviewResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/plan/preview'));
+  await page.locator('#plan-preview').click();
+  const planPreview = await expectJson(await planPreviewResponsePromise);
+  expect(planPreview.preview_hash).toBeTruthy();
+
+  await expect(page.locator('#plan-reject')).toBeEnabled();
+  await expect(page.locator('#plan-request-revision')).toBeEnabled();
+  await expect(page.locator('#plan-approve')).toBeEnabled();
+
+  const revisionResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/plan/revise'));
+  await page.locator('#plan-request-revision').click();
+  const revision = await expectJson(await revisionResponsePromise);
+  expect(revision.next_state).toBe('plan_revision_requested');
+  expect(revision.revision_control_only).toBe(true);
+  expect(revision.execution_started).toBe(false);
+  expect(revision.downstream_unavailable).toEqual(['execution', 'results', 'package']);
+
+  await expect(page.locator('#plan-panel')).toContainText('revision requested');
+  await expect(page.locator('#plan-panel')).toContainText('not started');
+  await expect(page.locator('#plan-preview')).toBeDisabled();
+  await expect(page.locator('#plan-reject')).toBeDisabled();
+  await expect(page.locator('#plan-request-revision')).toBeDisabled();
   await expect(page.locator('#plan-approve')).toBeDisabled();
   await expect(page.locator('[data-step="execution"]')).toBeDisabled();
   await expect(page.locator('[data-step="results"]')).toBeDisabled();
