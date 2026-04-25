@@ -4,11 +4,13 @@ import hashlib
 import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.models.models import (
+    AnalysisRun,
     L3AnalysisGroup,
     L3AnalysisPlan,
     L3AnalysisSet,
@@ -73,9 +75,13 @@ EXECUTION_SELECTION_STATE_SCHEMA_ID = "layer3.execution_selection_state.v1"
 EXECUTION_SELECTION_STATE = "execution_selected_not_started"
 ANALYSIS_EXECUTION_START_SCHEMA_ID = "layer3.analysis_execution_start.v1"
 ANALYSIS_EXECUTION_START_STATE_SCHEMA_ID = "layer3.analysis_execution_start_state.v1"
+EXECUTION_RESULT_STATUS_SCHEMA_ID = "layer3.execution_result_status.v1"
 EXECUTION_PASS_RUNNING_STATE = "execution_pass_running"
 EXECUTION_PASS_COMPLETED_STATE = "execution_pass_completed"
 EXECUTION_PASS_FAILED_STATE = "execution_pass_failed"
+EXECUTION_RESULT_STATUS_AVAILABLE_STATE = "execution_result_status_available"
+EXECUTION_RESULT_STATUS_BLOCKED_STATE = "execution_result_status_blocked"
+EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE = "execution_result_status_missing_output"
 STATE_MODEL_SCHEMA_ID = "layer3.workbench_state_model.v1"
 PLAN_REVISION_DECISIONS = frozenset({"reject_current_preview", "request_revision"})
 PLAN_REVISION_STATE_BY_DECISION = {
@@ -162,8 +168,51 @@ ANALYSIS_EXECUTION_START_ALLOWED_FIELDS = frozenset(
         "operator_reason",
     }
 )
+EXECUTION_RESULT_STATUS_FORBIDDEN_FIELDS = frozenset(
+    {
+        "approve_result",
+        "reject_result",
+        "result_review",
+        "result_decision",
+        "edited_findings",
+        "package",
+        "package_review",
+        "handoff",
+        "export",
+        "rerun",
+        "retry",
+        "cancel",
+        "run_all",
+        "batch",
+        "local_upload",
+        "local_directory",
+        "rag_plan",
+        "vector_plan",
+        "qualitative_plan",
+        "hybrid_plan",
+        "approved_plan_supersession",
+        "schema_migration",
+        "runtime_db_write",
+    }
+)
+EXECUTION_RESULT_STATUS_ALLOWED_FIELDS = frozenset(
+    {
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "analysis_run_id",
+        "operator_view_mode",
+        "client_request_id",
+    }
+)
 EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 ANALYSIS_EXECUTION_START_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
+EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE = ("result_review", "package", "handoff")
+EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES = frozenset(
+    {PASS_STATUS_COMPLETED, PASS_STATUS_COMPLETED_WITH_WARNINGS, PASS_STATUS_FAILED}
+)
 PLAN_PREVIEW_HASH_INCLUDED_INPUTS = (
     "session_id",
     "committed_gate_b_material_and_source_ids",
@@ -193,6 +242,7 @@ READINESS_REQUIRED_GATES = (
     "source-breadth",
     "execution-selection",
     "analysis-execution-start",
+    "result-status",
     "browser-proof",
 )
 READINESS_IMPLEMENTED_GATES = (
@@ -203,6 +253,7 @@ READINESS_IMPLEMENTED_GATES = (
     "concurrency",
     "execution-selection",
     "analysis-execution-start",
+    "result-status",
 )
 READINESS_DEFERRED_GATES = (
     "revision-recovery",
@@ -368,13 +419,31 @@ def _workbench_state_model() -> dict[str, Any]:
             {
                 "state": EXECUTION_PASS_COMPLETED_STATE,
                 "authority_source": "selected_l3_pass_run_and_wrapped_analysis_run",
-                "allowed_next_actions": [],
+                "allowed_next_actions": ["execution_result_status"],
                 "forbidden_downstream_actions": ["result_review", "package", "handoff", "source_expansion"],
             },
             {
                 "state": EXECUTION_PASS_FAILED_STATE,
                 "authority_source": "selected_l3_pass_run_failure_metadata",
+                "allowed_next_actions": ["execution_result_status"],
+                "forbidden_downstream_actions": ["result_review", "package", "handoff", "source_expansion"],
+            },
+            {
+                "state": EXECUTION_RESULT_STATUS_AVAILABLE_STATE,
+                "authority_source": "terminal_selected_l3_pass_run_and_read_only_output_metadata",
+                "allowed_next_actions": ["execution_result_status"],
+                "forbidden_downstream_actions": ["result_review", "package", "handoff", "source_expansion"],
+            },
+            {
+                "state": EXECUTION_RESULT_STATUS_BLOCKED_STATE,
+                "authority_source": "failed_result_status_authority_checks",
                 "allowed_next_actions": [],
+                "forbidden_downstream_actions": ["result_review", "package", "handoff", "source_expansion"],
+            },
+            {
+                "state": EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE,
+                "authority_source": "terminal_selected_l3_pass_run_without_readable_output_metadata",
+                "allowed_next_actions": ["execution_result_status"],
                 "forbidden_downstream_actions": ["result_review", "package", "handoff", "source_expansion"],
             },
             {
@@ -432,6 +501,8 @@ def readiness_contract() -> dict[str, Any]:
         "analysis_execution_admitted": False,
         "analysis_execution_start_admitted": True,
         "analysis_execution_start_endpoint": f"{API_ROOT}/execution/start",
+        "execution_result_status_admitted": True,
+        "execution_result_status_endpoint": f"{API_ROOT}/execution/result/status",
         "readiness_state": "execution_readiness_blocked",
         "required_gates": list(READINESS_REQUIRED_GATES),
         "implemented_gates": list(READINESS_IMPLEMENTED_GATES),
@@ -444,10 +515,12 @@ def readiness_contract() -> dict[str, Any]:
             "client_request_id_required_current_slice": False,
             "client_request_id_required_for_execution_selection": True,
             "client_request_id_required_for_analysis_execution_start": True,
+            "client_request_id_required_for_execution_result_status": False,
             "duplicate_plan_approval": "returns existing approved-plan conflict; no duplicate L3AnalysisPlan",
             "duplicate_plan_revision": "returns existing revision-control conflict; no duplicate revision-control state",
             "duplicate_execution_selection": "same client_request_id and same approved plan returns existing selection; conflicts fail closed",
             "duplicate_analysis_execution_start": "same client_request_id and same selected pass returns existing execution state; conflicts fail closed",
+            "duplicate_execution_result_status": "read-only status inspection does not create idempotency state",
             "duplicate_without_client_request_id": "server-authoritative state conflicts still prevent duplicate durable approval or revision-control state",
             "analysis_execution": "broad analysis execution remains blocked; selected-pass execution start is admitted separately",
         },
@@ -486,6 +559,7 @@ def bootstrap() -> dict[str, Any]:
             "plan_approval": True,
             "execution_selection": True,
             "analysis_execution_start": True,
+            "execution_result_status": True,
             "analysis_execution": False,
             "qualitative_execution": False,
             "hybrid_execution": False,
@@ -505,6 +579,8 @@ def bootstrap() -> dict[str, Any]:
             "analysis_execution_admitted": False,
             "analysis_execution_start_admitted": True,
             "analysis_execution_start_endpoint": f"{API_ROOT}/execution/start",
+            "execution_result_status_admitted": True,
+            "execution_result_status_endpoint": f"{API_ROOT}/execution/result/status",
             "readiness_state": "execution_readiness_blocked",
             "readiness_endpoint": f"{API_ROOT}/readiness",
         },
@@ -1651,6 +1727,91 @@ def _analysis_execution_start_response(
     }
 
 
+def _output_metadata_summary(pass_run: L3PassRun) -> tuple[dict[str, Any] | None, str | None]:
+    output_ref = str(pass_run.output_payload_ref or "").strip()
+    if not output_ref:
+        return None, "output_payload_ref_missing"
+    output_path = Path(output_ref)
+    if not output_path.exists() or not output_path.is_file():
+        return None, "output_metadata_file_missing"
+    try:
+        payload = json.loads(output_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None, "output_metadata_unreadable"
+    if not isinstance(payload, dict):
+        return None, "output_metadata_malformed"
+    artifact_refs = payload.get("artifact_refs_json")
+    artifact_types = payload.get("artifact_types_json")
+    return (
+        {
+            "present": True,
+            "readable": True,
+            "output_payload_ref": output_ref,
+            "analysis_run_id": payload.get("analysis_run_id"),
+            "analysis_set_id": payload.get("analysis_set_id"),
+            "dataset_version_id": payload.get("dataset_version_id"),
+            "selected_method_name": payload.get("selected_method_name"),
+            "artifact_count": len(artifact_refs) if isinstance(artifact_refs, list) else 0,
+            "artifact_types": list(artifact_types or []) if isinstance(artifact_types, list) else [],
+            "source_gate": payload.get("source_gate"),
+        },
+        None,
+    )
+
+
+def _execution_result_status_response(
+    *,
+    request_id: str | None,
+    status: str,
+    session_id: str,
+    analysis_plan_id: str,
+    preview_id: str,
+    preview_hash: str,
+    pass_run: L3PassRun,
+    analysis_run: AnalysisRun | None,
+    output_metadata_summary: dict[str, Any] | None,
+    output_metadata_error: str | None,
+) -> dict[str, Any]:
+    summary = pass_run.summary_json or {}
+    start_state = _analysis_execution_start_from_pass_run(pass_run)
+    pass_error = summary.get("error") or ((start_state or {}).get("error"))
+    return {
+        **_base_response(EXECUTION_RESULT_STATUS_SCHEMA_ID, request_id=request_id, status=status),
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run.pass_run_id,
+        "preview_identity": _preview_identity(preview_id=preview_id, preview_hash=preview_hash),
+        "execution_started": bool(start_state) or bool(summary.get("execution_started")),
+        "analysis_run_id": _pass_run_analysis_run_id(pass_run),
+        "analysis_run_status": analysis_run.status if analysis_run is not None else None,
+        "pass_run_status": pass_run.status,
+        "output_payload_ref": pass_run.output_payload_ref,
+        "output_metadata_summary": output_metadata_summary,
+        "output_metadata_error": output_metadata_error,
+        "warnings_present": pass_run.status == PASS_STATUS_COMPLETED_WITH_WARNINGS,
+        "error_present": pass_run.status == PASS_STATUS_FAILED or bool(pass_error),
+        "error_message": str(pass_error) if pass_error else None,
+        "result_status_available": status == "available",
+        "result_review_enabled": False,
+        "package_review_enabled": False,
+        "handoff_enabled": False,
+        "downstream_unavailable": list(EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE),
+        "next_state": (
+            EXECUTION_RESULT_STATUS_AVAILABLE_STATE
+            if status == "available"
+            else (
+                EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE
+                if status == "missing_output_metadata"
+                else EXECUTION_RESULT_STATUS_BLOCKED_STATE
+            )
+        ),
+        "operator_view_mode": "status_only",
+        "engine_family": pass_run.engine_family,
+        "selected_method_name": summary.get("selected_method_name"),
+        "dataset_version_id": summary.get("dataset_version_id"),
+    }
+
+
 def _execution_selection_response(
     *,
     request_id: str,
@@ -2305,6 +2466,259 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
         preview_id=preview_id,
         preview_hash=preview_hash,
         pass_run=pass_run,
+    )
+
+
+def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    session_id = str(payload.get("session_id") or "").strip()
+    analysis_plan_id = str(payload.get("analysis_plan_id") or "").strip()
+    pass_run_id = str(payload.get("pass_run_id") or "").strip()
+    preview_id = str(payload.get("preview_id") or "").strip()
+    preview_hash = str(payload.get("preview_hash") or "").strip()
+    request_id = str(payload.get("client_request_id") or "").strip() or None
+    supplied_analysis_run_id = str(payload.get("analysis_run_id") or "").strip()
+    operator_view_mode = str(payload.get("operator_view_mode") or "status_only").strip()
+
+    missing = [
+        field
+        for field, value in (
+            ("session_id", session_id),
+            ("analysis_plan_id", analysis_plan_id),
+            ("pass_run_id", pass_run_id),
+            ("preview_id", preview_id),
+            ("preview_hash", preview_hash),
+        )
+        if not value
+    ]
+    if missing:
+        raise Layer3WorkbenchError(
+            "missing_execution_result_status_fields",
+            f"Execution result/status request is missing required fields: {', '.join(missing)}.",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_execution_result_status_request"],
+        )
+
+    unknown = sorted(key for key in payload if key not in EXECUTION_RESULT_STATUS_ALLOWED_FIELDS)
+    forbidden = sorted(key for key in EXECUTION_RESULT_STATUS_FORBIDDEN_FIELDS if key in payload)
+    blocked_payload_fields = sorted(set(unknown) | set(forbidden))
+    if blocked_payload_fields:
+        blocked_text = ", ".join(blocked_payload_fields)
+        raise Layer3WorkbenchError(
+            "execution_result_status_scope_not_admitted",
+            f"Execution result/status request includes non-admitted fields: {blocked_text}.",
+            status="invalid",
+            blocked_fields=blocked_payload_fields,
+            next_allowed_actions=["submit_status_only_execution_result_status_request"],
+        )
+    if operator_view_mode != "status_only":
+        raise Layer3WorkbenchError(
+            "unsupported_execution_result_status_view_mode",
+            "This Layer 3 tranche admits only status_only result/status inspection.",
+            status="invalid",
+            blocked_fields=["operator_view_mode"],
+        )
+
+    session = db.query(L3Session).filter(L3Session.session_id == session_id).first()
+    if session is None:
+        raise Layer3WorkbenchError("session_not_found", f"Layer 3 session '{session_id}' was not found.", http_status=404)
+    revision_control = _plan_revision_control_from_session(session)
+    if revision_control is not None:
+        raise Layer3WorkbenchError(
+            str(revision_control.get("state") or "plan_revision_recorded"),
+            f"Layer 3 session '{session_id}' already has a plan revision-control decision.",
+            status="conflict",
+            http_status=409,
+        )
+
+    approved_plans = (
+        db.query(L3AnalysisPlan)
+        .filter(
+            L3AnalysisPlan.session_id == session_id,
+            L3AnalysisPlan.status == "approved",
+            L3AnalysisPlan.approved_by_operator.is_(True),
+        )
+        .order_by(L3AnalysisPlan.created_at.desc(), L3AnalysisPlan.analysis_plan_id.asc())
+        .all()
+    )
+    if len(approved_plans) == 0:
+        raise Layer3WorkbenchError(
+            "no_approved_plan",
+            f"Layer 3 session '{session_id}' has no current approved analysis plan.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["approve_current_plan"],
+        )
+    if len(approved_plans) > 1:
+        raise Layer3WorkbenchError(
+            "multiple_approved_plans",
+            f"Layer 3 session '{session_id}' has multiple approved analysis plans.",
+            status="conflict",
+            http_status=409,
+        )
+    approved_plan = approved_plans[0]
+    if approved_plan.analysis_plan_id != analysis_plan_id:
+        raise Layer3WorkbenchError(
+            "approved_plan_mismatch",
+            "Execution result/status must reference the current approved analysis plan.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["analysis_plan_id"],
+        )
+
+    plan_json = approved_plan.plan_json or {}
+    stored_preview_id = str(plan_json.get("source_preview_id") or "").strip()
+    stored_preview_hash = str(plan_json.get("source_preview_hash") or "").strip()
+    if preview_id != stored_preview_id or preview_hash != stored_preview_hash:
+        raise Layer3WorkbenchError(
+            "preview_mismatch",
+            "Execution result/status must reference the approved plan preview id and hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["preview_id", "preview_hash"],
+            next_allowed_actions=["refresh_plan_preview"],
+        )
+
+    selection = _execution_selection_from_session(session)
+    if selection is None:
+        raise Layer3WorkbenchError(
+            "execution_selection_required",
+            "Execution result/status requires a prior execution selection.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["submit_execution_selection"],
+        )
+    if (
+        str(selection.get("analysis_plan_id") or "") != analysis_plan_id
+        or str(selection.get("source_preview_id") or "") != preview_id
+        or str(selection.get("source_preview_hash") or "") != preview_hash
+    ):
+        raise Layer3WorkbenchError(
+            "execution_selection_mismatch",
+            "Execution selection does not match the supplied approved plan preview identity.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["analysis_plan_id", "preview_id", "preview_hash"],
+        )
+
+    pass_runs = _execution_selection_pass_runs(db, session_id=session_id)
+    stored_pass_run_ids = [str(item) for item in (selection.get("pass_run_ids_json") or [])]
+    actual_pass_run_ids = [pass_run.pass_run_id for pass_run in pass_runs]
+    if stored_pass_run_ids != actual_pass_run_ids:
+        raise Layer3WorkbenchError(
+            "execution_selection_inconsistent",
+            f"Layer 3 session '{session_id}' has inconsistent execution-selection shell state.",
+            status="conflict",
+            http_status=409,
+        )
+    if pass_run_id not in stored_pass_run_ids:
+        raise Layer3WorkbenchError(
+            "pass_run_not_selected",
+            "Execution result/status may inspect only a pass run from the current execution selection.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
+
+    pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).first()
+    if pass_run is None:
+        raise Layer3WorkbenchError("pass_run_not_found", f"Layer 3 pass run '{pass_run_id}' was not found.", http_status=404)
+    if pass_run.session_id != session_id or pass_run.analysis_plan_id != analysis_plan_id:
+        raise Layer3WorkbenchError(
+            "pass_run_mismatch",
+            "Execution result/status pass_run_id must belong to the supplied session and approved plan.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
+
+    pass_summary = pass_run.summary_json or {}
+    if str(pass_summary.get("source_preview_id") or "") != preview_id or str(pass_summary.get("source_preview_hash") or "") != preview_hash:
+        raise Layer3WorkbenchError(
+            "pass_run_preview_mismatch",
+            "Selected pass run does not match the supplied preview identity.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["preview_id", "preview_hash"],
+        )
+    planned_pass = pass_summary.get("planned_pass")
+    if not isinstance(planned_pass, dict):
+        raise Layer3WorkbenchError(
+            "selected_pass_malformed",
+            "Selected pass run is missing its approved planned-pass payload.",
+            status="conflict",
+            http_status=409,
+        )
+    if pass_run.engine_family != ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS or str(planned_pass.get("engine_family") or "") != ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS:
+        raise Layer3WorkbenchError(
+            "unsupported_execution_result_status_engine",
+            "This result/status slice admits only wrapped quantitative pass runs.",
+            status="conflict",
+            http_status=409,
+        )
+    if str(planned_pass.get("pass_type") or pass_run.pass_type) != PASS_TYPE_SINGLE_ITEM:
+        raise Layer3WorkbenchError(
+            "unsupported_execution_result_status_source_breadth",
+            "This result/status slice admits only selected single-item dataset-version pass runs.",
+            status="conflict",
+            http_status=409,
+        )
+
+    start_state = _analysis_execution_start_from_pass_run(pass_run)
+    if start_state is None:
+        raise Layer3WorkbenchError(
+            "analysis_execution_start_required",
+            "Execution result/status requires prior selected-pass analysis execution-start state.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["submit_analysis_execution_start"],
+        )
+    if pass_run.status not in EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES:
+        raise Layer3WorkbenchError(
+            "pass_run_not_terminal",
+            "Execution result/status requires a terminal selected pass run.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
+
+    analysis_run_id = _pass_run_analysis_run_id(pass_run)
+    if supplied_analysis_run_id and supplied_analysis_run_id != str(analysis_run_id or ""):
+        raise Layer3WorkbenchError(
+            "analysis_run_mismatch",
+            "Supplied analysis_run_id does not match the selected pass run.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["analysis_run_id"],
+        )
+    analysis_run = db.get(AnalysisRun, analysis_run_id) if analysis_run_id else None
+    if analysis_run_id and analysis_run is None:
+        raise Layer3WorkbenchError(
+            "analysis_run_not_found",
+            "Selected pass run references an analysis_run_id that is not present.",
+            status="conflict",
+            http_status=409,
+        )
+
+    output_summary, output_error = _output_metadata_summary(pass_run)
+    if pass_run.status == PASS_STATUS_FAILED:
+        response_status = "failed"
+    elif output_summary is None:
+        response_status = "missing_output_metadata"
+    else:
+        response_status = "available"
+
+    return _execution_result_status_response(
+        request_id=request_id,
+        status=response_status,
+        session_id=session_id,
+        analysis_plan_id=analysis_plan_id,
+        preview_id=preview_id,
+        preview_hash=preview_hash,
+        pass_run=pass_run,
+        analysis_run=analysis_run,
+        output_metadata_summary=output_summary,
+        output_metadata_error=output_error,
     )
 
 

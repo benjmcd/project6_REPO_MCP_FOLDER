@@ -1,6 +1,8 @@
 # Layer 3 Workbench Result Status Freeze
 
-Status: planning-only freeze for the next Layer 3 workbench tranche after merged PR `#218`.
+Status: governing freeze for the bounded result/status tranche after merged PR `#218`.
+
+Implementation note as of April 25, 2026: branch `codex/l3-result-status` implements this freeze as a read-only backend endpoint. Until that branch is merged and re-audited on `project6-origin/main`, current-main live truth remains PR `#221` planning-only governance plus PR `#218` bounded analysis-execution-start behavior.
 
 This document freezes the narrowest eligible boundary after selected-pass analysis-execution start: read-only status and execution-proof inspection for one completed or failed selected `L3PassRun`, while keeping result review, result approval, package review, handoff, source expansion, approved-plan supersession, runtime DB/schema widening, UI/full mockup activation, qualitative execution, hybrid execution, and RAG/vector retrieval out of scope.
 
@@ -35,9 +37,9 @@ The next adequate Layer 3 workbench tranche is:
 
 This is smaller and safer than result review because it does not require final taxonomy decisions for datum/fact/finding/insight/caveat/result/package, does not add operator approval/rejection semantics, and does not create new downstream artifacts.
 
-## Admitted Future Implementation Scope
+## Admitted Implementation Scope
 
-A later implementation PR governed by this freeze may add only:
+An implementation PR governed by this freeze may add only:
 
 - one read-only selected-pass result/status endpoint under the existing Layer 3 API family
 - validation that the session already has exactly one current approved `L3AnalysisPlan`
@@ -90,13 +92,13 @@ This freeze does not admit:
 | Output boundary | expose raw output metadata summary only when the existing output reference is present and readable | The output file can prove execution without becoming a package or reviewed result |
 | Failed pass handling | failed terminal passes may be inspected for status/error metadata only | Retry/recovery/cancellation require later freezes |
 | Idempotency | do not require `client_request_id` for the read-only endpoint; if accepted, it must be echoed only and must not create idempotency records | No writes means duplicate reads are naturally safe; idempotency storage would widen the boundary |
-| State model | allow only a future `result_status_inspection` step after `execution_pass_completed` or `execution_pass_failed` | This names the next status surface without implying result review |
+| State model | allow only `result_status_inspection` after `execution_pass_completed` or `execution_pass_failed` | This names the status surface without implying result review |
 | UI posture | if UI changes, show execution proof/status only | A status panel has lower blast radius than review/package/handoff UI |
 | Downstream posture | result review, package, and handoff remain unavailable | Execution proof does not settle result taxonomy, operator approval, or downstream packaging |
 
-## Required Future Proof
+## Required Proof
 
-A later implementation PR governed by this freeze must prove:
+An implementation PR governed by this freeze must prove:
 
 - result/status inspection requires prior PR `#218` execution-start state or terminal selected-pass failure metadata
 - stale or mismatched approved-plan preview identity/hash fails closed

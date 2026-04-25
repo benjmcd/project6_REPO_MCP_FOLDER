@@ -1,8 +1,10 @@
 # Layer 3 Workbench Result Status API And State Contract
 
-Status: planning-only companion for `42_L3_WB_RESULT_STATUS_FREEZE.md`.
+Status: governing API/state companion for `42_L3_WB_RESULT_STATUS_FREEZE.md`.
 
-This document defines the route, state, read-boundary, response contract, and proof requirements for a future selected-pass result/status implementation. It does not make result/status inspection, result review, package review, or handoff live by itself.
+This document defines the route, state, read-boundary, response contract, and proof requirements for the selected-pass result/status implementation. It does not make result review, package review, or handoff live by itself.
+
+Implementation note as of April 25, 2026: branch `codex/l3-result-status` implements the read-only endpoint described here. Until that branch is merged and re-audited on `project6-origin/main`, current-main live truth remains PR `#221` planning-only governance plus PR `#218` bounded analysis-execution-start behavior.
 
 ## Authority Order
 
@@ -21,9 +23,9 @@ Selected-pass result/status inspection must use this authority order:
 
 Browser state must not approve, revise, select, run, retry, cancel, interpret, review, complete, package, or hand off result/status output.
 
-## Candidate Endpoint
+## Endpoint
 
-The future implementation may add one endpoint:
+The bounded implementation may add one endpoint:
 
 `POST /api/v1/layer3/execution/result/status`
 
@@ -93,7 +95,7 @@ Minimum response fields:
 
 ## State Model Delta
 
-The future implementation may add only these state meanings:
+The implementation may add only these state meanings:
 
 | State | Authority source | Allowed next actions | Forbidden downstream actions |
 | --- | --- | --- | --- |
@@ -110,7 +112,7 @@ Existing states keep their current behavior:
 
 ## Read Boundary
 
-The future implementation may read only:
+The implementation may read only:
 
 - `L3Session`
 - `L3AnalysisPlan`
@@ -119,7 +121,7 @@ The future implementation may read only:
 - existing selected-pass output metadata file referenced by `output_payload_ref`, if present
 - existing JSON summary fields already written by prior admitted slices
 
-The future implementation must not write:
+The implementation must not write:
 
 - `L3Session`
 - `L3AnalysisPlan`
@@ -135,7 +137,7 @@ The future implementation must not write:
 - approved-plan replacement/supersession data
 - new artifact manifests or modified output payload files
 
-If a future implementation believes a durable read receipt or audit row is required, that is a separate write boundary and must be frozen before implementation.
+If a later implementation believes a durable read receipt or audit row is required, that is a separate write boundary and must be frozen before implementation.
 
 ## Selected-Pass Result/Status Contract
 
@@ -167,7 +169,7 @@ The endpoint must treat these as blocked:
 
 ## Output Metadata Summary
 
-If `output_payload_ref` is present, the future implementation may parse only enough metadata to summarize execution proof.
+If `output_payload_ref` is present, the implementation may parse only enough metadata to summarize execution proof.
 
 Permitted summary fields include:
 
@@ -222,7 +224,7 @@ For terminal failed selected passes, the response may report status and error me
 
 ## UI Boundary
 
-If the future implementation changes `/review/layer3`, the UI may only expose:
+If a later implementation changes `/review/layer3`, the UI may only expose:
 
 - a status/proof panel for one selected terminal pass
 - terminal pass status
@@ -247,7 +249,7 @@ Any UI change requires headed and headless Chrome proof for the affected `/revie
 
 ## Test Requirements
 
-Future implementation tests must cover:
+Implementation tests must cover:
 
 - successful result/status inspection for a completed selected pass
 - successful status-only inspection for a failed selected pass, if supported
