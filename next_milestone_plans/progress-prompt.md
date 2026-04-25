@@ -21,6 +21,8 @@ Goal:
 - rebuild the `layer3-aps-progress` Cowork artifact so it clearly shows:
   - what is done on `main`
   - what the current focus is
+  - what the Layer 3 workbench current decision is
+  - which Layer 3 workbench slices are planning-only versus live bounded implementation
   - what the candidate next consumers are
   - what is explicitly deferred
   - what each deferred item would need before it could become a candidate next consumer or the current focus
@@ -33,15 +35,19 @@ Hard rules:
 - Mermaid is optional enhancement only. If it does not render, there must be no loss of meaning.
 - Do not call the artifact live if it only embeds a stale snapshot and never updates from refreshed inputs.
 - Do not promote a deferred item into candidate-next or current-focus without using the manifest-declared activation criteria.
+- Render `layer3_workbench_current_decision` separately from `next_required_decision`; the later APS family settlement is not itself a workbench execution or next-slice admission.
+- Render `layer3_workbench_slices` as a structured workbench register; do not force PR `#184`, `#194`, and `#199` state to be inferred only from prose.
 
 Required sections in order:
 1. Program State Summary
 2. Current Focus
-3. Completed Chain
-4. Milestone Table
-5. Candidate Next Consumers
-6. Deferred Scope
-7. Deferred Scope Activation Criteria
+3. Layer 3 Workbench Current Decision
+4. Layer 3 Workbench Slice Register
+5. Completed Chain
+6. Milestone Table
+7. Candidate Next Consumers
+8. Deferred Scope
+9. Deferred Scope Activation Criteria
 
 Visual rules:
 - `merged`: green
@@ -111,6 +117,8 @@ Current repo-side facts to preserve:
 - if the checkout matches current `main` after PR `#190`, preserve PRs `#185` through `#190` as post-PR184 status/cohesion/explicit-Gate-C-typing/review-feedback closeouts; keep the first-slice route/API scope unchanged while carrying forward response-envelope, blocked Gate B error, Gate C authority-rail count/source-context, and tracked-PR metadata corrections
 - if the checkout matches current `main` after PR `#191`, preserve `next_milestone_plans/Layer3_planning_docs/30_L3_WB_PLAN_PREVIEW_FREEZE.md` and `next_milestone_plans/Layer3_planning_docs/31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md` as the merged second-slice plan-preview packet for the future workbench route family; after PR `#194`, treat only read-only plan preview after explicit Gate C typing commit as live and do not promote that into merged milestone count changes, packet-reopen evidence, schema widening, runtime snapshot DB writes, downstream execution/package scope, or full mockup/broader-workbench activation
 - preserve PR `#198` as the merged planning-only `32`/`33` plan-approval freeze/API-state packet; preserve PR `#199` as the bounded approval-only implementation of that packet, not as pass-run creation, analysis execution, execution/results/package/handoff activation, runtime DB/schema widening, or qualitative/hybrid/RAG/vector/LLM-planning admission
+- preserve `layer3_workbench_current_decision` as the workbench-only decision surface: current `main` has first-slice shell/API, read-only plan preview, and approval-only plan persistence, but no functional next workbench slice is selected by the settled later APS packet
+- preserve `layer3_workbench_slices` as the structured register for workbench deferred prep, first-slice contract/implementation, plan-preview contract/implementation, and plan-approval contract/implementation; do not collapse these into the APS milestone table or change the 29 merged APS milestone count
 - if a future checkout carries additional branch-local `28_L3_WB_FIRST_SLICE_FREEZE.md` revisions plus associated companion-doc edits beyond current `main`, keep them branch-local and planning-only rather than folded into current merged-state facts until GitHub and current `main` both confirm them
 - if the current checkout matches current `main` after PR `#178`, preserve the merged planning-only `28_L3_WB_FIRST_SLICE_FREEZE.md` first-slice setup target as landed current-main history; do not treat PR `#178` by itself as changing settled packet counts, current focus, or live route/API claims
 - if the current checkout matches current `main` after PR `#172`, preserve the merged qualitative single-item input packet as deferred-scope planning-only history on current `main`; do not promote it into merged milestones, packet-reopen evidence, or an active lane

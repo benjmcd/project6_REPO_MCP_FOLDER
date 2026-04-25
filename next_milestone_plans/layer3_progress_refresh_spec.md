@@ -132,21 +132,23 @@ Any external live artifact or dashboard must also obey:
    - update merge commit from GitHub
    - keep the milestone grouped under the same semantic milestone id unless repo truth proves the grouping wrong
 8. Reconcile board wording against the manifest.
-9. Reconcile any external render surface against `next_milestone_plans/progress-ui-spec.md`.
-10. Ensure the primary render path is HTML/CSS readable without JavaScript or Mermaid.
-11. Preserve explicit deferred scope.
-12. Preserve and re-audit the deferred activation contract so every deferred item still has explicit candidate-next and current-focus promotion rules.
-13. If the next-step decision has changed, or the bounded packet is now settled with no further active next lane, update `next_required_decision` in the manifest and the matching sections in the board and prompt.
-14. If the live artifact cannot read refreshed files at view time, regenerate the artifact itself from the refreshed manifest and board instead of leaving a stale embedded snapshot in place.
-15. Fail closed if GitHub state cannot be refreshed:
+9. Reconcile `layer3_workbench_current_decision` and `layer3_workbench_slices` against the board and prompt so workbench slice state is not inferred only from prose.
+10. Reconcile any external render surface against `next_milestone_plans/progress-ui-spec.md`.
+11. Ensure the primary render path is HTML/CSS readable without JavaScript or Mermaid.
+12. Preserve explicit deferred scope.
+13. Preserve and re-audit the deferred activation contract so every deferred item still has explicit candidate-next and current-focus promotion rules.
+14. If the APS next-step decision has changed, or the bounded APS packet is now settled with no further active next lane, update `next_required_decision` in the manifest and the matching sections in the board and prompt.
+15. If the Layer 3 workbench next-step decision has changed, update `layer3_workbench_current_decision` without repurposing the APS `next_required_decision`.
+16. If the live artifact cannot read refreshed files at view time, regenerate the artifact itself from the refreshed manifest and board instead of leaving a stale embedded snapshot in place.
+17. Fail closed if GitHub state cannot be refreshed:
    - keep the last known manifest state
    - mark the refresh as stale instead of inventing merged/open status
-16. If the current checkout carries a milestone that is not yet merged on `main`:
+18. If the current checkout carries a milestone that is not yet merged on `main`:
    - keep that milestone as `branch_only` only when no open or merged GitHub PR exists
    - upgrade it to `open` once GitHub confirms a PR exists
    - do not upgrade it to `merged` until GitHub confirms the merge
    - do not hide it from active artifact surfaces if the manifest declares it
-17. If the current checkout carries branch-local planning-only prep or docs/progress sync beyond current `main`:
+19. If the current checkout carries branch-local planning-only prep or docs/progress sync beyond current `main`:
    - keep a GitHub-backed open planning or docs/progress follow-up visible while GitHub still shows the PR open, even if equivalent content is already present locally
    - keep any additional branch-local planning-only companion updates, including future revisions to `26_L3_WB_INPUTS.md`, `28_L3_WB_FIRST_SLICE_FREEZE.md`, or a branch-local `27_L3_QUAL1_INPUTS.md`, as branch-local prep rather than merged milestone history until GitHub and current `main` both confirm them
    - do not let either change settled packet counts unless both GitHub state and current `main` repo truth warrant it
