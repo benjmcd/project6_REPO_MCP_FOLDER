@@ -433,6 +433,13 @@ They were merged as planning docs in PR `#191` and govern the PR `#194` workbenc
 - `30_L3_WB_PLAN_PREVIEW_FREEZE.md`
 - `31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md`
 
+### Broader workbench third-slice plan-approval freeze docs
+
+These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+They freeze the next candidate workbench slice after read-only plan preview: operator approval and durable formation of an approved owner-service plan, without pass-run creation, analysis execution, results review, package review, handoff, runtime snapshot DB writes, schema widening, qualitative/hybrid/RAG/vector execution, hidden LLM planning, or broader route/UI scope. When present on an unmerged branch, treat them as branch-local planning-only docs until GitHub and current `main` both confirm merge:
+- `32_L3_WB_PLAN_APPROVAL_FREEZE.md`
+- `33_L3_WB_PLAN_APPROVAL_API_AND_STATE_CONTRACT.md`
+
 ### Broader workbench first-slice and plan-preview implementation
 
 This implementation is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
@@ -582,6 +589,26 @@ Current answer:
 - the next adequate implementation slice after the landed first-slice shell/API was read-only plan preview after explicit Gate C typing commit; PR `#194` implements that slice, and PRs `#195`/`#196` only record post-merge proof/board metadata for it
 - plan preview composes around the landed pass-entry owner service through a read-only helper rather than duplicating pass-entry classification in route or browser code
 - execution, results, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and hidden LLM planning remain out of scope
+
+### If you are deciding the third Layer 3 workbench implementation slice
+
+Start with:
+- `Layer3_planning_docs/32_L3_WB_PLAN_APPROVAL_FREEZE.md`
+- `Layer3_planning_docs/33_L3_WB_PLAN_APPROVAL_API_AND_STATE_CONTRACT.md`
+- `Layer3_planning_docs/30_L3_WB_PLAN_PREVIEW_FREEZE.md`
+- `Layer3_planning_docs/31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md`
+- `backend/app/services/layer3_pass_entry.py`
+- `backend/app/services/layer3_workbench.py`
+- `backend/tests/test_layer3_pass_entry.py`
+- `backend/tests/test_layer3_workbench.py`
+- `backend/tests/test_layer3_api.py`
+- `e2e/layer3-workbench.spec.js`
+
+Current answer:
+- the next adequate slice after read-only plan preview is operator plan approval plus durable `L3AnalysisPlan` formation only
+- the existing `materialize_pass_entry(...)` helper is execution-bearing and must not be called by this slice
+- approval must add a narrower owner-service helper that can persist the approved plan without creating `L3PassRun`, running analysis, writing manifests, changing package/handoff state, adding migrations, or widening schema
+- execution, results review, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and hidden LLM planning remain out of scope
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 
