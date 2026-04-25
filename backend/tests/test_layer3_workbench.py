@@ -117,6 +117,7 @@ def test_bootstrap_is_explicit_about_first_slice_limits() -> None:
     assert result["route"] == "/review/layer3"
     assert result["api_root"] == "/api/v1/layer3"
     assert result["features"]["analysis_execution"] is False
+    assert result["features"]["plan_preview"] is True
     assert result["features"]["rag_vector_retrieval"] is False
     assert result["features"]["typing_override_enabled"] is False
     assert result["unavailable_gate_labels"] == ["plan", "execution", "results", "package"]
@@ -222,7 +223,7 @@ def test_gate_c_commit_typing_materializes_owner_service_records(db_session) -> 
         {"client_request_id": "req-gate-c-commit", "session_id": gate_b["session_id"], "commit_typing": True},
     )
 
-    assert committed["next_state"] == "first_slice_complete"
+    assert committed["next_state"] == "plan_preview_ready"
     assert committed["override_allowed"] is False
     assert committed["typing_records"][0]["authoritative"] is True
     assert committed["analysis_units"][0]["authoritative"] is True
@@ -235,9 +236,51 @@ def test_gate_c_commit_typing_materializes_owner_service_records(db_session) -> 
     assert db_session.query(L3AnalysisSet).count() == 1
 
     summary = layer3_workbench.session_summary(db_session, gate_b["session_id"])
-    assert summary["current_gate"] == "complete"
+    assert summary["current_gate"] == "plan"
     assert summary["gate_c_summary"]["typing_committed"] is True
     assert summary["authority_rail"]["typing_status"] == "committed"
+    assert summary["plan_preview"]["available"] is False
+    assert summary["plan_preview"]["blocked_reason"] == "no_admissible_plan"
+    assert summary["downstream_unavailable"] == ["execution", "results", "package"]
+
+
+def test_plan_preview_is_blocked_until_gate_c_commit(db_session) -> None:
+    preflight, source, material = _preflight_source_material()
+    gate_b = layer3_workbench.gate_b_decision(db_session, _gate_b_payload(preflight, source, material))
+
+    with pytest.raises(Layer3WorkbenchError) as blocked:
+        layer3_workbench.plan_preview(
+            db_session,
+            {
+                "client_request_id": "req-plan-before-gate-c",
+                "session_id": gate_b["session_id"],
+            },
+        )
+
+    assert blocked.value.error_code == "gate_c_not_committed"
+    assert blocked.value.status == "blocked"
+    assert blocked.value.next_allowed_actions == ["commit_gate_c_typing"]
+
+
+def test_plan_preview_fails_closed_when_committed_session_has_no_admissible_plan(db_session) -> None:
+    preflight, source, material = _preflight_source_material()
+    gate_b = layer3_workbench.gate_b_decision(db_session, _gate_b_payload(preflight, source, material))
+    layer3_workbench.gate_c_preview(
+        db_session,
+        {"client_request_id": "req-gate-c-commit", "session_id": gate_b["session_id"], "commit_typing": True},
+    )
+
+    with pytest.raises(Layer3WorkbenchError) as blocked:
+        layer3_workbench.plan_preview(
+            db_session,
+            {
+                "client_request_id": "req-plan-synthetic-material",
+                "session_id": gate_b["session_id"],
+            },
+        )
+
+    assert blocked.value.error_code == "no_admissible_plan"
+    assert blocked.value.status == "blocked"
 
 
 def test_session_summary_reflects_gate_b_counts_without_overclaiming_typing_commit(db_session) -> None:
