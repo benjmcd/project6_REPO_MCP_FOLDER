@@ -1,30 +1,30 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status implementation, result-review planning governance, and branch-only result-review implementation candidate",
+  "status": "current-main readiness proof plus bounded result/status and result-review implementation",
   "scope": {
-    "source_branch": "codex/l3-result-review-impl",
-    "merged_pr": "#222",
-    "merge_commit": "4409702e66ee40d8e2c63c8ea86fa72cb7ea2b6c",
+    "source_branch": "project6-origin/main",
+    "merged_pr": "#227",
+    "merge_commit": "d00440f2723708bd693d0ff50cfdb6f38cd6fc3f",
     "base_remote": "project6-origin/main",
-    "base_commit": "481c78fd810f",
-    "source_base_commit": "481c78fd810f23196eca39eb17e944809ab8271c",
-    "purpose": "Define, prove, and track readiness gates through current-main result/status plus the branch-only bounded result-review implementation candidate governed by docs 44/45.",
+    "base_commit": "d00440f27237",
+    "source_base_commit": "d00440f2723708bd693d0ff50cfdb6f38cd6fc3f",
+    "purpose": "Define, prove, and track readiness gates through current-main result/status plus the bounded selected-pass result-review implementation from PR #227.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "Current main through PR #222 includes the bounded read-only /api/v1/layer3/execution/result/status endpoint for one terminal selected pass; it does not add result review, package, handoff, runtime DB/schema widening, source expansion, UI changes, qualitative/hybrid/RAG/vector execution, or full mockup activation.",
-    "latest_implementation_pr": "#222",
-    "latest_implementation_branch": "codex/l3-result-status",
-    "latest_implementation_summary": "PR #222 adds POST /api/v1/layer3/execution/result/status as a read-only endpoint that validates session/approved-plan/preview/selection/execution-start/pass authority, reports available/missing-output/failed selected-pass status, summarizes existing output metadata only when readable, and writes no durable state.",
+    "live_behavior_change_summary": "Current main through PR #227 includes the bounded read-only /api/v1/layer3/execution/result/status endpoint and the bounded /api/v1/layer3/execution/result/review endpoint for one terminal selected pass; it does not add package review, handoff/export, rerun/recovery, runtime DB/schema widening, source expansion, UI changes, qualitative/hybrid/RAG/vector execution, local upload/directory ingestion, or full mockup activation.",
+    "latest_implementation_pr": "#227",
+    "latest_implementation_branch": "codex/l3-result-review-impl",
+    "latest_implementation_summary": "PR #227 adds POST /api/v1/layer3/execution/result/review as a bounded endpoint that validates session/approved-plan/preview/selection/execution-start/result-status/pass authority, records one operator decision in existing L3PassRun/L3Session JSON summaries, and creates no package, handoff, rerun/recovery, new execution, source/schema/runtime, UI, qualitative/hybrid/RAG/vector, local-upload, or full-mockup state.",
     "latest_planning_pr": "#226",
     "latest_planning_branch": "codex/l3-result-review-freeze",
-    "latest_planning_summary": "Docs 44/45 add planning-only governance for a future bounded selected-pass result-review decision after PR #222 result/status authority; they do not implement a result-review endpoint or package/handoff behavior.",
+    "latest_planning_summary": "Docs 44/45 add planning-only governance for the bounded selected-pass result-review decision after PR #222 result/status authority; by themselves they do not implement a result-review endpoint or package/handoff behavior.",
     "latest_planning_live_behavior_change": false,
     "latest_planning_behavior_summary": "Docs 44/45 are documentation/control only; merging them changes planning authority but not runtime API, UI, database, execution, package, or handoff behavior.",
-    "latest_implementation_merge_commit": "4409702e66ee40d8e2c63c8ea86fa72cb7ea2b6c",
+    "latest_implementation_merge_commit": "d00440f2723708bd693d0ff50cfdb6f38cd6fc3f",
     "latest_planning_base_commit": "9d78c5df1317",
-    "latest_branch_only_implementation_branch": "codex/l3-result-review-impl",
-    "latest_branch_only_implementation_pr": "#227",
-    "latest_branch_only_implementation_summary": "Branch-only backend implementation candidate in draft PR #227 adds POST /api/v1/layer3/execution/result/review for one selected terminal pass after result/status authority, records one bounded operator decision in existing L3PassRun/L3Session JSON summaries, and keeps package/handoff/rerun/source/schema/runtime/UI/full mockup scope closed until PR #227 merges and merged main is re-audited."
+    "latest_branch_only_implementation_branch": "none",
+    "latest_branch_only_implementation_pr": "none",
+    "latest_branch_only_implementation_summary": "No branch-only Layer 3 workbench implementation candidate remains in this artifact after PR #227; result review is current-main live bounded behavior."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -62,12 +62,12 @@
       "bounded selected-pass analysis-execution-start endpoint",
       "one wrapped quantitative AnalysisRun creation from an existing selected/not-started L3PassRun shell",
       "bounded selected-pass result/status endpoint",
-      "read-only selected-pass result/status inspection through /api/v1/layer3/execution/result/status"
+      "read-only selected-pass result/status inspection through /api/v1/layer3/execution/result/status",
+      "bounded selected-pass result-review endpoint",
+      "one operator result-review decision recorded against existing L3PassRun/L3Session JSON summaries"
     ],
     "not_live": [
       "general analysis execution beyond the PR #218 one selected-pass execution-start boundary",
-      "result review implementation",
-      "results review",
       "package review",
       "handoff",
       "runtime snapshot DB writes",
@@ -79,20 +79,20 @@
       "hidden LLM planning",
       "full mockup activation",
       "multi-pass or batch analysis execution",
-      "broad analysis execution beyond one selected single-item wrapped quantitative pass"
+      "broad analysis execution beyond one selected single-item wrapped quantitative pass",
+      "handoff/export",
+      "rerun/recovery",
+      "result-review amendment or supersession"
     ],
     "planning_only": [
       "analysis-execution-start freeze/API-state contract from PR #217 remains the governing scope contract for the PR #218 bounded implementation",
       "result/status freeze/API-state contract from docs 42/43 governs the PR #222 bounded read-only selected-pass status surface",
-      "result-review freeze/API-state contract from docs 44/45 governs only a future bounded selected-pass review decision after PR #222 status authority"
+      "result-review freeze/API-state contract from docs 44/45 governs the bounded selected-pass review decision after PR #222 status authority; by itself it does not add package/handoff behavior"
     ],
-    "branch_only_candidate": [
-      "draft PR #227 / branch codex/l3-result-review-impl contains POST /api/v1/layer3/execution/result/review implementation candidate; not current-main live until PR #227 merges and merged main is re-audited"
-    ],
-    "still_forbidden_after_pr_218": [
-      "result review",
+    "branch_only_candidate": [],
+    "still_forbidden_after_pr_227": [
       "package review",
-      "handoff",
+      "handoff/export",
       "batch or multi-pass execution",
       "approved-plan supersession",
       "runtime DB/schema widening",
@@ -102,7 +102,9 @@
       "hybrid execution",
       "RAG/vector execution",
       "full mockup activation",
-      "UI changes"
+      "UI changes",
+      "rerun/recovery",
+      "result-review amendment or supersession"
     ]
   },
   "readiness_gates": [
@@ -207,11 +209,11 @@
     },
     {
       "command": "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -> 23 passed, 3 warnings",
-      "purpose": "Verify the branch-only result-review endpoint success, non-approval, fail-closed, idempotency, and no downstream row creation behavior."
+      "purpose": "Verify the current-main result-review endpoint success, non-approval, fail-closed, idempotency, and no downstream row creation behavior."
     },
     {
       "command": "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3_*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest $tests -q -> 129 passed, 3 warnings",
-      "purpose": "Verify the complete Layer 3 focused backend/page/service family after the branch-only result-review implementation candidate."
+      "purpose": "Verify the complete Layer 3 focused backend/page/service family after the merged PR #227 result-review implementation."
     }
   ],
   "browser_proof_rule": "No browser proof is required for this backend-only readiness metadata slice because rendered UI behavior does not change. A later UI or execution slice must run both headed and headless browser proof when browser behavior changes.",
