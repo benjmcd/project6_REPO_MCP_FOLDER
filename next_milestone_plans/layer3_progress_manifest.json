@@ -6,9 +6,9 @@
     "repo": "benjmcd/project6_REPO_MCP_FOLDER",
     "authoritative_remote": "project6-origin/main",
     "authoritative_local_checkout_rule": "Use a clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match the artifact state being refreshed. Prefer current `main` for merged repo truth, and use the active branch checkout when the manifest declares an open or branch-only milestone.",
-    "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3-plan-preview-impl",
+    "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3-proof-sync",
     "snapshot_date": "2026-04-25",
-    "snapshot_base_main_commit": "5b8c6a7678bd2cdd6fb2b39b27f294469fbef9e0",
+    "snapshot_base_main_commit": "7b68c9d8d0d9105ef693f43a5b065d0aab5b70e6",
     "snapshot_base_main_commit_source": "git rev-parse project6-origin/main at the artifact refresh that produced this snapshot",
     "notes": [
       "This artifact is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.",
@@ -54,6 +54,7 @@
       "Current `main` now also includes the merged planning-only `30_L3_WB_PLAN_PREVIEW_FREEZE.md` and `31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md` second-slice plan-preview packet from PR `#191` for the future workbench route family; at landing, that packet was the governing plan-preview contract only, and it admitted no execution/results/package/handoff, qualitative/hybrid/RAG/vector execution, runtime DB writes, schema widening, or LLM planning.",
       "Current `main` also includes the post-PR191 progress/tracked-metadata syncs from PRs `#192` and `#193`; these record the merged plan-preview packet and tracked-PR state in the progress/control surfaces without changing live route/API scope or the downstream no-go list.",
       "Current `main` now also includes the bounded read-only plan-preview implementation from PR `#194`; it activates `/api/v1/layer3/plan/preview` and the gated UI plan panel only after explicit Gate C typing commit, uses the owner-service preview path without materializing plan/pass rows, and still excludes execution, results, package review, handoff, runtime snapshot DB writes, schema widening, qualitative/hybrid/RAG/vector execution, and hidden LLM planning.",
+      "This refresh records the post-merge PR `#194` main-state proof basis: merge commit `7b68c9d8d0d9105ef693f43a5b065d0aab5b70e6`, successful GitHub Actions run `24919102916`, focused backend rerun `28 passed, 3 warnings`, headed and headless Layer 3 workbench Playwright proof `1 passed` each, import-light proof, JSON validation, and `git diff --check`.",
       "Tracked metadata-refresh PRs are recorded after they are known completed inputs; the PR performing the current refresh is not required to list itself in order to avoid a self-referential update loop."
     ]
   },
@@ -1709,5 +1710,5 @@
       "e2e/layer3-workbench.spec.js"
     ]
   },
-  "snapshot_base_main_commit": "5b8c6a7678bd2cdd6fb2b39b27f294469fbef9e0"
+  "snapshot_base_main_commit": "7b68c9d8d0d9105ef693f43a5b065d0aab5b70e6"
 }
