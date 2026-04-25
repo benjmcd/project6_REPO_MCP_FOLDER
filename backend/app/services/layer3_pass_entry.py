@@ -58,6 +58,7 @@ SESSION_STATUS_ACTIVE_EXECUTION = "active_execution"
 PLAN_STATUS_FORMED = "formed"
 PLAN_STATUS_APPROVED = "approved"
 
+PLAN_PREVIEW_HASH_SCHEMA_ID = "layer3.plan_preview_hash.v1"
 PASS_TYPE_SINGLE_ITEM = "single_item"
 ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS = "wrapped_quantitative_analysis"
 
@@ -763,8 +764,10 @@ def _preview_result_from_basis(
         "mode": "read_only_preview",
         "source_gate": plan_payload["source_gate"],
         "owner_plan_version": PLAN_VERSION,
+        "preview_hash_schema_id": PLAN_PREVIEW_HASH_SCHEMA_ID,
     }
     preview_basis = {
+        "schema_id": PLAN_PREVIEW_HASH_SCHEMA_ID,
         "session_id": session_id,
         "admitted_sets": admitted_sets,
         "excluded_sets": excluded_sets,

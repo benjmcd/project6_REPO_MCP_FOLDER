@@ -1,13 +1,14 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "branch-local planning-only",
+  "status": "current-main planning-only plus branch-local read-only implementation-readiness proof",
   "scope": {
-    "branch": "codex/l3-readiness-proof-contract",
+    "branch": "codex/l3-state-proof",
     "base_remote": "project6-origin/main",
-    "base_commit": "16a26d799dbd8c0c800b01e3a1d378202d406482",
-    "purpose": "Define proof/readiness gates required before any later Layer 3 workbench execution implementation is selected.",
-    "live_behavior_change": false
+    "base_commit": "2070eae0bce9c8840c36aa369b0fcd1db0162e1f",
+    "purpose": "Define and prove read-only proof/readiness gates required before any later Layer 3 workbench execution implementation is selected.",
+    "live_behavior_change": true,
+    "live_behavior_change_summary": "Branch adds only a read-only /api/v1/layer3/readiness contract, explicit plan-preview identity/hash metadata, and approval/revision serialization proof; execution remains unavailable."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -52,27 +53,27 @@
     {
       "gate_id": "proof-manifest",
       "decision": "Proof claims must be machine-readable and cite exact files, commands, and expected results.",
-      "status": "introduced_by_this_manifest"
+      "status": "introduced_by_pr_212_manifest"
     },
     {
       "gate_id": "state-model",
       "decision": "Every workbench state must declare authority source, allowed next actions, and forbidden downstream posture.",
-      "status": "defined_in_37_contract"
+      "status": "defined_in_37_contract_and_readiness_endpoint"
     },
     {
       "gate_id": "preview-hash",
       "decision": "Canonical preview hash basis must be frozen before approval/revision/execution can depend on it.",
-      "status": "defined_in_37_contract"
+      "status": "defined_in_37_contract_and_preview_identity_metadata"
     },
     {
       "gate_id": "idempotency",
       "decision": "Every state-writing endpoint must define duplicate and retry behavior before execution.",
-      "status": "defined_in_37_contract"
+      "status": "defined_in_37_contract_and_readiness_endpoint"
     },
     {
       "gate_id": "concurrency",
       "decision": "Approval, revision, and future execution transitions must be serialized by server authority, not browser state.",
-      "status": "defined_in_37_contract"
+      "status": "defined_in_37_contract_and_approval_revision_session_locking"
     },
     {
       "gate_id": "revision-recovery",
@@ -101,15 +102,23 @@
       "purpose": "Validate proof/readiness manifest JSON syntax."
     },
     {
-      "command": "python -m pytest backend/tests/test_layer3_api.py backend/tests/test_layer3_page.py backend/tests/test_layer3_workbench.py -q",
-      "purpose": "Verify focused Layer 3 workbench backend/page behavior remains green."
+      "command": "python -m py_compile backend/app/api/layer3.py backend/app/services/layer3_workbench.py backend/app/services/layer3_pass_entry.py",
+      "purpose": "Validate changed Layer 3 API/service modules compile."
+    },
+    {
+      "command": "python -m pytest <all backend/tests/test_layer3_*.py files> -q",
+      "purpose": "Verify the Layer 3 backend/page/service family remains green."
+    },
+    {
+      "command": "python -m pytest backend/tests/test_layer3_pass_entry.py -q",
+      "purpose": "Verify owner-service preview hash metadata does not break pass-entry behavior."
     },
     {
       "command": "git diff --check",
       "purpose": "Verify whitespace/diff hygiene."
     }
   ],
-  "browser_proof_rule": "No browser proof is required for this docs-only readiness slice because runtime UI behavior does not change. A later UI or execution slice must run both headed and headless browser proof when browser behavior changes.",
+  "browser_proof_rule": "No browser proof is required for this backend-only readiness metadata slice because rendered UI behavior does not change. A later UI or execution slice must run both headed and headless browser proof when browser behavior changes.",
   "no_go_scan_terms": [
     "execution is live",
     "results are live",

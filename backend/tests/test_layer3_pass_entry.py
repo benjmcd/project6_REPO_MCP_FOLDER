@@ -555,6 +555,7 @@ def test_gatec_pass_entry_preview_is_read_only_for_quantitative_single_item(tmp_
         assert preview.planned_passes[0]["pass_scope"] == "quantitative_single_item_dataset_version"
         assert preview.planned_passes[0]["execution_status"] == "not_started"
         assert preview.owner_service_basis["mode"] == "read_only_preview"
+        assert preview.owner_service_basis["preview_hash_schema_id"] == "layer3.plan_preview_hash.v1"
         assert preview.owner_plan_payload["plan_version"] == "gatec_pass_entry_v1"
 
         session = db.get(L3Session, session_id)
