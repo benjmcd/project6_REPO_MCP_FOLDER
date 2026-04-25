@@ -2,6 +2,8 @@
 
 Status: governing planning-only freeze for the bounded result-review tranche after merged PR `#222`.
 
+Post-freeze status note: PR `#227` later implemented this backend result-review boundary on current `main`. This document remains the backend result-review planning freeze; it does not make UI behavior, package review, handoff/export, rerun/recovery, source/schema/runtime widening, or full mockup behavior live. Docs `46`/`47` separately freeze a future result-review UI presentation boundary.
+
 This document freezes the narrowest eligible boundary after selected-pass result/status inspection: operator review of one terminal selected pass result that has already passed the PR `#222` read-only result/status authority checks. It does not implement result review by itself and does not admit package review, handoff, rerun/recovery, source expansion, schema/runtime widening, UI/full mockup activation, qualitative/hybrid/RAG/vector execution, local upload/directory ingestion, or broad result taxonomy finalization.
 
 ## Current Live Boundary
