@@ -62,7 +62,8 @@
       "Current `main` now also includes PR #200 plan-approval post-merge sync, PR #201 mockup-spec approval-state sync, and PR #202 workbench progress-control hardening; these are docs/control syncs and do not make plan rejection/revision, execution, results/package/handoff, runtime DB/schema widening, or qualitative/hybrid/RAG/vector/LLM planning live.",
       "PR #203 adds the planning-only 34/35 plan-revision freeze/API-state contract; PR #204 corrects its deferred-scope count metadata; neither PR is a runtime implementation slice.",
       "Current `main` now also includes PR #205, which implements the bounded revision-control slice through `/api/v1/layer3/plan/revise` and the existing `/review/layer3` plan panel for explicit operator rejection or revision request against the current server-backed preview before approval, while still creating no `L3AnalysisPlan`, no `L3PassRun`, no `AnalysisRun`, no artifact manifests, no results/package/handoff state, no runtime DB/schema widening, and no qualitative/hybrid/RAG/vector/LLM planning. PR #206 records the post-PR205 docs/control sync, PR #207 hardens the same bounded revision-control path with serialized backend decision writes plus shared UI in-flight locking without adding a new functional slice or widening the no-go list, and PRs #208/#209/#210/#211 tighten docs/progress cohesion around that settled state.",
-      "Current `main` now also includes PR #212, which lands the planning-only execution-readiness proof/state packet, and PR #213, which implements only the merged live bounded read-only readiness proof endpoint, plan-preview identity/hash metadata, and approval/revision serialization proof. PR #213 does not select execution, create `L3PassRun` or `AnalysisRun`, write artifacts/manifests, enable results/package/handoff, widen schema/runtime DB behavior, reopen or supersede approved plans, or admit qualitative/hybrid/RAG/vector/source-ingestion expansion."
+      "Current `main` now also includes PR #212, which lands the planning-only execution-readiness proof/state packet, and PR #213, which implements only the merged live bounded read-only readiness proof endpoint, plan-preview identity/hash metadata, and approval/revision serialization proof. PR #213 does not select execution, create `L3PassRun` or `AnalysisRun`, write artifacts/manifests, enable results/package/handoff, widen schema/runtime DB behavior, reopen or supersede approved plans, or admit qualitative/hybrid/RAG/vector/source-ingestion expansion.",
+      "The execution-selection freeze packet adds `38_L3_WB_EXECUTION_SELECTION_FREEZE.md` and `39_L3_WB_EXECUTION_SELECTION_API_AND_STATE_CONTRACT.md` as planning-only governance for a future selected/not-started `L3PassRun` shell boundary after approved-plan and preview-hash validation. It does not admit `AnalysisRun`, analysis execution, results/package/handoff artifacts, approved-plan supersession, runtime DB/schema widening, source-breadth expansion, or full mockup activation."
     ]
   },
   "authority_order": [
@@ -191,20 +192,21 @@
     "branch_state_summary": "This checkout matches current `main` through the merged broader-workbench planning-packet chain from PR #168, PR #169, and PR #170, the merged qualitative single-item input packet from PR #172, the post-PR172 deferred-prep front-door tightening from PR #174, the merged planning-only `28_L3_WB_FIRST_SLICE_FREEZE.md` first-slice setup target from PR #178, the merged planning-only `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` endpoint/state companion from PR #182, and the bounded first-slice workbench implementation from PR #184. This artifact snapshot declares the first-slice route/API live only for the bounded workbench shell/API and does not change the settled APS packet state, merged milestone count, or downstream no-go boundaries. Current `main` also includes the post-PR184 status/cohesion/explicit-Gate-C-typing and merged-review-feedback closeouts from PRs #185 through #190; these keep the bounded first-slice route/API accurate by preserving response envelopes, blocked Gate B error semantics, Gate C authority-rail counts/source context, and tracked-PR metadata without changing the settled packet state, merged milestone count, or downstream no-go list. Current `main` now also includes the merged planning-only `30_L3_WB_PLAN_PREVIEW_FREEZE.md` / `31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md` plan-preview packet from PR #191; preserve it as the governing second-slice plan-preview packet; after PR #194, plan preview is live only as read-only preview after explicit Gate C typing commit, not as downstream execution, results, package review, handoff, runtime DB/schema widening, qualitative/hybrid/RAG/vector execution, or LLM planning. Current `main` also includes the post-PR191 progress/tracked-metadata syncs from PRs #192 and #193; those syncs record the merged plan-preview packet and tracked-PR state in the progress/control surfaces and do not expand live route/API scope or downstream no-go boundaries. Current `main` now also includes the bounded read-only plan-preview implementation from PR #194; plan preview is live only after explicit Gate C typing commit and still excludes execution, results, package review, handoff, runtime DB/schema widening, qualitative/hybrid/RAG/vector execution, and LLM planning. Current `main` now also includes the post-PR194 proof and board-metadata closeouts from PRs #195 and #196; those closeouts update proof/snapshot metadata only and do not change implementation scope, milestone counts, or downstream no-go boundaries. Current `main` now also includes the PR #198 `32_L3_WB_PLAN_APPROVAL_FREEZE.md` and `33_L3_WB_PLAN_APPROVAL_API_AND_STATE_CONTRACT.md` plan-approval freeze packet; the docs by themselves remain planning-only, while PR #199 implements only approval-only plan persistence and still does not call `materialize_pass_entry(...)`, create pass runs, run analysis, enable execution/results/package/handoff, widen runtime DB/schema, or admit qualitative/hybrid/RAG/vector/LLM planning. PR #203 adds `34_L3_WB_PLAN_REVISION_FREEZE.md` and `35_L3_WB_PLAN_REVISION_API_AND_STATE_CONTRACT.md` as a planning-only fourth-slice freeze/API-state contract for explicit operator rejection and revision-request semantics against the current server-backed preview before approval; PR #204 corrects the associated deferred-scope count metadata; PR #205 implements only the bounded revision-control endpoint/UI state; PR #206 records the post-PR205 docs/control sync; PR #207 hardens the same bounded revision-control endpoint/UI state against concurrent backend/UI submissions, and still does not reopen approved plans, call `materialize_pass_entry(...)`, create `L3AnalysisPlan` in the revision path, create `L3PassRun`, run analysis, write manifests, enable execution/results/package/handoff, widen runtime DB/schema, or admit qualitative/hybrid/RAG/vector/LLM planning. Current `main` also includes PR #200 plan-approval post-merge sync, PR #201 mockup-spec approval-state sync, and PR #202 workbench progress-control hardening; these sync/control updates do not expand the live workbench beyond approval-only persistence by themselves; PR #205 is the separate bounded revision-control implementation, PR #207 is its narrow hardening follow-up, PRs #208/#209/#210/#211 are docs/progress cohesion syncs, PR #212 is the planning-only execution-readiness proof packet, and PR #213 is the merged live bounded read-only readiness proof implementation; execution, results/package/handoff, runtime DB/schema widening, approved-plan supersession, and qualitative/hybrid/RAG/vector/LLM planning remain out."
   },
   "layer3_workbench_current_decision": {
-    "decision_id": "l3-workbench-readiness-proof-main",
-    "state": "merged_read_only_readiness_proof_no_execution_selected",
+    "decision_id": "l3-workbench-execution-selection-freeze",
+    "state": "execution_selection_freeze_planning_only_no_analysis_execution",
     "scope": "Layer 3 workbench only; separate from next_required_decision, which remains the settled later APS family decision.",
     "current_live_state": "Current `main` ships the bounded first-slice shell/API from PR #184, read-only plan preview from PR #194, approval-only `L3AnalysisPlan` persistence from PR #199, live bounded plan rejection/revision-control from PR #205 hardened by PR #207, and read-only readiness proof from PR #213. The PR #205/#207 slice records only pre-approval operator rejection or revision request for the current server-backed preview; the PR #213 slice records only readiness/hash/state proof; neither starts execution.",
     "selected_next_slice": {
-      "slice_id": "workbench-execution-readiness-contract",
-      "candidate": "execution-readiness proof, state, hash, idempotency, concurrency, revision-recovery, approved-plan-correction, output-taxonomy, and source-breadth contract",
-      "status": "merged planning-only from PR #212; no execution selected",
+      "slice_id": "workbench-execution-selection-contract",
+      "candidate": "execution-selection/pass-run shell boundary after approved-plan and preview-hash validation",
+      "status": "planning-only freeze packet; no analysis execution selected",
       "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/38_L3_WB_EXECUTION_SELECTION_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/39_L3_WB_EXECUTION_SELECTION_API_AND_STATE_CONTRACT.md",
         "next_milestone_plans/Layer3_planning_docs/36_L3_WB_EXECUTION_READINESS_FREEZE.md",
-        "next_milestone_plans/Layer3_planning_docs/37_L3_WB_STATE_HASH_IDEMPOTENCY_CONTRACT.md",
-        "next_milestone_plans/layer3_workbench_proof_manifest.json"
+        "next_milestone_plans/Layer3_planning_docs/37_L3_WB_STATE_HASH_IDEMPOTENCY_CONTRACT.md"
       ],
-      "why": "This is the lowest-blast-radius next step because PR #205/#207 already made revision-control live, while execution still requires centralized proof, state, hash, idempotency, concurrency, revision-recovery, approved-plan-correction, output-taxonomy, and source-breadth decisions before any runtime side effects are safe."
+      "why": "This is the lowest-blast-radius next tranche because it separates selected/not-started pass-run shell creation from analysis execution, results, package review, handoff, approved-plan supersession, runtime DB/schema widening, and source-breadth expansion."
     },
     "required_before_next_functional_slice": [
       "Keep the progress manifest, progress board, progress UI spec, refresh spec, progress prompt, status handoff, and pack front door synchronized so renderer, planning, and implementation-entry surfaces do not drift.",
@@ -212,16 +214,19 @@
       "Preserve the approval-only and revision-control-only boundaries until a later freeze explicitly admits additional behavior."
     ],
     "default_next_candidate": {
-      "candidate": "read-only workbench readiness proof surface",
-      "status": "merged live bounded read-only from PR #213; execution or approved-plan supersession requires a later freeze",
-      "why": "PR #212 made the readiness/proof/state contract machine-readable in planning artifacts. The lowest-blast-radius implementation follow-up is to expose that contract read-only and prove preview hash identity plus approval/revision serialization before any execution-bearing path is selected."
+      "candidate": "bounded execution-selection/pass-run shell implementation",
+      "status": "eligible only after this planning-only freeze is merged and re-audited; analysis execution requires a later freeze",
+      "why": "The freeze narrows the future code slice to approved-plan and preview-hash validation plus selected/not-started L3PassRun shell creation, which is testable without running analysis or producing downstream artifacts."
     },
     "must_not_skip": [
       "Do not treat the APS next_required_decision settlement as a workbench execution go-ahead.",
       "Do not move from approval-only persistence or revision-control directly into pass-run execution without a separate execution freeze, exact write-delta proof, and headed/headless browser proof.",
       "Do not use `materialize_pass_entry(...)` from the workbench approval or revision path unless a later freeze explicitly admits its execution-bearing side effects.",
       "Do not reopen, replace, or supersede an already approved plan in the PR #205/#207 revision-control slice.",
-      "Do not treat the readiness packet or read-only readiness endpoint as execution approval."
+      "Do not treat the readiness packet or read-only readiness endpoint as execution approval.",
+      "Do not treat execution selection as analysis execution.",
+      "Do not create `AnalysisRun`, result artifacts, package artifacts, handoff artifacts, runtime DB/schema widening, or source-breadth expansion in the execution-selection tranche.",
+      "Do not reopen, replace, cancel, or supersede approved plans unless a later freeze admits approved-plan correction explicitly."
     ]
   },
   "layer3_workbench_slices": [
@@ -393,6 +398,20 @@
       "live_scope": "Current-main read-only readiness contract endpoint, explicit plan-preview identity/hash metadata, and approval/revision serialization proof.",
       "explicit_non_goals": "No execution endpoint, no `materialize_pass_entry(...)` call from the workbench path, no `L3PassRun`, no `AnalysisRun`, no artifact manifests, no results/package/handoff, no approved-plan correction/supersession, no schema/runtime DB widening, and no qualitative/hybrid/RAG/vector/source-ingestion expansion.",
       "counting_rule": "Merged read-only implementation-readiness record; count as current-main live bounded read-only proof, not as execution."
+    },
+    {
+      "slice_id": "workbench-execution-selection-contract",
+      "main_state": "merged_planning_only",
+      "key_prs": [
+        "#TBD"
+      ],
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/38_L3_WB_EXECUTION_SELECTION_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/39_L3_WB_EXECUTION_SELECTION_API_AND_STATE_CONTRACT.md"
+      ],
+      "live_scope": "Planning-only governance for a future execution-selection/pass-run shell boundary after approved-plan and preview-hash validation.",
+      "explicit_non_goals": "No `AnalysisRun`, no analysis execution, no result/package/handoff artifacts, no approved-plan correction/supersession, no runtime DB/schema widening, no source-breadth expansion, and no full mockup activation.",
+      "counting_rule": "Merged planning-only workbench execution-selection record; does not change the 29 merged APS milestone count and does not count as a live bounded implementation slice."
     }
   ],
   "summary_counts": {
@@ -401,9 +420,9 @@
     "planned_decisions": 0,
     "deferred_scope_items": 8,
     "branch_only_milestones": 0,
-    "workbench_slice_records": 11,
+    "workbench_slice_records": 12,
     "workbench_live_bounded_slices": 5,
-    "workbench_planning_only_slices": 6,
+    "workbench_planning_only_slices": 7,
     "workbench_branch_local_read_only_slices": 0
   },
   "artifact_render_contract": {
@@ -1988,7 +2007,9 @@
       "next_milestone_plans/Layer3_planning_docs/35_L3_WB_PLAN_REVISION_API_AND_STATE_CONTRACT.md",
       "next_milestone_plans/Layer3_planning_docs/36_L3_WB_EXECUTION_READINESS_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/37_L3_WB_STATE_HASH_IDEMPOTENCY_CONTRACT.md",
-      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "next_milestone_plans/Layer3_planning_docs/38_L3_WB_EXECUTION_SELECTION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/39_L3_WB_EXECUTION_SELECTION_API_AND_STATE_CONTRACT.md"
     ]
   },
   "snapshot_base_main_commit": "b7bcea3d0c5b555ff8c064b1ee8128cd9903e994",

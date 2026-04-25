@@ -72,6 +72,12 @@ And to the Layer 3 workbench execution-readiness packet from PR `#212`, which re
 
 PR `#213` adds only read-only implementation-readiness proof around that packet, including `/api/v1/layer3/readiness`, plan-preview identity/hash metadata, and approval/revision serialization checks. It still must not create pass runs, run analysis, write result/package/handoff artifacts, widen schema/runtime DB behavior, or admit qualitative/hybrid/RAG/vector execution.
 
+And to the Layer 3 workbench execution-selection freeze packet, which remains planning-only and does not admit analysis execution or results:
+- `next_milestone_plans/Layer3_planning_docs/38_L3_WB_EXECUTION_SELECTION_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/39_L3_WB_EXECUTION_SELECTION_API_AND_STATE_CONTRACT.md`
+
+This packet freezes the next eligible implementation boundary as execution-selection/pass-run shell creation only after approved-plan and preview-hash validation. It still must not create `AnalysisRun`, run analysis, write result/package/handoff artifacts, reopen or supersede approved plans, widen schema/runtime DB behavior, expand source breadth, or activate the full mockup target state.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
@@ -666,6 +672,24 @@ Current answer:
 - it does not make execution, `L3PassRun`, analysis execution, results/package/handoff, approved-plan supersession, runtime DB/schema widening, qualitative/hybrid/RAG/vector execution, local upload ingestion, or full mockup activation live
 - PR `#213` adds only read-only readiness proof around that packet, including `/api/v1/layer3/readiness`, plan-preview identity/hash metadata, and approval/revision serialization checks
 - browser proof is not required for a backend-only readiness metadata slice because no rendered UI behavior changes, but any future UI or execution slice must run headed and headless browser proof when browser behavior changes
+
+### If you are auditing the Layer 3 workbench execution-selection freeze packet
+
+Start with:
+- `Layer3_planning_docs/38_L3_WB_EXECUTION_SELECTION_FREEZE.md`
+- `Layer3_planning_docs/39_L3_WB_EXECUTION_SELECTION_API_AND_STATE_CONTRACT.md`
+- `Layer3_planning_docs/36_L3_WB_EXECUTION_READINESS_FREEZE.md`
+- `Layer3_planning_docs/37_L3_WB_STATE_HASH_IDEMPOTENCY_CONTRACT.md`
+- `next_milestone_plans/layer3_progress_board.md`
+- `next_milestone_plans/layer3_progress_manifest.json`
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
+
+Current answer:
+- the packet is planning-only
+- it selects a future execution-selection/pass-run shell boundary, not analysis execution
+- a later implementation may create selected/not-started `L3PassRun` shell rows only after approved-plan and preview-hash validation
+- it does not admit `AnalysisRun`, analysis execution, result/package/handoff artifacts, approved-plan supersession, runtime DB/schema widening, source-breadth expansion, or full mockup activation
+- browser proof is required only if the later implementation changes rendered UI behavior
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 
