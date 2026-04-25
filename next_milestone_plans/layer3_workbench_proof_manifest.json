@@ -23,8 +23,8 @@
     "latest_implementation_merge_commit": "4409702e66ee40d8e2c63c8ea86fa72cb7ea2b6c",
     "latest_planning_base_commit": "9d78c5df1317",
     "latest_branch_only_implementation_branch": "codex/l3-result-review-impl",
-    "latest_branch_only_implementation_pr": "pending-result-review-implementation-pr",
-    "latest_branch_only_implementation_summary": "Branch-only backend implementation candidate adds POST /api/v1/layer3/execution/result/review for one selected terminal pass after result/status authority, records one bounded operator decision in existing L3PassRun/L3Session JSON summaries, and keeps package/handoff/rerun/source/schema/runtime/UI/full mockup scope closed."
+    "latest_branch_only_implementation_pr": "#227",
+    "latest_branch_only_implementation_summary": "Branch-only backend implementation candidate in draft PR #227 adds POST /api/v1/layer3/execution/result/review for one selected terminal pass after result/status authority, records one bounded operator decision in existing L3PassRun/L3Session JSON summaries, and keeps package/handoff/rerun/source/schema/runtime/UI/full mockup scope closed until PR #227 merges and merged main is re-audited."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -87,7 +87,7 @@
       "result-review freeze/API-state contract from docs 44/45 governs only a future bounded selected-pass review decision after PR #222 status authority"
     ],
     "branch_only_candidate": [
-      "branch-only POST /api/v1/layer3/execution/result/review implementation candidate on codex/l3-result-review-impl; not current-main live until PR merge and re-audit"
+      "draft PR #227 / branch codex/l3-result-review-impl contains POST /api/v1/layer3/execution/result/review implementation candidate; not current-main live until PR #227 merges and merged main is re-audited"
     ],
     "still_forbidden_after_pr_218": [
       "result review",
