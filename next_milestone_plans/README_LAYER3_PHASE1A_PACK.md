@@ -426,6 +426,13 @@ This document is outside the accepted Phase 1A normative control spine and outsi
 It is the merged API/state companion from PR `#182` for the `future workbench route family`; it froze endpoint, DTO, Gate B persistence, Gate C override, authority-rail, browser-state, and proof expectations for the later PR `#184` `/review/layer3` plus `/api/v1/layer3/...` implementation pass. It remains the governing API/state contract and does not change the no-go list:
 - `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md`
 
+### Broader workbench second-slice plan-preview freeze docs
+
+These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+They freeze the next planning-only workbench slice after the landed first-slice shell/API: a read-only plan-preview step after explicit Gate C typing commit. They do not activate execution, results, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, or broader route/UI scope:
+- `30_L3_WB_PLAN_PREVIEW_FREEZE.md`
+- `31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md`
+
 ### Broader workbench first-slice implementation
 
 This implementation is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
@@ -557,6 +564,24 @@ Current answer:
 - the live first implementation stops at intent/preflight, deterministic source selection, material preview, Gate B material review, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, and session summary
 - the implementation uses `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` as the endpoint, DTO, state, persistence, browser-state, and proof contract
 - downstream plan, execution, results, package review, qualitative, hybrid, RAG/vector, runtime snapshot DB writes, schema widening, and handoff remain unavailable unless separately activated
+
+### If you are deciding the second Layer 3 workbench implementation slice
+
+Start with:
+- `Layer3_planning_docs/30_L3_WB_PLAN_PREVIEW_FREEZE.md`
+- `Layer3_planning_docs/31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md`
+- `Layer3_planning_docs/26_L3_WB_INPUTS.md`
+- `backend/app/services/layer3_pass_entry.py`
+- `backend/app/services/layer3_workbench.py`
+- `backend/tests/test_layer3_pass_entry.py`
+- `backend/tests/test_layer3_workbench.py`
+- `backend/tests/test_layer3_api.py`
+- `e2e/layer3-workbench.spec.js`
+
+Current answer:
+- the next adequate implementation slice is read-only plan preview after explicit Gate C typing commit
+- plan preview must compose around the landed pass-entry owner service rather than duplicating pass-entry classification in route or browser code
+- execution, results, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and hidden LLM planning remain out of scope
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 
