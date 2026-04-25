@@ -304,6 +304,19 @@ def test_layer3_api_plan_preview_is_blocked_before_gate_c_commit(client: TestCli
     assert body["error_code"] == "gate_c_not_committed"
     assert body["status"] == "blocked"
 
+    revision = client.post(
+        "/api/v1/layer3/plan/revise",
+        json={
+            "client_request_id": "api-plan-revision-before-gate-c",
+            "session_id": gate_b["session_id"],
+            "preview_id": "missing-preview",
+            "preview_hash": "missing-hash",
+            "operator_decision": "request_revision",
+        },
+    )
+    assert revision.status_code == 409
+    assert revision.json()["error_code"] == "gate_c_not_committed"
+
 
 def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_session(client: TestClient, tmp_path) -> None:
     db = client.layer3_session_factory()
@@ -401,6 +414,184 @@ def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_sess
         db.close()
 
 
+def test_layer3_api_plan_revision_rejects_current_preview_without_execution(client: TestClient, tmp_path) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-plan-revision-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    )
+    assert preview.status_code == 200
+    preview_body = preview.json()
+
+    revision = client.post(
+        "/api/v1/layer3/plan/revise",
+        json={
+            "client_request_id": "api-plan-revision-reject",
+            "session_id": session_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_decision": "reject_current_preview",
+            "operator_note": "Reject this preview before approval.",
+        },
+    )
+    assert revision.status_code == 200
+    revision_body = revision.json()
+    _assert_common_response_envelope(revision_body)
+    assert revision_body["schema_id"] == "layer3.plan_revision_result.v1"
+    assert revision_body["next_state"] == "plan_rejected"
+    assert revision_body["revision_control_only"] is True
+    assert revision_body["execution_started"] is False
+    assert revision_body["operator_decision"] == "reject_current_preview"
+    assert revision_body["operator_note_recorded"] is True
+    assert revision_body["authority_rail"]["persistence_mode"] == "plan_revision_control"
+    assert revision_body["authority_rail"]["execution_enabled"] is False
+    assert revision_body["authority_rail"]["package_review_enabled"] is False
+    assert revision_body["downstream_unavailable"] == ["execution", "results", "package"]
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200
+    summary_body = summary.json()
+    assert summary_body["plan_revision"]["available"] is False
+    assert summary_body["plan_revision"]["state"] == "plan_rejected"
+    assert summary_body["plan_revision"]["operator_decision"] == "reject_current_preview"
+    assert summary_body["plan_revision"]["operator_note_recorded"] is True
+    assert summary_body["plan_revision"]["approval_available"] is False
+    assert summary_body["plan_revision"]["execution_started"] is False
+    assert summary_body["plan_preview"]["available"] is False
+    assert summary_body["plan_preview"]["blocked_reason"] == "plan_rejected"
+    assert summary_body["plan_approval"]["available"] is False
+    assert summary_body["plan_approval"]["blocked_reason"] == "plan_rejected"
+
+    approval = client.post(
+        "/api/v1/layer3/plan/approve",
+        json={
+            "client_request_id": "api-plan-revision-approval-blocked",
+            "session_id": session_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+        },
+    )
+    assert approval.status_code == 409
+    assert approval.json()["error_code"] == "plan_rejected"
+
+    duplicate_revision = client.post(
+        "/api/v1/layer3/plan/revise",
+        json={
+            "client_request_id": "api-plan-revision-duplicate",
+            "session_id": session_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_decision": "request_revision",
+        },
+    )
+    assert duplicate_revision.status_code == 409
+    assert duplicate_revision.json()["error_code"] == "plan_rejected"
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_plan_revision_request_revision_prechecks(client: TestClient, tmp_path) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-plan-revision-prechecks-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    ).json()
+
+    unsupported = client.post(
+        "/api/v1/layer3/plan/revise",
+        json={
+            "client_request_id": "api-plan-revision-unsupported",
+            "session_id": session_id,
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+            "operator_decision": "approve_anyway",
+        },
+    )
+    assert unsupported.status_code == 400
+    assert unsupported.json()["error_code"] == "unsupported_revision_decision"
+
+    forbidden = client.post(
+        "/api/v1/layer3/plan/revise",
+        json={
+            "client_request_id": "api-plan-revision-forbidden",
+            "session_id": session_id,
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+            "operator_decision": "request_revision",
+            "execute": True,
+        },
+    )
+    assert forbidden.status_code == 400
+    assert forbidden.json()["error_code"] == "execution_not_admitted"
+    assert forbidden.json()["blocked_fields"] == ["execute"]
+
+    mismatch = client.post(
+        "/api/v1/layer3/plan/revise",
+        json={
+            "client_request_id": "api-plan-revision-mismatch",
+            "session_id": session_id,
+            "preview_id": preview["preview_id"],
+            "preview_hash": "stale-preview-hash",
+            "operator_decision": "request_revision",
+        },
+    )
+    assert mismatch.status_code == 409
+    assert mismatch.json()["error_code"] == "preview_mismatch"
+
+    revision = client.post(
+        "/api/v1/layer3/plan/revise",
+        json={
+            "client_request_id": "api-plan-revision-request",
+            "session_id": session_id,
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+            "operator_decision": "request_revision",
+        },
+    )
+    assert revision.status_code == 200
+    revision_body = revision.json()
+    assert revision_body["next_state"] == "plan_revision_requested"
+    assert revision_body["revision_control_only"] is True
+    assert revision_body["execution_started"] is False
+    assert revision_body["operator_note_recorded"] is False
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
 def test_layer3_api_plan_approval_reports_existing_unapproved_plan(client: TestClient, tmp_path) -> None:
     db = client.layer3_session_factory()
     try:
@@ -446,6 +637,19 @@ def test_layer3_api_plan_approval_reports_existing_unapproved_plan(client: TestC
     )
     assert approval.status_code == 409
     assert approval.json()["error_code"] == "plan_already_materialized"
+
+    revision = client.post(
+        "/api/v1/layer3/plan/revise",
+        json={
+            "client_request_id": "api-plan-revision-existing-unapproved",
+            "session_id": session_id,
+            "preview_id": "stale-preview-id",
+            "preview_hash": "stale-preview-hash",
+            "operator_decision": "request_revision",
+        },
+    )
+    assert revision.status_code == 409
+    assert revision.json()["error_code"] == "plan_already_materialized"
 
 
 def test_layer3_api_plan_approval_rejects_confirmation_and_preview_mismatch(client: TestClient, tmp_path) -> None:

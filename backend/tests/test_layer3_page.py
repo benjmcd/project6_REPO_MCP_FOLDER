@@ -26,6 +26,8 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="gate-c-panel"' in response.text
     assert 'id="plan-panel"' in response.text
     assert 'id="plan-preview"' in response.text
+    assert 'id="plan-reject"' in response.text
+    assert 'id="plan-request-revision"' in response.text
     assert 'id="plan-approve"' in response.text
     assert 'href="/review/layer3/static/layer3.css"' in response.text
     assert 'src="/review/layer3/static/layer3.js"' in response.text
@@ -46,6 +48,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "postJson('/gate-b/decision'" in js.text
     assert "postJson('/gate-c/preview'" in js.text
     assert "postJson('/plan/preview'" in js.text
+    assert "postJson('/plan/revise'" in js.text
     assert "postJson('/plan/approve'" in js.text
 
 
