@@ -436,14 +436,14 @@ They were merged as planning docs in PR `#191` and govern the PR `#194` workbenc
 ### Broader workbench third-slice plan-approval freeze docs
 
 These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-They freeze the next candidate workbench slice after read-only plan preview: operator approval and durable formation of an approved owner-service plan, without pass-run creation, analysis execution, results review, package review, handoff, runtime snapshot DB writes, schema widening, qualitative/hybrid/RAG/vector execution, hidden LLM planning, or broader route/UI scope. When present on an unmerged branch, treat them as branch-local planning-only docs until GitHub and current `main` both confirm merge:
+They were merged as planning docs in PR `#198` and freeze the third workbench slice after read-only plan preview: operator approval and durable formation of an approved owner-service plan, without pass-run creation, analysis execution, results review, package review, handoff, runtime snapshot DB writes, schema widening, qualitative/hybrid/RAG/vector execution, hidden LLM planning, or broader route/UI scope. PR `#199` implements only that approval-only persistence boundary:
 - `32_L3_WB_PLAN_APPROVAL_FREEZE.md`
 - `33_L3_WB_PLAN_APPROVAL_API_AND_STATE_CONTRACT.md`
 
-### Broader workbench first-slice and plan-preview implementation
+### Broader workbench first-slice, plan-preview, and plan-approval implementation
 
 This implementation is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-It is the bounded first-slice workbench implementation from PR `#184`, with post-implementation status/cohesion/explicit-Gate-C-typing/review-feedback closeouts through PR `#190`; PR `#194` then adds read-only plan preview after explicit Gate C typing commit, and PRs `#195`/`#196` record proof/board metadata for that state. Together they make `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source preview, material preview, Gate B decision recording, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, session summary, and read-only plan preview:
+It is the bounded first-slice workbench implementation from PR `#184`, with post-implementation status/cohesion/explicit-Gate-C-typing/review-feedback closeouts through PR `#190`; PR `#194` then adds read-only plan preview after explicit Gate C typing commit, PRs `#195`/`#196` record proof/board metadata for that state, PR `#198` freezes plan approval, and PR `#199` adds approval-only `L3AnalysisPlan` persistence. Together they make `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source preview, material preview, Gate B decision recording, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, session summary, read-only plan preview, and approval-only plan persistence:
 - `backend/main.py`
 - `backend/app/api/router.py`
 - `backend/app/api/layer3.py`
@@ -590,7 +590,7 @@ Current answer:
 - plan preview composes around the landed pass-entry owner service through a read-only helper rather than duplicating pass-entry classification in route or browser code
 - execution, results, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and hidden LLM planning remain out of scope
 
-### If you are deciding the third Layer 3 workbench implementation slice
+### If you are auditing the third Layer 3 workbench implementation slice
 
 Start with:
 - `Layer3_planning_docs/32_L3_WB_PLAN_APPROVAL_FREEZE.md`
@@ -605,12 +605,14 @@ Start with:
 - `e2e/layer3-workbench.spec.js`
 
 Current answer:
-- the next adequate slice after read-only plan preview is operator plan approval plus durable `L3AnalysisPlan` formation only
-- the existing `materialize_pass_entry(...)` helper is execution-bearing and must not be called by this slice
-- approval must add a narrower owner-service helper that can persist the approved plan without creating `L3PassRun`, running analysis, writing manifests, changing package/handoff state, adding migrations, or widening schema
+- PR `#199` already implements operator plan approval plus durable `L3AnalysisPlan` formation only
+- the existing `materialize_pass_entry(...)` helper remains execution-bearing and must not be called by the approval path
+- the implementation uses a narrower owner-service helper that persists the approved plan without creating `L3PassRun`, running analysis, writing manifests, changing package/handoff state, adding migrations, or widening schema
 - execution, results review, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and hidden LLM planning remain out of scope
 
 PR `#199` is the bounded implementation lane for that third slice. It makes only approval-only plan persistence live through `/api/v1/layer3/plan/approve` and the existing `/review/layer3` plan panel; it still does not admit `L3PassRun`, analysis execution, result review, package review, handoff, runtime snapshot DB writes, schema widening, qualitative/hybrid/RAG/vector execution, or hidden LLM planning.
+
+No functional next workbench slice is selected by this pack. A later slice requires a fresh freeze/API-state contract; the default candidate to evaluate next is plan rejection/revision semantics, not execution.
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 

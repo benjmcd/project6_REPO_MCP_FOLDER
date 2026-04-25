@@ -29,10 +29,10 @@ Hard rule:
 ## Current Snapshot
 
 As of `2026-04-25`:
-- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-proof-sync`
+- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-control-hardening`
 - valid local authority rule: use a clean checkout whose contents match the artifact state being refreshed; prefer current `main` for merged repo truth and the active branch checkout when an open or branch-only milestone is declared
 - authoritative remote branch: `project6-origin/main`
-- snapshot base `main` commit at this artifact refresh: `7b68c9d8d0d9105ef693f43a5b065d0aab5b70e6`
+- snapshot base `main` commit at this artifact refresh: `1bed3623b8b170101a8b447e68936ac788880326`
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the landed export-package first shared-consumer freeze from PR `#106` and its docs-only closeout from PR `#107`
@@ -79,6 +79,27 @@ As of `2026-04-25`:
 - Current `main` now also includes the merged second-slice plan-preview packet from PR `#191`, the PR `#194` bounded implementation, and the PRs `#195`/`#196` proof/board-metadata closeouts; read-only plan preview is live after explicit Gate C typing commit, while execution, results, package review, handoff, runtime snapshot DB writes, schema widening, qualitative/hybrid/RAG/vector execution, and hidden LLM planning remain out
 - PR `#199` implements the third-slice plan-approval boundary with a new narrow owner-service helper; it keeps current `materialize_pass_entry(...)` execution-bearing and outside the workbench approval path
 - The repo-tracked mockup source mirror and visual-asset inventory are source context only; they preserve the planning input behind the first-slice setup without activating implementation scope or importing the binary/SVG mockup files as runtime dependencies
+- Workbench slice state is tracked separately below as 7 structured records: 4 planning-only records and 3 live bounded implementation records. This keeps the settled later APS family decision from being confused with workbench readiness, and keeps PRs `#184`, `#194`, and `#199` from remaining only prose-bound in this board.
+
+## Layer 3 Workbench Current Decision
+
+- Current workbench live state: current `main` ships the bounded first-slice shell/API from PR `#184`, read-only plan preview from PR `#194`, and approval-only `L3AnalysisPlan` persistence from PR `#199`.
+- Current decision state: no functional next workbench slice is selected by this packet.
+- Required before the next functional slice: keep the manifest, board, progress UI spec, and progress prompt synchronized; select the next behavior in a fresh freeze/API-state contract; preserve the approval-only boundary until a later freeze explicitly admits additional behavior.
+- Default candidate only, not admitted here: plan rejection and revision semantics after approval-only persistence. This has lower blast radius than execution because it can stay within the existing plan panel and approved-plan state model without starting analysis, writing manifests, packaging results, widening schema/runtime DB behavior, or invoking qualitative/hybrid/RAG/vector paths.
+- Hard rule: the settled APS `next_required_decision` is not a workbench execution go-ahead.
+
+## Layer 3 Workbench Slice Register
+
+| Slice | Current chain state | Governing docs | Key PRs | Exact status |
+| --- | --- | --- | --- | --- |
+| Workbench deferred prep | merged planning-only | `24_L3_WB_FREEZE.md`, `25_L3_QUAL1_FREEZE.md`, `26_L3_WB_INPUTS.md`, `27_L3_QUAL1_INPUTS.md` | `#165`, `#166`, `#168`, `#169`, `#170`, `#172`, `#174` | Deferred-scope prep only; no live route/API activation, no APS milestone-count change |
+| First-slice contract | merged planning-only | `28_L3_WB_FIRST_SLICE_FREEZE.md`, `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` | `#178`, `#182` | Governs the later first-slice implementation; no live route/API activation by itself |
+| First-slice implementation | merged live bounded | `28_L3_WB_FIRST_SLICE_FREEZE.md`, `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` | `#184` through `#190` | `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source/material preview, Gate B decision recording, Gate C typing preview/materialization, Gate C override unavailability, and session summary |
+| Plan-preview contract | merged planning-only | `30_L3_WB_PLAN_PREVIEW_FREEZE.md`, `31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md` | `#191`, `#192`, `#193` | Governs read-only plan preview after explicit Gate C typing commit; no preview implementation by itself |
+| Plan-preview implementation | merged live bounded | `30_L3_WB_PLAN_PREVIEW_FREEZE.md`, `31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md` | `#194`, `#195`, `#196` | Adds read-only `/api/v1/layer3/plan/preview` and gated UI plan panel only after explicit Gate C typing commit; no plan/pass-row materialization or execution |
+| Plan-approval contract | merged planning-only | `32_L3_WB_PLAN_APPROVAL_FREEZE.md`, `33_L3_WB_PLAN_APPROVAL_API_AND_STATE_CONTRACT.md` | `#198` | Governs operator approval and approved-plan formation; no approval implementation by itself |
+| Plan-approval implementation | merged live bounded approval-only | `32_L3_WB_PLAN_APPROVAL_FREEZE.md`, `33_L3_WB_PLAN_APPROVAL_API_AND_STATE_CONTRACT.md` | `#199` | Adds approval-only `L3AnalysisPlan` persistence through `/api/v1/layer3/plan/approve`; no `materialize_pass_entry(...)`, `L3PassRun`, analysis execution, manifests, results/package/handoff, runtime DB/schema widening, or qualitative/hybrid/RAG/vector/LLM planning |
 
 ## Milestone Table
 
@@ -291,33 +312,46 @@ Primary authority surfaces:
 Current boundary:
 - current `main` already ships additive `/review/nrc-aps/workbench-compare` and `/review/nrc-aps/candidate-b-trace` surfaces, plus the same-checkout prep gate and browser coverage
 - current `main` now also ships the bounded first-slice `/review/layer3` plus `/api/v1/layer3/...` workbench from PR `#184`
-- future workbench-route work therefore means either a second Layer 3 workbench slice beyond the shipped first-slice shell/API, or a different additive workbench family beyond the shipped compare, Candidate B Trace, and Layer 3 first-slice posture
+- current `main` now also ships read-only plan preview from PR `#194` and approval-only plan persistence from PR `#199`
+- future workbench-route work therefore means either a later Layer 3 workbench slice beyond the shipped first-slice, read-only plan-preview, and approval-only plan-approval posture, or a different additive workbench family beyond the shipped compare, Candidate B Trace, and Layer 3 workbench posture
 - `28_L3_WB_FIRST_SLICE_FREEZE.md` remains the scope/no-go contract for the now-landed first-slice workbench through intent/preflight, deterministic source selection, material preview, Gate B material review, and Gate C typing review
 - `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` remains the endpoint, DTO, Gate B persistence, Gate C override-unavailability, authority-rail, browser-state, and proof contract for that landed first-slice implementation
+- `30_L3_WB_PLAN_PREVIEW_FREEZE.md` and `31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md` remain the plan-preview freeze/API-state contract for the PR `#194` read-only plan-preview implementation
+- `32_L3_WB_PLAN_APPROVAL_FREEZE.md` and `33_L3_WB_PLAN_APPROVAL_API_AND_STATE_CONTRACT.md` remain the plan-approval freeze/API-state contract for the PR `#199` approval-only persistence implementation
 
 Candidate-next admission requires:
-- browser/operator validation or a concrete product requirement proving that the shipped review/document-trace/workbench/Candidate B surfaces and the shipped Layer 3 first-slice workbench are insufficient
-- a new freeze specifying an additive workbench page/API family instead of smuggling the work into the existing review or document-trace contracts
+- browser/operator validation or a concrete product requirement proving that the shipped review/document-trace/workbench/Candidate B surfaces and the shipped Layer 3 first-slice, plan-preview, and approval-only plan-approval workbench are insufficient
+- a new freeze specifying an additive workbench page/API family instead of smuggling the work into the existing review, document-trace, or shipped Layer 3 workbench contracts
 - exact route/page/API surfaces, same-checkout or validate-only preparation rules, and any bundle-scope versus runtime-scope constraints governing the new family
-- if extending the landed Layer 3 first-slice workbench, preserve the `28_L3_WB_FIRST_SLICE_FREEZE.md` and `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` no-go list unless a later freeze explicitly supersedes it
+- if extending the landed Layer 3 workbench, preserve the `28`/`29` first-slice, `30`/`31` plan-preview, and `32`/`33` plan-approval no-go lists unless a later freeze explicitly supersedes them
 
 Current-focus admission requires:
-- a planned or open second-slice milestone identifying the exact route/API additions, backend services, static UI files, source-binding behavior, Gate C behavior, and validation files that are in scope
+- a planned or open next workbench milestone beyond PR `#199` identifying the exact route/API additions, backend services, static UI files, plan-state behavior, source-binding behavior, and validation files that are in scope
 - headed and headless Chrome validation as part of the lane contract for shell reachability and operator flow
-- preservation of current Candidate B bundle-scoped, non-admitted boundaries unless the freeze explicitly reopens them
+- preservation of current Candidate B bundle-scoped, non-admitted boundaries and the Layer 3 workbench no-go lists unless the freeze explicitly reopens them
 
 Primary authority surfaces:
 - `next_milestone_plans/Layer3_planning_docs/24_L3_WB_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md`
 - `next_milestone_plans/Layer3_planning_docs/28_L3_WB_FIRST_SLICE_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md`
+- `next_milestone_plans/Layer3_planning_docs/30_L3_WB_PLAN_PREVIEW_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md`
+- `next_milestone_plans/Layer3_planning_docs/32_L3_WB_PLAN_APPROVAL_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/33_L3_WB_PLAN_APPROVAL_API_AND_STATE_CONTRACT.md`
 - `backend/main.py`
 - `backend/app/api/router.py`
 - `backend/app/api/layer3.py`
 - `backend/app/services/layer3_workbench.py`
+- `backend/app/services/layer3_pass_entry.py`
 - `backend/app/review_ui/static/layer3.html`
 - `backend/app/review_ui/static/layer3.css`
 - `backend/app/review_ui/static/layer3.js`
+- `backend/tests/test_layer3_api.py`
+- `backend/tests/test_layer3_page.py`
+- `backend/tests/test_layer3_pass_entry.py`
+- `backend/tests/test_layer3_workbench.py`
+- `e2e/layer3-workbench.spec.js`
 - `frontend_UI_plans/README.md`
 - `frontend_UI_plans/wb-compare-spec.md`
 - `frontend_UI_plans/wb-compare-contract.md`

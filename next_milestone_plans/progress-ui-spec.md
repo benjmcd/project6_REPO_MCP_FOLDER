@@ -34,6 +34,8 @@ The UI must not override authority.
   - summary counts
   - milestone rows
   - current focus
+  - Layer 3 workbench current decision
+  - Layer 3 workbench slice register
   - candidate next consumers
   - deferred scope
   - deferred activation criteria
@@ -42,6 +44,8 @@ The UI must not override authority.
 - If the artifact cannot read refreshed files at render time, the scheduled refresh must rewrite the artifact itself from current manifest data.
 - Do not present candidate next consumers as though they are already the current implementation lane.
 - Do not present a deferred item as a candidate or current focus unless its manifest-declared activation conditions are satisfied.
+- Render `layer3_workbench_current_decision` separately from `next_required_decision`; the later APS family settlement is not itself a workbench execution or next-slice admission.
+- Render `layer3_workbench_slices` as a structured workbench register; do not make users infer PR `#184`, `#194`, and `#199` state only from prose.
 
 ## Required Visual Sections
 
@@ -51,6 +55,7 @@ Render these sections in this order:
    - show summary cards for:
      - done now on `main`
      - current focus
+     - workbench slice records
      - candidate next consumers
      - deferred scope
    - use manifest `summary_counts` and `next_required_decision`
@@ -64,12 +69,31 @@ Render these sections in this order:
      - why now
      - must-not-skip rules or reopen conditions
 
-3. `Completed Chain`
+3. `Layer 3 Workbench Current Decision`
+   - render `layer3_workbench_current_decision`
+   - make the scope boundary visible: workbench-only and separate from the APS `next_required_decision`
+   - include:
+     - current live state
+     - required conditions before the next functional slice
+     - default next candidate, if present, as candidate-only and not admitted
+     - must-not-skip rules
+
+4. `Layer 3 Workbench Slice Register`
+   - render `layer3_workbench_slices` as a stable table or grouped list
+   - include:
+     - slice id/title
+     - state
+     - governing docs
+     - key PRs
+     - exact live scope or explicit non-goals
+   - keep the register visually separate from the APS milestone table because it is a workbench lineage overlay, not a 29-milestone APS count change
+
+5. `Completed Chain`
    - render the merged milestone chain as a visual rail or grouped sequence
    - each item should remain readable without JS
    - keep milestone order aligned with the manifest
 
-4. `Milestone Table`
+6. `Milestone Table`
    - render a stable table in markup
    - do not rely on JS to create rows
    - include:
@@ -79,16 +103,16 @@ Render these sections in this order:
      - key PRs
      - short note
 
-5. `Candidate Next Consumers`
+7. `Candidate Next Consumers`
    - render `next_required_decision.candidate_families`
    - if the list is empty under a `settled` packet, render an explicit `None active` message instead of inventing candidates
    - visually distinguish these from the current focus
 
-6. `Deferred Scope`
+8. `Deferred Scope`
    - render deferred items as a muted grouped grid or list
    - make it visually obvious these are not in the active lane
 
-7. `Deferred Scope Activation Criteria`
+9. `Deferred Scope Activation Criteria`
    - render `deferred_scope_activation_contract`
    - include the contract purpose and distinction rules before the itemized entries
    - for each deferred item, render:
@@ -132,9 +156,11 @@ State labels should remain visible in text, not color alone.
 The user should understand this in under ten seconds:
 1. what is already done on `main`
 2. what the current focus is
-3. what the next bounded consumer candidates are
-4. what is still explicitly deferred
-5. what each deferred item would need before it could stop being deferred
+3. what the Layer 3 workbench current decision is
+4. which workbench slices are planning-only versus live bounded implementation
+5. what the next bounded consumer candidates are
+6. what is still explicitly deferred
+7. what each deferred item would need before it could stop being deferred
 
 If a renderer has to choose between visual flourish and certainty, prefer certainty.
 
