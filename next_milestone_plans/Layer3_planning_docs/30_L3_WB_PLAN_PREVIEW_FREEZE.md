@@ -2,7 +2,7 @@
 
 ## Status
 
-- planning-only second-slice freeze
+- planning-only second-slice freeze merged by PR `#191`
 - not active implementation by itself
 - outside the accepted Phase 1A normative control spine
 - outside the settled later APS family packet
