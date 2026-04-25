@@ -63,6 +63,7 @@ PASS_TYPE_SINGLE_ITEM = "single_item"
 ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS = "wrapped_quantitative_analysis"
 
 PASS_STATUS_PLANNED = "planned"
+PASS_STATUS_SELECTED_NOT_STARTED = "selected_not_started"
 PASS_STATUS_RUNNING = "running"
 PASS_STATUS_COMPLETED = "completed"
 PASS_STATUS_COMPLETED_WITH_WARNINGS = "completed_with_warnings"
@@ -165,6 +166,18 @@ class Layer3PassEntryApprovalResult:
     planned_passes: tuple[dict[str, Any], ...]
     warnings: tuple[dict[str, Any], ...]
     owner_service_basis: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class Layer3SelectedPassExecutionResult:
+    pass_run: L3PassRun
+    status: str
+    execution_started: bool
+    analysis_run_id: str | None
+    dataset_version_id: str | None
+    selected_method_name: str | None
+    output_payload_ref: str | None
+    error_message: str | None = None
 
 
 def _utcnow() -> datetime:
@@ -1048,6 +1061,172 @@ def _persist_output_manifest(*, pass_run_id: str, payload: dict[str, Any]) -> st
 
 def _has_analysis_warnings(db: Session, *, analysis_run_id: str) -> bool:
     return db.query(CaveatNote).filter(CaveatNote.analysis_run_id == analysis_run_id).count() > 0
+
+
+def execute_selected_pass_run(
+    db: Session,
+    *,
+    pass_run: L3PassRun,
+    planned_pass: dict[str, Any],
+    client_request_id: str,
+) -> Layer3SelectedPassExecutionResult:
+    """Execute one preselected workbench pass without creating plan or pass-run rows."""
+
+    pass_run_id = pass_run.pass_run_id
+    if pass_run.status != PASS_STATUS_SELECTED_NOT_STARTED:
+        raise Layer3PassEntryError(
+            f"Selected pass run '{pass_run_id}' must be selected_not_started before execution start"
+        )
+    if pass_run.output_payload_ref:
+        raise Layer3PassEntryError(f"Selected pass run '{pass_run_id}' already has output metadata")
+    if pass_run.engine_family != ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS:
+        raise Layer3PassEntryError(
+            f"Selected pass run '{pass_run_id}' uses unsupported engine family '{pass_run.engine_family}'"
+        )
+
+    summary = _json_clone(pass_run.summary_json or {})
+    if summary.get("analysis_run_id"):
+        raise Layer3PassEntryError(f"Selected pass run '{pass_run_id}' already has an analysis_run_id")
+
+    planned_engine_family = str(planned_pass.get("engine_family") or pass_run.engine_family)
+    if planned_engine_family != ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS:
+        raise Layer3PassEntryError(
+            f"Selected pass run '{pass_run_id}' planned unsupported engine family '{planned_engine_family}'"
+        )
+    planned_pass_type = str(planned_pass.get("pass_type") or pass_run.pass_type)
+    if planned_pass_type != PASS_TYPE_SINGLE_ITEM:
+        raise Layer3PassEntryError(
+            f"Selected pass run '{pass_run_id}' uses source breadth outside this execution-start slice"
+        )
+
+    dataset_version_id = str(planned_pass.get("dataset_version_id") or summary.get("dataset_version_id") or "").strip()
+    selected_method_name = str(
+        planned_pass.get("selected_method_name") or summary.get("selected_method_name") or ""
+    ).strip()
+    if not dataset_version_id:
+        raise Layer3PassEntryError(f"Selected pass run '{pass_run_id}' has no dataset_version_id")
+    if selected_method_name not in SUPPORTED_WRAPPED_QUANTITATIVE_METHODS:
+        raise Layer3PassEntryError(
+            f"Selected pass run '{pass_run_id}' uses unsupported method '{selected_method_name}'"
+        )
+
+    started_at = _utcnow()
+    pass_run.status = PASS_STATUS_RUNNING
+    pass_run.started_at = started_at
+    pass_run.summary_json = {
+        **summary,
+        "execution_started": True,
+        "analysis_run_id": None,
+        "dataset_version_id": dataset_version_id,
+        "selected_method_name": selected_method_name,
+        "analysis_execution_start": {
+            "schema_id": "layer3.analysis_execution_start_state.v1",
+            "client_request_id": client_request_id,
+            "state": "execution_pass_running",
+            "started_at": _utc_isoformat(started_at),
+        },
+    }
+    db.flush()
+
+    try:
+        analysis_run = run_analysis(
+            db,
+            dataset_version_id=dataset_version_id,
+            method_name=selected_method_name,
+            goal_type=None,
+            parameters={},
+            annotation_window_id=None,
+        )
+    except Exception as exc:
+        db.rollback()
+        failed_pass_run = db.get(L3PassRun, pass_run_id)
+        if failed_pass_run is None:
+            raise Layer3PassEntryError(f"Selected pass run '{pass_run_id}' disappeared during execution") from exc
+        completed_at = _utcnow()
+        failed_summary = _json_clone(failed_pass_run.summary_json or {})
+        failed_pass_run.status = PASS_STATUS_FAILED
+        failed_pass_run.started_at = started_at
+        failed_pass_run.completed_at = completed_at
+        failed_pass_run.summary_json = {
+            **failed_summary,
+            "execution_started": True,
+            "analysis_run_id": None,
+            "dataset_version_id": dataset_version_id,
+            "selected_method_name": selected_method_name,
+            "error": str(exc),
+            "analysis_execution_start": {
+                "schema_id": "layer3.analysis_execution_start_state.v1",
+                "client_request_id": client_request_id,
+                "state": "execution_pass_failed",
+                "started_at": _utc_isoformat(started_at),
+                "completed_at": _utc_isoformat(completed_at),
+                "error": str(exc),
+            },
+        }
+        db.flush()
+        return Layer3SelectedPassExecutionResult(
+            pass_run=failed_pass_run,
+            status=PASS_STATUS_FAILED,
+            execution_started=True,
+            analysis_run_id=None,
+            dataset_version_id=dataset_version_id,
+            selected_method_name=selected_method_name,
+            output_payload_ref=None,
+            error_message=str(exc),
+        )
+
+    db.refresh(pass_run)
+    artifacts = (
+        db.query(AnalysisArtifact)
+        .filter(AnalysisArtifact.analysis_run_id == analysis_run.analysis_run_id)
+        .order_by(AnalysisArtifact.created_at.asc(), AnalysisArtifact.artifact_id.asc())
+        .all()
+    )
+    output_manifest_ref = _persist_output_manifest(
+        pass_run_id=pass_run.pass_run_id,
+        payload={
+            "analysis_run_id": analysis_run.analysis_run_id,
+            "analysis_set_id": pass_run.analysis_set_id,
+            "dataset_version_id": dataset_version_id,
+            "selected_method_name": selected_method_name,
+            "artifact_refs_json": [artifact.storage_ref for artifact in artifacts],
+            "artifact_types_json": [artifact.artifact_type for artifact in artifacts],
+            "source_gate": planned_pass.get("source_gate"),
+        },
+    )
+    has_warnings = _has_analysis_warnings(db, analysis_run_id=analysis_run.analysis_run_id)
+    completed_at = _utcnow()
+    pass_run.status = PASS_STATUS_COMPLETED_WITH_WARNINGS if has_warnings else PASS_STATUS_COMPLETED
+    pass_run.completed_at = completed_at
+    pass_run.output_payload_ref = output_manifest_ref
+    pass_run.summary_json = {
+        **_json_clone(pass_run.summary_json or {}),
+        "execution_started": True,
+        "analysis_run_id": analysis_run.analysis_run_id,
+        "dataset_version_id": dataset_version_id,
+        "selected_method_name": selected_method_name,
+        "artifact_refs_json": [artifact.storage_ref for artifact in artifacts],
+        "artifact_types_json": [artifact.artifact_type for artifact in artifacts],
+        "pass_status_from_analysis": analysis_run.status,
+        "analysis_execution_start": {
+            "schema_id": "layer3.analysis_execution_start_state.v1",
+            "client_request_id": client_request_id,
+            "state": "execution_pass_completed",
+            "started_at": _utc_isoformat(pass_run.started_at),
+            "completed_at": _utc_isoformat(completed_at),
+        },
+    }
+    db.flush()
+
+    return Layer3SelectedPassExecutionResult(
+        pass_run=pass_run,
+        status=pass_run.status,
+        execution_started=True,
+        analysis_run_id=analysis_run.analysis_run_id,
+        dataset_version_id=dataset_version_id,
+        selected_method_name=selected_method_name,
+        output_payload_ref=output_manifest_ref,
+    )
 
 
 def _execute_passes(
