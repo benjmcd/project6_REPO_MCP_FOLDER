@@ -404,9 +404,10 @@ function setBusy(button, busy, label) {
 }
 
 function setGateControls() {
+    const gateCCommitted = State.gateC?.authority_rail?.typing_status === 'committed';
     elements.gateBSubmit.disabled = !(State.materialPreview?.material_candidates || []).length;
-    elements.gateCPreview.disabled = !State.gateB?.session_id;
-    elements.gateCCommit.disabled = !State.gateB?.session_id || State.gateC?.authority_rail?.typing_status === 'committed';
+    elements.gateCPreview.disabled = !State.gateB?.session_id || gateCCommitted;
+    elements.gateCCommit.disabled = !State.gateB?.session_id || gateCCommitted;
     elements.planPreview.disabled = !canPlanPreview();
     elements.planStep.disabled = !canPlanPreview();
     elements.planStep.classList.toggle('active', canPlanPreview());
@@ -501,6 +502,7 @@ async function commitGateB() {
 
 async function previewGateC() {
     if (!State.gateB?.session_id) return;
+    if (State.gateC?.authority_rail?.typing_status === 'committed') return;
     setBusy(elements.gateCPreview, true, 'Preview Gate C');
     try {
         State.gateC = await postJson('/gate-c/preview', {

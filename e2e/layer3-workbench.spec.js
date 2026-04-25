@@ -78,6 +78,7 @@ test('Layer 3 workbench completes the first-slice operator path without enabling
   expect(gateCCommit.typing_records[0].authoritative).toBe(true);
 
   await expect(page.locator('#gate-c-panel')).toContainText('Authoritative: yes');
+  await expect(page.locator('#gate-c-preview')).toBeDisabled();
   await expect(page.locator('[data-step="plan"]')).toBeEnabled();
   await expect(page.locator('#plan-preview')).toBeEnabled();
 
