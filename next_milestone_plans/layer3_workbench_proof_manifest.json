@@ -15,7 +15,7 @@
     "latest_implementation_pr": "#222",
     "latest_implementation_branch": "codex/l3-result-status",
     "latest_implementation_summary": "PR #222 adds POST /api/v1/layer3/execution/result/status as a read-only endpoint that validates session/approved-plan/preview/selection/execution-start/pass authority, reports available/missing-output/failed selected-pass status, summarizes existing output metadata only when readable, and writes no durable state.",
-    "latest_planning_pr": "pending-result-review-freeze-pr",
+    "latest_planning_pr": "#226",
     "latest_planning_branch": "codex/l3-result-review-freeze",
     "latest_planning_summary": "Docs 44/45 add planning-only governance for a future bounded selected-pass result-review decision after PR #222 result/status authority; they do not implement a result-review endpoint or package/handoff behavior.",
     "latest_planning_live_behavior_change": false,
