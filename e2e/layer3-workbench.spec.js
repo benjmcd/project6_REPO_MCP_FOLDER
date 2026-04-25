@@ -229,8 +229,20 @@ test('Layer 3 workbench can request plan revision without starting execution', a
   await expect(page.locator('#plan-request-revision')).toBeEnabled();
   await expect(page.locator('#plan-approve')).toBeEnabled();
 
+  let releaseRevisionRequest;
+  await page.route('**/api/v1/layer3/plan/revise', async (route) => {
+    await new Promise((resolve) => {
+      releaseRevisionRequest = resolve;
+    });
+    await route.continue();
+  });
+
   const revisionResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/plan/revise'));
   await page.locator('#plan-request-revision').click();
+  await expect(page.locator('#plan-reject')).toBeDisabled();
+  await expect(page.locator('#plan-request-revision')).toBeDisabled();
+  await expect.poll(() => Boolean(releaseRevisionRequest)).toBe(true);
+  releaseRevisionRequest();
   const revision = await expectJson(await revisionResponsePromise);
   expect(revision.next_state).toBe('plan_revision_requested');
   expect(revision.revision_control_only).toBe(true);
