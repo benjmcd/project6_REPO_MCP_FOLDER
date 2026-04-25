@@ -1092,6 +1092,30 @@ def test_layer3_api_analysis_execution_start_prechecks_fail_closed(client: TestC
     assert forbidden.json()["error_code"] == "analysis_execution_start_scope_not_admitted"
     assert set(forbidden.json()["blocked_fields"]) == {"package_review", "run_all"}
 
+    unknown_forbidden = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-analysis-execution-start-unknown-forbidden",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "results": True,
+            "artifact_manifest": {"requested": True},
+            "source_expansion": "rag",
+            "schema_widening": True,
+        },
+    )
+    assert unknown_forbidden.status_code == 400
+    assert unknown_forbidden.json()["error_code"] == "analysis_execution_start_scope_not_admitted"
+    assert set(unknown_forbidden.json()["blocked_fields"]) == {
+        "artifact_manifest",
+        "results",
+        "schema_widening",
+        "source_expansion",
+    }
+
     stale_preview = client.post(
         "/api/v1/layer3/execution/start",
         json={
