@@ -53,6 +53,11 @@ PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 GATE_B_DECISIONS = ("approved", "denied", "isolated", "flagged")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
+PLAN_REVISION_DECISIONS = frozenset({"reject_current_preview", "request_revision"})
+PLAN_REVISION_STATE_BY_DECISION = {
+    "reject_current_preview": "plan_rejected",
+    "request_revision": "plan_revision_requested",
+}
 PLAN_APPROVAL_FORBIDDEN_FIELDS = frozenset(
     {
         "execute",
@@ -65,6 +70,19 @@ PLAN_APPROVAL_FORBIDDEN_FIELDS = frozenset(
         "plan_edits",
         "natural_language_plan",
         "llm_plan",
+    }
+)
+PLAN_REVISION_FORBIDDEN_FIELDS = PLAN_APPROVAL_FORBIDDEN_FIELDS | frozenset(
+    {
+        "execution_started",
+        "create_pass_runs",
+        "pass_run_ids",
+        "artifact_manifest",
+        "result_review",
+        "qualitative_plan",
+        "hybrid_plan",
+        "rag_plan",
+        "vector_plan",
     }
 )
 
@@ -728,6 +746,8 @@ def _plan_preview_readiness(db: Session, *, session_id: str, include_owner_servi
         blocked_reason = "no_analysis_sets"
     elif analysis_plan_count > 0 or pass_run_count > 0:
         blocked_reason = "plan_already_materialized"
+    elif (revision_control := _plan_revision_control(db, session_id=session_id)) is not None:
+        blocked_reason = str(revision_control.get("state") or "plan_revision_recorded")
     elif include_owner_service:
         try:
             owner_preview = preview_pass_entry(db, session_id=session_id)
@@ -757,6 +777,22 @@ def _latest_analysis_plan(db: Session, *, session_id: str) -> L3AnalysisPlan | N
         .order_by(L3AnalysisPlan.created_at.desc(), L3AnalysisPlan.analysis_plan_id.asc())
         .first()
     )
+
+
+def _plan_revision_control_from_session(session: L3Session | None) -> dict[str, Any] | None:
+    if session is None:
+        return None
+    control = (session.summary_json or {}).get("plan_revision_control")
+    if not isinstance(control, dict):
+        return None
+    if control.get("schema_id") != "layer3.plan_revision_control.v1":
+        return None
+    return control
+
+
+def _plan_revision_control(db: Session, *, session_id: str) -> dict[str, Any] | None:
+    session = db.query(L3Session).filter(L3Session.session_id == session_id).first()
+    return _plan_revision_control_from_session(session)
 
 
 def _plan_approval_summary(db: Session, *, session_id: str) -> dict[str, Any]:
@@ -795,6 +831,37 @@ def _plan_approval_summary(db: Session, *, session_id: str) -> dict[str, Any]:
         "pass_run_count": pass_run_count,
         "approval_only": bool(plan_json.get("approval_only")),
         "execution_started": bool(plan_json.get("execution_started")),
+    }
+
+
+def _plan_revision_summary(db: Session, *, session_id: str) -> dict[str, Any]:
+    control = _plan_revision_control(db, session_id=session_id)
+    if control is None:
+        preview = _plan_preview_readiness(db, session_id=session_id, include_owner_service=True)
+        return {
+            "schema_id": "layer3.plan_revision_readiness.v1",
+            "available": preview["available"],
+            "state": None,
+            "blocked_reason": preview["blocked_reason"],
+            "source_preview_id": None,
+            "source_preview_hash": None,
+            "operator_decision": None,
+            "operator_note_recorded": False,
+            "approval_available": preview["available"],
+            "execution_started": False,
+        }
+    return {
+        "schema_id": "layer3.plan_revision_readiness.v1",
+        "available": False,
+        "state": control.get("state"),
+        "blocked_reason": control.get("state"),
+        "source_preview_id": control.get("source_preview_id"),
+        "source_preview_hash": control.get("source_preview_hash"),
+        "operator_decision": control.get("operator_decision"),
+        "operator_note_recorded": bool(control.get("operator_note_recorded")),
+        "approval_available": False,
+        "execution_started": False,
+        "created_at": control.get("created_at"),
     }
 
 
@@ -1062,6 +1129,125 @@ def plan_approval(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def plan_revision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or uuid_str())
+    session_id = str(payload.get("session_id") or "").strip()
+    if not session_id:
+        raise Layer3WorkbenchError("session_not_found", "session_id is required for plan revision.", http_status=404)
+
+    operator_decision = str(payload.get("operator_decision") or "").strip()
+    if operator_decision not in PLAN_REVISION_DECISIONS:
+        raise Layer3WorkbenchError(
+            "unsupported_revision_decision",
+            f"Unsupported plan revision decision: {operator_decision or 'missing'}.",
+            status="invalid",
+            blocked_fields=["operator_decision"],
+            next_allowed_actions=["use_supported_revision_decision"],
+        )
+
+    forbidden = sorted(key for key in PLAN_REVISION_FORBIDDEN_FIELDS if key in payload)
+    if forbidden:
+        raise Layer3WorkbenchError(
+            "execution_not_admitted",
+            f"Plan revision request includes non-admitted fields: {', '.join(forbidden)}.",
+            status="invalid",
+            blocked_fields=forbidden,
+            next_allowed_actions=["submit_revision_control_only_request"],
+        )
+
+    session = _load_session(db, session_id)
+    existing_control = _plan_revision_control_from_session(session)
+    if existing_control is not None:
+        raise Layer3WorkbenchError(
+            str(existing_control.get("state") or "plan_revision_recorded"),
+            f"Layer 3 session '{session_id}' already has a plan revision-control decision.",
+            status="conflict",
+            http_status=409,
+        )
+
+    existing_plan = _latest_analysis_plan(db, session_id=session_id)
+    if existing_plan is not None:
+        if bool(existing_plan.approved_by_operator):
+            error_code = "plan_already_approved"
+            message = f"Layer 3 session '{session_id}' already has an approved analysis plan."
+        else:
+            error_code = "plan_already_materialized"
+            message = f"Layer 3 session '{session_id}' already has a non-approved analysis plan."
+        raise Layer3WorkbenchError(error_code, message, status="conflict", http_status=409)
+
+    if db.query(L3PassRun).filter(L3PassRun.session_id == session_id).count() > 0:
+        raise Layer3WorkbenchError(
+            "pass_runs_already_exist",
+            f"Layer 3 session '{session_id}' already has pass runs.",
+            status="conflict",
+            http_status=409,
+        )
+
+    expected_preview = plan_preview(
+        db,
+        {
+            "client_request_id": request_id,
+            "session_id": session_id,
+            "preview_scope": PLAN_PREVIEW_SCOPE,
+        },
+    )
+    preview_id = str(payload.get("preview_id") or "").strip()
+    preview_hash = str(payload.get("preview_hash") or "").strip()
+    if preview_id != expected_preview["preview_id"] or preview_hash != expected_preview["preview_hash"]:
+        raise Layer3WorkbenchError(
+            "preview_mismatch",
+            "Plan revision must reference the current server-recomputed preview id and hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["preview_id", "preview_hash"],
+            next_allowed_actions=["refresh_plan_preview"],
+        )
+
+    next_state = PLAN_REVISION_STATE_BY_DECISION[operator_decision]
+    operator_note = str(payload.get("operator_note") or "").strip()
+    gate_b_counts = _gate_b_summary_from_session(session)
+    source_classes = _source_classes_from_plan_preview(expected_preview.get("plan_preview") or {})
+    control = {
+        "schema_id": "layer3.plan_revision_control.v1",
+        "state": next_state,
+        "source_preview_id": preview_id,
+        "source_preview_hash": preview_hash,
+        "operator_decision": operator_decision,
+        "operator_note_recorded": bool(operator_note),
+        "approval_available": False,
+        "execution_started": False,
+        "created_at": _utcnow_iso(),
+    }
+    session.summary_json = {
+        **_json_clone(session.summary_json),
+        "plan_revision_control": control,
+    }
+    db.commit()
+
+    return {
+        **_base_response("layer3.plan_revision_result.v1", request_id=request_id),
+        "session_id": session_id,
+        "next_state": next_state,
+        "revision_control_only": True,
+        "execution_started": False,
+        "source_preview_id": preview_id,
+        "source_preview_hash": preview_hash,
+        "operator_decision": operator_decision,
+        "operator_note_recorded": bool(operator_note),
+        "authority_rail": _authority_rail(
+            session_id=session_id,
+            current_gate="plan",
+            persistence_mode="plan_revision_control",
+            source_classes=source_classes,
+            counts=gate_b_counts,
+            typing_status="committed",
+            downstream_unavailable=PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE,
+        ),
+        "downstream_unavailable": list(PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE),
+        "plan_revision_control": control,
+    }
+
+
 def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     session = _load_session(db, session_id)
     manifest = (
@@ -1081,6 +1267,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     typing_committed = typing_record_count > 0
     plan_preview_readiness = _plan_preview_readiness(db, session_id=session_id, include_owner_service=True)
     plan_approval_readiness = _plan_approval_summary(db, session_id=session_id)
+    plan_revision_readiness = _plan_revision_summary(db, session_id=session_id)
     current_gate = "plan" if typing_committed else "gate_c"
     downstream_unavailable = PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE if typing_committed else DOWNSTREAM_UNAVAILABLE
 
@@ -1099,6 +1286,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         },
         "plan_preview": plan_preview_readiness,
         "plan_approval": plan_approval_readiness,
+        "plan_revision": plan_revision_readiness,
         "downstream_unavailable": list(downstream_unavailable),
         "authority_rail": _authority_rail(
             session_id=session_id,
