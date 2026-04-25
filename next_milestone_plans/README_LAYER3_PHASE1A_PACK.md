@@ -440,6 +440,13 @@ They were merged as planning docs in PR `#198` and freeze the third workbench sl
 - `32_L3_WB_PLAN_APPROVAL_FREEZE.md`
 - `33_L3_WB_PLAN_APPROVAL_API_AND_STATE_CONTRACT.md`
 
+### Broader workbench fourth-slice plan-revision freeze docs
+
+These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+PR `#203` freezes the fourth workbench slice as planning-only governance for explicit operator rejection and revision-request semantics against the current server-backed plan preview before approval. It does not make rejection/revision live, reopen or supersede already approved plans, call `materialize_pass_entry(...)`, create `L3PassRun`, run analysis, write manifests, enable results/package/handoff, widen runtime DB/schema behavior, or admit qualitative/hybrid/RAG/vector/LLM planning:
+- `34_L3_WB_PLAN_REVISION_FREEZE.md`
+- `35_L3_WB_PLAN_REVISION_API_AND_STATE_CONTRACT.md`
+
 ### Broader workbench first-slice, plan-preview, and plan-approval implementation
 
 This implementation is outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
@@ -612,7 +619,27 @@ Current answer:
 
 PR `#199` is the bounded implementation lane for that third slice. It makes only approval-only plan persistence live through `/api/v1/layer3/plan/approve` and the existing `/review/layer3` plan panel; it still does not admit `L3PassRun`, analysis execution, result review, package review, handoff, runtime snapshot DB writes, schema widening, qualitative/hybrid/RAG/vector execution, or hidden LLM planning.
 
-No functional next workbench slice is selected by this pack. A later slice requires a fresh freeze/API-state contract; the default candidate to evaluate next is plan rejection/revision semantics, not execution.
+PRs `#200`, `#201`, and `#202` are post-approval docs/control syncs. They keep approval-state, mockup-spec, and workbench progress-control surfaces aligned without making plan rejection/revision, execution, results/package/handoff, runtime DB/schema widening, or qualitative/hybrid/RAG/vector/LLM planning live.
+
+### If you are auditing the fourth Layer 3 workbench planning-only slice
+
+Start with:
+- `Layer3_planning_docs/34_L3_WB_PLAN_REVISION_FREEZE.md`
+- `Layer3_planning_docs/35_L3_WB_PLAN_REVISION_API_AND_STATE_CONTRACT.md`
+- `Layer3_planning_docs/32_L3_WB_PLAN_APPROVAL_FREEZE.md`
+- `Layer3_planning_docs/33_L3_WB_PLAN_APPROVAL_API_AND_STATE_CONTRACT.md`
+- `backend/app/services/layer3_pass_entry.py`
+- `backend/app/services/layer3_workbench.py`
+- `backend/tests/test_layer3_api.py`
+- `e2e/layer3-workbench.spec.js`
+
+Current answer:
+- the fourth slice is selected only as planning freeze/API-state governance, not as live behavior
+- it admits explicit operator rejection and revision request against the current server-backed preview before approval
+- already approved plans remain terminal for this slice; reopening, replacing, or superseding them requires a later freeze
+- execution, results review, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and hidden LLM planning remain out of scope
+
+No functional next workbench implementation is live by this pack. The next functional pass must either implement only the `34`/`35` plan-revision contract or return to planning if the existing state model cannot represent the decision without ambiguity.
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 
