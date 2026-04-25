@@ -1,17 +1,17 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded execution-selection shell implementation plus merged PR #218 bounded analysis-execution-start implementation plus planning-only result-status freeze packet",
+  "status": "current-main readiness proof plus bounded execution-selection and analysis-execution-start implementations plus branch-local bounded result/status implementation candidate",
   "scope": {
-    "source_branch": "project6-origin/main",
+    "source_branch": "codex/l3-result-status",
     "merged_pr": "#218",
     "merge_commit": "587cb859d129dac5f80d165f640221995c6c7640",
     "base_remote": "project6-origin/main",
-    "base_commit": "1de784f9b3936b28275785a11517fff7d3039c0d",
+    "base_commit": "c1bee4fb76a0",
     "source_base_commit": "e4567aa2222af59c462dd219947b7b8fc7c78dad",
-    "purpose": "Define, prove, and track readiness gates, bounded execution-selection shell behavior, the PR #218 selected-pass analysis-execution-start implementation boundary, and the planning-only docs 42/43 result-status boundary.",
+    "purpose": "Define, prove, and track readiness gates, bounded execution-selection shell behavior, the PR #218 selected-pass analysis-execution-start implementation boundary, docs 42/43 result/status governance, and the branch-local bounded result/status implementation candidate.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "PR #213 adds read-only readiness proof; PR #216 adds only selected/not-started L3PassRun shell creation through /api/v1/layer3/execution/select; PR #217 adds planning docs 40/41; PR #218 adds the bounded /api/v1/layer3/execution/start implementation for one existing selected/not-started single-item wrapped quantitative pass. Docs 42/43 add planning-only result/status governance and do not make /api/v1/layer3/execution/result/status, result review, package, handoff, runtime DB/schema widening, source expansion, UI changes, qualitative/hybrid/RAG/vector execution, or full mockup activation live.",
+    "live_behavior_change_summary": "Current main through PR #221 includes docs 42/43 as planning-only result/status governance. Branch codex/l3-result-status adds the bounded read-only /api/v1/layer3/execution/result/status endpoint for one terminal selected pass; it does not add result review, package, handoff, runtime DB/schema widening, source expansion, UI changes, qualitative/hybrid/RAG/vector execution, or full mockup activation.",
     "latest_implementation_pr": "#218",
     "latest_implementation_branch": "codex/l3-exec-start",
     "latest_implementation_summary": "PR #218 adds only the bounded selected-pass analysis-execution-start endpoint and helper for one existing selected/not-started single-item wrapped quantitative L3PassRun shell; it creates no new L3AnalysisPlan or L3PassRun rows and keeps result/package/handoff/source/schema/UI scope out.",
@@ -21,7 +21,11 @@
     "latest_planning_live_behavior_change": false,
     "latest_planning_behavior_summary": "Docs 42/43 are documentation/control only; merging them changes planning authority but not runtime API, UI, database, execution, result-review, package, or handoff behavior.",
     "latest_implementation_merge_commit": "587cb859d129dac5f80d165f640221995c6c7640",
-    "latest_planning_base_commit": "1de784f9b3936b28275785a11517fff7d3039c0d"
+    "latest_planning_base_commit": "1de784f9b3936b28275785a11517fff7d3039c0d",
+    "latest_branch_implementation_branch": "codex/l3-result-status",
+    "latest_branch_implementation_summary": "Adds POST /api/v1/layer3/execution/result/status as a read-only endpoint that validates session/approved-plan/preview/selection/execution-start/pass authority, reports available/missing-output/failed selected-pass status, summarizes existing output metadata only when readable, and writes no durable state.",
+    "latest_branch_implementation_live_behavior_change": true,
+    "latest_branch_implementation_base_commit": "c1bee4fb76a0"
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -80,7 +84,9 @@
       "analysis-execution-start freeze/API-state contract from PR #217 remains the governing scope contract for the PR #218 bounded implementation",
       "result/status freeze/API-state contract from docs 42/43 is planning-only governance for a future read-only selected-pass status surface"
     ],
-    "branch_only_candidate": [],
+    "branch_only_candidate": [
+      "codex/l3-result-status adds branch-local POST /api/v1/layer3/execution/result/status for read-only selected-pass result/status inspection; not current-main live behavior until merged and re-audited"
+    ],
     "still_forbidden_after_pr_218": [
       "result review",
       "package review",
@@ -95,7 +101,7 @@
       "RAG/vector execution",
       "full mockup activation",
       "UI changes",
-      "result/status implementation until separately implemented under docs 42/43"
+      "result/status implementation on current main until codex/l3-result-status is merged and re-audited"
     ]
   },
   "readiness_gates": [
@@ -157,7 +163,7 @@
     {
       "gate_id": "result-status-inspection",
       "decision": "The next eligible post-execution slice may inspect one terminal selected pass as read-only status/execution proof only, and must not implement result review, package, handoff, rerun/recovery, source expansion, schema/runtime DB widening, UI activation, or qualitative/hybrid/RAG/vector behavior.",
-      "status": "frozen_by_docs_42_43_as_planning_only_no_live_endpoint"
+      "status": "implemented_branch_only_by_codex_l3_result_status_not_current_main_until_merge"
     }
   ],
   "validation_commands": [
@@ -175,7 +181,7 @@
     },
     {
       "command": "python -m pytest backend/tests/test_layer3_api.py -q",
-      "purpose": "Verify analysis-execution-start API success, idempotency, stale preview, revision-control, duplicate/conflict, and fail-closed behavior."
+      "purpose": "Verify Layer 3 API behavior including result/status success, failed terminal status, stale preview, forbidden fields, missing output metadata, no writes, execution-start idempotency, revision-control, duplicate/conflict, and fail-closed behavior."
     },
     {
       "command": "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3_*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest $tests -q",
@@ -188,6 +194,10 @@
     {
       "command": "git diff --check",
       "purpose": "Verify whitespace/diff hygiene."
+    },
+    {
+      "command": "python -m pytest backend/tests/test_layer3_pass_entry.py backend/tests/test_layer3_api.py -q",
+      "purpose": "Verify the selected-pass output metadata producer and the branch-local result/status reader together."
     }
   ],
   "browser_proof_rule": "No browser proof is required for this backend-only readiness metadata slice because rendered UI behavior does not change. A later UI or execution slice must run both headed and headless browser proof when browser behavior changes.",
@@ -216,5 +226,28 @@
     "result/status endpoint is live",
     "/api/v1/layer3/execution/result/status is live",
     "result review is enabled"
-  ]
+  ],
+  "branch_local_proof": {
+    "branch": "codex/l3-result-status",
+    "base_main_commit": "c1bee4fb76a0",
+    "commands": [
+      "python -m pytest backend/tests/test_layer3_api.py -q -> 20 passed, 3 warnings",
+      "python -m pytest backend/tests/test_layer3_pass_entry.py backend/tests/test_layer3_api.py -q -> 32 passed, 3 warnings",
+      "PowerShell-expanded backend/tests/test_layer3_*.py family -> 126 passed, 3 warnings"
+    ],
+    "browser_proof": "Not run because this branch changes no rendered UI behavior.",
+    "no_go_preserved": [
+      "result review",
+      "result approval/rejection",
+      "package review",
+      "handoff",
+      "rerun/recovery",
+      "source expansion",
+      "runtime DB/schema widening",
+      "UI changes",
+      "qualitative/hybrid/RAG/vector execution",
+      "local upload/directory ingestion",
+      "full mockup activation"
+    ]
+  }
 }
