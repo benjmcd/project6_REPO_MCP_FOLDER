@@ -115,10 +115,13 @@
             <section class="workband plan-band" aria-labelledby="plan-heading">
                 <div class="section-heading">
                     <div>
-                        <h2 id="plan-heading">Plan Preview</h2>
-                        <span class="status-pill preview">Preview only</span>
+                        <h2 id="plan-heading">Plan Preview And Approval</h2>
+                        <span class="status-pill preview">Approval only</span>
                     </div>
-                    <button id="plan-preview" class="primary-btn" type="button" disabled>Preview Plan</button>
+                    <div class="action-row">
+                        <button id="plan-preview" class="secondary-btn" type="button" disabled>Preview Plan</button>
+                        <button id="plan-approve" class="primary-btn" type="button" disabled>Approve Plan</button>
+                    </div>
                 </div>
                 <div id="plan-panel" class="plan-panel">
                     <div class="empty-panel">Commit Gate C typing before plan preview.</div>

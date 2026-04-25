@@ -21,7 +21,150 @@ from app.api import layer3, review_nrc_aps
 from app.api.deps import get_db
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
+from app.models.models import Dataset, DatasetVersion, VariableDefinition, VariableProfile, uuid_str
+from app.services import layer3_pass_entry as layer3_pass_entry_module
+from app.services.layer3_session_entry import (
+    SessionEntryRequest,
+    SnapshotMaterial,
+    commit_selection,
+    expand_descriptors,
+    finalize_session,
+    record_retrieval_event,
+)
+from app.services.layer3_typing_entry import materialize_typing_entry
 from review_browser_fixture import build_review_browser_fixture, install_review_browser_patches
+
+
+def _install_layer3_browser_patches() -> None:
+    def _recommend_analysis(*args, **kwargs) -> dict[str, object]:
+        dataset_version_id = str(kwargs.get("dataset_version_id") or (args[1] if len(args) > 1 else ""))
+        return {
+            "dataset_version_id": dataset_version_id,
+            "recommended_sequence": ["decomposition", "structural_break"],
+            "rationale": "browser harness deterministic quantitative recommendation",
+            "profile_context": {
+                "stationary_like_variables": ["value"],
+                "mixed_or_nonstationary_variables": [],
+                "seasonal_like_variables": ["value"],
+            },
+        }
+
+    layer3_pass_entry_module.recommend_analysis = _recommend_analysis
+
+
+def _seed_browser_dataset_version(db, temp_path: Path, *, seed_id: str, dataset_id: str, dataset_version_id: str) -> Path:
+    dataset = Dataset(
+        dataset_id=dataset_id,
+        name=f"Dataset {seed_id}",
+        description="Layer 3 browser harness dataset",
+        frequency_hint="MS",
+        time_column="observed_at",
+    )
+    version = DatasetVersion(
+        dataset_version_id=dataset_version_id,
+        dataset_id=dataset_id,
+        version_label="v1",
+        version_type="baseline",
+        status="ready",
+        notes="layer3-browser-harness",
+    )
+    observed_at = VariableDefinition(
+        variable_id=f"var-time-{seed_id}",
+        dataset_version_id=dataset_version_id,
+        variable_name="observed_at",
+        dtype="datetime64[ns]",
+        role="time_index",
+        is_numeric=False,
+        is_time_index=True,
+        ordinal_position=0,
+    )
+    value = VariableDefinition(
+        variable_id=f"var-value-{seed_id}",
+        dataset_version_id=dataset_version_id,
+        variable_name="value",
+        dtype="float64",
+        role="measure",
+        is_numeric=True,
+        is_time_index=False,
+        ordinal_position=1,
+    )
+    value_profile = VariableProfile(
+        variable_profile_id=f"profile-value-{seed_id}",
+        dataset_version_id=dataset_version_id,
+        variable_id=value.variable_id,
+        seasonality_flag=True,
+        stationarity_hint="likely_stationary",
+        summary_json={},
+    )
+    db.add_all([dataset, version, observed_at, value, value_profile])
+    db.flush()
+
+    dataset_dir = temp_path / "datasets"
+    dataset_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = dataset_dir / f"{dataset_version_id}.csv"
+    rows = ["observed_at,value"]
+    for index in range(24):
+        year = 2020 + (index // 12)
+        month = 1 + (index % 12)
+        rows.append(f"{year:04d}-{month:02d}-01T00:00:00+00:00,{100 + index}")
+    csv_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    version.storage_ref = str(csv_path)
+    version.row_count = 24
+    db.flush()
+    return csv_path
+
+
+def _build_browser_quant_ready_session(db, temp_path: Path) -> str:
+    seed_id = uuid_str()
+    dataset_id = f"ds-{seed_id}"
+    dataset_version_id = f"dv-{seed_id}"
+    csv_path = _seed_browser_dataset_version(
+        db,
+        temp_path,
+        seed_id=seed_id,
+        dataset_id=dataset_id,
+        dataset_version_id=dataset_version_id,
+    )
+    request = SessionEntryRequest(
+        manifest_items=[
+            {
+                "source_plane": "plane_a",
+                "descriptor_type": "dataset_version",
+                "selector_payload": {"dataset_version_id": dataset_version_id},
+                "selection_basis": {"selection_id": f"sel-{seed_id}"},
+                "expansion_reason": "committed_selection",
+            }
+        ],
+        source_plane_hints={"plane_a": ["dataset_version"]},
+        commit_reason="layer3-browser-harness",
+        entry_route_context={"entrypoint": "playwright"},
+        operator_context={"operator": "playwright"},
+        summary={"phase": "gate_c_pass"},
+    )
+    session, manifest = commit_selection(db, request)
+    descriptors = expand_descriptors(db, session=session, manifest=manifest)
+    record_retrieval_event(
+        db,
+        session=session,
+        descriptor=descriptors[0],
+        outcome="loaded",
+        reason_code="loaded",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape="dataset_version",
+                source_identity={"dataset_version_id": dataset_version_id},
+                source_provenance={"dataset_id": dataset_id, "storage_ref": str(csv_path)},
+                payload={"dataset_version_id": dataset_version_id},
+                load_summary={"loaded_records": 24, "failed_records": 0},
+            )
+        ],
+        storage_root=temp_path,
+    )
+    finalize_session(db, session=session)
+    db.commit()
+    materialize_typing_entry(db, session_id=session.session_id)
+    db.commit()
+    return session.session_id
 
 
 def create_app() -> FastAPI:
@@ -29,6 +172,7 @@ def create_app() -> FastAPI:
     temp_path = Path(temp_dir.name)
     fixture = build_review_browser_fixture(temp_path)
     install_review_browser_patches(fixture)
+    _install_layer3_browser_patches()
     settings.storage_dir = str(temp_path / "storage")
     bootstrap_storage_tree(settings.storage_dir)
     engine = create_engine(
@@ -83,5 +227,14 @@ def create_app() -> FastAPI:
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.post("/__test/layer3/seed-quant")
+    def seed_layer3_quant() -> dict[str, str]:
+        db = SessionLocal()
+        try:
+            session_id = _build_browser_quant_ready_session(db, temp_path)
+            return {"session_id": session_id}
+        finally:
+            db.close()
 
     return app

@@ -30,7 +30,12 @@ from app.models.models import (
 )
 from app.services import layer3_pass_entry as layer3_pass_entry_module
 from app.services.dataframe_io import load_version_dataframe
-from app.services.layer3_pass_entry import Layer3PassEntryError, materialize_pass_entry, preview_pass_entry
+from app.services.layer3_pass_entry import (
+    Layer3PassEntryError,
+    approve_pass_entry_plan,
+    materialize_pass_entry,
+    preview_pass_entry,
+)
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
     SnapshotMaterial,
@@ -575,6 +580,74 @@ def test_gatec_pass_entry_preview_reports_exclusions_without_materializing(tmp_p
         assert len(preview.excluded_sets) == 1
         assert preview.excluded_sets[0]["reason_code"] == "cohort_not_quantitative"
         assert preview.warnings[0]["reason_code"] == "partial_plan_preview"
+        session = db.get(L3Session, session_id)
+        assert session.status == phase1a_status
+        assert _utc_isoformat(session.completed_at) == _utc_isoformat(phase1a_completed_at)
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_gatec_pass_entry_approves_plan_without_execution(tmp_path):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, phase1a_status, phase1a_completed_at = _build_quant_ready_session(db, tmp_path)
+
+        preview = preview_pass_entry(db, session_id=session_id)
+        result = approve_pass_entry_plan(
+            db,
+            session_id=session_id,
+            preview_hash=preview.preview_hash,
+            source_preview_id="plan-preview-test",
+        )
+        db.commit()
+
+        stored_plan = db.query(L3AnalysisPlan).one()
+        session = db.get(L3Session, session_id)
+
+        assert result.analysis_plan.analysis_plan_id == stored_plan.analysis_plan_id
+        assert result.source_preview_hash == preview.preview_hash
+        assert result.approved_sets[0]["readiness"] == "approved"
+        assert result.planned_passes[0]["execution_status"] == "not_started"
+        assert result.owner_service_basis["mode"] == "operator_approved_plan_only"
+        assert stored_plan.status == "approved"
+        assert stored_plan.approved_by_operator is True
+        assert stored_plan.approved_at is not None
+        assert stored_plan.plan_json["approval_only"] is True
+        assert stored_plan.plan_json["execution_started"] is False
+        assert stored_plan.plan_json["source_preview_id"] == "plan-preview-test"
+        assert stored_plan.plan_json["source_preview_hash"] == preview.preview_hash
+        assert stored_plan.plan_json["approved_sets_json"][0]["readiness"] == "approved"
+        assert session.status == phase1a_status
+        assert _utc_isoformat(session.completed_at) == _utc_isoformat(phase1a_completed_at)
+        assert session.summary_json["plan_approval"]["analysis_plan_id"] == stored_plan.analysis_plan_id
+        assert session.summary_json["plan_approval"]["approval_only"] is True
+        assert session.summary_json["plan_approval"]["execution_started"] is False
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_gatec_pass_entry_approval_rejects_stale_preview_hash(tmp_path):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, phase1a_status, phase1a_completed_at = _build_quant_ready_session(db, tmp_path)
+
+        with pytest.raises(Layer3PassEntryError, match="preview hash mismatch"):
+            approve_pass_entry_plan(
+                db,
+                session_id=session_id,
+                preview_hash="stale-preview-hash",
+                source_preview_id="plan-preview-test",
+            )
+
         session = db.get(L3Session, session_id)
         assert session.status == phase1a_status
         assert _utc_isoformat(session.completed_at) == _utc_isoformat(phase1a_completed_at)
