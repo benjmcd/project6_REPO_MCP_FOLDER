@@ -12,6 +12,12 @@ const State = {
     planApproval: null,
     planRevision: null,
     planRevisionPending: false,
+    sessionSummary: null,
+    resultStatus: null,
+    resultStatusError: null,
+    resultReview: null,
+    resultReviewError: null,
+    resultReviewPending: false,
     gateBDecisions: {},
     materialFilter: '',
     events: [],
@@ -31,11 +37,21 @@ const elements = {
     gateCCommit: document.getElementById('gate-c-commit'),
     gateCPanel: document.getElementById('gate-c-panel'),
     planStep: document.getElementById('plan-step-chip'),
+    executionStep: document.getElementById('execution-step-chip'),
+    resultsStep: document.getElementById('results-step-chip'),
+    packageStep: document.getElementById('package-step-chip'),
     planPreview: document.getElementById('plan-preview'),
     planReject: document.getElementById('plan-reject'),
     planRequestRevision: document.getElementById('plan-request-revision'),
     planApprove: document.getElementById('plan-approve'),
     planPanel: document.getElementById('plan-panel'),
+    resultReviewRefresh: document.getElementById('result-review-refresh'),
+    resultStatusInspect: document.getElementById('result-status-inspect'),
+    resultReviewForm: document.getElementById('result-review-form'),
+    resultReviewPanel: document.getElementById('result-review-panel'),
+    resultReviewDecision: document.getElementById('result-review-decision'),
+    resultReviewNotes: document.getElementById('result-review-notes'),
+    resultReviewSubmit: document.getElementById('result-review-submit'),
     contextList: document.getElementById('context-list'),
     eventList: document.getElementById('event-list'),
     unavailableList: document.getElementById('unavailable-list'),
@@ -44,6 +60,8 @@ const elements = {
 const systemThemeQuery = typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-color-scheme: dark)')
     : null;
+const TERMINAL_PASS_STATUSES = new Set(['completed', 'completed_with_warnings', 'failed']);
+const RESULT_REVIEW_DECISIONS_REQUIRING_NOTES = new Set(['changes_requested', 'rejected', 'blocked']);
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -134,9 +152,20 @@ function renderUnavailable(labels) {
 }
 
 function currentAuthorityRail() {
-    return State.planApproval?.authority_rail || State.planRevision?.authority_rail || State.planPreview?.authority_rail || State.gateC?.authority_rail || State.gateB?.authority_rail
+    return State.sessionSummary?.authority_rail || State.resultReview?.authority_rail || State.resultStatus?.authority_rail
+        || State.planApproval?.authority_rail || State.planRevision?.authority_rail || State.planPreview?.authority_rail || State.gateC?.authority_rail || State.gateB?.authority_rail
         || State.materialPreview?.authority_rail || State.sourcePreview?.authority_rail || State.preflight?.authority_rail
         || State.bootstrap?.authority_rail;
+}
+
+function currentDownstreamUnavailable() {
+    return State.resultReview?.downstream_unavailable
+        || State.resultStatus?.downstream_unavailable
+        || State.sessionSummary?.execution_result_review?.downstream_unavailable
+        || State.sessionSummary?.analysis_execution_start?.downstream_unavailable
+        || State.sessionSummary?.downstream_unavailable
+        || currentAuthorityRail()?.downstream_unavailable
+        || State.bootstrap?.unavailable_gate_labels;
 }
 
 function renderContext() {
@@ -146,10 +175,13 @@ function renderContext() {
         preflight_id: State.preflight?.preflight_id || 'none',
         source_set_id: State.sourcePreview?.source_set_id || 'none',
         material_preview_id: State.materialPreview?.material_preview_id || 'none',
-        session_id: State.gateB?.session_id || 'none',
-        plan_preview_id: State.planPreview?.preview_id || 'none',
-        analysis_plan_id: State.planApproval?.analysis_plan_id || 'none',
+        session_id: currentSessionId() || 'none',
+        plan_preview_id: State.sessionSummary?.execution_selection?.source_preview_id || State.planPreview?.preview_id || 'none',
+        analysis_plan_id: State.sessionSummary?.execution_selection?.analysis_plan_id || State.planApproval?.analysis_plan_id || 'none',
         plan_revision: State.planRevision?.next_state || 'none',
+        pass_run_id: selectedResultAuthority()?.passRunId || State.resultStatus?.pass_run_id || 'none',
+        result_status: State.resultStatus?.status || State.resultStatusError?.error_code || 'none',
+        result_review: recordedResultReview()?.review_state || State.resultReview?.review_state || State.resultReviewError?.error_code || 'none',
     };
     elements.contextList.innerHTML = Object.entries(context)
         .map(([key, value]) => `
@@ -196,6 +228,104 @@ function requestId() {
         return window.crypto.randomUUID();
     }
     return `browser-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function currentSessionId() {
+    return State.sessionSummary?.session_id
+        || State.gateB?.session_id
+        || State.planApproval?.session_id
+        || State.planPreview?.session_id
+        || State.gateC?.session_id
+        || null;
+}
+
+function clearResultReviewState({ keepSummary = false } = {}) {
+    if (!keepSummary) {
+        State.sessionSummary = null;
+    }
+    State.resultStatus = null;
+    State.resultStatusError = null;
+    State.resultReview = null;
+    State.resultReviewError = null;
+    State.resultReviewPending = false;
+}
+
+function selectedResultAuthority() {
+    const summary = State.sessionSummary || {};
+    const selection = summary.execution_selection || {};
+    const startState = summary.analysis_execution_start || {};
+    const statusBody = State.resultStatus || {};
+    const reviewBody = State.resultReview || {};
+    const passRunIds = Array.isArray(selection.pass_run_ids) ? selection.pass_run_ids : [];
+    const firstPassRunId = passRunIds[0] || startState.pass_run_id || statusBody.pass_run_id || reviewBody.pass_run_id || null;
+    const passRunStatuses = selection.pass_run_statuses || {};
+    const passStatus = statusBody.pass_run_status || startState.pass_run_status || passRunStatuses[firstPassRunId] || null;
+    const analysisRunIds = Array.isArray(selection.analysis_run_ids) ? selection.analysis_run_ids : [];
+    const analysisRunId = statusBody.analysis_run_id || startState.analysis_run_id || analysisRunIds[0] || reviewBody.analysis_run_id || null;
+    const previewIdentity = statusBody.preview_identity || reviewBody.preview_identity || {};
+    const previewId = selection.source_preview_id || startState.source_preview_id || previewIdentity.preview_id || null;
+    const previewHash = selection.source_preview_hash || startState.source_preview_hash || previewIdentity.preview_hash || null;
+    const analysisPlanId = selection.analysis_plan_id || startState.analysis_plan_id || statusBody.analysis_plan_id || reviewBody.analysis_plan_id || null;
+    return {
+        sessionId: summary.session_id || currentSessionId(),
+        analysisPlanId,
+        passRunId: firstPassRunId,
+        previewId,
+        previewHash,
+        analysisRunId,
+        passStatus,
+        selected: selection.selected === true && Boolean(firstPassRunId),
+        terminal: TERMINAL_PASS_STATUSES.has(passStatus),
+        executionStarted: Boolean(selection.execution_started || startState.pass_run_id || statusBody.execution_started),
+    };
+}
+
+function hasResultAuthorityIdentity(authority = selectedResultAuthority()) {
+    return Boolean(
+        authority.sessionId
+        && authority.analysisPlanId
+        && authority.passRunId
+        && authority.previewId
+        && authority.previewHash
+    );
+}
+
+function recordedResultReview() {
+    if (State.resultReview?.review_record_ref || State.resultReview?.review_state) {
+        return State.resultReview;
+    }
+    const sessionReview = State.sessionSummary?.execution_result_review;
+    if (sessionReview?.review_record_ref || sessionReview?.state) {
+        return sessionReview;
+    }
+    return null;
+}
+
+function canRefreshSessionSummary() {
+    return Boolean(currentSessionId() && !State.resultReviewPending);
+}
+
+function canInspectResultStatus() {
+    const authority = selectedResultAuthority();
+    return Boolean(hasResultAuthorityIdentity(authority) && authority.selected && authority.terminal && !State.resultReviewPending);
+}
+
+function reviewDecisionNeedsNotes() {
+    return RESULT_REVIEW_DECISIONS_REQUIRING_NOTES.has(elements.resultReviewDecision.value);
+}
+
+function canSubmitResultReview() {
+    const authority = selectedResultAuthority();
+    const notes = elements.resultReviewNotes.value.trim();
+    return Boolean(
+        hasResultAuthorityIdentity(authority)
+        && authority.selected
+        && authority.terminal
+        && State.resultStatus?.result_status_available === true
+        && !recordedResultReview()
+        && !State.resultReviewPending
+        && (!reviewDecisionNeedsNotes() || notes)
+    );
 }
 
 function decisionState(candidateId) {
@@ -488,6 +618,137 @@ function renderPlanPanel() {
     `;
 }
 
+function displayValue(value) {
+    if (value === true) return 'true';
+    if (value === false) return 'false';
+    if (value === 0) return '0';
+    return value || 'unknown';
+}
+
+function fieldItem(label, value, { code = false } = {}) {
+    const escaped = escapeHtml(displayValue(value));
+    const body = code ? `<code>${escaped}</code>` : escaped;
+    return `<li>${escapeHtml(label)}: ${body}</li>`;
+}
+
+function summarizeTrace(value) {
+    if (!value || typeof value !== 'object') return 'none';
+    return Object.entries(value)
+        .map(([key, item]) => `${key}=${displayValue(item)}`)
+        .join(', ');
+}
+
+function resultReviewPanelState(authority) {
+    if (State.resultReviewPending) {
+        return { label: 'result_review_ui_recording', pill: 'preview', message: 'Recording one bounded operator decision.' };
+    }
+    if (recordedResultReview()) {
+        return { label: 'result_review_ui_recorded', pill: 'ok', message: 'Server state already contains a result-review record.' };
+    }
+    if (State.resultReviewError || State.resultStatusError) {
+        return { label: 'result_review_ui_blocked', pill: 'blocked', message: 'Server authority rejected or blocked the latest result-review action.' };
+    }
+    if (!authority.sessionId) {
+        return { label: 'result_review_ui_unavailable', pill: 'blocked', message: 'No Layer 3 session id is available.' };
+    }
+    if (!State.sessionSummary) {
+        return { label: 'result_review_ui_unavailable', pill: 'blocked', message: 'Refresh session state before inspecting result status.' };
+    }
+    if (!hasResultAuthorityIdentity(authority) || !authority.selected) {
+        return { label: 'result_review_ui_waiting_for_selection', pill: 'blocked', message: 'Server summary has no selected pass authority.' };
+    }
+    if (!authority.terminal) {
+        return { label: 'result_review_ui_waiting_for_execution_start', pill: 'blocked', message: 'Selected pass is not terminal.' };
+    }
+    if (State.resultStatus?.result_status_available === true) {
+        return { label: 'result_review_ui_review_ready', pill: 'ok', message: 'Result/status authority is available for one selected terminal pass.' };
+    }
+    if (State.resultStatus) {
+        return { label: 'result_review_ui_blocked', pill: 'blocked', message: 'Result/status authority is not available for review.' };
+    }
+    return { label: 'result_review_ui_unavailable', pill: 'preview', message: 'Selected terminal pass can be inspected for result/status availability.' };
+}
+
+function renderErrorCard(error) {
+    if (!error) return '';
+    const actions = Array.isArray(error.next_allowed_actions) ? error.next_allowed_actions : [];
+    return `
+        <section class="result-review-card">
+            <strong>Block Reason</strong>
+            <ul>
+                ${fieldItem('code', error.error_code || error.status)}
+                ${fieldItem('message', error.message)}
+                ${actions.map((action) => `<li>next action: ${escapeHtml(action)}</li>`).join('')}
+            </ul>
+        </section>
+    `;
+}
+
+function renderDownstreamLocks(labels) {
+    const locks = labels?.length ? labels : ['package', 'handoff', 'package_review'];
+    return locks.map((label) => `<span class="status-pill blocked">${escapeHtml(label.replace(/_/g, ' '))}</span>`).join('');
+}
+
+function renderResultReviewPanel() {
+    const authority = selectedResultAuthority();
+    const statusBody = State.resultStatus || {};
+    const reviewState = recordedResultReview();
+    const panelState = resultReviewPanelState(authority);
+    const metadata = statusBody.output_metadata_summary || {};
+    const traceSummary = State.resultReview?.trace_summary || reviewState?.trace_summary;
+    const error = State.resultReviewError || State.resultStatusError;
+    const downstream = State.resultReview?.downstream_unavailable
+        || statusBody.downstream_unavailable
+        || reviewState?.downstream_unavailable
+        || currentDownstreamUnavailable();
+
+    elements.resultReviewPanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Selected Authority</strong>
+                <ul>
+                    ${fieldItem('session', authority.sessionId, { code: true })}
+                    ${fieldItem('analysis plan', authority.analysisPlanId, { code: true })}
+                    ${fieldItem('pass run', authority.passRunId, { code: true })}
+                    ${fieldItem('preview', authority.previewId, { code: true })}
+                    ${fieldItem('preview hash', authority.previewHash, { code: true })}
+                    ${fieldItem('pass status', authority.passStatus)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Result Status</strong>
+                <ul>
+                    ${fieldItem('status', statusBody.status)}
+                    ${fieldItem('available', statusBody.result_status_available)}
+                    ${fieldItem('analysis run', authority.analysisRunId, { code: true })}
+                    ${fieldItem('output ref', statusBody.output_payload_ref, { code: true })}
+                    ${fieldItem('metadata readable', metadata.readable)}
+                    ${fieldItem('artifact count', metadata.artifact_count)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Review State</strong>
+                <ul>
+                    ${fieldItem('state', reviewState?.review_state || reviewState?.state)}
+                    ${fieldItem('decision', reviewState?.operator_decision)}
+                    ${fieldItem('record', reviewState?.review_record_ref, { code: true })}
+                    ${fieldItem('unresolved trace', reviewState?.unresolved_trace_count)}
+                    ${fieldItem('trace', summarizeTrace(traceSummary))}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Disabled Downstream</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+            ${renderErrorCard(error)}
+        </div>
+    `;
+}
+
 function setBusy(button, busy, label) {
     button.disabled = busy;
     if (label) {
@@ -495,8 +756,17 @@ function setBusy(button, busy, label) {
     }
 }
 
+function setStepChip(element, active) {
+    element.disabled = !active;
+    element.classList.toggle('active', active);
+    element.classList.toggle('unavailable', !active);
+}
+
 function setGateControls() {
     const gateCCommitted = State.gateC?.authority_rail?.typing_status === 'committed';
+    const authority = selectedResultAuthority();
+    const reviewRecorded = Boolean(recordedResultReview());
+    const resultReviewControlsEnabled = Boolean(State.resultStatus?.result_status_available === true && !reviewRecorded && !State.resultReviewPending);
     elements.gateBSubmit.disabled = !(State.materialPreview?.material_candidates || []).length;
     elements.gateCPreview.disabled = !State.gateB?.session_id || gateCCommitted;
     elements.gateCCommit.disabled = !State.gateB?.session_id || gateCCommitted;
@@ -504,19 +774,142 @@ function setGateControls() {
     elements.planReject.disabled = !canPlanRevise();
     elements.planRequestRevision.disabled = !canPlanRevise();
     elements.planApprove.disabled = !canPlanApprove();
-    elements.planStep.disabled = !canPlanPreview();
-    elements.planStep.classList.toggle('active', canPlanPreview());
-    elements.planStep.classList.toggle('unavailable', !canPlanPreview());
+    elements.resultReviewRefresh.disabled = !canRefreshSessionSummary();
+    elements.resultStatusInspect.disabled = !canInspectResultStatus();
+    elements.resultReviewDecision.disabled = !resultReviewControlsEnabled;
+    elements.resultReviewNotes.disabled = !resultReviewControlsEnabled;
+    elements.resultReviewSubmit.disabled = !canSubmitResultReview();
+    setStepChip(elements.planStep, canPlanPreview());
+    setStepChip(elements.executionStep, Boolean(State.sessionSummary?.execution_selection?.selected));
+    setStepChip(elements.resultsStep, Boolean(authority.selected && authority.terminal));
+    setStepChip(elements.packageStep, false);
 }
 
 function renderAll() {
     renderAuthority();
-    renderUnavailable(currentAuthorityRail()?.downstream_unavailable || State.bootstrap?.unavailable_gate_labels);
+    renderUnavailable(currentDownstreamUnavailable());
     renderContext();
     renderMaterialLedger();
     renderGateCPanel();
     renderPlanPanel();
+    renderResultReviewPanel();
     setGateControls();
+}
+
+function resultStatusPayload(authority = selectedResultAuthority()) {
+    const payload = {
+        client_request_id: requestId(),
+        session_id: authority.sessionId,
+        analysis_plan_id: authority.analysisPlanId,
+        pass_run_id: authority.passRunId,
+        preview_id: authority.previewId,
+        preview_hash: authority.previewHash,
+        operator_view_mode: 'status_only',
+    };
+    if (authority.analysisRunId) {
+        payload.analysis_run_id = authority.analysisRunId;
+    }
+    return payload;
+}
+
+function resultReviewPayload(authority = selectedResultAuthority()) {
+    const payload = {
+        client_request_id: requestId(),
+        session_id: authority.sessionId,
+        analysis_plan_id: authority.analysisPlanId,
+        pass_run_id: authority.passRunId,
+        preview_id: authority.previewId,
+        preview_hash: authority.previewHash,
+        operator_decision: elements.resultReviewDecision.value,
+        review_notes: elements.resultReviewNotes.value.trim(),
+    };
+    if (authority.analysisRunId) {
+        payload.analysis_run_id = authority.analysisRunId;
+    }
+    return payload;
+}
+
+async function refreshSessionSummary() {
+    const sessionId = currentSessionId();
+    if (!sessionId) return;
+    setBusy(elements.resultReviewRefresh, true, 'Refresh Session State');
+    try {
+        const previousSessionId = State.sessionSummary?.session_id;
+        State.sessionSummary = await getJson(`/session/${encodeURIComponent(sessionId)}`);
+        if (previousSessionId && previousSessionId !== State.sessionSummary.session_id) {
+            clearResultReviewState({ keepSummary: true });
+        }
+        State.resultStatusError = null;
+        State.resultReviewError = null;
+        addEvent('Session state refreshed.');
+        renderAll();
+    } catch (error) {
+        State.resultStatusError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'session_summary_request_failed',
+            message: error.message,
+        };
+        addEvent(`Session refresh blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        setBusy(elements.resultReviewRefresh, false, 'Refresh Session State');
+        setGateControls();
+    }
+}
+
+async function inspectResultStatus() {
+    if (!canInspectResultStatus()) return;
+    setBusy(elements.resultStatusInspect, true, 'Inspect Result Status');
+    try {
+        State.resultStatus = await postJson('/execution/result/status', resultStatusPayload());
+        State.resultStatusError = null;
+        State.resultReviewError = null;
+        addEvent('Result/status authority loaded.');
+        renderAll();
+    } catch (error) {
+        State.resultStatusError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'execution_result_status_request_failed',
+            message: error.message,
+        };
+        addEvent(`Result/status blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        setBusy(elements.resultStatusInspect, false, 'Inspect Result Status');
+        setGateControls();
+    }
+}
+
+async function submitResultReview(event) {
+    event.preventDefault();
+    if (!canSubmitResultReview()) return;
+    State.resultReviewPending = true;
+    State.resultReviewError = null;
+    renderAll();
+    setBusy(elements.resultReviewSubmit, true, 'Submit Result Review');
+    try {
+        State.resultReview = await postJson('/execution/result/review', resultReviewPayload());
+        State.resultReviewError = null;
+        addEvent('Result review recorded.');
+        try {
+            State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.resultReview.session_id)}`);
+        } catch (refreshError) {
+            addEvent(`Review recorded; session refresh blocked: ${refreshError.message}`);
+        }
+        renderAll();
+    } catch (error) {
+        State.resultReviewError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'execution_result_review_request_failed',
+            message: error.message,
+        };
+        addEvent(`Result review blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.resultReviewPending = false;
+        setBusy(elements.resultReviewSubmit, false, 'Submit Result Review');
+        renderAll();
+    }
 }
 
 async function runPreflightFlow(event) {
@@ -558,6 +951,7 @@ async function runPreflightFlow(event) {
         State.planPreview = null;
         State.planApproval = null;
         State.planRevision = null;
+        clearResultReviewState();
         addEvent('Material preview loaded.');
         renderAll();
     } catch (error) {
@@ -589,6 +983,7 @@ async function commitGateB() {
         State.planPreview = null;
         State.planApproval = null;
         State.planRevision = null;
+        clearResultReviewState();
         addEvent(`Gate B committed session ${State.gateB.session_id}.`);
         renderAll();
     } catch (error) {
@@ -613,6 +1008,7 @@ async function previewGateC() {
         State.planPreview = null;
         State.planApproval = null;
         State.planRevision = null;
+        clearResultReviewState();
         addEvent('Gate C typing preview loaded.');
         renderAll();
     } catch (error) {
@@ -636,6 +1032,7 @@ async function commitGateC() {
         State.planPreview = null;
         State.planApproval = null;
         State.planRevision = null;
+        clearResultReviewState();
         addEvent('Gate C typing committed.');
         renderAll();
     } catch (error) {
@@ -659,6 +1056,7 @@ async function previewPlan() {
         });
         State.planApproval = null;
         State.planRevision = null;
+        clearResultReviewState();
         addEvent('Plan preview loaded.');
         renderAll();
     } catch (error) {
@@ -689,6 +1087,7 @@ async function approvePlan() {
             operator_confirmation: true,
             approval_scope: 'owner_service_default',
         });
+        clearResultReviewState();
         addEvent('Plan approved. Execution has not started.');
         renderAll();
     } catch (error) {
@@ -715,6 +1114,7 @@ async function revisePlan(operatorDecision) {
             preview_hash: State.planPreview.preview_hash,
             operator_decision: operatorDecision,
         });
+        clearResultReviewState();
         addEvent(operatorDecision === 'reject_current_preview' ? 'Plan rejected. Execution has not started.' : 'Plan revision requested. Execution has not started.');
         renderAll();
     } catch (error) {
@@ -761,6 +1161,11 @@ elements.planPreview.addEventListener('click', previewPlan);
 elements.planReject.addEventListener('click', () => revisePlan('reject_current_preview'));
 elements.planRequestRevision.addEventListener('click', () => revisePlan('request_revision'));
 elements.planApprove.addEventListener('click', approvePlan);
+elements.resultReviewRefresh.addEventListener('click', refreshSessionSummary);
+elements.resultStatusInspect.addEventListener('click', inspectResultStatus);
+elements.resultReviewForm.addEventListener('submit', submitResultReview);
+elements.resultReviewDecision.addEventListener('change', setGateControls);
+elements.resultReviewNotes.addEventListener('input', setGateControls);
 elements.materialFilter.addEventListener('input', (event) => {
     State.materialFilter = event.target.value;
     renderMaterialLedger();

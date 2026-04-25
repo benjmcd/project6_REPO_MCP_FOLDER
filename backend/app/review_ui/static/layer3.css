@@ -163,7 +163,9 @@
 .intent-form textarea,
 .filter-row input,
 .decision-select,
-.reason-input {
+.reason-input,
+#result-review-decision,
+#result-review-notes {
     width: 100%;
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -216,6 +218,12 @@
 
 .secondary-btn:disabled {
     opacity: 0.45;
+    cursor: not-allowed;
+}
+
+#result-review-decision:disabled,
+#result-review-notes:disabled {
+    opacity: 0.66;
     cursor: not-allowed;
 }
 
@@ -282,39 +290,96 @@
     padding: 16px;
 }
 
+.result-review-form {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+}
+
+.result-review-panel {
+    display: grid;
+    gap: 14px;
+}
+
 .plan-summary-grid,
-.plan-preview-grid {
+.plan-preview-grid,
+.result-review-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: 10px;
 }
 
 .plan-summary-card,
-.plan-list {
+.plan-list,
+.result-review-card {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 12px;
     background: var(--layout-section-bg);
+    min-width: 0;
 }
 
 .plan-summary-card strong,
-.plan-list h3 {
+.plan-list h3,
+.result-review-card strong {
     display: block;
     margin-bottom: 6px;
     font-size: 0.88rem;
 }
 
 .plan-list ul,
-.warning-list {
+.warning-list,
+.result-review-card ul {
     margin: 0;
     padding-left: 18px;
     color: var(--muted-text);
     line-height: 1.5;
 }
 
-.plan-list code {
+.plan-list code,
+.result-review-card code {
     font-family: Consolas, "Courier New", monospace;
     font-size: 0.78rem;
+    word-break: break-word;
+}
+
+.result-review-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.result-review-controls {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+}
+
+.result-review-controls label {
+    color: var(--muted-text);
+    font-weight: 800;
+    font-size: 0.84rem;
+    padding-top: 9px;
+}
+
+.result-review-controls button {
+    grid-column: 2;
+    justify-self: start;
+}
+
+.downstream-locks {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.mono-value {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.78rem;
+    word-break: break-word;
 }
 
 .typing-card {
@@ -395,5 +460,13 @@
     .context-panel {
         border-left: none;
         border-top: 1px solid var(--border-color);
+    }
+
+    .result-review-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .result-review-controls button {
+        grid-column: 1;
     }
 }
