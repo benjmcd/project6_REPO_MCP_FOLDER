@@ -4,7 +4,7 @@ Status: governing API/state companion for `42_L3_WB_RESULT_STATUS_FREEZE.md`.
 
 This document defines the route, state, read-boundary, response contract, and proof requirements for the selected-pass result/status implementation. It does not make result review, package review, or handoff live by itself.
 
-Implementation note as of April 25, 2026: branch `codex/l3-result-status` implements the read-only endpoint described here. Until that branch is merged and re-audited on `project6-origin/main`, current-main live truth remains PR `#221` planning-only governance plus PR `#218` bounded analysis-execution-start behavior.
+Implementation note as of April 25, 2026: PR `#222` implements the read-only endpoint described here on `project6-origin/main`. The implementation remains limited to selected-pass status/execution-proof inspection and does not admit result review, package review, handoff, source/schema/runtime widening, UI activation, qualitative/hybrid/RAG/vector execution, rerun/recovery, or full mockup behavior.
 
 ## Authority Order
 

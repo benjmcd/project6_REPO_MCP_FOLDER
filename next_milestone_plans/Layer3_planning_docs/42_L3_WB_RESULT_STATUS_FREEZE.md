@@ -2,7 +2,7 @@
 
 Status: governing freeze for the bounded result/status tranche after merged PR `#218`.
 
-Implementation note as of April 25, 2026: branch `codex/l3-result-status` implements this freeze as a read-only backend endpoint. Until that branch is merged and re-audited on `project6-origin/main`, current-main live truth remains PR `#221` planning-only governance plus PR `#218` bounded analysis-execution-start behavior.
+Implementation note as of April 25, 2026: PR `#222` implements this freeze on `project6-origin/main` as a read-only backend endpoint. The implementation remains limited to selected-pass status/execution-proof inspection and does not admit result review, package review, handoff, source/schema/runtime widening, UI activation, qualitative/hybrid/RAG/vector execution, rerun/recovery, or full mockup behavior.
 
 This document freezes the narrowest eligible boundary after selected-pass analysis-execution start: read-only status and execution-proof inspection for one completed or failed selected `L3PassRun`, while keeping result review, result approval, package review, handoff, source expansion, approved-plan supersession, runtime DB/schema widening, UI/full mockup activation, qualitative execution, hybrid execution, and RAG/vector retrieval out of scope.
 
