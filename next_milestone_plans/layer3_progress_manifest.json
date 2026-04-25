@@ -209,13 +209,13 @@
     "default_next_candidate": {
       "candidate": "no functional next workbench slice selected by this artifact",
       "status": "not admitted; execution or approved-plan supersession requires a later freeze",
-      "why": "PR #205 completes the low-blast-radius pre-execution control loop. Moving into execution, approved-plan replacement, results/package review, or handoff would introduce new persistence and runtime side effects that are outside the 34/35 contract."
+      "why": "PR #205 completes the low-blast-radius pre-execution control loop, and PR #207 hardens that same bounded control loop without adding a new functional slice. Moving into execution, approved-plan replacement, results/package review, or handoff would introduce new persistence and runtime side effects that are outside the 34/35 contract."
     },
     "must_not_skip": [
       "Do not treat the APS next_required_decision settlement as a workbench execution go-ahead.",
       "Do not move from approval-only persistence or revision-control directly into pass-run execution without a separate execution freeze, exact write-delta proof, and headed/headless browser proof.",
       "Do not use `materialize_pass_entry(...)` from the workbench approval or revision path unless a later freeze explicitly admits its execution-bearing side effects.",
-      "Do not reopen, replace, or supersede an already approved plan in the PR #205 slice."
+      "Do not reopen, replace, or supersede an already approved plan in the PR #205/#207 revision-control slice."
     ]
   },
   "layer3_workbench_slices": [
