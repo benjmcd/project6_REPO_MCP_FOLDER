@@ -72,11 +72,11 @@ And to the Layer 3 workbench execution-readiness packet from PR `#212`, which re
 
 PR `#213` adds only read-only implementation-readiness proof around that packet, including `/api/v1/layer3/readiness`, plan-preview identity/hash metadata, and approval/revision serialization checks. It still must not create pass runs, run analysis, write result/package/handoff artifacts, widen schema/runtime DB behavior, or admit qualitative/hybrid/RAG/vector execution.
 
-And to the Layer 3 workbench execution-selection freeze packet, which remains planning-only and does not admit analysis execution or results:
+And to the Layer 3 workbench execution-selection freeze packet from PR `#215`, which remains planning-only and does not admit analysis execution or results:
 - `next_milestone_plans/Layer3_planning_docs/38_L3_WB_EXECUTION_SELECTION_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/39_L3_WB_EXECUTION_SELECTION_API_AND_STATE_CONTRACT.md`
 
-This packet freezes the next eligible implementation boundary as execution-selection/pass-run shell creation only after approved-plan and preview-hash validation. It still must not create `AnalysisRun`, run analysis, write result/package/handoff artifacts, reopen or supersede approved plans, widen schema/runtime DB behavior, expand source breadth, or activate the full mockup target state.
+PR `#215` freezes the next eligible implementation boundary as execution-selection/pass-run shell creation only after approved-plan and preview-hash validation. It still must not create `AnalysisRun`, run analysis, write result/package/handoff artifacts, reopen or supersede approved plans, widen schema/runtime DB behavior, expand source breadth, or activate the full mockup target state.
 
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
@@ -685,7 +685,7 @@ Start with:
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 
 Current answer:
-- the packet is planning-only
+- PR `#215` lands this packet as planning-only
 - it selects a future execution-selection/pass-run shell boundary, not analysis execution
 - a later implementation may create selected/not-started `L3PassRun` shell rows only after approved-plan and preview-hash validation
 - it does not admit `AnalysisRun`, analysis execution, result/package/handoff artifacts, approved-plan supersession, runtime DB/schema widening, source-breadth expansion, or full mockup activation

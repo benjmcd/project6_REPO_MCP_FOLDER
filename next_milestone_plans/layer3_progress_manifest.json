@@ -63,7 +63,7 @@
       "PR #203 adds the planning-only 34/35 plan-revision freeze/API-state contract; PR #204 corrects its deferred-scope count metadata; neither PR is a runtime implementation slice.",
       "Current `main` now also includes PR #205, which implements the bounded revision-control slice through `/api/v1/layer3/plan/revise` and the existing `/review/layer3` plan panel for explicit operator rejection or revision request against the current server-backed preview before approval, while still creating no `L3AnalysisPlan`, no `L3PassRun`, no `AnalysisRun`, no artifact manifests, no results/package/handoff state, no runtime DB/schema widening, and no qualitative/hybrid/RAG/vector/LLM planning. PR #206 records the post-PR205 docs/control sync, PR #207 hardens the same bounded revision-control path with serialized backend decision writes plus shared UI in-flight locking without adding a new functional slice or widening the no-go list, and PRs #208/#209/#210/#211 tighten docs/progress cohesion around that settled state.",
       "Current `main` now also includes PR #212, which lands the planning-only execution-readiness proof/state packet, and PR #213, which implements only the merged live bounded read-only readiness proof endpoint, plan-preview identity/hash metadata, and approval/revision serialization proof. PR #213 does not select execution, create `L3PassRun` or `AnalysisRun`, write artifacts/manifests, enable results/package/handoff, widen schema/runtime DB behavior, reopen or supersede approved plans, or admit qualitative/hybrid/RAG/vector/source-ingestion expansion.",
-      "The execution-selection freeze packet adds `38_L3_WB_EXECUTION_SELECTION_FREEZE.md` and `39_L3_WB_EXECUTION_SELECTION_API_AND_STATE_CONTRACT.md` as planning-only governance for a future selected/not-started `L3PassRun` shell boundary after approved-plan and preview-hash validation. It does not admit `AnalysisRun`, analysis execution, results/package/handoff artifacts, approved-plan supersession, runtime DB/schema widening, source-breadth expansion, or full mockup activation."
+      "PR #215 adds the execution-selection freeze packet, `38_L3_WB_EXECUTION_SELECTION_FREEZE.md` and `39_L3_WB_EXECUTION_SELECTION_API_AND_STATE_CONTRACT.md`, as planning-only governance for a future selected/not-started `L3PassRun` shell boundary after approved-plan and preview-hash validation. It does not admit `AnalysisRun`, analysis execution, results/package/handoff artifacts, approved-plan supersession, runtime DB/schema widening, source-breadth expansion, or full mockup activation."
     ]
   },
   "authority_order": [
@@ -403,7 +403,7 @@
       "slice_id": "workbench-execution-selection-contract",
       "main_state": "merged_planning_only",
       "key_prs": [
-        "#TBD"
+        "#215"
       ],
       "governing_docs": [
         "next_milestone_plans/Layer3_planning_docs/38_L3_WB_EXECUTION_SELECTION_FREEZE.md",
@@ -1897,7 +1897,8 @@
       210,
       211,
       212,
-      213
+      213,
+      215
     ],
     "repo_paths": [
       "docs/nrc_adams/nrc_aps_status_handoff.md",
