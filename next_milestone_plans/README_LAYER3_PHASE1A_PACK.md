@@ -88,7 +88,7 @@ PR `#217` freezes the next eligible implementation boundary as one selected-pass
 
 PR `#218` implements only that bounded analysis-execution-start boundary: `POST /api/v1/layer3/execution/start` executes one existing selected/not-started single-item wrapped quantitative `L3PassRun` shell, creates exactly one wrapped quantitative `AnalysisRun` plus selected-pass output metadata, preserves `client_request_id` idempotency, and still does not make result review, package review, handoff, source expansion, runtime DB/schema widening, UI changes, qualitative/hybrid/RAG/vector execution, or full mockup activation live.
 
-And to the Layer 3 workbench result/status freeze packet, which is planning-only and does not make result/status inspection, result review, package review, or handoff live by itself:
+And to PR `#221`'s Layer 3 workbench result/status freeze packet, which is planning-only and does not make result/status inspection, result review, package review, or handoff live by itself:
 - `next_milestone_plans/Layer3_planning_docs/42_L3_WB_RESULT_STATUS_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/43_L3_WB_RESULT_STATUS_API_AND_STATE_CONTRACT.md`
 
@@ -684,7 +684,7 @@ Current answer:
 - already approved plans remain terminal for this slice; reopening, replacing, or superseding them requires a later freeze
 - execution, results review, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and hidden LLM planning remain out of scope
 
-Merged PR `#218` makes only one selected-pass wrapped quantitative analysis-execution-start boundary live after PR `#216` execution-selection shell creation. It still does not make broad analysis execution, result review, package review, handoff, approved-plan supersession, runtime DB/schema widening, source expansion, UI/full-mockup activation, or qualitative/hybrid/RAG/vector/LLM planning live. Docs `42`/`43` now freeze the next implementation boundary as planning-only read-only result/status inspection for one terminal selected pass.
+Merged PR `#218` makes only one selected-pass wrapped quantitative analysis-execution-start boundary live after PR `#216` execution-selection shell creation. It still does not make broad analysis execution, result review, package review, handoff, approved-plan supersession, runtime DB/schema widening, source expansion, UI/full-mockup activation, or qualitative/hybrid/RAG/vector/LLM planning live. PR `#221` docs `42`/`43` now freeze the next implementation boundary as planning-only read-only result/status inspection for one terminal selected pass.
 
 ### If you are auditing the Layer 3 workbench execution-readiness packet
 
@@ -756,7 +756,7 @@ Start with:
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 
 Current answer:
-- docs `42`/`43` are planning-only result/status governance after merged PR `#218`
+- PR `#221` docs `42`/`43` are planning-only result/status governance after merged PR `#218`
 - they select read-only selected-pass status and execution-proof inspection as the next eligible boundary, not result review
 - they do not implement `/api/v1/layer3/execution/result/status` by themselves
 - they do not admit result approval/rejection, package review, handoff, rerun/recovery, runtime DB/schema widening, source-breadth expansion, UI changes, qualitative/hybrid/RAG/vector execution, or full mockup activation
