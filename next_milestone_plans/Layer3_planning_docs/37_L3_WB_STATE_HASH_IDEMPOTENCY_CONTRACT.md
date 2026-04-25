@@ -1,10 +1,10 @@
 # Layer 3 Workbench State, Hash, And Idempotency Contract
 
-Status: branch-local planning-only companion for `36_L3_WB_EXECUTION_READINESS_FREEZE.md`.
+Status: current-main planning-only companion for `36_L3_WB_EXECUTION_READINESS_FREEZE.md`.
 
 This document defines the state, preview identity, idempotency, and concurrency decisions that must be settled before any Layer 3 workbench execution slice can be selected.
 
-It is not a live implementation claim and does not change current `/review/layer3` or `/api/v1/layer3/...` behavior.
+It is not an execution claim. A later implementation may expose this contract through read-only API metadata without admitting execution or downstream state.
 
 ## Authority Model
 

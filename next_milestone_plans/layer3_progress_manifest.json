@@ -6,10 +6,10 @@
     "repo": "benjmcd/project6_REPO_MCP_FOLDER",
     "authoritative_remote": "project6-origin/main",
     "authoritative_local_checkout_rule": "Use a clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match the artifact state being refreshed. Prefer current `main` for merged repo truth, and use the active branch checkout when the manifest declares an open or branch-only milestone.",
-    "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3-plan-revision-basis-sync",
+    "seed_checkout_hint": "C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/l3-state-proof",
     "snapshot_date": "2026-04-25",
-    "snapshot_base_main_commit": "dfca7d5b1240fe73c170b9c25f920a439a0602fb",
-    "snapshot_base_main_commit_source": "git rev-parse project6-origin/main after PR #209 merged",
+    "snapshot_base_main_commit": "2070eae0bce9c8840c36aa369b0fcd1db0162e1f",
+    "snapshot_base_main_commit_source": "git rev-parse project6-origin/main after PR #212 merged",
     "notes": [
       "This artifact is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.",
       "This artifact now includes the landed first shared-consumer freeze that selects the first downstream shared APS consumer beyond multisource on current `main`, plus the now-landed bounded export-package handoff implementation slice governed by that freeze and the exact-run export/export-package gate-hardening follow-up on current `main`.",
@@ -180,7 +180,8 @@
     "settled": "The bounded packet is closed on current main and no further active next lane is currently justified.",
     "deferred": "The family is explicitly kept out by current freeze docs.",
     "branch_only": "The step exists in a branch but is not merged into main.",
-    "branch_local_planning_only": "The workbench planning/control artifact exists on the current branch only and must not be rendered as current-main live behavior."
+    "branch_local_planning_only": "The workbench planning/control artifact exists on the current branch only and must not be rendered as current-main live behavior.",
+    "branch_local_live_bounded_read_only": "The workbench route/API behavior exists on the current branch only, is read-only, and must not be rendered as current-main behavior until merged and re-audited."
   },
   "current_snapshot": {
     "main_state_summary": "Current `main` includes the bounded multisource implementation slice from PR #101, the post-merge multisource docs closeout from PR #102, the landed export-package first shared-consumer freeze plus its docs-only closeout from PR #106 and PR #107, the bounded export-package handoff implementation slice from PR #109 plus its docs closeout from PR #110, the exact-run export/export-package gate-hardening follow-up from PR #111 and PR #112, the landed package-derived-context continuation freeze from PR #113, the bounded package-derived context handoff implementation slice from PR #115, the earlier PR #116 hardening pass, the post-PR116 docs/progress sync from PR #117, the landed read-only context-dossier continuation freeze from PR #118, the merged PR #119 malformed-scoped candidate-discovery closeout across the export, export-package, and context-packet gates, the post-PR118 docs/progress sync from PR #120, the bounded context-dossier handoff implementation slice plus narrow dossier-gate scope hardening from PR #121, the post-PR121 docs/progress sync from PR #122, the post-PR122 artifact-state fix from PR #123, the landed read-only `18_GATED_APS_DETERMINISTIC_INSIGHT_FREEZE.md` freeze from PR #124, the bounded deterministic insight handoff implementation slice plus narrow deterministic gate hardening from PR #126, the post-PR126 docs/progress sync from PR #127, the landed read-only `19_GATED_APS_DETERMINISTIC_CHALLENGE_FREEZE.md` freeze from PR #128, the post-PR128 docs/progress sync from PR #129, the bounded deterministic challenge handoff implementation slice plus narrow deterministic challenge gate hardening from PR #130, the post-PR130 docs/progress sync from PR #131, the landed read-only `20_GATED_APS_REVIEW_PACKET_FREEZE.md` freeze from PR #132, the post-PR132 docs/progress sync from PR #133, the bounded deterministic challenge review-packet handoff slice plus narrow review-packet gate hardening from PR #134, the post-PR134 docs/progress sync from PR #135, the landed read-only `21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md` freeze from PR #136, the post-PR136 docs/progress sync from PR #137, the bounded validate-only gate-report refresh lane from PR #138, the post-PR138 docs/progress sync from PR #139, the landed read-only `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md` freeze from PR #140, the post-PR140 docs/progress sync from PR #141, and the post-PR141 docs/progress sync from PR #142, plus the bounded dedicated validate-only runtime/report-ref implementation lane from PR #143, plus the post-PR143 docs/progress sync from PR #144. Current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR #145, the post-PR145 docs/progress sync from PR #146, the later APS family settlement closeout from PR #147, and the post-PR147 progress-packet closeout from PR #148. Current `main` also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR #165; they remain deferred-scope prep artifacts and do not reopen the settled packet or change the merged milestone count. Current `main` also includes the post-PR165 docs/progress/front-door sync from PR #166, which aligns the progress artifact, pack front door, and canonical status/index surfaces with those merged planning-only deferred-prep docs without changing the settled packet state. Current `main` also includes the merged broader-workbench implementation-entry prep packet from PR #168, the post-PR168 current-main closeout from PR #169, and the post-PR169 duplicate-default cleanup from PR #170; together they land and finalize `26_L3_WB_INPUTS.md` plus companion updates to `24_L3_WB_FREEZE.md`, `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet without changing the settled packet state or merged milestone count. Current `main` now also includes the merged qualitative single-item input packet from PR #172, which lands `27_L3_QUAL1_INPUTS.md` plus companion updates to `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet as planning-only deferred-scope prep without changing the settled packet state or merged milestone count. Current `main` now also includes the post-PR172 deferred-prep front-door tightening from PR #174, which carries the merged workbench and qualitative companion prep into the remaining current-main status/front-door surfaces without changing the settled packet state or merged milestone count. Live repo truth now also shows the existing promotion governance family already sufficient on current `main`, while retrieval cutover already exists there as a separate validate-only parity-proof family; no further later APS family decision or implementation lane is currently justified by default. Current `main` now also includes the merged planning-only `28_L3_WB_FIRST_SLICE_FREEZE.md` first-slice setup target from PR #178 and the merged planning-only `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` endpoint/state companion from PR #182 as governing first-slice scope/API contracts. Current `main` now also includes the bounded first-slice workbench implementation from PR #184, which makes `/review/layer3` and `/api/v1/layer3/...` live only for intent/preflight, deterministic source preview, material preview, Gate B decision recording, Gate C UI non-authoritative typing preview, explicit API owner-service typing materialization when `commit_typing` is true, explicit Gate C override unavailability, and session summary while preserving the no-go list for downstream plan/execution/results/package, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and handoff scope. Current `main` also includes the post-PR184 status/cohesion/explicit-Gate-C-typing and merged-review-feedback closeouts from PRs #185 through #190; these keep the bounded first-slice route/API accurate by preserving response envelopes, blocked Gate B error semantics, Gate C authority-rail counts/source context, and tracked-PR metadata without changing the settled packet state, merged milestone count, or downstream no-go list. Current `main` now also includes the merged `30_L3_WB_PLAN_PREVIEW_FREEZE.md` and `31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md` second-slice plan-preview packet from PR #191; PR #194 implements that read-only plan preview after explicit Gate C typing commit without changing the settled packet state, merged milestone count, or downstream no-go list. Current `main` also includes the post-PR191 progress/tracked-metadata syncs from PRs #192 and #193; those syncs record the merged plan-preview packet and tracked-PR state in the progress/control surfaces and do not expand live route/API scope or downstream no-go boundaries. Current `main` now also includes the bounded read-only plan-preview implementation from PR #194; plan preview is live only after explicit Gate C typing commit and still excludes execution, results, package review, handoff, runtime DB/schema widening, qualitative/hybrid/RAG/vector execution, and LLM planning. Current `main` now also includes the post-PR194 proof and board-metadata closeouts from PRs #195 and #196; those closeouts update proof/snapshot metadata only and do not change implementation scope, milestone counts, or downstream no-go boundaries. Current `main` now also includes the PR #198 `32_L3_WB_PLAN_APPROVAL_FREEZE.md` and `33_L3_WB_PLAN_APPROVAL_API_AND_STATE_CONTRACT.md` plan-approval freeze packet; the docs by themselves remain planning-only, while PR #199 implements only approval-only plan persistence and still does not call `materialize_pass_entry(...)`, create pass runs, run analysis, enable execution/results/package/handoff, widen runtime DB/schema, or admit qualitative/hybrid/RAG/vector/LLM planning. PR #203 adds `34_L3_WB_PLAN_REVISION_FREEZE.md` and `35_L3_WB_PLAN_REVISION_API_AND_STATE_CONTRACT.md` as a planning-only fourth-slice freeze/API-state contract for explicit operator rejection and revision-request semantics against the current server-backed preview before approval; PR #204 corrects the associated deferred-scope count metadata; PR #205 implements only the bounded revision-control endpoint/UI state; PR #206 records the post-PR205 docs/control sync; PR #207 hardens the same bounded revision-control endpoint/UI state against concurrent backend/UI submissions, and still does not reopen approved plans, call `materialize_pass_entry(...)`, create `L3AnalysisPlan` in the revision path, create `L3PassRun`, run analysis, write manifests, enable execution/results/package/handoff, widen runtime DB/schema, or admit qualitative/hybrid/RAG/vector/LLM planning. Current `main` also includes PR #200 plan-approval post-merge sync, PR #201 mockup-spec approval-state sync, and PR #202 workbench progress-control hardening; these sync/control updates do not expand the live workbench beyond approval-only persistence by themselves; PR #205 is the separate bounded revision-control implementation, PR #207 is its narrow hardening follow-up, PRs #208/#209 are docs/progress cohesion syncs, and execution, results/package/handoff, runtime DB/schema widening, and qualitative/hybrid/RAG/vector/LLM planning remain out.",
@@ -188,14 +189,14 @@
     "branch_state_summary": "This checkout matches current `main` through the merged broader-workbench planning-packet chain from PR #168, PR #169, and PR #170, the merged qualitative single-item input packet from PR #172, the post-PR172 deferred-prep front-door tightening from PR #174, the merged planning-only `28_L3_WB_FIRST_SLICE_FREEZE.md` first-slice setup target from PR #178, the merged planning-only `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md` endpoint/state companion from PR #182, and the bounded first-slice workbench implementation from PR #184. This artifact snapshot declares the first-slice route/API live only for the bounded workbench shell/API and does not change the settled APS packet state, merged milestone count, or downstream no-go boundaries. Current `main` also includes the post-PR184 status/cohesion/explicit-Gate-C-typing and merged-review-feedback closeouts from PRs #185 through #190; these keep the bounded first-slice route/API accurate by preserving response envelopes, blocked Gate B error semantics, Gate C authority-rail counts/source context, and tracked-PR metadata without changing the settled packet state, merged milestone count, or downstream no-go list. Current `main` now also includes the merged planning-only `30_L3_WB_PLAN_PREVIEW_FREEZE.md` / `31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md` plan-preview packet from PR #191; preserve it as the governing second-slice plan-preview packet; after PR #194, plan preview is live only as read-only preview after explicit Gate C typing commit, not as downstream execution, results, package review, handoff, runtime DB/schema widening, qualitative/hybrid/RAG/vector execution, or LLM planning. Current `main` also includes the post-PR191 progress/tracked-metadata syncs from PRs #192 and #193; those syncs record the merged plan-preview packet and tracked-PR state in the progress/control surfaces and do not expand live route/API scope or downstream no-go boundaries. Current `main` now also includes the bounded read-only plan-preview implementation from PR #194; plan preview is live only after explicit Gate C typing commit and still excludes execution, results, package review, handoff, runtime DB/schema widening, qualitative/hybrid/RAG/vector execution, and LLM planning. Current `main` now also includes the post-PR194 proof and board-metadata closeouts from PRs #195 and #196; those closeouts update proof/snapshot metadata only and do not change implementation scope, milestone counts, or downstream no-go boundaries. Current `main` now also includes the PR #198 `32_L3_WB_PLAN_APPROVAL_FREEZE.md` and `33_L3_WB_PLAN_APPROVAL_API_AND_STATE_CONTRACT.md` plan-approval freeze packet; the docs by themselves remain planning-only, while PR #199 implements only approval-only plan persistence and still does not call `materialize_pass_entry(...)`, create pass runs, run analysis, enable execution/results/package/handoff, widen runtime DB/schema, or admit qualitative/hybrid/RAG/vector/LLM planning. PR #203 adds `34_L3_WB_PLAN_REVISION_FREEZE.md` and `35_L3_WB_PLAN_REVISION_API_AND_STATE_CONTRACT.md` as a planning-only fourth-slice freeze/API-state contract for explicit operator rejection and revision-request semantics against the current server-backed preview before approval; PR #204 corrects the associated deferred-scope count metadata; PR #205 implements only the bounded revision-control endpoint/UI state; PR #206 records the post-PR205 docs/control sync; PR #207 hardens the same bounded revision-control endpoint/UI state against concurrent backend/UI submissions, and still does not reopen approved plans, call `materialize_pass_entry(...)`, create `L3AnalysisPlan` in the revision path, create `L3PassRun`, run analysis, write manifests, enable execution/results/package/handoff, widen runtime DB/schema, or admit qualitative/hybrid/RAG/vector/LLM planning. Current `main` also includes PR #200 plan-approval post-merge sync, PR #201 mockup-spec approval-state sync, and PR #202 workbench progress-control hardening; these sync/control updates do not expand the live workbench beyond approval-only persistence by themselves; PR #205 is the separate bounded revision-control implementation, PR #207 is its narrow hardening follow-up, PRs #208/#209 are docs/progress cohesion syncs, and execution, results/package/handoff, runtime DB/schema widening, and qualitative/hybrid/RAG/vector/LLM planning remain out."
   },
   "layer3_workbench_current_decision": {
-    "decision_id": "l3-workbench-execution-readiness-branch",
-    "state": "branch_local_execution_readiness_planning_only_no_execution_selected",
+    "decision_id": "l3-workbench-readiness-proof-branch",
+    "state": "branch_local_read_only_readiness_proof_no_execution_selected",
     "scope": "Layer 3 workbench only; separate from next_required_decision, which remains the settled later APS family decision.",
     "current_live_state": "Current `main` ships the bounded first-slice shell/API from PR #184, read-only plan preview from PR #194, approval-only `L3AnalysisPlan` persistence from PR #199, and live bounded plan rejection/revision-control from PR #205, hardened by PR #207. The PR #205/#207 slice records only pre-approval operator rejection or revision request for the current server-backed preview; it does not start execution.",
     "selected_next_slice": {
       "slice_id": "workbench-execution-readiness-contract",
       "candidate": "execution-readiness proof, state, hash, idempotency, concurrency, revision-recovery, approved-plan-correction, output-taxonomy, and source-breadth contract",
-      "status": "branch-local planning-only; no runtime behavior change and no execution selected",
+      "status": "merged planning-only from PR #212; no execution selected",
       "governing_docs": [
         "next_milestone_plans/Layer3_planning_docs/36_L3_WB_EXECUTION_READINESS_FREEZE.md",
         "next_milestone_plans/Layer3_planning_docs/37_L3_WB_STATE_HASH_IDEMPOTENCY_CONTRACT.md",
@@ -205,20 +206,20 @@
     },
     "required_before_next_functional_slice": [
       "Keep the progress manifest, progress board, progress UI spec, refresh spec, progress prompt, status handoff, and pack front door synchronized so renderer, planning, and implementation-entry surfaces do not drift.",
-      "Use `36_L3_WB_EXECUTION_READINESS_FREEZE.md`, `37_L3_WB_STATE_HASH_IDEMPOTENCY_CONTRACT.md`, and `layer3_workbench_proof_manifest.json` as the branch-local readiness gate before any behavior beyond revision-control is implemented.",
+      "Use `36_L3_WB_EXECUTION_READINESS_FREEZE.md`, `37_L3_WB_STATE_HASH_IDEMPOTENCY_CONTRACT.md`, and `layer3_workbench_proof_manifest.json` as the readiness gate before any behavior beyond read-only readiness proof is implemented.",
       "Preserve the approval-only and revision-control-only boundaries until a later freeze explicitly admits additional behavior."
     ],
     "default_next_candidate": {
-      "candidate": "no functional next workbench slice selected by this artifact",
-      "status": "not admitted; execution or approved-plan supersession requires a later freeze",
-      "why": "PR #205 completes the low-blast-radius pre-execution control loop, and PR #207 hardens that same bounded control loop without adding a new functional slice. This branch adds readiness/proof/state contracts only; moving into execution, approved-plan replacement, results/package review, or handoff would introduce new persistence and runtime side effects that require a later freeze."
+      "candidate": "read-only workbench readiness proof surface",
+      "status": "branch-local live bounded read-only; execution or approved-plan supersession requires a later freeze",
+      "why": "PR #212 made the readiness/proof/state contract machine-readable in planning artifacts. The lowest-blast-radius implementation follow-up is to expose that contract read-only and prove preview hash identity plus approval/revision serialization before any execution-bearing path is selected."
     },
     "must_not_skip": [
       "Do not treat the APS next_required_decision settlement as a workbench execution go-ahead.",
       "Do not move from approval-only persistence or revision-control directly into pass-run execution without a separate execution freeze, exact write-delta proof, and headed/headless browser proof.",
       "Do not use `materialize_pass_entry(...)` from the workbench approval or revision path unless a later freeze explicitly admits its execution-bearing side effects.",
       "Do not reopen, replace, or supersede an already approved plan in the PR #205/#207 revision-control slice.",
-      "Do not treat this branch-local readiness packet as execution approval."
+      "Do not treat the readiness packet or read-only readiness endpoint as execution approval."
     ]
   },
   "layer3_workbench_slices": [
@@ -363,16 +364,31 @@
     },
     {
       "slice_id": "workbench-execution-readiness-contract",
-      "main_state": "branch_local_planning_only",
+      "main_state": "merged_planning_only",
+      "key_prs": [
+        "#212"
+      ],
+      "governing_docs": [
+        "next_milestone_plans/Layer3_planning_docs/36_L3_WB_EXECUTION_READINESS_FREEZE.md",
+        "next_milestone_plans/Layer3_planning_docs/37_L3_WB_STATE_HASH_IDEMPOTENCY_CONTRACT.md",
+        "next_milestone_plans/layer3_workbench_proof_manifest.json"
+      ],
+      "live_scope": "Current-main planning-only proof/readiness/state contract for what must be settled before any later workbench execution slice is selected.",
+      "explicit_non_goals": "No execution selection, no `L3PassRun`, no analysis execution, no manifests, no results/package/handoff, no approved-plan supersession, no runtime DB/schema widening, and no qualitative/hybrid/RAG/vector/source-ingestion expansion.",
+      "counting_rule": "Merged planning-only readiness record; does not change the 29 merged APS milestone count and does not count as a live bounded execution slice."
+    },
+    {
+      "slice_id": "workbench-readiness-proof-implementation",
+      "main_state": "branch_local_live_bounded_read_only",
       "key_prs": [],
       "governing_docs": [
         "next_milestone_plans/Layer3_planning_docs/36_L3_WB_EXECUTION_READINESS_FREEZE.md",
         "next_milestone_plans/Layer3_planning_docs/37_L3_WB_STATE_HASH_IDEMPOTENCY_CONTRACT.md",
         "next_milestone_plans/layer3_workbench_proof_manifest.json"
       ],
-      "live_scope": "Branch-local proof/readiness/state contract for what must be settled before any later workbench execution slice is selected.",
-      "explicit_non_goals": "No route/API/UI behavior change, no `L3PassRun`, no analysis execution, no manifests, no results/package/handoff, no approved-plan supersession, no runtime DB/schema widening, and no qualitative/hybrid/RAG/vector/source-ingestion expansion.",
-      "counting_rule": "Branch-local planning-only readiness record; does not change the 29 merged APS milestone count, does not change live bounded workbench slice count, and must not be presented as current-main execution readiness until merged and re-audited."
+      "live_scope": "Branch-local read-only readiness contract endpoint, explicit plan-preview identity/hash metadata, and approval/revision serialization proof.",
+      "explicit_non_goals": "No execution endpoint, no `materialize_pass_entry(...)` call from the workbench path, no `L3PassRun`, no `AnalysisRun`, no artifact manifests, no results/package/handoff, no approved-plan correction/supersession, no schema/runtime DB widening, and no qualitative/hybrid/RAG/vector/source-ingestion expansion.",
+      "counting_rule": "Branch-local read-only implementation-readiness record; count separately from current-main live bounded workbench slices until merged and re-audited."
     }
   ],
   "summary_counts": {
@@ -381,9 +397,10 @@
     "planned_decisions": 0,
     "deferred_scope_items": 8,
     "branch_only_milestones": 0,
-    "workbench_slice_records": 10,
+    "workbench_slice_records": 11,
     "workbench_live_bounded_slices": 4,
-    "workbench_planning_only_slices": 6
+    "workbench_planning_only_slices": 6,
+    "workbench_branch_local_read_only_slices": 1
   },
   "artifact_render_contract": {
     "purpose": "Provide a stable view contract for external render surfaces so they do not have to infer layout from prose or depend on runtime JavaScript or Mermaid for critical meaning.",
@@ -474,6 +491,11 @@
         "label": "Branch-local planning only",
         "fill": "#edf0ff",
         "stroke": "#5b6bb8"
+      },
+      "branch_local_live_bounded_read_only": {
+        "label": "Branch-local read-only",
+        "fill": "#e9f7ff",
+        "stroke": "#2f7a9b"
       }
     },
     "hard_rules": [
@@ -1956,7 +1978,7 @@
       "next_milestone_plans/layer3_workbench_proof_manifest.json"
     ]
   },
-  "snapshot_base_main_commit": "dfca7d5b1240fe73c170b9c25f920a439a0602fb",
+  "snapshot_base_main_commit": "2070eae0bce9c8840c36aa369b0fcd1db0162e1f",
   "main_state_summary": "",
   "branch_state_summary": ""
 }

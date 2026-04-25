@@ -1,6 +1,6 @@
 # Layer 3 Workbench Execution Readiness Freeze
 
-Status: branch-local planning-only freeze for the next Layer 3 workbench readiness pass.
+Status: current-main planning-only freeze for the next Layer 3 workbench readiness pass.
 
 This document freezes a non-execution preparation slice after the landed first-slice shell/API, read-only plan preview, approval-only plan persistence, and bounded pre-approval revision-control path.
 
@@ -40,13 +40,15 @@ This is the correct next slice because it reduces ambiguity and future blast rad
 
 ## Admitted Scope
 
-This readiness slice may add or update planning/control artifacts only:
+The PR `#212` readiness slice added planning/control artifacts only:
 
 - an execution-readiness freeze
 - a state/hash/idempotency companion contract
 - a machine-readable proof/readiness manifest
-- progress/front-door references that identify the packet as branch-local planning-only
+- progress/front-door references that identify the packet as planning-only
 - validation rules that fail closed when required proof or no-go boundaries are missing
+
+A later bounded implementation-readiness slice may add a read-only readiness-contract API surface or preview-identity metadata only if it still does not create execution, pass runs, result/package/handoff state, migrations, runtime artifact writes, or source-breadth expansion.
 
 ## Explicit Non-Goals
 
@@ -82,9 +84,9 @@ A later execution slice is not eligible until a separate implementation freeze c
 | Source breadth | RAG/vector/upload/local-directory scope is frozen or explicitly unavailable | Prevents source expansion inside execution |
 | Browser proof | Headed and headless proof requirements are named for any future UI behavior | Prevents UI-only readiness claims |
 
-## Proof Requirements For This Readiness Slice
+## Proof Requirements For PR #212 Planning Slice
 
-This readiness slice must prove:
+The PR `#212` planning-only readiness slice must prove:
 
 - JSON validity for the proof/readiness manifest
 - all manifest-declared repo paths exist
@@ -92,14 +94,14 @@ This readiness slice must prove:
 - focused Layer 3 backend/page tests still pass
 - `git diff --check` passes
 
-Browser proof is not required for this docs-only readiness slice because it changes no runtime UI behavior. A later UI or execution slice must run both headed and headless browser proof when browser behavior changes.
+Browser proof is not required for the PR `#212` docs-only readiness slice because it changes no runtime UI behavior. A backend-only implementation-readiness metadata slice also does not require browser proof if rendered UI behavior is unchanged. A later UI or execution slice must run both headed and headless browser proof when browser behavior changes.
 
 ## Stop Conditions
 
-Stop and return to planning if this slice requires:
+Stop and return to planning if a slice requires:
 
-- code behavior changes
-- route/API response changes
+- execution-bearing code behavior changes
+- route/API response changes beyond read-only readiness metadata or preview identity/hash metadata
 - database migration
 - runtime artifact generation
 - execution semantics

@@ -28,6 +28,11 @@ def get_bootstrap() -> dict[str, Any]:
     return layer3_workbench.bootstrap()
 
 
+@router.get("/readiness")
+def get_readiness() -> dict[str, Any]:
+    return layer3_workbench.readiness_contract()
+
+
 @router.post("/preflight", response_model=None)
 def post_preflight(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.preflight(payload))
