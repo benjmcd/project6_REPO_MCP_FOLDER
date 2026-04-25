@@ -401,6 +401,53 @@ def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_sess
         db.close()
 
 
+def test_layer3_api_plan_approval_reports_existing_unapproved_plan(client: TestClient, tmp_path) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+        db.add(
+            L3AnalysisPlan(
+                analysis_plan_id="manual-unapproved-plan",
+                session_id=session_id,
+                analysis_set_ids_json=["manual-analysis-set"],
+                status="formed",
+                approved_by_operator=False,
+                approved_at=None,
+                plan_json={
+                    "planned_passes_json": [{"analysis_set_id": "manual-analysis-set"}],
+                    "excluded_sets_json": [],
+                    "execution_started": False,
+                },
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200
+    plan_approval = summary.json()["plan_approval"]
+    assert plan_approval["available"] is False
+    assert plan_approval["approved"] is False
+    assert plan_approval["blocked_reason"] == "plan_already_materialized"
+    assert plan_approval["approved_by_operator"] is False
+    assert plan_approval["approved_at"] is None
+
+    approval = client.post(
+        "/api/v1/layer3/plan/approve",
+        json={
+            "client_request_id": "api-plan-approval-existing-unapproved",
+            "session_id": session_id,
+            "preview_id": "stale-preview-id",
+            "preview_hash": "stale-preview-hash",
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+        },
+    )
+    assert approval.status_code == 409
+    assert approval.json()["error_code"] == "plan_already_materialized"
+
+
 def test_layer3_api_plan_approval_rejects_confirmation_and_preview_mismatch(client: TestClient, tmp_path) -> None:
     db = client.layer3_session_factory()
     try:

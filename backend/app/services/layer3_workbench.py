@@ -750,7 +750,7 @@ def _plan_preview_readiness(db: Session, *, session_id: str, include_owner_servi
     }
 
 
-def _approved_analysis_plan(db: Session, *, session_id: str) -> L3AnalysisPlan | None:
+def _latest_analysis_plan(db: Session, *, session_id: str) -> L3AnalysisPlan | None:
     return (
         db.query(L3AnalysisPlan)
         .filter(L3AnalysisPlan.session_id == session_id)
@@ -760,7 +760,7 @@ def _approved_analysis_plan(db: Session, *, session_id: str) -> L3AnalysisPlan |
 
 
 def _plan_approval_summary(db: Session, *, session_id: str) -> dict[str, Any]:
-    analysis_plan = _approved_analysis_plan(db, session_id=session_id)
+    analysis_plan = _latest_analysis_plan(db, session_id=session_id)
     pass_run_count = db.query(L3PassRun).filter(L3PassRun.session_id == session_id).count()
     if analysis_plan is None:
         preview = _plan_preview_readiness(db, session_id=session_id, include_owner_service=True)
@@ -779,15 +779,16 @@ def _plan_approval_summary(db: Session, *, session_id: str) -> dict[str, Any]:
             "pass_run_count": pass_run_count,
         }
     plan_json = analysis_plan.plan_json or {}
+    approved = bool(analysis_plan.approved_by_operator)
     return {
         "schema_id": "layer3.plan_approval_readiness.v1",
         "available": False,
-        "approved": bool(analysis_plan.approved_by_operator),
-        "blocked_reason": "plan_already_approved",
+        "approved": approved,
+        "blocked_reason": "plan_already_approved" if approved else "plan_already_materialized",
         "analysis_plan_id": analysis_plan.analysis_plan_id,
         "plan_status": analysis_plan.status,
-        "approved_by_operator": bool(analysis_plan.approved_by_operator),
-        "approved_at": _utcnow_iso() if analysis_plan.approved_at is None else analysis_plan.approved_at.isoformat(),
+        "approved_by_operator": approved,
+        "approved_at": analysis_plan.approved_at.isoformat() if analysis_plan.approved_at else None,
         "approved_set_count": len(analysis_plan.analysis_set_ids_json or []),
         "excluded_set_count": len(plan_json.get("excluded_sets_json") or []),
         "planned_pass_count": len(plan_json.get("planned_passes_json") or []),
@@ -842,7 +843,7 @@ def _plan_approval_error(exc: Layer3PassEntryError) -> Layer3WorkbenchError:
             next_allowed_actions=["confirm_plan_approval"],
         )
     if "already has analysis plans" in message:
-        return Layer3WorkbenchError("plan_already_approved", message, status="conflict", http_status=409)
+        return Layer3WorkbenchError("plan_already_materialized", message, status="conflict", http_status=409)
     if "already has pass runs" in message:
         return Layer3WorkbenchError("pass_runs_already_exist", message, status="conflict", http_status=409)
     return _plan_preview_error(exc)
@@ -961,10 +962,17 @@ def plan_approval(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             blocked_fields=forbidden,
             next_allowed_actions=["submit_approval_only_request"],
         )
-    if _approved_analysis_plan(db, session_id=session_id) is not None:
+    existing_plan = _latest_analysis_plan(db, session_id=session_id)
+    if existing_plan is not None:
+        if bool(existing_plan.approved_by_operator):
+            error_code = "plan_already_approved"
+            message = f"Layer 3 session '{session_id}' already has an approved analysis plan."
+        else:
+            error_code = "plan_already_materialized"
+            message = f"Layer 3 session '{session_id}' already has a non-approved analysis plan."
         raise Layer3WorkbenchError(
-            "plan_already_approved",
-            f"Layer 3 session '{session_id}' already has an approved analysis plan.",
+            error_code,
+            message,
             status="conflict",
             http_status=409,
         )
