@@ -1,12 +1,12 @@
 # Layer 3 Workbench Result Review UI Freeze
 
-Status: governing planning-only freeze for a future bounded `/review/layer3` result-review presentation slice after merged PR `#227`.
+Status: governing planning-only freeze for the bounded `/review/layer3` result-review presentation slice after merged PR `#227`; PR `#232` later implemented this bounded UI slice on current `main`.
 
 This document freezes only the user-facing presentation and control boundary for the already-live backend selected-pass result-review state. It does not implement UI behavior by itself, does not change backend API behavior, and does not admit execution selection/start UI, package review, handoff/export, rerun/recovery, source expansion, schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation.
 
 ## Current Live Boundary
 
-Current `project6-origin/main` through PR `#229` includes:
+Current `project6-origin/main` through PR `#232` includes:
 
 - the `/review/layer3` workbench shell from PR `#184`
 - read-only plan preview from PR `#194`
@@ -18,8 +18,9 @@ Current `project6-origin/main` through PR `#229` includes:
 - backend selected-pass result/status inspection from PR `#222`
 - backend selected-pass result-review recording from PR `#227`
 - result-review progress-state vocabulary/render declaration from PR `#229`
+- bounded result-review UI controls from PR `#232`
 
-The rendered `/review/layer3` UI still stops at the intent/source/material/Gate B/Gate C/plan interaction path. The page contains disabled execution/results/package step chips, but it does not expose execution selection controls, execution-start controls, result/status inspection controls, or result-review controls. Current UI JavaScript does not currently consume the session summary endpoint as a state-rehydration source for post-plan execution/result state.
+PR `#232` changes the rendered `/review/layer3` UI only for the bounded result-review surface: session-state refresh, selected-pass result/status inspection, and one result-review submission. The page still must not expose execution selection controls, execution-start controls, package review, handoff/export, rerun/recovery, source expansion, schema/runtime widening, or full mockup behavior.
 
 ## Slice Decision
 
@@ -29,9 +30,9 @@ The next admitted UI planning boundary is:
 
 This is the smallest safe UI step after PR `#227` because it can make the existing backend result-review endpoint operable from the workbench surface without inventing new backend semantics or jumping to package/handoff workflow.
 
-## Admitted Future UI Scope
+## Admitted UI Scope
 
-A future implementation PR governed by this freeze may change only:
+The PR `#232` implementation governed by this freeze may change only:
 
 - `backend/app/review_ui/static/layer3.html`
 - `backend/app/review_ui/static/layer3.css`
@@ -162,4 +163,4 @@ This freeze is downstream of:
 - `38_L3_WB_EXECUTION_SELECTION_FREEZE.md`
 - `39_L3_WB_EXECUTION_SELECTION_API_AND_STATE_CONTRACT.md`
 
-It freezes only a future UI presentation and bounded result-review control surface for current backend result-review state. It does not replace the backend result-review docs and does not make UI behavior live by itself.
+It freezes only a bounded UI presentation and result-review control surface for current backend result-review state. It does not replace the backend result-review docs and did not make UI behavior live by itself; PR `#232` is the separate bounded implementation.

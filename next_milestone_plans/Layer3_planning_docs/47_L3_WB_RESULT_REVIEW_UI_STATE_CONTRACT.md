@@ -2,7 +2,7 @@
 
 Status: governing UI/state companion for `46_L3_WB_RESULT_REVIEW_UI_FREEZE.md`.
 
-This document defines the state, data, control, and proof contract for a future bounded `/review/layer3` result-review presentation slice. It does not make UI behavior live by itself and does not admit new backend behavior, execution selection/start UI, package review, handoff/export, rerun/recovery, source expansion, schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation.
+This document defines the state, data, control, and proof contract for the bounded `/review/layer3` result-review presentation slice implemented later by PR `#232`. It did not make UI behavior live by itself and does not admit new backend behavior, execution selection/start UI, package review, handoff/export, rerun/recovery, source expansion, schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation.
 
 ## Authority Order
 
@@ -22,7 +22,7 @@ The UI must not treat local component state, disabled step chips, URL fragments,
 
 ## UI State Model
 
-The future UI implementation may introduce only these UI-visible states:
+The bounded PR `#232` UI implementation may introduce only these UI-visible states:
 
 | UI state | Authority source | Enabled controls | Disabled downstream controls |
 | --- | --- | --- | --- |
@@ -62,7 +62,7 @@ Any field missing from server state must be rendered as unavailable or unknown. 
 
 ## Control Contract
 
-The future UI may expose:
+The bounded PR `#232` UI may expose:
 
 - a result/status refresh or inspect action for the current selected terminal pass
 - a result-review decision selector with `approved`, `changes_requested`, `rejected`, and `blocked`
@@ -71,7 +71,7 @@ The future UI may expose:
 - a read-only recorded-review display
 - disabled package-review and handoff indicators
 
-The future UI must not expose:
+The bounded PR `#232` UI must not expose:
 
 - pass-run id free text fields
 - multi-pass checkboxes
