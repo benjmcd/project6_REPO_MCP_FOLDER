@@ -1155,7 +1155,9 @@ def plan_revision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             next_allowed_actions=["submit_revision_control_only_request"],
         )
 
-    session = _load_session(db, session_id)
+    session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
+    if session is None:
+        raise Layer3WorkbenchError("session_not_found", f"Layer 3 session '{session_id}' was not found.", http_status=404)
     existing_control = _plan_revision_control_from_session(session)
     if existing_control is not None:
         raise Layer3WorkbenchError(
