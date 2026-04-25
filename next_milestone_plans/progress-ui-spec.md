@@ -136,6 +136,7 @@ Use these colors consistently:
 - `branch_local_planning_only`: blue-lavender or other clearly non-main, non-live planning state
 - `branch_local_live_bounded_read_only`: cyan-blue or other clearly non-main, read-only live-branch state
 - `merged_live_bounded_read_only`: green-blue or other clearly current-main, read-only live bounded state
+- `merged_live_bounded_execution_selection`: green-teal or other clearly current-main, write-bounded shell state; it must not look like running analysis, completed execution, results review, package review, or handoff
 
 State labels should remain visible in text, not color alone.
 
