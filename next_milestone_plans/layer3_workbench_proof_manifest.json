@@ -1,20 +1,20 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded execution-selection shell implementation plus planning-only analysis-execution-start freeze; analysis execution remains unavailable until a later implementation PR",
+  "status": "current-main readiness proof plus bounded execution-selection shell implementation plus PR #218 bounded analysis-execution-start implementation candidate",
   "scope": {
-    "source_branch": "codex/l3-state-proof",
+    "source_branch": "codex/l3-exec-start",
     "merged_pr": "#213",
     "merge_commit": "b7bcea3d0c5b555ff8c064b1ee8128cd9903e994",
     "base_remote": "project6-origin/main",
-    "base_commit": "34570e6e7f5671a081072a044cca941b4f2d6126",
-    "source_base_commit": "2070eae0bce9c8840c36aa369b0fcd1db0162e1f",
-    "purpose": "Define, prove, and track the readiness gates, bounded execution-selection shell boundary, and planning-only analysis-execution-start freeze before any Layer 3 workbench analysis execution implementation is admitted.",
+    "base_commit": "e4567aa2222af59c462dd219947b7b8fc7c78dad",
+    "source_base_commit": "e4567aa2222af59c462dd219947b7b8fc7c78dad",
+    "purpose": "Define, prove, and track readiness gates, bounded execution-selection shell behavior, and the PR #218 selected-pass analysis-execution-start implementation boundary.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "PR #213 adds read-only readiness proof; PR #216 adds only selected/not-started L3PassRun shell creation through /api/v1/layer3/execution/select; PR #217 adds planning-only docs 40/41 for a future one selected-pass-run analysis-execution-start boundary. Analysis execution, results, package, handoff, runtime DB/schema widening, source expansion, and full mockup activation remain unavailable.",
-    "latest_implementation_pr": "#216",
-    "latest_implementation_branch": "codex/l3-execution-selection-impl",
-    "latest_implementation_summary": "PR #216 adds only the bounded execution-selection shell endpoint and selected/not-started L3PassRun shell creation from an approved, hash-matched plan.",
+    "live_behavior_change_summary": "PR #213 adds read-only readiness proof; PR #216 adds only selected/not-started L3PassRun shell creation through /api/v1/layer3/execution/select; PR #217 adds planning docs 40/41; PR #218 adds the bounded /api/v1/layer3/execution/start implementation for one existing selected/not-started single-item wrapped quantitative pass. Results, package, handoff, runtime DB/schema widening, source expansion, UI changes, qualitative/hybrid/RAG/vector execution, and full mockup activation remain unavailable.",
+    "latest_implementation_pr": "#218",
+    "latest_implementation_branch": "codex/l3-exec-start",
+    "latest_implementation_summary": "PR #218 adds only the bounded selected-pass analysis-execution-start endpoint and helper for one existing selected/not-started single-item wrapped quantitative L3PassRun shell; it creates no new L3AnalysisPlan or L3PassRun rows and keeps result/package/handoff/source/schema/UI scope out.",
     "latest_planning_pr": "#217",
     "latest_planning_branch": "codex/l3-analysis-exec-freeze",
     "latest_planning_summary": "PR #217 adds docs 40/41 as planning-only governance for a future single selected-pass-run wrapped quantitative analysis-execution-start endpoint; it does not implement execution."
@@ -50,8 +50,7 @@
       "selected/not-started L3PassRun shell creation from approved hash-matched plans"
     ],
     "not_live": [
-      "analysis execution start from selected pass-run shells",
-      "analysis execution",
+      "general analysis execution beyond the PR #218 one selected-pass execution-start boundary",
       "results review",
       "package review",
       "handoff",
@@ -63,12 +62,29 @@
       "local upload or local-directory ingestion",
       "hidden LLM planning",
       "full mockup activation",
-      "POST /api/v1/layer3/execution/start or equivalent selected-pass-run execution endpoint",
-      "single selected-pass-run AnalysisRun creation from workbench shells",
-      "multi-pass or batch analysis execution"
+      "multi-pass or batch analysis execution",
+      "broad analysis execution beyond one selected single-item wrapped quantitative pass"
     ],
     "planning_only": [
-      "analysis-execution-start freeze/API-state contract for one future selected-pass-run wrapped quantitative execution start from PR #216 shells"
+      "analysis-execution-start freeze/API-state contract from PR #217 remains the governing scope contract for the PR #218 bounded implementation"
+    ],
+    "branch_only_candidate": [
+      "PR #218 bounded selected-pass analysis-execution-start implementation until merged"
+    ],
+    "still_forbidden_after_pr_218": [
+      "result review",
+      "package review",
+      "handoff",
+      "batch or multi-pass execution",
+      "approved-plan supersession",
+      "runtime DB/schema widening",
+      "source-breadth expansion",
+      "local upload or local-directory ingestion",
+      "qualitative execution",
+      "hybrid execution",
+      "RAG/vector execution",
+      "full mockup activation",
+      "UI changes"
     ]
   },
   "readiness_gates": [
@@ -125,7 +141,7 @@
     {
       "gate_id": "analysis-execution-start",
       "decision": "The next eligible execution implementation must execute at most one existing selected/not-started L3PassRun shell through wrapped quantitative analysis, and must not call materialize_pass_entry(...) as-is or open result/package/handoff/source/schema/UI scope.",
-      "status": "defined_by_pr_217_docs_40_41_planning_only_no_live_execution"
+      "status": "implemented_by_pr_218_as_bounded_single_selected_pass_start_pending_merge_to_main"
     }
   ],
   "validation_commands": [
@@ -135,19 +151,19 @@
     },
     {
       "command": "python -m json.tool next_milestone_plans/layer3_progress_manifest.json",
-      "purpose": "Validate progress manifest JSON syntax after adding the analysis-execution-start planning record."
+      "purpose": "Validate progress manifest JSON syntax after recording the PR #218 analysis-execution-start implementation record."
     },
     {
-      "command": "python -m py_compile backend/app/api/layer3.py backend/app/services/layer3_workbench.py backend/app/services/layer3_pass_entry.py",
+      "command": "python -m compileall backend/app/api/layer3.py backend/app/services/layer3_workbench.py backend/app/services/layer3_pass_entry.py",
       "purpose": "Validate changed Layer 3 API/service modules compile."
     },
     {
       "command": "python -m pytest backend/tests/test_layer3_api.py -q",
-      "purpose": "Verify execution-selection API success, idempotency, stale preview, revision-control, and multi-plan fail-closed behavior."
+      "purpose": "Verify analysis-execution-start API success, idempotency, stale preview, revision-control, duplicate/conflict, and fail-closed behavior."
     },
     {
-      "command": "python -m pytest <all backend/tests/test_layer3_*.py files> -q",
-      "purpose": "Verify the Layer 3 backend/page/service family remains green."
+      "command": "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3_*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest $tests -q",
+      "purpose": "Verify the complete Layer 3 backend/page/service test family remains green after the PR #218 endpoint/helper and docs/progress sync."
     },
     {
       "command": "python -m pytest backend/tests/test_layer3_pass_entry.py -q",
