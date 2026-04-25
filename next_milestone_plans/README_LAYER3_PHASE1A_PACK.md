@@ -443,7 +443,7 @@ They were merged as planning docs in PR `#198` and freeze the third workbench sl
 ### Broader workbench fourth-slice plan-revision freeze docs
 
 These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-They freeze the fourth workbench slice as planning-only governance for explicit operator rejection and revision-request semantics against the current server-backed plan preview before approval. They do not make rejection/revision live, reopen or supersede already approved plans, call `materialize_pass_entry(...)`, create `L3PassRun`, run analysis, write manifests, enable results/package/handoff, widen runtime DB/schema behavior, or admit qualitative/hybrid/RAG/vector/LLM planning:
+PR `#203` freezes the fourth workbench slice as planning-only governance for explicit operator rejection and revision-request semantics against the current server-backed plan preview before approval. It does not make rejection/revision live, reopen or supersede already approved plans, call `materialize_pass_entry(...)`, create `L3PassRun`, run analysis, write manifests, enable results/package/handoff, widen runtime DB/schema behavior, or admit qualitative/hybrid/RAG/vector/LLM planning:
 - `34_L3_WB_PLAN_REVISION_FREEZE.md`
 - `35_L3_WB_PLAN_REVISION_API_AND_STATE_CONTRACT.md`
 
