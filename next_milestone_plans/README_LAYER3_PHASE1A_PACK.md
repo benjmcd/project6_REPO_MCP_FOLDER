@@ -610,6 +610,8 @@ Current answer:
 - approval must add a narrower owner-service helper that can persist the approved plan without creating `L3PassRun`, running analysis, writing manifests, changing package/handoff state, adding migrations, or widening schema
 - execution, results review, package review, handoff, qualitative/hybrid/RAG/vector execution, runtime snapshot DB writes, schema widening, and hidden LLM planning remain out of scope
 
+PR `#199` is the bounded implementation lane for that third slice. When merged, it makes only approval-only plan persistence live through `/api/v1/layer3/plan/approve` and the existing `/review/layer3` plan panel; it still does not admit `L3PassRun`, analysis execution, result review, package review, handoff, runtime snapshot DB writes, schema widening, qualitative/hybrid/RAG/vector execution, or hidden LLM planning.
+
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 
 Start with:

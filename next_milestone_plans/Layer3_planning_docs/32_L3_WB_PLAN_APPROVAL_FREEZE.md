@@ -2,11 +2,12 @@
 
 ## Status
 
-- planning-only candidate third-slice freeze
+- merged planning-only third-slice freeze
 - not active implementation by itself
 - outside the accepted Phase 1A normative control spine
 - outside the settled later APS family packet
 - subordinate to `28_L3_WB_FIRST_SLICE_FREEZE.md`, `29_L3_WB_FIRST_SLICE_API_AND_STATE_CONTRACT.md`, `30_L3_WB_PLAN_PREVIEW_FREEZE.md`, and `31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md`
+- implementation binding: PR `#199`, when merged, implements this freeze as approval-only `L3AnalysisPlan` persistence without admitting execution
 
 This document freezes the next narrow Layer 3 workbench slice after the landed read-only plan-preview implementation.
 
