@@ -1,19 +1,22 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main planning-only plus branch-local read-only implementation-readiness proof",
+  "status": "current-main planning-only plus merged read-only implementation-readiness proof",
   "scope": {
-    "branch": "codex/l3-state-proof",
+    "source_branch": "codex/l3-state-proof",
+    "merged_pr": "#213",
+    "merge_commit": "b7bcea3d0c5b555ff8c064b1ee8128cd9903e994",
     "base_remote": "project6-origin/main",
-    "base_commit": "2070eae0bce9c8840c36aa369b0fcd1db0162e1f",
+    "base_commit": "b7bcea3d0c5b555ff8c064b1ee8128cd9903e994",
+    "source_base_commit": "2070eae0bce9c8840c36aa369b0fcd1db0162e1f",
     "purpose": "Define and prove read-only proof/readiness gates required before any later Layer 3 workbench execution implementation is selected.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "Branch adds only a read-only /api/v1/layer3/readiness contract, explicit plan-preview identity/hash metadata, and approval/revision serialization proof; execution remains unavailable."
+    "live_behavior_change_summary": "PR #213 adds only a read-only /api/v1/layer3/readiness contract, explicit plan-preview identity/hash metadata, and approval/revision serialization proof; execution remains unavailable."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
     "current main repo truth for live implementation surfaces",
-    "Layer3 planning docs for branch-local freeze scope",
+    "Layer3 planning docs for readiness/proof freeze scope",
     "mockup spec for target-state product intent only"
   ],
   "governing_docs": [
@@ -31,7 +34,8 @@
       "first-slice shell/API",
       "read-only plan preview",
       "approval-only L3AnalysisPlan persistence",
-      "pre-approval plan revision-control"
+      "pre-approval plan revision-control",
+      "read-only readiness proof"
     ],
     "not_live": [
       "L3PassRun creation from workbench",
