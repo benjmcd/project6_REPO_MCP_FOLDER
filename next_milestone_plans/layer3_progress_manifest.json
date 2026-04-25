@@ -73,7 +73,8 @@
       "Current main after PR #225 includes the progress state-vocabulary sync; docs 44/45 are planning-only result-review governance and do not make /api/v1/layer3/execution/result/review live by themselves.",
       "Current main after PR #228 includes the result-review post-merge progress/docs sync and does not change live Layer 3 behavior.",
       "Current main after PR #229 includes the result-review render-state vocabulary declaration and does not change live Layer 3 behavior.",
-      "This artifact adds docs 46/47 as planning-only result-review UI governance for a future /review/layer3 presentation/control boundary over current backend result-review state; the docs do not make UI behavior live by themselves and do not admit execution selection/start UI, package review, handoff/export, rerun/recovery, new backend endpoints by default, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation."
+      "This artifact adds docs 46/47 as planning-only result-review UI governance for a future /review/layer3 presentation/control boundary over current backend result-review state; the docs do not make UI behavior live by themselves and do not admit execution selection/start UI, package review, handoff/export, rerun/recovery, new backend endpoints by default, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation.",
+      "PR #230 adds docs 46/47 as planning-only result-review UI governance; by itself it does not make rendered UI behavior live."
     ],
     "state_notes": [
       "Current main after PR #227 includes the bounded selected-pass result-review endpoint: POST /api/v1/layer3/execution/result/review records one operator review decision against one terminal selected pass after result/status authority, writes only existing L3PassRun/L3Session JSON summaries, and still does not admit package review, handoff/export, rerun/recovery, new execution, source/schema/runtime widening, UI changes, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation.",
@@ -228,7 +229,7 @@
     "selected_next_slice": {
       "slice_id": "workbench-result-review-ui-freeze",
       "candidate": "planning-only result-review UI presentation/control boundary",
-      "status": "Docs 46/47 added in this artifact as UI governance only; implementation requires a later bounded UI PR after re-auditing current main.",
+      "status": "Docs 46/47 added in PR #230 as UI governance only; implementation requires a later bounded UI PR after re-auditing current main.",
       "governing_docs_required": [
         "next_milestone_plans/Layer3_planning_docs/46_L3_WB_RESULT_REVIEW_UI_FREEZE.md",
         "next_milestone_plans/Layer3_planning_docs/47_L3_WB_RESULT_REVIEW_UI_STATE_CONTRACT.md"
@@ -587,7 +588,9 @@
     {
       "slice_id": "workbench-result-review-ui-freeze",
       "main_state": "planning_only_result_review_ui_freeze",
-      "key_prs": [],
+      "key_prs": [
+        230
+      ],
       "governing_docs": [
         "next_milestone_plans/Layer3_planning_docs/46_L3_WB_RESULT_REVIEW_UI_FREEZE.md",
         "next_milestone_plans/Layer3_planning_docs/47_L3_WB_RESULT_REVIEW_UI_STATE_CONTRACT.md",
