@@ -1,17 +1,17 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status and result-review implementation",
+  "status": "current-main readiness proof plus bounded result/status and result-review implementation plus planning-only result-review UI freeze",
   "scope": {
     "source_branch": "project6-origin/main",
     "merged_pr": "#227",
     "merge_commit": "d00440f2723708bd693d0ff50cfdb6f38cd6fc3f",
     "base_remote": "project6-origin/main",
-    "base_commit": "d00440f27237",
-    "source_base_commit": "d00440f2723708bd693d0ff50cfdb6f38cd6fc3f",
-    "purpose": "Define, prove, and track readiness gates through current-main result/status plus the bounded selected-pass result-review implementation from PR #227.",
+    "base_commit": "0fb08b985506",
+    "source_base_commit": "0fb08b98550607e2fe37f3ece2c7729aa07c9d0c",
+    "purpose": "Define, prove, and track readiness gates through current-main result/status plus the bounded selected-pass result-review implementation from PR #227, and track docs 46/47 as planning-only result-review UI governance.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "Current main through PR #227 includes the bounded read-only /api/v1/layer3/execution/result/status endpoint and the bounded /api/v1/layer3/execution/result/review endpoint for one terminal selected pass; it does not add package review, handoff/export, rerun/recovery, runtime DB/schema widening, source expansion, UI changes, qualitative/hybrid/RAG/vector execution, local upload/directory ingestion, or full mockup activation.",
+    "live_behavior_change_summary": "Current main through PR #227 includes the bounded read-only /api/v1/layer3/execution/result/status endpoint and the bounded /api/v1/layer3/execution/result/review endpoint for one terminal selected pass; docs 46/47 add planning-only UI governance only and do not add rendered UI behavior, package review, handoff/export, rerun/recovery, runtime DB/schema widening, source expansion, qualitative/hybrid/RAG/vector execution, local upload/directory ingestion, or full mockup activation.",
     "latest_implementation_pr": "#227",
     "latest_implementation_branch": "codex/l3-result-review-impl",
     "latest_implementation_summary": "PR #227 adds POST /api/v1/layer3/execution/result/review as a bounded endpoint that validates session/approved-plan/preview/selection/execution-start/result-status/pass authority, records one operator decision in existing L3PassRun/L3Session JSON summaries, and creates no package, handoff, rerun/recovery, new execution, source/schema/runtime, UI, qualitative/hybrid/RAG/vector, local-upload, or full-mockup state.",
@@ -24,7 +24,12 @@
     "latest_planning_base_commit": "9d78c5df1317",
     "latest_branch_only_implementation_branch": "none",
     "latest_branch_only_implementation_pr": "none",
-    "latest_branch_only_implementation_summary": "No branch-only Layer 3 workbench implementation candidate remains in this artifact after PR #227; result review is current-main live bounded behavior."
+    "latest_branch_only_implementation_summary": "No branch-only Layer 3 workbench implementation candidate remains in this artifact after PR #227; result review is current-main live bounded behavior.",
+    "latest_ui_planning_pr": "pending",
+    "latest_ui_planning_branch": "codex/l3-result-review-ui-freeze",
+    "latest_ui_planning_summary": "Docs 46/47 freeze a future /review/layer3 result-review presentation/control boundary over existing backend selected-pass result/status and result-review state; by themselves they do not make UI behavior live.",
+    "latest_ui_planning_live_behavior_change": false,
+    "latest_ui_planning_behavior_summary": "Docs 46/47 are documentation/control only; merging them changes planning authority but not runtime API, rendered UI, database, execution, package, or handoff behavior."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -48,7 +53,9 @@
     "next_milestone_plans/Layer3_planning_docs/42_L3_WB_RESULT_STATUS_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/43_L3_WB_RESULT_STATUS_API_AND_STATE_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/44_L3_WB_RESULT_REVIEW_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/45_L3_WB_RESULT_REVIEW_API_AND_STATE_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/45_L3_WB_RESULT_REVIEW_API_AND_STATE_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/46_L3_WB_RESULT_REVIEW_UI_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/47_L3_WB_RESULT_REVIEW_UI_STATE_CONTRACT.md"
   ],
   "current_live_workbench_boundary": {
     "live_bounded": [
@@ -82,12 +89,15 @@
       "broad analysis execution beyond one selected single-item wrapped quantitative pass",
       "handoff/export",
       "rerun/recovery",
-      "result-review amendment or supersession"
+      "result-review amendment or supersession",
+      "result-review UI implementation",
+      "execution selection/start UI"
     ],
     "planning_only": [
       "analysis-execution-start freeze/API-state contract from PR #217 remains the governing scope contract for the PR #218 bounded implementation",
       "result/status freeze/API-state contract from docs 42/43 governs the PR #222 bounded read-only selected-pass status surface",
-      "result-review freeze/API-state contract from docs 44/45 governs the bounded selected-pass review decision after PR #222 status authority; by itself it does not add package/handoff behavior"
+      "result-review freeze/API-state contract from docs 44/45 governs the bounded selected-pass review decision after PR #222 status authority; by itself it does not add package/handoff behavior",
+      "result-review UI freeze/state contract from docs 46/47 governs only a future /review/layer3 presentation/control boundary for existing backend result-review state; by itself it does not add rendered UI behavior"
     ],
     "branch_only_candidate": [],
     "still_forbidden_after_pr_227": [
@@ -104,7 +114,25 @@
       "full mockup activation",
       "UI changes",
       "rerun/recovery",
-      "result-review amendment or supersession"
+      "result-review amendment or supersession",
+      "result-review UI behavior by docs 46/47 alone",
+      "execution selection/start UI"
+    ],
+    "still_forbidden_after_docs_46_47": [
+      "UI behavior unless a later implementation PR changes the rendered /review/layer3 page and passes browser proof",
+      "execution selection/start UI",
+      "package review",
+      "handoff/export",
+      "rerun/recovery",
+      "result-review amendment or supersession",
+      "new backend endpoints by default",
+      "runtime DB/schema widening",
+      "source-breadth expansion",
+      "local upload or local-directory ingestion",
+      "qualitative execution",
+      "hybrid execution",
+      "RAG/vector execution",
+      "full mockup activation"
     ]
   },
   "readiness_gates": [
@@ -216,7 +244,7 @@
       "purpose": "Verify the complete Layer 3 focused backend/page/service family after the merged PR #227 result-review implementation."
     }
   ],
-  "browser_proof_rule": "No browser proof is required for this backend-only readiness metadata slice because rendered UI behavior does not change. A later UI or execution slice must run both headed and headless browser proof when browser behavior changes.",
+  "browser_proof_rule": "No browser proof is required for this docs-only result-review UI freeze because rendered UI behavior does not change in this PR. A later UI implementation must run both headed and headless Chrome proof when /review/layer3 behavior changes.",
   "no_go_scan_terms": [
     "execution is live",
     "results are live",
