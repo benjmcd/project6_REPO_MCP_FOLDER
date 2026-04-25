@@ -192,6 +192,10 @@
     "branch_only": "The step exists in a branch but is not merged into main.",
     "branch_local_planning_only": "The workbench planning/control artifact exists on the current branch only and must not be rendered as current-main live behavior.",
     "branch_local_live_bounded_read_only": "The workbench route/API behavior exists on the current branch only, is read-only, and must not be rendered as current-main behavior until merged and re-audited.",
+    "merged_planning_only": "The workbench planning/control artifact is merged into current main as governance only and must not be rendered as live route/API behavior.",
+    "merged_live_bounded": "The workbench route/API behavior is merged into current main as bounded live behavior for the named slice only and must not be broadened into downstream execution, results, package, handoff, schema/runtime widening, or full mockup activation.",
+    "merged_live_bounded_approval_only": "The workbench route/API behavior is merged into current main only for approval-only plan persistence and must not be rendered as pass materialization, execution, results, package, handoff, schema/runtime widening, or full mockup activation.",
+    "merged_live_bounded_revision_control": "The workbench route/API behavior is merged into current main only for explicit pre-approval plan rejection/revision control and must not be rendered as approved-plan supersession, execution, results, package, handoff, schema/runtime widening, or full mockup activation.",
     "merged_live_bounded_read_only": "The workbench route/API behavior is merged into current main, is live only as a bounded read-only proof surface, and must not be rendered as execution-bearing behavior.",
     "merged_live_bounded_execution_selection": "The workbench route/API behavior is merged into current main and may create selected/not-started L3PassRun shell rows only from an approved, hash-matched plan; it must not be rendered as analysis execution, results, package, handoff, schema/runtime widening, or full mockup activation.",
     "merged_live_bounded_analysis_execution_start": "The workbench route/API behavior is merged into current main and may execute exactly one existing selected/not-started single-item wrapped quantitative L3PassRun shell through /api/v1/layer3/execution/start; it must not be rendered as general analysis execution, result review, package, handoff, source/schema/runtime widening, UI activation, or full mockup activation.",
@@ -633,10 +637,50 @@
         "fill": "#e9f7ff",
         "stroke": "#2f7a9b"
       },
+      "merged_planning_only": {
+        "label": "Merged planning only",
+        "fill": "#f0efe8",
+        "stroke": "#746d58"
+      },
+      "merged_live_bounded": {
+        "label": "Merged bounded live",
+        "fill": "#e0f4ea",
+        "stroke": "#317a55"
+      },
+      "merged_live_bounded_approval_only": {
+        "label": "Merged approval only",
+        "fill": "#e4f0da",
+        "stroke": "#5f7f35"
+      },
+      "merged_live_bounded_revision_control": {
+        "label": "Merged revision control",
+        "fill": "#e7f2df",
+        "stroke": "#497245"
+      },
       "merged_live_bounded_read_only": {
         "label": "Merged read-only",
         "fill": "#def6f3",
         "stroke": "#2b7a78"
+      },
+      "merged_live_bounded_execution_selection": {
+        "label": "Merged execution selection",
+        "fill": "#dff1f5",
+        "stroke": "#2b7182"
+      },
+      "merged_live_bounded_analysis_execution_start": {
+        "label": "Merged execution start",
+        "fill": "#dbeef7",
+        "stroke": "#2f6f9d"
+      },
+      "planning_only_result_status_freeze": {
+        "label": "Planning-only result/status",
+        "fill": "#f2eee4",
+        "stroke": "#7a6f55"
+      },
+      "merged_live_bounded_result_status": {
+        "label": "Merged result/status",
+        "fill": "#dff3ef",
+        "stroke": "#287a6c"
       }
     },
     "hard_rules": [

@@ -37,6 +37,7 @@ Hard rules:
 - Do not promote a deferred item into candidate-next or current-focus without using the manifest-declared activation criteria.
 - Render `layer3_workbench_current_decision` separately from `next_required_decision`; the later APS family settlement is not itself a workbench execution or next-slice admission.
 - Render `layer3_workbench_slices` as a structured workbench register; do not force PR `#184`, `#194`, and `#199` state to be inferred only from prose.
+- Treat `state_model` and `artifact_render_contract.state_visuals` as required vocabularies for every `main_state` used by `milestones` or `layer3_workbench_slices`; do not invent unstyled or undeclared state labels during rendering.
 
 Required sections in order:
 1. Program State Summary
