@@ -25,9 +25,9 @@
     "latest_branch_only_implementation_branch": "none",
     "latest_branch_only_implementation_pr": "none",
     "latest_branch_only_implementation_summary": "No branch-only Layer 3 workbench implementation candidate remains in this artifact after PR #227; result review is current-main live bounded behavior.",
-    "latest_ui_planning_pr": "pending",
+    "latest_ui_planning_pr": "#230",
     "latest_ui_planning_branch": "codex/l3-result-review-ui-freeze",
-    "latest_ui_planning_summary": "Docs 46/47 freeze a future /review/layer3 result-review presentation/control boundary over existing backend selected-pass result/status and result-review state; by themselves they do not make UI behavior live.",
+    "latest_ui_planning_summary": "PR #230 adds docs 46/47 to freeze a future /review/layer3 result-review presentation/control boundary over existing backend selected-pass result/status and result-review state; by itself it does not make UI behavior live.",
     "latest_ui_planning_live_behavior_change": false,
     "latest_ui_planning_behavior_summary": "Docs 46/47 are documentation/control only; merging them changes planning authority but not runtime API, rendered UI, database, execution, package, or handoff behavior."
   },
