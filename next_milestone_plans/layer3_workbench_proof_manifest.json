@@ -1,0 +1,125 @@
+{
+  "artifact_version": 1,
+  "artifact_name": "layer3-workbench-proof-readiness-manifest",
+  "status": "branch-local planning-only",
+  "scope": {
+    "branch": "codex/l3-readiness-proof-contract",
+    "base_remote": "project6-origin/main",
+    "base_commit": "16a26d799dbd8c0c800b01e3a1d378202d406482",
+    "purpose": "Define proof/readiness gates required before any later Layer 3 workbench execution implementation is selected.",
+    "live_behavior_change": false
+  },
+  "authority_order": [
+    "GitHub PR state for merged/open status",
+    "current main repo truth for live implementation surfaces",
+    "Layer3 planning docs for branch-local freeze scope",
+    "mockup spec for target-state product intent only"
+  ],
+  "governing_docs": [
+    "next_milestone_plans/Layer3_planning_docs/36_L3_WB_EXECUTION_READINESS_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/37_L3_WB_STATE_HASH_IDEMPOTENCY_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/34_L3_WB_PLAN_REVISION_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/35_L3_WB_PLAN_REVISION_API_AND_STATE_CONTRACT.md",
+    "next_milestone_plans/layer3_progress_manifest.json",
+    "next_milestone_plans/layer3_progress_board.md",
+    "next_milestone_plans/layer3-mockups/mockup-spec.txt",
+    "docs/nrc_adams/nrc_aps_status_handoff.md"
+  ],
+  "current_live_workbench_boundary": {
+    "live_bounded": [
+      "first-slice shell/API",
+      "read-only plan preview",
+      "approval-only L3AnalysisPlan persistence",
+      "pre-approval plan revision-control"
+    ],
+    "not_live": [
+      "L3PassRun creation from workbench",
+      "analysis execution",
+      "results review",
+      "package review",
+      "handoff",
+      "runtime snapshot DB writes",
+      "schema widening",
+      "qualitative execution",
+      "hybrid execution",
+      "RAG/vector execution",
+      "local upload or local-directory ingestion",
+      "hidden LLM planning",
+      "full mockup activation"
+    ]
+  },
+  "readiness_gates": [
+    {
+      "gate_id": "proof-manifest",
+      "decision": "Proof claims must be machine-readable and cite exact files, commands, and expected results.",
+      "status": "introduced_by_this_manifest"
+    },
+    {
+      "gate_id": "state-model",
+      "decision": "Every workbench state must declare authority source, allowed next actions, and forbidden downstream posture.",
+      "status": "defined_in_37_contract"
+    },
+    {
+      "gate_id": "preview-hash",
+      "decision": "Canonical preview hash basis must be frozen before approval/revision/execution can depend on it.",
+      "status": "defined_in_37_contract"
+    },
+    {
+      "gate_id": "idempotency",
+      "decision": "Every state-writing endpoint must define duplicate and retry behavior before execution.",
+      "status": "defined_in_37_contract"
+    },
+    {
+      "gate_id": "concurrency",
+      "decision": "Approval, revision, and future execution transitions must be serialized by server authority, not browser state.",
+      "status": "defined_in_37_contract"
+    },
+    {
+      "gate_id": "revision-recovery",
+      "decision": "The return path from plan_revision_requested to an approvable preview must be explicitly frozen.",
+      "status": "decision_required_before_execution"
+    },
+    {
+      "gate_id": "approved-plan-correction",
+      "decision": "Approved-plan cancellation or supersession must be explicitly frozen or remain unavailable.",
+      "status": "decision_required_before_execution"
+    },
+    {
+      "gate_id": "output-taxonomy",
+      "decision": "Datum/fact/finding/insight/caveat/result/package terms must be defined or deferred before results UI.",
+      "status": "decision_required_before_results_or_package_ui"
+    },
+    {
+      "gate_id": "source-breadth",
+      "decision": "RAG/vector/upload/local-directory/qualitative/hybrid scope must be explicitly admitted or remain unavailable.",
+      "status": "decision_required_before_source_or_execution_expansion"
+    }
+  ],
+  "validation_commands": [
+    {
+      "command": "python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "purpose": "Validate proof/readiness manifest JSON syntax."
+    },
+    {
+      "command": "python -m pytest backend/tests/test_layer3_api.py backend/tests/test_layer3_page.py backend/tests/test_layer3_workbench.py -q",
+      "purpose": "Verify focused Layer 3 workbench backend/page behavior remains green."
+    },
+    {
+      "command": "git diff --check",
+      "purpose": "Verify whitespace/diff hygiene."
+    }
+  ],
+  "browser_proof_rule": "No browser proof is required for this docs-only readiness slice because runtime UI behavior does not change. A later UI or execution slice must run both headed and headless browser proof when browser behavior changes.",
+  "no_go_scan_terms": [
+    "execution is live",
+    "results are live",
+    "package review is live",
+    "handoff is live",
+    "qualitative execution is live",
+    "hybrid execution is live",
+    "RAG/vector execution is live",
+    "runtime DB writes are live",
+    "schema widening is live",
+    "full mockup is live"
+  ]
+}

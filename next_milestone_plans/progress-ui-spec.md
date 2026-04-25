@@ -133,6 +133,7 @@ Use these colors consistently:
 - `settled`: green-gray or other clearly closed-but-not-deferred state
 - `deferred`: gray
 - `branch_only`: blue or other clearly non-main state
+- `branch_local_planning_only`: blue-lavender or other clearly non-main, non-live planning state
 
 State labels should remain visible in text, not color alone.
 
