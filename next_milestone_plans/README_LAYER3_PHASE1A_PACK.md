@@ -120,6 +120,12 @@ And to the Layer 3 workbench package-construction freeze packet from PR `#237`, 
 
 The package-construction packet freezes only the bounded commit step after PR `#235` read-only preview: exactly one reconciliation row, exactly three package rows, and exactly three payload files for `canonical_internal`, `user_facing`, and `review_facing`, guarded by approved selected-pass result-review and preview-basis authority. PR `#238` implements that backend commit as `POST /api/v1/layer3/package/review/commit`. It still does not admit package-review submit/decision state, handoff/export, `materialize_package_entry(...)` as-is from `/review/layer3`, schema/runtime/source widening, rerun/recovery, qualitative/hybrid/RAG/vector behavior, new UI code or package-creation controls, or full mockup activation. The existing package-preview panel reflects the new backend state by no longer listing package commit as disabled.
 
+And to the Layer 3 workbench package-review submit freeze packet, which is planning-only and does not make package-review submit, handoff, or export live by itself:
+- `next_milestone_plans/Layer3_planning_docs/52_L3_WB_PACKAGE_REVIEW_SUBMIT_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/53_L3_WB_PACKAGE_REVIEW_SUBMIT_API_AND_STATE_CONTRACT.md`
+
+The package-review submit packet freezes only a future operator decision over the already constructed package set from PR `#238`. It keeps package ids, package kinds, payload refs, and payload hashes server-verified and immutable; it does not admit package payload mutation, package reconstruction, additional package/reconciliation/artifact rows, handoff/export, result-review amendment, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, new UI code, or full mockup activation.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
@@ -562,6 +568,13 @@ They freeze the next eligible boundary after merged PR `#235` as package constru
 - `50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE.md`
 - `51_L3_WB_PACKAGE_CONSTRUCTION_API_AND_STATE_CONTRACT.md`
 
+### Broader workbench package-review submit planning-only freeze docs
+
+These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+They freeze the next eligible planning boundary after merged PR `#238` as package-review submit/decision state only, not handoff/export or package reconstruction. The admitted future write set is limited to one operator package-review decision object over the already constructed package set, preferably in existing `L3ReconciliationRecord.summary_json` plus an optional `L3Session.summary_json` pointer if no schema widening is required. They do not make package-review submission live by themselves and do not admit package payload mutation, additional package/reconciliation rows, `AnalysisArtifact` creation, handoff/export, result-review amendment, approved-plan supersession, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, package rebuild/amendment after changes requested, new UI code, or full mockup activation:
+- `52_L3_WB_PACKAGE_REVIEW_SUBMIT_FREEZE.md`
+- `53_L3_WB_PACKAGE_REVIEW_SUBMIT_API_AND_STATE_CONTRACT.md`
+
 ### Broader workbench mockup source mirror
 
 These files are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
@@ -898,6 +911,33 @@ Read docs `50`/`51` as package-construction governance and PR `#238` as the sepa
 - PR `#238` keeps durable package payload construction inside the package owner-service boundary through a workbench-compatible helper
 - PR `#238` must not call `materialize_package_entry(...)` as-is from `/review/layer3` by fabricating Gate D `phase1a_loading_closure` or `pass_entry`
 - it does not admit package-review submission, package-review approval/rejection, handoff/export, `AnalysisArtifact` creation, new analysis plan/pass/run creation, result-review amendment, approved-plan supersession, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation
+
+### If you are auditing the Layer 3 workbench package-review submit freeze
+
+Start with:
+- `Layer3_planning_docs/52_L3_WB_PACKAGE_REVIEW_SUBMIT_FREEZE.md`
+- `Layer3_planning_docs/53_L3_WB_PACKAGE_REVIEW_SUBMIT_API_AND_STATE_CONTRACT.md`
+- `Layer3_planning_docs/50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE.md`
+- `Layer3_planning_docs/51_L3_WB_PACKAGE_CONSTRUCTION_API_AND_STATE_CONTRACT.md`
+- `backend/app/models/models.py`
+- `backend/app/services/layer3_workbench.py`
+- `backend/app/services/layer3_package_entry.py`
+- `backend/app/api/layer3.py`
+- `backend/tests/test_layer3_api.py`
+- `backend/tests/test_layer3_package_entry.py`
+- `next_milestone_plans/layer3_workbench_proof_manifest.json`
+- `next_milestone_plans/layer3_progress_board.md`
+- `next_milestone_plans/layer3_progress_manifest.json`
+- `docs/nrc_adams/nrc_aps_status_handoff.md`
+
+Read docs `52`/`53` as package-review submit/decision governance only:
+- the admitted future decision records one operator disposition over an already constructed package set
+- package ids, package kinds, payload refs, and payload hashes must stay hash-stable and server-verified
+- the preferred persistence boundary is existing JSON-bearing state; if a new model or migration is required, stop for a separate schema/persistence freeze
+- approval does not enable handoff/export by itself
+- `changes_requested` does not imply package rebuild/amendment by itself
+- the docs do not make `/api/v1/layer3/package/review/submit` live by themselves
+- they do not admit package reconstruction, package payload mutation, additional package/reconciliation rows, `AnalysisArtifact` creation, handoff/export, result-review amendment, approved-plan supersession, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 
