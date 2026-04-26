@@ -2014,13 +2014,24 @@ def test_layer3_api_package_review_submit_records_decision_without_mutating_pack
     summary_body = summary.json()
     assert summary_body["package_review_submit"]["state"] == "package_review_approved"
     assert summary_body["package_review_submit"]["operator_decision"] == "approved"
+    assert summary_body["package_review_submit"]["analysis_run_id"] == start_body["analysis_run_id"]
+    assert summary_body["package_review_submit"]["result_review_record_ref"] == review_body["review_record_ref"]
+    assert summary_body["package_review_submit"]["package_review_preview_hash"] == commit_body["package_review_preview_hash"]
     assert summary_body["package_review_submit"]["package_review_submit_enabled"] is False
+    assert summary_body["package_review_submit"]["payload_hashes"] == commit_body["payload_hashes"]
     assert summary_body["package_review_submit"]["downstream_unavailable"] == [
         "aps_handoff",
         "external_export",
         "downstream_dispatch",
     ]
+    assert summary_body["handoff_export_prepare"]["available"] is True
     assert summary_body["handoff_export_prepare"]["state"] == "handoff_export_ready"
+    assert summary_body["handoff_export_prepare"]["analysis_run_id"] == start_body["analysis_run_id"]
+    assert summary_body["handoff_export_prepare"]["result_review_record_ref"] == review_body["review_record_ref"]
+    assert summary_body["handoff_export_prepare"]["package_review_preview_hash"] == commit_body["package_review_preview_hash"]
+    assert summary_body["handoff_export_prepare"]["package_review_state"] == "package_review_approved"
+    assert summary_body["handoff_export_prepare"]["payload_refs"] == commit_body["payload_refs"]
+    assert summary_body["handoff_export_prepare"]["payload_hashes"] == commit_body["payload_hashes"]
     assert summary_body["downstream_unavailable"] == ["aps_handoff", "external_export", "downstream_dispatch"]
 
 

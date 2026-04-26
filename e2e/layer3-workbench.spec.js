@@ -121,9 +121,11 @@ test('Layer 3 workbench completes the first-slice operator path without enabling
   await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
   await expect(page.locator('#package-construction-commit')).toBeDisabled();
   await expect(page.locator('#package-review-submit')).toBeDisabled();
+  await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Start Execution' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Rerun' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Export' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Download' })).toHaveCount(0);
   await expect(page.locator('#unavailable-list')).toContainText('plan');
   await expect(page.locator('#unavailable-list')).toContainText('execution');
 
@@ -266,6 +268,7 @@ test('Layer 3 workbench approves an admissible plan without starting execution',
   await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
   await expect(page.locator('#package-construction-commit')).toBeDisabled();
   await expect(page.locator('#package-review-submit')).toBeDisabled();
+  await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
   await expect(page.locator('#unavailable-list')).toContainText('execution');
   await expect(page.locator('#unavailable-list')).toContainText('package');
 });
@@ -372,6 +375,7 @@ test('Layer 3 workbench records selected-pass result review only after status au
   await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
   await expect(page.locator('#package-construction-commit')).toBeDisabled();
   await expect(page.locator('#package-review-submit')).toBeDisabled();
+  await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
 });
 
 test('Layer 3 workbench commits a package set and submits bounded package review after approved result review', async ({ page, request }) => {
@@ -556,8 +560,106 @@ test('Layer 3 workbench commits a package set and submits bounded package review
 
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_approved');
   await expect(page.locator('#package-review-submit')).toBeDisabled();
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('handoff_export_ready');
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('internal_export_envelope');
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('prepare_only');
+  await expect(page.locator('#handoff-export-prepare-submit')).toBeEnabled();
+
+  await page.locator('#handoff-export-prepare-decision').selectOption('hold');
+  await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
+  await page.locator('#handoff-export-prepare-notes').fill('Holding the preparation requires notes.');
+  await expect(page.locator('#handoff-export-prepare-submit')).toBeEnabled();
+  await page.locator('#handoff-export-prepare-decision').selectOption('authorize_prepare');
+  await page.locator('#handoff-export-prepare-notes').fill('');
+  await expect(page.locator('#handoff-export-prepare-submit')).toBeEnabled();
+
+  const prepareRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/handoff/export/prepare'));
+  const prepareResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/handoff/export/prepare'));
+  const postPrepareSummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${setup.seed.session_id}`));
+  await page.locator('#handoff-export-prepare-submit').click();
+  const prepareRequest = await prepareRequestPromise;
+  const preparePayload = prepareRequest.postDataJSON();
+  const committedPackageIds = commit.output_packages.map((item) => item.output_package_id);
+  const expectedPrepareKeys = [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'result_review_record_ref',
+    'package_review_preview_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'payload_refs',
+    'payload_hashes',
+    'package_review_submit_record_ref',
+    'package_review_state',
+    'handoff_target',
+    'export_mode',
+    'operator_decision',
+    'expected_package_kinds',
+  ];
+  if (preparePayload.analysis_run_id) expectedPrepareKeys.push('analysis_run_id');
+  expectOnlyPayloadKeys(preparePayload, expectedPrepareKeys);
+  expect(preparePayload.session_id).toBe(setup.seed.session_id);
+  expect(preparePayload.analysis_plan_id).toBe(setup.approval.analysis_plan_id);
+  expect(preparePayload.pass_run_id).toBe(setup.passRunId);
+  expect(preparePayload.preview_id).toBe(setup.planPreview.preview_id);
+  expect(preparePayload.preview_hash).toBe(setup.planPreview.preview_hash);
+  expect(preparePayload.result_review_record_ref).toBe(review.review_record_ref);
+  expect(preparePayload.package_review_preview_hash).toBe(preview.package_review_preview_hash);
+  expect(preparePayload.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(preparePayload.package_review_submit_record_ref).toBe(submit.submit_record_ref);
+  expect(preparePayload.package_review_state).toBe('package_review_approved');
+  expect(preparePayload.handoff_target).toBe('internal_export_envelope');
+  expect(preparePayload.export_mode).toBe('prepare_only');
+  expect(preparePayload.operator_decision).toBe('authorize_prepare');
+  expect([...preparePayload.output_package_ids].sort()).toEqual([...committedPackageIds].sort());
+  expect(preparePayload.payload_refs).toEqual(commit.payload_refs);
+  expect(preparePayload.payload_hashes).toEqual(commit.payload_hashes);
+  expect(preparePayload.expected_package_kinds).toEqual(['canonical_internal', 'user_facing', 'review_facing']);
+  for (const forbidden of [
+    'aps_handoff',
+    'dispatch',
+    'send',
+    'external_export',
+    'download',
+    'connector_run_id',
+    'runtime_db_write',
+    'analysis_artifact',
+    'artifact_manifest',
+    'create_package',
+    'rebuild_package',
+    'package_payload',
+    'rewrite_output',
+  ]) {
+    expect(preparePayload).not.toHaveProperty(forbidden);
+  }
+
+  const prepare = await expectJson(await prepareResponsePromise);
+  expect(prepare.schema_id).toBe('layer3.handoff_export_prepare.v1');
+  expect(prepare.status).toBe('prepared');
+  expect(prepare.handoff_export_state).toBe('handoff_export_prepared');
+  expect(prepare.handoff_target).toBe('internal_export_envelope');
+  expect(prepare.export_mode).toBe('prepare_only');
+  expect(prepare.external_handoff_enabled).toBe(false);
+  expect(prepare.external_export_enabled).toBe(false);
+  expect(prepare.dispatch_enabled).toBe(false);
+  expect(prepare.downstream_unavailable).toEqual(['aps_handoff', 'external_export', 'downstream_dispatch']);
+  expect([...prepare.handoff_export_envelope.output_package_ids].sort()).toEqual([...committedPackageIds].sort());
+  expect(prepare.handoff_export_envelope.payload_refs).toEqual(commit.payload_refs);
+  expect(prepare.handoff_export_envelope.payload_hashes).toEqual(commit.payload_hashes);
+  await expectJson(await postPrepareSummaryPromise);
+
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('handoff_export_prepared');
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('aps handoff');
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('external export');
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('downstream dispatch');
+  await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Create Package' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Export' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Download' })).toHaveCount(0);
 });
 
 test('Layer 3 workbench can request plan revision without starting execution', async ({ page, request }) => {
