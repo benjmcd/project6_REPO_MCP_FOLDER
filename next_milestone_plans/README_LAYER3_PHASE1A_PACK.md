@@ -583,10 +583,10 @@ PR `#241` freezes the next eligible planning boundary after merged PR `#238` as 
 - `52_L3_WB_PACKAGE_REVIEW_SUBMIT_FREEZE.md`
 - `53_L3_WB_PACKAGE_REVIEW_SUBMIT_API_AND_STATE_CONTRACT.md`
 
-### Broader workbench handoff/export preparation planning-only freeze docs
+### Broader workbench handoff/export preparation governance and backend implementation
 
 These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-PR `#250` freezes the next eligible planning boundary after merged package-review submit approval as internal handoff/export preparation only. The planned future write set is constrained to existing JSON-bearing workbench state, with a `prepare_only` export-envelope response that keeps external handoff/export/dispatch disabled. It does not make `/api/v1/layer3/handoff/export/prepare` live by itself, does not dispatch to APS, does not export externally, does not create physical export files, does not create `AnalysisArtifact` rows, does not create or mutate package rows or payloads, does not rebuild packages, does not widen source/schema/runtime scope, and does not activate the full mockup target state:
+PR `#250` freezes the next eligible planning boundary after merged package-review submit approval as internal handoff/export preparation only. PR `#251` implements that boundary as a backend/API-only `prepare_only` endpoint over existing JSON-bearing workbench state, and PR `#252` hardens blocker vocabulary plus active package-substate session-summary priority. The live boundary keeps external handoff/export/dispatch disabled, does not dispatch to APS, does not export externally, does not create physical export files, does not create `AnalysisArtifact` rows, does not create or mutate package rows or payloads, does not rebuild packages, does not render handoff/export controls, does not widen source/schema/runtime scope, and does not activate the full mockup target state:
 - `54_L3_WB_HANDOFF_EXPORT_FREEZE.md`
 - `55_L3_WB_HANDOFF_EXPORT_API_AND_STATE_CONTRACT.md`
 
