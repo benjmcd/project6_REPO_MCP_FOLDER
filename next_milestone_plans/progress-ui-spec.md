@@ -45,7 +45,7 @@ The UI must not override authority.
 - Do not present candidate next consumers as though they are already the current implementation lane.
 - Do not present a deferred item as a candidate or current focus unless its manifest-declared activation conditions are satisfied.
 - Render `layer3_workbench_current_decision` separately from `next_required_decision`; the later APS family settlement is not itself a workbench execution or next-slice admission.
-- Render `layer3_workbench_slices` as a structured workbench register; do not make users infer PR `#184`, `#194`, `#199`, `#205`, `#207`, `#212`, `#213`, `#216`, `#218`, `#222`, docs `44`/`45`, the PR `#227` result-review implementation state, docs `46`/`47` result-review UI planning state, PR `#232` result-review UI implementation state, docs `48`/`49` package-review preview planning state, PR `#235` package-review preview implementation state, docs `50`/`51` package-construction planning state, PR `#238` package-construction implementation state, PR `#241` docs `52`/`53` package-review submit planning state, branch-only package-review submit implementation candidate state, or any future branch-only package implementation candidate only from prose.
+- Render `layer3_workbench_slices` as a structured workbench register; do not make users infer PR `#184`, `#194`, `#199`, `#205`, `#207`, `#212`, `#213`, `#216`, `#218`, `#222`, docs `44`/`45`, the PR `#227` result-review implementation state, docs `46`/`47` result-review UI planning state, PR `#232` result-review UI implementation state, docs `48`/`49` package-review preview planning state, PR `#235` package-review preview implementation state, docs `50`/`51` package-construction planning state, PR `#238` package-construction implementation state, PR `#241` docs `52`/`53` package-review submit planning state, PR `#243` package-review submit implementation state, or any future branch-only package implementation candidate only from prose.
 
 ## Required Visual Sections
 
@@ -86,7 +86,7 @@ Render these sections in this order:
      - governing docs
      - key PRs
      - exact live scope or explicit non-goals
-  - render docs `46`/`47` as planning-only result-review UI governance, PR `#232` as the separate live bounded `/review/layer3` result-review UI implementation, docs `48`/`49` as planning-only package-review preview governance with no live package construction or handoff, PR `#235` as live only for read-only package-review preview inspection, docs `50`/`51` as planning-only package-construction governance by themselves, PR `#238` as live only for bounded backend package construction with no package-review submission or handoff, PR `#241` docs `52`/`53` as planning-only package-review submit/decision governance, branch-only package-review submit implementation candidates as non-main backend-only state until merged-main authority confirms them, and future branch-only package implementation candidates as branch-local until merged-main authority confirms them
+  - render docs `46`/`47` as planning-only result-review UI governance, PR `#232` as the separate live bounded `/review/layer3` result-review UI implementation, docs `48`/`49` as planning-only package-review preview governance with no live package construction or handoff, PR `#235` as live only for read-only package-review preview inspection, docs `50`/`51` as planning-only package-construction governance by themselves, PR `#238` as live only for bounded backend package construction by itself, PR `#241` docs `52`/`53` as planning-only package-review submit/decision governance, PR `#243` as current-main live backend-only package-review submit behavior with no rendered submit UI or handoff/export, and future branch-only package implementation candidates as branch-local until merged-main authority confirms them
    - keep the register visually separate from the APS milestone table because it is a workbench lineage overlay, not a 29-milestone APS count change
 
 5. `Completed Chain`
@@ -142,7 +142,7 @@ Use these colors consistently:
 - `merged_live_bounded_execution_selection`: green-teal or other clearly current-main, write-bounded shell state; it must not look like running analysis, completed execution, results review, package review, or handoff
 - `planning_only_package_construction_freeze`: amber or other clearly planning-only package-construction state; it must not look like live package construction, package-review submit/decision, handoff, or export
 - `planning_only_package_review_submit_freeze`: amber or other clearly planning-only package-review submit/decision state; it must not look like live package-review submission, package payload mutation, handoff, or export
-- `branch_only_bounded_package_review_submit_implementation`: cyan-blue or other clearly non-main bounded backend state; it must not look like current-main live behavior, rendered UI activation, package payload mutation, handoff, or export
+- `merged_live_bounded_package_review_submit`: green or other clearly current-main bounded backend state; it must not look like rendered UI activation, package payload mutation, handoff, or export
 
 State labels should remain visible in text, not color alone.
 
