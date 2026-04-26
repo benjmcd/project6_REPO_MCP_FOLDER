@@ -1,6 +1,6 @@
 # 58 L3 Workbench APS Handoff Dispatch Freeze
 
-Status: governing freeze for the bounded Layer 3 workbench APS handoff dispatch backend/API slice now implemented on current `main` through PR `#260`, with PR `#261` post-merge fail-closed authority hardening.
+Status: governing freeze for the bounded Layer 3 workbench APS handoff dispatch backend/API slice now implemented on current `main` through PR `#260`, with PR `#261` and PR `#263` post-merge fail-closed authority hardening.
 
 This document freezes only the bounded APS handoff dispatch step from the current `/review/layer3` workbench chain into the existing repo-native APS evidence-bundle handoff family. The merged backend/API implementation adds the dispatch endpoint and server-authoritative state only; it does not add rendered APS dispatch UI controls, external export/download, connector or generic downstream dispatch, new schema, package mutation, package reconstruction, source/runtime/schema widening, or full mockup activation.
 
@@ -12,7 +12,7 @@ Current `main` includes:
 - backend/API handoff/export `prepare_only` state after `package_review_approved`
 - rendered `/review/layer3` prepare-only controls after server-authoritative readiness
 - existing non-workbench APS evidence-bundle handoff owner service in `backend/app/services/layer3_aps_handoff.py`
-- backend/API workbench APS handoff dispatch through `POST /api/v1/layer3/handoff/aps/dispatch`, implemented in PR `#260` and hardened in PR `#261`
+- backend/API workbench APS handoff dispatch through `POST /api/v1/layer3/handoff/aps/dispatch`, implemented in PR `#260` and hardened in PR `#261`/`#263`
 
 Current `main` exposes the backend/API workbench dispatch endpoint only after server-confirmed `handoff_export_prepared` authority and APS owner-service compatibility. Current `main` still does not expose a rendered `/review/layer3` APS dispatch action. The existing APS handoff owner service can materialize an `aps_evidence_bundle_handoff` package row and persisted APS evidence-bundle artifact from terminal packaged Layer 3 session/package truth, and the workbench endpoint now calls it only after the workbench-specific authority checks pass.
 
@@ -37,7 +37,7 @@ The implementation governed by this freeze may add only:
 - state summary fields that identify the APS handoff row, APS bundle ref, handoff status, disabled external export/download posture, and next unavailable downstream families
 - focused tests proving success, fail-closed stale authority, idempotency/conflict behavior, and unchanged package source rows
 
-The implementation must keep the endpoint thin and delegate APS artifact/package materialization to the established owner service boundary. PR `#260` satisfied that compatibility by using the existing owner service plus a narrow workbench-source compatibility path; PR `#261` then restricted fallback behavior so malformed canonical APS provenance still fails closed. If later changes require schema changes, package rewrites, source expansion, or new package/reconciliation rows beyond the single APS handoff package row, stop and create a narrower prerequisite freeze instead.
+The implementation must keep the endpoint thin and delegate APS artifact/package materialization to the established owner service boundary. PR `#260` satisfied that compatibility by using the existing owner service plus a narrow workbench-source compatibility path; PR `#261` then restricted fallback behavior so malformed canonical APS provenance still fails closed, and PR `#263` restricted APS handoff package-row allowance to recorded dispatch state. If later changes require schema changes, package rewrites, source expansion, or new package/reconciliation rows beyond the single APS handoff package row, stop and create a narrower prerequisite freeze instead.
 
 ## Explicit Non-Goals
 

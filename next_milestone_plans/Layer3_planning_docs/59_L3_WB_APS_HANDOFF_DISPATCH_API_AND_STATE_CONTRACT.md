@@ -1,6 +1,6 @@
 # 59 L3 Workbench APS Handoff Dispatch API And State Contract
 
-Status: governing API/state contract for the bounded workbench APS handoff dispatch backend/API endpoint now implemented on current `main` through PR `#260`, with PR `#261` post-merge fail-closed authority hardening.
+Status: governing API/state contract for the bounded workbench APS handoff dispatch backend/API endpoint now implemented on current `main` through PR `#260`, with PR `#261` and PR `#263` post-merge fail-closed authority hardening.
 
 This document defines the request, response, state, idempotency, write, and proof contract for the workbench APS handoff dispatch step after `handoff_export_prepared`. The merged endpoint is backend/API-only and does not admit rendered APS dispatch UI controls, external export/download, generic downstream dispatch, destination selection, connector dispatch, package mutation/rebuild, source/runtime/schema widening, qualitative/hybrid/RAG/vector execution, or full mockup activation.
 

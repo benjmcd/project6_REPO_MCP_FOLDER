@@ -140,11 +140,11 @@ And to the Layer 3 workbench handoff/export preparation UI freeze packet, which 
 
 The handoff/export preparation UI packet freezes only the rendered prepare-only control boundary over the already-live backend prepare endpoint. PR `#256` now implements that bounded UI surface on current `main`: it may render one server-gated preparation decision form from `/review/layer3` after approved package-review authority, but it still does not admit APS handoff, external export/download, downstream dispatch, destination selection, physical export artifacts, `AnalysisArtifact`, package payload mutation, package reconstruction, source/schema/runtime widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
-And to the Layer 3 workbench APS handoff dispatch freeze/API contract from PR `#258`, now implemented backend/API-only by PR `#260` and hardened by PR `#261`:
+And to the Layer 3 workbench APS handoff dispatch freeze/API contract from PR `#258`, now implemented backend/API-only by PR `#260` and hardened by PR `#261`/`#263`:
 - `next_milestone_plans/Layer3_planning_docs/58_L3_WB_APS_HANDOFF_DISPATCH_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/59_L3_WB_APS_HANDOFF_DISPATCH_API_AND_STATE_CONTRACT.md`
 
-The APS handoff dispatch packet governs the bounded backend/API workbench dispatch from exactly one `handoff_export_prepared` envelope into the existing `aps_evidence_bundle_handoff` owner-service family. PR `#260` implements `POST /api/v1/layer3/handoff/aps/dispatch`; PR `#261` tightens fail-closed handling for malformed canonical APS provenance and unexpected package kinds. This still does not admit rendered APS dispatch controls, external export/download, connector dispatch, destination selection, package mutation/reconstruction, additional reconciliation rows, schema/runtime/source widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+The APS handoff dispatch packet governs the bounded backend/API workbench dispatch from exactly one `handoff_export_prepared` envelope into the existing `aps_evidence_bundle_handoff` owner-service family. PR `#260` implements `POST /api/v1/layer3/handoff/aps/dispatch`; PR `#261` tightens fail-closed handling for malformed canonical APS provenance and unexpected package kinds, and PR `#263` restricts APS handoff package-row allowance to recorded dispatch state. This still does not admit rendered APS dispatch controls, external export/download, connector dispatch, destination selection, package mutation/reconstruction, additional reconciliation rows, schema/runtime/source widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
@@ -1035,7 +1035,7 @@ Start with:
 - `backend/tests/test_layer3_aps_handoff.py`
 
 Read docs `58`/`59` as the governing APS handoff dispatch contract:
-- PR `#260` makes the backend/API endpoint live on current `main`; PR `#261` hardens malformed provenance and unexpected package-kind fail-closed behavior
+- PR `#260` makes the backend/API endpoint live on current `main`; PR `#261` hardens malformed provenance and unexpected package-kind fail-closed behavior, and PR `#263` hardens APS handoff package-row allowance so orphan/manual APS rows fail closed until dispatch state is recorded
 - they still do not make rendered APS dispatch controls live by themselves
 - the only APS target they select is `aps_evidence_bundle_handoff` through the existing owner-service family
 - the implementation starts from existing `handoff_export_prepared` state and fails closed on stale package/review/prepare authority
