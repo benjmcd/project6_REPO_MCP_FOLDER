@@ -165,7 +165,9 @@
 .decision-select,
 .reason-input,
 #result-review-decision,
-#result-review-notes {
+#result-review-notes,
+#package-review-submit-decision,
+#package-review-submit-notes {
     width: 100%;
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -222,7 +224,9 @@
 }
 
 #result-review-decision:disabled,
-#result-review-notes:disabled {
+#result-review-notes:disabled,
+#package-review-submit-decision:disabled,
+#package-review-submit-notes:disabled {
     opacity: 0.66;
     cursor: not-allowed;
 }

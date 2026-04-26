@@ -40,6 +40,11 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="result-review-submit"' in response.text
     assert 'id="package-review-preview-panel"' in response.text
     assert 'id="package-review-preview-inspect"' in response.text
+    assert 'id="package-construction-commit"' in response.text
+    assert 'id="package-review-submit-form"' in response.text
+    assert 'id="package-review-submit-decision"' in response.text
+    assert 'id="package-review-submit-notes"' in response.text
+    assert 'id="package-review-submit"' in response.text
     assert 'href="/review/layer3/static/layer3.css"' in response.text
     assert 'src="/review/layer3/static/layer3.js"' in response.text
     assert "Plan</button>" in response.text
@@ -65,8 +70,12 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "getJson(`/session/${encodeURIComponent(sessionId)}`)" in js.text
     assert "postJson('/execution/result/status'" in js.text
     assert "postJson('/execution/result/review'" in js.text
+    assert "postJson('/package/review/commit'" in js.text
+    assert "postJson('/package/review/submit'" in js.text
     assert "operator_view_mode: 'status_only'" in js.text
     assert "operator_decision: elements.resultReviewDecision.value" in js.text
+    assert "operator_decision: elements.packageReviewSubmitDecision.value" in js.text
+    assert "handoff" not in js.text[js.text.find("function packageReviewSubmitPayload"):js.text.find("async function refreshSessionSummary")]
     assert "planRevisionPending" in js.text
     assert "State.planRevisionPending = true" in js.text
 
