@@ -27,6 +27,9 @@ const State = {
     packageReviewSubmit: null,
     packageReviewSubmitError: null,
     packageReviewSubmitPending: false,
+    handoffExportPrepare: null,
+    handoffExportPrepareError: null,
+    handoffExportPreparePending: false,
     gateBDecisions: {},
     materialFilter: '',
     events: [],
@@ -49,6 +52,7 @@ const elements = {
     executionStep: document.getElementById('execution-step-chip'),
     resultsStep: document.getElementById('results-step-chip'),
     packageStep: document.getElementById('package-step-chip'),
+    handoffStep: document.getElementById('handoff-step-chip'),
     planPreview: document.getElementById('plan-preview'),
     planReject: document.getElementById('plan-reject'),
     planRequestRevision: document.getElementById('plan-request-revision'),
@@ -68,6 +72,11 @@ const elements = {
     packageReviewSubmitNotes: document.getElementById('package-review-submit-notes'),
     packageReviewSubmit: document.getElementById('package-review-submit'),
     packageReviewPreviewPanel: document.getElementById('package-review-preview-panel'),
+    handoffExportPrepareForm: document.getElementById('handoff-export-prepare-form'),
+    handoffExportPreparePanel: document.getElementById('handoff-export-prepare-panel'),
+    handoffExportPrepareDecision: document.getElementById('handoff-export-prepare-decision'),
+    handoffExportPrepareNotes: document.getElementById('handoff-export-prepare-notes'),
+    handoffExportPrepareSubmit: document.getElementById('handoff-export-prepare-submit'),
     contextList: document.getElementById('context-list'),
     eventList: document.getElementById('event-list'),
     unavailableList: document.getElementById('unavailable-list'),
@@ -79,6 +88,13 @@ const systemThemeQuery = typeof window.matchMedia === 'function'
 const TERMINAL_PASS_STATUSES = new Set(['completed', 'completed_with_warnings', 'failed']);
 const RESULT_REVIEW_DECISIONS_REQUIRING_NOTES = new Set(['changes_requested', 'rejected', 'blocked']);
 const PACKAGE_REVIEW_DECISIONS_REQUIRING_NOTES = new Set(['changes_requested', 'rejected', 'blocked']);
+const HANDOFF_EXPORT_PREPARE_DECISIONS_REQUIRING_NOTES = new Set(['hold', 'decline', 'blocked']);
+const HANDOFF_EXPORT_PREPARE_RECORDED_STATES = new Set([
+    'handoff_export_prepared',
+    'handoff_export_held',
+    'handoff_export_declined',
+    'handoff_export_blocked',
+]);
 const PACKAGE_REVIEW_PACKAGE_KINDS = ['canonical_internal', 'user_facing', 'review_facing'];
 
 function escapeHtml(value) {
@@ -170,7 +186,7 @@ function renderUnavailable(labels) {
 }
 
 function currentAuthorityRail() {
-    return State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
+    return State.handoffExportPrepare?.authority_rail || State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
         || State.sessionSummary?.authority_rail || State.resultReview?.authority_rail || State.resultStatus?.authority_rail
         || State.planApproval?.authority_rail || State.planRevision?.authority_rail || State.planPreview?.authority_rail || State.gateC?.authority_rail || State.gateB?.authority_rail
         || State.materialPreview?.authority_rail || State.sourcePreview?.authority_rail || State.preflight?.authority_rail
@@ -178,17 +194,18 @@ function currentAuthorityRail() {
 }
 
 function currentDownstreamUnavailable() {
-    return State.packageReviewSubmit?.downstream_unavailable
+    return State.handoffExportPrepare?.downstream_unavailable
+        || State.packageReviewSubmit?.downstream_unavailable
         || State.packageConstruction?.downstream_unavailable
         || State.packageReviewPreview?.downstream_unavailable
         || State.resultReview?.downstream_unavailable
         || State.resultStatus?.downstream_unavailable
+        || State.sessionSummary?.downstream_unavailable
         || State.sessionSummary?.package_review_submit?.downstream_unavailable
         || State.sessionSummary?.package_construction?.downstream_unavailable
         || State.sessionSummary?.package_review_preview?.downstream_unavailable
         || State.sessionSummary?.execution_result_review?.downstream_unavailable
         || State.sessionSummary?.analysis_execution_start?.downstream_unavailable
-        || State.sessionSummary?.downstream_unavailable
         || currentAuthorityRail()?.downstream_unavailable
         || State.bootstrap?.unavailable_gate_labels;
 }
@@ -210,6 +227,7 @@ function renderContext() {
         package_preview: State.packageReviewPreview?.next_state || State.packageReviewPreviewError?.error_code || State.sessionSummary?.package_review_preview?.state || 'none',
         package_construction: State.packageConstruction?.next_state || State.packageConstructionError?.error_code || State.sessionSummary?.package_construction?.state || 'none',
         package_review_submit: State.packageReviewSubmit?.next_state || State.packageReviewSubmitError?.error_code || State.sessionSummary?.package_review_submit?.state || 'none',
+        handoff_export_prepare: State.handoffExportPrepare?.next_state || State.handoffExportPrepareError?.error_code || State.sessionSummary?.handoff_export_prepare?.state || 'none',
     };
     elements.contextList.innerHTML = Object.entries(context)
         .map(([key, value]) => `
@@ -285,6 +303,9 @@ function clearResultReviewState({ keepSummary = false } = {}) {
     State.packageReviewSubmit = null;
     State.packageReviewSubmitError = null;
     State.packageReviewSubmitPending = false;
+    State.handoffExportPrepare = null;
+    State.handoffExportPrepareError = null;
+    State.handoffExportPreparePending = false;
 }
 
 function selectedResultAuthority() {
@@ -352,6 +373,7 @@ function canRefreshSessionSummary() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
+        && !State.handoffExportPreparePending
     );
 }
 
@@ -365,6 +387,7 @@ function canInspectResultStatus() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
+        && !State.handoffExportPreparePending
     );
 }
 
@@ -385,6 +408,7 @@ function canSubmitResultReview() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
+        && !State.handoffExportPreparePending
         && (!reviewDecisionNeedsNotes() || notes)
     );
 }
@@ -400,6 +424,7 @@ function canInspectPackageReviewPreview() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
+        && !State.handoffExportPreparePending
     );
 }
 
@@ -425,6 +450,7 @@ function packageReviewSubmitState() {
             reconciliation_record_id: construction.reconciliation_record_id,
             output_package_ids: outputPackageIds,
             package_kinds: construction.package_kinds,
+            payload_refs: construction.payload_refs,
             payload_hashes: construction.payload_hashes,
             package_review_submit_enabled: true,
             handoff_enabled: false,
@@ -439,8 +465,12 @@ function packageReviewSubmitState() {
 }
 
 function packageOutputPackageIds() {
+    const handoff = handoffExportPrepareState() || {};
     const submit = packageReviewSubmitState() || {};
     const construction = packageConstructionState() || {};
+    if (Array.isArray(handoff.output_package_ids) && handoff.output_package_ids.length) {
+        return handoff.output_package_ids;
+    }
     if (Array.isArray(submit.output_package_ids) && submit.output_package_ids.length) {
         return submit.output_package_ids;
     }
@@ -454,8 +484,12 @@ function packageOutputPackageIds() {
 }
 
 function packagePayloadHashes() {
+    const handoff = handoffExportPrepareState() || {};
     const submit = packageReviewSubmitState() || {};
     const construction = packageConstructionState() || {};
+    if (Array.isArray(handoff.payload_hashes) && handoff.payload_hashes.length) {
+        return handoff.payload_hashes;
+    }
     if (Array.isArray(submit.payload_hashes) && submit.payload_hashes.length) {
         return submit.payload_hashes;
     }
@@ -465,9 +499,32 @@ function packagePayloadHashes() {
     return [];
 }
 
-function packageKindsFromState() {
+function packagePayloadRefs() {
+    const handoff = handoffExportPrepareState() || {};
     const submit = packageReviewSubmitState() || {};
     const construction = packageConstructionState() || {};
+    if (Array.isArray(handoff.payload_refs) && handoff.payload_refs.length) {
+        return handoff.payload_refs;
+    }
+    if (Array.isArray(submit.payload_refs) && submit.payload_refs.length) {
+        return submit.payload_refs;
+    }
+    if (Array.isArray(construction.payload_refs) && construction.payload_refs.length) {
+        return construction.payload_refs;
+    }
+    if (Array.isArray(construction.output_packages)) {
+        return construction.output_packages.map((item) => item.payload_ref).filter(Boolean);
+    }
+    return [];
+}
+
+function packageKindsFromState() {
+    const handoff = handoffExportPrepareState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const construction = packageConstructionState() || {};
+    if (Array.isArray(handoff.package_kinds) && handoff.package_kinds.length) {
+        return handoff.package_kinds;
+    }
     if (Array.isArray(submit.package_kinds) && submit.package_kinds.length) {
         return submit.package_kinds;
     }
@@ -482,6 +539,23 @@ function packageKindsFromState() {
 
 function packageReviewSubmitDecisionNeedsNotes() {
     return PACKAGE_REVIEW_DECISIONS_REQUIRING_NOTES.has(elements.packageReviewSubmitDecision.value);
+}
+
+function handoffExportPrepareDecisionNeedsNotes() {
+    return HANDOFF_EXPORT_PREPARE_DECISIONS_REQUIRING_NOTES.has(elements.handoffExportPrepareDecision.value);
+}
+
+function handoffExportPrepareState() {
+    return State.handoffExportPrepare || State.sessionSummary?.handoff_export_prepare || null;
+}
+
+function recordedHandoffExportPrepare() {
+    const state = handoffExportPrepareState();
+    if (!state) return null;
+    const recordedState = state.handoff_export_state || state.next_state || state.state;
+    return state.prepare_record_ref || HANDOFF_EXPORT_PREPARE_RECORDED_STATES.has(recordedState)
+        ? state
+        : null;
 }
 
 function canCommitPackageConstruction() {
@@ -501,6 +575,7 @@ function canCommitPackageConstruction() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
+        && !State.handoffExportPreparePending
     );
 }
 
@@ -524,7 +599,39 @@ function canSubmitPackageReview() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
+        && !State.handoffExportPreparePending
         && (!packageReviewSubmitDecisionNeedsNotes() || notes)
+    );
+}
+
+function canSubmitHandoffExportPrepare() {
+    const authority = selectedResultAuthority();
+    const handoff = State.sessionSummary?.handoff_export_prepare || {};
+    const submit = packageReviewSubmitState() || {};
+    const packageReviewState = submit.package_review_state || submit.state || handoff.package_review_state;
+    const notes = elements.handoffExportPrepareNotes.value.trim();
+    return Boolean(
+        hasResultAuthorityIdentity(authority)
+        && authority.selected
+        && authority.terminal
+        && State.sessionSummary?.session_id
+        && handoff.available === true
+        && handoff.handoff_export_prepare_enabled === true
+        && packageReviewState === 'package_review_approved'
+        && handoff.result_review_record_ref
+        && handoff.package_review_preview_hash
+        && handoff.reconciliation_record_id
+        && handoff.package_review_submit_record_ref
+        && packageOutputPackageIds().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && packagePayloadRefs().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && packagePayloadHashes().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && !recordedHandoffExportPrepare()
+        && !State.resultReviewPending
+        && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
+        && !State.handoffExportPreparePending
+        && (!handoffExportPrepareDecisionNeedsNotes() || notes)
     );
 }
 
@@ -538,6 +645,18 @@ function isPackageActive() {
         || construction.next_state === 'package_constructed'
         || submit.package_review_submit_enabled === true
         || submit.submit_record_ref
+    );
+}
+
+function isHandoffActive() {
+    const handoff = handoffExportPrepareState() || {};
+    const submit = packageReviewSubmitState() || {};
+    return Boolean(
+        submit.package_review_state === 'package_review_approved'
+        || submit.state === 'package_review_approved'
+        || handoff.available === true
+        || handoff.state === 'handoff_export_ready'
+        || recordedHandoffExportPrepare()
     );
 }
 
@@ -1094,6 +1213,119 @@ function renderPackageReviewPreviewPanel() {
     `;
 }
 
+function handoffExportPanelState() {
+    const handoff = handoffExportPrepareState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const packageReviewState = submit.package_review_state || submit.state || handoff.package_review_state;
+    if (State.handoffExportPreparePending) {
+        return { label: 'handoff_export_prepare_recording', pill: 'preview', message: 'Recording one prepare-only handoff/export decision.' };
+    }
+    if (recordedHandoffExportPrepare()) {
+        return { label: handoff.handoff_export_state || handoff.next_state || handoff.state, pill: 'ok', message: 'Server state already contains a handoff/export preparation decision.' };
+    }
+    if (State.handoffExportPrepareError) {
+        return { label: 'handoff_export_prepare_blocked', pill: 'blocked', message: 'Server authority rejected or blocked the latest preparation action.' };
+    }
+    if (handoff.available === true && packageReviewState === 'package_review_approved') {
+        return { label: handoff.state || 'handoff_export_ready', pill: 'ok', message: 'Approved package-review submit state is ready for prepare-only recording.' };
+    }
+    if (packageReviewState === 'package_review_approved') {
+        return { label: handoff.state || 'handoff_export_unavailable', pill: 'blocked', message: handoff.blocked_reason || 'Preparation readiness is not available from the server summary.' };
+    }
+    return { label: handoff.state || 'handoff_export_unavailable', pill: 'blocked', message: 'Handoff/export preparation requires approved package-review submit state.' };
+}
+
+function renderCodeList(values, emptyText) {
+    return values?.length
+        ? values.map((value) => `<li><code>${escapeHtml(value)}</code></li>`).join('')
+        : `<li>${escapeHtml(emptyText)}</li>`;
+}
+
+function renderHandoffExportPreparePanel() {
+    const handoff = handoffExportPrepareState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const authority = selectedResultAuthority();
+    const panelState = handoffExportPanelState();
+    const packageReviewState = submit.package_review_state || submit.state || handoff.package_review_state;
+    const prepareState = handoff.handoff_export_state || handoff.next_state || handoff.state;
+    const packageIds = packageOutputPackageIds();
+    const packageKinds = packageKindsFromState();
+    const payloadRefs = packagePayloadRefs();
+    const payloadHashes = packagePayloadHashes();
+    const downstream = handoff.downstream_unavailable || submit.downstream_unavailable || ['aps_handoff', 'external_export', 'downstream_dispatch'];
+    const envelope = handoff.handoff_export_envelope;
+    const envelopeRows = envelope && typeof envelope === 'object'
+        ? [
+            fieldItem('schema', envelope.schema_id),
+            fieldItem('package review submit ref', envelope.package_review_submit_record_ref, { code: true }),
+            fieldItem('reconciliation', envelope.reconciliation_record_id, { code: true }),
+            fieldItem('package count', Array.isArray(envelope.output_package_ids) ? envelope.output_package_ids.length : null),
+        ].join('')
+        : '<li>No preparation envelope has been recorded.</li>';
+
+    elements.handoffExportPreparePanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Prepare Authority</strong>
+                <ul>
+                    ${fieldItem('session', authority.sessionId, { code: true })}
+                    ${fieldItem('analysis plan', authority.analysisPlanId, { code: true })}
+                    ${fieldItem('pass run', authority.passRunId, { code: true })}
+                    ${fieldItem('preview', authority.previewId, { code: true })}
+                    ${fieldItem('preview hash', authority.previewHash, { code: true })}
+                    ${fieldItem('analysis run', handoff.analysis_run_id || authority.analysisRunId, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Package Review Submit</strong>
+                <ul>
+                    ${fieldItem('state', packageReviewState)}
+                    ${fieldItem('submit ref', handoff.package_review_submit_record_ref || submit.submit_record_ref, { code: true })}
+                    ${fieldItem('operator decision', submit.operator_decision)}
+                    ${fieldItem('result review', handoff.result_review_record_ref || submit.result_review_record_ref, { code: true })}
+                    ${fieldItem('package preview hash', handoff.package_review_preview_hash || submit.package_review_preview_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Handoff Contract</strong>
+                <ul>
+                    ${fieldItem('target', handoff.handoff_target || 'internal_export_envelope')}
+                    ${fieldItem('mode', handoff.export_mode || 'prepare_only')}
+                    ${fieldItem('state', prepareState)}
+                    ${fieldItem('prepare enabled', handoff.handoff_export_prepare_enabled)}
+                    ${fieldItem('prepare ref', handoff.prepare_record_ref, { code: true })}
+                    ${fieldItem('operator decision', handoff.operator_decision)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Reviewed Packages</strong>
+                <ul>${renderCodeList(packageKinds.map((kind, index) => `${kind}${packageIds[index] ? ` / ${packageIds[index]}` : ''}`), 'No reviewed package identities are available.')}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Payload Refs</strong>
+                <ul>${renderCodeList(payloadRefs, 'No package payload refs are available.')}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Payload Hashes</strong>
+                <ul>${renderCodeList(payloadHashes, 'No package payload hashes are available.')}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Reference Envelope</strong>
+                <ul>${envelopeRows}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Disabled Downstream</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+            ${renderErrorCard(State.handoffExportPrepareError)}
+        </div>
+    `;
+}
+
 function setBusy(button, busy, label) {
     button.disabled = busy;
     if (label) {
@@ -1118,8 +1350,19 @@ function setGateControls() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
+        && !State.handoffExportPreparePending
     );
-    const packageReviewControlsEnabled = Boolean((packageReviewSubmitState() || {}).package_review_submit_enabled === true && !State.packageReviewSubmitPending);
+    const packageReviewControlsEnabled = Boolean(
+        (packageReviewSubmitState() || {}).package_review_submit_enabled === true
+        && !State.packageReviewSubmitPending
+        && !State.handoffExportPreparePending
+    );
+    const handoffExportControlsEnabled = Boolean(
+        State.sessionSummary?.handoff_export_prepare?.available === true
+        && (packageReviewSubmitState()?.package_review_state || packageReviewSubmitState()?.state) === 'package_review_approved'
+        && !recordedHandoffExportPrepare()
+        && !State.handoffExportPreparePending
+    );
     elements.gateBSubmit.disabled = !(State.materialPreview?.material_candidates || []).length;
     elements.gateCPreview.disabled = !State.gateB?.session_id || gateCCommitted;
     elements.gateCCommit.disabled = !State.gateB?.session_id || gateCCommitted;
@@ -1137,10 +1380,14 @@ function setGateControls() {
     elements.packageReviewSubmitDecision.disabled = !packageReviewControlsEnabled;
     elements.packageReviewSubmitNotes.disabled = !packageReviewControlsEnabled;
     elements.packageReviewSubmit.disabled = !canSubmitPackageReview();
+    elements.handoffExportPrepareDecision.disabled = !handoffExportControlsEnabled;
+    elements.handoffExportPrepareNotes.disabled = !handoffExportControlsEnabled;
+    elements.handoffExportPrepareSubmit.disabled = !canSubmitHandoffExportPrepare();
     setStepChip(elements.planStep, canPlanPreview());
     setStepChip(elements.executionStep, Boolean(State.sessionSummary?.execution_selection?.selected));
     setStepChip(elements.resultsStep, Boolean(authority.selected && authority.terminal));
     setStepChip(elements.packageStep, isPackageActive());
+    setStepChip(elements.handoffStep, isHandoffActive());
 }
 
 function renderAll() {
@@ -1152,6 +1399,7 @@ function renderAll() {
     renderPlanPanel();
     renderResultReviewPanel();
     renderPackageReviewPreviewPanel();
+    renderHandoffExportPreparePanel();
     setGateControls();
 }
 
@@ -1253,6 +1501,39 @@ function packageReviewSubmitPayload(authority = selectedResultAuthority()) {
     return payload;
 }
 
+function handoffExportPreparePayload(authority = selectedResultAuthority()) {
+    const handoff = State.sessionSummary?.handoff_export_prepare || {};
+    const submit = packageReviewSubmitState() || {};
+    const notes = elements.handoffExportPrepareNotes.value.trim();
+    const payload = {
+        client_request_id: requestId(),
+        session_id: authority.sessionId,
+        analysis_plan_id: authority.analysisPlanId,
+        pass_run_id: authority.passRunId,
+        preview_id: authority.previewId,
+        preview_hash: authority.previewHash,
+        result_review_record_ref: handoff.result_review_record_ref || submit.result_review_record_ref,
+        package_review_preview_hash: handoff.package_review_preview_hash || submit.package_review_preview_hash,
+        reconciliation_record_id: handoff.reconciliation_record_id || submit.reconciliation_record_id,
+        output_package_ids: packageOutputPackageIds(),
+        payload_refs: packagePayloadRefs(),
+        payload_hashes: packagePayloadHashes(),
+        package_review_submit_record_ref: handoff.package_review_submit_record_ref || submit.submit_record_ref,
+        package_review_state: submit.package_review_state || submit.state || handoff.package_review_state,
+        handoff_target: 'internal_export_envelope',
+        export_mode: 'prepare_only',
+        operator_decision: elements.handoffExportPrepareDecision.value,
+        expected_package_kinds: PACKAGE_REVIEW_PACKAGE_KINDS,
+    };
+    if (notes) {
+        payload.decision_notes = notes;
+    }
+    if (handoff.analysis_run_id || authority.analysisRunId) {
+        payload.analysis_run_id = handoff.analysis_run_id || authority.analysisRunId;
+    }
+    return payload;
+}
+
 async function refreshSessionSummary() {
     const sessionId = currentSessionId();
     if (!sessionId) return;
@@ -1268,6 +1549,7 @@ async function refreshSessionSummary() {
         State.packageReviewPreviewError = null;
         State.packageConstructionError = null;
         State.packageReviewSubmitError = null;
+        State.handoffExportPrepareError = null;
         addEvent('Session state refreshed.');
         renderAll();
     } catch (error) {
@@ -1297,6 +1579,8 @@ async function inspectResultStatus() {
         State.packageConstructionError = null;
         State.packageReviewSubmit = null;
         State.packageReviewSubmitError = null;
+        State.handoffExportPrepare = null;
+        State.handoffExportPrepareError = null;
         addEvent('Result/status authority loaded.');
         renderAll();
     } catch (error) {
@@ -1317,6 +1601,8 @@ async function inspectPackageReviewPreview() {
     if (!canInspectPackageReviewPreview()) return;
     State.packageReviewPreviewPending = true;
     State.packageReviewPreviewError = null;
+    State.handoffExportPrepare = null;
+    State.handoffExportPrepareError = null;
     renderAll();
     setBusy(elements.packageReviewPreviewInspect, true, 'Inspect Package Preview');
     try {
@@ -1324,6 +1610,7 @@ async function inspectPackageReviewPreview() {
         State.packageReviewPreviewError = null;
         State.packageConstructionError = null;
         State.packageReviewSubmitError = null;
+        State.handoffExportPrepareError = null;
         addEvent('Package review preview loaded.');
         renderAll();
     } catch (error) {
@@ -1346,12 +1633,15 @@ async function commitPackageConstruction() {
     State.packageConstructionPending = true;
     State.packageConstructionError = null;
     State.packageReviewSubmitError = null;
+    State.handoffExportPrepare = null;
+    State.handoffExportPrepareError = null;
     renderAll();
     setBusy(elements.packageConstructionCommit, true, 'Commit Package Set');
     try {
         State.packageConstruction = await postJson('/package/review/commit', packageConstructionPayload());
         State.packageConstructionError = null;
         State.packageReviewSubmitError = null;
+        State.handoffExportPrepareError = null;
         addEvent('Package set committed.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.packageConstruction.session_id)}`);
@@ -1379,11 +1669,14 @@ async function submitPackageReview(event) {
     if (!canSubmitPackageReview()) return;
     State.packageReviewSubmitPending = true;
     State.packageReviewSubmitError = null;
+    State.handoffExportPrepare = null;
+    State.handoffExportPrepareError = null;
     renderAll();
     setBusy(elements.packageReviewSubmit, true, 'Submit Package Review');
     try {
         State.packageReviewSubmit = await postJson('/package/review/submit', packageReviewSubmitPayload());
         State.packageReviewSubmitError = null;
+        State.handoffExportPrepareError = null;
         addEvent('Package review submitted.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.packageReviewSubmit.session_id)}`);
@@ -1406,6 +1699,38 @@ async function submitPackageReview(event) {
     }
 }
 
+async function submitHandoffExportPrepare(event) {
+    event.preventDefault();
+    if (!canSubmitHandoffExportPrepare()) return;
+    State.handoffExportPreparePending = true;
+    State.handoffExportPrepareError = null;
+    renderAll();
+    setBusy(elements.handoffExportPrepareSubmit, true, 'Submit Preparation');
+    try {
+        State.handoffExportPrepare = await postJson('/handoff/export/prepare', handoffExportPreparePayload());
+        State.handoffExportPrepareError = null;
+        addEvent('Handoff/export preparation recorded.');
+        try {
+            State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.handoffExportPrepare.session_id)}`);
+        } catch (refreshError) {
+            addEvent(`Handoff/export preparation recorded; session refresh blocked: ${refreshError.message}`);
+        }
+        renderAll();
+    } catch (error) {
+        State.handoffExportPrepareError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'handoff_export_prepare_request_failed',
+            message: error.message,
+        };
+        addEvent(`Handoff/export preparation blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.handoffExportPreparePending = false;
+        setBusy(elements.handoffExportPrepareSubmit, false, 'Submit Preparation');
+        renderAll();
+    }
+}
+
 async function submitResultReview(event) {
     event.preventDefault();
     if (!canSubmitResultReview()) return;
@@ -1422,6 +1747,8 @@ async function submitResultReview(event) {
         State.packageConstructionError = null;
         State.packageReviewSubmit = null;
         State.packageReviewSubmitError = null;
+        State.handoffExportPrepare = null;
+        State.handoffExportPrepareError = null;
         addEvent('Result review recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.resultReview.session_id)}`);
@@ -1699,10 +2026,13 @@ elements.resultReviewForm.addEventListener('submit', submitResultReview);
 elements.packageReviewPreviewInspect.addEventListener('click', inspectPackageReviewPreview);
 elements.packageConstructionCommit.addEventListener('click', commitPackageConstruction);
 elements.packageReviewSubmitForm.addEventListener('submit', submitPackageReview);
+elements.handoffExportPrepareForm.addEventListener('submit', submitHandoffExportPrepare);
 elements.resultReviewDecision.addEventListener('change', setGateControls);
 elements.resultReviewNotes.addEventListener('input', setGateControls);
 elements.packageReviewSubmitDecision.addEventListener('change', setGateControls);
 elements.packageReviewSubmitNotes.addEventListener('input', setGateControls);
+elements.handoffExportPrepareDecision.addEventListener('change', setGateControls);
+elements.handoffExportPrepareNotes.addEventListener('input', setGateControls);
 elements.materialFilter.addEventListener('input', (event) => {
     State.materialFilter = event.target.value;
     renderMaterialLedger();

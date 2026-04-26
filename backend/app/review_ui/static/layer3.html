@@ -49,6 +49,7 @@
             <button id="execution-step-chip" class="step-chip unavailable" data-step="execution" type="button" disabled>Execution</button>
             <button id="results-step-chip" class="step-chip unavailable" data-step="results" type="button" disabled>Results</button>
             <button id="package-step-chip" class="step-chip unavailable" data-step="package" type="button" disabled>Package</button>
+            <button id="handoff-step-chip" class="step-chip unavailable" data-step="handoff" type="button" disabled>Handoff</button>
         </aside>
 
         <section class="layer3-workspace" aria-label="Layer 3 first slice">
@@ -186,6 +187,32 @@
                         <label for="package-review-submit-notes">Notes</label>
                         <textarea id="package-review-submit-notes" rows="3" placeholder="Required for changes requested, rejected, or blocked decisions." disabled></textarea>
                         <button id="package-review-submit" class="primary-btn" type="submit" disabled>Submit Package Review</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="workband handoff-export-band" aria-labelledby="handoff-export-heading">
+                <div class="section-heading">
+                    <div>
+                        <h2 id="handoff-export-heading">Handoff / Export Preparation</h2>
+                        <span class="status-pill preview">Prepare only</span>
+                    </div>
+                </div>
+                <form id="handoff-export-prepare-form" class="result-review-form">
+                    <div id="handoff-export-prepare-panel" class="result-review-panel">
+                        <div class="empty-panel">No approved package-review submit state is available.</div>
+                    </div>
+                    <div class="result-review-controls handoff-export-controls" aria-label="Handoff export preparation controls">
+                        <label for="handoff-export-prepare-decision">Decision</label>
+                        <select id="handoff-export-prepare-decision" disabled>
+                            <option value="authorize_prepare">Authorize prepare</option>
+                            <option value="hold">Hold</option>
+                            <option value="decline">Decline</option>
+                            <option value="blocked">Blocked</option>
+                        </select>
+                        <label for="handoff-export-prepare-notes">Notes</label>
+                        <textarea id="handoff-export-prepare-notes" rows="3" placeholder="Required for hold, decline, or blocked decisions." disabled></textarea>
+                        <button id="handoff-export-prepare-submit" class="primary-btn" type="submit" disabled>Submit Preparation</button>
                     </div>
                 </form>
             </section>
