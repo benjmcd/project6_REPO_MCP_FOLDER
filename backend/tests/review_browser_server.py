@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import sys
 from datetime import datetime, timezone
@@ -22,7 +24,21 @@ from app.api import layer3, review_nrc_aps
 from app.api.deps import get_db
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
-from app.models.models import AnalysisArtifact, AnalysisRun, Dataset, DatasetVersion, VariableDefinition, VariableProfile, uuid_str
+from app.models.models import (
+    AnalysisArtifact,
+    AnalysisRun,
+    ApsContentChunk,
+    ApsContentDocument,
+    ApsContentLinkage,
+    ConnectorRun,
+    ConnectorRunTarget,
+    Dataset,
+    DatasetVersion,
+    VariableDefinition,
+    VariableProfile,
+    uuid_str,
+)
+from app.services import nrc_aps_evidence_bundle_contract as aps_contract
 from app.services import layer3_pass_entry as layer3_pass_entry_module
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
@@ -34,7 +50,6 @@ from app.services.layer3_session_entry import (
 )
 from app.services.layer3_typing_entry import materialize_typing_entry
 from review_browser_fixture import build_review_browser_fixture, install_review_browser_patches
-from test_layer3_aps_handoff import _seed_aps_content_fixture
 
 
 def _install_layer3_browser_patches() -> None:
@@ -83,6 +98,18 @@ def _install_layer3_browser_patches() -> None:
 
     layer3_pass_entry_module.recommend_analysis = _recommend_analysis
     layer3_pass_entry_module.run_analysis = _run_analysis
+
+
+def _write_json(path: Path, payload: dict[str, object]) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+    return str(path)
+
+
+def _write_text(path: Path, payload: str) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(payload, encoding="utf-8")
+    return str(path)
 
 
 def _seed_browser_dataset_version(db, temp_path: Path, *, seed_id: str, dataset_id: str, dataset_version_id: str) -> Path:
@@ -145,6 +172,109 @@ def _seed_browser_dataset_version(db, temp_path: Path, *, seed_id: str, dataset_
     version.row_count = 24
     db.flush()
     return csv_path
+
+
+def _seed_browser_aps_content_fixture(
+    db,
+    temp_path: Path,
+    *,
+    run_id: str,
+    target_id: str,
+    content_id: str,
+) -> None:
+    db.add(
+        ConnectorRun(
+            connector_run_id=run_id,
+            connector_key="nrc_adams_aps",
+            status="completed",
+        )
+    )
+    db.add(
+        ConnectorRunTarget(
+            connector_run_target_id=target_id,
+            connector_run_id=run_id,
+            status="completed",
+            ordinal=0,
+        )
+    )
+
+    artifact_root = temp_path / "aps"
+    chunk_texts = [
+        "Inspection findings confirm stable cooling performance.",
+        "No safety-significant degradation was identified during the interval.",
+    ]
+    normalized_text = "\n".join(chunk_texts)
+    content_units_ref = _write_json(
+        artifact_root / f"{content_id}_content_units.json",
+        {
+            "content_id": content_id,
+            "run_id": run_id,
+            "target_id": target_id,
+            "chunk_count": len(chunk_texts),
+        },
+    )
+    normalized_text_ref = _write_text(artifact_root / f"{content_id}_normalized.txt", normalized_text)
+    blob_ref = _write_text(artifact_root / f"{content_id}.pdf", "pdf-placeholder")
+    selection_ref = _write_json(artifact_root / f"{content_id}_selection.json", {"run_id": run_id, "target_id": target_id})
+    discovery_ref = _write_json(artifact_root / f"{content_id}_discovery.json", {"run_id": run_id, "target_id": target_id})
+    diagnostics_ref = _write_json(artifact_root / f"{content_id}_diagnostics.json", {"quality_status": "strong"})
+
+    db.add(
+        ApsContentDocument(
+            content_id=content_id,
+            content_contract_id=aps_contract.APS_CONTENT_CONTRACT_ID,
+            chunking_contract_id=aps_contract.APS_CHUNKING_CONTRACT_ID,
+            normalization_contract_id=aps_contract.APS_NORMALIZATION_CONTRACT_ID,
+            normalized_text_sha256=hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
+            normalized_char_count=len(normalized_text),
+            chunk_count=len(chunk_texts),
+            content_status="indexed",
+            media_type="application/pdf",
+            document_class="inspection_report",
+            quality_status="strong",
+            page_count=2,
+            diagnostics_ref=diagnostics_ref,
+            visual_page_refs_json=json.dumps([]),
+        )
+    )
+    for ordinal, chunk_text in enumerate(chunk_texts):
+        db.add(
+            ApsContentChunk(
+                content_id=content_id,
+                chunk_id=f"{content_id}-chunk-{ordinal + 1}",
+                content_contract_id=aps_contract.APS_CONTENT_CONTRACT_ID,
+                chunking_contract_id=aps_contract.APS_CHUNKING_CONTRACT_ID,
+                chunk_ordinal=ordinal,
+                start_char=ordinal * 64,
+                end_char=(ordinal * 64) + len(chunk_text),
+                chunk_text=chunk_text,
+                chunk_text_sha256=hashlib.sha256(chunk_text.encode("utf-8")).hexdigest(),
+                page_start=ordinal + 1,
+                page_end=ordinal + 1,
+                unit_kind="pdf_paragraph",
+                quality_status="strong",
+            )
+        )
+    db.add(
+        ApsContentLinkage(
+            content_id=content_id,
+            run_id=run_id,
+            target_id=target_id,
+            accession_number="ML26001A001",
+            content_contract_id=aps_contract.APS_CONTENT_CONTRACT_ID,
+            chunking_contract_id=aps_contract.APS_CHUNKING_CONTRACT_ID,
+            content_units_ref=content_units_ref,
+            normalized_text_ref=normalized_text_ref,
+            normalized_text_sha256=hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
+            blob_ref=blob_ref,
+            blob_sha256=hashlib.sha256(Path(blob_ref).read_bytes()).hexdigest(),
+            download_exchange_ref="aps/download_exchange.json",
+            discovery_ref=discovery_ref,
+            selection_ref=selection_ref,
+            diagnostics_ref=diagnostics_ref,
+        )
+    )
+    db.flush()
 
 
 def _build_browser_quant_ready_session(db, temp_path: Path) -> str:
@@ -214,7 +344,7 @@ def _build_browser_aps_handoff_ready_session(db, temp_path: Path) -> str:
         dataset_id=dataset_id,
         dataset_version_id=dataset_version_id,
     )
-    _seed_aps_content_fixture(db, temp_path, run_id=run_id, target_id=target_id, content_id=content_id)
+    _seed_browser_aps_content_fixture(db, temp_path, run_id=run_id, target_id=target_id, content_id=content_id)
     request = SessionEntryRequest(
         manifest_items=[
             {
