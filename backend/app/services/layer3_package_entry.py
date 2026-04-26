@@ -1068,9 +1068,9 @@ def materialize_workbench_package_commit(
         "trace_summary": trace_summary,
         "reviewed_output_items": reviewed_items,
         "output_metadata_summary": _json_clone(output_metadata_summary),
-        "package_review_submit_enabled": False,
+        "package_review_submit_enabled": True,
         "handoff_enabled": False,
-        "downstream_unavailable": ["package_review_submit", "handoff", "export"],
+        "downstream_unavailable": ["handoff", "export"],
     }
     canonical_payload = {
         "package_header": _package_header(
@@ -1115,7 +1115,7 @@ def materialize_workbench_package_commit(
             "review_record_ref": result_review_state.get("review_record_ref"),
             "unresolved_trace_count": int(result_review_state.get("unresolved_trace_count") or 0),
         },
-        "downstream_unavailable": ["package_review_submit", "handoff", "export"],
+        "downstream_unavailable": ["handoff", "export"],
     }
     review_facing_payload = {
         "package_header": _package_header(
@@ -1131,7 +1131,7 @@ def materialize_workbench_package_commit(
         "artifact_inventory_json": artifact_inventory,
         "owner_service_notes_json": [
             "constructed by workbench package-construction helper",
-            "package-review submit and handoff remain deferred",
+            "handoff remains deferred",
         ],
     }
     reconciliation_summary = {
@@ -1148,7 +1148,7 @@ def materialize_workbench_package_commit(
             "authority_basis_hash": authority_basis_hash,
             "package_review_preview_hash": package_review_preview_hash,
             "result_review_record_ref": result_review_state.get("review_record_ref"),
-            "package_review_submit_enabled": False,
+            "package_review_submit_enabled": True,
             "handoff_enabled": False,
         },
     }
