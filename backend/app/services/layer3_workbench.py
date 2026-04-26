@@ -91,6 +91,8 @@ PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = "layer3.package_review_preview.v1"
 PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID = "layer3.package_review_preview_state.v1"
 PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.package_construction_commit.v1"
 PACKAGE_CONSTRUCTION_COMMIT_STATE_SCHEMA_ID = "layer3.package_construction_commit_state.v1"
+PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.package_review_submit.v1"
+PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID = "layer3.package_review_submit_state.v1"
 EXECUTION_PASS_RUNNING_STATE = "execution_pass_running"
 EXECUTION_PASS_COMPLETED_STATE = "execution_pass_completed"
 EXECUTION_PASS_FAILED_STATE = "execution_pass_failed"
@@ -110,6 +112,13 @@ PACKAGE_COMMIT_UNAVAILABLE_STATE = "package_commit_unavailable"
 PACKAGE_COMMIT_BLOCKED_STATE = "package_commit_blocked"
 PACKAGE_COMMIT_READY_STATE = "package_commit_ready"
 PACKAGE_CONSTRUCTED_STATE = "package_constructed"
+PACKAGE_REVIEW_SUBMIT_UNAVAILABLE_STATE = "package_review_submit_unavailable"
+PACKAGE_REVIEW_SUBMIT_BLOCKED_STATE = "package_review_submit_blocked"
+PACKAGE_REVIEW_SUBMIT_READY_STATE = "package_review_submit_ready"
+PACKAGE_REVIEW_APPROVED_STATE = "package_review_approved"
+PACKAGE_REVIEW_CHANGES_REQUESTED_STATE = "package_review_changes_requested"
+PACKAGE_REVIEW_REJECTED_STATE = "package_review_rejected"
+PACKAGE_REVIEW_BLOCKED_STATE = "package_review_blocked"
 STATE_MODEL_SCHEMA_ID = "layer3.workbench_state_model.v1"
 PLAN_REVISION_DECISIONS = frozenset({"reject_current_preview", "request_revision"})
 PLAN_REVISION_STATE_BY_DECISION = {
@@ -123,6 +132,14 @@ EXECUTION_RESULT_REVIEW_STATE_BY_DECISION = {
     "rejected": EXECUTION_RESULT_REVIEW_REJECTED_STATE,
     "blocked": EXECUTION_RESULT_REVIEW_BLOCKED_STATE,
 }
+PACKAGE_REVIEW_SUBMIT_DECISIONS = frozenset({"approved", "changes_requested", "rejected", "blocked"})
+PACKAGE_REVIEW_SUBMIT_STATE_BY_DECISION = {
+    "approved": PACKAGE_REVIEW_APPROVED_STATE,
+    "changes_requested": PACKAGE_REVIEW_CHANGES_REQUESTED_STATE,
+    "rejected": PACKAGE_REVIEW_REJECTED_STATE,
+    "blocked": PACKAGE_REVIEW_BLOCKED_STATE,
+}
+PACKAGE_REVIEW_SUBMIT_NOTE_REQUIRED_DECISIONS = frozenset({"changes_requested", "rejected", "blocked"})
 EXECUTION_RESULT_REVIEW_ITEM_TYPES = frozenset(
     {
         "datum",
@@ -379,6 +396,54 @@ PACKAGE_CONSTRUCTION_COMMIT_ALLOWED_FIELDS = frozenset(
         "expected_package_kinds",
     }
 )
+PACKAGE_REVIEW_SUBMIT_FORBIDDEN_FIELDS = frozenset(
+    {
+        "handoff",
+        "export",
+        "aps_handoff",
+        "create_package",
+        "rebuild_package",
+        "package_payload",
+        "package_variant_content",
+        "rewrite_output",
+        "edited_findings",
+        "result_review_amendment",
+        "rerun",
+        "retry",
+        "recover",
+        "cancel",
+        "selected_pass_ids",
+        "pass_run_ids",
+        "new_analysis_plan",
+        "plan_revision",
+        "source_expansion",
+        "local_upload",
+        "local_directory",
+        "schema_migration",
+        "runtime_db_write",
+        "artifact_manifest",
+        "analysis_artifact",
+    }
+)
+PACKAGE_REVIEW_SUBMIT_ALLOWED_FIELDS = frozenset(
+    {
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "operator_decision",
+        "client_request_id",
+        "decision_notes",
+        "analysis_run_id",
+        "expected_package_kinds",
+    }
+)
 EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 ANALYSIS_EXECUTION_START_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE = ("result_review", "package", "handoff")
@@ -398,6 +463,7 @@ PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
     "handoff",
     "export",
 )
+PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = ("handoff", "export")
 EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES = frozenset(
     {PASS_STATUS_COMPLETED, PASS_STATUS_COMPLETED_WITH_WARNINGS, PASS_STATUS_FAILED}
 )
@@ -434,6 +500,7 @@ READINESS_REQUIRED_GATES = (
     "result-review",
     "package-review-preview",
     "package-construction",
+    "package-review-submit",
     "browser-proof",
 )
 READINESS_IMPLEMENTED_GATES = (
@@ -448,6 +515,7 @@ READINESS_IMPLEMENTED_GATES = (
     "result-review",
     "package-review-preview",
     "package-construction",
+    "package-review-submit",
 )
 READINESS_DEFERRED_GATES = (
     "revision-recovery",
@@ -716,8 +784,50 @@ def _workbench_state_model() -> dict[str, Any]:
             {
                 "state": PACKAGE_CONSTRUCTED_STATE,
                 "authority_source": "l3_reconciliation_record_and_three_l3_output_package_rows",
-                "allowed_next_actions": ["inspect_package_payloads"],
+                "allowed_next_actions": ["inspect_package_payloads", "package_review_submit"],
+                "forbidden_downstream_actions": ["handoff", "export"],
+            },
+            {
+                "state": PACKAGE_REVIEW_SUBMIT_UNAVAILABLE_STATE,
+                "authority_source": "missing_package_construction_state",
+                "allowed_next_actions": ["inspect_package_construction_state"],
                 "forbidden_downstream_actions": ["package_review_submit", "handoff", "export"],
+            },
+            {
+                "state": PACKAGE_REVIEW_SUBMIT_BLOCKED_STATE,
+                "authority_source": "server_fail_closed_package_review_submit_check",
+                "allowed_next_actions": ["inspect_block_reasons"],
+                "forbidden_downstream_actions": ["handoff", "export"],
+            },
+            {
+                "state": PACKAGE_REVIEW_SUBMIT_READY_STATE,
+                "authority_source": "l3_reconciliation_record_and_three_verified_l3_output_package_rows",
+                "allowed_next_actions": ["package_review_submit"],
+                "forbidden_downstream_actions": ["handoff", "export"],
+            },
+            {
+                "state": PACKAGE_REVIEW_APPROVED_STATE,
+                "authority_source": "bounded_operator_package_review_submit_state",
+                "allowed_next_actions": ["inspect_package_review_decision"],
+                "forbidden_downstream_actions": ["handoff", "export"],
+            },
+            {
+                "state": PACKAGE_REVIEW_CHANGES_REQUESTED_STATE,
+                "authority_source": "bounded_operator_package_review_submit_state",
+                "allowed_next_actions": ["inspect_package_review_decision"],
+                "forbidden_downstream_actions": ["handoff", "export"],
+            },
+            {
+                "state": PACKAGE_REVIEW_REJECTED_STATE,
+                "authority_source": "bounded_operator_package_review_submit_state",
+                "allowed_next_actions": ["inspect_package_review_decision"],
+                "forbidden_downstream_actions": ["handoff", "export"],
+            },
+            {
+                "state": PACKAGE_REVIEW_BLOCKED_STATE,
+                "authority_source": "bounded_operator_package_review_submit_state",
+                "allowed_next_actions": ["inspect_package_review_decision"],
+                "forbidden_downstream_actions": ["handoff", "export"],
             },
             {
                 "state": EXECUTION_RESULT_STATUS_BLOCKED_STATE,
@@ -794,6 +904,8 @@ def readiness_contract() -> dict[str, Any]:
         "package_review_preview_endpoint": f"{API_ROOT}/package/review/preview",
         "package_construction_commit_admitted": True,
         "package_construction_commit_endpoint": f"{API_ROOT}/package/review/commit",
+        "package_review_submit_admitted": True,
+        "package_review_submit_endpoint": f"{API_ROOT}/package/review/submit",
         "package_review_admitted": False,
         "readiness_state": "execution_readiness_blocked",
         "required_gates": list(READINESS_REQUIRED_GATES),
@@ -811,6 +923,7 @@ def readiness_contract() -> dict[str, Any]:
             "client_request_id_required_for_execution_result_review": True,
             "client_request_id_required_for_package_review_preview": False,
             "client_request_id_required_for_package_construction_commit": True,
+            "client_request_id_required_for_package_review_submit": True,
             "duplicate_plan_approval": "returns existing approved-plan conflict; no duplicate L3AnalysisPlan",
             "duplicate_plan_revision": "returns existing revision-control conflict; no duplicate revision-control state",
             "duplicate_execution_selection": "same client_request_id and same approved plan returns existing selection; conflicts fail closed",
@@ -819,6 +932,7 @@ def readiness_contract() -> dict[str, Any]:
             "duplicate_execution_result_review": "same client_request_id and same selected pass returns existing review state; conflicts fail closed",
             "duplicate_package_review_preview": "read-only package-review preview inspection does not create idempotency state",
             "duplicate_package_construction_commit": "same client_request_id and same authority basis returns existing package rows; conflicts fail closed",
+            "duplicate_package_review_submit": "same authority basis and same operator decision returns existing package-review state; conflicts fail closed",
             "duplicate_without_client_request_id": "server-authoritative state conflicts still prevent duplicate durable approval or revision-control state",
             "analysis_execution": "broad analysis execution remains blocked; selected-pass execution start is admitted separately",
         },
@@ -832,6 +946,7 @@ def readiness_contract() -> dict[str, Any]:
             "execution_result_review_uses_session_and_pass_locks": True,
             "package_review_preview_is_read_only": True,
             "package_construction_commit_uses_session_plan_and_pass_locks": True,
+            "package_review_submit_uses_session_reconciliation_and_package_locks": True,
             "broad_analysis_execution_requires_later_freeze": True,
         },
         "deferred_decisions": {
@@ -841,7 +956,7 @@ def readiness_contract() -> dict[str, Any]:
             "output_taxonomy": "requires later freeze before results or package UI",
             "source_breadth": "requires later freeze before RAG/vector/upload/local-directory expansion",
             "package_construction": "admitted only for selected-pass workbench commit; broader package construction still requires later freeze",
-            "package_review_submit": "requires later freeze before durable package-review decision state",
+            "package_review_submit": "admitted only for bounded decision recording over an already constructed workbench package set",
         },
     }
 
@@ -866,6 +981,7 @@ def bootstrap() -> dict[str, Any]:
             "execution_result_review": True,
             "package_review_preview": True,
             "package_construction_commit": True,
+            "package_review_submit": True,
             "analysis_execution": False,
             "qualitative_execution": False,
             "hybrid_execution": False,
@@ -893,6 +1009,8 @@ def bootstrap() -> dict[str, Any]:
             "package_review_preview_endpoint": f"{API_ROOT}/package/review/preview",
             "package_construction_commit_admitted": True,
             "package_construction_commit_endpoint": f"{API_ROOT}/package/review/commit",
+            "package_review_submit_admitted": True,
+            "package_review_submit_endpoint": f"{API_ROOT}/package/review/submit",
             "package_review_admitted": False,
             "readiness_state": "execution_readiness_blocked",
             "readiness_endpoint": f"{API_ROOT}/readiness",
@@ -3515,6 +3633,94 @@ def _package_review_preview_hash(
     )
 
 
+def _package_review_submit_from_reconciliation(reconciliation: L3ReconciliationRecord | None) -> dict[str, Any] | None:
+    if reconciliation is None:
+        return None
+    state = (reconciliation.summary_json or {}).get("package_review_submit")
+    if not isinstance(state, dict):
+        return None
+    if state.get("schema_id") != PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID:
+        return None
+    return state
+
+
+def _packages_in_review_order(packages: list[L3OutputPackage]) -> list[L3OutputPackage]:
+    packages_by_kind = {package.package_kind: package for package in packages}
+    return [packages_by_kind[package_kind] for package_kind in PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS]
+
+
+def _canonical_payload_hashes(
+    *,
+    payload_hashes: Any,
+    packages: list[L3OutputPackage],
+) -> list[str] | None:
+    ordered_packages = _packages_in_review_order(packages)
+    if isinstance(payload_hashes, list):
+        hashes = [str(item or "").strip() for item in payload_hashes]
+        if len(hashes) == len(ordered_packages) and set(hashes) == {package.payload_hash for package in ordered_packages}:
+            return [package.payload_hash for package in ordered_packages]
+        return None
+    if isinstance(payload_hashes, dict):
+        by_kind = {package.package_kind: package.payload_hash for package in ordered_packages}
+        by_id = {package.output_package_id: package.payload_hash for package in ordered_packages}
+        normalized = {str(key or "").strip(): str(value or "").strip() for key, value in payload_hashes.items()}
+        if normalized == by_kind:
+            return [package.payload_hash for package in ordered_packages]
+        if normalized == by_id:
+            return [package.payload_hash for package in ordered_packages]
+    return None
+
+
+def _package_review_submit_response(
+    *,
+    request_id: str,
+    status: str,
+    session_id: str,
+    analysis_plan_id: str,
+    pass_run_id: str,
+    preview_id: str,
+    preview_hash: str,
+    analysis_run_id: str | None,
+    result_review_record_ref: str,
+    package_review_preview_hash: str,
+    reconciliation_record: L3ReconciliationRecord,
+    packages: list[L3OutputPackage],
+    review_state: dict[str, Any],
+) -> dict[str, Any]:
+    ordered_packages = _packages_in_review_order(packages)
+    return {
+        **_base_response(PACKAGE_REVIEW_SUBMIT_SCHEMA_ID, request_id=request_id, status=status),
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_identity": _preview_identity(preview_id=preview_id, preview_hash=preview_hash),
+        "analysis_run_id": analysis_run_id,
+        "result_review_record_ref": result_review_record_ref,
+        "package_review_preview_hash": package_review_preview_hash,
+        "reconciliation_record_id": reconciliation_record.reconciliation_record_id,
+        "output_package_ids": [package.output_package_id for package in ordered_packages],
+        "package_kinds": [package.package_kind for package in ordered_packages],
+        "payload_hashes": [package.payload_hash for package in ordered_packages],
+        "operator_decision": review_state["operator_decision"],
+        "decision_notes": review_state.get("decision_notes"),
+        "package_review_state": review_state["package_review_state"],
+        "submit_record_ref": review_state["submit_record_ref"],
+        "package_review_submit_enabled": False,
+        "handoff_enabled": False,
+        "export_enabled": False,
+        "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+        "next_state": review_state["package_review_state"],
+        "authority_rail": _authority_rail(
+            session_id=session_id,
+            current_gate="package",
+            persistence_mode="durable_package_review_submit",
+            downstream_unavailable=PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
+            execution_enabled=False,
+            package_review_enabled=False,
+        ),
+    }
+
+
 def _package_construction_summary(
     db: Session,
     *,
@@ -3533,18 +3739,26 @@ def _package_construction_summary(
         .all()
     )
     if reconciliation is not None or packages:
+        constructed = bool(
+            reconciliation is not None
+            and len(packages) == len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+            and {package.package_kind for package in packages} == set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+        )
+        package_review_submit = _package_review_submit_from_reconciliation(reconciliation)
         return {
             "schema_id": PACKAGE_CONSTRUCTION_COMMIT_STATE_SCHEMA_ID,
             "available": False,
-            "state": PACKAGE_CONSTRUCTED_STATE if reconciliation is not None and len(packages) == 3 else PACKAGE_COMMIT_BLOCKED_STATE,
-            "blocked_reason": None if reconciliation is not None and len(packages) == 3 else "partial_package_state",
+            "state": PACKAGE_CONSTRUCTED_STATE if constructed else PACKAGE_COMMIT_BLOCKED_STATE,
+            "blocked_reason": None if constructed else "partial_package_state",
             "reconciliation_record_id": reconciliation.reconciliation_record_id if reconciliation is not None else None,
             "output_package_ids": [package.output_package_id for package in packages],
             "package_kinds": [package.package_kind for package in packages],
             "package_commit_enabled": False,
-            "package_review_submit_enabled": False,
+            "package_review_submit_enabled": constructed and package_review_submit is None,
             "handoff_enabled": False,
-            "downstream_unavailable": list(PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE),
+            "downstream_unavailable": list(
+                PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE if constructed else PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE
+            ),
         }
     available = bool(package_review_preview_state.get("available"))
     return {
@@ -4011,18 +4225,543 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
         "package_kinds": [package.package_kind for package in packages],
         "payload_refs": [package.payload_ref for package in packages],
         "payload_hashes": [package.payload_hash for package in packages],
-        "package_review_submit_enabled": False,
+        "package_review_submit_enabled": True,
         "handoff_enabled": False,
-        "downstream_unavailable": list(PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE),
+        "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
         "next_state": PACKAGE_CONSTRUCTED_STATE,
         "authority_rail": _authority_rail(
             session_id=session_id,
             current_gate="package",
             persistence_mode="durable_package_construction",
-            downstream_unavailable=PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE,
+            downstream_unavailable=PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
             execution_enabled=False,
             package_review_enabled=False,
         ),
+    }
+
+
+def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or "").strip()
+    if not request_id:
+        raise Layer3WorkbenchError(
+            "client_request_id_required",
+            "client_request_id is required for package-review submit.",
+            status="invalid",
+            blocked_fields=["client_request_id"],
+            next_allowed_actions=["submit_idempotent_package_review_submit_request"],
+        )
+
+    session_id = str(payload.get("session_id") or "").strip()
+    analysis_plan_id = str(payload.get("analysis_plan_id") or "").strip()
+    pass_run_id = str(payload.get("pass_run_id") or "").strip()
+    preview_id = str(payload.get("preview_id") or "").strip()
+    preview_hash = str(payload.get("preview_hash") or "").strip()
+    supplied_review_ref = str(payload.get("result_review_record_ref") or "").strip()
+    supplied_package_preview_hash = str(payload.get("package_review_preview_hash") or "").strip()
+    reconciliation_record_id = str(payload.get("reconciliation_record_id") or "").strip()
+    operator_decision = str(payload.get("operator_decision") or "").strip()
+    decision_notes = str(payload.get("decision_notes") or "").strip()
+    supplied_analysis_run_id = str(payload.get("analysis_run_id") or "").strip()
+    raw_output_package_ids = payload.get("output_package_ids")
+    raw_payload_hashes = payload.get("payload_hashes")
+
+    missing = [
+        field
+        for field, value in (
+            ("session_id", session_id),
+            ("analysis_plan_id", analysis_plan_id),
+            ("pass_run_id", pass_run_id),
+            ("preview_id", preview_id),
+            ("preview_hash", preview_hash),
+            ("result_review_record_ref", supplied_review_ref),
+            ("package_review_preview_hash", supplied_package_preview_hash),
+            ("reconciliation_record_id", reconciliation_record_id),
+            ("operator_decision", operator_decision),
+        )
+        if not value
+    ]
+    if not raw_output_package_ids:
+        missing.append("output_package_ids")
+    if not raw_payload_hashes:
+        missing.append("payload_hashes")
+    if missing:
+        raise Layer3WorkbenchError(
+            "missing_package_review_submit_fields",
+            f"Package-review submit request is missing required fields: {', '.join(missing)}.",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_package_review_submit_request"],
+        )
+
+    unknown = sorted(key for key in payload if key not in PACKAGE_REVIEW_SUBMIT_ALLOWED_FIELDS)
+    forbidden = sorted(key for key in PACKAGE_REVIEW_SUBMIT_FORBIDDEN_FIELDS if key in payload)
+    blocked_payload_fields = sorted(set(unknown) | set(forbidden))
+    if blocked_payload_fields:
+        blocked_text = ", ".join(blocked_payload_fields)
+        raise Layer3WorkbenchError(
+            "package_review_submit_scope_not_admitted",
+            f"Package-review submit request includes non-admitted fields: {blocked_text}.",
+            status="invalid",
+            blocked_fields=blocked_payload_fields,
+            next_allowed_actions=["submit_bounded_package_review_submit_request"],
+        )
+    if operator_decision not in PACKAGE_REVIEW_SUBMIT_DECISIONS:
+        raise Layer3WorkbenchError(
+            "unsupported_package_review_submit_decision",
+            "operator_decision must be approved, changes_requested, rejected, or blocked.",
+            status="invalid",
+            blocked_fields=["operator_decision"],
+        )
+    if operator_decision in PACKAGE_REVIEW_SUBMIT_NOTE_REQUIRED_DECISIONS and not decision_notes:
+        raise Layer3WorkbenchError(
+            "package_review_submit_notes_required",
+            "decision_notes are required for changes_requested, rejected, or blocked package-review decisions.",
+            status="invalid",
+            blocked_fields=["decision_notes"],
+        )
+
+    expected_package_kinds = payload.get("expected_package_kinds")
+    if expected_package_kinds is not None:
+        expected_kinds = [str(item or "").strip() for item in expected_package_kinds] if isinstance(expected_package_kinds, list) else []
+        if (
+            len(expected_kinds) != len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+            or set(expected_kinds) != set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+        ):
+            raise Layer3WorkbenchError(
+                "package_review_submit_kinds_mismatch",
+                "Package-review submit admits exactly the canonical_internal, user_facing, and review_facing package kinds.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["expected_package_kinds"],
+            )
+
+    status_payload = {
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_id,
+        "preview_hash": preview_hash,
+        "operator_view_mode": "status_only",
+        "client_request_id": request_id,
+    }
+    if supplied_analysis_run_id:
+        status_payload["analysis_run_id"] = supplied_analysis_run_id
+    status_body = execution_result_status(db, status_payload)
+    if status_body.get("status") != "available" or status_body.get("result_status_available") is not True:
+        raise Layer3WorkbenchError(
+            "package_review_submit_result_status_unavailable",
+            "Package-review submit requires available selected-pass result/status with readable output metadata.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["inspect_execution_result_status"],
+        )
+    output_metadata_summary = status_body.get("output_metadata_summary")
+    if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
+        raise Layer3WorkbenchError(
+            "package_review_submit_output_metadata_required",
+            "Package-review submit requires readable selected-pass output metadata.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
+
+    session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
+    pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(
+            L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+            L3ReconciliationRecord.session_id == session_id,
+        )
+        .with_for_update()
+        .one_or_none()
+    )
+    if session is None or pass_run is None:
+        raise Layer3WorkbenchError(
+            "package_review_submit_inconsistent",
+            "Package-review submit could not reload the selected session or pass run.",
+            status="conflict",
+            http_status=409,
+        )
+    if pass_run.session_id != session_id or pass_run.analysis_plan_id != analysis_plan_id:
+        raise Layer3WorkbenchError(
+            "package_review_submit_pass_run_mismatch",
+            "Package-review submit pass_run_id must belong to the supplied session and approved plan.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
+    if reconciliation is None:
+        raise Layer3WorkbenchError(
+            "package_review_submit_requires_package_construction",
+            "Package-review submit requires an existing reconciliation record from package construction commit.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+            next_allowed_actions=["package_construction_commit"],
+        )
+
+    review_state = _execution_result_review_from_pass_run(pass_run)
+    if (
+        review_state is None
+        or review_state.get("review_state") != EXECUTION_RESULT_REVIEW_APPROVED_STATE
+        or review_state.get("operator_decision") != "approved"
+    ):
+        raise Layer3WorkbenchError(
+            "package_review_submit_requires_approved_result_review",
+            "Package-review submit requires an approved selected-pass result-review record.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["record_approved_execution_result_review"],
+        )
+    if supplied_review_ref != str(review_state.get("review_record_ref") or ""):
+        raise Layer3WorkbenchError(
+            "package_review_submit_result_review_mismatch",
+            "Supplied result_review_record_ref does not match the selected-pass approved result review.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["result_review_record_ref"],
+        )
+    mismatched_review_fields = [
+        field
+        for field, expected in {
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "source_preview_id": preview_id,
+            "source_preview_hash": preview_hash,
+        }.items()
+        if str(review_state.get(field) or "") != str(expected)
+    ]
+    if mismatched_review_fields:
+        raise Layer3WorkbenchError(
+            "package_review_submit_result_review_mismatch",
+            "Stored result-review state does not match the supplied approved plan, pass, and preview identity.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=mismatched_review_fields,
+        )
+    if int(review_state.get("unresolved_trace_count") or 0) != 0:
+        raise Layer3WorkbenchError(
+            "package_review_submit_trace_unresolved",
+            "Package-review submit requires approved result-review state with no unresolved trace references.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["result_review_record_ref"],
+        )
+
+    expected_package_preview_hash = _package_review_preview_hash(
+        session_id=session_id,
+        analysis_plan_id=analysis_plan_id,
+        pass_run_id=pass_run_id,
+        preview_id=preview_id,
+        preview_hash=preview_hash,
+        analysis_run_id=str(status_body.get("analysis_run_id") or "") or None,
+        result_review_record_ref=supplied_review_ref,
+        output_metadata_summary=output_metadata_summary,
+    )
+    if supplied_package_preview_hash != expected_package_preview_hash:
+        raise Layer3WorkbenchError(
+            "package_review_submit_preview_mismatch",
+            "Package-review submit must reference the current server-recomputed package-review preview hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_review_preview_hash"],
+            next_allowed_actions=["refresh_package_review_preview"],
+        )
+
+    packages = (
+        db.query(L3OutputPackage)
+        .filter(
+            L3OutputPackage.session_id == session_id,
+            L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
+        )
+        .order_by(L3OutputPackage.package_kind.asc())
+        .with_for_update()
+        .all()
+    )
+    if (
+        len(packages) != len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+        or {package.package_kind for package in packages} != set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    ):
+        raise Layer3WorkbenchError(
+            "package_review_submit_requires_complete_package_set",
+            "Package-review submit requires exactly the constructed canonical_internal, user_facing, and review_facing packages.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["output_package_ids"],
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    ordered_packages = _packages_in_review_order(packages)
+    if not isinstance(raw_output_package_ids, list):
+        raise Layer3WorkbenchError(
+            "package_review_submit_package_ids_invalid",
+            "output_package_ids must be a list of the three constructed output package ids.",
+            status="invalid",
+            blocked_fields=["output_package_ids"],
+        )
+    supplied_package_ids = [str(item or "").strip() for item in raw_output_package_ids]
+    expected_package_ids = [package.output_package_id for package in ordered_packages]
+    if len(supplied_package_ids) != len(expected_package_ids) or set(supplied_package_ids) != set(expected_package_ids):
+        raise Layer3WorkbenchError(
+            "package_review_submit_package_ids_mismatch",
+            "Supplied output_package_ids do not match the constructed package set.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["output_package_ids"],
+        )
+    if not isinstance(raw_payload_hashes, (list, dict)):
+        raise Layer3WorkbenchError(
+            "package_review_submit_payload_hashes_invalid",
+            "payload_hashes must be either a list of package hashes or a mapping keyed by package kind or package id.",
+            status="invalid",
+            blocked_fields=["payload_hashes"],
+        )
+    canonical_payload_hashes = _canonical_payload_hashes(payload_hashes=raw_payload_hashes, packages=packages)
+    if canonical_payload_hashes is None:
+        raise Layer3WorkbenchError(
+            "package_review_submit_payload_hashes_mismatch",
+            "Supplied payload_hashes do not match the constructed package payload hashes.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["payload_hashes"],
+        )
+
+    reconciliation_summary = _json_clone(reconciliation.summary_json or {})
+    commit_summary = reconciliation_summary.get("workbench_package_commit")
+    if not isinstance(commit_summary, dict):
+        raise Layer3WorkbenchError(
+            "package_review_submit_non_workbench_package_state",
+            "Package-review submit requires workbench package-construction commit provenance.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    commit_mismatches = [
+        field
+        for field, expected in {
+            "package_review_preview_hash": supplied_package_preview_hash,
+            "result_review_record_ref": supplied_review_ref,
+        }.items()
+        if str(commit_summary.get(field) or "") != str(expected)
+    ]
+    if commit_mismatches:
+        raise Layer3WorkbenchError(
+            "package_review_submit_construction_mismatch",
+            "Stored package-construction provenance does not match the supplied package-review submit authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=commit_mismatches,
+        )
+
+    analysis_run_id = str(status_body.get("analysis_run_id") or "") or None
+    submit_basis = {
+        "schema_id": "layer3.package_review_submit_authority.v1",
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_id,
+        "preview_hash": preview_hash,
+        "analysis_run_id": analysis_run_id,
+        "result_review_record_ref": supplied_review_ref,
+        "package_review_preview_hash": supplied_package_preview_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": [package.package_kind for package in ordered_packages],
+        "payload_hashes": canonical_payload_hashes,
+        "operator_decision": operator_decision,
+        "decision_notes": decision_notes or None,
+    }
+    submit_record_ref = _stable_id("l3-package-review-submit", submit_basis)
+    existing_submit = _package_review_submit_from_reconciliation(reconciliation)
+    if existing_submit is not None:
+        if existing_submit.get("submit_record_ref") == submit_record_ref:
+            return _package_review_submit_response(
+                request_id=request_id,
+                status="already_submitted",
+                session_id=session_id,
+                analysis_plan_id=analysis_plan_id,
+                pass_run_id=pass_run_id,
+                preview_id=preview_id,
+                preview_hash=preview_hash,
+                analysis_run_id=analysis_run_id,
+                result_review_record_ref=supplied_review_ref,
+                package_review_preview_hash=supplied_package_preview_hash,
+                reconciliation_record=reconciliation,
+                packages=packages,
+                review_state=existing_submit,
+            )
+        raise Layer3WorkbenchError(
+            "package_review_submit_already_recorded",
+            "This package set already has a package-review submit decision.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["client_request_id", "operator_decision"],
+        )
+
+    package_review_state = PACKAGE_REVIEW_SUBMIT_STATE_BY_DECISION[operator_decision]
+    submit_state = {
+        "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+        "client_request_id": request_id,
+        "submit_record_ref": submit_record_ref,
+        "authority_basis": submit_basis,
+        "package_review_state": package_review_state,
+        "operator_decision": operator_decision,
+        "decision_notes": decision_notes or None,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "source_preview_id": preview_id,
+        "source_preview_hash": preview_hash,
+        "analysis_run_id": analysis_run_id,
+        "result_review_record_ref": supplied_review_ref,
+        "package_review_preview_hash": supplied_package_preview_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": [package.package_kind for package in ordered_packages],
+        "payload_hashes": canonical_payload_hashes,
+        "recorded_at": _utcnow_iso(),
+        "package_review_submit_enabled": False,
+        "handoff_enabled": False,
+        "export_enabled": False,
+        "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+    }
+    commit_summary = {**commit_summary, "package_review_submit_enabled": False}
+    reconciliation.summary_json = {
+        **reconciliation_summary,
+        "workbench_package_commit": commit_summary,
+        "package_review_submit": submit_state,
+    }
+    session.summary_json = {
+        **_json_clone(session.summary_json or {}),
+        "package_review_submit": {
+            "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+            "submit_record_ref": submit_record_ref,
+            "package_review_state": package_review_state,
+            "operator_decision": operator_decision,
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "analysis_run_id": analysis_run_id,
+            "reconciliation_record_id": reconciliation_record_id,
+            "output_package_ids": expected_package_ids,
+            "package_kinds": [package.package_kind for package in ordered_packages],
+            "package_review_submit_enabled": False,
+            "handoff_enabled": False,
+            "export_enabled": False,
+            "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+        },
+    }
+    db.commit()
+
+    return _package_review_submit_response(
+        request_id=request_id,
+        status="submitted",
+        session_id=session_id,
+        analysis_plan_id=analysis_plan_id,
+        pass_run_id=pass_run_id,
+        preview_id=preview_id,
+        preview_hash=preview_hash,
+        analysis_run_id=analysis_run_id,
+        result_review_record_ref=supplied_review_ref,
+        package_review_preview_hash=supplied_package_preview_hash,
+        reconciliation_record=reconciliation,
+        packages=packages,
+        review_state=submit_state,
+    )
+
+
+def _package_review_submit_summary(
+    db: Session,
+    *,
+    session_id: str,
+    package_construction_state: dict[str, Any],
+) -> dict[str, Any]:
+    reconciliation_record_id = str(package_construction_state.get("reconciliation_record_id") or "").strip()
+    if package_construction_state.get("state") != PACKAGE_CONSTRUCTED_STATE or not reconciliation_record_id:
+        return {
+            "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+            "available": False,
+            "state": PACKAGE_REVIEW_SUBMIT_UNAVAILABLE_STATE,
+            "blocked_reason": "package_not_constructed",
+            "reconciliation_record_id": None,
+            "output_package_ids": [],
+            "package_kinds": [],
+            "payload_hashes": [],
+            "package_review_submit_enabled": False,
+            "handoff_enabled": False,
+            "export_enabled": False,
+            "downstream_unavailable": list(PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE),
+        }
+
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(
+            L3ReconciliationRecord.session_id == session_id,
+            L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+        )
+        .one_or_none()
+    )
+    packages = (
+        db.query(L3OutputPackage)
+        .filter(
+            L3OutputPackage.session_id == session_id,
+            L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
+        )
+        .order_by(L3OutputPackage.package_kind.asc())
+        .all()
+    )
+    complete_package_set = bool(
+        reconciliation is not None
+        and len(packages) == len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+        and {package.package_kind for package in packages} == set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    )
+    if not complete_package_set:
+        return {
+            "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+            "available": False,
+            "state": PACKAGE_REVIEW_SUBMIT_BLOCKED_STATE,
+            "blocked_reason": "partial_package_state",
+            "reconciliation_record_id": reconciliation_record_id,
+            "output_package_ids": [package.output_package_id for package in packages],
+            "package_kinds": [package.package_kind for package in packages],
+            "payload_hashes": [package.payload_hash for package in packages],
+            "package_review_submit_enabled": False,
+            "handoff_enabled": False,
+            "export_enabled": False,
+            "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+        }
+
+    ordered_packages = _packages_in_review_order(packages)
+    recorded_submit = _package_review_submit_from_reconciliation(reconciliation)
+    if recorded_submit is not None:
+        return {
+            "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+            "available": False,
+            "state": recorded_submit.get("package_review_state"),
+            "blocked_reason": None,
+            "submit_record_ref": recorded_submit.get("submit_record_ref"),
+            "operator_decision": recorded_submit.get("operator_decision"),
+            "decision_notes": recorded_submit.get("decision_notes"),
+            "reconciliation_record_id": reconciliation_record_id,
+            "output_package_ids": [package.output_package_id for package in ordered_packages],
+            "package_kinds": [package.package_kind for package in ordered_packages],
+            "payload_hashes": [package.payload_hash for package in ordered_packages],
+            "package_review_submit_enabled": False,
+            "handoff_enabled": False,
+            "export_enabled": False,
+            "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+        }
+    return {
+        "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+        "available": True,
+        "state": PACKAGE_REVIEW_SUBMIT_READY_STATE,
+        "blocked_reason": None,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": [package.output_package_id for package in ordered_packages],
+        "package_kinds": [package.package_kind for package in ordered_packages],
+        "payload_hashes": [package.payload_hash for package in ordered_packages],
+        "package_review_submit_enabled": True,
+        "handoff_enabled": False,
+        "export_enabled": False,
+        "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
     }
 
 
@@ -4074,6 +4813,11 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         session_id=session_id,
         package_review_preview_state=package_review_preview_state,
     )
+    package_review_submit_state = _package_review_submit_summary(
+        db,
+        session_id=session_id,
+        package_construction_state=package_construction_state,
+    )
     selection_active = bool(execution_selection_readiness["selected"])
     package_active = bool(
         package_review_preview_state.get("available")
@@ -4081,7 +4825,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     )
     current_gate = "package" if package_active else ("execution" if selection_active else ("plan" if typing_committed else "gate_c"))
     downstream_unavailable = (
-        PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE
+        tuple(package_review_submit_state.get("downstream_unavailable") or package_construction_state.get("downstream_unavailable") or [])
         if package_active
         else (
         EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE
@@ -4111,6 +4855,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "execution_result_review": execution_result_review_state,
         "package_review_preview": package_review_preview_state,
         "package_construction": package_construction_state,
+        "package_review_submit": package_review_submit_state,
         "downstream_unavailable": list(downstream_unavailable),
         "authority_rail": _authority_rail(
             session_id=session_id,

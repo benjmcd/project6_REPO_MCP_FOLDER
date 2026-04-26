@@ -252,6 +252,64 @@ def _execute_and_approve_quant_result_review(
     return session_id, preview_body, approval_body, selection_body, start_body, status_body, review_body
 
 
+def _construct_quant_package_set(
+    client: TestClient,
+    tmp_path,
+    *,
+    request_id: str,
+) -> tuple[str, dict, dict, dict, dict, dict, dict, dict, dict]:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        _status_body,
+        review_body,
+    ) = _execute_and_approve_quant_result_review(client, tmp_path, request_id=request_id)
+    pass_run_id = selection_body["pass_run_ids"][0]
+    package_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": f"{request_id}-package-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert package_preview.status_code == 200
+    package_preview_body = package_preview.json()
+    commit_payload = {
+        "client_request_id": f"{request_id}-package-commit",
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_body["preview_id"],
+        "preview_hash": preview_body["preview_hash"],
+        "analysis_run_id": start_body["analysis_run_id"],
+        "result_review_record_ref": review_body["review_record_ref"],
+        "package_review_preview_hash": package_preview_body["package_review_preview_hash"],
+        "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+    }
+    package_commit = client.post("/api/v1/layer3/package/review/commit", json=commit_payload)
+    assert package_commit.status_code == 200
+    return (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        package_preview_body,
+        package_commit.json(),
+        commit_payload,
+    )
+
+
 def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     bootstrap = client.get("/api/v1/layer3/bootstrap")
     assert bootstrap.status_code == 200
@@ -262,6 +320,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap_body["features"]["execution_result_review"] is True
     assert bootstrap_body["features"]["package_review_preview"] is True
     assert bootstrap_body["features"]["package_construction_commit"] is True
+    assert bootstrap_body["features"]["package_review_submit"] is True
     assert bootstrap_body["features"]["package_review"] is False
     assert bootstrap_body["features"]["analysis_execution"] is False
     assert bootstrap_body["execution_readiness"]["execution_admitted"] is False
@@ -275,6 +334,8 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap_body["execution_readiness"]["package_review_preview_endpoint"] == "/api/v1/layer3/package/review/preview"
     assert bootstrap_body["execution_readiness"]["package_construction_commit_admitted"] is True
     assert bootstrap_body["execution_readiness"]["package_construction_commit_endpoint"] == "/api/v1/layer3/package/review/commit"
+    assert bootstrap_body["execution_readiness"]["package_review_submit_admitted"] is True
+    assert bootstrap_body["execution_readiness"]["package_review_submit_endpoint"] == "/api/v1/layer3/package/review/submit"
     assert bootstrap_body["execution_readiness"]["package_review_admitted"] is False
     assert bootstrap_body["execution_readiness"]["readiness_endpoint"] == "/api/v1/layer3/readiness"
 
@@ -295,6 +356,8 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["package_review_preview_endpoint"] == "/api/v1/layer3/package/review/preview"
     assert readiness_body["package_construction_commit_admitted"] is True
     assert readiness_body["package_construction_commit_endpoint"] == "/api/v1/layer3/package/review/commit"
+    assert readiness_body["package_review_submit_admitted"] is True
+    assert readiness_body["package_review_submit_endpoint"] == "/api/v1/layer3/package/review/submit"
     assert readiness_body["package_review_admitted"] is False
     assert readiness_body["readiness_state"] == "execution_readiness_blocked"
     assert readiness_body["preview_hash_contract"]["schema_id"] == "layer3.plan_preview_hash.v1"
@@ -303,6 +366,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert "preview-hash" in readiness_body["implemented_gates"]
     assert "analysis-execution-start" in readiness_body["implemented_gates"]
     assert "result-status" in readiness_body["implemented_gates"]
+    assert "package-review-submit" in readiness_body["implemented_gates"]
     assert "revision-recovery" in readiness_body["deferred_gates"]
     states = {item["state"] for item in readiness_body["state_model"]["states"]}
     assert {
@@ -324,6 +388,13 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         "package_commit_blocked",
         "package_commit_ready",
         "package_constructed",
+        "package_review_submit_unavailable",
+        "package_review_submit_blocked",
+        "package_review_submit_ready",
+        "package_review_approved",
+        "package_review_changes_requested",
+        "package_review_rejected",
+        "package_review_blocked",
         "execution_readiness_blocked",
     } <= states
 
@@ -1640,9 +1711,9 @@ def test_layer3_api_package_construction_commit_materializes_three_packages_idem
     assert len(body["output_packages"]) == 3
     assert len(body["payload_refs"]) == 3
     assert len(body["payload_hashes"]) == 3
-    assert body["package_review_submit_enabled"] is False
+    assert body["package_review_submit_enabled"] is True
     assert body["handoff_enabled"] is False
-    assert body["downstream_unavailable"] == ["package_review_submit", "handoff", "export"]
+    assert body["downstream_unavailable"] == ["handoff", "export"]
     for payload_ref, payload_hash in zip(body["payload_refs"], body["payload_hashes"], strict=True):
         payload_path = Path(payload_ref)
         assert payload_path.exists()
@@ -1672,7 +1743,7 @@ def test_layer3_api_package_construction_commit_materializes_three_packages_idem
         }
         reconciliation = db.query(L3ReconciliationRecord).one()
         assert reconciliation.summary_json["source_gate"] == "50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE"
-        assert reconciliation.summary_json["workbench_package_commit"]["package_review_submit_enabled"] is False
+        assert reconciliation.summary_json["workbench_package_commit"]["package_review_submit_enabled"] is True
     finally:
         db.close()
 
@@ -1694,7 +1765,289 @@ def test_layer3_api_package_construction_commit_materializes_three_packages_idem
     assert summary_body["current_gate"] == "package"
     assert summary_body["package_construction"]["state"] == "package_constructed"
     assert summary_body["package_construction"]["package_commit_enabled"] is False
-    assert summary_body["package_construction"]["package_review_submit_enabled"] is False
+    assert summary_body["package_construction"]["package_review_submit_enabled"] is True
+    assert summary_body["package_review_submit"]["state"] == "package_review_submit_ready"
+    assert summary_body["package_review_submit"]["package_review_submit_enabled"] is True
+
+
+def test_layer3_api_package_review_submit_records_decision_without_mutating_packages(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _commit_payload,
+    ) = _construct_quant_package_set(client, tmp_path, request_id="api-package-submit-success")
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "plans": db.query(L3AnalysisPlan).count(),
+            "passes": db.query(L3PassRun).count(),
+            "runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+        packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+    finally:
+        db.close()
+
+    submit_payload = {
+        "client_request_id": "api-package-submit-success-submit",
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_body["preview_id"],
+        "preview_hash": preview_body["preview_hash"],
+        "analysis_run_id": start_body["analysis_run_id"],
+        "result_review_record_ref": review_body["review_record_ref"],
+        "package_review_preview_hash": commit_body["package_review_preview_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": [package["output_package_id"] for package in commit_body["output_packages"]],
+        "payload_hashes": commit_body["payload_hashes"],
+        "operator_decision": "approved",
+        "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+    }
+    submit = client.post("/api/v1/layer3/package/review/submit", json=submit_payload)
+    assert submit.status_code == 200
+    body = submit.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.package_review_submit.v1"
+    assert body["status"] == "submitted"
+    assert body["package_review_state"] == "package_review_approved"
+    assert body["operator_decision"] == "approved"
+    assert body["decision_notes"] is None
+    assert body["package_review_submit_enabled"] is False
+    assert body["handoff_enabled"] is False
+    assert body["export_enabled"] is False
+    assert body["downstream_unavailable"] == ["handoff", "export"]
+    assert set(body["output_package_ids"]) == set(submit_payload["output_package_ids"])
+    assert body["payload_hashes"] == commit_body["payload_hashes"]
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "plans": db.query(L3AnalysisPlan).count(),
+            "passes": db.query(L3PassRun).count(),
+            "runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_before
+        packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after == packages_before
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        submit_state = reconciliation.summary_json["package_review_submit"]
+        assert submit_state["submit_record_ref"] == body["submit_record_ref"]
+        assert submit_state["operator_decision"] == "approved"
+        assert submit_state["package_review_state"] == "package_review_approved"
+        assert reconciliation.summary_json["workbench_package_commit"]["package_review_submit_enabled"] is False
+    finally:
+        db.close()
+
+    duplicate = client.post("/api/v1/layer3/package/review/submit", json=submit_payload)
+    assert duplicate.status_code == 200
+    duplicate_body = duplicate.json()
+    assert duplicate_body["status"] == "already_submitted"
+    assert duplicate_body["submit_record_ref"] == body["submit_record_ref"]
+
+    conflict = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={
+            **submit_payload,
+            "client_request_id": "api-package-submit-conflict",
+            "operator_decision": "rejected",
+            "decision_notes": "Different decision conflicts with recorded submit state.",
+        },
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["error_code"] == "package_review_submit_already_recorded"
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200
+    summary_body = summary.json()
+    assert summary_body["package_review_submit"]["state"] == "package_review_approved"
+    assert summary_body["package_review_submit"]["operator_decision"] == "approved"
+    assert summary_body["package_review_submit"]["package_review_submit_enabled"] is False
+
+
+def test_layer3_api_package_review_submit_prechecks_fail_closed(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    missing = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={"client_request_id": "api-package-submit-missing", "session_id": "session-only"},
+    )
+    assert missing.status_code == 400
+    assert set(missing.json()["blocked_fields"]) == {
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "operator_decision",
+    }
+
+    (
+        unconstructed_session_id,
+        unconstructed_preview_body,
+        unconstructed_approval_body,
+        unconstructed_selection_body,
+        unconstructed_start_body,
+        _status_body,
+        unconstructed_review_body,
+    ) = _execute_and_approve_quant_result_review(
+        client,
+        tmp_path,
+        request_id="api-package-submit-unconstructed",
+    )
+    unconstructed_pass_run_id = unconstructed_selection_body["pass_run_ids"][0]
+    unconstructed_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": "api-package-submit-unconstructed-preview",
+            "session_id": unconstructed_session_id,
+            "analysis_plan_id": unconstructed_approval_body["analysis_plan_id"],
+            "pass_run_id": unconstructed_pass_run_id,
+            "preview_id": unconstructed_preview_body["preview_id"],
+            "preview_hash": unconstructed_preview_body["preview_hash"],
+            "analysis_run_id": unconstructed_start_body["analysis_run_id"],
+            "result_review_record_ref": unconstructed_review_body["review_record_ref"],
+        },
+    )
+    assert unconstructed_preview.status_code == 200
+    unconstructed = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={
+            "client_request_id": "api-package-submit-unconstructed-submit",
+            "session_id": unconstructed_session_id,
+            "analysis_plan_id": unconstructed_approval_body["analysis_plan_id"],
+            "pass_run_id": unconstructed_pass_run_id,
+            "preview_id": unconstructed_preview_body["preview_id"],
+            "preview_hash": unconstructed_preview_body["preview_hash"],
+            "analysis_run_id": unconstructed_start_body["analysis_run_id"],
+            "result_review_record_ref": unconstructed_review_body["review_record_ref"],
+            "package_review_preview_hash": unconstructed_preview.json()["package_review_preview_hash"],
+            "reconciliation_record_id": "missing-reconciliation",
+            "output_package_ids": ["pkg-a", "pkg-b", "pkg-c"],
+            "payload_hashes": ["hash-a", "hash-b", "hash-c"],
+            "operator_decision": "approved",
+        },
+    )
+    assert unconstructed.status_code == 409
+    assert unconstructed.json()["error_code"] == "package_review_submit_requires_package_construction"
+
+    session_id = unconstructed_session_id
+    preview_body = unconstructed_preview_body
+    approval_body = unconstructed_approval_body
+    pass_run_id = unconstructed_pass_run_id
+    start_body = unconstructed_start_body
+    review_body = unconstructed_review_body
+    commit = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": "api-package-submit-precheck-package-commit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": unconstructed_preview.json()["package_review_preview_hash"],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert commit.status_code == 200
+    commit_body = commit.json()
+    base_payload = {
+        "client_request_id": "api-package-submit-precheck-submit",
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_body["preview_id"],
+        "preview_hash": preview_body["preview_hash"],
+        "analysis_run_id": start_body["analysis_run_id"],
+        "result_review_record_ref": review_body["review_record_ref"],
+        "package_review_preview_hash": commit_body["package_review_preview_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": [package["output_package_id"] for package in commit_body["output_packages"]],
+        "payload_hashes": commit_body["payload_hashes"],
+        "operator_decision": "approved",
+        "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+    }
+
+    forbidden = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={**base_payload, "handoff": True, "package_payload": {"unexpected": True}},
+    )
+    assert forbidden.status_code == 400
+    assert forbidden.json()["error_code"] == "package_review_submit_scope_not_admitted"
+    assert set(forbidden.json()["blocked_fields"]) == {"handoff", "package_payload"}
+
+    notes_required = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={**base_payload, "operator_decision": "changes_requested"},
+    )
+    assert notes_required.status_code == 400
+    assert notes_required.json()["error_code"] == "package_review_submit_notes_required"
+
+    stale_hash = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={**base_payload, "payload_hashes": ["stale-hash", *commit_body["payload_hashes"][1:]]},
+    )
+    assert stale_hash.status_code == 409
+    assert stale_hash.json()["error_code"] == "package_review_submit_payload_hashes_mismatch"
+
+    wrong_kinds = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={**base_payload, "expected_package_kinds": ["canonical_internal"]},
+    )
+    assert wrong_kinds.status_code == 409
+    assert wrong_kinds.json()["error_code"] == "package_review_submit_kinds_mismatch"
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        assert "package_review_submit" not in reconciliation.summary_json
+    finally:
+        db.close()
 
 
 def test_layer3_api_package_construction_commit_prechecks_fail_closed(
