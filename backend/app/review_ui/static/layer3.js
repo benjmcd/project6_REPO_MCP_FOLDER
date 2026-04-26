@@ -408,28 +408,32 @@ function packageConstructionState() {
 }
 
 function packageReviewSubmitState() {
-    if (State.packageReviewSubmit || State.sessionSummary?.package_review_submit) {
-        return State.packageReviewSubmit || State.sessionSummary.package_review_submit;
+    if (State.packageReviewSubmit) {
+        return State.packageReviewSubmit;
     }
-    if (State.packageConstruction?.package_review_submit_enabled === true) {
-        const outputPackageIds = Array.isArray(State.packageConstruction.output_package_ids)
-            ? State.packageConstruction.output_package_ids
-            : (Array.isArray(State.packageConstruction.output_packages)
-                ? State.packageConstruction.output_packages.map((item) => item.output_package_id).filter(Boolean)
+    const construction = State.packageConstruction;
+    if (construction?.package_review_submit_enabled === true) {
+        const outputPackageIds = Array.isArray(construction.output_package_ids)
+            ? construction.output_package_ids
+            : (Array.isArray(construction.output_packages)
+                ? construction.output_packages.map((item) => item.output_package_id).filter(Boolean)
                 : []);
         return {
             schema_id: 'layer3.package_review_submit_state.v1',
             available: true,
             state: 'package_review_submit_ready',
-            reconciliation_record_id: State.packageConstruction.reconciliation_record_id,
+            reconciliation_record_id: construction.reconciliation_record_id,
             output_package_ids: outputPackageIds,
-            package_kinds: State.packageConstruction.package_kinds,
-            payload_hashes: State.packageConstruction.payload_hashes,
+            package_kinds: construction.package_kinds,
+            payload_hashes: construction.payload_hashes,
             package_review_submit_enabled: true,
             handoff_enabled: false,
             export_enabled: false,
-            downstream_unavailable: State.packageConstruction.downstream_unavailable,
+            downstream_unavailable: construction.downstream_unavailable,
         };
+    }
+    if (State.sessionSummary?.package_review_submit) {
+        return State.sessionSummary.package_review_submit;
     }
     return null;
 }

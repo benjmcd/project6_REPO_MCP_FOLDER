@@ -451,6 +451,21 @@ test('Layer 3 workbench commits a package set and submits bounded package review
   await expect(page.locator('#package-review-submit')).toBeDisabled();
   await expect(page.locator('[data-step="package"]')).toBeEnabled();
 
+  const postCommitSummaryPattern = `**/api/v1/layer3/session/${setup.seed.session_id}`;
+  const blockPostCommitSummary = async (route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.workbench_error.v1',
+        error_code: 'forced_post_commit_session_refresh_failure',
+        message: 'Forced post-commit session refresh failure for UI fallback proof.',
+      }),
+    });
+    await page.unroute(postCommitSummaryPattern, blockPostCommitSummary);
+  };
+  await page.route(postCommitSummaryPattern, blockPostCommitSummary);
+
   const commitRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/package/review/commit'));
   const commitResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/package/review/commit'));
   const postCommitSummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${setup.seed.session_id}`));
@@ -485,7 +500,7 @@ test('Layer 3 workbench commits a package set and submits bounded package review
   expect(commit.handoff_enabled).toBe(false);
   expect(commit.downstream_unavailable).toEqual(['handoff', 'export']);
   expect(commit.output_packages).toHaveLength(3);
-  await expectJson(await postCommitSummaryPromise);
+  expect((await postCommitSummaryPromise).status()).toBe(503);
 
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_constructed');
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_submit_ready');
