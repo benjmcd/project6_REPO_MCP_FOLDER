@@ -1,8 +1,8 @@
 # 58 L3 Workbench APS Handoff Dispatch Freeze
 
-Status: planning-only freeze for the next Layer 3 workbench governance boundary after merged handoff/export prepare-only UI.
+Status: governing freeze for the bounded Layer 3 workbench APS handoff dispatch backend/API slice now implemented on current `main` through PR `#260`, with PR `#261` post-merge fail-closed authority hardening.
 
-This document freezes only a future bounded APS handoff dispatch step from the current `/review/layer3` workbench chain into the existing repo-native APS evidence-bundle handoff family. It does not implement dispatch by itself, does not make APS handoff live from the workbench, does not add external export/download, does not create new schema, and does not authorize package mutation, package reconstruction, source/runtime/schema widening, or full mockup activation.
+This document freezes only the bounded APS handoff dispatch step from the current `/review/layer3` workbench chain into the existing repo-native APS evidence-bundle handoff family. The merged backend/API implementation adds the dispatch endpoint and server-authoritative state only; it does not add rendered APS dispatch UI controls, external export/download, connector or generic downstream dispatch, new schema, package mutation, package reconstruction, source/runtime/schema widening, or full mockup activation.
 
 ## Current Live Boundary
 
@@ -12,20 +12,21 @@ Current `main` includes:
 - backend/API handoff/export `prepare_only` state after `package_review_approved`
 - rendered `/review/layer3` prepare-only controls after server-authoritative readiness
 - existing non-workbench APS evidence-bundle handoff owner service in `backend/app/services/layer3_aps_handoff.py`
+- backend/API workbench APS handoff dispatch through `POST /api/v1/layer3/handoff/aps/dispatch`, implemented in PR `#260` and hardened in PR `#261`
 
-Current `main` does not expose a workbench endpoint or rendered action that dispatches the prepared workbench package to APS. The existing APS handoff owner service can materialize an `aps_evidence_bundle_handoff` package row and persisted APS evidence-bundle artifact from terminal packaged Layer 3 session/package truth, but the workbench prepare-only envelope does not call it.
+Current `main` exposes the backend/API workbench dispatch endpoint only after server-confirmed `handoff_export_prepared` authority and APS owner-service compatibility. Current `main` still does not expose a rendered `/review/layer3` APS dispatch action. The existing APS handoff owner service can materialize an `aps_evidence_bundle_handoff` package row and persisted APS evidence-bundle artifact from terminal packaged Layer 3 session/package truth, and the workbench endpoint now calls it only after the workbench-specific authority checks pass.
 
 ## Slice Decision
 
-The next adequate Layer 3 workbench planning boundary is:
+The adequate Layer 3 workbench boundary selected by this freeze is:
 
-> Freeze a bounded workbench APS handoff dispatch step that may, in a later implementation, dispatch exactly one already prepared internal handoff/export envelope to the existing APS evidence-bundle handoff owner service. The first target family is `aps_evidence_bundle_handoff` only. The step must require an existing `handoff_export_prepared` state, server-confirmed package-review approval, unchanged package ids/refs/hashes, and compatibility with the existing APS evidence-bundle handoff service before any write occurs.
+> Freeze a bounded workbench APS handoff dispatch step that dispatches exactly one already prepared internal handoff/export envelope to the existing APS evidence-bundle handoff owner service. The first target family is `aps_evidence_bundle_handoff` only. The step must require an existing `handoff_export_prepared` state, server-confirmed package-review approval, unchanged package ids/refs/hashes, and compatibility with the existing APS evidence-bundle handoff service before any write occurs.
 
 This is the smallest coherent next boundary because current workbench state already stops at a server-authoritative internal reference envelope. The repo already has a narrower APS target family than generic external export: `layer3_aps_handoff.materialize_aps_handoff(...)` targets the APS evidence-bundle family and has existing service tests. External export/download, destination selection, connector dispatch, physical artifact manifests outside the APS evidence-bundle handoff, package amendment, and broader runtime/schema/source behavior are larger families and remain deferred.
 
-## Admitted Future Implementation Scope
+## Admitted Implementation Scope
 
-A later implementation governed by this freeze may add only:
+The implementation governed by this freeze may add only:
 
 - a workbench-owned backend/API action for APS handoff dispatch from a prepared envelope
 - server-side validation that the session has exactly one recorded `handoff_export_prepared` state
@@ -36,7 +37,7 @@ A later implementation governed by this freeze may add only:
 - state summary fields that identify the APS handoff row, APS bundle ref, handoff status, disabled external export/download posture, and next unavailable downstream families
 - focused tests proving success, fail-closed stale authority, idempotency/conflict behavior, and unchanged package source rows
 
-The future implementation must keep the endpoint thin and delegate APS artifact/package materialization to the established owner service boundary. If the existing owner service cannot satisfy the workbench authority basis without schema changes, package rewrites, source expansion, or new package/reconciliation rows beyond the single APS handoff package row, stop and create a narrower prerequisite freeze instead.
+The implementation must keep the endpoint thin and delegate APS artifact/package materialization to the established owner service boundary. PR `#260` satisfied that compatibility by using the existing owner service plus a narrow workbench-source compatibility path; PR `#261` then restricted fallback behavior so malformed canonical APS provenance still fails closed. If later changes require schema changes, package rewrites, source expansion, or new package/reconciliation rows beyond the single APS handoff package row, stop and create a narrower prerequisite freeze instead.
 
 ## Explicit Non-Goals
 
@@ -65,7 +66,7 @@ This freeze does not admit:
 
 ## Required Preconditions
 
-A future workbench APS handoff dispatch request must be blocked unless the server can prove all of the following:
+A workbench APS handoff dispatch request must be blocked unless the server can prove all of the following:
 
 1. `session_id`, `analysis_plan_id`, `pass_run_id`, `preview_id`, and `preview_hash` match current workbench session authority.
 2. selected-pass result/status authority still resolves to the same terminal selected pass.
@@ -78,17 +79,17 @@ A future workbench APS handoff dispatch request must be blocked unless the serve
 9. no prior APS handoff dispatch record already exists for the same authority basis unless the request is an exact idempotent replay.
 10. the existing APS evidence-bundle handoff owner service can satisfy its own provenance and validation requirements.
 
-If any precondition is missing, stale, inconsistent, or ambiguous, the future implementation must fail closed before creating a row or artifact.
+If any precondition is missing, stale, inconsistent, or ambiguous, the implementation must fail closed before creating a row or artifact.
 
 ## Write Boundary
 
-The only future durable writes admitted by this freeze are:
+The only durable writes admitted by this freeze are:
 
 - one APS handoff dispatch summary in existing JSON-bearing workbench state, if needed for session/reconciliation visibility
 - one `aps_evidence_bundle_handoff` `L3OutputPackage` row created through the existing APS handoff owner service
 - one persisted APS evidence-bundle artifact created by the existing APS evidence-bundle handoff contract
 
-The future implementation must not write:
+The implementation must not write:
 
 - package payload files for the existing canonical, user-facing, or review-facing packages
 - new package variants
@@ -107,20 +108,20 @@ The existing `backend/app/services/layer3_aps_handoff.py` service remains the re
 - `materialize_aps_handoff(db, session_id=...)`
 - persisted APS evidence-bundle artifact validation through the APS evidence-bundle contract
 
-This freeze does not reopen that owner service contract. A later workbench implementation may wrap or call it only after proving the workbench-specific prepared-envelope authority. If the owner service requires non-workbench terminal/session assumptions that conflict with the current workbench path, the implementation must stop and freeze a compatibility bridge before writing behavior.
+This freeze does not reopen that owner service contract. The workbench implementation may wrap or call it only after proving the workbench-specific prepared-envelope authority. If the owner service requires non-workbench terminal/session assumptions that conflict with the current workbench path, the implementation must stop and freeze a compatibility bridge before writing behavior.
 
 ## UI Boundary
 
-This freeze does not require rendered UI changes. A later implementation may keep APS dispatch backend-only. If rendered `/review/layer3` behavior changes, a separate UI-state contract or explicit UI section in the implementation PR must prove:
+This freeze does not require rendered UI changes. The current implementation keeps APS dispatch backend/API-only. If rendered `/review/layer3` behavior changes later, a separate UI-state contract or explicit UI section in the implementation PR must prove:
 
 - dispatch controls are visible only after server-authoritative `handoff_export_prepared`
 - external export/download, destination selection, connector-run controls, and package edit/rebuild controls remain absent or disabled
 - successful APS handoff renders server-returned APS handoff row and bundle refs as read-only
 - both headed and headless Chromium proof pass
 
-## Required Proof For A Later Implementation
+## Required Proof For Implementation
 
-At minimum, a later implementation must prove:
+At minimum, an implementation must prove:
 
 - success requires `handoff_export_prepared`
 - non-prepared, held, declined, blocked, missing, or stale prepare state fails closed

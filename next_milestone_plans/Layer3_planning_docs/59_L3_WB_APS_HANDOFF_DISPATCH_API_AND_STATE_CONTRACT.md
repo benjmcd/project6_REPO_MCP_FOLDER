@@ -1,12 +1,12 @@
 # 59 L3 Workbench APS Handoff Dispatch API And State Contract
 
-Status: planning-only API/state contract for a future bounded workbench APS handoff dispatch endpoint.
+Status: governing API/state contract for the bounded workbench APS handoff dispatch backend/API endpoint now implemented on current `main` through PR `#260`, with PR `#261` post-merge fail-closed authority hardening.
 
-This document defines the request, response, state, idempotency, write, and proof contract for a future workbench APS handoff dispatch step after `handoff_export_prepared`. It does not implement an endpoint by itself and does not admit external export/download, generic downstream dispatch, destination selection, connector dispatch, package mutation/rebuild, source/runtime/schema widening, qualitative/hybrid/RAG/vector execution, or full mockup activation.
+This document defines the request, response, state, idempotency, write, and proof contract for the workbench APS handoff dispatch step after `handoff_export_prepared`. The merged endpoint is backend/API-only and does not admit rendered APS dispatch UI controls, external export/download, generic downstream dispatch, destination selection, connector dispatch, package mutation/rebuild, source/runtime/schema widening, qualitative/hybrid/RAG/vector execution, or full mockup activation.
 
 ## Authority Order
 
-A future implementation must use the following authority order:
+The implementation must use the following authority order:
 
 1. server-stored Layer 3 session, plan, pass, result/status, result-review, package construction, package-review submit, and handoff/export prepare state
 2. existing `L3ReconciliationRecord.summary_json` and `L3Session.summary_json` state for workbench review/prepare authority
@@ -18,7 +18,7 @@ Browser state must not authorize APS handoff, export, dispatch, package mutation
 
 ## Endpoint
 
-If implemented later, the endpoint should be:
+The implemented endpoint is:
 
 `POST /api/v1/layer3/handoff/aps/dispatch`
 
@@ -53,7 +53,7 @@ Required request fields:
 | `dispatch_mode` | yes | Must equal `server_side_aps_handoff` |
 | `operator_decision` | yes | Must equal `dispatch_aps_handoff` |
 | `client_request_id` | yes | Required idempotency key |
-| `decision_notes` | conditional | Required if the future implementation admits any non-dispatch decision state |
+| `decision_notes` | optional | Allowed for the dispatch decision; required only if a later implementation separately admits any non-dispatch decision state |
 
 Optional request field:
 
@@ -97,7 +97,7 @@ Forbidden request fields must fail closed:
 
 ## State Vocabulary
 
-Allowed future APS handoff dispatch states:
+Allowed APS handoff dispatch states:
 
 | State | Meaning |
 | --- | --- |
@@ -111,7 +111,7 @@ No other state name is admitted by this contract.
 
 ## Minimum Success Response
 
-A successful future response must include:
+A successful response must include:
 
 - `schema_id`
 - `status`
@@ -155,7 +155,7 @@ The response must be reference-first. It may identify the APS evidence-bundle ha
 
 ## Write Contract
 
-Permitted future writes:
+Permitted writes:
 
 - existing workbench JSON-bearing state may record one APS handoff dispatch summary
 - the existing APS handoff owner service may create one `L3OutputPackage` row of kind `aps_evidence_bundle_handoff`
@@ -179,12 +179,12 @@ Prohibited writes:
 - Dispatch must be serialized for the session.
 - Exact retry with the same `client_request_id`, same prepared-envelope authority basis, same package ids/refs/hashes, same submit ref, same prepare ref, and same dispatch decision may return the existing APS handoff summary.
 - Same `client_request_id` with changed authority, package fields, prepare fields, target, mode, or decision must fail closed.
-- Different `client_request_id` after an existing APS handoff dispatch must fail closed unless it proves the same authority basis and the future implementation explicitly supports replay-as-inspection.
+- Different `client_request_id` after an existing APS handoff dispatch must fail closed unless it proves the same authority basis and a later implementation explicitly supports replay-as-inspection.
 - Duplicate/conflicting APS handoff dispatch decisions are not admitted.
 
 ## Required Fail-Closed Cases
 
-A future implementation must fail closed when:
+An implementation must fail closed when:
 
 - `handoff_export_state` is missing or not `handoff_export_prepared`
 - `prepare_record_ref` is missing or stale
@@ -203,7 +203,7 @@ A future implementation must fail closed when:
 
 ## Session Summary Contract
 
-If implemented later, `session_summary()` may expose an `aps_handoff_dispatch` object only as server-authoritative state. Minimum fields:
+`session_summary()` may expose an `aps_handoff_dispatch` object only as server-authoritative state. Minimum fields:
 
 - `schema_id`
 - `available`
@@ -225,7 +225,7 @@ Before `handoff_export_prepared`, this summary must remain unavailable and must 
 
 ## UI Contract
 
-This API/state contract does not require UI work. If a later implementation changes `/review/layer3`, the UI must:
+This API/state contract does not require UI work, and the current implementation keeps APS dispatch backend/API-only. If a later implementation changes `/review/layer3`, the UI must:
 
 - render APS handoff dispatch only after server reports `aps_handoff_ready`
 - keep external export/download, destination selection, and connector dispatch absent or disabled
@@ -237,7 +237,7 @@ This API/state contract does not require UI work. If a later implementation chan
 
 ## Verification Contract
 
-At minimum, a later implementation must run:
+At minimum, an implementation must run:
 
 - focused Layer 3 API tests for APS handoff dispatch success and fail-closed cases
 - existing handoff/export prepare tests
