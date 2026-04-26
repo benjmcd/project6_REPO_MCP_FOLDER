@@ -2190,6 +2190,54 @@ def test_layer3_api_package_construction_commit_materializes_three_packages_idem
     assert summary_body["package_review_submit"]["downstream_unavailable"] == ["handoff", "export"]
     assert summary_body["downstream_unavailable"] == ["handoff", "export"]
 
+    db = client.layer3_session_factory()
+    try:
+        db.add(
+            L3OutputPackage(
+                session_id=session_id,
+                reconciliation_record_id=body["reconciliation_record_id"],
+                package_kind="unexpected_debug_package",
+                status="package_complete",
+                payload_ref=str(tmp_path / "unexpected-package.json"),
+                payload_hash="0" * 64,
+                summary_json={"test_scope": "unexpected_package_kind"},
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    blocked_summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert blocked_summary.status_code == 200
+    blocked_summary_body = blocked_summary.json()
+    assert blocked_summary_body["package_construction"]["state"] == "package_commit_blocked"
+    assert blocked_summary_body["package_construction"]["blocked_reason"] == "unexpected_package_state"
+    assert blocked_summary_body["package_construction"]["unexpected_package_kinds"] == ["unexpected_debug_package"]
+    assert blocked_summary_body["package_review_submit"]["state"] == "package_review_submit_unavailable"
+    assert blocked_summary_body["downstream_unavailable"] == ["package_review_submit", "handoff", "export"]
+
+    blocked_submit = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={
+            "client_request_id": "api-package-commit-unexpected-submit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": body["package_review_preview_hash"],
+            "reconciliation_record_id": body["reconciliation_record_id"],
+            "output_package_ids": [package["output_package_id"] for package in body["output_packages"]],
+            "payload_hashes": body["payload_hashes"],
+            "operator_decision": "approved",
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert blocked_submit.status_code == 409
+    assert blocked_submit.json()["error_code"] == "package_review_submit_unexpected_package_state"
+
 
 def test_layer3_api_package_review_submit_records_decision_without_mutating_packages(
     client: TestClient,
@@ -3090,6 +3138,8 @@ def test_layer3_api_aps_handoff_dispatch_materializes_owner_service_bundle_witho
     summary = client.get(f"/api/v1/layer3/session/{session_id}")
     assert summary.status_code == 200
     summary_body = summary.json()
+    assert summary_body["package_construction"]["state"] == "package_constructed"
+    assert summary_body["package_construction"]["unexpected_package_kinds"] == []
     assert summary_body["handoff_export_prepare"]["state"] == "handoff_export_prepared"
     assert summary_body["aps_handoff_dispatch"]["state"] == "aps_handoff_dispatched"
     assert summary_body["aps_handoff_dispatch"]["available"] is False
@@ -3100,6 +3150,77 @@ def test_layer3_api_aps_handoff_dispatch_materializes_owner_service_bundle_witho
         "connector_dispatch",
         "non_aps_dispatch",
     ]
+
+
+def test_layer3_api_aps_handoff_dispatch_fails_closed_on_malformed_canonical_inventory(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        _preview_body,
+        _approval_body,
+        _selection_body,
+        _start_body,
+        _review_body,
+        _package_preview_body,
+        _commit_body,
+        _submit_body,
+        _prepare_body,
+        payload,
+    ) = _prepare_aps_handoff_dispatch(
+        client,
+        tmp_path,
+        request_id="api-aps-handoff-dispatch-malformed-inventory",
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        canonical_package = (
+            db.query(L3OutputPackage)
+            .filter(
+                L3OutputPackage.session_id == session_id,
+                L3OutputPackage.package_kind == "canonical_internal",
+            )
+            .one()
+        )
+        canonical_payload_path = Path(canonical_package.payload_ref)
+        canonical_payload = json.loads(canonical_payload_path.read_text(encoding="utf-8"))
+        canonical_payload["selection_and_source_summary"] = {
+            "material_snapshot_inventory_json": [
+                {
+                    "source_shape": "aps_content_document",
+                    "source_identity_json": {
+                        "content_id": "content-malformed",
+                        "run_id": "run-malformed",
+                    },
+                }
+            ]
+        }
+        canonical_payload_path.write_text(json.dumps(canonical_payload, sort_keys=True), encoding="utf-8")
+    finally:
+        db.close()
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200
+    summary_body = summary.json()
+    assert summary_body["aps_handoff_dispatch"]["state"] == "aps_handoff_blocked"
+    assert "target_id" in summary_body["aps_handoff_dispatch"]["blocked_reason"]
+
+    dispatch = client.post("/api/v1/layer3/handoff/aps/dispatch", json=payload)
+    assert dispatch.status_code == 409
+    assert dispatch.json()["error_code"] == "aps_handoff_dispatch_blocked"
+
+    db = client.layer3_session_factory()
+    try:
+        assert (
+            db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .count()
+            == 0
+        )
+    finally:
+        db.close()
 
 
 def test_layer3_api_aps_handoff_dispatch_prechecks_fail_closed(
