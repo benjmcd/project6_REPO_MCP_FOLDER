@@ -1882,6 +1882,8 @@ def test_layer3_api_package_construction_commit_materializes_three_packages_idem
     assert summary_body["package_construction"]["package_review_submit_enabled"] is True
     assert summary_body["package_review_submit"]["state"] == "package_review_submit_ready"
     assert summary_body["package_review_submit"]["package_review_submit_enabled"] is True
+    assert summary_body["package_review_submit"]["downstream_unavailable"] == ["handoff", "export"]
+    assert summary_body["downstream_unavailable"] == ["handoff", "export"]
 
 
 def test_layer3_api_package_review_submit_records_decision_without_mutating_packages(
@@ -1953,7 +1955,7 @@ def test_layer3_api_package_review_submit_records_decision_without_mutating_pack
     assert body["package_review_submit_enabled"] is False
     assert body["handoff_enabled"] is False
     assert body["export_enabled"] is False
-    assert body["downstream_unavailable"] == ["handoff", "export"]
+    assert body["downstream_unavailable"] == ["aps_handoff", "external_export", "downstream_dispatch"]
     assert set(body["output_package_ids"]) == set(submit_payload["output_package_ids"])
     assert body["payload_hashes"] == commit_body["payload_hashes"]
 
@@ -1984,6 +1986,7 @@ def test_layer3_api_package_review_submit_records_decision_without_mutating_pack
         assert submit_state["submit_record_ref"] == body["submit_record_ref"]
         assert submit_state["operator_decision"] == "approved"
         assert submit_state["package_review_state"] == "package_review_approved"
+        assert submit_state["downstream_unavailable"] == ["aps_handoff", "external_export", "downstream_dispatch"]
         assert reconciliation.summary_json["workbench_package_commit"]["package_review_submit_enabled"] is False
     finally:
         db.close()
@@ -2012,6 +2015,13 @@ def test_layer3_api_package_review_submit_records_decision_without_mutating_pack
     assert summary_body["package_review_submit"]["state"] == "package_review_approved"
     assert summary_body["package_review_submit"]["operator_decision"] == "approved"
     assert summary_body["package_review_submit"]["package_review_submit_enabled"] is False
+    assert summary_body["package_review_submit"]["downstream_unavailable"] == [
+        "aps_handoff",
+        "external_export",
+        "downstream_dispatch",
+    ]
+    assert summary_body["handoff_export_prepare"]["state"] == "handoff_export_ready"
+    assert summary_body["downstream_unavailable"] == ["aps_handoff", "external_export", "downstream_dispatch"]
 
 
 def test_layer3_api_handoff_export_prepare_records_reference_envelope_without_side_effects(
@@ -2190,6 +2200,7 @@ def test_layer3_api_handoff_export_prepare_records_reference_envelope_without_si
     assert summary_body["handoff_export_prepare"]["external_handoff_enabled"] is False
     assert summary_body["handoff_export_prepare"]["external_export_enabled"] is False
     assert summary_body["handoff_export_prepare"]["dispatch_enabled"] is False
+    assert summary_body["downstream_unavailable"] == ["aps_handoff", "external_export", "downstream_dispatch"]
 
 
 def test_layer3_api_handoff_export_prepare_requires_package_review_submit(
@@ -2248,6 +2259,8 @@ def test_layer3_api_handoff_export_prepare_rejects_nonapproved_package_review_su
         operator_decision="blocked",
         decision_notes="Package-review approval is not granted.",
     )
+    assert submit_body["package_review_state"] == "package_review_blocked"
+    assert submit_body["downstream_unavailable"] == ["handoff", "export"]
     payload = _handoff_export_prepare_payload(
         request_id="api-handoff-prepare-nonapproved-prepare",
         session_id=session_id,
