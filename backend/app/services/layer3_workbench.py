@@ -3840,6 +3840,41 @@ def _canonical_payload_refs(
     return None
 
 
+def _package_review_submit_downstream_unavailable(package_review_state: str | None) -> tuple[str, ...]:
+    if package_review_state == PACKAGE_REVIEW_APPROVED_STATE:
+        return HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE
+    return PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+
+
+def _state_downstream_unavailable(state: dict[str, Any], fallback: tuple[str, ...]) -> tuple[str, ...]:
+    values = state.get("downstream_unavailable") if isinstance(state, dict) else None
+    if isinstance(values, (list, tuple)) and values:
+        return tuple(str(item) for item in values)
+    return fallback
+
+
+def _active_package_downstream_unavailable(
+    *,
+    package_construction_state: dict[str, Any],
+    package_review_submit_state: dict[str, Any],
+    handoff_export_prepare_state: dict[str, Any],
+) -> tuple[str, ...]:
+    if package_review_submit_state.get("state") == PACKAGE_REVIEW_APPROVED_STATE:
+        return _state_downstream_unavailable(
+            handoff_export_prepare_state,
+            HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE,
+        )
+    if package_construction_state.get("state") == PACKAGE_CONSTRUCTED_STATE:
+        return _state_downstream_unavailable(
+            package_review_submit_state,
+            PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
+        )
+    return _state_downstream_unavailable(
+        package_construction_state,
+        PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE,
+    )
+
+
 def _package_review_submit_response(
     *,
     request_id: str,
@@ -3857,6 +3892,9 @@ def _package_review_submit_response(
     review_state: dict[str, Any],
 ) -> dict[str, Any]:
     ordered_packages = _packages_in_review_order(packages)
+    downstream_unavailable = _package_review_submit_downstream_unavailable(
+        str(review_state.get("package_review_state") or "")
+    )
     return {
         **_base_response(PACKAGE_REVIEW_SUBMIT_SCHEMA_ID, request_id=request_id, status=status),
         "session_id": session_id,
@@ -3877,13 +3915,13 @@ def _package_review_submit_response(
         "package_review_submit_enabled": False,
         "handoff_enabled": False,
         "export_enabled": False,
-        "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+        "downstream_unavailable": list(downstream_unavailable),
         "next_state": review_state["package_review_state"],
         "authority_rail": _authority_rail(
             session_id=session_id,
             current_gate="package",
             persistence_mode="durable_package_review_submit",
-            downstream_unavailable=PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
+            downstream_unavailable=downstream_unavailable,
             execution_enabled=False,
             package_review_enabled=False,
         ),
@@ -4827,6 +4865,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         )
 
     package_review_state = PACKAGE_REVIEW_SUBMIT_STATE_BY_DECISION[operator_decision]
+    downstream_unavailable = _package_review_submit_downstream_unavailable(package_review_state)
     submit_state = {
         "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
         "client_request_id": request_id,
@@ -4850,7 +4889,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "package_review_submit_enabled": False,
         "handoff_enabled": False,
         "export_enabled": False,
-        "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+        "downstream_unavailable": list(downstream_unavailable),
     }
     commit_summary = {**commit_summary, "package_review_submit_enabled": False}
     reconciliation.summary_json = {
@@ -4874,7 +4913,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             "package_review_submit_enabled": False,
             "handoff_enabled": False,
             "export_enabled": False,
-            "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+            "downstream_unavailable": list(downstream_unavailable),
         },
     }
     db.commit()
@@ -5538,6 +5577,9 @@ def _package_review_submit_summary(
     ordered_packages = _packages_in_review_order(packages)
     recorded_submit = _package_review_submit_from_reconciliation(reconciliation)
     if recorded_submit is not None:
+        downstream_unavailable = _package_review_submit_downstream_unavailable(
+            str(recorded_submit.get("package_review_state") or "")
+        )
         return {
             "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
             "available": False,
@@ -5553,7 +5595,7 @@ def _package_review_submit_summary(
             "package_review_submit_enabled": False,
             "handoff_enabled": False,
             "export_enabled": False,
-            "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+            "downstream_unavailable": list(downstream_unavailable),
         }
     return {
         "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
@@ -5746,11 +5788,10 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     )
     current_gate = "package" if package_active else ("execution" if selection_active else ("plan" if typing_committed else "gate_c"))
     downstream_unavailable = (
-        tuple(
-            handoff_export_prepare_state.get("downstream_unavailable")
-            or package_review_submit_state.get("downstream_unavailable")
-            or package_construction_state.get("downstream_unavailable")
-            or []
+        _active_package_downstream_unavailable(
+            package_construction_state=package_construction_state,
+            package_review_submit_state=package_review_submit_state,
+            handoff_export_prepare_state=handoff_export_prepare_state,
         )
         if package_active
         else (
