@@ -270,11 +270,11 @@
     "decision_id": "l3-workbench-handoff-export-ui-freeze",
     "state": "planning_only_handoff_export_ui_freeze",
     "scope": "Layer 3 workbench only; separate from next_required_decision, which remains the settled later APS family decision.",
-    "current_live_state": "Current main through PR #252 includes bounded /review/layer3 package-review controls, the PR #251 backend/API prepare-only handoff/export endpoint, and PR #252 downstream-blocker/session-summary hardening. Docs 56/57 add planning-only rendered UI governance over that endpoint, but rendered handoff/export preparation controls are still not live by docs alone.",
+    "current_live_state": "Current main through PR #255 includes bounded /review/layer3 package-review controls, the PR #251 backend/API prepare-only handoff/export endpoint, PR #252 downstream-blocker/session-summary hardening, and PR #255 docs 56/57 planning-only rendered UI governance over that endpoint. Rendered handoff/export preparation controls are still not live by docs alone.",
     "selected_next_slice": {
       "slice_id": "workbench-handoff-export-prepare-ui-freeze",
       "candidate": "planning-only rendered /review/layer3 handoff/export preparation UI freeze over the existing backend prepare endpoint",
-      "status": "Docs 56/57 define the future UI presentation/control boundary only. They do not change backend behavior, render controls, dispatch/export, create artifacts, mutate packages, or widen source/schema/runtime scope.",
+      "status": "PR #255 docs 56/57 define the future UI presentation/control boundary only. They do not change backend behavior, render controls, dispatch/export, create artifacts, mutate packages, or widen source/schema/runtime scope.",
       "governing_docs_required": [
         "next_milestone_plans/Layer3_planning_docs/56_L3_WB_HANDOFF_EXPORT_UI_FREEZE.md",
         "next_milestone_plans/Layer3_planning_docs/57_L3_WB_HANDOFF_EXPORT_UI_STATE_CONTRACT.md",
@@ -918,7 +918,9 @@
     {
       "slice_id": "workbench-handoff-export-prepare-ui-freeze",
       "main_state": "planning_only_handoff_export_ui_freeze",
-      "key_prs": [],
+      "key_prs": [
+        255
+      ],
       "base_commit": "a5a3c2bc",
       "source_branch": "codex/l3-handoff-prepare-ui",
       "governing_docs": [
@@ -2571,7 +2573,8 @@
       251,
       252,
       253,
-      254
+      254,
+      255
     ],
     "repo_paths": [
       "docs/nrc_adams/nrc_aps_status_handoff.md",

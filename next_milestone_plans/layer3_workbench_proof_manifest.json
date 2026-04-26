@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, package-review preview/construction/submit and rendered package-review UI proof, PR #250 handoff/export preparation governance in docs 54/55, PR #251 bounded backend/API handoff-export prepare-only implementation, PR #252 blocker-alignment/session-summary hardening proof, PR #253 docs/progress sync, PR #254 manifest seed-checkout fix, and docs 56/57 planning-only handoff/export prepare UI freeze packet",
+  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, package-review preview/construction/submit and rendered package-review UI proof, PR #250 handoff/export preparation governance in docs 54/55, PR #251 bounded backend/API handoff-export prepare-only implementation, PR #252 blocker-alignment/session-summary hardening proof, PR #253 docs/progress sync, PR #254 manifest seed-checkout fix, and PR #255 docs 56/57 planning-only handoff/export prepare UI freeze packet",
   "scope": {
     "source_branch": "codex/l3-handoff-export-freeze",
     "merged_pr": "#250",
@@ -81,10 +81,10 @@
     "latest_manifest_seed_checkout_fix_pr": "#254",
     "latest_manifest_seed_checkout_fix_merge_commit": "a5a3c2bcd67fd184de3afbf5f5f1ff4b371817cd",
     "latest_handoff_export_ui_planning_branch": "codex/l3-handoff-prepare-ui",
-    "latest_handoff_export_ui_planning_pr": "",
+    "latest_handoff_export_ui_planning_pr": "#255",
     "latest_handoff_export_ui_planning_base_commit": "a5a3c2bcd67fd184de3afbf5f5f1ff4b371817cd",
     "latest_handoff_export_ui_planning_live_behavior_change": false,
-    "latest_handoff_export_ui_planning_summary": "Docs 56/57 freeze only the future rendered /review/layer3 prepare-only UI controls over the existing POST /api/v1/layer3/handoff/export/prepare backend authority. They admit no UI behavior by themselves, no APS handoff, no external export/download/dispatch, no physical export artifact, no AnalysisArtifact, no package mutation/reconstruction, no schema/runtime/source widening, no execution selection/start UI expansion, and no full mockup activation."
+    "latest_handoff_export_ui_planning_summary": "PR #255 docs 56/57 freeze only the future rendered /review/layer3 prepare-only UI controls over the existing POST /api/v1/layer3/handoff/export/prepare backend authority. They admit no UI behavior by themselves, no APS handoff, no external export/download/dispatch, no physical export artifact, no AnalysisArtifact, no package mutation/reconstruction, no schema/runtime/source widening, no execution selection/start UI expansion, and no full mockup activation."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -1053,6 +1053,7 @@
       "execution selection/start UI expansion",
       "qualitative/hybrid/RAG/vector execution",
       "full mockup activation"
-    ]
+    ],
+    "pr": "#255"
   }
 }
