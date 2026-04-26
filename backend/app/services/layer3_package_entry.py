@@ -55,6 +55,7 @@ RECONCILIATION_STATUS_RECONCILED_WITH_WARNINGS = "reconciled_with_warnings"
 RECONCILIATION_STATUS_REVIEW_ONLY = "review_only"
 
 SOURCE_GATE_D_PACKAGE_FREEZE = "08_GATED_PACKAGE_FREEZE"
+SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE = "50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE"
 PACKAGE_SCHEMA_VERSION = 1
 
 FINALIZED_PACKAGE_SESSION_STATUSES = frozenset(
@@ -93,6 +94,7 @@ class Layer3PackageEntryError(ValueError):
 class Layer3PackageEntryResult:
     reconciliation_record: L3ReconciliationRecord
     output_packages: tuple[L3OutputPackage, ...]
+    replayed: bool = False
 
 
 def _stable_json_text(payload: Any) -> str:
@@ -700,6 +702,7 @@ def _package_header(
     package_kind: str,
     package_status: str,
     canonical_package_key: str | None = None,
+    source_gate: str = SOURCE_GATE_D_PACKAGE_FREEZE,
 ) -> dict[str, Any]:
     header = {
         "schema_id": PACKAGE_SCHEMA_IDS[package_kind],
@@ -708,7 +711,7 @@ def _package_header(
         "package_kind": package_kind,
         "package_status": package_status,
         "session_id": session_id,
-        "source_gate": SOURCE_GATE_D_PACKAGE_FREEZE,
+        "source_gate": source_gate,
     }
     if canonical_package_key:
         header["canonical_package_key"] = canonical_package_key
@@ -927,18 +930,276 @@ def _output_package_summary(
     findings: list[dict[str, Any]],
     contradictions: list[dict[str, Any]],
     caveats: list[dict[str, Any]],
+    source_gate: str = SOURCE_GATE_D_PACKAGE_FREEZE,
 ) -> dict[str, Any]:
     return {
         "schema_id": payload["package_header"]["schema_id"],
         "package_key": payload["package_header"]["package_key"],
         "package_status": package_status,
-        "source_gate": SOURCE_GATE_D_PACKAGE_FREEZE,
+        "source_gate": source_gate,
         "package_kind": package_kind,
         "section_keys_json": sorted(payload.keys()),
         "finding_count": len(findings),
         "contradiction_count": len(contradictions),
         "caveat_count": len(caveats),
     }
+
+
+def _workbench_package_status(pass_run: L3PassRun) -> str:
+    if pass_run.status == PASS_STATUS_FAILED:
+        return PACKAGE_STATUS_REVIEW_ONLY
+    if pass_run.status == PASS_STATUS_COMPLETED_WITH_WARNINGS:
+        return PACKAGE_STATUS_COMPLETE_WITH_WARNINGS
+    return PACKAGE_STATUS_COMPLETE
+
+
+def _workbench_artifact_inventory(output_metadata_summary: dict[str, Any]) -> list[dict[str, Any]]:
+    refs = list(output_metadata_summary.get("artifact_refs_json") or output_metadata_summary.get("artifact_refs") or [])
+    types = list(output_metadata_summary.get("artifact_types_json") or output_metadata_summary.get("artifact_types") or [])
+    inventory: list[dict[str, Any]] = []
+    for index, ref in enumerate(refs):
+        inventory.append(
+            {
+                "artifact_index": index,
+                "storage_ref": ref,
+                "artifact_type": types[index] if index < len(types) else None,
+            }
+        )
+    return inventory
+
+
+def _workbench_authority_basis_hash(authority_basis: dict[str, Any]) -> str:
+    return hashlib.sha256(_stable_json_bytes(authority_basis)).hexdigest()
+
+
+def _existing_workbench_package_result(
+    db: Session,
+    *,
+    session_id: str,
+    authority_basis_hash: str,
+    client_request_id: str,
+) -> Layer3PackageEntryResult | None:
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(L3ReconciliationRecord.session_id == session_id)
+        .one_or_none()
+    )
+    packages = (
+        db.query(L3OutputPackage)
+        .filter(L3OutputPackage.session_id == session_id)
+        .order_by(L3OutputPackage.package_kind.asc())
+        .all()
+    )
+    if reconciliation is None and not packages:
+        return None
+    if reconciliation is None or len(packages) != 3:
+        raise Layer3PackageEntryError(f"Layer 3 session '{session_id}' has partial package construction state")
+    packages_by_kind = {package.package_kind: package for package in packages}
+    expected = (
+        PACKAGE_KIND_CANONICAL_INTERNAL,
+        PACKAGE_KIND_USER_FACING,
+        PACKAGE_KIND_REVIEW_FACING,
+    )
+    if set(packages_by_kind) != set(expected):
+        raise Layer3PackageEntryError(f"Layer 3 session '{session_id}' has unexpected package kinds")
+    summary = reconciliation.summary_json or {}
+    commit_summary = summary.get("workbench_package_commit")
+    if not isinstance(commit_summary, dict):
+        raise Layer3PackageEntryError(f"Layer 3 session '{session_id}' already has non-workbench package state")
+    if (
+        commit_summary.get("authority_basis_hash") == authority_basis_hash
+        and commit_summary.get("client_request_id") == client_request_id
+    ):
+        return Layer3PackageEntryResult(
+            reconciliation_record=reconciliation,
+            output_packages=tuple(packages_by_kind[package_kind] for package_kind in expected),
+            replayed=True,
+        )
+    raise Layer3PackageEntryError(f"Layer 3 session '{session_id}' already has package construction state")
+
+
+def materialize_workbench_package_commit(
+    db: Session,
+    *,
+    session: L3Session,
+    analysis_plan: L3AnalysisPlan,
+    pass_run: L3PassRun,
+    preview_id: str,
+    preview_hash: str,
+    result_review_state: dict[str, Any],
+    package_review_preview_hash: str,
+    output_metadata_summary: dict[str, Any],
+    client_request_id: str,
+) -> Layer3PackageEntryResult:
+    authority_basis = {
+        "schema_id": "layer3.workbench_package_construction_authority.v1",
+        "client_request_id": client_request_id,
+        "session_id": session.session_id,
+        "analysis_plan_id": analysis_plan.analysis_plan_id,
+        "pass_run_id": pass_run.pass_run_id,
+        "preview_id": preview_id,
+        "preview_hash": preview_hash,
+        "analysis_run_id": output_metadata_summary.get("analysis_run_id"),
+        "result_review_record_ref": result_review_state.get("review_record_ref"),
+        "package_review_preview_hash": package_review_preview_hash,
+        "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+        "unresolved_trace_count": int(result_review_state.get("unresolved_trace_count") or 0),
+        "source_gate": SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+    }
+    authority_basis_hash = _workbench_authority_basis_hash(authority_basis)
+    existing = _existing_workbench_package_result(
+        db,
+        session_id=session.session_id,
+        authority_basis_hash=authority_basis_hash,
+        client_request_id=client_request_id,
+    )
+    if existing is not None:
+        return existing
+
+    package_status = _workbench_package_status(pass_run)
+    trace_summary = _json_clone(result_review_state.get("trace_summary") or {})
+    reviewed_items = _json_clone(result_review_state.get("reviewed_output_items") or [])
+    artifact_inventory = _workbench_artifact_inventory(output_metadata_summary)
+    workbench_summary = {
+        "authority_basis": authority_basis,
+        "authority_basis_hash": authority_basis_hash,
+        "review_state": result_review_state.get("review_state"),
+        "operator_decision": result_review_state.get("operator_decision"),
+        "trace_summary": trace_summary,
+        "reviewed_output_items": reviewed_items,
+        "output_metadata_summary": _json_clone(output_metadata_summary),
+        "package_review_submit_enabled": False,
+        "handoff_enabled": False,
+        "downstream_unavailable": ["package_review_submit", "handoff", "export"],
+    }
+    canonical_payload = {
+        "package_header": _package_header(
+            session_id=session.session_id,
+            package_kind=PACKAGE_KIND_CANONICAL_INTERNAL,
+            package_status=package_status,
+            source_gate=SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+        ),
+        "workbench_authority_summary": _json_clone(workbench_summary),
+        "approved_plan_summary": {
+            "analysis_plan_id": analysis_plan.analysis_plan_id,
+            "approved_by_operator": analysis_plan.approved_by_operator,
+            "approved_at": analysis_plan.approved_at.isoformat() if analysis_plan.approved_at else None,
+        },
+        "selected_pass_result_summary": {
+            "pass_run_id": pass_run.pass_run_id,
+            "pass_run_status": pass_run.status,
+            "analysis_run_id": output_metadata_summary.get("analysis_run_id"),
+            "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
+            "artifact_inventory_json": artifact_inventory,
+        },
+        "handoff_status": _handoff_status(package_status=package_status),
+    }
+    canonical_key = canonical_payload["package_header"]["package_key"]
+    user_facing_payload = {
+        "package_header": _package_header(
+            session_id=session.session_id,
+            package_kind=PACKAGE_KIND_USER_FACING,
+            package_status=package_status,
+            canonical_package_key=canonical_key,
+            source_gate=SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+        ),
+        "session_summary": {
+            "session_id": session.session_id,
+            "analysis_plan_id": analysis_plan.analysis_plan_id,
+            "pass_run_id": pass_run.pass_run_id,
+            "package_status": package_status,
+        },
+        "result_summary": _json_clone(canonical_payload["selected_pass_result_summary"]),
+        "review_summary": {
+            "operator_decision": result_review_state.get("operator_decision"),
+            "review_record_ref": result_review_state.get("review_record_ref"),
+            "unresolved_trace_count": int(result_review_state.get("unresolved_trace_count") or 0),
+        },
+        "downstream_unavailable": ["package_review_submit", "handoff", "export"],
+    }
+    review_facing_payload = {
+        "package_header": _package_header(
+            session_id=session.session_id,
+            package_kind=PACKAGE_KIND_REVIEW_FACING,
+            package_status=package_status,
+            canonical_package_key=canonical_key,
+            source_gate=SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+        ),
+        "workbench_authority_summary": _json_clone(workbench_summary),
+        "trace_summary": trace_summary,
+        "reviewed_output_items": reviewed_items,
+        "artifact_inventory_json": artifact_inventory,
+        "owner_service_notes_json": [
+            "constructed by workbench package-construction helper",
+            "package-review submit and handoff remain deferred",
+        ],
+    }
+    reconciliation_summary = {
+        "analysis_plan_id": analysis_plan.analysis_plan_id,
+        "pass_run_ids_json": [pass_run.pass_run_id],
+        "accepted_pass_run_ids_json": [pass_run.pass_run_id] if pass_run.status in ACCEPTED_PASS_STATUSES else [],
+        "warning_pass_run_ids_json": [pass_run.pass_run_id] if pass_run.status == PASS_STATUS_COMPLETED_WITH_WARNINGS else [],
+        "failed_pass_run_ids_json": [pass_run.pass_run_id] if pass_run.status == PASS_STATUS_FAILED else [],
+        "package_status": package_status,
+        "source_gate": SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+        "workbench_package_commit": {
+            "schema_id": "layer3.workbench_package_commit_summary.v1",
+            "client_request_id": client_request_id,
+            "authority_basis_hash": authority_basis_hash,
+            "package_review_preview_hash": package_review_preview_hash,
+            "result_review_record_ref": result_review_state.get("review_record_ref"),
+            "package_review_submit_enabled": False,
+            "handoff_enabled": False,
+        },
+    }
+    reconciliation_record = L3ReconciliationRecord(
+        reconciliation_record_id=uuid_str(),
+        session_id=session.session_id,
+        status=_reconciliation_status(package_status),
+        summary_json=reconciliation_summary,
+    )
+    db.add(reconciliation_record)
+    db.flush()
+
+    package_rows: list[L3OutputPackage] = []
+    for package_kind, payload in (
+        (PACKAGE_KIND_CANONICAL_INTERNAL, canonical_payload),
+        (PACKAGE_KIND_USER_FACING, user_facing_payload),
+        (PACKAGE_KIND_REVIEW_FACING, review_facing_payload),
+    ):
+        payload_ref, payload_hash = _persist_package_payload(
+            session_id=session.session_id,
+            package_kind=package_kind,
+            payload=payload,
+        )
+        package_rows.append(
+            L3OutputPackage(
+                output_package_id=uuid_str(),
+                session_id=session.session_id,
+                reconciliation_record_id=reconciliation_record.reconciliation_record_id,
+                package_kind=package_kind,
+                status=package_status,
+                payload_ref=payload_ref,
+                payload_hash=payload_hash,
+                summary_json=_output_package_summary(
+                    package_kind=package_kind,
+                    payload=payload,
+                    package_status=package_status,
+                    findings=artifact_inventory,
+                    contradictions=[],
+                    caveats=[],
+                    source_gate=SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+                ),
+            )
+        )
+    db.add_all(package_rows)
+    db.flush()
+
+    return Layer3PackageEntryResult(
+        reconciliation_record=reconciliation_record,
+        output_packages=tuple(package_rows),
+        replayed=False,
+    )
 
 
 def materialize_package_entry(db: Session, *, session_id: str) -> Layer3PackageEntryResult:
