@@ -574,6 +574,34 @@ def _aps_handoff_dispatch_payload(
     return payload
 
 
+def _insert_orphan_aps_handoff_package(
+    client: TestClient,
+    tmp_path,
+    *,
+    session_id: str,
+    reconciliation_record_id: str,
+    suffix: str,
+) -> None:
+    payload_path = tmp_path / f"orphan-aps-handoff-{suffix}.json"
+    payload_path.write_text(json.dumps({"test_scope": "orphan_aps_handoff_package"}), encoding="utf-8")
+    db = client.layer3_session_factory()
+    try:
+        db.add(
+            L3OutputPackage(
+                session_id=session_id,
+                reconciliation_record_id=reconciliation_record_id,
+                package_kind=PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+                status="package_complete",
+                payload_ref=str(payload_path),
+                payload_hash=hashlib.sha256(payload_path.read_bytes()).hexdigest(),
+                summary_json={"test_scope": "orphan_aps_handoff_package"},
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+
 def _prepare_aps_handoff_dispatch(
     client: TestClient,
     tmp_path,
@@ -3219,6 +3247,143 @@ def test_layer3_api_aps_handoff_dispatch_fails_closed_on_malformed_canonical_inv
             .count()
             == 0
         )
+    finally:
+        db.close()
+
+
+def test_layer3_api_package_review_submit_blocks_orphan_aps_handoff_package(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _commit_payload,
+    ) = _construct_quant_package_set(client, tmp_path, request_id="api-aps-orphan-before-submit")
+    pass_run_id = selection_body["pass_run_ids"][0]
+    _insert_orphan_aps_handoff_package(
+        client,
+        tmp_path,
+        session_id=session_id,
+        reconciliation_record_id=commit_body["reconciliation_record_id"],
+        suffix="before-submit",
+    )
+
+    submit_summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert submit_summary.status_code == 200
+    submit_summary_body = submit_summary.json()
+    assert submit_summary_body["package_construction"]["state"] == "package_commit_blocked"
+    assert submit_summary_body["package_construction"]["unexpected_package_kinds"] == [
+        PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF
+    ]
+    assert submit_summary_body["package_review_submit"]["state"] == "package_review_submit_unavailable"
+
+    blocked_submit = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={
+            "client_request_id": "api-aps-orphan-before-submit-submit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": commit_body["package_review_preview_hash"],
+            "reconciliation_record_id": commit_body["reconciliation_record_id"],
+            "output_package_ids": [package["output_package_id"] for package in commit_body["output_packages"]],
+            "payload_hashes": commit_body["payload_hashes"],
+            "operator_decision": "approved",
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert blocked_submit.status_code == 409
+    assert blocked_submit.json()["error_code"] == "package_review_submit_unexpected_package_state"
+
+
+def test_layer3_api_handoff_export_prepare_blocks_orphan_aps_handoff_package(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _submit_payload,
+        submit_body,
+    ) = _submit_quant_package_review(client, tmp_path, request_id="api-aps-orphan-before-prepare")
+    _insert_orphan_aps_handoff_package(
+        client,
+        tmp_path,
+        session_id=session_id,
+        reconciliation_record_id=commit_body["reconciliation_record_id"],
+        suffix="before-prepare",
+    )
+    blocked_prepare = client.post(
+        "/api/v1/layer3/handoff/export/prepare",
+        json=_handoff_export_prepare_payload(
+            request_id="api-aps-orphan-before-prepare-prepare",
+            session_id=session_id,
+            preview_body=preview_body,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=commit_body,
+            submit_body=submit_body,
+        ),
+    )
+    assert blocked_prepare.status_code == 409
+    assert blocked_prepare.json()["error_code"] == "handoff_export_prepare_unexpected_package_state"
+
+
+def test_layer3_api_aps_handoff_dispatch_blocks_orphan_aps_handoff_package(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        _preview_body,
+        _approval_body,
+        _selection_body,
+        _start_body,
+        _review_body,
+        _package_preview_body,
+        commit_body,
+        _submit_body,
+        _prepare_body,
+        payload,
+    ) = _prepare_aps_handoff_dispatch(client, tmp_path, request_id="api-aps-orphan-before-dispatch")
+    _insert_orphan_aps_handoff_package(
+        client,
+        tmp_path,
+        session_id=session_id,
+        reconciliation_record_id=commit_body["reconciliation_record_id"],
+        suffix="before-dispatch",
+    )
+    blocked_dispatch = client.post("/api/v1/layer3/handoff/aps/dispatch", json=payload)
+    assert blocked_dispatch.status_code == 409
+    assert blocked_dispatch.json()["error_code"] == "aps_handoff_dispatch_unexpected_package_state"
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+        )
+        assert "aps_handoff_dispatch" not in reconciliation.summary_json
     finally:
         db.close()
 

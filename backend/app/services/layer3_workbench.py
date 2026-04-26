@@ -619,7 +619,6 @@ PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS = (
     PACKAGE_KIND_USER_FACING,
     PACKAGE_KIND_REVIEW_FACING,
 )
-PACKAGE_REVIEW_ALLOWED_NON_SOURCE_KINDS = (PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,)
 PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
     "package_review_submit",
     "handoff",
@@ -3937,9 +3936,35 @@ def _review_source_packages(packages: list[L3OutputPackage]) -> list[L3OutputPac
     return [package for package in packages if package.package_kind in source_kinds]
 
 
-def _unexpected_package_kinds(packages: list[L3OutputPackage]) -> list[str]:
-    allowed_kinds = set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS) | set(PACKAGE_REVIEW_ALLOWED_NON_SOURCE_KINDS)
-    return sorted({package.package_kind for package in packages if package.package_kind not in allowed_kinds})
+def _dispatched_aps_handoff_package_id(dispatch_state: dict[str, Any] | None) -> str | None:
+    if not isinstance(dispatch_state, dict):
+        return None
+    if dispatch_state.get("aps_handoff_state") != APS_HANDOFF_DISPATCHED_STATE:
+        return None
+    if dispatch_state.get("aps_output_package_kind") != PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF:
+        return None
+    output_package_id = str(dispatch_state.get("aps_output_package_id") or "").strip()
+    return output_package_id or None
+
+
+def _unexpected_package_kinds(
+    packages: list[L3OutputPackage],
+    *,
+    aps_handoff_dispatch_state: dict[str, Any] | None = None,
+) -> list[str]:
+    allowed_source_kinds = set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    allowed_aps_package_id = _dispatched_aps_handoff_package_id(aps_handoff_dispatch_state)
+    unexpected_kinds = set()
+    for package in packages:
+        if package.package_kind in allowed_source_kinds:
+            continue
+        if (
+            package.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF
+            and package.output_package_id == allowed_aps_package_id
+        ):
+            continue
+        unexpected_kinds.add(package.package_kind)
+    return sorted(unexpected_kinds)
 
 
 def _canonical_payload_hashes(
@@ -4253,7 +4278,11 @@ def _package_construction_summary(
         .all()
     )
     review_packages = _review_source_packages(packages)
-    unexpected_package_kinds = _unexpected_package_kinds(packages)
+    aps_handoff_dispatch_state = _aps_handoff_dispatch_from_reconciliation(reconciliation)
+    unexpected_package_kinds = _unexpected_package_kinds(
+        packages,
+        aps_handoff_dispatch_state=aps_handoff_dispatch_state,
+    )
     if reconciliation is not None or packages:
         constructed = bool(
             reconciliation is not None
@@ -4990,6 +5019,12 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             next_allowed_actions=["refresh_package_review_preview"],
         )
 
+    existing_submit = _package_review_submit_from_reconciliation(reconciliation)
+    aps_handoff_dispatch_state = (
+        _aps_handoff_dispatch_from_reconciliation(reconciliation)
+        if existing_submit is not None and existing_submit.get("package_review_state") == PACKAGE_REVIEW_APPROVED_STATE
+        else None
+    )
     all_packages = (
         db.query(L3OutputPackage)
         .filter(
@@ -5000,7 +5035,10 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         .with_for_update()
         .all()
     )
-    unexpected_package_kinds = _unexpected_package_kinds(all_packages)
+    unexpected_package_kinds = _unexpected_package_kinds(
+        all_packages,
+        aps_handoff_dispatch_state=aps_handoff_dispatch_state,
+    )
     if unexpected_package_kinds:
         raise Layer3WorkbenchError(
             "package_review_submit_unexpected_package_state",
@@ -5104,7 +5142,6 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "decision_notes": decision_notes or None,
     }
     submit_record_ref = _stable_id("l3-package-review-submit", submit_basis)
-    existing_submit = _package_review_submit_from_reconciliation(reconciliation)
     if existing_submit is not None:
         if existing_submit.get("submit_record_ref") == submit_record_ref:
             return _package_review_submit_response(
@@ -5463,6 +5500,12 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             next_allowed_actions=["refresh_package_review_preview"],
         )
 
+    existing_prepare = _handoff_export_prepare_from_reconciliation(reconciliation)
+    aps_handoff_dispatch_state = (
+        _aps_handoff_dispatch_from_reconciliation(reconciliation)
+        if existing_prepare is not None and existing_prepare.get("handoff_export_state") == HANDOFF_EXPORT_PREPARED_STATE
+        else None
+    )
     all_packages = (
         db.query(L3OutputPackage)
         .filter(
@@ -5473,7 +5516,10 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         .with_for_update()
         .all()
     )
-    unexpected_package_kinds = _unexpected_package_kinds(all_packages)
+    unexpected_package_kinds = _unexpected_package_kinds(
+        all_packages,
+        aps_handoff_dispatch_state=aps_handoff_dispatch_state,
+    )
     if unexpected_package_kinds:
         raise Layer3WorkbenchError(
             "handoff_export_prepare_unexpected_package_state",
@@ -5658,7 +5704,6 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         "decision_notes": decision_notes or None,
     }
     prepare_record_ref = _stable_id("l3-handoff-export-prepare", preparation_basis)
-    existing_prepare = _handoff_export_prepare_from_reconciliation(reconciliation)
     if existing_prepare is not None:
         if existing_prepare.get("prepare_record_ref") == prepare_record_ref:
             existing_decision = str(existing_prepare.get("operator_decision") or operator_decision)
@@ -6068,6 +6113,7 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             next_allowed_actions=["refresh_package_review_preview"],
         )
 
+    existing_dispatch = _aps_handoff_dispatch_from_reconciliation(reconciliation)
     all_packages = (
         db.query(L3OutputPackage)
         .filter(
@@ -6078,7 +6124,10 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
         .with_for_update()
         .all()
     )
-    unexpected_package_kinds = _unexpected_package_kinds(all_packages)
+    unexpected_package_kinds = _unexpected_package_kinds(
+        all_packages,
+        aps_handoff_dispatch_state=existing_dispatch,
+    )
     if unexpected_package_kinds:
         raise Layer3WorkbenchError(
             "aps_handoff_dispatch_unexpected_package_state",
@@ -6337,7 +6386,6 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
         "decision_notes": decision_notes or None,
     }
     aps_handoff_record_ref = _stable_id("l3-aps-handoff-dispatch", dispatch_basis)
-    existing_dispatch = _aps_handoff_dispatch_from_reconciliation(reconciliation)
     existing_aps_package = _aps_handoff_package_for_session(db, session_id=session_id)
     if existing_dispatch is not None:
         if (
