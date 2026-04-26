@@ -115,6 +115,14 @@ def post_package_review_preview(
     return _json_or_error(lambda: layer3_workbench.package_review_preview(db, payload))
 
 
+@router.post("/package/review/commit", response_model=None)
+def post_package_review_commit(
+    payload: dict[str, Any],
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.package_construction_commit(db, payload))
+
+
 @router.get("/session/{session_id}", response_model=None)
 def get_session_summary(session_id: str, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.session_summary(db, session_id))

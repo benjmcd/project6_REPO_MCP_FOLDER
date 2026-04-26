@@ -114,11 +114,11 @@ And to the Layer 3 workbench package-review preview freeze packet, which is plan
 
 The package-review preview packet was merged as planning-only PR `#234` after PR `#232`. PR `#235` now implements only that read-only package-review readiness/preview step after one selected-pass result-review decision is already recorded as `approved`. It explicitly does not create `L3OutputPackage` or `L3ReconciliationRecord` rows, does not call `materialize_package_entry(...)` as-is, and does not admit package-review submission, package payload writes, handoff/export, rerun/recovery, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
-And to the Layer 3 workbench package-construction freeze packet, which is planning-only and does not make package construction, package-review submission, or handoff live by itself:
+And to the Layer 3 workbench package-construction freeze packet from PR `#237`, plus the bounded PR `#238` package-construction implementation:
 - `next_milestone_plans/Layer3_planning_docs/50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/51_L3_WB_PACKAGE_CONSTRUCTION_API_AND_STATE_CONTRACT.md`
 
-The package-construction packet freezes only the next possible bounded commit step after PR `#235` read-only preview: exactly one reconciliation row, exactly three package rows, and exactly three payload files for `canonical_internal`, `user_facing`, and `review_facing`, guarded by approved selected-pass result-review and preview-basis authority. It still does not admit package-review submit/decision state, handoff/export, `materialize_package_entry(...)` as-is from `/review/layer3`, schema/runtime/source widening, rerun/recovery, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+The package-construction packet freezes only the bounded commit step after PR `#235` read-only preview: exactly one reconciliation row, exactly three package rows, and exactly three payload files for `canonical_internal`, `user_facing`, and `review_facing`, guarded by approved selected-pass result-review and preview-basis authority. PR `#238` implements that backend-only commit as `POST /api/v1/layer3/package/review/commit`. It still does not admit package-review submit/decision state, handoff/export, `materialize_package_entry(...)` as-is from `/review/layer3`, schema/runtime/source widening, rerun/recovery, qualitative/hybrid/RAG/vector behavior, rendered UI changes, or full mockup activation.
 
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
@@ -555,10 +555,10 @@ They freeze the next eligible planning boundary after merged PR `#232` as read-o
 - `48_L3_WB_PACKAGE_REVIEW_FREEZE.md`
 - `49_L3_WB_PACKAGE_REVIEW_API_AND_STATE_CONTRACT.md`
 
-### Broader workbench package-construction planning-only freeze docs
+### Broader workbench package-construction freeze docs and implementation
 
 These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-They freeze the next eligible planning boundary after merged PR `#235` as package construction only, not package-review submission or handoff. The admitted future write set is limited to one `L3ReconciliationRecord`, three `L3OutputPackage` rows, and three package payload files for `canonical_internal`, `user_facing`, and `review_facing`, using a workbench-compatible owner-service helper rather than calling `materialize_package_entry(...)` as-is from `/review/layer3`. They do not make package construction live by themselves and do not admit package-review submit/decision state, handoff/export, result-review amendment, approved-plan supersession, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation:
+They freeze the next eligible boundary after merged PR `#235` as package construction only, not package-review submission or handoff. The admitted write set is limited to one `L3ReconciliationRecord`, three `L3OutputPackage` rows, and three package payload files for `canonical_internal`, `user_facing`, and `review_facing`, using a workbench-compatible owner-service helper rather than calling `materialize_package_entry(...)` as-is from `/review/layer3`. PR `#238` implements only that backend commit boundary and still does not admit package-review submit/decision state, handoff/export, result-review amendment, approved-plan supersession, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, rendered UI changes, or full mockup activation:
 - `50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE.md`
 - `51_L3_WB_PACKAGE_CONSTRUCTION_API_AND_STATE_CONTRACT.md`
 
@@ -874,7 +874,7 @@ Read the docs as planning-only package-review preview governance and PR `#235` a
 - it does not admit package construction, package-review submission, `L3OutputPackage`, `L3ReconciliationRecord`, `AnalysisArtifact`, package payload writes, handoff/export, rerun/recovery, runtime DB/schema widening, source-breadth expansion, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, execution selection/start UI, or full mockup activation
 - browser proof with both headed and headless Chrome was required and passed because PR `#235` changes rendered `/review/layer3` behavior
 
-### If you are auditing the package-construction planning packet
+### If you are auditing the package-construction packet or PR `#238` implementation
 
 Start with:
 - `Layer3_planning_docs/50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE.md`
@@ -883,17 +883,20 @@ Start with:
 - `Layer3_planning_docs/49_L3_WB_PACKAGE_REVIEW_API_AND_STATE_CONTRACT.md`
 - `Layer3_planning_docs/08_GATED_PACKAGE_FREEZE.md`
 - `backend/app/services/layer3_package_entry.py`
+- `backend/app/services/layer3_workbench.py`
+- `backend/app/api/layer3.py`
+- `backend/tests/test_layer3_api.py`
 - `backend/tests/test_layer3_package_entry.py`
 - `next_milestone_plans/layer3_workbench_proof_manifest.json`
 - `next_milestone_plans/layer3_progress_board.md`
 - `next_milestone_plans/layer3_progress_manifest.json`
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 
-Read the docs as planning-only package-construction governance:
-- the admitted future construction write set is exactly one reconciliation row, three output-package rows, and three payload files
+Read docs `50`/`51` as package-construction governance and PR `#238` as the separate bounded backend implementation:
+- the admitted construction write set is exactly one reconciliation row, three output-package rows, and three payload files
 - package kinds remain exactly `canonical_internal`, `user_facing`, and `review_facing`
-- a future implementation must keep durable package payload construction inside the package owner-service boundary
-- a future implementation must not call `materialize_package_entry(...)` as-is from `/review/layer3` by fabricating Gate D `phase1a_loading_closure` or `pass_entry`
+- PR `#238` keeps durable package payload construction inside the package owner-service boundary through a workbench-compatible helper
+- PR `#238` must not call `materialize_package_entry(...)` as-is from `/review/layer3` by fabricating Gate D `phase1a_loading_closure` or `pass_entry`
 - it does not admit package-review submission, package-review approval/rejection, handoff/export, `AnalysisArtifact` creation, new analysis plan/pass/run creation, result-review amendment, approved-plan supersession, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
