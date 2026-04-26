@@ -45,6 +45,13 @@ from app.services.layer3_package_entry import (
     Layer3PackageEntryError,
     materialize_workbench_package_commit,
 )
+from app.services.layer3_aps_handoff import (
+    APS_HANDOFF_SCHEMA_ID,
+    PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+    Layer3ApsHandoffError,
+    check_aps_handoff_compatibility,
+    materialize_aps_handoff,
+)
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
     SnapshotMaterial,
@@ -95,6 +102,8 @@ PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.package_review_submit.v1"
 PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID = "layer3.package_review_submit_state.v1"
 HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.handoff_export_prepare.v1"
 HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID = "layer3.handoff_export_prepare_state.v1"
+APS_HANDOFF_DISPATCH_SCHEMA_ID = "layer3.aps_handoff_dispatch.v1"
+APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID = "layer3.aps_handoff_dispatch_state.v1"
 EXECUTION_PASS_RUNNING_STATE = "execution_pass_running"
 EXECUTION_PASS_COMPLETED_STATE = "execution_pass_completed"
 EXECUTION_PASS_FAILED_STATE = "execution_pass_failed"
@@ -127,6 +136,11 @@ HANDOFF_EXPORT_PREPARED_STATE = "handoff_export_prepared"
 HANDOFF_EXPORT_HELD_STATE = "handoff_export_held"
 HANDOFF_EXPORT_DECLINED_STATE = "handoff_export_declined"
 HANDOFF_EXPORT_BLOCKED_STATE = "handoff_export_blocked"
+APS_HANDOFF_UNAVAILABLE_STATE = "aps_handoff_unavailable"
+APS_HANDOFF_READY_STATE = "aps_handoff_ready"
+APS_HANDOFF_DISPATCHED_STATE = "aps_handoff_dispatched"
+APS_HANDOFF_BLOCKED_STATE = "aps_handoff_blocked"
+APS_HANDOFF_CONFLICT_STATE = "aps_handoff_conflict"
 STATE_MODEL_SCHEMA_ID = "layer3.workbench_state_model.v1"
 PLAN_REVISION_DECISIONS = frozenset({"reject_current_preview", "request_revision"})
 PLAN_REVISION_STATE_BY_DECISION = {
@@ -162,6 +176,7 @@ HANDOFF_EXPORT_PREPARE_STATUS_BY_DECISION = {
     "blocked": "blocked",
 }
 HANDOFF_EXPORT_PREPARE_NOTE_REQUIRED_DECISIONS = frozenset({"hold", "decline", "blocked"})
+APS_HANDOFF_DISPATCH_OPERATOR_DECISION = "dispatch_aps_handoff"
 EXECUTION_RESULT_REVIEW_ITEM_TYPES = frozenset(
     {
         "datum",
@@ -524,6 +539,72 @@ HANDOFF_EXPORT_PREPARE_ALLOWED_FIELDS = frozenset(
         "expected_package_kinds",
     }
 )
+APS_HANDOFF_DISPATCH_FORBIDDEN_FIELDS = frozenset(
+    {
+        "external_export",
+        "external_target",
+        "download",
+        "download_url",
+        "destination",
+        "destination_selector",
+        "connector_run_id",
+        "connector_dispatch",
+        "dispatch",
+        "send",
+        "runtime_db_write",
+        "analysis_artifact",
+        "artifact_manifest",
+        "create_package",
+        "rebuild_package",
+        "package_payload",
+        "package_variant_content",
+        "rewrite_output",
+        "edited_findings",
+        "result_review_amendment",
+        "package_review_amendment",
+        "rerun",
+        "retry",
+        "recover",
+        "cancel",
+        "selected_pass_ids",
+        "pass_run_ids",
+        "new_analysis_plan",
+        "plan_revision",
+        "source_expansion",
+        "local_upload",
+        "local_directory",
+        "schema_migration",
+    }
+)
+APS_HANDOFF_DISPATCH_ALLOWED_FIELDS = frozenset(
+    {
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "operator_decision",
+        "client_request_id",
+        "decision_notes",
+        "analysis_run_id",
+    }
+)
 EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 ANALYSIS_EXECUTION_START_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE = ("result_review", "package", "handoff")
@@ -545,6 +626,19 @@ PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
 )
 PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = ("handoff", "export")
 HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE = ("aps_handoff", "external_export", "downstream_dispatch")
+APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE = (
+    "external_export",
+    "download",
+    "connector_dispatch",
+    "non_aps_dispatch",
+)
+APS_HANDOFF_BLOCKED_DOWNSTREAM_UNAVAILABLE = (
+    "aps_handoff",
+    "external_export",
+    "download",
+    "connector_dispatch",
+    "non_aps_dispatch",
+)
 EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES = frozenset(
     {PASS_STATUS_COMPLETED, PASS_STATUS_COMPLETED_WITH_WARNINGS, PASS_STATUS_FAILED}
 )
@@ -583,6 +677,7 @@ READINESS_REQUIRED_GATES = (
     "package-construction",
     "package-review-submit",
     "handoff-export-prepare",
+    "aps-handoff-dispatch",
     "browser-proof",
 )
 READINESS_IMPLEMENTED_GATES = (
@@ -599,6 +694,7 @@ READINESS_IMPLEMENTED_GATES = (
     "package-construction",
     "package-review-submit",
     "handoff-export-prepare",
+    "aps-handoff-dispatch",
 )
 READINESS_DEFERRED_GATES = (
     "revision-recovery",
@@ -927,8 +1023,8 @@ def _workbench_state_model() -> dict[str, Any]:
             {
                 "state": HANDOFF_EXPORT_PREPARED_STATE,
                 "authority_source": "bounded_operator_internal_export_envelope_preparation",
-                "allowed_next_actions": ["inspect_internal_envelope"],
-                "forbidden_downstream_actions": ["aps_handoff", "external_export", "downstream_dispatch"],
+                "allowed_next_actions": ["inspect_internal_envelope", "aps_handoff_dispatch"],
+                "forbidden_downstream_actions": ["external_export", "download", "connector_dispatch", "non_aps_dispatch"],
             },
             {
                 "state": HANDOFF_EXPORT_HELD_STATE,
@@ -947,6 +1043,36 @@ def _workbench_state_model() -> dict[str, Any]:
                 "authority_source": "stale_authority_partial_package_set_hash_mismatch_or_operator_block",
                 "allowed_next_actions": ["inspect_block_reasons"],
                 "forbidden_downstream_actions": ["aps_handoff", "external_export", "downstream_dispatch", "package_rewrite"],
+            },
+            {
+                "state": APS_HANDOFF_UNAVAILABLE_STATE,
+                "authority_source": "missing_prepared_internal_handoff_export_envelope_or_upstream_authority",
+                "allowed_next_actions": ["inspect_handoff_export_prepare_state"],
+                "forbidden_downstream_actions": ["aps_handoff", "external_export", "download", "connector_dispatch"],
+            },
+            {
+                "state": APS_HANDOFF_READY_STATE,
+                "authority_source": "server_validated_handoff_export_prepared_envelope_and_package_authority",
+                "allowed_next_actions": ["aps_handoff_dispatch"],
+                "forbidden_downstream_actions": ["external_export", "download", "connector_dispatch", "non_aps_dispatch"],
+            },
+            {
+                "state": APS_HANDOFF_DISPATCHED_STATE,
+                "authority_source": "existing_aps_evidence_bundle_handoff_owner_service_row_and_artifact",
+                "allowed_next_actions": ["inspect_aps_handoff"],
+                "forbidden_downstream_actions": ["external_export", "download", "connector_dispatch", "non_aps_dispatch"],
+            },
+            {
+                "state": APS_HANDOFF_BLOCKED_STATE,
+                "authority_source": "missing_aps_provenance_or_owner_service_validation_failure",
+                "allowed_next_actions": ["inspect_block_reasons"],
+                "forbidden_downstream_actions": ["aps_handoff", "external_export", "download", "connector_dispatch", "non_aps_dispatch"],
+            },
+            {
+                "state": APS_HANDOFF_CONFLICT_STATE,
+                "authority_source": "existing_or_conflicting_aps_handoff_dispatch_state",
+                "allowed_next_actions": ["inspect_existing_aps_handoff_state"],
+                "forbidden_downstream_actions": ["aps_handoff", "external_export", "download", "connector_dispatch", "non_aps_dispatch"],
             },
             {
                 "state": EXECUTION_RESULT_STATUS_BLOCKED_STATE,
@@ -1027,6 +1153,8 @@ def readiness_contract() -> dict[str, Any]:
         "package_review_submit_endpoint": f"{API_ROOT}/package/review/submit",
         "handoff_export_prepare_admitted": True,
         "handoff_export_prepare_endpoint": f"{API_ROOT}/handoff/export/prepare",
+        "aps_handoff_dispatch_admitted": True,
+        "aps_handoff_dispatch_endpoint": f"{API_ROOT}/handoff/aps/dispatch",
         "package_review_admitted": False,
         "external_handoff_admitted": False,
         "external_export_admitted": False,
@@ -1049,6 +1177,7 @@ def readiness_contract() -> dict[str, Any]:
             "client_request_id_required_for_package_construction_commit": True,
             "client_request_id_required_for_package_review_submit": True,
             "client_request_id_required_for_handoff_export_prepare": True,
+            "client_request_id_required_for_aps_handoff_dispatch": True,
             "duplicate_plan_approval": "returns existing approved-plan conflict; no duplicate L3AnalysisPlan",
             "duplicate_plan_revision": "returns existing revision-control conflict; no duplicate revision-control state",
             "duplicate_execution_selection": "same client_request_id and same approved plan returns existing selection; conflicts fail closed",
@@ -1059,6 +1188,7 @@ def readiness_contract() -> dict[str, Any]:
             "duplicate_package_construction_commit": "same client_request_id and same authority basis returns existing package rows; conflicts fail closed",
             "duplicate_package_review_submit": "same authority basis and same operator decision returns existing package-review state; conflicts fail closed",
             "duplicate_handoff_export_prepare": "same authority basis and same operator decision returns existing preparation state; conflicts fail closed",
+            "duplicate_aps_handoff_dispatch": "same client_request_id and same prepared-envelope authority returns existing APS handoff state; conflicts fail closed",
             "duplicate_without_client_request_id": "server-authoritative state conflicts still prevent duplicate durable approval or revision-control state",
             "analysis_execution": "broad analysis execution remains blocked; selected-pass execution start is admitted separately",
         },
@@ -1074,6 +1204,7 @@ def readiness_contract() -> dict[str, Any]:
             "package_construction_commit_uses_session_plan_and_pass_locks": True,
             "package_review_submit_uses_session_reconciliation_and_package_locks": True,
             "handoff_export_prepare_uses_session_reconciliation_and_package_locks": True,
+            "aps_handoff_dispatch_uses_session_reconciliation_and_package_locks": True,
             "broad_analysis_execution_requires_later_freeze": True,
         },
         "deferred_decisions": {
@@ -1084,7 +1215,8 @@ def readiness_contract() -> dict[str, Any]:
             "source_breadth": "requires later freeze before RAG/vector/upload/local-directory expansion",
             "package_construction": "admitted only for selected-pass workbench commit; broader package construction still requires later freeze",
             "package_review_submit": "admitted only for bounded decision recording over an already constructed workbench package set",
-            "external_handoff_export_dispatch": "requires later freeze; this tranche records internal prepare_only envelope state only",
+            "aps_handoff_dispatch": "admitted only for server-side APS evidence-bundle handoff after handoff_export_prepared",
+            "external_handoff_export_dispatch": "external export/download, connector dispatch, and non-APS dispatch still require later freezes",
         },
     }
 
@@ -1111,6 +1243,7 @@ def bootstrap() -> dict[str, Any]:
             "package_construction_commit": True,
             "package_review_submit": True,
             "handoff_export_prepare": True,
+            "aps_handoff_dispatch": True,
             "analysis_execution": False,
             "qualitative_execution": False,
             "hybrid_execution": False,
@@ -1144,6 +1277,8 @@ def bootstrap() -> dict[str, Any]:
             "package_review_submit_endpoint": f"{API_ROOT}/package/review/submit",
             "handoff_export_prepare_admitted": True,
             "handoff_export_prepare_endpoint": f"{API_ROOT}/handoff/export/prepare",
+            "aps_handoff_dispatch_admitted": True,
+            "aps_handoff_dispatch_endpoint": f"{API_ROOT}/handoff/aps/dispatch",
             "package_review_admitted": False,
             "external_handoff_admitted": False,
             "external_export_admitted": False,
@@ -3858,7 +3993,13 @@ def _active_package_downstream_unavailable(
     package_construction_state: dict[str, Any],
     package_review_submit_state: dict[str, Any],
     handoff_export_prepare_state: dict[str, Any],
+    aps_handoff_dispatch_state: dict[str, Any],
 ) -> tuple[str, ...]:
+    if handoff_export_prepare_state.get("state") == HANDOFF_EXPORT_PREPARED_STATE:
+        return _state_downstream_unavailable(
+            aps_handoff_dispatch_state,
+            APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE,
+        )
     if package_review_submit_state.get("state") == PACKAGE_REVIEW_APPROVED_STATE:
         return _state_downstream_unavailable(
             handoff_export_prepare_state,
@@ -3987,6 +4128,102 @@ def _handoff_export_prepare_response(
     return body
 
 
+def _aps_handoff_dispatch_from_reconciliation(reconciliation: L3ReconciliationRecord | None) -> dict[str, Any] | None:
+    if reconciliation is None:
+        return None
+    state = (reconciliation.summary_json or {}).get("aps_handoff_dispatch")
+    if not isinstance(state, dict):
+        return None
+    if state.get("schema_id") != APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID:
+        return None
+    return state
+
+
+def _aps_handoff_package_for_session(db: Session, *, session_id: str) -> L3OutputPackage | None:
+    return (
+        db.query(L3OutputPackage)
+        .filter(
+            L3OutputPackage.session_id == session_id,
+            L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+        )
+        .one_or_none()
+    )
+
+
+def _package_ref_map(packages: list[L3OutputPackage]) -> dict[str, str]:
+    return {package.package_kind: str(package.payload_ref or "") for package in _packages_in_review_order(packages)}
+
+
+def _package_hash_map(packages: list[L3OutputPackage]) -> dict[str, str]:
+    return {package.package_kind: str(package.payload_hash or "") for package in _packages_in_review_order(packages)}
+
+
+def _aps_handoff_dispatch_response(
+    *,
+    request_id: str,
+    status: str,
+    session_id: str,
+    analysis_plan_id: str,
+    pass_run_id: str,
+    preview_id: str,
+    preview_hash: str,
+    result_review_record_ref: str,
+    package_review_preview_hash: str,
+    reconciliation_record: L3ReconciliationRecord,
+    packages: list[L3OutputPackage],
+    dispatch_state: dict[str, Any],
+) -> dict[str, Any]:
+    ordered_packages = _packages_in_review_order(packages)
+    return {
+        **_base_response(APS_HANDOFF_DISPATCH_SCHEMA_ID, request_id=request_id, status=status),
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_identity": _preview_identity(preview_id=preview_id, preview_hash=preview_hash),
+        "analysis_run_id": dispatch_state.get("analysis_run_id"),
+        "result_review_record_ref": result_review_record_ref,
+        "package_review_preview_hash": package_review_preview_hash,
+        "reconciliation_record_id": reconciliation_record.reconciliation_record_id,
+        "output_package_ids": [package.output_package_id for package in ordered_packages],
+        "package_kinds": [package.package_kind for package in ordered_packages],
+        "payload_refs": [package.payload_ref for package in ordered_packages],
+        "payload_hashes": [package.payload_hash for package in ordered_packages],
+        "package_review_submit_record_ref": dispatch_state["package_review_submit_record_ref"],
+        "package_review_state": dispatch_state["package_review_state"],
+        "prepare_record_ref": dispatch_state["prepare_record_ref"],
+        "handoff_export_state": dispatch_state["handoff_export_state"],
+        "handoff_export_envelope_ref": dispatch_state["handoff_export_envelope_ref"],
+        "handoff_target": dispatch_state["handoff_target"],
+        "export_mode": dispatch_state["export_mode"],
+        "aps_handoff_target": dispatch_state["aps_handoff_target"],
+        "dispatch_mode": dispatch_state["dispatch_mode"],
+        "operator_decision": dispatch_state["operator_decision"],
+        "decision_notes": dispatch_state.get("decision_notes"),
+        "aps_handoff_state": dispatch_state["aps_handoff_state"],
+        "aps_handoff_record_ref": dispatch_state["aps_handoff_record_ref"],
+        "aps_output_package_id": dispatch_state["aps_output_package_id"],
+        "aps_output_package_kind": dispatch_state["aps_output_package_kind"],
+        "aps_bundle_ref": dispatch_state["aps_bundle_ref"],
+        "aps_bundle_id": dispatch_state["aps_bundle_id"],
+        "aps_schema_id": dispatch_state["aps_schema_id"],
+        "source_package_refs": _json_clone(dispatch_state["source_package_refs"]),
+        "source_package_hashes": _json_clone(dispatch_state["source_package_hashes"]),
+        "external_export_enabled": False,
+        "download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "downstream_unavailable": list(APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE),
+        "next_state": dispatch_state["aps_handoff_state"],
+        "authority_rail": _authority_rail(
+            session_id=session_id,
+            current_gate="package",
+            persistence_mode="durable_aps_handoff_dispatch",
+            downstream_unavailable=APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE,
+            execution_enabled=False,
+            package_review_enabled=False,
+        ),
+    }
+
+
 def _package_construction_summary(
     db: Session,
     *,
@@ -4001,6 +4238,7 @@ def _package_construction_summary(
     packages = (
         db.query(L3OutputPackage)
         .filter(L3OutputPackage.session_id == session_id)
+        .filter(L3OutputPackage.package_kind.in_(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS))
         .order_by(L3OutputPackage.package_kind.asc())
         .all()
     )
@@ -4741,6 +4979,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             L3OutputPackage.session_id == session_id,
             L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
         )
+        .filter(L3OutputPackage.package_kind.in_(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS))
         .order_by(L3OutputPackage.package_kind.asc())
         .with_for_update()
         .all()
@@ -5203,6 +5442,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             L3OutputPackage.session_id == session_id,
             L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
         )
+        .filter(L3OutputPackage.package_kind.in_(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS))
         .order_by(L3OutputPackage.package_kind.asc())
         .with_for_update()
         .all()
@@ -5513,6 +5753,691 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
     )
 
 
+def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or "").strip()
+    if not request_id:
+        raise Layer3WorkbenchError(
+            "client_request_id_required",
+            "client_request_id is required for APS handoff dispatch.",
+            status="invalid",
+            blocked_fields=["client_request_id"],
+            next_allowed_actions=["submit_idempotent_aps_handoff_dispatch_request"],
+        )
+
+    session_id = str(payload.get("session_id") or "").strip()
+    analysis_plan_id = str(payload.get("analysis_plan_id") or "").strip()
+    pass_run_id = str(payload.get("pass_run_id") or "").strip()
+    preview_id = str(payload.get("preview_id") or "").strip()
+    preview_hash = str(payload.get("preview_hash") or "").strip()
+    supplied_review_ref = str(payload.get("result_review_record_ref") or "").strip()
+    supplied_package_preview_hash = str(payload.get("package_review_preview_hash") or "").strip()
+    reconciliation_record_id = str(payload.get("reconciliation_record_id") or "").strip()
+    supplied_submit_ref = str(payload.get("package_review_submit_record_ref") or "").strip()
+    supplied_package_review_state = str(payload.get("package_review_state") or "").strip()
+    supplied_prepare_ref = str(payload.get("prepare_record_ref") or "").strip()
+    supplied_handoff_export_state = str(payload.get("handoff_export_state") or "").strip()
+    supplied_envelope_ref = str(payload.get("handoff_export_envelope_ref") or "").strip()
+    handoff_target = str(payload.get("handoff_target") or "").strip()
+    export_mode = str(payload.get("export_mode") or "").strip()
+    aps_handoff_target = str(payload.get("aps_handoff_target") or "").strip()
+    dispatch_mode = str(payload.get("dispatch_mode") or "").strip()
+    operator_decision = str(payload.get("operator_decision") or "").strip()
+    decision_notes = str(payload.get("decision_notes") or "").strip()
+    supplied_analysis_run_id = str(payload.get("analysis_run_id") or "").strip()
+    raw_output_package_ids = payload.get("output_package_ids")
+    raw_package_kinds = payload.get("package_kinds")
+    raw_payload_refs = payload.get("payload_refs")
+    raw_payload_hashes = payload.get("payload_hashes")
+
+    missing = [
+        field
+        for field, value in (
+            ("session_id", session_id),
+            ("analysis_plan_id", analysis_plan_id),
+            ("pass_run_id", pass_run_id),
+            ("preview_id", preview_id),
+            ("preview_hash", preview_hash),
+            ("result_review_record_ref", supplied_review_ref),
+            ("package_review_preview_hash", supplied_package_preview_hash),
+            ("reconciliation_record_id", reconciliation_record_id),
+            ("package_review_submit_record_ref", supplied_submit_ref),
+            ("package_review_state", supplied_package_review_state),
+            ("prepare_record_ref", supplied_prepare_ref),
+            ("handoff_export_state", supplied_handoff_export_state),
+            ("handoff_export_envelope_ref", supplied_envelope_ref),
+            ("handoff_target", handoff_target),
+            ("export_mode", export_mode),
+            ("aps_handoff_target", aps_handoff_target),
+            ("dispatch_mode", dispatch_mode),
+            ("operator_decision", operator_decision),
+        )
+        if not value
+    ]
+    if not raw_output_package_ids:
+        missing.append("output_package_ids")
+    if not raw_package_kinds:
+        missing.append("package_kinds")
+    if not raw_payload_refs:
+        missing.append("payload_refs")
+    if not raw_payload_hashes:
+        missing.append("payload_hashes")
+    if missing:
+        raise Layer3WorkbenchError(
+            "missing_aps_handoff_dispatch_fields",
+            f"APS handoff dispatch request is missing required fields: {', '.join(missing)}.",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_aps_handoff_dispatch_request"],
+        )
+
+    unknown = sorted(key for key in payload if key not in APS_HANDOFF_DISPATCH_ALLOWED_FIELDS)
+    forbidden = sorted(key for key in APS_HANDOFF_DISPATCH_FORBIDDEN_FIELDS if key in payload)
+    blocked_payload_fields = sorted(set(unknown) | set(forbidden))
+    if blocked_payload_fields:
+        blocked_text = ", ".join(blocked_payload_fields)
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_scope_not_admitted",
+            f"APS handoff dispatch request includes non-admitted fields: {blocked_text}.",
+            status="invalid",
+            blocked_fields=blocked_payload_fields,
+            next_allowed_actions=["submit_bounded_aps_handoff_dispatch_request"],
+        )
+    if handoff_target != "internal_export_envelope":
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_target_not_admitted",
+            "handoff_target must be internal_export_envelope for APS handoff dispatch.",
+            status="invalid",
+            blocked_fields=["handoff_target"],
+        )
+    if export_mode != "prepare_only":
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_export_mode_not_admitted",
+            "export_mode must be prepare_only for APS handoff dispatch.",
+            status="invalid",
+            blocked_fields=["export_mode"],
+        )
+    if aps_handoff_target != "aps_evidence_bundle":
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_target_family_not_admitted",
+            "aps_handoff_target must be aps_evidence_bundle.",
+            status="invalid",
+            blocked_fields=["aps_handoff_target"],
+        )
+    if dispatch_mode != "server_side_aps_handoff":
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_mode_not_admitted",
+            "dispatch_mode must be server_side_aps_handoff.",
+            status="invalid",
+            blocked_fields=["dispatch_mode"],
+        )
+    if operator_decision != APS_HANDOFF_DISPATCH_OPERATOR_DECISION:
+        raise Layer3WorkbenchError(
+            "unsupported_aps_handoff_dispatch_decision",
+            "operator_decision must be dispatch_aps_handoff.",
+            status="invalid",
+            blocked_fields=["operator_decision"],
+        )
+    if supplied_package_review_state != PACKAGE_REVIEW_APPROVED_STATE:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_requires_approved_package_review",
+            "APS handoff dispatch requires package_review_state to be package_review_approved.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_review_state"],
+            next_allowed_actions=["inspect_package_review_submit_state"],
+        )
+    if supplied_handoff_export_state != HANDOFF_EXPORT_PREPARED_STATE:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_requires_prepared_handoff_export",
+            "APS handoff dispatch requires handoff_export_state to be handoff_export_prepared.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["handoff_export_state"],
+            next_allowed_actions=["inspect_handoff_export_prepare_state"],
+        )
+
+    status_payload = {
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_id,
+        "preview_hash": preview_hash,
+        "operator_view_mode": "status_only",
+        "client_request_id": request_id,
+    }
+    if supplied_analysis_run_id:
+        status_payload["analysis_run_id"] = supplied_analysis_run_id
+    status_body = execution_result_status(db, status_payload)
+    if status_body.get("status") != "available" or status_body.get("result_status_available") is not True:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_result_status_unavailable",
+            "APS handoff dispatch requires available selected-pass result/status with readable output metadata.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["inspect_execution_result_status"],
+        )
+    output_metadata_summary = status_body.get("output_metadata_summary")
+    if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_output_metadata_required",
+            "APS handoff dispatch requires readable selected-pass output metadata.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
+
+    session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
+    pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(
+            L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+            L3ReconciliationRecord.session_id == session_id,
+        )
+        .with_for_update()
+        .one_or_none()
+    )
+    if session is None or pass_run is None:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_inconsistent",
+            "APS handoff dispatch could not reload the selected session or pass run.",
+            status="conflict",
+            http_status=409,
+        )
+    if pass_run.session_id != session_id or pass_run.analysis_plan_id != analysis_plan_id:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_pass_run_mismatch",
+            "APS handoff dispatch pass_run_id must belong to the supplied session and approved plan.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
+    if reconciliation is None:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_requires_package_construction",
+            "APS handoff dispatch requires an existing reconciliation record from package construction commit.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+            next_allowed_actions=["inspect_package_construction_state"],
+        )
+
+    review_state = _execution_result_review_from_pass_run(pass_run)
+    if (
+        review_state is None
+        or review_state.get("review_state") != EXECUTION_RESULT_REVIEW_APPROVED_STATE
+        or review_state.get("operator_decision") != "approved"
+    ):
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_requires_approved_result_review",
+            "APS handoff dispatch requires an approved selected-pass result-review record.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["record_approved_execution_result_review"],
+        )
+    if supplied_review_ref != str(review_state.get("review_record_ref") or ""):
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_result_review_mismatch",
+            "Supplied result_review_record_ref does not match the selected-pass approved result review.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["result_review_record_ref"],
+        )
+    mismatched_review_fields = [
+        field
+        for field, expected in {
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "source_preview_id": preview_id,
+            "source_preview_hash": preview_hash,
+        }.items()
+        if str(review_state.get(field) or "") != str(expected)
+    ]
+    if mismatched_review_fields:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_result_review_mismatch",
+            "Stored result-review state does not match the supplied approved plan, pass, and preview identity.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=mismatched_review_fields,
+        )
+    if int(review_state.get("unresolved_trace_count") or 0) != 0:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_trace_unresolved",
+            "APS handoff dispatch requires approved result-review state with no unresolved trace references.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["result_review_record_ref"],
+        )
+
+    analysis_run_id = str(status_body.get("analysis_run_id") or "") or None
+    expected_package_preview_hash = _package_review_preview_hash(
+        session_id=session_id,
+        analysis_plan_id=analysis_plan_id,
+        pass_run_id=pass_run_id,
+        preview_id=preview_id,
+        preview_hash=preview_hash,
+        analysis_run_id=analysis_run_id,
+        result_review_record_ref=supplied_review_ref,
+        output_metadata_summary=output_metadata_summary,
+    )
+    if supplied_package_preview_hash != expected_package_preview_hash:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_preview_mismatch",
+            "APS handoff dispatch must reference the current server-recomputed package-review preview hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_review_preview_hash"],
+            next_allowed_actions=["refresh_package_review_preview"],
+        )
+
+    packages = (
+        db.query(L3OutputPackage)
+        .filter(
+            L3OutputPackage.session_id == session_id,
+            L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
+        )
+        .filter(L3OutputPackage.package_kind.in_(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS))
+        .order_by(L3OutputPackage.package_kind.asc())
+        .with_for_update()
+        .all()
+    )
+    if (
+        len(packages) != len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+        or {package.package_kind for package in packages} != set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    ):
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_requires_complete_package_set",
+            "APS handoff dispatch requires exactly the reviewed canonical_internal, user_facing, and review_facing packages.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["output_package_ids"],
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    ordered_packages = _packages_in_review_order(packages)
+    if not isinstance(raw_output_package_ids, list):
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_package_ids_invalid",
+            "output_package_ids must be a list of the three reviewed output package ids.",
+            status="invalid",
+            blocked_fields=["output_package_ids"],
+        )
+    supplied_package_ids = [str(item or "").strip() for item in raw_output_package_ids]
+    expected_package_ids = [package.output_package_id for package in ordered_packages]
+    if supplied_package_ids != expected_package_ids:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_package_ids_mismatch",
+            "Supplied output_package_ids do not match the reviewed package set.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["output_package_ids"],
+        )
+    if not isinstance(raw_package_kinds, list):
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_package_kinds_invalid",
+            "package_kinds must be the reviewed package kinds in server order.",
+            status="invalid",
+            blocked_fields=["package_kinds"],
+        )
+    supplied_package_kinds = [str(item or "").strip() for item in raw_package_kinds]
+    expected_package_kinds = [package.package_kind for package in ordered_packages]
+    if supplied_package_kinds != expected_package_kinds:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_package_kinds_mismatch",
+            "Supplied package_kinds do not match the reviewed package set.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_kinds"],
+        )
+    if any(not str(package.payload_ref or "").strip() or not str(package.payload_hash or "").strip() for package in ordered_packages):
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_package_payload_identity_missing",
+            "APS handoff dispatch requires stored package payload refs and hashes.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["payload_refs", "payload_hashes"],
+        )
+    canonical_payload_refs = _canonical_payload_refs(payload_refs=raw_payload_refs, packages=packages)
+    if canonical_payload_refs is None:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_payload_refs_mismatch",
+            "Supplied payload_refs do not match the reviewed package payload refs.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["payload_refs"],
+        )
+    if not isinstance(raw_payload_hashes, (list, dict)):
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_payload_hashes_invalid",
+            "payload_hashes must be either a list of package hashes or a mapping keyed by package kind or package id.",
+            status="invalid",
+            blocked_fields=["payload_hashes"],
+        )
+    canonical_payload_hashes = _canonical_payload_hashes(payload_hashes=raw_payload_hashes, packages=packages)
+    if canonical_payload_hashes is None:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_payload_hashes_mismatch",
+            "Supplied payload_hashes do not match the reviewed package payload hashes.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["payload_hashes"],
+        )
+
+    reconciliation_summary = _json_clone(reconciliation.summary_json or {})
+    commit_summary = reconciliation_summary.get("workbench_package_commit")
+    if not isinstance(commit_summary, dict):
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_non_workbench_package_state",
+            "APS handoff dispatch requires workbench package-construction commit provenance.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    commit_mismatches = [
+        field
+        for field, expected in {
+            "package_review_preview_hash": supplied_package_preview_hash,
+            "result_review_record_ref": supplied_review_ref,
+        }.items()
+        if str(commit_summary.get(field) or "") != str(expected)
+    ]
+    if commit_mismatches:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_construction_mismatch",
+            "Stored package-construction provenance does not match the supplied APS handoff authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=commit_mismatches,
+        )
+
+    package_review_submit = _package_review_submit_from_reconciliation(reconciliation)
+    if package_review_submit is None or package_review_submit.get("package_review_state") != PACKAGE_REVIEW_APPROVED_STATE:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_requires_approved_package_review",
+            "APS handoff dispatch requires approved package-review submit state.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_review_state"],
+            next_allowed_actions=["inspect_package_review_submit_state"],
+        )
+    if supplied_submit_ref != str(package_review_submit.get("submit_record_ref") or ""):
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_submit_ref_mismatch",
+            "Supplied package_review_submit_record_ref does not match the approved package-review submit state.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_review_submit_record_ref"],
+        )
+    submit_mismatches = [
+        field
+        for field, expected in {
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "source_preview_id": preview_id,
+            "source_preview_hash": preview_hash,
+            "analysis_run_id": analysis_run_id,
+            "result_review_record_ref": supplied_review_ref,
+            "package_review_preview_hash": supplied_package_preview_hash,
+            "reconciliation_record_id": reconciliation_record_id,
+        }.items()
+        if str(package_review_submit.get(field) or "") != str(expected or "")
+    ]
+    if list(package_review_submit.get("output_package_ids") or []) != expected_package_ids:
+        submit_mismatches.append("output_package_ids")
+    if list(package_review_submit.get("package_kinds") or []) != expected_package_kinds:
+        submit_mismatches.append("package_kinds")
+    if list(package_review_submit.get("payload_hashes") or []) != canonical_payload_hashes:
+        submit_mismatches.append("payload_hashes")
+    if submit_mismatches:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_package_review_submit_mismatch",
+            "Stored package-review submit authority does not match the reviewed package set.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(set(submit_mismatches)),
+        )
+
+    prepare_state = _handoff_export_prepare_from_reconciliation(reconciliation)
+    if prepare_state is None or prepare_state.get("handoff_export_state") != HANDOFF_EXPORT_PREPARED_STATE:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_requires_prepared_handoff_export",
+            "APS handoff dispatch requires recorded handoff_export_prepared state.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["handoff_export_state"],
+            next_allowed_actions=["record_handoff_export_prepare"],
+        )
+    if supplied_prepare_ref != str(prepare_state.get("prepare_record_ref") or ""):
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_prepare_ref_mismatch",
+            "Supplied prepare_record_ref does not match the recorded handoff/export prepare state.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["prepare_record_ref"],
+        )
+    envelope = prepare_state.get("handoff_export_envelope")
+    envelope_ref = str(envelope.get("envelope_ref") or "").strip() if isinstance(envelope, dict) else ""
+    if not envelope_ref or supplied_envelope_ref != envelope_ref:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_envelope_ref_mismatch",
+            "Supplied handoff_export_envelope_ref does not match the recorded internal prepare envelope.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["handoff_export_envelope_ref"],
+        )
+    prepare_mismatches = [
+        field
+        for field, expected in {
+            "package_review_submit_record_ref": supplied_submit_ref,
+            "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+            "handoff_target": "internal_export_envelope",
+            "export_mode": "prepare_only",
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "source_preview_id": preview_id,
+            "source_preview_hash": preview_hash,
+            "analysis_run_id": analysis_run_id,
+            "result_review_record_ref": supplied_review_ref,
+            "package_review_preview_hash": supplied_package_preview_hash,
+            "reconciliation_record_id": reconciliation_record_id,
+        }.items()
+        if str(prepare_state.get(field) or "") != str(expected or "")
+    ]
+    if list(prepare_state.get("output_package_ids") or []) != expected_package_ids:
+        prepare_mismatches.append("output_package_ids")
+    if list(prepare_state.get("package_kinds") or []) != expected_package_kinds:
+        prepare_mismatches.append("package_kinds")
+    if list(prepare_state.get("payload_refs") or []) != canonical_payload_refs:
+        prepare_mismatches.append("payload_refs")
+    if list(prepare_state.get("payload_hashes") or []) != canonical_payload_hashes:
+        prepare_mismatches.append("payload_hashes")
+    if prepare_mismatches:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_prepare_mismatch",
+            "Stored handoff/export prepare authority does not match the reviewed package set.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(set(prepare_mismatches)),
+        )
+
+    source_package_refs = _package_ref_map(ordered_packages)
+    source_package_hashes = _package_hash_map(ordered_packages)
+    dispatch_basis = {
+        "schema_id": "layer3.aps_handoff_dispatch_authority.v1",
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_id,
+        "preview_hash": preview_hash,
+        "analysis_run_id": analysis_run_id,
+        "result_review_record_ref": supplied_review_ref,
+        "package_review_preview_hash": supplied_package_preview_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": expected_package_kinds,
+        "payload_refs": canonical_payload_refs,
+        "payload_hashes": canonical_payload_hashes,
+        "package_review_submit_record_ref": supplied_submit_ref,
+        "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+        "prepare_record_ref": supplied_prepare_ref,
+        "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+        "handoff_export_envelope_ref": envelope_ref,
+        "handoff_target": "internal_export_envelope",
+        "export_mode": "prepare_only",
+        "aps_handoff_target": "aps_evidence_bundle",
+        "dispatch_mode": "server_side_aps_handoff",
+        "operator_decision": APS_HANDOFF_DISPATCH_OPERATOR_DECISION,
+        "decision_notes": decision_notes or None,
+    }
+    aps_handoff_record_ref = _stable_id("l3-aps-handoff-dispatch", dispatch_basis)
+    existing_dispatch = _aps_handoff_dispatch_from_reconciliation(reconciliation)
+    existing_aps_package = _aps_handoff_package_for_session(db, session_id=session_id)
+    if existing_dispatch is not None:
+        if (
+            existing_dispatch.get("aps_handoff_record_ref") == aps_handoff_record_ref
+            and existing_dispatch.get("client_request_id") == request_id
+        ):
+            if existing_aps_package is None or existing_aps_package.output_package_id != existing_dispatch.get("aps_output_package_id"):
+                raise Layer3WorkbenchError(
+                    "aps_handoff_dispatch_state_inconsistent",
+                    "Recorded APS handoff dispatch state does not match an existing APS handoff package row.",
+                    status="conflict",
+                    http_status=409,
+                    blocked_fields=["aps_output_package_id"],
+                )
+            return _aps_handoff_dispatch_response(
+                request_id=request_id,
+                status="already_dispatched",
+                session_id=session_id,
+                analysis_plan_id=analysis_plan_id,
+                pass_run_id=pass_run_id,
+                preview_id=preview_id,
+                preview_hash=preview_hash,
+                result_review_record_ref=supplied_review_ref,
+                package_review_preview_hash=supplied_package_preview_hash,
+                reconciliation_record=reconciliation,
+                packages=packages,
+                dispatch_state=existing_dispatch,
+            )
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_already_recorded",
+            "This prepared package set already has an APS handoff dispatch decision.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["client_request_id", "operator_decision"],
+        )
+    if existing_aps_package is not None:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_already_exists",
+            "This session already has an APS evidence-bundle handoff package outside the workbench dispatch state.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["session_id"],
+        )
+
+    try:
+        aps_result = materialize_aps_handoff(db, session_id=session_id)
+    except Layer3ApsHandoffError as exc:
+        db.rollback()
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_blocked",
+            f"APS handoff dispatch could not satisfy the existing owner-service contract: {exc}",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_handoff_target"],
+            next_allowed_actions=["inspect_aps_handoff_provenance"],
+        ) from exc
+
+    aps_package = aps_result.output_package
+    aps_summary = aps_package.summary_json or {}
+    recorded_at = _utcnow_iso()
+    dispatch_state = {
+        "schema_id": APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
+        "client_request_id": request_id,
+        "aps_handoff_record_ref": aps_handoff_record_ref,
+        "authority_basis": dispatch_basis,
+        "package_review_submit_record_ref": supplied_submit_ref,
+        "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+        "prepare_record_ref": supplied_prepare_ref,
+        "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+        "handoff_export_envelope_ref": envelope_ref,
+        "handoff_target": "internal_export_envelope",
+        "export_mode": "prepare_only",
+        "aps_handoff_target": "aps_evidence_bundle",
+        "dispatch_mode": "server_side_aps_handoff",
+        "operator_decision": APS_HANDOFF_DISPATCH_OPERATOR_DECISION,
+        "decision_notes": decision_notes or None,
+        "aps_handoff_state": APS_HANDOFF_DISPATCHED_STATE,
+        "aps_output_package_id": aps_package.output_package_id,
+        "aps_output_package_kind": aps_package.package_kind,
+        "aps_bundle_ref": aps_package.payload_ref,
+        "aps_bundle_id": str(aps_summary.get("bundle_id") or ""),
+        "aps_schema_id": str(aps_summary.get("aps_schema_id") or APS_HANDOFF_SCHEMA_ID),
+        "source_package_refs": source_package_refs,
+        "source_package_hashes": source_package_hashes,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "source_preview_id": preview_id,
+        "source_preview_hash": preview_hash,
+        "analysis_run_id": analysis_run_id,
+        "result_review_record_ref": supplied_review_ref,
+        "package_review_preview_hash": supplied_package_preview_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": expected_package_kinds,
+        "payload_refs": canonical_payload_refs,
+        "payload_hashes": canonical_payload_hashes,
+        "recorded_at": recorded_at,
+        "external_export_enabled": False,
+        "download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "downstream_unavailable": list(APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE),
+    }
+    reconciliation.summary_json = {
+        **reconciliation_summary,
+        "aps_handoff_dispatch": dispatch_state,
+    }
+    session.summary_json = {
+        **_json_clone(session.summary_json or {}),
+        "aps_handoff_dispatch": {
+            "schema_id": APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
+            "aps_handoff_record_ref": aps_handoff_record_ref,
+            "prepare_record_ref": supplied_prepare_ref,
+            "handoff_export_envelope_ref": envelope_ref,
+            "aps_handoff_state": APS_HANDOFF_DISPATCHED_STATE,
+            "operator_decision": APS_HANDOFF_DISPATCH_OPERATOR_DECISION,
+            "decision_notes": decision_notes or None,
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "analysis_run_id": analysis_run_id,
+            "reconciliation_record_id": reconciliation_record_id,
+            "aps_output_package_id": aps_package.output_package_id,
+            "aps_bundle_ref": aps_package.payload_ref,
+            "aps_bundle_id": str(aps_summary.get("bundle_id") or ""),
+            "external_export_enabled": False,
+            "download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "downstream_unavailable": list(APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE),
+        },
+    }
+    db.commit()
+
+    return _aps_handoff_dispatch_response(
+        request_id=request_id,
+        status="dispatched",
+        session_id=session_id,
+        analysis_plan_id=analysis_plan_id,
+        pass_run_id=pass_run_id,
+        preview_id=preview_id,
+        preview_hash=preview_hash,
+        result_review_record_ref=supplied_review_ref,
+        package_review_preview_hash=supplied_package_preview_hash,
+        reconciliation_record=reconciliation,
+        packages=packages,
+        dispatch_state=dispatch_state,
+    )
+
+
 def _package_review_submit_summary(
     db: Session,
     *,
@@ -5550,6 +6475,7 @@ def _package_review_submit_summary(
             L3OutputPackage.session_id == session_id,
             L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
         )
+        .filter(L3OutputPackage.package_kind.in_(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS))
         .order_by(L3OutputPackage.package_kind.asc())
         .all()
     )
@@ -5657,6 +6583,7 @@ def _handoff_export_prepare_summary(
             L3OutputPackage.session_id == session_id,
             L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
         )
+        .filter(L3OutputPackage.package_kind.in_(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS))
         .order_by(L3OutputPackage.package_kind.asc())
         .all()
     )
@@ -5687,12 +6614,19 @@ def _handoff_export_prepare_summary(
     ordered_packages = _packages_in_review_order(packages)
     recorded_prepare = _handoff_export_prepare_from_reconciliation(reconciliation)
     if recorded_prepare is not None:
+        recorded_envelope = recorded_prepare.get("handoff_export_envelope")
+        recorded_envelope_ref = (
+            str(recorded_envelope.get("envelope_ref") or "").strip()
+            if isinstance(recorded_envelope, dict)
+            else None
+        )
         return {
             "schema_id": HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID,
             "available": False,
             "state": recorded_prepare.get("handoff_export_state"),
             "blocked_reason": None,
             "prepare_record_ref": recorded_prepare.get("prepare_record_ref"),
+            "handoff_export_envelope_ref": recorded_envelope_ref,
             "operator_decision": recorded_prepare.get("operator_decision"),
             "decision_notes": recorded_prepare.get("decision_notes"),
             "analysis_run_id": recorded_prepare.get("analysis_run_id") or package_review_submit_state.get("analysis_run_id"),
@@ -5737,6 +6671,124 @@ def _handoff_export_prepare_summary(
         "external_export_enabled": False,
         "dispatch_enabled": False,
         "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
+    }
+
+
+def _aps_handoff_dispatch_summary(
+    db: Session,
+    *,
+    session_id: str,
+    handoff_export_prepare_state: dict[str, Any],
+) -> dict[str, Any]:
+    reconciliation_record_id = str(handoff_export_prepare_state.get("reconciliation_record_id") or "").strip()
+    prepare_record_ref = str(handoff_export_prepare_state.get("prepare_record_ref") or "").strip()
+    envelope_ref = str(handoff_export_prepare_state.get("handoff_export_envelope_ref") or "").strip()
+    if handoff_export_prepare_state.get("state") != HANDOFF_EXPORT_PREPARED_STATE or not reconciliation_record_id or not prepare_record_ref or not envelope_ref:
+        return {
+            "schema_id": APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
+            "available": False,
+            "state": APS_HANDOFF_UNAVAILABLE_STATE,
+            "blocked_reason": "handoff_export_prepared_required",
+            "prepare_record_ref": prepare_record_ref or None,
+            "handoff_export_envelope_ref": envelope_ref or None,
+            "aps_handoff_target": "aps_evidence_bundle",
+            "dispatch_mode": "server_side_aps_handoff",
+            "aps_output_package_id": None,
+            "aps_bundle_ref": None,
+            "aps_bundle_id": None,
+            "external_export_enabled": False,
+            "download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "downstream_unavailable": list(APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE),
+        }
+
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(
+            L3ReconciliationRecord.session_id == session_id,
+            L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+        )
+        .one_or_none()
+    )
+    recorded_dispatch = _aps_handoff_dispatch_from_reconciliation(reconciliation)
+    if recorded_dispatch is not None:
+        return {
+            "schema_id": APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
+            "available": False,
+            "state": recorded_dispatch.get("aps_handoff_state"),
+            "blocked_reason": None,
+            "aps_handoff_record_ref": recorded_dispatch.get("aps_handoff_record_ref"),
+            "prepare_record_ref": recorded_dispatch.get("prepare_record_ref"),
+            "handoff_export_envelope_ref": recorded_dispatch.get("handoff_export_envelope_ref"),
+            "aps_handoff_target": recorded_dispatch.get("aps_handoff_target"),
+            "dispatch_mode": recorded_dispatch.get("dispatch_mode"),
+            "operator_decision": recorded_dispatch.get("operator_decision"),
+            "decision_notes": recorded_dispatch.get("decision_notes"),
+            "aps_output_package_id": recorded_dispatch.get("aps_output_package_id"),
+            "aps_bundle_ref": recorded_dispatch.get("aps_bundle_ref"),
+            "aps_bundle_id": recorded_dispatch.get("aps_bundle_id"),
+            "external_export_enabled": False,
+            "download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "downstream_unavailable": list(APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE),
+        }
+
+    existing_aps_package = _aps_handoff_package_for_session(db, session_id=session_id)
+    if existing_aps_package is not None:
+        return {
+            "schema_id": APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
+            "available": False,
+            "state": APS_HANDOFF_CONFLICT_STATE,
+            "blocked_reason": "aps_handoff_package_exists_without_workbench_dispatch_state",
+            "prepare_record_ref": prepare_record_ref,
+            "handoff_export_envelope_ref": envelope_ref,
+            "aps_handoff_target": "aps_evidence_bundle",
+            "dispatch_mode": "server_side_aps_handoff",
+            "aps_output_package_id": existing_aps_package.output_package_id,
+            "aps_bundle_ref": existing_aps_package.payload_ref,
+            "aps_bundle_id": (existing_aps_package.summary_json or {}).get("bundle_id"),
+            "external_export_enabled": False,
+            "download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "downstream_unavailable": list(APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE),
+        }
+
+    compatibility = check_aps_handoff_compatibility(db, session_id=session_id)
+    if not compatibility.compatible:
+        return {
+            "schema_id": APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
+            "available": False,
+            "state": APS_HANDOFF_BLOCKED_STATE,
+            "blocked_reason": compatibility.blocked_reason or "aps_handoff_owner_service_not_compatible",
+            "prepare_record_ref": prepare_record_ref,
+            "handoff_export_envelope_ref": envelope_ref,
+            "aps_handoff_target": "aps_evidence_bundle",
+            "dispatch_mode": "server_side_aps_handoff",
+            "aps_output_package_id": None,
+            "aps_bundle_ref": None,
+            "aps_bundle_id": None,
+            "external_export_enabled": False,
+            "download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "downstream_unavailable": list(APS_HANDOFF_BLOCKED_DOWNSTREAM_UNAVAILABLE),
+        }
+
+    return {
+        "schema_id": APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
+        "available": True,
+        "state": APS_HANDOFF_READY_STATE,
+        "blocked_reason": None,
+        "prepare_record_ref": prepare_record_ref,
+        "handoff_export_envelope_ref": envelope_ref,
+        "aps_handoff_target": "aps_evidence_bundle",
+        "dispatch_mode": "server_side_aps_handoff",
+        "aps_output_package_id": None,
+        "aps_bundle_ref": None,
+        "aps_bundle_id": None,
+        "external_export_enabled": False,
+        "download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "downstream_unavailable": list(APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE),
     }
 
 
@@ -5798,6 +6850,11 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         session_id=session_id,
         package_review_submit_state=package_review_submit_state,
     )
+    aps_handoff_dispatch_state = _aps_handoff_dispatch_summary(
+        db,
+        session_id=session_id,
+        handoff_export_prepare_state=handoff_export_prepare_state,
+    )
     selection_active = bool(execution_selection_readiness["selected"])
     package_active = bool(
         package_review_preview_state.get("available")
@@ -5809,6 +6866,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
             package_construction_state=package_construction_state,
             package_review_submit_state=package_review_submit_state,
             handoff_export_prepare_state=handoff_export_prepare_state,
+            aps_handoff_dispatch_state=aps_handoff_dispatch_state,
         )
         if package_active
         else (
@@ -5841,6 +6899,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "package_construction": package_construction_state,
         "package_review_submit": package_review_submit_state,
         "handoff_export_prepare": handoff_export_prepare_state,
+        "aps_handoff_dispatch": aps_handoff_dispatch_state,
         "downstream_unavailable": list(downstream_unavailable),
         "authority_rail": _authority_rail(
             session_id=session_id,

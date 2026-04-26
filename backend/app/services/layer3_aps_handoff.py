@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models import ApsContentChunk, ApsContentDocument, ApsContentLinkage
-from app.models.models import L3OutputPackage, L3ReconciliationRecord, L3Session, uuid_str
+from app.models.models import L3MaterialSnapshot, L3OutputPackage, L3ReconciliationRecord, L3Session, uuid_str
 from app.services import nrc_aps_evidence_bundle as aps_bundle
 from app.services import nrc_aps_evidence_bundle_contract as aps_contract
 from app.services.layer3_package_entry import (
@@ -21,6 +21,7 @@ from app.services.layer3_package_entry import (
     PACKAGE_KIND_USER_FACING,
     PACKAGE_STATUS_COMPLETE,
     PACKAGE_STATUS_COMPLETE_WITH_WARNINGS,
+    SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
 )
 from app.services.layer3_session_entry import (
     SESSION_STATUS_COMPLETED,
@@ -62,6 +63,12 @@ class Layer3ApsHandoffError(ValueError):
 class Layer3ApsHandoffResult:
     output_package: L3OutputPackage
     bundle_payload: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class Layer3ApsHandoffCompatibility:
+    compatible: bool
+    blocked_reason: str | None = None
 
 
 def _utc_iso() -> str:
@@ -161,40 +168,68 @@ def _load_source_packages_or_raise(
 
 
 def _canonical_payload_or_raise(canonical_row: L3OutputPackage) -> dict[str, Any]:
-    payload = _read_json_dict(
+    return _read_json_dict(
         _require_existing_ref(
             canonical_row.payload_ref,
             label=f"Layer 3 package '{PACKAGE_KIND_CANONICAL_INTERNAL}' payload ref",
         ),
         label=f"Layer 3 package '{PACKAGE_KIND_CANONICAL_INTERNAL}' payload",
     )
+
+
+def _canonical_inventory_or_raise(canonical_payload: dict[str, Any]) -> list[dict[str, Any]]:
     inventory = (
-        payload.get("selection_and_source_summary", {})
-        if isinstance(payload.get("selection_and_source_summary"), dict)
-        else {}
-    ).get("material_snapshot_inventory_json")
+        payload_summary.get("material_snapshot_inventory_json")
+        if isinstance(payload_summary := canonical_payload.get("selection_and_source_summary"), dict)
+        else None
+    )
     if not isinstance(inventory, list):
         raise Layer3ApsHandoffError(
             "canonical_internal package is missing selection_and_source_summary.material_snapshot_inventory_json"
         )
-    return payload
+    return [dict(item) for item in inventory if isinstance(item, dict)]
 
 
-def _selected_aps_targets_or_raise(
-    canonical_payload: dict[str, Any],
-) -> tuple[str, list[dict[str, str]]]:
-    inventory = list(
-        (
-            canonical_payload.get("selection_and_source_summary", {})
-            if isinstance(canonical_payload.get("selection_and_source_summary"), dict)
-            else {}
-        ).get("material_snapshot_inventory_json")
-        or []
+def _workbench_package_source_gate(canonical_payload: dict[str, Any]) -> bool:
+    header = canonical_payload.get("package_header")
+    return (
+        isinstance(header, dict)
+        and str(header.get("source_gate") or "").strip() == SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE
     )
+
+
+def _workbench_snapshot_inventory_or_raise(db: Session, *, session_id: str) -> list[dict[str, Any]]:
+    snapshots = (
+        db.query(L3MaterialSnapshot)
+        .filter(L3MaterialSnapshot.session_id == session_id)
+        .order_by(L3MaterialSnapshot.source_shape.asc(), L3MaterialSnapshot.material_snapshot_id.asc())
+        .all()
+    )
+    if not snapshots:
+        raise Layer3ApsHandoffError(
+            "workbench session is missing material snapshot inventory required for APS handoff"
+        )
+    return [
+        {
+            "material_snapshot_id": snapshot.material_snapshot_id,
+            "descriptor_id": snapshot.descriptor_id,
+            "source_plane": snapshot.source_plane,
+            "source_shape": snapshot.source_shape,
+            "payload_ref": snapshot.payload_ref,
+            "payload_hash": snapshot.payload_hash,
+            "source_identity_json": dict(snapshot.source_identity_json or {}),
+        }
+        for snapshot in snapshots
+    ]
+
+
+def _selected_aps_targets_from_inventory_or_raise(
+    inventory: list[dict[str, Any]],
+    *,
+    authority_label: str,
+) -> tuple[str, list[dict[str, str]]]:
     selected_targets: list[dict[str, str]] = []
     for item in inventory:
-        if not isinstance(item, dict):
-            continue
         if str(item.get("source_shape") or "").strip() != "aps_content_document":
             continue
         identity = dict(item.get("source_identity_json") or {})
@@ -203,7 +238,7 @@ def _selected_aps_targets_or_raise(
         target_id = str(identity.get("target_id") or "").strip()
         if not content_id or not run_id or not target_id:
             raise Layer3ApsHandoffError(
-                "canonical_internal package APS source identity must include content_id, run_id, and target_id for APS handoff"
+                f"{authority_label} APS source identity must include content_id, run_id, and target_id for APS handoff"
             )
         selected_targets.append(
             {
@@ -214,7 +249,7 @@ def _selected_aps_targets_or_raise(
         )
     if not selected_targets:
         raise Layer3ApsHandoffError(
-            "canonical_internal package contains no aps_content_document provenance admitted for APS handoff"
+            f"{authority_label} contains no aps_content_document provenance admitted for APS handoff"
         )
 
     run_ids = sorted({item["run_id"] for item in selected_targets})
@@ -228,6 +263,26 @@ def _selected_aps_targets_or_raise(
         deduped[(item["content_id"], item["run_id"], item["target_id"])] = item
     ordered = [deduped[key] for key in sorted(deduped)]
     return run_ids[0], ordered
+
+
+def _selected_aps_targets_for_session_or_raise(
+    db: Session,
+    *,
+    session_id: str,
+    canonical_payload: dict[str, Any],
+) -> tuple[str, list[dict[str, str]]]:
+    try:
+        return _selected_aps_targets_from_inventory_or_raise(
+            _canonical_inventory_or_raise(canonical_payload),
+            authority_label="canonical_internal package",
+        )
+    except Layer3ApsHandoffError:
+        if not _workbench_package_source_gate(canonical_payload):
+            raise
+    return _selected_aps_targets_from_inventory_or_raise(
+        _workbench_snapshot_inventory_or_raise(db, session_id=session_id),
+        authority_label="workbench material snapshot inventory",
+    )
 
 
 def _load_base_rows_or_raise(
@@ -407,12 +462,12 @@ def _summary_json(
         "compatibility_notes_json": [
             "canonical_internal remains the Layer 3 source of truth",
             "aps_evidence_bundle_handoff points at a persisted aps.evidence_bundle.v2 artifact",
-            "APS bundle rows are resolved from existing APS content tables using canonical snapshot identities",
+            "APS bundle rows are resolved from existing APS content tables using recorded Layer 3 snapshot identities",
         ],
         "field_map_json": {
-            "canonical.selection_and_source_summary.material_snapshot_inventory_json[].source_identity_json.run_id": "snapshot.read_scope.run_id",
-            "canonical.selection_and_source_summary.material_snapshot_inventory_json[].source_identity_json.target_id": "results[].target_id",
-            "canonical.selection_and_source_summary.material_snapshot_inventory_json[].source_identity_json.content_id": "results[].content_id",
+            "recorded_layer3_snapshot_identity.run_id": "snapshot.read_scope.run_id",
+            "recorded_layer3_snapshot_identity.target_id": "results[].target_id",
+            "recorded_layer3_snapshot_identity.content_id": "results[].content_id",
             "aps_content_linkage.content_units_ref": "results[].content_units_ref",
             "aps_content_document.normalization_contract_id": "results[].normalization_contract_id",
         },
@@ -428,11 +483,31 @@ def _summary_json(
     }
 
 
+def check_aps_handoff_compatibility(db: Session, *, session_id: str) -> Layer3ApsHandoffCompatibility:
+    try:
+        session = _load_session_or_raise(db, session_id=session_id)
+        source_rows, _reconciliation = _load_source_packages_or_raise(db, session_id=session.session_id)
+        canonical_payload = _canonical_payload_or_raise(source_rows[PACKAGE_KIND_CANONICAL_INTERNAL])
+        run_id, selected_targets = _selected_aps_targets_for_session_or_raise(
+            db,
+            session_id=session.session_id,
+            canonical_payload=canonical_payload,
+        )
+        _load_base_rows_or_raise(db, run_id=run_id, selected_targets=selected_targets)
+    except Layer3ApsHandoffError as exc:
+        return Layer3ApsHandoffCompatibility(compatible=False, blocked_reason=str(exc))
+    return Layer3ApsHandoffCompatibility(compatible=True)
+
+
 def materialize_aps_handoff(db: Session, *, session_id: str) -> Layer3ApsHandoffResult:
     session = _load_session_or_raise(db, session_id=session_id)
     source_rows, reconciliation = _load_source_packages_or_raise(db, session_id=session.session_id)
     canonical_payload = _canonical_payload_or_raise(source_rows[PACKAGE_KIND_CANONICAL_INTERNAL])
-    run_id, selected_targets = _selected_aps_targets_or_raise(canonical_payload)
+    run_id, selected_targets = _selected_aps_targets_for_session_or_raise(
+        db,
+        session_id=session.session_id,
+        canonical_payload=canonical_payload,
+    )
     base_rows = _load_base_rows_or_raise(db, run_id=run_id, selected_targets=selected_targets)
     normalized_request = _normalized_request(run_id=run_id, selected_targets=selected_targets)
     try:
