@@ -1,30 +1,30 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, planning-only package-review preview governance, merged read-only package-review preview implementation from PR #235, and planning-only package-construction governance in docs 50/51",
+  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, merged read-only package-review preview implementation from PR #235, planning-only package-construction governance in docs 50/51, and bounded package-construction commit implementation from PR #238",
   "scope": {
-    "source_branch": "codex/l3-package-construction-freeze",
-    "merged_pr": "#235",
-    "merge_commit": "6bca17c21d1d871d23c621ab5bd6dd52143f55a1",
+    "source_branch": "codex/l3-package-construction-impl",
+    "merged_pr": "#238",
+    "merge_commit": "pending until PR #238 merge",
     "base_remote": "project6-origin/main",
-    "base_commit": "8216129e",
-    "source_base_commit": "8216129e21474c34a4e195a16217bf667471bc8a",
-    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #234 planning-only docs 48/49 package-review preview governance, PR #235 read-only package-review preview implementation, PR #236 status sync, and docs 50/51 planning-only package-construction governance.",
+    "base_commit": "608e3a40",
+    "source_base_commit": "608e3a4068d94268f2114e08967482451c8d90af",
+    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, and PR #238 bounded package-construction commit implementation.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "Current main through PR #235 includes the bounded read-only /api/v1/layer3/execution/result/status endpoint, the bounded /api/v1/layer3/execution/result/review endpoint for one terminal selected pass, /review/layer3 UI controls to refresh session state, inspect result/status, submit one bounded review decision, and inspect read-only package-review preview candidates after an approved result review. It does not add package construction, package-review submit/commit, handoff/export, rerun/recovery, runtime DB/schema widening, source expansion, qualitative/hybrid/RAG/vector execution, local upload/directory ingestion, or full mockup activation.",
-    "latest_implementation_pr": "#235",
-    "latest_implementation_branch": "codex/l3-package-preview-impl",
-    "latest_implementation_summary": "PR #235 adds bounded read-only package-review preview behavior: POST /api/v1/layer3/package/review/preview plus /review/layer3 inspection after approved selected-pass result review, while preserving package construction, package-review submit/commit, handoff/export, rerun/recovery, source/schema/runtime/full-mockup no-go boundaries.",
+    "live_behavior_change_summary": "PR #238 adds bounded package construction: POST /api/v1/layer3/package/review/commit validates one approved selected-pass result review plus matching package-review preview hash, then creates exactly one L3ReconciliationRecord, three L3OutputPackage rows, and three payload files. It does not add package-review submit/decision state, handoff/export, rerun/recovery, runtime DB/schema widening, source expansion, qualitative/hybrid/RAG/vector execution, local upload/directory ingestion, rendered UI changes, or full mockup activation.",
+    "latest_implementation_pr": "#238",
+    "latest_implementation_branch": "codex/l3-package-construction-impl",
+    "latest_implementation_summary": "PR #238 adds the bounded package-construction commit endpoint/state after approved selected-pass result review and matching package-preview hash, while preserving package-review submit/decision, handoff/export, rerun/recovery, source/schema/runtime/full-mockup no-go boundaries.",
     "latest_planning_pr": "#226",
     "latest_planning_branch": "codex/l3-result-review-freeze",
     "latest_planning_summary": "Docs 44/45 add planning-only governance for the bounded selected-pass result-review decision after PR #222 result/status authority; by themselves they do not implement a result-review endpoint or package/handoff behavior.",
     "latest_planning_live_behavior_change": false,
     "latest_planning_behavior_summary": "Docs 44/45 are documentation/control only; merging them changes planning authority but not runtime API, UI, database, execution, package, or handoff behavior.",
-    "latest_implementation_merge_commit": "6bca17c21d1d871d23c621ab5bd6dd52143f55a1",
+    "latest_implementation_merge_commit": "pending until PR #238 merge",
     "latest_planning_base_commit": "9d78c5df1317",
-    "latest_branch_only_implementation_branch": "none active after PR #235",
+    "latest_branch_only_implementation_branch": "none active after PR #238",
     "latest_branch_only_implementation_pr": "none",
-    "latest_branch_only_implementation_summary": "No active branch-only Layer 3 package-review preview implementation candidate remains after PR #235 merged; future package construction or submit/commit work requires a separate freeze.",
+    "latest_branch_only_implementation_summary": "No additional branch-only Layer 3 package implementation candidate remains represented after PR #238; future package-review submit/decision and handoff/export work require separate freezes.",
     "latest_ui_planning_pr": "#230",
     "latest_ui_planning_branch": "codex/l3-result-review-ui-freeze",
     "latest_ui_planning_summary": "PR #230 adds docs 46/47 to freeze the /review/layer3 result-review presentation/control boundary over existing backend selected-pass result/status and result-review state; by itself it does not make UI behavior live.",
@@ -43,11 +43,11 @@
     "latest_package_review_implementation_pr": "#235",
     "latest_package_review_implementation_merge_commit": "6bca17c21d1d871d23c621ab5bd6dd52143f55a1",
     "latest_package_construction_planning_branch": "codex/l3-package-construction-freeze",
-    "latest_package_construction_planning_summary": "Docs 50/51 freeze a future bounded package-construction commit after PR #235 read-only package-review preview. The future admitted write set is exactly one L3ReconciliationRecord, three L3OutputPackage rows, and three payload files; package-review submit/decision state and handoff/export remain deferred.",
+    "latest_package_construction_planning_summary": "Docs 50/51 freeze the bounded package-construction commit after PR #235 read-only package-review preview. PR #238 is the separate implementation of that contract; package-review submit/decision state and handoff/export remain deferred.",
     "latest_package_construction_planning_live_behavior_change": false,
-    "latest_package_construction_implementation_branch": "none",
-    "latest_package_construction_implementation_pr": "none",
-    "latest_package_construction_implementation_summary": "No package-construction implementation is live or branch-only in this packet; docs 50/51 are planning/control only."
+    "latest_package_construction_implementation_branch": "codex/l3-package-construction-impl",
+    "latest_package_construction_implementation_pr": "#238",
+    "latest_package_construction_implementation_summary": "PR #238 implements only bounded package construction: one reconciliation row, three output-package rows, and three payload files after approved selected-pass result review and matching package-preview hash. Package-review submit/decision state and handoff/export remain deferred."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -98,7 +98,8 @@
       "bounded result-review UI presentation/control",
       "session refresh, selected-pass result/status inspection, and one result-review submission on /review/layer3",
       "bounded read-only package-review preview endpoint",
-      "read-only /review/layer3 package-preview inspection after approved selected-pass result review"
+      "read-only /review/layer3 package-preview inspection after approved selected-pass result review",
+      "package-construction commit through POST /api/v1/layer3/package/review/commit, limited to one L3ReconciliationRecord, three L3OutputPackage rows, and three payload files after approved selected-pass result-review and matching package-preview hash"
     ],
     "not_live": [
       "general analysis execution beyond the PR #218 one selected-pass execution-start boundary",
@@ -118,15 +119,16 @@
       "rerun/recovery",
       "result-review amendment or supersession",
       "execution selection/start UI",
-      "package construction",
-      "L3OutputPackage creation from workbench package review",
-      "L3ReconciliationRecord creation from workbench package review",
       "materialize_package_entry(...) as-is admission from /review/layer3",
       "package payload emission from /review/layer3",
       "package-review submission controls",
       "package construction from docs 50/51 by themselves",
       "package-review submit/decision state after package construction",
-      "handoff/export after package construction"
+      "handoff/export after package construction",
+      "package-review submit/decision state after package construction",
+      "handoff/export after package construction",
+      "AnalysisArtifact creation from package construction",
+      "new L3AnalysisPlan/L3PassRun/AnalysisRun creation during package construction"
     ],
     "planning_only": [
       "analysis-execution-start freeze/API-state contract from PR #217 remains the governing scope contract for the PR #218 bounded implementation",
@@ -134,7 +136,7 @@
       "result-review freeze/API-state contract from docs 44/45 governs the bounded selected-pass review decision after PR #222 status authority; by itself it does not add package/handoff behavior",
       "result-review UI freeze/state contract from docs 46/47 governs the PR #232 bounded /review/layer3 presentation/control implementation; by itself it does not add rendered UI behavior",
       "package-review preview freeze/API-state contract from docs 48/49 governs only a read-only package-review readiness/preview step after approved selected-pass result review; by itself it does not add package review, package construction, package rows, package payloads, or handoff/export behavior",
-      "package-construction freeze/API-state contract from docs 50/51 governs only a future bounded package-construction commit step after PR #235 read-only preview; by itself it does not add package construction, package-review submit/decision state, package rows/payloads, or handoff/export behavior"
+      "package-construction freeze/API-state contract from docs 50/51 governs the PR #238 bounded construction commit implementation; by itself it does not add package-review submit/decision state or handoff/export behavior"
     ],
     "branch_only_candidate": [],
     "still_forbidden_after_pr_227": [
@@ -242,6 +244,18 @@
       "source/schema/runtime widening",
       "qualitative/hybrid/RAG/vector execution",
       "full mockup activation"
+    ],
+    "still_forbidden_after_package_construction_impl": [
+      "package-review submit/decision state",
+      "handoff/export",
+      "materialize_package_entry(...) as-is call from /review/layer3",
+      "fabricated Gate D phase1a_loading_closure or pass_entry",
+      "AnalysisArtifact creation from package construction",
+      "new L3AnalysisPlan/L3PassRun/AnalysisRun creation",
+      "source/schema/runtime widening",
+      "local upload/directory ingestion",
+      "qualitative/hybrid/RAG/vector execution",
+      "full mockup activation"
     ]
   },
   "readiness_gates": [
@@ -329,6 +343,11 @@
       "gate_id": "package-construction-freeze",
       "decision": "The next eligible post-preview planning boundary may define package construction only: exactly one reconciliation row, three output-package rows, and three payload files after approved selected-pass result-review and matching package-preview authority; package-review submit/decision state and handoff/export remain deferred.",
       "status": "introduced_by_docs_50_51_as_planning_only_governance"
+    },
+    {
+      "gate_id": "package-construction-implementation",
+      "decision": "PR #238 exposes bounded package construction only: exactly one reconciliation row, three output-package rows, and three payload files after approved selected-pass result-review and matching package-preview authority; package-review submit/decision state and handoff/export remain deferred.",
+      "status": "implemented_by_pr_238_as_bounded_package_construction_commit"
     }
   ],
   "validation_commands": [
@@ -403,9 +422,25 @@
     {
       "command": "custom Python artifact-consistency audit over layer3_progress_manifest.json and layer3_workbench_proof_manifest.json",
       "purpose": "Verify state_model/state_visual coverage, declared path existence, workbench slice counts, and docs 50/51 registration after the final progress-prompt/progress-ui-spec correction; passed with artifact_consistency=PASS, 17 used states, and 24 workbench slices."
+    },
+    {
+      "command": "python -m pytest .\\backend\\tests\\test_layer3_api.py -q",
+      "purpose": "Verify PR #238 package-construction commit API success, idempotency, exact write set, and fail-closed prechecks; passed with 27 passed, 3 warnings."
+    },
+    {
+      "command": "python -m pytest .\\backend\\tests\\test_layer3_package_entry.py -q",
+      "purpose": "Verify existing Gate D package owner-service behavior still passes after adding the workbench-compatible construction helper; passed with 4 passed."
+    },
+    {
+      "command": "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest $tests -q",
+      "purpose": "Verify the complete focused Layer 3 backend/page/service family after PR #238 package-construction implementation; passed with 133 passed, 3 warnings."
+    },
+    {
+      "command": "git diff --check",
+      "purpose": "Validate whitespace/diff hygiene after PR #238 package-construction implementation; passed with CRLF normalization warnings only."
     }
   ],
-  "browser_proof_rule": "Rendered /review/layer3 behavior changed in the PR #235 package-preview implementation, so both headed and headless Chrome proof were required and passed before merge.",
+  "browser_proof_rule": "Rendered /review/layer3 behavior is not changed by PR #238, so local headed/headless Chrome proof was not required for this backend-only package-construction commit slice. Headed and headless Chrome remain required for any later rendered UI changes.",
   "no_go_scan_terms": [
     "package review is live",
     "handoff is live",
@@ -443,7 +478,10 @@
     "docs 50/51 make package construction live",
     "package construction is live from docs 50/51",
     "package-review submit is live after docs 50/51",
-    "handoff is live after docs 50/51"
+    "handoff is live after docs 50/51",
+    "package-review submission is live after PR #238",
+    "handoff is live after PR #238",
+    "PR #238 enables full package review"
   ],
   "post_merge_pr_222_proof": {
     "merge_commit": "4409702e66ee40d8e2c63c8ea86fa72cb7ea2b6c",
@@ -566,5 +604,31 @@
       "PowerShell-expanded backend/tests/test_layer3*.py family -> 131 passed, 3 warnings"
     ],
     "browser_proof": "Not run for this packet because it changes docs/progress/proof/status surfaces only and does not change rendered /review/layer3 UI behavior; headed and headless Chrome remain required for any later rendered UI implementation."
+  },
+  "package_construction_impl_proof": {
+    "implementation_branch": "codex/l3-package-construction-impl",
+    "base_commit": "608e3a40",
+    "base_source": "project6-origin/main after merged PR #237 package-construction boundary freeze",
+    "scope": "Backend API/state only: add POST /api/v1/layer3/package/review/commit plus a workbench-compatible package construction helper. Successful commit creates exactly one L3ReconciliationRecord, three L3OutputPackage rows, and three payload files. No rendered /review/layer3 UI behavior changes.",
+    "commands": [
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -> 27 passed, 3 warnings",
+      "python -m pytest .\\backend\\tests\\test_layer3_package_entry.py -q -> 4 passed",
+      "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest $tests -q -> 133 passed, 3 warnings",
+      "git diff --check -> passed with CRLF normalization warnings only"
+    ],
+    "write_set_proof": "Backend tests assert unchanged plan/pass/run/artifact counts and exactly +3 L3OutputPackage rows plus +1 L3ReconciliationRecord after the successful commit; repeated identical client_request_id returns already_committed without duplicate rows.",
+    "browser_proof": "Not run locally because this slice changes backend API/state behavior only and does not change rendered /review/layer3 UI behavior.",
+    "no_go_preserved": [
+      "package-review submit/decision state",
+      "handoff/export",
+      "materialize_package_entry(...) as-is call from /review/layer3",
+      "AnalysisArtifact creation",
+      "new L3AnalysisPlan/L3PassRun/AnalysisRun creation",
+      "source/schema/runtime widening",
+      "qualitative/hybrid/RAG/vector execution",
+      "full mockup activation"
+    ],
+    "pr": "#238",
+    "merge_commit": "pending until PR #238 merge"
   }
 }
