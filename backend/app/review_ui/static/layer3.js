@@ -21,6 +21,12 @@ const State = {
     packageReviewPreview: null,
     packageReviewPreviewError: null,
     packageReviewPreviewPending: false,
+    packageConstruction: null,
+    packageConstructionError: null,
+    packageConstructionPending: false,
+    packageReviewSubmit: null,
+    packageReviewSubmitError: null,
+    packageReviewSubmitPending: false,
     gateBDecisions: {},
     materialFilter: '',
     events: [],
@@ -56,6 +62,11 @@ const elements = {
     resultReviewNotes: document.getElementById('result-review-notes'),
     resultReviewSubmit: document.getElementById('result-review-submit'),
     packageReviewPreviewInspect: document.getElementById('package-review-preview-inspect'),
+    packageConstructionCommit: document.getElementById('package-construction-commit'),
+    packageReviewSubmitForm: document.getElementById('package-review-submit-form'),
+    packageReviewSubmitDecision: document.getElementById('package-review-submit-decision'),
+    packageReviewSubmitNotes: document.getElementById('package-review-submit-notes'),
+    packageReviewSubmit: document.getElementById('package-review-submit'),
     packageReviewPreviewPanel: document.getElementById('package-review-preview-panel'),
     contextList: document.getElementById('context-list'),
     eventList: document.getElementById('event-list'),
@@ -67,6 +78,8 @@ const systemThemeQuery = typeof window.matchMedia === 'function'
     : null;
 const TERMINAL_PASS_STATUSES = new Set(['completed', 'completed_with_warnings', 'failed']);
 const RESULT_REVIEW_DECISIONS_REQUIRING_NOTES = new Set(['changes_requested', 'rejected', 'blocked']);
+const PACKAGE_REVIEW_DECISIONS_REQUIRING_NOTES = new Set(['changes_requested', 'rejected', 'blocked']);
+const PACKAGE_REVIEW_PACKAGE_KINDS = ['canonical_internal', 'user_facing', 'review_facing'];
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -157,16 +170,21 @@ function renderUnavailable(labels) {
 }
 
 function currentAuthorityRail() {
-    return State.packageReviewPreview?.authority_rail || State.sessionSummary?.authority_rail || State.resultReview?.authority_rail || State.resultStatus?.authority_rail
+    return State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
+        || State.sessionSummary?.authority_rail || State.resultReview?.authority_rail || State.resultStatus?.authority_rail
         || State.planApproval?.authority_rail || State.planRevision?.authority_rail || State.planPreview?.authority_rail || State.gateC?.authority_rail || State.gateB?.authority_rail
         || State.materialPreview?.authority_rail || State.sourcePreview?.authority_rail || State.preflight?.authority_rail
         || State.bootstrap?.authority_rail;
 }
 
 function currentDownstreamUnavailable() {
-    return State.packageReviewPreview?.downstream_unavailable
+    return State.packageReviewSubmit?.downstream_unavailable
+        || State.packageConstruction?.downstream_unavailable
+        || State.packageReviewPreview?.downstream_unavailable
         || State.resultReview?.downstream_unavailable
         || State.resultStatus?.downstream_unavailable
+        || State.sessionSummary?.package_review_submit?.downstream_unavailable
+        || State.sessionSummary?.package_construction?.downstream_unavailable
         || State.sessionSummary?.package_review_preview?.downstream_unavailable
         || State.sessionSummary?.execution_result_review?.downstream_unavailable
         || State.sessionSummary?.analysis_execution_start?.downstream_unavailable
@@ -190,6 +208,8 @@ function renderContext() {
         result_status: State.resultStatus?.status || State.resultStatusError?.error_code || 'none',
         result_review: recordedResultReview()?.review_state || State.resultReview?.review_state || State.resultReviewError?.error_code || 'none',
         package_preview: State.packageReviewPreview?.next_state || State.packageReviewPreviewError?.error_code || State.sessionSummary?.package_review_preview?.state || 'none',
+        package_construction: State.packageConstruction?.next_state || State.packageConstructionError?.error_code || State.sessionSummary?.package_construction?.state || 'none',
+        package_review_submit: State.packageReviewSubmit?.next_state || State.packageReviewSubmitError?.error_code || State.sessionSummary?.package_review_submit?.state || 'none',
     };
     elements.contextList.innerHTML = Object.entries(context)
         .map(([key, value]) => `
@@ -259,6 +279,12 @@ function clearResultReviewState({ keepSummary = false } = {}) {
     State.packageReviewPreview = null;
     State.packageReviewPreviewError = null;
     State.packageReviewPreviewPending = false;
+    State.packageConstruction = null;
+    State.packageConstructionError = null;
+    State.packageConstructionPending = false;
+    State.packageReviewSubmit = null;
+    State.packageReviewSubmitError = null;
+    State.packageReviewSubmitPending = false;
 }
 
 function selectedResultAuthority() {
@@ -320,12 +346,26 @@ function recordedApprovedResultReview() {
 }
 
 function canRefreshSessionSummary() {
-    return Boolean(currentSessionId() && !State.resultReviewPending && !State.packageReviewPreviewPending);
+    return Boolean(
+        currentSessionId()
+        && !State.resultReviewPending
+        && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
+    );
 }
 
 function canInspectResultStatus() {
     const authority = selectedResultAuthority();
-    return Boolean(hasResultAuthorityIdentity(authority) && authority.selected && authority.terminal && !State.resultReviewPending && !State.packageReviewPreviewPending);
+    return Boolean(
+        hasResultAuthorityIdentity(authority)
+        && authority.selected
+        && authority.terminal
+        && !State.resultReviewPending
+        && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
+    );
 }
 
 function reviewDecisionNeedsNotes() {
@@ -342,6 +382,9 @@ function canSubmitResultReview() {
         && State.resultStatus?.result_status_available === true
         && !recordedResultReview()
         && !State.resultReviewPending
+        && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
         && (!reviewDecisionNeedsNotes() || notes)
     );
 }
@@ -355,6 +398,142 @@ function canInspectPackageReviewPreview() {
         && recordedApprovedResultReview()
         && !State.resultReviewPending
         && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
+    );
+}
+
+function packageConstructionState() {
+    return State.packageConstruction || State.sessionSummary?.package_construction || null;
+}
+
+function packageReviewSubmitState() {
+    if (State.packageReviewSubmit || State.sessionSummary?.package_review_submit) {
+        return State.packageReviewSubmit || State.sessionSummary.package_review_submit;
+    }
+    if (State.packageConstruction?.package_review_submit_enabled === true) {
+        const outputPackageIds = Array.isArray(State.packageConstruction.output_package_ids)
+            ? State.packageConstruction.output_package_ids
+            : (Array.isArray(State.packageConstruction.output_packages)
+                ? State.packageConstruction.output_packages.map((item) => item.output_package_id).filter(Boolean)
+                : []);
+        return {
+            schema_id: 'layer3.package_review_submit_state.v1',
+            available: true,
+            state: 'package_review_submit_ready',
+            reconciliation_record_id: State.packageConstruction.reconciliation_record_id,
+            output_package_ids: outputPackageIds,
+            package_kinds: State.packageConstruction.package_kinds,
+            payload_hashes: State.packageConstruction.payload_hashes,
+            package_review_submit_enabled: true,
+            handoff_enabled: false,
+            export_enabled: false,
+            downstream_unavailable: State.packageConstruction.downstream_unavailable,
+        };
+    }
+    return null;
+}
+
+function packageOutputPackageIds() {
+    const submit = packageReviewSubmitState() || {};
+    const construction = packageConstructionState() || {};
+    if (Array.isArray(submit.output_package_ids) && submit.output_package_ids.length) {
+        return submit.output_package_ids;
+    }
+    if (Array.isArray(construction.output_package_ids) && construction.output_package_ids.length) {
+        return construction.output_package_ids;
+    }
+    if (Array.isArray(construction.output_packages)) {
+        return construction.output_packages.map((item) => item.output_package_id).filter(Boolean);
+    }
+    return [];
+}
+
+function packagePayloadHashes() {
+    const submit = packageReviewSubmitState() || {};
+    const construction = packageConstructionState() || {};
+    if (Array.isArray(submit.payload_hashes) && submit.payload_hashes.length) {
+        return submit.payload_hashes;
+    }
+    if (Array.isArray(construction.payload_hashes) && construction.payload_hashes.length) {
+        return construction.payload_hashes;
+    }
+    return [];
+}
+
+function packageKindsFromState() {
+    const submit = packageReviewSubmitState() || {};
+    const construction = packageConstructionState() || {};
+    if (Array.isArray(submit.package_kinds) && submit.package_kinds.length) {
+        return submit.package_kinds;
+    }
+    if (Array.isArray(construction.package_kinds) && construction.package_kinds.length) {
+        return construction.package_kinds;
+    }
+    const previewKinds = Array.isArray(State.packageReviewPreview?.candidate_package_kinds)
+        ? State.packageReviewPreview.candidate_package_kinds.map((item) => item.package_kind).filter(Boolean)
+        : [];
+    return previewKinds.length ? previewKinds : PACKAGE_REVIEW_PACKAGE_KINDS;
+}
+
+function packageReviewSubmitDecisionNeedsNotes() {
+    return PACKAGE_REVIEW_DECISIONS_REQUIRING_NOTES.has(elements.packageReviewSubmitDecision.value);
+}
+
+function canCommitPackageConstruction() {
+    const authority = selectedResultAuthority();
+    const preview = State.packageReviewPreview || {};
+    const construction = packageConstructionState() || {};
+    return Boolean(
+        hasResultAuthorityIdentity(authority)
+        && authority.selected
+        && authority.terminal
+        && recordedApprovedResultReview()
+        && preview.package_review_preview_enabled === true
+        && preview.package_review_preview_hash
+        && construction.state !== 'package_constructed'
+        && construction.next_state !== 'package_constructed'
+        && !State.resultReviewPending
+        && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
+    );
+}
+
+function canSubmitPackageReview() {
+    const authority = selectedResultAuthority();
+    const review = recordedApprovedResultReview();
+    const preview = State.packageReviewPreview || {};
+    const submit = packageReviewSubmitState() || {};
+    const notes = elements.packageReviewSubmitNotes.value.trim();
+    return Boolean(
+        hasResultAuthorityIdentity(authority)
+        && authority.selected
+        && authority.terminal
+        && review?.review_record_ref
+        && preview.package_review_preview_hash
+        && submit.package_review_submit_enabled === true
+        && submit.reconciliation_record_id
+        && packageOutputPackageIds().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && packagePayloadHashes().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && !State.resultReviewPending
+        && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
+        && (!packageReviewSubmitDecisionNeedsNotes() || notes)
+    );
+}
+
+function isPackageActive() {
+    const submit = packageReviewSubmitState() || {};
+    const construction = packageConstructionState() || {};
+    return Boolean(
+        recordedApprovedResultReview()
+        || State.packageReviewPreview?.package_review_preview_enabled === true
+        || construction.state === 'package_constructed'
+        || construction.next_state === 'package_constructed'
+        || submit.package_review_submit_enabled === true
+        || submit.submit_record_ref
     );
 }
 
@@ -780,14 +959,31 @@ function renderResultReviewPanel() {
 }
 
 function packageReviewPanelState() {
+    const construction = packageConstructionState() || {};
+    const submit = packageReviewSubmitState() || {};
+    if (State.packageReviewSubmitPending) {
+        return { label: 'package_review_submit_recording', pill: 'preview', message: 'Recording one bounded package-review decision.' };
+    }
+    if (State.packageConstructionPending) {
+        return { label: 'package_construction_committing', pill: 'preview', message: 'Committing the three package families before package-review submit.' };
+    }
     if (State.packageReviewPreviewPending) {
         return { label: 'package_review_preview_inspecting', pill: 'preview', message: 'Inspecting read-only package-review readiness.' };
     }
-    if (State.packageReviewPreview?.package_review_preview_enabled === true) {
-        return { label: State.packageReviewPreview.next_state || 'package_review_preview_ready', pill: 'ok', message: 'Read-only package-review preview is available.' };
+    if (State.packageReviewSubmit?.package_review_state || submit.submit_record_ref) {
+        return { label: State.packageReviewSubmit?.package_review_state || submit.state || 'package_review_recorded', pill: 'ok', message: 'Server state already contains a package-review submit record.' };
     }
-    if (State.packageReviewPreviewError) {
-        return { label: 'package_review_preview_blocked', pill: 'blocked', message: 'Server authority rejected or blocked package-review preview.' };
+    if (State.packageReviewSubmitError || State.packageConstructionError || State.packageReviewPreviewError) {
+        return { label: 'package_review_blocked', pill: 'blocked', message: 'Server authority rejected or blocked the latest package action.' };
+    }
+    if (submit.package_review_submit_enabled === true) {
+        return { label: submit.state || 'package_review_submit_ready', pill: 'ok', message: 'Constructed packages are ready for one bounded package-review decision.' };
+    }
+    if (construction.state === 'package_constructed') {
+        return { label: 'package_constructed', pill: 'ok', message: 'Package set is constructed; inspect preview if a current preview hash is needed before submit.' };
+    }
+    if (State.packageReviewPreview?.package_review_preview_enabled === true) {
+        return { label: State.packageReviewPreview.next_state || 'package_review_preview_ready', pill: 'ok', message: 'Package-review preview is available and can be committed as a package set.' };
     }
     if (recordedApprovedResultReview()) {
         return { label: 'package_review_preview_unavailable', pill: 'preview', message: 'Approved result review can be inspected for package-preview readiness.' };
@@ -797,19 +993,36 @@ function packageReviewPanelState() {
 
 function renderPackageReviewPreviewPanel() {
     const preview = State.packageReviewPreview || {};
+    const construction = packageConstructionState() || {};
+    const submit = packageReviewSubmitState() || {};
     const panelState = packageReviewPanelState();
     const review = recordedApprovedResultReview() || {};
     const compatibility = preview.package_owner_compatibility || {};
     const candidateKinds = Array.isArray(preview.candidate_package_kinds) ? preview.candidate_package_kinds : [];
+    const packageIds = packageOutputPackageIds();
+    const payloadHashes = packagePayloadHashes();
+    const packageKinds = packageKindsFromState();
     const candidateRows = candidateKinds.length
         ? candidateKinds.map((candidate) => `
             <li>
                 <code>${escapeHtml(candidate.package_kind)}</code>
-                ${candidate.preview_only ? '<span class="status-pill preview">preview only</span>' : ''}
+                ${candidate.preview_only ? '<span class="status-pill preview">preview</span>' : ''}
+                ${candidate.package_commit_enabled ? '<span class="status-pill ok">commit ready</span>' : ''}
             </li>
         `).join('')
         : '<li>No package candidates loaded.</li>';
-    const error = State.packageReviewPreviewError;
+    const packageRows = packageKinds.length
+        ? packageKinds.map((packageKind, index) => `
+            <li>
+                <code>${escapeHtml(packageKind)}</code>
+                ${packageIds[index] ? `<code>${escapeHtml(packageIds[index])}</code>` : ''}
+            </li>
+        `).join('')
+        : '<li>No package set is constructed.</li>';
+    const payloadRows = payloadHashes.length
+        ? payloadHashes.map((payloadHash) => `<li><code>${escapeHtml(payloadHash)}</code></li>`).join('')
+        : '<li>No package payload hashes are available.</li>';
+    const error = State.packageReviewSubmitError || State.packageConstructionError || State.packageReviewPreviewError;
     elements.packageReviewPreviewPanel.innerHTML = `
         <div class="result-review-status">
             <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
@@ -831,6 +1044,34 @@ function renderPackageReviewPreviewPanel() {
                 <ul>${candidateRows}</ul>
             </section>
             <section class="result-review-card">
+                <strong>Package Construction</strong>
+                <ul>
+                    ${fieldItem('state', construction.next_state || construction.state)}
+                    ${fieldItem('reconciliation', construction.reconciliation_record_id, { code: true })}
+                    ${fieldItem('commit enabled', construction.package_commit_enabled)}
+                    ${fieldItem('submit enabled', construction.package_review_submit_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Constructed Packages</strong>
+                <ul>${packageRows}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Payload Hashes</strong>
+                <ul>${payloadRows}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Package Review Submit</strong>
+                <ul>
+                    ${fieldItem('state', submit.next_state || submit.package_review_state || submit.state)}
+                    ${fieldItem('submit ref', submit.submit_record_ref, { code: true })}
+                    ${fieldItem('operator decision', submit.operator_decision)}
+                    ${fieldItem('submit enabled', submit.package_review_submit_enabled)}
+                    ${fieldItem('handoff enabled', submit.handoff_enabled)}
+                    ${fieldItem('export enabled', submit.export_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card">
                 <strong>Owner Compatibility</strong>
                 <ul>
                     ${fieldItem('status', compatibility.status)}
@@ -842,7 +1083,7 @@ function renderPackageReviewPreviewPanel() {
             </section>
             <section class="result-review-card">
                 <strong>Disabled Downstream</strong>
-                <div class="downstream-locks">${renderDownstreamLocks(preview.downstream_unavailable || ['package_commit', 'package_review_submit', 'handoff', 'export'])}</div>
+                <div class="downstream-locks">${renderDownstreamLocks(submit.downstream_unavailable || construction.downstream_unavailable || preview.downstream_unavailable || ['package_commit', 'package_review_submit', 'handoff', 'export'])}</div>
             </section>
             ${renderErrorCard(error)}
         </div>
@@ -866,7 +1107,15 @@ function setGateControls() {
     const gateCCommitted = State.gateC?.authority_rail?.typing_status === 'committed';
     const authority = selectedResultAuthority();
     const reviewRecorded = Boolean(recordedResultReview());
-    const resultReviewControlsEnabled = Boolean(State.resultStatus?.result_status_available === true && !reviewRecorded && !State.resultReviewPending && !State.packageReviewPreviewPending);
+    const resultReviewControlsEnabled = Boolean(
+        State.resultStatus?.result_status_available === true
+        && !reviewRecorded
+        && !State.resultReviewPending
+        && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
+    );
+    const packageReviewControlsEnabled = Boolean((packageReviewSubmitState() || {}).package_review_submit_enabled === true && !State.packageReviewSubmitPending);
     elements.gateBSubmit.disabled = !(State.materialPreview?.material_candidates || []).length;
     elements.gateCPreview.disabled = !State.gateB?.session_id || gateCCommitted;
     elements.gateCCommit.disabled = !State.gateB?.session_id || gateCCommitted;
@@ -880,10 +1129,14 @@ function setGateControls() {
     elements.resultReviewNotes.disabled = !resultReviewControlsEnabled;
     elements.resultReviewSubmit.disabled = !canSubmitResultReview();
     elements.packageReviewPreviewInspect.disabled = !canInspectPackageReviewPreview();
+    elements.packageConstructionCommit.disabled = !canCommitPackageConstruction();
+    elements.packageReviewSubmitDecision.disabled = !packageReviewControlsEnabled;
+    elements.packageReviewSubmitNotes.disabled = !packageReviewControlsEnabled;
+    elements.packageReviewSubmit.disabled = !canSubmitPackageReview();
     setStepChip(elements.planStep, canPlanPreview());
     setStepChip(elements.executionStep, Boolean(State.sessionSummary?.execution_selection?.selected));
     setStepChip(elements.resultsStep, Boolean(authority.selected && authority.terminal));
-    setStepChip(elements.packageStep, false);
+    setStepChip(elements.packageStep, isPackageActive());
 }
 
 function renderAll() {
@@ -950,6 +1203,52 @@ function packageReviewPreviewPayload(authority = selectedResultAuthority()) {
     return payload;
 }
 
+function packageConstructionPayload(authority = selectedResultAuthority()) {
+    const review = recordedApprovedResultReview();
+    const preview = State.packageReviewPreview || {};
+    const payload = {
+        client_request_id: requestId(),
+        session_id: authority.sessionId,
+        analysis_plan_id: authority.analysisPlanId,
+        pass_run_id: authority.passRunId,
+        preview_id: authority.previewId,
+        preview_hash: authority.previewHash,
+        result_review_record_ref: preview.result_review_record_ref || review?.review_record_ref,
+        package_review_preview_hash: preview.package_review_preview_hash,
+        expected_package_kinds: PACKAGE_REVIEW_PACKAGE_KINDS,
+    };
+    if (authority.analysisRunId) {
+        payload.analysis_run_id = authority.analysisRunId;
+    }
+    return payload;
+}
+
+function packageReviewSubmitPayload(authority = selectedResultAuthority()) {
+    const review = recordedApprovedResultReview();
+    const preview = State.packageReviewPreview || {};
+    const submit = packageReviewSubmitState() || {};
+    const payload = {
+        client_request_id: requestId(),
+        session_id: authority.sessionId,
+        analysis_plan_id: authority.analysisPlanId,
+        pass_run_id: authority.passRunId,
+        preview_id: authority.previewId,
+        preview_hash: authority.previewHash,
+        result_review_record_ref: preview.result_review_record_ref || review?.review_record_ref,
+        package_review_preview_hash: preview.package_review_preview_hash,
+        reconciliation_record_id: submit.reconciliation_record_id,
+        output_package_ids: packageOutputPackageIds(),
+        payload_hashes: packagePayloadHashes(),
+        operator_decision: elements.packageReviewSubmitDecision.value,
+        decision_notes: elements.packageReviewSubmitNotes.value.trim(),
+        expected_package_kinds: PACKAGE_REVIEW_PACKAGE_KINDS,
+    };
+    if (authority.analysisRunId) {
+        payload.analysis_run_id = authority.analysisRunId;
+    }
+    return payload;
+}
+
 async function refreshSessionSummary() {
     const sessionId = currentSessionId();
     if (!sessionId) return;
@@ -963,6 +1262,8 @@ async function refreshSessionSummary() {
         State.resultStatusError = null;
         State.resultReviewError = null;
         State.packageReviewPreviewError = null;
+        State.packageConstructionError = null;
+        State.packageReviewSubmitError = null;
         addEvent('Session state refreshed.');
         renderAll();
     } catch (error) {
@@ -988,6 +1289,10 @@ async function inspectResultStatus() {
         State.resultReviewError = null;
         State.packageReviewPreview = null;
         State.packageReviewPreviewError = null;
+        State.packageConstruction = null;
+        State.packageConstructionError = null;
+        State.packageReviewSubmit = null;
+        State.packageReviewSubmitError = null;
         addEvent('Result/status authority loaded.');
         renderAll();
     } catch (error) {
@@ -1013,6 +1318,8 @@ async function inspectPackageReviewPreview() {
     try {
         State.packageReviewPreview = await postJson('/package/review/preview', packageReviewPreviewPayload());
         State.packageReviewPreviewError = null;
+        State.packageConstructionError = null;
+        State.packageReviewSubmitError = null;
         addEvent('Package review preview loaded.');
         renderAll();
     } catch (error) {
@@ -1030,6 +1337,71 @@ async function inspectPackageReviewPreview() {
     }
 }
 
+async function commitPackageConstruction() {
+    if (!canCommitPackageConstruction()) return;
+    State.packageConstructionPending = true;
+    State.packageConstructionError = null;
+    State.packageReviewSubmitError = null;
+    renderAll();
+    setBusy(elements.packageConstructionCommit, true, 'Commit Package Set');
+    try {
+        State.packageConstruction = await postJson('/package/review/commit', packageConstructionPayload());
+        State.packageConstructionError = null;
+        State.packageReviewSubmitError = null;
+        addEvent('Package set committed.');
+        try {
+            State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.packageConstruction.session_id)}`);
+        } catch (refreshError) {
+            addEvent(`Package committed; session refresh blocked: ${refreshError.message}`);
+        }
+        renderAll();
+    } catch (error) {
+        State.packageConstructionError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'package_construction_commit_request_failed',
+            message: error.message,
+        };
+        addEvent(`Package commit blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.packageConstructionPending = false;
+        setBusy(elements.packageConstructionCommit, false, 'Commit Package Set');
+        renderAll();
+    }
+}
+
+async function submitPackageReview(event) {
+    event.preventDefault();
+    if (!canSubmitPackageReview()) return;
+    State.packageReviewSubmitPending = true;
+    State.packageReviewSubmitError = null;
+    renderAll();
+    setBusy(elements.packageReviewSubmit, true, 'Submit Package Review');
+    try {
+        State.packageReviewSubmit = await postJson('/package/review/submit', packageReviewSubmitPayload());
+        State.packageReviewSubmitError = null;
+        addEvent('Package review submitted.');
+        try {
+            State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.packageReviewSubmit.session_id)}`);
+        } catch (refreshError) {
+            addEvent(`Package review submitted; session refresh blocked: ${refreshError.message}`);
+        }
+        renderAll();
+    } catch (error) {
+        State.packageReviewSubmitError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'package_review_submit_request_failed',
+            message: error.message,
+        };
+        addEvent(`Package review submit blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.packageReviewSubmitPending = false;
+        setBusy(elements.packageReviewSubmit, false, 'Submit Package Review');
+        renderAll();
+    }
+}
+
 async function submitResultReview(event) {
     event.preventDefault();
     if (!canSubmitResultReview()) return;
@@ -1042,6 +1414,10 @@ async function submitResultReview(event) {
         State.resultReviewError = null;
         State.packageReviewPreview = null;
         State.packageReviewPreviewError = null;
+        State.packageConstruction = null;
+        State.packageConstructionError = null;
+        State.packageReviewSubmit = null;
+        State.packageReviewSubmitError = null;
         addEvent('Result review recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.resultReview.session_id)}`);
@@ -1317,8 +1693,12 @@ elements.resultReviewRefresh.addEventListener('click', refreshSessionSummary);
 elements.resultStatusInspect.addEventListener('click', inspectResultStatus);
 elements.resultReviewForm.addEventListener('submit', submitResultReview);
 elements.packageReviewPreviewInspect.addEventListener('click', inspectPackageReviewPreview);
+elements.packageConstructionCommit.addEventListener('click', commitPackageConstruction);
+elements.packageReviewSubmitForm.addEventListener('submit', submitPackageReview);
 elements.resultReviewDecision.addEventListener('change', setGateControls);
 elements.resultReviewNotes.addEventListener('input', setGateControls);
+elements.packageReviewSubmitDecision.addEventListener('change', setGateControls);
+elements.packageReviewSubmitNotes.addEventListener('input', setGateControls);
 elements.materialFilter.addEventListener('input', (event) => {
     State.materialFilter = event.target.value;
     renderMaterialLedger();

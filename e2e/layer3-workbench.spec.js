@@ -119,6 +119,8 @@ test('Layer 3 workbench completes the first-slice operator path without enabling
   await expect(page.locator('#result-status-inspect')).toBeDisabled();
   await expect(page.locator('#result-review-submit')).toBeDisabled();
   await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
+  await expect(page.locator('#package-construction-commit')).toBeDisabled();
+  await expect(page.locator('#package-review-submit')).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Start Execution' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Rerun' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Export' })).toHaveCount(0);
@@ -262,6 +264,8 @@ test('Layer 3 workbench approves an admissible plan without starting execution',
   await expect(page.locator('[data-step="results"]')).toBeDisabled();
   await expect(page.locator('[data-step="package"]')).toBeDisabled();
   await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
+  await expect(page.locator('#package-construction-commit')).toBeDisabled();
+  await expect(page.locator('#package-review-submit')).toBeDisabled();
   await expect(page.locator('#unavailable-list')).toContainText('execution');
   await expect(page.locator('#unavailable-list')).toContainText('package');
 });
@@ -366,9 +370,11 @@ test('Layer 3 workbench records selected-pass result review only after status au
   await expect(page.locator('#result-review-submit')).toBeDisabled();
   await expect(page.locator('[data-step="package"]')).toBeDisabled();
   await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
+  await expect(page.locator('#package-construction-commit')).toBeDisabled();
+  await expect(page.locator('#package-review-submit')).toBeDisabled();
 });
 
-test('Layer 3 workbench exposes read-only package-review preview after approved result review', async ({ page, request }) => {
+test('Layer 3 workbench commits a package set and submits bounded package review after approved result review', async ({ page, request }) => {
   const setup = await prepareExecutedLayer3Session(request);
 
   const bootstrapResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/bootstrap'));
@@ -440,9 +446,101 @@ test('Layer 3 workbench exposes read-only package-review preview after approved 
   await expect(page.locator('#package-review-preview-panel')).toContainText('user_facing');
   await expect(page.locator('#package-review-preview-panel')).toContainText('review_facing');
   await expect(page.locator('#package-review-preview-panel')).toContainText('package review submit');
-  await expect(page.locator('#package-review-preview-panel')).not.toContainText('package commit');
   await expect(page.locator('#package-review-preview-panel')).toContainText('handoff');
-  await expect(page.locator('[data-step="package"]')).toBeDisabled();
+  await expect(page.locator('#package-construction-commit')).toBeEnabled();
+  await expect(page.locator('#package-review-submit')).toBeDisabled();
+  await expect(page.locator('[data-step="package"]')).toBeEnabled();
+
+  const commitRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/package/review/commit'));
+  const commitResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/package/review/commit'));
+  const postCommitSummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${setup.seed.session_id}`));
+  await page.locator('#package-construction-commit').click();
+  const commitRequest = await commitRequestPromise;
+  const commitPayload = commitRequest.postDataJSON();
+  const expectedCommitKeys = [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'result_review_record_ref',
+    'package_review_preview_hash',
+    'expected_package_kinds',
+  ];
+  if (commitPayload.analysis_run_id) expectedCommitKeys.push('analysis_run_id');
+  expectOnlyPayloadKeys(commitPayload, expectedCommitKeys);
+  expect(commitPayload.package_review_preview_hash).toBe(preview.package_review_preview_hash);
+  expect(commitPayload.expected_package_kinds).toEqual(['canonical_internal', 'user_facing', 'review_facing']);
+  expect(commitPayload).not.toHaveProperty('package');
+  expect(commitPayload).not.toHaveProperty('handoff');
+  expect(commitPayload).not.toHaveProperty('export');
+  expect(commitPayload).not.toHaveProperty('package_payload');
+
+  const commit = await expectJson(await commitResponsePromise);
+  expect(commit.schema_id).toBe('layer3.package_construction_commit.v1');
+  expect(commit.status).toBe('committed');
+  expect(commit.next_state).toBe('package_constructed');
+  expect(commit.package_review_submit_enabled).toBe(true);
+  expect(commit.handoff_enabled).toBe(false);
+  expect(commit.downstream_unavailable).toEqual(['handoff', 'export']);
+  expect(commit.output_packages).toHaveLength(3);
+  await expectJson(await postCommitSummaryPromise);
+
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_constructed');
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_submit_ready');
+  await expect(page.locator('#package-construction-commit')).toBeDisabled();
+  await expect(page.locator('#package-review-submit')).toBeEnabled();
+
+  const submitRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/package/review/submit'));
+  const submitResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/package/review/submit'));
+  const postSubmitSummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${setup.seed.session_id}`));
+  await page.locator('#package-review-submit').click();
+  const submitRequest = await submitRequestPromise;
+  const submitPayload = submitRequest.postDataJSON();
+  const expectedSubmitKeys = [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'result_review_record_ref',
+    'package_review_preview_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'payload_hashes',
+    'operator_decision',
+    'decision_notes',
+    'expected_package_kinds',
+  ];
+  if (submitPayload.analysis_run_id) expectedSubmitKeys.push('analysis_run_id');
+  expectOnlyPayloadKeys(submitPayload, expectedSubmitKeys);
+  expect(submitPayload.operator_decision).toBe('approved');
+  expect(submitPayload.decision_notes).toBe('');
+  expect(submitPayload.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect([...submitPayload.output_package_ids].sort()).toEqual([...commit.output_packages.map((item) => item.output_package_id)].sort());
+  expect(submitPayload.payload_hashes).toEqual(commit.payload_hashes);
+  expect(submitPayload.expected_package_kinds).toEqual(['canonical_internal', 'user_facing', 'review_facing']);
+  expect(submitPayload).not.toHaveProperty('package');
+  expect(submitPayload).not.toHaveProperty('handoff');
+  expect(submitPayload).not.toHaveProperty('export');
+  expect(submitPayload).not.toHaveProperty('package_payload');
+  expect(submitPayload).not.toHaveProperty('rebuild_package');
+
+  const submit = await expectJson(await submitResponsePromise);
+  expect(submit.schema_id).toBe('layer3.package_review_submit.v1');
+  expect(submit.status).toBe('submitted');
+  expect(submit.package_review_state).toBe('package_review_approved');
+  expect(submit.operator_decision).toBe('approved');
+  expect(submit.package_review_submit_enabled).toBe(false);
+  expect(submit.handoff_enabled).toBe(false);
+  expect(submit.export_enabled).toBe(false);
+  expect(submit.downstream_unavailable).toEqual(['handoff', 'export']);
+  await expectJson(await postSubmitSummaryPromise);
+
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_approved');
+  await expect(page.locator('#package-review-submit')).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Create Package' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Export' })).toHaveCount(0);
 });
