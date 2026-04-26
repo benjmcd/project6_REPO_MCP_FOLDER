@@ -1,27 +1,27 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, package-review preview/construction/submit and rendered package-review UI proof, PR #250 handoff/export preparation governance in docs 54/55, PR #251 bounded backend/API handoff-export prepare-only implementation, PR #252 blocker-alignment/session-summary hardening proof, PR #253 docs/progress sync, PR #254 manifest seed-checkout fix, PR #255 docs 56/57 planning-only handoff/export prepare UI freeze packet, and PR #256 bounded rendered /review/layer3 handoff-export prepare-only UI implementation",
+  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, package-review preview/construction/submit and rendered package-review UI proof, PR #250 handoff/export preparation governance in docs 54/55, PR #251 bounded backend/API handoff-export prepare-only implementation, PR #252 blocker-alignment/session-summary hardening proof, PR #253 docs/progress sync, PR #254 manifest seed-checkout fix, PR #255 docs 56/57 planning-only handoff/export prepare UI freeze packet, and PR #256 bounded rendered /review/layer3 handoff-export prepare-only UI implementation, PR #257 post-UI docs/progress sync, and PR #258 docs 58/59 planning-only APS handoff dispatch governance",
   "scope": {
-    "source_branch": "codex/l3-handoff-prepare-ui-impl",
-    "merged_pr": "#256",
-    "merge_commit": "0d256c1300ac3726bf9fc10889a2229addae4ec0",
+    "source_branch": "codex/l3-aps-handoff-dispatch-freeze",
+    "merged_pr": "#258",
+    "merge_commit": "",
     "base_remote": "project6-origin/main",
-    "base_commit": "bdbd4e20",
-    "source_base_commit": "bdbd4e2064dca00e3a945e48beddfaa06b854b37",
-    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, the merged PR #245 bounded rendered package-review UI implementation, and PR #247 post-review fallback hardening for submit readiness after a failed post-commit session refresh. PR #250 adds planning-only docs 54/55 for handoff/export preparation governance after package-review approval; PR #251 implements only the bounded backend/API prepare-only endpoint; PR #252 aligns downstream blocker vocabulary and session-summary priority without widening behavior. PR #253 synchronizes docs/progress after PR #251/#252 reached main; PR #254 fixes the manifest seed-checkout reference. Docs 56/57 freeze the rendered /review/layer3 handoff/export prepare-only UI boundary over the already-live backend endpoint, and PR #256 implements only that bounded rendered prepare-only UI. APS handoff, external export/download, downstream dispatch, physical artifacts, AnalysisArtifact rows, package mutation/reconstruction, source/schema/runtime widening, execution selection/start UI expansion, and full mockup activation remain unavailable.",
-    "live_behavior_change": true,
-    "live_behavior_change_summary": "PR #251 adds the bounded backend/API handoff-export prepare-only endpoint after PR #250 docs 54/55 governance and package_review_approved authority. PR #252 hardens only downstream blocker vocabulary and session-summary blocker priority. PR #256 adds the bounded rendered /review/layer3 prepare-only controls over that server authority and a narrow session-summary authority projection, while preserving no APS handoff, no external export/download/dispatch, no downstream destination selection, no physical artifacts, no AnalysisArtifact rows, no package mutation/reconstruction, no source/schema/runtime widening, no execution selection/start UI expansion, and no qualitative/hybrid/RAG/vector/full mockup behavior.",
+    "base_commit": "fb16b777",
+    "source_base_commit": "fb16b777d674a57e9073b46144275290804e56ce",
+    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, the merged PR #245 bounded rendered package-review UI implementation, and PR #247 post-review fallback hardening for submit readiness after a failed post-commit session refresh. PR #250 adds planning-only docs 54/55 for handoff/export preparation governance after package-review approval; PR #251 implements only the bounded backend/API prepare-only endpoint; PR #252 aligns downstream blocker vocabulary and session-summary priority without widening behavior. PR #253 synchronizes docs/progress after PR #251/#252 reached main; PR #254 fixes the manifest seed-checkout reference. Docs 56/57 freeze the rendered /review/layer3 handoff/export prepare-only UI boundary over the already-live backend endpoint, and PR #256 implements only that bounded rendered prepare-only UI. APS handoff, external export/download, downstream dispatch, physical artifacts, AnalysisArtifact rows, package mutation/reconstruction, source/schema/runtime widening, execution selection/start UI expansion, and full mockup activation remain unavailable. PR #258 adds docs 58/59 as planning-only governance for a future bounded workbench APS handoff dispatch bridge into the existing aps_evidence_bundle_handoff owner-service family; it does not make dispatch live.",
+    "live_behavior_change": false,
+    "live_behavior_change_summary": "PR #251 adds the bounded backend/API handoff-export prepare-only endpoint after PR #250 docs 54/55 governance and package_review_approved authority. PR #252 hardens only downstream blocker vocabulary and session-summary blocker priority. PR #256 adds the bounded rendered /review/layer3 prepare-only controls over that server authority and a narrow session-summary authority projection, while preserving no APS handoff, no external export/download/dispatch, no downstream destination selection, no physical artifacts, no AnalysisArtifact rows, no package mutation/reconstruction, no source/schema/runtime widening, no execution selection/start UI expansion, and no qualitative/hybrid/RAG/vector/full mockup behavior. PR #258 is docs/control only and does not add live APS handoff dispatch, external export/download, connector dispatch, package mutation, schema/runtime/source widening, or UI behavior.",
     "latest_implementation_pr": "#256",
     "latest_implementation_branch": "codex/l3-handoff-prepare-ui-impl",
     "latest_implementation_summary": "PR #256 adds bounded rendered /review/layer3 handoff/export prepare-only controls over the PR #251/#252 backend authority and narrow session-summary authority projection; it preserves APS handoff, external export/download/dispatch, downstream destination selection, physical artifacts, AnalysisArtifact creation, package mutation/rebuild, source/schema/runtime, execution selection/start UI expansion, and full-mockup no-go boundaries.",
-    "latest_planning_pr": "#250",
-    "latest_planning_branch": "codex/l3-handoff-export-freeze",
-    "latest_planning_summary": "PR #250 lands docs 54/55 as planning-only governance by themselves for internal handoff/export preparation after package-review approval; PR #251 is the separate backend/API prepare-only implementation.",
+    "latest_planning_pr": "#258",
+    "latest_planning_branch": "codex/l3-aps-handoff-dispatch-freeze",
+    "latest_planning_summary": "PR #258 lands docs 58/59 as planning-only governance for a future bounded workbench APS handoff dispatch bridge after handoff_export_prepared, targeting only the existing aps_evidence_bundle_handoff owner-service family.",
     "latest_planning_live_behavior_change": false,
-    "latest_planning_behavior_summary": "PR #250 docs 54/55 are documentation/control only by themselves; merging them changed planning authority but not runtime API, UI, database, package payload, APS handoff, external export, or dispatch behavior.",
+    "latest_planning_behavior_summary": "PR #258 docs 58/59 are documentation/control only; they do not implement a backend endpoint, rendered UI control, APS dispatch, external export/download, connector dispatch, package mutation, schema/runtime/source widening, or full mockup behavior.",
     "latest_implementation_merge_commit": "0d256c1300ac3726bf9fc10889a2229addae4ec0",
-    "latest_planning_base_commit": "ec58ac80ab5033f8a815195bdf9f44f41e42d532",
+    "latest_planning_base_commit": "fb16b777d674a57e9073b46144275290804e56ce",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
     "latest_branch_only_implementation_summary": "No active branch-only handoff/export preparation implementation remains after PR #256 merged. Current main includes the PR #251/#252 backend/API prepare-only endpoint and the PR #256 bounded rendered prepare-only UI controls. APS handoff, external export/download/dispatch, downstream destination selection, physical artifacts, package mutation/rebuild, source/schema/runtime widening, execution selection/start UI expansion, and full mockup activation remain out.",
@@ -90,7 +90,12 @@
     "latest_handoff_export_ui_implementation_base_commit": "bdbd4e2064dca00e3a945e48beddfaa06b854b37",
     "latest_handoff_export_ui_implementation_merge_commit": "0d256c1300ac3726bf9fc10889a2229addae4ec0",
     "latest_handoff_export_ui_implementation_live_behavior_change": true,
-    "latest_handoff_export_ui_implementation_summary": "PR #256 implements the bounded rendered /review/layer3 prepare-only controls governed by docs 56/57 over the existing backend prepare endpoint. The UI is server-gated by package_review_approved and handoff_export_prepare.available, submits only admitted prepare-only fields, records no packages/artifacts/files, and exposes no APS handoff, external export/download/dispatch, destination selection, package edit/rebuild, schema/runtime/source widening, execution selection/start UI expansion, or full mockup activation."
+    "latest_handoff_export_ui_implementation_summary": "PR #256 implements the bounded rendered /review/layer3 prepare-only controls governed by docs 56/57 over the existing backend prepare endpoint. The UI is server-gated by package_review_approved and handoff_export_prepare.available, submits only admitted prepare-only fields, records no packages/artifacts/files, and exposes no APS handoff, external export/download/dispatch, destination selection, package edit/rebuild, schema/runtime/source widening, execution selection/start UI expansion, or full mockup activation.",
+    "latest_aps_handoff_dispatch_planning_branch": "codex/l3-aps-handoff-dispatch-freeze",
+    "latest_aps_handoff_dispatch_planning_pr": "#258",
+    "latest_aps_handoff_dispatch_planning_base_commit": "fb16b777d674a57e9073b46144275290804e56ce",
+    "latest_aps_handoff_dispatch_planning_live_behavior_change": false,
+    "latest_aps_handoff_dispatch_planning_summary": "Docs 58/59 freeze the future workbench APS handoff dispatch contract after prepared-envelope authority and select aps_evidence_bundle_handoff only."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -132,7 +137,12 @@
     "next_milestone_plans/Layer3_planning_docs/54_L3_WB_HANDOFF_EXPORT_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/55_L3_WB_HANDOFF_EXPORT_API_AND_STATE_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/56_L3_WB_HANDOFF_EXPORT_UI_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/57_L3_WB_HANDOFF_EXPORT_UI_STATE_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/57_L3_WB_HANDOFF_EXPORT_UI_STATE_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/58_L3_WB_APS_HANDOFF_DISPATCH_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/59_L3_WB_APS_HANDOFF_DISPATCH_API_AND_STATE_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/09_GATED_APS_HANDOFF_FREEZE.md",
+    "backend/app/services/layer3_aps_handoff.py",
+    "backend/tests/test_layer3_aps_handoff.py"
   ],
   "current_live_workbench_boundary": {
     "live_bounded": [
@@ -190,7 +200,11 @@
       "package reconstruction or rebuild/amendment after package-review submit changes_requested until separately frozen",
       "handoff/export preparation or external dispatch by package-review approval alone",
       "APS handoff, external export, physical export artifact creation, or downstream dispatch from docs 54/55 by themselves",
-      "rendered handoff/export preparation controls from docs 56/57 by themselves"
+      "rendered handoff/export preparation controls from docs 56/57 by themselves",
+      "workbench APS handoff dispatch from docs 58/59 by themselves",
+      "external export/download after docs 58/59",
+      "connector dispatch or destination selection after docs 58/59",
+      "package amendment/rebuild/supersession after docs 58/59"
     ],
     "planning_only": [
       "analysis-execution-start freeze/API-state contract from PR #217 remains the governing scope contract for the PR #218 bounded implementation",
@@ -462,6 +476,11 @@
       "gate_id": "handoff-export-prepare-ui-freeze",
       "decision": "The next eligible rendered /review/layer3 boundary may expose only a prepare_only handoff/export control after server-confirmed package_review_approved authority and existing backend prepare readiness. The UI must remain server-authoritative, reference-only, and must not expose APS handoff, external export/download/dispatch, physical artifacts, AnalysisArtifact creation, package mutation/reconstruction, source/schema/runtime widening, execution selection/start UI expansion, or full mockup activation.",
       "status": "introduced_by_docs_56_57_as_planning_only_governance"
+    },
+    {
+      "gate_id": "aps-handoff-dispatch-freeze",
+      "decision": "Docs 58/59 select the next eligible workbench planning boundary as future bounded APS handoff dispatch from exactly one handoff_export_prepared envelope into the existing aps_evidence_bundle_handoff owner-service family only. They do not implement endpoint/UI dispatch behavior by themselves.",
+      "status": "introduced_by_docs_58_59_as_planning_only_governance_in_PR_258"
     }
   ],
   "validation_commands": [
@@ -638,6 +657,14 @@
       "command": "$env:PLAYWRIGHT_PYTHON='python'; npx playwright test layer3-workbench.spec.js --project=chromium --headed",
       "purpose": "Verify headed Chromium bounded handoff/export prepare-only UI flow without APS/export/download/dispatch controls.",
       "result": "5 passed"
+    },
+    {
+      "command": "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null; python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "purpose": "Validate JSON syntax for PR #258 docs 58/59 progress/control sync."
+    },
+    {
+      "command": "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k handoff_export_prepare; python -m pytest .\\backend\\tests\\test_layer3_aps_handoff.py -q",
+      "purpose": "Smoke current prepare-only backend behavior and existing APS handoff owner-service behavior after docs-only PR #258 planning sync."
     }
   ],
   "browser_proof_rule": "PR #256 changes rendered /review/layer3 behavior on current main, so headed and headless Chrome proof are required for the landed handoff/export prepare-only UI scope. Headless and headed Playwright must cover package preview -> package construction commit -> package-review submit -> handoff/export prepare-only UI readiness and submission, while confirming no APS handoff, external export/download, downstream dispatch, destination selection, or package edit/rebuild controls are exposed.",
@@ -690,7 +717,13 @@
     "package-review approval enables external export",
     "handoff/export dispatch is live",
     "APS handoff is live after docs 54/55",
-    "physical export artifact is created by docs 54/55"
+    "physical export artifact is created by docs 54/55",
+    "docs 58/59 make APS handoff live",
+    "PR #258 makes APS handoff dispatch live",
+    "workbench APS handoff dispatch is live",
+    "external export is live after docs 58/59",
+    "connector dispatch is live after docs 58/59",
+    "package amendment is admitted by docs 58/59"
   ],
   "post_merge_pr_222_proof": {
     "merge_commit": "4409702e66ee40d8e2c63c8ea86fa72cb7ea2b6c",
@@ -1092,7 +1125,11 @@
     "next_milestone_plans/Layer3_planning_docs/56_L3_WB_HANDOFF_EXPORT_UI_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/57_L3_WB_HANDOFF_EXPORT_UI_STATE_CONTRACT.md",
     "backend/app/services/layer3_workbench.py",
-    "backend/tests/test_layer3_api.py"
+    "backend/tests/test_layer3_api.py",
+    "next_milestone_plans/Layer3_planning_docs/58_L3_WB_APS_HANDOFF_DISPATCH_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/59_L3_WB_APS_HANDOFF_DISPATCH_API_AND_STATE_CONTRACT.md",
+    "backend/app/services/layer3_aps_handoff.py",
+    "backend/tests/test_layer3_aps_handoff.py"
   ],
   "handoff_export_prepare_ui_implementation_proof": {
     "implementation_branch": "codex/l3-handoff-prepare-ui-impl",
@@ -1156,5 +1193,47 @@
       "full mockup activation"
     ],
     "pr": "#256"
+  },
+  "aps_handoff_dispatch_planning_proof": {
+    "planning_branch": "codex/l3-aps-handoff-dispatch-freeze",
+    "base_commit": "fb16b777",
+    "base_source": "project6-origin/main after PR #257 post-UI docs/progress sync",
+    "scope": "Planning-only docs 58/59 APS handoff dispatch governance after PR #256/#257 prepare-only UI state. The packet selects a future bounded workbench bridge into the existing aps_evidence_bundle_handoff owner-service family and makes no endpoint/UI/dispatch behavior live by itself.",
+    "docs_added": [
+      "next_milestone_plans/Layer3_planning_docs/58_L3_WB_APS_HANDOFF_DISPATCH_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/59_L3_WB_APS_HANDOFF_DISPATCH_API_AND_STATE_CONTRACT.md"
+    ],
+    "docs_synced": [
+      "docs/nrc_adams/nrc_aps_status_handoff.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_progress_refresh_spec.md",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "next_milestone_plans/progress-prompt.md",
+      "next_milestone_plans/progress-ui-spec.md"
+    ],
+    "live_behavior_change": false,
+    "no_go_preserved": [
+      "no live workbench APS handoff dispatch endpoint by docs alone",
+      "no rendered dispatch UI controls by docs alone",
+      "no external export/download/dispatch",
+      "no connector-run dispatch",
+      "no destination selection",
+      "no package payload mutation or reconstruction",
+      "no additional reconciliation rows",
+      "no AnalysisArtifact rows",
+      "no source/schema/runtime widening",
+      "no execution selection/start UI expansion",
+      "no qualitative/hybrid/RAG/vector execution",
+      "no full mockup activation"
+    ],
+    "validation": [
+      "json syntax and manifest consistency audit expected in PR #258 verification",
+      "backend handoff-export prepare and APS handoff owner-service smoke expected in PR #258 verification",
+      "git diff --check expected in PR #258 verification"
+    ],
+    "pr": "#258",
+    "merge_commit": ""
   }
 }

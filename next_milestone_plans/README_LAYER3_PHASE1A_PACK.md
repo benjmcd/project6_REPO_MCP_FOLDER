@@ -140,6 +140,12 @@ And to the Layer 3 workbench handoff/export preparation UI freeze packet, which 
 
 The handoff/export preparation UI packet freezes only the rendered prepare-only control boundary over the already-live backend prepare endpoint. PR `#256` now implements that bounded UI surface on current `main`: it may render one server-gated preparation decision form from `/review/layer3` after approved package-review authority, but it still does not admit APS handoff, external export/download, downstream dispatch, destination selection, physical export artifacts, `AnalysisArtifact`, package payload mutation, package reconstruction, source/schema/runtime widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
+And to the Layer 3 workbench APS handoff dispatch freeze packet from PR `#258`, which is planning-only and does not make APS handoff dispatch live by itself:
+- `next_milestone_plans/Layer3_planning_docs/58_L3_WB_APS_HANDOFF_DISPATCH_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/59_L3_WB_APS_HANDOFF_DISPATCH_API_AND_STATE_CONTRACT.md`
+
+The APS handoff dispatch packet selects the next eligible planning boundary after the current prepare-only UI: a future bounded workbench dispatch from exactly one `handoff_export_prepared` envelope into the existing `aps_evidence_bundle_handoff` owner-service family. It does not implement a new endpoint or UI behavior by itself and does not admit external export/download, connector dispatch, destination selection, package mutation/reconstruction, additional reconciliation rows, schema/runtime/source widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
@@ -1014,6 +1020,22 @@ Read docs `56`/`57` as planning-only UI governance by themselves and PR `#256` a
 - the UI may render one prepare-only decision form after `package_review_approved` and server-reported `handoff_export_prepare.available == true`
 - headed and headless Chrome proof is required when a later implementation changes rendered `/review/layer3` behavior; PR `#256` supplied that proof
 - they do not admit APS handoff, external export/download, downstream dispatch, physical artifacts, `AnalysisArtifact`, package payload mutation/reconstruction, source/schema/runtime widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector execution, or full mockup activation
+
+### If you are auditing the Layer 3 workbench APS handoff dispatch freeze
+
+Start with:
+- `Layer3_planning_docs/58_L3_WB_APS_HANDOFF_DISPATCH_FREEZE.md`
+- `Layer3_planning_docs/59_L3_WB_APS_HANDOFF_DISPATCH_API_AND_STATE_CONTRACT.md`
+- `Layer3_planning_docs/54_L3_WB_HANDOFF_EXPORT_FREEZE.md`
+- `Layer3_planning_docs/55_L3_WB_HANDOFF_EXPORT_API_AND_STATE_CONTRACT.md`
+- `backend/app/services/layer3_aps_handoff.py`
+- `backend/tests/test_layer3_aps_handoff.py`
+
+Read docs `58`/`59` as planning-only APS handoff dispatch governance by themselves:
+- they do not make an APS handoff dispatch endpoint or rendered UI control live by themselves
+- the only future APS target they select is `aps_evidence_bundle_handoff` through the existing owner-service family
+- any implementation must start from existing `handoff_export_prepared` state and fail closed on stale package/review/prepare authority
+- they do not admit external export/download, connector dispatch, destination selection, package mutation/reconstruction, additional reconciliation rows, source/schema/runtime widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector execution, or full mockup activation
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 
