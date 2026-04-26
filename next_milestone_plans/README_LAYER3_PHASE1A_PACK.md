@@ -134,6 +134,12 @@ And to the Layer 3 workbench handoff/export preparation freeze packet, which is 
 
 The handoff/export preparation packet freezes only the next eligible planning boundary after package-review approval: a future internal `prepare_only` export-envelope decision over already approved package-review state. It does not add a live endpoint by itself, does not dispatch to APS, does not export externally, does not create physical export files, does not create `AnalysisArtifact` rows, does not mutate package payloads, does not rebuild packages, does not widen source/schema/runtime scope, and does not activate the full mockup target state.
 
+And to the Layer 3 workbench handoff/export preparation UI freeze packet, which is planning-only and does not make rendered `/review/layer3` handoff/export controls live by itself:
+- `next_milestone_plans/Layer3_planning_docs/56_L3_WB_HANDOFF_EXPORT_UI_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/57_L3_WB_HANDOFF_EXPORT_UI_STATE_CONTRACT.md`
+
+The handoff/export preparation UI packet freezes only a future rendered prepare-only control over the already-live backend prepare endpoint. It may later allow one server-gated preparation decision from `/review/layer3`, but it does not add UI behavior by itself, does not change backend behavior, and does not admit APS handoff, external export/download, downstream dispatch, physical export artifacts, `AnalysisArtifact`, package payload mutation, package reconstruction, source/schema/runtime widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
@@ -590,6 +596,13 @@ PR `#250` freezes the next eligible planning boundary after merged package-revie
 - `54_L3_WB_HANDOFF_EXPORT_FREEZE.md`
 - `55_L3_WB_HANDOFF_EXPORT_API_AND_STATE_CONTRACT.md`
 
+### Broader workbench handoff/export preparation UI governance
+
+These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+They freeze only the future rendered `/review/layer3` presentation/control boundary over the already-live backend prepare-only endpoint from PR `#251`/`#252`. They do not make UI behavior live by themselves, do not change backend behavior, and do not admit APS handoff, external export/download, downstream dispatch, physical export artifacts, `AnalysisArtifact`, package payload mutation, package reconstruction, source/schema/runtime widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector behavior, or full mockup activation:
+- `56_L3_WB_HANDOFF_EXPORT_UI_FREEZE.md`
+- `57_L3_WB_HANDOFF_EXPORT_UI_STATE_CONTRACT.md`
+
 ### Broader workbench mockup source mirror
 
 These files are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
@@ -975,6 +988,32 @@ Read docs `54`/`55` as planning-only preparation governance:
 - the planned future endpoint is an internal `prepare_only` envelope, not APS dispatch or external export
 - the preferred persistence boundary is existing JSON-bearing state; if physical export files, `AnalysisArtifact`, a new table/model, or a migration is required, stop for a separate persistence/artifact freeze
 - it does not admit package payload mutation, package reconstruction, additional package/reconciliation rows, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, APS dispatch, external export, or full mockup activation
+
+### If you are auditing the Layer 3 workbench handoff/export preparation UI freeze
+
+Start with:
+- `Layer3_planning_docs/56_L3_WB_HANDOFF_EXPORT_UI_FREEZE.md`
+- `Layer3_planning_docs/57_L3_WB_HANDOFF_EXPORT_UI_STATE_CONTRACT.md`
+- `Layer3_planning_docs/54_L3_WB_HANDOFF_EXPORT_FREEZE.md`
+- `Layer3_planning_docs/55_L3_WB_HANDOFF_EXPORT_API_AND_STATE_CONTRACT.md`
+- `backend/app/services/layer3_workbench.py`
+- `backend/app/api/layer3.py`
+- `backend/app/review_ui/static/layer3.html`
+- `backend/app/review_ui/static/layer3.css`
+- `backend/app/review_ui/static/layer3.js`
+- `backend/tests/test_layer3_api.py`
+- `backend/tests/test_layer3_page.py`
+- `e2e/layer3-workbench.spec.js`
+- `next_milestone_plans/layer3_workbench_proof_manifest.json`
+- `next_milestone_plans/layer3_progress_manifest.json`
+- `next_milestone_plans/layer3_progress_board.md`
+
+Read docs `56`/`57` as planning-only UI governance:
+- they do not make rendered handoff/export controls live by themselves
+- any future UI implementation must use server summary and `POST /api/v1/layer3/handoff/export/prepare` authority only
+- the UI may render one prepare-only decision form after `package_review_approved` and server-reported `handoff_export_prepare.available == true`
+- headed and headless Chrome proof is required if a later implementation changes rendered `/review/layer3` behavior
+- they do not admit APS handoff, external export/download, downstream dispatch, physical artifacts, `AnalysisArtifact`, package payload mutation/reconstruction, source/schema/runtime widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector execution, or full mockup activation
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 
