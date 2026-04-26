@@ -38,7 +38,6 @@ from app.models.models import (
     VariableProfile,
     uuid_str,
 )
-from app.services import nrc_aps_evidence_bundle_contract as aps_contract
 from app.services import layer3_pass_entry as layer3_pass_entry_module
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
@@ -50,6 +49,10 @@ from app.services.layer3_session_entry import (
 )
 from app.services.layer3_typing_entry import materialize_typing_entry
 from review_browser_fixture import build_review_browser_fixture, install_review_browser_patches
+
+APS_CONTENT_CONTRACT_ID = "aps_content_units_v2"
+APS_CHUNKING_CONTRACT_ID = "aps_chunking_v2"
+APS_NORMALIZATION_CONTRACT_ID = "aps_text_normalization_v2"
 
 
 def _install_layer3_browser_patches() -> None:
@@ -222,9 +225,9 @@ def _seed_browser_aps_content_fixture(
     db.add(
         ApsContentDocument(
             content_id=content_id,
-            content_contract_id=aps_contract.APS_CONTENT_CONTRACT_ID,
-            chunking_contract_id=aps_contract.APS_CHUNKING_CONTRACT_ID,
-            normalization_contract_id=aps_contract.APS_NORMALIZATION_CONTRACT_ID,
+            content_contract_id=APS_CONTENT_CONTRACT_ID,
+            chunking_contract_id=APS_CHUNKING_CONTRACT_ID,
+            normalization_contract_id=APS_NORMALIZATION_CONTRACT_ID,
             normalized_text_sha256=hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
             normalized_char_count=len(normalized_text),
             chunk_count=len(chunk_texts),
@@ -242,8 +245,8 @@ def _seed_browser_aps_content_fixture(
             ApsContentChunk(
                 content_id=content_id,
                 chunk_id=f"{content_id}-chunk-{ordinal + 1}",
-                content_contract_id=aps_contract.APS_CONTENT_CONTRACT_ID,
-                chunking_contract_id=aps_contract.APS_CHUNKING_CONTRACT_ID,
+                content_contract_id=APS_CONTENT_CONTRACT_ID,
+                chunking_contract_id=APS_CHUNKING_CONTRACT_ID,
                 chunk_ordinal=ordinal,
                 start_char=ordinal * 64,
                 end_char=(ordinal * 64) + len(chunk_text),
@@ -261,8 +264,8 @@ def _seed_browser_aps_content_fixture(
             run_id=run_id,
             target_id=target_id,
             accession_number="ML26001A001",
-            content_contract_id=aps_contract.APS_CONTENT_CONTRACT_ID,
-            chunking_contract_id=aps_contract.APS_CHUNKING_CONTRACT_ID,
+            content_contract_id=APS_CONTENT_CONTRACT_ID,
+            chunking_contract_id=APS_CHUNKING_CONTRACT_ID,
             content_units_ref=content_units_ref,
             normalized_text_ref=normalized_text_ref,
             normalized_text_sha256=hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
