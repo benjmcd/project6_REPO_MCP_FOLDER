@@ -377,6 +377,14 @@
     justify-self: start;
 }
 
+.aps-handoff-controls {
+    grid-template-columns: 1fr;
+}
+
+.aps-handoff-controls button {
+    grid-column: 1;
+}
+
 .downstream-locks {
     display: flex;
     gap: 8px;

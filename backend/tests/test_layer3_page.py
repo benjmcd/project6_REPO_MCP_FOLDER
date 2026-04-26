@@ -51,6 +51,9 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="handoff-export-prepare-decision"' in response.text
     assert 'id="handoff-export-prepare-notes"' in response.text
     assert 'id="handoff-export-prepare-submit"' in response.text
+    assert 'id="aps-handoff-dispatch-form"' in response.text
+    assert 'id="aps-handoff-dispatch-panel"' in response.text
+    assert 'id="aps-handoff-dispatch-submit"' in response.text
     assert 'href="/review/layer3/static/layer3.css"' in response.text
     assert 'src="/review/layer3/static/layer3.js"' in response.text
     assert "Plan</button>" in response.text
@@ -80,18 +83,23 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "postJson('/package/review/commit'" in js.text
     assert "postJson('/package/review/submit'" in js.text
     assert "postJson('/handoff/export/prepare'" in js.text
+    assert "postJson('/handoff/aps/dispatch'" in js.text
     assert "operator_view_mode: 'status_only'" in js.text
     assert "operator_decision: elements.resultReviewDecision.value" in js.text
     assert "operator_decision: elements.packageReviewSubmitDecision.value" in js.text
     assert "operator_decision: elements.handoffExportPrepareDecision.value" in js.text
+    assert "operator_decision: 'dispatch_aps_handoff'" in js.text
     package_start = js.text.find("function packageReviewSubmitPayload")
     handoff_start = js.text.find("function handoffExportPreparePayload")
+    aps_start = js.text.find("function apsHandoffDispatchPayload")
     refresh_start = js.text.find("async function refreshSessionSummary")
     assert package_start != -1
     assert handoff_start != -1
+    assert aps_start != -1
     assert refresh_start != -1
     package_submit_slice = js.text[package_start:handoff_start]
-    handoff_prepare_slice = js.text[handoff_start:refresh_start]
+    handoff_prepare_slice = js.text[handoff_start:aps_start]
+    aps_dispatch_slice = js.text[aps_start:refresh_start]
     assert "handoff_target" not in package_submit_slice
     assert "export_mode" not in package_submit_slice
     assert "payload_refs" not in package_submit_slice
@@ -114,6 +122,51 @@ def test_layer3_static_assets_are_mounted() -> None:
         "rewrite_output",
     ):
         assert forbidden not in handoff_prepare_slice
+    assert "handoff_target: 'internal_export_envelope'" in aps_dispatch_slice
+    assert "export_mode: 'prepare_only'" in aps_dispatch_slice
+    assert "aps_handoff_target: 'aps_evidence_bundle'" in aps_dispatch_slice
+    assert "dispatch_mode: 'server_side_aps_handoff'" in aps_dispatch_slice
+    assert "operator_decision: 'dispatch_aps_handoff'" in aps_dispatch_slice
+    assert "prepare_record_ref: handoff.prepare_record_ref" in aps_dispatch_slice
+    assert "handoff_export_envelope_ref: handoffExportEnvelopeRef(handoff)" in aps_dispatch_slice
+    assert "package_kinds: packageKindsFromState()" in aps_dispatch_slice
+    for forbidden in (
+        "external_export",
+        "external_target",
+        "download",
+        "download_url",
+        "destination",
+        "destination_selector",
+        "connector_run_id",
+        "connector_dispatch",
+        "dispatch",
+        "send",
+        "runtime_db_write",
+        "analysis_artifact",
+        "artifact_manifest",
+        "create_package",
+        "rebuild_package",
+        "package_payload",
+        "package_variant_content",
+        "rewrite_output",
+        "edited_findings",
+        "result_review_amendment",
+        "package_review_amendment",
+        "rerun",
+        "retry",
+        "recover",
+        "cancel",
+        "selected_pass_ids",
+        "pass_run_ids",
+        "new_analysis_plan",
+        "plan_revision",
+        "source_expansion",
+        "local_upload",
+        "local_directory",
+        "schema_migration",
+        "expected_package_kinds",
+    ):
+        assert f"{forbidden}:" not in aps_dispatch_slice
     assert "planRevisionPending" in js.text
     assert "State.planRevisionPending = true" in js.text
 

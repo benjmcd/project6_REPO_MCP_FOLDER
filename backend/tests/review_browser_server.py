@@ -34,6 +34,7 @@ from app.services.layer3_session_entry import (
 )
 from app.services.layer3_typing_entry import materialize_typing_entry
 from review_browser_fixture import build_review_browser_fixture, install_review_browser_patches
+from test_layer3_aps_handoff import _seed_aps_content_fixture
 
 
 def _install_layer3_browser_patches() -> None:
@@ -199,6 +200,87 @@ def _build_browser_quant_ready_session(db, temp_path: Path) -> str:
     return session.session_id
 
 
+def _build_browser_aps_handoff_ready_session(db, temp_path: Path) -> str:
+    seed_id = uuid_str()
+    dataset_id = f"ds-{seed_id}"
+    dataset_version_id = f"dv-{seed_id}"
+    run_id = f"run-{seed_id}"
+    target_id = f"target-{seed_id}"
+    content_id = f"content-{seed_id}"
+    csv_path = _seed_browser_dataset_version(
+        db,
+        temp_path,
+        seed_id=seed_id,
+        dataset_id=dataset_id,
+        dataset_version_id=dataset_version_id,
+    )
+    _seed_aps_content_fixture(db, temp_path, run_id=run_id, target_id=target_id, content_id=content_id)
+    request = SessionEntryRequest(
+        manifest_items=[
+            {
+                "source_plane": "plane_a",
+                "descriptor_type": "dataset_version",
+                "selector_payload": {"dataset_version_id": dataset_version_id},
+                "selection_basis": {"selection_id": f"sel-{seed_id}-quant"},
+                "expansion_reason": "committed_selection",
+            },
+            {
+                "source_plane": "plane_b",
+                "descriptor_type": "aps_content_document",
+                "selector_payload": {"run_id": run_id, "target_id": target_id},
+                "selection_basis": {"selection_id": f"sel-{seed_id}-aps-doc"},
+                "expansion_reason": "committed_selection",
+            },
+        ],
+        source_plane_hints={"plane_a": ["dataset_version"], "plane_b": ["aps_content_document"]},
+        commit_reason="layer3-browser-aps-handoff-harness",
+        entry_route_context={"entrypoint": "playwright"},
+        operator_context={"operator": "playwright"},
+        summary={"phase": "aps_handoff_dispatch"},
+    )
+    session, manifest = commit_selection(db, request)
+    descriptors = expand_descriptors(db, session=session, manifest=manifest)
+    record_retrieval_event(
+        db,
+        session=session,
+        descriptor=descriptors[0],
+        outcome="loaded",
+        reason_code="loaded",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape="dataset_version",
+                source_identity={"dataset_version_id": dataset_version_id},
+                source_provenance={"dataset_id": dataset_id, "storage_ref": str(csv_path)},
+                payload={"dataset_version_id": dataset_version_id},
+                load_summary={"loaded_records": 24, "failed_records": 0},
+            )
+        ],
+        storage_root=temp_path,
+    )
+    record_retrieval_event(
+        db,
+        session=session,
+        descriptor=descriptors[1],
+        outcome="loaded",
+        reason_code="loaded",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape="aps_content_document",
+                source_identity={"content_id": content_id, "run_id": run_id, "target_id": target_id},
+                source_provenance={"linkage_ref": f"aps/linkage/{content_id}"},
+                payload={"content": "browser APS handoff companion"},
+                load_summary={"loaded_records": 1, "failed_records": 0},
+            )
+        ],
+        storage_root=temp_path,
+    )
+    finalize_session(db, session=session)
+    db.commit()
+    materialize_typing_entry(db, session_id=session.session_id)
+    db.commit()
+    return session.session_id
+
+
 def create_app() -> FastAPI:
     temp_dir = TemporaryDirectory(prefix="review-browser-", ignore_cleanup_errors=True)
     temp_path = Path(temp_dir.name)
@@ -265,6 +347,15 @@ def create_app() -> FastAPI:
         db = SessionLocal()
         try:
             session_id = _build_browser_quant_ready_session(db, temp_path)
+            return {"session_id": session_id}
+        finally:
+            db.close()
+
+    @app.post("/__test/layer3/seed-aps-handoff")
+    def seed_layer3_aps_handoff() -> dict[str, str]:
+        db = SessionLocal()
+        try:
+            session_id = _build_browser_aps_handoff_ready_session(db, temp_path)
             return {"session_id": session_id}
         finally:
             db.close()
