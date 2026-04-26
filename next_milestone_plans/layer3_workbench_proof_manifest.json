@@ -5,7 +5,7 @@
   "scope": {
     "source_branch": "codex/l3-aps-handoff-dispatch-freeze",
     "merged_pr": "#258",
-    "merge_commit": "",
+    "merge_commit": "09e2b28aa4c9ba9ebc2ba4cf1a5cd495cba63519",
     "base_remote": "project6-origin/main",
     "base_commit": "fb16b777",
     "source_base_commit": "fb16b777d674a57e9073b46144275290804e56ce",
@@ -95,7 +95,9 @@
     "latest_aps_handoff_dispatch_planning_pr": "#258",
     "latest_aps_handoff_dispatch_planning_base_commit": "fb16b777d674a57e9073b46144275290804e56ce",
     "latest_aps_handoff_dispatch_planning_live_behavior_change": false,
-    "latest_aps_handoff_dispatch_planning_summary": "Docs 58/59 freeze the future workbench APS handoff dispatch contract after prepared-envelope authority and select aps_evidence_bundle_handoff only."
+    "latest_aps_handoff_dispatch_planning_summary": "Docs 58/59 freeze the future workbench APS handoff dispatch contract after prepared-envelope authority and select aps_evidence_bundle_handoff only.",
+    "latest_planning_merge_commit": "09e2b28aa4c9ba9ebc2ba4cf1a5cd495cba63519",
+    "latest_aps_handoff_dispatch_planning_merge_commit": "09e2b28aa4c9ba9ebc2ba4cf1a5cd495cba63519"
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -1229,11 +1231,13 @@
       "no full mockup activation"
     ],
     "validation": [
-      "json syntax and manifest consistency audit expected in PR #258 verification",
-      "backend handoff-export prepare and APS handoff owner-service smoke expected in PR #258 verification",
-      "git diff --check expected in PR #258 verification"
+      "python -m json.tool layer3_progress_manifest.json and layer3_workbench_proof_manifest.json passed after PR #258 merge",
+      "custom manifest consistency audit passed after PR #258 merge: 33 workbench records, 16 live bounded, 17 planning-only",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k handoff_export_prepare -> 7 passed, 29 deselected, 3 warnings",
+      "python -m pytest .\\backend\\tests\\test_layer3_aps_handoff.py -q -> 4 passed, 2 warnings",
+      "git diff --check -> passed after PR #258 merge"
     ],
     "pr": "#258",
-    "merge_commit": ""
+    "merge_commit": "09e2b28aa4c9ba9ebc2ba4cf1a5cd495cba63519"
   }
 }
