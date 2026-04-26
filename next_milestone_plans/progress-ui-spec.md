@@ -141,6 +141,7 @@ Use these colors consistently:
 - `merged_live_bounded_package_construction_commit`: green or other clearly current-main, write-bounded package-construction state; it must not look like package-review submit/decision, handoff, or export
 - `merged_live_bounded_execution_selection`: green-teal or other clearly current-main, write-bounded shell state; it must not look like running analysis, completed execution, results review, package review, or handoff
 - `planning_only_package_construction_freeze`: amber or other clearly planning-only package-construction state; it must not look like live package construction, package-review submit/decision, handoff, or export
+- `planning_only_package_review_submit_freeze`: amber or other clearly planning-only package-review submit/decision state; it must not look like live package-review submission, package payload mutation, handoff, or export
 
 State labels should remain visible in text, not color alone.
 
