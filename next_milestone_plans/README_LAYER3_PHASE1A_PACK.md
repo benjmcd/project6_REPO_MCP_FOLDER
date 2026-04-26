@@ -120,11 +120,11 @@ And to the Layer 3 workbench package-construction freeze packet from PR `#237`, 
 
 The package-construction packet freezes only the bounded commit step after PR `#235` read-only preview: exactly one reconciliation row, exactly three package rows, and exactly three payload files for `canonical_internal`, `user_facing`, and `review_facing`, guarded by approved selected-pass result-review and preview-basis authority. PR `#238` implements that backend commit as `POST /api/v1/layer3/package/review/commit`. It still does not admit package-review submit/decision state, handoff/export, `materialize_package_entry(...)` as-is from `/review/layer3`, schema/runtime/source widening, rerun/recovery, qualitative/hybrid/RAG/vector behavior, new UI code or package-creation controls, or full mockup activation. The existing package-preview panel reflects the new backend state by no longer listing package commit as disabled.
 
-And to the Layer 3 workbench package-review submit freeze packet, which is planning-only and does not make package-review submit, handoff, or export live by itself:
+And to the Layer 3 workbench package-review submit freeze packet from PR `#241`, which is planning-only and does not make package-review submit, handoff, or export live by itself:
 - `next_milestone_plans/Layer3_planning_docs/52_L3_WB_PACKAGE_REVIEW_SUBMIT_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/53_L3_WB_PACKAGE_REVIEW_SUBMIT_API_AND_STATE_CONTRACT.md`
 
-The package-review submit packet freezes only a future operator decision over the already constructed package set from PR `#238`. It keeps package ids, package kinds, payload refs, and payload hashes server-verified and immutable; it does not admit package payload mutation, package reconstruction, additional package/reconciliation/artifact rows, handoff/export, result-review amendment, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, new UI code, or full mockup activation.
+The package-review submit packet from PR `#241` freezes only a future operator decision over the already constructed package set from PR `#238`. It keeps package ids, package kinds, payload refs, and payload hashes server-verified and immutable; it does not admit package payload mutation, package reconstruction, additional package/reconciliation/artifact rows, handoff/export, result-review amendment, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, new UI code, or full mockup activation.
 
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
@@ -571,7 +571,7 @@ They freeze the next eligible boundary after merged PR `#235` as package constru
 ### Broader workbench package-review submit planning-only freeze docs
 
 These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-They freeze the next eligible planning boundary after merged PR `#238` as package-review submit/decision state only, not handoff/export or package reconstruction. The admitted future write set is limited to one operator package-review decision object over the already constructed package set, preferably in existing `L3ReconciliationRecord.summary_json` plus an optional `L3Session.summary_json` pointer if no schema widening is required. They do not make package-review submission live by themselves and do not admit package payload mutation, additional package/reconciliation rows, `AnalysisArtifact` creation, handoff/export, result-review amendment, approved-plan supersession, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, package rebuild/amendment after changes requested, new UI code, or full mockup activation:
+PR `#241` freezes the next eligible planning boundary after merged PR `#238` as package-review submit/decision state only, not handoff/export or package reconstruction. The admitted future write set is limited to one operator package-review decision object over the already constructed package set, preferably in existing `L3ReconciliationRecord.summary_json` plus an optional `L3Session.summary_json` pointer if no schema widening is required. It does not make package-review submission live by itself and does not admit package payload mutation, additional package/reconciliation rows, `AnalysisArtifact` creation, handoff/export, result-review amendment, approved-plan supersession, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, package rebuild/amendment after changes requested, new UI code, or full mockup activation:
 - `52_L3_WB_PACKAGE_REVIEW_SUBMIT_FREEZE.md`
 - `53_L3_WB_PACKAGE_REVIEW_SUBMIT_API_AND_STATE_CONTRACT.md`
 
@@ -930,7 +930,7 @@ Start with:
 - `next_milestone_plans/layer3_progress_manifest.json`
 - `docs/nrc_adams/nrc_aps_status_handoff.md`
 
-Read docs `52`/`53` as package-review submit/decision governance only:
+Read PR `#241` docs `52`/`53` as package-review submit/decision governance only:
 - the admitted future decision records one operator disposition over an already constructed package set
 - package ids, package kinds, payload refs, and payload hashes must stay hash-stable and server-verified
 - the preferred persistence boundary is existing JSON-bearing state; if a new model or migration is required, stop for a separate schema/persistence freeze
