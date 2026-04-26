@@ -619,6 +619,7 @@ PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS = (
     PACKAGE_KIND_USER_FACING,
     PACKAGE_KIND_REVIEW_FACING,
 )
+PACKAGE_REVIEW_ALLOWED_NON_SOURCE_KINDS = (PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,)
 PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
     "package_review_submit",
     "handoff",
@@ -3931,6 +3932,16 @@ def _packages_in_review_order(packages: list[L3OutputPackage]) -> list[L3OutputP
     return [packages_by_kind[package_kind] for package_kind in PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS]
 
 
+def _review_source_packages(packages: list[L3OutputPackage]) -> list[L3OutputPackage]:
+    source_kinds = set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    return [package for package in packages if package.package_kind in source_kinds]
+
+
+def _unexpected_package_kinds(packages: list[L3OutputPackage]) -> list[str]:
+    allowed_kinds = set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS) | set(PACKAGE_REVIEW_ALLOWED_NON_SOURCE_KINDS)
+    return sorted({package.package_kind for package in packages if package.package_kind not in allowed_kinds})
+
+
 def _canonical_payload_hashes(
     *,
     payload_hashes: Any,
@@ -4238,25 +4249,31 @@ def _package_construction_summary(
     packages = (
         db.query(L3OutputPackage)
         .filter(L3OutputPackage.session_id == session_id)
-        .filter(L3OutputPackage.package_kind.in_(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS))
         .order_by(L3OutputPackage.package_kind.asc())
         .all()
     )
+    review_packages = _review_source_packages(packages)
+    unexpected_package_kinds = _unexpected_package_kinds(packages)
     if reconciliation is not None or packages:
         constructed = bool(
             reconciliation is not None
-            and len(packages) == len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
-            and {package.package_kind for package in packages} == set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+            and not unexpected_package_kinds
+            and len(review_packages) == len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+            and {package.package_kind for package in review_packages} == set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
         )
         package_review_submit = _package_review_submit_from_reconciliation(reconciliation)
+        blocked_reason = None
+        if not constructed:
+            blocked_reason = "unexpected_package_state" if unexpected_package_kinds else "partial_package_state"
         return {
             "schema_id": PACKAGE_CONSTRUCTION_COMMIT_STATE_SCHEMA_ID,
             "available": False,
             "state": PACKAGE_CONSTRUCTED_STATE if constructed else PACKAGE_COMMIT_BLOCKED_STATE,
-            "blocked_reason": None if constructed else "partial_package_state",
+            "blocked_reason": blocked_reason,
             "reconciliation_record_id": reconciliation.reconciliation_record_id if reconciliation is not None else None,
-            "output_package_ids": [package.output_package_id for package in packages],
-            "package_kinds": [package.package_kind for package in packages],
+            "output_package_ids": [package.output_package_id for package in review_packages],
+            "package_kinds": [package.package_kind for package in review_packages],
+            "unexpected_package_kinds": unexpected_package_kinds,
             "package_commit_enabled": False,
             "package_review_submit_enabled": constructed and package_review_submit is None,
             "handoff_enabled": False,
@@ -4973,17 +4990,27 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             next_allowed_actions=["refresh_package_review_preview"],
         )
 
-    packages = (
+    all_packages = (
         db.query(L3OutputPackage)
         .filter(
             L3OutputPackage.session_id == session_id,
             L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
         )
-        .filter(L3OutputPackage.package_kind.in_(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS))
         .order_by(L3OutputPackage.package_kind.asc())
         .with_for_update()
         .all()
     )
+    unexpected_package_kinds = _unexpected_package_kinds(all_packages)
+    if unexpected_package_kinds:
+        raise Layer3WorkbenchError(
+            "package_review_submit_unexpected_package_state",
+            "Package-review submit cannot proceed with unexpected package kinds on the reconciliation.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_kinds"],
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    packages = _review_source_packages(all_packages)
     if (
         len(packages) != len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
         or {package.package_kind for package in packages} != set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
@@ -5436,17 +5463,27 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             next_allowed_actions=["refresh_package_review_preview"],
         )
 
-    packages = (
+    all_packages = (
         db.query(L3OutputPackage)
         .filter(
             L3OutputPackage.session_id == session_id,
             L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
         )
-        .filter(L3OutputPackage.package_kind.in_(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS))
         .order_by(L3OutputPackage.package_kind.asc())
         .with_for_update()
         .all()
     )
+    unexpected_package_kinds = _unexpected_package_kinds(all_packages)
+    if unexpected_package_kinds:
+        raise Layer3WorkbenchError(
+            "handoff_export_prepare_unexpected_package_state",
+            "Handoff/export preparation cannot proceed with unexpected package kinds on the reconciliation.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_kinds"],
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    packages = _review_source_packages(all_packages)
     if (
         len(packages) != len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
         or {package.package_kind for package in packages} != set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
@@ -6031,17 +6068,27 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             next_allowed_actions=["refresh_package_review_preview"],
         )
 
-    packages = (
+    all_packages = (
         db.query(L3OutputPackage)
         .filter(
             L3OutputPackage.session_id == session_id,
             L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
         )
-        .filter(L3OutputPackage.package_kind.in_(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS))
         .order_by(L3OutputPackage.package_kind.asc())
         .with_for_update()
         .all()
     )
+    unexpected_package_kinds = _unexpected_package_kinds(all_packages)
+    if unexpected_package_kinds:
+        raise Layer3WorkbenchError(
+            "aps_handoff_dispatch_unexpected_package_state",
+            "APS handoff dispatch cannot proceed with unexpected package kinds on the reconciliation.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_kinds"],
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    packages = _review_source_packages(all_packages)
     if (
         len(packages) != len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
         or {package.package_kind for package in packages} != set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)

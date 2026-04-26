@@ -51,6 +51,8 @@ REQUIRED_SOURCE_PACKAGE_KINDS = (
     PACKAGE_KIND_USER_FACING,
     PACKAGE_KIND_REVIEW_FACING,
 )
+CANONICAL_INVENTORY_PATH = "selection_and_source_summary.material_snapshot_inventory_json"
+CANONICAL_INVENTORY_MISSING_MESSAGE = f"canonical_internal package is missing {CANONICAL_INVENTORY_PATH}"
 
 
 class Layer3ApsHandoffError(ValueError):
@@ -182,17 +184,21 @@ def _canonical_payload_or_raise(canonical_row: L3OutputPackage) -> dict[str, Any
     )
 
 
-def _canonical_inventory_or_raise(canonical_payload: dict[str, Any]) -> list[dict[str, Any]]:
-    inventory = (
-        payload_summary.get("material_snapshot_inventory_json")
-        if isinstance(payload_summary := canonical_payload.get("selection_and_source_summary"), dict)
-        else None
-    )
+def _canonical_inventory_or_none(canonical_payload: dict[str, Any]) -> list[dict[str, Any]] | None:
+    payload_summary = canonical_payload.get("selection_and_source_summary")
+    if not isinstance(payload_summary, dict) or "material_snapshot_inventory_json" not in payload_summary:
+        return None
+    inventory = payload_summary.get("material_snapshot_inventory_json")
     if not isinstance(inventory, list):
-        raise Layer3ApsHandoffError(
-            "canonical_internal package is missing selection_and_source_summary.material_snapshot_inventory_json"
-        )
+        raise Layer3ApsHandoffError(f"canonical_internal package {CANONICAL_INVENTORY_PATH} must be a list")
     return [dict(item) for item in inventory if isinstance(item, dict)]
+
+
+def _canonical_inventory_or_raise(canonical_payload: dict[str, Any]) -> list[dict[str, Any]]:
+    inventory = _canonical_inventory_or_none(canonical_payload)
+    if inventory is None:
+        raise Layer3ApsHandoffError(CANONICAL_INVENTORY_MISSING_MESSAGE)
+    return inventory
 
 
 def _workbench_package_source_gate(canonical_payload: dict[str, Any]) -> bool:
@@ -276,14 +282,14 @@ def _selected_aps_targets_for_session_or_raise(
     session_id: str,
     canonical_payload: dict[str, Any],
 ) -> tuple[str, list[dict[str, str]]]:
-    try:
+    canonical_inventory = _canonical_inventory_or_none(canonical_payload)
+    if canonical_inventory is not None:
         return _selected_aps_targets_from_inventory_or_raise(
-            _canonical_inventory_or_raise(canonical_payload),
+            canonical_inventory,
             authority_label="canonical_internal package",
         )
-    except Layer3ApsHandoffError:
-        if not _workbench_package_source_gate(canonical_payload):
-            raise
+    if not _workbench_package_source_gate(canonical_payload):
+        raise Layer3ApsHandoffError(CANONICAL_INVENTORY_MISSING_MESSAGE)
     return _selected_aps_targets_from_inventory_or_raise(
         _workbench_snapshot_inventory_or_raise(db, session_id=session_id),
         authority_label="workbench material snapshot inventory",
