@@ -99,7 +99,7 @@
     "latest_planning_merge_commit": "09e2b28aa4c9ba9ebc2ba4cf1a5cd495cba63519",
     "latest_aps_handoff_dispatch_planning_merge_commit": "09e2b28aa4c9ba9ebc2ba4cf1a5cd495cba63519",
     "latest_aps_handoff_dispatch_ui_planning_branch": "codex/l3-aps-dispatch-ui-freeze",
-    "latest_aps_handoff_dispatch_ui_planning_pr": "",
+    "latest_aps_handoff_dispatch_ui_planning_pr": "#265",
     "latest_aps_handoff_dispatch_ui_planning_base_commit": "28f1dbd9edbdd5fa833556366cc884c422ec2a56",
     "latest_aps_handoff_dispatch_ui_planning_live_behavior_change": false,
     "latest_aps_handoff_dispatch_ui_planning_summary": "Docs 60/61 freeze only the future rendered /review/layer3 APS dispatch readiness/submit/read-only recorded-state UI boundary over the already-live backend/API APS dispatch endpoint. They admit no UI behavior by themselves and no backend, export, connector, destination, package mutation, schema/runtime/source, or full mockup widening."
@@ -1358,7 +1358,7 @@
     "validation": [
       "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null -> passed",
       "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null -> passed",
-      "manifest/proof declared repo-path and state vocabulary audit -> passed; 144 declared repo-path entries checked, 0 missing, 35 workbench records, 18 planning-only, 17 live bounded, no missing state_model or state_visual entries",
+      "manifest/proof declared repo-path and state vocabulary audit -> passed; declared repo-path entries checked with 0 missing, 35 workbench records, 18 planning-only, 17 live bounded, and no missing state_model or state_visual entries",
       "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k aps_handoff_dispatch -> 6 passed, 38 deselected, 3 warnings",
       "git diff --check -> passed; line-ending warnings only"
     ]

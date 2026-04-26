@@ -1073,7 +1073,9 @@
     {
       "slice_id": "workbench-aps-handoff-dispatch-ui-freeze",
       "main_state": "planning_only_aps_handoff_dispatch_ui_freeze",
-      "key_prs": [],
+      "key_prs": [
+        265
+      ],
       "base_commit": "28f1dbd9",
       "source_branch": "codex/l3-aps-dispatch-ui-freeze",
       "governing_docs": [
@@ -2767,7 +2769,8 @@
       260,
       261,
       263,
-      264
+      264,
+      265
     ],
     "repo_paths": [
       "docs/nrc_adams/nrc_aps_status_handoff.md",
