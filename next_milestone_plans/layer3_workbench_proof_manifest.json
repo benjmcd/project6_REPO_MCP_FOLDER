@@ -1,15 +1,15 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, merged read-only package-review preview implementation from PR #235, planning-only package-construction governance in docs 50/51, and bounded package-construction commit implementation from PR #238, plus merged PR #241 planning-only package-review submit/decision governance in docs 52/53",
+  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, merged read-only package-review preview implementation from PR #235, planning-only package-construction governance in docs 50/51, and bounded package-construction commit implementation from PR #238, plus merged PR #241 planning-only package-review submit/decision governance in docs 52/53; branch-only bounded package-review submit implementation candidate on codex/l3-package-review-submit-impl",
   "scope": {
-    "source_branch": "codex/l3-package-review-submit-postmerge",
-    "merged_pr": "#241",
-    "merge_commit": "901256549a7023cd64a3a15609914bab150f91e3",
+    "source_branch": "codex/l3-package-review-submit-impl",
+    "merged_pr": "none yet for branch-only submit implementation",
+    "merge_commit": "none yet for branch-only submit implementation",
     "base_remote": "project6-origin/main",
-    "base_commit": "90125654",
-    "source_base_commit": "901256549a7023cd64a3a15609914bab150f91e3",
-    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, and PR #238 bounded package-construction commit implementation. It also tracks PR #241 docs 52/53 as planning-only package-review submit/decision governance after PR #238.",
+    "base_commit": "63688c43",
+    "source_base_commit": "63688c43bd862080e9ca1e4fd81787565f342db6",
+    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, and PR #238 bounded package-construction commit implementation. It also tracks PR #241 docs 52/53 as planning-only package-review submit/decision governance after PR #238. This branch adds the bounded package-review submit implementation candidate governed by docs 52/53.",
     "live_behavior_change": true,
     "live_behavior_change_summary": "PR #238 adds bounded package construction: POST /api/v1/layer3/package/review/commit validates one approved selected-pass result review plus matching package-review preview hash, then creates exactly one L3ReconciliationRecord, three L3OutputPackage rows, and three payload files. It does not add package-review submit/decision state, handoff/export, rerun/recovery, runtime DB/schema widening, source expansion, qualitative/hybrid/RAG/vector execution, local upload/directory ingestion, new UI code or package-creation controls, or full mockup activation. The existing /review/layer3 package-preview panel reflects the new API state by no longer listing package commit as disabled.",
     "latest_implementation_pr": "#238",
@@ -52,7 +52,11 @@
     "latest_package_review_submit_planning_summary": "PR #241 lands docs 52/53 as the bounded package-review submit/decision planning boundary after PR #238 package construction. It does not make package-review submit live by itself and does not admit handoff/export, package payload mutation, package reconstruction, additional package/reconciliation/artifact rows, source/schema/runtime widening, or full mockup activation.",
     "latest_package_review_submit_planning_live_behavior_change": false,
     "latest_package_review_submit_planning_pr": "#241",
-    "latest_package_review_submit_planning_merge_commit": "901256549a7023cd64a3a15609914bab150f91e3"
+    "latest_package_review_submit_planning_merge_commit": "901256549a7023cd64a3a15609914bab150f91e3",
+    "latest_package_review_submit_implementation_branch": "codex/l3-package-review-submit-impl",
+    "latest_package_review_submit_implementation_pr": "pending",
+    "latest_package_review_submit_implementation_live_behavior_change": true,
+    "latest_package_review_submit_implementation_summary": "Branch-only backend candidate: POST /api/v1/layer3/package/review/submit records one operator package-review decision over an already constructed package set, persists only existing JSON-bearing state, leaves package rows/payload refs/hashes unchanged, and keeps handoff/export disabled."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -150,7 +154,9 @@
       "package-construction freeze/API-state contract from docs 50/51 governs the PR #238 bounded construction commit implementation; by itself it does not add package-review submit/decision state or handoff/export behavior",
       "package-review submit/decision governance from docs 52/53 is planning-only and not live endpoint behavior"
     ],
-    "branch_only_candidate": [],
+    "branch_only_candidate": [
+      "codex/l3-package-review-submit-impl: bounded backend package-review submit endpoint candidate; records one decision in existing JSON state after verifying constructed package ids/hashes; not current-main live until merged."
+    ],
     "still_forbidden_after_pr_227": [
       "package-review submit/commit and package construction",
       "handoff/export",
@@ -278,6 +284,13 @@
       "schema/runtime/source widening",
       "qualitative/hybrid/RAG/vector execution",
       "full mockup activation"
+    ],
+    "branch_only_bounded_scope": [
+      "POST /api/v1/layer3/package/review/submit backend endpoint candidate",
+      "one operator decision over an already constructed package set",
+      "existing JSON-bearing persistence only: L3ReconciliationRecord.summary_json and L3Session.summary_json",
+      "server verification of output_package_ids and payload_hashes before recording",
+      "no package row or package payload mutation; no handoff/export enablement"
     ]
   },
   "readiness_gates": [
@@ -375,6 +388,11 @@
       "gate_id": "package-review-submit-freeze",
       "decision": "The next eligible post-construction planning boundary may define one operator package-review decision over an already constructed package set only; package payload mutation, reconstruction, handoff/export, source/schema/runtime widening, and full mockup activation remain unavailable until separately frozen.",
       "status": "introduced_by_docs_52_53_as_planning_only_governance"
+    },
+    {
+      "gate_id": "package-review-submit-implementation",
+      "decision": "Branch codex/l3-package-review-submit-impl implements the docs 52/53 backend submit candidate only: one operator decision over an already constructed package set, persisted in existing JSON state, with package ids/hashes verified and handoff/export still unavailable.",
+      "status": "branch_only_candidate_pending_pr_merge"
     }
   ],
   "validation_commands": [
@@ -485,9 +503,21 @@
     {
       "command": "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest $tests -q",
       "purpose": "Verify the complete focused Layer 3 backend/page/service family after docs 52/53 package-review submit planning packet; passed with 133 passed, 3 warnings."
+    },
+    {
+      "command": "python -m pytest backend\\tests\\test_layer3_api.py -q",
+      "purpose": "Verify package-review submit API success, idempotency, fail-closed prechecks, no package mutation, and preserved handoff/export locks; passed with 29 passed, 3 warnings."
+    },
+    {
+      "command": "python -m pytest backend\\tests\\test_layer3_package_entry.py -q",
+      "purpose": "Verify package-entry helper behavior remains compatible after exposing package-review submit as the next backend step; passed with 4 passed."
+    },
+    {
+      "command": "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest $tests -q",
+      "purpose": "Verify complete focused Layer 3 backend/page/service family after branch-only package-review submit implementation; passed with 135 passed, 3 warnings."
     }
   ],
-  "browser_proof_rule": "PR #238 adds no new UI code or package-creation control, but the existing /review/layer3 package-preview panel reflects the backend state change by no longer listing package commit as disabled. Coverage for that rendered-state update is the chromium Playwright e2e check; headed and headless Chrome remain required for any later direct UI implementation changes. Docs 52/53 are planning-only and change no rendered UI behavior; headed/headless browser proof is required for any later direct package-review submit UI implementation.",
+  "browser_proof_rule": "The package-review submit implementation candidate changes backend API/state behavior only and does not change rendered /review/layer3 UI behavior, so local browser proof was not required for this branch. Headed and headless Chrome remain required for any later rendered package-review submit UI controls or other UI changes.",
   "no_go_scan_terms": [
     "package review is live",
     "handoff is live",
@@ -718,5 +748,33 @@
     ],
     "pr": "#241",
     "merge_commit": "901256549a7023cd64a3a15609914bab150f91e3"
+  },
+  "package_review_submit_impl_proof": {
+    "implementation_branch": "codex/l3-package-review-submit-impl",
+    "base_commit": "63688c43",
+    "base_source": "project6-origin/main after merged PR #242 docs/progress sync",
+    "scope": "Backend API/state only: add POST /api/v1/layer3/package/review/submit plus readiness/session state for one operator decision over an already constructed package set.",
+    "commands": [
+      "python -m pytest backend\\tests\\test_layer3_api.py -q -> 29 passed, 3 warnings",
+      "python -m pytest backend\\tests\\test_layer3_package_entry.py -q -> 4 passed",
+      "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest $tests -q -> 135 passed, 3 warnings"
+    ],
+    "write_set_proof": "Backend tests assert submit leaves L3OutputPackage rows and package payload refs/hashes unchanged, creates no additional package/reconciliation/artifact rows, records one decision object in reconciliation/session summary JSON, replays identical submits idempotently, and rejects conflicting submits.",
+    "browser_proof": "Not run locally because this branch changes backend API/state behavior only and does not change rendered /review/layer3 UI behavior.",
+    "no_go_preserved": [
+      "handoff/export",
+      "package payload mutation",
+      "package reconstruction or rebuild/amendment",
+      "additional package/reconciliation/artifact rows",
+      "L3OutputPackage.status mutation by default",
+      "result-review amendment or supersession",
+      "source/schema/runtime widening",
+      "local upload/directory ingestion",
+      "rendered UI changes",
+      "qualitative/hybrid/RAG/vector execution",
+      "full mockup activation"
+    ],
+    "pr": "pending",
+    "merge_commit": "none yet"
   }
 }
