@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, package-review preview/construction/submit and rendered package-review UI proof, PR #250 handoff/export preparation governance in docs 54/55, PR #251 bounded backend/API handoff-export prepare-only implementation, and PR #252 blocker-alignment/session-summary hardening proof",
+  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, package-review preview/construction/submit and rendered package-review UI proof, PR #250 handoff/export preparation governance in docs 54/55, PR #251 bounded backend/API handoff-export prepare-only implementation, PR #252 blocker-alignment/session-summary hardening proof, PR #253 docs/progress sync, PR #254 manifest seed-checkout fix, and docs 56/57 planning-only handoff/export prepare UI freeze packet",
   "scope": {
     "source_branch": "codex/l3-handoff-export-freeze",
     "merged_pr": "#250",
@@ -9,7 +9,7 @@
     "base_remote": "project6-origin/main",
     "base_commit": "ec58ac80",
     "source_base_commit": "ec58ac80ab5033f8a815195bdf9f44f41e42d532",
-    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, the merged PR #245 bounded rendered package-review UI implementation, and PR #247 post-review fallback hardening for submit readiness after a failed post-commit session refresh. PR #250 adds planning-only docs 54/55 for handoff/export preparation governance after package-review approval; PR #251 implements only the bounded backend/API prepare-only endpoint; PR #252 aligns downstream blocker vocabulary and session-summary priority without widening behavior.",
+    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, the merged PR #245 bounded rendered package-review UI implementation, and PR #247 post-review fallback hardening for submit readiness after a failed post-commit session refresh. PR #250 adds planning-only docs 54/55 for handoff/export preparation governance after package-review approval; PR #251 implements only the bounded backend/API prepare-only endpoint; PR #252 aligns downstream blocker vocabulary and session-summary priority without widening behavior. PR #253 synchronizes docs/progress after PR #251/#252 reached main; PR #254 fixes the manifest seed-checkout reference. Docs 56/57 freeze the next rendered /review/layer3 handoff/export prepare-only UI boundary over the already-live backend endpoint, but do not make rendered UI controls live by themselves.",
     "live_behavior_change": true,
     "live_behavior_change_summary": "PR #251 adds the bounded backend/API handoff-export prepare-only endpoint after PR #250 docs 54/55 governance and package_review_approved authority. It records only reference-envelope state in existing JSON-bearing workbench surfaces and does not create UI controls, APS handoff, external export, downstream dispatch, physical artifacts, AnalysisArtifact rows, package mutation/reconstruction, schema/runtime/source widening, or qualitative/hybrid/RAG/vector/full mockup behavior. PR #252 hardens only downstream blocker vocabulary and session-summary blocker priority.",
     "latest_implementation_pr": "#251",
@@ -24,7 +24,7 @@
     "latest_planning_base_commit": "ec58ac80ab5033f8a815195bdf9f44f41e42d532",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
-    "latest_branch_only_implementation_summary": "No active branch-only implementation remains in this proof snapshot after PR #251 and PR #252 merged. PR #251 is current-main bounded backend/API handoff-export prepare-only behavior; PR #252 is blocker/session-summary hardening only. Both keep UI activation, APS handoff, external export, downstream dispatch, package mutation/rebuild, source/schema/runtime widening, and full mockup activation out.",
+    "latest_branch_only_implementation_summary": "No active branch-only implementation remains in this proof snapshot after PR #251 and PR #252 merged. Docs 56/57 are a planning-only UI freeze packet, not branch-only implementation. PR #251 is current-main bounded backend/API handoff-export prepare-only behavior; PR #252 is blocker/session-summary hardening only. Both keep UI activation, APS handoff, external export, downstream dispatch, package mutation/rebuild, source/schema/runtime widening, and full mockup activation out.",
     "latest_ui_planning_pr": "#230",
     "latest_ui_planning_branch": "codex/l3-result-review-ui-freeze",
     "latest_ui_planning_summary": "PR #230 adds docs 46/47 to freeze the /review/layer3 result-review presentation/control boundary over existing backend selected-pass result/status and result-review state; by itself it does not make UI behavior live.",
@@ -75,7 +75,16 @@
     "latest_handoff_export_hardening_pr": "#252",
     "latest_handoff_export_hardening_branch": "codex/l3-export-review-fix",
     "latest_handoff_export_hardening_merge_commit": "7747ec374ab9e1ac9ba501794b3ba13a005865d9",
-    "latest_handoff_export_hardening_summary": "PR #252 resolves post-PR251 review comments by aligning approved package-review downstream blocker vocabulary with the handoff/export prepare state model and deriving session-summary blockers from the active package sub-state. It does not add new routes, rows, artifacts, dispatch behavior, or UI activation."
+    "latest_handoff_export_hardening_summary": "PR #252 resolves post-PR251 review comments by aligning approved package-review downstream blocker vocabulary with the handoff/export prepare state model and deriving session-summary blockers from the active package sub-state. It does not add new routes, rows, artifacts, dispatch behavior, or UI activation.",
+    "latest_docs_progress_sync_pr": "#253",
+    "latest_docs_progress_sync_merge_commit": "f70ab1341da6ff5530dc3df711bf3f74ed47db83",
+    "latest_manifest_seed_checkout_fix_pr": "#254",
+    "latest_manifest_seed_checkout_fix_merge_commit": "a5a3c2bcd67fd184de3afbf5f5f1ff4b371817cd",
+    "latest_handoff_export_ui_planning_branch": "codex/l3-handoff-prepare-ui",
+    "latest_handoff_export_ui_planning_pr": "",
+    "latest_handoff_export_ui_planning_base_commit": "a5a3c2bcd67fd184de3afbf5f5f1ff4b371817cd",
+    "latest_handoff_export_ui_planning_live_behavior_change": false,
+    "latest_handoff_export_ui_planning_summary": "Docs 56/57 freeze only the future rendered /review/layer3 prepare-only UI controls over the existing POST /api/v1/layer3/handoff/export/prepare backend authority. They admit no UI behavior by themselves, no APS handoff, no external export/download/dispatch, no physical export artifact, no AnalysisArtifact, no package mutation/reconstruction, no schema/runtime/source widening, no execution selection/start UI expansion, and no full mockup activation."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -115,7 +124,9 @@
     "backend/tests/test_layer3_page.py",
     "e2e/layer3-workbench.spec.js",
     "next_milestone_plans/Layer3_planning_docs/54_L3_WB_HANDOFF_EXPORT_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/55_L3_WB_HANDOFF_EXPORT_API_AND_STATE_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/55_L3_WB_HANDOFF_EXPORT_API_AND_STATE_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/56_L3_WB_HANDOFF_EXPORT_UI_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/57_L3_WB_HANDOFF_EXPORT_UI_STATE_CONTRACT.md"
   ],
   "current_live_workbench_boundary": {
     "live_bounded": [
@@ -172,7 +183,8 @@
       "APS handoff, external export, and downstream dispatch after package-review submit approval until separately frozen",
       "package reconstruction or rebuild/amendment after package-review submit changes_requested until separately frozen",
       "handoff/export preparation or external dispatch by package-review approval alone",
-      "APS handoff, external export, physical export artifact creation, or downstream dispatch from docs 54/55 by themselves"
+      "APS handoff, external export, physical export artifact creation, or downstream dispatch from docs 54/55 by themselves",
+      "rendered handoff/export preparation controls from docs 56/57 by themselves"
     ],
     "planning_only": [
       "analysis-execution-start freeze/API-state contract from PR #217 remains the governing scope contract for the PR #218 bounded implementation",
@@ -182,7 +194,8 @@
       "package-review preview freeze/API-state contract from docs 48/49 governs only a read-only package-review readiness/preview step after approved selected-pass result review; by itself it does not add package review, package construction, package rows, package payloads, or handoff/export behavior",
       "package-construction freeze/API-state contract from docs 50/51 governs the PR #238 bounded construction commit implementation; by itself it does not add package-review submit/decision state or handoff/export behavior",
       "package-review submit/decision governance from docs 52/53 is planning-only by itself; PR #243 is the separate current-main backend submit implementation",
-      "handoff/export preparation freeze/API-state contract from docs 54/55 is planning-only by itself; PR #251 is the separate current-main backend/API prepare-only implementation and PR #252 is blocker-alignment/session-summary hardening"
+      "handoff/export preparation freeze/API-state contract from docs 54/55 is planning-only by itself; PR #251 is the separate current-main backend/API prepare-only implementation and PR #252 is blocker-alignment/session-summary hardening",
+      "handoff/export prepare UI freeze/state contract from docs 56/57 governs only a future rendered /review/layer3 prepare-only control over the existing backend endpoint; by itself it does not add rendered UI behavior, APS handoff, external export/download/dispatch, physical artifacts, AnalysisArtifact rows, package mutation/reconstruction, schema/runtime/source widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector execution, or full mockup activation"
     ],
     "current_main_rendered_package_review_ui": [
       "PR #245 renders bounded package construction commit and package-review submit controls on /review/layer3 over the already-live PR #238 and PR #243 backend endpoints; PR #247 hardens stale session-summary fallback after package commit inside the same UI boundary. They do not admit handoff/export, package payload mutation, package reconstruction, source/schema/runtime widening, or full mockup activation."
@@ -438,6 +451,11 @@
       "gate_id": "handoff-export-preparation-freeze",
       "decision": "The next eligible post-package-review planning boundary may define one internal handoff/export preparation decision and envelope over an approved package-review submit state only; APS dispatch, external export, package mutation/copying, physical artifacts, schema/runtime/source widening, and full mockup activation remain unavailable until separately frozen.",
       "status": "introduced_by_docs_54_55_as_planning_only_governance_in_PR_250"
+    },
+    {
+      "gate_id": "handoff-export-prepare-ui-freeze",
+      "decision": "The next eligible rendered /review/layer3 boundary may expose only a prepare_only handoff/export control after server-confirmed package_review_approved authority and existing backend prepare readiness. The UI must remain server-authoritative, reference-only, and must not expose APS handoff, external export/download/dispatch, physical artifacts, AnalysisArtifact creation, package mutation/reconstruction, source/schema/runtime widening, execution selection/start UI expansion, or full mockup activation.",
+      "status": "introduced_by_docs_56_57_as_planning_only_governance"
     }
   ],
   "validation_commands": [
@@ -990,5 +1008,51 @@
     "implementation_merge_commit": "5814a732e61379ef36f077f89fee5ed6a6b906f6",
     "review_fix_pr": "#252",
     "review_fix_merge_commit": "7747ec374ab9e1ac9ba501794b3ba13a005865d9"
+  },
+  "handoff_export_prepare_ui_planning_proof": {
+    "planning_branch": "codex/l3-handoff-prepare-ui",
+    "base_commit": "a5a3c2bc",
+    "base_source": "project6-origin/main after PR #254 manifest seed-checkout fix",
+    "scope": "Planning-only docs 56/57 handoff/export prepare UI governance over the already-live backend prepare-only endpoint. This packet defines future /review/layer3 presentation/control requirements but makes no backend, rendered UI, schema, package, artifact, APS handoff, external export, or downstream dispatch implementation changes.",
+    "commands": [
+      {
+        "command": "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k handoff_export_prepare",
+        "result": "7 passed, 29 deselected, 3 warnings"
+      },
+      {
+        "command": "python -m pytest .\\backend\\tests\\test_layer3_api.py -q",
+        "result": "36 passed, 3 warnings"
+      },
+      {
+        "command": "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+        "result": "passed"
+      },
+      {
+        "command": "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null; python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+        "result": "passed"
+      },
+      {
+        "command": "manifest/proof consistency audit for docs 56/57, state vocabulary, state visuals, declared paths, and workbench slice counts",
+        "result": "passed; 31 workbench slice records, 15 live bounded slices, 16 planning-only slices"
+      },
+      {
+        "command": "git diff --check",
+        "result": "passed; line-ending warnings only"
+      }
+    ],
+    "no_go_preserved": [
+      "rendered UI activation by docs alone",
+      "APS handoff",
+      "external export/download/dispatch",
+      "physical export artifacts",
+      "AnalysisArtifact rows",
+      "package payload mutation or copying",
+      "package reconstruction or rebuild/amendment",
+      "additional package/reconciliation rows",
+      "source/schema/runtime widening",
+      "execution selection/start UI expansion",
+      "qualitative/hybrid/RAG/vector execution",
+      "full mockup activation"
+    ]
   }
 }
