@@ -23,8 +23,8 @@
     "latest_implementation_merge_commit": "e0101f064cf5ebbdb9983f03723020c99a051274",
     "latest_planning_base_commit": "1d86b282541762c45066376bf62a182bd393c8bb",
     "latest_branch_only_implementation_branch": "codex/l3-submit-ui",
-    "latest_branch_only_implementation_pr": "pending",
-    "latest_branch_only_implementation_summary": "Branch codex/l3-submit-ui is the active branch-local rendered package-review UI candidate. It exposes package construction commit and package-review submit controls over the already-live backend endpoints and keeps handoff/export, package mutation/rebuild, source/schema/runtime widening, and full mockup activation out.",
+    "latest_branch_only_implementation_pr": "#245",
+    "latest_branch_only_implementation_summary": "Draft PR #245 / branch codex/l3-submit-ui is the active branch-local rendered package-review UI candidate. It exposes package construction commit and package-review submit controls over the already-live backend endpoints and keeps handoff/export, package mutation/rebuild, source/schema/runtime widening, and full mockup activation out.",
     "latest_ui_planning_pr": "#230",
     "latest_ui_planning_branch": "codex/l3-result-review-ui-freeze",
     "latest_ui_planning_summary": "PR #230 adds docs 46/47 to freeze the /review/layer3 result-review presentation/control boundary over existing backend selected-pass result/status and result-review state; by itself it does not make UI behavior live.",
@@ -59,7 +59,7 @@
     "latest_package_review_submit_implementation_summary": "PR #243 implements docs 52/53 as backend API/state only: one package-review submit decision over an already constructed, hash-stable package set, persisted in existing JSON-bearing state.",
     "latest_package_review_submit_implementation_merge_commit": "e0101f064cf5ebbdb9983f03723020c99a051274",
     "latest_package_review_submit_ui_branch": "codex/l3-submit-ui",
-    "latest_package_review_submit_ui_summary": "Branch-local rendered /review/layer3 controls for package construction commit and package-review submit over PR #238 and PR #243 backend endpoints; not current-main truth until merged."
+    "latest_package_review_submit_ui_summary": "Draft PR #245 is the branch-local rendered /review/layer3 controls candidate for package construction commit and package-review submit over PR #238 and PR #243 backend endpoints; not current-main truth until merged."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -163,7 +163,7 @@
       "package-review submit/decision governance from docs 52/53 is planning-only by itself; PR #243 is the separate current-main backend submit implementation"
     ],
     "branch_only_candidate": [
-      "codex/l3-submit-ui renders bounded package construction commit and package-review submit controls on /review/layer3 over the already-live PR #238 and PR #243 backend endpoints; it remains branch-local until merged and does not admit handoff/export, package payload mutation, package reconstruction, source/schema/runtime widening, or full mockup activation."
+      "Draft PR #245 / codex/l3-submit-ui renders bounded package construction commit and package-review submit controls on /review/layer3 over the already-live PR #238 and PR #243 backend endpoints; it remains branch-local until merged and does not admit handoff/export, package payload mutation, package reconstruction, source/schema/runtime widening, or full mockup activation."
     ],
     "still_forbidden_after_pr_227": [
       "package-review submit/commit and package construction",
@@ -838,7 +838,7 @@
       "qualitative/hybrid/RAG/vector execution",
       "full mockup activation"
     ],
-    "pr": "pending",
+    "pr": "#245",
     "merge_commit": "pending"
   }
 }
