@@ -551,7 +551,7 @@ test('Layer 3 workbench commits a package set and submits bounded package review
   expect(submit.package_review_submit_enabled).toBe(false);
   expect(submit.handoff_enabled).toBe(false);
   expect(submit.export_enabled).toBe(false);
-  expect(submit.downstream_unavailable).toEqual(['handoff', 'export']);
+  expect(submit.downstream_unavailable).toEqual(['aps_handoff', 'external_export', 'downstream_dispatch']);
   await expectJson(await postSubmitSummaryPromise);
 
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_approved');
