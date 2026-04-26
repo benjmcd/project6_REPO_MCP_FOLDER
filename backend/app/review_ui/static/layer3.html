@@ -160,19 +160,34 @@
                 </form>
             </section>
 
-            <section class="workband package-review-band" aria-labelledby="package-review-preview-heading">
+            <section class="workband package-review-band" aria-labelledby="package-review-heading">
                 <div class="section-heading">
                     <div>
-                        <h2 id="package-review-preview-heading">Package Review Preview</h2>
-                        <span class="status-pill preview">Preview only</span>
+                        <h2 id="package-review-heading">Package Review</h2>
+                        <span class="status-pill preview">Bounded package path</span>
                     </div>
                     <div class="action-row">
                         <button id="package-review-preview-inspect" class="secondary-btn" type="button" disabled>Inspect Package Preview</button>
+                        <button id="package-construction-commit" class="secondary-btn" type="button" disabled>Commit Package Set</button>
                     </div>
                 </div>
-                <div id="package-review-preview-panel" class="result-review-panel">
-                    <div class="empty-panel">No approved selected-pass result review is available.</div>
-                </div>
+                <form id="package-review-submit-form" class="result-review-form">
+                    <div id="package-review-preview-panel" class="result-review-panel">
+                        <div class="empty-panel">No approved selected-pass result review is available.</div>
+                    </div>
+                    <div class="result-review-controls package-review-controls" aria-label="Package review controls">
+                        <label for="package-review-submit-decision">Decision</label>
+                        <select id="package-review-submit-decision" disabled>
+                            <option value="approved">Approved</option>
+                            <option value="changes_requested">Changes requested</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="blocked">Blocked</option>
+                        </select>
+                        <label for="package-review-submit-notes">Notes</label>
+                        <textarea id="package-review-submit-notes" rows="3" placeholder="Required for changes requested, rejected, or blocked decisions." disabled></textarea>
+                        <button id="package-review-submit" class="primary-btn" type="submit" disabled>Submit Package Review</button>
+                    </div>
+                </form>
             </section>
         </section>
 
