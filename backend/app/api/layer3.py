@@ -131,6 +131,14 @@ def post_package_review_submit(
     return _json_or_error(lambda: layer3_workbench.package_review_submit(db, payload))
 
 
+@router.post("/handoff/export/prepare", response_model=None)
+def post_handoff_export_prepare(
+    payload: dict[str, Any],
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.handoff_export_prepare(db, payload))
+
+
 @router.get("/session/{session_id}", response_model=None)
 def get_session_summary(session_id: str, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.session_summary(db, session_id))
