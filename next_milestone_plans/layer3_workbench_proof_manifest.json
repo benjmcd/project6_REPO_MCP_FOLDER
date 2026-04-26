@@ -1,20 +1,20 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, merged read-only package-review preview implementation from PR #235, planning-only package-construction governance in docs 50/51, bounded package-construction commit implementation from PR #238, merged PR #241 planning-only package-review submit/decision governance in docs 52/53, merged PR #243 bounded backend package-review submit implementation, and merged PR #245 bounded rendered package-review UI proof",
+  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, merged read-only package-review preview implementation from PR #235, planning-only package-construction governance in docs 50/51, bounded package-construction commit implementation from PR #238, merged PR #241 planning-only package-review submit/decision governance in docs 52/53, merged PR #243 bounded backend package-review submit implementation, and merged PR #245 bounded rendered package-review UI proof plus PR #247 post-review fallback hardening proof",
   "scope": {
-    "source_branch": "codex/l3-submit-ui",
-    "merged_pr": "#245",
-    "merge_commit": "1dd6de668f9ac2fe7be3ffd0234290e33f56ce5d",
+    "source_branch": "codex/l3-submit-ui; codex/l3-pr245-review-fix",
+    "merged_pr": "#247",
+    "merge_commit": "6d82c634c6d721adc324d4bf9c9087a83935db18",
     "base_remote": "project6-origin/main",
-    "base_commit": "4c059f99",
-    "source_base_commit": "4c059f996cd60bccd183fd0d087bfe3ff0ccd665",
-    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, and the merged PR #245 bounded rendered package-review UI implementation.",
+    "base_commit": "1dd6de66",
+    "source_base_commit": "1dd6de668f9ac2fe7be3ffd0234290e33f56ce5d",
+    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, the merged PR #245 bounded rendered package-review UI implementation, and PR #247 post-review fallback hardening for submit readiness after a failed post-commit session refresh.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "PR #245 adds rendered package-review controls to /review/layer3 on current main over existing backend authority: POST /api/v1/layer3/package/review/commit for bounded package construction and POST /api/v1/layer3/package/review/submit for one package-review decision. It does not mutate package rows or payload refs/hashes beyond the existing package-construction contract, create additional package/reconciliation/artifact rows beyond the existing backend commit/submit contracts, enable handoff/export, widen runtime DB/schema/source scope, or activate qualitative/hybrid/RAG/vector/full mockup behavior.",
+    "live_behavior_change_summary": "PR #245 adds rendered package-review controls to /review/layer3 on current main over existing backend authority: POST /api/v1/layer3/package/review/commit for bounded package construction and POST /api/v1/layer3/package/review/submit for one package-review decision. It does not mutate package rows or payload refs/hashes beyond the existing package-construction contract, create additional package/reconciliation/artifact rows beyond the existing backend commit/submit contracts, enable handoff/export, widen runtime DB/schema/source scope, or activate qualitative/hybrid/RAG/vector/full mockup behavior. PR #247 hardens only the already-admitted rendered UI readiness path by preferring fresh package-construction state after commit when the post-commit session-summary refresh fails; it adds no new endpoint, package row, payload mutation, handoff/export, source/schema/runtime widening, or full mockup activation.",
     "latest_implementation_pr": "#243",
     "latest_implementation_branch": "codex/l3-package-review-submit-impl",
-    "latest_implementation_summary": "PR #243 adds the bounded backend package-review submit endpoint/state after PR #238 package construction and docs 52/53 governance, while by itself preserving rendered UI, handoff/export, package mutation/rebuild, source/schema/runtime, and full-mockup no-go boundaries; PR #245 separately renders the bounded UI controls.",
+    "latest_implementation_summary": "PR #243 adds the bounded backend package-review submit endpoint/state after PR #238 package construction and docs 52/53 governance, while by itself preserving rendered UI, handoff/export, package mutation/rebuild, source/schema/runtime, and full-mockup no-go boundaries; PR #245 separately renders the bounded UI controls and PR #247 hardens stale session-summary fallback after package commit.",
     "latest_planning_pr": "#241",
     "latest_planning_branch": "codex/l3-package-review-submit-freeze",
     "latest_planning_summary": "PR #241 lands docs 52/53 as planning-only governance for package-review submit/decision after PR #238 package construction; by themselves they do not implement a package-review submit endpoint or handoff/export behavior.",
@@ -24,7 +24,7 @@
     "latest_planning_base_commit": "1d86b282541762c45066376bf62a182bd393c8bb",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
-    "latest_branch_only_implementation_summary": "No active branch-only implementation remains in this proof snapshot after PR #245 merged. PR #245 is current-main bounded rendered package-review UI behavior and keeps handoff/export, package mutation/rebuild, source/schema/runtime widening, and full mockup activation out.",
+    "latest_branch_only_implementation_summary": "No active branch-only implementation remains in this proof snapshot after PR #245 and PR #247 merged. PR #245 is current-main bounded rendered package-review UI behavior; PR #247 is fallback hardening only. Both keep handoff/export, package mutation/rebuild, source/schema/runtime widening, and full mockup activation out.",
     "latest_ui_planning_pr": "#230",
     "latest_ui_planning_branch": "codex/l3-result-review-ui-freeze",
     "latest_ui_planning_summary": "PR #230 adds docs 46/47 to freeze the /review/layer3 result-review presentation/control boundary over existing backend selected-pass result/status and result-review state; by itself it does not make UI behavior live.",
@@ -58,8 +58,11 @@
     "latest_package_review_submit_implementation_live_behavior_change": true,
     "latest_package_review_submit_implementation_summary": "PR #243 implements docs 52/53 as backend API/state only: one package-review submit decision over an already constructed, hash-stable package set, persisted in existing JSON-bearing state.",
     "latest_package_review_submit_implementation_merge_commit": "e0101f064cf5ebbdb9983f03723020c99a051274",
-    "latest_package_review_submit_ui_branch": "codex/l3-submit-ui",
-    "latest_package_review_submit_ui_summary": "PR #245 is the current-main bounded rendered /review/layer3 controls implementation for package construction commit and package-review submit over PR #238 and PR #243 backend endpoints."
+    "latest_package_review_submit_ui_branch": "codex/l3-submit-ui; codex/l3-pr245-review-fix",
+    "latest_package_review_submit_ui_summary": "PR #245 is the current-main bounded rendered /review/layer3 controls implementation for package construction commit and package-review submit over PR #238 and PR #243 backend endpoints. PR #247 hardens the same UI boundary so submit readiness is not blocked by stale session-summary fallback after a valid package commit.",
+    "latest_package_review_submit_ui_hardening_pr": "#247",
+    "latest_package_review_submit_ui_hardening_branch": "codex/l3-pr245-review-fix",
+    "latest_package_review_submit_ui_hardening_merge_commit": "6d82c634c6d721adc324d4bf9c9087a83935db18"
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -163,7 +166,7 @@
       "package-review submit/decision governance from docs 52/53 is planning-only by itself; PR #243 is the separate current-main backend submit implementation"
     ],
     "current_main_rendered_package_review_ui": [
-      "PR #245 renders bounded package construction commit and package-review submit controls on /review/layer3 over the already-live PR #238 and PR #243 backend endpoints; it does not admit handoff/export, package payload mutation, package reconstruction, source/schema/runtime widening, or full mockup activation."
+      "PR #245 renders bounded package construction commit and package-review submit controls on /review/layer3 over the already-live PR #238 and PR #243 backend endpoints; PR #247 hardens stale session-summary fallback after package commit inside the same UI boundary. They do not admit handoff/export, package payload mutation, package reconstruction, source/schema/runtime widening, or full mockup activation."
     ],
     "branch_only_candidate": [],
     "still_forbidden_after_pr_227": [
@@ -296,9 +299,9 @@
       "qualitative/hybrid/RAG/vector execution",
       "full mockup activation"
     ],
-    "branch_only_bounded_scope": "No active branch-only rendered package-review UI candidate remains after PR #245 merged",
+    "branch_only_bounded_scope": "No active branch-only rendered package-review UI candidate remains after PR #245 and PR #247 merged",
     "still_forbidden_after_package_review_submit_impl": [
-      "handoff/export activation after PR #245 rendered package-review controls",
+      "handoff/export activation after PR #245/#247 rendered package-review controls",
       "handoff/export",
       "package payload mutation",
       "package reconstruction or rebuild/amendment",
@@ -552,7 +555,7 @@
       "purpose": "Verify headed Chromium package preview, construction commit, and submit flow through the rendered UI without exposing handoff/export controls."
     }
   ],
-  "browser_proof_rule": "PR #245 changes rendered /review/layer3 behavior on current main, so headed and headless Chrome proof are required for the landed UI scope. Headless Playwright must cover the package preview -> package construction commit -> package-review submit flow, and headed Chrome proof must confirm the rendered controls without Create Package/Export controls.",
+  "browser_proof_rule": "PR #245 changes rendered /review/layer3 behavior on current main, and PR #247 hardens the same rendered behavior after review feedback, so headed and headless Chrome proof are required for the landed UI scope. Headless Playwright must cover the package preview -> package construction commit -> package-review submit flow, and headed Chrome proof must confirm the rendered controls without Create Package/Export controls.",
   "no_go_scan_terms": [
     "package review is live",
     "handoff is live",
@@ -818,13 +821,14 @@
     "implementation_branch": "codex/l3-submit-ui",
     "base_commit": "4c059f99",
     "base_source": "project6-origin/main before PR #245, after package-review submit postmerge docs sync",
-    "scope": "Current-main rendered /review/layer3 package-review controls from PR #245 over PR #238 package construction and PR #243 package-review submit endpoints. The UI may inspect package preview, commit the bounded package set, and submit one package-review decision; it must not expose handoff/export or mutate package payloads.",
+    "scope": "Current-main rendered /review/layer3 package-review controls from PR #245 over PR #238 package construction and PR #243 package-review submit endpoints, with PR #247 stale session-summary fallback hardening after package commit. The UI may inspect package preview, commit the bounded package set, and submit one package-review decision; it must not expose handoff/export, mutate package payloads, or expand source/schema/runtime/full-mockup scope.",
     "commands": [
       "node --check .\\backend\\app\\review_ui\\static\\layer3.js -> passed",
       "python -m pytest .\\backend\\tests\\test_layer3_page.py -> 3 passed, 3 warnings",
       "python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"package_construction_commit or package_review_submit\" -> 4 passed, 25 deselected, 3 warnings",
       "$env:PLAYWRIGHT_PYTHON='python'; npx playwright test e2e/layer3-workbench.spec.js --project=chromium -> 5 passed",
-      "$env:PLAYWRIGHT_PYTHON='python'; npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed -> 5 passed"
+      "$env:PLAYWRIGHT_PYTHON='python'; npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed -> 5 passed",
+      "git diff --check -> passed with line-ending warnings only"
     ],
     "browser_proof": "Headless Chromium and headed Chromium both pass the full rendered package flow. Headed Chrome is also launched locally at the branch server URL for manual inspection. Browser-use DOM proof confirmed the package controls are present and Create Package/Export controls are absent.",
     "no_go_preserved": [
@@ -840,6 +844,24 @@
       "full mockup activation"
     ],
     "pr": "#245",
-    "merge_commit": "1dd6de668f9ac2fe7be3ffd0234290e33f56ce5d"
+    "merge_commit": "1dd6de668f9ac2fe7be3ffd0234290e33f56ce5d",
+    "post_review_hardening_pr": "#247",
+    "post_review_hardening_merge_commit": "6d82c634c6d721adc324d4bf9c9087a83935db18",
+    "post_review_hardening_scope": "PR #247 keeps the PR #245 rendered package-review UI boundary and fixes only stale session-summary fallback after package commit; submit readiness may use fresh in-memory package-construction commit state when the post-commit session refresh fails."
+  },
+  "package_review_submit_ui_fallback_hardening_proof": {
+    "implementation_branch": "codex/l3-pr245-review-fix",
+    "base_commit": "1dd6de66",
+    "scope": "Post-PR245 review-feedback fix for rendered package-review submit readiness after package commit when the post-commit session-summary refresh fails. This is not a new slice and does not expand package-review UI scope.",
+    "commands": [
+      "node --check .\\backend\\app\\review_ui\\static\\layer3.js -> passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_page.py -> 3 passed, 3 warnings",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"package_construction_commit or package_review_submit\" -> 4 passed, 25 deselected, 3 warnings",
+      "$env:PLAYWRIGHT_PYTHON='python'; npx playwright test e2e/layer3-workbench.spec.js --project=chromium -> 5 passed",
+      "$env:PLAYWRIGHT_PYTHON='python'; npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed -> 5 passed",
+      "git diff --check -> passed with line-ending warnings only"
+    ],
+    "pr": "#247",
+    "merge_commit": "6d82c634c6d721adc324d4bf9c9087a83935db18"
   }
 }
