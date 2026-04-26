@@ -11,7 +11,7 @@
     "source_base_commit": "608e3a4068d94268f2114e08967482451c8d90af",
     "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, and PR #238 bounded package-construction commit implementation.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "PR #238 adds bounded package construction: POST /api/v1/layer3/package/review/commit validates one approved selected-pass result review plus matching package-review preview hash, then creates exactly one L3ReconciliationRecord, three L3OutputPackage rows, and three payload files. It does not add package-review submit/decision state, handoff/export, rerun/recovery, runtime DB/schema widening, source expansion, qualitative/hybrid/RAG/vector execution, local upload/directory ingestion, rendered UI changes, or full mockup activation.",
+    "live_behavior_change_summary": "PR #238 adds bounded package construction: POST /api/v1/layer3/package/review/commit validates one approved selected-pass result review plus matching package-review preview hash, then creates exactly one L3ReconciliationRecord, three L3OutputPackage rows, and three payload files. It does not add package-review submit/decision state, handoff/export, rerun/recovery, runtime DB/schema widening, source expansion, qualitative/hybrid/RAG/vector execution, local upload/directory ingestion, new UI code or package-creation controls, or full mockup activation. The existing /review/layer3 package-preview panel reflects the new API state by no longer listing package commit as disabled.",
     "latest_implementation_pr": "#238",
     "latest_implementation_branch": "codex/l3-package-construction-impl",
     "latest_implementation_summary": "PR #238 adds the bounded package-construction commit endpoint/state after approved selected-pass result review and matching package-preview hash, while preserving package-review submit/decision, handoff/export, rerun/recovery, source/schema/runtime/full-mockup no-go boundaries.",
@@ -440,7 +440,7 @@
       "purpose": "Validate whitespace/diff hygiene after PR #238 package-construction implementation; passed with CRLF normalization warnings only."
     }
   ],
-  "browser_proof_rule": "Rendered /review/layer3 behavior is not changed by PR #238, so local headed/headless Chrome proof was not required for this backend-only package-construction commit slice. Headed and headless Chrome remain required for any later rendered UI changes.",
+  "browser_proof_rule": "PR #238 adds no new UI code or package-creation control, but the existing /review/layer3 package-preview panel reflects the backend state change by no longer listing package commit as disabled. Coverage for that rendered-state update is the chromium Playwright e2e check; headed and headless Chrome remain required for any later direct UI implementation changes.",
   "no_go_scan_terms": [
     "package review is live",
     "handoff is live",
