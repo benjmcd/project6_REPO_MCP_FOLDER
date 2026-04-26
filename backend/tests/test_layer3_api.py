@@ -25,13 +25,25 @@ from app.db.session import Base
 from app.models.models import (
     AnalysisArtifact,
     AnalysisRun,
+    ConnectorRun,
     L3AnalysisPlan,
     L3OutputPackage,
     L3PassRun,
     L3ReconciliationRecord,
 )
+from app.services.layer3_aps_handoff import PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF
 from app.services import layer3_pass_entry as layer3_pass_entry_module
+from app.services.layer3_session_entry import (
+    SessionEntryRequest,
+    SnapshotMaterial,
+    commit_selection,
+    expand_descriptors,
+    finalize_session,
+    record_retrieval_event,
+)
+from app.services.layer3_typing_entry import materialize_typing_entry
 from main import app
+from test_layer3_aps_handoff import _seed_aps_content_fixture, _seed_timeseries_dataset_version
 from test_layer3_pass_entry import _build_quant_ready_session
 
 
@@ -126,6 +138,118 @@ def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
         "/api/v1/layer3/plan/approve",
         json={
             "client_request_id": "api-execution-selection-approval",
+            "session_id": session_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+        },
+    )
+    assert approval.status_code == 200
+    return session_id, preview_body, approval.json()
+
+
+def _build_aps_handoff_ready_session(db, tmp_path: Path) -> tuple[str, str, str, str]:
+    dataset_version_id = "dv-api-aps-handoff-001"
+    run_id = "run-api-aps-handoff-001"
+    target_id = "target-api-aps-handoff-001"
+    content_id = "content-api-aps-handoff-001"
+    _seed_timeseries_dataset_version(db, tmp_path, dataset_version_id=dataset_version_id)
+    _seed_aps_content_fixture(db, tmp_path, run_id=run_id, target_id=target_id, content_id=content_id)
+
+    request = SessionEntryRequest(
+        manifest_items=[
+            {
+                "source_plane": "plane_a",
+                "descriptor_type": "dataset_version",
+                "selector_payload": {"dataset_version_id": dataset_version_id},
+                "selection_basis": {"selection_id": "sel-api-aps-handoff-quant"},
+                "expansion_reason": "committed_selection",
+            },
+            {
+                "source_plane": "plane_b",
+                "descriptor_type": "aps_content_document",
+                "selector_payload": {"run_id": run_id, "target_id": target_id},
+                "selection_basis": {"selection_id": "sel-api-aps-handoff-doc"},
+                "expansion_reason": "committed_selection",
+            },
+        ],
+        source_plane_hints={"plane_a": ["dataset_version"], "plane_b": ["aps_content_document"]},
+        commit_reason="api-aps-handoff-dispatch-proof",
+        entry_route_context={"entrypoint": "pytest"},
+        operator_context={"operator": "pytest"},
+        summary={"phase": "api_aps_handoff_dispatch"},
+    )
+
+    session, manifest = commit_selection(db, request)
+    descriptors = expand_descriptors(db, session=session, manifest=manifest)
+    record_retrieval_event(
+        db,
+        session=session,
+        descriptor=descriptors[0],
+        outcome="loaded",
+        reason_code="loaded",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape="dataset_version",
+                source_identity={"dataset_version_id": dataset_version_id},
+                source_provenance={
+                    "dataset_id": f"ds-{dataset_version_id}",
+                    "storage_ref": str(tmp_path / "datasets" / f"{dataset_version_id}.csv"),
+                },
+                payload={"dataset_version_id": dataset_version_id},
+                load_summary={"loaded_records": 1, "failed_records": 0},
+            )
+        ],
+        storage_root=tmp_path,
+    )
+    record_retrieval_event(
+        db,
+        session=session,
+        descriptor=descriptors[1],
+        outcome="loaded",
+        reason_code="loaded",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape="aps_content_document",
+                source_identity={"content_id": content_id, "run_id": run_id, "target_id": target_id},
+                source_provenance={"linkage_ref": f"aps/linkage/{content_id}"},
+                payload={"content": "aps qualitative companion"},
+                load_summary={"loaded_records": 1, "failed_records": 0},
+            )
+        ],
+        storage_root=tmp_path,
+    )
+    finalize_session(db, session=session)
+    db.commit()
+    materialize_typing_entry(db, session_id=session.session_id)
+    db.commit()
+    return session.session_id, run_id, target_id, content_id
+
+
+def _approve_aps_handoff_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _, _ = _build_aps_handoff_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-aps-dispatch-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    )
+    assert preview.status_code == 200
+    preview_body = preview.json()
+
+    approval = client.post(
+        "/api/v1/layer3/plan/approve",
+        json={
+            "client_request_id": "api-aps-dispatch-approval",
             "session_id": session_id,
             "preview_id": preview_body["preview_id"],
             "preview_hash": preview_body["preview_hash"],
@@ -404,6 +528,176 @@ def _handoff_export_prepare_payload(
     return payload
 
 
+def _aps_handoff_dispatch_payload(
+    *,
+    request_id: str,
+    session_id: str,
+    preview_body: dict,
+    approval_body: dict,
+    selection_body: dict,
+    start_body: dict,
+    review_body: dict,
+    commit_body: dict,
+    submit_body: dict,
+    prepare_body: dict,
+    decision_notes: str | None = None,
+) -> dict:
+    envelope = prepare_body.get("handoff_export_envelope") or {}
+    payload = {
+        "client_request_id": request_id,
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": selection_body["pass_run_ids"][0],
+        "preview_id": preview_body["preview_id"],
+        "preview_hash": preview_body["preview_hash"],
+        "analysis_run_id": start_body["analysis_run_id"],
+        "result_review_record_ref": review_body["review_record_ref"],
+        "package_review_preview_hash": commit_body["package_review_preview_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": [package["output_package_id"] for package in commit_body["output_packages"]],
+        "package_kinds": commit_body["package_kinds"],
+        "payload_refs": commit_body["payload_refs"],
+        "payload_hashes": commit_body["payload_hashes"],
+        "package_review_submit_record_ref": submit_body["submit_record_ref"],
+        "package_review_state": submit_body["package_review_state"],
+        "prepare_record_ref": prepare_body["prepare_record_ref"],
+        "handoff_export_state": prepare_body["handoff_export_state"],
+        "handoff_export_envelope_ref": envelope.get("envelope_ref"),
+        "handoff_target": "internal_export_envelope",
+        "export_mode": "prepare_only",
+        "aps_handoff_target": "aps_evidence_bundle",
+        "dispatch_mode": "server_side_aps_handoff",
+        "operator_decision": "dispatch_aps_handoff",
+    }
+    if decision_notes is not None:
+        payload["decision_notes"] = decision_notes
+    return payload
+
+
+def _prepare_aps_handoff_dispatch(
+    client: TestClient,
+    tmp_path,
+    *,
+    request_id: str,
+) -> tuple[str, dict, dict, dict, dict, dict, dict, dict, dict, dict, dict]:
+    session_id, preview_body, approval_body = _approve_aps_handoff_plan(client, tmp_path)
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": f"{request_id}-selection",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert selection.status_code == 200
+    selection_body = selection.json()
+    start_body, _status_body, review_body = _start_and_approve_quant_result_review(
+        client,
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        request_id=request_id,
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+    package_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": f"{request_id}-package-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert package_preview.status_code == 200
+    package_preview_body = package_preview.json()
+    package_commit = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": f"{request_id}-package-commit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": package_preview_body["package_review_preview_hash"],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert package_commit.status_code == 200
+    commit_body = package_commit.json()
+    package_submit = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={
+            "client_request_id": f"{request_id}-package-submit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": commit_body["package_review_preview_hash"],
+            "reconciliation_record_id": commit_body["reconciliation_record_id"],
+            "output_package_ids": [package["output_package_id"] for package in commit_body["output_packages"]],
+            "payload_hashes": commit_body["payload_hashes"],
+            "operator_decision": "approved",
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert package_submit.status_code == 200
+    submit_body = package_submit.json()
+    prepare = client.post(
+        "/api/v1/layer3/handoff/export/prepare",
+        json=_handoff_export_prepare_payload(
+            request_id=f"{request_id}-prepare",
+            session_id=session_id,
+            preview_body=preview_body,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=commit_body,
+            submit_body=submit_body,
+        ),
+    )
+    assert prepare.status_code == 200
+    prepare_body = prepare.json()
+    assert prepare_body["handoff_export_state"] == "handoff_export_prepared"
+    return (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        package_preview_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        _aps_handoff_dispatch_payload(
+            request_id=f"{request_id}-aps-dispatch",
+            session_id=session_id,
+            preview_body=preview_body,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+        ),
+    )
+
+
 def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     bootstrap = client.get("/api/v1/layer3/bootstrap")
     assert bootstrap.status_code == 200
@@ -416,6 +710,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap_body["features"]["package_construction_commit"] is True
     assert bootstrap_body["features"]["package_review_submit"] is True
     assert bootstrap_body["features"]["handoff_export_prepare"] is True
+    assert bootstrap_body["features"]["aps_handoff_dispatch"] is True
     assert bootstrap_body["features"]["package_review"] is False
     assert bootstrap_body["features"]["external_export"] is False
     assert bootstrap_body["features"]["dispatch"] is False
@@ -435,6 +730,8 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap_body["execution_readiness"]["package_review_submit_endpoint"] == "/api/v1/layer3/package/review/submit"
     assert bootstrap_body["execution_readiness"]["handoff_export_prepare_admitted"] is True
     assert bootstrap_body["execution_readiness"]["handoff_export_prepare_endpoint"] == "/api/v1/layer3/handoff/export/prepare"
+    assert bootstrap_body["execution_readiness"]["aps_handoff_dispatch_admitted"] is True
+    assert bootstrap_body["execution_readiness"]["aps_handoff_dispatch_endpoint"] == "/api/v1/layer3/handoff/aps/dispatch"
     assert bootstrap_body["execution_readiness"]["package_review_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_handoff_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_export_admitted"] is False
@@ -462,6 +759,8 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["package_review_submit_endpoint"] == "/api/v1/layer3/package/review/submit"
     assert readiness_body["handoff_export_prepare_admitted"] is True
     assert readiness_body["handoff_export_prepare_endpoint"] == "/api/v1/layer3/handoff/export/prepare"
+    assert readiness_body["aps_handoff_dispatch_admitted"] is True
+    assert readiness_body["aps_handoff_dispatch_endpoint"] == "/api/v1/layer3/handoff/aps/dispatch"
     assert readiness_body["package_review_admitted"] is False
     assert readiness_body["external_handoff_admitted"] is False
     assert readiness_body["external_export_admitted"] is False
@@ -475,6 +774,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert "result-status" in readiness_body["implemented_gates"]
     assert "package-review-submit" in readiness_body["implemented_gates"]
     assert "handoff-export-prepare" in readiness_body["implemented_gates"]
+    assert "aps-handoff-dispatch" in readiness_body["implemented_gates"]
     assert "revision-recovery" in readiness_body["deferred_gates"]
     states = {item["state"] for item in readiness_body["state_model"]["states"]}
     assert {
@@ -509,6 +809,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         "handoff_export_held",
         "handoff_export_declined",
         "handoff_export_blocked",
+        "aps_handoff_unavailable",
+        "aps_handoff_ready",
+        "aps_handoff_dispatched",
+        "aps_handoff_blocked",
+        "aps_handoff_conflict",
         "execution_readiness_blocked",
     } <= states
 
@@ -2211,7 +2516,15 @@ def test_layer3_api_handoff_export_prepare_records_reference_envelope_without_si
     assert summary_body["handoff_export_prepare"]["external_handoff_enabled"] is False
     assert summary_body["handoff_export_prepare"]["external_export_enabled"] is False
     assert summary_body["handoff_export_prepare"]["dispatch_enabled"] is False
-    assert summary_body["downstream_unavailable"] == ["aps_handoff", "external_export", "downstream_dispatch"]
+    assert summary_body["aps_handoff_dispatch"]["state"] == "aps_handoff_blocked"
+    assert summary_body["aps_handoff_dispatch"]["available"] is False
+    assert summary_body["downstream_unavailable"] == [
+        "aps_handoff",
+        "external_export",
+        "download",
+        "connector_dispatch",
+        "non_aps_dispatch",
+    ]
 
 
 def test_layer3_api_handoff_export_prepare_requires_package_review_submit(
@@ -2573,6 +2886,530 @@ def test_layer3_api_handoff_export_prepare_records_non_dispatch_decisions(
     summary = client.get(f"/api/v1/layer3/session/{session_id}")
     assert summary.status_code == 200
     assert summary.json()["handoff_export_prepare"]["state"] == expected_state
+
+
+def test_layer3_api_aps_handoff_dispatch_materializes_owner_service_bundle_without_mutating_sources(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        _preview_body,
+        approval_body,
+        selection_body,
+        _start_body,
+        _review_body,
+        _package_preview_body,
+        commit_body,
+        _submit_body,
+        prepare_body,
+        payload,
+    ) = _prepare_aps_handoff_dispatch(client, tmp_path, request_id="api-aps-handoff-dispatch-success")
+
+    def files_under_tmp() -> set[str]:
+        return {str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*") if path.is_file()}
+
+    db = client.layer3_session_factory()
+    try:
+        source_packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage)
+            .filter(L3OutputPackage.output_package_id.in_(payload["output_package_ids"]))
+            .order_by(L3OutputPackage.package_kind.asc())
+            .all()
+        ]
+        counts_before = {
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "aps_packages": db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+    finally:
+        db.close()
+    files_before = files_under_tmp()
+
+    ready_summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert ready_summary.status_code == 200
+    ready_summary_body = ready_summary.json()
+    assert ready_summary_body["handoff_export_prepare"]["state"] == "handoff_export_prepared"
+    assert ready_summary_body["aps_handoff_dispatch"]["state"] == "aps_handoff_ready"
+    assert ready_summary_body["aps_handoff_dispatch"]["available"] is True
+    assert ready_summary_body["downstream_unavailable"] == [
+        "external_export",
+        "download",
+        "connector_dispatch",
+        "non_aps_dispatch",
+    ]
+
+    dispatch = client.post("/api/v1/layer3/handoff/aps/dispatch", json=payload)
+    assert dispatch.status_code == 200, dispatch.json()
+    body = dispatch.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.aps_handoff_dispatch.v1"
+    assert body["status"] == "dispatched"
+    assert body["session_id"] == session_id
+    assert body["analysis_plan_id"] == approval_body["analysis_plan_id"]
+    assert body["pass_run_id"] == selection_body["pass_run_ids"][0]
+    assert body["result_review_record_ref"] == payload["result_review_record_ref"]
+    assert body["package_review_preview_hash"] == commit_body["package_review_preview_hash"]
+    assert body["reconciliation_record_id"] == commit_body["reconciliation_record_id"]
+    assert body["output_package_ids"] == payload["output_package_ids"]
+    assert body["package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert body["payload_refs"] == commit_body["payload_refs"]
+    assert body["payload_hashes"] == commit_body["payload_hashes"]
+    assert body["source_package_refs"] == dict(zip(body["package_kinds"], commit_body["payload_refs"]))
+    assert body["source_package_hashes"] == dict(zip(body["package_kinds"], commit_body["payload_hashes"]))
+    assert body["package_review_submit_record_ref"] == payload["package_review_submit_record_ref"]
+    assert body["package_review_state"] == "package_review_approved"
+    assert body["prepare_record_ref"] == prepare_body["prepare_record_ref"]
+    assert body["handoff_export_state"] == "handoff_export_prepared"
+    assert body["handoff_export_envelope_ref"] == payload["handoff_export_envelope_ref"]
+    assert body["handoff_target"] == "internal_export_envelope"
+    assert body["export_mode"] == "prepare_only"
+    assert body["aps_handoff_target"] == "aps_evidence_bundle"
+    assert body["dispatch_mode"] == "server_side_aps_handoff"
+    assert body["operator_decision"] == "dispatch_aps_handoff"
+    assert body["aps_handoff_state"] == "aps_handoff_dispatched"
+    assert body["aps_output_package_kind"] == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF
+    assert body["aps_bundle_ref"]
+    assert body["aps_bundle_id"]
+    assert body["aps_schema_id"]
+    assert body["external_export_enabled"] is False
+    assert body["download_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["downstream_unavailable"] == [
+        "external_export",
+        "download",
+        "connector_dispatch",
+        "non_aps_dispatch",
+    ]
+    assert body["next_state"] == "aps_handoff_dispatched"
+    for forbidden_key in (
+        "download_url",
+        "connector_run_id",
+        "external_target",
+        "package_payload",
+        "package_variant_content",
+        "rewritten_content",
+    ):
+        assert forbidden_key not in body
+
+    db = client.layer3_session_factory()
+    try:
+        source_packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage)
+            .filter(L3OutputPackage.output_package_id.in_(payload["output_package_ids"]))
+            .order_by(L3OutputPackage.package_kind.asc())
+            .all()
+        ]
+        assert source_packages_after == source_packages_before
+        assert db.query(AnalysisArtifact).count() == counts_before["artifacts"]
+        assert db.query(ConnectorRun).count() == counts_before["connector_runs"]
+        assert db.query(L3ReconciliationRecord).count() == counts_before["reconciliations"]
+        assert db.query(L3OutputPackage).count() == counts_before["packages"] + 1
+        assert (
+            db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .count()
+            == counts_before["aps_packages"] + 1
+        )
+        aps_package = (
+            db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .one()
+        )
+        assert aps_package.output_package_id == body["aps_output_package_id"]
+        assert aps_package.payload_ref == body["aps_bundle_ref"]
+        assert aps_package.payload_hash
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        dispatch_state = reconciliation.summary_json["aps_handoff_dispatch"]
+        assert dispatch_state["aps_handoff_record_ref"] == body["aps_handoff_record_ref"]
+        assert dispatch_state["aps_handoff_state"] == "aps_handoff_dispatched"
+        assert dispatch_state["aps_output_package_id"] == body["aps_output_package_id"]
+    finally:
+        db.close()
+
+    files_after = files_under_tmp()
+    added_files = files_after - files_before
+    assert Path(body["aps_bundle_ref"]).exists()
+    assert str(Path(body["aps_bundle_ref"]).relative_to(tmp_path)) in added_files
+    assert len(added_files) == 1
+
+    replay = client.post("/api/v1/layer3/handoff/aps/dispatch", json=payload)
+    assert replay.status_code == 200
+    replay_body = replay.json()
+    assert replay_body["status"] == "already_dispatched"
+    assert replay_body["aps_handoff_record_ref"] == body["aps_handoff_record_ref"]
+    assert replay_body["aps_output_package_id"] == body["aps_output_package_id"]
+
+    same_basis_new_request = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json={**payload, "client_request_id": "api-aps-handoff-dispatch-success-new-request"},
+    )
+    assert same_basis_new_request.status_code == 409
+    assert same_basis_new_request.json()["error_code"] == "aps_handoff_dispatch_already_recorded"
+
+    conflicting_notes = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json={**payload, "decision_notes": "Changing notes after dispatch must fail closed."},
+    )
+    assert conflicting_notes.status_code == 409
+    assert conflicting_notes.json()["error_code"] == "aps_handoff_dispatch_already_recorded"
+
+    db = client.layer3_session_factory()
+    try:
+        assert (
+            db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .count()
+            == 1
+        )
+    finally:
+        db.close()
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200
+    summary_body = summary.json()
+    assert summary_body["handoff_export_prepare"]["state"] == "handoff_export_prepared"
+    assert summary_body["aps_handoff_dispatch"]["state"] == "aps_handoff_dispatched"
+    assert summary_body["aps_handoff_dispatch"]["available"] is False
+    assert summary_body["aps_handoff_dispatch"]["aps_output_package_id"] == body["aps_output_package_id"]
+    assert summary_body["downstream_unavailable"] == [
+        "external_export",
+        "download",
+        "connector_dispatch",
+        "non_aps_dispatch",
+    ]
+
+
+def test_layer3_api_aps_handoff_dispatch_prechecks_fail_closed(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    missing = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json={"client_request_id": "api-aps-handoff-dispatch-missing", "session_id": "session-only"},
+    )
+    assert missing.status_code == 400
+    assert set(missing.json()["blocked_fields"]) == {
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "operator_decision",
+    }
+
+    (
+        session_id,
+        _preview_body,
+        _approval_body,
+        _selection_body,
+        _start_body,
+        _review_body,
+        _package_preview_body,
+        commit_body,
+        _submit_body,
+        _prepare_body,
+        base_payload,
+    ) = _prepare_aps_handoff_dispatch(client, tmp_path, request_id="api-aps-handoff-dispatch-prechecks")
+
+    cases = [
+        (
+            {**base_payload, "handoff_target": "external_export"},
+            400,
+            "aps_handoff_dispatch_target_not_admitted",
+        ),
+        (
+            {**base_payload, "export_mode": "dispatch"},
+            400,
+            "aps_handoff_dispatch_export_mode_not_admitted",
+        ),
+        (
+            {**base_payload, "aps_handoff_target": "connector_run"},
+            400,
+            "aps_handoff_dispatch_target_family_not_admitted",
+        ),
+        (
+            {**base_payload, "dispatch_mode": "connector_dispatch"},
+            400,
+            "aps_handoff_dispatch_mode_not_admitted",
+        ),
+        (
+            {**base_payload, "operator_decision": "send"},
+            400,
+            "unsupported_aps_handoff_dispatch_decision",
+        ),
+        (
+            {**base_payload, "download_url": "https://example.invalid/bundle.json", "connector_run_id": "run-1"},
+            400,
+            "aps_handoff_dispatch_scope_not_admitted",
+        ),
+        (
+            {**base_payload, "result_review_record_ref": "stale-review-ref"},
+            409,
+            "aps_handoff_dispatch_result_review_mismatch",
+        ),
+        (
+            {**base_payload, "package_review_preview_hash": "stale-package-preview"},
+            409,
+            "aps_handoff_dispatch_preview_mismatch",
+        ),
+        (
+            {**base_payload, "package_review_submit_record_ref": "stale-submit-ref"},
+            409,
+            "aps_handoff_dispatch_submit_ref_mismatch",
+        ),
+        (
+            {**base_payload, "reconciliation_record_id": "stale-reconciliation"},
+            409,
+            "aps_handoff_dispatch_requires_package_construction",
+        ),
+        (
+            {**base_payload, "output_package_ids": ["pkg-stale", *base_payload["output_package_ids"][1:]]},
+            409,
+            "aps_handoff_dispatch_package_ids_mismatch",
+        ),
+        (
+            {**base_payload, "package_kinds": ["canonical_internal"]},
+            409,
+            "aps_handoff_dispatch_package_kinds_mismatch",
+        ),
+        (
+            {**base_payload, "payload_refs": ["stale-ref", *base_payload["payload_refs"][1:]]},
+            409,
+            "aps_handoff_dispatch_payload_refs_mismatch",
+        ),
+        (
+            {**base_payload, "payload_hashes": ["stale-hash", *base_payload["payload_hashes"][1:]]},
+            409,
+            "aps_handoff_dispatch_payload_hashes_mismatch",
+        ),
+        (
+            {**base_payload, "package_review_state": "package_review_blocked"},
+            409,
+            "aps_handoff_dispatch_requires_approved_package_review",
+        ),
+        (
+            {**base_payload, "handoff_export_state": "handoff_export_held"},
+            409,
+            "aps_handoff_dispatch_requires_prepared_handoff_export",
+        ),
+        (
+            {**base_payload, "prepare_record_ref": "stale-prepare-ref"},
+            409,
+            "aps_handoff_dispatch_prepare_ref_mismatch",
+        ),
+        (
+            {**base_payload, "handoff_export_envelope_ref": "stale-envelope-ref"},
+            409,
+            "aps_handoff_dispatch_envelope_ref_mismatch",
+        ),
+    ]
+    for payload, expected_status, expected_error in cases:
+        response = client.post("/api/v1/layer3/handoff/aps/dispatch", json=payload)
+        assert response.status_code == expected_status
+        assert response.json()["error_code"] == expected_error
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        assert "aps_handoff_dispatch" not in reconciliation.summary_json
+        assert (
+            db.query(L3OutputPackage)
+            .filter(
+                L3OutputPackage.session_id == session_id,
+                L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+            )
+            .count()
+            == 0
+        )
+    finally:
+        db.close()
+
+
+def test_layer3_api_aps_handoff_dispatch_requires_prepared_state(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _submit_payload,
+        submit_body,
+    ) = _submit_quant_package_review(client, tmp_path, request_id="api-aps-handoff-dispatch-held")
+    held_prepare = client.post(
+        "/api/v1/layer3/handoff/export/prepare",
+        json=_handoff_export_prepare_payload(
+            request_id="api-aps-handoff-dispatch-held-prepare",
+            session_id=session_id,
+            preview_body=preview_body,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            operator_decision="hold",
+            decision_notes="Hold prepare before APS handoff dispatch.",
+        ),
+    )
+    assert held_prepare.status_code == 200
+    held_prepare_body = held_prepare.json()
+    assert held_prepare_body["handoff_export_state"] == "handoff_export_held"
+    dispatch = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json=_aps_handoff_dispatch_payload(
+            request_id="api-aps-handoff-dispatch-held-dispatch",
+            session_id=session_id,
+            preview_body=preview_body,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body={
+                **held_prepare_body,
+                "handoff_export_envelope": {"envelope_ref": "missing-prepared-envelope"},
+            },
+        ),
+    )
+    assert dispatch.status_code == 409
+    assert dispatch.json()["error_code"] == "aps_handoff_dispatch_requires_prepared_handoff_export"
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200
+    summary_body = summary.json()
+    assert summary_body["handoff_export_prepare"]["state"] == "handoff_export_held"
+    assert summary_body["aps_handoff_dispatch"]["state"] == "aps_handoff_unavailable"
+
+
+def test_layer3_api_aps_handoff_dispatch_blocks_when_owner_service_provenance_missing(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _submit_payload,
+        submit_body,
+    ) = _submit_quant_package_review(client, tmp_path, request_id="api-aps-handoff-dispatch-blocked")
+    prepare = client.post(
+        "/api/v1/layer3/handoff/export/prepare",
+        json=_handoff_export_prepare_payload(
+            request_id="api-aps-handoff-dispatch-blocked-prepare",
+            session_id=session_id,
+            preview_body=preview_body,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=commit_body,
+            submit_body=submit_body,
+        ),
+    )
+    assert prepare.status_code == 200
+    prepare_body = prepare.json()
+    payload = _aps_handoff_dispatch_payload(
+        request_id="api-aps-handoff-dispatch-blocked-dispatch",
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+    )
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+    finally:
+        db.close()
+
+    dispatch = client.post("/api/v1/layer3/handoff/aps/dispatch", json=payload)
+    assert dispatch.status_code == 409
+    assert dispatch.json()["error_code"] == "aps_handoff_dispatch_blocked"
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_before
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        assert "aps_handoff_dispatch" not in reconciliation.summary_json
+        assert (
+            db.query(L3OutputPackage)
+            .filter(
+                L3OutputPackage.session_id == session_id,
+                L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+            )
+            .count()
+            == 0
+        )
+    finally:
+        db.close()
 
 
 def test_layer3_api_package_review_submit_prechecks_fail_closed(

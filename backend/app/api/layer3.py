@@ -139,6 +139,14 @@ def post_handoff_export_prepare(
     return _json_or_error(lambda: layer3_workbench.handoff_export_prepare(db, payload))
 
 
+@router.post("/handoff/aps/dispatch", response_model=None)
+def post_aps_handoff_dispatch(
+    payload: dict[str, Any],
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.aps_handoff_dispatch(db, payload))
+
+
 @router.get("/session/{session_id}", response_model=None)
 def get_session_summary(session_id: str, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.session_summary(db, session_id))
