@@ -425,19 +425,22 @@ test('Layer 3 workbench exposes read-only package-review preview after approved 
   expect(preview.schema_id).toBe('layer3.package_review_preview.v1');
   expect(preview.status).toBe('available');
   expect(preview.package_review_preview_enabled).toBe(true);
+  expect(preview.package_commit_enabled).toBe(true);
   expect(preview.package_review_enabled).toBe(false);
+  expect(preview.package_review_preview_hash).toEqual(expect.any(String));
   expect(preview.candidate_package_kinds.map((item) => item.package_kind)).toEqual([
     'canonical_internal',
     'user_facing',
     'review_facing',
   ]);
-  expect(preview.downstream_unavailable).toEqual(['package_commit', 'package_review_submit', 'handoff', 'export']);
+  expect(preview.downstream_unavailable).toEqual(['package_review_submit', 'handoff', 'export']);
 
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_preview_ready');
   await expect(page.locator('#package-review-preview-panel')).toContainText('canonical_internal');
   await expect(page.locator('#package-review-preview-panel')).toContainText('user_facing');
   await expect(page.locator('#package-review-preview-panel')).toContainText('review_facing');
-  await expect(page.locator('#package-review-preview-panel')).toContainText('package commit');
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package review submit');
+  await expect(page.locator('#package-review-preview-panel')).not.toContainText('package commit');
   await expect(page.locator('#package-review-preview-panel')).toContainText('handoff');
   await expect(page.locator('[data-step="package"]')).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Create Package' })).toHaveCount(0);
