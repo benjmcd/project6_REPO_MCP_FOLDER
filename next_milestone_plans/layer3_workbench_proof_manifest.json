@@ -5,7 +5,7 @@
   "scope": {
     "source_branch": "codex/l3-package-construction-impl",
     "merged_pr": "#238",
-    "merge_commit": "pending until PR #238 merge",
+    "merge_commit": "cafff4d4f5c2f42700231d00a07472dddf8983fc",
     "base_remote": "project6-origin/main",
     "base_commit": "608e3a40",
     "source_base_commit": "608e3a4068d94268f2114e08967482451c8d90af",
@@ -20,7 +20,7 @@
     "latest_planning_summary": "Docs 44/45 add planning-only governance for the bounded selected-pass result-review decision after PR #222 result/status authority; by themselves they do not implement a result-review endpoint or package/handoff behavior.",
     "latest_planning_live_behavior_change": false,
     "latest_planning_behavior_summary": "Docs 44/45 are documentation/control only; merging them changes planning authority but not runtime API, UI, database, execution, package, or handoff behavior.",
-    "latest_implementation_merge_commit": "pending until PR #238 merge",
+    "latest_implementation_merge_commit": "cafff4d4f5c2f42700231d00a07472dddf8983fc",
     "latest_planning_base_commit": "9d78c5df1317",
     "latest_branch_only_implementation_branch": "none active after PR #238",
     "latest_branch_only_implementation_pr": "none",
@@ -629,6 +629,6 @@
       "full mockup activation"
     ],
     "pr": "#238",
-    "merge_commit": "pending until PR #238 merge"
+    "merge_commit": "cafff4d4f5c2f42700231d00a07472dddf8983fc"
   }
 }
