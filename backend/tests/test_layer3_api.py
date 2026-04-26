@@ -1786,6 +1786,17 @@ def test_layer3_api_package_construction_commit_prechecks_fail_closed(
     assert wrong_kinds.status_code == 409
     assert wrong_kinds.json()["error_code"] == "package_construction_commit_kinds_mismatch"
 
+    output_metadata_path = Path(preview_state["output_metadata_summary"]["output_payload_ref"])
+    output_metadata = json.loads(output_metadata_path.read_text(encoding="utf-8"))
+    output_metadata["artifact_types_json"] = ["mutated_artifact_type_for_hash_guard"]
+    output_metadata_path.write_text(json.dumps(output_metadata, sort_keys=True), encoding="utf-8")
+    stale_artifact_type = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={**base_payload, "client_request_id": "api-package-commit-stale-artifact-type"},
+    )
+    assert stale_artifact_type.status_code == 409
+    assert stale_artifact_type.json()["error_code"] == "package_review_preview_mismatch"
+
     db = client.layer3_session_factory()
     try:
         assert db.query(L3OutputPackage).count() == 0

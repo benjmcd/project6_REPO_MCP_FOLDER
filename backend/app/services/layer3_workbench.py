@@ -3509,6 +3509,7 @@ def _package_review_preview_hash(
             "result_review_record_ref": result_review_record_ref,
             "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
             "artifact_refs": output_metadata_summary.get("artifact_refs") or [],
+            "artifact_types": output_metadata_summary.get("artifact_types") or [],
             "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
         },
     )
