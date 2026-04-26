@@ -128,6 +128,12 @@ The package-review submit packet from PR `#241` freezes only the operator decisi
 
 PR `#243` is the merged backend-only implementation for that packet. It adds `POST /api/v1/layer3/package/review/submit`, records one operator decision in existing reconciliation/session JSON, verifies the constructed package ids and payload hashes, and keeps package rows, package payload refs/hashes, handoff/export, rendered UI behavior on current `main`, schema/runtime/source widening, and full mockup activation out until separately admitted. PR `#245` is the merged bounded rendered UI implementation that renders the package construction commit and package-review submit controls over the already-live PR `#238` and PR `#243` endpoints on current `main`; PR `#247` is a post-review hardening pass inside that same rendered UI scope so submit readiness can use fresh package-construction commit state if the post-commit session-summary refresh fails.
 
+And to the Layer 3 workbench handoff/export preparation freeze packet, which is planning-only and does not make handoff/export, APS dispatch, or external export live by itself:
+- `next_milestone_plans/Layer3_planning_docs/54_L3_WB_HANDOFF_EXPORT_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/55_L3_WB_HANDOFF_EXPORT_API_AND_STATE_CONTRACT.md`
+
+The handoff/export preparation packet freezes only the next eligible planning boundary after package-review approval: a future internal `prepare_only` export-envelope decision over already approved package-review state. It does not add a live endpoint by itself, does not dispatch to APS, does not export externally, does not create physical export files, does not create `AnalysisArtifact` rows, does not mutate package payloads, does not rebuild packages, does not widen source/schema/runtime scope, and does not activate the full mockup target state.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
@@ -577,6 +583,13 @@ PR `#241` freezes the next eligible planning boundary after merged PR `#238` as 
 - `52_L3_WB_PACKAGE_REVIEW_SUBMIT_FREEZE.md`
 - `53_L3_WB_PACKAGE_REVIEW_SUBMIT_API_AND_STATE_CONTRACT.md`
 
+### Broader workbench handoff/export preparation planning-only freeze docs
+
+These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+PR `#250` freezes the next eligible planning boundary after merged package-review submit approval as internal handoff/export preparation only. The planned future write set is constrained to existing JSON-bearing workbench state, with a `prepare_only` export-envelope response that keeps external handoff/export/dispatch disabled. It does not make `/api/v1/layer3/handoff/export/prepare` live by itself, does not dispatch to APS, does not export externally, does not create physical export files, does not create `AnalysisArtifact` rows, does not create or mutate package rows or payloads, does not rebuild packages, does not widen source/schema/runtime scope, and does not activate the full mockup target state:
+- `54_L3_WB_HANDOFF_EXPORT_FREEZE.md`
+- `55_L3_WB_HANDOFF_EXPORT_API_AND_STATE_CONTRACT.md`
+
 ### Broader workbench mockup source mirror
 
 These files are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
@@ -941,6 +954,27 @@ Read PR `#241` docs `52`/`53` as package-review submit/decision governance, and 
 - the docs do not make `/api/v1/layer3/package/review/submit` live by themselves; PR `#243` is the current-main backend implementation
 - the merged backend implementation must create no additional package/reconciliation/artifact rows and must mutate no package rows, package payload refs, or package hashes
 - it does not admit package reconstruction, package payload mutation, additional package/reconciliation rows, `AnalysisArtifact` creation, handoff/export, result-review amendment, approved-plan supersession, source/schema/runtime widening, local upload/directory ingestion, rendered UI changes, qualitative/hybrid/RAG/vector execution, or full mockup activation
+
+### If you are auditing the Layer 3 workbench handoff/export preparation freeze
+
+Start with:
+- `Layer3_planning_docs/54_L3_WB_HANDOFF_EXPORT_FREEZE.md`
+- `Layer3_planning_docs/55_L3_WB_HANDOFF_EXPORT_API_AND_STATE_CONTRACT.md`
+- `Layer3_planning_docs/52_L3_WB_PACKAGE_REVIEW_SUBMIT_FREEZE.md`
+- `Layer3_planning_docs/53_L3_WB_PACKAGE_REVIEW_SUBMIT_API_AND_STATE_CONTRACT.md`
+- `backend/app/services/layer3_workbench.py`
+- `backend/app/api/layer3.py`
+- `backend/app/models/models.py`
+- `backend/tests/test_layer3_api.py`
+- `next_milestone_plans/layer3_workbench_proof_manifest.json`
+- `next_milestone_plans/layer3_progress_manifest.json`
+- `next_milestone_plans/layer3_progress_board.md`
+
+Read docs `54`/`55` as planning-only preparation governance:
+- package-review approval is necessary but not sufficient for external handoff/export
+- the planned future endpoint is an internal `prepare_only` envelope, not APS dispatch or external export
+- the preferred persistence boundary is existing JSON-bearing state; if physical export files, `AnalysisArtifact`, a new table/model, or a migration is required, stop for a separate persistence/artifact freeze
+- it does not admit package payload mutation, package reconstruction, additional package/reconciliation rows, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, APS dispatch, external export, or full mockup activation
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 
