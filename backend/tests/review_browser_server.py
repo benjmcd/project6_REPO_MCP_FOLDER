@@ -7,6 +7,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
@@ -34,6 +35,8 @@ from app.models.models import (
     ConnectorRunTarget,
     Dataset,
     DatasetVersion,
+    L3OutputPackage,
+    L3ReconciliationRecord,
     VariableDefinition,
     VariableProfile,
     uuid_str,
@@ -53,9 +56,10 @@ from review_browser_fixture import build_review_browser_fixture, install_review_
 APS_CONTENT_CONTRACT_ID = "aps_content_units_v2"
 APS_CHUNKING_CONTRACT_ID = "aps_chunking_v2"
 APS_NORMALIZATION_CONTRACT_ID = "aps_text_normalization_v2"
+PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF = "aps_evidence_bundle_handoff"
 
 
-def _install_layer3_browser_patches() -> None:
+def _install_layer3_browser_patches(temp_path: Path) -> None:
     def _recommend_analysis(*args, **kwargs) -> dict[str, object]:
         dataset_version_id = str(kwargs.get("dataset_version_id") or (args[1] if len(args) > 1 else ""))
         return {
@@ -101,6 +105,47 @@ def _install_layer3_browser_patches() -> None:
 
     layer3_pass_entry_module.recommend_analysis = _recommend_analysis
     layer3_pass_entry_module.run_analysis = _run_analysis
+
+    from app.services import layer3_workbench as layer3_workbench_module
+
+    def _check_aps_handoff_compatibility(db, *, session_id):
+        return SimpleNamespace(compatible=True, blocked_reason=None)
+
+    def _materialize_aps_handoff(db, *, session_id):
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.session_id == session_id)
+            .one()
+        )
+        output_package_id = uuid_str()
+        payload_path = temp_path / "aps-dispatch" / f"{output_package_id}.json"
+        payload = {
+            "schema_id": "layer3.browser_aps_handoff_fixture.v1",
+            "bundle_id": f"browser-aps-bundle-{output_package_id}",
+            "aps_schema_id": "nrc_aps_evidence_bundle.v1",
+            "session_id": session_id,
+            "reconciliation_record_id": reconciliation.reconciliation_record_id,
+        }
+        payload_ref = _write_json(payload_path, payload)
+        package = L3OutputPackage(
+            output_package_id=output_package_id,
+            session_id=session_id,
+            reconciliation_record_id=reconciliation.reconciliation_record_id,
+            package_kind=PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+            status="package_complete",
+            payload_ref=payload_ref,
+            payload_hash=hashlib.sha256(Path(payload_ref).read_bytes()).hexdigest(),
+            summary_json={
+                "bundle_id": payload["bundle_id"],
+                "aps_schema_id": payload["aps_schema_id"],
+            },
+        )
+        db.add(package)
+        db.flush()
+        return SimpleNamespace(output_package=package)
+
+    layer3_workbench_module.check_aps_handoff_compatibility = _check_aps_handoff_compatibility
+    layer3_workbench_module.materialize_aps_handoff = _materialize_aps_handoff
 
 
 def _write_json(path: Path, payload: dict[str, object]) -> str:
@@ -419,7 +464,7 @@ def create_app() -> FastAPI:
     temp_path = Path(temp_dir.name)
     fixture = build_review_browser_fixture(temp_path)
     install_review_browser_patches(fixture)
-    _install_layer3_browser_patches()
+    _install_layer3_browser_patches(temp_path)
     settings.storage_dir = str(temp_path / "storage")
     bootstrap_storage_tree(settings.storage_dir)
     engine = create_engine(
