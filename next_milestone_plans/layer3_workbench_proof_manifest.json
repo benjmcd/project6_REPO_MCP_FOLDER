@@ -1,20 +1,20 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, merged read-only package-review preview implementation from PR #235, planning-only package-construction governance in docs 50/51, bounded package-construction commit implementation from PR #238, merged PR #241 planning-only package-review submit/decision governance in docs 52/53, merged PR #243 bounded backend package-review submit implementation, and branch-local rendered package-review UI candidate proof",
+  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, merged read-only package-review preview implementation from PR #235, planning-only package-construction governance in docs 50/51, bounded package-construction commit implementation from PR #238, merged PR #241 planning-only package-review submit/decision governance in docs 52/53, merged PR #243 bounded backend package-review submit implementation, and merged PR #245 bounded rendered package-review UI proof",
   "scope": {
     "source_branch": "codex/l3-submit-ui",
-    "merged_pr": "#243",
-    "merge_commit": "e0101f064cf5ebbdb9983f03723020c99a051274",
+    "merged_pr": "#245",
+    "merge_commit": "1dd6de668f9ac2fe7be3ffd0234290e33f56ce5d",
     "base_remote": "project6-origin/main",
     "base_commit": "4c059f99",
     "source_base_commit": "4c059f996cd60bccd183fd0d087bfe3ff0ccd665",
-    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, and the branch-local rendered package-review UI candidate.",
+    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, and the merged PR #245 bounded rendered package-review UI implementation.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "Branch codex/l3-submit-ui adds rendered package-review controls to /review/layer3 over existing backend authority: POST /api/v1/layer3/package/review/commit for bounded package construction and POST /api/v1/layer3/package/review/submit for one package-review decision. It does not mutate package rows or payload refs/hashes beyond the existing package-construction contract, create additional package/reconciliation/artifact rows beyond the existing backend commit/submit contracts, enable handoff/export, widen runtime DB/schema/source scope, or activate qualitative/hybrid/RAG/vector/full mockup behavior.",
+    "live_behavior_change_summary": "PR #245 adds rendered package-review controls to /review/layer3 on current main over existing backend authority: POST /api/v1/layer3/package/review/commit for bounded package construction and POST /api/v1/layer3/package/review/submit for one package-review decision. It does not mutate package rows or payload refs/hashes beyond the existing package-construction contract, create additional package/reconciliation/artifact rows beyond the existing backend commit/submit contracts, enable handoff/export, widen runtime DB/schema/source scope, or activate qualitative/hybrid/RAG/vector/full mockup behavior.",
     "latest_implementation_pr": "#243",
     "latest_implementation_branch": "codex/l3-package-review-submit-impl",
-    "latest_implementation_summary": "PR #243 adds the bounded backend package-review submit endpoint/state after PR #238 package construction and docs 52/53 governance, while preserving rendered UI, handoff/export, package mutation/rebuild, source/schema/runtime, and full-mockup no-go boundaries.",
+    "latest_implementation_summary": "PR #243 adds the bounded backend package-review submit endpoint/state after PR #238 package construction and docs 52/53 governance, while by itself preserving rendered UI, handoff/export, package mutation/rebuild, source/schema/runtime, and full-mockup no-go boundaries; PR #245 separately renders the bounded UI controls.",
     "latest_planning_pr": "#241",
     "latest_planning_branch": "codex/l3-package-review-submit-freeze",
     "latest_planning_summary": "PR #241 lands docs 52/53 as planning-only governance for package-review submit/decision after PR #238 package construction; by themselves they do not implement a package-review submit endpoint or handoff/export behavior.",
@@ -22,9 +22,9 @@
     "latest_planning_behavior_summary": "PR #241 docs 52/53 are documentation/control only; merging them changes planning authority but not runtime API, UI, database, package payload, handoff, or export behavior.",
     "latest_implementation_merge_commit": "e0101f064cf5ebbdb9983f03723020c99a051274",
     "latest_planning_base_commit": "1d86b282541762c45066376bf62a182bd393c8bb",
-    "latest_branch_only_implementation_branch": "codex/l3-submit-ui",
-    "latest_branch_only_implementation_pr": "#245",
-    "latest_branch_only_implementation_summary": "Draft PR #245 / branch codex/l3-submit-ui is the active branch-local rendered package-review UI candidate. It exposes package construction commit and package-review submit controls over the already-live backend endpoints and keeps handoff/export, package mutation/rebuild, source/schema/runtime widening, and full mockup activation out.",
+    "latest_branch_only_implementation_branch": "",
+    "latest_branch_only_implementation_pr": "",
+    "latest_branch_only_implementation_summary": "No active branch-only implementation remains in this proof snapshot after PR #245 merged. PR #245 is current-main bounded rendered package-review UI behavior and keeps handoff/export, package mutation/rebuild, source/schema/runtime widening, and full mockup activation out.",
     "latest_ui_planning_pr": "#230",
     "latest_ui_planning_branch": "codex/l3-result-review-ui-freeze",
     "latest_ui_planning_summary": "PR #230 adds docs 46/47 to freeze the /review/layer3 result-review presentation/control boundary over existing backend selected-pass result/status and result-review state; by itself it does not make UI behavior live.",
@@ -59,7 +59,7 @@
     "latest_package_review_submit_implementation_summary": "PR #243 implements docs 52/53 as backend API/state only: one package-review submit decision over an already constructed, hash-stable package set, persisted in existing JSON-bearing state.",
     "latest_package_review_submit_implementation_merge_commit": "e0101f064cf5ebbdb9983f03723020c99a051274",
     "latest_package_review_submit_ui_branch": "codex/l3-submit-ui",
-    "latest_package_review_submit_ui_summary": "Draft PR #245 is the branch-local rendered /review/layer3 controls candidate for package construction commit and package-review submit over PR #238 and PR #243 backend endpoints; not current-main truth until merged."
+    "latest_package_review_submit_ui_summary": "PR #245 is the current-main bounded rendered /review/layer3 controls implementation for package construction commit and package-review submit over PR #238 and PR #243 backend endpoints."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -162,9 +162,10 @@
       "package-construction freeze/API-state contract from docs 50/51 governs the PR #238 bounded construction commit implementation; by itself it does not add package-review submit/decision state or handoff/export behavior",
       "package-review submit/decision governance from docs 52/53 is planning-only by itself; PR #243 is the separate current-main backend submit implementation"
     ],
-    "branch_only_candidate": [
-      "Draft PR #245 / codex/l3-submit-ui renders bounded package construction commit and package-review submit controls on /review/layer3 over the already-live PR #238 and PR #243 backend endpoints; it remains branch-local until merged and does not admit handoff/export, package payload mutation, package reconstruction, source/schema/runtime widening, or full mockup activation."
+    "current_main_rendered_package_review_ui": [
+      "PR #245 renders bounded package construction commit and package-review submit controls on /review/layer3 over the already-live PR #238 and PR #243 backend endpoints; it does not admit handoff/export, package payload mutation, package reconstruction, source/schema/runtime widening, or full mockup activation."
     ],
+    "branch_only_candidate": [],
     "still_forbidden_after_pr_227": [
       "package-review submit/commit and package construction",
       "handoff/export",
@@ -295,9 +296,9 @@
       "qualitative/hybrid/RAG/vector execution",
       "full mockup activation"
     ],
-    "branch_only_bounded_scope": "codex/l3-submit-ui is the active branch-local rendered package-review UI candidate over the current-main package construction and backend submit endpoints",
+    "branch_only_bounded_scope": "No active branch-only rendered package-review UI candidate remains after PR #245 merged",
     "still_forbidden_after_package_review_submit_impl": [
-      "rendered package-review submit controls on current main until the branch-local UI candidate is landed",
+      "handoff/export activation after PR #245 rendered package-review controls",
       "handoff/export",
       "package payload mutation",
       "package reconstruction or rebuild/amendment",
@@ -532,7 +533,7 @@
     },
     {
       "command": "node --check .\\backend\\app\\review_ui\\static\\layer3.js",
-      "purpose": "Validate branch-local rendered package-review UI JavaScript syntax."
+      "purpose": "Validate current-main rendered package-review UI JavaScript syntax."
     },
     {
       "command": "python -m pytest .\\backend\\tests\\test_layer3_page.py",
@@ -551,7 +552,7 @@
       "purpose": "Verify headed Chromium package preview, construction commit, and submit flow through the rendered UI without exposing handoff/export controls."
     }
   ],
-  "browser_proof_rule": "Branch codex/l3-submit-ui changes rendered /review/layer3 behavior, so headed and headless Chrome proof are required before landing. Headless Playwright must cover the package preview -> package construction commit -> package-review submit flow, and headed Chrome must be opened against the branch-local server for manual inspection. Current main still has PR #243 as backend-only submit behavior until this UI candidate lands.",
+  "browser_proof_rule": "PR #245 changes rendered /review/layer3 behavior on current main, so headed and headless Chrome proof are required for the landed UI scope. Headless Playwright must cover the package preview -> package construction commit -> package-review submit flow, and headed Chrome proof must confirm the rendered controls without Create Package/Export controls.",
   "no_go_scan_terms": [
     "package review is live",
     "handoff is live",
@@ -813,11 +814,11 @@
     "pr": "#243",
     "merge_commit": "e0101f064cf5ebbdb9983f03723020c99a051274"
   },
-  "package_review_submit_ui_branch_proof": {
+  "package_review_submit_ui_proof": {
     "implementation_branch": "codex/l3-submit-ui",
     "base_commit": "4c059f99",
-    "base_source": "project6-origin/main after package-review submit postmerge docs sync",
-    "scope": "Branch-local rendered /review/layer3 package-review controls over current-main PR #238 package construction and PR #243 package-review submit endpoints. The UI may inspect package preview, commit the bounded package set, and submit one package-review decision; it must not expose handoff/export or mutate package payloads.",
+    "base_source": "project6-origin/main before PR #245, after package-review submit postmerge docs sync",
+    "scope": "Current-main rendered /review/layer3 package-review controls from PR #245 over PR #238 package construction and PR #243 package-review submit endpoints. The UI may inspect package preview, commit the bounded package set, and submit one package-review decision; it must not expose handoff/export or mutate package payloads.",
     "commands": [
       "node --check .\\backend\\app\\review_ui\\static\\layer3.js -> passed",
       "python -m pytest .\\backend\\tests\\test_layer3_page.py -> 3 passed, 3 warnings",
@@ -839,6 +840,6 @@
       "full mockup activation"
     ],
     "pr": "#245",
-    "merge_commit": "pending"
+    "merge_commit": "1dd6de668f9ac2fe7be3ffd0234290e33f56ce5d"
   }
 }

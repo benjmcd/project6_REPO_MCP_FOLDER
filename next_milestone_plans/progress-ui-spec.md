@@ -86,7 +86,7 @@ Render these sections in this order:
      - governing docs
      - key PRs
      - exact live scope or explicit non-goals
-  - render docs `46`/`47` as planning-only result-review UI governance, PR `#232` as the separate live bounded `/review/layer3` result-review UI implementation, docs `48`/`49` as planning-only package-review preview governance with no live package construction or handoff, PR `#235` as live only for read-only package-review preview inspection, docs `50`/`51` as planning-only package-construction governance by themselves, PR `#238` as live only for bounded backend package construction by itself, PR `#241` docs `52`/`53` as planning-only package-review submit/decision governance, PR `#243` as current-main live backend-only package-review submit behavior with no rendered submit UI or handoff/export on current `main`, draft PR `#245` / branch `codex/l3-submit-ui` as the active branch-local rendered package-review UI candidate if present in the manifest, and future branch-only package implementation candidates as branch-local until merged-main authority confirms them
+  - render docs `46`/`47` as planning-only result-review UI governance, PR `#232` as the separate live bounded `/review/layer3` result-review UI implementation, docs `48`/`49` as planning-only package-review preview governance with no live package construction or handoff, PR `#235` as live only for read-only package-review preview inspection, docs `50`/`51` as planning-only package-construction governance by themselves, PR `#238` as live only for bounded backend package construction by itself, PR `#241` docs `52`/`53` as planning-only package-review submit/decision governance, PR `#243` as current-main live backend-only package-review submit behavior by itself, PR `#245` as current-main live bounded rendered package-review UI behavior with no handoff/export, and future branch-only package implementation candidates as branch-local until merged-main authority confirms them
    - keep the register visually separate from the APS milestone table because it is a workbench lineage overlay, not a 29-milestone APS count change
 
 5. `Completed Chain`
@@ -143,7 +143,8 @@ Use these colors consistently:
 - `planning_only_package_construction_freeze`: amber or other clearly planning-only package-construction state; it must not look like live package construction, package-review submit/decision, handoff, or export
 - `planning_only_package_review_submit_freeze`: amber or other clearly planning-only package-review submit/decision state; it must not look like live package-review submission, package payload mutation, handoff, or export
 - `merged_live_bounded_package_review_submit`: green or other clearly current-main bounded backend state; it must not look like rendered UI activation, package payload mutation, handoff, or export
-- `branch_live_bounded_package_review_submit_ui`: blue or other clearly branch-local bounded rendered UI state; it must not look like merged-main truth, handoff/export, package payload mutation, or full mockup activation
+- `merged_live_bounded_package_review_submit_ui`: green or other clearly current-main bounded rendered package-review UI state; it must not look like handoff/export, package payload mutation, package reconstruction, or full mockup activation
+- `branch_live_bounded_package_review_submit_ui`: blue or other clearly branch-local bounded rendered UI state for future unmerged candidates only; it must not look like merged-main truth, handoff/export, package payload mutation, or full mockup activation
 
 State labels should remain visible in text, not color alone.
 
