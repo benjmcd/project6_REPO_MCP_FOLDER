@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 from typing import Any, Callable
+from urllib.parse import parse_qsl
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 
@@ -21,6 +23,21 @@ def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JS
             status_code=exc.http_status,
             content=layer3_workbench.workbench_error_response(exc),
         )
+
+
+async def _payload_from_request(request: Request) -> dict[str, Any]:
+    content_type = request.headers.get("content-type", "").lower()
+    if "application/x-www-form-urlencoded" in content_type:
+        raw = (await request.body()).decode("utf-8")
+        payload: dict[str, Any] = {}
+        for key, value in parse_qsl(raw, keep_blank_values=True):
+            try:
+                payload[key] = json.loads(value)
+            except json.JSONDecodeError:
+                payload[key] = value
+        return payload
+    parsed = await request.json()
+    return parsed if isinstance(parsed, dict) else {}
 
 
 @router.get("/bootstrap")
@@ -156,11 +173,12 @@ def post_external_export_download_prepare(
 
 
 @router.post("/handoff/export/download/deliver", response_model=None)
-def post_external_export_download_deliver(
-    payload: dict[str, Any],
+async def post_external_export_download_deliver(
+    request: Request,
     db: Session = Depends(get_db),
 ) -> FileResponse | JSONResponse:
     try:
+        payload = await _payload_from_request(request)
         delivery = layer3_workbench.external_export_download_deliver(db, payload)
     except Layer3WorkbenchError as exc:
         return JSONResponse(
