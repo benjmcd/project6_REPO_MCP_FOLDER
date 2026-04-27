@@ -1045,7 +1045,7 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
   const postDeliverySummary = await expectJson(await postDeliverySummaryPromise);
   expect(postDeliverySummary.external_export_download.state).toBe('external_export_download_prepared');
 
-  await expect(page.locator('#external-export-download-delivery-panel')).toContainText('external_export_download_delivered');
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText('external_export_download_delivery_submitted');
   await expect(page.locator('#external-export-download-delivery-panel')).toContainText(deliveryHeaders['x-layer3-source-artifact-hash']);
   await expect(page.locator('#external-export-download-delivery-submit')).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Create Package' })).toHaveCount(0);
