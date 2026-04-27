@@ -144,13 +144,13 @@ And to the Layer 3 workbench APS handoff dispatch freeze/API contract from PR `#
 - `next_milestone_plans/Layer3_planning_docs/58_L3_WB_APS_HANDOFF_DISPATCH_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/59_L3_WB_APS_HANDOFF_DISPATCH_API_AND_STATE_CONTRACT.md`
 
-The APS handoff dispatch packet governs the bounded backend/API workbench dispatch from exactly one `handoff_export_prepared` envelope into the existing `aps_evidence_bundle_handoff` owner-service family. PR `#260` implements `POST /api/v1/layer3/handoff/aps/dispatch`; PR `#261` tightens fail-closed handling for malformed canonical APS provenance and unexpected package kinds, and PR `#263` restricts APS handoff package-row allowance to recorded dispatch state. This still does not admit rendered APS dispatch controls, external export/download, connector dispatch, destination selection, package mutation/reconstruction, additional reconciliation rows, schema/runtime/source widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+The APS handoff dispatch packet governs the bounded backend/API workbench dispatch from exactly one `handoff_export_prepared` envelope into the existing `aps_evidence_bundle_handoff` owner-service family. PR `#260` implements `POST /api/v1/layer3/handoff/aps/dispatch`; PR `#261` tightens fail-closed handling for malformed canonical APS provenance and unexpected package kinds, and PR `#263` restricts APS handoff package-row allowance to recorded dispatch state. That backend/API packet itself did not render APS dispatch controls; PR `#266` separately implements only the bounded rendered UI under docs `60`/`61`. The APS handoff dispatch packet still does not admit external export/download, connector dispatch, destination selection, package mutation/reconstruction, additional reconciliation rows, schema/runtime/source widening, execution selection/start UI expansion beyond already admitted work, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
 And to the Layer 3 workbench APS handoff dispatch UI freeze packet, which is planning-only and does not make rendered `/review/layer3` APS dispatch controls live by itself:
 - `next_milestone_plans/Layer3_planning_docs/60_L3_WB_APS_HANDOFF_DISPATCH_UI_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/61_L3_WB_APS_HANDOFF_DISPATCH_UI_STATE_CONTRACT.md`
 
-The APS handoff dispatch UI packet freezes only a future rendered readiness/read-only-result panel plus one server-gated `dispatch_aps_handoff` control over the already-live backend/API APS dispatch endpoint. It still does not admit UI behavior by docs alone, external export/download, generic downstream dispatch, connector dispatch, destination selection, package payload mutation/reconstruction/rebuild/amendment, additional reconciliation rows, `AnalysisArtifact`, schema/runtime/source widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+The APS handoff dispatch UI packet freezes only a rendered readiness/read-only-result panel plus one server-gated `dispatch_aps_handoff` control over the already-live backend/API APS dispatch endpoint. Docs `60`/`61` still do not admit UI behavior by themselves; PR `#266` separately implements the bounded rendered `/review/layer3` APS dispatch UI and still does not admit external export/download, generic downstream dispatch, connector dispatch, destination selection, package payload mutation/reconstruction/rebuild/amendment, additional reconciliation rows, `AnalysisArtifact`, schema/runtime/source widening, execution selection/start expansion beyond already admitted work, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
@@ -618,7 +618,7 @@ They freeze only the rendered `/review/layer3` presentation/control boundary ove
 ### Broader workbench APS handoff dispatch governance and UI planning
 
 These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-Docs `58`/`59` govern the backend/API APS handoff dispatch bridge into the existing `aps_evidence_bundle_handoff` owner-service family; PR `#260` implements that endpoint, with PR `#261`/`#263` hardening the fail-closed authority boundary. Docs `60`/`61` freeze only the future rendered `/review/layer3` presentation/control boundary over that already-live endpoint. By themselves they do not render APS dispatch controls, change backend behavior, admit external export/download, connector dispatch, destination selection, package mutation/reconstruction, additional reconciliation rows, `AnalysisArtifact`, source/schema/runtime widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector behavior, or full mockup activation:
+Docs `58`/`59` govern the backend/API APS handoff dispatch bridge into the existing `aps_evidence_bundle_handoff` owner-service family; PR `#260` implements that endpoint, with PR `#261`/`#263` hardening the fail-closed authority boundary. Docs `60`/`61` freeze only the rendered `/review/layer3` presentation/control boundary over that already-live endpoint, and PR `#266` separately implements that bounded rendered UI. By themselves docs `60`/`61` do not render APS dispatch controls, change backend behavior, admit external export/download, connector dispatch, destination selection, package mutation/reconstruction, additional reconciliation rows, `AnalysisArtifact`, source/schema/runtime widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector behavior, or full mockup activation:
 - `58_L3_WB_APS_HANDOFF_DISPATCH_FREEZE.md`
 - `59_L3_WB_APS_HANDOFF_DISPATCH_API_AND_STATE_CONTRACT.md`
 - `60_L3_WB_APS_HANDOFF_DISPATCH_UI_FREEZE.md`
@@ -1051,7 +1051,7 @@ Start with:
 
 Read docs `58`/`59` as the governing APS handoff dispatch contract:
 - PR `#260` makes the backend/API endpoint live on current `main`; PR `#261` hardens malformed provenance and unexpected package-kind fail-closed behavior, and PR `#263` hardens APS handoff package-row allowance so orphan/manual APS rows fail closed until dispatch state is recorded
-- they still do not make rendered APS dispatch controls live by themselves
+- they still do not make rendered APS dispatch controls live by themselves; PR `#266` is the separate bounded rendered UI implementation
 - the only APS target they select is `aps_evidence_bundle_handoff` through the existing owner-service family
 - the implementation starts from existing `handoff_export_prepared` state and fails closed on stale package/review/prepare authority
 - they do not admit external export/download, connector dispatch, destination selection, package mutation/reconstruction, additional reconciliation rows, source/schema/runtime widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector execution, or full mockup activation
@@ -1072,7 +1072,7 @@ Start with:
 Read docs `60`/`61` as planning-only rendered UI governance:
 - they freeze only future `/review/layer3` APS dispatch readiness, one server-gated `dispatch_aps_handoff` submit control, and read-only recorded dispatch presentation over the already-live backend/API endpoint
 - they do not make UI behavior live by themselves and do not change backend behavior
-- any future implementation must use server-authoritative package-review, prepare, package, and APS dispatch readiness state; it must not infer dispatch authority in the browser
+- PR `#266` is the separate bounded implementation: it uses server-authoritative package-review, prepare, package, and APS dispatch readiness state; it must not infer dispatch authority in the browser
 - headed and headless Chrome proof is required when a later implementation changes rendered `/review/layer3` behavior
 - they do not admit external export/download, connector dispatch, destination selection, package mutation/reconstruction, additional reconciliation rows, `AnalysisArtifact`, source/schema/runtime widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector execution, or full mockup activation
 
