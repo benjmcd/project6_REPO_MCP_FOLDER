@@ -1194,7 +1194,7 @@
       "slice_id": "workbench-external-export-download-readiness-ui-freeze",
       "main_state": "planning_only_external_export_download_readiness_ui_freeze",
       "key_prs": [
-        "pending governance PR"
+        "#273"
       ],
       "base_commit": "1f1fb697",
       "source_branch": "codex/l3-external-export-readiness-ui-freeze",
