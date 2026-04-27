@@ -3758,6 +3758,21 @@ def test_layer3_api_external_export_download_deliver_streams_validated_bundle_wi
     assert files_under_tmp() == files_before
 
 
+def test_layer3_api_external_export_download_deliver_malformed_json_fails_closed(
+    client: TestClient,
+) -> None:
+    response = client.post(
+        "/api/v1/layer3/handoff/export/download/deliver",
+        data="{",
+        headers={"content-type": "application/json"},
+    )
+    assert response.status_code == 400
+    body = response.json()
+    assert body["schema_id"] == "layer3.workbench_error.v1"
+    assert body["error_code"] == "invalid_layer3_request_json"
+    assert body["message"] == "Request body must be valid JSON."
+
+
 def test_layer3_api_external_export_download_deliver_prechecks_fail_closed(
     client: TestClient,
     tmp_path,
