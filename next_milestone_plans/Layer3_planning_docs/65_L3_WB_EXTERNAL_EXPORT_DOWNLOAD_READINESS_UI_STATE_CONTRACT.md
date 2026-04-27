@@ -108,7 +108,7 @@ The request must preserve the docs 62/63 backend contract and may include only b
 - source APS handoff package kind;
 - source artifact reference;
 - source artifact hash;
-- `external_export_download_target`;
+- `export_download_target`;
 - `download_mode`;
 - `operator_decision == prepare_external_export_download`;
 - optional decision notes if admitted by the backend contract;
