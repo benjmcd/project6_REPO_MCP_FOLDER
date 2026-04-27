@@ -51,6 +51,7 @@ from app.services.layer3_session_entry import (
     record_retrieval_event,
 )
 from app.services.layer3_typing_entry import materialize_typing_entry
+from app.services import nrc_aps_evidence_bundle_contract as aps_evidence_bundle_contract
 from review_browser_fixture import build_review_browser_fixture, install_review_browser_patches
 
 APS_CONTENT_CONTRACT_ID = "aps_content_units_v2"
@@ -119,13 +120,18 @@ def _install_layer3_browser_patches(temp_path: Path) -> None:
         )
         output_package_id = uuid_str()
         payload_path = temp_path / "aps-dispatch" / f"{output_package_id}.json"
+        bundle_id = f"browser-aps-bundle-{output_package_id}"
         payload = {
-            "schema_id": "layer3.browser_aps_handoff_fixture.v1",
-            "bundle_id": f"browser-aps-bundle-{output_package_id}",
-            "aps_schema_id": "nrc_aps_evidence_bundle.v1",
+            "schema_id": aps_evidence_bundle_contract.APS_EVIDENCE_BUNDLE_SCHEMA_ID,
+            "schema_version": aps_evidence_bundle_contract.APS_EVIDENCE_BUNDLE_SCHEMA_VERSION,
+            "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+            "bundle_id": bundle_id,
+            "mode": aps_evidence_bundle_contract.APS_MODE_BROWSE,
             "session_id": session_id,
             "reconciliation_record_id": reconciliation.reconciliation_record_id,
+            "results": [],
         }
+        payload["bundle_checksum"] = aps_evidence_bundle_contract.compute_bundle_checksum(payload)
         payload_ref = _write_json(payload_path, payload)
         package = L3OutputPackage(
             output_package_id=output_package_id,
@@ -137,7 +143,7 @@ def _install_layer3_browser_patches(temp_path: Path) -> None:
             payload_hash=hashlib.sha256(Path(payload_ref).read_bytes()).hexdigest(),
             summary_json={
                 "bundle_id": payload["bundle_id"],
-                "aps_schema_id": payload["aps_schema_id"],
+                "aps_schema_id": payload["schema_id"],
             },
         )
         db.add(package)

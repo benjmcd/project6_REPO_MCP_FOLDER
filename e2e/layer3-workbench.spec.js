@@ -123,6 +123,7 @@ test('Layer 3 workbench completes the first-slice operator path without enabling
   await expect(page.locator('#package-review-submit')).toBeDisabled();
   await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
   await expect(page.locator('#aps-handoff-dispatch-submit')).toBeDisabled();
+  await expect(page.locator('#external-export-download-prepare-submit')).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Start Execution' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Rerun' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Export' })).toHaveCount(0);
@@ -270,6 +271,7 @@ test('Layer 3 workbench approves an admissible plan without starting execution',
   await expect(page.locator('#package-construction-commit')).toBeDisabled();
   await expect(page.locator('#package-review-submit')).toBeDisabled();
   await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
+  await expect(page.locator('#external-export-download-prepare-submit')).toBeDisabled();
   await expect(page.locator('#unavailable-list')).toContainText('execution');
   await expect(page.locator('#unavailable-list')).toContainText('package');
 });
@@ -378,6 +380,7 @@ test('Layer 3 workbench records selected-pass result review only after status au
   await expect(page.locator('#package-review-submit')).toBeDisabled();
   await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
   await expect(page.locator('#aps-handoff-dispatch-submit')).toBeDisabled();
+  await expect(page.locator('#external-export-download-prepare-submit')).toBeDisabled();
 });
 
 test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff after approved package review', async ({ page, request }) => {
@@ -663,6 +666,7 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
   await expect(page.locator('#aps-handoff-dispatch-panel')).toContainText('aps_evidence_bundle');
   await expect(page.locator('#aps-handoff-dispatch-panel')).toContainText('server_side_aps_handoff');
   await expect(page.locator('#aps-handoff-dispatch-submit')).toBeEnabled();
+  await expect(page.locator('#external-export-download-prepare-submit')).toBeDisabled();
 
   const dispatchRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/handoff/aps/dispatch'));
   const dispatchResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/handoff/aps/dispatch'));
@@ -767,7 +771,9 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
   expect(dispatch.download_enabled).toBe(false);
   expect(dispatch.connector_dispatch_enabled).toBe(false);
   expect(dispatch.downstream_unavailable).toEqual(['external_export', 'download', 'connector_dispatch', 'non_aps_dispatch']);
-  await expectJson(await postDispatchSummaryPromise);
+  const postDispatchSummary = await expectJson(await postDispatchSummaryPromise);
+  expect(postDispatchSummary.external_export_download.state).toBe('external_export_download_ready');
+  expect(postDispatchSummary.external_export_download.available).toBe(true);
 
   await expect(page.locator('#aps-handoff-dispatch-panel')).toContainText('aps_handoff_dispatched');
   await expect(page.locator('#aps-handoff-dispatch-panel')).toContainText('aps_evidence_bundle_handoff');
@@ -776,6 +782,170 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
   await expect(page.locator('#aps-handoff-dispatch-panel')).toContainText('connector dispatch');
   await expect(page.locator('#aps-handoff-dispatch-panel')).toContainText('non aps dispatch');
   await expect(page.locator('#aps-handoff-dispatch-submit')).toBeDisabled();
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('external_export_download_ready');
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('aps_evidence_bundle_download_reference');
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('reference_only_prepare');
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('browser download');
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('download url');
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('connector dispatch');
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('destination selection');
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('generic downstream dispatch');
+  await expect(page.locator('#external-export-download-prepare-submit')).toBeEnabled();
+
+  const externalRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/handoff/export/download/prepare'));
+  const externalResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/handoff/export/download/prepare'));
+  const postExternalSummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${setup.seed.session_id}`));
+  await page.locator('#external-export-download-prepare-submit').click();
+  const externalRequest = await externalRequestPromise;
+  const externalPayload = externalRequest.postDataJSON();
+  const expectedExternalKeys = [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'result_review_record_ref',
+    'package_review_preview_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'package_kinds',
+    'payload_refs',
+    'payload_hashes',
+    'package_review_submit_record_ref',
+    'package_review_state',
+    'prepare_record_ref',
+    'handoff_export_state',
+    'handoff_export_envelope_ref',
+    'handoff_target',
+    'export_mode',
+    'aps_handoff_record_ref',
+    'aps_handoff_state',
+    'aps_handoff_target',
+    'dispatch_mode',
+    'aps_output_package_id',
+    'aps_output_package_kind',
+    'aps_bundle_ref',
+    'aps_bundle_id',
+    'aps_schema_id',
+    'export_download_target',
+    'download_mode',
+    'operator_decision',
+    'aps_bundle_hash',
+    'aps_bundle_size_bytes',
+  ];
+  if (externalPayload.analysis_run_id) expectedExternalKeys.push('analysis_run_id');
+  expectOnlyPayloadKeys(externalPayload, expectedExternalKeys);
+  expect(externalPayload.session_id).toBe(setup.seed.session_id);
+  expect(externalPayload.analysis_plan_id).toBe(setup.approval.analysis_plan_id);
+  expect(externalPayload.pass_run_id).toBe(setup.passRunId);
+  expect(externalPayload.preview_id).toBe(setup.planPreview.preview_id);
+  expect(externalPayload.preview_hash).toBe(setup.planPreview.preview_hash);
+  expect(externalPayload.result_review_record_ref).toBe(review.review_record_ref);
+  expect(externalPayload.package_review_preview_hash).toBe(preview.package_review_preview_hash);
+  expect(externalPayload.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(externalPayload.package_review_submit_record_ref).toBe(submit.submit_record_ref);
+  expect(externalPayload.package_review_state).toBe('package_review_approved');
+  expect(externalPayload.prepare_record_ref).toBe(prepare.prepare_record_ref);
+  expect(externalPayload.handoff_export_state).toBe('handoff_export_prepared');
+  expect(externalPayload.handoff_export_envelope_ref).toBe(prepare.handoff_export_envelope.envelope_ref);
+  expect(externalPayload.handoff_target).toBe('internal_export_envelope');
+  expect(externalPayload.export_mode).toBe('prepare_only');
+  expect(externalPayload.aps_handoff_record_ref).toBe(dispatch.aps_handoff_record_ref);
+  expect(externalPayload.aps_handoff_state).toBe('aps_handoff_dispatched');
+  expect(externalPayload.aps_handoff_target).toBe('aps_evidence_bundle');
+  expect(externalPayload.dispatch_mode).toBe('server_side_aps_handoff');
+  expect(externalPayload.aps_output_package_id).toBe(dispatch.aps_output_package_id);
+  expect(externalPayload.aps_output_package_kind).toBe('aps_evidence_bundle_handoff');
+  expect(externalPayload.aps_bundle_ref).toBe(dispatch.aps_bundle_ref);
+  expect(externalPayload.aps_bundle_id).toBe(dispatch.aps_bundle_id);
+  expect(externalPayload.aps_schema_id).toBe(dispatch.aps_schema_id);
+  expect(externalPayload.export_download_target).toBe('aps_evidence_bundle_download_reference');
+  expect(externalPayload.download_mode).toBe('reference_only_prepare');
+  expect(externalPayload.operator_decision).toBe('prepare_external_export_download');
+  expect(externalPayload.aps_bundle_hash).toBe(postDispatchSummary.external_export_download.source_artifact_hash);
+  expect(externalPayload.aps_bundle_size_bytes).toBe(postDispatchSummary.external_export_download.source_artifact_size_bytes);
+  expect([...externalPayload.output_package_ids].sort()).toEqual([...committedPackageIds].sort());
+  expect(externalPayload.package_kinds).toEqual(['canonical_internal', 'user_facing', 'review_facing']);
+  expect(externalPayload.payload_refs).toEqual(commit.payload_refs);
+  expect(externalPayload.payload_hashes).toEqual(commit.payload_hashes);
+  for (const forbidden of [
+    'download_url',
+    'public_url',
+    'signed_url',
+    'stream_file',
+    'browser_download',
+    'external_export',
+    'send',
+    'dispatch',
+    'generic_dispatch',
+    'connector_run_id',
+    'connector_dispatch',
+    'destination',
+    'destination_id',
+    'external_target',
+    'runtime_db_write',
+    'analysis_artifact',
+    'artifact_manifest',
+    'create_package',
+    'rebuild_package',
+    'package_payload',
+    'package_variant_content',
+    'rewrite_output',
+    'edited_findings',
+    'result_review_amendment',
+    'package_review_amendment',
+    'handoff_export_amendment',
+    'aps_handoff_amendment',
+    'rerun',
+    'retry',
+    'recover',
+    'cancel',
+    'selected_pass_ids',
+    'pass_run_ids',
+    'new_analysis_plan',
+    'plan_revision',
+    'source_expansion',
+    'local_upload',
+    'local_directory',
+    'schema_migration',
+  ]) {
+    expect(externalPayload).not.toHaveProperty(forbidden);
+  }
+
+  const external = await expectJson(await externalResponsePromise);
+  expect(external.schema_id).toBe('layer3.external_export_download_prepare.v1');
+  expect(external.status).toBe('prepared');
+  expect(external.external_export_download_state).toBe('external_export_download_prepared');
+  expect(external.export_download_target).toBe('aps_evidence_bundle_download_reference');
+  expect(external.download_mode).toBe('reference_only_prepare');
+  expect(external.operator_decision).toBe('prepare_external_export_download');
+  expect(external.browser_download_enabled).toBe(false);
+  expect(external.download_url_enabled).toBe(false);
+  expect(external.connector_dispatch_enabled).toBe(false);
+  expect(external.destination_selection_enabled).toBe(false);
+  expect(external.generic_downstream_dispatch_enabled).toBe(false);
+  expect(external.downstream_unavailable).toEqual([
+    'browser_download',
+    'download_url',
+    'connector_dispatch',
+    'destination_selection',
+    'generic_downstream_dispatch',
+  ]);
+  expect(external.external_export_download_descriptor.browser_download_enabled).toBe(false);
+  expect(external.external_export_download_descriptor.download_url_enabled).toBe(false);
+  const postExternalSummary = await expectJson(await postExternalSummaryPromise);
+  expect(postExternalSummary.external_export_download.state).toBe('external_export_download_prepared');
+  expect(postExternalSummary.external_export_download.available).toBe(false);
+
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('external_export_download_prepared');
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText(external.export_download_descriptor_ref);
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('browser download');
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('download url');
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('connector dispatch');
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('destination selection');
+  await expect(page.locator('#external-export-download-prepare-panel')).toContainText('generic downstream dispatch');
+  await expect(page.locator('#external-export-download-prepare-submit')).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Create Package' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Export' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Download' })).toHaveCount(0);
