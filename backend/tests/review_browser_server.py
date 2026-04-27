@@ -51,13 +51,27 @@ from app.services.layer3_session_entry import (
     record_retrieval_event,
 )
 from app.services.layer3_typing_entry import materialize_typing_entry
-from app.services import nrc_aps_evidence_bundle_contract as aps_evidence_bundle_contract
 from review_browser_fixture import build_review_browser_fixture, install_review_browser_patches
 
+APS_EVIDENCE_BUNDLE_SCHEMA_ID = "aps.evidence_bundle.v2"
+APS_EVIDENCE_BUNDLE_SCHEMA_VERSION = 2
+APS_MODE_BROWSE = "browse"
 APS_CONTENT_CONTRACT_ID = "aps_content_units_v2"
 APS_CHUNKING_CONTRACT_ID = "aps_chunking_v2"
 APS_NORMALIZATION_CONTRACT_ID = "aps_text_normalization_v2"
 PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF = "aps_evidence_bundle_handoff"
+
+
+def _canonical_json_bytes(payload: dict[str, object]) -> bytes:
+    return json.dumps(payload, sort_keys=True, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+
+
+def _compute_aps_bundle_checksum(payload: dict[str, object]) -> str:
+    clean = dict(payload)
+    clean.pop("bundle_checksum", None)
+    clean.pop("_bundle_ref", None)
+    clean.pop("_persisted", None)
+    return hashlib.sha256(_canonical_json_bytes(clean)).hexdigest()
 
 
 def _install_layer3_browser_patches(temp_path: Path) -> None:
@@ -122,16 +136,16 @@ def _install_layer3_browser_patches(temp_path: Path) -> None:
         payload_path = temp_path / "aps-dispatch" / f"{output_package_id}.json"
         bundle_id = f"browser-aps-bundle-{output_package_id}"
         payload = {
-            "schema_id": aps_evidence_bundle_contract.APS_EVIDENCE_BUNDLE_SCHEMA_ID,
-            "schema_version": aps_evidence_bundle_contract.APS_EVIDENCE_BUNDLE_SCHEMA_VERSION,
+            "schema_id": APS_EVIDENCE_BUNDLE_SCHEMA_ID,
+            "schema_version": APS_EVIDENCE_BUNDLE_SCHEMA_VERSION,
             "generated_at_utc": datetime.now(timezone.utc).isoformat(),
             "bundle_id": bundle_id,
-            "mode": aps_evidence_bundle_contract.APS_MODE_BROWSE,
+            "mode": APS_MODE_BROWSE,
             "session_id": session_id,
             "reconciliation_record_id": reconciliation.reconciliation_record_id,
             "results": [],
         }
-        payload["bundle_checksum"] = aps_evidence_bundle_contract.compute_bundle_checksum(payload)
+        payload["bundle_checksum"] = _compute_aps_bundle_checksum(payload)
         payload_ref = _write_json(payload_path, payload)
         package = L3OutputPackage(
             output_package_id=output_package_id,
