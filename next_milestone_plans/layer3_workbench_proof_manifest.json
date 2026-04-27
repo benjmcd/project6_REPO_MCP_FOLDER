@@ -1,30 +1,30 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, package-review preview/construction/submit and rendered package-review UI proof, handoff/export prepare-only backend/API and UI, APS handoff dispatch backend/API and UI, external export/download readiness backend/API and UI, external export/download delivery backend/API, and rendered external export/download delivery UI from PR #282",
+  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, package-review preview/construction/submit and rendered package-review UI proof, handoff/export prepare-only backend/API and UI, APS handoff dispatch backend/API and UI, external export/download readiness backend/API and UI, external export/download delivery backend/API, rendered external export/download delivery UI from PR #282, and PR #285/#286 delivery review hardening",
   "scope": {
-    "source_branch": "codex/l3-download-delivery-ui-docs-sync",
+    "source_branch": "codex/l3-download-delivery-review-sync",
     "merged_pr": "branch-local docs/progress sync",
     "merge_commit": "",
     "base_remote": "project6-origin/main",
-    "base_commit": "39b11ee3",
-    "source_base_commit": "39b11ee324d3b69a8b868a580846c86d92ad8980",
-    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, the merged PR #245 bounded rendered package-review UI implementation, and PR #247 post-review fallback hardening for submit readiness after a failed post-commit session refresh. PR #250 adds planning-only docs 54/55 for handoff/export preparation governance after package-review approval; PR #251 implements only the bounded backend/API prepare-only endpoint; PR #252 aligns downstream blocker vocabulary and session-summary priority without widening behavior. PR #253 synchronizes docs/progress after PR #251/#252 reached main; PR #254 fixes the manifest seed-checkout reference. Docs 56/57 freeze the rendered /review/layer3 handoff/export prepare-only UI boundary over the already-live backend endpoint, and PR #256 implements only that bounded rendered prepare-only UI. PR #258 adds docs 58/59 as governance for a bounded workbench APS handoff dispatch bridge into the existing aps_evidence_bundle_handoff owner-service family; PR #260 implements only the bounded backend/API APS handoff dispatch endpoint after handoff_export_prepared authority; PR #261 hardens malformed canonical APS provenance and unexpected package-kind fail-closed behavior, and PR #263 restricts APS handoff package-row allowance to recorded dispatch state. Docs 60/61 add planning-only rendered APS dispatch UI governance over the already-live backend/API APS dispatch endpoint; PR #266 separately implements that bounded rendered UI. Docs 62/63 add planning-only external export/download readiness governance after recorded aps_handoff_dispatched state; PR #269 separately implements only bounded backend/API external export/download readiness as a reference-only descriptor over the existing APS evidence-bundle handoff artifact. Docs 64/65 add planning-only rendered /review/layer3 external export/download readiness UI governance over the already-live PR #269 backend/API readiness endpoint; PR #274 fixes the docs 65 request-field typo to the admitted export_download_target field; PR #275 separately implements the bounded rendered readiness UI. PR #275 renders server-authoritative readiness, sends one admitted-field-only prepare_external_export_download request to POST /api/v1/layer3/handoff/export/download/prepare, renders recorded descriptors read-only, and still does not admit rendered browser download controls, public or signed URLs, same-origin file streaming beyond the PR #278 validated APS evidence-bundle artifact, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional rows, AnalysisArtifact expansion, schema/runtime/source widening, or full mockup activation. Docs 66/67 add planning-only governance for same-origin external export/download delivery after external_export_download_prepared; PR #278 separately implements the bounded backend/API delivery endpoint. Docs 66/67 make no behavior live by themselves, and PR #278 still does not render download controls, generate public/signed URLs, dispatch connectors or generic downstream targets, select destinations, mutate packages, create extra rows, widen schema/runtime/source scope, or activate the full mockup.",
+    "base_commit": "cce1a55e",
+    "source_base_commit": "cce1a55eaf53709e807f8a45862096aa5cba24bb",
+    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, the merged PR #245 bounded rendered package-review UI implementation, and PR #247 post-review fallback hardening for submit readiness after a failed post-commit session refresh. PR #250 adds planning-only docs 54/55 for handoff/export preparation governance after package-review approval; PR #251 implements only the bounded backend/API prepare-only endpoint; PR #252 aligns downstream blocker vocabulary and session-summary priority without widening behavior. PR #253 synchronizes docs/progress after PR #251/#252 reached main; PR #254 fixes the manifest seed-checkout reference. Docs 56/57 freeze the rendered /review/layer3 handoff/export prepare-only UI boundary over the already-live backend endpoint, and PR #256 implements only that bounded rendered prepare-only UI. PR #258 adds docs 58/59 as governance for a bounded workbench APS handoff dispatch bridge into the existing aps_evidence_bundle_handoff owner-service family; PR #260 implements only the bounded backend/API APS handoff dispatch endpoint after handoff_export_prepared authority; PR #261 hardens malformed canonical APS provenance and unexpected package-kind fail-closed behavior, and PR #263 restricts APS handoff package-row allowance to recorded dispatch state. Docs 60/61 add planning-only rendered APS dispatch UI governance over the already-live backend/API APS dispatch endpoint; PR #266 separately implements that bounded rendered UI. Docs 62/63 add planning-only external export/download readiness governance after recorded aps_handoff_dispatched state; PR #269 separately implements only bounded backend/API external export/download readiness as a reference-only descriptor over the existing APS evidence-bundle handoff artifact. Docs 64/65 add planning-only rendered /review/layer3 external export/download readiness UI governance over the already-live PR #269 backend/API readiness endpoint; PR #274 fixes the docs 65 request-field typo to the admitted export_download_target field; PR #275 separately implements the bounded rendered readiness UI. PR #275 renders server-authoritative readiness, sends one admitted-field-only prepare_external_export_download request to POST /api/v1/layer3/handoff/export/download/prepare, renders recorded descriptors read-only, and still does not admit rendered browser download controls, public or signed URLs, same-origin file streaming beyond the PR #278 validated APS evidence-bundle artifact, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional rows, AnalysisArtifact expansion, schema/runtime/source widening, or full mockup activation. Docs 66/67 add planning-only governance for same-origin external export/download delivery after external_export_download_prepared; PR #278 separately implements the bounded backend/API delivery endpoint. Docs 66/67 make no behavior live by themselves, and PR #278 still does not render download controls, generate public/signed URLs, dispatch connectors or generic downstream targets, select destinations, mutate packages, create extra rows, widen schema/runtime/source scope, or activate the full mockup. PR #282 separately implements rendered delivery UI; PR #285/#286 harden that same delivery UI/API boundary with browser-managed form delivery, UI-local submitted fallback state, and malformed-JSON fail-closed handling.",
     "live_behavior_change": false,
-    "live_behavior_change_summary": "This docs/progress sync branch changes no runtime behavior. Current main already includes PR #282 bounded rendered /review/layer3 external export/download delivery UI over the PR #278 same-origin backend endpoint; this branch records that live status and preserves public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, and full mockup behavior as deferred.",
-    "latest_implementation_pr": "#282",
-    "latest_implementation_branch": "codex/l3-download-delivery-ui-impl",
-    "latest_implementation_summary": "PR #282 implements the bounded rendered /review/layer3 external export/download delivery UI over the PR #278 same-origin delivery endpoint: one server-gated deliver_external_export_download action, admitted-field-only request payload, same-origin attachment handling, and no public/signed URLs, connector dispatch, destination selection, generic dispatch, package mutation, schema/runtime/source widening, or full mockup behavior.",
+    "live_behavior_change_summary": "This docs/progress sync branch changes no runtime behavior. Current main already includes PR #282 bounded rendered /review/layer3 external export/download delivery UI over the PR #278 same-origin backend endpoint plus PR #285/#286 review hardening for browser-managed delivery, timeout fallback state, and malformed JSON. This branch records that live status and preserves public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, and full mockup behavior as deferred.",
+    "latest_implementation_pr": "#286",
+    "latest_implementation_branch": "codex/l3-download-delivery-review-fix2",
+    "latest_implementation_summary": "PR #286 hardens the bounded rendered /review/layer3 external export/download delivery UI/API path after PR #282/#285: timeout fallback records only UI-local submitted state rather than delivered state, malformed delivery JSON returns a controlled client error, and public/signed URLs, connector dispatch, destination selection, generic dispatch, package mutation, schema/runtime/source widening, and full mockup behavior remain out.",
     "latest_planning_pr": "#281",
     "latest_planning_branch": "codex/l3-download-delivery-ui-freeze",
     "latest_planning_summary": "PR #281 lands docs 68/69 as planning-only rendered /review/layer3 external export/download delivery UI governance over the current-main PR #278 same-origin delivery endpoint; PR #282 is the separate implementation.",
     "latest_planning_live_behavior_change": false,
     "latest_planning_behavior_summary": "Docs 68/69 are planning/control only by themselves. PR #282 separately implements only the bounded rendered download-delivery UI; public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional row families, AnalysisArtifact expansion, schema/runtime/source widening, qualitative/hybrid/RAG/vector expansion, and full mockup activation remain out.",
-    "latest_implementation_merge_commit": "39b11ee324d3b69a8b868a580846c86d92ad8980",
+    "latest_implementation_merge_commit": "cce1a55eaf53709e807f8a45862096aa5cba24bb",
     "latest_planning_base_commit": "8a0692909895114a61584157b78dd90ee105cd8d",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
-    "latest_branch_only_implementation_summary": "No active branch-only implementation is included in this docs/progress sync. PR #282 is already merged on current main.",
+    "latest_branch_only_implementation_summary": "No active branch-only implementation is included in this docs/progress sync. PR #286 is already merged on current main.",
     "latest_ui_planning_pr": "#281",
     "latest_ui_planning_branch": "codex/l3-download-delivery-ui-freeze",
     "latest_ui_planning_summary": "PR #281 lands docs 68/69 as planning-only rendered /review/layer3 external export/download delivery UI governance over the already-live PR #278 backend/API delivery endpoint.",
@@ -32,8 +32,8 @@
     "latest_ui_planning_behavior_summary": "Docs 68/69 are planning/control only by themselves; PR #282 is the separate bounded rendered delivery UI implementation. Public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, and full mockup activation remain out.",
     "latest_backend_implementation_pr": "#269",
     "latest_backend_implementation_summary": "PR #269 implements bounded backend/API external export/download readiness over recorded aps_handoff_dispatched state as a reference-only descriptor through POST /api/v1/layer3/handoff/export/download/prepare. It does not add rendered UI, rendered download controls, public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, source/schema/runtime widening, or full mockup behavior.",
-    "latest_ui_implementation_pr": "#282",
-    "latest_ui_implementation_branch": "codex/l3-download-delivery-ui-impl",
+    "latest_ui_implementation_pr": "#286",
+    "latest_ui_implementation_branch": "codex/l3-download-delivery-review-fix2",
     "latest_ui_implementation_live_behavior_change": true,
     "latest_package_review_planning_branch": "codex/l3-package-review-freeze",
     "latest_package_review_planning_summary": "Docs 48/49 freeze only read-only package-review readiness/preview governance after an approved selected-pass result review. They do not make package review, package construction, L3OutputPackage/L3ReconciliationRecord creation, materialize_package_entry(...) as-is admission, package payloads, handoff/export, rerun/recovery, source/schema/runtime widening, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation live.",
@@ -150,8 +150,8 @@
     "latest_external_export_download_delivery_implementation_merge_commit": "d0e0532db74743c0de2f60daee723a4d7b0894b0",
     "latest_external_export_download_delivery_implementation_live_behavior_change": true,
     "latest_external_export_download_delivery_implementation_summary": "PR #278 implements only bounded backend/API same-origin external export/download delivery over the recorded PR #269 readiness descriptor: it streams the validated APS evidence-bundle artifact after server-side authority proof and does not add rendered download controls, public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation, new rows, schema/runtime/source widening, or full mockup behavior.",
-    "latest_ui_implementation_summary": "PR #282 implements the bounded rendered /review/layer3 external export/download delivery UI over the PR #278 same-origin delivery endpoint: one server-gated deliver_external_export_download action, admitted-field-only request payload, same-origin attachment handling, and no public/signed URLs, connector dispatch, destination selection, generic dispatch, package mutation, schema/runtime/source widening, or full mockup behavior.",
-    "latest_ui_implementation_merge_commit": "39b11ee324d3b69a8b868a580846c86d92ad8980"
+    "latest_ui_implementation_summary": "PR #286 hardens the bounded rendered /review/layer3 external export/download delivery UI/API path after PR #282/#285: timeout fallback records only UI-local submitted state rather than delivered state, malformed delivery JSON returns a controlled client error, and public/signed URLs, connector dispatch, destination selection, generic dispatch, package mutation, schema/runtime/source widening, and full mockup behavior remain out.",
+    "latest_ui_implementation_merge_commit": "cce1a55eaf53709e807f8a45862096aa5cba24bb"
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -1802,7 +1802,7 @@
     "base_commit": "a0178975543faaabc7bcbbaf1c4b6d8f1998ac4e",
     "head_commit": "2d12c8fbd8d1d3a0bbb9ccf9c4172dc4f4b44a2e",
     "merge_commit": "39b11ee324d3b69a8b868a580846c86d92ad8980",
-    "scope": "Bounded rendered /review/layer3 external export/download delivery UI over the PR #278 backend/API same-origin delivery endpoint. Renders server-authoritative readiness from recorded external_export_download_prepared state, enables one deliver_external_export_download action, submits only docs 66/67 admitted fields to POST /api/v1/layer3/handoff/export/download/deliver, and handles the same-origin attachment response as a browser download.",
+    "scope": "Bounded rendered /review/layer3 external export/download delivery UI over the PR #278 backend/API same-origin delivery endpoint. Renders server-authoritative readiness from recorded external_export_download_prepared state, enables one deliver_external_export_download action, submits only docs 66/67 admitted fields to POST /api/v1/layer3/handoff/export/download/deliver, and handles the same-origin attachment response as a browser download. PR #285/#286 later harden this same bounded UI/API boundary by moving delivery to a browser-managed same-origin form POST, keeping timeout fallback as UI-local submitted state, and returning controlled errors for malformed JSON.",
     "files_changed": [
       "backend/app/review_ui/static/layer3.html",
       "backend/app/review_ui/static/layer3.js",
@@ -1842,6 +1842,93 @@
         "command": "git diff --check",
         "result": "passed before PR #282 merge with line-ending warnings only"
       }
+    ],
+    "no_go_preserved": [
+      "no public or signed URL generation",
+      "no connector dispatch or connector-run handling",
+      "no destination selection",
+      "no generic downstream dispatch",
+      "no package mutation/reconstruction/rebuild/supersession",
+      "no additional reconciliation/package/artifact rows",
+      "no AnalysisArtifact expansion",
+      "no schema/runtime/source widening",
+      "no qualitative/hybrid/RAG/vector/full mockup activation"
+    ],
+    "review_hardening_prs": [
+      "#285",
+      "#286"
+    ],
+    "review_hardening_scope": "PR #285/#286 harden the existing rendered delivery UI/API boundary only; they do not create a new Layer 3 capability or admit public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation, new rows, schema/runtime/source widening, or full mockup behavior."
+  },
+  "external_export_download_delivery_ui_review_hardening_proof": {
+    "implementation_branches": [
+      "codex/l3-download-delivery-review-fix",
+      "codex/l3-download-delivery-review-fix2"
+    ],
+    "implementation_prs": [
+      "#285",
+      "#286"
+    ],
+    "base_commits": {
+      "#285": "a566a12ffd75a2069cca9fc1e0515d08df07e1ce",
+      "#286": "0cb8541262c54652035a2e045fc4818f8fa75e42"
+    },
+    "head_commits": {
+      "#285": "08967368f7f53d83c73342a0660a173a4fd4018d",
+      "#286": "b6e45f4e98ce933bf8a53df3ad23acc40cc0995f"
+    },
+    "merge_commits": {
+      "#285": "0cb8541262c54652035a2e045fc4818f8fa75e42",
+      "#286": "cce1a55eaf53709e807f8a45862096aa5cba24bb"
+    },
+    "scope": "Review hardening inside the existing PR #282 rendered external export/download delivery UI and PR #278 delivery API boundary: browser-managed same-origin form POST delivery, UI-local submitted fallback state instead of inferred delivered state, and controlled malformed-JSON errors.",
+    "files_changed": [
+      "backend/app/api/layer3.py",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_api.py",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js",
+      "next_milestone_plans/layer3_progress_board.md"
+    ],
+    "commands": [
+      {
+        "command": "node --check .\\backend\\app\\review_ui\\static\\layer3.js",
+        "result": "passed for PR #285/#286 review hardening"
+      },
+      {
+        "command": "python -m pytest .\\backend\\tests\\test_layer3_page.py -q",
+        "result": "3 passed"
+      },
+      {
+        "command": "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"external_export_download\"",
+        "result": "5 passed, 44 deselected after PR #286"
+      },
+      {
+        "command": "python -m pytest .\\backend\\tests\\test_layer3_api.py -q",
+        "result": "49 passed after PR #286"
+      },
+      {
+        "command": "npx playwright test e2e/layer3-workbench.spec.js --project=chromium --grep \"prepares handoff\"",
+        "result": "1 passed"
+      },
+      {
+        "command": "npx playwright test e2e/layer3-workbench.spec.js --project=chromium --grep \"prepares handoff\" --headed",
+        "result": "1 passed"
+      },
+      {
+        "command": "GitHub Playwright Tests check for PR #285 and PR #286",
+        "result": "passed"
+      },
+      {
+        "command": "git diff --check",
+        "result": "passed with line-ending warnings only"
+      }
+    ],
+    "review_threads_settled": [
+      "PR #282 blob-buffering review thread resolved by PR #285 browser-managed form delivery",
+      "PR #283 stale snapshot review thread resolved by PR #285 board snapshot correction",
+      "PR #285 fallback-success review thread resolved by PR #286 UI-local submitted state",
+      "PR #285 malformed-JSON review thread resolved by PR #286 controlled request error"
     ],
     "no_go_preserved": [
       "no public or signed URL generation",
