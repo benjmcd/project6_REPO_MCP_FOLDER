@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -153,6 +153,27 @@ def post_external_export_download_prepare(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.external_export_download_prepare(db, payload))
+
+
+@router.post("/handoff/export/download/deliver", response_model=None)
+def post_external_export_download_deliver(
+    payload: dict[str, Any],
+    db: Session = Depends(get_db),
+) -> FileResponse | JSONResponse:
+    try:
+        delivery = layer3_workbench.external_export_download_deliver(db, payload)
+    except Layer3WorkbenchError as exc:
+        return JSONResponse(
+            status_code=exc.http_status,
+            content=layer3_workbench.workbench_error_response(exc),
+        )
+    return FileResponse(
+        path=delivery.artifact_path,
+        media_type=delivery.media_type,
+        filename=delivery.filename,
+        content_disposition_type="attachment",
+        headers=delivery.headers,
+    )
 
 
 @router.get("/session/{session_id}", response_model=None)
