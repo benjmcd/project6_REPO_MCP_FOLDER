@@ -152,6 +152,12 @@ And to the Layer 3 workbench APS handoff dispatch UI freeze packet, which is pla
 
 The APS handoff dispatch UI packet freezes only a rendered readiness/read-only-result panel plus one server-gated `dispatch_aps_handoff` control over the already-live backend/API APS dispatch endpoint. Docs `60`/`61` still do not admit UI behavior by themselves; PR `#266` separately implements the bounded rendered `/review/layer3` APS dispatch UI and still does not admit external export/download, generic downstream dispatch, connector dispatch, destination selection, package payload mutation/reconstruction/rebuild/amendment, additional reconciliation rows, `AnalysisArtifact`, schema/runtime/source widening, execution selection/start expansion beyond already admitted work, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
+And to the Layer 3 workbench external export/download freeze packet, which is planning-only and does not make export/download behavior live by itself:
+- `next_milestone_plans/Layer3_planning_docs/62_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/63_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_API_AND_STATE_CONTRACT.md`
+
+The external export/download packet freezes only a future backend/API readiness preparation boundary after recorded `aps_handoff_dispatched` state. It selects a reference-only descriptor over the existing APS evidence-bundle handoff artifact as the narrow first boundary, not a browser download route, public/signed URL, destination selector, connector dispatch, generic downstream dispatch, package mutation/reconstruction, additional package/reconciliation/artifact rows, `AnalysisArtifact`, schema/runtime/source widening, execution expansion beyond already admitted work, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
@@ -1075,6 +1081,23 @@ Read docs `60`/`61` as planning-only rendered UI governance:
 - PR `#266` is the separate bounded implementation: it uses server-authoritative package-review, prepare, package, and APS dispatch readiness state; it must not infer dispatch authority in the browser
 - headed and headless Chrome proof is required when a later implementation changes rendered `/review/layer3` behavior
 - they do not admit external export/download, connector dispatch, destination selection, package mutation/reconstruction, additional reconciliation rows, `AnalysisArtifact`, source/schema/runtime widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector execution, or full mockup activation
+
+### If you are auditing the Layer 3 workbench external export/download freeze
+
+Start with:
+- `Layer3_planning_docs/62_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md`
+- `Layer3_planning_docs/63_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_API_AND_STATE_CONTRACT.md`
+- `Layer3_planning_docs/58_L3_WB_APS_HANDOFF_DISPATCH_FREEZE.md`
+- `Layer3_planning_docs/59_L3_WB_APS_HANDOFF_DISPATCH_API_AND_STATE_CONTRACT.md`
+- `backend/app/services/layer3_aps_handoff.py`
+- `backend/app/services/nrc_aps_evidence_bundle.py`
+- `backend/tests/test_layer3_aps_handoff.py`
+
+Read docs `62`/`63` as planning-only governance:
+- they freeze only a future backend/API external export/download readiness preparation boundary after `aps_handoff_dispatched`
+- they select a reference-only descriptor over the existing APS evidence-bundle handoff artifact as the first boundary because no current workbench route safely streams browser downloads
+- they do not make a live endpoint, rendered UI behavior, browser download route, public/signed URL, connector dispatch, destination selection, package mutation/reconstruction, additional reconciliation/package/artifact rows, `AnalysisArtifact`, source/schema/runtime widening, execution expansion beyond already admitted work, qualitative/hybrid/RAG/vector execution, or full mockup activation
+- browser proof is required only if a later implementation changes rendered `/review/layer3` behavior
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
 
