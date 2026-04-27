@@ -52,7 +52,6 @@ from app.services.layer3_aps_handoff import (
     check_aps_handoff_compatibility,
     materialize_aps_handoff,
 )
-from app.services.nrc_aps_evidence_bundle import EvidenceBundleError, load_persisted_bundle_artifact
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
     SnapshotMaterial,
@@ -4544,6 +4543,17 @@ def _aps_bundle_identity_for_external_export_download(
             http_status=409,
             blocked_fields=["aps_schema_id"],
         )
+    try:
+        from app.services.nrc_aps_evidence_bundle import EvidenceBundleError, load_persisted_bundle_artifact
+    except ModuleNotFoundError as exc:
+        raise Layer3WorkbenchError(
+            f"{error_prefix}_source_artifact_validator_unavailable",
+            f"External export/download readiness could not load the APS bundle artifact validator: {exc}",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_bundle_ref"],
+            next_allowed_actions=["inspect_aps_handoff_dispatch_state"],
+        ) from exc
     try:
         bundle_payload, bundle_path = load_persisted_bundle_artifact(bundle_ref=aps_bundle_ref)
     except EvidenceBundleError as exc:
