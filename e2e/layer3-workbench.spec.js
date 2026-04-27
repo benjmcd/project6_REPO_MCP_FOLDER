@@ -124,6 +124,7 @@ test('Layer 3 workbench completes the first-slice operator path without enabling
   await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
   await expect(page.locator('#aps-handoff-dispatch-submit')).toBeDisabled();
   await expect(page.locator('#external-export-download-prepare-submit')).toBeDisabled();
+  await expect(page.locator('#external-export-download-delivery-submit')).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Start Execution' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Rerun' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Export' })).toHaveCount(0);
@@ -946,6 +947,97 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
   await expect(page.locator('#external-export-download-prepare-panel')).toContainText('destination selection');
   await expect(page.locator('#external-export-download-prepare-panel')).toContainText('generic downstream dispatch');
   await expect(page.locator('#external-export-download-prepare-submit')).toBeDisabled();
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText('external_export_download_delivery_ui_ready');
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText(external.external_export_download_record_ref);
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText('same_origin_artifact_stream');
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText('public url');
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText('signed url');
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText('connector dispatch');
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText('destination selection');
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText('generic downstream dispatch');
+  await expect(page.locator('#external-export-download-delivery-submit')).toBeEnabled();
+
+  const deliveryRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/handoff/export/download/deliver'));
+  const deliveryResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/handoff/export/download/deliver'));
+  const downloadPromise = page.waitForEvent('download');
+  const postDeliverySummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${setup.seed.session_id}`));
+  await page.locator('#external-export-download-delivery-submit').click();
+  const deliveryRequest = await deliveryRequestPromise;
+  const deliveryPayload = deliveryRequest.postDataJSON();
+  const expectedDeliveryKeys = [
+    ...expectedExternalKeys.filter((key) => key !== 'operator_decision'),
+    'operator_decision',
+    'external_export_download_record_ref',
+    'export_download_descriptor_ref',
+    'external_export_download_state',
+    'delivery_mode',
+  ];
+  expectOnlyPayloadKeys(deliveryPayload, expectedDeliveryKeys);
+  expect(deliveryPayload.operator_decision).toBe('deliver_external_export_download');
+  expect(deliveryPayload.external_export_download_record_ref).toBe(external.external_export_download_record_ref);
+  expect(deliveryPayload.export_download_descriptor_ref).toBe(external.export_download_descriptor_ref);
+  expect(deliveryPayload.external_export_download_state).toBe('external_export_download_prepared');
+  expect(deliveryPayload.export_download_target).toBe('aps_evidence_bundle_download_reference');
+  expect(deliveryPayload.download_mode).toBe('reference_only_prepare');
+  expect(deliveryPayload.delivery_mode).toBe('same_origin_artifact_stream');
+  for (const forbidden of [
+    'download_url',
+    'download_token',
+    'public_url',
+    'signed_url',
+    'local_file_path',
+    'external_target',
+    'destination',
+    'destination_selector',
+    'destination_id',
+    'connector_run_id',
+    'connector_dispatch',
+    'generic_dispatch',
+    'dispatch',
+    'send',
+    'runtime_db_write',
+    'analysis_artifact',
+    'artifact_manifest',
+    'create_package',
+    'rebuild_package',
+    'package_payload',
+    'package_variant_content',
+    'rewrite_output',
+    'edited_findings',
+    'result_review_amendment',
+    'package_review_amendment',
+    'handoff_export_amendment',
+    'aps_handoff_amendment',
+    'rerun',
+    'retry',
+    'recover',
+    'cancel',
+    'selected_pass_ids',
+    'pass_run_ids',
+    'new_analysis_plan',
+    'plan_revision',
+    'source_expansion',
+    'local_upload',
+    'local_directory',
+    'schema_migration',
+  ]) {
+    expect(deliveryPayload).not.toHaveProperty(forbidden);
+  }
+
+  const deliveryResponse = await deliveryResponsePromise;
+  expect(deliveryResponse.status()).toBe(200);
+  const deliveryHeaders = deliveryResponse.headers();
+  expect(deliveryHeaders['x-layer3-schema-id']).toBe('layer3.external_export_download_delivery.v1');
+  expect(deliveryHeaders['x-layer3-delivery-state']).toBe('external_export_download_delivered');
+  expect(deliveryHeaders['x-layer3-external-export-download-record-ref']).toBe(external.external_export_download_record_ref);
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toContain('layer3-');
+  const postDeliverySummary = await expectJson(await postDeliverySummaryPromise);
+  expect(postDeliverySummary.external_export_download.state).toBe('external_export_download_prepared');
+
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText('external_export_download_delivered');
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText(deliveryHeaders['x-layer3-source-artifact-hash']);
+  await expect(page.locator('#external-export-download-delivery-submit')).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Create Package' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Export' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Download' })).toHaveCount(0);

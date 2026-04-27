@@ -57,6 +57,9 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="external-export-download-prepare-form"' in response.text
     assert 'id="external-export-download-prepare-panel"' in response.text
     assert 'id="external-export-download-prepare-submit"' in response.text
+    assert 'id="external-export-download-delivery-form"' in response.text
+    assert 'id="external-export-download-delivery-panel"' in response.text
+    assert 'id="external-export-download-delivery-submit"' in response.text
     assert 'href="/review/layer3/static/layer3.css"' in response.text
     assert 'src="/review/layer3/static/layer3.js"' in response.text
     assert "Plan</button>" in response.text
@@ -88,26 +91,31 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "postJson('/handoff/export/prepare'" in js.text
     assert "postJson('/handoff/aps/dispatch'" in js.text
     assert "postJson('/handoff/export/download/prepare'" in js.text
+    assert "postAttachment('/handoff/export/download/deliver'" in js.text
     assert "operator_view_mode: 'status_only'" in js.text
     assert "operator_decision: elements.resultReviewDecision.value" in js.text
     assert "operator_decision: elements.packageReviewSubmitDecision.value" in js.text
     assert "operator_decision: elements.handoffExportPrepareDecision.value" in js.text
     assert "operator_decision: 'dispatch_aps_handoff'" in js.text
     assert "operator_decision: 'prepare_external_export_download'" in js.text
+    assert "operator_decision: 'deliver_external_export_download'" in js.text
     package_start = js.text.find("function packageReviewSubmitPayload")
     handoff_start = js.text.find("function handoffExportPreparePayload")
     aps_start = js.text.find("function apsHandoffDispatchPayload")
     external_start = js.text.find("function externalExportDownloadPreparePayload")
+    delivery_start = js.text.find("function externalExportDownloadDeliveryPayload")
     refresh_start = js.text.find("async function refreshSessionSummary")
     assert package_start != -1
     assert handoff_start != -1
     assert aps_start != -1
     assert external_start != -1
+    assert delivery_start != -1
     assert refresh_start != -1
     package_submit_slice = js.text[package_start:handoff_start]
     handoff_prepare_slice = js.text[handoff_start:aps_start]
     aps_dispatch_slice = js.text[aps_start:external_start]
-    external_prepare_slice = js.text[external_start:refresh_start]
+    external_prepare_slice = js.text[external_start:delivery_start]
+    external_delivery_slice = js.text[delivery_start:refresh_start]
     assert "handoff_target" not in package_submit_slice
     assert "export_mode" not in package_submit_slice
     assert "payload_refs" not in package_submit_slice
@@ -223,6 +231,50 @@ def test_layer3_static_assets_are_mounted() -> None:
         "schema_migration",
     ):
         assert f"{forbidden}:" not in external_prepare_slice
+    assert "external_export_download_record_ref: external.external_export_download_record_ref" in external_delivery_slice
+    assert "export_download_descriptor_ref: external.export_download_descriptor_ref" in external_delivery_slice
+    assert "external_export_download_state: externalExportDownloadStateName(external)" in external_delivery_slice
+    assert "delivery_mode: 'same_origin_artifact_stream'" in external_delivery_slice
+    assert "operator_decision: 'deliver_external_export_download'" in external_delivery_slice
+    for forbidden in (
+        "download_url",
+        "download_token",
+        "public_url",
+        "signed_url",
+        "local_file_path",
+        "connector_run_id",
+        "connector_dispatch",
+        "destination",
+        "destination_id",
+        "external_target",
+        "generic_dispatch",
+        "runtime_db_write",
+        "analysis_artifact",
+        "artifact_manifest",
+        "create_package",
+        "rebuild_package",
+        "package_payload",
+        "package_variant_content",
+        "rewrite_output",
+        "edited_findings",
+        "result_review_amendment",
+        "package_review_amendment",
+        "handoff_export_amendment",
+        "aps_handoff_amendment",
+        "rerun",
+        "retry",
+        "recover",
+        "cancel",
+        "selected_pass_ids",
+        "pass_run_ids",
+        "new_analysis_plan",
+        "plan_revision",
+        "source_expansion",
+        "local_upload",
+        "local_directory",
+        "schema_migration",
+    ):
+        assert f"{forbidden}:" not in external_delivery_slice
     assert "planRevisionPending" in js.text
     assert "State.planRevisionPending = true" in js.text
 
