@@ -36,8 +36,19 @@ async def _payload_from_request(request: Request) -> dict[str, Any]:
             except json.JSONDecodeError:
                 payload[key] = value
         return payload
-    parsed = await request.json()
-    return parsed if isinstance(parsed, dict) else {}
+    try:
+        parsed = await request.json()
+    except json.JSONDecodeError as exc:
+        raise Layer3WorkbenchError(
+            "invalid_layer3_request_json",
+            "Request body must be valid JSON.",
+        ) from exc
+    if not isinstance(parsed, dict):
+        raise Layer3WorkbenchError(
+            "invalid_layer3_request_json",
+            "Request body must be a JSON object.",
+        )
+    return parsed
 
 
 @router.get("/bootstrap")
