@@ -18,6 +18,15 @@ function expectOnlyPayloadKeys(payload, allowedKeys) {
   expect(Object.keys(payload).sort()).toEqual([...allowedKeys].sort());
 }
 
+function formPostPayload(request) {
+  const payload = {};
+  const params = new URLSearchParams(request.postData() || '');
+  for (const [key, value] of params.entries()) {
+    payload[key] = JSON.parse(value);
+  }
+  return payload;
+}
+
 async function prepareExecutedLayer3Session(request, seedPath = '/__test/layer3/seed-quant') {
   const seed = await expectJson(await request.post(seedPath));
   const planPreview = await expectJson(await request.post('/api/v1/layer3/plan/preview', {
@@ -963,7 +972,8 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
   const postDeliverySummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${setup.seed.session_id}`));
   await page.locator('#external-export-download-delivery-submit').click();
   const deliveryRequest = await deliveryRequestPromise;
-  const deliveryPayload = deliveryRequest.postDataJSON();
+  expect(deliveryRequest.headers()['content-type']).toContain('application/x-www-form-urlencoded');
+  const deliveryPayload = formPostPayload(deliveryRequest);
   const expectedDeliveryKeys = [
     ...expectedExternalKeys.filter((key) => key !== 'operator_decision'),
     'operator_decision',

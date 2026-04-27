@@ -3712,6 +3712,16 @@ def test_layer3_api_external_export_download_deliver_streams_validated_bundle_wi
     assert "signed_url" not in delivery.headers
     assert "connector_run_id" not in delivery.headers
 
+    form_delivery = client.post(
+        "/api/v1/layer3/handoff/export/download/deliver",
+        data={key: json.dumps(value) for key, value in deliver_payload.items()},
+    )
+    assert form_delivery.status_code == 200, form_delivery.text
+    assert form_delivery.content == expected_bytes
+    assert "attachment" in form_delivery.headers["content-disposition"]
+    assert form_delivery.headers["x-layer3-delivery-state"] == "external_export_download_delivered"
+    assert form_delivery.headers["x-layer3-source-artifact-hash"] == readiness_body["source_artifact_hash"]
+
     replay = client.post("/api/v1/layer3/handoff/export/download/deliver", json=deliver_payload)
     assert replay.status_code == 200
     assert replay.content == expected_bytes
