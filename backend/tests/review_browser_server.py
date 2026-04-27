@@ -7,7 +7,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
@@ -75,6 +75,30 @@ def _compute_aps_bundle_checksum(payload: dict[str, object]) -> str:
 
 
 def _install_layer3_browser_patches(temp_path: Path) -> None:
+    class _BrowserEvidenceBundleError(RuntimeError):
+        def __init__(self, code: str, message: str, *, status_code: int = 400) -> None:
+            super().__init__(message)
+            self.code = code
+            self.message = message
+            self.status_code = status_code
+
+    def _load_browser_persisted_bundle_artifact(*, bundle_ref: str | Path):
+        bundle_path = Path(bundle_ref)
+        if not bundle_path.exists():
+            raise _BrowserEvidenceBundleError("invalid_request", "bundle not found", status_code=404)
+        payload = json.loads(bundle_path.read_text(encoding="utf-8"))
+        if payload.get("schema_id") != APS_EVIDENCE_BUNDLE_SCHEMA_ID:
+            raise _BrowserEvidenceBundleError("schema_mismatch", "bundle schema mismatch", status_code=409)
+        expected_checksum = _compute_aps_bundle_checksum(payload)
+        if payload.get("bundle_checksum") != expected_checksum:
+            raise _BrowserEvidenceBundleError("checksum_mismatch", "bundle checksum mismatch", status_code=409)
+        return payload, bundle_path
+
+    aps_bundle_module = ModuleType("app.services.nrc_aps_evidence_bundle")
+    aps_bundle_module.EvidenceBundleError = _BrowserEvidenceBundleError
+    aps_bundle_module.load_persisted_bundle_artifact = _load_browser_persisted_bundle_artifact
+    sys.modules["app.services.nrc_aps_evidence_bundle"] = aps_bundle_module
+
     def _recommend_analysis(*args, **kwargs) -> dict[str, object]:
         dataset_version_id = str(kwargs.get("dataset_version_id") or (args[1] if len(args) > 1 else ""))
         return {
