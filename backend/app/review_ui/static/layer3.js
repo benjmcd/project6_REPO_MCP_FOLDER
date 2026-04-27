@@ -221,27 +221,22 @@ function submitAttachmentForm(path, body) {
             cleanup();
             handler(value);
         };
+        const submittedResult = {
+            state: 'external_export_download_delivery_submitted',
+            schemaId: 'layer3.external_export_download_delivery.v1',
+            filename: 'browser-managed attachment',
+            sourceArtifactHash: body.source_artifact_hash || null,
+            externalExportDownloadRecordRef: body.external_export_download_record_ref || null,
+        };
         const timer = window.setTimeout(() => {
-            settle(resolve, {
-                state: 'external_export_download_delivered',
-                schemaId: 'layer3.external_export_download_delivery.v1',
-                filename: 'browser-managed attachment',
-                sourceArtifactHash: body.source_artifact_hash || null,
-                externalExportDownloadRecordRef: body.external_export_download_record_ref || null,
-            });
-        }, 1500);
+            settle(resolve, submittedResult);
+        }, 5000);
 
         frame.addEventListener('load', () => {
             if (!submitted || settled) return;
             const text = frame.contentDocument?.body?.textContent?.trim();
             if (!text) {
-                settle(resolve, {
-                    state: 'external_export_download_delivered',
-                    schemaId: 'layer3.external_export_download_delivery.v1',
-                    filename: 'browser-managed attachment',
-                    sourceArtifactHash: body.source_artifact_hash || null,
-                    externalExportDownloadRecordRef: body.external_export_download_record_ref || null,
-                });
+                settle(resolve, submittedResult);
                 return;
             }
             try {
@@ -1935,6 +1930,9 @@ function externalExportDownloadDeliveryPanelState() {
     const stateName = externalExportDownloadStateName(external);
     if (State.externalExportDownloadDeliveryPending) {
         return { label: 'external_export_download_delivery_ui_downloading', pill: 'preview', message: 'Submitting one same-origin attachment request for browser-managed download.' };
+    }
+    if (externalExportDownloadDeliveryStateName() === 'external_export_download_delivery_submitted') {
+        return { label: 'external_export_download_delivery_submitted', pill: 'preview', message: 'The same-origin delivery request was submitted; final download handling is browser-managed.' };
     }
     if (recordedExternalExportDownloadDelivery()) {
         return { label: State.externalExportDownloadDelivery.state || 'external_export_download_delivered', pill: 'ok', message: 'The browser received the same-origin delivery request; download handling is browser-managed.' };
