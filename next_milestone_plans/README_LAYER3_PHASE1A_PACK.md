@@ -164,6 +164,12 @@ And to the Layer 3 workbench external export/download readiness UI freeze packet
 
 The external export/download readiness UI packet freezes only rendered `/review/layer3` readiness over the already-live PR `#269` backend/API endpoint. Docs `64`/`65` remain governance by themselves; PR `#275` separately implements the bounded rendered readiness panel, read-only recorded descriptor display, and one server-gated `prepare_external_export_download` action. It does not admit browser download routes/controls, public or signed URLs, file streaming, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional package/reconciliation/artifact rows, `AnalysisArtifact`, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
+And to the Layer 3 workbench external export/download delivery freeze packet, which is planning-only and does not make actual download delivery live by itself:
+- `next_milestone_plans/Layer3_planning_docs/66_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/67_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_API_AND_STATE_CONTRACT.md`
+
+The external export/download delivery packet freezes only a future same-origin backend/API delivery boundary after recorded `external_export_download_prepared` readiness. It permits governance for streaming only the existing validated APS evidence-bundle handoff artifact after full server-side authority proof. It does not admit rendered download controls, public or signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional package/reconciliation/artifact rows, `AnalysisArtifact`, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
@@ -1104,6 +1110,22 @@ Read docs `62`/`63` and PR `#269` as split governance/live behavior:
 - PR `#269` separately implements only the bounded backend/API readiness descriptor through `POST /api/v1/layer3/handoff/export/download/prepare`
 - the live PR `#269` behavior is reference-only over the existing APS evidence-bundle handoff artifact and existing JSON-bearing workbench state
 - neither docs `62`/`63` nor PR `#269` make rendered UI behavior, browser download routes/controls, public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional reconciliation/package/artifact rows, `AnalysisArtifact`, source/schema/runtime widening, execution expansion beyond already admitted work, qualitative/hybrid/RAG/vector execution, or full mockup activation live
+- browser proof is required only if a later implementation changes rendered `/review/layer3` behavior
+
+### If you are auditing the Layer 3 workbench external export/download delivery freeze
+
+Start with:
+- `Layer3_planning_docs/66_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md`
+- `Layer3_planning_docs/67_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_API_AND_STATE_CONTRACT.md`
+- `Layer3_planning_docs/62_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md`
+- `Layer3_planning_docs/63_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_API_AND_STATE_CONTRACT.md`
+- `backend/app/services/nrc_aps_evidence_bundle.py`
+
+Read docs `66`/`67` as planning-only delivery governance:
+- they freeze only a future same-origin backend/API delivery endpoint after `external_export_download_prepared`
+- the delivery basis is the existing validated APS evidence-bundle handoff artifact, not a newly generated export artifact
+- implementation must revalidate package-review, handoff/export prepare, APS dispatch, readiness, package refs/hashes, and APS bundle refs server-side before streaming bytes
+- they do not admit rendered download controls, public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional row families, `AnalysisArtifact`, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation
 - browser proof is required only if a later implementation changes rendered `/review/layer3` behavior
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
