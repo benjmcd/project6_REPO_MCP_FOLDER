@@ -33,6 +33,9 @@ const State = {
     apsHandoffDispatch: null,
     apsHandoffDispatchError: null,
     apsHandoffDispatchPending: false,
+    externalExportDownloadPrepare: null,
+    externalExportDownloadPrepareError: null,
+    externalExportDownloadPreparePending: false,
     gateBDecisions: {},
     materialFilter: '',
     events: [],
@@ -83,6 +86,9 @@ const elements = {
     apsHandoffDispatchForm: document.getElementById('aps-handoff-dispatch-form'),
     apsHandoffDispatchPanel: document.getElementById('aps-handoff-dispatch-panel'),
     apsHandoffDispatchSubmit: document.getElementById('aps-handoff-dispatch-submit'),
+    externalExportDownloadPrepareForm: document.getElementById('external-export-download-prepare-form'),
+    externalExportDownloadPreparePanel: document.getElementById('external-export-download-prepare-panel'),
+    externalExportDownloadPrepareSubmit: document.getElementById('external-export-download-prepare-submit'),
     contextList: document.getElementById('context-list'),
     eventList: document.getElementById('event-list'),
     unavailableList: document.getElementById('unavailable-list'),
@@ -102,6 +108,7 @@ const HANDOFF_EXPORT_PREPARE_RECORDED_STATES = new Set([
     'handoff_export_blocked',
 ]);
 const APS_HANDOFF_DISPATCH_RECORDED_STATES = new Set(['aps_handoff_dispatched']);
+const EXTERNAL_EXPORT_DOWNLOAD_RECORDED_STATES = new Set(['external_export_download_prepared']);
 const PACKAGE_REVIEW_PACKAGE_KINDS = ['canonical_internal', 'user_facing', 'review_facing'];
 
 function escapeHtml(value) {
@@ -193,7 +200,7 @@ function renderUnavailable(labels) {
 }
 
 function currentAuthorityRail() {
-    return State.apsHandoffDispatch?.authority_rail || State.handoffExportPrepare?.authority_rail || State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
+    return State.externalExportDownloadPrepare?.authority_rail || State.apsHandoffDispatch?.authority_rail || State.handoffExportPrepare?.authority_rail || State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
         || State.sessionSummary?.authority_rail || State.resultReview?.authority_rail || State.resultStatus?.authority_rail
         || State.planApproval?.authority_rail || State.planRevision?.authority_rail || State.planPreview?.authority_rail || State.gateC?.authority_rail || State.gateB?.authority_rail
         || State.materialPreview?.authority_rail || State.sourcePreview?.authority_rail || State.preflight?.authority_rail
@@ -201,6 +208,18 @@ function currentAuthorityRail() {
 }
 
 function currentDownstreamUnavailable() {
+    const external = externalExportDownloadPrepareState();
+    if (
+        external?.downstream_unavailable
+        && (
+            State.externalExportDownloadPrepare
+            || external.available === true
+            || externalExportDownloadStateName(external) === 'external_export_download_ready'
+            || recordedExternalExportDownloadPrepare()
+        )
+    ) {
+        return external.downstream_unavailable;
+    }
     return State.apsHandoffDispatch?.downstream_unavailable
         || State.sessionSummary?.aps_handoff_dispatch?.downstream_unavailable
         || State.handoffExportPrepare?.downstream_unavailable
@@ -239,6 +258,7 @@ function renderContext() {
         package_review_submit: State.packageReviewSubmit?.next_state || State.packageReviewSubmitError?.error_code || State.sessionSummary?.package_review_submit?.state || 'none',
         handoff_export_prepare: State.handoffExportPrepare?.next_state || State.handoffExportPrepareError?.error_code || State.sessionSummary?.handoff_export_prepare?.state || 'none',
         aps_handoff_dispatch: State.apsHandoffDispatch?.next_state || State.apsHandoffDispatchError?.error_code || State.sessionSummary?.aps_handoff_dispatch?.state || 'none',
+        external_export_download: State.externalExportDownloadPrepare?.next_state || State.externalExportDownloadPrepareError?.error_code || State.sessionSummary?.external_export_download?.state || 'none',
     };
     elements.contextList.innerHTML = Object.entries(context)
         .map(([key, value]) => `
@@ -296,6 +316,12 @@ function currentSessionId() {
         || null;
 }
 
+function clearExternalExportDownloadPrepareState() {
+    State.externalExportDownloadPrepare = null;
+    State.externalExportDownloadPrepareError = null;
+    State.externalExportDownloadPreparePending = false;
+}
+
 function clearResultReviewState({ keepSummary = false } = {}) {
     if (!keepSummary) {
         State.sessionSummary = null;
@@ -320,6 +346,7 @@ function clearResultReviewState({ keepSummary = false } = {}) {
     State.apsHandoffDispatch = null;
     State.apsHandoffDispatchError = null;
     State.apsHandoffDispatchPending = false;
+    clearExternalExportDownloadPrepareState();
 }
 
 function selectedResultAuthority() {
@@ -389,6 +416,7 @@ function canRefreshSessionSummary() {
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
     );
 }
 
@@ -404,6 +432,7 @@ function canInspectResultStatus() {
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
     );
 }
 
@@ -425,6 +454,8 @@ function canSubmitResultReview() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
         && (!reviewDecisionNeedsNotes() || notes)
     );
 }
@@ -441,6 +472,8 @@ function canInspectPackageReviewPreview() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
     );
 }
 
@@ -591,6 +624,23 @@ function recordedApsHandoffDispatch() {
         : null;
 }
 
+function externalExportDownloadPrepareState() {
+    return State.externalExportDownloadPrepare || State.sessionSummary?.external_export_download || null;
+}
+
+function externalExportDownloadStateName(state = externalExportDownloadPrepareState()) {
+    return state?.external_export_download_state || state?.next_state || state?.state || null;
+}
+
+function recordedExternalExportDownloadPrepare() {
+    const state = externalExportDownloadPrepareState();
+    if (!state) return null;
+    const recordedState = externalExportDownloadStateName(state);
+    return state.external_export_download_record_ref || EXTERNAL_EXPORT_DOWNLOAD_RECORDED_STATES.has(recordedState)
+        ? state
+        : null;
+}
+
 function handoffExportEnvelopeRef(handoff = State.sessionSummary?.handoff_export_prepare || handoffExportPrepareState() || {}) {
     return handoff.handoff_export_envelope_ref || handoff.handoff_export_envelope?.envelope_ref || null;
 }
@@ -614,6 +664,7 @@ function canCommitPackageConstruction() {
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
     );
 }
 
@@ -639,6 +690,7 @@ function canSubmitPackageReview() {
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
         && (!packageReviewSubmitDecisionNeedsNotes() || notes)
     );
 }
@@ -671,6 +723,7 @@ function canSubmitHandoffExportPrepare() {
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
         && (!handoffExportPrepareDecisionNeedsNotes() || notes)
     );
 }
@@ -710,6 +763,56 @@ function canSubmitApsHandoffDispatch() {
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
+    );
+}
+
+function canSubmitExternalExportDownloadPrepare() {
+    const authority = selectedResultAuthority();
+    const external = State.sessionSummary?.external_export_download || {};
+    const aps = State.sessionSummary?.aps_handoff_dispatch || apsHandoffDispatchState() || {};
+    const handoff = State.sessionSummary?.handoff_export_prepare || handoffExportPrepareState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const packageReviewState = external.package_review_state || submit.package_review_state || submit.state || handoff.package_review_state;
+    const prepareState = external.handoff_export_state || handoff.handoff_export_state || handoff.next_state || handoff.state;
+    const apsState = external.aps_handoff_state || apsHandoffStateName(aps);
+    return Boolean(
+        hasResultAuthorityIdentity(authority)
+        && authority.selected
+        && authority.terminal
+        && State.sessionSummary?.session_id
+        && packageReviewState === 'package_review_approved'
+        && prepareState === 'handoff_export_prepared'
+        && apsState === 'aps_handoff_dispatched'
+        && external.available === true
+        && external.state === 'external_export_download_ready'
+        && external.external_export_download_prepare_enabled === true
+        && external.result_review_record_ref
+        && external.package_review_preview_hash
+        && external.reconciliation_record_id
+        && external.package_review_submit_record_ref
+        && external.prepare_record_ref
+        && external.handoff_export_envelope_ref
+        && external.aps_handoff_record_ref
+        && external.aps_output_package_id
+        && external.aps_output_package_kind
+        && external.aps_bundle_ref
+        && external.aps_bundle_id
+        && external.aps_schema_id
+        && external.source_artifact_hash
+        && external.source_artifact_size_bytes != null
+        && packageKindsFromState().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && packageOutputPackageIds().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && packagePayloadRefs().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && packagePayloadHashes().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && !recordedExternalExportDownloadPrepare()
+        && !State.resultReviewPending
+        && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
+        && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
     );
 }
 
@@ -738,6 +841,8 @@ function isHandoffActive() {
         || recordedHandoffExportPrepare()
         || aps.available === true
         || recordedApsHandoffDispatch()
+        || (externalExportDownloadPrepareState() || {}).available === true
+        || recordedExternalExportDownloadPrepare()
     );
 }
 
@@ -1517,6 +1622,152 @@ function renderApsHandoffDispatchPanel() {
     `;
 }
 
+function externalExportDownloadPanelState() {
+    const external = externalExportDownloadPrepareState() || {};
+    const aps = State.sessionSummary?.aps_handoff_dispatch || apsHandoffDispatchState() || {};
+    const stateName = externalExportDownloadStateName(external);
+    const apsState = external.aps_handoff_state || apsHandoffStateName(aps);
+    if (State.externalExportDownloadPreparePending) {
+        return { label: 'external_export_download_ui_preparing', pill: 'preview', message: 'Submitting one reference-only readiness request.' };
+    }
+    if (recordedExternalExportDownloadPrepare()) {
+        return { label: stateName || 'external_export_download_prepared', pill: 'ok', message: 'Server state already contains recorded external export/download readiness.' };
+    }
+    if (State.externalExportDownloadPrepareError) {
+        return { label: State.externalExportDownloadPrepareError.error_code || 'external_export_download_ui_error', pill: 'blocked', message: 'Server authority rejected or blocked the latest readiness action.' };
+    }
+    if (stateName === 'external_export_download_conflict') {
+        return { label: stateName, pill: 'blocked', message: external.blocked_reason || 'Existing external export/download readiness conflicts with this workbench session.' };
+    }
+    if (stateName === 'external_export_download_blocked') {
+        return { label: stateName, pill: 'blocked', message: external.blocked_reason || 'External export/download readiness is blocked by server authority.' };
+    }
+    if (external.available === true && stateName === 'external_export_download_ready') {
+        return { label: stateName, pill: 'ok', message: 'Recorded APS handoff dispatch is ready for reference-only external export/download readiness.' };
+    }
+    if (apsState === 'aps_handoff_dispatched') {
+        return { label: stateName || 'external_export_download_unavailable', pill: 'blocked', message: external.blocked_reason || 'External export/download readiness is not available from the server summary.' };
+    }
+    return { label: stateName || 'external_export_download_unavailable', pill: 'blocked', message: 'External export/download readiness requires recorded APS handoff dispatch.' };
+}
+
+function renderExternalExportDownloadPreparePanel() {
+    const external = externalExportDownloadPrepareState() || {};
+    const aps = State.sessionSummary?.aps_handoff_dispatch || apsHandoffDispatchState() || {};
+    const handoff = State.sessionSummary?.handoff_export_prepare || handoffExportPrepareState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const authority = selectedResultAuthority();
+    const panelState = externalExportDownloadPanelState();
+    const packageReviewState = external.package_review_state || submit.package_review_state || submit.state || handoff.package_review_state;
+    const prepareState = external.handoff_export_state || handoff.handoff_export_state || handoff.next_state || handoff.state;
+    const apsState = external.aps_handoff_state || apsHandoffStateName(aps);
+    const packageKinds = Array.isArray(external.package_kinds) && external.package_kinds.length ? external.package_kinds : packageKindsFromState();
+    const packageIds = Array.isArray(external.output_package_ids) && external.output_package_ids.length ? external.output_package_ids : packageOutputPackageIds();
+    const payloadRefs = Array.isArray(external.payload_refs) && external.payload_refs.length ? external.payload_refs : packagePayloadRefs();
+    const payloadHashes = Array.isArray(external.payload_hashes) && external.payload_hashes.length ? external.payload_hashes : packagePayloadHashes();
+    const downstream = external.downstream_unavailable || [
+        'browser_download',
+        'download_url',
+        'connector_dispatch',
+        'destination_selection',
+        'generic_downstream_dispatch',
+    ];
+    const descriptor = external.external_export_download_descriptor;
+    const descriptorRows = descriptor && typeof descriptor === 'object'
+        ? [
+            fieldItem('descriptor ref', descriptor.descriptor_ref, { code: true }),
+            fieldItem('source artifact', descriptor.source_artifact_ref, { code: true }),
+            fieldItem('target', descriptor.export_download_target),
+            fieldItem('mode', descriptor.download_mode),
+            fieldItem('browser download enabled', descriptor.browser_download_enabled),
+            fieldItem('download URL enabled', descriptor.download_url_enabled),
+        ].join('')
+        : '<li>No readiness descriptor has been recorded.</li>';
+
+    elements.externalExportDownloadPreparePanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Readiness Authority</strong>
+                <ul>
+                    ${fieldItem('session', authority.sessionId, { code: true })}
+                    ${fieldItem('analysis plan', authority.analysisPlanId, { code: true })}
+                    ${fieldItem('pass run', authority.passRunId, { code: true })}
+                    ${fieldItem('preview', authority.previewId, { code: true })}
+                    ${fieldItem('preview hash', authority.previewHash, { code: true })}
+                    ${fieldItem('result review', external.result_review_record_ref || handoff.result_review_record_ref || submit.result_review_record_ref, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Upstream State</strong>
+                <ul>
+                    ${fieldItem('package review state', packageReviewState)}
+                    ${fieldItem('submit ref', external.package_review_submit_record_ref || handoff.package_review_submit_record_ref || submit.submit_record_ref, { code: true })}
+                    ${fieldItem('prepare state', prepareState)}
+                    ${fieldItem('prepare ref', external.prepare_record_ref || handoff.prepare_record_ref, { code: true })}
+                    ${fieldItem('APS state', apsState)}
+                    ${fieldItem('APS record ref', external.aps_handoff_record_ref || aps.aps_handoff_record_ref, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Readiness Contract</strong>
+                <ul>
+                    ${fieldItem('target', external.export_download_target || 'aps_evidence_bundle_download_reference')}
+                    ${fieldItem('mode', external.download_mode || 'reference_only_prepare')}
+                    ${fieldItem('decision', external.operator_decision || 'prepare_external_export_download')}
+                    ${fieldItem('state', externalExportDownloadStateName(external))}
+                    ${fieldItem('prepare enabled', external.external_export_download_prepare_enabled)}
+                    ${fieldItem('readiness ref', external.external_export_download_record_ref, { code: true })}
+                    ${fieldItem('descriptor ref', external.export_download_descriptor_ref, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Source APS Bundle</strong>
+                <ul>
+                    ${fieldItem('package id', external.aps_output_package_id || aps.aps_output_package_id, { code: true })}
+                    ${fieldItem('package kind', external.aps_output_package_kind || aps.aps_output_package_kind)}
+                    ${fieldItem('bundle ref', external.aps_bundle_ref || aps.aps_bundle_ref, { code: true })}
+                    ${fieldItem('bundle id', external.aps_bundle_id || aps.aps_bundle_id, { code: true })}
+                    ${fieldItem('schema', external.aps_schema_id || aps.aps_schema_id)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Source Artifact</strong>
+                <ul>
+                    ${fieldItem('artifact ref', external.source_artifact_ref || external.aps_bundle_ref || aps.aps_bundle_ref, { code: true })}
+                    ${fieldItem('artifact schema', external.source_artifact_schema_id)}
+                    ${fieldItem('artifact hash', external.source_artifact_hash, { code: true })}
+                    ${fieldItem('artifact size bytes', external.source_artifact_size_bytes)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Reviewed Packages</strong>
+                <ul>${renderCodeList(packageKinds.map((kind, index) => `${kind}${packageIds[index] ? ` / ${packageIds[index]}` : ''}`), 'No reviewed package identities are available.')}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Payload Refs</strong>
+                <ul>${renderCodeList(payloadRefs, 'No source payload refs are available.')}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Payload Hashes</strong>
+                <ul>${renderCodeList(payloadHashes, 'No source payload hashes are available.')}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Readiness Descriptor</strong>
+                <ul>${descriptorRows}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Disabled Downstream</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+            ${renderErrorCard(State.externalExportDownloadPrepareError)}
+        </div>
+    `;
+}
+
 function setBusy(button, busy, label) {
     button.disabled = busy;
     if (label) {
@@ -1543,12 +1794,14 @@ function setGateControls() {
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
     );
     const packageReviewControlsEnabled = Boolean(
         (packageReviewSubmitState() || {}).package_review_submit_enabled === true
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
     );
     const handoffExportControlsEnabled = Boolean(
         State.sessionSummary?.handoff_export_prepare?.available === true
@@ -1556,11 +1809,18 @@ function setGateControls() {
         && !recordedHandoffExportPrepare()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
     );
     const apsHandoffControlsEnabled = Boolean(
         State.sessionSummary?.aps_handoff_dispatch?.available === true
         && !recordedApsHandoffDispatch()
         && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
+    );
+    const externalExportDownloadControlsEnabled = Boolean(
+        State.sessionSummary?.external_export_download?.available === true
+        && !recordedExternalExportDownloadPrepare()
+        && !State.externalExportDownloadPreparePending
     );
     elements.gateBSubmit.disabled = !(State.materialPreview?.material_candidates || []).length;
     elements.gateCPreview.disabled = !State.gateB?.session_id || gateCCommitted;
@@ -1583,6 +1843,7 @@ function setGateControls() {
     elements.handoffExportPrepareNotes.disabled = !handoffExportControlsEnabled;
     elements.handoffExportPrepareSubmit.disabled = !canSubmitHandoffExportPrepare();
     elements.apsHandoffDispatchSubmit.disabled = !apsHandoffControlsEnabled || !canSubmitApsHandoffDispatch();
+    elements.externalExportDownloadPrepareSubmit.disabled = !externalExportDownloadControlsEnabled || !canSubmitExternalExportDownloadPrepare();
     setStepChip(elements.planStep, canPlanPreview());
     setStepChip(elements.executionStep, Boolean(State.sessionSummary?.execution_selection?.selected));
     setStepChip(elements.resultsStep, Boolean(authority.selected && authority.terminal));
@@ -1601,6 +1862,7 @@ function renderAll() {
     renderPackageReviewPreviewPanel();
     renderHandoffExportPreparePanel();
     renderApsHandoffDispatchPanel();
+    renderExternalExportDownloadPreparePanel();
     setGateControls();
 }
 
@@ -1769,6 +2031,57 @@ function apsHandoffDispatchPayload(authority = selectedResultAuthority()) {
     return payload;
 }
 
+function externalExportDownloadPreparePayload(authority = selectedResultAuthority()) {
+    const external = State.sessionSummary?.external_export_download || {};
+    const aps = State.sessionSummary?.aps_handoff_dispatch || apsHandoffDispatchState() || {};
+    const handoff = State.sessionSummary?.handoff_export_prepare || handoffExportPrepareState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const payload = {
+        client_request_id: requestId(),
+        session_id: authority.sessionId,
+        analysis_plan_id: authority.analysisPlanId,
+        pass_run_id: authority.passRunId,
+        preview_id: authority.previewId,
+        preview_hash: authority.previewHash,
+        result_review_record_ref: external.result_review_record_ref || handoff.result_review_record_ref || submit.result_review_record_ref,
+        package_review_preview_hash: external.package_review_preview_hash || handoff.package_review_preview_hash || submit.package_review_preview_hash,
+        reconciliation_record_id: external.reconciliation_record_id || handoff.reconciliation_record_id || submit.reconciliation_record_id,
+        output_package_ids: Array.isArray(external.output_package_ids) && external.output_package_ids.length ? external.output_package_ids : packageOutputPackageIds(),
+        package_kinds: Array.isArray(external.package_kinds) && external.package_kinds.length ? external.package_kinds : packageKindsFromState(),
+        payload_refs: Array.isArray(external.payload_refs) && external.payload_refs.length ? external.payload_refs : packagePayloadRefs(),
+        payload_hashes: Array.isArray(external.payload_hashes) && external.payload_hashes.length ? external.payload_hashes : packagePayloadHashes(),
+        package_review_submit_record_ref: external.package_review_submit_record_ref || handoff.package_review_submit_record_ref || submit.submit_record_ref,
+        package_review_state: external.package_review_state || submit.package_review_state || submit.state || handoff.package_review_state,
+        prepare_record_ref: external.prepare_record_ref || handoff.prepare_record_ref,
+        handoff_export_state: external.handoff_export_state || handoff.handoff_export_state || handoff.next_state || handoff.state,
+        handoff_export_envelope_ref: external.handoff_export_envelope_ref || handoffExportEnvelopeRef(handoff),
+        handoff_target: external.handoff_target || 'internal_export_envelope',
+        export_mode: external.export_mode || 'prepare_only',
+        aps_handoff_record_ref: external.aps_handoff_record_ref || aps.aps_handoff_record_ref,
+        aps_handoff_state: external.aps_handoff_state || apsHandoffStateName(aps),
+        aps_handoff_target: external.aps_handoff_target || aps.aps_handoff_target || 'aps_evidence_bundle',
+        dispatch_mode: external.dispatch_mode || aps.dispatch_mode || 'server_side_aps_handoff',
+        aps_output_package_id: external.aps_output_package_id || aps.aps_output_package_id,
+        aps_output_package_kind: external.aps_output_package_kind || aps.aps_output_package_kind,
+        aps_bundle_ref: external.aps_bundle_ref || aps.aps_bundle_ref,
+        aps_bundle_id: external.aps_bundle_id || aps.aps_bundle_id,
+        aps_schema_id: external.aps_schema_id || aps.aps_schema_id,
+        export_download_target: external.export_download_target || 'aps_evidence_bundle_download_reference',
+        download_mode: external.download_mode || 'reference_only_prepare',
+        operator_decision: 'prepare_external_export_download',
+    };
+    if (external.analysis_run_id || handoff.analysis_run_id || authority.analysisRunId) {
+        payload.analysis_run_id = external.analysis_run_id || handoff.analysis_run_id || authority.analysisRunId;
+    }
+    if (external.source_artifact_hash) {
+        payload.aps_bundle_hash = external.source_artifact_hash;
+    }
+    if (external.source_artifact_size_bytes != null) {
+        payload.aps_bundle_size_bytes = external.source_artifact_size_bytes;
+    }
+    return payload;
+}
+
 async function refreshSessionSummary() {
     const sessionId = currentSessionId();
     if (!sessionId) return;
@@ -1786,6 +2099,7 @@ async function refreshSessionSummary() {
         State.packageReviewSubmitError = null;
         State.handoffExportPrepareError = null;
         State.apsHandoffDispatchError = null;
+        State.externalExportDownloadPrepareError = null;
         addEvent('Session state refreshed.');
         renderAll();
     } catch (error) {
@@ -1819,6 +2133,7 @@ async function inspectResultStatus() {
         State.handoffExportPrepareError = null;
         State.apsHandoffDispatch = null;
         State.apsHandoffDispatchError = null;
+        clearExternalExportDownloadPrepareState();
         addEvent('Result/status authority loaded.');
         renderAll();
     } catch (error) {
@@ -1843,6 +2158,7 @@ async function inspectPackageReviewPreview() {
     State.handoffExportPrepareError = null;
     State.apsHandoffDispatch = null;
     State.apsHandoffDispatchError = null;
+    clearExternalExportDownloadPrepareState();
     renderAll();
     setBusy(elements.packageReviewPreviewInspect, true, 'Inspect Package Preview');
     try {
@@ -1852,6 +2168,7 @@ async function inspectPackageReviewPreview() {
         State.packageReviewSubmitError = null;
         State.handoffExportPrepareError = null;
         State.apsHandoffDispatchError = null;
+        State.externalExportDownloadPrepareError = null;
         addEvent('Package review preview loaded.');
         renderAll();
     } catch (error) {
@@ -1878,6 +2195,7 @@ async function commitPackageConstruction() {
     State.handoffExportPrepareError = null;
     State.apsHandoffDispatch = null;
     State.apsHandoffDispatchError = null;
+    clearExternalExportDownloadPrepareState();
     renderAll();
     setBusy(elements.packageConstructionCommit, true, 'Commit Package Set');
     try {
@@ -1886,6 +2204,7 @@ async function commitPackageConstruction() {
         State.packageReviewSubmitError = null;
         State.handoffExportPrepareError = null;
         State.apsHandoffDispatchError = null;
+        State.externalExportDownloadPrepareError = null;
         addEvent('Package set committed.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.packageConstruction.session_id)}`);
@@ -1917,6 +2236,7 @@ async function submitPackageReview(event) {
     State.handoffExportPrepareError = null;
     State.apsHandoffDispatch = null;
     State.apsHandoffDispatchError = null;
+    clearExternalExportDownloadPrepareState();
     renderAll();
     setBusy(elements.packageReviewSubmit, true, 'Submit Package Review');
     try {
@@ -1924,6 +2244,7 @@ async function submitPackageReview(event) {
         State.packageReviewSubmitError = null;
         State.handoffExportPrepareError = null;
         State.apsHandoffDispatchError = null;
+        State.externalExportDownloadPrepareError = null;
         addEvent('Package review submitted.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.packageReviewSubmit.session_id)}`);
@@ -1953,12 +2274,14 @@ async function submitHandoffExportPrepare(event) {
     State.handoffExportPrepareError = null;
     State.apsHandoffDispatch = null;
     State.apsHandoffDispatchError = null;
+    clearExternalExportDownloadPrepareState();
     renderAll();
     setBusy(elements.handoffExportPrepareSubmit, true, 'Submit Preparation');
     try {
         State.handoffExportPrepare = await postJson('/handoff/export/prepare', handoffExportPreparePayload());
         State.handoffExportPrepareError = null;
         State.apsHandoffDispatchError = null;
+        State.externalExportDownloadPrepareError = null;
         addEvent('Handoff/export preparation recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.handoffExportPrepare.session_id)}`);
@@ -1986,11 +2309,13 @@ async function submitApsHandoffDispatch(event) {
     if (!canSubmitApsHandoffDispatch()) return;
     State.apsHandoffDispatchPending = true;
     State.apsHandoffDispatchError = null;
+    clearExternalExportDownloadPrepareState();
     renderAll();
     setBusy(elements.apsHandoffDispatchSubmit, true, 'Dispatch APS Handoff');
     try {
         State.apsHandoffDispatch = await postJson('/handoff/aps/dispatch', apsHandoffDispatchPayload());
         State.apsHandoffDispatchError = null;
+        State.externalExportDownloadPrepareError = null;
         addEvent('APS handoff dispatch recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.apsHandoffDispatch.session_id)}`);
@@ -2009,6 +2334,38 @@ async function submitApsHandoffDispatch(event) {
     } finally {
         State.apsHandoffDispatchPending = false;
         setBusy(elements.apsHandoffDispatchSubmit, false, 'Dispatch APS Handoff');
+        renderAll();
+    }
+}
+
+async function submitExternalExportDownloadPrepare(event) {
+    event.preventDefault();
+    if (!canSubmitExternalExportDownloadPrepare()) return;
+    State.externalExportDownloadPreparePending = true;
+    State.externalExportDownloadPrepareError = null;
+    renderAll();
+    setBusy(elements.externalExportDownloadPrepareSubmit, true, 'Prepare External Readiness');
+    try {
+        State.externalExportDownloadPrepare = await postJson('/handoff/export/download/prepare', externalExportDownloadPreparePayload());
+        State.externalExportDownloadPrepareError = null;
+        addEvent('External export/download readiness recorded.');
+        try {
+            State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.externalExportDownloadPrepare.session_id)}`);
+        } catch (refreshError) {
+            addEvent(`External readiness recorded; session refresh blocked: ${refreshError.message}`);
+        }
+        renderAll();
+    } catch (error) {
+        State.externalExportDownloadPrepareError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'external_export_download_prepare_request_failed',
+            message: error.message,
+        };
+        addEvent(`External export/download readiness blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.externalExportDownloadPreparePending = false;
+        setBusy(elements.externalExportDownloadPrepareSubmit, false, 'Prepare External Readiness');
         renderAll();
     }
 }
@@ -2033,6 +2390,7 @@ async function submitResultReview(event) {
         State.handoffExportPrepareError = null;
         State.apsHandoffDispatch = null;
         State.apsHandoffDispatchError = null;
+        clearExternalExportDownloadPrepareState();
         addEvent('Result review recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.resultReview.session_id)}`);
@@ -2312,6 +2670,7 @@ elements.packageConstructionCommit.addEventListener('click', commitPackageConstr
 elements.packageReviewSubmitForm.addEventListener('submit', submitPackageReview);
 elements.handoffExportPrepareForm.addEventListener('submit', submitHandoffExportPrepare);
 elements.apsHandoffDispatchForm.addEventListener('submit', submitApsHandoffDispatch);
+elements.externalExportDownloadPrepareForm.addEventListener('submit', submitExternalExportDownloadPrepare);
 elements.resultReviewDecision.addEventListener('change', setGateControls);
 elements.resultReviewNotes.addEventListener('input', setGateControls);
 elements.packageReviewSubmitDecision.addEventListener('change', setGateControls);
