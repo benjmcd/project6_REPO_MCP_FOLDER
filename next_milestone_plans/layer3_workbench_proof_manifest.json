@@ -96,7 +96,7 @@
     "latest_aps_handoff_dispatch_planning_base_commit": "fb16b777d674a57e9073b46144275290804e56ce",
     "latest_aps_handoff_dispatch_planning_live_behavior_change": false,
     "latest_aps_handoff_dispatch_planning_summary": "Docs 58/59 freeze the workbench APS handoff dispatch contract after prepared-envelope authority and select aps_evidence_bundle_handoff only; PR #260 is the separate backend/API implementation and PR #261 and PR #263 are hardening follow-ups.",
-    "latest_planning_merge_commit": "09e2b28aa4c9ba9ebc2ba4cf1a5cd495cba63519",
+    "latest_planning_merge_commit": "b14962b0b1219a478cc873462f686d4edfcc164e",
     "latest_aps_handoff_dispatch_planning_merge_commit": "09e2b28aa4c9ba9ebc2ba4cf1a5cd495cba63519",
     "latest_aps_handoff_dispatch_ui_planning_branch": "codex/l3-aps-dispatch-ui-freeze",
     "latest_aps_handoff_dispatch_ui_planning_pr": "#265",
