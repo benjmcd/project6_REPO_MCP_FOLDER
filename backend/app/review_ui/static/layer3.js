@@ -184,45 +184,79 @@ async function postJson(path, body) {
     return parseResponse(res);
 }
 
-function filenameFromDisposition(value) {
-    const header = String(value || '');
-    const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
-    if (utf8Match) {
-        return decodeURIComponent(utf8Match[1].trim().replace(/^"|"$/g, ''));
-    }
-    const match = header.match(/filename=([^;]+)/i);
-    return match ? match[1].trim().replace(/^"|"$/g, '') : 'layer3-aps-evidence-bundle.json';
-}
+function submitAttachmentForm(path, body) {
+    return new Promise((resolve, reject) => {
+        const frameName = `layer3-download-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        const frame = document.createElement('iframe');
+        frame.name = frameName;
+        frame.hidden = true;
 
-async function postAttachment(path, body) {
-    const res = await fetch(`${API_ROOT}${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `${API_ROOT}${path}`;
+        form.enctype = 'application/x-www-form-urlencoded';
+        form.target = frameName;
+        form.hidden = true;
+
+        Object.entries(body).forEach(([key, value]) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = JSON.stringify(value);
+            form.appendChild(input);
+        });
+
+        let submitted = false;
+        let settled = false;
+        const cleanup = () => {
+            window.setTimeout(() => {
+                form.remove();
+                frame.remove();
+            }, 15000);
+        };
+        const settle = (handler, value) => {
+            if (settled) return;
+            settled = true;
+            window.clearTimeout(timer);
+            cleanup();
+            handler(value);
+        };
+        const timer = window.setTimeout(() => {
+            settle(resolve, {
+                state: 'external_export_download_delivered',
+                schemaId: 'layer3.external_export_download_delivery.v1',
+                filename: 'browser-managed attachment',
+                sourceArtifactHash: body.source_artifact_hash || null,
+                externalExportDownloadRecordRef: body.external_export_download_record_ref || null,
+            });
+        }, 1500);
+
+        frame.addEventListener('load', () => {
+            if (!submitted || settled) return;
+            const text = frame.contentDocument?.body?.textContent?.trim();
+            if (!text) {
+                settle(resolve, {
+                    state: 'external_export_download_delivered',
+                    schemaId: 'layer3.external_export_download_delivery.v1',
+                    filename: 'browser-managed attachment',
+                    sourceArtifactHash: body.source_artifact_hash || null,
+                    externalExportDownloadRecordRef: body.external_export_download_record_ref || null,
+                });
+                return;
+            }
+            try {
+                const payload = JSON.parse(text);
+                settle(reject, Object.assign(new Error(payload.message || 'External delivery request failed.'), { payload }));
+            } catch (_error) {
+                settle(reject, new Error(text));
+            }
+        });
+
+        document.body.appendChild(frame);
+        document.body.appendChild(form);
+        submitted = true;
+        form.submit();
     });
-    if (!res.ok) {
-        return parseResponse(res);
-    }
-    return {
-        blob: await res.blob(),
-        filename: filenameFromDisposition(res.headers.get('content-disposition')),
-        schemaId: res.headers.get('x-layer3-schema-id') || null,
-        deliveryState: res.headers.get('x-layer3-delivery-state') || null,
-        sourceArtifactHash: res.headers.get('x-layer3-source-artifact-hash') || null,
-        externalExportDownloadRecordRef: res.headers.get('x-layer3-external-export-download-record-ref') || null,
-    };
-}
-
-function triggerBrowserDownload(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename || 'layer3-aps-evidence-bundle.json';
-    link.hidden = true;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 function addEvent(message) {
@@ -1900,10 +1934,10 @@ function externalExportDownloadDeliveryPanelState() {
     const external = externalExportDownloadPrepareState() || {};
     const stateName = externalExportDownloadStateName(external);
     if (State.externalExportDownloadDeliveryPending) {
-        return { label: 'external_export_download_delivery_ui_downloading', pill: 'preview', message: 'Requesting one same-origin artifact stream from the server.' };
+        return { label: 'external_export_download_delivery_ui_downloading', pill: 'preview', message: 'Submitting one same-origin attachment request for browser-managed download.' };
     }
     if (recordedExternalExportDownloadDelivery()) {
-        return { label: State.externalExportDownloadDelivery.state || 'external_export_download_delivered', pill: 'ok', message: 'The browser completed the same-origin delivery response.' };
+        return { label: State.externalExportDownloadDelivery.state || 'external_export_download_delivered', pill: 'ok', message: 'The browser received the same-origin delivery request; download handling is browser-managed.' };
     }
     if (State.externalExportDownloadDeliveryError) {
         const errorCode = State.externalExportDownloadDeliveryError.error_code || 'external_export_download_delivery_ui_error';
@@ -2662,17 +2696,16 @@ async function submitExternalExportDownloadDelivery(event) {
     renderAll();
     setBusy(elements.externalExportDownloadDeliverySubmit, true, 'Deliver External Bundle');
     try {
-        const delivery = await postAttachment('/handoff/export/download/deliver', externalExportDownloadDeliveryPayload());
-        triggerBrowserDownload(delivery.blob, delivery.filename);
+        const delivery = await submitAttachmentForm('/handoff/export/download/deliver', externalExportDownloadDeliveryPayload());
         State.externalExportDownloadDelivery = {
-            state: delivery.deliveryState || 'external_export_download_delivered',
+            state: delivery.state || 'external_export_download_delivered',
             schemaId: delivery.schemaId,
             filename: delivery.filename,
             sourceArtifactHash: delivery.sourceArtifactHash,
             externalExportDownloadRecordRef: delivery.externalExportDownloadRecordRef,
         };
         State.externalExportDownloadDeliveryError = null;
-        addEvent('External export/download bundle delivered by same-origin response.');
+        addEvent('External export/download bundle submitted as browser-managed same-origin attachment.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(currentSessionId())}`);
         } catch (refreshError) {

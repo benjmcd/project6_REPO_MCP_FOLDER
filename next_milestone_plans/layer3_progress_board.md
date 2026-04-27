@@ -47,11 +47,11 @@ Hard rule:
 
 ## Current Snapshot
 
-As of `2026-04-26`:
-- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-handoff-prepare-ui-impl`
+As of `2026-04-27`:
+- seed local checkout used to prepare this artifact: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-download-delivery-review-fix`
 - valid local authority rule: use a clean checkout whose contents match the artifact state being refreshed; prefer current `main` for merged repo truth and the active branch checkout only when an open or branch-only milestone is explicitly declared
 - authoritative remote branch: `project6-origin/main`
-- snapshot base for this post-PR278 docs/progress sync branch: current `project6-origin/main` after PR `#278` merge, commit `d0e0532db74743c0de2f60daee723a4d7b0894b0`
+- snapshot base for this post-PR284 review-fix branch: current `project6-origin/main` after PR `#284` merge, commit `a566a12ffd75a2069cca9fc1e0515d08df07e1ce`
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the landed export-package first shared-consumer freeze from PR `#106` and its docs-only closeout from PR `#107`

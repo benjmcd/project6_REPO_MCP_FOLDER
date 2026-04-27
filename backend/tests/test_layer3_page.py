@@ -91,7 +91,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "postJson('/handoff/export/prepare'" in js.text
     assert "postJson('/handoff/aps/dispatch'" in js.text
     assert "postJson('/handoff/export/download/prepare'" in js.text
-    assert "postAttachment('/handoff/export/download/deliver'" in js.text
+    assert "submitAttachmentForm('/handoff/export/download/deliver'" in js.text
+    assert ".blob()" not in js.text
     assert "operator_view_mode: 'status_only'" in js.text
     assert "operator_decision: elements.resultReviewDecision.value" in js.text
     assert "operator_decision: elements.packageReviewSubmitDecision.value" in js.text
