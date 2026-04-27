@@ -30,6 +30,9 @@ const State = {
     handoffExportPrepare: null,
     handoffExportPrepareError: null,
     handoffExportPreparePending: false,
+    apsHandoffDispatch: null,
+    apsHandoffDispatchError: null,
+    apsHandoffDispatchPending: false,
     gateBDecisions: {},
     materialFilter: '',
     events: [],
@@ -77,6 +80,9 @@ const elements = {
     handoffExportPrepareDecision: document.getElementById('handoff-export-prepare-decision'),
     handoffExportPrepareNotes: document.getElementById('handoff-export-prepare-notes'),
     handoffExportPrepareSubmit: document.getElementById('handoff-export-prepare-submit'),
+    apsHandoffDispatchForm: document.getElementById('aps-handoff-dispatch-form'),
+    apsHandoffDispatchPanel: document.getElementById('aps-handoff-dispatch-panel'),
+    apsHandoffDispatchSubmit: document.getElementById('aps-handoff-dispatch-submit'),
     contextList: document.getElementById('context-list'),
     eventList: document.getElementById('event-list'),
     unavailableList: document.getElementById('unavailable-list'),
@@ -95,6 +101,7 @@ const HANDOFF_EXPORT_PREPARE_RECORDED_STATES = new Set([
     'handoff_export_declined',
     'handoff_export_blocked',
 ]);
+const APS_HANDOFF_DISPATCH_RECORDED_STATES = new Set(['aps_handoff_dispatched']);
 const PACKAGE_REVIEW_PACKAGE_KINDS = ['canonical_internal', 'user_facing', 'review_facing'];
 
 function escapeHtml(value) {
@@ -186,7 +193,7 @@ function renderUnavailable(labels) {
 }
 
 function currentAuthorityRail() {
-    return State.handoffExportPrepare?.authority_rail || State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
+    return State.apsHandoffDispatch?.authority_rail || State.handoffExportPrepare?.authority_rail || State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
         || State.sessionSummary?.authority_rail || State.resultReview?.authority_rail || State.resultStatus?.authority_rail
         || State.planApproval?.authority_rail || State.planRevision?.authority_rail || State.planPreview?.authority_rail || State.gateC?.authority_rail || State.gateB?.authority_rail
         || State.materialPreview?.authority_rail || State.sourcePreview?.authority_rail || State.preflight?.authority_rail
@@ -194,13 +201,16 @@ function currentAuthorityRail() {
 }
 
 function currentDownstreamUnavailable() {
-    return State.handoffExportPrepare?.downstream_unavailable
+    return State.apsHandoffDispatch?.downstream_unavailable
+        || State.sessionSummary?.aps_handoff_dispatch?.downstream_unavailable
+        || State.handoffExportPrepare?.downstream_unavailable
         || State.packageReviewSubmit?.downstream_unavailable
         || State.packageConstruction?.downstream_unavailable
         || State.packageReviewPreview?.downstream_unavailable
         || State.resultReview?.downstream_unavailable
         || State.resultStatus?.downstream_unavailable
         || State.sessionSummary?.downstream_unavailable
+        || State.sessionSummary?.handoff_export_prepare?.downstream_unavailable
         || State.sessionSummary?.package_review_submit?.downstream_unavailable
         || State.sessionSummary?.package_construction?.downstream_unavailable
         || State.sessionSummary?.package_review_preview?.downstream_unavailable
@@ -228,6 +238,7 @@ function renderContext() {
         package_construction: State.packageConstruction?.next_state || State.packageConstructionError?.error_code || State.sessionSummary?.package_construction?.state || 'none',
         package_review_submit: State.packageReviewSubmit?.next_state || State.packageReviewSubmitError?.error_code || State.sessionSummary?.package_review_submit?.state || 'none',
         handoff_export_prepare: State.handoffExportPrepare?.next_state || State.handoffExportPrepareError?.error_code || State.sessionSummary?.handoff_export_prepare?.state || 'none',
+        aps_handoff_dispatch: State.apsHandoffDispatch?.next_state || State.apsHandoffDispatchError?.error_code || State.sessionSummary?.aps_handoff_dispatch?.state || 'none',
     };
     elements.contextList.innerHTML = Object.entries(context)
         .map(([key, value]) => `
@@ -306,6 +317,9 @@ function clearResultReviewState({ keepSummary = false } = {}) {
     State.handoffExportPrepare = null;
     State.handoffExportPrepareError = null;
     State.handoffExportPreparePending = false;
+    State.apsHandoffDispatch = null;
+    State.apsHandoffDispatchError = null;
+    State.apsHandoffDispatchPending = false;
 }
 
 function selectedResultAuthority() {
@@ -374,6 +388,7 @@ function canRefreshSessionSummary() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
     );
 }
 
@@ -388,6 +403,7 @@ function canInspectResultStatus() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
     );
 }
 
@@ -558,6 +574,27 @@ function recordedHandoffExportPrepare() {
         : null;
 }
 
+function apsHandoffDispatchState() {
+    return State.apsHandoffDispatch || State.sessionSummary?.aps_handoff_dispatch || null;
+}
+
+function apsHandoffStateName(state = apsHandoffDispatchState()) {
+    return state?.aps_handoff_state || state?.next_state || state?.state || null;
+}
+
+function recordedApsHandoffDispatch() {
+    const state = apsHandoffDispatchState();
+    if (!state) return null;
+    const recordedState = apsHandoffStateName(state);
+    return state.aps_handoff_record_ref || APS_HANDOFF_DISPATCH_RECORDED_STATES.has(recordedState)
+        ? state
+        : null;
+}
+
+function handoffExportEnvelopeRef(handoff = State.sessionSummary?.handoff_export_prepare || handoffExportPrepareState() || {}) {
+    return handoff.handoff_export_envelope_ref || handoff.handoff_export_envelope?.envelope_ref || null;
+}
+
 function canCommitPackageConstruction() {
     const authority = selectedResultAuthority();
     const preview = State.packageReviewPreview || {};
@@ -576,6 +613,7 @@ function canCommitPackageConstruction() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
     );
 }
 
@@ -600,6 +638,7 @@ function canSubmitPackageReview() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
         && (!packageReviewSubmitDecisionNeedsNotes() || notes)
     );
 }
@@ -631,7 +670,46 @@ function canSubmitHandoffExportPrepare() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
         && (!handoffExportPrepareDecisionNeedsNotes() || notes)
+    );
+}
+
+function canSubmitApsHandoffDispatch() {
+    const authority = selectedResultAuthority();
+    const aps = State.sessionSummary?.aps_handoff_dispatch || {};
+    const handoff = State.sessionSummary?.handoff_export_prepare || handoffExportPrepareState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const packageReviewState = submit.package_review_state || submit.state || handoff.package_review_state;
+    const prepareState = handoff.handoff_export_state || handoff.next_state || handoff.state;
+    return Boolean(
+        hasResultAuthorityIdentity(authority)
+        && authority.selected
+        && authority.terminal
+        && State.sessionSummary?.session_id
+        && packageReviewState === 'package_review_approved'
+        && prepareState === 'handoff_export_prepared'
+        && aps.available === true
+        && aps.state === 'aps_handoff_ready'
+        && aps.prepare_record_ref
+        && aps.handoff_export_envelope_ref
+        && handoff.prepare_record_ref
+        && handoffExportEnvelopeRef(handoff)
+        && handoff.result_review_record_ref
+        && handoff.package_review_preview_hash
+        && handoff.reconciliation_record_id
+        && handoff.package_review_submit_record_ref
+        && packageKindsFromState().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && packageOutputPackageIds().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && packagePayloadRefs().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && packagePayloadHashes().length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && !recordedApsHandoffDispatch()
+        && !State.resultReviewPending
+        && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
+        && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
     );
 }
 
@@ -650,6 +728,7 @@ function isPackageActive() {
 
 function isHandoffActive() {
     const handoff = handoffExportPrepareState() || {};
+    const aps = apsHandoffDispatchState() || {};
     const submit = packageReviewSubmitState() || {};
     return Boolean(
         submit.package_review_state === 'package_review_approved'
@@ -657,6 +736,8 @@ function isHandoffActive() {
         || handoff.available === true
         || handoff.state === 'handoff_export_ready'
         || recordedHandoffExportPrepare()
+        || aps.available === true
+        || recordedApsHandoffDispatch()
     );
 }
 
@@ -1326,6 +1407,116 @@ function renderHandoffExportPreparePanel() {
     `;
 }
 
+function apsHandoffPanelState() {
+    const aps = apsHandoffDispatchState() || {};
+    const handoff = State.sessionSummary?.handoff_export_prepare || handoffExportPrepareState() || {};
+    const prepareState = handoff.handoff_export_state || handoff.next_state || handoff.state;
+    const stateName = apsHandoffStateName(aps);
+    if (State.apsHandoffDispatchPending) {
+        return { label: 'aps_handoff_ui_dispatching', pill: 'preview', message: 'Submitting one server-side APS handoff dispatch request.' };
+    }
+    if (recordedApsHandoffDispatch()) {
+        return { label: stateName || 'aps_handoff_dispatched', pill: 'ok', message: 'Server state already contains a recorded APS handoff dispatch.' };
+    }
+    if (State.apsHandoffDispatchError) {
+        return { label: State.apsHandoffDispatchError.error_code || 'aps_handoff_ui_error', pill: 'blocked', message: 'Server authority rejected or blocked the latest APS dispatch action.' };
+    }
+    if (stateName === 'aps_handoff_conflict') {
+        return { label: stateName, pill: 'blocked', message: aps.blocked_reason || 'Existing APS handoff state conflicts with this workbench session.' };
+    }
+    if (stateName === 'aps_handoff_blocked') {
+        return { label: stateName, pill: 'blocked', message: aps.blocked_reason || 'APS owner-service compatibility is blocked.' };
+    }
+    if (aps.available === true && stateName === 'aps_handoff_ready') {
+        return { label: stateName, pill: 'ok', message: 'Prepared envelope authority is ready for server-side APS handoff dispatch.' };
+    }
+    if (prepareState === 'handoff_export_prepared') {
+        return { label: stateName || 'aps_handoff_unavailable', pill: 'blocked', message: aps.blocked_reason || 'APS dispatch readiness is not available from the server summary.' };
+    }
+    return { label: stateName || 'aps_handoff_unavailable', pill: 'blocked', message: 'APS dispatch requires a recorded handoff_export_prepared envelope.' };
+}
+
+function renderApsHandoffDispatchPanel() {
+    const aps = apsHandoffDispatchState() || {};
+    const handoff = State.sessionSummary?.handoff_export_prepare || handoffExportPrepareState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const authority = selectedResultAuthority();
+    const panelState = apsHandoffPanelState();
+    const packageReviewState = submit.package_review_state || submit.state || handoff.package_review_state;
+    const packageKinds = packageKindsFromState();
+    const packageIds = packageOutputPackageIds();
+    const payloadRefs = packagePayloadRefs();
+    const payloadHashes = packagePayloadHashes();
+    const downstream = aps.downstream_unavailable || ['external_export', 'download', 'connector_dispatch', 'non_aps_dispatch'];
+
+    elements.apsHandoffDispatchPanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Dispatch Authority</strong>
+                <ul>
+                    ${fieldItem('session', authority.sessionId, { code: true })}
+                    ${fieldItem('analysis plan', authority.analysisPlanId, { code: true })}
+                    ${fieldItem('pass run', authority.passRunId, { code: true })}
+                    ${fieldItem('preview', authority.previewId, { code: true })}
+                    ${fieldItem('preview hash', authority.previewHash, { code: true })}
+                    ${fieldItem('analysis run', handoff.analysis_run_id || authority.analysisRunId, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Prepared Envelope</strong>
+                <ul>
+                    ${fieldItem('package review state', packageReviewState)}
+                    ${fieldItem('submit ref', handoff.package_review_submit_record_ref || submit.submit_record_ref, { code: true })}
+                    ${fieldItem('prepare state', handoff.handoff_export_state || handoff.next_state || handoff.state)}
+                    ${fieldItem('prepare ref', aps.prepare_record_ref || handoff.prepare_record_ref, { code: true })}
+                    ${fieldItem('envelope ref', aps.handoff_export_envelope_ref || handoffExportEnvelopeRef(handoff), { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>APS Dispatch Contract</strong>
+                <ul>
+                    ${fieldItem('target', aps.aps_handoff_target || 'aps_evidence_bundle')}
+                    ${fieldItem('mode', aps.dispatch_mode || 'server_side_aps_handoff')}
+                    ${fieldItem('decision', aps.operator_decision || 'dispatch_aps_handoff')}
+                    ${fieldItem('state', apsHandoffStateName(aps))}
+                    ${fieldItem('record ref', aps.aps_handoff_record_ref, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Source Packages</strong>
+                <ul>${renderCodeList(packageKinds.map((kind, index) => `${kind}${packageIds[index] ? ` / ${packageIds[index]}` : ''}`), 'No reviewed package identities are available.')}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Payload Refs</strong>
+                <ul>${renderCodeList(payloadRefs, 'No source payload refs are available.')}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Payload Hashes</strong>
+                <ul>${renderCodeList(payloadHashes, 'No source payload hashes are available.')}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>APS Output</strong>
+                <ul>
+                    ${fieldItem('package id', aps.aps_output_package_id, { code: true })}
+                    ${fieldItem('package kind', aps.aps_output_package_kind)}
+                    ${fieldItem('bundle ref', aps.aps_bundle_ref, { code: true })}
+                    ${fieldItem('bundle id', aps.aps_bundle_id, { code: true })}
+                    ${fieldItem('schema', aps.aps_schema_id)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Disabled Downstream</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+            ${renderErrorCard(State.apsHandoffDispatchError)}
+        </div>
+    `;
+}
+
 function setBusy(button, busy, label) {
     button.disabled = busy;
     if (label) {
@@ -1351,17 +1542,25 @@ function setGateControls() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
     );
     const packageReviewControlsEnabled = Boolean(
         (packageReviewSubmitState() || {}).package_review_submit_enabled === true
         && !State.packageReviewSubmitPending
         && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
     );
     const handoffExportControlsEnabled = Boolean(
         State.sessionSummary?.handoff_export_prepare?.available === true
         && (packageReviewSubmitState()?.package_review_state || packageReviewSubmitState()?.state) === 'package_review_approved'
         && !recordedHandoffExportPrepare()
         && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
+    );
+    const apsHandoffControlsEnabled = Boolean(
+        State.sessionSummary?.aps_handoff_dispatch?.available === true
+        && !recordedApsHandoffDispatch()
+        && !State.apsHandoffDispatchPending
     );
     elements.gateBSubmit.disabled = !(State.materialPreview?.material_candidates || []).length;
     elements.gateCPreview.disabled = !State.gateB?.session_id || gateCCommitted;
@@ -1383,6 +1582,7 @@ function setGateControls() {
     elements.handoffExportPrepareDecision.disabled = !handoffExportControlsEnabled;
     elements.handoffExportPrepareNotes.disabled = !handoffExportControlsEnabled;
     elements.handoffExportPrepareSubmit.disabled = !canSubmitHandoffExportPrepare();
+    elements.apsHandoffDispatchSubmit.disabled = !apsHandoffControlsEnabled || !canSubmitApsHandoffDispatch();
     setStepChip(elements.planStep, canPlanPreview());
     setStepChip(elements.executionStep, Boolean(State.sessionSummary?.execution_selection?.selected));
     setStepChip(elements.resultsStep, Boolean(authority.selected && authority.terminal));
@@ -1400,6 +1600,7 @@ function renderAll() {
     renderResultReviewPanel();
     renderPackageReviewPreviewPanel();
     renderHandoffExportPreparePanel();
+    renderApsHandoffDispatchPanel();
     setGateControls();
 }
 
@@ -1534,6 +1735,40 @@ function handoffExportPreparePayload(authority = selectedResultAuthority()) {
     return payload;
 }
 
+function apsHandoffDispatchPayload(authority = selectedResultAuthority()) {
+    const handoff = State.sessionSummary?.handoff_export_prepare || handoffExportPrepareState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const payload = {
+        client_request_id: requestId(),
+        session_id: authority.sessionId,
+        analysis_plan_id: authority.analysisPlanId,
+        pass_run_id: authority.passRunId,
+        preview_id: authority.previewId,
+        preview_hash: authority.previewHash,
+        result_review_record_ref: handoff.result_review_record_ref || submit.result_review_record_ref,
+        package_review_preview_hash: handoff.package_review_preview_hash || submit.package_review_preview_hash,
+        reconciliation_record_id: handoff.reconciliation_record_id || submit.reconciliation_record_id,
+        output_package_ids: packageOutputPackageIds(),
+        package_kinds: packageKindsFromState(),
+        payload_refs: packagePayloadRefs(),
+        payload_hashes: packagePayloadHashes(),
+        package_review_submit_record_ref: handoff.package_review_submit_record_ref || submit.submit_record_ref,
+        package_review_state: submit.package_review_state || submit.state || handoff.package_review_state,
+        prepare_record_ref: handoff.prepare_record_ref,
+        handoff_export_state: handoff.handoff_export_state || handoff.next_state || handoff.state,
+        handoff_export_envelope_ref: handoffExportEnvelopeRef(handoff),
+        handoff_target: 'internal_export_envelope',
+        export_mode: 'prepare_only',
+        aps_handoff_target: 'aps_evidence_bundle',
+        dispatch_mode: 'server_side_aps_handoff',
+        operator_decision: 'dispatch_aps_handoff',
+    };
+    if (handoff.analysis_run_id || authority.analysisRunId) {
+        payload.analysis_run_id = handoff.analysis_run_id || authority.analysisRunId;
+    }
+    return payload;
+}
+
 async function refreshSessionSummary() {
     const sessionId = currentSessionId();
     if (!sessionId) return;
@@ -1550,6 +1785,7 @@ async function refreshSessionSummary() {
         State.packageConstructionError = null;
         State.packageReviewSubmitError = null;
         State.handoffExportPrepareError = null;
+        State.apsHandoffDispatchError = null;
         addEvent('Session state refreshed.');
         renderAll();
     } catch (error) {
@@ -1581,6 +1817,8 @@ async function inspectResultStatus() {
         State.packageReviewSubmitError = null;
         State.handoffExportPrepare = null;
         State.handoffExportPrepareError = null;
+        State.apsHandoffDispatch = null;
+        State.apsHandoffDispatchError = null;
         addEvent('Result/status authority loaded.');
         renderAll();
     } catch (error) {
@@ -1603,6 +1841,8 @@ async function inspectPackageReviewPreview() {
     State.packageReviewPreviewError = null;
     State.handoffExportPrepare = null;
     State.handoffExportPrepareError = null;
+    State.apsHandoffDispatch = null;
+    State.apsHandoffDispatchError = null;
     renderAll();
     setBusy(elements.packageReviewPreviewInspect, true, 'Inspect Package Preview');
     try {
@@ -1611,6 +1851,7 @@ async function inspectPackageReviewPreview() {
         State.packageConstructionError = null;
         State.packageReviewSubmitError = null;
         State.handoffExportPrepareError = null;
+        State.apsHandoffDispatchError = null;
         addEvent('Package review preview loaded.');
         renderAll();
     } catch (error) {
@@ -1635,6 +1876,8 @@ async function commitPackageConstruction() {
     State.packageReviewSubmitError = null;
     State.handoffExportPrepare = null;
     State.handoffExportPrepareError = null;
+    State.apsHandoffDispatch = null;
+    State.apsHandoffDispatchError = null;
     renderAll();
     setBusy(elements.packageConstructionCommit, true, 'Commit Package Set');
     try {
@@ -1642,6 +1885,7 @@ async function commitPackageConstruction() {
         State.packageConstructionError = null;
         State.packageReviewSubmitError = null;
         State.handoffExportPrepareError = null;
+        State.apsHandoffDispatchError = null;
         addEvent('Package set committed.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.packageConstruction.session_id)}`);
@@ -1671,12 +1915,15 @@ async function submitPackageReview(event) {
     State.packageReviewSubmitError = null;
     State.handoffExportPrepare = null;
     State.handoffExportPrepareError = null;
+    State.apsHandoffDispatch = null;
+    State.apsHandoffDispatchError = null;
     renderAll();
     setBusy(elements.packageReviewSubmit, true, 'Submit Package Review');
     try {
         State.packageReviewSubmit = await postJson('/package/review/submit', packageReviewSubmitPayload());
         State.packageReviewSubmitError = null;
         State.handoffExportPrepareError = null;
+        State.apsHandoffDispatchError = null;
         addEvent('Package review submitted.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.packageReviewSubmit.session_id)}`);
@@ -1704,11 +1951,14 @@ async function submitHandoffExportPrepare(event) {
     if (!canSubmitHandoffExportPrepare()) return;
     State.handoffExportPreparePending = true;
     State.handoffExportPrepareError = null;
+    State.apsHandoffDispatch = null;
+    State.apsHandoffDispatchError = null;
     renderAll();
     setBusy(elements.handoffExportPrepareSubmit, true, 'Submit Preparation');
     try {
         State.handoffExportPrepare = await postJson('/handoff/export/prepare', handoffExportPreparePayload());
         State.handoffExportPrepareError = null;
+        State.apsHandoffDispatchError = null;
         addEvent('Handoff/export preparation recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.handoffExportPrepare.session_id)}`);
@@ -1731,6 +1981,38 @@ async function submitHandoffExportPrepare(event) {
     }
 }
 
+async function submitApsHandoffDispatch(event) {
+    event.preventDefault();
+    if (!canSubmitApsHandoffDispatch()) return;
+    State.apsHandoffDispatchPending = true;
+    State.apsHandoffDispatchError = null;
+    renderAll();
+    setBusy(elements.apsHandoffDispatchSubmit, true, 'Dispatch APS Handoff');
+    try {
+        State.apsHandoffDispatch = await postJson('/handoff/aps/dispatch', apsHandoffDispatchPayload());
+        State.apsHandoffDispatchError = null;
+        addEvent('APS handoff dispatch recorded.');
+        try {
+            State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.apsHandoffDispatch.session_id)}`);
+        } catch (refreshError) {
+            addEvent(`APS handoff dispatch recorded; session refresh blocked: ${refreshError.message}`);
+        }
+        renderAll();
+    } catch (error) {
+        State.apsHandoffDispatchError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'aps_handoff_dispatch_request_failed',
+            message: error.message,
+        };
+        addEvent(`APS handoff dispatch blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.apsHandoffDispatchPending = false;
+        setBusy(elements.apsHandoffDispatchSubmit, false, 'Dispatch APS Handoff');
+        renderAll();
+    }
+}
+
 async function submitResultReview(event) {
     event.preventDefault();
     if (!canSubmitResultReview()) return;
@@ -1749,6 +2031,8 @@ async function submitResultReview(event) {
         State.packageReviewSubmitError = null;
         State.handoffExportPrepare = null;
         State.handoffExportPrepareError = null;
+        State.apsHandoffDispatch = null;
+        State.apsHandoffDispatchError = null;
         addEvent('Result review recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.resultReview.session_id)}`);
@@ -2027,6 +2311,7 @@ elements.packageReviewPreviewInspect.addEventListener('click', inspectPackageRev
 elements.packageConstructionCommit.addEventListener('click', commitPackageConstruction);
 elements.packageReviewSubmitForm.addEventListener('submit', submitPackageReview);
 elements.handoffExportPrepareForm.addEventListener('submit', submitHandoffExportPrepare);
+elements.apsHandoffDispatchForm.addEventListener('submit', submitApsHandoffDispatch);
 elements.resultReviewDecision.addEventListener('change', setGateControls);
 elements.resultReviewNotes.addEventListener('input', setGateControls);
 elements.packageReviewSubmitDecision.addEventListener('change', setGateControls);
