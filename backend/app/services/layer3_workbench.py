@@ -104,6 +104,8 @@ HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.handoff_export_prepare.v1"
 HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID = "layer3.handoff_export_prepare_state.v1"
 APS_HANDOFF_DISPATCH_SCHEMA_ID = "layer3.aps_handoff_dispatch.v1"
 APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID = "layer3.aps_handoff_dispatch_state.v1"
+EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.external_export_download_prepare.v1"
+EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID = "layer3.external_export_download_prepare_state.v1"
 EXECUTION_PASS_RUNNING_STATE = "execution_pass_running"
 EXECUTION_PASS_COMPLETED_STATE = "execution_pass_completed"
 EXECUTION_PASS_FAILED_STATE = "execution_pass_failed"
@@ -141,6 +143,11 @@ APS_HANDOFF_READY_STATE = "aps_handoff_ready"
 APS_HANDOFF_DISPATCHED_STATE = "aps_handoff_dispatched"
 APS_HANDOFF_BLOCKED_STATE = "aps_handoff_blocked"
 APS_HANDOFF_CONFLICT_STATE = "aps_handoff_conflict"
+EXTERNAL_EXPORT_DOWNLOAD_UNAVAILABLE_STATE = "external_export_download_unavailable"
+EXTERNAL_EXPORT_DOWNLOAD_READY_STATE = "external_export_download_ready"
+EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE = "external_export_download_prepared"
+EXTERNAL_EXPORT_DOWNLOAD_BLOCKED_STATE = "external_export_download_blocked"
+EXTERNAL_EXPORT_DOWNLOAD_CONFLICT_STATE = "external_export_download_conflict"
 STATE_MODEL_SCHEMA_ID = "layer3.workbench_state_model.v1"
 PLAN_REVISION_DECISIONS = frozenset({"reject_current_preview", "request_revision"})
 PLAN_REVISION_STATE_BY_DECISION = {
@@ -177,6 +184,7 @@ HANDOFF_EXPORT_PREPARE_STATUS_BY_DECISION = {
 }
 HANDOFF_EXPORT_PREPARE_NOTE_REQUIRED_DECISIONS = frozenset({"hold", "decline", "blocked"})
 APS_HANDOFF_DISPATCH_OPERATOR_DECISION = "dispatch_aps_handoff"
+EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = "prepare_external_export_download"
 EXECUTION_RESULT_REVIEW_ITEM_TYPES = frozenset(
     {
         "datum",
@@ -605,6 +613,87 @@ APS_HANDOFF_DISPATCH_ALLOWED_FIELDS = frozenset(
         "analysis_run_id",
     }
 )
+EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FORBIDDEN_FIELDS = frozenset(
+    {
+        "download",
+        "download_url",
+        "download_token",
+        "public_url",
+        "signed_url",
+        "local_file_path",
+        "external_target",
+        "destination",
+        "destination_selector",
+        "connector_run_id",
+        "connector_dispatch",
+        "generic_dispatch",
+        "dispatch",
+        "send",
+        "runtime_db_write",
+        "analysis_artifact",
+        "artifact_manifest",
+        "create_package",
+        "rebuild_package",
+        "package_payload",
+        "package_variant_content",
+        "rewrite_output",
+        "edited_findings",
+        "result_review_amendment",
+        "package_review_amendment",
+        "rerun",
+        "retry",
+        "recover",
+        "cancel",
+        "selected_pass_ids",
+        "pass_run_ids",
+        "new_analysis_plan",
+        "plan_revision",
+        "source_expansion",
+        "local_upload",
+        "local_directory",
+        "schema_migration",
+    }
+)
+EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS = frozenset(
+    {
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "aps_output_package_id",
+        "aps_output_package_kind",
+        "aps_bundle_ref",
+        "aps_bundle_id",
+        "aps_schema_id",
+        "export_download_target",
+        "download_mode",
+        "operator_decision",
+        "client_request_id",
+        "decision_notes",
+        "analysis_run_id",
+        "aps_bundle_hash",
+        "aps_bundle_size_bytes",
+    }
+)
 EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 ANALYSIS_EXECUTION_START_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE = ("result_review", "package", "handoff")
@@ -638,6 +727,13 @@ APS_HANDOFF_BLOCKED_DOWNSTREAM_UNAVAILABLE = (
     "download",
     "connector_dispatch",
     "non_aps_dispatch",
+)
+EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE = (
+    "browser_download",
+    "download_url",
+    "connector_dispatch",
+    "destination_selection",
+    "generic_downstream_dispatch",
 )
 EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES = frozenset(
     {PASS_STATUS_COMPLETED, PASS_STATUS_COMPLETED_WITH_WARNINGS, PASS_STATUS_FAILED}
@@ -678,6 +774,7 @@ READINESS_REQUIRED_GATES = (
     "package-review-submit",
     "handoff-export-prepare",
     "aps-handoff-dispatch",
+    "external-export-download-prepare",
     "browser-proof",
 )
 READINESS_IMPLEMENTED_GATES = (
@@ -695,6 +792,7 @@ READINESS_IMPLEMENTED_GATES = (
     "package-review-submit",
     "handoff-export-prepare",
     "aps-handoff-dispatch",
+    "external-export-download-prepare",
 )
 READINESS_DEFERRED_GATES = (
     "revision-recovery",
@@ -1059,8 +1157,14 @@ def _workbench_state_model() -> dict[str, Any]:
             {
                 "state": APS_HANDOFF_DISPATCHED_STATE,
                 "authority_source": "existing_aps_evidence_bundle_handoff_owner_service_row_and_artifact",
-                "allowed_next_actions": ["inspect_aps_handoff"],
-                "forbidden_downstream_actions": ["external_export", "download", "connector_dispatch", "non_aps_dispatch"],
+                "allowed_next_actions": ["inspect_aps_handoff", "external_export_download_prepare"],
+                "forbidden_downstream_actions": [
+                    "browser_download",
+                    "download_url",
+                    "connector_dispatch",
+                    "destination_selection",
+                    "generic_downstream_dispatch",
+                ],
             },
             {
                 "state": APS_HANDOFF_BLOCKED_STATE,
@@ -1073,6 +1177,68 @@ def _workbench_state_model() -> dict[str, Any]:
                 "authority_source": "existing_or_conflicting_aps_handoff_dispatch_state",
                 "allowed_next_actions": ["inspect_existing_aps_handoff_state"],
                 "forbidden_downstream_actions": ["aps_handoff", "external_export", "download", "connector_dispatch", "non_aps_dispatch"],
+            },
+            {
+                "state": EXTERNAL_EXPORT_DOWNLOAD_UNAVAILABLE_STATE,
+                "authority_source": "missing_recorded_aps_handoff_dispatch_or_validated_aps_bundle_source",
+                "allowed_next_actions": ["inspect_aps_handoff_dispatch_state"],
+                "forbidden_downstream_actions": [
+                    "external_export_download_prepare",
+                    "browser_download",
+                    "download_url",
+                    "connector_dispatch",
+                    "destination_selection",
+                    "generic_downstream_dispatch",
+                ],
+            },
+            {
+                "state": EXTERNAL_EXPORT_DOWNLOAD_READY_STATE,
+                "authority_source": "server_validated_aps_handoff_dispatch_state_and_existing_bundle_artifact",
+                "allowed_next_actions": ["external_export_download_prepare"],
+                "forbidden_downstream_actions": [
+                    "browser_download",
+                    "download_url",
+                    "connector_dispatch",
+                    "destination_selection",
+                    "generic_downstream_dispatch",
+                ],
+            },
+            {
+                "state": EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE,
+                "authority_source": "reference_only_external_export_download_readiness_descriptor",
+                "allowed_next_actions": ["inspect_external_export_download_readiness"],
+                "forbidden_downstream_actions": [
+                    "browser_download",
+                    "download_url",
+                    "connector_dispatch",
+                    "destination_selection",
+                    "generic_downstream_dispatch",
+                ],
+            },
+            {
+                "state": EXTERNAL_EXPORT_DOWNLOAD_BLOCKED_STATE,
+                "authority_source": "missing_or_invalid_aps_bundle_artifact_or_stale_authority",
+                "allowed_next_actions": ["inspect_block_reasons"],
+                "forbidden_downstream_actions": [
+                    "external_export_download_prepare",
+                    "browser_download",
+                    "download_url",
+                    "connector_dispatch",
+                    "destination_selection",
+                    "generic_downstream_dispatch",
+                ],
+            },
+            {
+                "state": EXTERNAL_EXPORT_DOWNLOAD_CONFLICT_STATE,
+                "authority_source": "existing_or_conflicting_external_export_download_prepare_state",
+                "allowed_next_actions": ["inspect_existing_external_export_download_readiness"],
+                "forbidden_downstream_actions": [
+                    "browser_download",
+                    "download_url",
+                    "connector_dispatch",
+                    "destination_selection",
+                    "generic_downstream_dispatch",
+                ],
             },
             {
                 "state": EXECUTION_RESULT_STATUS_BLOCKED_STATE,
@@ -1155,6 +1321,8 @@ def readiness_contract() -> dict[str, Any]:
         "handoff_export_prepare_endpoint": f"{API_ROOT}/handoff/export/prepare",
         "aps_handoff_dispatch_admitted": True,
         "aps_handoff_dispatch_endpoint": f"{API_ROOT}/handoff/aps/dispatch",
+        "external_export_download_prepare_admitted": True,
+        "external_export_download_prepare_endpoint": f"{API_ROOT}/handoff/export/download/prepare",
         "package_review_admitted": False,
         "external_handoff_admitted": False,
         "external_export_admitted": False,
@@ -1178,6 +1346,7 @@ def readiness_contract() -> dict[str, Any]:
             "client_request_id_required_for_package_review_submit": True,
             "client_request_id_required_for_handoff_export_prepare": True,
             "client_request_id_required_for_aps_handoff_dispatch": True,
+            "client_request_id_required_for_external_export_download_prepare": True,
             "duplicate_plan_approval": "returns existing approved-plan conflict; no duplicate L3AnalysisPlan",
             "duplicate_plan_revision": "returns existing revision-control conflict; no duplicate revision-control state",
             "duplicate_execution_selection": "same client_request_id and same approved plan returns existing selection; conflicts fail closed",
@@ -1189,6 +1358,7 @@ def readiness_contract() -> dict[str, Any]:
             "duplicate_package_review_submit": "same authority basis and same operator decision returns existing package-review state; conflicts fail closed",
             "duplicate_handoff_export_prepare": "same authority basis and same operator decision returns existing preparation state; conflicts fail closed",
             "duplicate_aps_handoff_dispatch": "same client_request_id and same prepared-envelope authority returns existing APS handoff state; conflicts fail closed",
+            "duplicate_external_export_download_prepare": "same client_request_id and same APS handoff authority returns existing readiness state; conflicts fail closed",
             "duplicate_without_client_request_id": "server-authoritative state conflicts still prevent duplicate durable approval or revision-control state",
             "analysis_execution": "broad analysis execution remains blocked; selected-pass execution start is admitted separately",
         },
@@ -1205,6 +1375,7 @@ def readiness_contract() -> dict[str, Any]:
             "package_review_submit_uses_session_reconciliation_and_package_locks": True,
             "handoff_export_prepare_uses_session_reconciliation_and_package_locks": True,
             "aps_handoff_dispatch_uses_session_reconciliation_and_package_locks": True,
+            "external_export_download_prepare_uses_session_reconciliation_and_package_locks": True,
             "broad_analysis_execution_requires_later_freeze": True,
         },
         "deferred_decisions": {
@@ -1216,7 +1387,8 @@ def readiness_contract() -> dict[str, Any]:
             "package_construction": "admitted only for selected-pass workbench commit; broader package construction still requires later freeze",
             "package_review_submit": "admitted only for bounded decision recording over an already constructed workbench package set",
             "aps_handoff_dispatch": "admitted only for server-side APS evidence-bundle handoff after handoff_export_prepared",
-            "external_handoff_export_dispatch": "external export/download, connector dispatch, and non-APS dispatch still require later freezes",
+            "external_export_download_prepare": "admitted only as a reference-only readiness descriptor after aps_handoff_dispatched; browser download remains disabled",
+            "external_handoff_export_dispatch": "browser download, public/signed URL generation, connector dispatch, destination selection, and non-APS dispatch still require later freezes",
         },
     }
 
@@ -1244,6 +1416,7 @@ def bootstrap() -> dict[str, Any]:
             "package_review_submit": True,
             "handoff_export_prepare": True,
             "aps_handoff_dispatch": True,
+            "external_export_download_prepare": True,
             "analysis_execution": False,
             "qualitative_execution": False,
             "hybrid_execution": False,
@@ -1279,6 +1452,8 @@ def bootstrap() -> dict[str, Any]:
             "handoff_export_prepare_endpoint": f"{API_ROOT}/handoff/export/prepare",
             "aps_handoff_dispatch_admitted": True,
             "aps_handoff_dispatch_endpoint": f"{API_ROOT}/handoff/aps/dispatch",
+            "external_export_download_prepare_admitted": True,
+            "external_export_download_prepare_endpoint": f"{API_ROOT}/handoff/export/download/prepare",
             "package_review_admitted": False,
             "external_handoff_admitted": False,
             "external_export_admitted": False,
@@ -4030,7 +4205,13 @@ def _active_package_downstream_unavailable(
     package_review_submit_state: dict[str, Any],
     handoff_export_prepare_state: dict[str, Any],
     aps_handoff_dispatch_state: dict[str, Any],
+    external_export_download_state: dict[str, Any],
 ) -> tuple[str, ...]:
+    if aps_handoff_dispatch_state.get("state") == APS_HANDOFF_DISPATCHED_STATE:
+        return _state_downstream_unavailable(
+            external_export_download_state,
+            EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE,
+        )
     if handoff_export_prepare_state.get("state") == HANDOFF_EXPORT_PREPARED_STATE:
         return _state_downstream_unavailable(
             aps_handoff_dispatch_state,
@@ -4175,11 +4356,46 @@ def _aps_handoff_dispatch_from_reconciliation(reconciliation: L3ReconciliationRe
     return state
 
 
+def _external_export_download_prepare_from_reconciliation(
+    reconciliation: L3ReconciliationRecord | None,
+) -> dict[str, Any] | None:
+    if reconciliation is None:
+        return None
+    state = (reconciliation.summary_json or {}).get("external_export_download_prepare")
+    if not isinstance(state, dict):
+        return None
+    if state.get("schema_id") != EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID:
+        return None
+    return state
+
+
 def _aps_handoff_package_for_session(db: Session, *, session_id: str) -> L3OutputPackage | None:
     return (
         db.query(L3OutputPackage)
         .filter(
             L3OutputPackage.session_id == session_id,
+            L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+        )
+        .one_or_none()
+    )
+
+
+def _aps_handoff_package_for_dispatch(
+    db: Session,
+    *,
+    session_id: str,
+    reconciliation_record_id: str,
+    dispatch_state: dict[str, Any],
+) -> L3OutputPackage | None:
+    output_package_id = str(dispatch_state.get("aps_output_package_id") or "").strip()
+    if not output_package_id:
+        return None
+    return (
+        db.query(L3OutputPackage)
+        .filter(
+            L3OutputPackage.session_id == session_id,
+            L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
+            L3OutputPackage.output_package_id == output_package_id,
             L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
         )
         .one_or_none()
@@ -4258,6 +4474,204 @@ def _aps_handoff_dispatch_response(
             package_review_enabled=False,
         ),
     }
+
+
+def _aps_bundle_identity_for_external_export_download(
+    db: Session,
+    *,
+    session_id: str,
+    reconciliation_record_id: str,
+    dispatch_state: dict[str, Any],
+    error_prefix: str,
+) -> dict[str, Any]:
+    if dispatch_state.get("aps_handoff_state") != APS_HANDOFF_DISPATCHED_STATE:
+        raise Layer3WorkbenchError(
+            f"{error_prefix}_requires_aps_handoff_dispatch",
+            "External export/download readiness requires recorded aps_handoff_dispatched state.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_handoff_state"],
+            next_allowed_actions=["record_aps_handoff_dispatch"],
+        )
+    if dispatch_state.get("aps_output_package_kind") != PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF:
+        raise Layer3WorkbenchError(
+            f"{error_prefix}_aps_package_kind_mismatch",
+            "Recorded APS handoff dispatch must reference an aps_evidence_bundle_handoff package.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_output_package_kind"],
+        )
+    package = _aps_handoff_package_for_dispatch(
+        db,
+        session_id=session_id,
+        reconciliation_record_id=reconciliation_record_id,
+        dispatch_state=dispatch_state,
+    )
+    if package is None:
+        raise Layer3WorkbenchError(
+            f"{error_prefix}_aps_package_missing",
+            "Recorded APS handoff dispatch does not match an existing APS evidence-bundle handoff package.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_output_package_id"],
+        )
+    aps_bundle_ref = str(package.payload_ref or "").strip()
+    if not aps_bundle_ref or aps_bundle_ref != str(dispatch_state.get("aps_bundle_ref") or "").strip():
+        raise Layer3WorkbenchError(
+            f"{error_prefix}_aps_bundle_ref_mismatch",
+            "Recorded APS bundle ref does not match the APS handoff package payload ref.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_bundle_ref"],
+        )
+    aps_summary = package.summary_json or {}
+    aps_bundle_id = str(aps_summary.get("bundle_id") or "").strip()
+    aps_schema_id = str(aps_summary.get("aps_schema_id") or APS_HANDOFF_SCHEMA_ID).strip()
+    if not aps_bundle_id or aps_bundle_id != str(dispatch_state.get("aps_bundle_id") or "").strip():
+        raise Layer3WorkbenchError(
+            f"{error_prefix}_aps_bundle_id_mismatch",
+            "Recorded APS bundle id does not match the APS handoff package summary.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_bundle_id"],
+        )
+    if not aps_schema_id or aps_schema_id != str(dispatch_state.get("aps_schema_id") or "").strip():
+        raise Layer3WorkbenchError(
+            f"{error_prefix}_aps_schema_mismatch",
+            "Recorded APS schema id does not match the APS handoff package summary.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_schema_id"],
+        )
+    try:
+        from app.services.nrc_aps_evidence_bundle import EvidenceBundleError, load_persisted_bundle_artifact
+    except ModuleNotFoundError as exc:
+        raise Layer3WorkbenchError(
+            f"{error_prefix}_source_artifact_validator_unavailable",
+            f"External export/download readiness could not load the APS bundle artifact validator: {exc}",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_bundle_ref"],
+            next_allowed_actions=["inspect_aps_handoff_dispatch_state"],
+        ) from exc
+    try:
+        bundle_payload, bundle_path = load_persisted_bundle_artifact(bundle_ref=aps_bundle_ref)
+    except EvidenceBundleError as exc:
+        raise Layer3WorkbenchError(
+            f"{error_prefix}_source_artifact_unavailable",
+            f"External export/download readiness could not validate the existing APS bundle artifact: {exc.message}",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_bundle_ref"],
+            next_allowed_actions=["inspect_aps_handoff_dispatch_state"],
+        ) from exc
+    if str(bundle_payload.get("bundle_id") or "").strip() != aps_bundle_id:
+        raise Layer3WorkbenchError(
+            f"{error_prefix}_source_artifact_mismatch",
+            "Validated APS bundle artifact does not match the recorded APS bundle id.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_bundle_id"],
+        )
+    source_artifact_hash = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
+    if str(package.payload_hash or "").strip() != source_artifact_hash:
+        raise Layer3WorkbenchError(
+            f"{error_prefix}_source_artifact_hash_mismatch",
+            "Validated APS bundle artifact hash does not match the APS handoff package payload hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_bundle_hash"],
+        )
+    return {
+        "aps_output_package_id": package.output_package_id,
+        "aps_output_package_kind": package.package_kind,
+        "aps_bundle_ref": aps_bundle_ref,
+        "aps_bundle_id": aps_bundle_id,
+        "aps_schema_id": aps_schema_id,
+        "source_artifact_ref": aps_bundle_ref,
+        "source_artifact_schema_id": aps_schema_id,
+        "source_artifact_hash": source_artifact_hash,
+        "source_artifact_size_bytes": int(bundle_path.stat().st_size),
+    }
+
+
+def _external_export_download_prepare_response(
+    *,
+    request_id: str,
+    status: str,
+    session_id: str,
+    analysis_plan_id: str,
+    pass_run_id: str,
+    preview_id: str,
+    preview_hash: str,
+    result_review_record_ref: str,
+    package_review_preview_hash: str,
+    reconciliation_record: L3ReconciliationRecord,
+    packages: list[L3OutputPackage],
+    readiness_state: dict[str, Any],
+) -> dict[str, Any]:
+    ordered_packages = _packages_in_review_order(packages)
+    body = {
+        **_base_response(EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID, request_id=request_id, status=status),
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_identity": _preview_identity(preview_id=preview_id, preview_hash=preview_hash),
+        "analysis_run_id": readiness_state.get("analysis_run_id"),
+        "result_review_record_ref": result_review_record_ref,
+        "package_review_preview_hash": package_review_preview_hash,
+        "reconciliation_record_id": reconciliation_record.reconciliation_record_id,
+        "output_package_ids": [package.output_package_id for package in ordered_packages],
+        "package_kinds": [package.package_kind for package in ordered_packages],
+        "payload_refs": [package.payload_ref for package in ordered_packages],
+        "payload_hashes": [package.payload_hash for package in ordered_packages],
+        "package_review_submit_record_ref": readiness_state["package_review_submit_record_ref"],
+        "package_review_state": readiness_state["package_review_state"],
+        "prepare_record_ref": readiness_state["prepare_record_ref"],
+        "handoff_export_state": readiness_state["handoff_export_state"],
+        "handoff_export_envelope_ref": readiness_state["handoff_export_envelope_ref"],
+        "handoff_target": readiness_state["handoff_target"],
+        "export_mode": readiness_state["export_mode"],
+        "aps_handoff_record_ref": readiness_state["aps_handoff_record_ref"],
+        "aps_handoff_state": readiness_state["aps_handoff_state"],
+        "aps_handoff_target": readiness_state["aps_handoff_target"],
+        "dispatch_mode": readiness_state["dispatch_mode"],
+        "aps_output_package_id": readiness_state["aps_output_package_id"],
+        "aps_output_package_kind": readiness_state["aps_output_package_kind"],
+        "aps_bundle_ref": readiness_state["aps_bundle_ref"],
+        "aps_bundle_id": readiness_state["aps_bundle_id"],
+        "aps_schema_id": readiness_state["aps_schema_id"],
+        "export_download_target": readiness_state["export_download_target"],
+        "download_mode": readiness_state["download_mode"],
+        "operator_decision": readiness_state["operator_decision"],
+        "decision_notes": readiness_state.get("decision_notes"),
+        "external_export_download_state": readiness_state["external_export_download_state"],
+        "external_export_download_record_ref": readiness_state["external_export_download_record_ref"],
+        "export_download_descriptor_ref": readiness_state["export_download_descriptor_ref"],
+        "source_artifact_ref": readiness_state["source_artifact_ref"],
+        "source_artifact_schema_id": readiness_state["source_artifact_schema_id"],
+        "source_artifact_hash": readiness_state["source_artifact_hash"],
+        "source_artifact_size_bytes": readiness_state["source_artifact_size_bytes"],
+        "browser_download_enabled": False,
+        "download_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_selection_enabled": False,
+        "generic_downstream_dispatch_enabled": False,
+        "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
+        "next_state": readiness_state["external_export_download_state"],
+        "authority_rail": _authority_rail(
+            session_id=session_id,
+            current_gate="package",
+            persistence_mode="durable_external_export_download_prepare",
+            downstream_unavailable=EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE,
+            execution_enabled=False,
+            package_review_enabled=False,
+        ),
+    }
+    descriptor = readiness_state.get("external_export_download_descriptor")
+    if isinstance(descriptor, dict):
+        body["external_export_download_descriptor"] = descriptor
+    return body
 
 
 def _package_construction_summary(
@@ -6533,6 +6947,823 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
     )
 
 
+def external_export_download_prepare(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or "").strip()
+    if not request_id:
+        raise Layer3WorkbenchError(
+            "client_request_id_required",
+            "client_request_id is required for external export/download readiness preparation.",
+            status="invalid",
+            blocked_fields=["client_request_id"],
+            next_allowed_actions=["submit_idempotent_external_export_download_prepare_request"],
+        )
+
+    session_id = str(payload.get("session_id") or "").strip()
+    analysis_plan_id = str(payload.get("analysis_plan_id") or "").strip()
+    pass_run_id = str(payload.get("pass_run_id") or "").strip()
+    preview_id = str(payload.get("preview_id") or "").strip()
+    preview_hash = str(payload.get("preview_hash") or "").strip()
+    supplied_review_ref = str(payload.get("result_review_record_ref") or "").strip()
+    supplied_package_preview_hash = str(payload.get("package_review_preview_hash") or "").strip()
+    reconciliation_record_id = str(payload.get("reconciliation_record_id") or "").strip()
+    supplied_submit_ref = str(payload.get("package_review_submit_record_ref") or "").strip()
+    supplied_package_review_state = str(payload.get("package_review_state") or "").strip()
+    supplied_prepare_ref = str(payload.get("prepare_record_ref") or "").strip()
+    supplied_handoff_export_state = str(payload.get("handoff_export_state") or "").strip()
+    supplied_envelope_ref = str(payload.get("handoff_export_envelope_ref") or "").strip()
+    handoff_target = str(payload.get("handoff_target") or "").strip()
+    export_mode = str(payload.get("export_mode") or "").strip()
+    supplied_aps_handoff_record_ref = str(payload.get("aps_handoff_record_ref") or "").strip()
+    supplied_aps_handoff_state = str(payload.get("aps_handoff_state") or "").strip()
+    aps_handoff_target = str(payload.get("aps_handoff_target") or "").strip()
+    dispatch_mode = str(payload.get("dispatch_mode") or "").strip()
+    supplied_aps_output_package_id = str(payload.get("aps_output_package_id") or "").strip()
+    supplied_aps_output_package_kind = str(payload.get("aps_output_package_kind") or "").strip()
+    supplied_aps_bundle_ref = str(payload.get("aps_bundle_ref") or "").strip()
+    supplied_aps_bundle_id = str(payload.get("aps_bundle_id") or "").strip()
+    supplied_aps_schema_id = str(payload.get("aps_schema_id") or "").strip()
+    export_download_target = str(payload.get("export_download_target") or "").strip()
+    download_mode = str(payload.get("download_mode") or "").strip()
+    operator_decision = str(payload.get("operator_decision") or "").strip()
+    decision_notes = str(payload.get("decision_notes") or "").strip()
+    supplied_analysis_run_id = str(payload.get("analysis_run_id") or "").strip()
+    supplied_aps_bundle_hash = str(payload.get("aps_bundle_hash") or "").strip()
+    raw_aps_bundle_size = payload.get("aps_bundle_size_bytes")
+    raw_output_package_ids = payload.get("output_package_ids")
+    raw_package_kinds = payload.get("package_kinds")
+    raw_payload_refs = payload.get("payload_refs")
+    raw_payload_hashes = payload.get("payload_hashes")
+
+    missing = [
+        field
+        for field, value in (
+            ("session_id", session_id),
+            ("analysis_plan_id", analysis_plan_id),
+            ("pass_run_id", pass_run_id),
+            ("preview_id", preview_id),
+            ("preview_hash", preview_hash),
+            ("result_review_record_ref", supplied_review_ref),
+            ("package_review_preview_hash", supplied_package_preview_hash),
+            ("reconciliation_record_id", reconciliation_record_id),
+            ("package_review_submit_record_ref", supplied_submit_ref),
+            ("package_review_state", supplied_package_review_state),
+            ("prepare_record_ref", supplied_prepare_ref),
+            ("handoff_export_state", supplied_handoff_export_state),
+            ("handoff_export_envelope_ref", supplied_envelope_ref),
+            ("handoff_target", handoff_target),
+            ("export_mode", export_mode),
+            ("aps_handoff_record_ref", supplied_aps_handoff_record_ref),
+            ("aps_handoff_state", supplied_aps_handoff_state),
+            ("aps_handoff_target", aps_handoff_target),
+            ("dispatch_mode", dispatch_mode),
+            ("aps_output_package_id", supplied_aps_output_package_id),
+            ("aps_output_package_kind", supplied_aps_output_package_kind),
+            ("aps_bundle_ref", supplied_aps_bundle_ref),
+            ("aps_bundle_id", supplied_aps_bundle_id),
+            ("aps_schema_id", supplied_aps_schema_id),
+            ("export_download_target", export_download_target),
+            ("download_mode", download_mode),
+            ("operator_decision", operator_decision),
+        )
+        if not value
+    ]
+    if not raw_output_package_ids:
+        missing.append("output_package_ids")
+    if not raw_package_kinds:
+        missing.append("package_kinds")
+    if not raw_payload_refs:
+        missing.append("payload_refs")
+    if not raw_payload_hashes:
+        missing.append("payload_hashes")
+    if missing:
+        raise Layer3WorkbenchError(
+            "missing_external_export_download_prepare_fields",
+            f"External export/download readiness request is missing required fields: {', '.join(missing)}.",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_external_export_download_prepare_request"],
+        )
+
+    unknown = sorted(key for key in payload if key not in EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS)
+    forbidden = sorted(key for key in EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FORBIDDEN_FIELDS if key in payload)
+    blocked_payload_fields = sorted(set(unknown) | set(forbidden))
+    if blocked_payload_fields:
+        blocked_text = ", ".join(blocked_payload_fields)
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_scope_not_admitted",
+            f"External export/download readiness request includes non-admitted fields: {blocked_text}.",
+            status="invalid",
+            blocked_fields=blocked_payload_fields,
+            next_allowed_actions=["submit_bounded_external_export_download_prepare_request"],
+        )
+    if handoff_target != "internal_export_envelope":
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_handoff_target_not_admitted",
+            "handoff_target must be internal_export_envelope.",
+            status="invalid",
+            blocked_fields=["handoff_target"],
+        )
+    if export_mode != "prepare_only":
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_export_mode_not_admitted",
+            "export_mode must be prepare_only.",
+            status="invalid",
+            blocked_fields=["export_mode"],
+        )
+    if aps_handoff_target != "aps_evidence_bundle":
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_aps_target_not_admitted",
+            "aps_handoff_target must be aps_evidence_bundle.",
+            status="invalid",
+            blocked_fields=["aps_handoff_target"],
+        )
+    if dispatch_mode != "server_side_aps_handoff":
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_dispatch_mode_not_admitted",
+            "dispatch_mode must be server_side_aps_handoff.",
+            status="invalid",
+            blocked_fields=["dispatch_mode"],
+        )
+    if export_download_target != "aps_evidence_bundle_download_reference":
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_target_not_admitted",
+            "export_download_target must be aps_evidence_bundle_download_reference.",
+            status="invalid",
+            blocked_fields=["export_download_target"],
+        )
+    if download_mode != "reference_only_prepare":
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_download_mode_not_admitted",
+            "download_mode must be reference_only_prepare.",
+            status="invalid",
+            blocked_fields=["download_mode"],
+        )
+    if operator_decision != EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION:
+        raise Layer3WorkbenchError(
+            "unsupported_external_export_download_prepare_decision",
+            "operator_decision must be prepare_external_export_download.",
+            status="invalid",
+            blocked_fields=["operator_decision"],
+        )
+    if supplied_package_review_state != PACKAGE_REVIEW_APPROVED_STATE:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_requires_approved_package_review",
+            "External export/download readiness requires package_review_state to be package_review_approved.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_review_state"],
+            next_allowed_actions=["inspect_package_review_submit_state"],
+        )
+    if supplied_handoff_export_state != HANDOFF_EXPORT_PREPARED_STATE:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_requires_prepared_handoff_export",
+            "External export/download readiness requires handoff_export_state to be handoff_export_prepared.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["handoff_export_state"],
+            next_allowed_actions=["inspect_handoff_export_prepare_state"],
+        )
+    if supplied_aps_handoff_state != APS_HANDOFF_DISPATCHED_STATE:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_requires_aps_handoff_dispatch",
+            "External export/download readiness requires aps_handoff_state to be aps_handoff_dispatched.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_handoff_state"],
+            next_allowed_actions=["inspect_aps_handoff_dispatch_state"],
+        )
+    if supplied_aps_output_package_kind != PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_aps_package_kind_mismatch",
+            "aps_output_package_kind must be aps_evidence_bundle_handoff.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_output_package_kind"],
+        )
+
+    status_payload = {
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_id,
+        "preview_hash": preview_hash,
+        "operator_view_mode": "status_only",
+        "client_request_id": request_id,
+    }
+    if supplied_analysis_run_id:
+        status_payload["analysis_run_id"] = supplied_analysis_run_id
+    status_body = execution_result_status(db, status_payload)
+    if status_body.get("status") != "available" or status_body.get("result_status_available") is not True:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_result_status_unavailable",
+            "External export/download readiness requires available selected-pass result/status.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["inspect_execution_result_status"],
+        )
+    output_metadata_summary = status_body.get("output_metadata_summary")
+    if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_output_metadata_required",
+            "External export/download readiness requires readable selected-pass output metadata.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
+
+    session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
+    pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(
+            L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+            L3ReconciliationRecord.session_id == session_id,
+        )
+        .with_for_update()
+        .one_or_none()
+    )
+    if session is None or pass_run is None:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_inconsistent",
+            "External export/download readiness could not reload the selected session or pass run.",
+            status="conflict",
+            http_status=409,
+        )
+    if pass_run.session_id != session_id or pass_run.analysis_plan_id != analysis_plan_id:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_pass_run_mismatch",
+            "pass_run_id must belong to the supplied session and approved plan.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
+    if reconciliation is None:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_requires_package_construction",
+            "External export/download readiness requires an existing package construction reconciliation.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+            next_allowed_actions=["inspect_package_construction_state"],
+        )
+
+    review_state = _execution_result_review_from_pass_run(pass_run)
+    if (
+        review_state is None
+        or review_state.get("review_state") != EXECUTION_RESULT_REVIEW_APPROVED_STATE
+        or review_state.get("operator_decision") != "approved"
+    ):
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_requires_approved_result_review",
+            "External export/download readiness requires approved selected-pass result review.",
+            status="blocked",
+            http_status=409,
+            next_allowed_actions=["record_approved_execution_result_review"],
+        )
+    if supplied_review_ref != str(review_state.get("review_record_ref") or ""):
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_result_review_mismatch",
+            "Supplied result_review_record_ref does not match the approved result review.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["result_review_record_ref"],
+        )
+    mismatched_review_fields = [
+        field
+        for field, expected in {
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "source_preview_id": preview_id,
+            "source_preview_hash": preview_hash,
+        }.items()
+        if str(review_state.get(field) or "") != str(expected)
+    ]
+    if mismatched_review_fields:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_result_review_mismatch",
+            "Stored result-review state does not match the supplied authority basis.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=mismatched_review_fields,
+        )
+
+    analysis_run_id = str(status_body.get("analysis_run_id") or "") or None
+    expected_package_preview_hash = _package_review_preview_hash(
+        session_id=session_id,
+        analysis_plan_id=analysis_plan_id,
+        pass_run_id=pass_run_id,
+        preview_id=preview_id,
+        preview_hash=preview_hash,
+        analysis_run_id=analysis_run_id,
+        result_review_record_ref=supplied_review_ref,
+        output_metadata_summary=output_metadata_summary,
+    )
+    if supplied_package_preview_hash != expected_package_preview_hash:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_preview_mismatch",
+            "External export/download readiness must reference the current package-review preview hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_review_preview_hash"],
+            next_allowed_actions=["refresh_package_review_preview"],
+        )
+
+    reconciliation_summary = _json_clone(reconciliation.summary_json or {})
+    existing_readiness = _external_export_download_prepare_from_reconciliation(reconciliation)
+    recorded_dispatch = _aps_handoff_dispatch_from_reconciliation(reconciliation)
+    all_packages = (
+        db.query(L3OutputPackage)
+        .filter(
+            L3OutputPackage.session_id == session_id,
+            L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
+        )
+        .order_by(L3OutputPackage.package_kind.asc())
+        .with_for_update()
+        .all()
+    )
+    unexpected_package_kinds = _unexpected_package_kinds(all_packages, aps_handoff_dispatch_state=recorded_dispatch)
+    if unexpected_package_kinds:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_unexpected_package_state",
+            "External export/download readiness cannot proceed with unexpected package kinds on the reconciliation.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_kinds"],
+            next_allowed_actions=["inspect_existing_package_state"],
+        )
+    packages = _review_source_packages(all_packages)
+    if (
+        len(packages) != len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+        or {package.package_kind for package in packages} != set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    ):
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_requires_complete_package_set",
+            "External export/download readiness requires the reviewed package set.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["output_package_ids"],
+        )
+    ordered_packages = _packages_in_review_order(packages)
+    expected_package_ids = [package.output_package_id for package in ordered_packages]
+    expected_package_kinds = [package.package_kind for package in ordered_packages]
+    supplied_package_ids = [str(item or "").strip() for item in raw_output_package_ids] if isinstance(raw_output_package_ids, list) else []
+    if supplied_package_ids != expected_package_ids:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_package_ids_mismatch",
+            "Supplied output_package_ids do not match the reviewed package set.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["output_package_ids"],
+        )
+    supplied_package_kinds = [str(item or "").strip() for item in raw_package_kinds] if isinstance(raw_package_kinds, list) else []
+    if supplied_package_kinds != expected_package_kinds:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_package_kinds_mismatch",
+            "Supplied package_kinds do not match the reviewed package set.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_kinds"],
+        )
+    canonical_payload_refs = _canonical_payload_refs(payload_refs=raw_payload_refs, packages=packages)
+    if canonical_payload_refs is None:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_payload_refs_mismatch",
+            "Supplied payload_refs do not match the reviewed package payload refs.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["payload_refs"],
+        )
+    if not isinstance(raw_payload_hashes, (list, dict)):
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_payload_hashes_invalid",
+            "payload_hashes must be either a list of package hashes or a mapping keyed by package kind or package id.",
+            status="invalid",
+            blocked_fields=["payload_hashes"],
+        )
+    canonical_payload_hashes = _canonical_payload_hashes(payload_hashes=raw_payload_hashes, packages=packages)
+    if canonical_payload_hashes is None:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_payload_hashes_mismatch",
+            "Supplied payload_hashes do not match the reviewed package payload hashes.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["payload_hashes"],
+        )
+
+    package_review_submit = _package_review_submit_from_reconciliation(reconciliation)
+    if package_review_submit is None or package_review_submit.get("package_review_state") != PACKAGE_REVIEW_APPROVED_STATE:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_requires_approved_package_review",
+            "External export/download readiness requires approved package-review submit state.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_review_state"],
+            next_allowed_actions=["inspect_package_review_submit_state"],
+        )
+    if supplied_submit_ref != str(package_review_submit.get("submit_record_ref") or ""):
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_submit_ref_mismatch",
+            "Supplied package_review_submit_record_ref does not match the approved package-review submit state.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_review_submit_record_ref"],
+        )
+    submit_mismatches = [
+        field
+        for field, expected in {
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "source_preview_id": preview_id,
+            "source_preview_hash": preview_hash,
+            "analysis_run_id": analysis_run_id,
+            "result_review_record_ref": supplied_review_ref,
+            "package_review_preview_hash": supplied_package_preview_hash,
+            "reconciliation_record_id": reconciliation_record_id,
+        }.items()
+        if str(package_review_submit.get(field) or "") != str(expected or "")
+    ]
+    if list(package_review_submit.get("output_package_ids") or []) != expected_package_ids:
+        submit_mismatches.append("output_package_ids")
+    if list(package_review_submit.get("package_kinds") or []) != expected_package_kinds:
+        submit_mismatches.append("package_kinds")
+    if list(package_review_submit.get("payload_hashes") or []) != canonical_payload_hashes:
+        submit_mismatches.append("payload_hashes")
+    if submit_mismatches:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_package_review_submit_mismatch",
+            "Stored package-review submit authority does not match the supplied readiness basis.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(set(submit_mismatches)),
+        )
+
+    prepare_state = _handoff_export_prepare_from_reconciliation(reconciliation)
+    if prepare_state is None or prepare_state.get("handoff_export_state") != HANDOFF_EXPORT_PREPARED_STATE:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_requires_prepared_handoff_export",
+            "External export/download readiness requires recorded handoff_export_prepared state.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["handoff_export_state"],
+            next_allowed_actions=["record_handoff_export_prepare"],
+        )
+    envelope = prepare_state.get("handoff_export_envelope")
+    envelope_ref = str(envelope.get("envelope_ref") or "").strip() if isinstance(envelope, dict) else ""
+    if supplied_prepare_ref != str(prepare_state.get("prepare_record_ref") or ""):
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_prepare_ref_mismatch",
+            "Supplied prepare_record_ref does not match the recorded handoff/export prepare state.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["prepare_record_ref"],
+        )
+    if not envelope_ref or supplied_envelope_ref != envelope_ref:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_envelope_ref_mismatch",
+            "Supplied handoff_export_envelope_ref does not match the recorded internal prepare envelope.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["handoff_export_envelope_ref"],
+        )
+    prepare_mismatches = [
+        field
+        for field, expected in {
+            "package_review_submit_record_ref": supplied_submit_ref,
+            "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+            "handoff_target": "internal_export_envelope",
+            "export_mode": "prepare_only",
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "source_preview_id": preview_id,
+            "source_preview_hash": preview_hash,
+            "analysis_run_id": analysis_run_id,
+            "result_review_record_ref": supplied_review_ref,
+            "package_review_preview_hash": supplied_package_preview_hash,
+            "reconciliation_record_id": reconciliation_record_id,
+        }.items()
+        if str(prepare_state.get(field) or "") != str(expected or "")
+    ]
+    if list(prepare_state.get("output_package_ids") or []) != expected_package_ids:
+        prepare_mismatches.append("output_package_ids")
+    if list(prepare_state.get("package_kinds") or []) != expected_package_kinds:
+        prepare_mismatches.append("package_kinds")
+    if list(prepare_state.get("payload_refs") or []) != canonical_payload_refs:
+        prepare_mismatches.append("payload_refs")
+    if list(prepare_state.get("payload_hashes") or []) != canonical_payload_hashes:
+        prepare_mismatches.append("payload_hashes")
+    if prepare_mismatches:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_prepare_mismatch",
+            "Stored handoff/export prepare authority does not match the supplied readiness basis.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(set(prepare_mismatches)),
+        )
+    recorded_dispatch = _aps_handoff_dispatch_from_reconciliation(reconciliation)
+    if recorded_dispatch is None or recorded_dispatch.get("aps_handoff_state") != APS_HANDOFF_DISPATCHED_STATE:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_requires_aps_handoff_dispatch",
+            "External export/download readiness requires recorded APS handoff dispatch.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_handoff_state"],
+            next_allowed_actions=["record_aps_handoff_dispatch"],
+        )
+    bundle_identity = _aps_bundle_identity_for_external_export_download(
+        db,
+        session_id=session_id,
+        reconciliation_record_id=reconciliation_record_id,
+        dispatch_state=recorded_dispatch,
+        error_prefix="external_export_download_prepare",
+    )
+    dispatch_mismatches = [
+        field
+        for field, expected in {
+            "aps_handoff_record_ref": supplied_aps_handoff_record_ref,
+            "package_review_submit_record_ref": supplied_submit_ref,
+            "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+            "prepare_record_ref": supplied_prepare_ref,
+            "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+            "handoff_export_envelope_ref": envelope_ref,
+            "handoff_target": "internal_export_envelope",
+            "export_mode": "prepare_only",
+            "aps_handoff_target": "aps_evidence_bundle",
+            "dispatch_mode": "server_side_aps_handoff",
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "source_preview_id": preview_id,
+            "source_preview_hash": preview_hash,
+            "analysis_run_id": analysis_run_id,
+            "result_review_record_ref": supplied_review_ref,
+            "package_review_preview_hash": supplied_package_preview_hash,
+            "reconciliation_record_id": reconciliation_record_id,
+        }.items()
+        if str(recorded_dispatch.get(field) or "") != str(expected or "")
+    ]
+    if list(recorded_dispatch.get("output_package_ids") or []) != expected_package_ids:
+        dispatch_mismatches.append("output_package_ids")
+    if list(recorded_dispatch.get("package_kinds") or []) != expected_package_kinds:
+        dispatch_mismatches.append("package_kinds")
+    if list(recorded_dispatch.get("payload_refs") or []) != canonical_payload_refs:
+        dispatch_mismatches.append("payload_refs")
+    if list(recorded_dispatch.get("payload_hashes") or []) != canonical_payload_hashes:
+        dispatch_mismatches.append("payload_hashes")
+    if dispatch_mismatches:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_aps_dispatch_mismatch",
+            "Stored APS handoff dispatch authority does not match the supplied readiness basis.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(set(dispatch_mismatches)),
+        )
+    for field, supplied, expected in (
+        ("aps_output_package_id", supplied_aps_output_package_id, bundle_identity["aps_output_package_id"]),
+        ("aps_output_package_kind", supplied_aps_output_package_kind, bundle_identity["aps_output_package_kind"]),
+        ("aps_bundle_ref", supplied_aps_bundle_ref, bundle_identity["aps_bundle_ref"]),
+        ("aps_bundle_id", supplied_aps_bundle_id, bundle_identity["aps_bundle_id"]),
+        ("aps_schema_id", supplied_aps_schema_id, bundle_identity["aps_schema_id"]),
+    ):
+        if str(supplied or "") != str(expected or ""):
+            raise Layer3WorkbenchError(
+                f"external_export_download_prepare_{field}_mismatch",
+                f"Supplied {field} does not match the recorded APS handoff artifact.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=[field],
+            )
+    if supplied_aps_bundle_hash and supplied_aps_bundle_hash != bundle_identity["source_artifact_hash"]:
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_aps_bundle_hash_mismatch",
+            "Supplied aps_bundle_hash does not match the existing APS bundle artifact hash.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_bundle_hash"],
+        )
+    if raw_aps_bundle_size is not None:
+        try:
+            supplied_size = int(raw_aps_bundle_size)
+        except (TypeError, ValueError):
+            raise Layer3WorkbenchError(
+                "external_export_download_prepare_aps_bundle_size_invalid",
+                "aps_bundle_size_bytes must be an integer when supplied.",
+                status="invalid",
+                blocked_fields=["aps_bundle_size_bytes"],
+            ) from None
+        if supplied_size != bundle_identity["source_artifact_size_bytes"]:
+            raise Layer3WorkbenchError(
+                "external_export_download_prepare_aps_bundle_size_mismatch",
+                "Supplied aps_bundle_size_bytes does not match the existing APS bundle artifact size.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["aps_bundle_size_bytes"],
+            )
+
+    source_package_refs = _package_ref_map(ordered_packages)
+    source_package_hashes = _package_hash_map(ordered_packages)
+    readiness_basis = {
+        "schema_id": "layer3.external_export_download_prepare_authority.v1",
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_id,
+        "preview_hash": preview_hash,
+        "analysis_run_id": analysis_run_id,
+        "result_review_record_ref": supplied_review_ref,
+        "package_review_preview_hash": supplied_package_preview_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": expected_package_kinds,
+        "payload_refs": canonical_payload_refs,
+        "payload_hashes": canonical_payload_hashes,
+        "package_review_submit_record_ref": supplied_submit_ref,
+        "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+        "prepare_record_ref": supplied_prepare_ref,
+        "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+        "handoff_export_envelope_ref": envelope_ref,
+        "handoff_target": "internal_export_envelope",
+        "export_mode": "prepare_only",
+        "aps_handoff_record_ref": supplied_aps_handoff_record_ref,
+        "aps_handoff_state": APS_HANDOFF_DISPATCHED_STATE,
+        "aps_handoff_target": "aps_evidence_bundle",
+        "dispatch_mode": "server_side_aps_handoff",
+        "aps_output_package_id": bundle_identity["aps_output_package_id"],
+        "aps_output_package_kind": bundle_identity["aps_output_package_kind"],
+        "aps_bundle_ref": bundle_identity["aps_bundle_ref"],
+        "aps_bundle_id": bundle_identity["aps_bundle_id"],
+        "aps_schema_id": bundle_identity["aps_schema_id"],
+        "source_package_refs": source_package_refs,
+        "source_package_hashes": source_package_hashes,
+        "source_artifact_hash": bundle_identity["source_artifact_hash"],
+        "source_artifact_size_bytes": bundle_identity["source_artifact_size_bytes"],
+        "export_download_target": "aps_evidence_bundle_download_reference",
+        "download_mode": "reference_only_prepare",
+        "operator_decision": EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION,
+        "decision_notes": decision_notes or None,
+    }
+    external_export_download_record_ref = _stable_id("l3-external-export-download-prepare", readiness_basis)
+    if existing_readiness is not None:
+        if (
+            existing_readiness.get("external_export_download_record_ref") == external_export_download_record_ref
+            and existing_readiness.get("client_request_id") == request_id
+        ):
+            return _external_export_download_prepare_response(
+                request_id=request_id,
+                status="already_prepared",
+                session_id=session_id,
+                analysis_plan_id=analysis_plan_id,
+                pass_run_id=pass_run_id,
+                preview_id=preview_id,
+                preview_hash=preview_hash,
+                result_review_record_ref=supplied_review_ref,
+                package_review_preview_hash=supplied_package_preview_hash,
+                reconciliation_record=reconciliation,
+                packages=packages,
+                readiness_state=existing_readiness,
+            )
+        raise Layer3WorkbenchError(
+            "external_export_download_prepare_already_recorded",
+            "This APS handoff dispatch already has an external export/download readiness decision.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["client_request_id", "operator_decision"],
+        )
+
+    recorded_at = _utcnow_iso()
+    descriptor_basis = {
+        **readiness_basis,
+        "schema_id": "layer3.external_export_download_descriptor_authority.v1",
+    }
+    descriptor_ref = _stable_id("l3-external-export-download-descriptor", descriptor_basis)
+    descriptor = {
+        "schema_id": "layer3.external_export_download_descriptor.v1",
+        "descriptor_ref": descriptor_ref,
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "reconciliation_record_id": reconciliation_record_id,
+        "aps_handoff_record_ref": supplied_aps_handoff_record_ref,
+        "aps_output_package_id": bundle_identity["aps_output_package_id"],
+        "aps_output_package_kind": bundle_identity["aps_output_package_kind"],
+        "aps_bundle_ref": bundle_identity["aps_bundle_ref"],
+        "aps_bundle_id": bundle_identity["aps_bundle_id"],
+        "aps_schema_id": bundle_identity["aps_schema_id"],
+        "source_artifact_ref": bundle_identity["source_artifact_ref"],
+        "source_artifact_schema_id": bundle_identity["source_artifact_schema_id"],
+        "source_artifact_hash": bundle_identity["source_artifact_hash"],
+        "source_artifact_size_bytes": bundle_identity["source_artifact_size_bytes"],
+        "export_download_target": "aps_evidence_bundle_download_reference",
+        "download_mode": "reference_only_prepare",
+        "prepared_at": recorded_at,
+        "browser_download_enabled": False,
+        "download_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_selection_enabled": False,
+        "generic_downstream_dispatch_enabled": False,
+        "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
+    }
+    readiness_state = {
+        "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+        "client_request_id": request_id,
+        "external_export_download_record_ref": external_export_download_record_ref,
+        "export_download_descriptor_ref": descriptor_ref,
+        "external_export_download_descriptor": descriptor,
+        "authority_basis": readiness_basis,
+        "package_review_submit_record_ref": supplied_submit_ref,
+        "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+        "prepare_record_ref": supplied_prepare_ref,
+        "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+        "handoff_export_envelope_ref": envelope_ref,
+        "handoff_target": "internal_export_envelope",
+        "export_mode": "prepare_only",
+        "aps_handoff_record_ref": supplied_aps_handoff_record_ref,
+        "aps_handoff_state": APS_HANDOFF_DISPATCHED_STATE,
+        "aps_handoff_target": "aps_evidence_bundle",
+        "dispatch_mode": "server_side_aps_handoff",
+        "operator_decision": EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION,
+        "decision_notes": decision_notes or None,
+        "external_export_download_state": EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE,
+        "export_download_target": "aps_evidence_bundle_download_reference",
+        "download_mode": "reference_only_prepare",
+        "aps_output_package_id": bundle_identity["aps_output_package_id"],
+        "aps_output_package_kind": bundle_identity["aps_output_package_kind"],
+        "aps_bundle_ref": bundle_identity["aps_bundle_ref"],
+        "aps_bundle_id": bundle_identity["aps_bundle_id"],
+        "aps_schema_id": bundle_identity["aps_schema_id"],
+        "source_artifact_ref": bundle_identity["source_artifact_ref"],
+        "source_artifact_schema_id": bundle_identity["source_artifact_schema_id"],
+        "source_artifact_hash": bundle_identity["source_artifact_hash"],
+        "source_artifact_size_bytes": bundle_identity["source_artifact_size_bytes"],
+        "source_package_refs": source_package_refs,
+        "source_package_hashes": source_package_hashes,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "source_preview_id": preview_id,
+        "source_preview_hash": preview_hash,
+        "analysis_run_id": analysis_run_id,
+        "result_review_record_ref": supplied_review_ref,
+        "package_review_preview_hash": supplied_package_preview_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": expected_package_kinds,
+        "payload_refs": canonical_payload_refs,
+        "payload_hashes": canonical_payload_hashes,
+        "recorded_at": recorded_at,
+        "browser_download_enabled": False,
+        "download_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_selection_enabled": False,
+        "generic_downstream_dispatch_enabled": False,
+        "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
+    }
+    reconciliation.summary_json = {
+        **reconciliation_summary,
+        "external_export_download_prepare": readiness_state,
+    }
+    session.summary_json = {
+        **_json_clone(session.summary_json or {}),
+        "external_export_download_prepare": {
+            "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+            "external_export_download_record_ref": external_export_download_record_ref,
+            "export_download_descriptor_ref": descriptor_ref,
+            "external_export_download_state": EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE,
+            "operator_decision": EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION,
+            "decision_notes": decision_notes or None,
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "analysis_run_id": analysis_run_id,
+            "reconciliation_record_id": reconciliation_record_id,
+            "aps_handoff_record_ref": supplied_aps_handoff_record_ref,
+            "aps_output_package_id": bundle_identity["aps_output_package_id"],
+            "aps_bundle_ref": bundle_identity["aps_bundle_ref"],
+            "aps_bundle_id": bundle_identity["aps_bundle_id"],
+            "source_artifact_hash": bundle_identity["source_artifact_hash"],
+            "source_artifact_size_bytes": bundle_identity["source_artifact_size_bytes"],
+            "browser_download_enabled": False,
+            "download_url_enabled": False,
+            "connector_dispatch_enabled": False,
+            "destination_selection_enabled": False,
+            "generic_downstream_dispatch_enabled": False,
+            "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
+        },
+    }
+    db.commit()
+
+    return _external_export_download_prepare_response(
+        request_id=request_id,
+        status="prepared",
+        session_id=session_id,
+        analysis_plan_id=analysis_plan_id,
+        pass_run_id=pass_run_id,
+        preview_id=preview_id,
+        preview_hash=preview_hash,
+        result_review_record_ref=supplied_review_ref,
+        package_review_preview_hash=supplied_package_preview_hash,
+        reconciliation_record=reconciliation,
+        packages=packages,
+        readiness_state=readiness_state,
+    )
+
+
 def _package_review_submit_summary(
     db: Session,
     *,
@@ -6784,13 +8015,16 @@ def _aps_handoff_dispatch_summary(
             "available": False,
             "state": APS_HANDOFF_UNAVAILABLE_STATE,
             "blocked_reason": "handoff_export_prepared_required",
+            "reconciliation_record_id": reconciliation_record_id or None,
             "prepare_record_ref": prepare_record_ref or None,
             "handoff_export_envelope_ref": envelope_ref or None,
             "aps_handoff_target": "aps_evidence_bundle",
             "dispatch_mode": "server_side_aps_handoff",
             "aps_output_package_id": None,
+            "aps_output_package_kind": None,
             "aps_bundle_ref": None,
             "aps_bundle_id": None,
+            "aps_schema_id": None,
             "external_export_enabled": False,
             "download_enabled": False,
             "connector_dispatch_enabled": False,
@@ -6812,6 +8046,7 @@ def _aps_handoff_dispatch_summary(
             "available": False,
             "state": recorded_dispatch.get("aps_handoff_state"),
             "blocked_reason": None,
+            "reconciliation_record_id": reconciliation_record_id,
             "aps_handoff_record_ref": recorded_dispatch.get("aps_handoff_record_ref"),
             "prepare_record_ref": recorded_dispatch.get("prepare_record_ref"),
             "handoff_export_envelope_ref": recorded_dispatch.get("handoff_export_envelope_ref"),
@@ -6820,8 +8055,10 @@ def _aps_handoff_dispatch_summary(
             "operator_decision": recorded_dispatch.get("operator_decision"),
             "decision_notes": recorded_dispatch.get("decision_notes"),
             "aps_output_package_id": recorded_dispatch.get("aps_output_package_id"),
+            "aps_output_package_kind": recorded_dispatch.get("aps_output_package_kind"),
             "aps_bundle_ref": recorded_dispatch.get("aps_bundle_ref"),
             "aps_bundle_id": recorded_dispatch.get("aps_bundle_id"),
+            "aps_schema_id": recorded_dispatch.get("aps_schema_id"),
             "external_export_enabled": False,
             "download_enabled": False,
             "connector_dispatch_enabled": False,
@@ -6835,13 +8072,16 @@ def _aps_handoff_dispatch_summary(
             "available": False,
             "state": APS_HANDOFF_CONFLICT_STATE,
             "blocked_reason": "aps_handoff_package_exists_without_workbench_dispatch_state",
+            "reconciliation_record_id": reconciliation_record_id,
             "prepare_record_ref": prepare_record_ref,
             "handoff_export_envelope_ref": envelope_ref,
             "aps_handoff_target": "aps_evidence_bundle",
             "dispatch_mode": "server_side_aps_handoff",
             "aps_output_package_id": existing_aps_package.output_package_id,
+            "aps_output_package_kind": existing_aps_package.package_kind,
             "aps_bundle_ref": existing_aps_package.payload_ref,
             "aps_bundle_id": (existing_aps_package.summary_json or {}).get("bundle_id"),
+            "aps_schema_id": (existing_aps_package.summary_json or {}).get("aps_schema_id"),
             "external_export_enabled": False,
             "download_enabled": False,
             "connector_dispatch_enabled": False,
@@ -6855,13 +8095,16 @@ def _aps_handoff_dispatch_summary(
             "available": False,
             "state": APS_HANDOFF_BLOCKED_STATE,
             "blocked_reason": compatibility.blocked_reason or "aps_handoff_owner_service_not_compatible",
+            "reconciliation_record_id": reconciliation_record_id,
             "prepare_record_ref": prepare_record_ref,
             "handoff_export_envelope_ref": envelope_ref,
             "aps_handoff_target": "aps_evidence_bundle",
             "dispatch_mode": "server_side_aps_handoff",
             "aps_output_package_id": None,
+            "aps_output_package_kind": None,
             "aps_bundle_ref": None,
             "aps_bundle_id": None,
+            "aps_schema_id": None,
             "external_export_enabled": False,
             "download_enabled": False,
             "connector_dispatch_enabled": False,
@@ -6873,17 +8116,201 @@ def _aps_handoff_dispatch_summary(
         "available": True,
         "state": APS_HANDOFF_READY_STATE,
         "blocked_reason": None,
+        "reconciliation_record_id": reconciliation_record_id,
         "prepare_record_ref": prepare_record_ref,
         "handoff_export_envelope_ref": envelope_ref,
         "aps_handoff_target": "aps_evidence_bundle",
         "dispatch_mode": "server_side_aps_handoff",
         "aps_output_package_id": None,
+        "aps_output_package_kind": None,
         "aps_bundle_ref": None,
         "aps_bundle_id": None,
+        "aps_schema_id": None,
         "external_export_enabled": False,
         "download_enabled": False,
         "connector_dispatch_enabled": False,
         "downstream_unavailable": list(APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE),
+    }
+
+
+def _external_export_download_prepare_summary(
+    db: Session,
+    *,
+    session_id: str,
+    aps_handoff_dispatch_state: dict[str, Any],
+) -> dict[str, Any]:
+    reconciliation_record_id = str(aps_handoff_dispatch_state.get("reconciliation_record_id") or "").strip()
+    aps_handoff_record_ref = str(aps_handoff_dispatch_state.get("aps_handoff_record_ref") or "").strip()
+    if (
+        aps_handoff_dispatch_state.get("state") != APS_HANDOFF_DISPATCHED_STATE
+        or not reconciliation_record_id
+        or not aps_handoff_record_ref
+    ):
+        return {
+            "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+            "available": False,
+            "state": EXTERNAL_EXPORT_DOWNLOAD_UNAVAILABLE_STATE,
+            "blocked_reason": "aps_handoff_dispatched_required",
+            "reconciliation_record_id": reconciliation_record_id or None,
+            "aps_handoff_record_ref": aps_handoff_record_ref or None,
+            "export_download_target": "aps_evidence_bundle_download_reference",
+            "download_mode": "reference_only_prepare",
+            "external_export_download_prepare_enabled": False,
+            "browser_download_enabled": False,
+            "download_url_enabled": False,
+            "connector_dispatch_enabled": False,
+            "destination_selection_enabled": False,
+            "generic_downstream_dispatch_enabled": False,
+            "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
+        }
+
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(
+            L3ReconciliationRecord.session_id == session_id,
+            L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+        )
+        .one_or_none()
+    )
+    recorded_dispatch = _aps_handoff_dispatch_from_reconciliation(reconciliation)
+    if recorded_dispatch is None:
+        return {
+            "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+            "available": False,
+            "state": EXTERNAL_EXPORT_DOWNLOAD_BLOCKED_STATE,
+            "blocked_reason": "aps_handoff_dispatch_state_missing",
+            "reconciliation_record_id": reconciliation_record_id,
+            "aps_handoff_record_ref": aps_handoff_record_ref,
+            "export_download_target": "aps_evidence_bundle_download_reference",
+            "download_mode": "reference_only_prepare",
+            "external_export_download_prepare_enabled": False,
+            "browser_download_enabled": False,
+            "download_url_enabled": False,
+            "connector_dispatch_enabled": False,
+            "destination_selection_enabled": False,
+            "generic_downstream_dispatch_enabled": False,
+            "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
+        }
+    recorded_readiness = _external_export_download_prepare_from_reconciliation(reconciliation)
+    if recorded_readiness is not None:
+        return {
+            "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+            "available": False,
+            "state": recorded_readiness.get("external_export_download_state"),
+            "blocked_reason": None,
+            "external_export_download_record_ref": recorded_readiness.get("external_export_download_record_ref"),
+            "export_download_descriptor_ref": recorded_readiness.get("export_download_descriptor_ref"),
+            "operator_decision": recorded_readiness.get("operator_decision"),
+            "decision_notes": recorded_readiness.get("decision_notes"),
+            "analysis_run_id": recorded_readiness.get("analysis_run_id"),
+            "result_review_record_ref": recorded_readiness.get("result_review_record_ref"),
+            "package_review_preview_hash": recorded_readiness.get("package_review_preview_hash"),
+            "reconciliation_record_id": reconciliation_record_id,
+            "output_package_ids": list(recorded_readiness.get("output_package_ids") or []),
+            "package_kinds": list(recorded_readiness.get("package_kinds") or []),
+            "payload_refs": list(recorded_readiness.get("payload_refs") or []),
+            "payload_hashes": list(recorded_readiness.get("payload_hashes") or []),
+            "package_review_submit_record_ref": recorded_readiness.get("package_review_submit_record_ref"),
+            "package_review_state": recorded_readiness.get("package_review_state"),
+            "prepare_record_ref": recorded_readiness.get("prepare_record_ref"),
+            "handoff_export_state": recorded_readiness.get("handoff_export_state"),
+            "handoff_export_envelope_ref": recorded_readiness.get("handoff_export_envelope_ref"),
+            "handoff_target": recorded_readiness.get("handoff_target"),
+            "export_mode": recorded_readiness.get("export_mode"),
+            "aps_handoff_record_ref": recorded_readiness.get("aps_handoff_record_ref"),
+            "aps_handoff_state": recorded_readiness.get("aps_handoff_state"),
+            "aps_handoff_target": recorded_readiness.get("aps_handoff_target"),
+            "dispatch_mode": recorded_readiness.get("dispatch_mode"),
+            "aps_output_package_id": recorded_readiness.get("aps_output_package_id"),
+            "aps_output_package_kind": recorded_readiness.get("aps_output_package_kind"),
+            "aps_bundle_ref": recorded_readiness.get("aps_bundle_ref"),
+            "aps_bundle_id": recorded_readiness.get("aps_bundle_id"),
+            "aps_schema_id": recorded_readiness.get("aps_schema_id"),
+            "source_artifact_ref": recorded_readiness.get("source_artifact_ref"),
+            "source_artifact_schema_id": recorded_readiness.get("source_artifact_schema_id"),
+            "source_artifact_hash": recorded_readiness.get("source_artifact_hash"),
+            "source_artifact_size_bytes": recorded_readiness.get("source_artifact_size_bytes"),
+            "export_download_target": recorded_readiness.get("export_download_target"),
+            "download_mode": recorded_readiness.get("download_mode"),
+            "external_export_download_prepare_enabled": False,
+            "browser_download_enabled": False,
+            "download_url_enabled": False,
+            "connector_dispatch_enabled": False,
+            "destination_selection_enabled": False,
+            "generic_downstream_dispatch_enabled": False,
+            "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
+        }
+
+    try:
+        bundle_identity = _aps_bundle_identity_for_external_export_download(
+            db,
+            session_id=session_id,
+            reconciliation_record_id=reconciliation_record_id,
+            dispatch_state=recorded_dispatch,
+            error_prefix="external_export_download_summary",
+        )
+    except Layer3WorkbenchError as exc:
+        return {
+            "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+            "available": False,
+            "state": EXTERNAL_EXPORT_DOWNLOAD_BLOCKED_STATE,
+            "blocked_reason": exc.message,
+            "reconciliation_record_id": reconciliation_record_id,
+            "aps_handoff_record_ref": aps_handoff_record_ref,
+            "export_download_target": "aps_evidence_bundle_download_reference",
+            "download_mode": "reference_only_prepare",
+            "external_export_download_prepare_enabled": False,
+            "browser_download_enabled": False,
+            "download_url_enabled": False,
+            "connector_dispatch_enabled": False,
+            "destination_selection_enabled": False,
+            "generic_downstream_dispatch_enabled": False,
+            "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
+        }
+
+    return {
+        "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+        "available": True,
+        "state": EXTERNAL_EXPORT_DOWNLOAD_READY_STATE,
+        "blocked_reason": None,
+        "analysis_run_id": recorded_dispatch.get("analysis_run_id"),
+        "result_review_record_ref": recorded_dispatch.get("result_review_record_ref"),
+        "package_review_preview_hash": recorded_dispatch.get("package_review_preview_hash"),
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": list(recorded_dispatch.get("output_package_ids") or []),
+        "package_kinds": list(recorded_dispatch.get("package_kinds") or []),
+        "payload_refs": list(recorded_dispatch.get("payload_refs") or []),
+        "payload_hashes": list(recorded_dispatch.get("payload_hashes") or []),
+        "package_review_submit_record_ref": recorded_dispatch.get("package_review_submit_record_ref"),
+        "package_review_state": recorded_dispatch.get("package_review_state"),
+        "prepare_record_ref": recorded_dispatch.get("prepare_record_ref"),
+        "handoff_export_state": recorded_dispatch.get("handoff_export_state"),
+        "handoff_export_envelope_ref": recorded_dispatch.get("handoff_export_envelope_ref"),
+        "handoff_target": recorded_dispatch.get("handoff_target"),
+        "export_mode": recorded_dispatch.get("export_mode"),
+        "aps_handoff_record_ref": aps_handoff_record_ref,
+        "aps_handoff_state": recorded_dispatch.get("aps_handoff_state"),
+        "aps_handoff_target": recorded_dispatch.get("aps_handoff_target"),
+        "dispatch_mode": recorded_dispatch.get("dispatch_mode"),
+        "operator_decision": EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION,
+        "aps_output_package_id": bundle_identity["aps_output_package_id"],
+        "aps_output_package_kind": bundle_identity["aps_output_package_kind"],
+        "aps_bundle_ref": bundle_identity["aps_bundle_ref"],
+        "aps_bundle_id": bundle_identity["aps_bundle_id"],
+        "aps_schema_id": bundle_identity["aps_schema_id"],
+        "source_artifact_ref": bundle_identity["source_artifact_ref"],
+        "source_artifact_schema_id": bundle_identity["source_artifact_schema_id"],
+        "source_artifact_hash": bundle_identity["source_artifact_hash"],
+        "source_artifact_size_bytes": bundle_identity["source_artifact_size_bytes"],
+        "export_download_target": "aps_evidence_bundle_download_reference",
+        "download_mode": "reference_only_prepare",
+        "external_export_download_prepare_enabled": True,
+        "browser_download_enabled": False,
+        "download_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_selection_enabled": False,
+        "generic_downstream_dispatch_enabled": False,
+        "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
     }
 
 
@@ -6950,6 +8377,11 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         session_id=session_id,
         handoff_export_prepare_state=handoff_export_prepare_state,
     )
+    external_export_download_state = _external_export_download_prepare_summary(
+        db,
+        session_id=session_id,
+        aps_handoff_dispatch_state=aps_handoff_dispatch_state,
+    )
     selection_active = bool(execution_selection_readiness["selected"])
     package_active = bool(
         package_review_preview_state.get("available")
@@ -6962,6 +8394,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
             package_review_submit_state=package_review_submit_state,
             handoff_export_prepare_state=handoff_export_prepare_state,
             aps_handoff_dispatch_state=aps_handoff_dispatch_state,
+            external_export_download_state=external_export_download_state,
         )
         if package_active
         else (
@@ -6995,6 +8428,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "package_review_submit": package_review_submit_state,
         "handoff_export_prepare": handoff_export_prepare_state,
         "aps_handoff_dispatch": aps_handoff_dispatch_state,
+        "external_export_download": external_export_download_state,
         "downstream_unavailable": list(downstream_unavailable),
         "authority_rail": _authority_rail(
             session_id=session_id,
