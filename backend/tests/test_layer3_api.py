@@ -632,6 +632,29 @@ def _external_export_download_prepare_payload(
     return payload
 
 
+def _external_export_download_deliver_payload(
+    *,
+    request_id: str,
+    prepare_payload: dict,
+    readiness_body: dict,
+    decision_notes: str | None = None,
+) -> dict:
+    payload = {
+        **prepare_payload,
+        "client_request_id": request_id,
+        "operator_decision": "deliver_external_export_download",
+        "external_export_download_record_ref": readiness_body["external_export_download_record_ref"],
+        "export_download_descriptor_ref": readiness_body["export_download_descriptor_ref"],
+        "external_export_download_state": readiness_body["external_export_download_state"],
+        "delivery_mode": "same_origin_artifact_stream",
+    }
+    if decision_notes is not None:
+        payload["decision_notes"] = decision_notes
+    else:
+        payload.pop("decision_notes", None)
+    return payload
+
+
 def _insert_orphan_aps_handoff_package(
     client: TestClient,
     tmp_path,
@@ -798,6 +821,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap_body["features"]["handoff_export_prepare"] is True
     assert bootstrap_body["features"]["aps_handoff_dispatch"] is True
     assert bootstrap_body["features"]["external_export_download_prepare"] is True
+    assert bootstrap_body["features"]["external_export_download_deliver"] is True
     assert bootstrap_body["features"]["package_review"] is False
     assert bootstrap_body["features"]["external_export"] is False
     assert bootstrap_body["features"]["dispatch"] is False
@@ -823,6 +847,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert (
         bootstrap_body["execution_readiness"]["external_export_download_prepare_endpoint"]
         == "/api/v1/layer3/handoff/export/download/prepare"
+    )
+    assert bootstrap_body["execution_readiness"]["external_export_download_deliver_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["external_export_download_deliver_endpoint"]
+        == "/api/v1/layer3/handoff/export/download/deliver"
     )
     assert bootstrap_body["execution_readiness"]["package_review_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_handoff_admitted"] is False
@@ -855,6 +884,8 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["aps_handoff_dispatch_endpoint"] == "/api/v1/layer3/handoff/aps/dispatch"
     assert readiness_body["external_export_download_prepare_admitted"] is True
     assert readiness_body["external_export_download_prepare_endpoint"] == "/api/v1/layer3/handoff/export/download/prepare"
+    assert readiness_body["external_export_download_deliver_admitted"] is True
+    assert readiness_body["external_export_download_deliver_endpoint"] == "/api/v1/layer3/handoff/export/download/deliver"
     assert readiness_body["package_review_admitted"] is False
     assert readiness_body["external_handoff_admitted"] is False
     assert readiness_body["external_export_admitted"] is False
@@ -870,6 +901,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert "handoff-export-prepare" in readiness_body["implemented_gates"]
     assert "aps-handoff-dispatch" in readiness_body["implemented_gates"]
     assert "external-export-download-prepare" in readiness_body["implemented_gates"]
+    assert "external-export-download-deliver" in readiness_body["implemented_gates"]
     assert "revision-recovery" in readiness_body["deferred_gates"]
     states = {item["state"] for item in readiness_body["state_model"]["states"]}
     assert {
@@ -914,6 +946,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         "external_export_download_prepared",
         "external_export_download_blocked",
         "external_export_download_conflict",
+        "external_export_download_delivery_unavailable",
+        "external_export_download_delivery_ready",
+        "external_export_download_delivered",
+        "external_export_download_delivery_blocked",
+        "external_export_download_delivery_conflict",
         "execution_readiness_blocked",
     } <= states
 
@@ -3582,6 +3619,242 @@ def test_layer3_api_external_export_download_prepare_prechecks_fail_closed(
         assert "external_export_download_prepare" not in reconciliation.summary_json
     finally:
         db.close()
+
+
+def test_layer3_api_external_export_download_deliver_streams_validated_bundle_without_side_effects(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        dispatch_payload,
+    ) = _prepare_aps_handoff_dispatch(client, tmp_path, request_id="api-external-export-download-deliver-success")
+    dispatch = client.post("/api/v1/layer3/handoff/aps/dispatch", json=dispatch_payload)
+    assert dispatch.status_code == 200, dispatch.json()
+    dispatch_body = dispatch.json()
+    prepare_payload = _external_export_download_prepare_payload(
+        request_id="api-external-export-download-deliver-success-prepare",
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+    )
+    readiness = client.post("/api/v1/layer3/handoff/export/download/prepare", json=prepare_payload)
+    assert readiness.status_code == 200, readiness.json()
+    readiness_body = readiness.json()
+    deliver_payload = _external_export_download_deliver_payload(
+        request_id="api-external-export-download-deliver-success-deliver",
+        prepare_payload=prepare_payload,
+        readiness_body=readiness_body,
+        decision_notes="Deliver the validated APS bundle artifact.",
+    )
+    bundle_path = Path(readiness_body["source_artifact_ref"])
+    expected_bytes = bundle_path.read_bytes()
+
+    def files_under_tmp() -> set[str]:
+        return {str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*") if path.is_file()}
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+        packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        readiness_state_before = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json["external_export_download_prepare"]
+        )
+    finally:
+        db.close()
+    files_before = files_under_tmp()
+
+    delivery = client.post("/api/v1/layer3/handoff/export/download/deliver", json=deliver_payload)
+    assert delivery.status_code == 200, delivery.text
+    assert delivery.content == expected_bytes
+    assert delivery.headers["content-type"].startswith("application/json")
+    assert "attachment" in delivery.headers["content-disposition"]
+    assert "filename=" in delivery.headers["content-disposition"]
+    assert delivery.headers["x-layer3-schema-id"] == "layer3.external_export_download_delivery.v1"
+    assert delivery.headers["x-layer3-delivery-state"] == "external_export_download_delivered"
+    assert delivery.headers["x-layer3-source-artifact-hash"] == readiness_body["source_artifact_hash"]
+    assert "download_url" not in delivery.headers
+    assert "public_url" not in delivery.headers
+    assert "signed_url" not in delivery.headers
+    assert "connector_run_id" not in delivery.headers
+
+    replay = client.post("/api/v1/layer3/handoff/export/download/deliver", json=deliver_payload)
+    assert replay.status_code == 200
+    assert replay.content == expected_bytes
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_before
+        packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after == packages_before
+        readiness_state_after = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json["external_export_download_prepare"]
+        )
+        assert readiness_state_after == readiness_state_before
+    finally:
+        db.close()
+    assert files_under_tmp() == files_before
+
+
+def test_layer3_api_external_export_download_deliver_prechecks_fail_closed(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    missing = client.post(
+        "/api/v1/layer3/handoff/export/download/deliver",
+        json={"client_request_id": "api-external-export-download-deliver-missing", "session_id": "session-only"},
+    )
+    assert missing.status_code == 400
+    assert set(missing.json()["blocked_fields"]) >= {
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "aps_output_package_id",
+        "aps_bundle_ref",
+        "external_export_download_record_ref",
+        "export_download_descriptor_ref",
+        "external_export_download_state",
+        "export_download_target",
+        "download_mode",
+        "delivery_mode",
+        "operator_decision",
+    }
+
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        dispatch_payload,
+    ) = _prepare_aps_handoff_dispatch(client, tmp_path, request_id="api-external-export-download-deliver-prechecks")
+    dispatch = client.post("/api/v1/layer3/handoff/aps/dispatch", json=dispatch_payload)
+    assert dispatch.status_code == 200, dispatch.json()
+    dispatch_body = dispatch.json()
+    prepare_payload = _external_export_download_prepare_payload(
+        request_id="api-external-export-download-deliver-prechecks-prepare",
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+    )
+    not_prepared_payload = {
+        **prepare_payload,
+        "client_request_id": "api-external-export-download-deliver-not-prepared",
+        "operator_decision": "deliver_external_export_download",
+        "external_export_download_record_ref": "missing-readiness",
+        "export_download_descriptor_ref": "missing-descriptor",
+        "external_export_download_state": "external_export_download_prepared",
+        "delivery_mode": "same_origin_artifact_stream",
+    }
+    not_prepared = client.post("/api/v1/layer3/handoff/export/download/deliver", json=not_prepared_payload)
+    assert not_prepared.status_code == 409
+    assert not_prepared.json()["error_code"] == "external_export_download_delivery_requires_prepared_readiness"
+
+    readiness = client.post("/api/v1/layer3/handoff/export/download/prepare", json=prepare_payload)
+    assert readiness.status_code == 200, readiness.json()
+    readiness_body = readiness.json()
+    base_payload = _external_export_download_deliver_payload(
+        request_id="api-external-export-download-deliver-prechecks-deliver",
+        prepare_payload=prepare_payload,
+        readiness_body=readiness_body,
+    )
+    cases = [
+        ({**base_payload, "export_download_target": "public_download_url"}, 400, "external_export_download_delivery_target_not_admitted"),
+        ({**base_payload, "download_mode": "browser_download"}, 400, "external_export_download_delivery_download_mode_not_admitted"),
+        ({**base_payload, "delivery_mode": "signed_url"}, 400, "external_export_download_delivery_mode_not_admitted"),
+        ({**base_payload, "operator_decision": "prepare_external_export_download"}, 400, "unsupported_external_export_download_delivery_decision"),
+        ({**base_payload, "download_url": "https://example.invalid/bundle.json"}, 400, "external_export_download_delivery_scope_not_admitted"),
+        ({**base_payload, "external_export_download_state": "external_export_download_unavailable"}, 409, "external_export_download_delivery_requires_prepared_readiness"),
+        ({**base_payload, "external_export_download_record_ref": "stale-readiness-ref"}, 409, "external_export_download_delivery_external_export_download_record_ref_mismatch"),
+        ({**base_payload, "export_download_descriptor_ref": "stale-descriptor-ref"}, 409, "external_export_download_delivery_export_download_descriptor_ref_mismatch"),
+        ({**base_payload, "aps_bundle_ref": "stale-bundle-ref"}, 409, "external_export_download_delivery_aps_bundle_ref_mismatch"),
+        ({**base_payload, "aps_bundle_id": "stale-bundle-id"}, 409, "external_export_download_delivery_aps_bundle_id_mismatch"),
+        ({**base_payload, "aps_schema_id": "stale-schema"}, 409, "external_export_download_delivery_aps_schema_id_mismatch"),
+        ({**base_payload, "payload_hashes": ["stale-hash", *base_payload["payload_hashes"][1:]]}, 409, "external_export_download_prepare_payload_hashes_mismatch"),
+    ]
+    for payload, expected_status, expected_error in cases:
+        response = client.post("/api/v1/layer3/handoff/export/download/deliver", json=payload)
+        assert response.status_code == expected_status, response.text
+        assert response.json()["error_code"] == expected_error
 
 
 def test_layer3_api_aps_handoff_dispatch_fails_closed_on_malformed_canonical_inventory(

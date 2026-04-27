@@ -106,6 +106,7 @@ APS_HANDOFF_DISPATCH_SCHEMA_ID = "layer3.aps_handoff_dispatch.v1"
 APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID = "layer3.aps_handoff_dispatch_state.v1"
 EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.external_export_download_prepare.v1"
 EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID = "layer3.external_export_download_prepare_state.v1"
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.external_export_download_delivery.v1"
 EXECUTION_PASS_RUNNING_STATE = "execution_pass_running"
 EXECUTION_PASS_COMPLETED_STATE = "execution_pass_completed"
 EXECUTION_PASS_FAILED_STATE = "execution_pass_failed"
@@ -148,6 +149,11 @@ EXTERNAL_EXPORT_DOWNLOAD_READY_STATE = "external_export_download_ready"
 EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE = "external_export_download_prepared"
 EXTERNAL_EXPORT_DOWNLOAD_BLOCKED_STATE = "external_export_download_blocked"
 EXTERNAL_EXPORT_DOWNLOAD_CONFLICT_STATE = "external_export_download_conflict"
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UNAVAILABLE_STATE = "external_export_download_delivery_unavailable"
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_READY_STATE = "external_export_download_delivery_ready"
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE = "external_export_download_delivered"
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BLOCKED_STATE = "external_export_download_delivery_blocked"
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONFLICT_STATE = "external_export_download_delivery_conflict"
 STATE_MODEL_SCHEMA_ID = "layer3.workbench_state_model.v1"
 PLAN_REVISION_DECISIONS = frozenset({"reject_current_preview", "request_revision"})
 PLAN_REVISION_STATE_BY_DECISION = {
@@ -185,6 +191,7 @@ HANDOFF_EXPORT_PREPARE_STATUS_BY_DECISION = {
 HANDOFF_EXPORT_PREPARE_NOTE_REQUIRED_DECISIONS = frozenset({"hold", "decline", "blocked"})
 APS_HANDOFF_DISPATCH_OPERATOR_DECISION = "dispatch_aps_handoff"
 EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = "prepare_external_export_download"
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION = "deliver_external_export_download"
 EXECUTION_RESULT_REVIEW_ITEM_TYPES = frozenset(
     {
         "datum",
@@ -694,6 +701,57 @@ EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS = frozenset(
         "aps_bundle_size_bytes",
     }
 )
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORBIDDEN_FIELDS = frozenset(
+    {
+        "download_url",
+        "download_token",
+        "public_url",
+        "signed_url",
+        "local_file_path",
+        "external_target",
+        "destination",
+        "destination_selector",
+        "destination_id",
+        "connector_run_id",
+        "connector_dispatch",
+        "generic_dispatch",
+        "dispatch",
+        "send",
+        "runtime_db_write",
+        "analysis_artifact",
+        "artifact_manifest",
+        "create_package",
+        "rebuild_package",
+        "package_payload",
+        "package_variant_content",
+        "rewrite_output",
+        "edited_findings",
+        "result_review_amendment",
+        "package_review_amendment",
+        "handoff_export_amendment",
+        "aps_handoff_amendment",
+        "rerun",
+        "retry",
+        "recover",
+        "cancel",
+        "selected_pass_ids",
+        "pass_run_ids",
+        "new_analysis_plan",
+        "plan_revision",
+        "source_expansion",
+        "local_upload",
+        "local_directory",
+        "schema_migration",
+    }
+)
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ALLOWED_FIELDS = EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS | frozenset(
+    {
+        "external_export_download_record_ref",
+        "export_download_descriptor_ref",
+        "external_export_download_state",
+        "delivery_mode",
+    }
+)
 EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 ANALYSIS_EXECUTION_START_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE = ("result_review", "package", "handoff")
@@ -775,6 +833,7 @@ READINESS_REQUIRED_GATES = (
     "handoff-export-prepare",
     "aps-handoff-dispatch",
     "external-export-download-prepare",
+    "external-export-download-deliver",
     "browser-proof",
 )
 READINESS_IMPLEMENTED_GATES = (
@@ -793,6 +852,7 @@ READINESS_IMPLEMENTED_GATES = (
     "handoff-export-prepare",
     "aps-handoff-dispatch",
     "external-export-download-prepare",
+    "external-export-download-deliver",
 )
 READINESS_DEFERRED_GATES = (
     "revision-recovery",
@@ -812,6 +872,14 @@ class Layer3WorkbenchError(ValueError):
     recoverable: bool = True
     blocked_fields: list[str] = field(default_factory=list)
     next_allowed_actions: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class ExternalExportDownloadDelivery:
+    artifact_path: Path
+    media_type: str
+    filename: str
+    headers: dict[str, str]
 
 
 def _utcnow_iso() -> str:
@@ -1206,9 +1274,8 @@ def _workbench_state_model() -> dict[str, Any]:
             {
                 "state": EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE,
                 "authority_source": "reference_only_external_export_download_readiness_descriptor",
-                "allowed_next_actions": ["inspect_external_export_download_readiness"],
+                "allowed_next_actions": ["inspect_external_export_download_readiness", "external_export_download_deliver"],
                 "forbidden_downstream_actions": [
-                    "browser_download",
                     "download_url",
                     "connector_dispatch",
                     "destination_selection",
@@ -1234,6 +1301,61 @@ def _workbench_state_model() -> dict[str, Any]:
                 "allowed_next_actions": ["inspect_existing_external_export_download_readiness"],
                 "forbidden_downstream_actions": [
                     "browser_download",
+                    "download_url",
+                    "connector_dispatch",
+                    "destination_selection",
+                    "generic_downstream_dispatch",
+                ],
+            },
+            {
+                "state": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UNAVAILABLE_STATE,
+                "authority_source": "missing_recorded_external_export_download_readiness_or_validated_artifact_source",
+                "allowed_next_actions": ["inspect_external_export_download_readiness"],
+                "forbidden_downstream_actions": [
+                    "download_url",
+                    "connector_dispatch",
+                    "destination_selection",
+                    "generic_downstream_dispatch",
+                ],
+            },
+            {
+                "state": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_READY_STATE,
+                "authority_source": "server_validated_readiness_descriptor_and_existing_bundle_artifact",
+                "allowed_next_actions": ["external_export_download_deliver"],
+                "forbidden_downstream_actions": [
+                    "download_url",
+                    "connector_dispatch",
+                    "destination_selection",
+                    "generic_downstream_dispatch",
+                ],
+            },
+            {
+                "state": EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE,
+                "authority_source": "same_origin_stream_of_existing_validated_aps_evidence_bundle",
+                "allowed_next_actions": ["inspect_external_export_download_readiness"],
+                "forbidden_downstream_actions": [
+                    "download_url",
+                    "connector_dispatch",
+                    "destination_selection",
+                    "generic_downstream_dispatch",
+                ],
+            },
+            {
+                "state": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BLOCKED_STATE,
+                "authority_source": "missing_or_invalid_readiness_descriptor_or_aps_bundle_artifact",
+                "allowed_next_actions": ["inspect_block_reasons"],
+                "forbidden_downstream_actions": [
+                    "download_url",
+                    "connector_dispatch",
+                    "destination_selection",
+                    "generic_downstream_dispatch",
+                ],
+            },
+            {
+                "state": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONFLICT_STATE,
+                "authority_source": "request_conflicts_with_recorded_external_export_download_readiness",
+                "allowed_next_actions": ["inspect_existing_external_export_download_readiness"],
+                "forbidden_downstream_actions": [
                     "download_url",
                     "connector_dispatch",
                     "destination_selection",
@@ -1323,6 +1445,8 @@ def readiness_contract() -> dict[str, Any]:
         "aps_handoff_dispatch_endpoint": f"{API_ROOT}/handoff/aps/dispatch",
         "external_export_download_prepare_admitted": True,
         "external_export_download_prepare_endpoint": f"{API_ROOT}/handoff/export/download/prepare",
+        "external_export_download_deliver_admitted": True,
+        "external_export_download_deliver_endpoint": f"{API_ROOT}/handoff/export/download/deliver",
         "package_review_admitted": False,
         "external_handoff_admitted": False,
         "external_export_admitted": False,
@@ -1347,6 +1471,7 @@ def readiness_contract() -> dict[str, Any]:
             "client_request_id_required_for_handoff_export_prepare": True,
             "client_request_id_required_for_aps_handoff_dispatch": True,
             "client_request_id_required_for_external_export_download_prepare": True,
+            "client_request_id_required_for_external_export_download_deliver": True,
             "duplicate_plan_approval": "returns existing approved-plan conflict; no duplicate L3AnalysisPlan",
             "duplicate_plan_revision": "returns existing revision-control conflict; no duplicate revision-control state",
             "duplicate_execution_selection": "same client_request_id and same approved plan returns existing selection; conflicts fail closed",
@@ -1359,6 +1484,7 @@ def readiness_contract() -> dict[str, Any]:
             "duplicate_handoff_export_prepare": "same authority basis and same operator decision returns existing preparation state; conflicts fail closed",
             "duplicate_aps_handoff_dispatch": "same client_request_id and same prepared-envelope authority returns existing APS handoff state; conflicts fail closed",
             "duplicate_external_export_download_prepare": "same client_request_id and same APS handoff authority returns existing readiness state; conflicts fail closed",
+            "duplicate_external_export_download_deliver": "read-only delivery revalidates the recorded readiness descriptor and may re-stream the same existing artifact",
             "duplicate_without_client_request_id": "server-authoritative state conflicts still prevent duplicate durable approval or revision-control state",
             "analysis_execution": "broad analysis execution remains blocked; selected-pass execution start is admitted separately",
         },
@@ -1376,6 +1502,7 @@ def readiness_contract() -> dict[str, Any]:
             "handoff_export_prepare_uses_session_reconciliation_and_package_locks": True,
             "aps_handoff_dispatch_uses_session_reconciliation_and_package_locks": True,
             "external_export_download_prepare_uses_session_reconciliation_and_package_locks": True,
+            "external_export_download_deliver_uses_session_reconciliation_and_package_locks": True,
             "broad_analysis_execution_requires_later_freeze": True,
         },
         "deferred_decisions": {
@@ -1388,6 +1515,7 @@ def readiness_contract() -> dict[str, Any]:
             "package_review_submit": "admitted only for bounded decision recording over an already constructed workbench package set",
             "aps_handoff_dispatch": "admitted only for server-side APS evidence-bundle handoff after handoff_export_prepared",
             "external_export_download_prepare": "admitted only as a reference-only readiness descriptor after aps_handoff_dispatched; browser download remains disabled",
+            "external_export_download_deliver": "admitted only as same-origin streaming of the already validated APS evidence-bundle artifact after recorded readiness; public or signed URLs remain disabled",
             "external_handoff_export_dispatch": "browser download, public/signed URL generation, connector dispatch, destination selection, and non-APS dispatch still require later freezes",
         },
     }
@@ -1417,6 +1545,7 @@ def bootstrap() -> dict[str, Any]:
             "handoff_export_prepare": True,
             "aps_handoff_dispatch": True,
             "external_export_download_prepare": True,
+            "external_export_download_deliver": True,
             "analysis_execution": False,
             "qualitative_execution": False,
             "hybrid_execution": False,
@@ -1454,6 +1583,8 @@ def bootstrap() -> dict[str, Any]:
             "aps_handoff_dispatch_endpoint": f"{API_ROOT}/handoff/aps/dispatch",
             "external_export_download_prepare_admitted": True,
             "external_export_download_prepare_endpoint": f"{API_ROOT}/handoff/export/download/prepare",
+            "external_export_download_deliver_admitted": True,
+            "external_export_download_deliver_endpoint": f"{API_ROOT}/handoff/export/download/deliver",
             "package_review_admitted": False,
             "external_handoff_admitted": False,
             "external_export_admitted": False,
@@ -7761,6 +7892,306 @@ def external_export_download_prepare(db: Session, payload: dict[str, Any]) -> di
         reconciliation_record=reconciliation,
         packages=packages,
         readiness_state=readiness_state,
+    )
+
+
+def _safe_download_token(value: str, *, fallback: str) -> str:
+    token = "".join(ch if ch.isalnum() or ch in {"-", "_", "."} else "-" for ch in str(value or "").strip())
+    token = token.strip(".-")
+    return (token or fallback)[:96]
+
+
+def _external_export_download_prepare_payload_for_delivery(
+    payload: dict[str, Any],
+    *,
+    readiness_state: dict[str, Any],
+) -> dict[str, Any]:
+    prepare_payload = {
+        key: payload[key]
+        for key in EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS
+        if key in payload and key not in {"client_request_id", "operator_decision", "decision_notes"}
+    }
+    prepare_payload["client_request_id"] = str(readiness_state.get("client_request_id") or "").strip()
+    prepare_payload["operator_decision"] = EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION
+    if readiness_state.get("decision_notes") is not None:
+        prepare_payload["decision_notes"] = readiness_state.get("decision_notes")
+    return prepare_payload
+
+
+def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> ExternalExportDownloadDelivery:
+    request_id = str(payload.get("client_request_id") or "").strip()
+    if not request_id:
+        raise Layer3WorkbenchError(
+            "client_request_id_required",
+            "client_request_id is required for external export/download delivery.",
+            status="invalid",
+            blocked_fields=["client_request_id"],
+            next_allowed_actions=["submit_idempotent_external_export_download_delivery_request"],
+        )
+
+    session_id = str(payload.get("session_id") or "").strip()
+    reconciliation_record_id = str(payload.get("reconciliation_record_id") or "").strip()
+    supplied_readiness_ref = str(payload.get("external_export_download_record_ref") or "").strip()
+    supplied_descriptor_ref = str(payload.get("export_download_descriptor_ref") or "").strip()
+    supplied_readiness_state = str(payload.get("external_export_download_state") or "").strip()
+    delivery_mode = str(payload.get("delivery_mode") or "").strip()
+    operator_decision = str(payload.get("operator_decision") or "").strip()
+    export_download_target = str(payload.get("export_download_target") or "").strip()
+    download_mode = str(payload.get("download_mode") or "").strip()
+    supplied_aps_bundle_ref = str(payload.get("aps_bundle_ref") or "").strip()
+    supplied_aps_bundle_id = str(payload.get("aps_bundle_id") or "").strip()
+    supplied_aps_schema_id = str(payload.get("aps_schema_id") or "").strip()
+    raw_output_package_ids = payload.get("output_package_ids")
+    raw_package_kinds = payload.get("package_kinds")
+    raw_payload_refs = payload.get("payload_refs")
+    raw_payload_hashes = payload.get("payload_hashes")
+
+    missing = [
+        field
+        for field, value in (
+            ("session_id", session_id),
+            ("analysis_plan_id", str(payload.get("analysis_plan_id") or "").strip()),
+            ("pass_run_id", str(payload.get("pass_run_id") or "").strip()),
+            ("preview_id", str(payload.get("preview_id") or "").strip()),
+            ("preview_hash", str(payload.get("preview_hash") or "").strip()),
+            ("result_review_record_ref", str(payload.get("result_review_record_ref") or "").strip()),
+            ("package_review_preview_hash", str(payload.get("package_review_preview_hash") or "").strip()),
+            ("reconciliation_record_id", reconciliation_record_id),
+            ("package_review_submit_record_ref", str(payload.get("package_review_submit_record_ref") or "").strip()),
+            ("package_review_state", str(payload.get("package_review_state") or "").strip()),
+            ("prepare_record_ref", str(payload.get("prepare_record_ref") or "").strip()),
+            ("handoff_export_state", str(payload.get("handoff_export_state") or "").strip()),
+            ("handoff_export_envelope_ref", str(payload.get("handoff_export_envelope_ref") or "").strip()),
+            ("handoff_target", str(payload.get("handoff_target") or "").strip()),
+            ("export_mode", str(payload.get("export_mode") or "").strip()),
+            ("aps_handoff_record_ref", str(payload.get("aps_handoff_record_ref") or "").strip()),
+            ("aps_handoff_state", str(payload.get("aps_handoff_state") or "").strip()),
+            ("aps_handoff_target", str(payload.get("aps_handoff_target") or "").strip()),
+            ("dispatch_mode", str(payload.get("dispatch_mode") or "").strip()),
+            ("aps_output_package_id", str(payload.get("aps_output_package_id") or "").strip()),
+            ("aps_output_package_kind", str(payload.get("aps_output_package_kind") or "").strip()),
+            ("aps_bundle_ref", supplied_aps_bundle_ref),
+            ("aps_bundle_id", supplied_aps_bundle_id),
+            ("aps_schema_id", supplied_aps_schema_id),
+            ("external_export_download_record_ref", supplied_readiness_ref),
+            ("export_download_descriptor_ref", supplied_descriptor_ref),
+            ("external_export_download_state", supplied_readiness_state),
+            ("export_download_target", export_download_target),
+            ("download_mode", download_mode),
+            ("delivery_mode", delivery_mode),
+            ("operator_decision", operator_decision),
+        )
+        if not value
+    ]
+    if not raw_output_package_ids:
+        missing.append("output_package_ids")
+    if not raw_package_kinds:
+        missing.append("package_kinds")
+    if not raw_payload_refs:
+        missing.append("payload_refs")
+    if not raw_payload_hashes:
+        missing.append("payload_hashes")
+    if missing:
+        raise Layer3WorkbenchError(
+            "missing_external_export_download_delivery_fields",
+            f"External export/download delivery request is missing required fields: {', '.join(missing)}.",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_external_export_download_delivery_request"],
+        )
+
+    unknown = sorted(key for key in payload if key not in EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ALLOWED_FIELDS)
+    forbidden = sorted(key for key in EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORBIDDEN_FIELDS if key in payload)
+    blocked_payload_fields = sorted(set(unknown) | set(forbidden))
+    if blocked_payload_fields:
+        blocked_text = ", ".join(blocked_payload_fields)
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_scope_not_admitted",
+            f"External export/download delivery request includes non-admitted fields: {blocked_text}.",
+            status="invalid",
+            blocked_fields=blocked_payload_fields,
+            next_allowed_actions=["submit_bounded_external_export_download_delivery_request"],
+        )
+    if export_download_target != "aps_evidence_bundle_download_reference":
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_target_not_admitted",
+            "export_download_target must be aps_evidence_bundle_download_reference.",
+            status="invalid",
+            blocked_fields=["export_download_target"],
+        )
+    if download_mode != "reference_only_prepare":
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_download_mode_not_admitted",
+            "download_mode must be reference_only_prepare.",
+            status="invalid",
+            blocked_fields=["download_mode"],
+        )
+    if delivery_mode != "same_origin_artifact_stream":
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_mode_not_admitted",
+            "delivery_mode must be same_origin_artifact_stream.",
+            status="invalid",
+            blocked_fields=["delivery_mode"],
+        )
+    if operator_decision != EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION:
+        raise Layer3WorkbenchError(
+            "unsupported_external_export_download_delivery_decision",
+            "operator_decision must be deliver_external_export_download.",
+            status="invalid",
+            blocked_fields=["operator_decision"],
+        )
+    if supplied_readiness_state != EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE:
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_requires_prepared_readiness",
+            "External export/download delivery requires external_export_download_state to be external_export_download_prepared.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["external_export_download_state"],
+            next_allowed_actions=["record_external_export_download_prepare"],
+        )
+
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(
+            L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+            L3ReconciliationRecord.session_id == session_id,
+        )
+        .with_for_update()
+        .one_or_none()
+    )
+    readiness_state = _external_export_download_prepare_from_reconciliation(reconciliation)
+    if readiness_state is None or readiness_state.get("external_export_download_state") != EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE:
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_requires_prepared_readiness",
+            "External export/download delivery requires recorded external_export_download_prepared state.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["external_export_download_state"],
+            next_allowed_actions=["record_external_export_download_prepare"],
+        )
+    if not str(readiness_state.get("client_request_id") or "").strip():
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_readiness_request_id_missing",
+            "Recorded external export/download readiness is missing its idempotency basis.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["external_export_download_record_ref"],
+        )
+    for field, supplied, expected in (
+        ("external_export_download_record_ref", supplied_readiness_ref, readiness_state.get("external_export_download_record_ref")),
+        ("export_download_descriptor_ref", supplied_descriptor_ref, readiness_state.get("export_download_descriptor_ref")),
+        ("aps_bundle_ref", supplied_aps_bundle_ref, readiness_state.get("aps_bundle_ref")),
+        ("aps_bundle_id", supplied_aps_bundle_id, readiness_state.get("aps_bundle_id")),
+        ("aps_schema_id", supplied_aps_schema_id, readiness_state.get("aps_schema_id")),
+    ):
+        if str(supplied or "") != str(expected or ""):
+            raise Layer3WorkbenchError(
+                f"external_export_download_delivery_{field}_mismatch",
+                f"Supplied {field} does not match recorded external export/download readiness.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=[field],
+            )
+
+    validation_body = external_export_download_prepare(
+        db,
+        _external_export_download_prepare_payload_for_delivery(payload, readiness_state=readiness_state),
+    )
+    if validation_body.get("external_export_download_record_ref") != supplied_readiness_ref:
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_readiness_mismatch",
+            "Validated readiness authority does not match the requested delivery record.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["external_export_download_record_ref"],
+        )
+
+    descriptor = readiness_state.get("external_export_download_descriptor")
+    if not isinstance(descriptor, dict) or descriptor.get("descriptor_ref") != supplied_descriptor_ref:
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_descriptor_mismatch",
+            "Recorded external export/download descriptor is missing or stale.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["export_download_descriptor_ref"],
+        )
+    source_artifact_ref = str(descriptor.get("source_artifact_ref") or "").strip()
+    if not source_artifact_ref or source_artifact_ref != supplied_aps_bundle_ref:
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_source_artifact_mismatch",
+            "Recorded source artifact does not match the supplied APS bundle ref.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_bundle_ref"],
+        )
+    try:
+        from app.services.nrc_aps_evidence_bundle import EvidenceBundleError, load_persisted_bundle_artifact
+    except ModuleNotFoundError as exc:
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_artifact_validator_unavailable",
+            f"External export/download delivery could not load the APS bundle artifact validator: {exc}",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_bundle_ref"],
+            next_allowed_actions=["inspect_external_export_download_readiness"],
+        ) from exc
+    try:
+        bundle_payload, bundle_path = load_persisted_bundle_artifact(bundle_ref=source_artifact_ref)
+    except EvidenceBundleError as exc:
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_source_artifact_unavailable",
+            f"External export/download delivery could not validate the existing APS bundle artifact: {exc.message}",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["aps_bundle_ref"],
+            next_allowed_actions=["inspect_external_export_download_readiness"],
+        ) from exc
+
+    artifact_hash = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
+    artifact_size = int(bundle_path.stat().st_size)
+    try:
+        recorded_artifact_size = int(readiness_state.get("source_artifact_size_bytes") or -1)
+    except (TypeError, ValueError):
+        recorded_artifact_size = -1
+    if artifact_hash != str(readiness_state.get("source_artifact_hash") or ""):
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_source_artifact_hash_mismatch",
+            "Validated APS bundle artifact hash does not match recorded readiness.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_bundle_hash"],
+        )
+    if artifact_size != recorded_artifact_size:
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_source_artifact_size_mismatch",
+            "Validated APS bundle artifact size does not match recorded readiness.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_bundle_size_bytes"],
+        )
+    if str(bundle_payload.get("bundle_id") or "") != supplied_aps_bundle_id:
+        raise Layer3WorkbenchError(
+            "external_export_download_delivery_aps_bundle_id_mismatch",
+            "Validated APS bundle payload does not match the supplied APS bundle id.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["aps_bundle_id"],
+        )
+
+    filename = (
+        f"layer3-{_safe_download_token(session_id, fallback='session')}-"
+        f"{_safe_download_token(supplied_aps_bundle_id, fallback='aps-bundle')}.json"
+    )
+    return ExternalExportDownloadDelivery(
+        artifact_path=bundle_path,
+        media_type="application/json",
+        filename=filename,
+        headers={
+            "X-Layer3-Schema-Id": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+            "X-Layer3-Delivery-State": EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE,
+            "X-Layer3-Source-Artifact-Hash": artifact_hash,
+            "X-Layer3-External-Export-Download-Record-Ref": supplied_readiness_ref,
+        },
     )
 
 
