@@ -123,7 +123,7 @@
     "latest_external_export_download_implementation_live_behavior_change": true,
     "latest_external_export_download_implementation_summary": "PR #269 implements only bounded backend/API external export/download readiness as a server-authoritative reference-only descriptor over the existing APS evidence-bundle handoff artifact after recorded aps_handoff_dispatched state.",
     "latest_external_export_download_readiness_ui_planning_branch": "codex/l3-external-export-readiness-ui-freeze",
-    "latest_external_export_download_readiness_ui_planning_pr": "pending governance PR",
+    "latest_external_export_download_readiness_ui_planning_pr": "#273",
     "latest_external_export_download_readiness_ui_planning_base_commit": "1f1fb69781af1274f51e89c4e6f63f2aa2cd6a55",
     "latest_external_export_download_readiness_ui_planning_live_behavior_change": false,
     "latest_external_export_download_readiness_ui_planning_summary": "Docs 64/65 freeze only the future rendered /review/layer3 external export/download readiness UI over the already-live PR #269 backend/API endpoint. Implementation, browser download delivery, URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation, and schema/runtime/source widening remain out."
