@@ -7,7 +7,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
@@ -53,13 +53,52 @@ from app.services.layer3_session_entry import (
 from app.services.layer3_typing_entry import materialize_typing_entry
 from review_browser_fixture import build_review_browser_fixture, install_review_browser_patches
 
+APS_EVIDENCE_BUNDLE_SCHEMA_ID = "aps.evidence_bundle.v2"
+APS_EVIDENCE_BUNDLE_SCHEMA_VERSION = 2
+APS_MODE_BROWSE = "browse"
 APS_CONTENT_CONTRACT_ID = "aps_content_units_v2"
 APS_CHUNKING_CONTRACT_ID = "aps_chunking_v2"
 APS_NORMALIZATION_CONTRACT_ID = "aps_text_normalization_v2"
 PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF = "aps_evidence_bundle_handoff"
 
 
+def _canonical_json_bytes(payload: dict[str, object]) -> bytes:
+    return json.dumps(payload, sort_keys=True, ensure_ascii=True, separators=(",", ":")).encode("utf-8")
+
+
+def _compute_aps_bundle_checksum(payload: dict[str, object]) -> str:
+    clean = dict(payload)
+    clean.pop("bundle_checksum", None)
+    clean.pop("_bundle_ref", None)
+    clean.pop("_persisted", None)
+    return hashlib.sha256(_canonical_json_bytes(clean)).hexdigest()
+
+
 def _install_layer3_browser_patches(temp_path: Path) -> None:
+    class _BrowserEvidenceBundleError(RuntimeError):
+        def __init__(self, code: str, message: str, *, status_code: int = 400) -> None:
+            super().__init__(message)
+            self.code = code
+            self.message = message
+            self.status_code = status_code
+
+    def _load_browser_persisted_bundle_artifact(*, bundle_ref: str | Path):
+        bundle_path = Path(bundle_ref)
+        if not bundle_path.exists():
+            raise _BrowserEvidenceBundleError("invalid_request", "bundle not found", status_code=404)
+        payload = json.loads(bundle_path.read_text(encoding="utf-8"))
+        if payload.get("schema_id") != APS_EVIDENCE_BUNDLE_SCHEMA_ID:
+            raise _BrowserEvidenceBundleError("schema_mismatch", "bundle schema mismatch", status_code=409)
+        expected_checksum = _compute_aps_bundle_checksum(payload)
+        if payload.get("bundle_checksum") != expected_checksum:
+            raise _BrowserEvidenceBundleError("checksum_mismatch", "bundle checksum mismatch", status_code=409)
+        return payload, bundle_path
+
+    aps_bundle_module = ModuleType("app.services.nrc_aps_evidence_bundle")
+    aps_bundle_module.EvidenceBundleError = _BrowserEvidenceBundleError
+    aps_bundle_module.load_persisted_bundle_artifact = _load_browser_persisted_bundle_artifact
+    sys.modules["app.services.nrc_aps_evidence_bundle"] = aps_bundle_module
+
     def _recommend_analysis(*args, **kwargs) -> dict[str, object]:
         dataset_version_id = str(kwargs.get("dataset_version_id") or (args[1] if len(args) > 1 else ""))
         return {
@@ -119,13 +158,18 @@ def _install_layer3_browser_patches(temp_path: Path) -> None:
         )
         output_package_id = uuid_str()
         payload_path = temp_path / "aps-dispatch" / f"{output_package_id}.json"
+        bundle_id = f"browser-aps-bundle-{output_package_id}"
         payload = {
-            "schema_id": "layer3.browser_aps_handoff_fixture.v1",
-            "bundle_id": f"browser-aps-bundle-{output_package_id}",
-            "aps_schema_id": "nrc_aps_evidence_bundle.v1",
+            "schema_id": APS_EVIDENCE_BUNDLE_SCHEMA_ID,
+            "schema_version": APS_EVIDENCE_BUNDLE_SCHEMA_VERSION,
+            "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+            "bundle_id": bundle_id,
+            "mode": APS_MODE_BROWSE,
             "session_id": session_id,
             "reconciliation_record_id": reconciliation.reconciliation_record_id,
+            "results": [],
         }
+        payload["bundle_checksum"] = _compute_aps_bundle_checksum(payload)
         payload_ref = _write_json(payload_path, payload)
         package = L3OutputPackage(
             output_package_id=output_package_id,
@@ -137,7 +181,7 @@ def _install_layer3_browser_patches(temp_path: Path) -> None:
             payload_hash=hashlib.sha256(Path(payload_ref).read_bytes()).hexdigest(),
             summary_json={
                 "bundle_id": payload["bundle_id"],
-                "aps_schema_id": payload["aps_schema_id"],
+                "aps_schema_id": payload["schema_id"],
             },
         )
         db.add(package)
