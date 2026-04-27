@@ -158,6 +158,12 @@ And to the Layer 3 workbench external export/download freeze packet, which is pl
 
 The external export/download packet freezes only a future backend/API readiness preparation boundary after recorded `aps_handoff_dispatched` state. It selects a reference-only descriptor over the existing APS evidence-bundle handoff artifact as the narrow first boundary, not a browser download route, public/signed URL, destination selector, connector dispatch, generic downstream dispatch, package mutation/reconstruction, additional package/reconciliation/artifact rows, `AnalysisArtifact`, schema/runtime/source widening, execution expansion beyond already admitted work, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
+And to the Layer 3 workbench external export/download readiness UI freeze packet, which is planning-only and does not make rendered `/review/layer3` external export/download readiness controls live by itself:
+- `next_milestone_plans/Layer3_planning_docs/64_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_READINESS_UI_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/65_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_READINESS_UI_STATE_CONTRACT.md`
+
+The external export/download readiness UI packet freezes only a future rendered `/review/layer3` readiness panel over the already-live PR `#269` backend/API endpoint. It admits server-authoritative readiness rendering, read-only recorded descriptor display, and one server-gated `prepare_external_export_download` action only. It does not make UI behavior live by itself and does not admit browser download routes/controls, public or signed URLs, file streaming, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional package/reconciliation/artifact rows, `AnalysisArtifact`, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
