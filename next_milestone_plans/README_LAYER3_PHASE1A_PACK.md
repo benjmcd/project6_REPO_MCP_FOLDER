@@ -1093,10 +1093,11 @@ Start with:
 - `backend/app/services/nrc_aps_evidence_bundle.py`
 - `backend/tests/test_layer3_aps_handoff.py`
 
-Read docs `62`/`63` as planning-only governance:
-- they freeze only a future backend/API external export/download readiness preparation boundary after `aps_handoff_dispatched`
-- they select a reference-only descriptor over the existing APS evidence-bundle handoff artifact as the first boundary because no current workbench route safely streams browser downloads
-- they do not make a live endpoint, rendered UI behavior, browser download route, public/signed URL, connector dispatch, destination selection, package mutation/reconstruction, additional reconciliation/package/artifact rows, `AnalysisArtifact`, source/schema/runtime widening, execution expansion beyond already admitted work, qualitative/hybrid/RAG/vector execution, or full mockup activation
+Read docs `62`/`63` and PR `#269` as split governance/live behavior:
+- docs `62`/`63` freeze the backend/API external export/download readiness preparation boundary after `aps_handoff_dispatched`; by themselves they remain planning governance only
+- PR `#269` separately implements only the bounded backend/API readiness descriptor through `POST /api/v1/layer3/handoff/export/download/prepare`
+- the live PR `#269` behavior is reference-only over the existing APS evidence-bundle handoff artifact and existing JSON-bearing workbench state
+- neither docs `62`/`63` nor PR `#269` make rendered UI behavior, browser download routes/controls, public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional reconciliation/package/artifact rows, `AnalysisArtifact`, source/schema/runtime widening, execution expansion beyond already admitted work, qualitative/hybrid/RAG/vector execution, or full mockup activation live
 - browser proof is required only if a later implementation changes rendered `/review/layer3` behavior
 
 ### If you are auditing the merged qualitative single-item companion prep on current `main`
