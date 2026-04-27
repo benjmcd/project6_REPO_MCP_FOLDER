@@ -106,6 +106,8 @@ When present in the current checkout, also read:
 - `next_milestone_plans/Layer3_planning_docs/59_L3_WB_APS_HANDOFF_DISPATCH_API_AND_STATE_CONTRACT.md`
 - `next_milestone_plans/Layer3_planning_docs/60_L3_WB_APS_HANDOFF_DISPATCH_UI_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/61_L3_WB_APS_HANDOFF_DISPATCH_UI_STATE_CONTRACT.md`
+- `next_milestone_plans/Layer3_planning_docs/62_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/63_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_API_AND_STATE_CONTRACT.md`
 - `backend/app/services/layer3_aps_handoff.py`
 - `backend/tests/test_layer3_aps_handoff.py`
 - `backend/app/services/layer3_workbench.py`

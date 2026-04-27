@@ -1431,6 +1431,11 @@
         "label": "Merged APS dispatch UI",
         "fill": "#dff1df",
         "stroke": "#2f6b3f"
+      },
+      "planning_only_external_export_download_freeze": {
+        "label": "Planning-only external export/download",
+        "fill": "#f5ecdf",
+        "stroke": "#765933"
       }
     },
     "hard_rules": [
