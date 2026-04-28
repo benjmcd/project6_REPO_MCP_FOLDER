@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -23,6 +24,105 @@ from app.services.profiling import _detect_stationarity
 
 NONSTATIONARY_HINTS = {'likely_nonstationary', 'trend_stationary_or_mixed'}
 WARN_STATIONARITY_HINTS = {'mixed_or_borderline', 'inconclusive', 'insufficient_data'}
+
+
+@dataclass(frozen=True)
+class AnalysisMethodSpec:
+    method_id: str
+    label: str
+    engine_family: str
+    input_scope: str
+    required_dataset_features: tuple[str, ...]
+    parameters: dict[str, dict[str, Any]]
+    assumption_checks: tuple[str, ...]
+    caveats: tuple[str, ...]
+    artifact_types: tuple[str, ...]
+    runner: str
+
+
+ANALYSIS_METHOD_REGISTRY: dict[str, AnalysisMethodSpec] = {
+    'cross_correlation': AnalysisMethodSpec(
+        method_id='cross_correlation',
+        label='Cross-correlation',
+        engine_family='wrapped_quantitative',
+        input_scope='dataset_version_with_optional_annotation_window',
+        required_dataset_features=('time_column', 'at_least_two_numeric_variables'),
+        parameters={'max_lag': {'type': 'integer', 'default': 10}},
+        assumption_checks=('time_ordered_observations', 'series_stationarity'),
+        caveats=('interpretation', 'insufficient_variables', 'degenerate_pairs'),
+        artifact_types=('cross_correlation_result', 'cross_correlation_plot'),
+        runner='cross_correlation',
+    ),
+    'decomposition': AnalysisMethodSpec(
+        method_id='decomposition',
+        label='STL decomposition',
+        engine_family='wrapped_quantitative',
+        input_scope='dataset_version_with_optional_annotation_window',
+        required_dataset_features=('time_column', 'at_least_one_numeric_variable'),
+        parameters={},
+        assumption_checks=('sufficient_observations', 'time_regularity', 'stationarity_of_residual'),
+        caveats=(
+            'missing_time_index',
+            'insufficient_observations',
+            'irregular_time_index',
+            'missing_period',
+            'seasonal_period_inferred_from_autocorrelation',
+            'no_decomposition_artifacts',
+        ),
+        artifact_types=('decomposition_components', 'decomposition_plot'),
+        runner='decomposition',
+    ),
+    'structural_break': AnalysisMethodSpec(
+        method_id='structural_break',
+        label='Structural break detection',
+        engine_family='wrapped_quantitative',
+        input_scope='dataset_version_with_optional_annotation_window',
+        required_dataset_features=('time_column', 'at_least_one_numeric_variable'),
+        parameters={
+            'penalty': {'type': 'number', 'default': 8.0},
+            'minimum_segment_flag': {'type': 'integer', 'default': 12},
+            'min_size': {'type': 'integer', 'default': 3},
+            'model': {'type': 'string', 'default': 'l2'},
+        },
+        assumption_checks=('minimum_segment_length', 'stationarity_required_for_break_test'),
+        caveats=(
+            'missing_time_index',
+            'penalty_sensitivity',
+            'break_model_choice',
+            'insufficient_observations',
+            'break_preparation',
+            'degenerate_series',
+            'nonstationary_break_interpretation',
+            'no_breakpoints_detected',
+            'no_structural_break_artifacts',
+        ),
+        artifact_types=('structural_break_result', 'structural_break_plot'),
+        runner='structural_break',
+    ),
+}
+
+
+SUPPORTED_ANALYSIS_METHOD_IDS: tuple[str, ...] = tuple(ANALYSIS_METHOD_REGISTRY)
+
+
+def analysis_method_registry() -> dict[str, dict[str, Any]]:
+    return {method_id: asdict(spec) for method_id, spec in ANALYSIS_METHOD_REGISTRY.items()}
+
+
+def _method_sequence(*method_ids: str) -> list[str]:
+    missing = [method_id for method_id in method_ids if method_id not in ANALYSIS_METHOD_REGISTRY]
+    if missing:
+        raise RuntimeError(f'Analysis method registry is missing method ids: {", ".join(missing)}')
+    return list(method_ids)
+
+
+def _supported_method_message() -> str:
+    if len(SUPPORTED_ANALYSIS_METHOD_IDS) == 1:
+        supported = SUPPORTED_ANALYSIS_METHOD_IDS[0]
+    else:
+        supported = ', '.join(SUPPORTED_ANALYSIS_METHOD_IDS[:-1])
+        supported = f'{supported}, and {SUPPORTED_ANALYSIS_METHOD_IDS[-1]}'
+    return f'Only {supported} are implemented in the starter repo.'
 
 
 def _artifact_dir() -> Path:
@@ -94,7 +194,7 @@ def recommend_analysis(db: Session, dataset_version_id: str, goal_type: str | No
     seasonal_like = [name for name in numeric_cols if name in profile_map and bool(profile_map[name].seasonality_flag)]
 
     if has_time and len(numeric_cols) >= 2:
-        sequence = ['cross_correlation', 'decomposition', 'structural_break']
+        sequence = _method_sequence('cross_correlation', 'decomposition', 'structural_break')
         if seasonal_like and mixed_like:
             rationale = 'time-indexed multivariate data supports lag inspection, decomposition, and break detection; seasonality is present and nonstationary variables require caution'
         elif seasonal_like:
@@ -104,7 +204,7 @@ def recommend_analysis(db: Session, dataset_version_id: str, goal_type: str | No
         else:
             rationale = 'time-indexed multivariate data supports lag inspection, decomposition, and break detection on the starter spine'
     elif has_time and len(numeric_cols) == 1:
-        sequence = ['decomposition', 'structural_break']
+        sequence = _method_sequence('decomposition', 'structural_break')
         rationale = 'single numeric time series should be decomposed first and then checked for structural breaks'
     else:
         sequence = ['descriptive_summary']
@@ -563,14 +663,17 @@ def run_analysis(db: Session, dataset_version_id: str, method_name: str, goal_ty
     db.add(run)
     db.flush()
 
-    if method_name == 'cross_correlation':
+    method_spec = ANALYSIS_METHOD_REGISTRY.get(method_name)
+    if method_spec is None:
+        db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='unsupported_method', severity='high', message=_supported_method_message()))
+    elif method_spec.runner == 'cross_correlation':
         _run_cross_correlation(db, run, dataset_version_id, dataset, df)
-    elif method_name == 'decomposition':
+    elif method_spec.runner == 'decomposition':
         _run_decomposition(db, run, dataset_version_id, dataset, df)
-    elif method_name == 'structural_break':
+    elif method_spec.runner == 'structural_break':
         _run_structural_break(db, run, dataset_version_id, dataset, df)
     else:
-        db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='unsupported_method', severity='high', message='Only cross_correlation, decomposition, and structural_break are implemented in the starter repo.'))
+        raise RuntimeError(f'Analysis method registry runner is unsupported: {method_spec.runner}')
 
     db.commit()
     db.refresh(run)
