@@ -159,6 +159,52 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
     } <= set(readiness_schema["required"])
 
 
+def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+
+    preflight_schema = _openapi_response_schema(spec, "/api/v1/layer3/preflight", "post")
+    assert preflight_schema["title"] == "Layer3PreflightResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "preflight_id",
+        "normalized_intent",
+        "eligible_for_source_selection",
+        "authority_rail",
+    } <= set(preflight_schema["required"])
+
+    source_schema = _openapi_response_schema(spec, "/api/v1/layer3/source-preview", "post")
+    assert source_schema["title"] == "Layer3SourcePreviewResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "source_set_id",
+        "source_candidates",
+        "unsupported_sources",
+        "authority_rail",
+    } <= set(source_schema["required"])
+
+    material_schema = _openapi_response_schema(spec, "/api/v1/layer3/material-preview", "post")
+    assert material_schema["title"] == "Layer3MaterialPreviewResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "material_preview_id",
+        "material_candidates",
+        "partial_retrieval",
+        "authority_rail",
+    } <= set(material_schema["required"])
+
+
 def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
     db = client.layer3_session_factory()
     try:

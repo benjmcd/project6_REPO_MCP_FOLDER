@@ -81,6 +81,29 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     deferred_decisions: dict[str, Any]
 
 
+class Layer3PreflightResponse(Layer3BaseResponse):
+    preflight_id: str
+    normalized_intent: dict[str, Any]
+    blockers: list[Any]
+    warnings: list[Any]
+    eligible_for_source_selection: bool
+    authority_rail: dict[str, Any]
+
+
+class Layer3SourcePreviewResponse(Layer3BaseResponse):
+    source_set_id: str
+    source_candidates: list[dict[str, Any]]
+    unsupported_sources: list[Any]
+    authority_rail: dict[str, Any]
+
+
+class Layer3MaterialPreviewResponse(Layer3BaseResponse):
+    material_preview_id: str
+    material_candidates: list[dict[str, Any]]
+    partial_retrieval: bool
+    authority_rail: dict[str, Any]
+
+
 def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JSONResponse:
     try:
         return handler()
@@ -127,17 +150,17 @@ def get_readiness() -> dict[str, Any]:
     return layer3_workbench.readiness_contract()
 
 
-@router.post("/preflight", response_model=None)
+@router.post("/preflight", response_model=Layer3PreflightResponse)
 def post_preflight(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.preflight(payload))
 
 
-@router.post("/source-preview", response_model=None)
+@router.post("/source-preview", response_model=Layer3SourcePreviewResponse)
 def post_source_preview(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.source_preview(payload))
 
 
-@router.post("/material-preview", response_model=None)
+@router.post("/material-preview", response_model=Layer3MaterialPreviewResponse)
 def post_material_preview(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.material_preview(payload))
 
