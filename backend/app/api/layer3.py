@@ -243,6 +243,74 @@ class Layer3ExecutionResultReviewResponse(Layer3BaseResponse):
     engine_family: str | None
 
 
+class Layer3PackageReviewPreviewResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    preview_identity: dict[str, Any]
+    package_review_preview_hash: str
+    analysis_run_id: str | None
+    result_status_available: bool
+    result_review_state: str | None
+    result_review_record_ref: str | None
+    package_review_preview_enabled: bool
+    package_commit_enabled: bool
+    package_review_enabled: bool
+    candidate_package_kinds: list[dict[str, Any]]
+    package_owner_compatibility: dict[str, Any]
+    blocked_reasons: list[str]
+    downstream_unavailable: list[str]
+    next_state: str
+    output_metadata_summary: dict[str, Any]
+    trace_summary: dict[str, Any] | None
+    unresolved_trace_count: int
+    authority_rail: dict[str, Any]
+
+
+class Layer3PackageConstructionCommitResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    preview_identity: dict[str, Any]
+    analysis_run_id: str | None
+    result_review_record_ref: str
+    package_review_preview_hash: str
+    reconciliation_record_id: str
+    output_packages: list[dict[str, Any]]
+    package_kinds: list[str]
+    payload_refs: list[str]
+    payload_hashes: list[str]
+    package_review_submit_enabled: bool
+    handoff_enabled: bool
+    downstream_unavailable: list[str]
+    next_state: str
+    authority_rail: dict[str, Any]
+
+
+class Layer3PackageReviewSubmitResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    preview_identity: dict[str, Any]
+    analysis_run_id: str | None
+    result_review_record_ref: str
+    package_review_preview_hash: str
+    reconciliation_record_id: str
+    output_package_ids: list[str]
+    package_kinds: list[str]
+    payload_hashes: list[str]
+    operator_decision: str
+    decision_notes: str | None
+    package_review_state: str
+    submit_record_ref: str
+    package_review_submit_enabled: bool
+    handoff_enabled: bool
+    export_enabled: bool
+    downstream_unavailable: list[str]
+    next_state: str
+    authority_rail: dict[str, Any]
+
+
 def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JSONResponse:
     try:
         return handler()
@@ -363,7 +431,7 @@ def post_execution_result_review(
     return _json_or_error(lambda: layer3_workbench.execution_result_review(db, payload))
 
 
-@router.post("/package/review/preview", response_model=None)
+@router.post("/package/review/preview", response_model=Layer3PackageReviewPreviewResponse)
 def post_package_review_preview(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
@@ -371,7 +439,7 @@ def post_package_review_preview(
     return _json_or_error(lambda: layer3_workbench.package_review_preview(db, payload))
 
 
-@router.post("/package/review/commit", response_model=None)
+@router.post("/package/review/commit", response_model=Layer3PackageConstructionCommitResponse)
 def post_package_review_commit(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
@@ -379,7 +447,7 @@ def post_package_review_commit(
     return _json_or_error(lambda: layer3_workbench.package_construction_commit(db, payload))
 
 
-@router.post("/package/review/submit", response_model=None)
+@router.post("/package/review/submit", response_model=Layer3PackageReviewSubmitResponse)
 def post_package_review_submit(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
