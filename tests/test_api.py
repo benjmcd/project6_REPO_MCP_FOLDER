@@ -93,6 +93,7 @@ app = main_module.app
 from app.core.config import bootstrap_storage_tree  # noqa: E402
 from app.api.deps import get_db  # noqa: E402
 from app.db.session import Base  # noqa: E402
+from app.services.analysis import SUPPORTED_ANALYSIS_METHOD_IDS, analysis_method_registry  # noqa: E402
 
 SQLALCHEMY_DATABASE_URL = TEST_DATABASE_URL
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={'check_same_thread': False})
@@ -113,6 +114,17 @@ def override_get_db():
 
 app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
+
+
+def test_analysis_method_registry_describes_current_methods_only() -> None:
+    registry = analysis_method_registry()
+
+    assert list(SUPPORTED_ANALYSIS_METHOD_IDS) == ["cross_correlation", "decomposition", "structural_break"]
+    assert list(registry) == list(SUPPORTED_ANALYSIS_METHOD_IDS)
+    assert registry["cross_correlation"]["parameters"]["max_lag"]["default"] == 10
+    assert registry["decomposition"]["artifact_types"] == ("decomposition_components", "decomposition_plot")
+    assert registry["structural_break"]["parameters"]["penalty"]["default"] == 8.0
+    assert registry["structural_break"]["parameters"]["model"]["default"] == "l2"
 
 
 def _read_nrc_fixture_bytes(name: str) -> bytes:
