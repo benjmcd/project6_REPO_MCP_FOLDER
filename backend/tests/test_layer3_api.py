@@ -196,6 +196,17 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
 def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
 
+    preflight_request_schema = spec["paths"]["/api/v1/layer3/preflight"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert preflight_request_schema["additionalProperties"] is True
+    assert set(preflight_request_schema["required"]) == {"natural_language_intent"}
+    assert preflight_request_schema["properties"]["natural_language_intent"]["type"] == "string"
+    assert preflight_request_schema["properties"]["manual_constraints"]["additionalProperties"] is True
+    assert preflight_request_schema["properties"]["manual_constraints"]["properties"]["source_classes"]["items"][
+        "enum"
+    ] == ["dataset_version", "aps_content_document"]
+
     preflight_schema = _openapi_response_schema(spec, "/api/v1/layer3/preflight", "post")
     assert preflight_schema["title"] == "Layer3PreflightResponse"
     assert {
@@ -210,6 +221,16 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
         "authority_rail",
     } <= set(preflight_schema["required"])
 
+    source_request_schema = spec["paths"]["/api/v1/layer3/source-preview"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert source_request_schema["additionalProperties"] is True
+    assert set(source_request_schema["required"]) == {"preflight_id"}
+    assert source_request_schema["properties"]["selected_source_classes"]["items"]["enum"] == [
+        "dataset_version",
+        "aps_content_document",
+    ]
+
     source_schema = _openapi_response_schema(spec, "/api/v1/layer3/source-preview", "post")
     assert source_schema["title"] == "Layer3SourcePreviewResponse"
     assert {
@@ -223,6 +244,14 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
         "unsupported_sources",
         "authority_rail",
     } <= set(source_schema["required"])
+
+    material_request_schema = spec["paths"]["/api/v1/layer3/material-preview"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert material_request_schema["additionalProperties"] is True
+    assert set(material_request_schema["required"]) == {"source_candidate_ids"}
+    assert material_request_schema["properties"]["source_candidate_ids"]["items"]["type"] == "string"
+    assert material_request_schema["properties"]["query_basis"]["properties"]["terms"]["items"]["type"] == "string"
 
     material_schema = _openapi_response_schema(spec, "/api/v1/layer3/material-preview", "post")
     assert material_schema["title"] == "Layer3MaterialPreviewResponse"
@@ -242,6 +271,23 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
 def test_layer3_gate_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
 
+    gate_b_request_schema = spec["paths"]["/api/v1/layer3/gate-b/decision"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert gate_b_request_schema["additionalProperties"] is True
+    assert set(gate_b_request_schema["required"]) == {"candidate_decisions"}
+    assert gate_b_request_schema["properties"]["candidate_decisions"]["minItems"] == 1
+    gate_b_decision_item_schema = gate_b_request_schema["properties"]["candidate_decisions"]["items"]
+    assert gate_b_decision_item_schema["additionalProperties"] is True
+    assert set(gate_b_decision_item_schema["required"]) == {"candidate_id", "decision"}
+    assert gate_b_decision_item_schema["properties"]["decision"]["enum"] == [
+        "approved",
+        "denied",
+        "isolated",
+        "flagged",
+    ]
+    assert "operator_reason" in gate_b_decision_item_schema["properties"]
+
     gate_b_schema = _openapi_response_schema(spec, "/api/v1/layer3/gate-b/decision", "post")
     assert gate_b_schema["title"] == "Layer3GateBDecisionResponse"
     assert {
@@ -260,6 +306,13 @@ def test_layer3_gate_openapi_contracts(client: TestClient) -> None:
         "next_state",
         "authority_rail",
     } <= set(gate_b_schema["required"])
+
+    gate_c_request_schema = spec["paths"]["/api/v1/layer3/gate-c/preview"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert gate_c_request_schema["additionalProperties"] is True
+    assert set(gate_c_request_schema["required"]) == {"session_id"}
+    assert gate_c_request_schema["properties"]["commit_typing"]["type"] == "boolean"
 
     gate_c_schema = _openapi_response_schema(spec, "/api/v1/layer3/gate-c/preview", "post")
     assert gate_c_schema["title"] == "Layer3GateCPreviewResponse"
