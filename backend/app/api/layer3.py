@@ -195,6 +195,54 @@ class Layer3AnalysisExecutionStartResponse(Layer3BaseResponse):
     dataset_version_id: str | None
 
 
+class Layer3ExecutionResultStatusResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    preview_identity: dict[str, Any]
+    execution_started: bool
+    analysis_run_id: str | None
+    analysis_run_status: str | None
+    pass_run_status: str
+    output_payload_ref: str | None
+    output_metadata_summary: dict[str, Any] | None
+    output_metadata_error: str | None
+    warnings_present: bool
+    error_present: bool
+    error_message: str | None
+    result_status_available: bool
+    result_review_enabled: bool
+    package_review_enabled: bool
+    handoff_enabled: bool
+    downstream_unavailable: list[str]
+    next_state: str
+    operator_view_mode: str
+    engine_family: str | None
+    selected_method_name: str | None
+    dataset_version_id: str | None
+
+
+class Layer3ExecutionResultReviewResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    preview_identity: dict[str, Any]
+    analysis_run_id: str | None
+    result_status_available: bool
+    result_review_enabled: bool
+    review_state: str
+    operator_decision: str
+    review_record_ref: str
+    trace_summary: dict[str, Any]
+    reviewed_output_items: list[dict[str, Any]]
+    unresolved_trace_count: int
+    package_review_enabled: bool
+    handoff_enabled: bool
+    downstream_unavailable: list[str]
+    review_notes_recorded: bool
+    engine_family: str | None
+
+
 def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JSONResponse:
     try:
         return handler()
@@ -299,7 +347,7 @@ def post_execution_start(payload: dict[str, Any], db: Session = Depends(get_db))
     return _json_or_error(lambda: layer3_workbench.analysis_execution_start(db, payload))
 
 
-@router.post("/execution/result/status", response_model=None)
+@router.post("/execution/result/status", response_model=Layer3ExecutionResultStatusResponse)
 def post_execution_result_status(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
@@ -307,7 +355,7 @@ def post_execution_result_status(
     return _json_or_error(lambda: layer3_workbench.execution_result_status(db, payload))
 
 
-@router.post("/execution/result/review", response_model=None)
+@router.post("/execution/result/review", response_model=Layer3ExecutionResultReviewResponse)
 def post_execution_result_review(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
