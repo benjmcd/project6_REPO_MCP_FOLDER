@@ -207,7 +207,11 @@
     "next_milestone_plans/Layer3_planning_docs/64_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_READINESS_UI_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/65_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_READINESS_UI_STATE_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/66_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/67_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_API_AND_STATE_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/67_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_API_AND_STATE_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/68_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/69_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_STATE_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/70_L3_ANALYSIS_METHOD_REGISTRY_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/71_L3_ANALYSIS_METHOD_REGISTRY_CONTRACT.md"
   ],
   "current_live_workbench_boundary": {
     "live_bounded": [
@@ -1241,7 +1245,11 @@
     "next_milestone_plans/Layer3_planning_docs/64_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_READINESS_UI_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/65_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_READINESS_UI_STATE_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/66_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/67_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_API_AND_STATE_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/67_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_API_AND_STATE_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/68_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/69_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_STATE_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/70_L3_ANALYSIS_METHOD_REGISTRY_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/71_L3_ANALYSIS_METHOD_REGISTRY_CONTRACT.md"
   ],
   "handoff_export_prepare_ui_implementation_proof": {
     "implementation_branch": "codex/l3-handoff-prepare-ui-impl",
@@ -1984,6 +1992,31 @@
       "no AnalysisArtifact expansion",
       "no schema/runtime/source widening",
       "no qualitative/hybrid/RAG/vector/full mockup activation"
+    ]
+  },
+  "analysis_method_registry_governance_proof": {
+    "planning_branch": "codex/l3-analysis-method-governance",
+    "planning_pr": "pending",
+    "base_commit": "75460ee29bf4edf2a9aa1b692f8df303f7b57c8d",
+    "scope": "Planning-only current-methods AnalysisMethod registry governance over existing backend/app/services/analysis.py methods cross_correlation, decomposition, and structural_break. This proof records governance only; it does not implement a registry, add methods, change execution behavior, change artifacts, widen schema/runtime/source scope, activate UI, or expand qualitative/hybrid/RAG/vector behavior.",
+    "docs_added": [
+      "next_milestone_plans/Layer3_planning_docs/70_L3_ANALYSIS_METHOD_REGISTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/71_L3_ANALYSIS_METHOD_REGISTRY_CONTRACT.md"
+    ],
+    "repo_evidence": [
+      "backend/app/services/analysis.py recommends and runs the current wrapped quantitative methods through hardcoded method names",
+      "backend/app/services/layer3_pass_entry.py consumes the wrapped quantitative analysis spine from admitted Layer 3 execution paths",
+      "tests/test_api.py and backend/tests/test_layer3_pass_entry.py cover current method behavior and Layer 3 pass-entry integration"
+    ],
+    "no_go_preserved": [
+      "no new analysis methods",
+      "no registry implementation by docs alone",
+      "no runtime behavior change",
+      "no schema/model/migration change",
+      "no source/runtime widening",
+      "no qualitative/hybrid/RAG/vector expansion",
+      "no UI activation",
+      "no full mockup activation"
     ]
   }
 }
