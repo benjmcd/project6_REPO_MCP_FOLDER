@@ -166,6 +166,35 @@ class Layer3PlanRevisionResponse(Layer3BaseResponse):
     plan_revision_control: dict[str, Any]
 
 
+class Layer3ExecutionSelectionResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    preview_identity: dict[str, Any]
+    pass_run_ids: list[str]
+    pass_run_count: int
+    execution_started: bool
+    analysis_run_ids: list[str]
+    pass_run_statuses: dict[str, str]
+    downstream_unavailable: list[str]
+    next_state: str
+
+
+class Layer3AnalysisExecutionStartResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    preview_identity: dict[str, Any]
+    execution_started: bool
+    analysis_run_id: str | None
+    pass_run_status: str
+    output_payload_ref: str | None
+    downstream_unavailable: list[str]
+    next_state: str
+    engine_family: str | None
+    selected_method_name: str | None
+    dataset_version_id: str | None
+
+
 def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JSONResponse:
     try:
         return handler()
@@ -260,12 +289,12 @@ def post_plan_revise(payload: dict[str, Any], db: Session = Depends(get_db)) -> 
     return _json_or_error(lambda: layer3_workbench.plan_revision(db, payload))
 
 
-@router.post("/execution/select", response_model=None)
+@router.post("/execution/select", response_model=Layer3ExecutionSelectionResponse)
 def post_execution_select(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.execution_selection(db, payload))
 
 
-@router.post("/execution/start", response_model=None)
+@router.post("/execution/start", response_model=Layer3AnalysisExecutionStartResponse)
 def post_execution_start(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.analysis_execution_start(db, payload))
 

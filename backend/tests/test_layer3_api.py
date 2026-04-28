@@ -310,6 +310,53 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
     } <= set(revision_schema["required"])
 
 
+def test_layer3_execution_openapi_contracts(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+
+    selection_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/select", "post")
+    assert selection_schema["title"] == "Layer3ExecutionSelectionResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "analysis_plan_id",
+        "preview_identity",
+        "pass_run_ids",
+        "pass_run_count",
+        "execution_started",
+        "analysis_run_ids",
+        "pass_run_statuses",
+        "downstream_unavailable",
+        "next_state",
+    } <= set(selection_schema["required"])
+
+    start_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/start", "post")
+    assert start_schema["title"] == "Layer3AnalysisExecutionStartResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_identity",
+        "execution_started",
+        "analysis_run_id",
+        "pass_run_status",
+        "output_payload_ref",
+        "downstream_unavailable",
+        "next_state",
+        "engine_family",
+        "selected_method_name",
+        "dataset_version_id",
+    } <= set(start_schema["required"])
+
+
 def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
     db = client.layer3_session_factory()
     try:
