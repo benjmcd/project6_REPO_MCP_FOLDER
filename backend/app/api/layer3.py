@@ -447,6 +447,10 @@ class Layer3WorkbenchErrorResponse(Layer3BaseResponse):
     next_allowed_actions: list[str]
 
 
+def _workbench_error_responses(*statuses: int) -> dict[int, dict[str, type[Layer3WorkbenchErrorResponse]]]:
+    return {status: {"model": Layer3WorkbenchErrorResponse} for status in statuses}
+
+
 class Layer3SessionSummaryResponse(Layer3BaseResponse):
     session_id: str
     selection_manifest_id: str
@@ -515,27 +519,31 @@ def get_readiness() -> dict[str, Any]:
     return layer3_workbench.readiness_contract()
 
 
-@router.post("/preflight", response_model=Layer3PreflightResponse)
+@router.post("/preflight", response_model=Layer3PreflightResponse, responses=_workbench_error_responses(400))
 def post_preflight(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.preflight(payload))
 
 
-@router.post("/source-preview", response_model=Layer3SourcePreviewResponse)
+@router.post("/source-preview", response_model=Layer3SourcePreviewResponse, responses=_workbench_error_responses(400))
 def post_source_preview(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.source_preview(payload))
 
 
-@router.post("/material-preview", response_model=Layer3MaterialPreviewResponse)
+@router.post("/material-preview", response_model=Layer3MaterialPreviewResponse, responses=_workbench_error_responses(400))
 def post_material_preview(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.material_preview(payload))
 
 
-@router.post("/gate-b/decision", response_model=Layer3GateBDecisionResponse)
+@router.post("/gate-b/decision", response_model=Layer3GateBDecisionResponse, responses=_workbench_error_responses(400))
 def post_gate_b_decision(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.gate_b_decision(db, payload))
 
 
-@router.post("/gate-c/preview", response_model=Layer3GateCPreviewResponse)
+@router.post(
+    "/gate-c/preview",
+    response_model=Layer3GateCPreviewResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
 def post_gate_c_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.gate_c_preview(db, payload))
 
@@ -552,32 +560,56 @@ def post_gate_c_override(payload: dict[str, Any]) -> JSONResponse:
     )
 
 
-@router.post("/plan/preview", response_model=Layer3PlanPreviewResponse)
+@router.post(
+    "/plan/preview",
+    response_model=Layer3PlanPreviewResponse,
+    responses=_workbench_error_responses(400, 404, 409, 500),
+)
 def post_plan_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.plan_preview(db, payload))
 
 
-@router.post("/plan/approve", response_model=Layer3PlanApprovalResponse)
+@router.post(
+    "/plan/approve",
+    response_model=Layer3PlanApprovalResponse,
+    responses=_workbench_error_responses(400, 404, 409, 500),
+)
 def post_plan_approve(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.plan_approval(db, payload))
 
 
-@router.post("/plan/revise", response_model=Layer3PlanRevisionResponse)
+@router.post(
+    "/plan/revise",
+    response_model=Layer3PlanRevisionResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
 def post_plan_revise(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.plan_revision(db, payload))
 
 
-@router.post("/execution/select", response_model=Layer3ExecutionSelectionResponse)
+@router.post(
+    "/execution/select",
+    response_model=Layer3ExecutionSelectionResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
 def post_execution_select(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.execution_selection(db, payload))
 
 
-@router.post("/execution/start", response_model=Layer3AnalysisExecutionStartResponse)
+@router.post(
+    "/execution/start",
+    response_model=Layer3AnalysisExecutionStartResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
 def post_execution_start(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.analysis_execution_start(db, payload))
 
 
-@router.post("/execution/result/status", response_model=Layer3ExecutionResultStatusResponse)
+@router.post(
+    "/execution/result/status",
+    response_model=Layer3ExecutionResultStatusResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
 def post_execution_result_status(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
@@ -585,7 +617,11 @@ def post_execution_result_status(
     return _json_or_error(lambda: layer3_workbench.execution_result_status(db, payload))
 
 
-@router.post("/execution/result/review", response_model=Layer3ExecutionResultReviewResponse)
+@router.post(
+    "/execution/result/review",
+    response_model=Layer3ExecutionResultReviewResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
 def post_execution_result_review(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
@@ -593,7 +629,11 @@ def post_execution_result_review(
     return _json_or_error(lambda: layer3_workbench.execution_result_review(db, payload))
 
 
-@router.post("/package/review/preview", response_model=Layer3PackageReviewPreviewResponse)
+@router.post(
+    "/package/review/preview",
+    response_model=Layer3PackageReviewPreviewResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
 def post_package_review_preview(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
@@ -601,7 +641,11 @@ def post_package_review_preview(
     return _json_or_error(lambda: layer3_workbench.package_review_preview(db, payload))
 
 
-@router.post("/package/review/commit", response_model=Layer3PackageConstructionCommitResponse)
+@router.post(
+    "/package/review/commit",
+    response_model=Layer3PackageConstructionCommitResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
 def post_package_review_commit(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
@@ -609,7 +653,11 @@ def post_package_review_commit(
     return _json_or_error(lambda: layer3_workbench.package_construction_commit(db, payload))
 
 
-@router.post("/package/review/submit", response_model=Layer3PackageReviewSubmitResponse)
+@router.post(
+    "/package/review/submit",
+    response_model=Layer3PackageReviewSubmitResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
 def post_package_review_submit(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
@@ -621,6 +669,7 @@ def post_package_review_submit(
     "/handoff/export/prepare",
     response_model=Layer3HandoffExportPrepareResponse,
     response_model_exclude_unset=True,
+    responses=_workbench_error_responses(400, 404, 409),
 )
 def post_handoff_export_prepare(
     payload: dict[str, Any],
@@ -629,7 +678,11 @@ def post_handoff_export_prepare(
     return _json_or_error(lambda: layer3_workbench.handoff_export_prepare(db, payload))
 
 
-@router.post("/handoff/aps/dispatch", response_model=Layer3ApsHandoffDispatchResponse)
+@router.post(
+    "/handoff/aps/dispatch",
+    response_model=Layer3ApsHandoffDispatchResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
 def post_aps_handoff_dispatch(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
@@ -637,7 +690,11 @@ def post_aps_handoff_dispatch(
     return _json_or_error(lambda: layer3_workbench.aps_handoff_dispatch(db, payload))
 
 
-@router.post("/handoff/export/download/prepare", response_model=Layer3ExternalExportDownloadPrepareResponse)
+@router.post(
+    "/handoff/export/download/prepare",
+    response_model=Layer3ExternalExportDownloadPrepareResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
 def post_external_export_download_prepare(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
