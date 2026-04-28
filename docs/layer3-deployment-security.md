@@ -42,3 +42,5 @@ Before deploying beyond a trusted local/dev environment, choose and document:
 ## Acceptance Criteria For A Future Hardening Slice
 
 A future implementation may proceed only after the deployment mode is selected and the slice is separately governed. The narrow hardening contract should state the target environment, exact changed settings/routes/middleware, backward-compatible local proof behavior, focused API/static-delivery tests, and rollback expectations.
+
+The first selected governance boundary for that work is `docs/layer3-deploy-hardening.md`. It freezes a planning-only deployment-profile guardrail for non-local use and still does not change runtime behavior by itself.
