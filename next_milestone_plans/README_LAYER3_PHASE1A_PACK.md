@@ -176,6 +176,12 @@ And to the Layer 3 workbench external export/download delivery UI freeze packet,
 
 The external export/download delivery UI packet admits only the bounded rendered control boundary: server-authoritative delivery availability, one server-gated `deliver_external_export_download` browser action, admitted-field-only requests to the PR `#278` endpoint, and same-origin attachment handling. Docs `68`/`69` do not implement UI behavior by themselves; PR `#282` is the separate live rendered UI implementation, and PR `#285`/`#286` only harden that boundary with browser-managed form delivery, UI-local submitted fallback state, and controlled malformed-JSON errors; PR `#289` separately hardens backend/API delivery lock-release under the same endpoint. Neither the docs nor PR `#282`/`#285`/`#286`/`#289` admit public or signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional package/reconciliation/artifact rows, `AnalysisArtifact`, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
+And to the Layer 3 analysis method registry governance packet, which is planning-only by itself and freezes the current-methods-only quantitative registry boundary before any method expansion:
+- `next_milestone_plans/Layer3_planning_docs/70_L3_ANALYSIS_METHOD_REGISTRY_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/71_L3_ANALYSIS_METHOD_REGISTRY_CONTRACT.md`
+
+The analysis method registry packet admits only governance for the existing wrapped quantitative methods in `backend/app/services/analysis.py`: `cross_correlation`, `decomposition`, and `structural_break`. The docs do not implement a registry, add methods, change execution behavior, change artifacts, widen schemas/runtime/source scope, add qualitative/hybrid/RAG/vector execution, or activate any new UI/full mockup behavior.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
