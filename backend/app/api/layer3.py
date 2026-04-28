@@ -581,7 +581,7 @@ def post_plan_approve(payload: dict[str, Any], db: Session = Depends(get_db)) ->
 @router.post(
     "/plan/revise",
     response_model=Layer3PlanRevisionResponse,
-    responses=_workbench_error_responses(400, 404, 409),
+    responses=_workbench_error_responses(400, 404, 409, 500),
 )
 def post_plan_revise(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.plan_revision(db, payload))
