@@ -4614,6 +4614,8 @@ def _aps_bundle_identity_for_external_export_download(
     reconciliation_record_id: str,
     dispatch_state: dict[str, Any],
     error_prefix: str,
+    existing_readiness: dict[str, Any] | None = None,
+    validate_source_artifact: bool = True,
 ) -> dict[str, Any]:
     if dispatch_state.get("aps_handoff_state") != APS_HANDOFF_DISPATCHED_STATE:
         raise Layer3WorkbenchError(
@@ -4674,6 +4676,39 @@ def _aps_bundle_identity_for_external_export_download(
             http_status=409,
             blocked_fields=["aps_schema_id"],
         )
+    if not validate_source_artifact:
+        source_artifact_hash = str((existing_readiness or {}).get("source_artifact_hash") or "").strip()
+        if not source_artifact_hash or str(package.payload_hash or "").strip() != source_artifact_hash:
+            raise Layer3WorkbenchError(
+                f"{error_prefix}_source_artifact_hash_mismatch",
+                "Recorded external export/download readiness hash does not match the APS handoff package payload hash.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["aps_bundle_hash"],
+            )
+        try:
+            source_artifact_size = int((existing_readiness or {}).get("source_artifact_size_bytes") or -1)
+        except (TypeError, ValueError):
+            source_artifact_size = -1
+        if source_artifact_size < 0:
+            raise Layer3WorkbenchError(
+                f"{error_prefix}_source_artifact_size_mismatch",
+                "Recorded external export/download readiness is missing the APS bundle artifact size.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["aps_bundle_size_bytes"],
+            )
+        return {
+            "aps_output_package_id": package.output_package_id,
+            "aps_output_package_kind": package.package_kind,
+            "aps_bundle_ref": aps_bundle_ref,
+            "aps_bundle_id": aps_bundle_id,
+            "aps_schema_id": aps_schema_id,
+            "source_artifact_ref": aps_bundle_ref,
+            "source_artifact_schema_id": aps_schema_id,
+            "source_artifact_hash": source_artifact_hash,
+            "source_artifact_size_bytes": source_artifact_size,
+        }
     try:
         from app.services.nrc_aps_evidence_bundle import EvidenceBundleError, load_persisted_bundle_artifact
     except ModuleNotFoundError as exc:
@@ -7078,7 +7113,12 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
     )
 
 
-def external_export_download_prepare(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+def external_export_download_prepare(
+    db: Session,
+    payload: dict[str, Any],
+    *,
+    validate_source_artifact: bool = True,
+) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or "").strip()
     if not request_id:
         raise Layer3WorkbenchError(
@@ -7606,6 +7646,8 @@ def external_export_download_prepare(db: Session, payload: dict[str, Any]) -> di
         reconciliation_record_id=reconciliation_record_id,
         dispatch_state=recorded_dispatch,
         error_prefix="external_export_download_prepare",
+        existing_readiness=existing_readiness,
+        validate_source_artifact=validate_source_artifact,
     )
     dispatch_mismatches = [
         field
@@ -8096,6 +8138,7 @@ def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> Ex
     validation_body = external_export_download_prepare(
         db,
         _external_export_download_prepare_payload_for_delivery(payload, readiness_state=readiness_state),
+        validate_source_artifact=False,
     )
     if validation_body.get("external_export_download_record_ref") != supplied_readiness_ref:
         raise Layer3WorkbenchError(
@@ -8124,6 +8167,18 @@ def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> Ex
             http_status=409,
             blocked_fields=["aps_bundle_ref"],
         )
+    expected_artifact_hash = str(readiness_state.get("source_artifact_hash") or "")
+    try:
+        expected_artifact_size = int(readiness_state.get("source_artifact_size_bytes") or -1)
+    except (TypeError, ValueError):
+        expected_artifact_size = -1
+    filename = (
+        f"layer3-{_safe_download_token(session_id, fallback='session')}-"
+        f"{_safe_download_token(supplied_aps_bundle_id, fallback='aps-bundle')}.json"
+    )
+
+    db.rollback()
+
     try:
         from app.services.nrc_aps_evidence_bundle import EvidenceBundleError, load_persisted_bundle_artifact
     except ModuleNotFoundError as exc:
@@ -8149,11 +8204,7 @@ def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> Ex
 
     artifact_hash = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
     artifact_size = int(bundle_path.stat().st_size)
-    try:
-        recorded_artifact_size = int(readiness_state.get("source_artifact_size_bytes") or -1)
-    except (TypeError, ValueError):
-        recorded_artifact_size = -1
-    if artifact_hash != str(readiness_state.get("source_artifact_hash") or ""):
+    if artifact_hash != expected_artifact_hash:
         raise Layer3WorkbenchError(
             "external_export_download_delivery_source_artifact_hash_mismatch",
             "Validated APS bundle artifact hash does not match recorded readiness.",
@@ -8161,7 +8212,7 @@ def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> Ex
             http_status=409,
             blocked_fields=["aps_bundle_hash"],
         )
-    if artifact_size != recorded_artifact_size:
+    if artifact_size != expected_artifact_size:
         raise Layer3WorkbenchError(
             "external_export_download_delivery_source_artifact_size_mismatch",
             "Validated APS bundle artifact size does not match recorded readiness.",
@@ -8178,10 +8229,6 @@ def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> Ex
             blocked_fields=["aps_bundle_id"],
         )
 
-    filename = (
-        f"layer3-{_safe_download_token(session_id, fallback='session')}-"
-        f"{_safe_download_token(supplied_aps_bundle_id, fallback='aps-bundle')}.json"
-    )
     return ExternalExportDownloadDelivery(
         artifact_path=bundle_path,
         media_type="application/json",
