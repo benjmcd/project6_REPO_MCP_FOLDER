@@ -251,6 +251,7 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
     assert material_request_schema["additionalProperties"] is True
     assert set(material_request_schema["required"]) == {"source_candidate_ids"}
     assert material_request_schema["properties"]["source_candidate_ids"]["items"]["type"] == "string"
+    assert material_request_schema["properties"]["source_candidate_ids"]["minItems"] == 1
     assert material_request_schema["properties"]["query_basis"]["properties"]["terms"]["items"]["type"] == "string"
 
     material_schema = _openapi_response_schema(spec, "/api/v1/layer3/material-preview", "post")
