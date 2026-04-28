@@ -115,6 +115,50 @@ def _assert_common_response_envelope(body: dict) -> None:
     assert body["status"]
 
 
+def _openapi_response_schema(spec: dict, path: str, method: str) -> dict:
+    schema = spec["paths"][path][method]["responses"]["200"]["content"]["application/json"]["schema"]
+    ref = schema.get("$ref")
+    assert ref, f"{path} {method} must use a component response schema"
+    return spec["components"]["schemas"][ref.rsplit("/", 1)[-1]]
+
+
+def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+
+    bootstrap_schema = _openapi_response_schema(spec, "/api/v1/layer3/bootstrap", "get")
+    assert bootstrap_schema["title"] == "Layer3WorkbenchBootstrapResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "route",
+        "api_root",
+        "features",
+        "execution_readiness",
+        "authority_rail",
+    } <= set(bootstrap_schema["required"])
+    assert bootstrap_schema["properties"]["features"]["additionalProperties"]["type"] == "boolean"
+
+    readiness_schema = _openapi_response_schema(spec, "/api/v1/layer3/readiness", "get")
+    assert readiness_schema["title"] == "Layer3ExecutionReadinessResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "execution_admitted",
+        "execution_enabled",
+        "state_model",
+        "preview_hash_contract",
+        "idempotency_contract",
+        "concurrency_contract",
+        "deferred_decisions",
+    } <= set(readiness_schema["required"])
+
+
 def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
     db = client.layer3_session_factory()
     try:

@@ -6,6 +6,7 @@ from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -13,6 +14,71 @@ from app.services import layer3_workbench
 from app.services.layer3_workbench import Layer3WorkbenchError
 
 router = APIRouter()
+
+
+class Layer3BaseResponse(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str
+    schema_version: int
+    request_id: str
+    server_time: str
+    status: str
+
+
+class Layer3WorkbenchBootstrapResponse(Layer3BaseResponse):
+    route: str
+    api_root: str
+    supported_source_classes: list[str]
+    preview_only_source_classes: list[str]
+    unsupported_source_classes: list[str]
+    gate_labels: list[str]
+    active_gate_labels: list[str]
+    unavailable_gate_labels: list[str]
+    features: dict[str, bool]
+    execution_readiness: dict[str, Any]
+    authority_rail: dict[str, Any]
+
+
+class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
+    execution_admitted: bool
+    execution_enabled: bool
+    execution_selection_admitted: bool
+    execution_selection_endpoint: str
+    analysis_execution_admitted: bool
+    analysis_execution_start_admitted: bool
+    analysis_execution_start_endpoint: str
+    execution_result_status_admitted: bool
+    execution_result_status_endpoint: str
+    execution_result_review_admitted: bool
+    execution_result_review_endpoint: str
+    package_review_preview_admitted: bool
+    package_review_preview_endpoint: str
+    package_construction_commit_admitted: bool
+    package_construction_commit_endpoint: str
+    package_review_submit_admitted: bool
+    package_review_submit_endpoint: str
+    handoff_export_prepare_admitted: bool
+    handoff_export_prepare_endpoint: str
+    aps_handoff_dispatch_admitted: bool
+    aps_handoff_dispatch_endpoint: str
+    external_export_download_prepare_admitted: bool
+    external_export_download_prepare_endpoint: str
+    external_export_download_deliver_admitted: bool
+    external_export_download_deliver_endpoint: str
+    package_review_admitted: bool
+    external_handoff_admitted: bool
+    external_export_admitted: bool
+    dispatch_admitted: bool
+    readiness_state: str
+    required_gates: list[str]
+    implemented_gates: list[str]
+    deferred_gates: list[str]
+    state_model: dict[str, Any]
+    preview_hash_contract: dict[str, Any]
+    idempotency_contract: dict[str, Any]
+    concurrency_contract: dict[str, Any]
+    deferred_decisions: dict[str, Any]
 
 
 def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JSONResponse:
@@ -51,12 +117,12 @@ async def _payload_from_request(request: Request) -> dict[str, Any]:
     return parsed
 
 
-@router.get("/bootstrap")
+@router.get("/bootstrap", response_model=Layer3WorkbenchBootstrapResponse)
 def get_bootstrap() -> dict[str, Any]:
     return layer3_workbench.bootstrap()
 
 
-@router.get("/readiness")
+@router.get("/readiness", response_model=Layer3ExecutionReadinessResponse)
 def get_readiness() -> dict[str, Any]:
     return layer3_workbench.readiness_contract()
 
