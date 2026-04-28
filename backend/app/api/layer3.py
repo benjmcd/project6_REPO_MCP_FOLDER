@@ -128,6 +128,13 @@ class Layer3GateCPreviewResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
 
 
+class Layer3TypingOverrideUnavailableResponse(Layer3BaseResponse):
+    error_code: str
+    message: str
+    recoverable: bool
+    next_allowed_actions: list[str]
+
+
 class Layer3PlanPreviewResponse(Layer3BaseResponse):
     session_id: str
     next_state: str
@@ -432,6 +439,36 @@ class Layer3ExternalExportDownloadPrepareResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
 
 
+class Layer3WorkbenchErrorResponse(Layer3BaseResponse):
+    error_code: str
+    message: str
+    recoverable: bool
+    blocked_fields: list[str]
+    next_allowed_actions: list[str]
+
+
+class Layer3SessionSummaryResponse(Layer3BaseResponse):
+    session_id: str
+    selection_manifest_id: str
+    current_gate: str
+    gate_b_summary: dict[str, int]
+    gate_c_summary: dict[str, Any]
+    plan_preview: dict[str, Any]
+    plan_approval: dict[str, Any]
+    plan_revision: dict[str, Any]
+    execution_selection: dict[str, Any]
+    analysis_execution_start: dict[str, Any]
+    execution_result_review: dict[str, Any]
+    package_review_preview: dict[str, Any]
+    package_construction: dict[str, Any]
+    package_review_submit: dict[str, Any]
+    handoff_export_prepare: dict[str, Any]
+    aps_handoff_dispatch: dict[str, Any]
+    external_export_download: dict[str, Any]
+    downstream_unavailable: list[str]
+    authority_rail: dict[str, Any]
+
+
 def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JSONResponse:
     try:
         return handler()
@@ -503,7 +540,11 @@ def post_gate_c_preview(payload: dict[str, Any], db: Session = Depends(get_db)) 
     return _json_or_error(lambda: layer3_workbench.gate_c_preview(db, payload))
 
 
-@router.post("/gate-c/override")
+@router.post(
+    "/gate-c/override",
+    status_code=409,
+    response_model=Layer3TypingOverrideUnavailableResponse,
+)
 def post_gate_c_override(payload: dict[str, Any]) -> JSONResponse:
     return JSONResponse(
         status_code=409,
@@ -604,7 +645,29 @@ def post_external_export_download_prepare(
     return _json_or_error(lambda: layer3_workbench.external_export_download_prepare(db, payload))
 
 
-@router.post("/handoff/export/download/deliver", response_model=None)
+@router.post(
+    "/handoff/export/download/deliver",
+    response_model=None,
+    responses={
+        200: {
+            "description": "APS evidence bundle artifact attachment.",
+            "content": {
+                "application/json": {
+                    "schema": {"type": "string", "format": "binary"},
+                },
+            },
+            "headers": {
+                "Content-Disposition": {"schema": {"type": "string"}},
+                "X-Layer3-Schema-Id": {"schema": {"type": "string"}},
+                "X-Layer3-Delivery-State": {"schema": {"type": "string"}},
+                "X-Layer3-Source-Artifact-Hash": {"schema": {"type": "string"}},
+            },
+        },
+        400: {"model": Layer3WorkbenchErrorResponse},
+        404: {"model": Layer3WorkbenchErrorResponse},
+        409: {"model": Layer3WorkbenchErrorResponse},
+    },
+)
 async def post_external_export_download_deliver(
     request: Request,
     db: Session = Depends(get_db),
@@ -626,6 +689,10 @@ async def post_external_export_download_deliver(
     )
 
 
-@router.get("/session/{session_id}", response_model=None)
+@router.get(
+    "/session/{session_id}",
+    response_model=Layer3SessionSummaryResponse,
+    responses={404: {"model": Layer3WorkbenchErrorResponse}},
+)
 def get_session_summary(session_id: str, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.session_summary(db, session_id))
