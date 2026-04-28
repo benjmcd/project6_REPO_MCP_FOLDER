@@ -549,6 +549,18 @@ def test_layer3_execution_result_openapi_contracts(client: TestClient) -> None:
 def test_layer3_package_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
 
+    preview_request_schema = spec["paths"]["/api/v1/layer3/package/review/preview"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert preview_request_schema["additionalProperties"] is False
+    assert set(preview_request_schema["required"]) == {
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+    }
+
     preview_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/preview", "post")
     assert preview_schema["title"] == "Layer3PackageReviewPreviewResponse"
     assert {
@@ -580,6 +592,26 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
         "authority_rail",
     } <= set(preview_schema["required"])
 
+    commit_request_schema = spec["paths"]["/api/v1/layer3/package/review/commit"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert commit_request_schema["additionalProperties"] is False
+    assert set(commit_request_schema["required"]) == {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+    }
+    assert commit_request_schema["properties"]["expected_package_kinds"]["items"]["enum"] == [
+        "canonical_internal",
+        "user_facing",
+        "review_facing",
+    ]
+
     commit_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/commit", "post")
     assert commit_schema["title"] == "Layer3PackageConstructionCommitResponse"
     assert {
@@ -606,6 +638,33 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
         "next_state",
         "authority_rail",
     } <= set(commit_schema["required"])
+
+    submit_request_schema = spec["paths"]["/api/v1/layer3/package/review/submit"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert submit_request_schema["additionalProperties"] is False
+    assert set(submit_request_schema["required"]) == {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "operator_decision",
+    }
+    assert submit_request_schema["properties"]["operator_decision"]["enum"] == [
+        "approved",
+        "changes_requested",
+        "rejected",
+        "blocked",
+    ]
+    assert submit_request_schema["properties"]["output_package_ids"]["type"] == "array"
+    assert submit_request_schema["properties"]["payload_hashes"]["type"] == "array"
 
     submit_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/submit", "post")
     assert submit_schema["title"] == "Layer3PackageReviewSubmitResponse"
