@@ -744,6 +744,7 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
     assert deliver_request_body["required"] is True
     assert {"application/json", "application/x-www-form-urlencoded"} <= set(deliver_request_body["content"])
     deliver_request_schema = deliver_request_body["content"]["application/json"]["schema"]
+    deliver_form_schema = deliver_request_body["content"]["application/x-www-form-urlencoded"]["schema"]
     assert deliver_request_schema["additionalProperties"] is False
     assert {
         "client_request_id",
@@ -787,6 +788,17 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
     assert deliver_request_schema["properties"]["operator_decision"]["enum"] == ["deliver_external_export_download"]
     assert "download_url" not in deliver_request_schema["properties"]
     assert "connector_run_id" not in deliver_request_schema["properties"]
+    assert deliver_form_schema["additionalProperties"] is False
+    assert "JSON-stringified" in deliver_form_schema["description"]
+    assert "not as repeated form keys" in deliver_form_schema["description"]
+    assert set(deliver_request_schema["required"]) == set(deliver_form_schema["required"])
+    assert set(deliver_request_schema["properties"]) == set(deliver_form_schema["properties"])
+    assert deliver_request_schema["properties"]["output_package_ids"]["type"] == "array"
+    assert deliver_form_schema["properties"]["output_package_ids"]["type"] == "string"
+    assert deliver_form_schema["properties"]["payload_refs"]["type"] == "string"
+    assert deliver_form_schema["properties"]["payload_hashes"]["type"] == "string"
+    assert "download_url" not in deliver_form_schema["properties"]
+    assert "connector_run_id" not in deliver_form_schema["properties"]
 
     deliver_success_schema = deliver_responses["200"]["content"]["application/json"]["schema"]
     assert deliver_success_schema == {"type": "string", "format": "binary"}
