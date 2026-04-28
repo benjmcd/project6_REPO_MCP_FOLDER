@@ -692,6 +692,95 @@ EXECUTION_RESULT_REVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 }
 
 
+PACKAGE_REVIEW_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "preview_id": {"type": "string"},
+        "preview_hash": {"type": "string"},
+        "result_review_record_ref": {"type": "string"},
+        "analysis_run_id": {"type": "string"},
+    },
+}
+
+
+PACKAGE_CONSTRUCTION_COMMIT_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "preview_id": {"type": "string"},
+        "preview_hash": {"type": "string"},
+        "result_review_record_ref": {"type": "string"},
+        "package_review_preview_hash": {"type": "string"},
+        "analysis_run_id": {"type": "string"},
+        "expected_package_kinds": {
+            "type": "array",
+            "items": {"type": "string", "enum": ["canonical_internal", "user_facing", "review_facing"]},
+        },
+    },
+}
+
+
+PACKAGE_REVIEW_SUBMIT_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": "decision_notes are required by runtime for changes_requested, rejected, and blocked decisions.",
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "preview_id": {"type": "string"},
+        "preview_hash": {"type": "string"},
+        "result_review_record_ref": {"type": "string"},
+        "package_review_preview_hash": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "output_package_ids": {"type": "array", "items": {"type": "string"}},
+        "payload_hashes": {"type": "array", "items": {"type": "string"}},
+        "operator_decision": {"type": "string", "enum": ["approved", "changes_requested", "rejected", "blocked"]},
+        "decision_notes": {"type": "string"},
+        "analysis_run_id": {"type": "string"},
+        "expected_package_kinds": {
+            "type": "array",
+            "items": {"type": "string", "enum": ["canonical_internal", "user_facing", "review_facing"]},
+        },
+    },
+}
+
+
 class Layer3SessionSummaryResponse(Layer3BaseResponse):
     session_id: str
     selection_manifest_id: str
@@ -880,6 +969,7 @@ def post_execution_result_review(
 @router.post(
     "/package/review/preview",
     response_model=Layer3PackageReviewPreviewResponse,
+    openapi_extra={"requestBody": _json_request_body(PACKAGE_REVIEW_PREVIEW_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_review_preview(
@@ -892,6 +982,7 @@ def post_package_review_preview(
 @router.post(
     "/package/review/commit",
     response_model=Layer3PackageConstructionCommitResponse,
+    openapi_extra={"requestBody": _json_request_body(PACKAGE_CONSTRUCTION_COMMIT_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_review_commit(
@@ -904,6 +995,7 @@ def post_package_review_commit(
 @router.post(
     "/package/review/submit",
     response_model=Layer3PackageReviewSubmitResponse,
+    openapi_extra={"requestBody": _json_request_body(PACKAGE_REVIEW_SUBMIT_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_review_submit(
