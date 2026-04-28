@@ -208,7 +208,17 @@ print(json.dumps({
                 "TRUSTED_PROXY_MODE": "true",
                 "STORAGE_EXPOSURE": "enabled",
             },
-            "STORAGE_EXPOSURE=enabled is not allowed",
+            "STORAGE_EXPOSURE must be auto or disabled",
+        ),
+        (
+            {
+                "DEPLOYMENT_MODE": "nonlocal",
+                "ALLOWED_ORIGINS": "https://review.example.com",
+                "AUTH_OWNER": "proxy",
+                "TRUSTED_PROXY_MODE": "true",
+                "STORAGE_EXPOSURE": "proxy_protected",
+            },
+            "STORAGE_EXPOSURE must be auto or disabled",
         ),
     ],
 )
