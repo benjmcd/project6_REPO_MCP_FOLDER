@@ -104,6 +104,30 @@ class Layer3MaterialPreviewResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
 
 
+class Layer3GateBDecisionResponse(Layer3BaseResponse):
+    session_id: str
+    selection_manifest_id: str
+    gate_b_decision_manifest_id: str
+    approved_candidate_ids: list[str]
+    denied_candidate_ids: list[str]
+    isolated_candidate_ids: list[str]
+    flagged_candidate_ids: list[str]
+    next_state: str
+    authority_rail: dict[str, Any]
+
+
+class Layer3GateCPreviewResponse(Layer3BaseResponse):
+    session_id: str
+    typing_records: list[dict[str, Any]]
+    analysis_units: list[dict[str, Any]]
+    analysis_groups: list[dict[str, Any]]
+    analysis_sets: list[dict[str, Any]]
+    unsupported_material: list[dict[str, Any]]
+    override_allowed: bool
+    next_state: str
+    authority_rail: dict[str, Any]
+
+
 def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JSONResponse:
     try:
         return handler()
@@ -165,12 +189,12 @@ def post_material_preview(payload: dict[str, Any]) -> dict[str, Any] | JSONRespo
     return _json_or_error(lambda: layer3_workbench.material_preview(payload))
 
 
-@router.post("/gate-b/decision", response_model=None)
+@router.post("/gate-b/decision", response_model=Layer3GateBDecisionResponse)
 def post_gate_b_decision(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.gate_b_decision(db, payload))
 
 
-@router.post("/gate-c/preview", response_model=None)
+@router.post("/gate-c/preview", response_model=Layer3GateCPreviewResponse)
 def post_gate_c_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.gate_c_preview(db, payload))
 
