@@ -381,6 +381,56 @@ class Layer3ApsHandoffDispatchResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
 
 
+class Layer3ExternalExportDownloadPrepareResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    preview_identity: dict[str, Any]
+    analysis_run_id: str | None
+    result_review_record_ref: str
+    package_review_preview_hash: str
+    reconciliation_record_id: str
+    output_package_ids: list[str]
+    package_kinds: list[str]
+    payload_refs: list[str]
+    payload_hashes: list[str]
+    package_review_submit_record_ref: str
+    package_review_state: str
+    prepare_record_ref: str
+    handoff_export_state: str
+    handoff_export_envelope_ref: str
+    handoff_target: str
+    export_mode: str
+    aps_handoff_record_ref: str
+    aps_handoff_state: str
+    aps_handoff_target: str
+    dispatch_mode: str
+    aps_output_package_id: str
+    aps_output_package_kind: str
+    aps_bundle_ref: str
+    aps_bundle_id: str
+    aps_schema_id: str
+    export_download_target: str
+    download_mode: str
+    operator_decision: str
+    decision_notes: str | None
+    external_export_download_state: str
+    external_export_download_record_ref: str
+    export_download_descriptor_ref: str
+    source_artifact_ref: str
+    source_artifact_schema_id: str
+    source_artifact_hash: str
+    source_artifact_size_bytes: int
+    browser_download_enabled: bool
+    download_url_enabled: bool
+    connector_dispatch_enabled: bool
+    destination_selection_enabled: bool
+    generic_downstream_dispatch_enabled: bool
+    downstream_unavailable: list[str]
+    next_state: str
+    authority_rail: dict[str, Any]
+
+
 def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JSONResponse:
     try:
         return handler()
@@ -541,7 +591,7 @@ def post_aps_handoff_dispatch(
     return _json_or_error(lambda: layer3_workbench.aps_handoff_dispatch(db, payload))
 
 
-@router.post("/handoff/export/download/prepare", response_model=None)
+@router.post("/handoff/export/download/prepare", response_model=Layer3ExternalExportDownloadPrepareResponse)
 def post_external_export_download_prepare(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
