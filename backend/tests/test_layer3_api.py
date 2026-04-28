@@ -122,6 +122,13 @@ def _openapi_response_schema(spec: dict, path: str, method: str) -> dict:
     return spec["components"]["schemas"][ref.rsplit("/", 1)[-1]]
 
 
+def _openapi_response_schema_for_status(spec: dict, path: str, method: str, status: str) -> dict:
+    schema = spec["paths"][path][method]["responses"][status]["content"]["application/json"]["schema"]
+    ref = schema.get("$ref")
+    assert ref, f"{path} {method} {status} must use a component response schema"
+    return spec["components"]["schemas"][ref.rsplit("/", 1)[-1]]
+
+
 def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
 
@@ -665,6 +672,92 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
         "next_state",
         "authority_rail",
     } <= set(prepare_schema["required"])
+
+
+def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+
+    override_responses = spec["paths"]["/api/v1/layer3/gate-c/override"]["post"]["responses"]
+    assert "200" not in override_responses
+    override_schema = _openapi_response_schema_for_status(spec, "/api/v1/layer3/gate-c/override", "post", "409")
+    assert override_schema["title"] == "Layer3TypingOverrideUnavailableResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "error_code",
+        "message",
+        "recoverable",
+        "next_allowed_actions",
+    } <= set(override_schema["required"])
+
+    deliver_responses = spec["paths"]["/api/v1/layer3/handoff/export/download/deliver"]["post"]["responses"]
+    deliver_success_schema = deliver_responses["200"]["content"]["application/json"]["schema"]
+    assert deliver_success_schema == {"type": "string", "format": "binary"}
+    assert {
+        "Content-Disposition",
+        "X-Layer3-Schema-Id",
+        "X-Layer3-Delivery-State",
+        "X-Layer3-Source-Artifact-Hash",
+    } <= set(deliver_responses["200"]["headers"])
+    for status in ("400", "404", "409"):
+        error_schema = _openapi_response_schema_for_status(
+            spec,
+            "/api/v1/layer3/handoff/export/download/deliver",
+            "post",
+            status,
+        )
+        assert error_schema["title"] == "Layer3WorkbenchErrorResponse"
+        assert {
+            "schema_id",
+            "schema_version",
+            "request_id",
+            "server_time",
+            "status",
+            "error_code",
+            "message",
+            "recoverable",
+            "blocked_fields",
+            "next_allowed_actions",
+        } <= set(error_schema["required"])
+
+    session_schema = _openapi_response_schema(spec, "/api/v1/layer3/session/{session_id}", "get")
+    assert session_schema["title"] == "Layer3SessionSummaryResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "selection_manifest_id",
+        "current_gate",
+        "gate_b_summary",
+        "gate_c_summary",
+        "plan_preview",
+        "plan_approval",
+        "plan_revision",
+        "execution_selection",
+        "analysis_execution_start",
+        "execution_result_review",
+        "package_review_preview",
+        "package_construction",
+        "package_review_submit",
+        "handoff_export_prepare",
+        "aps_handoff_dispatch",
+        "external_export_download",
+        "downstream_unavailable",
+        "authority_rail",
+    } <= set(session_schema["required"])
+    session_error_schema = _openapi_response_schema_for_status(
+        spec,
+        "/api/v1/layer3/session/{session_id}",
+        "get",
+        "404",
+    )
+    assert session_error_schema["title"] == "Layer3WorkbenchErrorResponse"
 
 
 def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
