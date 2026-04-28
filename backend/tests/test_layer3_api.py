@@ -423,6 +423,99 @@ def test_layer3_execution_result_openapi_contracts(client: TestClient) -> None:
     } <= set(review_schema["required"])
 
 
+def test_layer3_package_openapi_contracts(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+
+    preview_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/preview", "post")
+    assert preview_schema["title"] == "Layer3PackageReviewPreviewResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_identity",
+        "package_review_preview_hash",
+        "analysis_run_id",
+        "result_status_available",
+        "result_review_state",
+        "result_review_record_ref",
+        "package_review_preview_enabled",
+        "package_commit_enabled",
+        "package_review_enabled",
+        "candidate_package_kinds",
+        "package_owner_compatibility",
+        "blocked_reasons",
+        "downstream_unavailable",
+        "next_state",
+        "output_metadata_summary",
+        "trace_summary",
+        "unresolved_trace_count",
+        "authority_rail",
+    } <= set(preview_schema["required"])
+
+    commit_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/commit", "post")
+    assert commit_schema["title"] == "Layer3PackageConstructionCommitResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_identity",
+        "analysis_run_id",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_packages",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_enabled",
+        "handoff_enabled",
+        "downstream_unavailable",
+        "next_state",
+        "authority_rail",
+    } <= set(commit_schema["required"])
+
+    submit_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/submit", "post")
+    assert submit_schema["title"] == "Layer3PackageReviewSubmitResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_identity",
+        "analysis_run_id",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_hashes",
+        "operator_decision",
+        "decision_notes",
+        "package_review_state",
+        "submit_record_ref",
+        "package_review_submit_enabled",
+        "handoff_enabled",
+        "export_enabled",
+        "downstream_unavailable",
+        "next_state",
+        "authority_rail",
+    } <= set(submit_schema["required"])
+
+
 def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
     db = client.layer3_session_factory()
     try:
