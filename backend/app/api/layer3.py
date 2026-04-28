@@ -585,6 +585,145 @@ def _json_request_body(schema: dict[str, Any]) -> dict[str, Any]:
     return {"required": True, "content": {"application/json": {"schema": schema}}}
 
 
+SOURCE_CLASS_SCHEMA: dict[str, Any] = {
+    "type": "string",
+    "enum": ["dataset_version", "aps_content_document"],
+}
+
+
+PREFLIGHT_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": True,
+    "description": "Known preflight fields; current runtime tolerates extra metadata fields.",
+    "required": ["natural_language_intent"],
+    "properties": {
+        "schema_id": {"type": "string", "enum": ["layer3.preflight_request.v1"]},
+        "schema_version": {"type": "integer", "enum": [1]},
+        "client_request_id": {"type": "string"},
+        "natural_language_intent": {"type": "string"},
+        "manual_constraints": {
+            "type": "object",
+            "additionalProperties": True,
+            "properties": {
+                "topics": {"type": "array", "items": {"type": "string"}},
+                "source_classes": {"type": "array", "items": SOURCE_CLASS_SCHEMA},
+                "date_bounds": {
+                    "oneOf": [
+                        {"type": "object", "additionalProperties": True},
+                        {"type": "null"},
+                    ],
+                },
+                "required_artifacts": {"type": "array", "items": {"type": "string"}},
+                "conflict": {"type": "boolean"},
+                "conflicts": {"type": "array", "items": {"type": "string"}},
+            },
+        },
+        "actor": {"type": "string"},
+    },
+}
+
+
+SOURCE_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": True,
+    "description": "Known source-preview fields; selected_source_classes defaults to supported source classes.",
+    "required": ["preflight_id"],
+    "properties": {
+        "schema_id": {"type": "string", "enum": ["layer3.source_preview_request.v1"]},
+        "schema_version": {"type": "integer", "enum": [1]},
+        "client_request_id": {"type": "string"},
+        "preflight_id": {"type": "string"},
+        "selected_source_classes": {"type": "array", "items": SOURCE_CLASS_SCHEMA},
+        "actor": {"type": "string"},
+    },
+}
+
+
+MATERIAL_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": True,
+    "description": "Known material-preview fields; preflight/source-set ids are carried as authority context.",
+    "required": ["source_candidate_ids"],
+    "properties": {
+        "schema_id": {"type": "string", "enum": ["layer3.material_preview_request.v1"]},
+        "schema_version": {"type": "integer", "enum": [1]},
+        "client_request_id": {"type": "string"},
+        "preflight_id": {"type": "string"},
+        "source_set_id": {"type": "string"},
+        "source_candidate_ids": {"type": "array", "items": {"type": "string"}},
+        "query_basis": {
+            "type": "object",
+            "additionalProperties": True,
+            "properties": {
+                "terms": {"type": "array", "items": {"type": "string"}},
+                "filters": {"type": "object", "additionalProperties": True},
+            },
+        },
+        "actor": {"type": "string"},
+    },
+}
+
+
+GATE_B_DECISION_ITEM_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": True,
+    "required": ["candidate_id", "decision"],
+    "properties": {
+        "candidate_id": {"type": "string"},
+        "decision": {"type": "string", "enum": ["approved", "denied", "isolated", "flagged"]},
+        "operator_reason": {"type": "string"},
+        "decision_basis": {
+            "type": "object",
+            "additionalProperties": True,
+            "properties": {
+                "source_ref": {"type": "string"},
+                "query_basis": {"type": "string"},
+                "provenance_ref": {"type": "string"},
+            },
+        },
+    },
+}
+
+
+GATE_B_DECISION_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": True,
+    "description": "Known Gate B fields; denied, isolated, and flagged decisions require operator_reason at runtime.",
+    "required": ["candidate_decisions"],
+    "properties": {
+        "schema_id": {"type": "string", "enum": ["layer3.gate_b_decision_request.v1"]},
+        "schema_version": {"type": "integer", "enum": [1]},
+        "client_request_id": {"type": "string"},
+        "preflight_id": {"type": "string"},
+        "source_set_id": {"type": "string"},
+        "material_preview_id": {"type": "string"},
+        "actor": {"type": "string"},
+        "candidate_decisions": {
+            "type": "array",
+            "items": GATE_B_DECISION_ITEM_SCHEMA,
+            "minItems": 1,
+        },
+        "commit_reason": {"type": "string"},
+    },
+}
+
+
+GATE_C_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": True,
+    "description": "Known Gate C preview fields; commit_typing controls owner-service materialization.",
+    "required": ["session_id"],
+    "properties": {
+        "schema_id": {"type": "string", "enum": ["layer3.gate_c_preview_request.v1"]},
+        "schema_version": {"type": "integer", "enum": [1]},
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "commit_typing": {"type": "boolean"},
+        "actor": {"type": "string"},
+    },
+}
+
+
 PLAN_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": True,
@@ -1064,22 +1203,42 @@ def get_readiness() -> dict[str, Any]:
     return layer3_workbench.readiness_contract()
 
 
-@router.post("/preflight", response_model=Layer3PreflightResponse, responses=_workbench_error_responses(400))
+@router.post(
+    "/preflight",
+    response_model=Layer3PreflightResponse,
+    openapi_extra={"requestBody": _json_request_body(PREFLIGHT_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400),
+)
 def post_preflight(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.preflight(payload))
 
 
-@router.post("/source-preview", response_model=Layer3SourcePreviewResponse, responses=_workbench_error_responses(400))
+@router.post(
+    "/source-preview",
+    response_model=Layer3SourcePreviewResponse,
+    openapi_extra={"requestBody": _json_request_body(SOURCE_PREVIEW_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400),
+)
 def post_source_preview(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.source_preview(payload))
 
 
-@router.post("/material-preview", response_model=Layer3MaterialPreviewResponse, responses=_workbench_error_responses(400))
+@router.post(
+    "/material-preview",
+    response_model=Layer3MaterialPreviewResponse,
+    openapi_extra={"requestBody": _json_request_body(MATERIAL_PREVIEW_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400),
+)
 def post_material_preview(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.material_preview(payload))
 
 
-@router.post("/gate-b/decision", response_model=Layer3GateBDecisionResponse, responses=_workbench_error_responses(400))
+@router.post(
+    "/gate-b/decision",
+    response_model=Layer3GateBDecisionResponse,
+    openapi_extra={"requestBody": _json_request_body(GATE_B_DECISION_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400),
+)
 def post_gate_b_decision(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.gate_b_decision(db, payload))
 
@@ -1087,6 +1246,7 @@ def post_gate_b_decision(payload: dict[str, Any], db: Session = Depends(get_db))
 @router.post(
     "/gate-c/preview",
     response_model=Layer3GateCPreviewResponse,
+    openapi_extra={"requestBody": _json_request_body(GATE_C_PREVIEW_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_gate_c_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
