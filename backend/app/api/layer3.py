@@ -650,7 +650,7 @@ MATERIAL_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
         "client_request_id": {"type": "string"},
         "preflight_id": {"type": "string"},
         "source_set_id": {"type": "string"},
-        "source_candidate_ids": {"type": "array", "items": {"type": "string"}},
+        "source_candidate_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1},
         "query_basis": {
             "type": "object",
             "additionalProperties": True,
