@@ -604,6 +604,67 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
     } <= set(dispatch_schema["required"])
 
 
+def test_layer3_external_export_download_openapi_contracts(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+
+    prepare_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/export/download/prepare", "post")
+    assert prepare_schema["title"] == "Layer3ExternalExportDownloadPrepareResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_identity",
+        "analysis_run_id",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "aps_output_package_id",
+        "aps_output_package_kind",
+        "aps_bundle_ref",
+        "aps_bundle_id",
+        "aps_schema_id",
+        "export_download_target",
+        "download_mode",
+        "operator_decision",
+        "decision_notes",
+        "external_export_download_state",
+        "external_export_download_record_ref",
+        "export_download_descriptor_ref",
+        "source_artifact_ref",
+        "source_artifact_schema_id",
+        "source_artifact_hash",
+        "source_artifact_size_bytes",
+        "browser_download_enabled",
+        "download_url_enabled",
+        "connector_dispatch_enabled",
+        "destination_selection_enabled",
+        "generic_downstream_dispatch_enabled",
+        "downstream_unavailable",
+        "next_state",
+        "authority_rail",
+    } <= set(prepare_schema["required"])
+
+
 def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
     db = client.layer3_session_factory()
     try:
