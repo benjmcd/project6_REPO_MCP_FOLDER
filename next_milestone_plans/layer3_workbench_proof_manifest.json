@@ -1,37 +1,37 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, package-review preview/construction/submit and rendered package-review UI proof, handoff/export prepare-only backend/API and UI, APS handoff dispatch backend/API and UI, external export/download readiness backend/API and UI, external export/download delivery backend/API, rendered external export/download delivery UI from PR #282, PR #285/#286 delivery review hardening, and PR #289 delivery lock-release hardening",
+  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, package-review preview/construction/submit and rendered package-review UI proof, handoff/export prepare-only backend/API and UI, APS handoff dispatch backend/API and UI, external export/download readiness backend/API and UI, external export/download delivery backend/API, rendered external export/download delivery UI from PR #282, PR #285/#286 delivery review hardening, and PR #289 delivery lock-release hardening, docs 70/71 AnalysisMethod registry governance, and PR #316 current-methods registry implementation",
   "scope": {
-    "source_branch": "codex/l3-pr289-docsync",
+    "source_branch": "codex/l3-analysis-method-registry-docs-sync",
     "merged_pr": "branch-local docs/progress sync",
     "merge_commit": "",
     "base_remote": "project6-origin/main",
-    "base_commit": "d04dc007",
-    "source_base_commit": "d04dc007a7459d5687fd7aacda32956ee70187d0",
-    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, the merged PR #245 bounded rendered package-review UI implementation, and PR #247 post-review fallback hardening for submit readiness after a failed post-commit session refresh. PR #250 adds planning-only docs 54/55 for handoff/export preparation governance after package-review approval; PR #251 implements only the bounded backend/API prepare-only endpoint; PR #252 aligns downstream blocker vocabulary and session-summary priority without widening behavior. PR #253 synchronizes docs/progress after PR #251/#252 reached main; PR #254 fixes the manifest seed-checkout reference. Docs 56/57 freeze the rendered /review/layer3 handoff/export prepare-only UI boundary over the already-live backend endpoint, and PR #256 implements only that bounded rendered prepare-only UI. PR #258 adds docs 58/59 as governance for a bounded workbench APS handoff dispatch bridge into the existing aps_evidence_bundle_handoff owner-service family; PR #260 implements only the bounded backend/API APS handoff dispatch endpoint after handoff_export_prepared authority; PR #261 hardens malformed canonical APS provenance and unexpected package-kind fail-closed behavior, and PR #263 restricts APS handoff package-row allowance to recorded dispatch state. Docs 60/61 add planning-only rendered APS dispatch UI governance over the already-live backend/API APS dispatch endpoint; PR #266 separately implements that bounded rendered UI. Docs 62/63 add planning-only external export/download readiness governance after recorded aps_handoff_dispatched state; PR #269 separately implements only bounded backend/API external export/download readiness as a reference-only descriptor over the existing APS evidence-bundle handoff artifact. Docs 64/65 add planning-only rendered /review/layer3 external export/download readiness UI governance over the already-live PR #269 backend/API readiness endpoint; PR #274 fixes the docs 65 request-field typo to the admitted export_download_target field; PR #275 separately implements the bounded rendered readiness UI. PR #275 renders server-authoritative readiness, sends one admitted-field-only prepare_external_export_download request to POST /api/v1/layer3/handoff/export/download/prepare, renders recorded descriptors read-only, and still does not admit rendered browser download controls, public or signed URLs, same-origin file streaming beyond the PR #278 validated APS evidence-bundle artifact, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional rows, AnalysisArtifact expansion, schema/runtime/source widening, or full mockup activation. Docs 66/67 add planning-only governance for same-origin external export/download delivery after external_export_download_prepared; PR #278 separately implements the bounded backend/API delivery endpoint. Docs 66/67 make no behavior live by themselves, and PR #278 still does not render download controls, generate public/signed URLs, dispatch connectors or generic downstream targets, select destinations, mutate packages, create extra rows, widen schema/runtime/source scope, or activate the full mockup. PR #282 separately implements rendered delivery UI; PR #285/#286 harden that same delivery UI/API boundary with browser-managed form delivery, UI-local submitted fallback state, and malformed-JSON fail-closed handling. PR #289 hardens the existing backend/API external export/download delivery endpoint by releasing the read-only DB transaction/row lock before APS bundle artifact validation/read/hash/stat; it changes no rendered UI behavior and admits no new delivery capability.",
+    "base_commit": "4ee1c95b",
+    "source_base_commit": "4ee1c95b1558eb45e821a5637fe74ef64920b175",
+    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, the merged PR #245 bounded rendered package-review UI implementation, and PR #247 post-review fallback hardening for submit readiness after a failed post-commit session refresh. PR #250 adds planning-only docs 54/55 for handoff/export preparation governance after package-review approval; PR #251 implements only the bounded backend/API prepare-only endpoint; PR #252 aligns downstream blocker vocabulary and session-summary priority without widening behavior. PR #253 synchronizes docs/progress after PR #251/#252 reached main; PR #254 fixes the manifest seed-checkout reference. Docs 56/57 freeze the rendered /review/layer3 handoff/export prepare-only UI boundary over the already-live backend endpoint, and PR #256 implements only that bounded rendered prepare-only UI. PR #258 adds docs 58/59 as governance for a bounded workbench APS handoff dispatch bridge into the existing aps_evidence_bundle_handoff owner-service family; PR #260 implements only the bounded backend/API APS handoff dispatch endpoint after handoff_export_prepared authority; PR #261 hardens malformed canonical APS provenance and unexpected package-kind fail-closed behavior, and PR #263 restricts APS handoff package-row allowance to recorded dispatch state. Docs 60/61 add planning-only rendered APS dispatch UI governance over the already-live backend/API APS dispatch endpoint; PR #266 separately implements that bounded rendered UI. Docs 62/63 add planning-only external export/download readiness governance after recorded aps_handoff_dispatched state; PR #269 separately implements only bounded backend/API external export/download readiness as a reference-only descriptor over the existing APS evidence-bundle handoff artifact. Docs 64/65 add planning-only rendered /review/layer3 external export/download readiness UI governance over the already-live PR #269 backend/API readiness endpoint; PR #274 fixes the docs 65 request-field typo to the admitted export_download_target field; PR #275 separately implements the bounded rendered readiness UI. PR #275 renders server-authoritative readiness, sends one admitted-field-only prepare_external_export_download request to POST /api/v1/layer3/handoff/export/download/prepare, renders recorded descriptors read-only, and still does not admit rendered browser download controls, public or signed URLs, same-origin file streaming beyond the PR #278 validated APS evidence-bundle artifact, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional rows, AnalysisArtifact expansion, schema/runtime/source widening, or full mockup activation. Docs 66/67 add planning-only governance for same-origin external export/download delivery after external_export_download_prepared; PR #278 separately implements the bounded backend/API delivery endpoint. Docs 66/67 make no behavior live by themselves, and PR #278 still does not render download controls, generate public/signed URLs, dispatch connectors or generic downstream targets, select destinations, mutate packages, create extra rows, widen schema/runtime/source scope, or activate the full mockup. PR #282 separately implements rendered delivery UI; PR #285/#286 harden that same delivery UI/API boundary with browser-managed form delivery, UI-local submitted fallback state, and malformed-JSON fail-closed handling. PR #289 hardens the existing backend/API external export/download delivery endpoint by releasing the read-only DB transaction/row lock before APS bundle artifact validation/read/hash/stat; it changes no rendered UI behavior and admits no new delivery capability. PR #315 adds docs 70/71 as planning-only current-methods AnalysisMethod registry governance; PR #316 separately implements the current-methods registry in backend/app/services/analysis.py without adding methods, changing execution behavior, widening schema/runtime/source scope, activating UI, or admitting qualitative/hybrid/RAG/vector/full mockup behavior.",
     "live_behavior_change": false,
-    "live_behavior_change_summary": "This docs/progress sync branch changes no runtime behavior. Current main already includes PR #282 bounded rendered /review/layer3 external export/download delivery UI over the PR #278 same-origin backend endpoint, PR #285/#286 review hardening for browser-managed delivery, timeout fallback state, and malformed JSON, and PR #289 backend/API lock-release hardening that releases the delivery transaction/row lock before APS bundle artifact validation/read/hash/stat. This branch records that live status and preserves public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, and full mockup behavior as deferred.",
-    "latest_implementation_pr": "#289",
-    "latest_implementation_branch": "codex/l3-download-lock",
-    "latest_implementation_summary": "PR #289 hardens the existing bounded backend/API external export/download delivery path after PR #278/#282/#285/#286: delivery snapshots scalar authority facts and releases the read-only DB transaction/row lock before APS bundle artifact validation/read/hash/stat. It does not add a new feature tranche, rendered UI behavior, public/signed URLs, connector dispatch, destination selection, generic dispatch, package mutation, schema/runtime/source widening, or full mockup behavior.",
-    "latest_planning_pr": "#281",
-    "latest_planning_branch": "codex/l3-download-delivery-ui-freeze",
-    "latest_planning_summary": "PR #281 lands docs 68/69 as planning-only rendered /review/layer3 external export/download delivery UI governance over the current-main PR #278 same-origin delivery endpoint; PR #282 is the separate implementation.",
+    "live_behavior_change_summary": "This docs/progress sync branch changes no runtime behavior. Current main already includes PR #316 current-methods AnalysisMethod registry implementation over cross_correlation, decomposition, and structural_break, with no new methods, execution behavior change, schema/runtime/source widening, UI activation, qualitative/hybrid/RAG/vector expansion, or full mockup activation.",
+    "latest_implementation_pr": "#316",
+    "latest_implementation_branch": "codex/l3-analysis-method-registry",
+    "latest_implementation_summary": "PR #316 implements the docs 70/71 current-methods AnalysisMethod registry in backend/app/services/analysis.py for cross_correlation, decomposition, and structural_break while preserving existing recommendation/execution behavior and adding registry shape coverage in tests/test_api.py.",
+    "latest_planning_pr": "#315",
+    "latest_planning_branch": "codex/l3-analysis-method-governance",
+    "latest_planning_summary": "PR #315 lands docs 70/71 as planning-only current-methods AnalysisMethod registry governance before any method expansion; PR #316 is the separate implementation.",
     "latest_planning_live_behavior_change": false,
-    "latest_planning_behavior_summary": "Docs 68/69 are planning/control only by themselves. PR #282 separately implements only the bounded rendered download-delivery UI; public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional row families, AnalysisArtifact expansion, schema/runtime/source widening, qualitative/hybrid/RAG/vector expansion, and full mockup activation remain out.",
-    "latest_implementation_merge_commit": "d04dc007a7459d5687fd7aacda32956ee70187d0",
-    "latest_planning_base_commit": "8a0692909895114a61584157b78dd90ee105cd8d",
+    "latest_planning_behavior_summary": "Docs 70/71 are planning/control only by themselves. PR #316 separately implements only the current-methods registry; new methods, execution behavior changes, schema/runtime/source widening, qualitative/hybrid/RAG/vector expansion, UI activation, and full mockup activation remain out.",
+    "latest_implementation_merge_commit": "4ee1c95b1558eb45e821a5637fe74ef64920b175",
+    "latest_planning_base_commit": "75460ee29bf4edf2a9aa1b692f8df303f7b57c8d",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
-    "latest_branch_only_implementation_summary": "No active branch-only implementation is included in this docs/progress sync. PR #289 is already merged on current main.",
+    "latest_branch_only_implementation_summary": "No active branch-only implementation is included in this docs/progress sync. PR #316 is already merged on current main.",
     "latest_ui_planning_pr": "#281",
     "latest_ui_planning_branch": "codex/l3-download-delivery-ui-freeze",
     "latest_ui_planning_summary": "PR #281 lands docs 68/69 as planning-only rendered /review/layer3 external export/download delivery UI governance over the already-live PR #278 backend/API delivery endpoint.",
     "latest_ui_planning_live_behavior_change": false,
     "latest_ui_planning_behavior_summary": "Docs 68/69 are planning/control only by themselves; PR #282 is the separate bounded rendered delivery UI implementation. Public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, and full mockup activation remain out.",
-    "latest_backend_implementation_pr": "#289",
-    "latest_backend_implementation_summary": "PR #289 hardens the bounded backend/API external export/download delivery endpoint by releasing the read-only DB transaction/row lock before APS bundle artifact validation/read/hash/stat. It does not add rendered UI behavior, public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, source/schema/runtime widening, or full mockup behavior.",
+    "latest_backend_implementation_pr": "#316",
+    "latest_backend_implementation_summary": "PR #316 adds the current-methods AnalysisMethod registry to backend/app/services/analysis.py without changing runtime execution behavior or admitting new methods.",
     "latest_ui_implementation_pr": "#286",
     "latest_ui_implementation_branch": "codex/l3-download-delivery-review-fix2",
     "latest_ui_implementation_live_behavior_change": true,
@@ -96,7 +96,7 @@
     "latest_aps_handoff_dispatch_planning_base_commit": "fb16b777d674a57e9073b46144275290804e56ce",
     "latest_aps_handoff_dispatch_planning_live_behavior_change": false,
     "latest_aps_handoff_dispatch_planning_summary": "Docs 58/59 freeze the workbench APS handoff dispatch contract after prepared-envelope authority and select aps_evidence_bundle_handoff only; PR #260 is the separate backend/API implementation and PR #261 and PR #263 are hardening follow-ups.",
-    "latest_planning_merge_commit": "a0178975543faaabc7bcbbaf1c4b6d8f1998ac4e",
+    "latest_planning_merge_commit": "d8cee67dab437da578b25936f4de6033153767d0",
     "latest_aps_handoff_dispatch_planning_merge_commit": "09e2b28aa4c9ba9ebc2ba4cf1a5cd495cba63519",
     "latest_aps_handoff_dispatch_ui_planning_branch": "codex/l3-aps-dispatch-ui-freeze",
     "latest_aps_handoff_dispatch_ui_planning_pr": "#265",
@@ -239,7 +239,8 @@
       "bounded backend/API APS handoff dispatch endpoint through POST /api/v1/layer3/handoff/aps/dispatch, limited to one handoff_export_prepared workbench envelope into the existing aps_evidence_bundle_handoff owner-service family after server-side authority and provenance checks",
       "bounded backend/API external export/download readiness endpoint through POST /api/v1/layer3/handoff/export/download/prepare, limited to one reference-only readiness descriptor over the existing APS evidence-bundle handoff artifact after recorded aps_handoff_dispatched authority",
       "bounded rendered /review/layer3 external export/download readiness UI controls over POST /api/v1/layer3/handoff/export/download/prepare after server-authoritative external_export_download.available readiness, limited to one prepare_external_export_download action and read-only recorded descriptor rendering",
-      "bounded backend/API same-origin external export/download delivery endpoint through POST /api/v1/layer3/handoff/export/download/deliver, limited to streaming the existing validated APS evidence-bundle artifact after server-side authority proof over package-review, handoff/export prepare, APS dispatch, readiness descriptor, package refs/hashes, and APS bundle authority"
+      "bounded backend/API same-origin external export/download delivery endpoint through POST /api/v1/layer3/handoff/export/download/deliver, limited to streaming the existing validated APS evidence-bundle artifact after server-side authority proof over package-review, handoff/export prepare, APS dispatch, readiness descriptor, package refs/hashes, and APS bundle authority",
+      "current-methods AnalysisMethod registry implementation in backend/app/services/analysis.py for cross_correlation, decomposition, and structural_break, with existing recommendation/execution behavior preserved"
     ],
     "not_live": [
       "general analysis execution beyond the PR #218 one selected-pass execution-start boundary",
@@ -281,7 +282,9 @@
       "rendered workbench APS dispatch controls after PR #260/#261/#263 until separately governed",
       "external export/download, generic downstream dispatch, connector dispatch, and destination selection after PR #260/#261/#263",
       "runtime external export/download from docs 62/63 by themselves",
-      "rendered browser download control, public or signed download URL, connector dispatch, destination selection, and generic downstream dispatch from docs 62/63 by themselves"
+      "rendered browser download control, public or signed download URL, connector dispatch, destination selection, and generic downstream dispatch from docs 62/63 by themselves",
+      "new quantitative methods beyond cross_correlation, decomposition, and structural_break without separate governance",
+      "qualitative/hybrid/RAG/vector analysis method expansion without separate governance"
     ],
     "planning_only": [
       "analysis-execution-start freeze/API-state contract from PR #217 remains the governing scope contract for the PR #218 bounded implementation",
@@ -294,7 +297,8 @@
       "handoff/export preparation freeze/API-state contract from docs 54/55 is planning-only by itself; PR #251 is the separate current-main backend/API prepare-only implementation and PR #252 is blocker-alignment/session-summary hardening",
       "handoff/export prepare UI freeze/state contract from docs 56/57 governs only a future rendered /review/layer3 prepare-only control over the existing backend endpoint; by itself it does not add rendered UI behavior, APS handoff, external export/download/dispatch, physical artifacts, AnalysisArtifact rows, package mutation/reconstruction, schema/runtime/source widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector execution, or full mockup activation",
       "APS handoff dispatch governance from docs 58/59 governs the PR #260 backend/API implementation; by itself it does not add rendered UI controls, external export/download, generic downstream dispatch, connector dispatch, destination selection, package mutation/reconstruction, source/schema/runtime widening, or full mockup activation",
-      "external export/download readiness governance from docs 62/63 is planning-only by itself; a future implementation must remain a backend/API reference-only descriptor after aps_handoff_dispatched unless a later freeze admits browser download routes, public/signed URLs, connector dispatch, destination selection, physical export materialization, or extra rows"
+      "external export/download readiness governance from docs 62/63 is planning-only by itself; a future implementation must remain a backend/API reference-only descriptor after aps_handoff_dispatched unless a later freeze admits browser download routes, public/signed URLs, connector dispatch, destination selection, physical export materialization, or extra rows",
+      "docs 70/71 are planning-only current-methods AnalysisMethod registry governance by themselves; PR #316 is the separate implementation and new methods still require separate governance"
     ],
     "current_main_rendered_package_review_ui": [
       "PR #245 renders bounded package construction commit and package-review submit controls on /review/layer3 over the already-live PR #238 and PR #243 backend endpoints; PR #247 hardens stale session-summary fallback after package commit inside the same UI boundary. They do not admit handoff/export, package payload mutation, package reconstruction, source/schema/runtime widening, or full mockup activation."
@@ -1249,7 +1253,10 @@
     "next_milestone_plans/Layer3_planning_docs/68_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/69_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_STATE_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/70_L3_ANALYSIS_METHOD_REGISTRY_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/71_L3_ANALYSIS_METHOD_REGISTRY_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/71_L3_ANALYSIS_METHOD_REGISTRY_CONTRACT.md",
+    "backend/app/services/analysis.py",
+    "tests/test_api.py",
+    "backend/tests/test_layer3_pass_entry.py"
   ],
   "handoff_export_prepare_ui_implementation_proof": {
     "implementation_branch": "codex/l3-handoff-prepare-ui-impl",
@@ -1996,9 +2003,9 @@
   },
   "analysis_method_registry_governance_proof": {
     "planning_branch": "codex/l3-analysis-method-governance",
-    "planning_pr": "pending",
+    "planning_pr": "#315",
     "base_commit": "75460ee29bf4edf2a9aa1b692f8df303f7b57c8d",
-    "scope": "Planning-only current-methods AnalysisMethod registry governance over existing backend/app/services/analysis.py methods cross_correlation, decomposition, and structural_break. This proof records governance only; it does not implement a registry, add methods, change execution behavior, change artifacts, widen schema/runtime/source scope, activate UI, or expand qualitative/hybrid/RAG/vector behavior.",
+    "scope": "Planning-only current-methods AnalysisMethod registry governance over existing backend/app/services/analysis.py methods cross_correlation, decomposition, and structural_break. PR #315 records governance only; PR #316 is the separate current-methods registry implementation.",
     "docs_added": [
       "next_milestone_plans/Layer3_planning_docs/70_L3_ANALYSIS_METHOD_REGISTRY_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/71_L3_ANALYSIS_METHOD_REGISTRY_CONTRACT.md"
@@ -2009,9 +2016,40 @@
       "tests/test_api.py and backend/tests/test_layer3_pass_entry.py cover current method behavior and Layer 3 pass-entry integration"
     ],
     "no_go_preserved": [
+      "no new analysis methods by docs 70/71 alone",
+      "no execution behavior change by docs 70/71 alone",
+      "no schema/model/migration change",
+      "no source/runtime widening",
+      "no qualitative/hybrid/RAG/vector expansion",
+      "no UI activation",
+      "no full mockup activation"
+    ],
+    "merge_commit": "d8cee67dab437da578b25936f4de6033153767d0"
+  },
+  "analysis_method_registry_implementation_proof": {
+    "implementation_branch": "codex/l3-analysis-method-registry",
+    "implementation_pr": "#316",
+    "base_commit": "d8cee67dab437da578b25936f4de6033153767d0",
+    "head_commit": "f4c39a07001d00c945007787c3a25b3a807334b4",
+    "merge_commit": "4ee1c95b1558eb45e821a5637fe74ef64920b175",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/70_L3_ANALYSIS_METHOD_REGISTRY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/71_L3_ANALYSIS_METHOD_REGISTRY_CONTRACT.md"
+    ],
+    "scope": "Current-main implementation of a typed AnalysisMethod registry for exactly the already-live wrapped quantitative methods cross_correlation, decomposition, and structural_break.",
+    "changed_files": [
+      "backend/app/services/analysis.py",
+      "tests/test_api.py"
+    ],
+    "repo_evidence": [
+      "ANALYSIS_METHOD_REGISTRY in backend/app/services/analysis.py contains exactly cross_correlation, decomposition, and structural_break",
+      "recommend_analysis and run_analysis route through the registry while preserving existing method behavior",
+      "tests/test_api.py covers the registry shape and existing analysis behavior remains covered",
+      "backend/tests/test_layer3_pass_entry.py and focused Layer 3 execution-start API tests passed during PR #316 validation"
+    ],
+    "no_go_preserved": [
       "no new analysis methods",
-      "no registry implementation by docs alone",
-      "no runtime behavior change",
+      "no execution behavior change",
       "no schema/model/migration change",
       "no source/runtime widening",
       "no qualitative/hybrid/RAG/vector expansion",
