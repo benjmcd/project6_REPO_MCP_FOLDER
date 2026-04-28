@@ -615,6 +615,83 @@ PLAN_REVISION_REQUEST_SCHEMA: dict[str, Any] = {
 }
 
 
+EXECUTION_SELECTION_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": True,
+    "description": "Known execution-selection fields; explicit execution/run/result/package/handoff fields remain fail-closed.",
+    "required": ["client_request_id", "session_id", "analysis_plan_id", "preview_id", "preview_hash"],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "preview_id": {"type": "string"},
+        "preview_hash": {"type": "string"},
+    },
+}
+
+
+ANALYSIS_EXECUTION_START_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["client_request_id", "session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "preview_id": {"type": "string"},
+        "preview_hash": {"type": "string"},
+        "execution_mode": {"type": "string", "enum": ["synchronous_single_pass"]},
+        "operator_reason": {"type": "string"},
+    },
+}
+
+
+EXECUTION_RESULT_STATUS_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "preview_id": {"type": "string"},
+        "preview_hash": {"type": "string"},
+        "analysis_run_id": {"type": "string"},
+        "operator_view_mode": {"type": "string", "enum": ["status_only"]},
+    },
+}
+
+
+EXECUTION_RESULT_REVIEW_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": "review_notes are required by runtime for changes_requested, rejected, and blocked decisions.",
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "preview_id": {"type": "string"},
+        "preview_hash": {"type": "string"},
+        "operator_decision": {"type": "string", "enum": ["approved", "changes_requested", "rejected", "blocked"]},
+        "review_notes": {"type": "string"},
+        "reviewed_output_items": {"type": "array", "items": {"type": "object", "additionalProperties": True}},
+        "analysis_run_id": {"type": "string"},
+    },
+}
+
+
 class Layer3SessionSummaryResponse(Layer3BaseResponse):
     session_id: str
     selection_manifest_id: str
@@ -757,6 +834,7 @@ def post_plan_revise(payload: dict[str, Any], db: Session = Depends(get_db)) -> 
 @router.post(
     "/execution/select",
     response_model=Layer3ExecutionSelectionResponse,
+    openapi_extra={"requestBody": _json_request_body(EXECUTION_SELECTION_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_execution_select(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
@@ -766,6 +844,7 @@ def post_execution_select(payload: dict[str, Any], db: Session = Depends(get_db)
 @router.post(
     "/execution/start",
     response_model=Layer3AnalysisExecutionStartResponse,
+    openapi_extra={"requestBody": _json_request_body(ANALYSIS_EXECUTION_START_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_execution_start(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
@@ -775,6 +854,7 @@ def post_execution_start(payload: dict[str, Any], db: Session = Depends(get_db))
 @router.post(
     "/execution/result/status",
     response_model=Layer3ExecutionResultStatusResponse,
+    openapi_extra={"requestBody": _json_request_body(EXECUTION_RESULT_STATUS_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_execution_result_status(
@@ -787,6 +867,7 @@ def post_execution_result_status(
 @router.post(
     "/execution/result/review",
     response_model=Layer3ExecutionResultReviewResponse,
+    openapi_extra={"requestBody": _json_request_body(EXECUTION_RESULT_REVIEW_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_execution_result_review(
