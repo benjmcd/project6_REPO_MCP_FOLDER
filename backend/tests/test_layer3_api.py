@@ -205,6 +205,48 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
     } <= set(material_schema["required"])
 
 
+def test_layer3_gate_openapi_contracts(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+
+    gate_b_schema = _openapi_response_schema(spec, "/api/v1/layer3/gate-b/decision", "post")
+    assert gate_b_schema["title"] == "Layer3GateBDecisionResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "selection_manifest_id",
+        "gate_b_decision_manifest_id",
+        "approved_candidate_ids",
+        "denied_candidate_ids",
+        "isolated_candidate_ids",
+        "flagged_candidate_ids",
+        "next_state",
+        "authority_rail",
+    } <= set(gate_b_schema["required"])
+
+    gate_c_schema = _openapi_response_schema(spec, "/api/v1/layer3/gate-c/preview", "post")
+    assert gate_c_schema["title"] == "Layer3GateCPreviewResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "typing_records",
+        "analysis_units",
+        "analysis_groups",
+        "analysis_sets",
+        "unsupported_material",
+        "override_allowed",
+        "next_state",
+        "authority_rail",
+    } <= set(gate_c_schema["required"])
+
+
 def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
     db = client.layer3_session_factory()
     try:
