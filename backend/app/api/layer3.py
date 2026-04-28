@@ -451,6 +451,16 @@ def _workbench_error_responses(*statuses: int) -> dict[int, dict[str, type[Layer
     return {status: {"model": Layer3WorkbenchErrorResponse} for status in statuses}
 
 
+def _string_array_or_string_map_schema(description: str) -> dict[str, Any]:
+    return {
+        "oneOf": [
+            {"type": "array", "items": {"type": "string"}},
+            {"type": "object", "additionalProperties": {"type": "string"}},
+        ],
+        "description": description,
+    }
+
+
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -504,8 +514,12 @@ EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA: dict[str, Any] = {
         "reconciliation_record_id": {"type": "string"},
         "output_package_ids": {"type": "array", "items": {"type": "string"}},
         "package_kinds": {"type": "array", "items": {"type": "string"}},
-        "payload_refs": {"type": "array", "items": {"type": "string"}},
-        "payload_hashes": {"type": "array", "items": {"type": "string"}},
+        "payload_refs": _string_array_or_string_map_schema(
+            "List of payload refs or a mapping keyed by package kind or package id."
+        ),
+        "payload_hashes": _string_array_or_string_map_schema(
+            "List of payload hashes or a mapping keyed by package kind or package id."
+        ),
         "package_review_submit_record_ref": {"type": "string"},
         "package_review_state": {"type": "string"},
         "prepare_record_ref": {"type": "string"},
@@ -542,9 +556,10 @@ EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORM_REQUEST_SCHEMA: dict[str, Any] = {
     "additionalProperties": False,
     "description": (
         "Browser-managed form delivery uses one form field per JSON request key. "
-        "Each form field value is the JSON-stringified value for that key; array "
-        "fields such as output_package_ids, payload_refs, and payload_hashes must "
-        "be sent as JSON array strings, not as repeated form keys."
+        "Each form field value is the JSON-stringified value for that key. "
+        "output_package_ids and package_kinds must be sent as JSON array strings. "
+        "payload_refs and payload_hashes may be sent as JSON array strings or JSON "
+        "object strings keyed by package kind or package id, not as repeated form keys."
     ),
     "required": list(EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA["required"]),
     "properties": {
@@ -769,7 +784,9 @@ PACKAGE_REVIEW_SUBMIT_REQUEST_SCHEMA: dict[str, Any] = {
         "package_review_preview_hash": {"type": "string"},
         "reconciliation_record_id": {"type": "string"},
         "output_package_ids": {"type": "array", "items": {"type": "string"}},
-        "payload_hashes": {"type": "array", "items": {"type": "string"}},
+        "payload_hashes": _string_array_or_string_map_schema(
+            "List of package payload hashes or a mapping keyed by package kind or package id."
+        ),
         "operator_decision": {"type": "string", "enum": ["approved", "changes_requested", "rejected", "blocked"]},
         "decision_notes": {"type": "string"},
         "analysis_run_id": {"type": "string"},
@@ -814,8 +831,12 @@ HANDOFF_EXPORT_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
         "package_review_preview_hash": {"type": "string"},
         "reconciliation_record_id": {"type": "string"},
         "output_package_ids": {"type": "array", "items": {"type": "string"}},
-        "payload_refs": {"type": "array", "items": {"type": "string"}},
-        "payload_hashes": {"type": "array", "items": {"type": "string"}},
+        "payload_refs": _string_array_or_string_map_schema(
+            "List of payload refs or a mapping keyed by package kind or package id."
+        ),
+        "payload_hashes": _string_array_or_string_map_schema(
+            "List of payload hashes or a mapping keyed by package kind or package id."
+        ),
         "package_review_submit_record_ref": {"type": "string"},
         "package_review_state": {"type": "string", "enum": ["package_review_approved"]},
         "handoff_target": {"type": "string", "enum": ["internal_export_envelope"]},
@@ -871,8 +892,12 @@ APS_HANDOFF_DISPATCH_REQUEST_SCHEMA: dict[str, Any] = {
         "reconciliation_record_id": {"type": "string"},
         "output_package_ids": {"type": "array", "items": {"type": "string"}},
         "package_kinds": {"type": "array", "items": {"type": "string"}},
-        "payload_refs": {"type": "array", "items": {"type": "string"}},
-        "payload_hashes": {"type": "array", "items": {"type": "string"}},
+        "payload_refs": _string_array_or_string_map_schema(
+            "List of payload refs or a mapping keyed by package kind or package id."
+        ),
+        "payload_hashes": _string_array_or_string_map_schema(
+            "List of payload hashes or a mapping keyed by package kind or package id."
+        ),
         "package_review_submit_record_ref": {"type": "string"},
         "package_review_state": {"type": "string", "enum": ["package_review_approved"]},
         "prepare_record_ref": {"type": "string"},
@@ -938,8 +963,12 @@ EXTERNAL_EXPORT_DOWNLOAD_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
         "reconciliation_record_id": {"type": "string"},
         "output_package_ids": {"type": "array", "items": {"type": "string"}},
         "package_kinds": {"type": "array", "items": {"type": "string"}},
-        "payload_refs": {"type": "array", "items": {"type": "string"}},
-        "payload_hashes": {"type": "array", "items": {"type": "string"}},
+        "payload_refs": _string_array_or_string_map_schema(
+            "List of payload refs or a mapping keyed by package kind or package id."
+        ),
+        "payload_hashes": _string_array_or_string_map_schema(
+            "List of payload hashes or a mapping keyed by package kind or package id."
+        ),
         "package_review_submit_record_ref": {"type": "string"},
         "package_review_state": {"type": "string", "enum": ["package_review_approved"]},
         "prepare_record_ref": {"type": "string"},
