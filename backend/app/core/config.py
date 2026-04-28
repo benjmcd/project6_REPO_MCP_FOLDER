@@ -18,6 +18,9 @@ def _sqlite_url_for_path(path: Path) -> str:
 
 DEFAULT_DATABASE_URL = _sqlite_url_for_path(DEFAULT_DATABASE_PATH)
 DB_INIT_MODES = {"migrate", "create_all", "none"}
+DEPLOYMENT_MODES = {"local", "nonlocal"}
+AUTH_OWNERS = {"none", "proxy"}
+STORAGE_EXPOSURE_MODES = {"auto", "enabled", "disabled", "proxy_protected"}
 
 
 def _normalize_sqlite_url(value: str) -> str:
@@ -46,12 +49,28 @@ def _normalize_storage_path(value: str | Path) -> str:
     return str(candidate.resolve())
 
 
+def _split_csv(value: str) -> list[str]:
+    return [item.strip() for item in str(value).split(",") if item.strip()]
+
+
 class Settings(BaseSettings):
     app_name: str = "Method-Aware Framework"
     api_prefix: str = "/api/v1"
+    deployment_mode: Literal["local", "nonlocal"] = Field(default="local", alias="DEPLOYMENT_MODE")
     db_init_mode: Literal["migrate", "create_all", "none"] = Field(default="migrate", alias="DB_INIT_MODE")
     database_url: str = Field(default=DEFAULT_DATABASE_URL, alias="DATABASE_URL")
     storage_dir: str = Field(default=str(DEFAULT_STORAGE_PATH.resolve()), alias="STORAGE_DIR")
+    allowed_origins: str = Field(default="*", alias="ALLOWED_ORIGINS")
+    cors_allow_credentials: bool | None = Field(default=None, alias="CORS_ALLOW_CREDENTIALS")
+    auth_owner: Literal["none", "proxy"] = Field(default="none", alias="AUTH_OWNER")
+    proxy_identity_header: str = Field(default="X-Forwarded-User", alias="PROXY_IDENTITY_HEADER")
+    proxy_email_header: str = Field(default="X-Forwarded-Email", alias="PROXY_EMAIL_HEADER")
+    proxy_groups_header: str = Field(default="X-Forwarded-Groups", alias="PROXY_GROUPS_HEADER")
+    trusted_proxy_mode: bool = Field(default=False, alias="TRUSTED_PROXY_MODE")
+    storage_exposure: Literal["auto", "enabled", "disabled", "proxy_protected"] = Field(
+        default="auto",
+        alias="STORAGE_EXPOSURE",
+    )
     max_upload_mb: int = Field(default=64, alias="MAX_UPLOAD_MB")
     sciencebase_api_base_url: str = Field(default="https://www.sciencebase.gov/catalog", alias="SCIENCEBASE_API_BASE_URL")
     nrc_adams_api_base_url: str = Field(default="https://adams-api.nrc.gov", alias="NRC_ADAMS_APS_API_BASE_URL")
@@ -67,6 +86,15 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=str(BACKEND_ENV_FILE), env_file_encoding="utf-8", extra="ignore")
 
+    @field_validator("deployment_mode", mode="before")
+    @classmethod
+    def _normalize_deployment_mode(cls, value: object) -> str:
+        normalized = "local" if value is None else str(value).strip().lower()
+        if normalized not in DEPLOYMENT_MODES:
+            allowed = ", ".join(sorted(DEPLOYMENT_MODES))
+            raise ValueError(f"DEPLOYMENT_MODE must be one of: {allowed}")
+        return normalized
+
     @field_validator("db_init_mode", mode="before")
     @classmethod
     def _normalize_db_init_mode(cls, value: object) -> str:
@@ -76,10 +104,66 @@ class Settings(BaseSettings):
             raise ValueError(f"DB_INIT_MODE must be one of: {allowed}")
         return normalized
 
+    @field_validator("auth_owner", mode="before")
+    @classmethod
+    def _normalize_auth_owner(cls, value: object) -> str:
+        normalized = "none" if value is None else str(value).strip().lower()
+        if normalized not in AUTH_OWNERS:
+            allowed = ", ".join(sorted(AUTH_OWNERS))
+            raise ValueError(f"AUTH_OWNER must be one of: {allowed}")
+        return normalized
+
+    @field_validator("storage_exposure", mode="before")
+    @classmethod
+    def _normalize_storage_exposure(cls, value: object) -> str:
+        normalized = "auto" if value is None else str(value).strip().lower()
+        if normalized not in STORAGE_EXPOSURE_MODES:
+            allowed = ", ".join(sorted(STORAGE_EXPOSURE_MODES))
+            raise ValueError(f"STORAGE_EXPOSURE must be one of: {allowed}")
+        return normalized
+
     def model_post_init(self, __context: object) -> None:
         if self.database_url.startswith("sqlite"):
             self.database_url = _normalize_sqlite_url(self.database_url)
         self.storage_dir = _normalize_storage_path(self.storage_dir)
+        self._validate_deployment_profile()
+
+    @property
+    def allowed_origin_list(self) -> list[str]:
+        origins = _split_csv(self.allowed_origins)
+        return origins or ["*"]
+
+    @property
+    def cors_allow_credentials_enabled(self) -> bool:
+        if self.cors_allow_credentials is None:
+            return self.deployment_mode == "local"
+        return self.cors_allow_credentials
+
+    @property
+    def storage_mount_enabled(self) -> bool:
+        if self.storage_exposure == "disabled":
+            return False
+        if self.storage_exposure == "auto":
+            return self.deployment_mode == "local"
+        return True
+
+    def _validate_deployment_profile(self) -> None:
+        if self.deployment_mode != "nonlocal":
+            return
+
+        origins = self.allowed_origin_list
+        if not origins or "*" in origins or any("*" in origin for origin in origins):
+            raise ValueError("ALLOWED_ORIGINS must use explicit origins when DEPLOYMENT_MODE=nonlocal")
+        if any(not origin.lower().startswith("https://") for origin in origins):
+            raise ValueError("ALLOWED_ORIGINS must use HTTPS origins when DEPLOYMENT_MODE=nonlocal")
+        if self.auth_owner != "proxy":
+            raise ValueError("AUTH_OWNER=proxy is required when DEPLOYMENT_MODE=nonlocal")
+        if not self.trusted_proxy_mode:
+            raise ValueError("TRUSTED_PROXY_MODE=true is required when DEPLOYMENT_MODE=nonlocal")
+        if not self.proxy_identity_header.strip():
+            raise ValueError("PROXY_IDENTITY_HEADER is required when DEPLOYMENT_MODE=nonlocal")
+        if self.storage_exposure == "enabled":
+            raise ValueError("STORAGE_EXPOSURE=enabled is not allowed when DEPLOYMENT_MODE=nonlocal")
 
     @property
     def raw_storage_dir(self) -> str:
