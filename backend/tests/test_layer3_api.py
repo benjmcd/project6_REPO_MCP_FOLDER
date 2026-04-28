@@ -357,6 +357,72 @@ def test_layer3_execution_openapi_contracts(client: TestClient) -> None:
     } <= set(start_schema["required"])
 
 
+def test_layer3_execution_result_openapi_contracts(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+
+    status_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/result/status", "post")
+    assert status_schema["title"] == "Layer3ExecutionResultStatusResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_identity",
+        "execution_started",
+        "analysis_run_id",
+        "analysis_run_status",
+        "pass_run_status",
+        "output_payload_ref",
+        "output_metadata_summary",
+        "output_metadata_error",
+        "warnings_present",
+        "error_present",
+        "error_message",
+        "result_status_available",
+        "result_review_enabled",
+        "package_review_enabled",
+        "handoff_enabled",
+        "downstream_unavailable",
+        "next_state",
+        "operator_view_mode",
+        "engine_family",
+        "selected_method_name",
+        "dataset_version_id",
+    } <= set(status_schema["required"])
+
+    review_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/result/review", "post")
+    assert review_schema["title"] == "Layer3ExecutionResultReviewResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_identity",
+        "analysis_run_id",
+        "result_status_available",
+        "result_review_enabled",
+        "review_state",
+        "operator_decision",
+        "review_record_ref",
+        "trace_summary",
+        "reviewed_output_items",
+        "unresolved_trace_count",
+        "package_review_enabled",
+        "handoff_enabled",
+        "downstream_unavailable",
+        "review_notes_recorded",
+        "engine_family",
+    } <= set(review_schema["required"])
+
+
 def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
     db = client.layer3_session_factory()
     try:
