@@ -566,6 +566,55 @@ EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_BODY: dict[str, Any] = {
 }
 
 
+def _json_request_body(schema: dict[str, Any]) -> dict[str, Any]:
+    return {"required": True, "content": {"application/json": {"schema": schema}}}
+
+
+PLAN_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": True,
+    "required": ["session_id"],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "preview_scope": {"type": "string", "enum": ["owner_service_default"]},
+        "include_exclusions": {"type": "boolean"},
+    },
+}
+
+
+PLAN_APPROVAL_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": True,
+    "description": "Known plan-approval fields; explicit execution/package/handoff fields remain fail-closed.",
+    "required": ["session_id", "preview_id", "preview_hash", "operator_confirmation"],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "preview_id": {"type": "string"},
+        "preview_hash": {"type": "string"},
+        "operator_confirmation": {"type": "boolean"},
+        "approval_scope": {"type": "string", "enum": ["owner_service_default"]},
+    },
+}
+
+
+PLAN_REVISION_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": True,
+    "description": "Known plan-revision fields; explicit execution/package/handoff fields remain fail-closed.",
+    "required": ["session_id", "preview_id", "preview_hash", "operator_decision"],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "preview_id": {"type": "string"},
+        "preview_hash": {"type": "string"},
+        "operator_decision": {"type": "string", "enum": ["reject_current_preview", "request_revision"]},
+        "operator_note": {"type": "string"},
+    },
+}
+
+
 class Layer3SessionSummaryResponse(Layer3BaseResponse):
     session_id: str
     selection_manifest_id: str
@@ -678,6 +727,7 @@ def post_gate_c_override(payload: dict[str, Any]) -> JSONResponse:
 @router.post(
     "/plan/preview",
     response_model=Layer3PlanPreviewResponse,
+    openapi_extra={"requestBody": _json_request_body(PLAN_PREVIEW_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409, 500),
 )
 def post_plan_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
@@ -687,6 +737,7 @@ def post_plan_preview(payload: dict[str, Any], db: Session = Depends(get_db)) ->
 @router.post(
     "/plan/approve",
     response_model=Layer3PlanApprovalResponse,
+    openapi_extra={"requestBody": _json_request_body(PLAN_APPROVAL_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409, 500),
 )
 def post_plan_approve(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
@@ -696,6 +747,7 @@ def post_plan_approve(payload: dict[str, Any], db: Session = Depends(get_db)) ->
 @router.post(
     "/plan/revise",
     response_model=Layer3PlanRevisionResponse,
+    openapi_extra={"requestBody": _json_request_body(PLAN_REVISION_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409, 500),
 )
 def post_plan_revise(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:

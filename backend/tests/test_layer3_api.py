@@ -277,6 +277,14 @@ def test_layer3_gate_openapi_contracts(client: TestClient) -> None:
 def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
 
+    preview_request_schema = spec["paths"]["/api/v1/layer3/plan/preview"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert preview_request_schema["additionalProperties"] is True
+    assert set(preview_request_schema["required"]) == {"session_id"}
+    assert preview_request_schema["properties"]["preview_scope"]["enum"] == ["owner_service_default"]
+    assert preview_request_schema["properties"]["include_exclusions"]["type"] == "boolean"
+
     preview_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/preview", "post")
     assert preview_schema["title"] == "Layer3PlanPreviewResponse"
     assert {
@@ -294,6 +302,19 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
         "authority_rail",
         "plan_preview",
     } <= set(preview_schema["required"])
+
+    approval_request_schema = spec["paths"]["/api/v1/layer3/plan/approve"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert approval_request_schema["additionalProperties"] is True
+    assert set(approval_request_schema["required"]) == {
+        "session_id",
+        "preview_id",
+        "preview_hash",
+        "operator_confirmation",
+    }
+    assert approval_request_schema["properties"]["operator_confirmation"]["type"] == "boolean"
+    assert approval_request_schema["properties"]["approval_scope"]["enum"] == ["owner_service_default"]
 
     approval_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/approve", "post")
     assert approval_schema["title"] == "Layer3PlanApprovalResponse"
@@ -314,6 +335,21 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
         "authority_rail",
         "approved_plan",
     } <= set(approval_schema["required"])
+
+    revision_request_schema = spec["paths"]["/api/v1/layer3/plan/revise"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert revision_request_schema["additionalProperties"] is True
+    assert set(revision_request_schema["required"]) == {
+        "session_id",
+        "preview_id",
+        "preview_hash",
+        "operator_decision",
+    }
+    assert revision_request_schema["properties"]["operator_decision"]["enum"] == [
+        "reject_current_preview",
+        "request_revision",
+    ]
 
     revision_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/revise", "post")
     assert revision_schema["title"] == "Layer3PlanRevisionResponse"
