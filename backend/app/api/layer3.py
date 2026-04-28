@@ -311,6 +311,76 @@ class Layer3PackageReviewSubmitResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
 
 
+class Layer3HandoffExportPrepareResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    preview_identity: dict[str, Any]
+    analysis_run_id: str | None
+    result_review_record_ref: str
+    package_review_preview_hash: str
+    reconciliation_record_id: str
+    output_package_ids: list[str]
+    package_kinds: list[str]
+    payload_refs: list[str]
+    payload_hashes: list[str]
+    package_review_submit_record_ref: str
+    package_review_state: str
+    operator_decision: str
+    decision_notes: str | None
+    handoff_export_state: str
+    handoff_target: str
+    export_mode: str
+    external_handoff_enabled: bool
+    external_export_enabled: bool
+    dispatch_enabled: bool
+    downstream_unavailable: list[str]
+    next_state: str
+    prepare_record_ref: str
+    authority_rail: dict[str, Any]
+
+
+class Layer3ApsHandoffDispatchResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    preview_identity: dict[str, Any]
+    analysis_run_id: str | None
+    result_review_record_ref: str
+    package_review_preview_hash: str
+    reconciliation_record_id: str
+    output_package_ids: list[str]
+    package_kinds: list[str]
+    payload_refs: list[str]
+    payload_hashes: list[str]
+    package_review_submit_record_ref: str
+    package_review_state: str
+    prepare_record_ref: str
+    handoff_export_state: str
+    handoff_export_envelope_ref: str
+    handoff_target: str
+    export_mode: str
+    aps_handoff_target: str
+    dispatch_mode: str
+    operator_decision: str
+    decision_notes: str | None
+    aps_handoff_state: str
+    aps_handoff_record_ref: str
+    aps_output_package_id: str
+    aps_output_package_kind: str
+    aps_bundle_ref: str
+    aps_bundle_id: str
+    aps_schema_id: str
+    source_package_refs: dict[str, str]
+    source_package_hashes: dict[str, str]
+    external_export_enabled: bool
+    download_enabled: bool
+    connector_dispatch_enabled: bool
+    downstream_unavailable: list[str]
+    next_state: str
+    authority_rail: dict[str, Any]
+
+
 def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JSONResponse:
     try:
         return handler()
@@ -455,7 +525,7 @@ def post_package_review_submit(
     return _json_or_error(lambda: layer3_workbench.package_review_submit(db, payload))
 
 
-@router.post("/handoff/export/prepare", response_model=None)
+@router.post("/handoff/export/prepare", response_model=Layer3HandoffExportPrepareResponse)
 def post_handoff_export_prepare(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
@@ -463,7 +533,7 @@ def post_handoff_export_prepare(
     return _json_or_error(lambda: layer3_workbench.handoff_export_prepare(db, payload))
 
 
-@router.post("/handoff/aps/dispatch", response_model=None)
+@router.post("/handoff/aps/dispatch", response_model=Layer3ApsHandoffDispatchResponse)
 def post_aps_handoff_dispatch(
     payload: dict[str, Any],
     db: Session = Depends(get_db),
