@@ -129,6 +129,26 @@ def _openapi_response_schema_for_status(spec: dict, path: str, method: str, stat
     return spec["components"]["schemas"][ref.rsplit("/", 1)[-1]]
 
 
+def _assert_workbench_error_responses(spec: dict, path: str, method: str, statuses: tuple[str, ...]) -> None:
+    responses = spec["paths"][path][method]["responses"]
+    for status in statuses:
+        assert status in responses, f"{path} {method} must document {status} workbench errors"
+        error_schema = _openapi_response_schema_for_status(spec, path, method, status)
+        assert error_schema["title"] == "Layer3WorkbenchErrorResponse"
+        assert {
+            "schema_id",
+            "schema_version",
+            "request_id",
+            "server_time",
+            "status",
+            "error_code",
+            "message",
+            "recoverable",
+            "blocked_fields",
+            "next_allowed_actions",
+        } <= set(error_schema["required"])
+
+
 def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
 
@@ -672,6 +692,32 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
         "next_state",
         "authority_rail",
     } <= set(prepare_schema["required"])
+
+
+def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+    route_statuses = {
+        ("/api/v1/layer3/preflight", "post"): ("400",),
+        ("/api/v1/layer3/source-preview", "post"): ("400",),
+        ("/api/v1/layer3/material-preview", "post"): ("400",),
+        ("/api/v1/layer3/gate-b/decision", "post"): ("400",),
+        ("/api/v1/layer3/gate-c/preview", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/plan/preview", "post"): ("400", "404", "409", "500"),
+        ("/api/v1/layer3/plan/approve", "post"): ("400", "404", "409", "500"),
+        ("/api/v1/layer3/plan/revise", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/execution/select", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/execution/start", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/execution/result/status", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/execution/result/review", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/package/review/preview", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/package/review/commit", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/package/review/submit", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/handoff/export/prepare", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/handoff/aps/dispatch", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/handoff/export/download/prepare", "post"): ("400", "404", "409"),
+    }
+    for (path, method), statuses in route_statuses.items():
+        _assert_workbench_error_responses(spec, path, method, statuses)
 
 
 def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
