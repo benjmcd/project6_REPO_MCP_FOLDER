@@ -537,11 +537,31 @@ EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA: dict[str, Any] = {
 }
 
 
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORM_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Browser-managed form delivery uses one form field per JSON request key. "
+        "Each form field value is the JSON-stringified value for that key; array "
+        "fields such as output_package_ids, payload_refs, and payload_hashes must "
+        "be sent as JSON array strings, not as repeated form keys."
+    ),
+    "required": list(EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA["required"]),
+    "properties": {
+        key: {
+            "type": "string",
+            "description": "JSON-stringified value for the matching JSON request field.",
+        }
+        for key in EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA["properties"]
+    },
+}
+
+
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_BODY: dict[str, Any] = {
     "required": True,
     "content": {
         "application/json": {"schema": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA},
-        "application/x-www-form-urlencoded": {"schema": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA},
+        "application/x-www-form-urlencoded": {"schema": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORM_REQUEST_SCHEMA},
     },
 }
 
