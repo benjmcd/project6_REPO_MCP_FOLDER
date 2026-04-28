@@ -7,8 +7,8 @@
 > - [nrc_aps_ui_launch_runbook.md](docs/nrc_adams/nrc_aps_ui_launch_runbook.md) (Canonical review/document-trace/workbench/Candidate B Trace launch contract)
 > - [frontend_UI_plans/README.md](frontend_UI_plans/README.md) (Review UI / Document Trace / Workbench Compare / Candidate B Trace retained operator/reference front door)
 > - [docs/onlook-ops.md](docs/onlook-ops.md) (Onlook testing / troubleshooting / audit / operator front door)
-> - [docs/layer3-deployment-security.md](docs/layer3-deployment-security.md) (Layer 3 local/dev deployment-security posture and non-local hardening decisions)
-> - [docs/layer3-deploy-hardening.md](docs/layer3-deploy-hardening.md) (Layer 3 non-local deployment hardening governance)
+> - [docs/layer3-deployment-security.md](docs/layer3-deployment-security.md) (Layer 3 local/dev deployment-security posture, live non-local startup guardrail, and remaining hardening decisions)
+> - [docs/layer3-deploy-hardening.md](docs/layer3-deploy-hardening.md) (Layer 3 non-local deployment hardening governance and first settings guardrail)
 > - [postgres_status_handoff.md](docs/postgres/postgres_status_handoff.md) (PostgreSQL Tier1 Status)
 >
 > **CRITICAL WARNING**: Unverified `tests/...` and `tools/...` paths referenced below may not exist in this specific export workspace and should not be trusted as safe authority paths unless their on-disk presence is directly confirmed.
