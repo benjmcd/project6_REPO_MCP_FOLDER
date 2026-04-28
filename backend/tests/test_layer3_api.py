@@ -516,6 +516,94 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
     } <= set(submit_schema["required"])
 
 
+def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+
+    prepare_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/export/prepare", "post")
+    assert prepare_schema["title"] == "Layer3HandoffExportPrepareResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_identity",
+        "analysis_run_id",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "operator_decision",
+        "decision_notes",
+        "handoff_export_state",
+        "handoff_target",
+        "export_mode",
+        "external_handoff_enabled",
+        "external_export_enabled",
+        "dispatch_enabled",
+        "downstream_unavailable",
+        "next_state",
+        "prepare_record_ref",
+        "authority_rail",
+    } <= set(prepare_schema["required"])
+
+    dispatch_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/aps/dispatch", "post")
+    assert dispatch_schema["title"] == "Layer3ApsHandoffDispatchResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_identity",
+        "analysis_run_id",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "operator_decision",
+        "decision_notes",
+        "aps_handoff_state",
+        "aps_handoff_record_ref",
+        "aps_output_package_id",
+        "aps_output_package_kind",
+        "aps_bundle_ref",
+        "aps_bundle_id",
+        "aps_schema_id",
+        "source_package_refs",
+        "source_package_hashes",
+        "external_export_enabled",
+        "download_enabled",
+        "connector_dispatch_enabled",
+        "downstream_unavailable",
+        "next_state",
+        "authority_rail",
+    } <= set(dispatch_schema["required"])
+
+
 def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
     db = client.layer3_session_factory()
     try:
