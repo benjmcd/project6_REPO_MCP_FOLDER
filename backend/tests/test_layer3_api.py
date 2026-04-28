@@ -313,7 +313,7 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
         "preview_hash",
         "operator_confirmation",
     }
-    assert approval_request_schema["properties"]["operator_confirmation"]["type"] == "boolean"
+    assert approval_request_schema["properties"]["operator_confirmation"] == {"type": "boolean", "enum": [True]}
     assert approval_request_schema["properties"]["approval_scope"]["enum"] == ["owner_service_default"]
 
     approval_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/approve", "post")
