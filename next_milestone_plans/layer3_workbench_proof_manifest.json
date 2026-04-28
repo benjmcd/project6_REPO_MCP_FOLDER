@@ -1,37 +1,37 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, package-review preview/construction/submit and rendered package-review UI proof, handoff/export prepare-only backend/API and UI, APS handoff dispatch backend/API and UI, external export/download readiness backend/API and UI, external export/download delivery backend/API, rendered external export/download delivery UI from PR #282, and PR #285/#286 delivery review hardening",
+  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, package-review preview/construction/submit and rendered package-review UI proof, handoff/export prepare-only backend/API and UI, APS handoff dispatch backend/API and UI, external export/download readiness backend/API and UI, external export/download delivery backend/API, rendered external export/download delivery UI from PR #282, PR #285/#286 delivery review hardening, and PR #289 delivery lock-release hardening",
   "scope": {
-    "source_branch": "codex/l3-download-delivery-review-sync",
+    "source_branch": "codex/l3-pr289-docsync",
     "merged_pr": "branch-local docs/progress sync",
     "merge_commit": "",
     "base_remote": "project6-origin/main",
-    "base_commit": "cce1a55e",
-    "source_base_commit": "cce1a55eaf53709e807f8a45862096aa5cba24bb",
-    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, the merged PR #245 bounded rendered package-review UI implementation, and PR #247 post-review fallback hardening for submit readiness after a failed post-commit session refresh. PR #250 adds planning-only docs 54/55 for handoff/export preparation governance after package-review approval; PR #251 implements only the bounded backend/API prepare-only endpoint; PR #252 aligns downstream blocker vocabulary and session-summary priority without widening behavior. PR #253 synchronizes docs/progress after PR #251/#252 reached main; PR #254 fixes the manifest seed-checkout reference. Docs 56/57 freeze the rendered /review/layer3 handoff/export prepare-only UI boundary over the already-live backend endpoint, and PR #256 implements only that bounded rendered prepare-only UI. PR #258 adds docs 58/59 as governance for a bounded workbench APS handoff dispatch bridge into the existing aps_evidence_bundle_handoff owner-service family; PR #260 implements only the bounded backend/API APS handoff dispatch endpoint after handoff_export_prepared authority; PR #261 hardens malformed canonical APS provenance and unexpected package-kind fail-closed behavior, and PR #263 restricts APS handoff package-row allowance to recorded dispatch state. Docs 60/61 add planning-only rendered APS dispatch UI governance over the already-live backend/API APS dispatch endpoint; PR #266 separately implements that bounded rendered UI. Docs 62/63 add planning-only external export/download readiness governance after recorded aps_handoff_dispatched state; PR #269 separately implements only bounded backend/API external export/download readiness as a reference-only descriptor over the existing APS evidence-bundle handoff artifact. Docs 64/65 add planning-only rendered /review/layer3 external export/download readiness UI governance over the already-live PR #269 backend/API readiness endpoint; PR #274 fixes the docs 65 request-field typo to the admitted export_download_target field; PR #275 separately implements the bounded rendered readiness UI. PR #275 renders server-authoritative readiness, sends one admitted-field-only prepare_external_export_download request to POST /api/v1/layer3/handoff/export/download/prepare, renders recorded descriptors read-only, and still does not admit rendered browser download controls, public or signed URLs, same-origin file streaming beyond the PR #278 validated APS evidence-bundle artifact, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional rows, AnalysisArtifact expansion, schema/runtime/source widening, or full mockup activation. Docs 66/67 add planning-only governance for same-origin external export/download delivery after external_export_download_prepared; PR #278 separately implements the bounded backend/API delivery endpoint. Docs 66/67 make no behavior live by themselves, and PR #278 still does not render download controls, generate public/signed URLs, dispatch connectors or generic downstream targets, select destinations, mutate packages, create extra rows, widen schema/runtime/source scope, or activate the full mockup. PR #282 separately implements rendered delivery UI; PR #285/#286 harden that same delivery UI/API boundary with browser-managed form delivery, UI-local submitted fallback state, and malformed-JSON fail-closed handling.",
+    "base_commit": "d04dc007",
+    "source_base_commit": "d04dc007a7459d5687fd7aacda32956ee70187d0",
+    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, the merged PR #245 bounded rendered package-review UI implementation, and PR #247 post-review fallback hardening for submit readiness after a failed post-commit session refresh. PR #250 adds planning-only docs 54/55 for handoff/export preparation governance after package-review approval; PR #251 implements only the bounded backend/API prepare-only endpoint; PR #252 aligns downstream blocker vocabulary and session-summary priority without widening behavior. PR #253 synchronizes docs/progress after PR #251/#252 reached main; PR #254 fixes the manifest seed-checkout reference. Docs 56/57 freeze the rendered /review/layer3 handoff/export prepare-only UI boundary over the already-live backend endpoint, and PR #256 implements only that bounded rendered prepare-only UI. PR #258 adds docs 58/59 as governance for a bounded workbench APS handoff dispatch bridge into the existing aps_evidence_bundle_handoff owner-service family; PR #260 implements only the bounded backend/API APS handoff dispatch endpoint after handoff_export_prepared authority; PR #261 hardens malformed canonical APS provenance and unexpected package-kind fail-closed behavior, and PR #263 restricts APS handoff package-row allowance to recorded dispatch state. Docs 60/61 add planning-only rendered APS dispatch UI governance over the already-live backend/API APS dispatch endpoint; PR #266 separately implements that bounded rendered UI. Docs 62/63 add planning-only external export/download readiness governance after recorded aps_handoff_dispatched state; PR #269 separately implements only bounded backend/API external export/download readiness as a reference-only descriptor over the existing APS evidence-bundle handoff artifact. Docs 64/65 add planning-only rendered /review/layer3 external export/download readiness UI governance over the already-live PR #269 backend/API readiness endpoint; PR #274 fixes the docs 65 request-field typo to the admitted export_download_target field; PR #275 separately implements the bounded rendered readiness UI. PR #275 renders server-authoritative readiness, sends one admitted-field-only prepare_external_export_download request to POST /api/v1/layer3/handoff/export/download/prepare, renders recorded descriptors read-only, and still does not admit rendered browser download controls, public or signed URLs, same-origin file streaming beyond the PR #278 validated APS evidence-bundle artifact, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional rows, AnalysisArtifact expansion, schema/runtime/source widening, or full mockup activation. Docs 66/67 add planning-only governance for same-origin external export/download delivery after external_export_download_prepared; PR #278 separately implements the bounded backend/API delivery endpoint. Docs 66/67 make no behavior live by themselves, and PR #278 still does not render download controls, generate public/signed URLs, dispatch connectors or generic downstream targets, select destinations, mutate packages, create extra rows, widen schema/runtime/source scope, or activate the full mockup. PR #282 separately implements rendered delivery UI; PR #285/#286 harden that same delivery UI/API boundary with browser-managed form delivery, UI-local submitted fallback state, and malformed-JSON fail-closed handling. PR #289 hardens the existing backend/API external export/download delivery endpoint by releasing the read-only DB transaction/row lock before APS bundle artifact validation/read/hash/stat; it changes no rendered UI behavior and admits no new delivery capability.",
     "live_behavior_change": false,
-    "live_behavior_change_summary": "This docs/progress sync branch changes no runtime behavior. Current main already includes PR #282 bounded rendered /review/layer3 external export/download delivery UI over the PR #278 same-origin backend endpoint plus PR #285/#286 review hardening for browser-managed delivery, timeout fallback state, and malformed JSON. This branch records that live status and preserves public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, and full mockup behavior as deferred.",
-    "latest_implementation_pr": "#286",
-    "latest_implementation_branch": "codex/l3-download-delivery-review-fix2",
-    "latest_implementation_summary": "PR #286 hardens the bounded rendered /review/layer3 external export/download delivery UI/API path after PR #282/#285: timeout fallback records only UI-local submitted state rather than delivered state, malformed delivery JSON returns a controlled client error, and public/signed URLs, connector dispatch, destination selection, generic dispatch, package mutation, schema/runtime/source widening, and full mockup behavior remain out.",
+    "live_behavior_change_summary": "This docs/progress sync branch changes no runtime behavior. Current main already includes PR #282 bounded rendered /review/layer3 external export/download delivery UI over the PR #278 same-origin backend endpoint, PR #285/#286 review hardening for browser-managed delivery, timeout fallback state, and malformed JSON, and PR #289 backend/API lock-release hardening that releases the delivery transaction/row lock before APS bundle artifact validation/read/hash/stat. This branch records that live status and preserves public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, and full mockup behavior as deferred.",
+    "latest_implementation_pr": "#289",
+    "latest_implementation_branch": "codex/l3-download-lock",
+    "latest_implementation_summary": "PR #289 hardens the existing bounded backend/API external export/download delivery path after PR #278/#282/#285/#286: delivery snapshots scalar authority facts and releases the read-only DB transaction/row lock before APS bundle artifact validation/read/hash/stat. It does not add a new feature tranche, rendered UI behavior, public/signed URLs, connector dispatch, destination selection, generic dispatch, package mutation, schema/runtime/source widening, or full mockup behavior.",
     "latest_planning_pr": "#281",
     "latest_planning_branch": "codex/l3-download-delivery-ui-freeze",
     "latest_planning_summary": "PR #281 lands docs 68/69 as planning-only rendered /review/layer3 external export/download delivery UI governance over the current-main PR #278 same-origin delivery endpoint; PR #282 is the separate implementation.",
     "latest_planning_live_behavior_change": false,
     "latest_planning_behavior_summary": "Docs 68/69 are planning/control only by themselves. PR #282 separately implements only the bounded rendered download-delivery UI; public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional row families, AnalysisArtifact expansion, schema/runtime/source widening, qualitative/hybrid/RAG/vector expansion, and full mockup activation remain out.",
-    "latest_implementation_merge_commit": "cce1a55eaf53709e807f8a45862096aa5cba24bb",
+    "latest_implementation_merge_commit": "d04dc007a7459d5687fd7aacda32956ee70187d0",
     "latest_planning_base_commit": "8a0692909895114a61584157b78dd90ee105cd8d",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
-    "latest_branch_only_implementation_summary": "No active branch-only implementation is included in this docs/progress sync. PR #286 is already merged on current main.",
+    "latest_branch_only_implementation_summary": "No active branch-only implementation is included in this docs/progress sync. PR #289 is already merged on current main.",
     "latest_ui_planning_pr": "#281",
     "latest_ui_planning_branch": "codex/l3-download-delivery-ui-freeze",
     "latest_ui_planning_summary": "PR #281 lands docs 68/69 as planning-only rendered /review/layer3 external export/download delivery UI governance over the already-live PR #278 backend/API delivery endpoint.",
     "latest_ui_planning_live_behavior_change": false,
     "latest_ui_planning_behavior_summary": "Docs 68/69 are planning/control only by themselves; PR #282 is the separate bounded rendered delivery UI implementation. Public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, and full mockup activation remain out.",
-    "latest_backend_implementation_pr": "#269",
-    "latest_backend_implementation_summary": "PR #269 implements bounded backend/API external export/download readiness over recorded aps_handoff_dispatched state as a reference-only descriptor through POST /api/v1/layer3/handoff/export/download/prepare. It does not add rendered UI, rendered download controls, public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, source/schema/runtime widening, or full mockup behavior.",
+    "latest_backend_implementation_pr": "#289",
+    "latest_backend_implementation_summary": "PR #289 hardens the bounded backend/API external export/download delivery endpoint by releasing the read-only DB transaction/row lock before APS bundle artifact validation/read/hash/stat. It does not add rendered UI behavior, public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, source/schema/runtime widening, or full mockup behavior.",
     "latest_ui_implementation_pr": "#286",
     "latest_ui_implementation_branch": "codex/l3-download-delivery-review-fix2",
     "latest_ui_implementation_live_behavior_change": true,
@@ -143,13 +143,13 @@
     "latest_external_export_download_delivery_planning_live_behavior_change": false,
     "latest_external_export_download_delivery_planning_summary": "PR #277 docs 66/67 freeze only the same-origin external export/download delivery backend/API boundary after external_export_download_prepared; PR #278 is the separate backend/API implementation and rendered download UI remains a separate future slice.",
     "latest_external_export_download_delivery_planning_merge_commit": "496dfe1f6a6c18444579f6b3c561ed02b4dc8c1b",
-    "latest_external_export_download_delivery_implementation_branch": "codex/l3-download-delivery-impl",
-    "latest_external_export_download_delivery_implementation_pr": "#278",
+    "latest_external_export_download_delivery_implementation_branch": "codex/l3-download-delivery-impl; lock hardening: codex/l3-download-lock",
+    "latest_external_export_download_delivery_implementation_pr": "#278; hardening #289",
     "latest_external_export_download_delivery_implementation_base_commit": "496dfe1f6a6c18444579f6b3c561ed02b4dc8c1b",
     "latest_external_export_download_delivery_implementation_head_commit": "36957677b4808a6261c75b89390cd25a45405f1c",
-    "latest_external_export_download_delivery_implementation_merge_commit": "d0e0532db74743c0de2f60daee723a4d7b0894b0",
+    "latest_external_export_download_delivery_implementation_merge_commit": "d04dc007a7459d5687fd7aacda32956ee70187d0",
     "latest_external_export_download_delivery_implementation_live_behavior_change": true,
-    "latest_external_export_download_delivery_implementation_summary": "PR #278 implements only bounded backend/API same-origin external export/download delivery over the recorded PR #269 readiness descriptor: it streams the validated APS evidence-bundle artifact after server-side authority proof and does not add rendered download controls, public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation, new rows, schema/runtime/source widening, or full mockup behavior.",
+    "latest_external_export_download_delivery_implementation_summary": "PR #278 implements only bounded backend/API same-origin external export/download delivery over the recorded PR #269 readiness descriptor; PR #289 hardens that same endpoint so delivery snapshots scalar facts and releases the read-only DB transaction/row lock before APS bundle artifact validation/read/hash/stat. The boundary still does not add rendered download controls, public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation, new rows, schema/runtime/source widening, or full mockup behavior.",
     "latest_ui_implementation_summary": "PR #286 hardens the bounded rendered /review/layer3 external export/download delivery UI/API path after PR #282/#285: timeout fallback records only UI-local submitted state rather than delivered state, malformed delivery JSON returns a controlled client error, and public/signed URLs, connector dispatch, destination selection, generic dispatch, package mutation, schema/runtime/source widening, and full mockup behavior remain out.",
     "latest_ui_implementation_merge_commit": "cce1a55eaf53709e807f8a45862096aa5cba24bb"
   },
@@ -1738,7 +1738,7 @@
     "base_commit": "496dfe1f6a6c18444579f6b3c561ed02b4dc8c1b",
     "head_commit": "36957677b4808a6261c75b89390cd25a45405f1c",
     "merge_commit": "d0e0532db74743c0de2f60daee723a4d7b0894b0",
-    "scope": "Bounded backend/API same-origin external export/download delivery over the recorded PR #269 readiness descriptor and docs 66/67 governance. The endpoint POST /api/v1/layer3/handoff/export/download/deliver streams only the existing validated APS evidence-bundle artifact after server-side authority proof and keeps rendered download controls, public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation, new rows, schema/runtime/source widening, and full mockup behavior out.",
+    "scope": "Bounded backend/API same-origin external export/download delivery over the recorded PR #269 readiness descriptor and docs 66/67 governance. PR #278 implements POST /api/v1/layer3/handoff/export/download/deliver; PR #289 hardens the same endpoint by snapshotting scalar delivery facts and releasing the read-only DB transaction/row lock before APS bundle artifact validation/read/hash/stat. The endpoint streams only the existing validated APS evidence-bundle artifact after server-side authority proof and keeps rendered download controls, public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation, new rows, schema/runtime/source widening, and full mockup behavior out.",
     "files_changed": [
       "backend/app/api/layer3.py",
       "backend/app/services/layer3_workbench.py",
@@ -1931,6 +1931,50 @@
       "PR #285 malformed-JSON review thread resolved by PR #286 controlled request error"
     ],
     "no_go_preserved": [
+      "no public or signed URL generation",
+      "no connector dispatch or connector-run handling",
+      "no destination selection",
+      "no generic downstream dispatch",
+      "no package mutation/reconstruction/rebuild/supersession",
+      "no additional reconciliation/package/artifact rows",
+      "no AnalysisArtifact expansion",
+      "no schema/runtime/source widening",
+      "no qualitative/hybrid/RAG/vector/full mockup activation"
+    ]
+  },
+  "external_export_download_delivery_lock_release_hardening_proof": {
+    "implementation_branch": "codex/l3-download-lock",
+    "implementation_pr": "#289",
+    "base_commit": "0dda5a57b7ccb88b30ce8296b0f59e765b428820",
+    "head_commit": "125d8962caeeb3e0d1cee209adc8ff5b49037462",
+    "merge_commit": "d04dc007a7459d5687fd7aacda32956ee70187d0",
+    "scope": "Backend/API hardening inside the existing external export/download delivery endpoint only: external_export_download_deliver snapshots scalar delivery facts under server-authoritative readiness validation, releases the read-only DB transaction/row lock with db.rollback(), then validates/reads/hashes/stats the existing APS evidence-bundle artifact. No route, UI, docs-governance, public/signed URL, connector, destination, generic dispatch, package mutation, row-family, schema/runtime/source, or full mockup capability is added.",
+    "files_changed": [
+      "backend/app/services/layer3_workbench.py",
+      "backend/tests/test_layer3_api.py"
+    ],
+    "commands": [
+      {
+        "command": "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"external_export_download\"",
+        "result": "5 passed, 44 deselected post-merge on current main; pytest emitted known third-party warnings and an ignored Windows temp cleanup PermissionError after exit code 0"
+      },
+      {
+        "command": "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"external_export_download or handoff_export_prepare or aps_handoff_dispatch\"",
+        "result": "19 passed, 30 deselected on PR branch before merge"
+      },
+      {
+        "command": "git diff --check and git diff --check project6-origin/main^1..project6-origin/main",
+        "result": "passed post-merge with no output"
+      },
+      {
+        "command": "GitHub Playwright Tests check for PR #289",
+        "result": "passed"
+      }
+    ],
+    "no_go_preserved": [
+      "no new Layer 3 feature tranche",
+      "no docs/progress behavior claim beyond hardening sync",
+      "no rendered UI/static behavior change",
       "no public or signed URL generation",
       "no connector dispatch or connector-run handling",
       "no destination selection",
