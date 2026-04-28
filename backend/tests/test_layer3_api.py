@@ -704,7 +704,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("/api/v1/layer3/gate-c/preview", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/plan/preview", "post"): ("400", "404", "409", "500"),
         ("/api/v1/layer3/plan/approve", "post"): ("400", "404", "409", "500"),
-        ("/api/v1/layer3/plan/revise", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/plan/revise", "post"): ("400", "404", "409", "500"),
         ("/api/v1/layer3/execution/select", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/execution/start", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/execution/result/status", "post"): ("400", "404", "409"),
