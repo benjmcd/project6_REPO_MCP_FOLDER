@@ -337,6 +337,7 @@ class Layer3HandoffExportPrepareResponse(Layer3BaseResponse):
     downstream_unavailable: list[str]
     next_state: str
     prepare_record_ref: str
+    handoff_export_envelope: dict[str, Any] | None = None
     authority_rail: dict[str, Any]
 
 
@@ -575,7 +576,11 @@ def post_package_review_submit(
     return _json_or_error(lambda: layer3_workbench.package_review_submit(db, payload))
 
 
-@router.post("/handoff/export/prepare", response_model=Layer3HandoffExportPrepareResponse)
+@router.post(
+    "/handoff/export/prepare",
+    response_model=Layer3HandoffExportPrepareResponse,
+    response_model_exclude_unset=True,
+)
 def post_handoff_export_prepare(
     payload: dict[str, Any],
     db: Session = Depends(get_db),

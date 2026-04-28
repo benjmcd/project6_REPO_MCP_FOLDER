@@ -554,6 +554,8 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
         "prepare_record_ref",
         "authority_rail",
     } <= set(prepare_schema["required"])
+    assert "handoff_export_envelope" in prepare_schema["properties"]
+    assert "handoff_export_envelope" not in prepare_schema["required"]
 
     dispatch_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/aps/dispatch", "post")
     assert dispatch_schema["title"] == "Layer3ApsHandoffDispatchResponse"
