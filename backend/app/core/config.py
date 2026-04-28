@@ -162,8 +162,8 @@ class Settings(BaseSettings):
             raise ValueError("TRUSTED_PROXY_MODE=true is required when DEPLOYMENT_MODE=nonlocal")
         if not self.proxy_identity_header.strip():
             raise ValueError("PROXY_IDENTITY_HEADER is required when DEPLOYMENT_MODE=nonlocal")
-        if self.storage_exposure == "enabled":
-            raise ValueError("STORAGE_EXPOSURE=enabled is not allowed when DEPLOYMENT_MODE=nonlocal")
+        if self.storage_exposure in {"enabled", "proxy_protected"}:
+            raise ValueError("STORAGE_EXPOSURE must be auto or disabled when DEPLOYMENT_MODE=nonlocal")
 
     @property
     def raw_storage_dir(self) -> str:
