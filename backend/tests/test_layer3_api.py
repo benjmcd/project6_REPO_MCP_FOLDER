@@ -247,6 +247,69 @@ def test_layer3_gate_openapi_contracts(client: TestClient) -> None:
     } <= set(gate_c_schema["required"])
 
 
+def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
+    spec = client.get("/openapi.json").json()
+
+    preview_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/preview", "post")
+    assert preview_schema["title"] == "Layer3PlanPreviewResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "next_state",
+        "preview_id",
+        "preview_hash",
+        "preview_identity",
+        "preview_only",
+        "authority_rail",
+        "plan_preview",
+    } <= set(preview_schema["required"])
+
+    approval_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/approve", "post")
+    assert approval_schema["title"] == "Layer3PlanApprovalResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "next_state",
+        "approval_only",
+        "execution_started",
+        "analysis_plan_id",
+        "plan_status",
+        "approved_by_operator",
+        "approved_at",
+        "authority_rail",
+        "approved_plan",
+    } <= set(approval_schema["required"])
+
+    revision_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/revise", "post")
+    assert revision_schema["title"] == "Layer3PlanRevisionResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "next_state",
+        "revision_control_only",
+        "execution_started",
+        "source_preview_id",
+        "source_preview_hash",
+        "operator_decision",
+        "operator_note_recorded",
+        "authority_rail",
+        "downstream_unavailable",
+        "plan_revision_control",
+    } <= set(revision_schema["required"])
+
+
 def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
     db = client.layer3_session_factory()
     try:

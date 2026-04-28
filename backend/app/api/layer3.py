@@ -128,6 +128,44 @@ class Layer3GateCPreviewResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
 
 
+class Layer3PlanPreviewResponse(Layer3BaseResponse):
+    session_id: str
+    next_state: str
+    preview_id: str
+    preview_hash: str
+    preview_identity: dict[str, Any]
+    preview_only: bool
+    authority_rail: dict[str, Any]
+    plan_preview: dict[str, Any]
+
+
+class Layer3PlanApprovalResponse(Layer3BaseResponse):
+    session_id: str
+    next_state: str
+    approval_only: bool
+    execution_started: bool
+    analysis_plan_id: str
+    plan_status: str
+    approved_by_operator: bool
+    approved_at: str | None
+    authority_rail: dict[str, Any]
+    approved_plan: dict[str, Any]
+
+
+class Layer3PlanRevisionResponse(Layer3BaseResponse):
+    session_id: str
+    next_state: str
+    revision_control_only: bool
+    execution_started: bool
+    source_preview_id: str
+    source_preview_hash: str
+    operator_decision: str
+    operator_note_recorded: bool
+    authority_rail: dict[str, Any]
+    downstream_unavailable: list[str]
+    plan_revision_control: dict[str, Any]
+
+
 def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JSONResponse:
     try:
         return handler()
@@ -207,17 +245,17 @@ def post_gate_c_override(payload: dict[str, Any]) -> JSONResponse:
     )
 
 
-@router.post("/plan/preview", response_model=None)
+@router.post("/plan/preview", response_model=Layer3PlanPreviewResponse)
 def post_plan_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.plan_preview(db, payload))
 
 
-@router.post("/plan/approve", response_model=None)
+@router.post("/plan/approve", response_model=Layer3PlanApprovalResponse)
 def post_plan_approve(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.plan_approval(db, payload))
 
 
-@router.post("/plan/revise", response_model=None)
+@router.post("/plan/revise", response_model=Layer3PlanRevisionResponse)
 def post_plan_revise(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.plan_revision(db, payload))
 
