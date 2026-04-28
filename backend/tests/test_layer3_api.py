@@ -376,6 +376,18 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
 def test_layer3_execution_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
 
+    selection_request_schema = spec["paths"]["/api/v1/layer3/execution/select"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert selection_request_schema["additionalProperties"] is True
+    assert set(selection_request_schema["required"]) == {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "preview_id",
+        "preview_hash",
+    }
+
     selection_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/select", "post")
     assert selection_schema["title"] == "Layer3ExecutionSelectionResponse"
     assert {
@@ -395,6 +407,20 @@ def test_layer3_execution_openapi_contracts(client: TestClient) -> None:
         "downstream_unavailable",
         "next_state",
     } <= set(selection_schema["required"])
+
+    start_request_schema = spec["paths"]["/api/v1/layer3/execution/start"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert start_request_schema["additionalProperties"] is False
+    assert set(start_request_schema["required"]) == {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+    }
+    assert start_request_schema["properties"]["execution_mode"]["enum"] == ["synchronous_single_pass"]
 
     start_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/start", "post")
     assert start_schema["title"] == "Layer3AnalysisExecutionStartResponse"
@@ -422,6 +448,19 @@ def test_layer3_execution_openapi_contracts(client: TestClient) -> None:
 
 def test_layer3_execution_result_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
+
+    status_request_schema = spec["paths"]["/api/v1/layer3/execution/result/status"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert status_request_schema["additionalProperties"] is False
+    assert set(status_request_schema["required"]) == {
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+    }
+    assert status_request_schema["properties"]["operator_view_mode"]["enum"] == ["status_only"]
 
     status_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/result/status", "post")
     assert status_schema["title"] == "Layer3ExecutionResultStatusResponse"
@@ -456,6 +495,27 @@ def test_layer3_execution_result_openapi_contracts(client: TestClient) -> None:
         "selected_method_name",
         "dataset_version_id",
     } <= set(status_schema["required"])
+
+    review_request_schema = spec["paths"]["/api/v1/layer3/execution/result/review"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert review_request_schema["additionalProperties"] is False
+    assert set(review_request_schema["required"]) == {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "operator_decision",
+    }
+    assert review_request_schema["properties"]["operator_decision"]["enum"] == [
+        "approved",
+        "changes_requested",
+        "rejected",
+        "blocked",
+    ]
+    assert review_request_schema["properties"]["reviewed_output_items"]["type"] == "array"
 
     review_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/result/review", "post")
     assert review_schema["title"] == "Layer3ExecutionResultReviewResponse"
