@@ -9,6 +9,21 @@ permissions:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 jobs:
+  backend-layer3-api:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+    - name: Install Layer 3 API test dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r ./backend/tests/requirements-layer3-api.txt
+    - name: Run Layer 3 API pytest guardrail
+      run: python -m pytest ./backend/tests/test_layer3_api.py -q
+
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
