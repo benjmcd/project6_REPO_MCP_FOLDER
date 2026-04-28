@@ -149,6 +149,13 @@ def _assert_workbench_error_responses(spec: dict, path: str, method: str, status
         } <= set(error_schema["required"])
 
 
+def _assert_string_array_or_string_map_schema(schema: dict) -> None:
+    assert schema["oneOf"] == [
+        {"type": "array", "items": {"type": "string"}},
+        {"type": "object", "additionalProperties": {"type": "string"}},
+    ]
+
+
 def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
 
@@ -664,7 +671,7 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
         "blocked",
     ]
     assert submit_request_schema["properties"]["output_package_ids"]["type"] == "array"
-    assert submit_request_schema["properties"]["payload_hashes"]["type"] == "array"
+    _assert_string_array_or_string_map_schema(submit_request_schema["properties"]["payload_hashes"])
 
     submit_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/submit", "post")
     assert submit_schema["title"] == "Layer3PackageReviewSubmitResponse"
@@ -731,6 +738,8 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
         "decline",
         "blocked",
     ]
+    _assert_string_array_or_string_map_schema(prepare_request_schema["properties"]["payload_refs"])
+    _assert_string_array_or_string_map_schema(prepare_request_schema["properties"]["payload_hashes"])
 
     prepare_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/export/prepare", "post")
     assert prepare_schema["title"] == "Layer3HandoffExportPrepareResponse"
@@ -802,6 +811,8 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
     assert dispatch_request_schema["properties"]["aps_handoff_target"]["enum"] == ["aps_evidence_bundle"]
     assert dispatch_request_schema["properties"]["dispatch_mode"]["enum"] == ["server_side_aps_handoff"]
     assert dispatch_request_schema["properties"]["operator_decision"]["enum"] == ["dispatch_aps_handoff"]
+    _assert_string_array_or_string_map_schema(dispatch_request_schema["properties"]["payload_refs"])
+    _assert_string_array_or_string_map_schema(dispatch_request_schema["properties"]["payload_hashes"])
 
     dispatch_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/aps/dispatch", "post")
     assert dispatch_schema["title"] == "Layer3ApsHandoffDispatchResponse"
@@ -898,6 +909,8 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
     ]
     assert prepare_request_schema["properties"]["download_mode"]["enum"] == ["reference_only_prepare"]
     assert prepare_request_schema["properties"]["operator_decision"]["enum"] == ["prepare_external_export_download"]
+    _assert_string_array_or_string_map_schema(prepare_request_schema["properties"]["payload_refs"])
+    _assert_string_array_or_string_map_schema(prepare_request_schema["properties"]["payload_hashes"])
 
     prepare_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/export/download/prepare", "post")
     assert prepare_schema["title"] == "Layer3ExternalExportDownloadPrepareResponse"
@@ -1049,10 +1062,13 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
     } <= set(deliver_request_schema["required"])
     assert deliver_request_schema["properties"]["delivery_mode"]["enum"] == ["same_origin_artifact_stream"]
     assert deliver_request_schema["properties"]["operator_decision"]["enum"] == ["deliver_external_export_download"]
+    _assert_string_array_or_string_map_schema(deliver_request_schema["properties"]["payload_refs"])
+    _assert_string_array_or_string_map_schema(deliver_request_schema["properties"]["payload_hashes"])
     assert "download_url" not in deliver_request_schema["properties"]
     assert "connector_run_id" not in deliver_request_schema["properties"]
     assert deliver_form_schema["additionalProperties"] is False
     assert "JSON-stringified" in deliver_form_schema["description"]
+    assert "JSON array strings or JSON object strings" in deliver_form_schema["description"]
     assert "not as repeated form keys" in deliver_form_schema["description"]
     assert set(deliver_request_schema["required"]) == set(deliver_form_schema["required"])
     assert set(deliver_request_schema["properties"]) == set(deliver_form_schema["properties"])
