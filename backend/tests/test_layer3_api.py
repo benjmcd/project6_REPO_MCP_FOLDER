@@ -701,6 +701,37 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
 def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
 
+    prepare_request_schema = spec["paths"]["/api/v1/layer3/handoff/export/prepare"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert prepare_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "handoff_target",
+        "export_mode",
+        "operator_decision",
+    } == set(prepare_request_schema["required"])
+    assert prepare_request_schema["properties"]["handoff_target"]["enum"] == ["internal_export_envelope"]
+    assert prepare_request_schema["properties"]["export_mode"]["enum"] == ["prepare_only"]
+    assert prepare_request_schema["properties"]["operator_decision"]["enum"] == [
+        "authorize_prepare",
+        "hold",
+        "decline",
+        "blocked",
+    ]
+
     prepare_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/export/prepare", "post")
     assert prepare_schema["title"] == "Layer3HandoffExportPrepareResponse"
     assert {
@@ -738,6 +769,39 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
     } <= set(prepare_schema["required"])
     assert "handoff_export_envelope" in prepare_schema["properties"]
     assert "handoff_export_envelope" not in prepare_schema["required"]
+
+    dispatch_request_schema = spec["paths"]["/api/v1/layer3/handoff/aps/dispatch"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert dispatch_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "operator_decision",
+    } == set(dispatch_request_schema["required"])
+    assert dispatch_request_schema["properties"]["aps_handoff_target"]["enum"] == ["aps_evidence_bundle"]
+    assert dispatch_request_schema["properties"]["dispatch_mode"]["enum"] == ["server_side_aps_handoff"]
+    assert dispatch_request_schema["properties"]["operator_decision"]["enum"] == ["dispatch_aps_handoff"]
 
     dispatch_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/aps/dispatch", "post")
     assert dispatch_schema["title"] == "Layer3ApsHandoffDispatchResponse"
@@ -790,6 +854,50 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
 
 def test_layer3_external_export_download_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
+
+    prepare_request_schema = spec["paths"]["/api/v1/layer3/handoff/export/download/prepare"]["post"][
+        "requestBody"
+    ]["content"]["application/json"]["schema"]
+    assert prepare_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "aps_output_package_id",
+        "aps_output_package_kind",
+        "aps_bundle_ref",
+        "aps_bundle_id",
+        "aps_schema_id",
+        "export_download_target",
+        "download_mode",
+        "operator_decision",
+    } == set(prepare_request_schema["required"])
+    assert prepare_request_schema["properties"]["export_download_target"]["enum"] == [
+        "aps_evidence_bundle_download_reference"
+    ]
+    assert prepare_request_schema["properties"]["download_mode"]["enum"] == ["reference_only_prepare"]
+    assert prepare_request_schema["properties"]["operator_decision"]["enum"] == ["prepare_external_export_download"]
 
     prepare_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/export/download/prepare", "post")
     assert prepare_schema["title"] == "Layer3ExternalExportDownloadPrepareResponse"
