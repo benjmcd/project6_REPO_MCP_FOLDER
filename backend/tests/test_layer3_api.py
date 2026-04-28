@@ -3,11 +3,13 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -20,7 +22,7 @@ sys.path.insert(0, str(BACKEND))
 sys.path.insert(0, str(TESTS))
 
 from app.api.deps import get_db
-from app.core.config import bootstrap_storage_tree, settings
+from app.core.config import Settings, bootstrap_storage_tree, settings
 from app.db.session import Base
 from app.models.models import (
     AnalysisArtifact,
@@ -45,6 +47,20 @@ from app.services.layer3_typing_entry import materialize_typing_entry
 from main import app
 from test_layer3_aps_handoff import _seed_aps_content_fixture, _seed_timeseries_dataset_version
 from test_layer3_pass_entry import _build_quant_ready_session
+
+
+def _settings_for_test(**values):
+    base_values = {
+        "DB_INIT_MODE": "none",
+        "DEPLOYMENT_MODE": "local",
+        "ALLOWED_ORIGINS": "*",
+        "CORS_ALLOW_CREDENTIALS": None,
+        "AUTH_OWNER": "none",
+        "TRUSTED_PROXY_MODE": "false",
+        "STORAGE_EXPOSURE": "auto",
+    }
+    base_values.update(values)
+    return Settings(_env_file=None, **base_values)
 
 
 @pytest.fixture()
@@ -75,6 +91,130 @@ def client(tmp_path, monkeypatch):
         yield test_client
     finally:
         app.dependency_overrides.pop(get_db, None)
+
+
+def test_layer3_deployment_profile_local_defaults_preserve_proof_posture() -> None:
+    profile = _settings_for_test()
+
+    assert profile.deployment_mode == "local"
+    assert profile.allowed_origin_list == ["*"]
+    assert profile.cors_allow_credentials_enabled is True
+    assert profile.storage_mount_enabled is True
+
+    cors_middleware = next(middleware for middleware in app.user_middleware if middleware.cls.__name__ == "CORSMiddleware")
+    assert cors_middleware.kwargs["allow_origins"] == ["*"]
+    assert cors_middleware.kwargs["allow_credentials"] is True
+    assert any(getattr(route, "path", None) == "/storage" for route in app.routes)
+
+
+def test_layer3_deployment_profile_nonlocal_accepts_proxy_owned_guardrail() -> None:
+    profile = _settings_for_test(
+        DEPLOYMENT_MODE="nonlocal",
+        ALLOWED_ORIGINS="https://review.example.com, https://ops.example.com",
+        AUTH_OWNER="proxy",
+        TRUSTED_PROXY_MODE="true",
+    )
+
+    assert profile.allowed_origin_list == ["https://review.example.com", "https://ops.example.com"]
+    assert profile.cors_allow_credentials_enabled is False
+    assert profile.auth_owner == "proxy"
+    assert profile.proxy_identity_header == "X-Forwarded-User"
+    assert profile.storage_mount_enabled is False
+
+
+def test_layer3_deployment_profile_nonlocal_main_disables_direct_storage(tmp_path) -> None:
+    code = """
+import json
+from main import app
+
+cors = next(middleware for middleware in app.user_middleware if middleware.cls.__name__ == "CORSMiddleware")
+print(json.dumps({
+    "allow_origins": cors.kwargs["allow_origins"],
+    "allow_credentials": cors.kwargs["allow_credentials"],
+    "storage_mounted": any(getattr(route, "path", None) == "/storage" for route in app.routes),
+}))
+"""
+    env = os.environ.copy()
+    env.update(
+        {
+            "PYTHONPATH": str(BACKEND) + os.pathsep + env.get("PYTHONPATH", ""),
+            "DB_INIT_MODE": "none",
+            "STORAGE_DIR": str(tmp_path / "storage"),
+            "DEPLOYMENT_MODE": "nonlocal",
+            "ALLOWED_ORIGINS": "https://review.example.com",
+            "AUTH_OWNER": "proxy",
+            "TRUSTED_PROXY_MODE": "true",
+        }
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=str(BACKEND.parent),
+        env=env,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    body = json.loads(result.stdout)
+
+    assert body == {
+        "allow_origins": ["https://review.example.com"],
+        "allow_credentials": False,
+        "storage_mounted": False,
+    }
+
+
+@pytest.mark.parametrize(
+    ("values", "message"),
+    [
+        (
+            {
+                "DEPLOYMENT_MODE": "nonlocal",
+                "ALLOWED_ORIGINS": "*",
+                "AUTH_OWNER": "proxy",
+                "TRUSTED_PROXY_MODE": "true",
+            },
+            "ALLOWED_ORIGINS must use explicit origins",
+        ),
+        (
+            {
+                "DEPLOYMENT_MODE": "nonlocal",
+                "ALLOWED_ORIGINS": "http://review.example.com",
+                "AUTH_OWNER": "proxy",
+                "TRUSTED_PROXY_MODE": "true",
+            },
+            "ALLOWED_ORIGINS must use HTTPS origins",
+        ),
+        (
+            {
+                "DEPLOYMENT_MODE": "nonlocal",
+                "ALLOWED_ORIGINS": "https://review.example.com",
+                "TRUSTED_PROXY_MODE": "true",
+            },
+            "AUTH_OWNER=proxy is required",
+        ),
+        (
+            {
+                "DEPLOYMENT_MODE": "nonlocal",
+                "ALLOWED_ORIGINS": "https://review.example.com",
+                "AUTH_OWNER": "proxy",
+            },
+            "TRUSTED_PROXY_MODE=true is required",
+        ),
+        (
+            {
+                "DEPLOYMENT_MODE": "nonlocal",
+                "ALLOWED_ORIGINS": "https://review.example.com",
+                "AUTH_OWNER": "proxy",
+                "TRUSTED_PROXY_MODE": "true",
+                "STORAGE_EXPOSURE": "enabled",
+            },
+            "STORAGE_EXPOSURE=enabled is not allowed",
+        ),
+    ],
+)
+def test_layer3_deployment_profile_nonlocal_fails_closed(values: dict, message: str) -> None:
+    with pytest.raises(ValidationError, match=message):
+        _settings_for_test(**values)
 
 
 def _prepare_material(client: TestClient) -> tuple[dict, dict, dict]:

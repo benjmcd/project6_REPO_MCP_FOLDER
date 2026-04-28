@@ -40,10 +40,17 @@ def _initialize_database() -> None:
 _initialize_database()
 
 app = FastAPI(title=settings.app_name)
-app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.allowed_origin_list,
+    allow_credentials=settings.cors_allow_credentials_enabled,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
 app.include_router(api_router, prefix=settings.api_prefix)
 bootstrap_storage_tree()
-app.mount('/storage', StaticFiles(directory=settings.storage_dir), name='storage')
+if settings.storage_mount_enabled:
+    app.mount('/storage', StaticFiles(directory=settings.storage_dir), name='storage')
 review_ui_static_dir = Path(__file__).resolve().parent / "app" / "review_ui" / "static"
 app.mount('/review/nrc-aps/static', StaticFiles(directory=review_ui_static_dir), name='review_ui_static')
 app.mount('/review/layer3/static', StaticFiles(directory=review_ui_static_dir), name='layer3_ui_static')
