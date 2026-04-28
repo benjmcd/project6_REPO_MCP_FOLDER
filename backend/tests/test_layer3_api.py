@@ -3623,6 +3623,7 @@ def test_layer3_api_external_export_download_prepare_prechecks_fail_closed(
 
 def test_layer3_api_external_export_download_deliver_streams_validated_bundle_without_side_effects(
     client: TestClient,
+    monkeypatch,
     tmp_path,
 ) -> None:
     (
@@ -3697,6 +3698,31 @@ def test_layer3_api_external_export_download_deliver_streams_validated_bundle_wi
     finally:
         db.close()
     files_before = files_under_tmp()
+
+    from app.services import layer3_workbench, nrc_aps_evidence_bundle
+
+    observed_artifact_validation_transactions: list[bool] = []
+    original_load_bundle = nrc_aps_evidence_bundle.load_persisted_bundle_artifact
+
+    direct_db = client.layer3_session_factory()
+    try:
+        def assert_artifact_validation_after_transaction_release(*, bundle_id=None, bundle_ref=None):
+            observed_artifact_validation_transactions.append(direct_db.in_transaction())
+            return original_load_bundle(bundle_id=bundle_id, bundle_ref=bundle_ref)
+
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                nrc_aps_evidence_bundle,
+                "load_persisted_bundle_artifact",
+                assert_artifact_validation_after_transaction_release,
+            )
+            direct_delivery = layer3_workbench.external_export_download_deliver(direct_db, deliver_payload)
+    finally:
+        direct_db.close()
+
+    assert observed_artifact_validation_transactions == [False]
+    assert direct_delivery.artifact_path.read_bytes() == expected_bytes
+    assert direct_delivery.headers["X-Layer3-Delivery-State"] == "external_export_download_delivered"
 
     delivery = client.post("/api/v1/layer3/handoff/export/download/deliver", json=deliver_payload)
     assert delivery.status_code == 200, delivery.text
