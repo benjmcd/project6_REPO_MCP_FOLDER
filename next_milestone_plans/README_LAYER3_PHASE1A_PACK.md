@@ -182,6 +182,8 @@ And to the Layer 3 analysis method registry governance packet, which is planning
 
 The analysis method registry packet admits only governance for the existing wrapped quantitative methods in `backend/app/services/analysis.py`: `cross_correlation`, `decomposition`, and `structural_break`. The docs do not implement a registry, add methods, change execution behavior, change artifacts, widen schemas/runtime/source scope, add qualitative/hybrid/RAG/vector execution, or activate any new UI/full mockup behavior.
 
+PR `#316` separately implements that current-methods registry in `backend/app/services/analysis.py` without adding methods or changing execution behavior. New quantitative methods, qualitative/hybrid/RAG/vector expansion, source/schema/runtime widening, UI activation, and full mockup behavior remain deferred until separately governed.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
