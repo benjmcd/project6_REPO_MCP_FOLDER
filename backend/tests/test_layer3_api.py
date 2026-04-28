@@ -740,6 +740,54 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
     } <= set(override_schema["required"])
 
     deliver_responses = spec["paths"]["/api/v1/layer3/handoff/export/download/deliver"]["post"]["responses"]
+    deliver_request_body = spec["paths"]["/api/v1/layer3/handoff/export/download/deliver"]["post"]["requestBody"]
+    assert deliver_request_body["required"] is True
+    assert {"application/json", "application/x-www-form-urlencoded"} <= set(deliver_request_body["content"])
+    deliver_request_schema = deliver_request_body["content"]["application/json"]["schema"]
+    assert deliver_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "aps_output_package_id",
+        "aps_output_package_kind",
+        "aps_bundle_ref",
+        "aps_bundle_id",
+        "aps_schema_id",
+        "external_export_download_record_ref",
+        "export_download_descriptor_ref",
+        "external_export_download_state",
+        "export_download_target",
+        "download_mode",
+        "delivery_mode",
+        "operator_decision",
+    } <= set(deliver_request_schema["required"])
+    assert deliver_request_schema["properties"]["delivery_mode"]["enum"] == ["same_origin_artifact_stream"]
+    assert deliver_request_schema["properties"]["operator_decision"]["enum"] == ["deliver_external_export_download"]
+    assert "download_url" not in deliver_request_schema["properties"]
+    assert "connector_run_id" not in deliver_request_schema["properties"]
+
     deliver_success_schema = deliver_responses["200"]["content"]["application/json"]["schema"]
     assert deliver_success_schema == {"type": "string", "format": "binary"}
     assert {

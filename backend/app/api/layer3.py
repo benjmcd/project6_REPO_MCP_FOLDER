@@ -451,6 +451,101 @@ def _workbench_error_responses(*statuses: int) -> dict[int, dict[str, type[Layer
     return {status: {"model": Layer3WorkbenchErrorResponse} for status in statuses}
 
 
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "aps_output_package_id",
+        "aps_output_package_kind",
+        "aps_bundle_ref",
+        "aps_bundle_id",
+        "aps_schema_id",
+        "external_export_download_record_ref",
+        "export_download_descriptor_ref",
+        "external_export_download_state",
+        "export_download_target",
+        "download_mode",
+        "delivery_mode",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "preview_id": {"type": "string"},
+        "preview_hash": {"type": "string"},
+        "result_review_record_ref": {"type": "string"},
+        "package_review_preview_hash": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "output_package_ids": {"type": "array", "items": {"type": "string"}},
+        "package_kinds": {"type": "array", "items": {"type": "string"}},
+        "payload_refs": {"type": "array", "items": {"type": "string"}},
+        "payload_hashes": {"type": "array", "items": {"type": "string"}},
+        "package_review_submit_record_ref": {"type": "string"},
+        "package_review_state": {"type": "string"},
+        "prepare_record_ref": {"type": "string"},
+        "handoff_export_state": {"type": "string"},
+        "handoff_export_envelope_ref": {"type": "string"},
+        "handoff_target": {"type": "string"},
+        "export_mode": {"type": "string"},
+        "aps_handoff_record_ref": {"type": "string"},
+        "aps_handoff_state": {"type": "string"},
+        "aps_handoff_target": {"type": "string"},
+        "dispatch_mode": {"type": "string"},
+        "aps_output_package_id": {"type": "string"},
+        "aps_output_package_kind": {"type": "string"},
+        "aps_bundle_ref": {"type": "string"},
+        "aps_bundle_id": {"type": "string"},
+        "aps_schema_id": {"type": "string"},
+        "external_export_download_record_ref": {"type": "string"},
+        "export_download_descriptor_ref": {"type": "string"},
+        "external_export_download_state": {"type": "string"},
+        "export_download_target": {"type": "string", "enum": ["aps_evidence_bundle_download_reference"]},
+        "download_mode": {"type": "string", "enum": ["reference_only_prepare"]},
+        "delivery_mode": {"type": "string", "enum": ["same_origin_artifact_stream"]},
+        "operator_decision": {"type": "string", "enum": ["deliver_external_export_download"]},
+        "decision_notes": {"type": "string"},
+        "analysis_run_id": {"type": "string"},
+        "aps_bundle_hash": {"type": "string"},
+        "aps_bundle_size_bytes": {"type": "integer"},
+    },
+}
+
+
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_BODY: dict[str, Any] = {
+    "required": True,
+    "content": {
+        "application/json": {"schema": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA},
+        "application/x-www-form-urlencoded": {"schema": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA},
+    },
+}
+
+
 class Layer3SessionSummaryResponse(Layer3BaseResponse):
     session_id: str
     selection_manifest_id: str
@@ -705,6 +800,7 @@ def post_external_export_download_prepare(
 @router.post(
     "/handoff/export/download/deliver",
     response_model=None,
+    openapi_extra={"requestBody": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_BODY},
     responses={
         200: {
             "description": "APS evidence bundle artifact attachment.",
