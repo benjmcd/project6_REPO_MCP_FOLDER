@@ -593,7 +593,7 @@ PLAN_APPROVAL_REQUEST_SCHEMA: dict[str, Any] = {
         "session_id": {"type": "string"},
         "preview_id": {"type": "string"},
         "preview_hash": {"type": "string"},
-        "operator_confirmation": {"type": "boolean"},
+        "operator_confirmation": {"type": "boolean", "enum": [True]},
         "approval_scope": {"type": "string", "enum": ["owner_service_default"]},
     },
 }
