@@ -47,6 +47,48 @@ Remaining deployment decisions before broader non-local exposure:
 - artifact retention, logging, and file-delivery policy;
 - whether any future application-owned auth middleware or authorized file delivery should be separately governed.
 
+## Proxy-Owned Non-Local Profile Decision Packet
+
+Use this packet before any further deployment-hardening implementation. It records the concrete choices the deployment owner must make without inventing repo-local production values.
+
+### Required Operator Choices
+
+1. **Allowed browser origins:** replace the placeholders with exact HTTPS origins for the deployed review UI/API clients. Do not use `*`.
+2. **Credentialed CORS:** keep `CORS_ALLOW_CREDENTIALS=false` unless a later cookie/session-auth design is explicitly selected and governed.
+3. **Auth owner:** keep `AUTH_OWNER=proxy`; the app currently requires proxy-owned posture but does not enforce in-app authorization.
+4. **Identity header:** keep `PROXY_IDENTITY_HEADER=X-Forwarded-User` unless the proxy contract chooses another nonblank identity header name. The proxy must strip or overwrite client-supplied identity headers before forwarding to the app.
+5. **Optional identity metadata:** configure `PROXY_EMAIL_HEADER` and `PROXY_GROUPS_HEADER` only if the proxy can supply trustworthy values; current app behavior names these headers but does not authorize requests from them.
+6. **Proxy/TLS boundary:** terminate HTTPS at the trusted proxy and forward only from that proxy to the app. `TRUSTED_PROXY_MODE=true` is a posture declaration, not proof that the network path is protected.
+7. **Storage exposure:** keep `STORAGE_EXPOSURE=auto` or `disabled`; non-local mode rejects direct and `proxy_protected` app-owned `/storage` mounts.
+8. **Secrets/config injection:** inject deployment values through the environment or deployment secret manager. Do not commit production origins, secrets, signing keys, or connector credentials into the repo.
+9. **Artifact retention/logging:** decide retention, audit logging, and storage ownership outside this first guardrail before exposing sensitive artifacts to non-local users.
+
+### Minimal Non-Local Environment Shape
+
+The following is a template, not a production configuration:
+
+```text
+DEPLOYMENT_MODE=nonlocal
+ALLOWED_ORIGINS=https://review.example.invalid,https://ops.example.invalid
+CORS_ALLOW_CREDENTIALS=false
+AUTH_OWNER=proxy
+PROXY_IDENTITY_HEADER=X-Forwarded-User
+PROXY_EMAIL_HEADER=X-Forwarded-Email
+PROXY_GROUPS_HEADER=X-Forwarded-Groups
+TRUSTED_PROXY_MODE=true
+STORAGE_EXPOSURE=auto
+```
+
+`STORAGE_EXPOSURE=auto` disables the direct `/storage` app mount in non-local mode. Use `STORAGE_EXPOSURE=disabled` when the deployment owner wants that policy to be explicit. Do not use `enabled` or `proxy_protected` in non-local mode; both fail closed.
+
+### What This Proves
+
+The current startup/settings guardrail proves that the app rejects several unsafe non-local configurations before startup use: wildcard or non-HTTPS origins, missing proxy-owned auth posture, missing trusted-proxy posture, blank identity header, and direct or proxy-protected app-owned storage exposure.
+
+### What This Does Not Prove
+
+This packet does not prove that the reverse proxy is correctly configured, that users are authenticated or authorized, that identity headers are stripped or overwritten by the proxy, that `/storage` is safely deliverable, that artifacts have a retention policy, or that public/signed URLs are available. Those remain separate deployment or product decisions.
+
 ## Implemented Guardrail
 
 The implemented startup/settings guardrail:
