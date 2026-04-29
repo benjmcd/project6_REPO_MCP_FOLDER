@@ -423,6 +423,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     grid-template-columns: minmax(410px, 0.94fr) 86px minmax(460px, 1.06fr);
     grid-template-areas:
         "spec spec spec"
+        "stateflow stateflow stateflow"
         "threea connector3ab threeb"
         "connector3bc connector3bc connector3bc"
         "threec threec threec";
@@ -467,6 +468,99 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
     grid-template-columns: minmax(300px, 0.95fr) minmax(360px, 1.05fr);
     gap: 16px;
     min-width: 0;
+}
+
+.canvas-state-flow {
+    grid-area: stateflow;
+    display: grid;
+    grid-template-columns: minmax(100px, 0.8fr) minmax(34px, 80px) minmax(100px, 0.8fr) minmax(34px, 80px) minmax(100px, 0.8fr);
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.state-node {
+    --modality-accent: var(--primary-color);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 30px;
+    border: 1px dashed color-mix(in srgb, var(--modality-accent) 56%, var(--border-color));
+    border-radius: 2px;
+    padding: 4px 8px;
+    color: var(--text-color);
+    background: color-mix(in srgb, var(--modality-accent) 7%, transparent);
+}
+
+.state-node strong {
+    color: var(--modality-accent);
+    font-size: 0.72rem;
+    font-weight: 900;
+}
+
+.state-node span {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--muted-text);
+    font-size: 0.68rem;
+    font-weight: 900;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.state-3a {
+    --modality-accent: #4ade80;
+}
+
+.state-3b {
+    --modality-accent: #c084fc;
+}
+
+.state-3c {
+    --modality-accent: #38bdf8;
+}
+
+.state-flow-link {
+    position: relative;
+    display: block;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, var(--diagram-flow-color, var(--primary-color)));
+}
+
+.state-flow-link::after {
+    content: "";
+    position: absolute;
+    right: -1px;
+    top: -6px;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-left: 13px solid var(--diagram-flow-color, var(--primary-color));
+}
+
+html[data-theme="workbench"] body.layer3-page .state-node {
+    border-radius: 0;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            rgba(248, 248, 248, 0.035) 0,
+            rgba(248, 248, 248, 0.035) 1px,
+            transparent 1px,
+            transparent 18px
+        ),
+        rgba(5, 5, 5, 0.62);
+}
+
+html[data-theme="workbench"] body.layer3-page .state-node:not(.viz-state-empty):not(.viz-state-structural) {
+    border-style: solid;
+    box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--modality-accent) 42%, transparent);
+}
+
+html[data-theme="workbench"] body.layer3-page .viz-state-empty .empty-node,
+html[data-theme="workbench"] body.layer3-page .viz-state-structural .empty-node {
+    opacity: 0.72;
 }
 
 html[data-theme="workbench"] body.layer3-page .canvas-intake-spec {
@@ -653,6 +747,15 @@ html[data-theme="workbench"] body.layer3-page .sublayer-region::before {
 .sublayer-title strong {
     color: var(--text-color);
     font-size: 1.05rem;
+}
+
+.sublayer-title em {
+    color: var(--modality-accent);
+    font-size: 0.66rem;
+    font-style: normal;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .gate-panel {
@@ -996,6 +1099,18 @@ html[data-theme="workbench"] body.layer3-page .modality-heading {
     gap: 4px;
 }
 
+.modality-route-label {
+    color: var(--muted-text);
+    font-size: 0.58rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+html[data-theme="workbench"] body.layer3-page .modality-route-label {
+    color: color-mix(in srgb, var(--modality-accent) 62%, var(--muted-text));
+}
+
 .sublayer-connector {
     position: relative;
     display: flex;
@@ -1099,6 +1214,17 @@ html[data-theme="workbench"] body.layer3-page .analysis-plane {
 
 html[data-theme="workbench"] body.layer3-page .analysis-plane-title h4 {
     font-size: 0.9rem;
+}
+
+.plane-state-label {
+    border: 1px solid color-mix(in srgb, var(--modality-accent) 50%, #5f5f5f);
+    padding: 2px 6px;
+    color: color-mix(in srgb, var(--modality-accent) 72%, var(--text-color));
+    font-size: 0.58rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .plane-flow {
@@ -1262,6 +1388,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
         grid-template-columns: minmax(220px, 0.48fr) 46px minmax(270px, 0.66fr) 54px minmax(560px, 1.64fr);
         grid-template-areas:
             "spec spec spec spec spec"
+            "stateflow stateflow stateflow stateflow stateflow"
             "threea connector3ab threeb connector3bc threec";
         align-items: stretch;
         gap: 15px;
@@ -1733,6 +1860,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
         grid-template-columns: 1fr;
         grid-template-areas:
             "spec"
+            "stateflow"
             "threea"
             "connector3ab"
             "threeb"
@@ -1742,6 +1870,28 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 
     .canvas-intake-spec {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    .canvas-state-flow {
+        grid-template-columns: 1fr;
+    }
+
+    .state-flow-link {
+        justify-self: center;
+        width: 4px;
+        height: 24px;
+        background: linear-gradient(180deg, transparent, var(--diagram-flow-color, var(--primary-color)));
+    }
+
+    .state-flow-link::after {
+        right: auto;
+        top: auto;
+        bottom: -2px;
+        left: -6px;
+        border-top: 10px solid var(--diagram-flow-color, var(--primary-color));
+        border-right: 8px solid transparent;
+        border-bottom: none;
+        border-left: 8px solid transparent;
     }
 
     html[data-theme="workbench"] body.layer3-page .canvas-intake-spec {
