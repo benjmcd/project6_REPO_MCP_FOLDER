@@ -275,6 +275,9 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   await expect(page.locator('#sublayer-map-panel')).toContainText('Sublayer 3B');
   await expect(page.locator('#sublayer-map-panel')).toContainText('Sublayer 3C');
   await expect(page.locator('#sublayer-map-panel')).toHaveClass(/diagram-canvas/);
+  await expect(page.locator('.canvas-intake-spec')).toContainText('User Natural Language Query Input');
+  await expect(page.locator('.manual-source-spec')).toContainText('Dataset version');
+  await expect(page.locator('.manual-source-spec')).toContainText('APS content document');
   await expect(page.locator('.ledger-chip-field')).toBeVisible();
   await expect(page.locator('.ledger-bracket')).toContainText('Session-scoped Materials');
   await expect(page.locator('.plane-arrow-process').first()).toBeVisible();
@@ -322,7 +325,10 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     const modality = window.getComputedStyle(document.querySelector('.modality-bucket.modality-quantitative'));
     const arrow = window.getComputedStyle(document.querySelector('.plane-arrow-process'));
     const chip = window.getComputedStyle(document.querySelector('.sublayer-3a .diagram-chip'));
+    const intake = window.getComputedStyle(document.querySelector('.canvas-intake-spec'));
     return {
+      intakeDisplay: intake.display,
+      intakeGridArea: intake.gridArea,
       sublayerBorderStyle: sublayer.borderTopStyle,
       modalityBorderStyle: modality.borderTopStyle,
       arrowDisplay: arrow.display,
@@ -330,6 +336,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     };
   });
   expect(diagramStyles).toEqual({
+    intakeDisplay: 'grid',
+    intakeGridArea: 'spec',
     sublayerBorderStyle: 'dotted',
     modalityBorderStyle: 'solid',
     arrowDisplay: 'block',
