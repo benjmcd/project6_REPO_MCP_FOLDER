@@ -168,6 +168,52 @@ test('Layer 3 workbench keeps page-level scrolling and step navigation across vi
   }
 });
 
+test('Layer 3 workbench exposes visible keyboard focus across themes', async ({ page }) => {
+  for (const theme of ['light', 'dark', 'workbench']) {
+    await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+    await page.locator('#theme-selector').selectOption(theme);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+
+    await page.keyboard.press('Tab');
+    await expect(page.locator('a.back-link')).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#theme-selector')).toBeFocused();
+    await page.keyboard.press('Tab');
+
+    const intentChip = page.locator('[data-step="intent"]');
+    await expect(intentChip).toBeFocused();
+    await expect(intentChip).toHaveAttribute('aria-current', 'step');
+    const chipFocusStyle = await intentChip.evaluate((element) => {
+      const style = window.getComputedStyle(element);
+      return {
+        outlineStyle: style.outlineStyle,
+        outlineWidth: style.outlineWidth,
+        outlineColor: style.outlineColor,
+        borderColor: style.borderColor,
+      };
+    });
+    expect(chipFocusStyle.outlineStyle).toBe('solid');
+    expect(chipFocusStyle.outlineWidth).toBe('3px');
+
+    const gateCChip = page.locator('[data-step="gate_c"]');
+    await gateCChip.focus();
+    await page.keyboard.press('Enter');
+    await expect(gateCChip).toHaveAttribute('aria-current', 'step');
+    await expect(page.locator('#gate-c-band')).toBeFocused();
+    const targetFocusStyle = await page.locator('#gate-c-band').evaluate((element) => {
+      const style = window.getComputedStyle(element);
+      return {
+        outlineStyle: style.outlineStyle,
+        outlineWidth: style.outlineWidth,
+        boxShadow: style.boxShadow,
+      };
+    });
+    expect(targetFocusStyle.outlineStyle).toBe('solid');
+    expect(targetFocusStyle.outlineWidth).toBe('3px');
+    expect(targetFocusStyle.boxShadow).not.toBe('none');
+  }
+});
+
 async function prepareExecutedLayer3Session(request, seedPath = '/__test/layer3/seed-quant') {
   const seed = await expectJson(await request.post(seedPath));
   const planPreview = await expectJson(await request.post('/api/v1/layer3/plan/preview', {

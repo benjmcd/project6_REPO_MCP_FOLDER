@@ -96,6 +96,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "body.layer3-page" in css.text
     assert "overflow: visible" in css.text
     assert ".step-chip.current" in css.text
+    assert ".step-chip:focus-visible" in css.text
+    assert ".workband:focus" in css.text
+    assert "outline: 3px solid var(--primary-color)" in css.text
     assert "const API_ROOT = '/api/v1/layer3';" in js.text
     assert "const LAYER3_THEME_STORAGE_KEY = 'layer3_workbench_theme';" in js.text
     assert "isSharedThemePreference" in js.text
