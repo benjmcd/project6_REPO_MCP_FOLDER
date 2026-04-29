@@ -1362,17 +1362,21 @@ function currentSublayerVisualizationModel() {
     };
 }
 
-function renderFlowObjects(items, emptyMessage) {
+function renderFlowObjects(items, emptyMessage, options = {}) {
+    const fieldLabel = options.fieldLabel || 'Object field';
+    const slotCount = options.slotCount || 4;
     if (!items.length) {
         return `
-            <div class="flow-empty diagram-empty">
-                <span class="empty-node" aria-hidden="true"></span>
+            <div class="flow-empty diagram-empty" data-field-label="${escapeHtml(fieldLabel)}">
+                <div class="empty-slot-field" aria-hidden="true">
+                    ${Array.from({ length: slotCount }).map(() => '<span class="empty-slot"></span>').join('')}
+                </div>
                 <p>${escapeHtml(emptyMessage)}</p>
             </div>
         `;
     }
     return `
-        <div class="flow-object-list diagram-chip-grid">
+        <div class="flow-object-list diagram-chip-grid" data-field-label="${escapeHtml(fieldLabel)}" data-object-count="${items.length}">
             ${items.map((item) => {
                 const modality = item.modality || 'unclassified';
                 const meta = modalityMeta(modality);
@@ -1410,7 +1414,7 @@ function renderModalityBucket(bucket) {
                 <span>${objects.length} objects</span>
             </div>
             <div class="modality-route-label" aria-hidden="true">Object bank / grouping field</div>
-            ${renderFlowObjects(objects, meta.empty)}
+            ${renderFlowObjects(objects, meta.empty, { fieldLabel: `${meta.label} object bank`, slotCount: 3 })}
         </section>
     `;
 }
@@ -1437,7 +1441,7 @@ function renderAnalysisPlane(plane) {
                     <h5>Input objects</h5>
                     <div class="plane-input-group">
                         <span class="plane-bracket" aria-hidden="true"></span>
-                        ${renderFlowObjects(inputs, 'No live input object is available for this plane.')}
+                        ${renderFlowObjects(inputs, 'No live input object is available for this plane.', { fieldLabel: `${meta.label} input objects`, slotCount: 3 })}
                     </div>
                 </section>
                 <span class="plane-arrow plane-arrow-process" aria-hidden="true"></span>
@@ -1457,7 +1461,7 @@ function renderAnalysisPlane(plane) {
                         badge: card.badge,
                         modality,
                         live: true,
-                    })), 'No live output, insight, fact, or data card has been produced for this plane.')}
+                    })), 'No live output, insight, fact, or data card has been produced for this plane.', { fieldLabel: `${meta.label} output field`, slotCount: 6 })}
                 </section>
             </div>
         </article>
@@ -1520,7 +1524,7 @@ function renderSublayerMap() {
             </div>
             <div class="ledger-chip-field">
                 <div class="ledger-bracket"><span>Session-scoped Materials / Material Snapshots</span></div>
-                ${renderFlowObjects(model.threeA.objects, 'No material preview, session entry, or material ledger object is currently loaded.')}
+                ${renderFlowObjects(model.threeA.objects, 'No material preview, session entry, or material ledger object is currently loaded.', { fieldLabel: '3A material ledger object field', slotCount: 6 })}
             </div>
         </section>
         <div class="sublayer-connector sublayer-connector-3ab" aria-hidden="true"><span>3A to 3B</span></div>
