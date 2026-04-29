@@ -280,6 +280,10 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-heading {
     border-color: transparent;
 }
 
+html[data-theme="workbench"] body.layer3-page .sublayer-map-heading .flow-kicker {
+    display: none;
+}
+
 html[data-theme="workbench"] body.layer3-page .sublayer-map-heading h2 {
     font-size: 0.86rem;
 }
@@ -333,7 +337,7 @@ html[data-theme="workbench"] body.layer3-page .flow-empty,
 html[data-theme="workbench"] body.layer3-page .plane-column,
 html[data-theme="workbench"] body.layer3-page .plane-process {
     border-color: #555555;
-    background: rgba(5, 5, 5, 0.82);
+    background: rgba(5, 5, 5, 0.64);
 }
 
 html[data-theme="workbench"] body.layer3-page .plane-column,
@@ -345,7 +349,7 @@ html[data-theme="workbench"] body.layer3-page .plane-process {
 
 html[data-theme="workbench"] body.layer3-page .plane-process li {
     border-color: #6f6f6f;
-    background: #1a1a1a;
+    background: transparent;
 }
 
 html[data-theme="workbench"] body.layer3-page .status-pill:not(.blocked):not(.ok),
@@ -433,7 +437,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
-    gap: 20px;
+    gap: 16px;
 }
 
 .diagram-canvas::before {
@@ -558,8 +562,8 @@ html[data-theme="workbench"] body.layer3-page .state-node:not(.viz-state-empty):
     box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--modality-accent) 42%, transparent);
 }
 
-html[data-theme="workbench"] body.layer3-page .viz-state-empty .empty-node,
-html[data-theme="workbench"] body.layer3-page .viz-state-structural .empty-node {
+html[data-theme="workbench"] body.layer3-page .viz-state-empty .empty-slot,
+html[data-theme="workbench"] body.layer3-page .viz-state-structural .empty-slot {
     opacity: 0.72;
 }
 
@@ -623,7 +627,7 @@ html[data-theme="workbench"] body.layer3-page .canvas-intake-spec {
 
 html[data-theme="workbench"] body.layer3-page .query-spec-block,
 html[data-theme="workbench"] body.layer3-page .manual-source-spec {
-    min-height: 96px;
+    min-height: 112px;
     padding: 14px 20px;
     background:
         repeating-linear-gradient(
@@ -831,6 +835,11 @@ html[data-theme="workbench"] body.layer3-page .ledger-chip-field {
     min-height: 300px;
     padding: 14px;
     border-color: color-mix(in srgb, var(--modality-accent) 48%, #8d8d8d);
+    background:
+        radial-gradient(circle at 12px 12px, color-mix(in srgb, var(--modality-accent) 14%, transparent) 0 2px, transparent 2px 100%),
+        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 8%, transparent), transparent 72%),
+        rgba(4, 4, 4, 0.42);
+    background-size: 22px 22px, auto, auto;
 }
 
 .ledger-bracket {
@@ -890,6 +899,23 @@ html[data-theme="workbench"] body.layer3-page .flow-object {
         linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 10%, transparent), transparent 54%),
         #080808;
     box-shadow: none;
+}
+
+html[data-theme="workbench"] body.layer3-page .ledger-chip-field .flow-object-list {
+    align-content: start;
+    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    min-height: 218px;
+}
+
+html[data-theme="workbench"] body.layer3-page .flow-object-list::before,
+html[data-theme="workbench"] body.layer3-page .flow-empty::before {
+    content: attr(data-field-label);
+    grid-column: 1 / -1;
+    color: color-mix(in srgb, var(--modality-accent) 54%, var(--muted-text));
+    font-size: 0.54rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 .flow-object-head,
@@ -955,8 +981,9 @@ html[data-theme="workbench"] body.layer3-page .flow-object strong {
 
 .diagram-empty {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 7px;
     min-height: 54px;
     background:
         repeating-linear-gradient(
@@ -973,12 +1000,17 @@ html[data-theme="workbench"] body.layer3-page .flow-object strong {
     margin: 0;
 }
 
-.empty-node {
-    width: 13px;
-    height: 13px;
-    border: 1px dashed color-mix(in srgb, var(--modality-accent) 70%, var(--border-color));
-    border-radius: 999px;
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--modality-accent) 14%, transparent);
+.empty-slot-field {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(42px, 1fr));
+    gap: 5px;
+    min-width: 0;
+}
+
+.empty-slot {
+    min-height: 18px;
+    border: 1px dashed color-mix(in srgb, var(--modality-accent) 68%, var(--border-color));
+    background: color-mix(in srgb, var(--modality-accent) 7%, transparent);
 }
 
 .modality-bucket,
@@ -1049,6 +1081,7 @@ html[data-theme="workbench"] body.layer3-page .modality-bucket {
     padding: 8px 10px;
     border-width: 1px;
     border-left-width: 3px;
+    box-shadow: inset 0 0 0 1px rgba(248, 248, 248, 0.035);
 }
 
 html[data-theme="workbench"] body.layer3-page .modality-heading h4 {
@@ -1204,12 +1237,14 @@ html[data-theme="workbench"] body.layer3-page .modality-route-label {
 
 html[data-theme="workbench"] body.layer3-page .analysis-plane {
     min-height: 210px;
-    border-style: solid;
+    border-style: dotted;
     border-color: color-mix(in srgb, var(--modality-accent) 34%, #c9c9c9);
     padding: 12px 14px 14px;
     background:
+        radial-gradient(circle at 12px 12px, color-mix(in srgb, var(--modality-accent) 12%, transparent) 0 2px, transparent 2px 100%),
         linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 5%, transparent), transparent 18%),
-        rgba(14, 14, 14, 0.24);
+        rgba(14, 14, 14, 0.12);
+    background-size: 24px 24px, auto, auto;
 }
 
 html[data-theme="workbench"] body.layer3-page .analysis-plane-title h4 {
@@ -1296,7 +1331,7 @@ html[data-theme="workbench"] body.layer3-page .plane-bracket {
 }
 
 html[data-theme="workbench"] body.layer3-page .plane-column {
-    border-style: solid;
+    border-style: dotted;
     border-color: color-mix(in srgb, var(--modality-accent) 24%, #6f6f6f);
 }
 
@@ -1304,13 +1339,15 @@ html[data-theme="workbench"] body.layer3-page .plane-outputs {
     min-height: 150px;
     background:
         linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 3%, transparent), transparent 78%),
-        rgba(44, 44, 44, 0.42);
+        rgba(44, 44, 44, 0.22);
 }
 
 html[data-theme="workbench"] body.layer3-page .plane-process {
     min-height: 126px;
     border-color: #878787;
-    background: rgba(0, 0, 0, 0.64);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 42%),
+        rgba(0, 0, 0, 0.52);
 }
 
 .plane-arrow {
