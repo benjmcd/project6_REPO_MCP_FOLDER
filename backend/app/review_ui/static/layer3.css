@@ -516,9 +516,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     grid-template-areas:
         "spec spec spec"
         "stateflow stateflow stateflow"
-        "threea connector3ab threeb"
-        "connector3bc connector3bc connector3bc"
-        "threec threec threec";
+        "threea connector3ab routing";
     align-items: stretch;
     gap: 16px;
     padding: 16px 20px 20px;
@@ -556,6 +554,11 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
 
 .canvas-intake-spec {
     grid-area: spec;
+    display: grid;
+    min-width: 0;
+}
+
+.intake-spec-frame {
     display: grid;
     grid-template-columns: minmax(300px, 0.95fr) minmax(360px, 1.05fr);
     gap: 16px;
@@ -656,8 +659,21 @@ html[data-theme="workbench"] body.layer3-page .viz-state-structural .empty-slot 
 }
 
 html[data-theme="workbench"] body.layer3-page .canvas-intake-spec {
-    grid-template-columns: minmax(420px, 1.05fr) minmax(360px, 0.95fr);
-    gap: 18px;
+    justify-items: center;
+}
+
+html[data-theme="workbench"] body.layer3-page .intake-spec-frame {
+    width: min(100%, 980px);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    border: 2px solid rgba(150, 150, 150, 0.5);
+    padding: 18px 34px 16px;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 30%),
+        rgba(72, 72, 72, 0.42);
+    box-shadow:
+        inset 0 0 0 7px rgba(0, 0, 0, 0.16),
+        inset 0 -12px 0 rgba(210, 210, 210, 0.06);
 }
 
 .query-spec-block,
@@ -715,8 +731,9 @@ html[data-theme="workbench"] body.layer3-page .canvas-intake-spec {
 
 html[data-theme="workbench"] body.layer3-page .query-spec-block,
 html[data-theme="workbench"] body.layer3-page .manual-source-spec {
-    min-height: 112px;
-    padding: 14px 20px;
+    min-height: 126px;
+    padding: 18px 22px;
+    border-color: rgba(180, 180, 180, 0.42);
     background:
         repeating-linear-gradient(
             90deg,
@@ -725,14 +742,18 @@ html[data-theme="workbench"] body.layer3-page .manual-source-spec {
             transparent 1px,
             transparent 24px
         ),
-        rgba(37, 37, 37, 0.46);
+        rgba(37, 37, 37, 0.66);
 }
 
 html[data-theme="workbench"] body.layer3-page .query-spec-block p {
-    max-width: 760px;
+    align-self: center;
+    justify-self: center;
+    max-width: 680px;
     color: #ffffff;
-    font-size: 0.84rem;
-    line-height: 1.38;
+    font-size: 0.9rem;
+    font-style: italic;
+    line-height: 1.42;
+    text-align: center;
 }
 
 .source-spec-chip-grid {
@@ -817,7 +838,16 @@ html[data-theme="workbench"] body.layer3-page .sublayer-region::before {
 }
 
 .analysis-routing-plane {
-    display: contents;
+    grid-area: routing;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+        "threeb"
+        "connector3bc"
+        "threec";
+    align-items: stretch;
+    gap: 16px;
+    min-width: 0;
 }
 
 .sublayer-title {
@@ -1168,12 +1198,17 @@ html[data-theme="workbench"] body.layer3-page .flow-object strong {
 }
 
 html[data-theme="workbench"] body.layer3-page .modality-bucket {
+    position: relative;
     grid-template-columns: minmax(106px, 0.42fr) minmax(0, 1fr);
     min-height: 92px;
     padding: 8px 10px;
     border-width: 1px;
     border-left-width: 3px;
-    box-shadow: inset 0 0 0 1px rgba(248, 248, 248, 0.035);
+    background:
+        radial-gradient(circle at 10px 10px, color-mix(in srgb, var(--modality-accent) 11%, transparent) 0 2px, transparent 2px 100%),
+        rgba(7, 7, 7, 0.46);
+    background-size: 22px 22px, auto;
+    box-shadow: none;
 }
 
 html[data-theme="workbench"] body.layer3-page .modality-heading h4 {
@@ -1199,6 +1234,8 @@ html[data-theme="workbench"] body.layer3-page .modality-bucket > .flow-empty,
 html[data-theme="workbench"] body.layer3-page .modality-bucket > .flow-object-list {
     grid-column: 2;
     min-height: 64px;
+    border: 0;
+    background: transparent;
 }
 
 html[data-theme="workbench"] body.layer3-page .modality-bucket > .flow-object-list {
@@ -1329,13 +1366,13 @@ html[data-theme="workbench"] body.layer3-page .modality-route-label {
 
 html[data-theme="workbench"] body.layer3-page .analysis-plane {
     min-height: 210px;
-    border-style: dotted;
-    border-color: color-mix(in srgb, var(--modality-accent) 34%, #c9c9c9);
-    padding: 12px 14px 14px;
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--modality-accent) 28%, #c9c9c9);
+    padding: 14px 16px 16px;
     background:
         radial-gradient(circle at 12px 12px, color-mix(in srgb, var(--modality-accent) 12%, transparent) 0 2px, transparent 2px 100%),
-        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 5%, transparent), transparent 18%),
-        rgba(14, 14, 14, 0.12);
+        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 6%, transparent), transparent 22%),
+        rgba(46, 46, 46, 0.22);
     background-size: 24px 24px, auto, auto;
 }
 
@@ -1423,15 +1460,16 @@ html[data-theme="workbench"] body.layer3-page .plane-bracket {
 }
 
 html[data-theme="workbench"] body.layer3-page .plane-column {
-    border-style: dotted;
-    border-color: color-mix(in srgb, var(--modality-accent) 24%, #6f6f6f);
+    border-style: dashed;
+    border-color: color-mix(in srgb, var(--modality-accent) 28%, #9a9a9a);
+    background: rgba(4, 4, 4, 0.26);
 }
 
 html[data-theme="workbench"] body.layer3-page .plane-outputs {
     min-height: 150px;
     background:
-        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 3%, transparent), transparent 78%),
-        rgba(44, 44, 44, 0.22);
+        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 4%, transparent), transparent 78%),
+        rgba(58, 58, 58, 0.36);
 }
 
 html[data-theme="workbench"] body.layer3-page .plane-process {
@@ -2088,12 +2126,10 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
             "stateflow"
             "threea"
             "connector3ab"
-            "threeb"
-            "connector3bc"
-            "threec";
+            "routing";
     }
 
-    .canvas-intake-spec {
+    .intake-spec-frame {
         grid-template-columns: minmax(0, 1fr);
     }
 
@@ -2119,8 +2155,9 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
         border-left: 8px solid transparent;
     }
 
-    html[data-theme="workbench"] body.layer3-page .canvas-intake-spec {
+    html[data-theme="workbench"] body.layer3-page .intake-spec-frame {
         grid-template-columns: minmax(0, 1fr);
+        width: 100%;
     }
 
     html[data-theme="workbench"] body.layer3-page .plane-flow {
@@ -2254,7 +2291,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
         grid-template-columns: 1fr;
     }
 
-    .canvas-intake-spec {
+    .intake-spec-frame {
         grid-template-columns: 1fr;
     }
 
