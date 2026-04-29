@@ -110,6 +110,7 @@ html[data-theme="workbench"] body.layer3-page {
     --layout-section-bg: #1b1b1b;
     --layout-divider-color: #535353;
     --l3-stage-accent: #7dd3fc;
+    --diagram-flow-color: #f3f3f3;
     background: #0d0d0d;
 }
 
@@ -117,10 +118,12 @@ html[data-theme="workbench"] body.layer3-page .layer3-header {
     background: #242424;
     border-bottom-color: #535353;
     box-shadow: inset 0 -1px 0 #373737;
+    min-height: 52px;
+    padding-block: 6px;
 }
 
 html[data-theme="workbench"] body.layer3-page .layer3-body {
-    grid-template-columns: 96px minmax(0, 1fr) 196px;
+    grid-template-columns: 76px minmax(0, 1fr) 168px;
     background:
         linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
         linear-gradient(180deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
@@ -130,7 +133,7 @@ html[data-theme="workbench"] body.layer3-page .layer3-body {
 
 html[data-theme="workbench"] body.layer3-page .layer3-stepper,
 html[data-theme="workbench"] body.layer3-page .context-panel {
-    background: #121212;
+    background: rgba(11, 11, 11, 0.78);
     border-color: #535353;
 }
 
@@ -140,43 +143,47 @@ html[data-theme="workbench"] body.layer3-page .layer3-stepper {
 }
 
 html[data-theme="workbench"] body.layer3-page .context-panel {
-    padding: 10px;
-    font-size: 0.78rem;
-}
-
-html[data-theme="workbench"] body.layer3-page .layer3-workspace {
-    background: #111111;
-    box-shadow: inset 0 0 0 1px #313131;
-}
-
-html[data-theme="workbench"] body.layer3-page .authority-rail {
-    grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
-    gap: 6px;
-    margin: 8px 10px 0;
-    padding: 8px 10px;
-    border: 1px solid #5b5b5b;
-    border-radius: 2px;
-    background: rgba(20, 20, 20, 0.84);
-}
-
-html[data-theme="workbench"] body.layer3-page .authority-rail .rail-label {
-    font-size: 0.6rem;
-}
-
-html[data-theme="workbench"] body.layer3-page .authority-rail .rail-value {
+    padding: 9px;
     font-size: 0.74rem;
 }
 
+html[data-theme="workbench"] body.layer3-page .layer3-workspace {
+    background: rgba(9, 9, 9, 0.42);
+    box-shadow: inset 0 0 0 1px rgba(248, 248, 248, 0.04);
+}
+
+html[data-theme="workbench"] body.layer3-page .authority-rail {
+    grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+    gap: 5px 10px;
+    margin: 6px 8px 0;
+    padding: 5px 8px;
+    border: 1px solid #5b5b5b;
+    border-radius: 0;
+    background: rgba(8, 8, 8, 0.64);
+}
+
+html[data-theme="workbench"] body.layer3-page .authority-rail .rail-label {
+    font-size: 0.56rem;
+}
+
+html[data-theme="workbench"] body.layer3-page .authority-rail .rail-value {
+    font-size: 0.68rem;
+}
+
 html[data-theme="workbench"] body.layer3-page .workband {
-    margin: 8px 10px 0;
+    margin: 7px 8px 0;
     border: 1px dashed #7d7d7d;
     border-left: 4px solid var(--l3-stage-accent);
-    background: #1b1b1b;
+    background: #121212;
     box-shadow: inset 0 0 0 1px rgba(248, 248, 248, 0.035);
 }
 
 html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) {
-    background: rgba(27, 27, 27, 0.78);
+    border-style: dotted;
+    border-left-width: 2px;
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--l3-stage-accent) 5%, transparent), transparent 28%),
+        rgba(13, 13, 13, 0.56);
     box-shadow: none;
 }
 
@@ -185,7 +192,8 @@ html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band):
 }
 
 html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading {
-    padding: 10px 14px;
+    padding: 8px 13px;
+    background: rgba(18, 18, 18, 0.72);
 }
 
 html[data-theme="workbench"] body.layer3-page .intent-band {
@@ -214,7 +222,7 @@ html[data-theme="workbench"] body.layer3-page .external-export-download-band {
 
 html[data-theme="workbench"] body.layer3-page .section-heading,
 html[data-theme="workbench"] body.layer3-page .material-table th {
-    background: #242424;
+    background: rgba(36, 36, 36, 0.82);
     border-color: #535353;
 }
 
@@ -246,14 +254,14 @@ html[data-theme="workbench"] body.layer3-page .result-review-card,
 html[data-theme="workbench"] body.layer3-page .typing-card {
     border-style: dashed;
     border-color: #5b5b5b;
-    background: #242424;
+    background: rgba(25, 25, 25, 0.68);
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
-    margin: 8px 10px 0;
-    min-height: calc(100vh - 82px);
-    border: 1px solid #7d7d7d;
-    border-radius: 2px;
+    margin: 6px 8px 0;
+    min-height: calc(100vh - 66px);
+    border: 1px solid #9b9b9b;
+    border-radius: 0;
     background:
         linear-gradient(90deg, rgba(248, 248, 248, 0.025) 1px, transparent 1px),
         linear-gradient(180deg, rgba(248, 248, 248, 0.02) 1px, transparent 1px),
@@ -265,31 +273,34 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-heading {
-    padding: 9px 14px 0;
+    padding: 7px 12px 0;
     background: transparent;
     border-color: transparent;
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-heading h2 {
-    font-size: 0.92rem;
+    font-size: 0.86rem;
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
-    min-height: calc(100vh - 146px);
+    min-height: calc(100vh - 118px);
+    padding: 12px 18px 18px;
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-region {
-    border-color: #8d8d8d;
+    border-width: 3px;
+    border-color: #b4b4b4;
+    border-radius: 0;
     background:
         radial-gradient(circle at 12% 8%, rgba(125, 211, 252, 0.06), transparent 28%),
-        rgba(10, 10, 10, 0.74);
+        rgba(5, 5, 5, 0.66);
 }
 
 html[data-theme="workbench"] body.layer3-page .gate-panel,
 html[data-theme="workbench"] body.layer3-page .modality-bucket,
 html[data-theme="workbench"] body.layer3-page .analysis-plane {
-    border-color: #686868;
-    background: rgba(14, 14, 14, 0.58);
+    border-color: #767676;
+    background: rgba(20, 20, 20, 0.42);
 }
 
 html[data-theme="workbench"] body.layer3-page .gate-panel.diagram-gate {
@@ -302,18 +313,18 @@ html[data-theme="workbench"] body.layer3-page .gate-panel.diagram-gate {
 
 html[data-theme="workbench"] body.layer3-page .ledger-chip-field,
 html[data-theme="workbench"] body.layer3-page .modality-bucket {
-    border-style: dashed;
+    border-style: solid;
     background:
-        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 8%, transparent), transparent 46%),
-        rgba(9, 9, 9, 0.54);
+        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 7%, transparent), transparent 46%),
+        rgba(37, 37, 37, 0.5);
 }
 
 html[data-theme="workbench"] body.layer3-page .flow-object,
 html[data-theme="workbench"] body.layer3-page .flow-empty,
 html[data-theme="workbench"] body.layer3-page .plane-column,
 html[data-theme="workbench"] body.layer3-page .plane-process {
-    border-color: #4f4f4f;
-    background: #101010;
+    border-color: #555555;
+    background: #0b0b0b;
 }
 
 html[data-theme="workbench"] body.layer3-page .plane-column,
@@ -411,13 +422,17 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     padding: 16px 20px 20px;
 }
 
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
+    gap: 20px;
+}
+
 .diagram-canvas::before {
     content: "";
     position: absolute;
-    inset: 10px;
+    inset: 8px;
     z-index: -1;
-    border: 1px dotted color-mix(in srgb, var(--border-color) 72%, transparent);
-    border-radius: 8px;
+    border: 2px dotted color-mix(in srgb, var(--border-color) 72%, transparent);
+    border-radius: 0;
     pointer-events: none;
 }
 
@@ -443,6 +458,11 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     grid-template-columns: minmax(300px, 0.95fr) minmax(360px, 1.05fr);
     gap: 16px;
     min-width: 0;
+}
+
+html[data-theme="workbench"] body.layer3-page .canvas-intake-spec {
+    grid-template-columns: minmax(420px, 1.05fr) minmax(360px, 0.95fr);
+    gap: 18px;
 }
 
 .query-spec-block,
@@ -498,10 +518,40 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     line-height: 1.35;
 }
 
+html[data-theme="workbench"] body.layer3-page .query-spec-block,
+html[data-theme="workbench"] body.layer3-page .manual-source-spec {
+    min-height: 116px;
+    padding: 18px 22px;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            rgba(248, 248, 248, 0.035) 0,
+            rgba(248, 248, 248, 0.035) 1px,
+            transparent 1px,
+            transparent 24px
+        ),
+        rgba(37, 37, 37, 0.46);
+}
+
+html[data-theme="workbench"] body.layer3-page .query-spec-block p {
+    max-width: 760px;
+    color: #ffffff;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
 .source-spec-chip-grid {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
+}
+
+html[data-theme="workbench"] body.layer3-page .source-spec-chip-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+    align-content: start;
+    gap: 7px;
+    max-width: 520px;
 }
 
 .source-spec-chip {
@@ -517,6 +567,15 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     font-weight: 800;
 }
 
+html[data-theme="workbench"] body.layer3-page .source-spec-chip {
+    justify-content: center;
+    min-height: 28px;
+    border-radius: 0;
+    background: rgba(125, 211, 252, 0.12);
+    font-size: 0.68rem;
+    text-align: center;
+}
+
 .source-spec-chip.muted {
     border-style: dashed;
     color: var(--muted-text);
@@ -530,6 +589,13 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     border: 1px solid color-mix(in srgb, var(--border-color) 30%, transparent);
     border-radius: 3px;
     pointer-events: none;
+}
+
+html[data-theme="workbench"] body.layer3-page .sublayer-region::before {
+    inset: 16px;
+    border-style: dotted;
+    border-color: rgba(248, 248, 248, 0.22);
+    border-radius: 0;
 }
 
 .sublayer-region > * {
@@ -649,6 +715,12 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
         color-mix(in srgb, var(--control-bg) 66%, transparent);
 }
 
+html[data-theme="workbench"] body.layer3-page .ledger-chip-field {
+    min-height: 330px;
+    padding: 16px;
+    border-color: color-mix(in srgb, var(--modality-accent) 48%, #8d8d8d);
+}
+
 .ledger-bracket {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
@@ -698,6 +770,16 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
         0 1px 0 color-mix(in srgb, var(--modality-accent) 24%, transparent);
 }
 
+html[data-theme="workbench"] body.layer3-page .flow-object {
+    border-radius: 0;
+    padding: 4px 6px;
+    min-height: 26px;
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--modality-accent) 6%, transparent), transparent 72%),
+        #0a0a0a;
+    box-shadow: 0 0 0 1px rgba(248, 248, 248, 0.04);
+}
+
 .flow-object-head,
 .modality-heading,
 .analysis-plane-title {
@@ -721,6 +803,11 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     color: var(--text-color);
     font-size: 0.66rem;
     line-height: 1.12;
+}
+
+html[data-theme="workbench"] body.layer3-page .flow-object strong {
+    font-size: 0.62rem;
+    letter-spacing: 0.01em;
 }
 
 .flow-object > span,
@@ -844,6 +931,16 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     min-height: 154px;
 }
 
+html[data-theme="workbench"] body.layer3-page .modality-bucket {
+    min-height: 176px;
+    padding: 12px;
+    border-width: 2px;
+}
+
+html[data-theme="workbench"] body.layer3-page .modality-heading h4 {
+    font-size: 0.98rem;
+}
+
 .modality-bucket > .flow-object-list,
 .modality-bucket > .flow-empty {
     min-height: 92px;
@@ -889,9 +986,9 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     left: 0;
     right: 0;
     top: 50%;
-    height: 4px;
+    height: 5px;
     border-top: none;
-    background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+    background: linear-gradient(90deg, transparent, var(--diagram-flow-color, var(--primary-color)), transparent);
 }
 
 .sublayer-connector::after {
@@ -903,7 +1000,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     height: 0;
     border-top: 7px solid transparent;
     border-bottom: 7px solid transparent;
-    border-left: 12px solid var(--primary-color);
+    border-left: 12px solid var(--diagram-flow-color, var(--primary-color));
 }
 
 .sublayer-connector span {
@@ -926,7 +1023,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     height: auto;
     border-top: none;
     border-left: none;
-    background: linear-gradient(180deg, transparent, var(--primary-color), transparent);
+    background: linear-gradient(180deg, transparent, var(--diagram-flow-color, var(--primary-color)), transparent);
 }
 
 .sublayer-connector-3bc::after {
@@ -934,7 +1031,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     right: auto;
     bottom: 0;
     left: calc(50% - 5px);
-    border-top: 8px solid var(--primary-color);
+    border-top: 8px solid var(--diagram-flow-color, var(--primary-color));
     border-right: 5px solid transparent;
     border-bottom: none;
     border-left: 5px solid transparent;
@@ -952,6 +1049,18 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
         color-mix(in srgb, var(--pane-bg) 58%, transparent);
 }
 
+html[data-theme="workbench"] body.layer3-page .analysis-plane {
+    border-style: solid;
+    padding: 16px;
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 6%, transparent), transparent 26%),
+        rgba(31, 31, 31, 0.46);
+}
+
+html[data-theme="workbench"] body.layer3-page .analysis-plane-title h4 {
+    font-size: 0.96rem;
+}
+
 .plane-flow {
     display: grid;
     grid-template-columns: minmax(220px, 0.88fr) 86px minmax(210px, 0.78fr) 86px minmax(320px, 1.22fr);
@@ -959,6 +1068,10 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     align-items: stretch;
     gap: 0;
     min-width: 0;
+}
+
+html[data-theme="workbench"] body.layer3-page .plane-flow {
+    grid-template-columns: minmax(190px, 0.78fr) 64px minmax(170px, 0.62fr) 64px minmax(260px, 1.08fr);
 }
 
 .plane-column,
@@ -1012,6 +1125,10 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     border-left: 2px solid color-mix(in srgb, var(--modality-accent) 62%, var(--border-color));
 }
 
+html[data-theme="workbench"] body.layer3-page .plane-bracket {
+    border-color: var(--diagram-flow-color);
+}
+
 .plane-arrow {
     position: relative;
     display: block;
@@ -1019,7 +1136,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     justify-self: stretch;
     height: 5px;
     margin: 0 10px;
-    background: linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 20%, transparent), var(--modality-accent));
+    background: linear-gradient(90deg, color-mix(in srgb, var(--diagram-flow-color, var(--modality-accent)) 20%, transparent), var(--diagram-flow-color, var(--modality-accent)));
 }
 
 .plane-arrow::after {
@@ -1029,7 +1146,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     top: -8px;
     border-top: 10px solid transparent;
     border-bottom: 10px solid transparent;
-    border-left: 16px solid var(--modality-accent);
+    border-left: 16px solid var(--diagram-flow-color, var(--modality-accent));
 }
 
 .plane-arrow-process {
@@ -1071,12 +1188,12 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 
 @media (min-width: 1500px) {
     html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
-        grid-template-columns: minmax(220px, 0.58fr) 48px minmax(250px, 0.64fr) 52px minmax(410px, 1.38fr);
+        grid-template-columns: minmax(240px, 0.52fr) 52px minmax(276px, 0.6fr) 60px minmax(610px, 1.56fr);
         grid-template-areas:
             "spec spec spec spec spec"
             "threea connector3ab threeb connector3bc threec";
         align-items: stretch;
-        gap: 14px;
+        gap: 15px;
     }
 
     html[data-theme="workbench"] body.layer3-page .sublayer-3a,
@@ -1086,7 +1203,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     }
 
     html[data-theme="workbench"] body.layer3-page .ledger-chip-field {
-        min-height: 270px;
+        min-height: 340px;
     }
 
     html[data-theme="workbench"] body.layer3-page .sublayer-connector-3bc {
@@ -1099,8 +1216,8 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
         top: 50%;
         bottom: auto;
         width: auto;
-        height: 4px;
-        background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+        height: 5px;
+        background: linear-gradient(90deg, transparent, var(--diagram-flow-color, var(--primary-color)), transparent);
     }
 
     html[data-theme="workbench"] body.layer3-page .sublayer-connector-3bc::after {
@@ -1110,7 +1227,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
         left: auto;
         border-top: 7px solid transparent;
         border-bottom: 7px solid transparent;
-        border-left: 12px solid var(--primary-color);
+        border-left: 12px solid var(--diagram-flow-color, var(--primary-color));
         border-right: none;
     }
 
@@ -1119,11 +1236,11 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     }
 
     html[data-theme="workbench"] body.layer3-page .analysis-plane {
-        padding: 11px;
+        padding: 13px;
     }
 
     html[data-theme="workbench"] body.layer3-page .plane-flow {
-        grid-template-columns: minmax(118px, 0.88fr) 36px minmax(118px, 0.78fr) 36px minmax(160px, 1.18fr);
+        grid-template-columns: minmax(126px, 0.72fr) 34px minmax(112px, 0.56fr) 34px minmax(172px, 1.08fr);
     }
 
     html[data-theme="workbench"] body.layer3-page .plane-column,
@@ -1554,6 +1671,41 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 
     .canvas-intake-spec {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .canvas-intake-spec {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .plane-flow,
+    html[data-theme="workbench"] body.layer3-page .plane-flow {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "inputs"
+            "arrow-process"
+            "process"
+            "arrow-output"
+            "outputs";
+        gap: 8px;
+    }
+
+    .plane-arrow {
+        justify-self: center;
+        width: 4px;
+        height: 28px;
+        margin: 0;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--diagram-flow-color, var(--modality-accent)) 20%, transparent), var(--diagram-flow-color, var(--modality-accent)));
+    }
+
+    .plane-arrow::after {
+        right: auto;
+        top: auto;
+        bottom: -1px;
+        left: -6px;
+        border-top: 11px solid var(--diagram-flow-color, var(--modality-accent));
+        border-right: 8px solid transparent;
+        border-bottom: none;
+        border-left: 8px solid transparent;
     }
 
     .sublayer-connector {
