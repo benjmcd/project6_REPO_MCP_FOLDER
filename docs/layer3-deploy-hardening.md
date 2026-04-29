@@ -65,7 +65,7 @@ Use this packet before any further deployment-hardening implementation. It recor
 
 ### Minimal Non-Local Environment Shape
 
-The following is a template, not a production configuration:
+The following is a template, not a production configuration. The standalone non-secret template is `docs/layer3-nonlocal.env.template`; copy values from it into the selected deployment environment or secret manager only after replacing placeholders.
 
 ```text
 DEPLOYMENT_MODE=nonlocal
@@ -97,15 +97,16 @@ Use this procedure only after the deployment owner supplies real values for the 
 
 ```text
 DEPLOYMENT_MODE=nonlocal
-ALLOWED_ORIGINS=<exact HTTPS origin list>
+ALLOWED_ORIGINS=<exact-https-origin-list>
 CORS_ALLOW_CREDENTIALS=false
 AUTH_OWNER=proxy
 PROXY_IDENTITY_HEADER=<selected identity header, default X-Forwarded-User>
-PROXY_EMAIL_HEADER=<optional proxy-owned email header>
-PROXY_GROUPS_HEADER=<optional proxy-owned groups header>
 TRUSTED_PROXY_MODE=true
 STORAGE_EXPOSURE=auto
 DB_INIT_MODE=none
+# Optional only if proxy-owned and trustworthy:
+# PROXY_EMAIL_HEADER=X-Forwarded-Email
+# PROXY_GROUPS_HEADER=X-Forwarded-Groups
 ```
 
 2. Run the repo-level guardrail proof from the repo root:
