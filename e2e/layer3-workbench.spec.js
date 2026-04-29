@@ -672,6 +672,9 @@ test('Layer 3 workbench approves an admissible plan without starting execution',
   await page.locator('#plan-preview').click();
   const planPreview = await expectJson(await planPreviewResponsePromise);
   expect(planPreview.preview_hash).toBeTruthy();
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'session|empty|planned');
+  await expect(page.locator('.analysis-plane.modality-quantitative .plane-inputs')).toContainText('analysis set');
+  await expect(page.locator('.analysis-plane.modality-quantitative .plane-process')).toContainText('planned');
   await expect(page.locator('#plan-approve')).toBeEnabled();
 
   const approvalResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/plan/approve'));
@@ -682,6 +685,8 @@ test('Layer 3 workbench approves an admissible plan without starting execution',
   expect(approval.execution_started).toBe(false);
   expect(approval.approved_plan.would_create_pass_runs).toBe(false);
   expect(approval.approved_plan.would_execute_passes).toBe(false);
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'session|empty|planned');
+  await expect(page.locator('.analysis-plane.modality-quantitative .plane-process')).toContainText('approval only');
 
   await expect(page.locator('#plan-panel')).toContainText('approved');
   await expect(page.locator('#plan-panel')).toContainText('not started');
@@ -716,6 +721,9 @@ test('Layer 3 workbench records selected-pass result review only after status au
   expect(summary.execution_selection.selected).toBe(true);
   expect(summary.execution_selection.pass_run_ids).toEqual([setup.passRunId]);
   expect(summary.execution_selection.analysis_plan_id).toBe(setup.approval.analysis_plan_id);
+  await expect(page.locator('.execution-state-field')).toContainText('Execution selection');
+  await expect(page.locator('.execution-state-field')).toContainText('Execution start');
+  await expect(page.locator('.execution-state-field')).toContainText('Output payload');
 
   await expect(page.locator('#result-status-inspect')).toBeEnabled();
   await expect(page.locator('#result-review-submit')).toBeDisabled();
@@ -752,6 +760,10 @@ test('Layer 3 workbench records selected-pass result review only after status au
 
   const status = await expectJson(await statusResponsePromise);
   expect(status.result_status_available).toBe(true);
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'session|empty|outputs');
+  await expect(page.locator('.execution-state-field')).toContainText('Result status');
+  await expect(page.locator('.analysis-plane.modality-quantitative .plane-process')).toContainText('Result status');
+  await expect(page.locator('.analysis-plane.modality-quantitative .plane-outputs')).toContainText('Output payload');
   await expect(page.locator('#result-review-panel')).toContainText('result_review_ui_review_ready');
 
   await page.locator('#result-review-decision').selectOption('changes_requested');
