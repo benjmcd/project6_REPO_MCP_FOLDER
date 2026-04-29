@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="/review/layer3/static/review.css">
     <link rel="stylesheet" href="/review/layer3/static/layer3.css">
 </head>
-<body>
+<body class="layer3-page">
     <header class="app-header layer3-header">
         <div class="header-left layer3-header-left">
             <a href="/review/nrc-aps" class="back-link" aria-label="Back to Pipeline Review">&larr; Back</a>
@@ -41,21 +41,21 @@
 
     <main class="app-body layer3-body">
         <aside class="layer3-stepper" aria-label="Layer 3 workflow">
-            <button class="step-chip active" data-step="intent" type="button">Intent</button>
-            <button class="step-chip active" data-step="sources" type="button">Sources</button>
-            <button class="step-chip active" data-step="gate_b" type="button">Gate B</button>
-            <button class="step-chip active" data-step="gate_c" type="button">Gate C</button>
-            <button id="plan-step-chip" class="step-chip unavailable" data-step="plan" type="button" disabled>Plan</button>
-            <button id="execution-step-chip" class="step-chip unavailable" data-step="execution" type="button" disabled>Execution</button>
-            <button id="results-step-chip" class="step-chip unavailable" data-step="results" type="button" disabled>Results</button>
-            <button id="package-step-chip" class="step-chip unavailable" data-step="package" type="button" disabled>Package</button>
-            <button id="handoff-step-chip" class="step-chip unavailable" data-step="handoff" type="button" disabled>Handoff</button>
+            <button class="step-chip active current" data-step="intent" data-step-target="intent-band" aria-controls="intent-band" aria-current="step" type="button">Intent</button>
+            <button class="step-chip active" data-step="sources" data-step-target="source-fieldset" aria-controls="source-fieldset" type="button">Sources</button>
+            <button class="step-chip active" data-step="gate_b" data-step-target="gate-b-band" aria-controls="gate-b-band" type="button">Gate B</button>
+            <button class="step-chip active" data-step="gate_c" data-step-target="gate-c-band" aria-controls="gate-c-band" type="button">Gate C</button>
+            <button id="plan-step-chip" class="step-chip unavailable" data-step="plan" data-step-target="plan-band" aria-controls="plan-band" data-available="false" type="button">Plan</button>
+            <button id="execution-step-chip" class="step-chip unavailable" data-step="execution" data-step-target="result-review-band" aria-controls="result-review-band" data-available="false" type="button">Execution</button>
+            <button id="results-step-chip" class="step-chip unavailable" data-step="results" data-step-target="result-review-band" aria-controls="result-review-band" data-available="false" type="button">Results</button>
+            <button id="package-step-chip" class="step-chip unavailable" data-step="package" data-step-target="package-review-band" aria-controls="package-review-band" data-available="false" type="button">Package</button>
+            <button id="handoff-step-chip" class="step-chip unavailable" data-step="handoff" data-step-target="handoff-export-band" aria-controls="handoff-export-band" data-available="false" type="button">Handoff</button>
         </aside>
 
         <section class="layer3-workspace" aria-label="Layer 3 first slice">
             <section class="authority-rail" id="authority-rail" aria-label="Authority rail"></section>
 
-            <section class="workband intent-band" aria-labelledby="intent-heading">
+            <section id="intent-band" class="workband intent-band" aria-labelledby="intent-heading" tabindex="-1">
                 <div class="section-heading">
                     <h2 id="intent-heading">Intent</h2>
                     <span class="status-pill preview">Preview only</span>
@@ -63,7 +63,7 @@
                 <form id="intent-form" class="intent-form">
                     <label for="layer3-intent">Operator intent</label>
                     <textarea id="layer3-intent" name="layer3-intent" rows="4">Review deterministic dataset and APS document material for bounded Layer 3 typing.</textarea>
-                    <fieldset class="source-fieldset">
+                    <fieldset id="source-fieldset" class="source-fieldset" tabindex="-1">
                         <legend>Source classes</legend>
                         <label><input type="checkbox" name="source-class" value="dataset_version" checked> Dataset version</label>
                         <label><input type="checkbox" name="source-class" value="aps_content_document" checked> APS content document</label>
@@ -72,7 +72,7 @@
                 </form>
             </section>
 
-            <section class="workband material-band" aria-labelledby="material-heading">
+            <section id="gate-b-band" class="workband material-band" aria-labelledby="material-heading" tabindex="-1">
                 <div class="section-heading">
                     <h2 id="material-heading">Gate B Material Ledger</h2>
                     <button id="gate-b-submit" class="primary-btn" type="button" disabled>Commit Gate B</button>
@@ -100,7 +100,7 @@
                 </div>
             </section>
 
-            <section class="workband gatec-band" aria-labelledby="gatec-heading">
+            <section id="gate-c-band" class="workband gatec-band" aria-labelledby="gatec-heading" tabindex="-1">
                 <div class="section-heading">
                     <h2 id="gatec-heading">Gate C Typing Review</h2>
                     <div class="action-row">
@@ -113,7 +113,7 @@
                 </div>
             </section>
 
-            <section class="workband plan-band" aria-labelledby="plan-heading">
+            <section id="plan-band" class="workband plan-band" aria-labelledby="plan-heading" tabindex="-1">
                 <div class="section-heading">
                     <div>
                         <h2 id="plan-heading">Plan Preview And Approval</h2>
@@ -131,7 +131,7 @@
                 </div>
             </section>
 
-            <section class="workband result-review-band" aria-labelledby="result-review-heading">
+            <section id="result-review-band" class="workband result-review-band" aria-labelledby="result-review-heading" tabindex="-1">
                 <div class="section-heading">
                     <div>
                         <h2 id="result-review-heading">Result Review</h2>
@@ -161,7 +161,7 @@
                 </form>
             </section>
 
-            <section class="workband package-review-band" aria-labelledby="package-review-heading">
+            <section id="package-review-band" class="workband package-review-band" aria-labelledby="package-review-heading" tabindex="-1">
                 <div class="section-heading">
                     <div>
                         <h2 id="package-review-heading">Package Review</h2>
@@ -191,7 +191,7 @@
                 </form>
             </section>
 
-            <section class="workband handoff-export-band" aria-labelledby="handoff-export-heading">
+            <section id="handoff-export-band" class="workband handoff-export-band" aria-labelledby="handoff-export-heading" tabindex="-1">
                 <div class="section-heading">
                     <div>
                         <h2 id="handoff-export-heading">Handoff / Export Preparation</h2>
@@ -217,7 +217,7 @@
                 </form>
             </section>
 
-            <section class="workband aps-handoff-band" aria-labelledby="aps-handoff-heading">
+            <section id="aps-handoff-band" class="workband aps-handoff-band" aria-labelledby="aps-handoff-heading" tabindex="-1">
                 <div class="section-heading">
                     <div>
                         <h2 id="aps-handoff-heading">APS Handoff Dispatch</h2>
@@ -234,7 +234,7 @@
                 </form>
             </section>
 
-            <section class="workband external-export-download-band" aria-labelledby="external-export-download-heading">
+            <section id="external-export-download-band" class="workband external-export-download-band" aria-labelledby="external-export-download-heading" tabindex="-1">
                 <div class="section-heading">
                     <div>
                         <h2 id="external-export-download-heading">External Export / Download Readiness</h2>
