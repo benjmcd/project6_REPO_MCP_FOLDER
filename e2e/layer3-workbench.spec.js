@@ -264,6 +264,64 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   });
 });
 
+test('Layer 3 workbench renders a responsive live-state sublayer material and analysis map', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const bootstrapResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/bootstrap'));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expectJson(await bootstrapResponsePromise);
+  await page.locator('#theme-selector').selectOption('workbench');
+
+  await expect(page.locator('#sublayer-map-panel')).toContainText('Sublayer 3A');
+  await expect(page.locator('#sublayer-map-panel')).toContainText('Sublayer 3B');
+  await expect(page.locator('#sublayer-map-panel')).toContainText('Sublayer 3C');
+  await expect(page.locator('.sublayer-3a .flow-empty')).toContainText('No material preview');
+  await expect(page.locator('.modality-bucket.modality-quantitative')).toContainText('No quantitative objects');
+  await expect(page.locator('.analysis-plane.modality-quantitative')).toContainText('No live input object');
+
+  const preflightResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/preflight'));
+  const sourceResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/source-preview'));
+  const materialResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/material-preview'));
+  await page.locator('#run-preflight').click();
+  await Promise.all([
+    expectJson(await preflightResponsePromise),
+    expectJson(await sourceResponsePromise),
+    expectJson(await materialResponsePromise),
+  ]);
+
+  await expect(page.locator('.sublayer-3a .flow-object')).toHaveCount(2);
+  await expect(page.locator('.sublayer-3a')).toContainText('Dataset Version');
+
+  const rows = page.locator('#material-ledger-body tr[data-candidate-id]');
+  await rows.nth(1).locator('.decision-select').selectOption('denied');
+  await rows.nth(1).locator('.reason-input').fill('Deferred outside this visual proof.');
+  await expect(page.locator('.sublayer-3a')).toContainText('denied');
+
+  const gateBResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/gate-b/decision'));
+  await page.locator('#gate-b-submit').click();
+  await expectJson(await gateBResponsePromise);
+
+  const gateCResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/gate-c/preview'));
+  await page.locator('#gate-c-preview').click();
+  const gateC = await expectJson(await gateCResponsePromise);
+  expect(gateC.typing_records.length).toBeGreaterThan(0);
+
+  await expect(page.locator('.modality-bucket.modality-quantitative .flow-object')).toHaveCount(gateC.typing_records.length);
+  await expect(page.locator('.analysis-plane.modality-quantitative .plane-column').first()).toContainText('modality quantitative');
+  await expect(page.locator('.analysis-plane.modality-quantitative .plane-process')).toContainText('No live process yet');
+  await expect(page.locator('.analysis-plane.modality-quantitative .plane-column').last()).toContainText('No live output');
+
+  const desktopFit = await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1);
+  expect(desktopFit).toBe(true);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('#sublayer-map-panel')).toBeVisible();
+  await expect(page.locator('.sublayer-3a')).toBeVisible();
+  await expect(page.locator('.sublayer-3b')).toBeVisible();
+  await expect(page.locator('.sublayer-3c')).toBeVisible();
+  const mobileFit = await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1);
+  expect(mobileFit).toBe(true);
+});
+
 async function prepareExecutedLayer3Session(request, seedPath = '/__test/layer3/seed-quant') {
   const seed = await expectJson(await request.post(seedPath));
   const planPreview = await expectJson(await request.post('/api/v1/layer3/plan/preview', {
