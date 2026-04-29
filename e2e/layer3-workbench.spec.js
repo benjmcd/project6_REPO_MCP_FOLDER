@@ -292,7 +292,11 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   await expect(page.locator('#sublayer-map-panel')).toContainText('Sublayer 3B');
   await expect(page.locator('#sublayer-map-panel')).toContainText('Sublayer 3C');
   await expect(page.locator('#sublayer-map-panel')).toHaveClass(/diagram-canvas/);
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'empty|empty|structural');
   await expect(page.locator('.canvas-intake-spec')).toContainText('User Natural Language Query Input');
+  await expect(page.locator('.canvas-state-flow')).toContainText('3A');
+  await expect(page.locator('.canvas-state-flow')).toContainText('Awaiting live state');
+  await expect(page.locator('.canvas-state-flow')).toContainText('Structural only');
   await expect(page.locator('.manual-source-spec')).toContainText('Dataset version');
   await expect(page.locator('.manual-source-spec')).toContainText('APS content document');
   await expect(page.locator('.ledger-chip-field')).toBeVisible();
@@ -315,6 +319,7 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
 
   await expect(page.locator('.sublayer-3a .flow-object')).toHaveCount(2);
   await expect(page.locator('.sublayer-3a .diagram-chip')).toHaveCount(2);
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'preview|empty|structural');
   await expect(page.locator('.sublayer-3a')).toContainText('Dataset Version');
 
   const rows = page.locator('#material-ledger-body tr[data-candidate-id]');
@@ -333,6 +338,9 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
 
   await expect(page.locator('.modality-bucket.modality-quantitative .flow-object')).toHaveCount(gateC.typing_records.length);
   await expect(page.locator('.modality-bucket.modality-quantitative .diagram-chip')).toHaveCount(gateC.typing_records.length);
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'session|typed|structural');
+  await expect(page.locator('.state-3a')).toContainText('Session scoped');
+  await expect(page.locator('.state-3b')).toContainText('Typing previewed');
   await expect(page.locator('.analysis-plane.modality-quantitative .plane-column').first()).toContainText('modality quantitative');
   await expect(page.locator('.analysis-plane.modality-quantitative .plane-process')).toContainText('No live process yet');
   await expect(page.locator('.analysis-plane.modality-quantitative .plane-column').last()).toContainText('No live output');
@@ -344,9 +352,12 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     const arrow = window.getComputedStyle(document.querySelector('.plane-arrow-process'));
     const chip = window.getComputedStyle(document.querySelector('.sublayer-3a .diagram-chip'));
     const intake = window.getComputedStyle(document.querySelector('.canvas-intake-spec'));
+    const stateFlow = window.getComputedStyle(document.querySelector('.canvas-state-flow'));
     return {
       intakeDisplay: intake.display,
       intakeGridArea: intake.gridArea,
+      stateFlowDisplay: stateFlow.display,
+      stateFlowGridArea: stateFlow.gridArea,
       sublayerBorderStyle: sublayer.borderTopStyle,
       modalityBorderStyle: modality.borderTopStyle,
       modalityColumns: modality.gridTemplateColumns.split(' ').filter(Boolean).length,
@@ -358,6 +369,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   expect(diagramStyles).toEqual({
     intakeDisplay: 'grid',
     intakeGridArea: 'spec',
+    stateFlowDisplay: 'grid',
+    stateFlowGridArea: 'stateflow',
     sublayerBorderStyle: 'dotted',
     modalityBorderStyle: 'solid',
     modalityColumns: 2,

@@ -1270,6 +1270,98 @@ function outputCardsForModality(modality) {
     return modality === 'unclassified' ? [] : cards;
 }
 
+function sublayerStateLabel(state) {
+    const labels = {
+        empty: 'Awaiting live state',
+        preview: 'Preview loaded',
+        session: 'Session scoped',
+        typed: 'Typing previewed',
+        structural: 'Structural only',
+        planned: 'Plan inputs loaded',
+        outputs: 'Outputs reported',
+    };
+    return labels[state] || humanizeToken(state);
+}
+
+function currentSublayerVisualizationModel() {
+    const rail = currentAuthorityRail() || {};
+    const materialObjects = currentMaterialObjects();
+    const typingObjects = currentTypingObjects();
+    const planObjects = currentPlanSetObjects();
+    const typedGroups = groupedByModality(typingObjects);
+    const planGroups = groupedByModality(planObjects);
+    const plannedPasses = currentPlannedPasses();
+    const hasSessionScope = Boolean(State.gateB?.session_id || (rail.session_id && rail.session_id !== 'none'));
+    const hasOutputs = SUBLAYER_MODALITIES.some((modality) => outputCardsForModality(modality).length > 0);
+    const threeAState = materialObjects.length ? (hasSessionScope ? 'session' : 'preview') : 'empty';
+    const threeBState = typingObjects.length ? 'typed' : 'empty';
+    const threeCState = hasOutputs ? 'outputs' : (planObjects.length || plannedPasses.length ? 'planned' : 'structural');
+
+    const gateBMessage = materialObjects.length
+        ? (
+            hasSessionScope
+                ? 'Session-scoped material objects are represented from the current material preview, Gate B response, or authority rail.'
+                : 'Source-plane material preview candidates are loaded; Gate B has not committed them into session state yet.'
+        )
+        : 'No source-plane material is loaded yet. Run Preflight to request material preview.';
+    const gateCMessage = typingObjects.length
+        ? 'Gate C typing objects are grouped by repo-reported modality.'
+        : 'No Gate C typing state is loaded yet. Commit Gate B and preview Gate C to classify material.';
+    const planeIntro = planObjects.length || plannedPasses.length
+        ? '3C planes are populated from plan preview or approved-plan state where available.'
+        : '3C planes are structural and neutral until plan preview, approval, execution, or result status reports live data.';
+
+    const modalityBuckets = SUBLAYER_MODALITIES.map((modality) => {
+        const objects = typedGroups[modality] || [];
+        return {
+            modality,
+            meta: modalityMeta(modality),
+            objects,
+            state: objects.length ? 'loaded' : 'empty',
+        };
+    });
+
+    const analysisPlanes = SUBLAYER_MODALITIES
+        .filter((modality) => modality !== 'unclassified')
+        .map((modality) => {
+            const inputs = (planGroups[modality] || []).length ? planGroups[modality] : (typedGroups[modality] || []);
+            const passes = planPassesForModality(modality);
+            const outputs = outputCardsForModality(modality);
+            return {
+                modality,
+                meta: modalityMeta(modality),
+                inputs,
+                passes,
+                outputs,
+                state: outputs.length ? 'outputs' : (passes.length || inputs.length ? 'inputs' : 'empty'),
+            };
+        });
+
+    return {
+        rail,
+        intentText: currentIntentText(),
+        sourceLabels: selectedSourceClassLabels(),
+        threeA: {
+            state: threeAState,
+            stateLabel: sublayerStateLabel(threeAState),
+            objects: materialObjects,
+            message: gateBMessage,
+        },
+        threeB: {
+            state: threeBState,
+            stateLabel: sublayerStateLabel(threeBState),
+            buckets: modalityBuckets,
+            message: gateCMessage,
+        },
+        threeC: {
+            state: threeCState,
+            stateLabel: sublayerStateLabel(threeCState),
+            planes: analysisPlanes,
+            message: planeIntro,
+        },
+    };
+}
+
 function renderFlowObjects(items, emptyMessage) {
     if (!items.length) {
         return `
@@ -1308,25 +1400,23 @@ function renderFlowObjects(items, emptyMessage) {
     `;
 }
 
-function renderModalityBucket(modality, objects) {
-    const meta = modalityMeta(modality);
+function renderModalityBucket(bucket) {
+    const { modality, meta, objects, state } = bucket;
     return `
-        <section class="modality-bucket modality-${escapeHtml(modality)}" aria-label="${escapeHtml(meta.label)}">
+        <section class="modality-bucket modality-${escapeHtml(modality)} viz-state-${escapeHtml(state)}" aria-label="${escapeHtml(meta.label)}" data-modality="${escapeHtml(modality)}" data-object-count="${objects.length}">
             <div class="modality-heading">
                 <span class="modality-dot" aria-hidden="true"></span>
                 <h4>${escapeHtml(meta.label)}</h4>
-                <span>${objects.length}</span>
+                <span>${objects.length} objects</span>
             </div>
+            <div class="modality-route-label" aria-hidden="true">Object bank / grouping field</div>
             ${renderFlowObjects(objects, meta.empty)}
         </section>
     `;
 }
 
-function renderAnalysisPlane(modality, typingObjects, planObjects) {
-    const meta = modalityMeta(modality);
-    const inputs = planObjects.length ? planObjects : typingObjects;
-    const passes = planPassesForModality(modality);
-    const outputCards = outputCardsForModality(modality);
+function renderAnalysisPlane(plane) {
+    const { modality, meta, inputs, passes, outputs, state } = plane;
     const processBody = passes.length
         ? passes.map((pass) => `
             <li>
@@ -1336,10 +1426,11 @@ function renderAnalysisPlane(modality, typingObjects, planObjects) {
         `).join('')
         : '<li><strong>No live process yet</strong><span>Plan preview or approval has not reported a pass for this plane.</span></li>';
     return `
-        <article class="analysis-plane modality-${escapeHtml(modality)}">
+        <article class="analysis-plane modality-${escapeHtml(modality)} viz-state-${escapeHtml(state)}" data-modality="${escapeHtml(modality)}">
             <div class="analysis-plane-title">
                 <span class="modality-dot" aria-hidden="true"></span>
                 <h4>${escapeHtml(meta.plane)}</h4>
+                <span class="plane-state-label">${escapeHtml(sublayerStateLabel(state))}</span>
             </div>
             <div class="plane-flow">
                 <section class="plane-column plane-inputs">
@@ -1357,7 +1448,7 @@ function renderAnalysisPlane(modality, typingObjects, planObjects) {
                 <span class="plane-arrow plane-arrow-output" aria-hidden="true"></span>
                 <section class="plane-column plane-outputs">
                     <h5>Output cards</h5>
-                    ${renderFlowObjects(outputCards.map((card) => ({
+                    ${renderFlowObjects(outputs.map((card) => ({
                         id: card.secondary,
                         label: card.label,
                         kind: 'output card',
@@ -1375,34 +1466,16 @@ function renderAnalysisPlane(modality, typingObjects, planObjects) {
 
 function renderSublayerMap() {
     if (!elements.sublayerMapPanel) return;
-    const rail = currentAuthorityRail() || {};
-    const materialObjects = currentMaterialObjects();
-    const typingObjects = currentTypingObjects();
-    const typedGroups = groupedByModality(typingObjects);
-    const planObjects = currentPlanSetObjects();
-    const planGroups = groupedByModality(planObjects);
-    const hasSessionScope = Boolean(State.gateB?.session_id || (rail.session_id && rail.session_id !== 'none'));
-    const intentText = currentIntentText();
-    const sourceLabels = selectedSourceClassLabels();
-    const gateBMessage = materialObjects.length
-        ? (
-            hasSessionScope
-                ? 'Session-scoped material objects are represented from the current material preview, Gate B response, or authority rail.'
-                : 'Source-plane material preview candidates are loaded; Gate B has not committed them into session state yet.'
-        )
-        : 'No source-plane material is loaded yet. Run Preflight to request material preview.';
-    const gateCMessage = typingObjects.length
-        ? 'Gate C typing objects are grouped by repo-reported modality.'
-        : 'No Gate C typing state is loaded yet. Commit Gate B and preview Gate C to classify material.';
-    const planeIntro = planObjects.length || currentPlannedPasses().length
-        ? '3C planes are populated from plan preview or approved-plan state where available.'
-        : '3C planes are structural and neutral until plan preview, approval, execution, or result status reports live data.';
+    const model = currentSublayerVisualizationModel();
+    const rail = model.rail;
+    const sourceLabels = model.sourceLabels;
 
+    elements.sublayerMapPanel.dataset.vizState = `${model.threeA.state}|${model.threeB.state}|${model.threeC.state}`;
     elements.sublayerMapPanel.innerHTML = `
         <section class="canvas-intake-spec" aria-label="Layer 3 intake specification">
             <article class="query-spec-block">
                 <span>User Natural Language Query Input</span>
-                <p>${escapeHtml(shortText(intentText, 170))}</p>
+                <p>${escapeHtml(shortText(model.intentText, 170))}</p>
             </article>
             <article class="manual-source-spec">
                 <span>User Manual / Custom Source Specification</span>
@@ -1413,14 +1486,31 @@ function renderSublayerMap() {
                 </div>
             </article>
         </section>
-        <section class="sublayer-region sublayer-3a" aria-label="Sublayer 3A material intake and session scoping">
+        <nav class="canvas-state-flow" aria-label="Layer 3 visualization state">
+            <span class="state-node state-3a viz-state-${escapeHtml(model.threeA.state)}">
+                <strong>3A</strong>
+                <span>${escapeHtml(model.threeA.stateLabel)}</span>
+            </span>
+            <span class="state-flow-link" aria-hidden="true"></span>
+            <span class="state-node state-3b viz-state-${escapeHtml(model.threeB.state)}">
+                <strong>3B</strong>
+                <span>${escapeHtml(model.threeB.stateLabel)}</span>
+            </span>
+            <span class="state-flow-link" aria-hidden="true"></span>
+            <span class="state-node state-3c viz-state-${escapeHtml(model.threeC.state)}">
+                <strong>3C</strong>
+                <span>${escapeHtml(model.threeC.stateLabel)}</span>
+            </span>
+        </nav>
+        <section class="sublayer-region sublayer-3a viz-state-${escapeHtml(model.threeA.state)}" aria-label="Sublayer 3A material intake and session scoping">
             <div class="sublayer-title">
                 <span>Sublayer 3A</span>
                 <strong>Material Intake &amp; Session Scoping</strong>
+                <em>${escapeHtml(model.threeA.stateLabel)}</em>
             </div>
             <div class="gate-panel diagram-gate">
                 <h3>Gate B / Session Entry / Material Ledger</h3>
-                <p>${escapeHtml(gateBMessage)}</p>
+                <p>${escapeHtml(model.threeA.message)}</p>
                 <div class="mini-rail">
                     <span>Session ${escapeHtml(shortText(rail.session_id || 'none', 24))}</span>
                     <span>Approved ${escapeHtml(rail.approved_material_count ?? 0)}</span>
@@ -1430,37 +1520,37 @@ function renderSublayerMap() {
             </div>
             <div class="ledger-chip-field">
                 <div class="ledger-bracket"><span>Session-scoped Materials / Material Snapshots</span></div>
-                ${renderFlowObjects(materialObjects, 'No material preview, session entry, or material ledger object is currently loaded.')}
+                ${renderFlowObjects(model.threeA.objects, 'No material preview, session entry, or material ledger object is currently loaded.')}
             </div>
         </section>
         <div class="sublayer-connector sublayer-connector-3ab" aria-hidden="true"><span>3A to 3B</span></div>
-        <section class="sublayer-region sublayer-3b" aria-label="Sublayer 3B typing and set formation">
+        <section class="sublayer-region sublayer-3b viz-state-${escapeHtml(model.threeB.state)}" aria-label="Sublayer 3B typing and set formation">
             <div class="sublayer-title">
                 <span>Sublayer 3B</span>
                 <strong>Typing, Unit/Group/Set Formation</strong>
+                <em>${escapeHtml(model.threeB.stateLabel)}</em>
             </div>
             <div class="gate-panel diagram-gate">
                 <h3>Gate C Typing</h3>
-                <p>${escapeHtml(gateCMessage)}</p>
+                <p>${escapeHtml(model.threeB.message)}</p>
             </div>
             <div class="modality-buckets">
-                ${SUBLAYER_MODALITIES.map((modality) => renderModalityBucket(modality, typedGroups[modality])).join('')}
+                ${model.threeB.buckets.map((bucket) => renderModalityBucket(bucket)).join('')}
             </div>
         </section>
         <div class="sublayer-connector sublayer-connector-3bc" aria-hidden="true"><span>3B to 3C</span></div>
-        <section class="sublayer-region sublayer-3c" aria-label="Sublayer 3C analysis execution environments">
+        <section class="sublayer-region sublayer-3c viz-state-${escapeHtml(model.threeC.state)}" aria-label="Sublayer 3C analysis execution environments">
             <div class="sublayer-title">
                 <span>Sublayer 3C</span>
                 <strong>Analysis Execution Environments / Planes</strong>
+                <em>${escapeHtml(model.threeC.stateLabel)}</em>
             </div>
             <div class="gate-panel diagram-gate">
                 <h3>Input To Process To Output</h3>
-                <p>${escapeHtml(planeIntro)}</p>
+                <p>${escapeHtml(model.threeC.message)}</p>
             </div>
             <div class="analysis-planes">
-                ${SUBLAYER_MODALITIES.filter((modality) => modality !== 'unclassified')
-                    .map((modality) => renderAnalysisPlane(modality, typedGroups[modality], planGroups[modality]))
-                    .join('')}
+                ${model.threeC.planes.map((plane) => renderAnalysisPlane(plane)).join('')}
             </div>
         </section>
     `;
