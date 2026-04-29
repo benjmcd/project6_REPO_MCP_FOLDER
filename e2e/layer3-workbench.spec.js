@@ -344,8 +344,18 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     chipRadius: '3px',
   });
 
-  const desktopFit = await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1);
-  expect(desktopFit).toBe(true);
+  const desktopFit = await page.evaluate(() => {
+    const panel = document.querySelector('.sublayer-map-panel');
+    const band = document.querySelector('.sublayer-map-band');
+    return {
+      pageFitsViewport: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
+      panelFitsBand: panel.scrollWidth <= band.clientWidth + 1,
+    };
+  });
+  expect(desktopFit).toEqual({
+    pageFitsViewport: true,
+    panelFitsBand: true,
+  });
 
   await page.setViewportSize({ width: 1024, height: 768 });
   const tabletFit = await page.evaluate(() => {
