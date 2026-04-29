@@ -274,6 +274,11 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   await expect(page.locator('#sublayer-map-panel')).toContainText('Sublayer 3A');
   await expect(page.locator('#sublayer-map-panel')).toContainText('Sublayer 3B');
   await expect(page.locator('#sublayer-map-panel')).toContainText('Sublayer 3C');
+  await expect(page.locator('#sublayer-map-panel')).toHaveClass(/diagram-canvas/);
+  await expect(page.locator('.ledger-chip-field')).toBeVisible();
+  await expect(page.locator('.ledger-bracket')).toContainText('Session-scoped Materials');
+  await expect(page.locator('.plane-arrow-process').first()).toBeVisible();
+  await expect(page.locator('.plane-bracket').first()).toBeVisible();
   await expect(page.locator('.sublayer-3a .flow-empty')).toContainText('No material preview');
   await expect(page.locator('.modality-bucket.modality-quantitative')).toContainText('No quantitative objects');
   await expect(page.locator('.analysis-plane.modality-quantitative')).toContainText('No live input object');
@@ -289,6 +294,7 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   ]);
 
   await expect(page.locator('.sublayer-3a .flow-object')).toHaveCount(2);
+  await expect(page.locator('.sublayer-3a .diagram-chip')).toHaveCount(2);
   await expect(page.locator('.sublayer-3a')).toContainText('Dataset Version');
 
   const rows = page.locator('#material-ledger-body tr[data-candidate-id]');
@@ -306,9 +312,29 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   expect(gateC.typing_records.length).toBeGreaterThan(0);
 
   await expect(page.locator('.modality-bucket.modality-quantitative .flow-object')).toHaveCount(gateC.typing_records.length);
+  await expect(page.locator('.modality-bucket.modality-quantitative .diagram-chip')).toHaveCount(gateC.typing_records.length);
   await expect(page.locator('.analysis-plane.modality-quantitative .plane-column').first()).toContainText('modality quantitative');
   await expect(page.locator('.analysis-plane.modality-quantitative .plane-process')).toContainText('No live process yet');
   await expect(page.locator('.analysis-plane.modality-quantitative .plane-column').last()).toContainText('No live output');
+
+  const diagramStyles = await page.evaluate(() => {
+    const sublayer = window.getComputedStyle(document.querySelector('.sublayer-3a'));
+    const modality = window.getComputedStyle(document.querySelector('.modality-bucket.modality-quantitative'));
+    const arrow = window.getComputedStyle(document.querySelector('.plane-arrow-process'));
+    const chip = window.getComputedStyle(document.querySelector('.sublayer-3a .diagram-chip'));
+    return {
+      sublayerBorderStyle: sublayer.borderTopStyle,
+      modalityBorderStyle: modality.borderTopStyle,
+      arrowDisplay: arrow.display,
+      chipRadius: chip.borderTopLeftRadius,
+    };
+  });
+  expect(diagramStyles).toEqual({
+    sublayerBorderStyle: 'dashed',
+    modalityBorderStyle: 'dashed',
+    arrowDisplay: 'block',
+    chipRadius: '5px',
+  });
 
   const desktopFit = await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1);
   expect(desktopFit).toBe(true);
