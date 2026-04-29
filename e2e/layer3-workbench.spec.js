@@ -383,7 +383,7 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     intakeDisplay: 'grid',
     intakeGridArea: 'spec',
     intakeFrameDisplay: 'grid',
-    intakeFrameColumns: 1,
+    intakeFrameColumns: 2,
     stateFlowDisplay: 'grid',
     stateFlowGridArea: 'stateflow',
     routingTag: 'SECTION',
@@ -415,6 +415,20 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     mapIsPrimarySurface: true,
   });
 
+  await page.setViewportSize({ width: 1440, height: 820 });
+  const mediumFit = await page.evaluate(() => {
+    const firstPlaneFlow = document.querySelector('.analysis-plane .plane-flow');
+    const firstPlaneColumnCount = window.getComputedStyle(firstPlaneFlow).gridTemplateColumns.split(' ').filter(Boolean).length;
+    return {
+      fitsViewport: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
+      planeColumnCount: firstPlaneColumnCount,
+    };
+  });
+  expect(mediumFit).toEqual({
+    fitsViewport: true,
+    planeColumnCount: 1,
+  });
+
   await page.setViewportSize({ width: 1024, height: 768 });
   const tabletFit = await page.evaluate(() => {
     const intake = window.getComputedStyle(document.querySelector('.canvas-intake-spec'));
@@ -438,6 +452,58 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   await expect(page.locator('.sublayer-3c')).toBeVisible();
   const mobileFit = await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1);
   expect(mobileFit).toBe(true);
+});
+
+test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-input state', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 820 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.locator('#theme-selector').selectOption('workbench');
+
+  await page.evaluate(() => {
+    const authorityRail = {
+      current_gate: 'gate_c',
+      session_id: 'unsupported-only-session',
+      persistence_status: 'not_committed',
+      approved_material_count: 0,
+      denied_material_count: 0,
+      isolated_material_count: 0,
+      flagged_material_count: 1,
+      typing_status: 'previewed',
+    };
+    State.materialPreview = null;
+    State.gateB = {
+      schema_id: 'layer3.gate_b_decision_result.v1',
+      session_id: 'unsupported-only-session',
+      approved_candidate_ids: [],
+      denied_candidate_ids: [],
+      isolated_candidate_ids: [],
+      flagged_candidate_ids: ['unsupported-snapshot-1'],
+      authority_rail: authorityRail,
+    };
+    State.gateC = {
+      schema_id: 'layer3.gate_c_preview_result.v1',
+      session_id: 'unsupported-only-session',
+      typing_records: [],
+      unsupported_material: [{
+        material_snapshot_id: 'unsupported-snapshot-1',
+        owner_service_source_shape: 'unsupported_shape',
+        reason: 'unsupported-only visual proof',
+      }],
+      authority_rail: authorityRail,
+    };
+    State.planPreview = null;
+    State.planApproval = null;
+    State.planRevision = null;
+    State.sessionSummary = null;
+    clearResultReviewState();
+    renderAll();
+  });
+
+  await expect(page.locator('.modality-bucket.modality-unclassified')).toContainText('Unsupported material');
+  await expect(page.locator('.modality-bucket.modality-unclassified .diagram-chip')).toHaveCount(1);
+  await expect(page.locator('.analysis-plane .plane-inputs .diagram-chip')).toHaveCount(0);
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'session|typed|structural');
+  await expect(page.locator('.state-3c')).toContainText('Structural only');
 });
 
 async function prepareExecutedLayer3Session(request, seedPath = '/__test/layer3/seed-quant') {
