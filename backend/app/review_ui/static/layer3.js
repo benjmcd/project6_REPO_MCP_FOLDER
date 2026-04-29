@@ -1134,6 +1134,23 @@ function groupedByModality(items) {
     }, {});
 }
 
+function sessionSublayerState() {
+    const state = State.sessionSummary?.sublayer_visualization;
+    return state && typeof state === 'object' ? state : {};
+}
+
+function sourceIdentityLabel(identity = {}) {
+    const candidates = [
+        identity.candidate_id,
+        identity.dataset_version_id,
+        identity.content_id,
+        identity.run_id,
+        identity.target_id,
+        identity.source_ref,
+    ];
+    return candidates.find((candidate) => candidate) || null;
+}
+
 function currentMaterialObjects() {
     const candidates = State.materialPreview?.material_candidates || [];
     if (candidates.length) {
@@ -1147,6 +1164,27 @@ function currentMaterialObjects() {
                 secondary: candidate.query_basis || candidate.duplicate_status || 'preview candidate',
                 badge: decision,
                 modality: normalizeModality(candidate.owner_service_source_shape || candidate.planning_shape_family || candidate.source_class),
+                live: true,
+            };
+        });
+    }
+
+    const persistedObjects = sessionSublayerState().material_objects || [];
+    if (persistedObjects.length) {
+        return persistedObjects.map((item, index) => {
+            const identity = item.source_identity || {};
+            const identityLabel = sourceIdentityLabel(identity);
+            const loadedRecords = item.load_summary?.loaded_records;
+            return {
+                id: item.material_snapshot_id || `material-snapshot-${index + 1}`,
+                label: humanizeToken(identityLabel || item.source_shape || `Material snapshot ${index + 1}`),
+                kind: item.source_shape || 'material snapshot',
+                primary: identityLabel || item.source_plane || 'persisted material snapshot',
+                secondary: loadedRecords !== undefined
+                    ? `${loadedRecords} loaded record${loadedRecords === 1 ? '' : 's'}`
+                    : (item.source_plane || 'session material ledger'),
+                badge: item.state || 'loaded',
+                modality: normalizeModality(item.source_shape || item.source_plane),
                 live: true,
             };
         });
@@ -1192,7 +1230,9 @@ function currentMaterialObjects() {
 
 function currentTypingObjects() {
     const records = State.gateC?.typing_records || [];
-    const typed = records.map((record, index) => ({
+    const persistedRecords = sessionSublayerState().typing_records || [];
+    const sourceRecords = records.length ? records : persistedRecords;
+    const typed = sourceRecords.map((record, index) => ({
         id: record.material_snapshot_id || `typing-${index + 1}`,
         label: record.planning_shape_family || 'Typed material',
         kind: record.owner_service_source_shape || 'source shape',
@@ -1220,13 +1260,14 @@ function currentPlanBody() {
     if (State.planPreview?.schema_id === 'layer3.plan_preview_result.v1') {
         return State.planPreview.plan_preview || State.planPreview;
     }
+    if (sessionSublayerState().latest_plan) return sessionSublayerState().latest_plan;
     return null;
 }
 
 function currentPlanSetObjects() {
     const plan = currentPlanBody();
-    const sets = State.planApproval?.approved_plan
-        ? (plan?.approved_sets || [])
+    const sets = (plan?.approved_sets || []).length
+        ? (plan.approved_sets || [])
         : (plan?.admitted_sets || []);
     return sets.map((item, index) => ({
         id: item.analysis_set_id || `analysis-set-${index + 1}`,
@@ -1234,7 +1275,22 @@ function currentPlanSetObjects() {
         kind: 'analysis set',
         primary: `modality ${humanizeToken(item.analysis_modality)}`,
         secondary: item.status || item.set_status || 'admitted',
-        badge: State.planApproval ? 'approved' : 'admitted',
+        badge: plan?.approved || State.planApproval ? 'approved' : 'admitted',
+        modality: normalizeModality(item.analysis_modality),
+        live: true,
+    }));
+}
+
+function currentPersistedAnalysisSetObjects() {
+    return (sessionSublayerState().analysis_sets || []).map((item, index) => ({
+        id: item.analysis_set_id || `persisted-analysis-set-${index + 1}`,
+        label: item.analysis_set_id || `Analysis set ${index + 1}`,
+        kind: item.set_type || 'analysis set',
+        primary: `modality ${humanizeToken(item.analysis_modality)}`,
+        secondary: item.unit_count !== undefined
+            ? `${item.unit_count} unit${item.unit_count === 1 ? '' : 's'}`
+            : 'formed Gate C set',
+        badge: item.state || 'formed',
         modality: normalizeModality(item.analysis_modality),
         live: true,
     }));
@@ -1276,6 +1332,12 @@ function modalityFromEngineFamily(value) {
 function currentResultModality() {
     const fromStatus = modalityFromEngineFamily(State.resultStatus?.engine_family);
     if (fromStatus) return fromStatus;
+    const passRunModalities = new Set(
+        (sessionSublayerState().pass_runs || [])
+            .map((passRun) => modalityFromEngineFamily(passRun.engine_family))
+            .filter(Boolean)
+    );
+    if (passRunModalities.size === 1) return [...passRunModalities][0];
     const plannedModalities = new Set(
         currentPlannedPasses()
             .map((pass) => modalityFromPlanPass(pass))
@@ -1290,6 +1352,7 @@ function currentExecutionPipeline() {
     const start = summary.analysis_execution_start || {};
     const status = State.resultStatus || {};
     const review = recordedResultReview() || State.resultReview || {};
+    const persistedPassRuns = sessionSublayerState().pass_runs || [];
     const cards = [];
     const outputs = [];
 
@@ -1303,6 +1366,16 @@ function currentExecutionPipeline() {
             live: true,
         });
     }
+
+    persistedPassRuns.slice(0, 4).forEach((passRun) => {
+        cards.push({
+            label: 'Pass run',
+            primary: passRun.status || 'pass run shell',
+            secondary: passRun.selected_method_name || passRun.pass_scope || passRun.pass_run_id || 'method not reported',
+            badge: passRun.output_payload_available ? 'output ref' : (passRun.input_payload_available ? 'input ref' : 'run'),
+            live: true,
+        });
+    });
 
     if (start.state || start.pass_run_id || status.execution_started) {
         cards.push({
@@ -1425,6 +1498,7 @@ function sublayerStateLabel(state) {
         typed: 'Typing previewed',
         structural: 'Structural only',
         planned: 'Plan inputs loaded',
+        inputs: 'Inputs routed',
         active: 'Execution state loaded',
         outputs: 'Outputs reported',
     };
@@ -1436,16 +1510,19 @@ function currentSublayerVisualizationModel() {
     const materialObjects = currentMaterialObjects();
     const typingObjects = currentTypingObjects();
     const planObjects = currentPlanSetObjects();
+    const persistedAnalysisSetObjects = currentPersistedAnalysisSetObjects();
     const typedGroups = groupedByModality(typingObjects);
     const planGroups = groupedByModality(planObjects);
+    const analysisSetGroups = groupedByModality(persistedAnalysisSetObjects);
     const plannedPasses = currentPlannedPasses();
     const executionPipeline = currentExecutionPipeline();
     const hasSessionScope = Boolean(State.gateB?.session_id || (rail.session_id && rail.session_id !== 'none'));
     const hasOutputs = SUBLAYER_MODALITIES.some((modality) => outputCardsForModality(modality).length > 0);
     const hasExecutionState = executionPipeline.cards.length > 0 || executionPipeline.outputs.length > 0;
+    const hasRoutedInputs = typingObjects.length > 0 || persistedAnalysisSetObjects.length > 0;
     const threeAState = materialObjects.length ? (hasSessionScope ? 'session' : 'preview') : 'empty';
     const threeBState = typingObjects.length ? 'typed' : 'empty';
-    const threeCState = hasOutputs ? 'outputs' : (planObjects.length || plannedPasses.length ? 'planned' : (hasExecutionState ? 'active' : 'structural'));
+    const threeCState = hasOutputs ? 'outputs' : (planObjects.length || plannedPasses.length ? 'planned' : (hasExecutionState ? 'active' : (hasRoutedInputs ? 'inputs' : 'structural')));
 
     const gateBMessage = materialObjects.length
         ? (
@@ -1461,7 +1538,9 @@ function currentSublayerVisualizationModel() {
         ? '3C reflects the currently selected execution/result authority where the session summary or status endpoint reports it.'
         : (planObjects.length || plannedPasses.length
         ? '3C planes are populated from plan preview or approved-plan state where available.'
-        : '3C planes are structural and neutral until plan preview, approval, execution, or result status reports live data.');
+        : (hasRoutedInputs
+            ? '3C planes show Gate C input objects where persisted typing or analysis-set state is available; process/output zones remain neutral until plan or execution state exists.'
+            : '3C planes are structural and neutral until plan preview, approval, execution, or result status reports live data.'));
 
     const modalityBuckets = SUBLAYER_MODALITIES.map((modality) => {
         const objects = typedGroups[modality] || [];
@@ -1476,10 +1555,12 @@ function currentSublayerVisualizationModel() {
     const analysisPlanes = SUBLAYER_MODALITIES
         .filter((modality) => modality !== 'unclassified')
         .map((modality) => {
-            const inputs = (planGroups[modality] || []).length ? planGroups[modality] : (typedGroups[modality] || []);
+            const inputs = (planGroups[modality] || []).length
+                ? planGroups[modality]
+                : ((analysisSetGroups[modality] || []).length ? analysisSetGroups[modality] : (typedGroups[modality] || []));
             const passes = planPassesForModality(modality);
             const outputs = outputCardsForModality(modality);
-            const processCards = (!passes.length && executionPipeline.modality === modality) ? executionPipeline.cards : [];
+            const processCards = executionPipeline.modality === modality ? executionPipeline.cards : [];
             return {
                 modality,
                 meta: modalityMeta(modality),
@@ -1622,23 +1703,23 @@ function renderExecutionPipeline(pipeline) {
 
 function renderAnalysisPlane(plane) {
     const { modality, meta, inputs, passes, processCards, outputs, state } = plane;
-    const processBody = passes.length
-        ? passes.map((pass) => `
+    const passRows = passes.map((pass) => `
             <li>
                 <strong>${escapeHtml(humanizeToken(pass.pass_type || pass.method_family || 'planned pass'))}</strong>
                 <span>${escapeHtml(shortText(pass.selected_method_name || pass.method_family || pass.pass_scope || 'method not reported', 52))}</span>
                 <em>${escapeHtml(pass.approval_only ? 'approval only' : (pass.execution_mode || pass.status || 'planned'))}</em>
             </li>
-        `).join('')
-        : ((processCards || []).length
-            ? processCards.map((card) => `
+        `).join('');
+    const liveRows = (processCards || []).map((card) => `
                 <li>
                     <strong>${escapeHtml(card.label)}</strong>
                     <span>${escapeHtml(shortText(card.primary, 52))}</span>
                     <em>${escapeHtml(humanizeToken(card.badge || 'live'))}</em>
                 </li>
-            `).join('')
-            : '<li><strong>No live process yet</strong><span>Plan preview or approval has not reported a pass for this plane.</span></li>');
+            `).join('');
+    const processBody = passRows || liveRows
+        ? `${passRows}${liveRows}`
+        : '<li><strong>No live process yet</strong><span>Plan preview or approval has not reported a pass for this plane.</span></li>';
     return `
         <article class="analysis-plane modality-${escapeHtml(modality)} viz-state-${escapeHtml(state)}" data-modality="${escapeHtml(modality)}">
             <div class="analysis-plane-title">

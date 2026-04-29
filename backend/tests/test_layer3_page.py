@@ -136,6 +136,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "Sublayer 3A" in js.text
     assert "Sublayer 3B" in js.text
     assert "Sublayer 3C" in js.text
+    assert "sessionSublayerState" in js.text
+    assert "sublayer_visualization" in js.text
     assert "currentMaterialObjects" in js.text
     assert "currentTypingObjects" in js.text
     assert "element.disabled = false" in js.text
