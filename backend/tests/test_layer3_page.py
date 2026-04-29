@@ -100,6 +100,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "const LAYER3_THEME_STORAGE_KEY = 'layer3_workbench_theme';" in js.text
     assert "isSharedThemePreference" in js.text
     assert "value === 'workbench'" in js.text
+    assert "localStorage.removeItem(LAYER3_THEME_STORAGE_KEY)" in js.text
     assert "localStorage.removeItem(THEME_STORAGE_KEY)" in js.text
     assert "navigateToStep" in js.text
     assert "scrollIntoView" in js.text

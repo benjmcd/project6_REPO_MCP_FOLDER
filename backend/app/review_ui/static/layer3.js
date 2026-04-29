@@ -152,11 +152,14 @@ function applyThemePreference(preference, { persist = true } = {}) {
     }
     if (persist) {
         try {
-            localStorage.setItem(LAYER3_THEME_STORAGE_KEY, normalized);
             if (isSharedThemePreference(normalized)) {
+                localStorage.removeItem(LAYER3_THEME_STORAGE_KEY);
                 localStorage.setItem(THEME_STORAGE_KEY, normalized);
-            } else if (localStorage.getItem(THEME_STORAGE_KEY) === normalized) {
-                localStorage.removeItem(THEME_STORAGE_KEY);
+            } else {
+                localStorage.setItem(LAYER3_THEME_STORAGE_KEY, normalized);
+                if (localStorage.getItem(THEME_STORAGE_KEY) === normalized) {
+                    localStorage.removeItem(THEME_STORAGE_KEY);
+                }
             }
         } catch (error) {
             addEvent('Theme preference kept in browser memory only.');

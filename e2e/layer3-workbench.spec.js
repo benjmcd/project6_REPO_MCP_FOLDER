@@ -76,6 +76,78 @@ test('Layer 3 workbench keeps the Workbench theme preference page-local', async 
   await page.goto('/review/nrc-aps', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
   await expect(page.locator('#theme-selector')).toHaveValue('system');
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.locator('#theme-selector').selectOption('dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
+  const storageAfterLayer3Dark = await page.evaluate(() => ({
+    sharedTheme: localStorage.getItem('nrc_aps_review_theme'),
+    layer3Theme: localStorage.getItem('layer3_workbench_theme'),
+  }));
+  expect(storageAfterLayer3Dark).toEqual({
+    sharedTheme: 'dark',
+    layer3Theme: null,
+  });
+
+  await page.goto('/review/nrc-aps', { waitUntil: 'domcontentloaded' });
+  await page.locator('#theme-selector').selectOption('light');
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
+  await expect(page.locator('#theme-selector')).toHaveValue('light');
+  const storageAfterNrcLight = await page.evaluate(() => ({
+    sharedTheme: localStorage.getItem('nrc_aps_review_theme'),
+    layer3Theme: localStorage.getItem('layer3_workbench_theme'),
+  }));
+  expect(storageAfterNrcLight).toEqual({
+    sharedTheme: 'light',
+    layer3Theme: null,
+  });
+});
+
+test('Layer 3 workbench keeps page-level scrolling and step navigation across viewports', async ({ page }) => {
+  const stepTargets = [
+    ['intent', 'intent-band'],
+    ['sources', 'source-fieldset'],
+    ['gate_b', 'gate-b-band'],
+    ['gate_c', 'gate-c-band'],
+    ['plan', 'plan-band'],
+    ['execution', 'result-review-band'],
+    ['results', 'result-review-band'],
+    ['package', 'package-review-band'],
+    ['handoff', 'handoff-export-band'],
+  ];
+
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: 'Layer 3 Workbench' })).toBeVisible();
+
+    const scrollState = await page.evaluate(() => {
+      const bodyStyle = window.getComputedStyle(document.body);
+      const contextStyle = window.getComputedStyle(document.querySelector('.context-panel'));
+      return {
+        bodyOverflowY: bodyStyle.overflowY,
+        contextOverflow: contextStyle.overflow,
+        pageCanScroll: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) > window.innerHeight,
+      };
+    });
+    expect(scrollState).toEqual({
+      bodyOverflowY: 'auto',
+      contextOverflow: 'visible',
+      pageCanScroll: true,
+    });
+
+    for (const [step, targetId] of stepTargets) {
+      const chip = page.locator(`[data-step="${step}"]`);
+      await expect(chip).toBeEnabled();
+      await chip.click();
+      await expect(chip).toHaveAttribute('aria-current', 'step');
+      await expect(page.locator(`#${targetId}`)).toBeVisible();
+    }
+  }
 });
 
 async function prepareExecutedLayer3Session(request, seedPath = '/__test/layer3/seed-quant') {
