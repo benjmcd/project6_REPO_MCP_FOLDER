@@ -52,6 +52,7 @@ const elements = {
     sublayerMapPanel: document.getElementById('sublayer-map-panel'),
     intentForm: document.getElementById('intent-form'),
     intentInput: document.getElementById('layer3-intent'),
+    sourceFieldset: document.getElementById('source-fieldset'),
     runPreflight: document.getElementById('run-preflight'),
     materialLedgerBody: document.getElementById('material-ledger-body'),
     materialFilter: document.getElementById('material-filter'),
@@ -418,6 +419,19 @@ function renderAuthority(rail) {
 function selectedSourceClasses() {
     return Array.from(document.querySelectorAll('input[name="source-class"]:checked'))
         .map((input) => input.value);
+}
+
+function selectedSourceClassLabels() {
+    return Array.from(document.querySelectorAll('input[name="source-class"]'))
+        .filter((input) => input.checked)
+        .map((input) => input.closest('label')?.textContent || input.value)
+        .map((label) => label.replace(/\s+/g, ' ').trim())
+        .filter(Boolean);
+}
+
+function currentIntentText() {
+    const intent = elements.intentInput?.value?.trim();
+    return intent || 'No operator intent has been entered yet.';
 }
 
 function requestId() {
@@ -1368,6 +1382,8 @@ function renderSublayerMap() {
     const planObjects = currentPlanSetObjects();
     const planGroups = groupedByModality(planObjects);
     const hasSessionScope = Boolean(State.gateB?.session_id || (rail.session_id && rail.session_id !== 'none'));
+    const intentText = currentIntentText();
+    const sourceLabels = selectedSourceClassLabels();
     const gateBMessage = materialObjects.length
         ? (
             hasSessionScope
@@ -1383,6 +1399,20 @@ function renderSublayerMap() {
         : '3C planes are structural and neutral until plan preview, approval, execution, or result status reports live data.';
 
     elements.sublayerMapPanel.innerHTML = `
+        <section class="canvas-intake-spec" aria-label="Layer 3 intake specification">
+            <article class="query-spec-block">
+                <span>User Natural Language Query Input</span>
+                <p>${escapeHtml(shortText(intentText, 170))}</p>
+            </article>
+            <article class="manual-source-spec">
+                <span>User Manual / Custom Source Specification</span>
+                <div class="source-spec-chip-grid">
+                    ${sourceLabels.length
+                        ? sourceLabels.map((label) => `<span class="source-spec-chip">${escapeHtml(label)}</span>`).join('')
+                        : '<span class="source-spec-chip muted">No source classes selected</span>'}
+                </div>
+            </article>
+        </section>
         <section class="sublayer-region sublayer-3a" aria-label="Sublayer 3A material intake and session scoping">
             <div class="sublayer-title">
                 <span>Sublayer 3A</span>
@@ -3439,6 +3469,8 @@ elements.stepChips.forEach((chip) => {
     chip.addEventListener('click', () => navigateToStep(chip));
 });
 elements.intentForm.addEventListener('submit', runPreflightFlow);
+elements.intentInput.addEventListener('input', renderSublayerMap);
+elements.sourceFieldset.addEventListener('change', renderSublayerMap);
 elements.gateBSubmit.addEventListener('click', commitGateB);
 elements.gateCPreview.addEventListener('click', previewGateC);
 elements.gateCCommit.addEventListener('click', commitGateC);
