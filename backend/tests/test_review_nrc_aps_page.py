@@ -45,6 +45,23 @@ def test_page_places_workbench_compare_nav_before_document_trace() -> None:
     assert html.index('id="launch-workbench-compare"') < html.index('id="launch-document-trace"')
 
 
+def test_shared_review_theme_bootstrap_rejects_layer3_only_theme() -> None:
+    static_dir = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static"
+    shared_theme_pages = [
+        "analyst_insight.html",
+        "candidate_b_trace.html",
+        "document_trace.html",
+        "index.html",
+        "workbench_compare.html",
+    ]
+
+    for page_name in shared_theme_pages:
+        html = (static_dir / page_name).read_text(encoding="utf-8")
+        assert "isSharedThemePreference" in html
+        assert "localStorage.removeItem(storageKey)" in html
+        assert "localStorage.getItem(storageKey) ||" not in html
+
+
 def test_review_js_has_identity_aware_overlay_messages():
     """Verify review.js sets identity-aware overlay messages with state-appropriate titles."""
     from pathlib import Path

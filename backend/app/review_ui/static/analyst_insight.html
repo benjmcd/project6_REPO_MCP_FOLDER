@@ -7,9 +7,15 @@
     <script>
         (function () {
             const storageKey = "nrc_aps_review_theme";
+            const isSharedThemePreference = (value) => value === "system" || value === "light" || value === "dark";
             let preference = "system";
             try {
-                preference = localStorage.getItem(storageKey) || "system";
+                const storedPreference = localStorage.getItem(storageKey);
+                if (isSharedThemePreference(storedPreference)) {
+                    preference = storedPreference;
+                } else if (storedPreference) {
+                    localStorage.removeItem(storageKey);
+                }
             } catch (e) {
                 preference = "system";
             }
