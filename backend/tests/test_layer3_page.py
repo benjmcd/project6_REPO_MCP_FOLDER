@@ -20,7 +20,18 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert "<title>Layer 3 Workbench</title>" in response.text
+    assert '<body class="layer3-page">' in response.text
     assert 'id="authority-rail"' in response.text
+    assert 'data-step-target="intent-band"' in response.text
+    assert 'aria-current="step"' in response.text
+    assert 'data-step-target="source-fieldset"' in response.text
+    assert 'data-step-target="gate-b-band"' in response.text
+    assert 'aria-controls="result-review-band"' in response.text
+    assert 'data-available="false"' in response.text
+    assert 'id="intent-band"' in response.text
+    assert 'id="source-fieldset"' in response.text
+    assert 'id="gate-b-band"' in response.text
+    assert 'id="result-review-band"' in response.text
     assert 'id="intent-form"' in response.text
     assert 'id="material-ledger-body"' in response.text
     assert 'id="gate-c-panel"' in response.text
@@ -76,7 +87,13 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert css.status_code == 200
     assert js.status_code == 200
     assert ".authority-rail" in css.text
+    assert "body.layer3-page" in css.text
+    assert "overflow: visible" in css.text
+    assert ".step-chip.current" in css.text
     assert "const API_ROOT = '/api/v1/layer3';" in js.text
+    assert "navigateToStep" in js.text
+    assert "scrollIntoView" in js.text
+    assert "element.disabled = false" in js.text
     assert "postJson('/gate-b/decision'" in js.text
     assert "postJson('/gate-c/preview'" in js.text
     assert "postJson('/plan/preview'" in js.text
