@@ -49,6 +49,7 @@ const State = {
 const elements = {
     themeSelector: document.getElementById('theme-selector'),
     authorityRail: document.getElementById('authority-rail'),
+    sublayerMapPanel: document.getElementById('sublayer-map-panel'),
     intentForm: document.getElementById('intent-form'),
     intentInput: document.getElementById('layer3-intent'),
     runPreflight: document.getElementById('run-preflight'),
@@ -119,6 +120,33 @@ const APS_HANDOFF_DISPATCH_RECORDED_STATES = new Set(['aps_handoff_dispatched'])
 const EXTERNAL_EXPORT_DOWNLOAD_RECORDED_STATES = new Set(['external_export_download_prepared']);
 const EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RECORDED_STATES = new Set(['external_export_download_delivered']);
 const PACKAGE_REVIEW_PACKAGE_KINDS = ['canonical_internal', 'user_facing', 'review_facing'];
+const SUBLAYER_MODALITIES = ['quantitative', 'qualitative', 'hybrid', 'unclassified'];
+const SUBLAYER_MODALITY_META = {
+    quantitative: {
+        label: 'Quantitative Data',
+        plane: 'Quantitative / Deterministic Environment',
+        accent: 'green',
+        empty: 'No quantitative objects are live in the current session state.',
+    },
+    qualitative: {
+        label: 'Qualitative Data',
+        plane: 'Qualitative Data Analysis Environment',
+        accent: 'purple',
+        empty: 'No qualitative objects are live in the current session state.',
+    },
+    hybrid: {
+        label: 'Hybrid / Mixed Data',
+        plane: 'Hybrid / Mixed Environment',
+        accent: 'amber',
+        empty: 'No hybrid or mixed objects are live in the current session state.',
+    },
+    unclassified: {
+        label: 'Unclassified / Unsupported',
+        plane: 'Unclassified Holding Area',
+        accent: 'cyan',
+        empty: 'No unclassified objects are currently reported.',
+    },
+};
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -1049,6 +1077,342 @@ function candidateSearchText(candidate) {
         candidate.validation_status,
         candidate.duplicate_status,
     ].join(' ').toLowerCase();
+}
+
+function humanizeToken(value) {
+    const text = String(value ?? '').trim();
+    if (!text) return 'none';
+    return text.replace(/[_-]+/g, ' ');
+}
+
+function shortText(value, maxLength = 36) {
+    const text = String(value ?? '').trim();
+    if (!text) return 'none';
+    if (text.length <= maxLength) return text;
+    return `${text.slice(0, Math.max(8, maxLength - 12))}...${text.slice(-8)}`;
+}
+
+function normalizeModality(value) {
+    const text = String(value ?? '').toLowerCase();
+    if (!text) return 'unclassified';
+    if (text.includes('hybrid') || text.includes('mixed')) return 'hybrid';
+    if (text.includes('qual')) return 'qualitative';
+    if (
+        text.includes('quant')
+        || text.includes('deterministic')
+        || text.includes('dataset')
+        || text.includes('numeric')
+        || text.includes('time_series')
+    ) {
+        return 'quantitative';
+    }
+    return 'unclassified';
+}
+
+function modalityMeta(modality) {
+    return SUBLAYER_MODALITY_META[modality] || SUBLAYER_MODALITY_META.unclassified;
+}
+
+function groupedByModality(items) {
+    return SUBLAYER_MODALITIES.reduce((groups, modality) => {
+        groups[modality] = items.filter((item) => item.modality === modality);
+        return groups;
+    }, {});
+}
+
+function currentMaterialObjects() {
+    const candidates = State.materialPreview?.material_candidates || [];
+    if (candidates.length) {
+        return candidates.map((candidate, index) => {
+            const decision = decisionState(candidate.candidate_id).decision;
+            return {
+                id: candidate.candidate_id || `candidate-${index + 1}`,
+                label: candidate.source_label || `Material candidate ${index + 1}`,
+                kind: candidate.source_class || 'material candidate',
+                primary: candidate.owner_service_source_shape || candidate.planning_shape_family || 'source shape unavailable',
+                secondary: candidate.query_basis || candidate.duplicate_status || 'preview candidate',
+                badge: decision,
+                modality: normalizeModality(candidate.owner_service_source_shape || candidate.planning_shape_family || candidate.source_class),
+                live: true,
+            };
+        });
+    }
+
+    const gateB = State.gateB || {};
+    const gateBIds = [
+        ...(gateB.approved_candidate_ids || []).map((id) => ({ id, decision: 'approved' })),
+        ...(gateB.denied_candidate_ids || []).map((id) => ({ id, decision: 'denied' })),
+        ...(gateB.isolated_candidate_ids || []).map((id) => ({ id, decision: 'isolated' })),
+        ...(gateB.flagged_candidate_ids || []).map((id) => ({ id, decision: 'flagged' })),
+    ];
+    if (gateBIds.length) {
+        return gateBIds.map((item, index) => ({
+            id: item.id || `gate-b-${index + 1}`,
+            label: `Gate B ${humanizeToken(item.decision)} material`,
+            kind: 'session-scoped material',
+            primary: 'Gate B decision record',
+            secondary: currentSessionId() ? `session ${shortText(currentSessionId(), 24)}` : 'session not reported',
+            badge: item.decision,
+            modality: 'unclassified',
+            live: true,
+        }));
+    }
+
+    const rail = currentAuthorityRail();
+    const railSessionId = rail?.session_id && rail.session_id !== 'none' ? rail.session_id : null;
+    const sessionId = State.gateB?.session_id || railSessionId;
+    if (sessionId) {
+        return [{
+            id: sessionId,
+            label: 'Session-scoped material posture',
+            kind: 'authority rail',
+            primary: `${rail?.approved_material_count ?? 0} approved / ${rail?.denied_material_count ?? 0} denied`,
+            secondary: `typing ${rail?.typing_status || 'not_started'}`,
+            badge: rail?.current_gate || 'session',
+            modality: 'unclassified',
+            live: true,
+        }];
+    }
+    return [];
+}
+
+function currentTypingObjects() {
+    const records = State.gateC?.typing_records || [];
+    const typed = records.map((record, index) => ({
+        id: record.material_snapshot_id || `typing-${index + 1}`,
+        label: record.planning_shape_family || 'Typed material',
+        kind: record.owner_service_source_shape || 'source shape',
+        primary: `modality ${humanizeToken(record.chosen_modality)}`,
+        secondary: `confidence ${record.confidence ?? 'none'}`,
+        badge: record.authoritative ? 'authoritative' : 'preview',
+        modality: normalizeModality(record.chosen_modality || record.analysis_modality || record.planning_shape_family),
+        live: true,
+    }));
+    const unsupported = (State.gateC?.unsupported_material || []).map((item, index) => ({
+        id: item.material_snapshot_id || `unsupported-${index + 1}`,
+        label: 'Unsupported material',
+        kind: item.owner_service_source_shape || 'source shape',
+        primary: item.reason || 'unsupported typing shape',
+        secondary: 'held outside typed modality lanes',
+        badge: 'unsupported',
+        modality: 'unclassified',
+        live: true,
+    }));
+    return [...typed, ...unsupported];
+}
+
+function currentPlanBody() {
+    if (State.planApproval?.approved_plan) return State.planApproval.approved_plan;
+    if (State.planPreview?.schema_id === 'layer3.plan_preview_result.v1') return State.planPreview;
+    return null;
+}
+
+function currentPlanSetObjects() {
+    const plan = currentPlanBody();
+    const sets = State.planApproval?.approved_plan
+        ? (plan?.approved_sets || [])
+        : (plan?.admitted_sets || []);
+    return sets.map((item, index) => ({
+        id: item.analysis_set_id || `analysis-set-${index + 1}`,
+        label: item.analysis_set_label || item.analysis_set_id || `Analysis set ${index + 1}`,
+        kind: 'analysis set',
+        primary: `modality ${humanizeToken(item.analysis_modality)}`,
+        secondary: item.status || item.set_status || 'admitted',
+        badge: State.planApproval ? 'approved' : 'admitted',
+        modality: normalizeModality(item.analysis_modality),
+        live: true,
+    }));
+}
+
+function currentPlannedPasses() {
+    const plan = currentPlanBody();
+    return plan?.planned_passes || [];
+}
+
+function planPassesForModality(modality) {
+    return currentPlannedPasses().filter((item) => normalizeModality(item.analysis_modality || item.pass_type || item.method_family) === modality);
+}
+
+function outputCardsForModality(modality) {
+    const cards = [];
+    const status = State.resultStatus;
+    if (status?.result_status_available || TERMINAL_PASS_STATUSES.has(status?.pass_run_status)) {
+        cards.push({
+            label: 'Result status',
+            primary: status.pass_run_status || status.status || 'available',
+            secondary: status.pass_run_id || 'pass run id not reported',
+            badge: 'status',
+        });
+    }
+    const review = recordedResultReview() || State.resultReview;
+    if (review?.review_state || review?.status) {
+        cards.push({
+            label: 'Result review',
+            primary: review.operator_decision || review.review_state || review.status,
+            secondary: review.review_record_ref || 'review ref not reported',
+            badge: 'review',
+        });
+    }
+    return modality === 'unclassified' ? [] : cards;
+}
+
+function renderFlowObjects(items, emptyMessage) {
+    if (!items.length) {
+        return `<div class="flow-empty">${escapeHtml(emptyMessage)}</div>`;
+    }
+    return `
+        <div class="flow-object-list">
+            ${items.map((item) => {
+                const modality = item.modality || 'unclassified';
+                const meta = modalityMeta(modality);
+                return `
+                    <article class="flow-object modality-${escapeHtml(modality)}" data-live-backed="${item.live ? 'true' : 'false'}">
+                        <div class="flow-object-head">
+                            <span>${escapeHtml(humanizeToken(item.kind || meta.label))}</span>
+                            <span class="flow-object-badge">${escapeHtml(humanizeToken(item.badge || 'reported'))}</span>
+                        </div>
+                        <strong>${escapeHtml(shortText(item.label || item.id, 48))}</strong>
+                        <span>${escapeHtml(shortText(item.primary || 'No detail reported', 56))}</span>
+                        <code>${escapeHtml(shortText(item.id, 34))}</code>
+                    </article>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
+function renderModalityBucket(modality, objects) {
+    const meta = modalityMeta(modality);
+    return `
+        <section class="modality-bucket modality-${escapeHtml(modality)}" aria-label="${escapeHtml(meta.label)}">
+            <div class="modality-heading">
+                <span class="modality-dot" aria-hidden="true"></span>
+                <h4>${escapeHtml(meta.label)}</h4>
+                <span>${objects.length}</span>
+            </div>
+            ${renderFlowObjects(objects, meta.empty)}
+        </section>
+    `;
+}
+
+function renderAnalysisPlane(modality, typingObjects, planObjects) {
+    const meta = modalityMeta(modality);
+    const inputs = planObjects.length ? planObjects : typingObjects;
+    const passes = planPassesForModality(modality);
+    const outputCards = outputCardsForModality(modality);
+    const processBody = passes.length
+        ? passes.map((pass) => `
+            <li>
+                <strong>${escapeHtml(humanizeToken(pass.pass_type || pass.method_family || 'planned pass'))}</strong>
+                <span>${escapeHtml(shortText(pass.selected_method_name || pass.method_family || pass.pass_scope || 'method not reported', 52))}</span>
+            </li>
+        `).join('')
+        : '<li><strong>No live process yet</strong><span>Plan preview or approval has not reported a pass for this plane.</span></li>';
+    return `
+        <article class="analysis-plane modality-${escapeHtml(modality)}">
+            <div class="analysis-plane-title">
+                <span class="modality-dot" aria-hidden="true"></span>
+                <h4>${escapeHtml(meta.plane)}</h4>
+            </div>
+            <div class="plane-flow">
+                <section class="plane-column">
+                    <h5>Inputs</h5>
+                    ${renderFlowObjects(inputs, 'No live input object is available for this plane.')}
+                </section>
+                <section class="plane-process" aria-label="${escapeHtml(meta.plane)} process status">
+                    <h5>Process / Status</h5>
+                    <ul>${processBody}</ul>
+                </section>
+                <section class="plane-column">
+                    <h5>Outputs</h5>
+                    ${renderFlowObjects(outputCards.map((card) => ({
+                        id: card.secondary,
+                        label: card.label,
+                        kind: 'output card',
+                        primary: card.primary,
+                        secondary: card.secondary,
+                        badge: card.badge,
+                        modality,
+                        live: true,
+                    })), 'No live output, insight, fact, or data card has been produced for this plane.')}
+                </section>
+            </div>
+        </article>
+    `;
+}
+
+function renderSublayerMap() {
+    if (!elements.sublayerMapPanel) return;
+    const rail = currentAuthorityRail() || {};
+    const materialObjects = currentMaterialObjects();
+    const typingObjects = currentTypingObjects();
+    const typedGroups = groupedByModality(typingObjects);
+    const planObjects = currentPlanSetObjects();
+    const planGroups = groupedByModality(planObjects);
+    const hasSessionScope = Boolean(State.gateB?.session_id || (rail.session_id && rail.session_id !== 'none'));
+    const gateBMessage = materialObjects.length
+        ? (
+            hasSessionScope
+                ? 'Session-scoped material objects are represented from the current material preview, Gate B response, or authority rail.'
+                : 'Source-plane material preview candidates are loaded; Gate B has not committed them into session state yet.'
+        )
+        : 'No source-plane material is loaded yet. Run Preflight to request material preview.';
+    const gateCMessage = typingObjects.length
+        ? 'Gate C typing objects are grouped by repo-reported modality.'
+        : 'No Gate C typing state is loaded yet. Commit Gate B and preview Gate C to classify material.';
+    const planeIntro = planObjects.length || currentPlannedPasses().length
+        ? '3C planes are populated from plan preview or approved-plan state where available.'
+        : '3C planes are structural and neutral until plan preview, approval, execution, or result status reports live data.';
+
+    elements.sublayerMapPanel.innerHTML = `
+        <section class="sublayer-region sublayer-3a" aria-label="Sublayer 3A material intake and session scoping">
+            <div class="sublayer-title">
+                <span>Sublayer 3A</span>
+                <strong>Material Intake &amp; Session Scoping</strong>
+            </div>
+            <div class="gate-panel">
+                <h3>Gate B / Session Entry / Material Ledger</h3>
+                <p>${escapeHtml(gateBMessage)}</p>
+                <div class="mini-rail">
+                    <span>Session ${escapeHtml(shortText(rail.session_id || 'none', 24))}</span>
+                    <span>Approved ${escapeHtml(rail.approved_material_count ?? 0)}</span>
+                    <span>Denied ${escapeHtml(rail.denied_material_count ?? 0)}</span>
+                    <span>Typing ${escapeHtml(rail.typing_status || 'not_started')}</span>
+                </div>
+            </div>
+            ${renderFlowObjects(materialObjects, 'No material preview, session entry, or material ledger object is currently loaded.')}
+        </section>
+        <div class="sublayer-connector sublayer-connector-3ab" aria-hidden="true"><span>3A to 3B</span></div>
+        <section class="sublayer-region sublayer-3b" aria-label="Sublayer 3B typing and set formation">
+            <div class="sublayer-title">
+                <span>Sublayer 3B</span>
+                <strong>Typing, Unit/Group/Set Formation</strong>
+            </div>
+            <div class="gate-panel">
+                <h3>Gate C Typing</h3>
+                <p>${escapeHtml(gateCMessage)}</p>
+            </div>
+            <div class="modality-buckets">
+                ${SUBLAYER_MODALITIES.map((modality) => renderModalityBucket(modality, typedGroups[modality])).join('')}
+            </div>
+        </section>
+        <div class="sublayer-connector sublayer-connector-3bc" aria-hidden="true"><span>3B to 3C</span></div>
+        <section class="sublayer-region sublayer-3c" aria-label="Sublayer 3C analysis execution environments">
+            <div class="sublayer-title">
+                <span>Sublayer 3C</span>
+                <strong>Analysis Execution Environments / Planes</strong>
+            </div>
+            <div class="gate-panel">
+                <h3>Input To Process To Output</h3>
+                <p>${escapeHtml(planeIntro)}</p>
+            </div>
+            <div class="analysis-planes">
+                ${SUBLAYER_MODALITIES.filter((modality) => modality !== 'unclassified')
+                    .map((modality) => renderAnalysisPlane(modality, typedGroups[modality], planGroups[modality]))
+                    .join('')}
+            </div>
+        </section>
+    `;
 }
 
 function renderMaterialLedger() {
@@ -2155,6 +2519,7 @@ function setGateControls() {
 
 function renderAll() {
     renderAuthority();
+    renderSublayerMap();
     renderUnavailable(currentDownstreamUnavailable());
     renderContext();
     renderMaterialLedger();
@@ -3084,12 +3449,14 @@ elements.materialLedgerBody.addEventListener('change', (event) => {
     const row = event.target.closest('tr[data-candidate-id]');
     if (row) {
         syncDecisionStateFromRow(row);
+        renderSublayerMap();
     }
 });
 elements.materialLedgerBody.addEventListener('input', (event) => {
     const row = event.target.closest('tr[data-candidate-id]');
     if (row) {
         syncDecisionStateFromRow(row);
+        renderSublayerMap();
     }
 });
 
