@@ -1505,6 +1505,11 @@ function sublayerStateLabel(state) {
     return labels[state] || humanizeToken(state);
 }
 
+function isRoutableAnalysisObject(item) {
+    const modality = normalizeModality(item?.modality);
+    return Boolean(modality && modality !== 'unclassified');
+}
+
 function currentSublayerVisualizationModel() {
     const rail = currentAuthorityRail() || {};
     const materialObjects = currentMaterialObjects();
@@ -1519,7 +1524,8 @@ function currentSublayerVisualizationModel() {
     const hasSessionScope = Boolean(State.gateB?.session_id || (rail.session_id && rail.session_id !== 'none'));
     const hasOutputs = SUBLAYER_MODALITIES.some((modality) => outputCardsForModality(modality).length > 0);
     const hasExecutionState = executionPipeline.cards.length > 0 || executionPipeline.outputs.length > 0;
-    const hasRoutedInputs = typingObjects.length > 0 || persistedAnalysisSetObjects.length > 0;
+    const hasRoutedInputs = typingObjects.some(isRoutableAnalysisObject)
+        || persistedAnalysisSetObjects.some(isRoutableAnalysisObject);
     const threeAState = materialObjects.length ? (hasSessionScope ? 'session' : 'preview') : 'empty';
     const threeBState = typingObjects.length ? 'typed' : 'empty';
     const threeCState = hasOutputs ? 'outputs' : (planObjects.length || plannedPasses.length ? 'planned' : (hasExecutionState ? 'active' : (hasRoutedInputs ? 'inputs' : 'structural')));
@@ -1832,8 +1838,11 @@ function renderSublayerMap() {
                     <h3>Gate C Typing</h3>
                     <p>${escapeHtml(model.threeB.message)}</p>
                 </div>
-                <div class="modality-buckets">
-                    ${model.threeB.buckets.map((bucket) => renderModalityBucket(bucket)).join('')}
+                <div class="modality-bank-field">
+                    <div class="field-bracket modality-field-bracket"><span>Modality Object Banks / Ingress Containers</span></div>
+                    <div class="modality-buckets">
+                        ${model.threeB.buckets.map((bucket) => renderModalityBucket(bucket)).join('')}
+                    </div>
                 </div>
             </section>
             <div class="sublayer-connector sublayer-connector-3bc" aria-hidden="true"><span>3B to 3C</span></div>
@@ -1848,8 +1857,11 @@ function renderSublayerMap() {
                     <p>${escapeHtml(model.threeC.message)}</p>
                 </div>
                 ${renderExecutionPipeline(model.threeC.executionPipeline)}
-                <div class="analysis-planes">
-                    ${model.threeC.planes.map((plane) => renderAnalysisPlane(plane)).join('')}
+                <div class="analysis-plane-field">
+                    <div class="field-bracket analysis-field-bracket"><span>Analysis Environment Planes / Input To Output Fields</span></div>
+                    <div class="analysis-planes">
+                        ${model.threeC.planes.map((plane) => renderAnalysisPlane(plane)).join('')}
+                    </div>
                 </div>
             </section>
         </section>
