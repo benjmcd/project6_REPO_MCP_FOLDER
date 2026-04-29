@@ -92,7 +92,7 @@ body.layer3-page .app-body {
 .layer3-page .workband:focus,
 .layer3-page .source-fieldset:focus,
 .layer3-page .sublayer-map-band:focus {
-    box-shadow: 0 0 0 3px var(--control-hover-bg);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 24%, transparent);
 }
 
 html[data-theme="workbench"] body.layer3-page {
@@ -120,7 +120,7 @@ html[data-theme="workbench"] body.layer3-page .layer3-header {
 }
 
 html[data-theme="workbench"] body.layer3-page .layer3-body {
-    grid-template-columns: 124px minmax(0, 1fr) 236px;
+    grid-template-columns: 96px minmax(0, 1fr) 196px;
     background:
         linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
         linear-gradient(180deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
@@ -141,6 +141,7 @@ html[data-theme="workbench"] body.layer3-page .layer3-stepper {
 
 html[data-theme="workbench"] body.layer3-page .context-panel {
     padding: 10px;
+    font-size: 0.78rem;
 }
 
 html[data-theme="workbench"] body.layer3-page .layer3-workspace {
@@ -167,10 +168,24 @@ html[data-theme="workbench"] body.layer3-page .authority-rail .rail-value {
 }
 
 html[data-theme="workbench"] body.layer3-page .workband {
+    margin: 8px 10px 0;
     border: 1px dashed #7d7d7d;
     border-left: 4px solid var(--l3-stage-accent);
     background: #1b1b1b;
     box-shadow: inset 0 0 0 1px rgba(248, 248, 248, 0.035);
+}
+
+html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) {
+    background: rgba(27, 27, 27, 0.78);
+    box-shadow: none;
+}
+
+html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band):focus {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 24%, transparent);
+}
+
+html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading {
+    padding: 10px 14px;
 }
 
 html[data-theme="workbench"] body.layer3-page .intent-band {
@@ -236,6 +251,7 @@ html[data-theme="workbench"] body.layer3-page .typing-card {
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
     margin: 8px 10px 0;
+    min-height: calc(100vh - 82px);
     border: 1px solid #7d7d7d;
     border-radius: 2px;
     background:
@@ -258,6 +274,10 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-heading h2 {
     font-size: 0.92rem;
 }
 
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
+    min-height: calc(100vh - 146px);
+}
+
 html[data-theme="workbench"] body.layer3-page .sublayer-region {
     border-color: #8d8d8d;
     background:
@@ -269,7 +289,7 @@ html[data-theme="workbench"] body.layer3-page .gate-panel,
 html[data-theme="workbench"] body.layer3-page .modality-bucket,
 html[data-theme="workbench"] body.layer3-page .analysis-plane {
     border-color: #686868;
-    background: rgba(14, 14, 14, 0.74);
+    background: rgba(14, 14, 14, 0.58);
 }
 
 html[data-theme="workbench"] body.layer3-page .gate-panel.diagram-gate {
@@ -280,12 +300,27 @@ html[data-theme="workbench"] body.layer3-page .gate-panel.diagram-gate {
     background: transparent;
 }
 
+html[data-theme="workbench"] body.layer3-page .ledger-chip-field,
+html[data-theme="workbench"] body.layer3-page .modality-bucket {
+    border-style: dashed;
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 8%, transparent), transparent 46%),
+        rgba(9, 9, 9, 0.54);
+}
+
 html[data-theme="workbench"] body.layer3-page .flow-object,
 html[data-theme="workbench"] body.layer3-page .flow-empty,
 html[data-theme="workbench"] body.layer3-page .plane-column,
 html[data-theme="workbench"] body.layer3-page .plane-process {
     border-color: #4f4f4f;
     background: #101010;
+}
+
+html[data-theme="workbench"] body.layer3-page .plane-column,
+html[data-theme="workbench"] body.layer3-page .plane-process {
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--modality-accent) 5%, transparent), transparent 74%),
+        rgba(8, 8, 8, 0.7);
 }
 
 html[data-theme="workbench"] body.layer3-page .plane-process li {
@@ -1034,6 +1069,74 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     font-size: 0.8rem;
 }
 
+@media (min-width: 1500px) {
+    html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
+        grid-template-columns: minmax(275px, 0.58fr) 58px minmax(305px, 0.64fr) 68px minmax(540px, 1.38fr);
+        grid-template-areas:
+            "spec spec spec spec spec"
+            "threea connector3ab threeb connector3bc threec";
+        align-items: stretch;
+        gap: 14px;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .sublayer-3a,
+    html[data-theme="workbench"] body.layer3-page .sublayer-3b,
+    html[data-theme="workbench"] body.layer3-page .sublayer-3c {
+        min-height: calc(100vh - 292px);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .ledger-chip-field {
+        min-height: 270px;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .sublayer-connector-3bc {
+        min-height: auto;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .sublayer-connector-3bc::before {
+        left: 0;
+        right: 0;
+        top: 50%;
+        bottom: auto;
+        width: auto;
+        height: 4px;
+        background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .sublayer-connector-3bc::after {
+        top: calc(50% - 7px);
+        right: -3px;
+        bottom: auto;
+        left: auto;
+        border-top: 7px solid transparent;
+        border-bottom: 7px solid transparent;
+        border-left: 12px solid var(--primary-color);
+        border-right: none;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .sublayer-connector-3bc span {
+        transform: rotate(-90deg);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .analysis-plane {
+        padding: 11px;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .plane-flow {
+        grid-template-columns: minmax(118px, 0.88fr) 36px minmax(118px, 0.78fr) 36px minmax(160px, 1.18fr);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .plane-column,
+    html[data-theme="workbench"] body.layer3-page .plane-process {
+        min-height: 122px;
+        padding: 8px;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .plane-process {
+        min-height: 106px;
+    }
+}
+
 .rail-item {
     display: flex;
     flex-direction: column;
@@ -1447,6 +1550,10 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
             "threeb"
             "connector3bc"
             "threec";
+    }
+
+    .canvas-intake-spec {
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .sublayer-connector {
