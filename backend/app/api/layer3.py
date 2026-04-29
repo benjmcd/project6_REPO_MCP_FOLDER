@@ -1153,6 +1153,7 @@ class Layer3SessionSummaryResponse(Layer3BaseResponse):
     handoff_export_prepare: dict[str, Any]
     aps_handoff_dispatch: dict[str, Any]
     external_export_download: dict[str, Any]
+    sublayer_visualization: dict[str, Any]
     downstream_unavailable: list[str]
     authority_rail: dict[str, Any]
 
