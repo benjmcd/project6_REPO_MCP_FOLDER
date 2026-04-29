@@ -93,6 +93,133 @@ body.layer3-page .app-body {
     box-shadow: 0 0 0 3px var(--control-hover-bg);
 }
 
+html[data-theme="workbench"] body.layer3-page {
+    --bg-color: #0d0d0d;
+    --text-color: #f8f8f8;
+    --muted-text: #c9c9c9;
+    --border-color: #535353;
+    --border-strong-color: #9a9a9a;
+    --header-bg: #242424;
+    --primary-color: #7dd3fc;
+    --pane-bg: #121212;
+    --pane-header-bg: #242424;
+    --control-bg: #1b1b1b;
+    --control-hover-bg: #313131;
+    --layout-section-bg: #1b1b1b;
+    --layout-divider-color: #535353;
+    --l3-stage-accent: #7dd3fc;
+    background: #0d0d0d;
+}
+
+html[data-theme="workbench"] body.layer3-page .layer3-header {
+    background: #242424;
+    border-bottom-color: #535353;
+    box-shadow: inset 0 -1px 0 #373737;
+}
+
+html[data-theme="workbench"] body.layer3-page .layer3-body {
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+        #0d0d0d;
+    background-size: 32px 32px;
+}
+
+html[data-theme="workbench"] body.layer3-page .layer3-stepper,
+html[data-theme="workbench"] body.layer3-page .context-panel {
+    background: #121212;
+    border-color: #535353;
+}
+
+html[data-theme="workbench"] body.layer3-page .layer3-workspace {
+    background: #111111;
+    box-shadow: inset 0 0 0 1px #313131;
+}
+
+html[data-theme="workbench"] body.layer3-page .authority-rail {
+    margin: 14px 16px 0;
+    border: 1px solid #5b5b5b;
+    border-radius: 8px;
+    background: #1b1b1b;
+}
+
+html[data-theme="workbench"] body.layer3-page .workband {
+    border: 1px dashed #7d7d7d;
+    border-left: 4px solid var(--l3-stage-accent);
+    background: #1b1b1b;
+    box-shadow: inset 0 0 0 1px rgba(248, 248, 248, 0.035);
+}
+
+html[data-theme="workbench"] body.layer3-page .intent-band {
+    --l3-stage-accent: #7dd3fc;
+}
+
+html[data-theme="workbench"] body.layer3-page .material-band,
+html[data-theme="workbench"] body.layer3-page .package-review-band {
+    --l3-stage-accent: #ccff99;
+}
+
+html[data-theme="workbench"] body.layer3-page .gatec-band,
+html[data-theme="workbench"] body.layer3-page .aps-handoff-band {
+    --l3-stage-accent: #b266ff;
+}
+
+html[data-theme="workbench"] body.layer3-page .plan-band,
+html[data-theme="workbench"] body.layer3-page .handoff-export-band {
+    --l3-stage-accent: #ffb366;
+}
+
+html[data-theme="workbench"] body.layer3-page .result-review-band,
+html[data-theme="workbench"] body.layer3-page .external-export-download-band {
+    --l3-stage-accent: #7dd3fc;
+}
+
+html[data-theme="workbench"] body.layer3-page .section-heading,
+html[data-theme="workbench"] body.layer3-page .material-table th {
+    background: #242424;
+    border-color: #535353;
+}
+
+html[data-theme="workbench"] body.layer3-page .step-chip {
+    background: #1b1b1b;
+    border-color: #535353;
+    color: #f8f8f8;
+}
+
+html[data-theme="workbench"] body.layer3-page .step-chip.active {
+    background: #242424;
+    border-color: #9a9a9a;
+    color: #f8f8f8;
+}
+
+html[data-theme="workbench"] body.layer3-page .step-chip.current {
+    box-shadow:
+        inset 4px 0 0 var(--primary-color),
+        0 0 0 1px rgba(125, 211, 252, 0.3);
+}
+
+html[data-theme="workbench"] body.layer3-page .source-fieldset,
+html[data-theme="workbench"] body.layer3-page .plan-summary-card,
+html[data-theme="workbench"] body.layer3-page .plan-list,
+html[data-theme="workbench"] body.layer3-page .result-review-card,
+html[data-theme="workbench"] body.layer3-page .typing-card {
+    border-style: dashed;
+    border-color: #5b5b5b;
+    background: #242424;
+}
+
+html[data-theme="workbench"] body.layer3-page .status-pill:not(.blocked):not(.ok),
+html[data-theme="workbench"] body.layer3-page .source-badge,
+html[data-theme="workbench"] body.layer3-page .downstream-locks .status-pill:not(.blocked):not(.ok) {
+    border-color: #7d7d7d;
+    background: #121212;
+}
+
+html[data-theme="workbench"] body.layer3-page .primary-btn {
+    background: #7dd3fc;
+    color: #0d0d0d;
+}
+
 .layer3-workspace {
     display: flex;
     min-width: 0;
@@ -515,6 +642,25 @@ body.layer3-page .app-body {
 }
 
 @media (max-width: 980px) {
+    .layer3-header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .layer3-header-left {
+        min-width: 0;
+    }
+
+    .layer3-header .header-right {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .layer3-header .header-right select {
+        min-width: 0;
+        width: min(100%, 240px);
+    }
+
     .layer3-body {
         grid-template-columns: 1fr;
         overflow: visible;
