@@ -265,7 +265,7 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
 });
 
 test('Layer 3 workbench renders a responsive live-state sublayer material and analysis map', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.setViewportSize({ width: 1626, height: 869 });
   const bootstrapResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/bootstrap'));
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   await expectJson(await bootstrapResponsePromise);
@@ -339,13 +339,26 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     intakeDisplay: 'grid',
     intakeGridArea: 'spec',
     sublayerBorderStyle: 'dotted',
-    modalityBorderStyle: 'solid',
+    modalityBorderStyle: 'dashed',
     arrowDisplay: 'block',
     chipRadius: '3px',
   });
 
   const desktopFit = await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1);
   expect(desktopFit).toBe(true);
+
+  await page.setViewportSize({ width: 1024, height: 768 });
+  const tabletFit = await page.evaluate(() => {
+    const intake = window.getComputedStyle(document.querySelector('.canvas-intake-spec'));
+    return {
+      fitsViewport: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
+      intakeColumnCount: intake.gridTemplateColumns.split(' ').filter(Boolean).length,
+    };
+  });
+  expect(tabletFit).toEqual({
+    fitsViewport: true,
+    intakeColumnCount: 1,
+  });
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator('#sublayer-map-panel')).toBeVisible();
