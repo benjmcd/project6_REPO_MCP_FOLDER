@@ -27,6 +27,20 @@ function formPostPayload(request) {
   return payload;
 }
 
+async function expectStepAvailable(page, step) {
+  const chip = page.locator(`[data-step="${step}"]`);
+  await expect(chip).toBeEnabled();
+  await expect(chip).toHaveAttribute('data-available', 'true');
+  await expect(chip).not.toHaveClass(/unavailable/);
+}
+
+async function expectStepUnavailable(page, step) {
+  const chip = page.locator(`[data-step="${step}"]`);
+  await expect(chip).toBeEnabled();
+  await expect(chip).toHaveAttribute('data-available', 'false');
+  await expect(chip).toHaveClass(/unavailable/);
+}
+
 async function prepareExecutedLayer3Session(request, seedPath = '/__test/layer3/seed-quant') {
   const seed = await expectJson(await request.post(seedPath));
   const planPreview = await expectJson(await request.post('/api/v1/layer3/plan/preview', {
@@ -120,10 +134,10 @@ test('Layer 3 workbench completes the first-slice operator path without enabling
 
   await expect(page.getByRole('heading', { name: 'Layer 3 Workbench' })).toBeVisible();
   await expect(page.locator('#authority-rail')).toContainText('not_committed');
-  await expect(page.locator('[data-step="plan"]')).toBeDisabled();
-  await expect(page.locator('[data-step="execution"]')).toBeDisabled();
-  await expect(page.locator('[data-step="results"]')).toBeDisabled();
-  await expect(page.locator('[data-step="package"]')).toBeDisabled();
+  await expectStepUnavailable(page, 'plan');
+  await expectStepUnavailable(page, 'execution');
+  await expectStepUnavailable(page, 'results');
+  await expectStepUnavailable(page, 'package');
   await expect(page.locator('#result-review-refresh')).toBeDisabled();
   await expect(page.locator('#result-status-inspect')).toBeDisabled();
   await expect(page.locator('#result-review-submit')).toBeDisabled();
@@ -181,7 +195,7 @@ test('Layer 3 workbench completes the first-slice operator path without enabling
 
   await expect(page.locator('#gate-c-panel .typing-card')).toHaveCount(1);
   await expect(page.locator('#gate-c-panel')).toContainText('Authoritative: no');
-  await expect(page.locator('[data-step="plan"]')).toBeDisabled();
+  await expectStepUnavailable(page, 'plan');
 
   const gateCCommitResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/gate-c/preview'));
   await page.locator('#gate-c-commit').click();
@@ -191,7 +205,7 @@ test('Layer 3 workbench completes the first-slice operator path without enabling
 
   await expect(page.locator('#gate-c-panel')).toContainText('Authoritative: yes');
   await expect(page.locator('#gate-c-preview')).toBeDisabled();
-  await expect(page.locator('[data-step="plan"]')).toBeEnabled();
+  await expectStepAvailable(page, 'plan');
   await expect(page.locator('#plan-preview')).toBeEnabled();
 
   const planPreviewResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/plan/preview'));
@@ -202,8 +216,8 @@ test('Layer 3 workbench completes the first-slice operator path without enabling
   await expect(page.locator('#plan-panel')).toContainText('Plan Preview Blocked');
   await expect(page.locator('#plan-panel')).toContainText('no_admissible_plan');
   await expect(page.locator('#unavailable-list')).toContainText('package');
-  await expect(page.locator('[data-step="execution"]')).toBeDisabled();
-  await expect(page.locator('[data-step="package"]')).toBeDisabled();
+  await expectStepUnavailable(page, 'execution');
+  await expectStepUnavailable(page, 'package');
 });
 
 test('Layer 3 workbench approves an admissible plan without starting execution', async ({ page, request }) => {
@@ -274,9 +288,9 @@ test('Layer 3 workbench approves an admissible plan without starting execution',
   await expect(page.locator('#plan-panel')).toContainText('approved');
   await expect(page.locator('#plan-panel')).toContainText('not started');
   await expect(page.locator('#plan-approve')).toBeDisabled();
-  await expect(page.locator('[data-step="execution"]')).toBeDisabled();
-  await expect(page.locator('[data-step="results"]')).toBeDisabled();
-  await expect(page.locator('[data-step="package"]')).toBeDisabled();
+  await expectStepUnavailable(page, 'execution');
+  await expectStepUnavailable(page, 'results');
+  await expectStepUnavailable(page, 'package');
   await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
   await expect(page.locator('#package-construction-commit')).toBeDisabled();
   await expect(page.locator('#package-review-submit')).toBeDisabled();
@@ -307,9 +321,9 @@ test('Layer 3 workbench records selected-pass result review only after status au
 
   await expect(page.locator('#result-status-inspect')).toBeEnabled();
   await expect(page.locator('#result-review-submit')).toBeDisabled();
-  await expect(page.locator('[data-step="execution"]')).toBeEnabled();
-  await expect(page.locator('[data-step="results"]')).toBeEnabled();
-  await expect(page.locator('[data-step="package"]')).toBeDisabled();
+  await expectStepAvailable(page, 'execution');
+  await expectStepAvailable(page, 'results');
+  await expectStepUnavailable(page, 'package');
 
   const statusRequestPromise = page.waitForRequest((req) => req.url().includes('/api/v1/layer3/execution/result/status'));
   const statusResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/execution/result/status'));
@@ -384,7 +398,7 @@ test('Layer 3 workbench records selected-pass result review only after status au
   await expect(page.locator('#result-review-panel')).toContainText('package');
   await expect(page.locator('#result-review-panel')).toContainText('handoff');
   await expect(page.locator('#result-review-submit')).toBeDisabled();
-  await expect(page.locator('[data-step="package"]')).toBeDisabled();
+  await expectStepUnavailable(page, 'package');
   await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
   await expect(page.locator('#package-construction-commit')).toBeDisabled();
   await expect(page.locator('#package-review-submit')).toBeDisabled();
@@ -468,7 +482,7 @@ test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff afte
   await expect(page.locator('#package-review-preview-panel')).toContainText('handoff');
   await expect(page.locator('#package-construction-commit')).toBeEnabled();
   await expect(page.locator('#package-review-submit')).toBeDisabled();
-  await expect(page.locator('[data-step="package"]')).toBeEnabled();
+  await expectStepAvailable(page, 'package');
 
   const postCommitSummaryPattern = `**/api/v1/layer3/session/${setup.seed.session_id}`;
   const blockPostCommitSummary = async (route) => {
@@ -1139,9 +1153,9 @@ test('Layer 3 workbench can request plan revision without starting execution', a
   await expect(page.locator('#plan-reject')).toBeDisabled();
   await expect(page.locator('#plan-request-revision')).toBeDisabled();
   await expect(page.locator('#plan-approve')).toBeDisabled();
-  await expect(page.locator('[data-step="execution"]')).toBeDisabled();
-  await expect(page.locator('[data-step="results"]')).toBeDisabled();
-  await expect(page.locator('[data-step="package"]')).toBeDisabled();
+  await expectStepUnavailable(page, 'execution');
+  await expectStepUnavailable(page, 'results');
+  await expectStepUnavailable(page, 'package');
   await expect(page.locator('#unavailable-list')).toContainText('execution');
   await expect(page.locator('#unavailable-list')).toContainText('package');
 });
