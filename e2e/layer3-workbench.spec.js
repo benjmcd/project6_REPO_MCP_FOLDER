@@ -353,11 +353,17 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     const chip = window.getComputedStyle(document.querySelector('.sublayer-3a .diagram-chip'));
     const intake = window.getComputedStyle(document.querySelector('.canvas-intake-spec'));
     const stateFlow = window.getComputedStyle(document.querySelector('.canvas-state-flow'));
+    const routing = window.getComputedStyle(document.querySelector('.analysis-routing-plane'));
+    const threeA = window.getComputedStyle(document.querySelector('.sublayer-3a'));
     return {
       intakeDisplay: intake.display,
       intakeGridArea: intake.gridArea,
       stateFlowDisplay: stateFlow.display,
       stateFlowGridArea: stateFlow.gridArea,
+      routingDisplay: routing.display,
+      routingGridArea: routing.gridArea,
+      threeADisplay: threeA.display,
+      threeAColumns: threeA.gridTemplateColumns.split(' ').filter(Boolean).length,
       sublayerBorderStyle: sublayer.borderTopStyle,
       modalityBorderStyle: modality.borderTopStyle,
       modalityColumns: modality.gridTemplateColumns.split(' ').filter(Boolean).length,
@@ -371,10 +377,14 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     intakeGridArea: 'spec',
     stateFlowDisplay: 'grid',
     stateFlowGridArea: 'stateflow',
+    routingDisplay: 'grid',
+    routingGridArea: 'routing',
+    threeADisplay: 'grid',
+    threeAColumns: 2,
     sublayerBorderStyle: 'dotted',
     modalityBorderStyle: 'solid',
-    modalityColumns: 2,
-    modalityObjectGridArea: '2',
+    modalityColumns: 1,
+    modalityObjectGridArea: '1',
     arrowDisplay: 'block',
     chipRadius: '0px',
   });

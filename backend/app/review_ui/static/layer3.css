@@ -816,6 +816,10 @@ html[data-theme="workbench"] body.layer3-page .sublayer-region::before {
     min-height: 500px;
 }
 
+.analysis-routing-plane {
+    display: contents;
+}
+
 .sublayer-title {
     display: grid;
     justify-items: center;
@@ -1510,23 +1514,119 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 
 @media (min-width: 1500px) {
     html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
-        grid-template-columns: minmax(220px, 0.48fr) 46px minmax(270px, 0.66fr) 54px minmax(560px, 1.64fr);
+        grid-template-columns: minmax(0, 1fr);
         grid-template-areas:
-            "spec spec spec spec spec"
-            "stateflow stateflow stateflow stateflow stateflow"
-            "threea connector3ab threeb connector3bc threec";
+            "spec"
+            "stateflow"
+            "threea"
+            "connector3ab"
+            "routing";
         align-items: stretch;
-        gap: 15px;
+        gap: 12px;
     }
 
-    html[data-theme="workbench"] body.layer3-page .sublayer-3a,
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane {
+        grid-area: routing;
+        display: grid;
+        grid-template-columns: minmax(320px, 0.58fr) 62px minmax(760px, 1.42fr);
+        grid-template-areas: "threeb connector3bc threec";
+        align-items: stretch;
+        gap: 16px;
+        min-width: 0;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .sublayer-3a {
+        display: grid;
+        grid-template-columns: minmax(270px, 0.34fr) minmax(0, 1fr);
+        grid-template-areas:
+            "title title"
+            "gate ledger";
+        align-items: stretch;
+        gap: 14px 18px;
+        min-height: 250px;
+        padding: 16px 22px 18px;
+    }
+
     html[data-theme="workbench"] body.layer3-page .sublayer-3b,
     html[data-theme="workbench"] body.layer3-page .sublayer-3c {
-        min-height: calc(100vh - 272px);
+        min-height: calc(100vh - 420px);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .sublayer-3a > .sublayer-title {
+        grid-area: title;
+        justify-items: start;
+        padding-bottom: 8px;
+        border-bottom: 1px dotted rgba(248, 248, 248, 0.26);
+        text-align: left;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .sublayer-3a > .diagram-gate {
+        grid-area: gate;
+        align-self: stretch;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .sublayer-3a > .ledger-chip-field {
+        grid-area: ledger;
+        align-self: stretch;
     }
 
     html[data-theme="workbench"] body.layer3-page .ledger-chip-field {
-        min-height: 340px;
+        min-height: 178px;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .sublayer-3a .flow-object-list {
+        grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+        align-content: start;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .sublayer-connector-3ab {
+        min-height: 32px;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .sublayer-connector-3ab::before {
+        left: 50%;
+        right: auto;
+        top: 0;
+        bottom: 0;
+        width: 5px;
+        height: auto;
+        background: linear-gradient(180deg, transparent, var(--diagram-flow-color, var(--primary-color)), transparent);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .sublayer-connector-3ab::after {
+        top: auto;
+        right: auto;
+        bottom: 0;
+        left: calc(50% - 6px);
+        border-top: 10px solid var(--diagram-flow-color, var(--primary-color));
+        border-right: 7px solid transparent;
+        border-bottom: none;
+        border-left: 7px solid transparent;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .sublayer-connector-3ab span {
+        transform: none;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-bucket {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        min-height: 128px;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-heading {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-bucket > .flow-empty,
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-bucket > .flow-object-list {
+        grid-column: 1;
+        min-height: 70px;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-bucket > .flow-object-list {
+        grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
     }
 
     html[data-theme="workbench"] body.layer3-page .sublayer-connector-3bc {
