@@ -15,7 +15,9 @@
             }
             const prefersDark = typeof window.matchMedia === 'function'
                 && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const resolvedTheme = preference === 'dark' ? 'dark' : preference === 'light' ? 'light' : (prefersDark ? 'dark' : 'light');
+            const resolvedTheme = preference === 'dark' || preference === 'light' || preference === 'workbench'
+                ? preference
+                : (prefersDark ? 'dark' : 'light');
             document.documentElement.dataset.theme = resolvedTheme;
             document.documentElement.dataset.themePreference = preference;
         }());
@@ -35,6 +37,7 @@
                 <option value="system">System</option>
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
+                <option value="workbench">Workbench</option>
             </select>
         </div>
     </header>

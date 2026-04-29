@@ -129,11 +129,11 @@ function escapeHtml(value) {
 }
 
 function isValidThemePreference(value) {
-    return value === 'system' || value === 'light' || value === 'dark';
+    return value === 'system' || value === 'light' || value === 'dark' || value === 'workbench';
 }
 
 function resolveTheme(preference) {
-    if (preference === 'light' || preference === 'dark') return preference;
+    if (preference === 'light' || preference === 'dark' || preference === 'workbench') return preference;
     return systemThemeQuery?.matches ? 'dark' : 'light';
 }
 
@@ -2045,7 +2045,7 @@ function navigateToStep(chip) {
     const target = targetId ? document.getElementById(targetId) : null;
     if (!target) return;
     setCurrentStepChip(chip);
-    target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    target.scrollIntoView({ block: 'start', behavior: 'auto' });
     if (typeof target.focus === 'function') {
         target.focus({ preventScroll: true });
     }
