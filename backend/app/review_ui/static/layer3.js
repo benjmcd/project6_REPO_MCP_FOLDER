@@ -1,5 +1,6 @@
 const API_ROOT = '/api/v1/layer3';
 const THEME_STORAGE_KEY = 'nrc_aps_review_theme';
+const LAYER3_THEME_STORAGE_KEY = 'layer3_workbench_theme';
 
 const State = {
     bootstrap: null,
@@ -128,8 +129,12 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+function isSharedThemePreference(value) {
+    return value === 'system' || value === 'light' || value === 'dark';
+}
+
 function isValidThemePreference(value) {
-    return value === 'system' || value === 'light' || value === 'dark' || value === 'workbench';
+    return isSharedThemePreference(value) || value === 'workbench';
 }
 
 function resolveTheme(preference) {
@@ -147,7 +152,12 @@ function applyThemePreference(preference, { persist = true } = {}) {
     }
     if (persist) {
         try {
-            localStorage.setItem(THEME_STORAGE_KEY, normalized);
+            localStorage.setItem(LAYER3_THEME_STORAGE_KEY, normalized);
+            if (isSharedThemePreference(normalized)) {
+                localStorage.setItem(THEME_STORAGE_KEY, normalized);
+            } else if (localStorage.getItem(THEME_STORAGE_KEY) === normalized) {
+                localStorage.removeItem(THEME_STORAGE_KEY);
+            }
         } catch (error) {
             addEvent('Theme preference kept in browser memory only.');
         }
