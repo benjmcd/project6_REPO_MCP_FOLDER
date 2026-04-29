@@ -234,6 +234,7 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
       workbandBorderStyle: workbandStyle.borderTopStyle,
       workbandBorderLeftWidth: workbandStyle.borderLeftWidth,
       workbandBorderLeftColor: workbandStyle.borderLeftColor,
+      workbandBackground: workbandStyle.backgroundColor,
       fieldsetBorderStyle: fieldsetStyle.borderTopStyle,
       chipBackground: chipStyle.backgroundColor,
     };
@@ -242,8 +243,8 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
     bodyBackground: 'rgb(13, 13, 13)',
     railBorderStyle: 'solid',
     workbandBorderStyle: 'dotted',
-    workbandBorderLeftWidth: '2px',
-    workbandBorderLeftColor: 'rgb(204, 255, 153)',
+    workbandBorderLeftWidth: '0px',
+    workbandBackground: 'rgba(0, 0, 0, 0)',
     fieldsetBorderStyle: 'dashed',
   });
   expect(workbenchStyles.railBackground).not.toBe('rgba(0, 0, 0, 0)');
@@ -339,6 +340,7 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   const diagramStyles = await page.evaluate(() => {
     const sublayer = window.getComputedStyle(document.querySelector('.sublayer-3a'));
     const modality = window.getComputedStyle(document.querySelector('.modality-bucket.modality-quantitative'));
+    const modalityObjects = window.getComputedStyle(document.querySelector('.modality-bucket.modality-quantitative .flow-object-list'));
     const arrow = window.getComputedStyle(document.querySelector('.plane-arrow-process'));
     const chip = window.getComputedStyle(document.querySelector('.sublayer-3a .diagram-chip'));
     const intake = window.getComputedStyle(document.querySelector('.canvas-intake-spec'));
@@ -347,6 +349,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
       intakeGridArea: intake.gridArea,
       sublayerBorderStyle: sublayer.borderTopStyle,
       modalityBorderStyle: modality.borderTopStyle,
+      modalityColumns: modality.gridTemplateColumns.split(' ').filter(Boolean).length,
+      modalityObjectGridArea: modalityObjects.gridColumnStart,
       arrowDisplay: arrow.display,
       chipRadius: chip.borderTopLeftRadius,
     };
@@ -356,6 +360,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     intakeGridArea: 'spec',
     sublayerBorderStyle: 'dotted',
     modalityBorderStyle: 'solid',
+    modalityColumns: 2,
+    modalityObjectGridArea: '2',
     arrowDisplay: 'block',
     chipRadius: '0px',
   });
