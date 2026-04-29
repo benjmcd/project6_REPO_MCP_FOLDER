@@ -150,12 +150,14 @@ test('Layer 3 workbench keeps page-level scrolling and step navigation across vi
         bodyOverflowY: bodyStyle.overflowY,
         contextOverflow: contextStyle.overflow,
         pageCanScroll: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) > window.innerHeight,
+        pageFitsViewportWidth: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
       };
     });
     expect(scrollState).toEqual({
       bodyOverflowY: 'auto',
       contextOverflow: 'visible',
       pageCanScroll: true,
+      pageFitsViewportWidth: true,
     });
 
     for (const [step, targetId] of stepTargets) {
@@ -212,6 +214,54 @@ test('Layer 3 workbench exposes visible keyboard focus across themes', async ({ 
     expect(targetFocusStyle.outlineWidth).toBe('3px');
     expect(targetFocusStyle.boxShadow).not.toBe('none');
   }
+});
+
+test('Layer 3 workbench applies mockup-informed Workbench visual boundaries without degrading shared themes', async ({ page }) => {
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.locator('#theme-selector').selectOption('workbench');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+
+  const workbenchStyles = await page.evaluate(() => {
+    const bodyStyle = window.getComputedStyle(document.body);
+    const railStyle = window.getComputedStyle(document.querySelector('.authority-rail'));
+    const workbandStyle = window.getComputedStyle(document.querySelector('#gate-b-band'));
+    const fieldsetStyle = window.getComputedStyle(document.querySelector('#source-fieldset'));
+    const chipStyle = window.getComputedStyle(document.querySelector('[data-step="gate_b"]'));
+    return {
+      bodyBackground: bodyStyle.backgroundColor,
+      railBorderStyle: railStyle.borderTopStyle,
+      railBackground: railStyle.backgroundColor,
+      workbandBorderStyle: workbandStyle.borderTopStyle,
+      workbandBorderLeftWidth: workbandStyle.borderLeftWidth,
+      workbandBorderLeftColor: workbandStyle.borderLeftColor,
+      fieldsetBorderStyle: fieldsetStyle.borderTopStyle,
+      chipBackground: chipStyle.backgroundColor,
+    };
+  });
+  expect(workbenchStyles).toMatchObject({
+    bodyBackground: 'rgb(13, 13, 13)',
+    railBorderStyle: 'solid',
+    workbandBorderStyle: 'dashed',
+    workbandBorderLeftWidth: '4px',
+    workbandBorderLeftColor: 'rgb(204, 255, 153)',
+    fieldsetBorderStyle: 'dashed',
+  });
+  expect(workbenchStyles.railBackground).not.toBe('rgba(0, 0, 0, 0)');
+  expect(workbenchStyles.chipBackground).not.toBe('rgba(0, 0, 0, 0)');
+
+  await page.locator('#theme-selector').selectOption('light');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const lightWorkbandStyle = await page.locator('#gate-b-band').evaluate((element) => {
+    const style = window.getComputedStyle(element);
+    return {
+      borderStyle: style.borderTopStyle,
+      borderLeftWidth: style.borderLeftWidth,
+    };
+  });
+  expect(lightWorkbandStyle).toEqual({
+    borderStyle: 'solid',
+    borderLeftWidth: '1px',
+  });
 });
 
 async function prepareExecutedLayer3Session(request, seedPath = '/__test/layer3/seed-quant') {
