@@ -183,8 +183,10 @@ html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) 
     border-bottom-color: transparent;
     border-left-width: 0;
     border-top-style: dotted;
+    border-radius: 0;
     background: transparent;
     box-shadow: none;
+    overflow: visible;
 }
 
 html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band):focus {
@@ -257,6 +259,92 @@ html[data-theme="workbench"] body.layer3-page .typing-card {
     border-style: dashed;
     border-color: #5b5b5b;
     background: rgba(25, 25, 25, 0.68);
+}
+
+html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading {
+    position: relative;
+    min-height: 34px;
+    padding: 6px 12px 6px 18px;
+    border-bottom: 1px solid rgba(248, 248, 248, 0.22);
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--l3-stage-accent) 11%, transparent), transparent 45%),
+        linear-gradient(180deg, rgba(248, 248, 248, 0.045), rgba(248, 248, 248, 0.008));
+}
+
+html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 7px;
+    width: 5px;
+    border-top: 1px solid var(--l3-stage-accent);
+    border-bottom: 1px solid var(--l3-stage-accent);
+    border-left: 2px solid var(--l3-stage-accent);
+    opacity: 0.88;
+}
+
+html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading h2 {
+    font-size: 0.86rem;
+    letter-spacing: 0;
+}
+
+html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .status-pill {
+    min-height: 20px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+}
+
+html[data-theme="workbench"] body.layer3-page .intent-form,
+html[data-theme="workbench"] body.layer3-page .result-review-form {
+    padding: 10px 14px;
+}
+
+html[data-theme="workbench"] body.layer3-page .filter-row,
+html[data-theme="workbench"] body.layer3-page .result-review-panel,
+html[data-theme="workbench"] body.layer3-page #package-review-preview-panel,
+html[data-theme="workbench"] body.layer3-page #handoff-export-prepare-panel,
+html[data-theme="workbench"] body.layer3-page #aps-handoff-dispatch-panel,
+html[data-theme="workbench"] body.layer3-page #external-export-download-prepare-panel,
+html[data-theme="workbench"] body.layer3-page #external-export-download-delivery-panel {
+    padding: 10px 14px;
+}
+
+html[data-theme="workbench"] body.layer3-page .plan-summary-grid,
+html[data-theme="workbench"] body.layer3-page .plan-preview-grid,
+html[data-theme="workbench"] body.layer3-page .result-review-grid {
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    gap: 8px;
+}
+
+html[data-theme="workbench"] body.layer3-page .plan-summary-card,
+html[data-theme="workbench"] body.layer3-page .plan-list,
+html[data-theme="workbench"] body.layer3-page .result-review-card {
+    border-style: dotted;
+    border-radius: 0;
+    padding: 9px 10px;
+    background:
+        linear-gradient(180deg, rgba(248, 248, 248, 0.035), rgba(248, 248, 248, 0.012)),
+        rgba(9, 9, 9, 0.54);
+    box-shadow: none;
+}
+
+html[data-theme="workbench"] body.layer3-page .result-review-card {
+    min-height: 92px;
+}
+
+html[data-theme="workbench"] body.layer3-page .plan-summary-card strong,
+html[data-theme="workbench"] body.layer3-page .plan-list h3,
+html[data-theme="workbench"] body.layer3-page .result-review-card strong {
+    margin-bottom: 5px;
+    color: #f8f8f8;
+    font-size: 0.78rem;
+}
+
+html[data-theme="workbench"] body.layer3-page .result-review-card ul,
+html[data-theme="workbench"] body.layer3-page .plan-list ul {
+    line-height: 1.42;
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
