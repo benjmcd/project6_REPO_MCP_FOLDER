@@ -116,6 +116,64 @@ html[data-theme="dark"] {
     --not-exercised-color: #95a4bb;
 }
 
+html[data-theme="workbench"] {
+    color-scheme: dark;
+    --bg-color: #10120f;
+    --text-color: #f0f5ed;
+    --muted-text: #b5c0ae;
+    --border-color: #374234;
+    --border-strong-color: #52604d;
+    --header-bg: #171b15;
+    --primary-color: #7dd3fc;
+    --pane-bg: #171b15;
+    --pane-header-bg: #1d241b;
+    --drawer-bg: #121510;
+    --control-bg: #1f261d;
+    --control-hover-bg: #2a3426;
+    --toggle-bg: #20281e;
+    --tree-hover-bg: #273022;
+    --tree-selected-bg: #143638;
+    --tree-selected-text: #e8fcff;
+    --layout-section-bg: #151914;
+    --layout-divider-color: #303a2d;
+    --layout-mapped-bg: #1b2d26;
+    --graph-bg-top: #121510;
+    --graph-bg-bottom: #171b15;
+    --graph-edge-color: #8ba284;
+    --graph-state-complete-fill: #173524;
+    --graph-state-complete-stroke: #80e0a7;
+    --graph-state-missing-fill: #3b1b24;
+    --graph-state-missing-stroke: #ff8395;
+    --graph-state-mismatch-fill: #392f12;
+    --graph-state-mismatch-stroke: #f6d36f;
+    --graph-state-unknown-fill: #192f34;
+    --graph-state-unknown-stroke: #7dd3fc;
+    --graph-canonical-fill: #171b15;
+    --graph-canonical-stroke: #9fe7d7;
+    --graph-canonical-text: #effbf7;
+    --graph-light-fill: #20281e;
+    --graph-light-stroke: #a8ba9f;
+    --graph-light-text: #f4faef;
+    --graph-heavy-fill: #18241b;
+    --graph-heavy-stroke: #80e0a7;
+    --graph-heavy-text: #ecfff4;
+    --graph-composite-fill: #1b2d26;
+    --graph-composite-stroke: #7dd3fc;
+    --graph-composite-text: #e8fcff;
+    --graph-selected-fill: #143638;
+    --graph-selected-stroke: #7dd3fc;
+    --overlay-bg: rgba(12, 15, 11, 0.84);
+    --disabled-message-bg: #1d241b;
+    --shadow-color: rgba(0, 0, 0, 0.48);
+    --preview-bg: #111510;
+    --preview-text: #eef8ea;
+    --preview-border-color: #3a4736;
+    --missing-color: #ff8395;
+    --complete-color: #80e0a7;
+    --mismatch-color: #f6d36f;
+    --not-exercised-color: #a9b6a2;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; }
 
 body { display: flex; flex-direction: column; height: 100vh; background: var(--bg-color); color: var(--text-color); }
