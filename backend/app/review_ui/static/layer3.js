@@ -1217,7 +1217,9 @@ function currentTypingObjects() {
 
 function currentPlanBody() {
     if (State.planApproval?.approved_plan) return State.planApproval.approved_plan;
-    if (State.planPreview?.schema_id === 'layer3.plan_preview_result.v1') return State.planPreview;
+    if (State.planPreview?.schema_id === 'layer3.plan_preview_result.v1') {
+        return State.planPreview.plan_preview || State.planPreview;
+    }
     return null;
 }
 
@@ -1243,13 +1245,149 @@ function currentPlannedPasses() {
     return plan?.planned_passes || [];
 }
 
+function modalityFromPlanPass(pass) {
+    const candidates = [
+        pass?.analysis_modality,
+        pass?.pass_scope,
+        pass?.engine_family,
+        pass?.method_family,
+        pass?.pass_type,
+        pass?.set_type,
+    ];
+    for (const candidate of candidates) {
+        const modality = normalizeModality(candidate);
+        if (modality && modality !== 'unclassified') return modality;
+    }
+    return 'unclassified';
+}
+
 function planPassesForModality(modality) {
-    return currentPlannedPasses().filter((item) => normalizeModality(item.analysis_modality || item.pass_type || item.method_family) === modality);
+    return currentPlannedPasses().filter((item) => modalityFromPlanPass(item) === modality);
+}
+
+function modalityFromEngineFamily(value) {
+    const text = String(value || '').toLowerCase();
+    if (text.includes('quant') || text.includes('deterministic')) return 'quantitative';
+    if (text.includes('qual')) return 'qualitative';
+    if (text.includes('hybrid') || text.includes('mixed')) return 'hybrid';
+    return null;
+}
+
+function currentResultModality() {
+    const fromStatus = modalityFromEngineFamily(State.resultStatus?.engine_family);
+    if (fromStatus) return fromStatus;
+    const plannedModalities = new Set(
+        currentPlannedPasses()
+            .map((pass) => modalityFromPlanPass(pass))
+            .filter((modality) => modality && modality !== 'unclassified')
+    );
+    return plannedModalities.size === 1 ? [...plannedModalities][0] : null;
+}
+
+function currentExecutionPipeline() {
+    const summary = State.sessionSummary || {};
+    const selection = summary.execution_selection || {};
+    const start = summary.analysis_execution_start || {};
+    const status = State.resultStatus || {};
+    const review = recordedResultReview() || State.resultReview || {};
+    const cards = [];
+    const outputs = [];
+
+    if (selection.selected || selection.pass_run_count || (Array.isArray(selection.pass_run_ids) && selection.pass_run_ids.length)) {
+        const passRunIds = Array.isArray(selection.pass_run_ids) ? selection.pass_run_ids : [];
+        cards.push({
+            label: 'Execution selection',
+            primary: selection.state || (selection.selected ? 'selected' : 'available'),
+            secondary: passRunIds.length ? `${passRunIds.length} pass run shell${passRunIds.length === 1 ? '' : 's'}` : 'no pass run shell reported',
+            badge: selection.execution_started ? 'started' : 'selected',
+            live: true,
+        });
+    }
+
+    if (start.state || start.pass_run_id || status.execution_started) {
+        cards.push({
+            label: 'Execution start',
+            primary: start.pass_run_status || status.pass_run_status || start.state || 'started',
+            secondary: start.analysis_run_id || status.analysis_run_id || start.pass_run_id || 'analysis run not reported',
+            badge: start.output_payload_ref || status.output_payload_ref ? 'output ref' : 'started',
+            live: true,
+        });
+    }
+
+    if (status.pass_run_status || status.result_status_available || status.next_state) {
+        cards.push({
+            label: 'Result status',
+            primary: status.pass_run_status || status.status || status.next_state || 'available',
+            secondary: status.next_state || status.pass_run_id || 'status loaded',
+            badge: status.result_status_available ? 'available' : 'status',
+            live: true,
+        });
+    }
+
+    if (review.review_state || review.operator_decision || review.review_record_ref) {
+        cards.push({
+            label: 'Result review',
+            primary: review.operator_decision || review.review_state || 'review recorded',
+            secondary: review.review_record_ref || 'review ref not reported',
+            badge: 'review',
+            live: true,
+        });
+    }
+
+    const outputRef = status.output_payload_ref || start.output_payload_ref;
+    if (outputRef) {
+        outputs.push({
+            label: 'Output payload',
+            primary: status.output_metadata_summary?.readable ? 'metadata readable' : 'payload reference reported',
+            secondary: outputRef,
+            badge: 'payload',
+        });
+    }
+    if (status.output_metadata_summary?.artifact_count !== undefined) {
+        outputs.push({
+            label: 'Output artifacts',
+            primary: `${status.output_metadata_summary.artifact_count} artifact${status.output_metadata_summary.artifact_count === 1 ? '' : 's'}`,
+            secondary: status.output_metadata_summary.analysis_set_id || status.output_metadata_summary.source_gate || 'metadata summary',
+            badge: 'metadata',
+        });
+    }
+    const reviewedItems = Array.isArray(review.reviewed_output_items) ? review.reviewed_output_items : [];
+    reviewedItems.slice(0, 6).forEach((item, index) => {
+        outputs.push({
+            label: item.item_type || `Reviewed item ${index + 1}`,
+            primary: item.status || item.review_status || item.title || 'reviewed output item',
+            secondary: item.item_ref || item.output_ref || item.trace_ref || review.review_record_ref || 'review item',
+            badge: 'reviewed',
+        });
+    });
+
+    const modality = currentResultModality();
+    return {
+        cards,
+        outputs,
+        modality,
+        modalityLabel: modality ? modalityMeta(modality).label : 'modality not reported',
+        state: outputs.length ? 'outputs' : (cards.length ? 'active' : 'empty'),
+    };
 }
 
 function outputCardsForModality(modality) {
     const cards = [];
+    const resultModality = currentResultModality();
+    if (!resultModality || resultModality !== modality) {
+        return cards;
+    }
     const status = State.resultStatus;
+    const start = State.sessionSummary?.analysis_execution_start || {};
+    const outputRef = status?.output_payload_ref || start.output_payload_ref;
+    if (outputRef) {
+        cards.push({
+            label: 'Output payload',
+            primary: status?.output_metadata_summary?.readable ? 'metadata readable' : 'payload reference reported',
+            secondary: outputRef,
+            badge: 'payload',
+        });
+    }
     if (status?.result_status_available || TERMINAL_PASS_STATUSES.has(status?.pass_run_status)) {
         cards.push({
             label: 'Result status',
@@ -1267,6 +1405,15 @@ function outputCardsForModality(modality) {
             badge: 'review',
         });
     }
+    const reviewedItems = Array.isArray(review?.reviewed_output_items) ? review.reviewed_output_items : [];
+    reviewedItems.slice(0, 6).forEach((item, index) => {
+        cards.push({
+            label: item.item_type || `Reviewed item ${index + 1}`,
+            primary: item.status || item.review_status || item.title || 'reviewed output item',
+            secondary: item.item_ref || item.output_ref || item.trace_ref || review.review_record_ref || 'review item',
+            badge: 'reviewed',
+        });
+    });
     return modality === 'unclassified' ? [] : cards;
 }
 
@@ -1278,6 +1425,7 @@ function sublayerStateLabel(state) {
         typed: 'Typing previewed',
         structural: 'Structural only',
         planned: 'Plan inputs loaded',
+        active: 'Execution state loaded',
         outputs: 'Outputs reported',
     };
     return labels[state] || humanizeToken(state);
@@ -1291,11 +1439,13 @@ function currentSublayerVisualizationModel() {
     const typedGroups = groupedByModality(typingObjects);
     const planGroups = groupedByModality(planObjects);
     const plannedPasses = currentPlannedPasses();
+    const executionPipeline = currentExecutionPipeline();
     const hasSessionScope = Boolean(State.gateB?.session_id || (rail.session_id && rail.session_id !== 'none'));
     const hasOutputs = SUBLAYER_MODALITIES.some((modality) => outputCardsForModality(modality).length > 0);
+    const hasExecutionState = executionPipeline.cards.length > 0 || executionPipeline.outputs.length > 0;
     const threeAState = materialObjects.length ? (hasSessionScope ? 'session' : 'preview') : 'empty';
     const threeBState = typingObjects.length ? 'typed' : 'empty';
-    const threeCState = hasOutputs ? 'outputs' : (planObjects.length || plannedPasses.length ? 'planned' : 'structural');
+    const threeCState = hasOutputs ? 'outputs' : (planObjects.length || plannedPasses.length ? 'planned' : (hasExecutionState ? 'active' : 'structural'));
 
     const gateBMessage = materialObjects.length
         ? (
@@ -1307,9 +1457,11 @@ function currentSublayerVisualizationModel() {
     const gateCMessage = typingObjects.length
         ? 'Gate C typing objects are grouped by repo-reported modality.'
         : 'No Gate C typing state is loaded yet. Commit Gate B and preview Gate C to classify material.';
-    const planeIntro = planObjects.length || plannedPasses.length
+    const planeIntro = hasExecutionState
+        ? '3C reflects the currently selected execution/result authority where the session summary or status endpoint reports it.'
+        : (planObjects.length || plannedPasses.length
         ? '3C planes are populated from plan preview or approved-plan state where available.'
-        : '3C planes are structural and neutral until plan preview, approval, execution, or result status reports live data.';
+        : '3C planes are structural and neutral until plan preview, approval, execution, or result status reports live data.');
 
     const modalityBuckets = SUBLAYER_MODALITIES.map((modality) => {
         const objects = typedGroups[modality] || [];
@@ -1327,11 +1479,13 @@ function currentSublayerVisualizationModel() {
             const inputs = (planGroups[modality] || []).length ? planGroups[modality] : (typedGroups[modality] || []);
             const passes = planPassesForModality(modality);
             const outputs = outputCardsForModality(modality);
+            const processCards = (!passes.length && executionPipeline.modality === modality) ? executionPipeline.cards : [];
             return {
                 modality,
                 meta: modalityMeta(modality),
                 inputs,
                 passes,
+                processCards,
                 outputs,
                 state: outputs.length ? 'outputs' : (passes.length || inputs.length ? 'inputs' : 'empty'),
             };
@@ -1357,6 +1511,7 @@ function currentSublayerVisualizationModel() {
             state: threeCState,
             stateLabel: sublayerStateLabel(threeCState),
             planes: analysisPlanes,
+            executionPipeline,
             message: planeIntro,
         },
     };
@@ -1419,16 +1574,71 @@ function renderModalityBucket(bucket) {
     `;
 }
 
+function renderExecutionPipeline(pipeline) {
+    const processRows = pipeline.cards.length
+        ? pipeline.cards.map((card) => `
+            <li>
+                <strong>${escapeHtml(card.label)}</strong>
+                <span>${escapeHtml(shortText(card.primary, 54))}</span>
+                <code>${escapeHtml(shortText(card.secondary, 42))}</code>
+                <em>${escapeHtml(humanizeToken(card.badge || 'live'))}</em>
+            </li>
+        `).join('')
+        : `
+            <li>
+                <strong>No selected execution state</strong>
+                <span>Execution selection, start, result status, and review state are not loaded into this session view.</span>
+            </li>
+        `;
+    const outputObjects = pipeline.outputs.map((item) => ({
+        id: item.secondary,
+        label: item.label,
+        kind: 'execution output',
+        primary: item.primary,
+        badge: item.badge,
+        modality: pipeline.modality || 'unclassified',
+        live: true,
+    }));
+    return `
+        <section class="execution-state-field viz-state-${escapeHtml(pipeline.state)}" data-execution-modality="${escapeHtml(pipeline.modality || 'unreported')}">
+            <div class="execution-state-heading">
+                <span>Selected execution / result authority</span>
+                <strong>${escapeHtml(pipeline.modalityLabel)}</strong>
+            </div>
+            <div class="execution-state-flow">
+                <section class="execution-state-process">
+                    <h5>Process state</h5>
+                    <ul>${processRows}</ul>
+                </section>
+                <span class="plane-arrow plane-arrow-output" aria-hidden="true"></span>
+                <section class="execution-state-outputs">
+                    <h5>Live output refs</h5>
+                    ${renderFlowObjects(outputObjects, 'No execution output reference or reviewed output item is loaded.', { fieldLabel: 'selected execution output field', slotCount: 5 })}
+                </section>
+            </div>
+        </section>
+    `;
+}
+
 function renderAnalysisPlane(plane) {
-    const { modality, meta, inputs, passes, outputs, state } = plane;
+    const { modality, meta, inputs, passes, processCards, outputs, state } = plane;
     const processBody = passes.length
         ? passes.map((pass) => `
             <li>
                 <strong>${escapeHtml(humanizeToken(pass.pass_type || pass.method_family || 'planned pass'))}</strong>
                 <span>${escapeHtml(shortText(pass.selected_method_name || pass.method_family || pass.pass_scope || 'method not reported', 52))}</span>
+                <em>${escapeHtml(pass.approval_only ? 'approval only' : (pass.execution_mode || pass.status || 'planned'))}</em>
             </li>
         `).join('')
-        : '<li><strong>No live process yet</strong><span>Plan preview or approval has not reported a pass for this plane.</span></li>';
+        : ((processCards || []).length
+            ? processCards.map((card) => `
+                <li>
+                    <strong>${escapeHtml(card.label)}</strong>
+                    <span>${escapeHtml(shortText(card.primary, 52))}</span>
+                    <em>${escapeHtml(humanizeToken(card.badge || 'live'))}</em>
+                </li>
+            `).join('')
+            : '<li><strong>No live process yet</strong><span>Plan preview or approval has not reported a pass for this plane.</span></li>');
     return `
         <article class="analysis-plane modality-${escapeHtml(modality)} viz-state-${escapeHtml(state)}" data-modality="${escapeHtml(modality)}">
             <div class="analysis-plane-title">
@@ -1556,6 +1766,7 @@ function renderSublayerMap() {
                     <h3>Input To Process To Output</h3>
                     <p>${escapeHtml(model.threeC.message)}</p>
                 </div>
+                ${renderExecutionPipeline(model.threeC.executionPipeline)}
                 <div class="analysis-planes">
                     ${model.threeC.planes.map((plane) => renderAnalysisPlane(plane)).join('')}
                 </div>
