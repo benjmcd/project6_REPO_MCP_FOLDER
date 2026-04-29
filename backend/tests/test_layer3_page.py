@@ -25,6 +25,9 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert "layer3_workbench_theme" in response.text
     assert "localStorage.removeItem(sharedStorageKey)" in response.text
     assert 'id="authority-rail"' in response.text
+    assert 'id="sublayer-map-band"' in response.text
+    assert 'id="sublayer-map-panel"' in response.text
+    assert "Sublayer Material And Analysis Map" in response.text
     assert 'data-step-target="intent-band"' in response.text
     assert 'aria-current="step"' in response.text
     assert 'data-step-target="source-fieldset"' in response.text
@@ -101,6 +104,10 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "outline: 3px solid var(--primary-color)" in css.text
     assert 'html[data-theme="workbench"] body.layer3-page' in css.text
     assert "--l3-stage-accent" in css.text
+    assert ".sublayer-map-panel" in css.text
+    assert ".sublayer-region" in css.text
+    assert ".analysis-plane" in css.text
+    assert ".modality-quantitative" in css.text
     assert "border: 1px dashed #7d7d7d" in css.text
     assert ".layer3-header .header-right select" in css.text
     assert "const API_ROOT = '/api/v1/layer3';" in js.text
@@ -111,6 +118,12 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "localStorage.removeItem(THEME_STORAGE_KEY)" in js.text
     assert "navigateToStep" in js.text
     assert "scrollIntoView" in js.text
+    assert "renderSublayerMap" in js.text
+    assert "Sublayer 3A" in js.text
+    assert "Sublayer 3B" in js.text
+    assert "Sublayer 3C" in js.text
+    assert "currentMaterialObjects" in js.text
+    assert "currentTypingObjects" in js.text
     assert "element.disabled = false" in js.text
     assert "postJson('/gate-b/decision'" in js.text
     assert "postJson('/gate-c/preview'" in js.text
