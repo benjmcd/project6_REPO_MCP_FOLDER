@@ -338,9 +338,10 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
 
   await expect(page.locator('.modality-bucket.modality-quantitative .flow-object')).toHaveCount(gateC.typing_records.length);
   await expect(page.locator('.modality-bucket.modality-quantitative .diagram-chip')).toHaveCount(gateC.typing_records.length);
-  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'session|typed|structural');
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'session|typed|inputs');
   await expect(page.locator('.state-3a')).toContainText('Session scoped');
   await expect(page.locator('.state-3b')).toContainText('Typing previewed');
+  await expect(page.locator('.state-3c')).toContainText('Inputs routed');
   await expect(page.locator('.analysis-plane.modality-quantitative .plane-column').first()).toContainText('modality quantitative');
   await expect(page.locator('.analysis-plane.modality-quantitative .plane-process')).toContainText('No live process yet');
   await expect(page.locator('.analysis-plane.modality-quantitative .plane-column').last()).toContainText('No live output');
@@ -721,6 +722,15 @@ test('Layer 3 workbench records selected-pass result review only after status au
   expect(summary.execution_selection.selected).toBe(true);
   expect(summary.execution_selection.pass_run_ids).toEqual([setup.passRunId]);
   expect(summary.execution_selection.analysis_plan_id).toBe(setup.approval.analysis_plan_id);
+  expect(summary.sublayer_visualization.material_objects).toHaveLength(1);
+  expect(summary.sublayer_visualization.typing_records).toHaveLength(1);
+  expect(summary.sublayer_visualization.analysis_sets).toHaveLength(1);
+  expect(summary.sublayer_visualization.pass_runs).toHaveLength(1);
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'session|typed|outputs');
+  await expect(page.locator('.sublayer-3a .diagram-chip')).toContainText('dataset version');
+  await expect(page.locator('.sublayer-3a .diagram-chip')).toContainText('loaded');
+  await expect(page.locator('.modality-bucket.modality-quantitative .diagram-chip')).toHaveCount(1);
+  await expect(page.locator('.analysis-plane.modality-quantitative .plane-inputs')).toContainText('analysis set');
   await expect(page.locator('.execution-state-field')).toContainText('Execution selection');
   await expect(page.locator('.execution-state-field')).toContainText('Execution start');
   await expect(page.locator('.execution-state-field')).toContainText('Output payload');
@@ -760,7 +770,7 @@ test('Layer 3 workbench records selected-pass result review only after status au
 
   const status = await expectJson(await statusResponsePromise);
   expect(status.result_status_available).toBe(true);
-  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'session|empty|outputs');
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'session|typed|outputs');
   await expect(page.locator('.execution-state-field')).toContainText('Result status');
   await expect(page.locator('.analysis-plane.modality-quantitative .plane-process')).toContainText('Result status');
   await expect(page.locator('.analysis-plane.modality-quantitative .plane-outputs')).toContainText('Output payload');

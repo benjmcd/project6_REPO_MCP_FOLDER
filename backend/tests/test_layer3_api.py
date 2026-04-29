@@ -1337,6 +1337,7 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
         "handoff_export_prepare",
         "aps_handoff_dispatch",
         "external_export_download",
+        "sublayer_visualization",
         "downstream_unavailable",
         "authority_rail",
     } <= set(session_schema["required"])
@@ -2501,6 +2502,26 @@ def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_sess
     assert summary_body["plan_approval"]["approved"] is True
     assert summary_body["plan_approval"]["analysis_plan_id"] == approval_body["analysis_plan_id"]
     assert summary_body["plan_approval"]["pass_run_count"] == 0
+    sublayer = summary_body["sublayer_visualization"]
+    assert sublayer["schema_id"] == "layer3.sublayer_visualization_state.v1"
+    assert sublayer["authority_source"] == "read_only_persisted_layer3_rows"
+    assert sublayer["no_side_effects"] is True
+    assert len(sublayer["material_objects"]) == 1
+    assert sublayer["material_objects"][0]["source_shape"] == "dataset_version"
+    assert sublayer["material_objects"][0]["source_identity"]["dataset_version_id"] == "dv-pass-001"
+    assert len(sublayer["typing_records"]) == 1
+    assert sublayer["typing_records"][0]["chosen_modality"] == "quantitative"
+    assert sublayer["typing_records"][0]["owner_service_source_shape"] == "dataset_version"
+    assert len(sublayer["analysis_units"]) == 1
+    assert len(sublayer["analysis_sets"]) == 1
+    assert sublayer["analysis_sets"][0]["analysis_modality"] == "quantitative"
+    assert sublayer["analysis_sets"][0]["unit_count"] == 1
+    assert sublayer["latest_plan"]["analysis_plan_id"] == approval_body["analysis_plan_id"]
+    assert sublayer["latest_plan"]["approved"] is True
+    assert sublayer["latest_plan"]["approval_only"] is True
+    assert len(sublayer["latest_plan"]["approved_sets"]) == 1
+    assert len(sublayer["latest_plan"]["planned_passes"]) == 1
+    assert sublayer["pass_runs"] == []
 
     db = client.layer3_session_factory()
     try:
@@ -3022,6 +3043,24 @@ def test_layer3_api_analysis_execution_start_runs_selected_pass_once(client: Tes
     assert summary_body["execution_selection"]["analysis_run_ids"] == [start_body["analysis_run_id"]]
     assert summary_body["execution_selection"]["pass_run_statuses"][pass_run_id] == start_body["status"]
     assert summary_body["downstream_unavailable"] == ["results", "package", "handoff"]
+    sublayer = summary_body["sublayer_visualization"]
+    assert len(sublayer["material_objects"]) == 1
+    assert len(sublayer["typing_records"]) == 1
+    assert len(sublayer["analysis_sets"]) == 1
+    assert sublayer["latest_plan"]["analysis_plan_id"] == approval_body["analysis_plan_id"]
+    assert len(sublayer["pass_runs"]) == 1
+    sublayer_pass_run = sublayer["pass_runs"][0]
+    assert sublayer_pass_run["pass_run_id"] == pass_run_id
+    assert (
+        sublayer_pass_run["analysis_set_id"]
+        == sublayer["latest_plan"]["approved_sets"][0]["analysis_set_id"]
+    )
+    assert sublayer_pass_run["engine_family"] == "wrapped_quantitative_analysis"
+    assert sublayer_pass_run["status"] == start_body["status"]
+    assert sublayer_pass_run["input_payload_available"] is True
+    assert sublayer_pass_run["output_payload_available"] is True
+    assert sublayer_pass_run["analysis_run_id"] == start_body["analysis_run_id"]
+    assert sublayer_pass_run["selected_method_name"] == "decomposition"
 
     db = client.layer3_session_factory()
     try:
