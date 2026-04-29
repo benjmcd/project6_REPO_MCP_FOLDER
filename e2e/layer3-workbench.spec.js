@@ -330,10 +330,10 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     };
   });
   expect(diagramStyles).toEqual({
-    sublayerBorderStyle: 'dashed',
-    modalityBorderStyle: 'dashed',
+    sublayerBorderStyle: 'dotted',
+    modalityBorderStyle: 'solid',
     arrowDisplay: 'block',
-    chipRadius: '5px',
+    chipRadius: '3px',
   });
 
   const desktopFit = await page.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1);

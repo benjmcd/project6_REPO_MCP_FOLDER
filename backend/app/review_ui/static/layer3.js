@@ -1270,15 +1270,23 @@ function renderFlowObjects(items, emptyMessage) {
             ${items.map((item) => {
                 const modality = item.modality || 'unclassified';
                 const meta = modalityMeta(modality);
+                const label = shortText(item.label || item.id, 32);
+                const primary = shortText(item.primary || 'No detail reported', 34);
+                const ref = shortText(item.id, 22);
+                const chipTitle = [
+                    item.label || item.id,
+                    item.primary,
+                    item.id,
+                ].filter(Boolean).join(' / ');
                 return `
-                    <article class="flow-object diagram-chip modality-${escapeHtml(modality)}" data-live-backed="${item.live ? 'true' : 'false'}">
+                    <article class="flow-object diagram-chip modality-${escapeHtml(modality)}" data-live-backed="${item.live ? 'true' : 'false'}" title="${escapeHtml(chipTitle)}">
                         <div class="flow-object-head">
                             <span>${escapeHtml(humanizeToken(item.kind || meta.label))}</span>
                             <span class="flow-object-badge">${escapeHtml(humanizeToken(item.badge || 'reported'))}</span>
                         </div>
-                        <strong>${escapeHtml(shortText(item.label || item.id, 48))}</strong>
-                        <span>${escapeHtml(shortText(item.primary || 'No detail reported', 56))}</span>
-                        <code>${escapeHtml(shortText(item.id, 34))}</code>
+                        <strong>${escapeHtml(label)}</strong>
+                        <span>${escapeHtml(primary)}</span>
+                        <code>${escapeHtml(ref)}</code>
                     </article>
                 `;
             }).join('')}
@@ -1415,7 +1423,7 @@ function renderSublayerMap() {
                 <span>Sublayer 3C</span>
                 <strong>Analysis Execution Environments / Planes</strong>
             </div>
-            <div class="gate-panel">
+            <div class="gate-panel diagram-gate">
                 <h3>Input To Process To Output</h3>
                 <p>${escapeHtml(planeIntro)}</p>
             </div>
