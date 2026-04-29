@@ -89,6 +89,43 @@ The current startup/settings guardrail proves that the app rejects several unsaf
 
 This packet does not prove that the reverse proxy is correctly configured, that users are authenticated or authorized, that identity headers are stripped or overwritten by the proxy, that `/storage` is safely deliverable, that artifacts have a retention policy, or that public/signed URLs are available. Those remain separate deployment or product decisions.
 
+### Provider-Agnostic Profile Proof Procedure
+
+Use this procedure only after the deployment owner supplies real values for the required operator choices above. It is a validate-only proof for the selected environment shape, not a deployment script and not permission to add new runtime behavior.
+
+1. Build a staged environment from the selected values. Replace every placeholder before treating the profile as usable:
+
+```text
+DEPLOYMENT_MODE=nonlocal
+ALLOWED_ORIGINS=<exact HTTPS origin list>
+CORS_ALLOW_CREDENTIALS=false
+AUTH_OWNER=proxy
+PROXY_IDENTITY_HEADER=<selected identity header, default X-Forwarded-User>
+PROXY_EMAIL_HEADER=<optional proxy-owned email header>
+PROXY_GROUPS_HEADER=<optional proxy-owned groups header>
+TRUSTED_PROXY_MODE=true
+STORAGE_EXPOSURE=auto
+DB_INIT_MODE=none
+```
+
+2. Run the repo-level guardrail proof from the repo root:
+
+```powershell
+python -m pytest .\backend\tests\test_layer3_api.py -q -k "deployment_profile"
+```
+
+3. Run a settings-only proof in the selected environment before exposing the app. From `.\backend`, import the settings with the selected environment already applied, then verify the reported profile:
+
+```powershell
+python -c "from app.core.config import settings; print({'deployment_mode': settings.deployment_mode, 'origins': settings.allowed_origin_list, 'credentials': settings.cors_allow_credentials_enabled, 'auth_owner': settings.auth_owner, 'identity_header': settings.proxy_identity_header, 'trusted_proxy_mode': settings.trusted_proxy_mode, 'storage_exposure': settings.storage_exposure, 'storage_mount_enabled': settings.storage_mount_enabled})"
+```
+
+Passing evidence for the current guardrail is limited to: `deployment_mode` is `nonlocal`, `origins` exactly match the selected HTTPS origin list, `credentials` is `False` unless separately governed, `auth_owner` is `proxy`, `identity_header` is nonblank, `trusted_proxy_mode` is `True`, and `storage_mount_enabled` is `False`.
+
+4. Record the selected non-secret environment keys, proxy ownership decision, and proof output in the deployment operator notes. Do not record production secrets, connector credentials, signing keys, or sensitive artifact paths in the repo.
+
+If any step requires public/signed URLs, app-owned authorization, direct `/storage` exposure, connector dispatch, destination selection, package mutation, schema/runtime/source widening, or provider-specific secrets in the repo, stop and create a separate governed tranche before implementation.
+
 ## Implemented Guardrail
 
 The implemented startup/settings guardrail:
