@@ -1477,18 +1477,20 @@ function renderSublayerMap() {
     elements.sublayerMapPanel.dataset.vizState = `${model.threeA.state}|${model.threeB.state}|${model.threeC.state}`;
     elements.sublayerMapPanel.innerHTML = `
         <section class="canvas-intake-spec" aria-label="Layer 3 intake specification">
-            <article class="query-spec-block">
-                <span>User Natural Language Query Input</span>
-                <p>${escapeHtml(shortText(model.intentText, 170))}</p>
-            </article>
-            <article class="manual-source-spec">
-                <span>User Manual / Custom Source Specification</span>
-                <div class="source-spec-chip-grid">
-                    ${sourceLabels.length
-                        ? sourceLabels.map((label) => `<span class="source-spec-chip">${escapeHtml(label)}</span>`).join('')
-                        : '<span class="source-spec-chip muted">No source classes selected</span>'}
-                </div>
-            </article>
+            <div class="intake-spec-frame">
+                <article class="query-spec-block">
+                    <span>User Natural Language Query Input</span>
+                    <p>${escapeHtml(shortText(model.intentText, 170))}</p>
+                </article>
+                <article class="manual-source-spec">
+                    <span>User Manual / Custom Source Specification</span>
+                    <div class="source-spec-chip-grid">
+                        ${sourceLabels.length
+                            ? sourceLabels.map((label) => `<span class="source-spec-chip">${escapeHtml(label)}</span>`).join('')
+                            : '<span class="source-spec-chip muted">No source classes selected</span>'}
+                    </div>
+                </article>
+            </div>
         </section>
         <nav class="canvas-state-flow" aria-label="Layer 3 visualization state">
             <span class="state-node state-3a viz-state-${escapeHtml(model.threeA.state)}">
