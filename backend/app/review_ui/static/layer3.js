@@ -1528,34 +1528,36 @@ function renderSublayerMap() {
             </div>
         </section>
         <div class="sublayer-connector sublayer-connector-3ab" aria-hidden="true"><span>3A to 3B</span></div>
-        <section class="sublayer-region sublayer-3b viz-state-${escapeHtml(model.threeB.state)}" aria-label="Sublayer 3B typing and set formation">
-            <div class="sublayer-title">
-                <span>Sublayer 3B</span>
-                <strong>Typing, Unit/Group/Set Formation</strong>
-                <em>${escapeHtml(model.threeB.stateLabel)}</em>
-            </div>
-            <div class="gate-panel diagram-gate">
-                <h3>Gate C Typing</h3>
-                <p>${escapeHtml(model.threeB.message)}</p>
-            </div>
-            <div class="modality-buckets">
-                ${model.threeB.buckets.map((bucket) => renderModalityBucket(bucket)).join('')}
-            </div>
-        </section>
-        <div class="sublayer-connector sublayer-connector-3bc" aria-hidden="true"><span>3B to 3C</span></div>
-        <section class="sublayer-region sublayer-3c viz-state-${escapeHtml(model.threeC.state)}" aria-label="Sublayer 3C analysis execution environments">
-            <div class="sublayer-title">
-                <span>Sublayer 3C</span>
-                <strong>Analysis Execution Environments / Planes</strong>
-                <em>${escapeHtml(model.threeC.stateLabel)}</em>
-            </div>
-            <div class="gate-panel diagram-gate">
-                <h3>Input To Process To Output</h3>
-                <p>${escapeHtml(model.threeC.message)}</p>
-            </div>
-            <div class="analysis-planes">
-                ${model.threeC.planes.map((plane) => renderAnalysisPlane(plane)).join('')}
-            </div>
+        <section class="analysis-routing-plane" aria-label="Sublayer 3B to 3C analysis routing">
+            <section class="sublayer-region sublayer-3b viz-state-${escapeHtml(model.threeB.state)}" aria-label="Sublayer 3B typing and set formation">
+                <div class="sublayer-title">
+                    <span>Sublayer 3B</span>
+                    <strong>Typing, Unit/Group/Set Formation</strong>
+                    <em>${escapeHtml(model.threeB.stateLabel)}</em>
+                </div>
+                <div class="gate-panel diagram-gate">
+                    <h3>Gate C Typing</h3>
+                    <p>${escapeHtml(model.threeB.message)}</p>
+                </div>
+                <div class="modality-buckets">
+                    ${model.threeB.buckets.map((bucket) => renderModalityBucket(bucket)).join('')}
+                </div>
+            </section>
+            <div class="sublayer-connector sublayer-connector-3bc" aria-hidden="true"><span>3B to 3C</span></div>
+            <section class="sublayer-region sublayer-3c viz-state-${escapeHtml(model.threeC.state)}" aria-label="Sublayer 3C analysis execution environments">
+                <div class="sublayer-title">
+                    <span>Sublayer 3C</span>
+                    <strong>Analysis Execution Environments / Planes</strong>
+                    <em>${escapeHtml(model.threeC.stateLabel)}</em>
+                </div>
+                <div class="gate-panel diagram-gate">
+                    <h3>Input To Process To Output</h3>
+                    <p>${escapeHtml(model.threeC.message)}</p>
+                </div>
+                <div class="analysis-planes">
+                    ${model.threeC.planes.map((plane) => renderAnalysisPlane(plane)).join('')}
+                </div>
+            </section>
         </section>
     `;
 }
