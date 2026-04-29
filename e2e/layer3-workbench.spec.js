@@ -241,8 +241,8 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   expect(workbenchStyles).toMatchObject({
     bodyBackground: 'rgb(13, 13, 13)',
     railBorderStyle: 'solid',
-    workbandBorderStyle: 'dashed',
-    workbandBorderLeftWidth: '4px',
+    workbandBorderStyle: 'dotted',
+    workbandBorderLeftWidth: '2px',
     workbandBorderLeftColor: 'rgb(204, 255, 153)',
     fieldsetBorderStyle: 'dashed',
   });
@@ -339,9 +339,9 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     intakeDisplay: 'grid',
     intakeGridArea: 'spec',
     sublayerBorderStyle: 'dotted',
-    modalityBorderStyle: 'dashed',
+    modalityBorderStyle: 'solid',
     arrowDisplay: 'block',
-    chipRadius: '3px',
+    chipRadius: '0px',
   });
 
   const desktopFit = await page.evaluate(() => {
@@ -350,11 +350,13 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     return {
       pageFitsViewport: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
       panelFitsBand: panel.scrollWidth <= band.clientWidth + 1,
+      mapIsPrimarySurface: band.getBoundingClientRect().height >= window.innerHeight * 0.82,
     };
   });
   expect(desktopFit).toEqual({
     pageFitsViewport: true,
     panelFitsBand: true,
+    mapIsPrimarySurface: true,
   });
 
   await page.setViewportSize({ width: 1024, height: 768 });
