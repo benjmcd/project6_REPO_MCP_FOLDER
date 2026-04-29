@@ -64,6 +64,35 @@ body.layer3-page .app-body {
     cursor: pointer;
 }
 
+.layer3-page :where(
+    .back-link,
+    .step-chip,
+    .primary-btn,
+    .secondary-btn,
+    textarea,
+    input,
+    select
+):focus-visible,
+.layer3-page .workband:focus,
+.layer3-page .source-fieldset:focus {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 3px;
+}
+
+.layer3-page .step-chip:focus-visible,
+.layer3-page .primary-btn:focus-visible,
+.layer3-page .secondary-btn:focus-visible,
+.layer3-page textarea:focus-visible,
+.layer3-page input:focus-visible,
+.layer3-page select:focus-visible {
+    border-color: var(--primary-color);
+}
+
+.layer3-page .workband:focus,
+.layer3-page .source-fieldset:focus {
+    box-shadow: 0 0 0 3px var(--control-hover-bg);
+}
+
 .layer3-workspace {
     display: flex;
     min-width: 0;
