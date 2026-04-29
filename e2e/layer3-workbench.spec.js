@@ -262,6 +262,22 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
     borderStyle: 'solid',
     borderLeftWidth: '1px',
   });
+
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const lightPlaneColumnCount = await page.locator('.analysis-plane .plane-flow').first().evaluate((element) => {
+    const style = window.getComputedStyle(element);
+    return style.gridTemplateColumns.split(' ').filter(Boolean).length;
+  });
+  expect(lightPlaneColumnCount).toBeGreaterThan(1);
+
+  await page.locator('#theme-selector').selectOption('workbench');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const workbenchPlaneColumnCount = await page.locator('.analysis-plane .plane-flow').first().evaluate((element) => {
+    const style = window.getComputedStyle(element);
+    return style.gridTemplateColumns.split(' ').filter(Boolean).length;
+  });
+  expect(workbenchPlaneColumnCount).toBe(1);
 });
 
 test('Layer 3 workbench renders a responsive live-state sublayer material and analysis map', async ({ page }) => {
