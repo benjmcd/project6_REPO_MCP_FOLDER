@@ -1677,7 +1677,6 @@ html[data-theme="workbench"] body.layer3-page .plane-bracket {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .plane-flow,
     html[data-theme="workbench"] body.layer3-page .plane-flow {
         grid-template-columns: 1fr;
         grid-template-areas:
@@ -1689,7 +1688,7 @@ html[data-theme="workbench"] body.layer3-page .plane-bracket {
         gap: 8px;
     }
 
-    .plane-arrow {
+    html[data-theme="workbench"] body.layer3-page .plane-arrow {
         justify-self: center;
         width: 4px;
         height: 28px;
@@ -1697,7 +1696,7 @@ html[data-theme="workbench"] body.layer3-page .plane-bracket {
         background: linear-gradient(180deg, color-mix(in srgb, var(--diagram-flow-color, var(--modality-accent)) 20%, transparent), var(--diagram-flow-color, var(--modality-accent)));
     }
 
-    .plane-arrow::after {
+    html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
         right: auto;
         top: auto;
         bottom: -1px;
