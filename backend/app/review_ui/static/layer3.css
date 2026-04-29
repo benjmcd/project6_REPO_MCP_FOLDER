@@ -179,11 +179,11 @@ html[data-theme="workbench"] body.layer3-page .workband {
 }
 
 html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) {
-    border-style: dotted;
-    border-left-width: 2px;
-    background:
-        linear-gradient(90deg, color-mix(in srgb, var(--l3-stage-accent) 5%, transparent), transparent 28%),
-        rgba(13, 13, 13, 0.56);
+    border-right-color: transparent;
+    border-bottom-color: transparent;
+    border-left-width: 0;
+    border-top-style: dotted;
+    background: transparent;
     box-shadow: none;
 }
 
@@ -192,8 +192,10 @@ html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band):
 }
 
 html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading {
-    padding: 8px 13px;
-    background: rgba(18, 18, 18, 0.72);
+    padding: 7px 13px;
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--l3-stage-accent) 7%, transparent), transparent 34%),
+        rgba(10, 10, 10, 0.38);
 }
 
 html[data-theme="workbench"] body.layer3-page .intent-band {
@@ -284,7 +286,7 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-heading h2 {
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
     min-height: calc(100vh - 118px);
-    padding: 12px 18px 18px;
+    padding: 10px 16px 18px;
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-region {
@@ -292,15 +294,17 @@ html[data-theme="workbench"] body.layer3-page .sublayer-region {
     border-color: #b4b4b4;
     border-radius: 0;
     background:
-        radial-gradient(circle at 12% 8%, rgba(125, 211, 252, 0.06), transparent 28%),
-        rgba(5, 5, 5, 0.66);
+        linear-gradient(90deg, rgba(248, 248, 248, 0.018) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(248, 248, 248, 0.014) 1px, transparent 1px),
+        rgba(2, 2, 2, 0.62);
+    background-size: 18px 18px;
 }
 
 html[data-theme="workbench"] body.layer3-page .gate-panel,
 html[data-theme="workbench"] body.layer3-page .modality-bucket,
 html[data-theme="workbench"] body.layer3-page .analysis-plane {
     border-color: #767676;
-    background: rgba(20, 20, 20, 0.42);
+    background: transparent;
 }
 
 html[data-theme="workbench"] body.layer3-page .gate-panel.diagram-gate {
@@ -311,12 +315,17 @@ html[data-theme="workbench"] body.layer3-page .gate-panel.diagram-gate {
     background: transparent;
 }
 
+html[data-theme="workbench"] body.layer3-page .gate-panel.diagram-gate p {
+    font-size: 0.68rem;
+    line-height: 1.32;
+}
+
 html[data-theme="workbench"] body.layer3-page .ledger-chip-field,
 html[data-theme="workbench"] body.layer3-page .modality-bucket {
     border-style: solid;
     background:
-        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 7%, transparent), transparent 46%),
-        rgba(37, 37, 37, 0.5);
+        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 8%, transparent), transparent 34%),
+        rgba(28, 28, 28, 0.32);
 }
 
 html[data-theme="workbench"] body.layer3-page .flow-object,
@@ -324,14 +333,14 @@ html[data-theme="workbench"] body.layer3-page .flow-empty,
 html[data-theme="workbench"] body.layer3-page .plane-column,
 html[data-theme="workbench"] body.layer3-page .plane-process {
     border-color: #555555;
-    background: #0b0b0b;
+    background: rgba(5, 5, 5, 0.82);
 }
 
 html[data-theme="workbench"] body.layer3-page .plane-column,
 html[data-theme="workbench"] body.layer3-page .plane-process {
     background:
-        linear-gradient(180deg, color-mix(in srgb, var(--modality-accent) 5%, transparent), transparent 74%),
-        rgba(8, 8, 8, 0.7);
+        linear-gradient(180deg, color-mix(in srgb, var(--modality-accent) 4%, transparent), transparent 78%),
+        rgba(12, 12, 12, 0.5);
 }
 
 html[data-theme="workbench"] body.layer3-page .plane-process li {
@@ -520,8 +529,8 @@ html[data-theme="workbench"] body.layer3-page .canvas-intake-spec {
 
 html[data-theme="workbench"] body.layer3-page .query-spec-block,
 html[data-theme="workbench"] body.layer3-page .manual-source-spec {
-    min-height: 116px;
-    padding: 18px 22px;
+    min-height: 96px;
+    padding: 14px 20px;
     background:
         repeating-linear-gradient(
             90deg,
@@ -536,8 +545,8 @@ html[data-theme="workbench"] body.layer3-page .manual-source-spec {
 html[data-theme="workbench"] body.layer3-page .query-spec-block p {
     max-width: 760px;
     color: #ffffff;
-    font-size: 0.88rem;
-    line-height: 1.45;
+    font-size: 0.84rem;
+    line-height: 1.38;
 }
 
 .source-spec-chip-grid {
@@ -569,10 +578,10 @@ html[data-theme="workbench"] body.layer3-page .source-spec-chip-grid {
 
 html[data-theme="workbench"] body.layer3-page .source-spec-chip {
     justify-content: center;
-    min-height: 28px;
+    min-height: 24px;
     border-radius: 0;
     background: rgba(125, 211, 252, 0.12);
-    font-size: 0.68rem;
+    font-size: 0.62rem;
     text-align: center;
 }
 
@@ -716,8 +725,8 @@ html[data-theme="workbench"] body.layer3-page .sublayer-region::before {
 }
 
 html[data-theme="workbench"] body.layer3-page .ledger-chip-field {
-    min-height: 330px;
-    padding: 16px;
+    min-height: 300px;
+    padding: 14px;
     border-color: color-mix(in srgb, var(--modality-accent) 48%, #8d8d8d);
 }
 
@@ -772,12 +781,12 @@ html[data-theme="workbench"] body.layer3-page .ledger-chip-field {
 
 html[data-theme="workbench"] body.layer3-page .flow-object {
     border-radius: 0;
-    padding: 4px 6px;
-    min-height: 26px;
+    padding: 3px 6px;
+    min-height: 22px;
     background:
-        linear-gradient(180deg, color-mix(in srgb, var(--modality-accent) 6%, transparent), transparent 72%),
-        #0a0a0a;
-    box-shadow: 0 0 0 1px rgba(248, 248, 248, 0.04);
+        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 10%, transparent), transparent 54%),
+        #080808;
+    box-shadow: none;
 }
 
 .flow-object-head,
@@ -806,7 +815,7 @@ html[data-theme="workbench"] body.layer3-page .flow-object {
 }
 
 html[data-theme="workbench"] body.layer3-page .flow-object strong {
-    font-size: 0.62rem;
+    font-size: 0.58rem;
     letter-spacing: 0.01em;
 }
 
@@ -932,13 +941,15 @@ html[data-theme="workbench"] body.layer3-page .flow-object strong {
 }
 
 html[data-theme="workbench"] body.layer3-page .modality-bucket {
-    min-height: 176px;
-    padding: 12px;
-    border-width: 2px;
+    grid-template-columns: minmax(106px, 0.42fr) minmax(0, 1fr);
+    min-height: 92px;
+    padding: 8px 10px;
+    border-width: 1px;
+    border-left-width: 3px;
 }
 
 html[data-theme="workbench"] body.layer3-page .modality-heading h4 {
-    font-size: 0.98rem;
+    font-size: 0.8rem;
 }
 
 .modality-bucket > .flow-object-list,
@@ -951,11 +962,38 @@ html[data-theme="workbench"] body.layer3-page .modality-heading h4 {
     grid-column: 1;
 }
 
+html[data-theme="workbench"] body.layer3-page .modality-buckets {
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+html[data-theme="workbench"] body.layer3-page .modality-bucket > .flow-empty,
+html[data-theme="workbench"] body.layer3-page .modality-bucket > .flow-object-list {
+    grid-column: 2;
+    min-height: 64px;
+}
+
+html[data-theme="workbench"] body.layer3-page .modality-bucket > .flow-object-list {
+    align-content: start;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+}
+
+html[data-theme="workbench"] body.layer3-page .modality-bucket > .flow-empty {
+    padding: 7px;
+}
+
 .modality-heading {
     align-items: flex-start;
     justify-content: flex-start;
     grid-column: 1;
     flex-wrap: wrap;
+}
+
+html[data-theme="workbench"] body.layer3-page .modality-heading {
+    align-content: start;
+    align-items: start;
+    display: grid;
+    gap: 4px;
 }
 
 .sublayer-connector {
@@ -1050,15 +1088,17 @@ html[data-theme="workbench"] body.layer3-page .modality-heading h4 {
 }
 
 html[data-theme="workbench"] body.layer3-page .analysis-plane {
+    min-height: 210px;
     border-style: solid;
-    padding: 16px;
+    border-color: color-mix(in srgb, var(--modality-accent) 34%, #c9c9c9);
+    padding: 12px 14px 14px;
     background:
-        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 6%, transparent), transparent 26%),
-        rgba(31, 31, 31, 0.46);
+        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 5%, transparent), transparent 18%),
+        rgba(14, 14, 14, 0.24);
 }
 
 html[data-theme="workbench"] body.layer3-page .analysis-plane-title h4 {
-    font-size: 0.96rem;
+    font-size: 0.9rem;
 }
 
 .plane-flow {
@@ -1071,7 +1111,7 @@ html[data-theme="workbench"] body.layer3-page .analysis-plane-title h4 {
 }
 
 html[data-theme="workbench"] body.layer3-page .plane-flow {
-    grid-template-columns: minmax(190px, 0.78fr) 64px minmax(170px, 0.62fr) 64px minmax(260px, 1.08fr);
+    grid-template-columns: minmax(190px, 0.78fr) 72px minmax(178px, 0.62fr) 72px minmax(300px, 1.18fr);
 }
 
 .plane-column,
@@ -1129,6 +1169,24 @@ html[data-theme="workbench"] body.layer3-page .plane-bracket {
     border-color: var(--diagram-flow-color);
 }
 
+html[data-theme="workbench"] body.layer3-page .plane-column {
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--modality-accent) 24%, #6f6f6f);
+}
+
+html[data-theme="workbench"] body.layer3-page .plane-outputs {
+    min-height: 150px;
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 3%, transparent), transparent 78%),
+        rgba(44, 44, 44, 0.42);
+}
+
+html[data-theme="workbench"] body.layer3-page .plane-process {
+    min-height: 126px;
+    border-color: #878787;
+    background: rgba(0, 0, 0, 0.64);
+}
+
 .plane-arrow {
     position: relative;
     display: block;
@@ -1139,6 +1197,12 @@ html[data-theme="workbench"] body.layer3-page .plane-bracket {
     background: linear-gradient(90deg, color-mix(in srgb, var(--diagram-flow-color, var(--modality-accent)) 20%, transparent), var(--diagram-flow-color, var(--modality-accent)));
 }
 
+html[data-theme="workbench"] body.layer3-page .plane-arrow {
+    height: 6px;
+    margin: 0 8px;
+    background: linear-gradient(90deg, transparent, var(--diagram-flow-color, var(--modality-accent)) 32%, var(--diagram-flow-color, var(--modality-accent)));
+}
+
 .plane-arrow::after {
     content: "";
     position: absolute;
@@ -1147,6 +1211,13 @@ html[data-theme="workbench"] body.layer3-page .plane-bracket {
     border-top: 10px solid transparent;
     border-bottom: 10px solid transparent;
     border-left: 16px solid var(--diagram-flow-color, var(--modality-accent));
+}
+
+html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
+    top: -9px;
+    border-top-width: 12px;
+    border-bottom-width: 12px;
+    border-left-width: 20px;
 }
 
 .plane-arrow-process {
@@ -1188,7 +1259,7 @@ html[data-theme="workbench"] body.layer3-page .plane-bracket {
 
 @media (min-width: 1500px) {
     html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
-        grid-template-columns: minmax(240px, 0.52fr) 52px minmax(276px, 0.6fr) 60px minmax(610px, 1.56fr);
+        grid-template-columns: minmax(220px, 0.48fr) 46px minmax(270px, 0.66fr) 54px minmax(560px, 1.64fr);
         grid-template-areas:
             "spec spec spec spec spec"
             "threea connector3ab threeb connector3bc threec";
@@ -1199,7 +1270,7 @@ html[data-theme="workbench"] body.layer3-page .plane-bracket {
     html[data-theme="workbench"] body.layer3-page .sublayer-3a,
     html[data-theme="workbench"] body.layer3-page .sublayer-3b,
     html[data-theme="workbench"] body.layer3-page .sublayer-3c {
-        min-height: calc(100vh - 292px);
+        min-height: calc(100vh - 272px);
     }
 
     html[data-theme="workbench"] body.layer3-page .ledger-chip-field {
@@ -1240,7 +1311,7 @@ html[data-theme="workbench"] body.layer3-page .plane-bracket {
     }
 
     html[data-theme="workbench"] body.layer3-page .plane-flow {
-        grid-template-columns: minmax(126px, 0.72fr) 34px minmax(112px, 0.56fr) 34px minmax(172px, 1.08fr);
+        grid-template-columns: minmax(116px, 0.74fr) 32px minmax(104px, 0.54fr) 32px minmax(166px, 1.16fr);
     }
 
     html[data-theme="workbench"] body.layer3-page .plane-column,
