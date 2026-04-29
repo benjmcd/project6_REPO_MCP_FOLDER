@@ -102,6 +102,24 @@ test('Layer 3 workbench keeps the Workbench theme preference page-local', async 
     sharedTheme: 'light',
     layer3Theme: null,
   });
+
+  await page.locator('#theme-selector').selectOption('workbench');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
+  await expect(page.locator('#theme-selector')).toHaveValue('workbench');
+  const storageAfterWorkbenchWithSharedTheme = await page.evaluate(() => ({
+    sharedTheme: localStorage.getItem('nrc_aps_review_theme'),
+    layer3Theme: localStorage.getItem('layer3_workbench_theme'),
+  }));
+  expect(storageAfterWorkbenchWithSharedTheme).toEqual({
+    sharedTheme: 'light',
+    layer3Theme: 'workbench',
+  });
+
+  await page.goto('/review/nrc-aps', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
 });
 
 test('Layer 3 workbench keeps page-level scrolling and step navigation across viewports', async ({ page }) => {
