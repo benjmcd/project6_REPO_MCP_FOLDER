@@ -1071,7 +1071,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 
 @media (min-width: 1500px) {
     html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
-        grid-template-columns: minmax(275px, 0.58fr) 58px minmax(305px, 0.64fr) 68px minmax(540px, 1.38fr);
+        grid-template-columns: minmax(220px, 0.58fr) 48px minmax(250px, 0.64fr) 52px minmax(410px, 1.38fr);
         grid-template-areas:
             "spec spec spec spec spec"
             "threea connector3ab threeb connector3bc threec";
