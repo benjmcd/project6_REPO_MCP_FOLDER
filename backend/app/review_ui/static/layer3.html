@@ -27,10 +27,10 @@
                     localStorage.removeItem(layer3StorageKey);
                     layer3Preference = null;
                 }
-                if (isSharedThemePreference(sharedPreference)) {
-                    preference = sharedPreference;
-                } else if (layer3Preference === 'workbench') {
+                if (layer3Preference === 'workbench') {
                     preference = layer3Preference;
+                } else if (isSharedThemePreference(sharedPreference)) {
+                    preference = sharedPreference;
                 }
             } catch (error) {
                 preference = 'system';
