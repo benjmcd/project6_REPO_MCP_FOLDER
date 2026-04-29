@@ -98,6 +98,7 @@ const elements = {
     contextList: document.getElementById('context-list'),
     eventList: document.getElementById('event-list'),
     unavailableList: document.getElementById('unavailable-list'),
+    stepChips: Array.from(document.querySelectorAll('.step-chip[data-step-target]')),
 };
 
 const systemThemeQuery = typeof window.matchMedia === 'function'
@@ -2027,10 +2028,35 @@ function setBusy(button, busy, label) {
     }
 }
 
+function setCurrentStepChip(selectedChip) {
+    elements.stepChips.forEach((chip) => {
+        const selected = chip === selectedChip;
+        chip.classList.toggle('current', selected);
+        if (selected) {
+            chip.setAttribute('aria-current', 'step');
+        } else {
+            chip.removeAttribute('aria-current');
+        }
+    });
+}
+
+function navigateToStep(chip) {
+    const targetId = chip.dataset.stepTarget;
+    const target = targetId ? document.getElementById(targetId) : null;
+    if (!target) return;
+    setCurrentStepChip(chip);
+    target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    if (typeof target.focus === 'function') {
+        target.focus({ preventScroll: true });
+    }
+}
+
 function setStepChip(element, active) {
-    element.disabled = !active;
+    if (!element) return;
+    element.disabled = false;
     element.classList.toggle('active', active);
     element.classList.toggle('unavailable', !active);
+    element.dataset.available = active ? 'true' : 'false';
 }
 
 function setGateControls() {
@@ -3010,6 +3036,9 @@ if (systemThemeQuery) {
     });
 }
 
+elements.stepChips.forEach((chip) => {
+    chip.addEventListener('click', () => navigateToStep(chip));
+});
 elements.intentForm.addEventListener('submit', runPreflightFlow);
 elements.gateBSubmit.addEventListener('click', commitGateB);
 elements.gateCPreview.addEventListener('click', previewGateC);
