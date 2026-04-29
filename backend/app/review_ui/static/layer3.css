@@ -74,7 +74,8 @@ body.layer3-page .app-body {
     select
 ):focus-visible,
 .layer3-page .workband:focus,
-.layer3-page .source-fieldset:focus {
+.layer3-page .source-fieldset:focus,
+.layer3-page .sublayer-map-band:focus {
     outline: 3px solid var(--primary-color);
     outline-offset: 3px;
 }
@@ -89,7 +90,8 @@ body.layer3-page .app-body {
 }
 
 .layer3-page .workband:focus,
-.layer3-page .source-fieldset:focus {
+.layer3-page .source-fieldset:focus,
+.layer3-page .sublayer-map-band:focus {
     box-shadow: 0 0 0 3px var(--control-hover-bg);
 }
 
@@ -208,6 +210,42 @@ html[data-theme="workbench"] body.layer3-page .typing-card {
     background: #242424;
 }
 
+html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
+    border: 1px solid #6c6c6c;
+    background: #101010;
+    box-shadow: inset 0 0 0 1px rgba(248, 248, 248, 0.035);
+}
+
+html[data-theme="workbench"] body.layer3-page .sublayer-map-heading {
+    background: #242424;
+    border-color: #535353;
+}
+
+html[data-theme="workbench"] body.layer3-page .sublayer-region {
+    border-color: #8d8d8d;
+    background: #151515;
+}
+
+html[data-theme="workbench"] body.layer3-page .gate-panel,
+html[data-theme="workbench"] body.layer3-page .modality-bucket,
+html[data-theme="workbench"] body.layer3-page .analysis-plane {
+    border-color: #5f5f5f;
+    background: #202020;
+}
+
+html[data-theme="workbench"] body.layer3-page .flow-object,
+html[data-theme="workbench"] body.layer3-page .flow-empty,
+html[data-theme="workbench"] body.layer3-page .plane-column,
+html[data-theme="workbench"] body.layer3-page .plane-process {
+    border-color: #4d4d4d;
+    background: #121212;
+}
+
+html[data-theme="workbench"] body.layer3-page .plane-process li {
+    border-color: #6f6f6f;
+    background: #1a1a1a;
+}
+
 html[data-theme="workbench"] body.layer3-page .status-pill:not(.blocked):not(.ok),
 html[data-theme="workbench"] body.layer3-page .source-badge,
 html[data-theme="workbench"] body.layer3-page .downstream-locks .status-pill:not(.blocked):not(.ok) {
@@ -236,6 +274,370 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     padding: 12px 16px;
     background: var(--pane-header-bg);
     border-bottom: 1px solid var(--border-color);
+}
+
+.sublayer-map-band {
+    margin: 14px 16px 0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--pane-bg);
+    scroll-margin-top: 16px;
+    overflow: hidden;
+}
+
+.sublayer-map-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--pane-header-bg);
+    flex-wrap: wrap;
+}
+
+.sublayer-map-heading h2 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.flow-kicker {
+    margin: 0 0 4px;
+    color: var(--muted-text);
+    font-size: 0.74rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.sublayer-map-panel {
+    display: grid;
+    grid-template-columns: minmax(250px, 1fr) 34px minmax(250px, 1fr);
+    grid-template-areas:
+        "threea connector3ab threeb"
+        "connector3bc connector3bc connector3bc"
+        "threec threec threec";
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px;
+}
+
+.sublayer-region {
+    --modality-accent: var(--primary-color);
+    display: grid;
+    align-content: start;
+    gap: 10px;
+    min-width: 0;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    background: var(--layout-section-bg);
+}
+
+.sublayer-3a {
+    --modality-accent: #4ade80;
+    grid-area: threea;
+}
+
+.sublayer-3b {
+    --modality-accent: #c084fc;
+    grid-area: threeb;
+}
+
+.sublayer-3c {
+    --modality-accent: #38bdf8;
+    grid-area: threec;
+}
+
+.sublayer-title {
+    display: grid;
+    gap: 4px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sublayer-title span,
+.flow-object-head span:first-child,
+.plane-column h5,
+.plane-process h5 {
+    color: var(--muted-text);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.sublayer-title strong {
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+.gate-panel {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px;
+    background: var(--pane-bg);
+}
+
+.gate-panel h3,
+.modality-heading h4,
+.analysis-plane-title h4 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 0.88rem;
+}
+
+.gate-panel p {
+    margin: 0;
+    color: var(--muted-text);
+    font-size: 0.82rem;
+    line-height: 1.45;
+}
+
+.mini-rail {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.mini-rail span {
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 3px 7px;
+    color: var(--muted-text);
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.flow-object-list,
+.modality-buckets,
+.analysis-planes {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+}
+
+.flow-object {
+    --modality-accent: var(--primary-color);
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--modality-accent);
+    border-radius: 8px;
+    padding: 9px;
+    background: var(--control-bg);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.flow-object-head,
+.modality-heading,
+.analysis-plane-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+}
+
+.flow-object strong,
+.flow-object span,
+.flow-object code {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.flow-object strong {
+    color: var(--text-color);
+    font-size: 0.84rem;
+}
+
+.flow-object > span,
+.flow-object code {
+    color: var(--muted-text);
+    font-size: 0.74rem;
+}
+
+.flow-object code {
+    font-family: Consolas, "Courier New", monospace;
+}
+
+.flow-object-badge {
+    border: 1px solid var(--modality-accent);
+    border-radius: 999px;
+    padding: 2px 6px;
+    color: var(--modality-accent);
+    font-size: 0.68rem;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.flow-empty {
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 10px;
+    color: var(--muted-text);
+    font-size: 0.8rem;
+    line-height: 1.4;
+    background: var(--control-bg);
+}
+
+.modality-bucket,
+.analysis-plane {
+    --modality-accent: var(--primary-color);
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px;
+    background: var(--pane-bg);
+}
+
+.modality-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--modality-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--modality-accent) 24%, transparent);
+    flex: 0 0 auto;
+}
+
+.modality-heading h4,
+.analysis-plane-title h4 {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.modality-heading > span:last-child {
+    color: var(--muted-text);
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.modality-quantitative {
+    --modality-accent: #8fe36f;
+}
+
+.modality-qualitative {
+    --modality-accent: #c084fc;
+}
+
+.modality-hybrid {
+    --modality-accent: #f59e0b;
+}
+
+.modality-unclassified {
+    --modality-accent: #38bdf8;
+}
+
+.sublayer-connector {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    color: var(--muted-text);
+    font-size: 0.66rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.sublayer-connector-3ab {
+    grid-area: connector3ab;
+}
+
+.sublayer-connector-3bc {
+    grid-area: connector3bc;
+    min-height: 28px;
+}
+
+.sublayer-connector::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    border-top: 1px dashed var(--border-color);
+}
+
+.sublayer-connector span {
+    position: relative;
+    z-index: 1;
+    padding: 3px 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: var(--pane-bg);
+    white-space: nowrap;
+    transform: rotate(-90deg);
+}
+
+.sublayer-connector-3bc::before {
+    left: 50%;
+    right: auto;
+    width: 1px;
+    height: 100%;
+    border-top: none;
+    border-left: 1px dashed var(--border-color);
+}
+
+.sublayer-connector-3bc span {
+    transform: none;
+}
+
+.analysis-plane {
+    border-style: dashed;
+}
+
+.plane-flow {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.95fr) minmax(0, 0.9fr);
+    gap: 8px;
+    min-width: 0;
+}
+
+.plane-column,
+.plane-process {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    min-width: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px;
+    background: var(--control-bg);
+}
+
+.plane-column h5,
+.plane-process h5 {
+    margin: 0;
+}
+
+.plane-process ul {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.plane-process li {
+    display: grid;
+    gap: 4px;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 8px;
+    color: var(--muted-text);
+    font-size: 0.76rem;
+}
+
+.plane-process li strong {
+    color: var(--text-color);
+    font-size: 0.8rem;
 }
 
 .rail-item {
@@ -641,6 +1043,37 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     line-height: 1.5;
 }
 
+@media (max-width: 1280px) {
+    .sublayer-map-panel {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "threea"
+            "connector3ab"
+            "threeb"
+            "connector3bc"
+            "threec";
+    }
+
+    .sublayer-connector {
+        min-height: 28px;
+    }
+
+    .sublayer-connector::before {
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        right: auto;
+        width: 1px;
+        height: auto;
+        border-top: none;
+        border-left: 1px dashed var(--border-color);
+    }
+
+    .sublayer-connector span {
+        transform: none;
+    }
+}
+
 @media (max-width: 980px) {
     .layer3-header {
         align-items: flex-start;
@@ -683,5 +1116,16 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 
     .result-review-controls button {
         grid-column: 1;
+    }
+
+    .sublayer-map-panel,
+    .plane-flow {
+        grid-template-columns: 1fr;
+    }
+
+    .sublayer-map-band,
+    .workband {
+        margin-left: 10px;
+        margin-right: 10px;
     }
 }
