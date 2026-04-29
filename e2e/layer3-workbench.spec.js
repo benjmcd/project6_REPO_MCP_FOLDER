@@ -41,6 +41,43 @@ async function expectStepUnavailable(page, step) {
   await expect(chip).toHaveClass(/unavailable/);
 }
 
+test('Layer 3 workbench keeps the Workbench theme preference page-local', async ({ page }) => {
+  await page.goto('/review/nrc-aps', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => {
+    localStorage.setItem('nrc_aps_review_theme', 'workbench');
+    localStorage.removeItem('layer3_workbench_theme');
+  });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
+  await expect(page.locator('#theme-selector')).toHaveValue('system');
+  const sharedAfterNrc = await page.evaluate(() => localStorage.getItem('nrc_aps_review_theme'));
+  expect(sharedAfterNrc).toBeNull();
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => {
+    localStorage.setItem('nrc_aps_review_theme', 'workbench');
+    localStorage.removeItem('layer3_workbench_theme');
+  });
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
+  await expect(page.locator('#theme-selector')).toHaveValue('workbench');
+
+  const storage = await page.evaluate(() => ({
+    sharedTheme: localStorage.getItem('nrc_aps_review_theme'),
+    layer3Theme: localStorage.getItem('layer3_workbench_theme'),
+  }));
+  expect(storage).toEqual({
+    sharedTheme: null,
+    layer3Theme: 'workbench',
+  });
+
+  await page.goto('/review/nrc-aps', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
+  await expect(page.locator('#theme-selector')).toHaveValue('system');
+});
+
 async function prepareExecutedLayer3Session(request, seedPath = '/__test/layer3/seed-quant') {
   const seed = await expectJson(await request.post(seedPath));
   const planPreview = await expectJson(await request.post('/api/v1/layer3/plan/preview', {
