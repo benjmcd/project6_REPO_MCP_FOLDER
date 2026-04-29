@@ -1258,15 +1258,20 @@ function outputCardsForModality(modality) {
 
 function renderFlowObjects(items, emptyMessage) {
     if (!items.length) {
-        return `<div class="flow-empty">${escapeHtml(emptyMessage)}</div>`;
+        return `
+            <div class="flow-empty diagram-empty">
+                <span class="empty-node" aria-hidden="true"></span>
+                <p>${escapeHtml(emptyMessage)}</p>
+            </div>
+        `;
     }
     return `
-        <div class="flow-object-list">
+        <div class="flow-object-list diagram-chip-grid">
             ${items.map((item) => {
                 const modality = item.modality || 'unclassified';
                 const meta = modalityMeta(modality);
                 return `
-                    <article class="flow-object modality-${escapeHtml(modality)}" data-live-backed="${item.live ? 'true' : 'false'}">
+                    <article class="flow-object diagram-chip modality-${escapeHtml(modality)}" data-live-backed="${item.live ? 'true' : 'false'}">
                         <div class="flow-object-head">
                             <span>${escapeHtml(humanizeToken(item.kind || meta.label))}</span>
                             <span class="flow-object-badge">${escapeHtml(humanizeToken(item.badge || 'reported'))}</span>
@@ -1315,16 +1320,21 @@ function renderAnalysisPlane(modality, typingObjects, planObjects) {
                 <h4>${escapeHtml(meta.plane)}</h4>
             </div>
             <div class="plane-flow">
-                <section class="plane-column">
-                    <h5>Inputs</h5>
-                    ${renderFlowObjects(inputs, 'No live input object is available for this plane.')}
+                <section class="plane-column plane-inputs">
+                    <h5>Input objects</h5>
+                    <div class="plane-input-group">
+                        <span class="plane-bracket" aria-hidden="true"></span>
+                        ${renderFlowObjects(inputs, 'No live input object is available for this plane.')}
+                    </div>
                 </section>
+                <span class="plane-arrow plane-arrow-process" aria-hidden="true"></span>
                 <section class="plane-process" aria-label="${escapeHtml(meta.plane)} process status">
                     <h5>Process / Status</h5>
                     <ul>${processBody}</ul>
                 </section>
-                <section class="plane-column">
-                    <h5>Outputs</h5>
+                <span class="plane-arrow plane-arrow-output" aria-hidden="true"></span>
+                <section class="plane-column plane-outputs">
+                    <h5>Output cards</h5>
                     ${renderFlowObjects(outputCards.map((card) => ({
                         id: card.secondary,
                         label: card.label,
@@ -1370,7 +1380,7 @@ function renderSublayerMap() {
                 <span>Sublayer 3A</span>
                 <strong>Material Intake &amp; Session Scoping</strong>
             </div>
-            <div class="gate-panel">
+            <div class="gate-panel diagram-gate">
                 <h3>Gate B / Session Entry / Material Ledger</h3>
                 <p>${escapeHtml(gateBMessage)}</p>
                 <div class="mini-rail">
@@ -1380,7 +1390,10 @@ function renderSublayerMap() {
                     <span>Typing ${escapeHtml(rail.typing_status || 'not_started')}</span>
                 </div>
             </div>
-            ${renderFlowObjects(materialObjects, 'No material preview, session entry, or material ledger object is currently loaded.')}
+            <div class="ledger-chip-field">
+                <div class="ledger-bracket"><span>Session-scoped Materials / Material Snapshots</span></div>
+                ${renderFlowObjects(materialObjects, 'No material preview, session entry, or material ledger object is currently loaded.')}
+            </div>
         </section>
         <div class="sublayer-connector sublayer-connector-3ab" aria-hidden="true"><span>3A to 3B</span></div>
         <section class="sublayer-region sublayer-3b" aria-label="Sublayer 3B typing and set formation">
@@ -1388,7 +1401,7 @@ function renderSublayerMap() {
                 <span>Sublayer 3B</span>
                 <strong>Typing, Unit/Group/Set Formation</strong>
             </div>
-            <div class="gate-panel">
+            <div class="gate-panel diagram-gate">
                 <h3>Gate C Typing</h3>
                 <p>${escapeHtml(gateCMessage)}</p>
             </div>
