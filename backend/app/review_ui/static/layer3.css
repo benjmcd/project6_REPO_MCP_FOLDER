@@ -120,6 +120,7 @@ html[data-theme="workbench"] body.layer3-page .layer3-header {
 }
 
 html[data-theme="workbench"] body.layer3-page .layer3-body {
+    grid-template-columns: 124px minmax(0, 1fr) 236px;
     background:
         linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
         linear-gradient(180deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
@@ -133,16 +134,36 @@ html[data-theme="workbench"] body.layer3-page .context-panel {
     border-color: #535353;
 }
 
+html[data-theme="workbench"] body.layer3-page .layer3-stepper {
+    gap: 7px;
+    padding: 10px 8px;
+}
+
+html[data-theme="workbench"] body.layer3-page .context-panel {
+    padding: 10px;
+}
+
 html[data-theme="workbench"] body.layer3-page .layer3-workspace {
     background: #111111;
     box-shadow: inset 0 0 0 1px #313131;
 }
 
 html[data-theme="workbench"] body.layer3-page .authority-rail {
-    margin: 14px 16px 0;
+    grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
+    gap: 6px;
+    margin: 8px 10px 0;
+    padding: 8px 10px;
     border: 1px solid #5b5b5b;
-    border-radius: 8px;
-    background: #1b1b1b;
+    border-radius: 2px;
+    background: rgba(20, 20, 20, 0.84);
+}
+
+html[data-theme="workbench"] body.layer3-page .authority-rail .rail-label {
+    font-size: 0.6rem;
+}
+
+html[data-theme="workbench"] body.layer3-page .authority-rail .rail-value {
+    font-size: 0.74rem;
 }
 
 html[data-theme="workbench"] body.layer3-page .workband {
@@ -185,7 +206,10 @@ html[data-theme="workbench"] body.layer3-page .material-table th {
 html[data-theme="workbench"] body.layer3-page .step-chip {
     background: #1b1b1b;
     border-color: #535353;
+    border-radius: 3px;
     color: #f8f8f8;
+    padding: 7px 8px;
+    font-size: 0.74rem;
 }
 
 html[data-theme="workbench"] body.layer3-page .step-chip.active {
@@ -211,7 +235,9 @@ html[data-theme="workbench"] body.layer3-page .typing-card {
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
+    margin: 8px 10px 0;
     border: 1px solid #7d7d7d;
+    border-radius: 2px;
     background:
         linear-gradient(90deg, rgba(248, 248, 248, 0.025) 1px, transparent 1px),
         linear-gradient(180deg, rgba(248, 248, 248, 0.02) 1px, transparent 1px),
@@ -223,20 +249,27 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-heading {
-    background: #171717;
-    border-color: #5b5b5b;
+    padding: 9px 14px 0;
+    background: transparent;
+    border-color: transparent;
+}
+
+html[data-theme="workbench"] body.layer3-page .sublayer-map-heading h2 {
+    font-size: 0.92rem;
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-region {
     border-color: #8d8d8d;
-    background: rgba(16, 16, 16, 0.86);
+    background:
+        radial-gradient(circle at 12% 8%, rgba(125, 211, 252, 0.06), transparent 28%),
+        rgba(10, 10, 10, 0.74);
 }
 
 html[data-theme="workbench"] body.layer3-page .gate-panel,
 html[data-theme="workbench"] body.layer3-page .modality-bucket,
 html[data-theme="workbench"] body.layer3-page .analysis-plane {
     border-color: #686868;
-    background: rgba(27, 27, 27, 0.86);
+    background: rgba(14, 14, 14, 0.74);
 }
 
 html[data-theme="workbench"] body.layer3-page .gate-panel.diagram-gate {
@@ -332,14 +365,15 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     position: relative;
     isolation: isolate;
     display: grid;
-    grid-template-columns: minmax(330px, 0.95fr) 64px minmax(340px, 1.05fr);
+    grid-template-columns: minmax(410px, 0.94fr) 86px minmax(460px, 1.06fr);
     grid-template-areas:
+        "spec spec spec"
         "threea connector3ab threeb"
         "connector3bc connector3bc connector3bc"
         "threec threec threec";
     align-items: stretch;
-    gap: 14px;
-    padding: 18px;
+    gap: 16px;
+    padding: 16px 20px 20px;
 }
 
 .diagram-canvas::before {
@@ -357,15 +391,101 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     position: relative;
     display: grid;
     align-content: start;
-    gap: 10px;
+    gap: 12px;
     min-width: 0;
     border: 2px dotted color-mix(in srgb, var(--modality-accent) 54%, var(--border-color));
-    border-radius: 6px;
-    padding: 16px;
+    border-radius: 3px;
+    padding: 18px;
     background:
         linear-gradient(135deg, color-mix(in srgb, var(--modality-accent) 7%, transparent), transparent 42%),
         color-mix(in srgb, var(--layout-section-bg) 56%, transparent);
     box-shadow: none;
+}
+
+.canvas-intake-spec {
+    grid-area: spec;
+    display: grid;
+    grid-template-columns: minmax(300px, 0.95fr) minmax(360px, 1.05fr);
+    gap: 16px;
+    min-width: 0;
+}
+
+.query-spec-block,
+.manual-source-spec {
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    min-width: 0;
+    min-height: 92px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+    border-radius: 3px;
+    padding: 12px 14px;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            color-mix(in srgb, var(--border-color) 9%, transparent) 0,
+            color-mix(in srgb, var(--border-color) 9%, transparent) 1px,
+            transparent 1px,
+            transparent 18px
+        ),
+        color-mix(in srgb, var(--control-bg) 64%, transparent);
+}
+
+.query-spec-block::before,
+.manual-source-spec::before {
+    content: "";
+    position: absolute;
+    inset: 7px;
+    border: 1px dotted color-mix(in srgb, var(--border-color) 62%, transparent);
+    pointer-events: none;
+}
+
+.query-spec-block > *,
+.manual-source-spec > * {
+    position: relative;
+    z-index: 1;
+}
+
+.query-spec-block span,
+.manual-source-spec span:first-child {
+    color: var(--muted-text);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.query-spec-block p {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.source-spec-chip-grid {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.source-spec-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 23px;
+    border: 1px solid color-mix(in srgb, #7dd3fc 62%, var(--border-color));
+    border-radius: 2px;
+    padding: 3px 7px;
+    color: var(--text-color);
+    background: color-mix(in srgb, #7dd3fc 10%, transparent);
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+
+.source-spec-chip.muted {
+    border-style: dashed;
+    color: var(--muted-text);
+    background: transparent;
 }
 
 .sublayer-region::before {
@@ -385,16 +505,19 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 .sublayer-3a {
     --modality-accent: #4ade80;
     grid-area: threea;
+    min-height: 420px;
 }
 
 .sublayer-3b {
     --modality-accent: #c084fc;
     grid-area: threeb;
+    min-height: 420px;
 }
 
 .sublayer-3c {
     --modality-accent: #38bdf8;
     grid-area: threec;
+    min-height: 500px;
 }
 
 .sublayer-title {
@@ -482,7 +605,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     display: grid;
     gap: 9px;
     min-width: 0;
-    min-height: 190px;
+    min-height: 248px;
     border: 1px solid color-mix(in srgb, var(--modality-accent) 38%, var(--border-color));
     border-radius: 2px;
     padding: 12px;
@@ -519,9 +642,9 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 }
 
 .diagram-chip-grid {
-    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
     align-content: start;
-    gap: 6px;
+    gap: 5px;
 }
 
 .flow-object {
@@ -531,7 +654,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     min-width: 0;
     border: 1px solid color-mix(in srgb, var(--modality-accent) 54%, var(--border-color));
     border-radius: 3px;
-    padding: 5px 6px;
+    padding: 4px 5px;
     background:
         linear-gradient(180deg, color-mix(in srgb, var(--modality-accent) 8%, transparent), transparent 70%),
         var(--control-bg);
@@ -561,14 +684,14 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 
 .flow-object strong {
     color: var(--text-color);
-    font-size: 0.72rem;
+    font-size: 0.66rem;
     line-height: 1.12;
 }
 
 .flow-object > span,
 .flow-object code {
     color: var(--muted-text);
-    font-size: 0.62rem;
+    font-size: 0.56rem;
     line-height: 1.15;
 }
 
@@ -581,7 +704,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     border-radius: 3px;
     padding: 1px 4px;
     color: var(--modality-accent);
-    font-size: 0.58rem;
+    font-size: 0.54rem;
     font-weight: 900;
     white-space: nowrap;
 }
@@ -589,9 +712,9 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 .flow-empty {
     border: 1px dashed var(--border-color);
     border-radius: 2px;
-    padding: 8px;
+    padding: 9px;
     color: var(--muted-text);
-    font-size: 0.8rem;
+    font-size: 0.74rem;
     line-height: 1.4;
     background: var(--control-bg);
 }
@@ -632,7 +755,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     min-width: 0;
     border: 1px solid color-mix(in srgb, var(--modality-accent) 36%, var(--border-color));
     border-radius: 2px;
-    padding: 10px;
+    padding: 11px;
     background:
         linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 8%, transparent), transparent 36%),
         color-mix(in srgb, var(--pane-bg) 70%, transparent);
@@ -676,22 +799,24 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 }
 
 .modality-buckets {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: stretch;
 }
 
 .modality-bucket {
-    grid-template-columns: minmax(120px, 0.42fr) minmax(0, 1fr);
+    grid-template-columns: 1fr;
     align-items: start;
+    min-height: 154px;
 }
 
 .modality-bucket > .flow-object-list,
 .modality-bucket > .flow-empty {
-    min-height: 62px;
+    min-height: 92px;
 }
 
 .modality-bucket > .flow-empty,
 .modality-bucket > .flow-object-list {
-    grid-column: 2;
+    grid-column: 1;
 }
 
 .modality-heading {
@@ -729,7 +854,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     left: 0;
     right: 0;
     top: 50%;
-    height: 2px;
+    height: 4px;
     border-top: none;
     background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
 }
@@ -737,19 +862,19 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 .sublayer-connector::after {
     content: "";
     position: absolute;
-    top: calc(50% - 5px);
-    right: -1px;
+    top: calc(50% - 7px);
+    right: -3px;
     width: 0;
     height: 0;
-    border-top: 5px solid transparent;
-    border-bottom: 5px solid transparent;
-    border-left: 8px solid var(--primary-color);
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-left: 12px solid var(--primary-color);
 }
 
 .sublayer-connector span {
     position: relative;
     z-index: 1;
-    padding: 3px 6px;
+    padding: 3px 7px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     background: var(--pane-bg);
@@ -762,7 +887,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     right: auto;
     top: 0;
     bottom: 0;
-    width: 2px;
+    width: 4px;
     height: auto;
     border-top: none;
     border-left: none;
@@ -786,7 +911,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 
 .analysis-plane {
     border-style: dashed;
-    padding: 12px;
+    padding: 14px;
     background:
         linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 8%, transparent), transparent 32%),
         color-mix(in srgb, var(--pane-bg) 58%, transparent);
@@ -794,7 +919,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 
 .plane-flow {
     display: grid;
-    grid-template-columns: minmax(190px, 0.82fr) 70px minmax(190px, 0.78fr) 70px minmax(260px, 1.15fr);
+    grid-template-columns: minmax(220px, 0.88fr) 86px minmax(210px, 0.78fr) 86px minmax(320px, 1.22fr);
     grid-template-areas: "inputs arrow-process process arrow-output outputs";
     align-items: stretch;
     gap: 0;
@@ -808,7 +933,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     align-content: start;
     gap: 7px;
     min-width: 0;
-    min-height: 118px;
+    min-height: 152px;
     border: 1px solid color-mix(in srgb, var(--modality-accent) 28%, var(--border-color));
     border-radius: 2px;
     padding: 10px;
@@ -824,7 +949,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 .plane-process {
     grid-area: process;
     align-self: center;
-    min-height: 106px;
+    min-height: 128px;
     border-style: dashed;
     background: color-mix(in srgb, #000 76%, var(--control-bg));
 }
@@ -857,7 +982,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     display: block;
     align-self: center;
     justify-self: stretch;
-    height: 4px;
+    height: 5px;
     margin: 0 10px;
     background: linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 20%, transparent), var(--modality-accent));
 }
@@ -866,10 +991,10 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     content: "";
     position: absolute;
     right: -2px;
-    top: -7px;
-    border-top: 8px solid transparent;
-    border-bottom: 8px solid transparent;
-    border-left: 13px solid var(--modality-accent);
+    top: -8px;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 16px solid var(--modality-accent);
 }
 
 .plane-arrow-process {
@@ -1316,6 +1441,7 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     .sublayer-map-panel {
         grid-template-columns: 1fr;
         grid-template-areas:
+            "spec"
             "threea"
             "connector3ab"
             "threeb"
@@ -1353,6 +1479,12 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     .sublayer-connector span {
         transform: none;
     }
+
+    .sublayer-3a,
+    .sublayer-3b,
+    .sublayer-3c {
+        min-height: auto;
+    }
 }
 
 @media (max-width: 980px) {
@@ -1380,15 +1512,29 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
         overflow: visible;
     }
 
+    html[data-theme="workbench"] body.layer3-page .layer3-body {
+        grid-template-columns: 1fr;
+    }
+
     .layer3-stepper {
         flex-direction: row;
         border-bottom: 1px solid var(--border-color);
         overflow-x: auto;
     }
 
+    html[data-theme="workbench"] body.layer3-page .layer3-stepper {
+        flex-direction: row;
+        padding: 8px 10px;
+        overflow-x: auto;
+    }
+
     .context-panel {
         border-left: none;
         border-top: 1px solid var(--border-color);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .context-panel {
+        padding: 10px;
     }
 
     .result-review-controls {
@@ -1401,6 +1547,10 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 
     .sublayer-map-panel,
     .plane-flow {
+        grid-template-columns: 1fr;
+    }
+
+    .canvas-intake-spec {
         grid-template-columns: 1fr;
     }
 

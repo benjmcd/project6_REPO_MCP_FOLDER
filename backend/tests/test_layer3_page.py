@@ -108,6 +108,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".diagram-canvas::before" in css.text
     assert ".sublayer-map-panel" in css.text
     assert ".sublayer-region" in css.text
+    assert ".canvas-intake-spec" in css.text
+    assert ".source-spec-chip-grid" in css.text
     assert ".ledger-chip-field" in css.text
     assert ".diagram-chip-grid" in css.text
     assert ".plane-arrow" in css.text
@@ -125,6 +127,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "navigateToStep" in js.text
     assert "scrollIntoView" in js.text
     assert "renderSublayerMap" in js.text
+    assert "selectedSourceClassLabels" in js.text
+    assert "User Natural Language Query Input" in js.text
     assert "ledger-chip-field" in js.text
     assert "diagram-chip" in js.text
     assert "plane-arrow-process" in js.text
