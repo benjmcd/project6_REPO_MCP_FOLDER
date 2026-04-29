@@ -352,14 +352,20 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     const arrow = window.getComputedStyle(document.querySelector('.plane-arrow-process'));
     const chip = window.getComputedStyle(document.querySelector('.sublayer-3a .diagram-chip'));
     const intake = window.getComputedStyle(document.querySelector('.canvas-intake-spec'));
+    const intakeFrame = window.getComputedStyle(document.querySelector('.intake-spec-frame'));
     const stateFlow = window.getComputedStyle(document.querySelector('.canvas-state-flow'));
-    const routing = window.getComputedStyle(document.querySelector('.analysis-routing-plane'));
+    const routingElement = document.querySelector('.analysis-routing-plane');
+    const routing = window.getComputedStyle(routingElement);
     const threeA = window.getComputedStyle(document.querySelector('.sublayer-3a'));
     return {
       intakeDisplay: intake.display,
       intakeGridArea: intake.gridArea,
+      intakeFrameDisplay: intakeFrame.display,
+      intakeFrameColumns: intakeFrame.gridTemplateColumns.split(' ').filter(Boolean).length,
       stateFlowDisplay: stateFlow.display,
       stateFlowGridArea: stateFlow.gridArea,
+      routingTag: routingElement.tagName,
+      routingLabel: routingElement.getAttribute('aria-label'),
       routingDisplay: routing.display,
       routingGridArea: routing.gridArea,
       threeADisplay: threeA.display,
@@ -375,8 +381,12 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   expect(diagramStyles).toEqual({
     intakeDisplay: 'grid',
     intakeGridArea: 'spec',
+    intakeFrameDisplay: 'grid',
+    intakeFrameColumns: 1,
     stateFlowDisplay: 'grid',
     stateFlowGridArea: 'stateflow',
+    routingTag: 'SECTION',
+    routingLabel: 'Sublayer 3B to 3C analysis routing',
     routingDisplay: 'grid',
     routingGridArea: 'routing',
     threeADisplay: 'grid',
@@ -407,14 +417,17 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   await page.setViewportSize({ width: 1024, height: 768 });
   const tabletFit = await page.evaluate(() => {
     const intake = window.getComputedStyle(document.querySelector('.canvas-intake-spec'));
+    const routing = window.getComputedStyle(document.querySelector('.analysis-routing-plane'));
     return {
       fitsViewport: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
       intakeColumnCount: intake.gridTemplateColumns.split(' ').filter(Boolean).length,
+      routingDisplay: routing.display,
     };
   });
   expect(tabletFit).toEqual({
     fitsViewport: true,
     intakeColumnCount: 1,
+    routingDisplay: 'grid',
   });
 
   await page.setViewportSize({ width: 390, height: 844 });
