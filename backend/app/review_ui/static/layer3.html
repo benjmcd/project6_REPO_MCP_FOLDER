@@ -9,22 +9,28 @@
             const sharedStorageKey = 'nrc_aps_review_theme';
             const layer3StorageKey = 'layer3_workbench_theme';
             const isSharedThemePreference = (value) => value === 'system' || value === 'light' || value === 'dark';
-            const isLayer3ThemePreference = (value) => isSharedThemePreference(value) || value === 'workbench';
             let preference = 'system';
             try {
-                const sharedPreference = localStorage.getItem(sharedStorageKey);
+                let sharedPreference = localStorage.getItem(sharedStorageKey);
                 let layer3Preference = localStorage.getItem(layer3StorageKey);
                 if (sharedPreference === 'workbench') {
-                    if (!isLayer3ThemePreference(layer3Preference)) {
-                        layer3Preference = 'workbench';
-                        localStorage.setItem(layer3StorageKey, layer3Preference);
-                    }
+                    layer3Preference = 'workbench';
+                    localStorage.setItem(layer3StorageKey, layer3Preference);
                     localStorage.removeItem(sharedStorageKey);
+                    sharedPreference = null;
                 }
-                if (isLayer3ThemePreference(layer3Preference)) {
-                    preference = layer3Preference;
-                } else if (isSharedThemePreference(sharedPreference)) {
+                if (isSharedThemePreference(layer3Preference)) {
+                    if (!isSharedThemePreference(sharedPreference)) {
+                        sharedPreference = layer3Preference;
+                        localStorage.setItem(sharedStorageKey, sharedPreference);
+                    }
+                    localStorage.removeItem(layer3StorageKey);
+                    layer3Preference = null;
+                }
+                if (isSharedThemePreference(sharedPreference)) {
                     preference = sharedPreference;
+                } else if (layer3Preference === 'workbench') {
+                    preference = layer3Preference;
                 }
             } catch (error) {
                 preference = 'system';
