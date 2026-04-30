@@ -1886,6 +1886,13 @@ function renderSublayerMap() {
                     ${renderExecutionPipeline(model.threeC.executionPipeline)}
                     <div class="analysis-plane-field">
                         <div class="field-bracket analysis-field-bracket"><span>Analysis Environment Planes / Input To Output Fields</span></div>
+                        <div class="analysis-lane-legend" aria-hidden="true">
+                            <span class="analysis-lane-label lane-label-input">Input object bank</span>
+                            <span class="analysis-lane-arrow">route</span>
+                            <span class="analysis-lane-label lane-label-process">Process / status</span>
+                            <span class="analysis-lane-arrow">produce</span>
+                            <span class="analysis-lane-label lane-label-output">Output field</span>
+                        </div>
                         <div class="analysis-planes">
                             ${model.threeC.planes.map((plane) => renderAnalysisPlane(plane)).join('')}
                         </div>
