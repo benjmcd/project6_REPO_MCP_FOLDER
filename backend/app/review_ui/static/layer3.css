@@ -318,6 +318,79 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
     gap: 8px;
 }
 
+@media (min-width: 1100px) {
+    html[data-theme="workbench"] body.layer3-page .layer3-workspace > .workband:not(.sublayer-map-band) {
+        display: grid;
+        grid-template-columns: minmax(210px, 0.2fr) minmax(0, 1fr);
+        gap: 0 14px;
+        margin: 9px 10px 0;
+        padding: 0 0 10px;
+        border-top-color: rgba(248, 248, 248, 0.3);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) > .section-heading {
+        grid-column: 1;
+        align-self: stretch;
+        align-content: start;
+        display: grid;
+        justify-content: stretch;
+        gap: 8px;
+        min-height: 100%;
+        border-right: 1px dotted color-mix(in srgb, var(--l3-stage-accent) 42%, #767676);
+        border-bottom: 0;
+        padding: 8px 12px 8px 18px;
+        background:
+            linear-gradient(90deg, color-mix(in srgb, var(--l3-stage-accent) 13%, transparent), transparent 58%),
+            rgba(8, 8, 8, 0.32);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) > :not(.section-heading) {
+        grid-column: 2;
+        min-width: 0;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading h2 {
+        max-width: 18ch;
+        font-size: 0.78rem;
+        line-height: 1.18;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading .action-row {
+        align-items: stretch;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading .primary-btn,
+    html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading .secondary-btn {
+        min-height: 31px;
+        padding: 7px 9px;
+        font-size: 0.72rem;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .intent-form,
+    html[data-theme="workbench"] body.layer3-page .result-review-form {
+        padding: 9px 0 0;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .filter-row,
+    html[data-theme="workbench"] body.layer3-page .result-review-panel,
+    html[data-theme="workbench"] body.layer3-page #package-review-preview-panel,
+    html[data-theme="workbench"] body.layer3-page #handoff-export-prepare-panel,
+    html[data-theme="workbench"] body.layer3-page #aps-handoff-dispatch-panel,
+    html[data-theme="workbench"] body.layer3-page #external-export-download-prepare-panel,
+    html[data-theme="workbench"] body.layer3-page #external-export-download-delivery-panel {
+        padding-right: 0;
+        padding-left: 0;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .source-fieldset,
+    html[data-theme="workbench"] body.layer3-page .result-review-card,
+    html[data-theme="workbench"] body.layer3-page .plan-summary-card,
+    html[data-theme="workbench"] body.layer3-page .plan-list,
+    html[data-theme="workbench"] body.layer3-page .typing-card {
+        background: rgba(8, 8, 8, 0.32);
+    }
+}
+
 html[data-theme="workbench"] body.layer3-page .plan-summary-card,
 html[data-theme="workbench"] body.layer3-page .plan-list,
 html[data-theme="workbench"] body.layer3-page .result-review-card {
@@ -348,9 +421,12 @@ html[data-theme="workbench"] body.layer3-page .plan-list ul {
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
-    margin: 4px 4px 0;
+    position: relative;
+    margin: 0;
     min-height: calc(100vh - 58px);
-    border: 1px solid #9b9b9b;
+    border: 0;
+    border-top: 1px solid #9b9b9b;
+    border-bottom: 1px solid #767676;
     border-radius: 0;
     background:
         linear-gradient(90deg, rgba(248, 248, 248, 0.025) 1px, transparent 1px),
@@ -363,9 +439,15 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-heading {
-    padding: 5px 10px 0;
+    position: absolute;
+    z-index: 3;
+    top: 8px;
+    left: 12px;
+    right: 12px;
+    padding: 0;
     background: transparent;
     border-color: transparent;
+    pointer-events: none;
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-heading .flow-kicker {
@@ -373,12 +455,26 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-heading .flow-kicker
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-heading h2 {
-    font-size: 0.86rem;
+    border-left: 2px solid #d7d7d7;
+    padding-left: 8px;
+    color: #f8f8f8;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+html[data-theme="workbench"] body.layer3-page .sublayer-map-heading .status-pill {
+    min-height: 18px;
+    border-radius: 0;
+    padding: 1px 7px;
+    background: rgba(4, 4, 4, 0.72);
+    font-size: 0.62rem;
+    pointer-events: auto;
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
     min-height: calc(100vh - 102px);
-    padding: 8px 12px 16px;
+    padding: 34px 12px 16px;
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-region {
@@ -646,6 +742,18 @@ html[data-theme="workbench"] body.layer3-page .state-node {
             transparent 18px
         ),
         rgba(5, 5, 5, 0.62);
+}
+
+html[data-theme="workbench"] body.layer3-page .canvas-state-flow {
+    gap: 5px;
+    padding-inline: 6px;
+}
+
+html[data-theme="workbench"] body.layer3-page .state-node {
+    min-height: 24px;
+    border-right-color: transparent;
+    border-left-color: transparent;
+    padding: 2px 8px;
 }
 
 html[data-theme="workbench"] body.layer3-page .state-node:not(.viz-state-empty):not(.viz-state-structural) {
