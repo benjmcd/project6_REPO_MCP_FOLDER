@@ -228,6 +228,9 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
     const fieldsetStyle = window.getComputedStyle(document.querySelector('#source-fieldset'));
     const chipStyle = window.getComputedStyle(document.querySelector('[data-step="gate_b"]'));
     const dockStyle = window.getComputedStyle(document.querySelector('.operations-dock'));
+    const dockNavStyle = window.getComputedStyle(document.querySelector('.operations-dock-nav'));
+    const activePanelStyle = window.getComputedStyle(document.querySelector('.operations-dock > .operation-panel-active'));
+    const inactivePanelStyle = window.getComputedStyle(document.querySelector('.operations-dock > .operation-panel-inactive'));
     return {
       bodyBackground: bodyStyle.backgroundColor,
       railBorderStyle: railStyle.borderTopStyle,
@@ -240,6 +243,10 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
       chipBackground: chipStyle.backgroundColor,
       dockDisplay: dockStyle.display,
       dockOverflowX: dockStyle.overflowX,
+      dockColumnCount: dockStyle.gridTemplateColumns.split(' ').filter(Boolean).length,
+      dockNavDisplay: dockNavStyle.display,
+      activePanelDisplay: activePanelStyle.display,
+      inactivePanelDisplay: inactivePanelStyle.display,
     };
   });
   expect(workbenchStyles).toMatchObject({
@@ -249,11 +256,25 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
     workbandBorderLeftWidth: '0px',
     workbandBackground: 'rgba(0, 0, 0, 0)',
     fieldsetBorderStyle: 'dashed',
-    dockDisplay: 'flex',
-    dockOverflowX: 'auto',
+    dockDisplay: 'grid',
+    dockOverflowX: 'hidden',
+    dockColumnCount: 2,
+    dockNavDisplay: 'grid',
+    activePanelDisplay: 'grid',
+    inactivePanelDisplay: 'none',
   });
   expect(workbenchStyles.railBackground).not.toBe('rgba(0, 0, 0, 0)');
   expect(workbenchStyles.chipBackground).not.toBe('rgba(0, 0, 0, 0)');
+  await expect(page.locator('.operation-dock-tab')).toHaveCount(9);
+  await expect(page.locator('.operation-dock-tab').first()).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#intent-band')).toHaveAttribute('data-operation-active', 'true');
+  await expect(page.locator('#gate-b-band')).toHaveAttribute('data-operation-active', 'false');
+
+  await page.locator('.operation-dock-tab').first().focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('.operation-dock-tab').nth(1)).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#gate-b-band')).toHaveAttribute('data-operation-active', 'true');
+  await expect(page.locator('#intent-band')).toHaveAttribute('data-operation-active', 'false');
 
   await page.locator('#theme-selector').selectOption('light');
   await page.reload({ waitUntil: 'domcontentloaded' });

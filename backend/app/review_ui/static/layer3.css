@@ -352,10 +352,12 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
 
 @media (min-width: 1100px) {
     html[data-theme="workbench"] body.layer3-page .operations-dock {
-        display: flex;
-        gap: 10px;
+        display: grid;
+        grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
+        align-items: stretch;
+        gap: 12px;
         margin: 8px 10px 0;
-        padding: 8px 8px 10px;
+        padding: 10px;
         border-top: 1px solid rgba(248, 248, 248, 0.18);
         border-bottom: 1px solid rgba(248, 248, 248, 0.16);
         background:
@@ -363,36 +365,120 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
             linear-gradient(180deg, rgba(248, 248, 248, 0.016) 1px, transparent 1px),
             rgba(3, 3, 3, 0.5);
         background-size: 28px 28px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        scroll-padding-inline: 8px;
-        scroll-snap-type: x proximity;
+        overflow: hidden;
     }
 
     html[data-theme="workbench"] body.layer3-page .operations-dock::before {
-        content: "Operations dock";
-        flex: 0 0 18px;
-        align-self: stretch;
-        writing-mode: vertical-rl;
-        transform: rotate(180deg);
-        color: rgba(248, 248, 248, 0.58);
-        font-size: 0.56rem;
+        content: none;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock-nav {
+        display: grid;
+        grid-column: 1;
+        align-self: start;
+        gap: 7px;
+        max-height: min(78vh, 860px);
+        padding: 8px;
+        border: 1px dotted rgba(248, 248, 248, 0.42);
+        background:
+            linear-gradient(180deg, rgba(248, 248, 248, 0.035), rgba(248, 248, 248, 0.008)),
+            rgba(0, 0, 0, 0.34);
+        overflow-y: auto;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock-nav::before {
+        content: "Operation focus";
+        color: rgba(248, 248, 248, 0.68);
+        font-size: 0.58rem;
         font-weight: 900;
         letter-spacing: 0.1em;
         text-transform: uppercase;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab {
+        display: grid;
+        gap: 3px;
+        width: 100%;
+        padding: 7px 8px;
+        border: 1px solid rgba(248, 248, 248, 0.2);
+        border-left: 3px solid color-mix(in srgb, var(--l3-stage-accent) 60%, #f8f8f8);
+        border-radius: 0;
+        background:
+            linear-gradient(90deg, color-mix(in srgb, var(--l3-stage-accent) 8%, transparent), transparent 74%),
+            rgba(8, 8, 8, 0.56);
+        color: #f8f8f8;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab:hover,
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab:focus-visible {
+        border-color: color-mix(in srgb, var(--primary-color) 72%, #f8f8f8);
+        outline: 2px solid color-mix(in srgb, var(--primary-color) 56%, transparent);
+        outline-offset: 2px;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab.active {
+        border-color: color-mix(in srgb, var(--primary-color) 78%, #f8f8f8);
+        background:
+            linear-gradient(90deg, color-mix(in srgb, var(--l3-stage-accent) 16%, transparent), transparent 76%),
+            rgba(12, 12, 12, 0.84);
+        box-shadow:
+            inset 0 0 0 1px rgba(248, 248, 248, 0.14),
+            0 0 0 1px rgba(76, 201, 240, 0.18);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab-label {
+        font-size: 0.75rem;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab-state {
+        width: fit-content;
+        padding: 2px 6px;
+        border: 1px solid rgba(248, 248, 248, 0.22);
+        color: color-mix(in srgb, var(--l3-stage-accent) 68%, #f8f8f8);
+        font-size: 0.58rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab-detail {
+        color: rgba(248, 248, 248, 0.64);
+        font-size: 0.66rem;
+        line-height: 1.22;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab[data-operation-state="blocked"] {
+        border-left-color: rgba(248, 248, 248, 0.34);
+        color: rgba(248, 248, 248, 0.72);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab[data-operation-state="blocked"] .operation-dock-tab-state {
+        color: rgba(248, 248, 248, 0.58);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab[data-operation-state="ready"] .operation-dock-tab-state {
+        color: #fbbf24;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab[data-operation-state="live"] .operation-dock-tab-state {
+        color: #90f870;
     }
 
     html[data-theme="workbench"] body.layer3-page .operations-dock > .workband:not(.sublayer-map-band) {
         display: grid;
         grid-template-columns: minmax(132px, 0.12fr) minmax(0, 1fr);
         gap: 0 10px;
-        flex: 0 0 clamp(420px, 46vw, 760px);
-        max-height: min(72vh, 760px);
+        grid-column: 2;
+        min-height: 420px;
+        max-height: min(78vh, 860px);
         margin: 0;
         padding: 0 0 7px;
         border-top-color: rgba(248, 248, 248, 0.22);
         overflow-y: auto;
-        scroll-snap-align: start;
     }
 
     html[data-theme="workbench"] body.layer3-page .operations-dock > #plan-band,
@@ -401,7 +487,15 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
     html[data-theme="workbench"] body.layer3-page .operations-dock > #handoff-export-band,
     html[data-theme="workbench"] body.layer3-page .operations-dock > #aps-handoff-band,
     html[data-theme="workbench"] body.layer3-page .operations-dock > #external-export-download-band {
-        flex-basis: clamp(560px, 64vw, 980px);
+        min-height: 480px;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock > .workband.operation-panel-inactive:not(.sublayer-map-band) {
+        display: none;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock > .workband.operation-panel-active:not(.sublayer-map-band) {
+        display: grid;
     }
 
     html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) > .section-heading {
@@ -694,6 +788,10 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-heading {
 
 .operations-dock {
     display: contents;
+}
+
+.operations-dock-nav {
+    display: none;
 }
 
 .authority-rail {
