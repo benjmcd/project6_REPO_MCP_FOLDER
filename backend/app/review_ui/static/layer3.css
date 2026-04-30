@@ -2584,7 +2584,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     html[data-theme="workbench"] body.layer3-page .analysis-routing-plane {
         grid-area: routing;
         display: grid;
-        grid-template-columns: minmax(290px, 0.46fr) 58px minmax(820px, 1.54fr);
+        grid-template-columns: minmax(340px, 0.54fr) 76px minmax(780px, 1.46fr);
         grid-template-areas: "threeb connector3bc threec";
         align-items: stretch;
         gap: 16px;
@@ -2667,8 +2667,8 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-bucket {
         grid-template-columns: 1fr;
         gap: 8px;
-        min-height: 128px;
-        padding-right: 18px;
+        min-height: 136px;
+        padding-right: 26px;
     }
 
     html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-heading {
@@ -2689,8 +2689,8 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-transfer-rail {
         position: absolute;
         top: 50%;
-        right: -50px;
-        width: 42px;
+        right: -72px;
+        width: 64px;
         height: 24px;
         padding: 0;
         border: 0;
@@ -2704,10 +2704,10 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
         content: "";
         position: absolute;
         left: 0;
-        right: 13px;
+        right: 15px;
         top: calc(50% - 2px);
-        height: 4px;
-        background: linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 20%, transparent), var(--modality-accent));
+        height: 5px;
+        background: linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 18%, transparent), var(--modality-accent));
     }
 
     html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-transfer-rail::after {
@@ -2738,31 +2738,37 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     }
 
     html[data-theme="workbench"] body.layer3-page .sublayer-connector-3bc {
+        align-self: stretch;
         min-height: auto;
+        overflow: visible;
     }
 
     html[data-theme="workbench"] body.layer3-page .sublayer-connector-3bc::before {
-        left: 0;
-        right: 0;
-        top: 50%;
-        bottom: auto;
-        width: auto;
-        height: 5px;
-        background: linear-gradient(90deg, transparent, var(--diagram-flow-color, var(--primary-color)), transparent);
+        left: calc(50% - 3px);
+        right: auto;
+        top: 6%;
+        bottom: 6%;
+        width: 6px;
+        height: auto;
+        background:
+            linear-gradient(180deg, transparent, var(--diagram-flow-color, var(--primary-color)) 12%, var(--diagram-flow-color, var(--primary-color)) 88%, transparent);
     }
 
     html[data-theme="workbench"] body.layer3-page .sublayer-connector-3bc::after {
-        top: calc(50% - 7px);
-        right: -3px;
+        top: calc(50% - 4px);
+        right: -7px;
         bottom: auto;
-        left: auto;
-        border-top: 7px solid transparent;
-        border-bottom: 7px solid transparent;
-        border-left: 12px solid var(--diagram-flow-color, var(--primary-color));
-        border-right: none;
+        left: calc(50% - 2px);
+        width: 52px;
+        height: 9px;
+        border: 0;
+        background: var(--diagram-flow-color, var(--primary-color));
+        clip-path: polygon(0 28%, 72% 28%, 72% 0, 100% 50%, 72% 100%, 72% 72%, 0 72%);
     }
 
     html[data-theme="workbench"] body.layer3-page .sublayer-connector-3bc span {
+        position: relative;
+        z-index: 2;
         transform: rotate(-90deg);
     }
 
@@ -2771,7 +2777,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     }
 
     html[data-theme="workbench"] body.layer3-page .analysis-lane-legend {
-        grid-template-columns: minmax(118px, 0.56fr) 34px minmax(106px, 0.46fr) 34px minmax(190px, 1.22fr);
+        grid-template-columns: minmax(210px, 0.82fr) 52px minmax(170px, 0.56fr) 52px minmax(320px, 1.12fr);
     }
 
     html[data-theme="workbench"] body.layer3-page .analysis-lane-arrow {
@@ -2779,7 +2785,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     }
 
     html[data-theme="workbench"] body.layer3-page .plane-flow {
-        grid-template-columns: minmax(118px, 0.56fr) 34px minmax(106px, 0.46fr) 34px minmax(190px, 1.22fr);
+        grid-template-columns: minmax(210px, 0.82fr) 52px minmax(170px, 0.56fr) 52px minmax(320px, 1.12fr);
     }
 
     html[data-theme="workbench"] body.layer3-page .plane-column,
