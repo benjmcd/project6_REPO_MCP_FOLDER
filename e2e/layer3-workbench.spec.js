@@ -509,6 +509,10 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     const processNode = document.querySelector('.plane-process-node');
     const outputField = document.querySelector('.plane-output-field');
     const outputFieldStyle = window.getComputedStyle(outputField);
+    const materialBankShell = document.querySelector('.material-bank-shell');
+    const materialBankShellStyle = window.getComputedStyle(materialBankShell);
+    const modalityBankShell = document.querySelector('.modality-bank-shell');
+    const modalityBankShellStyle = window.getComputedStyle(modalityBankShell);
     const laneFrame = document.querySelector('.plane-flow-frame');
     const laneFrameStyle = window.getComputedStyle(laneFrame);
     const laneSpineStyle = window.getComputedStyle(document.querySelector('.plane-lane-spine'));
@@ -530,6 +534,10 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
       threeADisplay: threeA.display,
       threeAColumns: threeA.gridTemplateColumns.split(' ').filter(Boolean).length,
       sublayerBorderStyle: sublayer.borderTopStyle,
+      materialBankRole: materialBankShell.getAttribute('data-diagram-role'),
+      materialBankColumns: materialBankShellStyle.gridTemplateColumns.split(' ').filter(Boolean).length,
+      modalityBankRole: modalityBankShell.getAttribute('data-diagram-role'),
+      modalityBankColumns: modalityBankShellStyle.gridTemplateColumns.split(' ').filter(Boolean).length,
       modalityBorderStyle: modality.borderTopStyle,
       modalityColumns: modality.gridTemplateColumns.split(' ').filter(Boolean).length,
       modalityObjectGridArea: modalityObjects.gridColumnStart,
@@ -577,9 +585,13 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     threeADisplay: 'grid',
     threeAColumns: 2,
     sublayerBorderStyle: 'dotted',
+    materialBankRole: 'source-plane-material-field',
+    materialBankColumns: 2,
+    modalityBankRole: 'modality-object-bank',
+    modalityBankColumns: 2,
     modalityBorderStyle: 'solid',
     modalityColumns: 1,
-    modalityObjectGridArea: '1',
+    modalityObjectGridArea: '2',
     transferRailDisplay: 'flex',
     transferRailGridColumnStart: '3',
     transferRailPosition: 'absolute',

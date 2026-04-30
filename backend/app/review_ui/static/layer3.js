@@ -1679,7 +1679,10 @@ function renderModalityBucket(bucket) {
             </div>
             <div class="modality-route-label" aria-hidden="true">Object bank / grouping field</div>
             <span class="modality-transfer-rail" data-transfer-state="${escapeHtml(transferState)}">${escapeHtml(transferLabel)}</span>
-            ${renderFlowObjects(objects, meta.empty, { fieldLabel: `${meta.label} object bank`, slotCount: 3 })}
+            <div class="modality-bank-shell" data-diagram-role="modality-object-bank">
+                <span class="modality-bank-bracket" aria-hidden="true"></span>
+                ${renderFlowObjects(objects, meta.empty, { fieldLabel: `${meta.label} object bank`, slotCount: 3 })}
+            </div>
         </section>
     `;
 }
@@ -1854,7 +1857,10 @@ function renderSublayerMap() {
                 </div>
                 <div class="ledger-chip-field">
                     <div class="ledger-bracket"><span>Session-scoped Materials / Material Snapshots</span></div>
-                    ${renderFlowObjects(model.threeA.objects, 'No material preview, session entry, or material ledger object is currently loaded.', { fieldLabel: '3A material ledger object field', slotCount: 6 })}
+                    <div class="material-bank-shell" data-diagram-role="source-plane-material-field">
+                        <span class="material-bank-bracket" aria-hidden="true"></span>
+                        ${renderFlowObjects(model.threeA.objects, 'No material preview, session entry, or material ledger object is currently loaded.', { fieldLabel: '3A material ledger object field', slotCount: 6 })}
+                    </div>
                 </div>
             </section>
             <div class="sublayer-connector sublayer-connector-3ab" aria-hidden="true"><span>3A to 3B</span></div>
