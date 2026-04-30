@@ -279,6 +279,34 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
     return style.gridTemplateColumns.split(' ').filter(Boolean).length;
   });
   expect(workbenchPlaneColumnCount).toBe(1);
+
+  const workbenchControlColumns = await page.evaluate(() => {
+    const resultControls = window.getComputedStyle(document.querySelector('#result-review-band .result-review-controls'));
+    const apsControls = window.getComputedStyle(document.querySelector('#aps-handoff-dispatch-form .result-review-controls'));
+    return {
+      result: resultControls.gridTemplateColumns.split(' ').filter(Boolean).length,
+      aps: apsControls.gridTemplateColumns.split(' ').filter(Boolean).length,
+    };
+  });
+  expect(workbenchControlColumns).toEqual({
+    result: 2,
+    aps: 1,
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const mobileWorkbenchControlColumns = await page.evaluate(() => {
+    const resultControls = window.getComputedStyle(document.querySelector('#result-review-band .result-review-controls'));
+    const apsControls = window.getComputedStyle(document.querySelector('#aps-handoff-dispatch-form .result-review-controls'));
+    return {
+      result: resultControls.gridTemplateColumns.split(' ').filter(Boolean).length,
+      aps: apsControls.gridTemplateColumns.split(' ').filter(Boolean).length,
+    };
+  });
+  expect(mobileWorkbenchControlColumns).toEqual({
+    result: 1,
+    aps: 1,
+  });
 });
 
 test('Layer 3 workbench renders a responsive live-state sublayer material and analysis map', async ({ page }) => {
