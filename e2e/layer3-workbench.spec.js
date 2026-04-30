@@ -41,7 +41,7 @@ async function expectStepUnavailable(page, step) {
   await expect(chip).toHaveClass(/unavailable/);
 }
 
-test('Layer 3 workbench keeps the Workbench theme preference page-local', async ({ page }) => {
+test('Layer 3 workbench keeps Layer 3-only theme preferences page-local', async ({ page }) => {
   await page.goto('/review/nrc-aps', { waitUntil: 'domcontentloaded' });
   await page.evaluate(() => {
     localStorage.setItem('nrc_aps_review_theme', 'workbench');
@@ -120,6 +120,37 @@ test('Layer 3 workbench keeps the Workbench theme preference page-local', async 
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
+
+  await page.locator('#theme-selector').selectOption('claude');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'claude');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-variant', 'claude');
+  await expect(page.locator('#theme-selector')).toHaveValue('claude');
+  const storageAfterClaude = await page.evaluate(() => ({
+    sharedTheme: localStorage.getItem('nrc_aps_review_theme'),
+    layer3Theme: localStorage.getItem('layer3_workbench_theme'),
+  }));
+  expect(storageAfterClaude).toEqual({
+    sharedTheme: 'light',
+    layer3Theme: 'claude',
+  });
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'claude');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-variant', 'claude');
+
+  await page.goto('/review/nrc-aps', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme-variant', 'claude');
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'claude');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-variant', 'claude');
+
+  await page.locator('#theme-selector').selectOption('dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme-variant', 'claude');
 });
 
 test('Layer 3 workbench keeps page-level scrolling and step navigation across viewports', async ({ page }) => {
@@ -171,7 +202,7 @@ test('Layer 3 workbench keeps page-level scrolling and step navigation across vi
 });
 
 test('Layer 3 workbench exposes visible keyboard focus across themes', async ({ page }) => {
-  for (const theme of ['light', 'dark', 'workbench']) {
+  for (const theme of ['light', 'dark', 'workbench', 'claude']) {
     await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
     await page.locator('#theme-selector').selectOption(theme);
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -407,6 +438,80 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
     return apsControls.gridTemplateColumns.split(' ').filter(Boolean).length;
   });
   expect(mobileApsControlColumns).toBe(1);
+});
+
+test('Layer 3 workbench exposes Claude as a durable diagram-canvas theme variant', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.locator('#theme-selector').selectOption('claude');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+
+  await expect(page.locator('#theme-selector')).toHaveValue('claude');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'workbench');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'claude');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-variant', 'claude');
+  await expect(page.locator('#sublayer-map-panel')).toHaveClass(/diagram-canvas/);
+
+  const claudeStyles = await page.evaluate(() => {
+    const bodyStyle = window.getComputedStyle(document.body);
+    const headerBefore = window.getComputedStyle(document.querySelector('.layer3-header'), '::before');
+    const stepperStyle = window.getComputedStyle(document.querySelector('.layer3-stepper'));
+    const canvas = document.querySelector('.workflow-canvas-field');
+    const canvasStyle = window.getComputedStyle(canvas);
+    const threeAStyle = window.getComputedStyle(document.querySelector('.sublayer-3a'));
+    const ledgerStyle = window.getComputedStyle(document.querySelector('.ledger-chip-field'));
+    const connector3ab = document.querySelector('.sublayer-connector-3ab');
+    const connector3abBefore = window.getComputedStyle(connector3ab, '::before');
+    const routingStyle = window.getComputedStyle(document.querySelector('.analysis-routing-plane'));
+    const planeFlowStyle = window.getComputedStyle(document.querySelector('.analysis-plane .plane-flow'));
+    const planeOutputStyle = window.getComputedStyle(document.querySelector('.plane-output-field'));
+    return {
+      bodyBackground: bodyStyle.backgroundColor,
+      headerBeforeContent: headerBefore.content,
+      headerBeforeWidth: Math.round(Number.parseFloat(headerBefore.width)),
+      stepperOpacity: Number.parseFloat(stepperStyle.opacity),
+      canvasAreas: canvasStyle.gridTemplateAreas,
+      canvasColumns: canvasStyle.gridTemplateColumns.split(' ').filter(Boolean).length,
+      threeAColumns: threeAStyle.gridTemplateColumns.split(' ').filter(Boolean).length,
+      ledgerMinHeight: Math.round(Number.parseFloat(ledgerStyle.minHeight)),
+      connector3abBeforeWidth: Math.round(Number.parseFloat(connector3abBefore.width)),
+      connector3abBeforeHeight: Math.round(Number.parseFloat(connector3abBefore.height)),
+      routingColumns: routingStyle.gridTemplateColumns.split(' ').filter(Boolean).length,
+      planeFlowColumns: planeFlowStyle.gridTemplateColumns.split(' ').filter(Boolean).length,
+      outputBorderStyle: planeOutputStyle.borderTopStyle,
+      outputBackground: planeOutputStyle.backgroundColor,
+    };
+  });
+  expect(claudeStyles).toMatchObject({
+    bodyBackground: 'rgb(14, 14, 14)',
+    canvasColumns: 3,
+    threeAColumns: 1,
+    routingColumns: 3,
+    planeFlowColumns: 5,
+    outputBorderStyle: 'dotted',
+  });
+  expect(claudeStyles.headerBeforeContent).not.toBe('none');
+  expect(claudeStyles.headerBeforeWidth).toBeGreaterThan(0);
+  expect(claudeStyles.stepperOpacity).toBeLessThan(1);
+  expect(claudeStyles.canvasAreas).toContain('threea');
+  expect(claudeStyles.canvasAreas).toContain('routing');
+  expect(claudeStyles.ledgerMinHeight).toBeGreaterThanOrEqual(500);
+  expect(claudeStyles.connector3abBeforeWidth).toBeGreaterThan(claudeStyles.connector3abBeforeHeight);
+  expect(claudeStyles.outputBackground).not.toBe('rgba(0, 0, 0, 0)');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme-variant', 'claude');
+  const mobileState = await page.evaluate(() => ({
+    pageFitsViewportWidth: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
+    stateFlowColumns: window.getComputedStyle(document.querySelector('.canvas-state-flow')).gridTemplateColumns.split(' ').filter(Boolean).length,
+    planeFlowColumns: window.getComputedStyle(document.querySelector('.analysis-plane .plane-flow')).gridTemplateColumns.split(' ').filter(Boolean).length,
+  }));
+  expect(mobileState).toEqual({
+    pageFitsViewportWidth: true,
+    stateFlowColumns: 1,
+    planeFlowColumns: 1,
+  });
 });
 
 test('Layer 3 workbench renders a responsive live-state sublayer material and analysis map', async ({ page }) => {
