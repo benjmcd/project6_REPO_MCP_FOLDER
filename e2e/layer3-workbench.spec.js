@@ -455,6 +455,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   await expect(page.locator('.modality-bucket.modality-quantitative .diagram-chip')).toHaveCount(gateC.typing_records.length);
   await expect(page.locator('.modality-bucket.modality-quantitative .modality-transfer-rail')).toHaveAttribute('data-transfer-state', 'ready');
   await expect(page.locator('.modality-bucket.modality-quantitative .modality-transfer-rail')).toHaveText('Feeds 3C plane');
+  await expect(page.locator('.sublayer-3a .flow-slot-ghost')).toHaveCount(4);
+  await expect(page.locator('.modality-bucket.modality-quantitative .flow-slot-ghost')).toHaveCount(Math.max(0, 3 - gateC.typing_records.length));
   await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'session|typed|inputs');
   await expect(page.locator('.state-3a')).toContainText('Session scoped');
   await expect(page.locator('.state-3b')).toContainText('Typing previewed');
@@ -468,6 +470,7 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     const modality = window.getComputedStyle(document.querySelector('.modality-bucket.modality-quantitative'));
     const modalityObjects = window.getComputedStyle(document.querySelector('.modality-bucket.modality-quantitative .flow-object-list'));
     const transferRail = window.getComputedStyle(document.querySelector('.modality-bucket.modality-quantitative .modality-transfer-rail'));
+    const ghostSlot = window.getComputedStyle(document.querySelector('.sublayer-3a .flow-slot-ghost'));
     const arrow = window.getComputedStyle(document.querySelector('.plane-arrow-process'));
     const chip = window.getComputedStyle(document.querySelector('.sublayer-3a .diagram-chip'));
     const intake = window.getComputedStyle(document.querySelector('.canvas-intake-spec'));
@@ -495,6 +498,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
       modalityObjectGridArea: modalityObjects.gridColumnStart,
       transferRailDisplay: transferRail.display,
       transferRailGridColumnStart: transferRail.gridColumnStart,
+      ghostSlotDisplay: ghostSlot.display,
+      ghostSlotBorderStyle: ghostSlot.borderTopStyle,
       arrowDisplay: arrow.display,
       chipRadius: chip.borderTopLeftRadius,
     };
@@ -518,6 +523,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     modalityObjectGridArea: '1',
     transferRailDisplay: 'flex',
     transferRailGridColumnStart: '1',
+    ghostSlotDisplay: 'block',
+    ghostSlotBorderStyle: 'dashed',
     arrowDisplay: 'block',
     chipRadius: '0px',
   });
