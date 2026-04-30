@@ -34,6 +34,19 @@ async function openWorkbenchCompare(page) {
   };
 }
 
+test('NRC APS header exposes Layer3 workbench navigation', async ({ page }) => {
+  await page.goto('/review/nrc-aps', { waitUntil: 'domcontentloaded' });
+  const layer3Link = page.locator('header.app-header a.nav-link[href="/review/layer3"]');
+  await expect(layer3Link).toHaveCount(1);
+  await expect(layer3Link).toHaveText('Layer3');
+
+  await Promise.all([
+    page.waitForURL('**/review/layer3'),
+    layer3Link.click(),
+  ]);
+  await expect(page.getByRole('heading', { name: 'Layer 3 Workbench' })).toBeVisible();
+});
+
 test('workbench compare deep-links into Candidate B Trace and Candidate B Trace defaults to annotated PDF', async ({ page }) => {
   const { sources, targets, manifest } = await openWorkbenchCompare(page);
 
