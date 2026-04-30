@@ -154,15 +154,15 @@ const SUBLAYER_MODALITY_META = {
     },
 };
 const OPERATION_DOCK_STEPS = [
-    { id: 'intent-band', key: 'intent', label: 'Intent', shortLabel: 'Intent', canvasLink: '3A intake setup' },
-    { id: 'gate-b-band', key: 'gate_b', label: 'Gate B Material Ledger', shortLabel: 'Gate B', canvasLink: '3A material ledger' },
-    { id: 'gate-c-band', key: 'gate_c', label: 'Gate C Typing Review', shortLabel: 'Gate C', canvasLink: '3B modality grouping' },
-    { id: 'plan-band', key: 'plan', label: 'Plan Preview And Approval', shortLabel: 'Plan', canvasLink: '3C process planning' },
-    { id: 'result-review-band', key: 'results', label: 'Result Review', shortLabel: 'Results', canvasLink: '3C output authority' },
-    { id: 'package-review-band', key: 'package', label: 'Package Review', shortLabel: 'Package', canvasLink: 'post-3C package controls' },
-    { id: 'handoff-export-band', key: 'handoff', label: 'Handoff / Export Preparation', shortLabel: 'Handoff', canvasLink: 'post-3C handoff controls' },
-    { id: 'aps-handoff-band', key: 'aps', label: 'APS Handoff Dispatch', shortLabel: 'APS', canvasLink: 'post-3C APS bridge' },
-    { id: 'external-export-download-band', key: 'external', label: 'External Export / Download', shortLabel: 'External', canvasLink: 'post-3C delivery controls' },
+    { id: 'intent-band', key: 'intent', label: 'Intent', shortLabel: 'Intent', canvasLink: '3A intake setup', canvasTarget: '3a', canvasRole: 'Sublayer 3A intake/specification field' },
+    { id: 'gate-b-band', key: 'gate_b', label: 'Gate B Material Ledger', shortLabel: 'Gate B', canvasLink: '3A material ledger', canvasTarget: '3a', canvasRole: 'Sublayer 3A session-scoped material ledger' },
+    { id: 'gate-c-band', key: 'gate_c', label: 'Gate C Typing Review', shortLabel: 'Gate C', canvasLink: '3B modality grouping', canvasTarget: '3b', canvasRole: 'Sublayer 3B modality object banks' },
+    { id: 'plan-band', key: 'plan', label: 'Plan Preview And Approval', shortLabel: 'Plan', canvasLink: '3C process planning', canvasTarget: '3c-process', canvasRole: 'Sublayer 3C process/status planes' },
+    { id: 'result-review-band', key: 'results', label: 'Result Review', shortLabel: 'Results', canvasLink: '3C output authority', canvasTarget: '3c-output', canvasRole: 'Sublayer 3C output/result fields' },
+    { id: 'package-review-band', key: 'package', label: 'Package Review', shortLabel: 'Package', canvasLink: 'post-3C package controls', canvasTarget: 'post-3c', canvasRole: 'Post-3C package review control plane' },
+    { id: 'handoff-export-band', key: 'handoff', label: 'Handoff / Export Preparation', shortLabel: 'Handoff', canvasLink: 'post-3C handoff controls', canvasTarget: 'post-3c', canvasRole: 'Post-3C handoff/export control plane' },
+    { id: 'aps-handoff-band', key: 'aps', label: 'APS Handoff Dispatch', shortLabel: 'APS', canvasLink: 'post-3C APS bridge', canvasTarget: 'post-3c', canvasRole: 'Post-3C APS dispatch bridge' },
+    { id: 'external-export-download-band', key: 'external', label: 'External Export / Download', shortLabel: 'External', canvasLink: 'post-3C delivery controls', canvasTarget: 'post-3c', canvasRole: 'Post-3C delivery readiness controls' },
 ];
 
 function escapeHtml(value) {
@@ -1786,8 +1786,11 @@ function renderSublayerMap() {
     const model = currentSublayerVisualizationModel();
     const rail = model.rail;
     const sourceLabels = model.sourceLabels;
+    const activeOperation = OPERATION_DOCK_STEPS.find((step) => step.id === State.activeOperationId);
 
     elements.sublayerMapPanel.dataset.vizState = `${model.threeA.state}|${model.threeB.state}|${model.threeC.state}`;
+    elements.sublayerMapPanel.dataset.activeOperationCanvas = activeOperation?.canvasTarget || '3a';
+    elements.sublayerMapPanel.dataset.activeOperationKey = activeOperation?.key || 'intent';
     elements.sublayerMapPanel.innerHTML = `
         <section class="canvas-intake-spec" aria-label="Layer 3 intake specification">
             <div class="intake-spec-frame">
@@ -2975,6 +2978,7 @@ function renderOperationDockSummary(activeStep, status) {
             ? 'Action-ready'
             : 'Unavailable';
     elements.operationsDockSummary.dataset.operationState = status.state;
+    elements.operationsDockSummary.dataset.canvasTarget = activeStep.canvasTarget || '';
     elements.operationsDockSummary.innerHTML = `
         <div class="operation-summary-eyebrow">
             <span>${escapeHtml(positionLabel)}</span>
@@ -2983,6 +2987,10 @@ function renderOperationDockSummary(activeStep, status) {
         <div class="operation-summary-main">
             <h3>${escapeHtml(activeStep.label)}</h3>
             <span class="operation-summary-state">${escapeHtml(stateLabel)}: ${escapeHtml(status.label)}</span>
+        </div>
+        <div class="operation-summary-canvas-role">
+            <span>Canvas role</span>
+            <strong>${escapeHtml(activeStep.canvasRole || activeStep.canvasLink || 'Layer 3 canvas')}</strong>
         </div>
         <p>${escapeHtml(status.detail)}</p>
     `;
@@ -3004,6 +3012,10 @@ function renderOperationsDock() {
     elements.operationsDock.dataset.activeOperation = State.activeOperationId;
     const activeStep = availableSteps.find((step) => step.id === State.activeOperationId);
     const activeStatus = activeStep ? operationDockStatus(activeStep) : null;
+    if (elements.sublayerMapPanel) {
+        elements.sublayerMapPanel.dataset.activeOperationCanvas = activeStep?.canvasTarget || '3a';
+        elements.sublayerMapPanel.dataset.activeOperationKey = activeStep?.key || 'intent';
+    }
     renderOperationDockSummary(activeStep, activeStatus);
     elements.operationsDockNav.innerHTML = availableSteps.map((step, index) => {
         const status = operationDockStatus(step);
