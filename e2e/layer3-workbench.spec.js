@@ -483,6 +483,9 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     const stateFlow = window.getComputedStyle(document.querySelector('.canvas-state-flow'));
     const routingElement = document.querySelector('.analysis-routing-plane');
     const routing = window.getComputedStyle(routingElement);
+    const connector3bc = document.querySelector('.sublayer-connector-3bc');
+    const connector3bcBefore = window.getComputedStyle(connector3bc, '::before');
+    const connector3bcAfter = window.getComputedStyle(connector3bc, '::after');
     const threeA = window.getComputedStyle(document.querySelector('.sublayer-3a'));
     return {
       intakeDisplay: intake.display,
@@ -495,6 +498,10 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
       routingLabel: routingElement.getAttribute('aria-label'),
       routingDisplay: routing.display,
       routingGridArea: routing.gridArea,
+      routingColumns: routing.gridTemplateColumns.split(' ').filter(Boolean).length,
+      connector3bcBeforeWidth: connector3bcBefore.width,
+      connector3bcAfterWidth: connector3bcAfter.width,
+      connector3bcAfterClip: connector3bcAfter.clipPath !== 'none',
       threeADisplay: threeA.display,
       threeAColumns: threeA.gridTemplateColumns.split(' ').filter(Boolean).length,
       sublayerBorderStyle: sublayer.borderTopStyle,
@@ -503,6 +510,7 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
       modalityObjectGridArea: modalityObjects.gridColumnStart,
       transferRailDisplay: transferRail.display,
       transferRailGridColumnStart: transferRail.gridColumnStart,
+      transferRailWidth: Math.round(Number.parseFloat(transferRail.width)),
       ghostSlotDisplay: ghostSlot.display,
       ghostSlotBorderStyle: ghostSlot.borderTopStyle,
       arrowDisplay: arrow.display,
@@ -523,6 +531,10 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     routingLabel: 'Sublayer 3B to 3C analysis routing',
     routingDisplay: 'grid',
     routingGridArea: 'routing',
+    routingColumns: 3,
+    connector3bcBeforeWidth: '6px',
+    connector3bcAfterWidth: '52px',
+    connector3bcAfterClip: true,
     threeADisplay: 'grid',
     threeAColumns: 2,
     sublayerBorderStyle: 'dotted',
@@ -531,6 +543,7 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     modalityObjectGridArea: '1',
     transferRailDisplay: 'flex',
     transferRailGridColumnStart: '1',
+    transferRailWidth: 64,
     ghostSlotDisplay: 'block',
     ghostSlotBorderStyle: 'dashed',
     arrowDisplay: 'block',
