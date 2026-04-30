@@ -1842,7 +1842,50 @@ html[data-theme="workbench"] body.layer3-page .ledger-chip-field .flow-object-li
     align-content: start;
     grid-template-columns: repeat(auto-fit, minmax(88px, 0.16fr));
     justify-content: start;
+    min-height: 220px;
+}
+
+.material-bank-shell,
+.modality-bank-shell {
+    position: relative;
+    display: grid;
+    min-width: 0;
+}
+
+html[data-theme="workbench"] body.layer3-page .material-bank-shell {
+    grid-template-columns: 20px minmax(0, 1fr);
+    align-items: stretch;
     min-height: 244px;
+    border: 1px solid color-mix(in srgb, var(--modality-accent) 50%, #777);
+    background:
+        repeating-linear-gradient(
+            90deg,
+            color-mix(in srgb, var(--modality-accent) 10%, transparent) 0,
+            color-mix(in srgb, var(--modality-accent) 10%, transparent) 10px,
+            transparent 10px,
+            transparent 18px
+        ),
+        rgba(0, 0, 0, 0.2);
+}
+
+html[data-theme="workbench"] body.layer3-page .material-bank-shell > .flow-object-list,
+html[data-theme="workbench"] body.layer3-page .material-bank-shell > .flow-empty {
+    grid-column: 2;
+    align-self: stretch;
+    border: 0;
+    background: transparent;
+}
+
+html[data-theme="workbench"] body.layer3-page .material-bank-bracket,
+html[data-theme="workbench"] body.layer3-page .modality-bank-bracket {
+    display: block;
+    align-self: stretch;
+    justify-self: center;
+    width: 12px;
+    border-top: 2px solid color-mix(in srgb, var(--modality-accent) 66%, #d7d7d7);
+    border-bottom: 2px solid color-mix(in srgb, var(--modality-accent) 66%, #d7d7d7);
+    border-left: 2px solid color-mix(in srgb, var(--modality-accent) 66%, #d7d7d7);
+    pointer-events: none;
 }
 
 html[data-theme="workbench"] body.layer3-page .flow-object-list::before,
@@ -2201,13 +2244,14 @@ html[data-theme="workbench"] body.layer3-page .modality-heading h4 {
     font-size: 0.8rem;
 }
 
-.modality-bucket > .flow-object-list,
-.modality-bucket > .flow-empty {
+.modality-bucket .flow-object-list,
+.modality-bucket .flow-empty {
     min-height: 92px;
 }
 
 .modality-bucket > .flow-empty,
-.modality-bucket > .flow-object-list {
+.modality-bucket > .flow-object-list,
+.modality-bank-shell {
     grid-column: 1;
 }
 
@@ -2216,21 +2260,28 @@ html[data-theme="workbench"] body.layer3-page .modality-buckets {
     gap: 10px;
 }
 
-html[data-theme="workbench"] body.layer3-page .modality-bucket > .flow-empty,
-html[data-theme="workbench"] body.layer3-page .modality-bucket > .flow-object-list {
+html[data-theme="workbench"] body.layer3-page .modality-bank-shell {
     grid-column: 2;
+    grid-template-columns: 18px minmax(0, 1fr);
+    min-height: 64px;
+}
+
+html[data-theme="workbench"] body.layer3-page .modality-bank-shell > .flow-empty,
+html[data-theme="workbench"] body.layer3-page .modality-bank-shell > .flow-object-list {
+    grid-column: 2;
+    align-self: stretch;
     min-height: 64px;
     border: 0;
     background: transparent;
 }
 
-html[data-theme="workbench"] body.layer3-page .modality-bucket > .flow-object-list {
+html[data-theme="workbench"] body.layer3-page .modality-bank-shell > .flow-object-list {
     align-content: start;
     grid-template-columns: repeat(auto-fit, minmax(84px, 0.5fr));
     justify-content: start;
 }
 
-html[data-theme="workbench"] body.layer3-page .modality-bucket > .flow-empty {
+html[data-theme="workbench"] body.layer3-page .modality-bank-shell > .flow-empty {
     padding: 7px;
 }
 
@@ -2776,13 +2827,18 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
         align-items: center;
     }
 
-    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-bucket > .flow-empty,
-    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-bucket > .flow-object-list {
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-bank-shell {
         grid-column: 1;
+        grid-template-columns: 16px minmax(0, 1fr);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-bank-shell > .flow-empty,
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-bank-shell > .flow-object-list {
+        grid-column: 2;
         min-height: 70px;
     }
 
-    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-bucket > .flow-object-list {
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-bank-shell > .flow-object-list {
         grid-template-columns: repeat(auto-fit, minmax(94px, 0.46fr));
         justify-content: start;
     }
@@ -3599,8 +3655,15 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 
     .modality-bucket > .flow-empty,
     .modality-bucket > .flow-object-list,
+    .modality-bank-shell,
     .modality-heading {
         grid-column: 1;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .material-bank-shell,
+    html[data-theme="workbench"] body.layer3-page .modality-bank-shell,
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-bank-shell {
+        grid-template-columns: 12px minmax(0, 1fr);
     }
 
     .sublayer-map-band,
