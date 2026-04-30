@@ -133,7 +133,7 @@ html[data-theme="workbench"] body.layer3-page .layer3-header select {
 }
 
 html[data-theme="workbench"] body.layer3-page .layer3-body {
-    grid-template-columns: 58px minmax(0, 1fr) 124px;
+    grid-template-columns: 48px minmax(0, 1fr) 96px;
     background:
         linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
         linear-gradient(180deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
@@ -143,40 +143,53 @@ html[data-theme="workbench"] body.layer3-page .layer3-body {
 
 html[data-theme="workbench"] body.layer3-page .layer3-stepper,
 html[data-theme="workbench"] body.layer3-page .context-panel {
+    min-width: 0;
     background: rgba(11, 11, 11, 0.78);
     border-color: #535353;
 }
 
 html[data-theme="workbench"] body.layer3-page .layer3-stepper {
-    gap: 5px;
-    padding: 8px 5px;
+    gap: 4px;
+    padding: 6px 4px;
 }
 
 html[data-theme="workbench"] body.layer3-page .context-panel {
-    padding: 7px;
-    font-size: 0.66rem;
+    padding: 6px 5px;
+    font-size: 0.6rem;
+    background:
+        linear-gradient(180deg, rgba(248, 248, 248, 0.035), transparent 18%),
+        rgba(7, 7, 7, 0.74);
+    box-shadow: inset 1px 0 0 rgba(248, 248, 248, 0.08);
 }
 
 html[data-theme="workbench"] body.layer3-page .step-chip {
     border-radius: 0;
-    padding: 7px 4px;
-    font-size: 0.62rem;
+    min-height: 29px;
+    padding: 6px 2px;
+    font-size: 0.56rem;
     line-height: 1.1;
     text-align: center;
 }
 
 html[data-theme="workbench"] body.layer3-page .context-panel h2 {
-    font-size: 0.76rem;
+    font-size: 0.68rem;
+    margin-bottom: 6px;
 }
 
 html[data-theme="workbench"] body.layer3-page .context-list dt,
 html[data-theme="workbench"] body.layer3-page .event-list,
 html[data-theme="workbench"] body.layer3-page .unavailable-list {
-    font-size: 0.66rem;
+    font-size: 0.59rem;
+    overflow-wrap: anywhere;
 }
 
 html[data-theme="workbench"] body.layer3-page .context-list dd {
-    font-size: 0.68rem;
+    font-size: 0.6rem;
+    overflow-wrap: anywhere;
+}
+
+html[data-theme="workbench"] body.layer3-page .context-panel section + section {
+    margin-top: 10px;
 }
 
 html[data-theme="workbench"] body.layer3-page .layer3-workspace {
@@ -185,21 +198,23 @@ html[data-theme="workbench"] body.layer3-page .layer3-workspace {
 }
 
 html[data-theme="workbench"] body.layer3-page .authority-rail {
-    grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
-    gap: 5px 10px;
-    margin: 6px 8px 0;
-    padding: 5px 8px;
-    border: 1px solid #5b5b5b;
+    grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+    gap: 3px 8px;
+    margin: 4px 6px 0;
+    padding: 4px 7px;
+    border: 1px solid rgba(210, 210, 210, 0.32);
     border-radius: 0;
-    background: rgba(8, 8, 8, 0.64);
+    background:
+        linear-gradient(90deg, rgba(248, 248, 248, 0.045), transparent 45%),
+        rgba(5, 5, 5, 0.58);
 }
 
 html[data-theme="workbench"] body.layer3-page .authority-rail .rail-label {
-    font-size: 0.56rem;
+    font-size: 0.52rem;
 }
 
 html[data-theme="workbench"] body.layer3-page .authority-rail .rail-value {
-    font-size: 0.68rem;
+    font-size: 0.62rem;
 }
 
 html[data-theme="workbench"] body.layer3-page .workband {
@@ -265,10 +280,12 @@ html[data-theme="workbench"] body.layer3-page .material-table th {
 html[data-theme="workbench"] body.layer3-page .step-chip {
     background: #1b1b1b;
     border-color: #535353;
-    border-radius: 3px;
+    border-radius: 0;
     color: #f8f8f8;
-    padding: 7px 8px;
-    font-size: 0.74rem;
+    min-width: 0;
+    padding: 6px 2px;
+    font-size: 0.56rem;
+    overflow-wrap: anywhere;
 }
 
 html[data-theme="workbench"] body.layer3-page .step-chip.active {
@@ -984,7 +1001,8 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
-    margin: 8px 10px 0;
+    margin: 5px 6px 0;
+    min-height: calc(100vh - 50px);
     border-color: rgba(210, 210, 210, 0.34);
     border-radius: 0;
     background:
@@ -996,8 +1014,13 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-heading {
     border-bottom-color: rgba(210, 210, 210, 0.28);
-    padding: 8px 12px;
-    background: rgba(0, 0, 0, 0.52);
+    padding: 6px 10px;
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.28));
+}
+
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
+    min-height: calc(100vh - 84px);
+    padding-inline: 10px;
 }
 
 .layer3-workspace {
