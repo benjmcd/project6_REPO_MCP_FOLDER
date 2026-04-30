@@ -231,6 +231,11 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
 
   const workbenchStyles = await page.evaluate(() => {
     const bodyStyle = window.getComputedStyle(document.body);
+    const shell = document.querySelector('.layer3-body');
+    const shellRect = shell.getBoundingClientRect();
+    const stepperRect = document.querySelector('.layer3-stepper').getBoundingClientRect();
+    const contextRect = document.querySelector('.context-panel').getBoundingClientRect();
+    const workspaceRect = document.querySelector('.layer3-workspace').getBoundingClientRect();
     const railStyle = window.getComputedStyle(document.querySelector('.authority-rail'));
     const workbandStyle = window.getComputedStyle(document.querySelector('#gate-b-band'));
     const fieldsetStyle = window.getComputedStyle(document.querySelector('#source-fieldset'));
@@ -255,6 +260,10 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
       dockNavDisplay: dockNavStyle.display,
       activePanelDisplay: activePanelStyle.display,
       inactivePanelDisplay: inactivePanelStyle.display,
+      shellColumnCount: window.getComputedStyle(shell).gridTemplateColumns.split(' ').filter(Boolean).length,
+      stepperWidth: Math.round(stepperRect.width),
+      contextWidth: Math.round(contextRect.width),
+      workspaceShare: workspaceRect.width / shellRect.width,
     };
   });
   expect(workbenchStyles).toMatchObject({
@@ -270,7 +279,11 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
     dockNavDisplay: 'grid',
     activePanelDisplay: 'grid',
     inactivePanelDisplay: 'none',
+    shellColumnCount: 3,
   });
+  expect(workbenchStyles.stepperWidth).toBeLessThanOrEqual(50);
+  expect(workbenchStyles.contextWidth).toBeLessThanOrEqual(100);
+  expect(workbenchStyles.workspaceShare).toBeGreaterThan(0.88);
   expect(workbenchStyles.railBackground).not.toBe('rgba(0, 0, 0, 0)');
   expect(workbenchStyles.chipBackground).not.toBe('rgba(0, 0, 0, 0)');
   await expect(page.locator('.operation-dock-tab')).toHaveCount(9);
