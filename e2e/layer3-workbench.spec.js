@@ -418,6 +418,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   await expect(page.locator('.plane-bracket').first()).toBeVisible();
   await expect(page.locator('.sublayer-3a .flow-empty')).toContainText('No material preview');
   await expect(page.locator('.modality-bucket.modality-quantitative')).toContainText('No quantitative objects');
+  await expect(page.locator('.modality-bucket.modality-quantitative .modality-transfer-rail')).toHaveText('Awaiting objects');
+  await expect(page.locator('.modality-bucket.modality-unclassified .modality-transfer-rail')).toHaveText('Held in 3B');
   await expect(page.locator('.analysis-plane.modality-quantitative')).toContainText('No live input object');
 
   const preflightResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/preflight'));
@@ -451,6 +453,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
 
   await expect(page.locator('.modality-bucket.modality-quantitative .flow-object')).toHaveCount(gateC.typing_records.length);
   await expect(page.locator('.modality-bucket.modality-quantitative .diagram-chip')).toHaveCount(gateC.typing_records.length);
+  await expect(page.locator('.modality-bucket.modality-quantitative .modality-transfer-rail')).toHaveAttribute('data-transfer-state', 'ready');
+  await expect(page.locator('.modality-bucket.modality-quantitative .modality-transfer-rail')).toHaveText('Feeds 3C plane');
   await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-viz-state', 'session|typed|inputs');
   await expect(page.locator('.state-3a')).toContainText('Session scoped');
   await expect(page.locator('.state-3b')).toContainText('Typing previewed');
@@ -463,6 +467,7 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     const sublayer = window.getComputedStyle(document.querySelector('.sublayer-3a'));
     const modality = window.getComputedStyle(document.querySelector('.modality-bucket.modality-quantitative'));
     const modalityObjects = window.getComputedStyle(document.querySelector('.modality-bucket.modality-quantitative .flow-object-list'));
+    const transferRail = window.getComputedStyle(document.querySelector('.modality-bucket.modality-quantitative .modality-transfer-rail'));
     const arrow = window.getComputedStyle(document.querySelector('.plane-arrow-process'));
     const chip = window.getComputedStyle(document.querySelector('.sublayer-3a .diagram-chip'));
     const intake = window.getComputedStyle(document.querySelector('.canvas-intake-spec'));
@@ -488,6 +493,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
       modalityBorderStyle: modality.borderTopStyle,
       modalityColumns: modality.gridTemplateColumns.split(' ').filter(Boolean).length,
       modalityObjectGridArea: modalityObjects.gridColumnStart,
+      transferRailDisplay: transferRail.display,
+      transferRailGridColumnStart: transferRail.gridColumnStart,
       arrowDisplay: arrow.display,
       chipRadius: chip.borderTopLeftRadius,
     };
@@ -509,6 +516,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     modalityBorderStyle: 'solid',
     modalityColumns: 1,
     modalityObjectGridArea: '1',
+    transferRailDisplay: 'flex',
+    transferRailGridColumnStart: '1',
     arrowDisplay: 'block',
     chipRadius: '0px',
   });

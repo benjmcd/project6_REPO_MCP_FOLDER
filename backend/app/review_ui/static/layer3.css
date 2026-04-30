@@ -2166,6 +2166,28 @@ html[data-theme="workbench"] body.layer3-page .modality-route-label {
     color: color-mix(in srgb, var(--modality-accent) 62%, var(--muted-text));
 }
 
+.modality-transfer-rail {
+    display: flex;
+    grid-column: 1 / -1;
+    justify-self: end;
+    align-items: center;
+    min-width: 0;
+    border: 1px solid color-mix(in srgb, var(--modality-accent) 42%, var(--border-color));
+    padding: 2px 6px;
+    color: color-mix(in srgb, var(--modality-accent) 68%, var(--text-color));
+    font-size: 0.56rem;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    line-height: 1.1;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+html[data-theme="workbench"] body.layer3-page .modality-transfer-rail {
+    border-style: dotted;
+    background: rgba(0, 0, 0, 0.54);
+}
+
 .sublayer-connector {
     position: relative;
     display: flex;
@@ -2559,6 +2581,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
         grid-template-columns: 1fr;
         gap: 8px;
         min-height: 128px;
+        padding-right: 18px;
     }
 
     html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-heading {
@@ -2574,6 +2597,57 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 
     html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-bucket > .flow-object-list {
         grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    }
+
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-transfer-rail {
+        position: absolute;
+        top: 50%;
+        right: -50px;
+        width: 42px;
+        height: 24px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: transparent;
+        overflow: hidden;
+        transform: translateY(-50%);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-transfer-rail::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 13px;
+        top: calc(50% - 2px);
+        height: 4px;
+        background: linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 20%, transparent), var(--modality-accent));
+    }
+
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-transfer-rail::after {
+        content: "";
+        position: absolute;
+        top: 4px;
+        right: 0;
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+        border-left: 14px solid var(--modality-accent);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-unclassified .modality-transfer-rail {
+        position: static;
+        width: fit-content;
+        height: auto;
+        padding: 2px 6px;
+        border: 1px dotted color-mix(in srgb, var(--modality-accent) 42%, #9a9a9a);
+        background: rgba(0, 0, 0, 0.54);
+        color: color-mix(in srgb, var(--modality-accent) 72%, #f8f8f8);
+        overflow: visible;
+        transform: none;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-unclassified .modality-transfer-rail::before,
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-unclassified .modality-transfer-rail::after {
+        content: none;
     }
 
     html[data-theme="workbench"] body.layer3-page .sublayer-connector-3bc {
