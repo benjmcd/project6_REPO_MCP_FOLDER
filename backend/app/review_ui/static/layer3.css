@@ -548,6 +548,23 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     color: #0d0d0d;
 }
 
+html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
+    margin: 8px 10px 0;
+    border-color: rgba(210, 210, 210, 0.34);
+    border-radius: 0;
+    background:
+        linear-gradient(90deg, rgba(248, 248, 248, 0.028) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(248, 248, 248, 0.024) 1px, transparent 1px),
+        #070707;
+    background-size: 36px 36px;
+}
+
+html[data-theme="workbench"] body.layer3-page .sublayer-map-heading {
+    border-bottom-color: rgba(210, 210, 210, 0.28);
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.52);
+}
+
 .layer3-workspace {
     display: flex;
     min-width: 0;
@@ -608,18 +625,18 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
     position: relative;
     isolation: isolate;
     display: grid;
-    grid-template-columns: minmax(410px, 0.94fr) 86px minmax(460px, 1.06fr);
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-        "spec spec spec"
-        "stateflow stateflow stateflow"
-        "threea connector3ab routing";
+        "spec"
+        "workflow";
     align-items: stretch;
     gap: 16px;
     padding: 16px 20px 20px;
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
-    gap: 16px;
+    gap: 12px;
+    padding: 8px 10px 14px;
 }
 
 .diagram-canvas::before {
@@ -630,6 +647,56 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
     border: 2px dotted color-mix(in srgb, var(--border-color) 72%, transparent);
     border-radius: 0;
     pointer-events: none;
+}
+
+.workflow-canvas-field {
+    grid-area: workflow;
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+        "stateflow"
+        "threea"
+        "connector3ab"
+        "routing";
+    align-items: stretch;
+    gap: 14px;
+    min-width: 0;
+    border: 2px dotted color-mix(in srgb, var(--border-color) 68%, transparent);
+    border-radius: 2px;
+    padding: 14px;
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--border-color) 10%, transparent) 1px, transparent 1px),
+        linear-gradient(180deg, color-mix(in srgb, var(--border-color) 8%, transparent) 1px, transparent 1px),
+        color-mix(in srgb, var(--layout-section-bg) 72%, transparent);
+    background-size: 26px 26px;
+}
+
+.workflow-canvas-field::before {
+    content: "";
+    position: absolute;
+    inset: 9px;
+    border: 1px solid color-mix(in srgb, var(--border-color) 22%, transparent);
+    pointer-events: none;
+}
+
+html[data-theme="workbench"] body.layer3-page .workflow-canvas-field {
+    gap: 12px;
+    border-color: rgba(235, 235, 235, 0.58);
+    border-radius: 0;
+    padding: 16px;
+    background:
+        radial-gradient(circle at 14px 14px, rgba(230, 230, 230, 0.095) 0 1px, transparent 1px 100%),
+        linear-gradient(90deg, rgba(248, 248, 248, 0.034) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(248, 248, 248, 0.028) 1px, transparent 1px),
+        rgba(0, 0, 0, 0.44);
+    background-size: 22px 22px, 44px 44px, 44px 44px, auto;
+}
+
+html[data-theme="workbench"] body.layer3-page .workflow-canvas-field::before {
+    inset: 18px;
+    border-style: dotted;
+    border-color: rgba(230, 230, 230, 0.2);
 }
 
 .sublayer-region {
@@ -746,7 +813,7 @@ html[data-theme="workbench"] body.layer3-page .state-node {
 
 html[data-theme="workbench"] body.layer3-page .canvas-state-flow {
     gap: 5px;
-    padding-inline: 6px;
+    padding: 0 6px 2px;
 }
 
 html[data-theme="workbench"] body.layer3-page .state-node {
@@ -782,6 +849,31 @@ html[data-theme="workbench"] body.layer3-page .intake-spec-frame {
     box-shadow:
         inset 0 0 0 7px rgba(0, 0, 0, 0.16),
         inset 0 -12px 0 rgba(210, 210, 210, 0.06);
+}
+
+html[data-theme="workbench"] body.layer3-page .workflow-canvas-field > .sublayer-region {
+    border-width: 1px;
+    border-radius: 0;
+    background:
+        linear-gradient(135deg, color-mix(in srgb, var(--modality-accent) 5%, transparent), transparent 38%),
+        rgba(0, 0, 0, 0.24);
+}
+
+html[data-theme="workbench"] body.layer3-page .workflow-canvas-field > .sublayer-region::before {
+    inset: 10px;
+    border-color: color-mix(in srgb, var(--modality-accent) 34%, rgba(248, 248, 248, 0.25));
+}
+
+html[data-theme="workbench"] body.layer3-page .analysis-routing-plane {
+    position: relative;
+}
+
+html[data-theme="workbench"] body.layer3-page .analysis-routing-plane::before {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border: 1px dotted rgba(248, 248, 248, 0.2);
+    pointer-events: none;
 }
 
 .query-spec-block,
@@ -1850,6 +1942,14 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
         grid-template-columns: minmax(0, 1fr);
         grid-template-areas:
             "spec"
+            "workflow";
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .workflow-canvas-field {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
             "stateflow"
             "threea"
             "connector3ab"
