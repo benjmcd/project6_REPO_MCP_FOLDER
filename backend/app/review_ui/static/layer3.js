@@ -44,6 +44,8 @@ const State = {
     materialFilter: '',
     events: [],
     themePreference: document.documentElement.dataset.themePreference || 'system',
+    activeOperationId: 'intent-band',
+    operationDockManual: false,
 };
 
 const elements = {
@@ -102,6 +104,8 @@ const elements = {
     eventList: document.getElementById('event-list'),
     unavailableList: document.getElementById('unavailable-list'),
     stepChips: Array.from(document.querySelectorAll('.step-chip[data-step-target]')),
+    operationsDock: document.querySelector('.operations-dock'),
+    operationsDockNav: document.getElementById('operations-dock-nav'),
 };
 
 const systemThemeQuery = typeof window.matchMedia === 'function'
@@ -148,6 +152,17 @@ const SUBLAYER_MODALITY_META = {
         empty: 'No unclassified objects are currently reported.',
     },
 };
+const OPERATION_DOCK_STEPS = [
+    { id: 'intent-band', key: 'intent', label: 'Intent', shortLabel: 'Intent' },
+    { id: 'gate-b-band', key: 'gate_b', label: 'Gate B Material Ledger', shortLabel: 'Gate B' },
+    { id: 'gate-c-band', key: 'gate_c', label: 'Gate C Typing Review', shortLabel: 'Gate C' },
+    { id: 'plan-band', key: 'plan', label: 'Plan Preview And Approval', shortLabel: 'Plan' },
+    { id: 'result-review-band', key: 'results', label: 'Result Review', shortLabel: 'Results' },
+    { id: 'package-review-band', key: 'package', label: 'Package Review', shortLabel: 'Package' },
+    { id: 'handoff-export-band', key: 'handoff', label: 'Handoff / Export Preparation', shortLabel: 'Handoff' },
+    { id: 'aps-handoff-band', key: 'aps', label: 'APS Handoff Dispatch', shortLabel: 'APS' },
+    { id: 'external-export-download-band', key: 'external', label: 'External Export / Download', shortLabel: 'External' },
+];
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -2877,6 +2892,9 @@ function navigateToStep(chip) {
     const target = targetId ? document.getElementById(targetId) : null;
     if (!target) return;
     setCurrentStepChip(chip);
+    if (target.closest('.operations-dock')) {
+        setActiveOperation(targetId, { manual: true });
+    }
     target.scrollIntoView({ block: 'start', behavior: 'auto' });
     if (typeof target.focus === 'function') {
         target.focus({ preventScroll: true });
@@ -2889,6 +2907,140 @@ function setStepChip(element, active) {
     element.classList.toggle('active', active);
     element.classList.toggle('unavailable', !active);
     element.dataset.available = active ? 'true' : 'false';
+}
+
+function operationDockStatus(step) {
+    const sessionReady = Boolean(State.gateB?.session_id || currentSessionId());
+    const gateCReady = Boolean(State.gateC?.typing_records?.length || sessionSublayerState().typing_records?.length);
+    const authority = selectedResultAuthority();
+    switch (step.key) {
+    case 'intent':
+        return State.preflight
+            ? { state: 'live', label: 'preflight passed', detail: 'Intent and source posture are loaded.' }
+            : { state: 'ready', label: 'ready', detail: 'Run preflight to load source and material previews.' };
+    case 'gate_b':
+        if (sessionReady) return { state: 'live', label: 'session scoped', detail: 'Gate B has a session-scoped material boundary.' };
+        if ((State.materialPreview?.material_candidates || []).length) return { state: 'ready', label: 'review ready', detail: 'Material preview is loaded and ready for Gate B decisions.' };
+        return { state: 'blocked', label: 'waiting', detail: 'Run preflight before Gate B review.' };
+    case 'gate_c':
+        if (gateCReady) return { state: 'live', label: 'typing loaded', detail: 'Gate C typing is available for modality grouping.' };
+        if (sessionReady) return { state: 'ready', label: 'preview ready', detail: 'Gate B is committed; Gate C preview can classify material.' };
+        return { state: 'blocked', label: 'blocked', detail: 'Commit Gate B before Gate C typing.' };
+    case 'plan':
+        if (State.planApproval) return { state: 'live', label: 'approved', detail: 'Plan approval state is recorded.' };
+        if (State.planPreview) return { state: 'live', label: 'preview loaded', detail: 'Plan preview state is loaded.' };
+        if (canPlanPreview()) return { state: 'ready', label: 'preview ready', detail: 'Gate C typing allows plan preview.' };
+        return { state: 'blocked', label: 'blocked', detail: 'Commit Gate C typing before plan preview.' };
+    case 'results':
+        if (recordedResultReview()) return { state: 'live', label: 'review recorded', detail: 'Selected-pass result review is recorded.' };
+        if (State.resultStatus?.result_status_available === true) return { state: 'ready', label: 'status ready', detail: 'Selected-pass result status can be reviewed.' };
+        if (authority.selected) return { state: 'ready', label: 'selected pass', detail: 'A selected pass exists; inspect terminal result status when available.' };
+        return { state: 'blocked', label: 'blocked', detail: 'Execution/result authority is not available in the current session.' };
+    case 'package':
+        if (packageReviewSubmitState()?.package_review_state || packageReviewSubmitState()?.state) return { state: 'live', label: 'package state', detail: 'Package review state is recorded.' };
+        if (canInspectPackageReviewPreview() || canCommitPackageConstruction() || canSubmitPackageReview()) return { state: 'ready', label: 'package ready', detail: 'Package preview, construction, or review controls are available.' };
+        return { state: 'blocked', label: 'blocked', detail: 'Approve selected-pass result review before package review.' };
+    case 'handoff':
+        if (recordedHandoffExportPrepare()) return { state: 'live', label: 'prepared', detail: 'Internal handoff/export preparation is recorded.' };
+        if (State.sessionSummary?.handoff_export_prepare?.available === true) return { state: 'ready', label: 'prepare ready', detail: 'Package review approval can be prepared for handoff/export.' };
+        return { state: 'blocked', label: 'blocked', detail: 'Approve package review before handoff/export preparation.' };
+    case 'aps':
+        if (recordedApsHandoffDispatch()) return { state: 'live', label: 'dispatched', detail: 'APS handoff dispatch is recorded.' };
+        if (State.sessionSummary?.aps_handoff_dispatch?.available === true) return { state: 'ready', label: 'dispatch ready', detail: 'Prepared handoff/export can dispatch the APS evidence bundle.' };
+        return { state: 'blocked', label: 'blocked', detail: 'Prepare handoff/export before APS dispatch.' };
+    case 'external':
+        if (recordedExternalExportDownloadDelivery()) return { state: 'live', label: 'delivered', detail: 'Same-origin delivery has been requested.' };
+        if (recordedExternalExportDownloadPrepare()) return { state: 'ready', label: 'delivery ready', detail: 'External export/download readiness can be delivered.' };
+        if (State.sessionSummary?.external_export_download?.available === true) return { state: 'ready', label: 'prepare ready', detail: 'APS dispatch can prepare external export/download readiness.' };
+        return { state: 'blocked', label: 'blocked', detail: 'Dispatch APS handoff before external export/download readiness.' };
+    default:
+        return { state: 'blocked', label: 'unknown', detail: 'Operation state is not reported.' };
+    }
+}
+
+function renderOperationsDock() {
+    if (!elements.operationsDock || !elements.operationsDockNav) return;
+    const availableSteps = OPERATION_DOCK_STEPS.filter((step) => document.getElementById(step.id));
+    if (!availableSteps.some((step) => step.id === State.activeOperationId)) {
+        State.activeOperationId = availableSteps[0]?.id || '';
+        State.operationDockManual = false;
+    }
+    if (!State.operationDockManual) {
+        const suggestedStep = [...availableSteps]
+            .reverse()
+            .find((step) => operationDockStatus(step).state !== 'blocked');
+        if (suggestedStep) State.activeOperationId = suggestedStep.id;
+    }
+    elements.operationsDock.dataset.activeOperation = State.activeOperationId;
+    elements.operationsDockNav.innerHTML = availableSteps.map((step, index) => {
+        const status = operationDockStatus(step);
+        const selected = step.id === State.activeOperationId;
+        return `
+            <button class="operation-dock-tab ${selected ? 'active' : ''}" type="button" role="tab"
+                id="operation-tab-${escapeHtml(step.key)}"
+                aria-controls="${escapeHtml(step.id)}"
+                aria-selected="${selected ? 'true' : 'false'}"
+                tabindex="${selected ? '0' : '-1'}"
+                data-operation-target="${escapeHtml(step.id)}"
+                data-operation-state="${escapeHtml(status.state)}"
+                data-operation-index="${index}">
+                <span class="operation-dock-tab-label">${escapeHtml(step.shortLabel)}</span>
+                <span class="operation-dock-tab-state">${escapeHtml(status.label)}</span>
+                <span class="operation-dock-tab-detail">${escapeHtml(status.detail)}</span>
+            </button>
+        `;
+    }).join('');
+    availableSteps.forEach((step) => {
+        const panel = document.getElementById(step.id);
+        const status = operationDockStatus(step);
+        const selected = step.id === State.activeOperationId;
+        panel.classList.toggle('operation-panel-active', selected);
+        panel.classList.toggle('operation-panel-inactive', !selected);
+        panel.dataset.operationState = status.state;
+        panel.dataset.operationActive = selected ? 'true' : 'false';
+        panel.setAttribute('role', 'tabpanel');
+        panel.setAttribute('aria-labelledby', `operation-tab-${step.key}`);
+    });
+    Array.from(elements.operationsDockNav.querySelectorAll('.operation-dock-tab')).forEach((button) => {
+        button.addEventListener('click', () => setActiveOperation(button.dataset.operationTarget, { focusPanel: true, manual: true }));
+        button.addEventListener('keydown', handleOperationDockKeydown);
+    });
+}
+
+function setActiveOperation(operationId, { focusPanel = false, focusButton = false, manual = false } = {}) {
+    if (manual) State.operationDockManual = true;
+    if (!operationId || State.activeOperationId === operationId) {
+        if (focusPanel) document.getElementById(operationId)?.focus({ preventScroll: true });
+        return;
+    }
+    State.activeOperationId = operationId;
+    renderOperationsDock();
+    const panel = document.getElementById(operationId);
+    const button = elements.operationsDockNav?.querySelector(`[data-operation-target="${CSS.escape(operationId)}"]`);
+    if (focusButton && button) button.focus();
+    if (focusPanel && panel) {
+        panel.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+        panel.focus({ preventScroll: true });
+    }
+}
+
+function handleOperationDockKeydown(event) {
+    const keys = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End'];
+    if (!keys.includes(event.key)) return;
+    const buttons = Array.from(elements.operationsDockNav?.querySelectorAll('.operation-dock-tab') || []);
+    const currentIndex = buttons.indexOf(event.currentTarget);
+    if (currentIndex < 0) return;
+    event.preventDefault();
+    let nextIndex = currentIndex;
+    if (event.key === 'Home') {
+        nextIndex = 0;
+    } else if (event.key === 'End') {
+        nextIndex = buttons.length - 1;
+    } else {
+        const delta = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1;
+        nextIndex = (currentIndex + delta + buttons.length) % buttons.length;
+    }
+    setActiveOperation(buttons[nextIndex].dataset.operationTarget, { focusButton: true, manual: true });
 }
 
 function setGateControls() {
@@ -2987,6 +3139,7 @@ function renderAll() {
     renderExternalExportDownloadPreparePanel();
     renderExternalExportDownloadDeliveryPanel();
     setGateControls();
+    renderOperationsDock();
 }
 
 function resultStatusPayload(authority = selectedResultAuthority()) {
