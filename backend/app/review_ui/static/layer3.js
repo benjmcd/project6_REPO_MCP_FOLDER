@@ -178,11 +178,16 @@ function isSharedThemePreference(value) {
     return value === 'system' || value === 'light' || value === 'dark';
 }
 
+function isLayer3ThemePreference(value) {
+    return value === 'workbench' || value === 'claude';
+}
+
 function isValidThemePreference(value) {
-    return isSharedThemePreference(value) || value === 'workbench';
+    return isSharedThemePreference(value) || isLayer3ThemePreference(value);
 }
 
 function resolveTheme(preference) {
+    if (preference === 'claude') return 'workbench';
     if (preference === 'light' || preference === 'dark' || preference === 'workbench') return preference;
     return systemThemeQuery?.matches ? 'dark' : 'light';
 }
@@ -191,6 +196,11 @@ function applyThemePreference(preference, { persist = true } = {}) {
     const normalized = isValidThemePreference(preference) ? preference : 'system';
     document.documentElement.dataset.themePreference = normalized;
     document.documentElement.dataset.theme = resolveTheme(normalized);
+    if (normalized === 'claude') {
+        document.documentElement.dataset.themeVariant = 'claude';
+    } else {
+        delete document.documentElement.dataset.themeVariant;
+    }
     State.themePreference = normalized;
     if (elements.themeSelector) {
         elements.themeSelector.value = normalized;
