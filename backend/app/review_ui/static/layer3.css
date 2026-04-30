@@ -118,12 +118,22 @@ html[data-theme="workbench"] body.layer3-page .layer3-header {
     background: #242424;
     border-bottom-color: #535353;
     box-shadow: inset 0 -1px 0 #373737;
-    min-height: 52px;
-    padding-block: 6px;
+    min-height: 44px;
+    padding-block: 4px;
+}
+
+html[data-theme="workbench"] body.layer3-page .layer3-header h1 {
+    font-size: 1rem;
+}
+
+html[data-theme="workbench"] body.layer3-page .layer3-header .back-link,
+html[data-theme="workbench"] body.layer3-page .layer3-header label,
+html[data-theme="workbench"] body.layer3-page .layer3-header select {
+    font-size: 0.78rem;
 }
 
 html[data-theme="workbench"] body.layer3-page .layer3-body {
-    grid-template-columns: 68px minmax(0, 1fr) 148px;
+    grid-template-columns: 58px minmax(0, 1fr) 124px;
     background:
         linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
         linear-gradient(180deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
@@ -138,13 +148,35 @@ html[data-theme="workbench"] body.layer3-page .context-panel {
 }
 
 html[data-theme="workbench"] body.layer3-page .layer3-stepper {
-    gap: 7px;
-    padding: 10px 8px;
+    gap: 5px;
+    padding: 8px 5px;
 }
 
 html[data-theme="workbench"] body.layer3-page .context-panel {
-    padding: 9px;
-    font-size: 0.7rem;
+    padding: 7px;
+    font-size: 0.66rem;
+}
+
+html[data-theme="workbench"] body.layer3-page .step-chip {
+    border-radius: 0;
+    padding: 7px 4px;
+    font-size: 0.62rem;
+    line-height: 1.1;
+    text-align: center;
+}
+
+html[data-theme="workbench"] body.layer3-page .context-panel h2 {
+    font-size: 0.76rem;
+}
+
+html[data-theme="workbench"] body.layer3-page .context-list dt,
+html[data-theme="workbench"] body.layer3-page .event-list,
+html[data-theme="workbench"] body.layer3-page .unavailable-list {
+    font-size: 0.66rem;
+}
+
+html[data-theme="workbench"] body.layer3-page .context-list dd {
+    font-size: 0.68rem;
 }
 
 html[data-theme="workbench"] body.layer3-page .layer3-workspace {
@@ -2559,6 +2591,12 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
         grid-template-columns: 1fr;
         grid-template-areas:
             "spec"
+            "workflow";
+    }
+
+    .workflow-canvas-field {
+        grid-template-columns: 1fr;
+        grid-template-areas:
             "stateflow"
             "threea"
             "connector3ab"
