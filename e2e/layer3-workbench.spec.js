@@ -414,6 +414,9 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   await expect(page.locator('.manual-source-spec')).toContainText('APS content document');
   await expect(page.locator('.ledger-chip-field')).toBeVisible();
   await expect(page.locator('.ledger-bracket')).toContainText('Session-scoped Materials');
+  await expect(page.locator('.analysis-lane-legend')).toContainText('Input object bank');
+  await expect(page.locator('.analysis-lane-legend')).toContainText('Process / status');
+  await expect(page.locator('.analysis-lane-legend')).toContainText('Output field');
   await expect(page.locator('.plane-arrow-process').first()).toBeVisible();
   await expect(page.locator('.plane-bracket').first()).toBeVisible();
   await expect(page.locator('.sublayer-3a .flow-empty')).toContainText('No material preview');
@@ -473,6 +476,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     const ghostSlot = window.getComputedStyle(document.querySelector('.sublayer-3a .flow-slot-ghost'));
     const arrow = window.getComputedStyle(document.querySelector('.plane-arrow-process'));
     const chip = window.getComputedStyle(document.querySelector('.sublayer-3a .diagram-chip'));
+    const laneLegend = window.getComputedStyle(document.querySelector('.analysis-lane-legend'));
+    const laneLabel = window.getComputedStyle(document.querySelector('.analysis-lane-label'));
     const intake = window.getComputedStyle(document.querySelector('.canvas-intake-spec'));
     const intakeFrame = window.getComputedStyle(document.querySelector('.intake-spec-frame'));
     const stateFlow = window.getComputedStyle(document.querySelector('.canvas-state-flow'));
@@ -502,6 +507,9 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
       ghostSlotBorderStyle: ghostSlot.borderTopStyle,
       arrowDisplay: arrow.display,
       chipRadius: chip.borderTopLeftRadius,
+      laneLegendDisplay: laneLegend.display,
+      laneLegendColumns: laneLegend.gridTemplateColumns.split(' ').filter(Boolean).length,
+      laneLabelTransform: laneLabel.textTransform,
     };
   });
   expect(diagramStyles).toEqual({
@@ -527,6 +535,9 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     ghostSlotBorderStyle: 'dashed',
     arrowDisplay: 'block',
     chipRadius: '0px',
+    laneLegendDisplay: 'grid',
+    laneLegendColumns: 5,
+    laneLabelTransform: 'uppercase',
   });
 
   const desktopFit = await page.evaluate(() => {
@@ -548,14 +559,17 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   const mediumFit = await page.evaluate(() => {
     const firstPlaneFlow = document.querySelector('.analysis-plane .plane-flow');
     const firstPlaneColumnCount = window.getComputedStyle(firstPlaneFlow).gridTemplateColumns.split(' ').filter(Boolean).length;
+    const laneLegend = window.getComputedStyle(document.querySelector('.analysis-lane-legend'));
     return {
       fitsViewport: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
       planeColumnCount: firstPlaneColumnCount,
+      laneLegendDisplay: laneLegend.display,
     };
   });
   expect(mediumFit).toEqual({
     fitsViewport: true,
     planeColumnCount: 1,
+    laneLegendDisplay: 'none',
   });
 
   await page.setViewportSize({ width: 1024, height: 768 });
