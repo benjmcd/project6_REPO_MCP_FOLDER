@@ -431,16 +431,22 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
 
   await page.setViewportSize({ width: 1024, height: 768 });
   const tabletFit = await page.evaluate(() => {
+    const panel = window.getComputedStyle(document.querySelector('#sublayer-map-panel'));
     const intake = window.getComputedStyle(document.querySelector('.canvas-intake-spec'));
     const routing = window.getComputedStyle(document.querySelector('.analysis-routing-plane'));
+    const workflow = window.getComputedStyle(document.querySelector('.workflow-canvas-field'));
     return {
       fitsViewport: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
+      panelTemplateIncludesWorkflow: panel.gridTemplateAreas.includes('workflow'),
+      workflowGridArea: workflow.gridArea,
       intakeColumnCount: intake.gridTemplateColumns.split(' ').filter(Boolean).length,
       routingDisplay: routing.display,
     };
   });
   expect(tabletFit).toEqual({
     fitsViewport: true,
+    panelTemplateIncludesWorkflow: true,
+    workflowGridArea: 'workflow',
     intakeColumnCount: 1,
     routingDisplay: 'grid',
   });
