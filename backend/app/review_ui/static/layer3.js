@@ -106,6 +106,7 @@ const elements = {
     stepChips: Array.from(document.querySelectorAll('.step-chip[data-step-target]')),
     operationsDock: document.querySelector('.operations-dock'),
     operationsDockNav: document.getElementById('operations-dock-nav'),
+    operationsDockSummary: document.getElementById('operations-dock-summary'),
 };
 
 const systemThemeQuery = typeof window.matchMedia === 'function'
@@ -153,15 +154,15 @@ const SUBLAYER_MODALITY_META = {
     },
 };
 const OPERATION_DOCK_STEPS = [
-    { id: 'intent-band', key: 'intent', label: 'Intent', shortLabel: 'Intent' },
-    { id: 'gate-b-band', key: 'gate_b', label: 'Gate B Material Ledger', shortLabel: 'Gate B' },
-    { id: 'gate-c-band', key: 'gate_c', label: 'Gate C Typing Review', shortLabel: 'Gate C' },
-    { id: 'plan-band', key: 'plan', label: 'Plan Preview And Approval', shortLabel: 'Plan' },
-    { id: 'result-review-band', key: 'results', label: 'Result Review', shortLabel: 'Results' },
-    { id: 'package-review-band', key: 'package', label: 'Package Review', shortLabel: 'Package' },
-    { id: 'handoff-export-band', key: 'handoff', label: 'Handoff / Export Preparation', shortLabel: 'Handoff' },
-    { id: 'aps-handoff-band', key: 'aps', label: 'APS Handoff Dispatch', shortLabel: 'APS' },
-    { id: 'external-export-download-band', key: 'external', label: 'External Export / Download', shortLabel: 'External' },
+    { id: 'intent-band', key: 'intent', label: 'Intent', shortLabel: 'Intent', canvasLink: '3A intake setup' },
+    { id: 'gate-b-band', key: 'gate_b', label: 'Gate B Material Ledger', shortLabel: 'Gate B', canvasLink: '3A material ledger' },
+    { id: 'gate-c-band', key: 'gate_c', label: 'Gate C Typing Review', shortLabel: 'Gate C', canvasLink: '3B modality grouping' },
+    { id: 'plan-band', key: 'plan', label: 'Plan Preview And Approval', shortLabel: 'Plan', canvasLink: '3C process planning' },
+    { id: 'result-review-band', key: 'results', label: 'Result Review', shortLabel: 'Results', canvasLink: '3C output authority' },
+    { id: 'package-review-band', key: 'package', label: 'Package Review', shortLabel: 'Package', canvasLink: 'post-3C package controls' },
+    { id: 'handoff-export-band', key: 'handoff', label: 'Handoff / Export Preparation', shortLabel: 'Handoff', canvasLink: 'post-3C handoff controls' },
+    { id: 'aps-handoff-band', key: 'aps', label: 'APS Handoff Dispatch', shortLabel: 'APS', canvasLink: 'post-3C APS bridge' },
+    { id: 'external-export-download-band', key: 'external', label: 'External Export / Download', shortLabel: 'External', canvasLink: 'post-3C delivery controls' },
 ];
 
 function escapeHtml(value) {
@@ -2962,6 +2963,31 @@ function operationDockStatus(step) {
     }
 }
 
+function renderOperationDockSummary(activeStep, status) {
+    if (!elements.operationsDockSummary || !activeStep || !status) return;
+    const activeIndex = OPERATION_DOCK_STEPS.findIndex((step) => step.id === activeStep.id);
+    const positionLabel = activeIndex >= 0
+        ? `${activeIndex + 1} of ${OPERATION_DOCK_STEPS.length}`
+        : 'operation';
+    const stateLabel = status.state === 'live'
+        ? 'Live-backed'
+        : status.state === 'ready'
+            ? 'Action-ready'
+            : 'Unavailable';
+    elements.operationsDockSummary.dataset.operationState = status.state;
+    elements.operationsDockSummary.innerHTML = `
+        <div class="operation-summary-eyebrow">
+            <span>${escapeHtml(positionLabel)}</span>
+            <span>${escapeHtml(activeStep.canvasLink || 'Layer 3 operation')}</span>
+        </div>
+        <div class="operation-summary-main">
+            <h3>${escapeHtml(activeStep.label)}</h3>
+            <span class="operation-summary-state">${escapeHtml(stateLabel)}: ${escapeHtml(status.label)}</span>
+        </div>
+        <p>${escapeHtml(status.detail)}</p>
+    `;
+}
+
 function renderOperationsDock() {
     if (!elements.operationsDock || !elements.operationsDockNav) return;
     const availableSteps = OPERATION_DOCK_STEPS.filter((step) => document.getElementById(step.id));
@@ -2976,6 +3002,9 @@ function renderOperationsDock() {
         if (suggestedStep) State.activeOperationId = suggestedStep.id;
     }
     elements.operationsDock.dataset.activeOperation = State.activeOperationId;
+    const activeStep = availableSteps.find((step) => step.id === State.activeOperationId);
+    const activeStatus = activeStep ? operationDockStatus(activeStep) : null;
+    renderOperationDockSummary(activeStep, activeStatus);
     elements.operationsDockNav.innerHTML = availableSteps.map((step, index) => {
         const status = operationDockStatus(step);
         const selected = step.id === State.activeOperationId;

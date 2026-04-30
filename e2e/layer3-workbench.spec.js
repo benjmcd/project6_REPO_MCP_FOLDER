@@ -223,6 +223,8 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   await expect(page.locator('.operation-dock-tab')).toHaveCount(9);
   await expect(page.locator('.operations-dock > .operation-panel-active')).toHaveCount(1);
   await expect(page.locator('.operations-dock > .operation-panel-inactive').first()).toBeAttached();
+  await expect(page.locator('#operations-dock-summary')).toContainText('Intent');
+  await expect(page.locator('#operations-dock-summary')).toContainText('3A intake setup');
 
   const workbenchStyles = await page.evaluate(() => {
     const bodyStyle = window.getComputedStyle(document.body);
@@ -278,6 +280,8 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   await expect(page.locator('.operation-dock-tab').nth(1)).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#gate-b-band')).toHaveAttribute('data-operation-active', 'true');
   await expect(page.locator('#intent-band')).toHaveAttribute('data-operation-active', 'false');
+  await expect(page.locator('#operations-dock-summary')).toContainText('Gate B Material Ledger');
+  await expect(page.locator('#operations-dock-summary')).toContainText('3A material ledger');
 
   await page.locator('[data-step="sources"]').click();
   await expect(page.locator('#intent-band')).toHaveAttribute('data-operation-active', 'true');
@@ -313,33 +317,41 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   });
   expect(workbenchPlaneColumnCount).toBe(1);
 
-  const workbenchControlColumns = await page.evaluate(() => {
+  await page.locator('[data-operation-target="result-review-band"]').click();
+  await expect(page.locator('#result-review-band')).toHaveAttribute('data-operation-active', 'true');
+  const workbenchResultControlColumns = await page.evaluate(() => {
     const resultControls = window.getComputedStyle(document.querySelector('#result-review-band .result-review-controls'));
+    return resultControls.gridTemplateColumns.split(' ').filter(Boolean).length;
+  });
+  expect(workbenchResultControlColumns).toBe(2);
+  await page.locator('[data-operation-target="aps-handoff-band"]').click();
+  await expect(page.locator('#aps-handoff-band')).toHaveAttribute('data-operation-active', 'true');
+  const workbenchApsControlColumns = await page.evaluate(() => {
     const apsControls = window.getComputedStyle(document.querySelector('#aps-handoff-dispatch-form .result-review-controls'));
-    return {
-      result: resultControls.gridTemplateColumns.split(' ').filter(Boolean).length,
-      aps: apsControls.gridTemplateColumns.split(' ').filter(Boolean).length,
-    };
+    return apsControls.gridTemplateColumns.split(' ').filter(Boolean).length;
   });
-  expect(workbenchControlColumns).toEqual({
-    result: 2,
-    aps: 1,
-  });
+  expect(workbenchApsControlColumns).toBe(1);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.locator('[data-operation-target="result-review-band"]').click();
+  await expect(page.locator('#result-review-band')).toHaveAttribute('data-operation-active', 'true');
   const mobileWorkbenchControlColumns = await page.evaluate(() => {
     const resultControls = window.getComputedStyle(document.querySelector('#result-review-band .result-review-controls'));
-    const apsControls = window.getComputedStyle(document.querySelector('#aps-handoff-dispatch-form .result-review-controls'));
     return {
       result: resultControls.gridTemplateColumns.split(' ').filter(Boolean).length,
-      aps: apsControls.gridTemplateColumns.split(' ').filter(Boolean).length,
     };
   });
   expect(mobileWorkbenchControlColumns).toEqual({
     result: 1,
-    aps: 1,
   });
+  await page.locator('[data-operation-target="aps-handoff-band"]').click();
+  await expect(page.locator('#aps-handoff-band')).toHaveAttribute('data-operation-active', 'true');
+  const mobileApsControlColumns = await page.evaluate(() => {
+    const apsControls = window.getComputedStyle(document.querySelector('#aps-handoff-dispatch-form .result-review-controls'));
+    return apsControls.gridTemplateColumns.split(' ').filter(Boolean).length;
+  });
+  expect(mobileApsControlColumns).toBe(1);
 });
 
 test('Layer 3 workbench renders a responsive live-state sublayer material and analysis map', async ({ page }) => {
