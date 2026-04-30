@@ -127,8 +127,11 @@ test('Layer 3 workbench keeps Layer 3-only theme preferences page-local', async 
   ]);
   await expect(page).toHaveTitle(/Layer 3 Workbench.*Prototype/);
   await expect(page.locator('.app-shell')).toBeVisible();
+  await expect(page.locator('.chrome-bar')).toHaveCount(0);
+  await expect(page.locator('header.app-header.layer3-header')).toBeVisible();
+  await expect(page.locator('a.back-link')).toHaveAttribute('href', '/review/nrc-aps');
   await expect(page.locator('.proto-badge')).toHaveText('PROTOTYPE');
-  await expect(page.locator('#theme-selector')).toHaveCount(0);
+  await expect(page.locator('#theme-selector')).toHaveValue('claude');
   const storageAfterClaude = await page.evaluate(() => ({
     sharedTheme: localStorage.getItem('nrc_aps_review_theme'),
     layer3Theme: localStorage.getItem('layer3_workbench_theme'),
@@ -138,7 +141,10 @@ test('Layer 3 workbench keeps Layer 3-only theme preferences page-local', async 
     layer3Theme: 'workbench',
   });
 
-  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await Promise.all([
+    page.waitForURL('**/review/layer3'),
+    page.locator('#theme-selector').selectOption('workbench'),
+  ]);
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'workbench');
   await expect(page.locator('#theme-selector')).toHaveValue('workbench');
 
@@ -442,12 +448,13 @@ test('Layer 3 workbench opens the exact Claude prototype as a durable standalone
   ]);
 
   await expect(page).toHaveTitle(/Layer 3 Workbench.*Prototype/);
-  await expect(page.locator('.chrome-bar')).toBeVisible();
+  await expect(page.locator('.chrome-bar')).toHaveCount(0);
+  await expect(page.locator('header.app-header.layer3-header')).toBeVisible();
   await expect(page.locator('.proto-badge')).toHaveText('PROTOTYPE');
+  await expect(page.locator('#theme-selector')).toHaveValue('claude');
   await expect(page.locator('.nav-tab[data-screen="overview"]')).toContainText('Overview');
   await expect(page.locator('.state-btn[data-state="loaded"]')).toHaveClass(/active/);
   await expect(page.locator('#screen-intent')).toHaveClass(/active/);
-  await expect(page.locator('#theme-selector')).toHaveCount(0);
 
   await page.locator('.nav-tab[data-screen="overview"]').click();
   await expect(page.locator('#screen-overview')).toHaveClass(/active/);
@@ -461,11 +468,19 @@ test('Layer 3 workbench opens the exact Claude prototype as a durable standalone
   const mobileState = await page.evaluate(() => ({
     screenCount: document.querySelectorAll('.screen').length,
     hasPrototypeBadge: document.querySelector('.proto-badge')?.textContent?.trim() === 'PROTOTYPE',
+    themeValue: document.querySelector('#theme-selector')?.value,
   }));
   expect(mobileState).toEqual({
     screenCount: 5,
     hasPrototypeBadge: true,
+    themeValue: 'claude',
   });
+
+  await Promise.all([
+    page.waitForURL('**/review/layer3'),
+    page.locator('#theme-selector').selectOption('dark'),
+  ]);
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
 });
 
 test('Layer 3 workbench renders a responsive live-state sublayer material and analysis map', async ({ page }) => {
