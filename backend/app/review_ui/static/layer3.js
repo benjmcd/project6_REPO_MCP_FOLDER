@@ -1664,6 +1664,10 @@ function renderFlowObjects(items, emptyMessage, options = {}) {
 
 function renderModalityBucket(bucket) {
     const { modality, meta, objects, state } = bucket;
+    const transferState = modality === 'unclassified' ? 'held' : (objects.length ? 'ready' : 'empty');
+    const transferLabel = modality === 'unclassified'
+        ? 'Held in 3B'
+        : (objects.length ? 'Feeds 3C plane' : 'Awaiting objects');
     return `
         <section class="modality-bucket modality-${escapeHtml(modality)} viz-state-${escapeHtml(state)}" aria-label="${escapeHtml(meta.label)}" data-modality="${escapeHtml(modality)}" data-object-count="${objects.length}">
             <div class="modality-heading">
@@ -1672,6 +1676,7 @@ function renderModalityBucket(bucket) {
                 <span>${objects.length} objects</span>
             </div>
             <div class="modality-route-label" aria-hidden="true">Object bank / grouping field</div>
+            <span class="modality-transfer-rail" data-transfer-state="${escapeHtml(transferState)}">${escapeHtml(transferLabel)}</span>
             ${renderFlowObjects(objects, meta.empty, { fieldLabel: `${meta.label} object bank`, slotCount: 3 })}
         </section>
     `;
