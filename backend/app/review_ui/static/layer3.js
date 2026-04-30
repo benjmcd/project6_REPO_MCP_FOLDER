@@ -2893,7 +2893,11 @@ function navigateToStep(chip) {
     if (!target) return;
     setCurrentStepChip(chip);
     if (target.closest('.operations-dock')) {
-        setActiveOperation(targetId, { manual: true });
+        const operationPanel = target.closest('.workband');
+        const operationId = OPERATION_DOCK_STEPS.some((step) => step.id === operationPanel?.id)
+            ? operationPanel.id
+            : targetId;
+        setActiveOperation(operationId, { manual: true });
     }
     target.scrollIntoView({ block: 'start', behavior: 'auto' });
     if (typeof target.focus === 'function') {
