@@ -907,6 +907,10 @@ test('Layer 3 workbench records selected-pass result review only after status au
   await expect(page.locator('.execution-state-field')).toContainText('Result status');
   await expect(page.locator('.analysis-plane.modality-quantitative .plane-process')).toContainText('Result status');
   await expect(page.locator('.analysis-plane.modality-quantitative .plane-outputs')).toContainText('Output payload');
+  await expect(page.locator('.analysis-plane.modality-qualitative .plane-outputs')).toContainText('No live output');
+  await expect(page.locator('.analysis-plane.modality-qualitative .plane-outputs')).not.toContainText('Output payload');
+  await expect(page.locator('.analysis-plane.modality-hybrid .plane-outputs')).toContainText('No live output');
+  await expect(page.locator('.analysis-plane.modality-hybrid .plane-outputs')).not.toContainText('Output payload');
   await expect(page.locator('#result-review-panel')).toContainText('result_review_ui_review_ready');
 
   await page.locator('#result-review-decision').selectOption('changes_requested');
