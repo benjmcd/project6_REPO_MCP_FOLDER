@@ -2710,7 +2710,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     font-size: 0.8rem;
 }
 
-@media (min-width: 1500px) {
+@media (min-width: 1360px) {
     html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
         grid-template-columns: minmax(0, 1fr);
         grid-template-areas:
@@ -2822,6 +2822,10 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
         padding-right: 26px;
     }
 
+    html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-unclassified {
+        padding-right: 10px;
+    }
+
     html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-heading {
         grid-template-columns: auto minmax(0, 1fr) auto;
         align-items: center;
@@ -2879,6 +2883,10 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 
     html[data-theme="workbench"] body.layer3-page .analysis-routing-plane .modality-unclassified .modality-transfer-rail {
         position: static;
+        grid-column: 1;
+        grid-row: auto;
+        justify-self: start;
+        align-self: start;
         width: fit-content;
         height: auto;
         padding: 2px 6px;
@@ -2959,7 +2967,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     }
 }
 
-@media (max-width: 1499px) {
+@media (max-width: 1359px) {
     html[data-theme="workbench"] body.layer3-page .analysis-lane-legend {
         display: none;
     }
