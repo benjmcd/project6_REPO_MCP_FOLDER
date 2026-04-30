@@ -489,6 +489,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     const modality = window.getComputedStyle(document.querySelector('.modality-bucket.modality-quantitative'));
     const modalityObjects = window.getComputedStyle(document.querySelector('.modality-bucket.modality-quantitative .flow-object-list'));
     const transferRail = window.getComputedStyle(document.querySelector('.modality-bucket.modality-quantitative .modality-transfer-rail'));
+    const heldRailElement = document.querySelector('.analysis-routing-plane .modality-bucket.modality-unclassified .modality-transfer-rail');
+    const heldRail = window.getComputedStyle(heldRailElement);
     const ghostSlot = window.getComputedStyle(document.querySelector('.sublayer-3a .flow-slot-ghost'));
     const arrow = window.getComputedStyle(document.querySelector('.plane-arrow-process'));
     const chip = window.getComputedStyle(document.querySelector('.sublayer-3a .diagram-chip'));
@@ -533,7 +535,13 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
       modalityObjectGridArea: modalityObjects.gridColumnStart,
       transferRailDisplay: transferRail.display,
       transferRailGridColumnStart: transferRail.gridColumnStart,
+      transferRailPosition: transferRail.position,
+      transferRailWritingMode: transferRail.writingMode,
       transferRailWidth: Math.round(Number.parseFloat(transferRail.width)),
+      heldRailText: heldRailElement.textContent.trim(),
+      heldRailPosition: heldRail.position,
+      heldRailWhiteSpace: heldRail.whiteSpace,
+      heldRailWritingMode: heldRail.writingMode,
       ghostSlotDisplay: ghostSlot.display,
       ghostSlotBorderStyle: ghostSlot.borderTopStyle,
       arrowDisplay: arrow.display,
@@ -574,7 +582,13 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     modalityObjectGridArea: '1',
     transferRailDisplay: 'flex',
     transferRailGridColumnStart: '3',
+    transferRailPosition: 'absolute',
+    transferRailWritingMode: 'vertical-rl',
     transferRailWidth: 64,
+    heldRailText: 'Held in 3B',
+    heldRailPosition: 'static',
+    heldRailWhiteSpace: 'nowrap',
+    heldRailWritingMode: 'horizontal-tb',
     ghostSlotDisplay: 'block',
     ghostSlotBorderStyle: 'dashed',
     arrowDisplay: 'block',
