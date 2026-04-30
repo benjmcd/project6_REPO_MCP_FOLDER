@@ -573,7 +573,7 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     modalityColumns: 1,
     modalityObjectGridArea: '1',
     transferRailDisplay: 'flex',
-    transferRailGridColumnStart: '1',
+    transferRailGridColumnStart: '3',
     transferRailWidth: 64,
     ghostSlotDisplay: 'block',
     ghostSlotBorderStyle: 'dashed',
