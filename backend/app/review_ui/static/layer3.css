@@ -2474,9 +2474,25 @@ html[data-theme="workbench"] body.layer3-page .plane-column {
         rgba(4, 4, 4, 0.2);
 }
 
+html[data-theme="workbench"] body.layer3-page .plane-field-node {
+    box-shadow: none;
+}
+
+html[data-theme="workbench"] body.layer3-page .plane-input-bank,
+html[data-theme="workbench"] body.layer3-page .plane-output-field {
+    border-style: dotted;
+}
+
 html[data-theme="workbench"] body.layer3-page .plane-outputs {
     min-height: 150px;
     background:
+        repeating-linear-gradient(
+            90deg,
+            color-mix(in srgb, var(--modality-accent) 8%, transparent) 0,
+            color-mix(in srgb, var(--modality-accent) 8%, transparent) 1px,
+            transparent 1px,
+            transparent 44px
+        ),
         linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 5%, transparent), transparent 78%),
         rgba(30, 30, 30, 0.28);
 }
@@ -2777,7 +2793,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     }
 
     html[data-theme="workbench"] body.layer3-page .analysis-lane-legend {
-        grid-template-columns: minmax(210px, 0.82fr) 52px minmax(170px, 0.56fr) 52px minmax(320px, 1.12fr);
+        grid-template-columns: minmax(180px, 0.76fr) 42px minmax(140px, 0.52fr) 42px minmax(250px, 1.08fr);
     }
 
     html[data-theme="workbench"] body.layer3-page .analysis-lane-arrow {
@@ -2785,7 +2801,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     }
 
     html[data-theme="workbench"] body.layer3-page .plane-flow {
-        grid-template-columns: minmax(210px, 0.82fr) 52px minmax(170px, 0.56fr) 52px minmax(320px, 1.12fr);
+        grid-template-columns: minmax(180px, 0.76fr) 42px minmax(140px, 0.52fr) 42px minmax(250px, 1.08fr);
     }
 
     html[data-theme="workbench"] body.layer3-page .plane-column,
