@@ -220,6 +220,9 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   await page.locator('#theme-selector').selectOption('workbench');
   await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('.operation-dock-tab')).toHaveCount(9);
+  await expect(page.locator('.operations-dock > .operation-panel-active')).toHaveCount(1);
+  await expect(page.locator('.operations-dock > .operation-panel-inactive').first()).toBeAttached();
 
   const workbenchStyles = await page.evaluate(() => {
     const bodyStyle = window.getComputedStyle(document.body);
@@ -275,6 +278,10 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   await expect(page.locator('.operation-dock-tab').nth(1)).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('#gate-b-band')).toHaveAttribute('data-operation-active', 'true');
   await expect(page.locator('#intent-band')).toHaveAttribute('data-operation-active', 'false');
+
+  await page.locator('[data-step="sources"]').click();
+  await expect(page.locator('#intent-band')).toHaveAttribute('data-operation-active', 'true');
+  await expect(page.locator('#source-fieldset')).toBeVisible();
 
   await page.locator('#theme-selector').selectOption('light');
   await page.reload({ waitUntil: 'domcontentloaded' });
