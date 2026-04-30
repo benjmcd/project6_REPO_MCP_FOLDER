@@ -548,6 +548,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
       transferRailWidth: Math.round(Number.parseFloat(transferRail.width)),
       heldRailText: heldRailElement.textContent.trim(),
       heldRailPosition: heldRail.position,
+      heldRailGridColumnStart: heldRail.gridColumnStart,
+      heldRailAlignSelf: heldRail.alignSelf,
       heldRailWhiteSpace: heldRail.whiteSpace,
       heldRailWritingMode: heldRail.writingMode,
       ghostSlotDisplay: ghostSlot.display,
@@ -599,6 +601,8 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     transferRailWidth: 64,
     heldRailText: 'Held in 3B',
     heldRailPosition: 'static',
+    heldRailGridColumnStart: '1',
+    heldRailAlignSelf: 'start',
     heldRailWhiteSpace: 'nowrap',
     heldRailWritingMode: 'horizontal-tb',
     ghostSlotDisplay: 'block',
@@ -668,9 +672,9 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   });
   expect(mediumFit).toEqual({
     fitsViewport: true,
-    planeColumnCount: 1,
-    laneLegendDisplay: 'none',
-    laneSpineDisplay: 'none',
+    planeColumnCount: 5,
+    laneLegendDisplay: 'grid',
+    laneSpineDisplay: 'block',
   });
 
   await page.setViewportSize({ width: 1024, height: 768 });
