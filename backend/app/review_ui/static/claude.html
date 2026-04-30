@@ -69,45 +69,69 @@ html, body {
 ::-webkit-scrollbar-thumb:hover { background: #444; }
 
 /* ═══════════════════════════════════════════════════════════
-   CHROME BAR
+   LAYER 3 HEADER
    ═══════════════════════════════════════════════════════════ */
-.chrome-bar {
+.app-header.layer3-header {
   height: 38px;
   background: #161616;
   border-bottom: 1px solid #252525;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 14px;
-  gap: 10px;
   flex-shrink: 0;
   user-select: none;
 }
-.chrome-dots { display: flex; gap: 6px; align-items: center; }
-.chrome-dot {
-  width: 11px; height: 11px; border-radius: 50%;
-}
-.dot-red    { background: #ff5f57; }
-.dot-yellow { background: #febc2e; }
-.dot-green  { background: #28c840; }
 
-.chrome-url {
-  flex: 1;
-  background: #111;
-  border: 1px solid #2e2e2e;
-  border-radius: 4px;
-  padding: 3px 12px;
-  color: #666;
-  font-family: var(--f-mono);
-  font-size: 11px;
-  pointer-events: none;
-  max-width: 480px;
+.layer3-header-left,
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.chrome-label {
-  color: #444;
-  font-size: 11px;
+.back-link {
+  color: #6f9fc7;
+  font-size: 12px;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+
+.back-link:hover,
+.back-link:focus-visible {
+  color: #9ec5e5;
+  text-decoration: underline;
+}
+
+.layer3-header h1 {
+  color: #d8d8d8;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.header-right label {
+  color: #777;
   font-family: var(--f-mono);
-  letter-spacing: 0.05em;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#theme-selector {
+  color: #d8d8d8;
+  background: #101010;
+  border: 1px solid #323232;
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-family: var(--f-mono);
+  font-size: 11px;
+}
+
+#theme-selector:focus-visible {
+  outline: 2px solid #6f9fc7;
+  outline-offset: 2px;
 }
 
 .proto-badge {
@@ -1092,6 +1116,24 @@ html, body {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .app-header.layer3-header {
+    height: auto;
+    min-height: 38px;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    padding: 6px 10px;
+  }
+  .layer3-header-left { min-width: 0; }
+  .layer3-header h1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .header-right {
+    width: 100%;
+    gap: 8px;
+  }
+  #theme-selector { max-width: 160px; }
   .overview-content { min-width: unset; padding: 16px 12px 40px; }
   .flow-rail { flex-direction: column; }
   .stage-arrow-col { transform: rotate(90deg); margin: 0 auto; }
@@ -1104,18 +1146,24 @@ html, body {
 
 <div class="app-shell">
 
-  <!-- ── Chrome Bar ── -->
-  <div class="chrome-bar">
-    <div class="chrome-dots">
-      <div class="chrome-dot dot-red"></div>
-      <div class="chrome-dot dot-yellow"></div>
-      <div class="chrome-dot dot-green"></div>
+  <!-- ── Layer 3 App Header ── -->
+  <header class="app-header layer3-header">
+    <div class="header-left layer3-header-left">
+      <a href="/review/nrc-aps" class="back-link" aria-label="Back to Pipeline Review">&larr; Back</a>
+      <h1>Layer 3 Workbench</h1>
     </div>
-    <div class="chrome-url">localhost:8000/review/layer3</div>
-    <div style="flex:1"></div>
-    <div class="chrome-label">Layer 3 Workbench</div>
-    <div class="proto-badge">PROTOTYPE</div>
-  </div>
+    <div class="header-right">
+      <span class="proto-badge">PROTOTYPE</span>
+      <label for="theme-selector">Theme:</label>
+      <select id="theme-selector">
+        <option value="system">System</option>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <option value="workbench">Workbench</option>
+        <option value="claude" selected>Claude</option>
+      </select>
+    </div>
+  </header>
 
   <!-- ── Nav Bar ── -->
   <div class="nav-bar">
@@ -1388,6 +1436,40 @@ html, body {
      ═══════════════════════════════════════════════════════════ -->
 <script>
 'use strict';
+
+/* -- Theme handoff ------------------------------------------------------ */
+const THEME_STORAGE_KEY = 'nrc_aps_review_theme';
+const LAYER3_THEME_STORAGE_KEY = 'layer3_workbench_theme';
+
+function persistLayer3ThemePreference(preference) {
+  try {
+    if (preference === 'system' || preference === 'light' || preference === 'dark') {
+      localStorage.removeItem(LAYER3_THEME_STORAGE_KEY);
+      localStorage.setItem(THEME_STORAGE_KEY, preference);
+    } else if (preference === 'workbench') {
+      localStorage.setItem(LAYER3_THEME_STORAGE_KEY, preference);
+      if (localStorage.getItem(THEME_STORAGE_KEY) === preference) {
+        localStorage.removeItem(THEME_STORAGE_KEY);
+      }
+    }
+  } catch (error) {
+    // Theme selection still navigates even when storage is unavailable.
+  }
+}
+
+function initializeThemeSelector() {
+  const selector = document.getElementById('theme-selector');
+  if (!selector) return;
+  selector.value = 'claude';
+  selector.addEventListener('change', (event) => {
+    const preference = event.target.value;
+    if (preference === 'claude') return;
+    persistLayer3ThemePreference(preference);
+    window.location.assign('/review/layer3');
+  });
+}
+
+initializeThemeSelector();
 
 /* ── State ─────────────────────────────────────────────── */
 let currentScreen = 'intent';
