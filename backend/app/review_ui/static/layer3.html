@@ -9,6 +9,7 @@
             const sharedStorageKey = 'nrc_aps_review_theme';
             const layer3StorageKey = 'layer3_workbench_theme';
             const isSharedThemePreference = (value) => value === 'system' || value === 'light' || value === 'dark';
+            const isLayer3ThemePreference = (value) => value === 'workbench' || value === 'claude';
             let preference = 'system';
             try {
                 let sharedPreference = localStorage.getItem(sharedStorageKey);
@@ -27,7 +28,7 @@
                     localStorage.removeItem(layer3StorageKey);
                     layer3Preference = null;
                 }
-                if (layer3Preference === 'workbench') {
+                if (isLayer3ThemePreference(layer3Preference)) {
                     preference = layer3Preference;
                 } else if (isSharedThemePreference(sharedPreference)) {
                     preference = sharedPreference;
@@ -37,11 +38,15 @@
             }
             const prefersDark = typeof window.matchMedia === 'function'
                 && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const resolvedTheme = preference === 'dark' || preference === 'light' || preference === 'workbench'
-                ? preference
-                : (prefersDark ? 'dark' : 'light');
+            const resolvedTheme = preference === 'claude'
+                ? 'workbench'
+                : (preference === 'dark' || preference === 'light' || preference === 'workbench' ? preference
+                : (prefersDark ? 'dark' : 'light'));
             document.documentElement.dataset.theme = resolvedTheme;
             document.documentElement.dataset.themePreference = preference;
+            if (preference === 'claude') {
+                document.documentElement.dataset.themeVariant = 'claude';
+            }
         }());
     </script>
     <link rel="stylesheet" href="/review/layer3/static/review.css">
@@ -60,6 +65,7 @@
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
                 <option value="workbench">Workbench</option>
+                <option value="claude">Claude</option>
             </select>
         </div>
     </header>
