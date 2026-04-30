@@ -492,6 +492,9 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     const processNode = document.querySelector('.plane-process-node');
     const outputField = document.querySelector('.plane-output-field');
     const outputFieldStyle = window.getComputedStyle(outputField);
+    const laneFrame = document.querySelector('.plane-flow-frame');
+    const laneFrameStyle = window.getComputedStyle(laneFrame);
+    const laneSpineStyle = window.getComputedStyle(document.querySelector('.plane-lane-spine'));
     return {
       intakeDisplay: intake.display,
       intakeGridArea: intake.gridArea,
@@ -528,6 +531,9 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
       outputFieldRole: outputField.getAttribute('data-plane-role'),
       outputFieldHeading: outputField.querySelector('h5')?.textContent?.trim(),
       outputFieldBorderStyle: outputFieldStyle.borderTopStyle,
+      laneFrameRole: laneFrame.getAttribute('data-plane-role'),
+      laneFrameBorderTopStyle: laneFrameStyle.borderTopStyle,
+      laneSpineDisplay: laneSpineStyle.display,
     };
   });
   expect(diagramStyles).toEqual({
@@ -566,6 +572,9 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     outputFieldRole: 'output-field',
     outputFieldHeading: 'Output / Result Field',
     outputFieldBorderStyle: 'dotted',
+    laneFrameRole: 'analysis-environment-lane',
+    laneFrameBorderTopStyle: 'solid',
+    laneSpineDisplay: 'block',
   });
 
   const desktopFit = await page.evaluate(() => {
@@ -608,16 +617,19 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     const firstPlaneFlow = document.querySelector('.analysis-plane .plane-flow');
     const firstPlaneColumnCount = window.getComputedStyle(firstPlaneFlow).gridTemplateColumns.split(' ').filter(Boolean).length;
     const laneLegend = window.getComputedStyle(document.querySelector('.analysis-lane-legend'));
+    const laneSpine = window.getComputedStyle(document.querySelector('.plane-lane-spine'));
     return {
       fitsViewport: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
       planeColumnCount: firstPlaneColumnCount,
       laneLegendDisplay: laneLegend.display,
+      laneSpineDisplay: laneSpine.display,
     };
   });
   expect(mediumFit).toEqual({
     fitsViewport: true,
     planeColumnCount: 1,
     laneLegendDisplay: 'none',
+    laneSpineDisplay: 'none',
   });
 
   await page.setViewportSize({ width: 1024, height: 768 });

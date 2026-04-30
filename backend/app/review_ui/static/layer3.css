@@ -2391,6 +2391,52 @@ html[data-theme="workbench"] body.layer3-page .analysis-plane-title h4 {
     white-space: nowrap;
 }
 
+.plane-flow-frame {
+    position: relative;
+    min-width: 0;
+}
+
+html[data-theme="workbench"] body.layer3-page .plane-flow-frame {
+    border-top: 1px solid color-mix(in srgb, var(--modality-accent) 50%, transparent);
+    border-bottom: 1px dotted color-mix(in srgb, var(--modality-accent) 34%, transparent);
+    padding: 10px 0 8px;
+}
+
+.plane-lane-spine,
+.plane-lane-bracket {
+    display: none;
+}
+
+html[data-theme="workbench"] body.layer3-page .plane-lane-spine,
+html[data-theme="workbench"] body.layer3-page .plane-lane-bracket {
+    display: block;
+    pointer-events: none;
+}
+
+html[data-theme="workbench"] body.layer3-page .plane-lane-spine {
+    position: absolute;
+    z-index: 0;
+    left: 16px;
+    right: 12px;
+    top: calc(50% - 2px);
+    height: 4px;
+    background:
+        linear-gradient(90deg, color-mix(in srgb, var(--modality-accent) 24%, transparent), var(--diagram-flow-color, var(--modality-accent)) 52%, color-mix(in srgb, var(--modality-accent) 22%, transparent));
+    opacity: 0.52;
+}
+
+html[data-theme="workbench"] body.layer3-page .plane-lane-bracket {
+    position: absolute;
+    z-index: 0;
+    left: 4px;
+    top: 22px;
+    bottom: 18px;
+    width: 14px;
+    border-top: 2px solid color-mix(in srgb, var(--modality-accent) 58%, #f8f8f8);
+    border-bottom: 2px solid color-mix(in srgb, var(--modality-accent) 58%, #f8f8f8);
+    border-left: 2px solid color-mix(in srgb, var(--modality-accent) 58%, #f8f8f8);
+}
+
 .plane-flow {
     display: grid;
     grid-template-columns: minmax(220px, 0.88fr) 86px minmax(210px, 0.78fr) 86px minmax(320px, 1.22fr);
@@ -2398,6 +2444,11 @@ html[data-theme="workbench"] body.layer3-page .analysis-plane-title h4 {
     align-items: stretch;
     gap: 0;
     min-width: 0;
+}
+
+html[data-theme="workbench"] body.layer3-page .plane-flow {
+    position: relative;
+    z-index: 1;
 }
 
 html[data-theme="workbench"] body.layer3-page .plane-flow {
@@ -2817,6 +2868,14 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 
 @media (max-width: 1499px) {
     html[data-theme="workbench"] body.layer3-page .analysis-lane-legend {
+        display: none;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .plane-flow-frame {
+        padding-left: 14px;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .plane-lane-spine {
         display: none;
     }
 
