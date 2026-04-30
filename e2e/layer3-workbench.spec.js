@@ -227,6 +227,7 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
     const workbandStyle = window.getComputedStyle(document.querySelector('#gate-b-band'));
     const fieldsetStyle = window.getComputedStyle(document.querySelector('#source-fieldset'));
     const chipStyle = window.getComputedStyle(document.querySelector('[data-step="gate_b"]'));
+    const dockStyle = window.getComputedStyle(document.querySelector('.operations-dock'));
     return {
       bodyBackground: bodyStyle.backgroundColor,
       railBorderStyle: railStyle.borderTopStyle,
@@ -237,6 +238,8 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
       workbandBackground: workbandStyle.backgroundColor,
       fieldsetBorderStyle: fieldsetStyle.borderTopStyle,
       chipBackground: chipStyle.backgroundColor,
+      dockDisplay: dockStyle.display,
+      dockOverflowX: dockStyle.overflowX,
     };
   });
   expect(workbenchStyles).toMatchObject({
@@ -246,6 +249,8 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
     workbandBorderLeftWidth: '0px',
     workbandBackground: 'rgba(0, 0, 0, 0)',
     fieldsetBorderStyle: 'dashed',
+    dockDisplay: 'flex',
+    dockOverflowX: 'auto',
   });
   expect(workbenchStyles.railBackground).not.toBe('rgba(0, 0, 0, 0)');
   expect(workbenchStyles.chipBackground).not.toBe('rgba(0, 0, 0, 0)');
