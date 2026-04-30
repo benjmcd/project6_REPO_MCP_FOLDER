@@ -346,18 +346,18 @@ html[data-theme="workbench"] body.layer3-page #external-export-download-delivery
 html[data-theme="workbench"] body.layer3-page .plan-summary-grid,
 html[data-theme="workbench"] body.layer3-page .plan-preview-grid,
 html[data-theme="workbench"] body.layer3-page .result-review-grid {
-    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(126px, 1fr));
+    gap: 7px;
 }
 
 @media (min-width: 1100px) {
     html[data-theme="workbench"] body.layer3-page .layer3-workspace > .workband:not(.sublayer-map-band) {
         display: grid;
-        grid-template-columns: minmax(210px, 0.2fr) minmax(0, 1fr);
-        gap: 0 14px;
-        margin: 9px 10px 0;
-        padding: 0 0 10px;
-        border-top-color: rgba(248, 248, 248, 0.3);
+        grid-template-columns: minmax(132px, 0.12fr) minmax(0, 1fr);
+        gap: 0 10px;
+        margin: 6px 10px 0;
+        padding: 0 0 7px;
+        border-top-color: rgba(248, 248, 248, 0.22);
     }
 
     html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) > .section-heading {
@@ -366,14 +366,14 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
         align-content: start;
         display: grid;
         justify-content: stretch;
-        gap: 8px;
+        gap: 6px;
         min-height: 100%;
-        border-right: 1px dotted color-mix(in srgb, var(--l3-stage-accent) 42%, #767676);
+        border-right: 1px dotted color-mix(in srgb, var(--l3-stage-accent) 34%, #767676);
         border-bottom: 0;
-        padding: 8px 12px 8px 18px;
+        padding: 7px 8px 7px 16px;
         background:
-            linear-gradient(90deg, color-mix(in srgb, var(--l3-stage-accent) 13%, transparent), transparent 58%),
-            rgba(8, 8, 8, 0.32);
+            linear-gradient(90deg, color-mix(in srgb, var(--l3-stage-accent) 9%, transparent), transparent 62%),
+            rgba(8, 8, 8, 0.22);
     }
 
     html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) > :not(.section-heading) {
@@ -382,9 +382,10 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
     }
 
     html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading h2 {
-        max-width: 18ch;
-        font-size: 0.78rem;
-        line-height: 1.18;
+        max-width: 13ch;
+        font-size: 0.68rem;
+        line-height: 1.12;
+        text-transform: uppercase;
     }
 
     html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading .action-row {
@@ -393,14 +394,14 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
 
     html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading .primary-btn,
     html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) .section-heading .secondary-btn {
-        min-height: 31px;
-        padding: 7px 9px;
-        font-size: 0.72rem;
+        min-height: 27px;
+        padding: 5px 7px;
+        font-size: 0.64rem;
     }
 
     html[data-theme="workbench"] body.layer3-page .intent-form,
     html[data-theme="workbench"] body.layer3-page .result-review-form {
-        padding: 9px 0 0;
+        padding: 6px 0 0;
     }
 
     html[data-theme="workbench"] body.layer3-page .filter-row,
@@ -419,7 +420,7 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
     html[data-theme="workbench"] body.layer3-page .plan-summary-card,
     html[data-theme="workbench"] body.layer3-page .plan-list,
     html[data-theme="workbench"] body.layer3-page .typing-card {
-        background: rgba(8, 8, 8, 0.32);
+        background: rgba(8, 8, 8, 0.18);
     }
 }
 
@@ -428,28 +429,67 @@ html[data-theme="workbench"] body.layer3-page .plan-list,
 html[data-theme="workbench"] body.layer3-page .result-review-card {
     border-style: dotted;
     border-radius: 0;
-    padding: 9px 10px;
+    padding: 7px 8px;
     background:
-        linear-gradient(180deg, rgba(248, 248, 248, 0.035), rgba(248, 248, 248, 0.012)),
-        rgba(9, 9, 9, 0.54);
+        linear-gradient(180deg, rgba(248, 248, 248, 0.022), rgba(248, 248, 248, 0.006)),
+        rgba(7, 7, 7, 0.32);
     box-shadow: none;
 }
 
 html[data-theme="workbench"] body.layer3-page .result-review-card {
-    min-height: 92px;
+    min-height: 62px;
 }
 
 html[data-theme="workbench"] body.layer3-page .plan-summary-card strong,
 html[data-theme="workbench"] body.layer3-page .plan-list h3,
 html[data-theme="workbench"] body.layer3-page .result-review-card strong {
-    margin-bottom: 5px;
+    margin-bottom: 4px;
     color: #f8f8f8;
-    font-size: 0.78rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 html[data-theme="workbench"] body.layer3-page .result-review-card ul,
 html[data-theme="workbench"] body.layer3-page .plan-list ul {
-    line-height: 1.42;
+    line-height: 1.3;
+}
+
+html[data-theme="workbench"] body.layer3-page .result-review-card li,
+html[data-theme="workbench"] body.layer3-page .plan-list li {
+    margin-bottom: 2px;
+}
+
+html[data-theme="workbench"] body.layer3-page .result-review-card,
+html[data-theme="workbench"] body.layer3-page .plan-summary-card,
+html[data-theme="workbench"] body.layer3-page .plan-list,
+html[data-theme="workbench"] body.layer3-page .typing-card,
+html[data-theme="workbench"] body.layer3-page .source-fieldset {
+    font-size: 0.74rem;
+}
+
+html[data-theme="workbench"] body.layer3-page .result-review-controls {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 7px 9px;
+}
+
+html[data-theme="workbench"] body.layer3-page .result-review-controls label {
+    font-size: 0.72rem;
+    padding-top: 6px;
+    text-transform: uppercase;
+}
+
+html[data-theme="workbench"] body.layer3-page .result-review-controls textarea {
+    min-height: 54px;
+}
+
+html[data-theme="workbench"] body.layer3-page .material-table th,
+html[data-theme="workbench"] body.layer3-page .material-table td {
+    padding: 7px 8px;
+}
+
+html[data-theme="workbench"] body.layer3-page .material-table th {
+    font-size: 0.66rem;
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
