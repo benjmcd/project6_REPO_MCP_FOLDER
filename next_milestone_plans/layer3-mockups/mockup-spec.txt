@@ -76,12 +76,12 @@ Mockup-observed:
 Repo-confirmed implemented:
 
 - Confirmed in project6-origin/main source code, tests, migrations, or live route/static registrations.
-- Examples: Layer 3 backend tables, layer3_session_entry.py, layer3_typing_entry.py, layer3_pass_entry.py, layer3_package_entry.py, the bounded PR #184 /review/layer3 plus /api/v1/layer3/... first-slice shell/API, the PR #194 read-only plan-preview endpoint/UI step after committed Gate C typing, the PR #199 approval-only plan persistence endpoint/UI step, APS handoff service family, Analyst Insight page, and adjacent NRC APS review UI routes.
+- Examples: Layer 3 backend tables, layer3_session_entry.py, layer3_typing_entry.py, layer3_pass_entry.py, layer3_package_entry.py, the bounded /review/layer3 plus /api/v1/layer3/... workbench family from PR #184 onward, later explicitly frozen plan/revision/execution/result/package/handoff/export slices, APS handoff service family, Analyst Insight page, and adjacent NRC APS review UI routes.
 
 Repo-confirmed planning-only:
 
 - Present in current-main planning docs but explicitly not active implementation.
-- Examples: the broader end-to-end workbench beyond the bounded /review/layer3 and /api/v1/layer3/... first-slice, preview, and approval-only slices, the full workbench state machine, and qualitative single-item execution prep.
+- Examples: the broader end-to-end workbench beyond the bounded /review/layer3 and /api/v1/layer3/... explicitly frozen slices, the full workbench state machine, and qualitative single-item execution prep.
 
 Inference:
 
@@ -100,8 +100,8 @@ Do not treat this specification as activation permission for the entire mockup.
 
 Future planning should obey these constraints:
 
-- Do not claim the full mockup workbench exists merely because the bounded first-slice /review/layer3 route, read-only plan-preview step, and approval-only plan-persistence step are now added and tested.
-- Do not claim the full mockup API exists merely because the bounded first-slice /api/v1/layer3/... router now includes preview-only and approval-only plan endpoints.
+- Do not claim the full mockup workbench exists merely because bounded /review/layer3 UI states are added and tested.
+- Do not claim the full mockup API exists merely because bounded /api/v1/layer3/... endpoints are added and tested.
 - Do not relabel /review/analyst-insight as the broader Layer 3 workbench.
 - Do not relabel Workbench Compare or Candidate B Trace as the broader Layer 3 workbench.
 - Do not treat RAG/vector/semantic search as repo-live implementation until a concrete service and proof exist.
@@ -458,10 +458,10 @@ Insights/Facts/Data Generated:
 
 Workbench/Controller:
 
-- The broader repo-planned operator surface that would own the end-to-end Layer 3 lifecycle beyond the currently live bounded first-slice, preview, and approval-only slices.
-- Current main already ships the bounded PR #184 /review/layer3 and /api/v1/layer3/... first-slice route/API.
-- Current main also includes post-PR184 closeouts through PR #190 that preserve response-envelope, blocked Gate B error, Gate C authority-rail count/source-context, and progress-tracking accuracy without expanding that bounded first-slice scope; PR #194 then adds only the read-only plan-preview step after explicit Gate C typing commit, and PR #199 adds only approval-only plan persistence after that server-backed preview.
-- Those same route families remain the adopted candidate location for later explicitly frozen workbench slices, but the full target workbench is not active merely because the bounded first-slice, preview, and approval-only slices exist.
+- The broader repo-planned operator surface that would own the end-to-end Layer 3 lifecycle beyond the currently live bounded explicitly frozen slices.
+- Current main already ships the bounded /review/layer3 and /api/v1/layer3/... workbench family from PR #184 onward.
+- Current main also includes later explicitly frozen bounded slices for plan preview, plan approval/revision, execution readiness/selection/start, result status/review, package review/construction/submit, handoff/export preparation, APS handoff dispatch, external export/download readiness and same-origin delivery, plus subsequent Workbench visual/state-continuity passes. These additions still do not activate the full mockup workflow, qualitative/hybrid execution, public/signed URLs, connector dispatch, generic downstream dispatch, package mutation/reconstruction, source/schema/runtime widening, or full mockup behavior.
+- Those same route families remain the adopted candidate location for later explicitly frozen workbench slices, but the full target workbench is not active merely because bounded slices exist.
 
 7. User Intent Entry
 
@@ -803,7 +803,7 @@ Current repo-live limitation:
 
 14. Typing Review And Operator Overrides
 
-The broader workbench planning docs define typing_review as a bounded override-only review state. The bounded PR #184 first-slice route/API, PR #194 read-only plan-preview step, and PR #199 approval-only plan-persistence step do not make the full typing_review workflow active by themselves.
+The broader workbench planning docs define typing_review as a bounded override-only review state. The bounded /review/layer3 and /api/v1/layer3/... workbench family does not make the full typing_review workflow, qualitative execution, hybrid execution, or ungoverned operator override behavior active by itself.
 
 Expected UI behavior:
 
@@ -918,7 +918,7 @@ Mockup intent:
 
 Repo-live planning alignment:
 
-- The broader workbench planning state machine includes plan_review. PR #194 makes only read-only plan preview live after explicit Gate C typing commit, and PR #199 adds only approval-only plan persistence after server-backed preview; together they still do not make the full plan_review rejection/revision, execution, results, or package workflow active.
+- The broader workbench planning state machine includes plan_review. Current main includes bounded preview, approval, revision, execution, result, package, handoff, and export slices where explicitly frozen and implemented; together they still do not make the full plan_review, execution, results, package, or handoff workflow active in the mockup's unrestricted target-state sense.
 - plan_review is defined as bounded approve/reject only, with no execution side effects during review.
 - L3AnalysisPlan has approved_by_operator and approved_at fields.
 
@@ -1206,13 +1206,13 @@ Implication:
 
 - This is the target operator workflow implied by the mockups.
 - Current repo-live backend assets cover meaningful parts of the chain.
-- Current repo-live UI exposes the bounded PR #184 /review/layer3 first-slice workbench, with post-implementation closeouts through PR #190, plus the PR #194 read-only plan-preview step and PR #199 approval-only plan-persistence step after committed Gate C typing, but not this full end-to-end target workflow.
+- Current repo-live UI exposes the bounded /review/layer3 workbench family, including later explicitly frozen plan/revision/execution/result/package/handoff/export controls and visual/state-continuity refinements, but not this full end-to-end target workflow.
 
 23D.2 Frontend / UI Presentation Model
 
 ```mermaid
 flowchart TB
-    Shell["Bounded /review/layer3 shell plus preview/approval slices are live<br/>full target workbench is not live"] --> Header["Top navigation and session/status strip"]
+    Shell["Bounded /review/layer3 workbench states are live<br/>full target workbench is not live"] --> Header["Top navigation and session/status strip"]
     Shell --> Main["Primary workbench area"]
     Shell --> Side["Action / Event / Context panels"]
 
@@ -1246,7 +1246,7 @@ flowchart TB
     RepoLive["Repo-live confirmed"] --> LiveBackend["Layer 3 backend model/service spine"]
     RepoLive --> LiveAdjacentUI["Adjacent NRC APS and Analyst Insight UI surfaces"]
     RepoLive --> LiveRetrieval["Token/query APS retrieval evidence"]
-    RepoLive --> LiveFirstSlice["Bounded /review/layer3 plus /api/v1/layer3 first-slice, preview, and approval-only shell/API"]
+    RepoLive --> LiveFirstSlice["Bounded /review/layer3 plus /api/v1/layer3 explicitly frozen shell/API states"]
 
     PlanningOnly["Repo-live planning-only"] --> PlannedRoute["Later slices on /review/layer3 plus /api/v1/layer3/... route family"]
     PlanningOnly --> PlannedWorkbench["Broader workbench state machine"]
@@ -1260,7 +1260,7 @@ flowchart TB
     Unresolved --> Semantics["Gate B, typing, pass, package, and handoff semantics"]
     Unresolved --> Proof["Fixtures, proofs, runtime/write boundaries"]
 
-    PlannedRoute -.-> RouteGuard["Bounded first slice plus preview/approval are live<br/>full workbench requires later freeze"]
+    PlannedRoute -.-> RouteGuard["Bounded explicitly frozen slices are live<br/>full workbench requires later freeze"]
     RouteGuard -.-> TargetUI
     TargetUI -.-> PromotionGuard["Must not be promoted from mockup alone"]
     PromotionGuard -.-> RepoLive
@@ -1347,11 +1347,10 @@ Repo-live route/API posture:
 
 Current repo-live status:
 
-- Bounded PR #184 /review/layer3 route exists.
-- Bounded PR #184 /api/v1/layer3/... API family exists.
-- Bounded PR #194 /api/v1/layer3/plan/preview and gated plan-preview UI state exist after explicit Gate C typing commit.
-- Bounded PR #199 /api/v1/layer3/plan/approve and approval-only UI state exist after server-backed plan preview.
-- No broader end-to-end workbench route/API exists beyond the bounded first-slice shell/API, read-only plan-preview step, and approval-only plan-persistence step.
+- Bounded /review/layer3 route exists.
+- Bounded /api/v1/layer3/... API family exists.
+- Explicitly frozen plan/revision/execution/result/package/handoff/export states exist where current main has admitted and tested them.
+- No broader end-to-end workbench route/API exists beyond the bounded explicitly frozen slices.
 
 Implementation design requirement:
 
@@ -1489,9 +1488,9 @@ Planning implication:
 Repo-live frontend/UI state:
 
 - Live adjacent pages exist for NRC APS review, document trace, workbench compare, Candidate B trace, and Analyst Insight.
-- Repo-live route evidence now shows a bounded /review/layer3 first-slice page.
-- Repo-live API evidence now shows a bounded /api/v1/layer3/... first-slice family.
-- Current planning docs preserve /review/layer3 plus /api/v1/layer3/... as the bounded first-slice route/API plus later preview/approval plan slices and as the candidate route family for later slices, not as proof that the full mockup workbench is active.
+- Repo-live route evidence now shows a bounded /review/layer3 workbench page with later explicitly frozen states.
+- Repo-live API evidence now shows a bounded /api/v1/layer3/... workbench family with later explicitly frozen endpoints.
+- Current planning docs preserve /review/layer3 plus /api/v1/layer3/... as the bounded candidate route/API family for explicitly frozen slices, not as proof that the full mockup workbench is active.
 
 Mockup target-state:
 
@@ -1501,7 +1500,7 @@ Mockup target-state:
 
 Implications that must be addressed before frontend implementation:
 
-- Decide whether the bounded /review/layer3 and /api/v1/layer3/... first-slice, preview, and approval-only route/API family remains canonical for later end-to-end workbench slices.
+- Decide whether the bounded /review/layer3 and /api/v1/layer3/... route/API family remains canonical for later end-to-end workbench slices.
 - Decide whether the visual diagram language becomes the production UI itself, a navigational map inside a conventional workbench, onboarding/help content, or a planning-only explanatory artifact.
 - Decide how the primary layout should behave in actual use: staged horizontal flow, vertical stepper, tabbed workbench, split-pane review surface, canvas/map plus detail panel, or another explicit layout.
 - Decide whether the side Action/Event/Context panels are always visible, collapsible, stage-specific, modal, or only explanatory.
@@ -1514,7 +1513,7 @@ Implications that must be addressed before frontend implementation:
 
 Frontend contradictions or target-vs-live gaps:
 
-- The mockup shows a full Layer 3 workbench; the live repo currently ships only the bounded PR #184 /review/layer3 first-slice shell/API plus closeouts through PR #190, the PR #194 read-only plan-preview step, and the PR #199 approval-only plan-persistence step.
+- The mockup shows a full Layer 3 workbench; the live repo currently ships a bounded /review/layer3 and /api/v1/layer3/... workbench family built through later explicitly frozen slices, but still not the full mockup workflow or unbounded source/modality/downstream behavior.
 - The mockup shows a broad staged workflow; live adjacent pages are separate NRC APS/Analyst Insight surfaces, not the unified Layer 3 operator route.
 - The mockup implies direct user operation across several Layer 3 gates; current live UI exposes the bounded first-slice flow, read-only plan preview, and approval-only plan persistence, but still does not expose full Gate B/Gate C editing depth, rejection workflow, pass monitor, reconciliation, package review, or downstream handoff as one end-to-end operator workflow.
 - The mockup's later-stage visual presentation remains less concrete than early-stage entry/retrieval/gate visuals. Later stage UI should not be over-specified from the current images alone.
@@ -1536,7 +1535,7 @@ Repo-live backend state:
 - Current main contains Layer 3 models for sessions, selection manifests, descriptors, retrieval events, material snapshots, typing records, analysis units/groups/sets, analysis plans, pass runs, reconciliation records, and output packages.
 - Current main contains Layer 3 service entry points for session/selection, typing, pass, package, and APS handoff families.
 - Current main contains adjacent NRC APS review and Analyst Insight API/UI surfaces.
-- Current main proves a bounded public /api/v1/layer3/... API family for the PR #184 first-slice workbench plus PR #194 read-only plan preview and PR #199 approval-only plan persistence, but not the full mockup workbench API.
+- Current main proves a bounded public /api/v1/layer3/... API family for the PR #184-and-later workbench slices, including later explicitly frozen plan/revision/execution/result/package/handoff/export boundaries, but not the full mockup workbench API.
 
 Mockup target-state:
 
@@ -1710,8 +1709,8 @@ User decisions needed:
 
 These are not repo bugs by themselves, but they are important planning gaps:
 
-- The bounded /review/layer3 first-slice route plus read-only plan-preview and approval-only plan-persistence UI states are live, but their presence does not make the full mockup UI live.
-- The bounded /api/v1/layer3/... first-slice API family plus preview-only and approval-only plan endpoints are live, but their presence does not make the full mockup API/workflow live.
+- The bounded /review/layer3 workbench UI states through the later explicitly frozen slices are live, but their presence does not make the full mockup UI live.
+- The bounded /api/v1/layer3/... workbench API family through the later explicitly frozen slices is live, but its presence does not make the full mockup API/workflow live.
 - The absence of proven repo-live RAG/vector/semantic retrieval is not a contradiction if first-slice retrieval is token/query based, but it is a contradiction if the implementation plan claims semantic retrieval.
 - The absence of live qualitative/hybrid execution is not a contradiction if those lanes remain deferred, but it is a contradiction if first-slice UI exposes them as operational.
 - Existing NRC APS, Workbench Compare, Candidate B Trace, Document Trace, and Analyst Insight pages are relevant adjacent surfaces, but they are not equivalent to the full Layer 3 mockup workbench.
@@ -1720,8 +1719,8 @@ These are not repo bugs by themselves, but they are important planning gaps:
 
 Before implementation planning proceeds, the user or planning doc should answer these directly:
 
-1. Should the bounded /review/layer3 first-slice route remain the accepted UI entry route for later end-to-end workbench slices?
-2. Should the bounded /api/v1/layer3/... first-slice API family remain the accepted public API family for later end-to-end workbench slices?
+1. Should the bounded /review/layer3 route remain the accepted UI entry route for later end-to-end workbench slices?
+2. Should the bounded /api/v1/layer3/... API family remain the accepted public API family for later end-to-end workbench slices?
 3. What is the first active implementation slice?
 4. Is the first slice UI-only, backend-only, service-first, API-first, or combined?
 5. Which mockup stages are explicitly out of scope for the first slice?
@@ -1747,7 +1746,7 @@ The safest interpretation is:
 
 - Treat the mockups as target-state product/UX intent.
 - Treat current Layer 3 backend models/services as real implementation assets where repo-live evidence confirms them.
-- Treat /review/layer3 and /api/v1/layer3/... as the bounded PR #184 first-slice route/API plus PR #194 read-only plan-preview step and PR #199 approval-only plan-persistence step, and as the candidate route/API family for later explicitly frozen slices, not as automatic activation of the full mockup workflow.
+- Treat /review/layer3 and /api/v1/layer3/... as the bounded PR #184-and-later route/API family for explicitly frozen slices, not as automatic activation of the full mockup workflow.
 - Treat RAG/vector/semantic retrieval, qualitative execution, and hybrid execution as unresolved/deferred unless explicitly scoped into a slice.
 - Treat adjacent NRC APS and Analyst Insight pages as integration/compatibility constraints, not as the workbench itself.
 - Start implementation with one narrow slice and direct proof, then expand only after each boundary is frozen and verified.
@@ -1771,7 +1770,7 @@ Current audit result:
 - It is intentionally scoped to repo-tracked Layer 3 progress, settled APS-family state, deferred scope, and deferred activation criteria.
 - It already represents the broader workbench route family as deferred/planning-only rather than active.
 - It already represents broader qualitative, hybrid, comparative, or cross-modal Layer 3 breadth as deferred rather than active.
-- It already treats runtime DB writes, schema widening, and route/UI widening as deferred unless later activation criteria are met.
+- It already treats runtime DB/schema widening and route/UI widening beyond explicitly admitted slices as deferred unless later activation criteria are met.
 - The manifest-declared refresh repo paths were checked during this pass; declared paths exist on project6-origin/main.
 
 Implication for this mockup spec:
@@ -1784,7 +1783,7 @@ Implication for this mockup spec:
 
 Overclaim guard:
 
-- Do not use this spec alone to promote /review/layer3 or /api/v1/layer3/... beyond the bounded PR #184 first-slice live scope plus PR #194 read-only plan-preview step and PR #199 approval-only plan-persistence step.
+- Do not use this spec alone to promote /review/layer3 or /api/v1/layer3/... beyond the bounded explicitly frozen slices already admitted by current main.
 - Do not promote RAG/vector/semantic retrieval to repo-live implementation from this spec alone.
 - Do not promote qualitative or hybrid execution to active implementation from this spec alone.
 - Do not treat mockup visual completeness as implementation readiness until section 28A.10 questions are answered or intentionally deferred.
@@ -2089,14 +2088,14 @@ Authority boundary:
 
 - This section is a decision aid for future planning.
 - It does not activate implementation.
-- It does not expand the bounded PR #184 /review/layer3 and /api/v1/layer3/... first-slice shell/API plus PR #194 read-only plan-preview step and PR #199 approval-only plan-persistence step into the full mockup workbench.
-- It does not authorize RAG/vector retrieval, qualitative execution, hybrid execution, runtime DB writes, schema widening, route/UI widening, or broad downstream handoff.
+- It does not expand the bounded /review/layer3 and /api/v1/layer3/... workbench family into the full mockup workbench.
+- It does not authorize RAG/vector retrieval, qualitative execution, hybrid execution, runtime DB/schema widening beyond explicitly admitted slices, route/UI widening beyond explicitly admitted slices, or broad downstream handoff.
 - If any recommended default conflicts with a later explicit freeze, implementation plan, or repo-confirmed constraint, the later explicit authority must win.
 - Option 1 is the recommended/default decision. Option 2 is the next-best fallback. Option 3 is the third-best or highest-risk acceptable alternative, usually suitable only if explicitly frozen later.
 
 Recommended posture:
 
-Treat PR #184 as the already-landed narrow /review/layer3 plus /api/v1/layer3/... first slice, with closeout/correction passes through PR #190 that do not expand its scope. PR #191 added 30_L3_WB_PLAN_PREVIEW_FREEZE.md and 31_L3_WB_PLAN_PREVIEW_API_AND_STATE_CONTRACT.md as planning docs that narrow the next possible slice to plan preview after explicit Gate C typing commit; PRs #192 and #193 record progress/tracked-metadata state without expanding live scope. PR #194 implements that next slice as read-only plan preview only, using the owner-service preview path without materializing plan/pass rows. PR #198 freezes the approval boundary, and PR #199 implements only approval-only `L3AnalysisPlan` persistence after server-backed preview without starting execution. Any later implementation slice should remain explicitly frozen, UI-led but API-backed, compose around existing Layer 3 backend owner services, reuse repo-proven token/query retrieval first unless a later freeze admits more, and keep schema widening, runtime DB writes, RAG/vector claims, qualitative execution, hybrid execution, automated handoff, downstream execution/results/package review, and broad adjacent-surface rewrites out of scope by default.
+Treat PR #184 as the already-landed narrow /review/layer3 plus /api/v1/layer3/... first slice, with later slices admitted only when explicitly frozen, implemented, tested, and merged. Current main has since admitted bounded plan/revision/execution/result/package/handoff/export behavior and visual/state-continuity refinements in that same route/API family, but those additions still do not activate the full mockup workbench. Any later implementation slice should remain explicitly frozen, UI-led but API-backed, compose around existing Layer 3 backend owner services, reuse repo-proven token/query retrieval first unless a later freeze admits more, and keep schema widening, runtime DB writes beyond admitted state, RAG/vector claims, qualitative execution, hybrid execution, ungoverned automated handoff, package mutation/reconstruction, public/signed URLs, connector dispatch, generic downstream dispatch, and broad adjacent-surface rewrites out of scope by default.
 
 | Item | Problem / situation summary | Recommended decision options | Reasoning |
 |---|---|---|---|
