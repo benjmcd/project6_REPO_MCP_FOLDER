@@ -1757,31 +1757,31 @@ function renderAnalysisPlane(plane) {
                 <span class="plane-state-label">${escapeHtml(sublayerStateLabel(state))}</span>
             </div>
             <div class="plane-flow">
-                <section class="plane-column plane-inputs">
-                    <h5>Input objects</h5>
+                <section class="plane-column plane-inputs plane-field-node plane-input-bank" data-plane-role="input-bank">
+                    <h5>Input Object Bank</h5>
                     <div class="plane-input-group">
                         <span class="plane-bracket" aria-hidden="true"></span>
                         ${renderFlowObjects(inputs, 'No live input object is available for this plane.', { fieldLabel: `${meta.label} input objects`, slotCount: 3 })}
                     </div>
                 </section>
                 <span class="plane-arrow plane-arrow-process" aria-hidden="true"></span>
-                <section class="plane-process" aria-label="${escapeHtml(meta.plane)} process status">
+                <section class="plane-process plane-field-node plane-process-node" data-plane-role="process-status" aria-label="${escapeHtml(meta.plane)} process status">
                     <h5>Process / Status</h5>
                     <ul>${processBody}</ul>
                 </section>
                 <span class="plane-arrow plane-arrow-output" aria-hidden="true"></span>
-                <section class="plane-column plane-outputs">
-                    <h5>Output cards</h5>
+                <section class="plane-column plane-outputs plane-field-node plane-output-field" data-plane-role="output-field">
+                    <h5>Output / Result Field</h5>
                     ${renderFlowObjects(outputs.map((card) => ({
                         id: card.secondary,
                         label: card.label,
-                        kind: 'output card',
+                        kind: 'output field',
                         primary: card.primary,
                         secondary: card.secondary,
                         badge: card.badge,
                         modality,
                         live: true,
-                    })), 'No live output, insight, fact, or data card has been produced for this plane.', { fieldLabel: `${meta.label} output field`, slotCount: 6 })}
+                    })), 'No live output, insight, fact, or data item has been produced for this plane.', { fieldLabel: `${meta.label} generated output field`, slotCount: 6 })}
                 </section>
             </div>
         </article>
