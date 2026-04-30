@@ -351,13 +351,57 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
 }
 
 @media (min-width: 1100px) {
-    html[data-theme="workbench"] body.layer3-page .layer3-workspace > .workband:not(.sublayer-map-band) {
+    html[data-theme="workbench"] body.layer3-page .operations-dock {
+        display: flex;
+        gap: 10px;
+        margin: 8px 10px 0;
+        padding: 8px 8px 10px;
+        border-top: 1px solid rgba(248, 248, 248, 0.18);
+        border-bottom: 1px solid rgba(248, 248, 248, 0.16);
+        background:
+            linear-gradient(90deg, rgba(248, 248, 248, 0.02) 1px, transparent 1px),
+            linear-gradient(180deg, rgba(248, 248, 248, 0.016) 1px, transparent 1px),
+            rgba(3, 3, 3, 0.5);
+        background-size: 28px 28px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-padding-inline: 8px;
+        scroll-snap-type: x proximity;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock::before {
+        content: "Operations dock";
+        flex: 0 0 18px;
+        align-self: stretch;
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        color: rgba(248, 248, 248, 0.58);
+        font-size: 0.56rem;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock > .workband:not(.sublayer-map-band) {
         display: grid;
         grid-template-columns: minmax(132px, 0.12fr) minmax(0, 1fr);
         gap: 0 10px;
-        margin: 6px 10px 0;
+        flex: 0 0 clamp(420px, 46vw, 760px);
+        max-height: min(72vh, 760px);
+        margin: 0;
         padding: 0 0 7px;
         border-top-color: rgba(248, 248, 248, 0.22);
+        overflow-y: auto;
+        scroll-snap-align: start;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock > #plan-band,
+    html[data-theme="workbench"] body.layer3-page .operations-dock > #result-review-band,
+    html[data-theme="workbench"] body.layer3-page .operations-dock > #package-review-band,
+    html[data-theme="workbench"] body.layer3-page .operations-dock > #handoff-export-band,
+    html[data-theme="workbench"] body.layer3-page .operations-dock > #aps-handoff-band,
+    html[data-theme="workbench"] body.layer3-page .operations-dock > #external-export-download-band {
+        flex-basis: clamp(560px, 64vw, 980px);
     }
 
     html[data-theme="workbench"] body.layer3-page .workband:not(.sublayer-map-band) > .section-heading {
@@ -646,6 +690,10 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-heading {
     flex-direction: column;
     overflow: visible;
     background: var(--bg-color);
+}
+
+.operations-dock {
+    display: contents;
 }
 
 .authority-rail {
