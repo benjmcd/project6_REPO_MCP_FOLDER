@@ -1623,6 +1623,7 @@ function currentSublayerVisualizationModel() {
 function renderFlowObjects(items, emptyMessage, options = {}) {
     const fieldLabel = options.fieldLabel || 'Object field';
     const slotCount = options.slotCount || 4;
+    const ghostSlotCount = Math.max(0, slotCount - items.length);
     if (!items.length) {
         return `
             <div class="flow-empty diagram-empty" data-field-label="${escapeHtml(fieldLabel)}">
@@ -1634,7 +1635,7 @@ function renderFlowObjects(items, emptyMessage, options = {}) {
         `;
     }
     return `
-        <div class="flow-object-list diagram-chip-grid" data-field-label="${escapeHtml(fieldLabel)}" data-object-count="${items.length}">
+        <div class="flow-object-list diagram-chip-grid" data-field-label="${escapeHtml(fieldLabel)}" data-object-count="${items.length}" data-slot-count="${escapeHtml(slotCount)}">
             ${items.map((item) => {
                 const modality = item.modality || 'unclassified';
                 const meta = modalityMeta(modality);
@@ -1658,6 +1659,7 @@ function renderFlowObjects(items, emptyMessage, options = {}) {
                     </article>
                 `;
             }).join('')}
+            ${Array.from({ length: ghostSlotCount }).map(() => '<span class="flow-slot-ghost" aria-hidden="true"></span>').join('')}
         </div>
     `;
 }

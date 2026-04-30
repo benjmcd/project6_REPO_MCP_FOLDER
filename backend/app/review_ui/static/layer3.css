@@ -1888,6 +1888,35 @@ html[data-theme="workbench"] body.layer3-page .flow-object strong {
     background: color-mix(in srgb, var(--modality-accent) 7%, transparent);
 }
 
+.flow-slot-ghost {
+    display: block;
+    min-height: 32px;
+    border: 1px dashed color-mix(in srgb, var(--modality-accent) 58%, var(--border-color));
+    background:
+        repeating-linear-gradient(
+            90deg,
+            color-mix(in srgb, var(--modality-accent) 12%, transparent) 0,
+            color-mix(in srgb, var(--modality-accent) 12%, transparent) 8px,
+            transparent 8px,
+            transparent 14px
+        ),
+        color-mix(in srgb, var(--modality-accent) 5%, transparent);
+    opacity: 0.62;
+}
+
+html[data-theme="workbench"] body.layer3-page .flow-slot-ghost {
+    border-radius: 0;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.34);
+}
+
+html[data-theme="workbench"] body.layer3-page .ledger-chip-field .flow-slot-ghost {
+    min-height: 38px;
+}
+
+html[data-theme="workbench"] body.layer3-page .plane-outputs .flow-slot-ghost {
+    min-height: 24px;
+}
+
 .modality-bucket,
 .analysis-plane {
     --modality-accent: var(--primary-color);
