@@ -354,6 +354,7 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
     html[data-theme="workbench"] body.layer3-page .operations-dock {
         display: grid;
         grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
         align-items: stretch;
         gap: 12px;
         margin: 8px 10px 0;
@@ -375,6 +376,7 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
     html[data-theme="workbench"] body.layer3-page .operations-dock-nav {
         display: grid;
         grid-column: 1;
+        grid-row: 1 / span 2;
         align-self: start;
         gap: 7px;
         max-height: min(78vh, 860px);
@@ -468,13 +470,85 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
         color: #90f870;
     }
 
+    html[data-theme="workbench"] body.layer3-page .operations-dock-summary {
+        display: grid;
+        grid-column: 2;
+        grid-row: 1;
+        gap: 6px;
+        min-width: 0;
+        padding: 9px 12px;
+        border: 1px dotted rgba(248, 248, 248, 0.36);
+        border-left: 3px solid color-mix(in srgb, var(--primary-color) 62%, #f8f8f8);
+        background:
+            linear-gradient(90deg, color-mix(in srgb, var(--l3-stage-accent) 9%, transparent), transparent 78%),
+            rgba(0, 0, 0, 0.34);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-summary-eyebrow,
+    html[data-theme="workbench"] body.layer3-page .operation-summary-main {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-width: 0;
+        flex-wrap: wrap;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-summary-eyebrow {
+        color: rgba(248, 248, 248, 0.66);
+        font-size: 0.58rem;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-summary-main h3 {
+        margin: 0;
+        color: #f8f8f8;
+        font-size: 0.86rem;
+        line-height: 1.12;
+        text-transform: uppercase;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-summary-state {
+        width: fit-content;
+        padding: 2px 7px;
+        border: 1px solid rgba(248, 248, 248, 0.24);
+        color: color-mix(in srgb, var(--l3-stage-accent) 70%, #f8f8f8);
+        font-size: 0.6rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock-summary[data-operation-state="blocked"] .operation-summary-state {
+        color: rgba(248, 248, 248, 0.62);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock-summary[data-operation-state="ready"] .operation-summary-state {
+        color: #fbbf24;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock-summary[data-operation-state="live"] .operation-summary-state {
+        color: #90f870;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock-summary p {
+        max-width: 92ch;
+        margin: 0;
+        color: rgba(248, 248, 248, 0.72);
+        font-size: 0.72rem;
+        line-height: 1.28;
+    }
+
     html[data-theme="workbench"] body.layer3-page .operations-dock > .workband:not(.sublayer-map-band) {
         display: grid;
         grid-template-columns: minmax(132px, 0.12fr) minmax(0, 1fr);
         gap: 0 10px;
         grid-column: 2;
-        min-height: 420px;
-        max-height: min(78vh, 860px);
+        grid-row: 2;
+        align-self: start;
+        min-height: clamp(260px, 34vh, 420px);
+        max-height: min(62vh, 760px);
         margin: 0;
         padding: 0 0 7px;
         border-top-color: rgba(248, 248, 248, 0.22);
@@ -487,7 +561,7 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
     html[data-theme="workbench"] body.layer3-page .operations-dock > #handoff-export-band,
     html[data-theme="workbench"] body.layer3-page .operations-dock > #aps-handoff-band,
     html[data-theme="workbench"] body.layer3-page .operations-dock > #external-export-download-band {
-        min-height: 480px;
+        min-height: clamp(300px, 40vh, 480px);
     }
 
     html[data-theme="workbench"] body.layer3-page .operations-dock > .workband.operation-panel-inactive:not(.sublayer-map-band) {
@@ -559,6 +633,116 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
     html[data-theme="workbench"] body.layer3-page .plan-list,
     html[data-theme="workbench"] body.layer3-page .typing-card {
         background: rgba(8, 8, 8, 0.18);
+    }
+}
+
+@media (max-width: 1099px) {
+    html[data-theme="workbench"] body.layer3-page .operations-dock {
+        display: grid;
+        gap: 10px;
+        margin: 8px 10px 0;
+        padding: 9px;
+        border-top: 1px solid rgba(248, 248, 248, 0.18);
+        border-bottom: 1px solid rgba(248, 248, 248, 0.16);
+        background:
+            linear-gradient(90deg, rgba(248, 248, 248, 0.02) 1px, transparent 1px),
+            linear-gradient(180deg, rgba(248, 248, 248, 0.016) 1px, transparent 1px),
+            rgba(3, 3, 3, 0.48);
+        background-size: 28px 28px;
+        overflow: hidden;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock-nav {
+        display: flex;
+        gap: 7px;
+        min-width: 0;
+        padding: 7px;
+        border: 1px dotted rgba(248, 248, 248, 0.36);
+        background: rgba(0, 0, 0, 0.34);
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab {
+        display: grid;
+        flex: 0 0 min(190px, 70vw);
+        gap: 3px;
+        padding: 7px 8px;
+        border: 1px solid rgba(248, 248, 248, 0.2);
+        border-left: 3px solid color-mix(in srgb, var(--l3-stage-accent) 60%, #f8f8f8);
+        border-radius: 0;
+        background:
+            linear-gradient(90deg, color-mix(in srgb, var(--l3-stage-accent) 8%, transparent), transparent 74%),
+            rgba(8, 8, 8, 0.56);
+        color: #f8f8f8;
+        text-align: left;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab.active {
+        border-color: color-mix(in srgb, var(--primary-color) 78%, #f8f8f8);
+        background:
+            linear-gradient(90deg, color-mix(in srgb, var(--l3-stage-accent) 16%, transparent), transparent 76%),
+            rgba(12, 12, 12, 0.84);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab-label {
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab-state,
+    html[data-theme="workbench"] body.layer3-page .operation-dock-tab-detail {
+        font-size: 0.62rem;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock-summary {
+        display: grid;
+        gap: 6px;
+        padding: 9px 10px;
+        border: 1px dotted rgba(248, 248, 248, 0.34);
+        border-left: 3px solid color-mix(in srgb, var(--primary-color) 62%, #f8f8f8);
+        background: rgba(0, 0, 0, 0.34);
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-summary-eyebrow,
+    html[data-theme="workbench"] body.layer3-page .operation-summary-main {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-summary-eyebrow,
+    html[data-theme="workbench"] body.layer3-page .operation-summary-state {
+        font-size: 0.58rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-summary-main h3,
+    html[data-theme="workbench"] body.layer3-page .operations-dock > .workband:not(.sublayer-map-band) .section-heading h2 {
+        margin: 0;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock-summary p {
+        margin: 0;
+        color: rgba(248, 248, 248, 0.72);
+        font-size: 0.7rem;
+        line-height: 1.28;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock > .workband.operation-panel-inactive:not(.sublayer-map-band) {
+        display: none;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operations-dock > .workband.operation-panel-active:not(.sublayer-map-band) {
+        display: grid;
+        margin: 0;
     }
 }
 
@@ -791,6 +975,10 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-heading {
 }
 
 .operations-dock-nav {
+    display: none;
+}
+
+.operations-dock-summary {
     display: none;
 }
 
