@@ -468,9 +468,11 @@ html[data-theme="workbench"] body.layer3-page .source-fieldset {
     font-size: 0.74rem;
 }
 
-html[data-theme="workbench"] body.layer3-page .result-review-controls {
-    grid-template-columns: 92px minmax(0, 1fr);
-    gap: 7px 9px;
+@media (min-width: 981px) {
+    html[data-theme="workbench"] body.layer3-page .result-review-controls:not(.aps-handoff-controls) {
+        grid-template-columns: 92px minmax(0, 1fr);
+        gap: 7px 9px;
+    }
 }
 
 html[data-theme="workbench"] body.layer3-page .result-review-controls label {
