@@ -9,7 +9,7 @@
             const sharedStorageKey = 'nrc_aps_review_theme';
             const layer3StorageKey = 'layer3_workbench_theme';
             const isSharedThemePreference = (value) => value === 'system' || value === 'light' || value === 'dark';
-            const isLayer3ThemePreference = (value) => value === 'workbench' || value === 'claude';
+            const isLayer3ThemePreference = (value) => value === 'workbench';
             let preference = 'system';
             try {
                 let sharedPreference = localStorage.getItem(sharedStorageKey);
@@ -27,6 +27,9 @@
                     }
                     localStorage.removeItem(layer3StorageKey);
                     layer3Preference = null;
+                } else if (layer3Preference && !isLayer3ThemePreference(layer3Preference)) {
+                    localStorage.removeItem(layer3StorageKey);
+                    layer3Preference = null;
                 }
                 if (isLayer3ThemePreference(layer3Preference)) {
                     preference = layer3Preference;
@@ -38,15 +41,11 @@
             }
             const prefersDark = typeof window.matchMedia === 'function'
                 && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const resolvedTheme = preference === 'claude'
-                ? 'workbench'
-                : (preference === 'dark' || preference === 'light' || preference === 'workbench' ? preference
-                : (prefersDark ? 'dark' : 'light'));
+            const resolvedTheme = preference === 'dark' || preference === 'light' || preference === 'workbench'
+                ? preference
+                : (prefersDark ? 'dark' : 'light');
             document.documentElement.dataset.theme = resolvedTheme;
             document.documentElement.dataset.themePreference = preference;
-            if (preference === 'claude') {
-                document.documentElement.dataset.themeVariant = 'claude';
-            }
         }());
     </script>
     <link rel="stylesheet" href="/review/layer3/static/review.css">
