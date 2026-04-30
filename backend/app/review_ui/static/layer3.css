@@ -133,7 +133,7 @@ html[data-theme="workbench"] body.layer3-page .layer3-header select {
 }
 
 html[data-theme="workbench"] body.layer3-page .layer3-body {
-    grid-template-columns: 48px minmax(0, 1fr) 96px;
+    grid-template-columns: 36px minmax(0, 1fr) 60px;
     background:
         linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
         linear-gradient(180deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
@@ -150,12 +150,12 @@ html[data-theme="workbench"] body.layer3-page .context-panel {
 
 html[data-theme="workbench"] body.layer3-page .layer3-stepper {
     gap: 4px;
-    padding: 6px 4px;
+    padding: 5px 3px;
 }
 
 html[data-theme="workbench"] body.layer3-page .context-panel {
-    padding: 6px 5px;
-    font-size: 0.6rem;
+    padding: 5px 4px;
+    font-size: 0.56rem;
     background:
         linear-gradient(180deg, rgba(248, 248, 248, 0.035), transparent 18%),
         rgba(7, 7, 7, 0.74);
@@ -164,27 +164,27 @@ html[data-theme="workbench"] body.layer3-page .context-panel {
 
 html[data-theme="workbench"] body.layer3-page .step-chip {
     border-radius: 0;
-    min-height: 29px;
-    padding: 6px 2px;
-    font-size: 0.56rem;
+    min-height: 27px;
+    padding: 5px 1px;
+    font-size: 0.52rem;
     line-height: 1.1;
     text-align: center;
 }
 
 html[data-theme="workbench"] body.layer3-page .context-panel h2 {
-    font-size: 0.68rem;
-    margin-bottom: 6px;
+    font-size: 0.62rem;
+    margin-bottom: 5px;
 }
 
 html[data-theme="workbench"] body.layer3-page .context-list dt,
 html[data-theme="workbench"] body.layer3-page .event-list,
 html[data-theme="workbench"] body.layer3-page .unavailable-list {
-    font-size: 0.59rem;
+    font-size: 0.54rem;
     overflow-wrap: anywhere;
 }
 
 html[data-theme="workbench"] body.layer3-page .context-list dd {
-    font-size: 0.6rem;
+    font-size: 0.55rem;
     overflow-wrap: anywhere;
 }
 
@@ -193,28 +193,29 @@ html[data-theme="workbench"] body.layer3-page .context-panel section + section {
 }
 
 html[data-theme="workbench"] body.layer3-page .layer3-workspace {
-    background: rgba(9, 9, 9, 0.42);
-    box-shadow: inset 0 0 0 1px rgba(248, 248, 248, 0.04);
+    background: transparent;
+    box-shadow: none;
 }
 
 html[data-theme="workbench"] body.layer3-page .authority-rail {
     grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
-    gap: 3px 8px;
-    margin: 4px 6px 0;
-    padding: 4px 7px;
-    border: 1px solid rgba(210, 210, 210, 0.32);
+    gap: 2px 8px;
+    margin: 0;
+    padding: 3px 8px;
+    border: 0;
+    border-bottom: 1px dotted rgba(210, 210, 210, 0.28);
     border-radius: 0;
     background:
-        linear-gradient(90deg, rgba(248, 248, 248, 0.045), transparent 45%),
-        rgba(5, 5, 5, 0.58);
+        linear-gradient(90deg, rgba(248, 248, 248, 0.035), transparent 45%),
+        rgba(5, 5, 5, 0.34);
 }
 
 html[data-theme="workbench"] body.layer3-page .authority-rail .rail-label {
-    font-size: 0.52rem;
+    font-size: 0.5rem;
 }
 
 html[data-theme="workbench"] body.layer3-page .authority-rail .rail-value {
-    font-size: 0.62rem;
+    font-size: 0.58rem;
 }
 
 html[data-theme="workbench"] body.layer3-page .workband {
@@ -1001,9 +1002,11 @@ html[data-theme="workbench"] body.layer3-page .primary-btn {
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
-    margin: 5px 6px 0;
-    min-height: calc(100vh - 50px);
-    border-color: rgba(210, 210, 210, 0.34);
+    margin: 0;
+    min-height: calc(100vh - 40px);
+    border-color: rgba(210, 210, 210, 0.22);
+    border-right-color: transparent;
+    border-left-color: transparent;
     border-radius: 0;
     background:
         linear-gradient(90deg, rgba(248, 248, 248, 0.028) 1px, transparent 1px),
@@ -1013,14 +1016,14 @@ html[data-theme="workbench"] body.layer3-page .sublayer-map-band {
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-heading {
-    border-bottom-color: rgba(210, 210, 210, 0.28);
-    padding: 6px 10px;
-    background: linear-gradient(90deg, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.28));
+    border-bottom-color: transparent;
+    padding: 4px 8px;
+    background: transparent;
 }
 
 html[data-theme="workbench"] body.layer3-page .sublayer-map-panel {
-    min-height: calc(100vh - 84px);
-    padding-inline: 10px;
+    min-height: calc(100vh - 72px);
+    padding: 30px 6px 14px;
 }
 
 .layer3-workspace {
