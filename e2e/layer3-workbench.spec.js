@@ -225,6 +225,9 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   await expect(page.locator('.operations-dock > .operation-panel-inactive').first()).toBeAttached();
   await expect(page.locator('#operations-dock-summary')).toContainText('Intent');
   await expect(page.locator('#operations-dock-summary')).toContainText('3A intake setup');
+  await expect(page.locator('#operations-dock-summary')).toContainText('Sublayer 3A intake/specification field');
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-active-operation-canvas', '3a');
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-active-operation-key', 'intent');
 
   const workbenchStyles = await page.evaluate(() => {
     const bodyStyle = window.getComputedStyle(document.body);
@@ -282,9 +285,33 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
   await expect(page.locator('#intent-band')).toHaveAttribute('data-operation-active', 'false');
   await expect(page.locator('#operations-dock-summary')).toContainText('Gate B Material Ledger');
   await expect(page.locator('#operations-dock-summary')).toContainText('3A material ledger');
+  await expect(page.locator('#operations-dock-summary')).toContainText('Sublayer 3A session-scoped material ledger');
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-active-operation-canvas', '3a');
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-active-operation-key', 'gate_b');
+
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('.operation-dock-tab').nth(2)).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#gate-c-band')).toHaveAttribute('data-operation-active', 'true');
+  await expect(page.locator('#operations-dock-summary')).toContainText('Sublayer 3B modality object banks');
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-active-operation-canvas', '3b');
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-active-operation-key', 'gate_c');
+
+  const canvasFocusStyles = await page.evaluate(() => {
+    const threeB = window.getComputedStyle(document.querySelector('.sublayer-3b'));
+    const connector = window.getComputedStyle(document.querySelector('.sublayer-connector-3bc'));
+    return {
+      threeBBorderColor: threeB.borderTopColor,
+      threeBBoxShadow: threeB.boxShadow,
+      connectorFilter: connector.filter,
+    };
+  });
+  expect(canvasFocusStyles.threeBBorderColor).not.toBe('rgb(180, 180, 180)');
+  expect(canvasFocusStyles.threeBBoxShadow).not.toBe('none');
+  expect(canvasFocusStyles.connectorFilter).not.toBe('none');
 
   await page.locator('[data-step="sources"]').click();
   await expect(page.locator('#intent-band')).toHaveAttribute('data-operation-active', 'true');
+  await expect(page.locator('#sublayer-map-panel')).toHaveAttribute('data-active-operation-key', 'intent');
   await expect(page.locator('#source-fieldset')).toBeVisible();
 
   await page.locator('#theme-selector').selectOption('light');

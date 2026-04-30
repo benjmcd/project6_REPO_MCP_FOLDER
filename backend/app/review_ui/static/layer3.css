@@ -540,6 +540,29 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
         line-height: 1.28;
     }
 
+    html[data-theme="workbench"] body.layer3-page .operation-summary-canvas-role {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 8px;
+        min-width: 0;
+        color: rgba(248, 248, 248, 0.72);
+        font-size: 0.68rem;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-summary-canvas-role span {
+        color: color-mix(in srgb, var(--primary-color) 70%, #f8f8f8);
+        font-size: 0.58rem;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-summary-canvas-role strong {
+        min-width: 0;
+        font-weight: 800;
+    }
+
     html[data-theme="workbench"] body.layer3-page .operations-dock > .workband:not(.sublayer-map-band) {
         display: grid;
         grid-template-columns: minmax(132px, 0.12fr) minmax(0, 1fr);
@@ -734,6 +757,22 @@ html[data-theme="workbench"] body.layer3-page .result-review-grid {
         color: rgba(248, 248, 248, 0.72);
         font-size: 0.7rem;
         line-height: 1.28;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-summary-canvas-role {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px 7px;
+        color: rgba(248, 248, 248, 0.72);
+        font-size: 0.66rem;
+    }
+
+    html[data-theme="workbench"] body.layer3-page .operation-summary-canvas-role span {
+        color: color-mix(in srgb, var(--primary-color) 70%, #f8f8f8);
+        font-size: 0.56rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
     }
 
     html[data-theme="workbench"] body.layer3-page .operations-dock > .workband.operation-panel-inactive:not(.sublayer-map-band) {
@@ -1270,6 +1309,50 @@ html[data-theme="workbench"] body.layer3-page .workflow-canvas-field > .sublayer
 html[data-theme="workbench"] body.layer3-page .workflow-canvas-field > .sublayer-region::before {
     inset: 10px;
     border-color: color-mix(in srgb, var(--modality-accent) 34%, rgba(248, 248, 248, 0.25));
+}
+
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="3a"] .sublayer-3a,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="3b"] .sublayer-3b,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas^="3c"] .sublayer-3c,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="post-3c"] .sublayer-3c {
+    border-color: color-mix(in srgb, var(--modality-accent) 82%, #f8f8f8);
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--modality-accent) 52%, transparent),
+        0 0 24px color-mix(in srgb, var(--modality-accent) 18%, transparent),
+        inset 0 0 0 1px rgba(248, 248, 248, 0.18);
+}
+
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="3a"] .sublayer-3a::before,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="3b"] .sublayer-3b::before,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas^="3c"] .sublayer-3c::before,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="post-3c"] .sublayer-3c::before {
+    border-color: color-mix(in srgb, var(--modality-accent) 58%, rgba(248, 248, 248, 0.42));
+}
+
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="3a"] .sublayer-connector-3ab,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="3b"] .sublayer-connector-3ab,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="3b"] .sublayer-connector-3bc,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas^="3c"] .sublayer-connector-3bc,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="post-3c"] .sublayer-connector-3bc {
+    color: #f8f8f8;
+    filter: drop-shadow(0 0 8px rgba(76, 201, 240, 0.42));
+}
+
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="3a"] .state-3a,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="3b"] .state-3b,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas^="3c"] .state-3c,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="post-3c"] .state-3c {
+    border-color: color-mix(in srgb, var(--modality-accent) 78%, #f8f8f8);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--modality-accent) 34%, transparent);
+}
+
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="3c-process"] .analysis-plane .plane-process,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="3c-output"] .analysis-plane .plane-outputs,
+html[data-theme="workbench"] body.layer3-page .sublayer-map-panel[data-active-operation-canvas="post-3c"] .analysis-plane .plane-outputs {
+    border-color: color-mix(in srgb, var(--modality-accent, var(--primary-color)) 72%, #f8f8f8);
+    box-shadow:
+        inset 0 0 0 1px rgba(248, 248, 248, 0.14),
+        0 0 16px color-mix(in srgb, var(--modality-accent, var(--primary-color)) 14%, transparent);
 }
 
 html[data-theme="workbench"] body.layer3-page .analysis-routing-plane {
