@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Layer 3 Workbench — Prototype</title>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN SYSTEM — Layer 3 Workbench Prototype
+   Faithful to: layer3mockups/ image set
+   Status: prototype/sample-state-backed
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  /* Backgrounds */
+  --bg-base:    #0e0e0e;
+  --bg-panel:   #181818;
+  --bg-inner:   #212121;
+  --bg-card:    #1c1c1c;
+  --bg-hover:   #272727;
+
+  /* Borders */
+  --border-sublayer:  #3d3d3d;
+  --border-gate:      #2e2e2e;
+  --border-default:   #2a2a2a;
+
+  /* Type colors — from mockup */
+  --c-quant:   #39d353;   /* lime green */
+  --c-qual:    #9b59b6;   /* medium purple */
+  --c-hybrid:  #d97706;   /* amber/orange */
+  --c-unclass: #6b7280;   /* slate */
+
+  /* Text */
+  --text-primary:    #e4e4e4;
+  --text-secondary:  #888888;
+  --text-muted:      #4a4a4a;
+  --text-quant:      #5ae375;
+  --text-qual:       #c084fc;
+  --text-hybrid:     #fbbf24;
+
+  /* Arrows */
+  --arrow-fill: #4a4a4a;
+
+  /* Accent */
+  --accent-blue: #5a9fd4;
+  --accent-blue-dim: #2a5a7a;
+
+  /* Fonts */
+  --f-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --f-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--f-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #111; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #444; }
+
+/* ═══════════════════════════════════════════════════════════
+   CHROME BAR
+   ═══════════════════════════════════════════════════════════ */
+.chrome-bar {
+  height: 38px;
+  background: #161616;
+  border-bottom: 1px solid #252525;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+  flex-shrink: 0;
+  user-select: none;
+}
+.chrome-dots { display: flex; gap: 6px; align-items: center; }
+.chrome-dot {
+  width: 11px; height: 11px; border-radius: 50%;
+}
+.dot-red    { background: #ff5f57; }
+.dot-yellow { background: #febc2e; }
+.dot-green  { background: #28c840; }
+
+.chrome-url {
+  flex: 1;
+  background: #111;
+  border: 1px solid #2e2e2e;
+  border-radius: 4px;
+  padding: 3px 12px;
+  color: #666;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  pointer-events: none;
+  max-width: 480px;
+}
+
+.chrome-label {
+  color: #444;
+  font-size: 11px;
+  font-family: var(--f-mono);
+  letter-spacing: 0.05em;
+}
+
+.proto-badge {
+  border: 1px solid #d97706;
+  color: #d97706;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-family: var(--f-mono);
+  letter-spacing: 0.08em;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NAV BAR
+   ═══════════════════════════════════════════════════════════ */
+.nav-bar {
+  height: 40px;
+  background: #121212;
+  border-bottom: 1px solid #222;
+  display: flex;
+  align-items: stretch;
+  padding: 0 12px;
+  flex-shrink: 0;
+  gap: 0;
+}
+
+.nav-tab {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 11.5px;
+  color: #555;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+.nav-tab:hover { color: #888; }
+.nav-tab.active {
+  color: #ccc;
+  border-bottom-color: var(--accent-blue);
+}
+.nav-tab .tab-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  margin-right: 6px;
+  background: #3a3a3a;
+}
+.nav-tab.active .tab-dot { background: var(--accent-blue); }
+
+.nav-sep {
+  width: 1px;
+  background: #222;
+  margin: 8px 4px;
+}
+.nav-spacer { flex: 1; }
+
+/* State controls */
+.state-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.state-label {
+  font-size: 10px;
+  color: #444;
+  font-family: var(--f-mono);
+  margin-right: 6px;
+  letter-spacing: 0.05em;
+}
+.state-btn {
+  padding: 3px 9px;
+  font-size: 10px;
+  font-family: var(--f-mono);
+  background: #1a1a1a;
+  border: 1px solid #2e2e2e;
+  color: #555;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.1s;
+  letter-spacing: 0.04em;
+}
+.state-btn:hover { border-color: #484848; color: #888; }
+.state-btn.active {
+  background: #162535;
+  border-color: var(--accent-blue);
+  color: #7ec8e3;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   WORKBENCH CANVAS
+   ═══════════════════════════════════════════════════════════ */
+.workbench-canvas {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Screens */
+.screen { display: none; min-height: 100%; }
+.screen.active { display: block; }
+
+/* ═══════════════════════════════════════════════════════════
+   SCREEN: INTENT ENTRY
+   ═══════════════════════════════════════════════════════════ */
+.intent-screen {
+  min-height: 100%;
+  background: var(--bg-base);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 36px 24px 48px;
+}
+
+.intent-workbench-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.intent-workbench-header h1 {
+  font-size: 22px;
+  font-weight: 300;
+  color: #fff;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.intent-workbench-header .hdr-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--f-mono);
+  margin-top: 4px;
+  letter-spacing: 0.06em;
+}
+
+.intent-panels-wrap {
+  width: 100%;
+  max-width: 860px;
+}
+
+/* NL Query Panel */
+.intent-panel {
+  background: var(--bg-panel);
+  border: 1px solid #2e2e2e;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.intent-panel-hdr {
+  background: #1e1e1e;
+  border-bottom: 1px solid #272727;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.intent-panel-hdr h2 {
+  font-size: 13px;
+  font-weight: 500;
+  color: #d8d8d8;
+}
+.intent-panel-hdr .field-tag {
+  font-size: 9px;
+  color: var(--accent-blue);
+  border: 1px solid var(--accent-blue-dim);
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-family: var(--f-mono);
+}
+
+.intent-panel-body { padding: 16px 18px; }
+
+.nl-query-textarea {
+  width: 100%;
+  min-height: 90px;
+  background: #111;
+  border: 1px solid #2e2e2e;
+  border-radius: 3px;
+  padding: 12px 14px;
+  color: #bbb;
+  font-family: var(--f-sans);
+  font-size: 13px;
+  line-height: 1.65;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.12s;
+}
+.nl-query-textarea:focus { border-color: #3a5a72; }
+.nl-query-textarea::placeholder { color: #3a3a3a; }
+
+.intent-helper-text {
+  font-size: 10px;
+  color: #444;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* OR divider */
+.or-divider {
+  display: flex;
+  align-items: center;
+  padding: 14px 0;
+  gap: 12px;
+}
+.or-divider::before,
+.or-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #222;
+}
+.or-divider span {
+  font-size: 11px;
+  color: #444;
+  font-family: var(--f-mono);
+  letter-spacing: 0.1em;
+}
+
+/* Manual Spec Panel */
+.spec-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.spec-chip {
+  padding: 4px 10px;
+  font-size: 10.5px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #777;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.1s;
+  user-select: none;
+  white-space: nowrap;
+}
+.spec-chip:hover { border-color: #4a4a4a; color: #aaa; background: #222; }
+.spec-chip.selected {
+  background: #162535;
+  border-color: var(--accent-blue);
+  color: #7ec8e3;
+}
+.spec-chip.selected-quant { background: #0d2010; border-color: var(--c-quant); color: var(--text-quant); }
+.spec-chip.selected-qual  { background: #1a0d2a; border-color: var(--c-qual);  color: var(--text-qual);  }
+.spec-chip.selected-hybrid { background: #251500; border-color: var(--c-hybrid); color: var(--text-hybrid); }
+
+/* Submit row */
+.intent-submit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-top: 1px solid #1e1e1e;
+  background: #151515;
+}
+.intent-submit-note {
+  font-size: 10px;
+  color: #3a3a3a;
+  font-family: var(--f-mono);
+}
+.submit-btn {
+  padding: 8px 28px;
+  background: #162535;
+  border: 1px solid var(--accent-blue);
+  color: #7ec8e3;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  transition: all 0.12s;
+}
+.submit-btn:hover { background: #1e3a52; }
+
+/* ═══════════════════════════════════════════════════════════
+   SESSION CONTEXT STRIP (visible on flow screens)
+   ═══════════════════════════════════════════════════════════ */
+.session-strip {
+  background: #141414;
+  border-bottom: 1px solid #222;
+  padding: 6px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.session-strip-label {
+  font-size: 9px;
+  color: #444;
+  font-family: var(--f-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.session-strip-query {
+  font-size: 11px;
+  color: #777;
+  font-style: italic;
+  max-width: 500px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.session-strip-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.session-tag {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-family: var(--f-mono);
+  border: 1px solid #2a2a2a;
+  color: #555;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SHARED FLOW COMPONENTS
+   ═══════════════════════════════════════════════════════════ */
+
+/* Sublayer region */
+.sublayer-region {
+  border: 2px dashed var(--border-sublayer);
+  border-radius: 4px;
+  padding: 14px;
+  position: relative;
+}
+
+.sublayer-title-block {
+  text-align: center;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #1e1e1e;
+}
+.sublayer-title-block h2 {
+  font-size: 16px;
+  font-weight: 400;
+  color: #ddd;
+  letter-spacing: 0.04em;
+}
+.sublayer-title-block .sublayer-subtitle {
+  font-size: 11px;
+  color: #666;
+  margin-top: 3px;
+  font-family: var(--f-mono);
+}
+
+/* Gate container */
+.gate-container {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-gate);
+  border-radius: 3px;
+  padding: 12px;
+}
+.gate-hdr {
+  text-align: center;
+  padding-bottom: 10px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #1e1e1e;
+}
+.gate-hdr h3 {
+  font-size: 13px;
+  font-weight: 400;
+  color: #bbb;
+}
+.gate-hdr .gate-sub1 {
+  font-size: 10.5px;
+  color: #666;
+  margin-top: 2px;
+}
+.gate-hdr .gate-sub2 {
+  font-size: 10px;
+  color: #444;
+  margin-top: 6px;
+  font-family: var(--f-mono);
+  letter-spacing: 0.04em;
+}
+
+/* Ingress chips */
+.ingress-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.ingress-chip {
+  background: var(--bg-inner);
+  border-radius: 2px;
+  padding: 5px 7px;
+  font-size: 9.5px;
+  cursor: pointer;
+  transition: opacity 0.1s, background 0.1s;
+  position: relative;
+  overflow: hidden;
+  line-height: 1.4;
+}
+.ingress-chip:hover { background: #2a2a2a; }
+.ingress-chip.quant  { border: 1px solid var(--c-quant);  color: #c0f0c8; }
+.ingress-chip.qual   { border: 1px solid var(--c-qual);   color: #ddc8ff; }
+.ingress-chip.hybrid { border: 1px solid var(--c-hybrid); color: #ffdda0; }
+.ingress-chip.unclass { border: 1px solid var(--c-unclass); color: #ccc; }
+
+.ingress-chip .chip-id {
+  display: block;
+  font-size: 8px;
+  font-family: var(--f-mono);
+  opacity: 0.55;
+  margin-bottom: 1px;
+  letter-spacing: 0.03em;
+}
+.ingress-chip .chip-name {
+  display: block;
+  font-size: 9px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Chip action menu on hover */
+.ingress-chip .chip-actions {
+  display: none;
+  position: absolute;
+  right: 2px; top: 2px;
+  gap: 2px;
+}
+.ingress-chip:hover .chip-actions { display: flex; }
+.chip-action-btn {
+  font-size: 7px;
+  padding: 1px 3px;
+  border-radius: 1px;
+  cursor: pointer;
+  border: none;
+  font-family: var(--f-mono);
+  letter-spacing: 0.02em;
+}
+.chip-action-btn.approve { background: #0d2010; color: var(--c-quant); border: 1px solid #1a4020; }
+.chip-action-btn.deny    { background: #2a1010; color: #f87171; border: 1px solid #4a1a1a; }
+.chip-action-btn.isolate { background: #252510; color: #f0d060; border: 1px solid #3a3a10; }
+
+/* Empty slot */
+.empty-slot {
+  border: 1px dashed #252525;
+  border-radius: 3px;
+  padding: 18px;
+  text-align: center;
+  color: #333;
+  font-size: 11px;
+  font-family: var(--f-mono);
+}
+.empty-slot .empty-icon { font-size: 18px; opacity: 0.3; margin-bottom: 6px; }
+
+/* Typed group */
+.typed-group {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-gate);
+  border-radius: 3px;
+  padding: 10px;
+  margin-bottom: 6px;
+}
+.typed-group:last-child { margin-bottom: 0; }
+.typed-group-hdr {
+  font-size: 13px;
+  font-weight: 400;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #1e1e1e;
+}
+.typed-group-hdr.quant  { color: var(--text-quant); }
+.typed-group-hdr.qual   { color: var(--text-qual);  }
+.typed-group-hdr.hybrid { color: var(--text-hybrid); }
+.typed-group-hdr.unclass { color: #888; }
+.typed-group-count {
+  font-size: 9px;
+  font-family: var(--f-mono);
+  opacity: 0.5;
+  margin-left: 6px;
+}
+
+/* Flow arrows */
+.flow-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.flow-arrow svg {
+  fill: var(--arrow-fill);
+}
+.flow-arrow.vertical svg {
+  transform: rotate(90deg);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCREEN: OVERVIEW
+   ═══════════════════════════════════════════════════════════ */
+.overview-screen {
+  min-height: 100%;
+  background: var(--bg-base);
+  overflow: auto;
+}
+
+.overview-content {
+  padding: 28px 24px 48px;
+  min-width: 1700px;
+}
+
+.overview-title {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.overview-title h1 {
+  font-size: 26px;
+  font-weight: 300;
+  color: #fff;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.overview-title .ov-line {
+  width: 1px;
+  height: 20px;
+  background: #333;
+  margin: 8px auto;
+}
+
+/* The main horizontal flow */
+.flow-rail {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+}
+
+/* Pre-3A column */
+.pre3a-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding-top: 80px;
+  min-width: 130px;
+}
+.pre3a-label {
+  font-size: 14px;
+  font-weight: 300;
+  color: #aaa;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.pre3a-sublabel {
+  font-size: 9px;
+  color: #555;
+  text-align: center;
+  font-family: var(--f-mono);
+  margin-bottom: 20px;
+}
+
+.source-node {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 3px;
+  padding: 10px 8px;
+  text-align: center;
+  width: 110px;
+  margin-bottom: 0;
+}
+.source-node-title {
+  font-size: 10px;
+  color: #888;
+  line-height: 1.4;
+}
+.source-node-sub {
+  font-size: 8px;
+  color: #4a4a4a;
+  margin-top: 3px;
+  font-family: var(--f-mono);
+}
+
+/* Feed arrow group: source nodes + arrows to 3A */
+.feed-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: 40px;
+}
+
+/* Arrow columns between stages */
+.stage-arrow-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  flex-shrink: 0;
+  margin-top: 120px;
+}
+.stage-arrow-col.split {
+  justify-content: space-around;
+  gap: 0;
+  margin-top: 0;
+  padding-top: 80px;
+}
+
+/* SVG arrow */
+.arrow-chevron {
+  width: 36px;
+  height: 28px;
+  fill: #505050;
+}
+
+/* Sublayer columns */
+.sublayer-col {
+  flex-shrink: 0;
+}
+
+/* ── 3A column ── */
+.col-3a { min-width: 270px; max-width: 290px; margin-top: 60px; }
+.col-3b { min-width: 240px; max-width: 260px; margin-top: 60px; }
+.col-3c { min-width: 750px; flex: 1; margin-top: 60px; }
+
+/* ── 3C analysis plane ── */
+.analysis-plane {
+  background: var(--bg-panel);
+  border: 1px solid #262626;
+  border-radius: 3px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.analysis-plane:last-child { margin-bottom: 0; }
+
+.plane-title {
+  font-size: 12px;
+  font-weight: 400;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1e1e1e;
+}
+.plane-title.quant  { color: var(--text-quant); }
+.plane-title.qual   { color: var(--text-qual); }
+.plane-title.hybrid { color: var(--text-hybrid); }
+
+.plane-body {
+  display: grid;
+  grid-template-columns: 155px auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Plane input column with bracket */
+.plane-inputs-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.plane-input-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+.plane-input-chip {
+  font-size: 8.5px;
+  padding: 3px 6px;
+  border-radius: 2px;
+  background: var(--bg-inner);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plane-input-chip.quant  { border: 1px solid var(--c-quant);  color: #aaeebb; }
+.plane-input-chip.qual   { border: 1px solid var(--c-qual);   color: #d0b0f8; }
+.plane-input-chip.hybrid { border: 1px solid var(--c-hybrid); color: #f8d090; }
+
+/* Bracket connector (right-facing bracket) */
+.plane-bracket {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+.bracket-svg {
+  width: 14px;
+  stroke: #555;
+  fill: none;
+  stroke-width: 2;
+}
+
+/* Plane center: arrow + process box */
+.plane-center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.plane-process-box {
+  border: 1px dashed #3a3a3a;
+  border-radius: 3px;
+  padding: 10px 12px;
+  background: #161616;
+  text-align: center;
+  max-width: 200px;
+}
+.plane-process-text {
+  font-size: 9.5px;
+  color: #777;
+  line-height: 1.6;
+}
+.plane-process-note {
+  font-size: 8.5px;
+  color: #444;
+  font-style: italic;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+.plane-process-note em {
+  font-style: normal;
+  color: #555;
+}
+
+/* Output grid */
+.plane-outputs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+.output-card {
+  background: #171717;
+  border: 1px solid #2a2a2a;
+  border-radius: 2px;
+  padding: 7px 6px;
+  font-size: 9px;
+  color: #888;
+  text-align: center;
+  line-height: 1.5;
+}
+.output-card .out-obj-ref {
+  display: block;
+  font-size: 8px;
+  color: #4a4a4a;
+  font-family: var(--f-mono);
+  margin-top: 3px;
+}
+.output-card.quant-out { border-color: #1e3828; color: #9dbfab; }
+.output-card.qual-out  { border-color: #281a3a; color: #b090d0; }
+
+/* Gate labels at bottom of columns */
+.gate-label {
+  font-size: 9px;
+  color: #444;
+  font-family: var(--f-mono);
+  text-align: center;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #1e1e1e;
+  letter-spacing: 0.05em;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCREEN: 3A DETAIL
+   ═══════════════════════════════════════════════════════════ */
+.detail-screen {
+  min-height: 100%;
+  background: var(--bg-base);
+  padding: 28px 32px 48px;
+}
+
+.detail-hdr {
+  margin-bottom: 24px;
+}
+.detail-hdr h1 {
+  font-size: 20px;
+  font-weight: 300;
+  color: #ddd;
+  letter-spacing: 0.06em;
+}
+.detail-hdr .detail-sub {
+  font-size: 11px;
+  color: #555;
+  margin-top: 4px;
+  font-family: var(--f-mono);
+}
+
+.detail-3a-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .detail-3a-layout { grid-template-columns: 1fr; }
+}
+
+.gate-b-region {
+  border: 2px dashed var(--border-sublayer);
+  border-radius: 4px;
+  padding: 16px;
+}
+
+.gate-b-title-block {
+  text-align: center;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #1e1e1e;
+}
+.gate-b-title-block h2 {
+  font-size: 15px;
+  font-weight: 400;
+  color: #ccc;
+}
+.gate-b-title-block .gtb-sub1 {
+  font-size: 11px;
+  color: #666;
+  margin-top: 3px;
+}
+.gate-b-title-block .gtb-sub2 {
+  font-size: 10px;
+  color: #444;
+  margin-top: 8px;
+  font-family: var(--f-mono);
+}
+
+.gate-b-legend {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  color: #666;
+  font-family: var(--f-mono);
+}
+.legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 1px;
+  border: 1.5px solid;
+}
+.legend-dot.quant  { border-color: var(--c-quant); }
+.legend-dot.qual   { border-color: var(--c-qual); }
+.legend-dot.hybrid { border-color: var(--c-hybrid); }
+
+.status-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-gate);
+  border-radius: 3px;
+  padding: 16px;
+}
+.status-panel-hdr {
+  font-size: 11px;
+  color: #666;
+  font-family: var(--f-mono);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1e1e1e;
+  letter-spacing: 0.05em;
+}
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid #1a1a1a;
+}
+.status-row:last-child { border-bottom: none; }
+.status-key { font-size: 10px; color: #555; font-family: var(--f-mono); }
+.status-val { font-size: 10px; color: #888; font-family: var(--f-mono); }
+.status-val.ok { color: var(--text-quant); }
+.status-val.pending { color: #888; }
+.status-val.deferred { color: var(--text-hybrid); }
+
+/* ═══════════════════════════════════════════════════════════
+   SCREEN: 3B DETAIL
+   ═══════════════════════════════════════════════════════════ */
+.detail-3b-layout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .detail-3b-layout { grid-template-columns: 1fr; }
+}
+
+.typed-group-detail {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-gate);
+  border-radius: 3px;
+  padding: 14px;
+}
+.tgd-hdr {
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #1e1e1e;
+}
+.tgd-hdr h2 {
+  font-size: 15px;
+  font-weight: 400;
+}
+.tgd-hdr h2.quant  { color: var(--text-quant); }
+.tgd-hdr h2.qual   { color: var(--text-qual); }
+.tgd-hdr h2.hybrid { color: var(--text-hybrid); }
+.tgd-hdr .tgd-sub {
+  font-size: 10px;
+  color: #555;
+  font-family: var(--f-mono);
+  margin-top: 3px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCREEN: 3C DETAIL
+   ═══════════════════════════════════════════════════════════ */
+.detail-3c-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.plane-detail {
+  border: 1px solid #262626;
+  border-radius: 3px;
+  background: var(--bg-panel);
+  overflow: hidden;
+}
+.plane-detail-hdr {
+  padding: 10px 16px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #222;
+}
+.plane-detail-hdr h2 {
+  font-size: 13px;
+  font-weight: 400;
+}
+.plane-detail-hdr h2.quant { color: var(--text-quant); }
+.plane-detail-hdr h2.qual  { color: var(--text-qual); }
+.plane-detail-hdr .pd-sub {
+  font-size: 9px;
+  color: #444;
+  margin-top: 2px;
+  font-family: var(--f-mono);
+}
+
+.plane-detail-body {
+  display: grid;
+  grid-template-columns: 210px auto 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+}
+
+@media (max-width: 900px) {
+  .plane-detail-body { grid-template-columns: 1fr; }
+  .plane-detail-body > .plane-bracket-svg { display: none; }
+}
+
+.plane-arrow-small { color: #444; font-size: 18px; text-align: center; }
+
+/* ═══════════════════════════════════════════════════════════
+   MISC UTILITY
+   ═══════════════════════════════════════════════════════════ */
+.proto-notice {
+  background: #1a1200;
+  border: 1px solid #3a2a00;
+  border-radius: 3px;
+  padding: 8px 14px;
+  font-size: 10px;
+  color: #888;
+  font-family: var(--f-mono);
+  margin-bottom: 20px;
+}
+.proto-notice strong { color: #d97706; }
+
+.section-spacer { height: 18px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .overview-content { min-width: unset; padding: 16px 12px 40px; }
+  .flow-rail { flex-direction: column; }
+  .stage-arrow-col { transform: rotate(90deg); margin: 0 auto; }
+  .plane-body { grid-template-columns: 1fr; }
+  .plane-outputs { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ── Chrome Bar ── -->
+  <div class="chrome-bar">
+    <div class="chrome-dots">
+      <div class="chrome-dot dot-red"></div>
+      <div class="chrome-dot dot-yellow"></div>
+      <div class="chrome-dot dot-green"></div>
+    </div>
+    <div class="chrome-url">localhost:8000/review/layer3</div>
+    <div style="flex:1"></div>
+    <div class="chrome-label">Layer 3 Workbench</div>
+    <div class="proto-badge">PROTOTYPE</div>
+  </div>
+
+  <!-- ── Nav Bar ── -->
+  <div class="nav-bar">
+    <div class="nav-tab active" data-screen="intent" onclick="switchScreen('intent')">
+      <div class="tab-dot"></div>
+      Intent Entry
+    </div>
+    <div class="nav-sep"></div>
+    <div class="nav-tab" data-screen="overview" onclick="switchScreen('overview')">
+      <div class="tab-dot"></div>
+      Overview
+    </div>
+    <div class="nav-tab" data-screen="3a" onclick="switchScreen('3a')">
+      <div class="tab-dot"></div>
+      3A · Intake
+    </div>
+    <div class="nav-tab" data-screen="3b" onclick="switchScreen('3b')">
+      <div class="tab-dot"></div>
+      3B · Typing
+    </div>
+    <div class="nav-tab" data-screen="3c" onclick="switchScreen('3c')">
+      <div class="tab-dot"></div>
+      3C · Analysis
+    </div>
+    <div class="nav-spacer"></div>
+    <div class="state-controls">
+      <span class="state-label">state:</span>
+      <button class="state-btn" data-state="empty"    onclick="setWorkbenchState('empty')">empty</button>
+      <button class="state-btn active" data-state="loaded"   onclick="setWorkbenchState('loaded')">loaded</button>
+      <button class="state-btn" data-state="typed"    onclick="setWorkbenchState('typed')">typed</button>
+      <button class="state-btn" data-state="analyzed" onclick="setWorkbenchState('analyzed')">analyzed</button>
+    </div>
+  </div>
+
+  <!-- ── Workbench Canvas ── -->
+  <div class="workbench-canvas">
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN: INTENT ENTRY
+         ═══════════════════════════════════════════ -->
+    <div id="screen-intent" class="screen active">
+      <div class="intent-screen">
+        <div class="intent-workbench-header">
+          <h1>Layer 3 Workbench</h1>
+          <div class="hdr-sub">pre-3A · intent &amp; source specification</div>
+        </div>
+
+        <div class="intent-panels-wrap">
+          <div class="proto-notice">
+            <strong>PROTOTYPE STATE:</strong> Inputs below are pre-populated with the specific-scenario example from the mockup spec (section 8A).
+            In live implementation these would be empty or session-recalled.
+          </div>
+
+          <!-- NL Query -->
+          <div class="intent-panel">
+            <div class="intent-panel-hdr">
+              <h2>User Natural Language Query Input</h2>
+              <span class="field-tag">NL_QUERY</span>
+            </div>
+            <div class="intent-panel-body">
+              <textarea class="nl-query-textarea" id="nl-query-input"
+                placeholder="User types what they want/intend to do, investigate, analyze, compare, explore, or determine within Layer 3..."
+              >I want to analyze federal infrastructure spending on semiconductor production facilities and see if we can correlate it with domestic auto manufacturing investments, import dependency, and/or labor market shifts in the automotive sector.</textarea>
+              <div class="intent-helper-text">
+                "User types what they want/intend to do / investigate / analyze within this layer" — mockup-observed label
+              </div>
+            </div>
+          </div>
+
+          <div class="or-divider"><span>OR</span></div>
+
+          <!-- Manual Spec -->
+          <div class="intent-panel">
+            <div class="intent-panel-hdr">
+              <h2>User Manual/Custom Specification</h2>
+              <span class="field-tag">MANUAL_SPEC</span>
+            </div>
+            <div class="intent-panel-body">
+              <div class="intent-helper-text" style="margin-bottom:10px;">
+                "User manually chooses specific keywords, topics/focuses/themes, etc. to include/fetch/retrieve within this layer" — mockup-observed label
+              </div>
+              <div class="spec-chips-grid" id="spec-chips-grid">
+                <!-- Chips injected by JS -->
+              </div>
+            </div>
+            <div class="intent-submit-row">
+              <span class="intent-submit-note">prototype/sample-state · real source-picker contract unspecified</span>
+              <button class="submit-btn" onclick="submitIntent()">Confirm / Submit →</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN: OVERVIEW
+         ═══════════════════════════════════════════ -->
+    <div id="screen-overview" class="screen">
+      <!-- Session strip (persistent context) -->
+      <div class="session-strip" id="session-strip-overview">
+        <span class="session-strip-label">session intent:</span>
+        <span class="session-strip-query" id="ss-query-overview">—</span>
+        <div class="session-strip-tags" id="ss-tags-overview"></div>
+      </div>
+
+      <div class="overview-screen">
+        <div class="overview-content">
+          <div class="overview-title">
+            <h1>Layer 3</h1>
+            <div class="ov-line"></div>
+          </div>
+
+          <div class="flow-rail">
+
+            <!-- Pre-3A column -->
+            <div class="pre3a-col">
+              <div class="pre3a-label">Pre-3A</div>
+              <div class="pre3a-sublabel">(Triggered by<br>user interaction)</div>
+              <div class="feed-group" id="ov-sources">
+                <!-- source nodes injected by JS based on state -->
+              </div>
+            </div>
+
+            <!-- Arrow: Pre-3A → 3A -->
+            <div class="stage-arrow-col">
+              <svg class="arrow-chevron" viewBox="0 0 36 28">
+                <polygon points="0,4 22,4 22,0 36,14 22,28 22,24 0,24"/>
+              </svg>
+            </div>
+
+            <!-- Sublayer 3A -->
+            <div class="sublayer-col col-3a">
+              <div class="sublayer-region" id="ov-3a-region">
+                <div class="sublayer-title-block">
+                  <h2>Sublayer 3A</h2>
+                  <div class="sublayer-subtitle">Material Intake &amp; Session Scoping</div>
+                </div>
+                <div id="ov-3a-content"><!-- injected --></div>
+                <div class="gate-label">Gate B</div>
+              </div>
+            </div>
+
+            <!-- Arrow: 3A → 3B (with split arrows) -->
+            <div class="stage-arrow-col">
+              <svg class="arrow-chevron" viewBox="0 0 36 28">
+                <polygon points="0,4 22,4 22,0 36,14 22,28 22,24 0,24"/>
+              </svg>
+            </div>
+
+            <!-- Sublayer 3B -->
+            <div class="sublayer-col col-3b">
+              <div class="sublayer-region" id="ov-3b-region">
+                <div class="sublayer-title-block">
+                  <h2>Sublayer 3B</h2>
+                  <div class="sublayer-subtitle">Typing, Unit/Group/Set Formation</div>
+                </div>
+                <div id="ov-3b-content"><!-- injected --></div>
+                <div class="gate-label">Gate C</div>
+              </div>
+            </div>
+
+            <!-- Arrow: 3B → 3C -->
+            <div class="stage-arrow-col">
+              <svg class="arrow-chevron" viewBox="0 0 36 28">
+                <polygon points="0,4 22,4 22,0 36,14 22,28 22,24 0,24"/>
+              </svg>
+            </div>
+
+            <!-- Sublayer 3C -->
+            <div class="sublayer-col col-3c">
+              <div class="sublayer-region" id="ov-3c-region">
+                <div class="sublayer-title-block">
+                  <h2>Sublayer 3C</h2>
+                  <div class="sublayer-subtitle">Analysis Execution Environments</div>
+                </div>
+                <div id="ov-3c-content"><!-- injected --></div>
+              </div>
+            </div>
+
+          </div><!-- /flow-rail -->
+        </div><!-- /overview-content -->
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN: 3A DETAIL
+         ═══════════════════════════════════════════ -->
+    <div id="screen-3a" class="screen">
+      <div class="session-strip" id="session-strip-3a">
+        <span class="session-strip-label">session intent:</span>
+        <span class="session-strip-query" id="ss-query-3a">—</span>
+      </div>
+      <div class="detail-screen">
+        <div class="detail-hdr">
+          <h1>Sublayer 3A — Material Intake &amp; Session Scoping</h1>
+          <div class="detail-sub">Gate B / Session Entry / Material Ledger · ( Source-plane Material Intake )</div>
+        </div>
+        <div class="proto-notice">
+          <strong>PROTOTYPE STATE:</strong> Ingress objects use sample materials from mockup spec §8A.
+          Live: requires L3MaterialSnapshot + L3SelectionManifest backend. Approve/deny/isolate actions are prototype-only.
+        </div>
+        <div class="detail-3a-layout">
+          <div>
+            <div class="gate-b-region" id="detail-3a-gate">
+              <!-- injected by JS -->
+            </div>
+          </div>
+          <div>
+            <div class="status-panel">
+              <div class="status-panel-hdr">SESSION / STATE STATUS</div>
+              <div id="detail-3a-status"><!-- injected --></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN: 3B DETAIL
+         ═══════════════════════════════════════════ -->
+    <div id="screen-3b" class="screen">
+      <div class="session-strip" id="session-strip-3b">
+        <span class="session-strip-label">session intent:</span>
+        <span class="session-strip-query" id="ss-query-3b">—</span>
+      </div>
+      <div class="detail-screen">
+        <div class="detail-hdr">
+          <h1>Sublayer 3B — Typing, Unit/Group/Set Formation</h1>
+          <div class="detail-sub">Gate C / Typing + Set Formation</div>
+        </div>
+        <div class="proto-notice">
+          <strong>PROTOTYPE STATE:</strong> Typing assignments from sample classification. Live: requires L3TypingRecord + L3AnalysisUnit/Group/Set backend.
+        </div>
+        <div class="detail-3b-layout" id="detail-3b-layout">
+          <!-- injected by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         SCREEN: 3C DETAIL
+         ═══════════════════════════════════════════ -->
+    <div id="screen-3c" class="screen">
+      <div class="session-strip" id="session-strip-3c">
+        <span class="session-strip-label">session intent:</span>
+        <span class="session-strip-query" id="ss-query-3c">—</span>
+      </div>
+      <div class="detail-screen">
+        <div class="detail-hdr">
+          <h1>Sublayer 3C — Analysis Execution Environments</h1>
+          <div class="detail-sub">Analysis planes: Quantitative (Deterministic) · Qualitative · Hybrid/Mixed (deferred)</div>
+        </div>
+        <div class="proto-notice">
+          <strong>PROTOTYPE STATE:</strong> Analysis outputs use sample insight/fact/data cards.
+          Live: requires L3PassEntry + L3OutputPackage + execution engine integration.
+          Qualitative and Hybrid planes are planning-only as of prototype date.
+        </div>
+        <div class="detail-3c-layout" id="detail-3c-layout">
+          <!-- injected by JS -->
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /workbench-canvas -->
+</div><!-- /app-shell -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT — State, Data, Rendering
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ── State ─────────────────────────────────────────────── */
+let currentScreen = 'intent';
+let workbenchState = 'loaded'; // empty | loaded | typed | analyzed
+
+const sessionData = {
+  query: 'I want to analyze federal infrastructure spending on semiconductor production facilities and see if we can correlate it with domestic auto manufacturing investments, import dependency, and/or labor market shifts in the automotive sector.',
+  selectedChips: []
+};
+
+/* ── Material Data ─────────────────────────────────────── */
+// 20 Gate B ingress objects, typed per mockup color groupings
+const MATERIALS = [
+  // Quantitative — green (#1–7)
+  { id: 1,  type: 'quant',  label: 'Dept. of Commerce — Semiconductor Investment Report',    shortId: 'OBJ-001' },
+  { id: 2,  type: 'quant',  label: 'Census Bureau — Import/Export Data',                     shortId: 'OBJ-002' },
+  { id: 3,  type: 'quant',  label: 'BLS Employment Data — Semiconductor/Auto Sector',        shortId: 'OBJ-003' },
+  { id: 4,  type: 'quant',  label: 'SEC Earnings — Ford, GM, Tesla, Toyota, Rivian',         shortId: 'OBJ-004' },
+  { id: 5,  type: 'quant',  label: 'Auto Industry CapEx / Plant Expansion Report',           shortId: 'OBJ-005' },
+  { id: 6,  type: 'quant',  label: 'Taiwan / Korea Semiconductor Export Data',               shortId: 'OBJ-006' },
+  { id: 7,  type: 'quant',  label: 'BEA — Balance of Trade / Import Declarations',           shortId: 'OBJ-007' },
+  // Qualitative — purple (#8–14)
+  { id: 8,  type: 'qual',   label: 'NSC / OSTP Policy Framework Documents',                  shortId: 'OBJ-008' },
+  { id: 9,  type: 'qual',   label: 'UAW — United Auto Workers Reports / Workforce Trends',   shortId: 'OBJ-009' },
+  { id: 10, type: 'qual',   label: 'NAM — National Assoc. of Manufacturers Workforce Data',  shortId: 'OBJ-010' },
+  { id: 11, type: 'qual',   label: 'NIST — Supply Chain Policy Documents',                   shortId: 'OBJ-011' },
+  { id: 12, type: 'qual',   label: 'NHTSA — EV Mandate / Regulation Reports',                shortId: 'OBJ-012' },
+  { id: 13, type: 'qual',   label: 'NSF — STEM / Workforce Reports',                         shortId: 'OBJ-013' },
+  { id: 14, type: 'qual',   label: 'DOE AMO — Advanced Manufacturing Reports',               shortId: 'OBJ-014' },
+  // Hybrid/Mixed — orange (#15–20)
+  { id: 15, type: 'hybrid', label: 'IHS Markit / AutoForecast — Supply Chain Analysis',      shortId: 'OBJ-015' },
+  { id: 16, type: 'hybrid', label: 'AGA / Assoc. of Global Automakers — Investment Report',  shortId: 'OBJ-016' },
+  { id: 17, type: 'hybrid', label: 'WSTS / Korea Customs — Semiconductor Trade Data',        shortId: 'OBJ-017' },
+  { id: 18, type: 'hybrid', label: 'State Economic Development Agency Reports',              shortId: 'OBJ-018' },
+  { id: 19, type: 'hybrid', label: 'Policy / Subsidies / Incentives Analysis',               shortId: 'OBJ-019' },
+  { id: 20, type: 'hybrid', label: 'NRC APS — Project Run Artifacts',                        shortId: 'OBJ-020' },
+];
+
+// 3C analysis planes: which objects go to which plane
+// (per sublayer3C.png: quant+#15-17 → Quantitative plane; qual+#18-20 → Qualitative plane)
+const PLANE_QUANT_IDS  = [1, 2, 3, 4, 5, 6, 7, 15, 16, 17];
+const PLANE_QUAL_IDS   = [8, 9, 10, 11, 12, 13, 14, 18, 19, 20];
+
+// Sample output cards
+const OUTPUTS_QUANT = [
+  { id: 'Q-001', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #1' },
+  { id: 'Q-002', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #2' },
+  { id: 'Q-003', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #3' },
+  { id: 'Q-004', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #4' },
+  { id: 'Q-005', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #5' },
+  { id: 'Q-006', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #6' },
+  { id: 'Q-007', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #7' },
+  { id: 'Q-015', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #15' },
+  { id: 'Q-016', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #16' },
+  { id: 'Q-017', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #17' },
+];
+const OUTPUTS_QUAL = [
+  { id: 'L-008', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #8' },
+  { id: 'L-009', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #9' },
+  { id: 'L-010', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #10' },
+  { id: 'L-011', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #11' },
+  { id: 'L-012', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #12' },
+  { id: 'L-013', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #13' },
+  { id: 'L-014', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #14' },
+  { id: 'L-018', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #18' },
+  { id: 'L-019', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #19' },
+  { id: 'L-020', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #20' },
+];
+
+// Manual spec chips
+const SPEC_CHIPS = [
+  { label: 'Dept. of Commerce',         group: 'quant' },
+  { label: 'NSC / OSTP',                group: 'qual' },
+  { label: 'Auto Manufacturing',         group: 'hybrid' },
+  { label: 'SEC Earnings Reports',       group: 'quant' },
+  { label: 'Census Import/Export Data',  group: 'quant' },
+  { label: 'Taiwan Semiconductor Trade', group: 'quant' },
+  { label: 'Korea / WSTS',              group: 'quant' },
+  { label: 'BLS / DOL Workforce',        group: 'quant' },
+  { label: 'UAW',                        group: 'qual' },
+  { label: 'NAM',                        group: 'qual' },
+  { label: 'NRC APS',                    group: 'hybrid' },
+  { label: 'NIST Supply Chain',          group: 'qual' },
+  { label: 'NSF / STEM',                 group: 'qual' },
+  { label: 'DOE / AMO',                  group: 'qual' },
+  { label: 'NHTSA / EV Regulation',      group: 'qual' },
+  { label: 'CapEx Reports',              group: 'quant' },
+  { label: 'Plant Expansion',            group: 'quant' },
+  { label: 'IHS Markit',                 group: 'hybrid' },
+  { label: 'AGA / Global Automakers',    group: 'hybrid' },
+  { label: 'BEA',                        group: 'quant' },
+  { label: 'Policy / Subsidies',         group: 'qual' },
+  { label: 'Semiconductor Investment',   group: 'quant' },
+  { label: 'Semiconductor Capacity',     group: 'quant' },
+  { label: 'Auto Supply Chain',          group: 'hybrid' },
+  { label: 'Import Dependency',          group: 'hybrid' },
+  { label: 'Labor Market Shifts',        group: 'qual' },
+  { label: 'State Economic Dev. Agencies', group: 'hybrid' },
+  { label: 'Ford / GM / Tesla / Toyota', group: 'quant' },
+  { label: 'TSMC',                       group: 'quant' },
+  { label: 'Workforce Trends',           group: 'qual' },
+];
+
+/* ── Helpers ────────────────────────────────────────────── */
+function getMaterialsByType(type) {
+  return MATERIALS.filter(m => m.type === type);
+}
+function getMaterialById(id) {
+  return MATERIALS.find(m => m.id === id);
+}
+
+function makeIngressChip(mat, options = {}) {
+  const { showActions = false, singleLine = false } = options;
+  const actions = showActions ? `
+    <div class="chip-actions">
+      <button class="chip-action-btn approve" title="Approve">✓</button>
+      <button class="chip-action-btn deny"    title="Deny">✗</button>
+      <button class="chip-action-btn isolate" title="Isolate">⊙</button>
+    </div>` : '';
+  const name = singleLine
+    ? `<span class="chip-name">${mat.label}</span>`
+    : `<span class="chip-id">Gate B Ingress Object #${mat.id}</span>
+       <span class="chip-name">${mat.label}</span>`;
+  return `<div class="ingress-chip ${mat.type}" title="${mat.label} (${mat.shortId})" data-id="${mat.id}">
+    ${name}
+    ${actions}
+  </div>`;
+}
+
+function makeEmptySlot(msg) {
+  return `<div class="empty-slot">
+    <div class="empty-icon">⬚</div>
+    ${msg}
+  </div>`;
+}
+
+function arrowSvg() {
+  return `<svg class="arrow-chevron" viewBox="0 0 36 28">
+    <polygon points="0,4 22,4 22,0 36,14 22,28 22,24 0,24"/>
+  </svg>`;
+}
+
+function bracketSvg(height) {
+  const h = height || 120;
+  return `<svg class="bracket-svg" viewBox="0 0 14 ${h}" height="${h}" style="width:14px;height:${h}px;">
+    <polyline points="8,2 2,2 2,${h-2} 8,${h-2}" stroke-linecap="round"/>
+  </svg>`;
+}
+
+/* ── Screen switching ───────────────────────────────────── */
+function switchScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.screen === id);
+  });
+  currentScreen = id;
+  renderCurrentScreen();
+}
+
+/* ── State switching ────────────────────────────────────── */
+function setWorkbenchState(state) {
+  workbenchState = state;
+  document.querySelectorAll('.state-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.state === state);
+  });
+  renderCurrentScreen();
+}
+
+function submitIntent() {
+  switchScreen('overview');
+  setWorkbenchState('loaded');
+}
+
+/* ── Session strip ──────────────────────────────────────── */
+function updateSessionStrips() {
+  const q = sessionData.query;
+  const stripped = q.length > 120 ? q.substring(0, 117) + '...' : q;
+  ['overview','3a','3b','3c'].forEach(id => {
+    const el = document.getElementById('ss-query-' + id);
+    if (el) el.textContent = stripped || '—';
+    const tagsEl = document.getElementById('ss-tags-' + id);
+    if (tagsEl) {
+      tagsEl.innerHTML = sessionData.selectedChips.slice(0,6)
+        .map(c => `<span class="session-tag">${c}</span>`).join('');
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDER FUNCTIONS
+   ══════════════════════════════════════════════════════════ */
+function renderCurrentScreen() {
+  updateSessionStrips();
+  if (currentScreen === 'overview') renderOverview();
+  if (currentScreen === '3a') render3ADetail();
+  if (currentScreen === '3b') render3BDetail();
+  if (currentScreen === '3c') render3CDetail();
+}
+
+/* ── OVERVIEW ───────────────────────────────────────────── */
+function renderOverview() {
+  renderOverviewSources();
+  renderOverview3A();
+  renderOverview3B();
+  renderOverview3C();
+}
+
+function renderOverviewSources() {
+  const el = document.getElementById('ov-sources');
+  if (workbenchState === 'empty') {
+    el.innerHTML = makeEmptySlot('sources not yet specified');
+    return;
+  }
+  el.innerHTML = `
+    <div class="source-node">
+      <div class="source-node-title">Upstream feeder<br>and/or DB</div>
+      <div class="source-node-sub">feeder-1</div>
+    </div>
+    <div style="height:14px;display:flex;align-items:center;justify-content:center">
+      <svg width="12" height="8" viewBox="0 0 12 8" fill="#4a4a4a"><polygon points="0,2 8,2 8,0 12,4 8,8 8,6 0,6"/></svg>
+    </div>
+    <div class="source-node">
+      <div class="source-node-title">Upstream feeder<br>and/or DB</div>
+      <div class="source-node-sub">feeder-2</div>
+    </div>
+    <div style="height:14px;display:flex;align-items:center;justify-content:center">
+      <svg width="12" height="8" viewBox="0 0 12 8" fill="#4a4a4a"><polygon points="0,2 8,2 8,0 12,4 8,8 8,6 0,6"/></svg>
+    </div>
+    <div class="source-node">
+      <div class="source-node-title">Upstream feeder<br>and/or DB</div>
+      <div class="source-node-sub">feeder-3</div>
+    </div>
+  `;
+}
+
+function renderOverview3A() {
+  const el = document.getElementById('ov-3a-content');
+  if (workbenchState === 'empty') {
+    el.innerHTML = `
+      <div class="gate-container">
+        <div class="gate-hdr">
+          <h3>Gate B / Session Entry / Material Ledger</h3>
+          <div class="gate-sub1">( Source-plane Material Intake )</div>
+          <div class="gate-sub2">Session-scoped Materials / Material Snapshots</div>
+        </div>
+        ${makeEmptySlot('awaiting material intake')}
+      </div>`;
+    return;
+  }
+  const chips = MATERIALS.map(m => makeIngressChip(m)).join('');
+  el.innerHTML = `
+    <div class="gate-container">
+      <div class="gate-hdr">
+        <h3>Gate B / Session Entry / Material Ledger</h3>
+        <div class="gate-sub1">( Source-plane Material Intake )</div>
+        <div class="gate-sub2">Session-scoped Materials / Material Snapshots</div>
+      </div>
+      <div class="ingress-grid">${chips}</div>
+    </div>`;
+}
+
+function renderOverview3B() {
+  const el = document.getElementById('ov-3b-content');
+  if (workbenchState === 'empty' || workbenchState === 'loaded') {
+    el.innerHTML = `
+      <div class="gate-container">
+        <div class="gate-hdr">
+          <h3>Gate C / Typing + Set Formation</h3>
+        </div>
+        ${makeEmptySlot(workbenchState === 'empty' ? 'awaiting material' : 'material not yet typed')}
+      </div>`;
+    return;
+  }
+  // typed or analyzed
+  const groups = [
+    { type: 'quant',  label: 'Quantitative Data',  ids: [1,2,3,4,5,6,7] },
+    { type: 'qual',   label: 'Qualitative Data',    ids: [8,9,10,11,12,13,14] },
+    { type: 'hybrid', label: 'Hybrid/Mixed Data',   ids: [15,16,17,18,19,20] },
+  ];
+  el.innerHTML = `
+    <div class="gate-container">
+      <div class="gate-hdr">
+        <h3>Gate C / Typing + Set Formation</h3>
+      </div>
+      ${groups.map(g => `
+        <div class="typed-group">
+          <div class="typed-group-hdr ${g.type}">${g.label}<span class="typed-group-count">(${g.ids.length})</span></div>
+          <div class="ingress-grid">
+            ${g.ids.map(id => makeIngressChip(MATERIALS[id-1])).join('')}
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderOverview3C() {
+  const el = document.getElementById('ov-3c-content');
+  if (workbenchState === 'empty' || workbenchState === 'loaded' || workbenchState === 'typed') {
+    const msg = {
+      empty: 'awaiting material and typing',
+      loaded: 'material not yet typed',
+      typed: 'analysis not yet executed',
+    }[workbenchState];
+    el.innerHTML = `
+      ${makeEmptySlot('Quantitative plane — ' + msg)}
+      <div style="height:8px"></div>
+      ${makeEmptySlot('Qualitative plane — ' + msg)}`;
+    return;
+  }
+  // analyzed state
+  el.innerHTML = renderAnalysisPlaneHTML('quant', PLANE_QUANT_IDS, OUTPUTS_QUANT, true) +
+    '<div style="height:10px"></div>' +
+    renderAnalysisPlaneHTML('qual',  PLANE_QUAL_IDS,  OUTPUTS_QUAL,  true);
+}
+
+function renderAnalysisPlaneHTML(type, inputIds, outputs, compact = false) {
+  const typeLabels = {
+    quant: "Quantitative (and/or AKA 'Deterministic') Environment/Container/Plane",
+    qual:  "Qualitative Data Analysis Environment/Container/Plane",
+  };
+  const inputChips = inputIds.map(id => {
+    const m = getMaterialById(id);
+    const t = m.type;
+    return `<div class="plane-input-chip ${t}">Gate B Ingress Object #${id}</div>`;
+  }).join('');
+
+  const outCols = compact ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)';
+  const outputCards = outputs.map(o =>
+    `<div class="output-card ${type}-out">
+      ${o.text}
+      <span class="out-obj-ref">${o.objRef}</span>
+    </div>`
+  ).join('');
+
+  const bracketH = Math.max(60, inputIds.length * 19);
+
+  return `<div class="analysis-plane">
+    <div class="plane-title ${type}">${typeLabels[type]}</div>
+    <div class="plane-body">
+      <div class="plane-inputs-wrap">
+        <div class="plane-input-list">${inputChips}</div>
+        <div class="plane-bracket">
+          <svg class="bracket-svg" viewBox="0 0 14 ${bracketH}" style="width:14px;height:${bracketH}px;stroke:#555;fill:none;stroke-width:2;">
+            <polyline points="8,2 2,2 2,${bracketH-2} 8,${bracketH-2}" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="plane-center">
+        <svg width="28" height="16" viewBox="0 0 28 16" style="flex-shrink:0"><polygon points="0,3 18,3 18,0 28,8 18,16 18,13 0,13" fill="#4a4a4a"/></svg>
+        <div class="plane-process-box">
+          <div class="plane-process-text">Data Investigation/Exploration/Analysis is conducted/executed, verified/validated, and outputs/products are saved/frozen/handed off for the purpose of insight/fact generation/determination</div>
+          <div class="plane-process-note"><em>Note:</em> The process/orchestration/machinations/steps/etc. behind this has yet to be adequately conceptualized/determined</div>
+        </div>
+        <svg width="28" height="16" viewBox="0 0 28 16" style="flex-shrink:0"><polygon points="0,3 18,3 18,0 28,8 18,16 18,13 0,13" fill="#4a4a4a"/></svg>
+      </div>
+      <div class="plane-outputs" style="grid-template-columns:${outCols}">
+        ${outputCards}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── Analysis Plane — Detail view (wider output grid) ───── */
+function renderAnalysisPlaneHTMLDetail(type, inputIds, outputs) {
+  const typeLabels = {
+    quant: "Quantitative (and/or AKA 'Deterministic') Environment/Container/Plane",
+    qual:  "Qualitative Data Analysis Environment/Container/Plane",
+  };
+  const inputChips = inputIds.map(id => {
+    const m = getMaterialById(id);
+    return `<div class="plane-input-chip ${m.type}">
+      <span style="display:block;font-size:7.5px;font-family:var(--f-mono);opacity:0.5;">Gate B Ingress Obj #${id}</span>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">${m.label}</span>
+    </div>`;
+  }).join('');
+
+  const bracketH = Math.max(60, inputIds.length * 22);
+  const outputCards = outputs.map(o =>
+    `<div class="output-card ${type}-out">
+      ${o.text}
+      <span class="out-obj-ref">${o.objRef}</span>
+    </div>`
+  ).join('');
+
+  return `<div class="plane-detail">
+    <div class="plane-detail-hdr">
+      <h2 class="${type}">${typeLabels[type]}</h2>
+      <div class="pd-sub">prototype/sample-state · analysis executed (sample outputs)</div>
+    </div>
+    <div style="display:grid;grid-template-columns:220px auto 1fr;gap:16px;align-items:flex-start;padding:16px;">
+      <div style="display:flex;align-items:flex-start;gap:6px;">
+        <div class="plane-input-list" style="font-size:9.5px;">${inputChips}</div>
+        <svg viewBox="0 0 14 ${bracketH}" style="width:14px;height:${bracketH}px;stroke:#555;fill:none;stroke-width:2;flex-shrink:0;margin-top:4px;">
+          <polyline points="8,2 2,2 2,${bracketH-2} 8,${bracketH-2}" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;padding-top:8px;">
+        <svg width="28" height="16" viewBox="0 0 28 16"><polygon points="0,3 18,3 18,0 28,8 18,16 18,13 0,13" fill="#4a4a4a"/></svg>
+        <div class="plane-process-box" style="max-width:220px;">
+          <div class="plane-process-text">Data Investigation/Exploration/Analysis is conducted/executed, verified/validated, and outputs/products are saved/frozen/handed off for the purpose of insight/fact generation/determination</div>
+          <div class="plane-process-note"><em>Note:</em> The process/orchestration/machinations/steps/etc. behind this has yet to be adequately conceptualized/determined</div>
+        </div>
+        <svg width="28" height="16" viewBox="0 0 28 16"><polygon points="0,3 18,3 18,0 28,8 18,16 18,13 0,13" fill="#4a4a4a"/></svg>
+      </div>
+      <div class="plane-outputs" style="grid-template-columns:repeat(3,1fr);align-self:start;">
+        ${outputCards}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── 3A DETAIL ──────────────────────────────────────────── */
+function render3ADetail() {
+  const gateEl = document.getElementById('detail-3a-gate');
+  const statEl = document.getElementById('detail-3a-status');
+
+  if (workbenchState === 'empty') {
+    gateEl.innerHTML = `
+      <div class="gate-b-title-block">
+        <h2>Gate B / Session Entry / Material Ledger</h2>
+        <div class="gtb-sub1">( Source-plane Material Intake )</div>
+        <div class="gtb-sub2">Session-scoped Materials / Material Snapshots</div>
+      </div>
+      ${makeEmptySlot('No material loaded. Submit intent to begin retrieval.')}`;
+    statEl.innerHTML = statusRows('empty');
+    return;
+  }
+
+  const legend = `
+    <div class="gate-b-legend">
+      <div class="legend-item"><div class="legend-dot quant"></div>Quantitative (#1–7)</div>
+      <div class="legend-item"><div class="legend-dot qual"></div>Qualitative (#8–14)</div>
+      <div class="legend-item"><div class="legend-dot hybrid"></div>Hybrid/Mixed (#15–20)</div>
+    </div>
+    <div style="font-size:9px;color:#3a3a3a;text-align:center;margin-bottom:8px;font-family:var(--f-mono);">
+      hover a chip to see approve / deny / isolate actions
+    </div>`;
+
+  const chips = MATERIALS.map(m => makeIngressChip(m, {showActions: true})).join('');
+
+  gateEl.innerHTML = `
+    <div class="gate-b-title-block">
+      <h2>Gate B / Session Entry / Material Ledger</h2>
+      <div class="gtb-sub1">( Source-plane Material Intake )</div>
+      <div class="gtb-sub2">Session-scoped Materials / Material Snapshots</div>
+    </div>
+    ${legend}
+    <div class="ingress-grid">${chips}</div>`;
+
+  statEl.innerHTML = statusRows(workbenchState);
+}
+
+function statusRows(state) {
+  const rows = [
+    ['session_id',          state === 'empty' ? '—' : 'L3-SESS-0042',          state !== 'empty' ? 'ok' : 'pending'],
+    ['material_count',      state === 'empty' ? '0' : '20',                     state !== 'empty' ? 'ok' : 'pending'],
+    ['gate_b_status',       state === 'empty' ? 'empty' : 'loaded',             state !== 'empty' ? 'ok' : 'pending'],
+    ['snapshot_frozen',     ['typed','analyzed'].includes(state) ? 'yes' : 'no', ['typed','analyzed'].includes(state) ? 'ok' : 'pending'],
+    ['L3MaterialSnapshot',  'prototype/sample-state',  'deferred'],
+    ['L3SelectionManifest', 'prototype/sample-state',  'deferred'],
+    ['approve_deny_isolate', 'prototype UI only',       'deferred'],
+  ];
+  return rows.map(([k,v,cls]) =>
+    `<div class="status-row">
+      <span class="status-key">${k}</span>
+      <span class="status-val ${cls || ''}">${v}</span>
+    </div>`
+  ).join('');
+}
+
+/* ── 3B DETAIL ──────────────────────────────────────────── */
+function render3BDetail() {
+  const el = document.getElementById('detail-3b-layout');
+
+  if (workbenchState === 'empty' || workbenchState === 'loaded') {
+    el.innerHTML = `
+      <div style="grid-column:1/-1">
+        ${makeEmptySlot(workbenchState === 'empty' ? 'No material loaded.' : 'Material loaded but not yet typed. Advance state to "typed" to see groupings.')}
+      </div>`;
+    return;
+  }
+
+  const groups = [
+    { type: 'quant',  title: 'Quantitative Data',  sub: 'deterministic / numeric analysis path',  ids: [1,2,3,4,5,6,7] },
+    { type: 'qual',   title: 'Qualitative Data',    sub: 'narrative / policy / documentary path',  ids: [8,9,10,11,12,13,14] },
+    { type: 'hybrid', title: 'Hybrid / Mixed Data', sub: 'mixed-modality analysis path',           ids: [15,16,17,18,19,20] },
+  ];
+
+  el.innerHTML = groups.map(g => `
+    <div class="typed-group-detail">
+      <div class="tgd-hdr">
+        <h2 class="${g.type}">${g.title}</h2>
+        <div class="tgd-sub">${g.sub}</div>
+      </div>
+      <div class="ingress-grid">
+        ${g.ids.map(id => makeIngressChip(MATERIALS[id-1], {showActions: false})).join('')}
+      </div>
+      <div style="margin-top:8px;font-size:9px;color:#444;font-family:var(--f-mono);">
+        unit/group/set formation — prototype/sample-state-backed<br>
+        live: requires L3TypingRecord + L3AnalysisUnit/Group/Set
+      </div>
+    </div>`
+  ).join('');
+}
+
+/* ── 3C DETAIL ──────────────────────────────────────────── */
+function render3CDetail() {
+  const el = document.getElementById('detail-3c-layout');
+
+  if (workbenchState === 'empty' || workbenchState === 'loaded') {
+    el.innerHTML = makeEmptySlot('No analysis data. Advance state to "typed" or "analyzed".');
+    return;
+  }
+  if (workbenchState === 'typed') {
+    el.innerHTML = `
+      ${renderPlanetDetailConfigHTML('quant', PLANE_QUANT_IDS)}
+      <div style="height:12px"></div>
+      ${renderPlanetDetailConfigHTML('qual',  PLANE_QUAL_IDS)}
+      <div style="height:8px"></div>
+      <div class="empty-slot">
+        Hybrid/Mixed Analysis Environment/Container/Plane — intentionally deferred.
+        Real: requires hybrid execution engine (planning-only as of prototype date).
+      </div>`;
+    return;
+  }
+  // analyzed — detail view uses same plane HTML but with 3-col outputs
+  el.innerHTML =
+    renderAnalysisPlaneHTMLDetail('quant', PLANE_QUANT_IDS, OUTPUTS_QUANT) +
+    '<div style="height:12px"></div>' +
+    renderAnalysisPlaneHTMLDetail('qual',  PLANE_QUAL_IDS,  OUTPUTS_QUAL) +
+    '<div style="height:8px"></div>' +
+    `<div class="empty-slot">
+      Hybrid/Mixed Analysis Environment/Container/Plane — intentionally deferred.
+      Real: requires hybrid execution engine (planning-only as of prototype date).
+    </div>`;
+}
+
+function renderPlanetDetailConfigHTML(type, inputIds) {
+  var typeLabels = {
+    quant: "Quantitative (and/or AKA 'Deterministic') Environment/Container/Plane",
+    qual:  "Qualitative Data Analysis Environment/Container/Plane",
+  };
+  var inputChips = inputIds.map(function(id) {
+    var m = getMaterialById(id);
+    return '<div class="plane-input-chip ' + m.type + '">Gate B Ingress Object #' + id + '</div>';
+  }).join('');
+  var bracketH = Math.max(60, inputIds.length * 19);
+
+  return '<div class="plane-detail">' +
+    '<div class="plane-detail-hdr">' +
+      '<h2 class="' + type + '">' + typeLabels[type] + '</h2>' +
+      '<div class="pd-sub">prototype/sample-state · analysis pending — advance state to "analyzed" for outputs</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:200px auto 1fr;gap:16px;align-items:flex-start;padding:16px;">' +
+      '<div style="display:flex;align-items:flex-start;gap:6px;">' +
+        '<div class="plane-input-list">' + inputChips + '</div>' +
+        '<svg viewBox="0 0 14 ' + bracketH + '" style="width:14px;height:' + bracketH + 'px;stroke:#555;fill:none;stroke-width:2;flex-shrink:0;"><polyline points="8,2 2,2 2,' + (bracketH-2) + ' 8,' + (bracketH-2) + '" stroke-linecap="round"/></svg>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;padding-top:8px;">' +
+        '<svg width="28" height="16" viewBox="0 0 28 16"><polygon points="0,3 18,3 18,0 28,8 18,16 18,13 0,13" fill="#4a4a4a"/></svg>' +
+        '<div class="plane-process-box"><div class="plane-process-text">Analysis configured — awaiting execution trigger.</div><div class="plane-process-note"><em>Note:</em> Execution engine not yet specified.</div></div>' +
+        '<svg width="28" height="16" viewBox="0 0 28 16"><polygon points="0,3 18,3 18,0 28,8 18,16 18,13 0,13" fill="#4a4a4a"/></svg>' +
+      '</div>' +
+      '<div class="empty-slot" style="align-self:center;"><div class="empty-icon">⬚</div>Outputs will appear here — advance state to "analyzed".</div>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ── Spec chips ─────────────────────────────────────────── */
+function initSpecChips() {
+  var container = document.getElementById('spec-chips-grid');
+  if (!container) return;
+  container.innerHTML = SPEC_CHIPS.map(function(chip, i) {
+    sessionData.selectedChips.push(chip.label);
+    var cls = 'selected-' + chip.group;
+    return '<div class="spec-chip ' + cls + '" data-idx="' + i + '" onclick="toggleChip(this,' + i + ')">' + chip.label + '</div>';
+  }).join('');
+}
+
+function toggleChip(el, idx) {
+  var chip = SPEC_CHIPS[idx];
+  var cls = 'selected-' + chip.group;
+  var wasSelected = el.classList.contains(cls);
+  el.classList.toggle(cls, !wasSelected);
+  if (wasSelected) {
+    sessionData.selectedChips = sessionData.selectedChips.filter(function(c){ return c !== chip.label; });
+  } else {
+    sessionData.selectedChips.push(chip.label);
+  }
+}
+
+/* ── Hash-based state routing ───────────────────────────── */
+function applyHashState() {
+  var hash = window.location.hash.replace('#', '');
+  if (!hash) return;
+  var params = {};
+  hash.split('&').forEach(function(p) {
+    var kv = p.split('=');
+    if (kv[0]) params[kv[0]] = kv[1] || '';
+  });
+  if (params.state) {
+    workbenchState = params.state;
+    document.querySelectorAll('.state-btn').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.state === params.state);
+    });
+  }
+  if (params.screen) {
+    document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+    var el = document.getElementById('screen-' + params.screen);
+    if (el) el.classList.add('active');
+    document.querySelectorAll('.nav-tab').forEach(function(t) {
+      t.classList.toggle('active', t.dataset.screen === params.screen);
+    });
+    currentScreen = params.screen;
+  }
+}
+
+/* ── Init ───────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+  initSpecChips();
+  applyHashState();
+  renderCurrentScreen();
+});
+
+/* hashchange fires when the same file is reloaded with a different hash
+   (e.g. Puppeteer page.goto on same file:// origin — DOMContentLoaded
+   does NOT re-fire, only hashchange does) */
+window.addEventListener('hashchange', function() {
+  applyHashState();
+  renderCurrentScreen();
+});
+</script>
+</body>
+</html>
+the same file is reloaded with a different hash
+   (e.g. Puppeteer page.goto on same file:// origin — DOMContentLoaded
+   does NOT re-fire, only hashchange does) */
+window.addEventListener('hashchange', function() {
+  applyHashState();
+  renderCurrentScreen();
+});
+</script>
+</body>
+</html>
