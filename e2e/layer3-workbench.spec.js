@@ -244,10 +244,15 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
     const dockNavStyle = window.getComputedStyle(document.querySelector('.operations-dock-nav'));
     const activePanelStyle = window.getComputedStyle(document.querySelector('.operations-dock > .operation-panel-active'));
     const inactivePanelStyle = window.getComputedStyle(document.querySelector('.operations-dock > .operation-panel-inactive'));
+    const mapBand = document.querySelector('#sublayer-map-band');
+    const mapBandStyle = window.getComputedStyle(mapBand);
+    const mapPanelStyle = window.getComputedStyle(document.querySelector('#sublayer-map-panel'));
     return {
       bodyBackground: bodyStyle.backgroundColor,
-      railBorderStyle: railStyle.borderTopStyle,
+      railBorderTopStyle: railStyle.borderTopStyle,
+      railBorderBottomStyle: railStyle.borderBottomStyle,
       railBackground: railStyle.backgroundColor,
+      workspaceBackground: window.getComputedStyle(document.querySelector('.layer3-workspace')).backgroundColor,
       workbandBorderStyle: workbandStyle.borderTopStyle,
       workbandBorderLeftWidth: workbandStyle.borderLeftWidth,
       workbandBorderLeftColor: workbandStyle.borderLeftColor,
@@ -264,11 +269,17 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
       stepperWidth: Math.round(stepperRect.width),
       contextWidth: Math.round(contextRect.width),
       workspaceShare: workspaceRect.width / shellRect.width,
+      mapBandHasCanvasStageClass: mapBand.classList.contains('canvas-stage-band'),
+      mapBandBorderLeftStyle: mapBandStyle.borderLeftStyle,
+      mapBandBorderRightStyle: mapBandStyle.borderRightStyle,
+      mapPanelPaddingLeft: Math.round(Number.parseFloat(mapPanelStyle.paddingLeft)),
     };
   });
   expect(workbenchStyles).toMatchObject({
     bodyBackground: 'rgb(13, 13, 13)',
-    railBorderStyle: 'solid',
+    railBorderTopStyle: 'none',
+    railBorderBottomStyle: 'dotted',
+    workspaceBackground: 'rgba(0, 0, 0, 0)',
     workbandBorderStyle: 'dotted',
     workbandBorderLeftWidth: '0px',
     workbandBackground: 'rgba(0, 0, 0, 0)',
@@ -280,10 +291,14 @@ test('Layer 3 workbench applies mockup-informed Workbench visual boundaries with
     activePanelDisplay: 'grid',
     inactivePanelDisplay: 'none',
     shellColumnCount: 3,
+    mapBandHasCanvasStageClass: true,
+    mapBandBorderLeftStyle: 'none',
+    mapBandBorderRightStyle: 'none',
   });
-  expect(workbenchStyles.stepperWidth).toBeLessThanOrEqual(50);
-  expect(workbenchStyles.contextWidth).toBeLessThanOrEqual(100);
-  expect(workbenchStyles.workspaceShare).toBeGreaterThan(0.88);
+  expect(workbenchStyles.mapPanelPaddingLeft).toBeLessThanOrEqual(10);
+  expect(workbenchStyles.stepperWidth).toBeLessThanOrEqual(38);
+  expect(workbenchStyles.contextWidth).toBeLessThanOrEqual(62);
+  expect(workbenchStyles.workspaceShare).toBeGreaterThan(0.92);
   expect(workbenchStyles.railBackground).not.toBe('rgba(0, 0, 0, 0)');
   expect(workbenchStyles.chipBackground).not.toBe('rgba(0, 0, 0, 0)');
   await expect(page.locator('.operation-dock-tab')).toHaveCount(9);
