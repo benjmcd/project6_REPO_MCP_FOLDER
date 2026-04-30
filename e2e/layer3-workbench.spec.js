@@ -464,9 +464,10 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
   await expect(page.locator('.state-3a')).toContainText('Session scoped');
   await expect(page.locator('.state-3b')).toContainText('Typing previewed');
   await expect(page.locator('.state-3c')).toContainText('Inputs routed');
-  await expect(page.locator('.analysis-plane.modality-quantitative .plane-column').first()).toContainText('modality quantitative');
-  await expect(page.locator('.analysis-plane.modality-quantitative .plane-process')).toContainText('No live process yet');
-  await expect(page.locator('.analysis-plane.modality-quantitative .plane-column').last()).toContainText('No live output');
+  await expect(page.locator('.analysis-plane.modality-quantitative .plane-input-bank')).toContainText('modality quantitative');
+  await expect(page.locator('.analysis-plane.modality-quantitative .plane-process-node')).toContainText('No live process yet');
+  await expect(page.locator('.analysis-plane.modality-quantitative .plane-output-field')).toContainText('No live output');
+  await expect(page.locator('.analysis-plane.modality-quantitative .plane-output-field h5')).toHaveText('Output / Result Field');
 
   const diagramStyles = await page.evaluate(() => {
     const sublayer = window.getComputedStyle(document.querySelector('.sublayer-3a'));
@@ -487,6 +488,10 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     const connector3bcBefore = window.getComputedStyle(connector3bc, '::before');
     const connector3bcAfter = window.getComputedStyle(connector3bc, '::after');
     const threeA = window.getComputedStyle(document.querySelector('.sublayer-3a'));
+    const inputBank = document.querySelector('.plane-input-bank');
+    const processNode = document.querySelector('.plane-process-node');
+    const outputField = document.querySelector('.plane-output-field');
+    const outputFieldStyle = window.getComputedStyle(outputField);
     return {
       intakeDisplay: intake.display,
       intakeGridArea: intake.gridArea,
@@ -518,6 +523,11 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
       laneLegendDisplay: laneLegend.display,
       laneLegendColumns: laneLegend.gridTemplateColumns.split(' ').filter(Boolean).length,
       laneLabelTransform: laneLabel.textTransform,
+      inputBankRole: inputBank.getAttribute('data-plane-role'),
+      processNodeRole: processNode.getAttribute('data-plane-role'),
+      outputFieldRole: outputField.getAttribute('data-plane-role'),
+      outputFieldHeading: outputField.querySelector('h5')?.textContent?.trim(),
+      outputFieldBorderStyle: outputFieldStyle.borderTopStyle,
     };
   });
   expect(diagramStyles).toEqual({
@@ -551,6 +561,11 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     laneLegendDisplay: 'grid',
     laneLegendColumns: 5,
     laneLabelTransform: 'uppercase',
+    inputBankRole: 'input-bank',
+    processNodeRole: 'process-status',
+    outputFieldRole: 'output-field',
+    outputFieldHeading: 'Output / Result Field',
+    outputFieldBorderStyle: 'dotted',
   });
 
   const desktopFit = await page.evaluate(() => {
@@ -566,6 +581,26 @@ test('Layer 3 workbench renders a responsive live-state sublayer material and an
     pageFitsViewport: true,
     panelFitsBand: true,
     mapIsPrimarySurface: true,
+  });
+
+  await page.setViewportSize({ width: 1500, height: 820 });
+  const desktopBreakpointFit = await page.evaluate(() => {
+    const panel = document.querySelector('.sublayer-map-panel');
+    const band = document.querySelector('.sublayer-map-band');
+    const firstPlaneFlow = document.querySelector('.analysis-plane .plane-flow');
+    const laneLegend = document.querySelector('.analysis-lane-legend');
+    return {
+      pageFitsViewport: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
+      panelFitsBand: panel.scrollWidth <= band.clientWidth + 1,
+      planeColumnCount: window.getComputedStyle(firstPlaneFlow).gridTemplateColumns.split(' ').filter(Boolean).length,
+      laneLegendColumns: window.getComputedStyle(laneLegend).gridTemplateColumns.split(' ').filter(Boolean).length,
+    };
+  });
+  expect(desktopBreakpointFit).toEqual({
+    pageFitsViewport: true,
+    panelFitsBand: true,
+    planeColumnCount: 5,
+    laneLegendColumns: 5,
   });
 
   await page.setViewportSize({ width: 1440, height: 820 });
