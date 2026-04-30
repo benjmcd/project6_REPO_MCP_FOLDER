@@ -1789,80 +1789,82 @@ function renderSublayerMap() {
                 </article>
             </div>
         </section>
-        <nav class="canvas-state-flow" aria-label="Layer 3 visualization state">
-            <span class="state-node state-3a viz-state-${escapeHtml(model.threeA.state)}">
-                <strong>3A</strong>
-                <span>${escapeHtml(model.threeA.stateLabel)}</span>
-            </span>
-            <span class="state-flow-link" aria-hidden="true"></span>
-            <span class="state-node state-3b viz-state-${escapeHtml(model.threeB.state)}">
-                <strong>3B</strong>
-                <span>${escapeHtml(model.threeB.stateLabel)}</span>
-            </span>
-            <span class="state-flow-link" aria-hidden="true"></span>
-            <span class="state-node state-3c viz-state-${escapeHtml(model.threeC.state)}">
-                <strong>3C</strong>
-                <span>${escapeHtml(model.threeC.stateLabel)}</span>
-            </span>
-        </nav>
-        <section class="sublayer-region sublayer-3a viz-state-${escapeHtml(model.threeA.state)}" aria-label="Sublayer 3A material intake and session scoping">
-            <div class="sublayer-title">
-                <span>Sublayer 3A</span>
-                <strong>Material Intake &amp; Session Scoping</strong>
-                <em>${escapeHtml(model.threeA.stateLabel)}</em>
-            </div>
-            <div class="gate-panel diagram-gate">
-                <h3>Gate B / Session Entry / Material Ledger</h3>
-                <p>${escapeHtml(model.threeA.message)}</p>
-                <div class="mini-rail">
-                    <span>Session ${escapeHtml(shortText(rail.session_id || 'none', 24))}</span>
-                    <span>Approved ${escapeHtml(rail.approved_material_count ?? 0)}</span>
-                    <span>Denied ${escapeHtml(rail.denied_material_count ?? 0)}</span>
-                    <span>Typing ${escapeHtml(rail.typing_status || 'not_started')}</span>
-                </div>
-            </div>
-            <div class="ledger-chip-field">
-                <div class="ledger-bracket"><span>Session-scoped Materials / Material Snapshots</span></div>
-                ${renderFlowObjects(model.threeA.objects, 'No material preview, session entry, or material ledger object is currently loaded.', { fieldLabel: '3A material ledger object field', slotCount: 6 })}
-            </div>
-        </section>
-        <div class="sublayer-connector sublayer-connector-3ab" aria-hidden="true"><span>3A to 3B</span></div>
-        <section class="analysis-routing-plane" aria-label="Sublayer 3B to 3C analysis routing">
-            <section class="sublayer-region sublayer-3b viz-state-${escapeHtml(model.threeB.state)}" aria-label="Sublayer 3B typing and set formation">
+        <section class="workflow-canvas-field" aria-label="Layer 3 3A to 3B to 3C workflow canvas">
+            <nav class="canvas-state-flow" aria-label="Layer 3 visualization state">
+                <span class="state-node state-3a viz-state-${escapeHtml(model.threeA.state)}">
+                    <strong>3A</strong>
+                    <span>${escapeHtml(model.threeA.stateLabel)}</span>
+                </span>
+                <span class="state-flow-link" aria-hidden="true"></span>
+                <span class="state-node state-3b viz-state-${escapeHtml(model.threeB.state)}">
+                    <strong>3B</strong>
+                    <span>${escapeHtml(model.threeB.stateLabel)}</span>
+                </span>
+                <span class="state-flow-link" aria-hidden="true"></span>
+                <span class="state-node state-3c viz-state-${escapeHtml(model.threeC.state)}">
+                    <strong>3C</strong>
+                    <span>${escapeHtml(model.threeC.stateLabel)}</span>
+                </span>
+            </nav>
+            <section class="sublayer-region sublayer-3a viz-state-${escapeHtml(model.threeA.state)}" aria-label="Sublayer 3A material intake and session scoping">
                 <div class="sublayer-title">
-                    <span>Sublayer 3B</span>
-                    <strong>Typing, Unit/Group/Set Formation</strong>
-                    <em>${escapeHtml(model.threeB.stateLabel)}</em>
+                    <span>Sublayer 3A</span>
+                    <strong>Material Intake &amp; Session Scoping</strong>
+                    <em>${escapeHtml(model.threeA.stateLabel)}</em>
                 </div>
                 <div class="gate-panel diagram-gate">
-                    <h3>Gate C Typing</h3>
-                    <p>${escapeHtml(model.threeB.message)}</p>
-                </div>
-                <div class="modality-bank-field">
-                    <div class="field-bracket modality-field-bracket"><span>Modality Object Banks / Ingress Containers</span></div>
-                    <div class="modality-buckets">
-                        ${model.threeB.buckets.map((bucket) => renderModalityBucket(bucket)).join('')}
+                    <h3>Gate B / Session Entry / Material Ledger</h3>
+                    <p>${escapeHtml(model.threeA.message)}</p>
+                    <div class="mini-rail">
+                        <span>Session ${escapeHtml(shortText(rail.session_id || 'none', 24))}</span>
+                        <span>Approved ${escapeHtml(rail.approved_material_count ?? 0)}</span>
+                        <span>Denied ${escapeHtml(rail.denied_material_count ?? 0)}</span>
+                        <span>Typing ${escapeHtml(rail.typing_status || 'not_started')}</span>
                     </div>
+                </div>
+                <div class="ledger-chip-field">
+                    <div class="ledger-bracket"><span>Session-scoped Materials / Material Snapshots</span></div>
+                    ${renderFlowObjects(model.threeA.objects, 'No material preview, session entry, or material ledger object is currently loaded.', { fieldLabel: '3A material ledger object field', slotCount: 6 })}
                 </div>
             </section>
-            <div class="sublayer-connector sublayer-connector-3bc" aria-hidden="true"><span>3B to 3C</span></div>
-            <section class="sublayer-region sublayer-3c viz-state-${escapeHtml(model.threeC.state)}" aria-label="Sublayer 3C analysis execution environments">
-                <div class="sublayer-title">
-                    <span>Sublayer 3C</span>
-                    <strong>Analysis Execution Environments / Planes</strong>
-                    <em>${escapeHtml(model.threeC.stateLabel)}</em>
-                </div>
-                <div class="gate-panel diagram-gate">
-                    <h3>Input To Process To Output</h3>
-                    <p>${escapeHtml(model.threeC.message)}</p>
-                </div>
-                ${renderExecutionPipeline(model.threeC.executionPipeline)}
-                <div class="analysis-plane-field">
-                    <div class="field-bracket analysis-field-bracket"><span>Analysis Environment Planes / Input To Output Fields</span></div>
-                    <div class="analysis-planes">
-                        ${model.threeC.planes.map((plane) => renderAnalysisPlane(plane)).join('')}
+            <div class="sublayer-connector sublayer-connector-3ab" aria-hidden="true"><span>3A to 3B</span></div>
+            <section class="analysis-routing-plane" aria-label="Sublayer 3B to 3C analysis routing">
+                <section class="sublayer-region sublayer-3b viz-state-${escapeHtml(model.threeB.state)}" aria-label="Sublayer 3B typing and set formation">
+                    <div class="sublayer-title">
+                        <span>Sublayer 3B</span>
+                        <strong>Typing, Unit/Group/Set Formation</strong>
+                        <em>${escapeHtml(model.threeB.stateLabel)}</em>
                     </div>
-                </div>
+                    <div class="gate-panel diagram-gate">
+                        <h3>Gate C Typing</h3>
+                        <p>${escapeHtml(model.threeB.message)}</p>
+                    </div>
+                    <div class="modality-bank-field">
+                        <div class="field-bracket modality-field-bracket"><span>Modality Object Banks / Ingress Containers</span></div>
+                        <div class="modality-buckets">
+                            ${model.threeB.buckets.map((bucket) => renderModalityBucket(bucket)).join('')}
+                        </div>
+                    </div>
+                </section>
+                <div class="sublayer-connector sublayer-connector-3bc" aria-hidden="true"><span>3B to 3C</span></div>
+                <section class="sublayer-region sublayer-3c viz-state-${escapeHtml(model.threeC.state)}" aria-label="Sublayer 3C analysis execution environments">
+                    <div class="sublayer-title">
+                        <span>Sublayer 3C</span>
+                        <strong>Analysis Execution Environments / Planes</strong>
+                        <em>${escapeHtml(model.threeC.stateLabel)}</em>
+                    </div>
+                    <div class="gate-panel diagram-gate">
+                        <h3>Input To Process To Output</h3>
+                        <p>${escapeHtml(model.threeC.message)}</p>
+                    </div>
+                    ${renderExecutionPipeline(model.threeC.executionPipeline)}
+                    <div class="analysis-plane-field">
+                        <div class="field-bracket analysis-field-bracket"><span>Analysis Environment Planes / Input To Output Fields</span></div>
+                        <div class="analysis-planes">
+                            ${model.threeC.planes.map((plane) => renderAnalysisPlane(plane)).join('')}
+                        </div>
+                    </div>
+                </section>
             </section>
         </section>
     `;
