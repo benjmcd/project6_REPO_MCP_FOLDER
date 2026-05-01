@@ -23,6 +23,7 @@ const els = {
     workspace: document.getElementById('candidate-b-trace-workspace'),
     identitySummary: document.getElementById('identity-summary'),
     badgeStrip: document.getElementById('badge-strip'),
+    artifactStatusStrip: document.getElementById('artifact-status-strip'),
     warningList: document.getElementById('warning-list'),
     limitationList: document.getElementById('limitation-list'),
     tabsHeader: document.getElementById('tabs-header'),
@@ -179,6 +180,44 @@ function renderBadges(manifest) {
     }
 }
 
+function artifactTabAvailable(manifest, tabId) {
+    return (manifest.tabs || []).some((tab) => tab.tab_id === tabId && tab.available);
+}
+
+function renderArtifactStatusStrip(manifest) {
+    const annotatedStatus = manifest.summary.annotated_pdf_status || 'missing';
+    const artifactStatuses = [
+        {
+            label: 'Annotated PDF',
+            available: artifactTabAvailable(manifest, 'annotated_pdf') && Boolean(manifest.artifacts.annotated_pdf),
+            detail: `Status: ${annotatedStatus}.`,
+        },
+        {
+            label: 'Raw JSON',
+            available: artifactTabAvailable(manifest, 'raw_json') && Boolean(manifest.artifacts.raw_json),
+            detail: 'Structured ODL payload.',
+        },
+        {
+            label: 'Raw Markdown',
+            available: artifactTabAvailable(manifest, 'raw_markdown') && Boolean(manifest.artifacts.raw_markdown),
+            detail: 'ODL markdown export.',
+        },
+    ];
+    els.artifactStatusStrip.innerHTML = artifactStatuses.map((artifact) => {
+        const stateLabel = artifact.available ? 'Available' : 'Unavailable';
+        const detail = artifact.available
+            ? artifact.detail
+            : `${artifact.detail} No artifact was retained for this fixture; validation remains read-only.`;
+        return `
+            <div class="artifact-status-card ${artifact.available ? 'available' : 'unavailable'}">
+                <span class="artifact-status-label">${escapeHtml(artifact.label)}</span>
+                <strong>${escapeHtml(stateLabel)}</strong>
+                <span>${escapeHtml(detail)}</span>
+            </div>
+        `;
+    }).join('');
+}
+
 function renderNoticeList(listEl, items, emptyMessage) {
     listEl.innerHTML = '';
     if (!items.length) {
@@ -201,7 +240,10 @@ function renderTabs(manifest) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = `tab-btn${tab.tab_id === state.tabId ? ' active' : ''}`;
-        button.textContent = tab.label;
+        button.textContent = tab.available ? tab.label : `${tab.label} (Unavailable)`;
+        button.title = tab.available
+            ? `${tab.label} artifact is available for this fixture.`
+            : `${tab.label} artifact was not retained for this fixture.`;
         button.disabled = !tab.available;
         button.addEventListener('click', async () => {
             if (state.tabId === tab.tab_id || !tab.available) {
@@ -272,9 +314,22 @@ function renderSummaryTab(manifest) {
     `;
 }
 
+function renderArtifactUnavailable(label, detail) {
+    els.tabContentArea.innerHTML = `
+        <section class="artifact-empty-state" role="status">
+            <h3>${escapeHtml(label)} unavailable</h3>
+            <p>${escapeHtml(detail)}</p>
+            <p>This is an expected bundle-scoped artifact state. The page does not generate or seed replacement artifacts.</p>
+        </section>
+    `;
+}
+
 function renderAnnotatedPdfTab(manifest) {
     if (!manifest.artifacts.annotated_pdf) {
-        els.tabContentArea.innerHTML = '<div class="placeholder">Annotated PDF is unavailable for this fixture.</div>';
+        renderArtifactUnavailable(
+            'Annotated PDF',
+            `The bundle reports annotated_pdf_status=${manifest.summary.annotated_pdf_status || 'missing'}, so no inline PDF artifact is available for this fixture.`,
+        );
         return;
     }
     els.tabContentArea.innerHTML = `
@@ -289,7 +344,7 @@ function renderAnnotatedPdfTab(manifest) {
 
 async function renderRawJsonTab(manifest) {
     if (!manifest.artifacts.raw_json) {
-        els.tabContentArea.innerHTML = '<div class="placeholder">Raw JSON is unavailable for this fixture.</div>';
+        renderArtifactUnavailable('Raw JSON', 'No raw JSON endpoint is available in the validated Candidate B bundle manifest for this fixture.');
         return;
     }
     if (state.cachedJson === null) {
@@ -307,7 +362,7 @@ async function renderRawJsonTab(manifest) {
 
 async function renderRawMarkdownTab(manifest) {
     if (!manifest.artifacts.raw_markdown) {
-        els.tabContentArea.innerHTML = '<div class="placeholder">Raw Markdown is unavailable for this fixture.</div>';
+        renderArtifactUnavailable('Raw Markdown', 'No raw Markdown endpoint is available in the validated Candidate B bundle manifest for this fixture.');
         return;
     }
     if (state.cachedMarkdown === null) {
@@ -369,6 +424,7 @@ async function loadManifest() {
     syncReturnLink();
     renderIdentitySummary(state.manifest);
     renderBadges(state.manifest);
+    renderArtifactStatusStrip(state.manifest);
     renderNoticeList(els.warningList, state.manifest.warnings || [], 'No warnings.');
     renderNoticeList(els.limitationList, state.manifest.limitations || [], 'No limitations.');
     renderTabs(state.manifest);
