@@ -109,6 +109,19 @@ def test_workbench_compare_js_uses_page_local_query_params_and_compare_routes() 
     assert "document-trace?run_id=" not in js_content
 
 
+def test_workbench_compare_js_adds_bundle_trace_return_context() -> None:
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "workbench_compare.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "function withBundleTraceContext(rawUrl)" in js_content
+    assert "withBundleTraceContext(manifest.deep_links.candidate_b_trace)" in js_content
+    assert "url.searchParams.set('baseline_run_id', state.baselineRunId)" in js_content
+    assert "url.searchParams.set('candidate_a_run_id', state.candidateARunId)" in js_content
+    assert "url.searchParams.set('candidate_b_source_kind', 'bundle')" in js_content
+    assert "url.searchParams.delete('candidate_b_run_id')" in js_content
+    assert "withBundleTraceContext(manifest.deep_links.candidate_b_runtime_trace)" not in js_content
+
+
 def test_workbench_compare_js_renders_required_compare_columns() -> None:
     js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "workbench_compare.js"
     js_content = js_path.read_text(encoding="utf-8")

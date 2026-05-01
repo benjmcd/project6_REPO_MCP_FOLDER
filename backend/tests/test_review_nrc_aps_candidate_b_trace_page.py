@@ -101,6 +101,8 @@ def test_candidate_b_trace_js_preserves_bundle_context_for_workbench_return() ->
     assert "baseline_run_id" in js_content
     assert "candidate_a_run_id" in js_content
     assert "candidate_b_source_kind', 'bundle'" in js_content
+    assert js_content.count("params.set('baseline_run_id', state.baselineRunId)") == 2
+    assert js_content.count("params.set('candidate_a_run_id', state.candidateARunId)") == 2
     assert "params.get('candidate_b_run_id')" not in js_content
     assert "params.set('candidate_b_run_id'" not in js_content
     assert "syncReturnLink();" in js_content
