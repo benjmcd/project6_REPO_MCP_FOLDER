@@ -330,7 +330,7 @@ Do not describe Option B as a small follow-up to Candidate B Trace; it is a sepa
 ## Remaining open item 7 - bundle-scoped operator ergonomics
 
 ### What remains open
-If Candidate B remains bundle-scoped, there is still room for narrow operator-ergonomics improvement after hardening and scope decisions.
+For the preserved bundle-scoped Candidate B Trace path, there is still room for narrow operator-ergonomics improvement after hardening and scope decisions.
 
 ### Candidate examples
 - stronger fixture-to-fixture navigation in Candidate B Trace
