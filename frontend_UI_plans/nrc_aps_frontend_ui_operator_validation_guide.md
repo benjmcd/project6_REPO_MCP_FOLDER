@@ -110,6 +110,8 @@ Important workbench-compare note:
 - populated workbench-compare validation requires same-checkout prep for baseline, Candidate A, and Candidate B sources
 - the canonical compare prep flow now includes the validate-only same-checkout prep gate in `tools/validate_wb_prep.py`
 - once same-checkout prep exists, this guide should also validate Candidate B Trace follow-through from the compare page
+- Candidate B Trace follow-through should preserve available Workbench Compare return context, show artifact availability/unavailable states, and show fixture navigation/status from the existing Workbench Compare targets API
+- the current repo-native browser fixture proves the truthful one-target state (`Fixture 1 of 1` with disabled Previous/Next), not active multi-fixture navigation
 - use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated same-corpus compare prep, `tools/validate_wb_prep.py` gate, and populated operator-validation sequence
 
 ## Preconditions
@@ -202,6 +204,8 @@ Candidate B Trace:
 
 - `http://127.0.0.1:8098/review/nrc-aps/candidate-b-trace?candidate_b_bundle_id=<BUNDLE_ID>&fixture_id=<FIXTURE_ID>`
 - the preferred operator path is still to reach this page from a Candidate B deep link inside Workbench Compare after same-checkout prep
+- the Workbench Compare deep link should carry `baseline_run_id`, `candidate_a_run_id`, `candidate_b_source_kind=bundle`, `candidate_b_bundle_id`, and `fixture_id`; that context enables the return link and fixture navigation/status
+- direct bundle/fixture URLs can inspect one Candidate B fixture but do not prove compare-context preservation by themselves
 
 Direct run link:
 
@@ -275,6 +279,10 @@ On `/review/nrc-aps/candidate-b-trace`, once same-checkout compare prep is prese
 - `annotated_pdf` is the default tab when the artifact is present
 - the annotated PDF renders inline in the page rather than forcing a download response
 - `summary`, `raw_json`, and `raw_markdown` tabs load coherently
+- artifact availability/status cards are visible for annotated PDF, raw JSON, and raw Markdown
+- unavailable artifact states are explicit read-only states
+- the Back link preserves available Workbench Compare context
+- fixture navigation/status is visible; if only one comparable target exists, `Fixture 1 of 1` with disabled Previous/Next is correct
 - no raw local filesystem paths are displayed in the browser UI
 
 If 3 or more reviewable runs are available:

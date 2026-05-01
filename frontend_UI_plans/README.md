@@ -103,6 +103,8 @@ Current shipped-baseline note:
   - `tools/validate_wb_prep.py`
   - `tests/test_validate_wb_prep.py`
 - that prep gate fails closed on empty, donor, ambiguous, missing-runtime-run-id, or incoherent same-checkout prep state and should precede populated operator validation
+- the preserved bundle-scoped Candidate B Trace path now also includes compare/trace return-context preservation, artifact availability/unavailable-state affordances, and fixture navigation/status over the existing Workbench Compare targets API
+- current repo-native browser coverage proves the single-target `Fixture 1 of 1` disabled-navigation state; active multi-fixture Previous/Next navigation requires a prepared state with multiple comparable targets
 - future work should start from that shipped posture rather than from pre-compare or pre-trace assumptions
 - future work should stay additive and lane-scoped unless a repo-confirmed blocker requires a broader reopen
 
@@ -116,7 +118,7 @@ Ordered next-decision note:
 - only reopen a wider Candidate B runtime-admission program if a concrete operator/product requirement proves the shipped bundle-scoped model insufficient
 - that wider program has now been explicitly reopened through processing-engine admission, existing `/runs` runtime metadata, rendered review/document-trace selector visibility, and additive Workbench Compare runtime-source integration; it is not yet Candidate B Trace parity for admitted runtime runs, document-trace parity expansion, DB schema/model/migration work, broad route widening, persistence redesign, or new run-submission UI work
 - same-checkout prepared-state workflow hardening is now landed through the validate-only prep gate and canonical prep sequence
-- for the preserved bundle-scoped Candidate B Trace path, operator ergonomics should improve only where justified
+- for the preserved bundle-scoped Candidate B Trace path, further operator ergonomics should improve only where justified and should not be described as runtime Candidate B Trace parity
 - current `main` also includes the merged planning-only broader-workbench prep packet rooted in `next_milestone_plans/Layer3_planning_docs/24_L3_WB_FREEZE.md` from PR `#165` and `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md` from PR `#168`; that deferred additive lane still does not rename, replace, or activate the currently shipped review/document-trace/workbench/Candidate B surfaces
 - documentation closeout is now landed for the active UI/operator front doors:
   - `frontend_UI_plans/README.md` remains the front-door index
