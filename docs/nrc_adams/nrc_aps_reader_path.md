@@ -30,3 +30,8 @@ For the shipped NRC APS review surfaces on current `main`, use these docs in ord
 3. `frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md` - concise startup walkthrough layered on top of the launch runbook
 4. `frontend_UI_plans/wb-compare-validation.md` - same-checkout prep, `tools/validate_wb_prep.py`, and populated Workbench Compare plus Candidate B Trace validation
 5. `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md` - broader manual validation pass after launch and prep succeed
+
+Candidate B runtime-admission note:
+- The older Candidate B workbench pack remains the authority for bundle-scoped compare/trace history and guardrails, but it did not authorize runtime admission.
+- The later explicit runtime-admission reopen is currently implemented as the opt-in `document_processing_engine="candidate_b_opendataloader_pdf"` processing path on the existing NRC APS run-submit flow, plus optional runtime metadata on the existing review `/runs` selector response.
+- Use `docs/nrc_adams/nrc_aps_status_handoff.md` and the live source files named there before making runtime-selector, Workbench Compare, Candidate B Trace, schema, route, or persistence claims.

@@ -184,6 +184,90 @@ class TestNormalizeVisualLaneMode:
         assert result == "baseline"
 
 
+class TestNormalizeDocumentProcessingEngine:
+    def test_preserves_baseline(self):
+        result = nrc_aps_document_processing._normalize_document_processing_engine("baseline")
+        assert result == nrc_aps_document_processing.APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
+
+    def test_preserves_candidate_b(self):
+        result = nrc_aps_document_processing._normalize_document_processing_engine("candidate_b_opendataloader_pdf")
+        assert result == nrc_aps_document_processing.APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+
+    def test_fail_closed_for_unapproved_value(self):
+        result = nrc_aps_document_processing._normalize_document_processing_engine("candidate_c_other_pdf")
+        assert result == nrc_aps_document_processing.APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
+
+
+class TestCandidateBProcessingIntegration:
+    def test_candidate_b_requires_pdf(self):
+        with pytest.raises(ValueError, match="document_processing_engine_requires_pdf"):
+            nrc_aps_document_processing.process_document(
+                content=_fixture_bytes("mismatch_pdf_body.txt"),
+                declared_content_type="text/plain",
+                config={
+                    "document_processing_engine": "candidate_b_opendataloader_pdf",
+                },
+            )
+
+    def test_candidate_b_requires_artifact_storage_dir(self):
+        with pytest.raises(ValueError, match="candidate_b_artifact_storage_dir_required"):
+            nrc_aps_document_processing.process_document(
+                content=_fixture_bytes("layout.pdf"),
+                declared_content_type="application/pdf",
+                config={
+                    "document_processing_engine": "candidate_b_opendataloader_pdf",
+                },
+            )
+
+    def test_candidate_b_missing_package_fails_closed(self, monkeypatch, tmp_path: Path):
+        def _missing_version(_dist_name: str) -> str:
+            raise importlib.metadata.PackageNotFoundError
+
+        monkeypatch.setattr(nrc_aps_document_processing.importlib.metadata, "version", _missing_version)
+
+        with pytest.raises(ValueError, match="candidate_b_package_unavailable"):
+            nrc_aps_document_processing.process_document(
+                content=_fixture_bytes("layout.pdf"),
+                declared_content_type="application/pdf",
+                config={
+                    "document_processing_engine": "candidate_b_opendataloader_pdf",
+                    "artifact_storage_dir": str(tmp_path),
+                },
+            )
+
+    def test_candidate_b_processes_pdf_with_existing_contract_shape(self, tmp_path: Path):
+        content = _fixture_bytes("layout.pdf")
+
+        result = nrc_aps_document_processing.process_document(
+            content=content,
+            declared_content_type="application/pdf",
+            config={
+                "document_processing_engine": "candidate_b_opendataloader_pdf",
+                "artifact_storage_dir": str(tmp_path),
+            },
+        )
+
+        output_root = nrc_aps_document_processing._candidate_b_output_root(
+            artifact_storage_dir=tmp_path,
+            content=content,
+        )
+
+        assert result["effective_content_type"] == "application/pdf"
+        assert result["document_processing_contract_id"] == nrc_aps_document_processing.APS_DOCUMENT_EXTRACTION_CONTRACT_ID
+        assert result["normalization_contract_id"] == nrc_aps_document_processing.APS_TEXT_NORMALIZATION_CONTRACT_ID
+        assert result["extractor_family"] == "pdf_candidate_b_opendataloader"
+        assert result["extractor_id"] == nrc_aps_document_processing.APS_ODL_PDF_EXTRACTOR_ID
+        assert result["extractor_version"] == nrc_aps_document_processing.APS_ODL_PDF_EXPECTED_VERSION
+        assert result["page_count"] >= 1
+        assert result["ordered_units"]
+        assert result["normalized_text"]
+        assert result["normalized_text_sha256"]
+        assert result["normalized_char_count"] > 0
+        assert result["visual_page_refs"] == []
+        assert (output_root / "input.pdf").exists()
+        assert (output_root / "input.json").exists()
+
+
 class TestVisualLaneIntegration:
     """Integration tests through process_document for the visual lane."""
 

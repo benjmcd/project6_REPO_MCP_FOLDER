@@ -157,6 +157,10 @@ def processing_config_from_run_config(config: dict[str, Any] | None = None) -> d
         "content_min_searchable_chars": incoming.get("content_min_searchable_chars", 200),
         "content_min_searchable_tokens": incoming.get("content_min_searchable_tokens", 30),
         "visual_lane_mode": incoming.get("visual_lane_mode", "baseline"),
+        "document_processing_engine": incoming.get(
+            "document_processing_engine",
+            nrc_aps_document_processing.APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
+        ),
     }
     if incoming.get("artifact_storage_dir"):
         overrides["artifact_storage_dir"] = incoming["artifact_storage_dir"]
