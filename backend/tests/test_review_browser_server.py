@@ -72,6 +72,8 @@ def test_review_browser_server_candidate_b_trace_defaults_to_annotated_pdf(clien
             "candidate_b_bundle_id": sources_payload["candidate_b_bundles"][0]["bundle_id"],
         },
     ).json()
+    assert [target["fixture_id"] for target in targets_payload["targets"]] == ["fontish", "ml17123a319"]
+    assert targets_payload["default_fixture_id"] is None
     fixture_id = targets_payload["targets"][0]["fixture_id"]
 
     manifest_response = client.get(
@@ -88,6 +90,21 @@ def test_review_browser_server_candidate_b_trace_defaults_to_annotated_pdf(clien
     assert manifest["artifacts"]["annotated_pdf"].startswith("/api/v1/review/nrc-aps/candidate-b-trace/annotated-pdf?")
     assert "C:\\" not in str(manifest)
 
+    second_manifest_response = client.get(
+        "/api/v1/review/nrc-aps/candidate-b-trace/manifest",
+        params={
+            "candidate_b_bundle_id": sources_payload["candidate_b_bundles"][0]["bundle_id"],
+            "fixture_id": targets_payload["targets"][1]["fixture_id"],
+        },
+    )
+    assert second_manifest_response.status_code == 200
+    second_manifest = second_manifest_response.json()
+    assert second_manifest["fixture_id"] == "ml17123a319"
+    assert second_manifest["artifacts"]["annotated_pdf"].startswith(
+        "/api/v1/review/nrc-aps/candidate-b-trace/annotated-pdf?"
+    )
+    assert "C:\\" not in str(second_manifest)
+
 
 def test_review_browser_server_document_trace_routes_use_isolated_runtime_fixture(client: TestClient) -> None:
     runs_response = client.get("/api/v1/review/nrc-aps/runs")
@@ -99,7 +116,7 @@ def test_review_browser_server_document_trace_routes_use_isolated_runtime_fixtur
     documents_response = client.get(f"/api/v1/review/nrc-aps/runs/{run_id}/documents")
     assert documents_response.status_code == 200
     documents_payload = documents_response.json()
-    assert len(documents_payload["documents"]) == 1
+    assert len(documents_payload["documents"]) == 2
     target_id = documents_payload["default_target_id"]
     assert target_id
 
