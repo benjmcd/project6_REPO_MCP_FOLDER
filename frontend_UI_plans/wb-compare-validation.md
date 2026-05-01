@@ -133,7 +133,12 @@ After automated tests are green, verify manually:
 15. runtime-sourced Candidate B deep links use the existing `document-trace` route for the admitted Candidate B runtime target and do not masquerade as Candidate B Trace parity
 16. when annotated PDF output is present, bundle-sourced `Candidate B Trace` defaults to `annotated_pdf` rather than `summary`
 17. the Candidate B annotated PDF renders inline in the page rather than forcing a download response
-18. no network call attempts to pass arbitrary filesystem paths from the browser
+18. Candidate B Trace shows artifact availability/status affordances for annotated PDF, raw JSON, and raw Markdown
+19. missing or unavailable Candidate B Trace artifacts render explicit read-only states and do not seed or generate replacement artifacts
+20. Workbench Compare to Candidate B Trace to Workbench Compare preserves available baseline, Candidate A, bundle-source, bundle-id, and fixture context
+21. Candidate B Trace fixture navigation/status uses the existing Workbench Compare targets API
+22. in the current repo-native browser fixture, the correct navigation proof is `Fixture 1 of 1` with disabled Previous/Next controls; active multi-fixture navigation requires a prepared state with multiple comparable targets
+23. no network call attempts to pass arbitrary filesystem paths from the browser
 
 ## 5. Validate-Only Rules
 

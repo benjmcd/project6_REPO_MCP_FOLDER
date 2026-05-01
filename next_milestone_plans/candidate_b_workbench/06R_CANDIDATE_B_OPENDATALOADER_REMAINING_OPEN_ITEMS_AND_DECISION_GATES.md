@@ -327,16 +327,20 @@ Do not describe Option B as a small follow-up to Candidate B Trace; it is a sepa
 
 ---
 
-## Remaining open item 7 - bundle-scoped operator ergonomics
+## Resolved post-PR392 - bundle-scoped operator ergonomics
+
+### Resolved posture
+For the preserved bundle-scoped Candidate B Trace path, the narrow operator-ergonomics tranche is now landed:
+
+- Workbench Compare Candidate B Trace links preserve available baseline, Candidate A, bundle, and fixture context into Candidate B Trace.
+- Candidate B Trace return links preserve that context back to Workbench Compare without inventing unavailable run ids.
+- Candidate B Trace surfaces annotated PDF, raw JSON, and raw Markdown availability/status affordances.
+- missing or unavailable artifacts are explicit read-only operator states and do not seed or generate replacement artifacts.
+- Candidate B Trace exposes comparable-fixture navigation/status using the existing Workbench Compare targets API.
+- the current repo-native browser fixture has exactly one comparable target, so the proven browser state is `Fixture 1 of 1` with disabled Previous/Next controls, not active multi-fixture navigation.
 
 ### What remains open
-For the preserved bundle-scoped Candidate B Trace path, there is still room for narrow operator-ergonomics improvement after hardening and scope decisions.
-
-### Candidate examples
-- stronger fixture-to-fixture navigation in Candidate B Trace
-- clearer missing-artifact states
-- better artifact affordances around annotated PDF, raw JSON, and raw Markdown
-- compact operator shortcuts from compare to trace and back
+Future fixture-to-fixture ergonomics can be refined only if a same-checkout prepared state exposes multiple comparable fixtures and the change remains frontend-only or otherwise narrowly justified.
 
 ### Hard rule
 Do not broaden ergonomics work into runtime admission, schema widening, or document-trace parity by stealth.
