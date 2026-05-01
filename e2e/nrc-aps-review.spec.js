@@ -47,6 +47,35 @@ test('NRC APS header exposes Layer3 workbench navigation', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Layer 3 Workbench' })).toBeVisible();
 });
 
+test('NRC APS run selectors label admitted Candidate B runtime distinctly', async ({ page }) => {
+  const reviewRunsResponsePromise = page.waitForResponse((response) => response.url().endsWith('/api/v1/review/nrc-aps/runs'));
+  await page.goto('/review/nrc-aps', { waitUntil: 'domcontentloaded' });
+  const reviewRunsPayload = await expectJsonResponse(await reviewRunsResponsePromise);
+  const candidateB = reviewRunsPayload.runs.find(
+    (run) => run.runtime_binding?.document_processing_engine === 'candidate_b_opendataloader_pdf',
+  );
+  expect(candidateB).toBeTruthy();
+
+  await expect(page.locator('#run-selector option').filter({ hasText: 'Baseline Run' })).toHaveCount(1);
+  await expect(page.locator('#run-selector option').filter({ hasText: 'Candidate A Run' })).toHaveCount(1);
+  await expect(page.locator('#run-selector option').filter({ hasText: 'Candidate B / OpenDataLoader PDF' })).toHaveCount(1);
+
+  await page.selectOption('#run-selector', candidateB.run_id);
+  await expect(page.locator('#current-run-info')).toContainText('Candidate B / OpenDataLoader PDF');
+  await expect(page.locator('#current-run-info')).toContainText('Variant:');
+
+  const documentTraceRunsResponsePromise = page.waitForResponse(
+    (response) => response.url().endsWith('/api/v1/review/nrc-aps/runs'),
+  );
+  await page.goto(`/review/nrc-aps/document-trace?run_id=${encodeURIComponent(candidateB.run_id)}`, { waitUntil: 'domcontentloaded' });
+  await expectJsonResponse(await documentTraceRunsResponsePromise);
+  await expect(page.locator('#trace-workspace')).toBeVisible();
+  await expect(page.locator('#run-selector')).toHaveValue(candidateB.run_id);
+  await expect(page.locator('#run-selector option:checked')).toContainText('Candidate B / OpenDataLoader PDF');
+  await expect(page.locator('#identity-summary')).toContainText('VARIANT');
+  await expect(page.locator('#identity-summary')).toContainText('Candidate B / OpenDataLoader PDF');
+});
+
 test('workbench compare deep-links into Candidate B Trace and Candidate B Trace defaults to annotated PDF', async ({ page }) => {
   const { sources, targets, manifest } = await openWorkbenchCompare(page);
 

@@ -16,10 +16,10 @@ from app.models import ApsContentChunk, ApsContentDocument, ApsContentLinkage, C
 import app.services.review_nrc_aps_candidate_b_trace as trace_service
 import app.services.review_nrc_aps_runtime as runtime_service
 import app.services.review_nrc_aps_workbench_compare as compare_service
+from app.services.review_nrc_aps_catalog import build_runtime_binding_summary
 from app.schemas.review_nrc_aps import (
     NrcApsReviewRunSelectorItemOut,
     NrcApsReviewRunSelectorOut,
-    NrcApsReviewRuntimeBindingSummaryOut,
 )
 from app.services.review_nrc_aps_runtime import ReviewRuntimeBinding
 
@@ -45,6 +45,7 @@ class _BrowserCorpusFixture:
 class ReviewBrowserFixture:
     baseline_binding: ReviewRuntimeBinding
     candidate_a_binding: ReviewRuntimeBinding
+    candidate_b_binding: ReviewRuntimeBinding
     checkout_root: Path
     bundle_id: str
     fixture_id: str
@@ -141,6 +142,7 @@ def _seed_runtime_binding(
     submitted_at: str,
     completed_at: str,
     corpus_fixture: _BrowserCorpusFixture,
+    document_processing_engine: str | None = None,
 ) -> ReviewRuntimeBinding:
     runtime_root = tmp_path / run_id
     runtime_root.mkdir(parents=True, exist_ok=True)
@@ -204,6 +206,8 @@ def _seed_runtime_binding(
     content_id = f"{run_id}-content-001"
     target_id = f"{run_id}-target-001"
     request_config = {"visual_lane_mode": visual_lane_mode}
+    if document_processing_engine is not None:
+        request_config["document_processing_engine"] = document_processing_engine
     timestamp = datetime.fromisoformat(completed_at.replace("Z", "+00:00")).astimezone(timezone.utc)
 
     Base.metadata.create_all(engine)
@@ -439,6 +443,16 @@ def build_review_browser_fixture(tmp_path: Path) -> ReviewBrowserFixture:
         completed_at="2026-04-13T23:05:00Z",
         corpus_fixture=corpus_fixture,
     )
+    candidate_b_binding = _seed_runtime_binding(
+        tmp_path,
+        run_id="candidate-b-runtime-001",
+        visual_lane_mode="baseline",
+        document_processing_engine="candidate_b_opendataloader_pdf",
+        accession_number="ML-BROWSER-003",
+        submitted_at="2026-04-13T23:00:00Z",
+        completed_at="2026-04-13T23:10:00Z",
+        corpus_fixture=corpus_fixture,
+    )
     checkout_root, bundle_id = _write_candidate_b_bundle(
         tmp_path,
         corpus_fixture=corpus_fixture,
@@ -453,11 +467,7 @@ def build_review_browser_fixture(tmp_path: Path) -> ReviewBrowserFixture:
                 submitted_at="2026-04-13T22:50:00Z",
                 completed_at="2026-04-13T23:00:00Z",
                 reviewable=True,
-                runtime_binding=NrcApsReviewRuntimeBindingSummaryOut(
-                    runtime_label=baseline_binding.review_root.name,
-                    database_label=baseline_binding.database_path.name if baseline_binding.database_path else None,
-                    storage_label=baseline_binding.storage_dir.name if baseline_binding.storage_dir else None,
-                ),
+                runtime_binding=build_runtime_binding_summary(baseline_binding),
             ),
             NrcApsReviewRunSelectorItemOut(
                 run_id=candidate_a_binding.run_id,
@@ -466,17 +476,23 @@ def build_review_browser_fixture(tmp_path: Path) -> ReviewBrowserFixture:
                 submitted_at="2026-04-13T22:55:00Z",
                 completed_at="2026-04-13T23:05:00Z",
                 reviewable=True,
-                runtime_binding=NrcApsReviewRuntimeBindingSummaryOut(
-                    runtime_label=candidate_a_binding.review_root.name,
-                    database_label=candidate_a_binding.database_path.name if candidate_a_binding.database_path else None,
-                    storage_label=candidate_a_binding.storage_dir.name if candidate_a_binding.storage_dir else None,
-                ),
+                runtime_binding=build_runtime_binding_summary(candidate_a_binding),
+            ),
+            NrcApsReviewRunSelectorItemOut(
+                run_id=candidate_b_binding.run_id,
+                display_label="Candidate B Runtime",
+                status="completed",
+                submitted_at="2026-04-13T23:00:00Z",
+                completed_at="2026-04-13T23:10:00Z",
+                reviewable=True,
+                runtime_binding=build_runtime_binding_summary(candidate_b_binding),
             ),
         ],
     )
     return ReviewBrowserFixture(
         baseline_binding=baseline_binding,
         candidate_a_binding=candidate_a_binding,
+        candidate_b_binding=candidate_b_binding,
         checkout_root=checkout_root,
         bundle_id=bundle_id,
         fixture_id=corpus_fixture.fixture_id,
@@ -519,7 +535,7 @@ def restore_review_browser_patches(patch_state: dict[str, object]) -> None:
 
 def install_review_browser_patches(fixture: ReviewBrowserFixture) -> None:
     runtime_service._load_binding_request_config_json.cache_clear()
-    bindings = [fixture.baseline_binding, fixture.candidate_a_binding]
+    bindings = [fixture.baseline_binding, fixture.candidate_a_binding, fixture.candidate_b_binding]
     runtime_service.discover_runtime_bindings = lambda: list(bindings)
     compare_service.discover_runtime_bindings = lambda: list(bindings)
     compare_service.discover_candidate_runs = lambda: fixture.selector

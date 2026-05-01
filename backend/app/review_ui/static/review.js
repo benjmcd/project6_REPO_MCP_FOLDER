@@ -71,6 +71,14 @@ let _runSeq = 0;
 let _detailsSeq = 0;
 let _graphSeq = 0;
 
+function runtimeVariantLabel(runtimeBinding) {
+    return window.NrcApsRuntimeLabels?.variantLabel(runtimeBinding) || 'Baseline';
+}
+
+function runOptionLabel(runInfo) {
+    return window.NrcApsRuntimeLabels?.runOptionLabel(runInfo) || runInfo?.display_label || runInfo?.run_id || 'unknown run';
+}
+
 function escapeMermaidLabel(label) {
     return String(label ?? '').replace(/"/g, '&quot;');
 }
@@ -577,6 +585,7 @@ function updateRunIdentity(runId) {
     el.innerHTML =
         `<div class="meta-item"><span class="meta-label">Run:</span> ${escapeHtml(runId)}</div>` +
         `<div class="meta-item"><span class="meta-label">Status:</span> ${escapeHtml(status)}</div>` +
+        `<div class="meta-item"><span class="meta-label">Variant:</span> ${escapeHtml(runtimeVariantLabel(runtimeBinding))}</div>` +
         `<div class="meta-item"><span class="meta-label">Runtime:</span> ${escapeHtml(runtimeBinding?.runtime_label || 'n/a')}</div>` +
         `<div class="meta-item"><span class="meta-label">DB:</span> ${escapeHtml(runtimeBinding?.database_label || 'n/a')}</div>` +
         `<div class="meta-item"><span class="meta-label">Storage:</span> ${escapeHtml(runtimeBinding?.storage_label || 'n/a')}</div>` +
@@ -676,7 +685,7 @@ async function init() {
         const data = await API.fetchRuns();
         State.runs = data.runs;
         elements.runSelector.innerHTML = data.runs.map((run) => (
-            `<option value="${run.run_id}" ${!run.reviewable ? 'disabled' : ''}>${escapeHtml(run.display_label || run.run_id)}${!run.reviewable ? ` (${escapeHtml(run.disabled_reason_code)})` : ''}</option>`
+            `<option value="${escapeHtml(run.run_id)}" ${!run.reviewable ? 'disabled' : ''}>${escapeHtml(runOptionLabel(run))}${!run.reviewable ? ` (${escapeHtml(run.disabled_reason_code)})` : ''}</option>`
         )).join('');
         const defaultRun = data.default_run_id || data.runs[0]?.run_id;
         if (defaultRun) {
