@@ -104,6 +104,10 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
   expect(traceUrl.searchParams.get('candidate_b_run_id')).toBeNull();
 
   const traceManifestResponsePromise = page.waitForResponse((response) => response.url().includes('/candidate-b-trace/manifest'));
+  const traceTargetsResponsePromise = page.waitForResponse(
+    (response) => response.url().includes('/workbench-compare/targets?')
+      && response.url().includes('candidate_b_source_kind=bundle'),
+  );
   const annotatedPdfResponsePromise = page.waitForResponse((response) => response.url().includes('/candidate-b-trace/annotated-pdf'));
   await Promise.all([
     page.waitForURL(/\/review\/nrc-aps\/candidate-b-trace\?/),
@@ -118,6 +122,17 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
   const traceManifest = await expectJsonResponse(await traceManifestResponsePromise);
   expect(traceManifest.default_tab).toBe('annotated_pdf');
   expect(traceManifest.artifacts.annotated_pdf).toContain('/api/v1/review/nrc-aps/candidate-b-trace/annotated-pdf?');
+  const traceTargets = await expectJsonResponse(await traceTargetsResponsePromise);
+  expect(traceTargets.candidate_b_source_kind).toBe('bundle');
+  expect(traceTargets.candidate_b_run_id).toBeNull();
+  expect(traceTargets.targets).toHaveLength(1);
+  const fixtureNavigation = page.locator('#fixture-navigation');
+  await expect(fixtureNavigation).toContainText('Comparable fixtures');
+  await expect(fixtureNavigation).toContainText('Fixture 1 of 1');
+  await expect(fixtureNavigation).toContainText(targets.targets[0].display_label);
+  await expect(fixtureNavigation).toContainText('Only one comparable fixture is available');
+  await expect(fixtureNavigation.locator('.fixture-nav-link.disabled')).toHaveCount(2);
+  await expect(fixtureNavigation.locator('a.fixture-nav-link')).toHaveCount(0);
   const artifactStatusStrip = page.locator('#artifact-status-strip');
   await expect(artifactStatusStrip).toContainText('Annotated PDF');
   await expect(artifactStatusStrip).toContainText('Raw JSON');
