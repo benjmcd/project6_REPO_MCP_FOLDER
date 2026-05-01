@@ -63,6 +63,14 @@ def _sources_payload() -> NrcApsWorkbenchCompareSourcesOut:
                 local_only=True,
             )
         ],
+        candidate_b_runtime_runs=[
+            NrcApsWorkbenchCompareRunSourceItemOut(
+                run_id="candidate-b-runtime-001",
+                display_label="Candidate B Runtime",
+                completed_at="2026-04-12T08:15:00Z",
+                variant_kind="candidate_b_opendataloader_pdf",
+            )
+        ],
     )
 
 
@@ -232,6 +240,55 @@ def test_workbench_compare_targets_route_returns_payload(mock_targets) -> None:
 
     assert response.status_code == 200
     assert response.json()["targets"][0]["fixture_id"] == "fixture-001"
+    mock_targets.assert_called_once_with(
+        baseline_run_id="baseline-run-001",
+        candidate_a_run_id="candidate-a-run-001",
+        candidate_b_source_kind="bundle",
+        candidate_b_bundle_id="archive/20260412-cb-proof/cb-proof-test",
+        candidate_b_run_id=None,
+    )
+
+
+@patch("app.api.review_nrc_aps.compose_workbench_compare_targets")
+def test_workbench_compare_targets_route_accepts_candidate_b_runtime_source(mock_targets) -> None:
+    mock_targets.return_value = NrcApsWorkbenchCompareTargetsOut(
+        baseline_run_id="baseline-run-001",
+        candidate_a_run_id="candidate-a-run-001",
+        candidate_b_source_kind="runtime",
+        candidate_b_run_id="candidate-b-runtime-001",
+        default_fixture_id="fixture-001",
+        targets=[
+            NrcApsWorkbenchCompareTargetItemOut(
+                fixture_id="fixture-001",
+                display_label="Fixture 001",
+                source_file_name="fixture-001.pdf",
+                baseline_target_id="target-baseline-001",
+                candidate_a_target_id="target-candidate-a-001",
+                candidate_b_target_id="target-candidate-b-001",
+            )
+        ],
+    )
+
+    response = client.get(
+        "/api/v1/review/nrc-aps/workbench-compare/targets",
+        params={
+            "baseline_run_id": "baseline-run-001",
+            "candidate_a_run_id": "candidate-a-run-001",
+            "candidate_b_source_kind": "runtime",
+            "candidate_b_run_id": "candidate-b-runtime-001",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["candidate_b_source_kind"] == "runtime"
+    assert response.json()["candidate_b_run_id"] == "candidate-b-runtime-001"
+    mock_targets.assert_called_once_with(
+        baseline_run_id="baseline-run-001",
+        candidate_a_run_id="candidate-a-run-001",
+        candidate_b_source_kind="runtime",
+        candidate_b_bundle_id=None,
+        candidate_b_run_id="candidate-b-runtime-001",
+    )
 
 
 @patch("app.api.review_nrc_aps.compose_workbench_compare_manifest")

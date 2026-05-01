@@ -545,27 +545,33 @@ def install_review_browser_patches(fixture: ReviewBrowserFixture) -> None:
         checkout_root=fixture.checkout_root,
     )
     review_api.compose_workbench_compare_targets = (
-        lambda *, baseline_run_id, candidate_a_run_id, candidate_b_bundle_id: compare_service.compose_workbench_compare_targets(
+        lambda *, baseline_run_id, candidate_a_run_id, candidate_b_source_kind="bundle", candidate_b_bundle_id=None, candidate_b_run_id=None: compare_service.compose_workbench_compare_targets(
             baseline_run_id=baseline_run_id,
             candidate_a_run_id=candidate_a_run_id,
+            candidate_b_source_kind=candidate_b_source_kind,
             candidate_b_bundle_id=candidate_b_bundle_id,
+            candidate_b_run_id=candidate_b_run_id,
             checkout_root=fixture.checkout_root,
         )
     )
     review_api.compose_workbench_compare_manifest = (
-        lambda *, baseline_run_id, candidate_a_run_id, candidate_b_bundle_id, fixture_id: compare_service.compose_workbench_compare_manifest(
+        lambda *, baseline_run_id, candidate_a_run_id, fixture_id, candidate_b_source_kind="bundle", candidate_b_bundle_id=None, candidate_b_run_id=None: compare_service.compose_workbench_compare_manifest(
             baseline_run_id=baseline_run_id,
             candidate_a_run_id=candidate_a_run_id,
+            candidate_b_source_kind=candidate_b_source_kind,
             candidate_b_bundle_id=candidate_b_bundle_id,
+            candidate_b_run_id=candidate_b_run_id,
             fixture_id=fixture_id,
             checkout_root=fixture.checkout_root,
         )
     )
     review_api.compose_workbench_compare_tab = (
-        lambda *, baseline_run_id, candidate_a_run_id, candidate_b_bundle_id, fixture_id, tab_id: compare_service.compose_workbench_compare_tab(
+        lambda *, baseline_run_id, candidate_a_run_id, fixture_id, tab_id, candidate_b_source_kind="bundle", candidate_b_bundle_id=None, candidate_b_run_id=None: compare_service.compose_workbench_compare_tab(
             baseline_run_id=baseline_run_id,
             candidate_a_run_id=candidate_a_run_id,
+            candidate_b_source_kind=candidate_b_source_kind,
             candidate_b_bundle_id=candidate_b_bundle_id,
+            candidate_b_run_id=candidate_b_run_id,
             fixture_id=fixture_id,
             tab_id=tab_id,
             checkout_root=fixture.checkout_root,

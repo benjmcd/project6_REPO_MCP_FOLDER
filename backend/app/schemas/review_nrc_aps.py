@@ -384,10 +384,13 @@ class NrcApsWorkbenchCompareBundleSourceItemOut(BaseModel):
 class NrcApsWorkbenchCompareSourcesOut(BaseModel):
     default_baseline_run_id: str | None = None
     default_candidate_a_run_id: str | None = None
+    default_candidate_b_source_kind: str | None = None
     default_candidate_b_bundle_id: str | None = None
+    default_candidate_b_run_id: str | None = None
     baseline_runs: list[NrcApsWorkbenchCompareRunSourceItemOut] = Field(default_factory=list)
     candidate_a_runs: list[NrcApsWorkbenchCompareRunSourceItemOut] = Field(default_factory=list)
     candidate_b_bundles: list[NrcApsWorkbenchCompareBundleSourceItemOut] = Field(default_factory=list)
+    candidate_b_runtime_runs: list[NrcApsWorkbenchCompareRunSourceItemOut] = Field(default_factory=list)
 
 
 class NrcApsWorkbenchCompareTargetItemOut(BaseModel):
@@ -396,6 +399,7 @@ class NrcApsWorkbenchCompareTargetItemOut(BaseModel):
     source_file_name: str | None = None
     baseline_target_id: str
     candidate_a_target_id: str
+    candidate_b_target_id: str | None = None
     candidate_b_available: bool = True
     comparability_state: str = "aligned"
 
@@ -403,7 +407,9 @@ class NrcApsWorkbenchCompareTargetItemOut(BaseModel):
 class NrcApsWorkbenchCompareTargetsOut(BaseModel):
     baseline_run_id: str
     candidate_a_run_id: str
-    candidate_b_bundle_id: str
+    candidate_b_source_kind: str = "bundle"
+    candidate_b_bundle_id: str | None = None
+    candidate_b_run_id: str | None = None
     default_fixture_id: str | None = None
     targets: list[NrcApsWorkbenchCompareTargetItemOut] = Field(default_factory=list)
 
@@ -425,7 +431,11 @@ class NrcApsWorkbenchCompareRunBindingOut(BaseModel):
 
 
 class NrcApsWorkbenchCompareBundleBindingOut(BaseModel):
-    bundle_id: str
+    source_kind: str = "bundle"
+    bundle_id: str | None = None
+    run_id: str | None = None
+    target_id: str | None = None
+    content_id: str | None = None
     candidate_b_run_id: str | None = None
 
 
@@ -452,6 +462,7 @@ class NrcApsWorkbenchCompareDeepLinksOut(BaseModel):
     baseline_trace: str | None = None
     candidate_a_trace: str | None = None
     candidate_b_trace: str | None = None
+    candidate_b_runtime_trace: str | None = None
 
 
 class NrcApsWorkbenchCompareManifestOut(BaseModel):

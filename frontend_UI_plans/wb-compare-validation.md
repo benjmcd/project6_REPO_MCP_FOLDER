@@ -58,6 +58,7 @@ Add a dedicated service test surface covering at minimum:
 - Candidate A run classification
 - blank or missing `visual_lane_mode` normalizes to `baseline`
 - Candidate B bundle discovery from allowlisted roots only
+- Candidate B runtime source discovery from reviewable `candidate_b_opendataloader_pdf` runtime bindings only
 - strict `fixture_id` mapping from review-run source file name to corpus manifest
 - omission of unmappable rows
 - target intersection across the three selected sources
@@ -78,10 +79,13 @@ Add API tests covering at minimum:
 - `sources` returns an empty `candidate_b_bundles` list without error when the current checkout has no allowlisted bundle roots
 - `sources` returns an empty `candidate_b_bundles` list without error in a git worktree where `archive/*/cb-proof-*` is absent
 - `sources` emits `candidate_b_bundle_id` values in canonical POSIX-style relative-path form
+- `sources` emits admitted Candidate B runtime runs separately in `candidate_b_runtime_runs[]` and does not leak them into `baseline_runs[]` or `candidate_a_runs[]`
 - `targets` rejects invalid source combinations
 - `targets` rejects crafted `candidate_b_bundle_id` values containing traversal or non-discovered bundle roots
+- `targets` rejects missing or invalid `candidate_b_run_id` values when `candidate_b_source_kind=runtime`
 - `manifest` rejects invalid or unmappable `fixture_id`
 - `manifest` rejects crafted `candidate_b_bundle_id` values containing traversal or non-discovered bundle roots
+- `manifest` keeps `candidate_b_trace` bundle-only and emits `candidate_b_runtime_trace` for admitted runtime sources
 - `tabs/{tab_id}` rejects unsupported tabs
 - `tabs/{tab_id}` rejects crafted `candidate_b_bundle_id` values containing traversal or non-discovered bundle roots
 - tab payload includes all three required columns even when one column is unavailable
@@ -119,10 +123,11 @@ After automated tests are green, verify manually:
 11. Candidate B limitation badges remain visible, including footer-related warnings when present
 12. direct, derived-only, non-equivalent, and missing states are visually distinct
 13. baseline and Candidate A deep links open the correct document-trace routes
-14. Candidate B deep links open the separate `Candidate B Trace` page rather than `document-trace`
-15. when annotated PDF output is present, `Candidate B Trace` defaults to `annotated_pdf` rather than `summary`
-16. the Candidate B annotated PDF renders inline in the page rather than forcing a download response
-17. no network call attempts to pass arbitrary filesystem paths from the browser
+14. bundle-sourced Candidate B deep links open the separate `Candidate B Trace` page rather than `document-trace`
+15. runtime-sourced Candidate B deep links use the existing `document-trace` route for the admitted Candidate B runtime target and do not masquerade as Candidate B Trace parity
+16. when annotated PDF output is present, bundle-sourced `Candidate B Trace` defaults to `annotated_pdf` rather than `summary`
+17. the Candidate B annotated PDF renders inline in the page rather than forcing a download response
+18. no network call attempts to pass arbitrary filesystem paths from the browser
 
 ## 5. Validate-Only Rules
 

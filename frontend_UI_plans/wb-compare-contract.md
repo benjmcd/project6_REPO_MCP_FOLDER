@@ -29,16 +29,19 @@ Return the selectable source sets for:
 - baseline review runs
 - Candidate A review runs
 - Candidate B compare bundles
+- admitted Candidate B runtime runs
 
 ### 3.3 Required behavior
 
 - baseline and Candidate A sources are discovered from reviewable runtime bindings
 - variant classification for review runs must come from runtime request config / visual lane mode, not UI guesswork
 - Candidate B bundle discovery must be limited to allowlisted local roots
+- Candidate B runtime runs are discovered from reviewable runtime bindings only when `variant_kind` / `document_processing_engine` resolves to `candidate_b_opendataloader_pdf`
 - no endpoint may accept an arbitrary filesystem path from the client
 - absence of eligible baseline runs in the current checkout is a valid state, not a backend error
 - absence of eligible Candidate A runs in the current checkout is a valid state, not a backend error
 - absence of Candidate B bundles in the current checkout is a valid state, not a backend error
+- absence of admitted Candidate B runtime runs in the current checkout is a valid state, not a backend error
 
 Exact review-run classification rules for v1:
 
@@ -46,6 +49,8 @@ Exact review-run classification rules for v1:
   - `visual_lane_mode` missing, blank, or `baseline`
 - `candidate_a_page_evidence_v1` run:
   - `visual_lane_mode` exactly `candidate_a_page_evidence_v1`
+- `candidate_b_opendataloader_pdf` run:
+  - `document_processing_engine` exactly `candidate_b_opendataloader_pdf`
 - all other visual-lane modes:
   - excluded from this workspace
 
@@ -93,6 +98,7 @@ The endpoint should return:
 - `baseline_runs[]`
 - `candidate_a_runs[]`
 - `candidate_b_bundles[]`
+- `candidate_b_runtime_runs[]`
 - optional defaults when uniquely resolvable
 
 Baseline/Candidate A source item minimum fields:
@@ -115,6 +121,16 @@ Do not use absolute machine paths as the public bundle identifier.
 Serialize `bundle_id` in POSIX-style relative-path form with forward slashes, even on Windows.
 The backend may normalize incoming separators before validation, but the emitted public contract should use one canonical path form.
 
+Candidate B runtime source items use the same review-run item shape as baseline/Candidate A:
+
+- `run_id`
+- `display_label`
+- `completed_at`
+- `variant_kind`
+- `runtime_binding`
+
+Runtime Candidate B must remain a separate source kind. Do not overload `candidate_b_bundle_id` to carry a runtime run id.
+
 ## 4. Compare Target Identity Contract
 
 ### 4.1 Endpoint
@@ -125,13 +141,15 @@ Required query params:
 
 - `baseline_run_id`
 - `candidate_a_run_id`
-- `candidate_b_bundle_id`
+- `candidate_b_source_kind`
+- `candidate_b_bundle_id` when `candidate_b_source_kind=bundle`
+- `candidate_b_run_id` when `candidate_b_source_kind=runtime`
 
 ### 4.2 Purpose
 
 Return only the compare targets that can be strictly aligned across the three selected sources.
 
-Every `targets` request must revalidate `candidate_b_bundle_id` against the discovered allowlisted bundle roots for the current checkout before opening any bundle file.
+Every `targets` request must revalidate the selected Candidate B source. Bundle requests must revalidate `candidate_b_bundle_id` against discovered allowlisted bundle roots for the current checkout before opening any bundle file. Runtime requests must revalidate that `candidate_b_run_id` is reviewable and classified as `candidate_b_opendataloader_pdf`.
 
 ### 4.3 Compare key
 
@@ -144,6 +162,7 @@ The compare key is:
 Candidate B side:
 
 - `fixture_id` comes directly from `baseline-summary.json`, `compare.json`, and `proof.json`
+- for runtime Candidate B sources, `fixture_id` is mapped from the selected run target source-file basename through the corpus manifest, matching the baseline/Candidate A mapping rule
 
 Baseline/Candidate A side:
 
@@ -160,6 +179,7 @@ Baseline/Candidate A side:
 - `source_file_name`
 - `baseline_target_id`
 - `candidate_a_target_id`
+- `candidate_b_target_id` when the Candidate B source kind is `runtime`
 - `candidate_b_available`
 - `comparability_state`
 
@@ -173,13 +193,15 @@ Required query params:
 
 - `baseline_run_id`
 - `candidate_a_run_id`
-- `candidate_b_bundle_id`
+- `candidate_b_source_kind`
+- `candidate_b_bundle_id` when `candidate_b_source_kind=bundle`
+- `candidate_b_run_id` when `candidate_b_source_kind=runtime`
 
 ### 5.2 Purpose
 
 Return the shared identity and tab availability model for one selected compare target.
 
-Every `manifest` request must revalidate `candidate_b_bundle_id` against the discovered allowlisted bundle roots for the current checkout before opening any bundle file.
+Every `manifest` request must revalidate the selected Candidate B source using the same source-kind rules as `targets`.
 
 ### 5.3 Manifest minimum fields
 
@@ -203,7 +225,11 @@ Required `variant_bindings` content:
   - `target_id`
   - `content_id`
 - candidate_b:
+  - `source_kind`
   - `bundle_id`
+  - `run_id`
+  - `target_id`
+  - `content_id`
   - `candidate_b_run_id`
 
 Required `tabs` ids:
@@ -218,6 +244,7 @@ Required `deep_links` content:
 - `baseline_trace`
 - `candidate_a_trace`
 - `candidate_b_trace`
+- `candidate_b_runtime_trace`
 
 For v1, baseline and Candidate A deep links must use the existing document-trace query-string contract:
 
@@ -227,8 +254,12 @@ Candidate B deep links must use the separate bundle-scoped inspection contract:
 
 - `/review/nrc-aps/candidate-b-trace?candidate_b_bundle_id=<bundle_id>&fixture_id=<fixture_id>`
 
+Runtime Candidate B deep links must use the existing document-trace contract for the selected Candidate B runtime target:
+
+- `/review/nrc-aps/document-trace?run_id=<run_id>&target_id=<target_id>`
+
 No compare-specific query parameters may be forwarded into the baseline/Candidate A document-trace contract unless a later document-trace planning pass explicitly reopens that page contract.
-`candidate_b_trace` remains a separate additive page and must not be described as document-trace parity or runtime admission.
+`candidate_b_trace` remains a separate additive bundle page and must not be described as document-trace parity. Runtime Candidate B compare links are document-trace links for already-admitted runtime rows, not Candidate B Trace parity.
 
 ## 6. Compare Tab Contract
 
@@ -240,14 +271,16 @@ Required query params:
 
 - `baseline_run_id`
 - `candidate_a_run_id`
-- `candidate_b_bundle_id`
+- `candidate_b_source_kind`
+- `candidate_b_bundle_id` when `candidate_b_source_kind=bundle`
+- `candidate_b_run_id` when `candidate_b_source_kind=runtime`
 
 ### 6.2 Purpose
 
 Return one aligned compare tab payload that already contains all three variant columns.
 
 The frontend must not fan out into three unrelated variant endpoints for the same tab and invent alignment client-side.
-Every `tabs/{tab_id}` request must revalidate `candidate_b_bundle_id` against the discovered allowlisted bundle roots for the current checkout before opening any bundle file.
+Every `tabs/{tab_id}` request must revalidate the selected Candidate B source using the same source-kind rules as `targets`.
 
 ### 6.3 Common payload shape
 
@@ -328,6 +361,8 @@ Must include:
 - if the selected Candidate A run is not classified as `candidate_a_page_evidence_v1`, reject it
 - if the selected Candidate B bundle lacks any required top-level artifact, reject it
 - if the selected Candidate B bundle does not revalidate to an exact discovered allowlisted bundle root, reject it
+- if the selected Candidate B runtime run is not classified as `candidate_b_opendataloader_pdf`, reject it
+- if `candidate_b_source_kind` is unsupported or the required source id for that kind is missing, reject it
 - if `fixture_id` cannot be resolved across all three selected sources, omit it from the target list
 - if a tab lacks valid data for a column, return `available = false` with a concrete warning rather than fabricating an empty aligned record
 

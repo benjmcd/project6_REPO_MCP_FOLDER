@@ -39,6 +39,8 @@ def test_review_browser_server_health_and_compare_sources(client: TestClient) ->
     assert len(payload["baseline_runs"]) == 1
     assert len(payload["candidate_a_runs"]) == 1
     assert len(payload["candidate_b_bundles"]) == 1
+    assert len(payload["candidate_b_runtime_runs"]) == 1
+    assert payload["candidate_b_runtime_runs"][0]["runtime_binding"]["document_processing_engine"] == "candidate_b_opendataloader_pdf"
     assert "C:\\" not in str(payload)
 
 
