@@ -152,6 +152,14 @@ function formatUnavailableMessage(label, { runId, targetId, reasonCode } = {}) {
     return `${escapeHtml(label)} is not available for ${context}.${reason ? ` Reason: ${escapeHtml(reason)}.` : ''}`;
 }
 
+function runtimeVariantLabel(runtimeBinding) {
+    return window.NrcApsRuntimeLabels?.variantLabel(runtimeBinding) || 'Baseline';
+}
+
+function runOptionLabel(runInfo) {
+    return window.NrcApsRuntimeLabels?.runOptionLabel(runInfo) || runInfo?.display_label || runInfo?.run_id || 'unknown run';
+}
+
 function formatEmptyMessage(label, { runId, targetId, detail } = {}) {
     const context = formatTraceContext(runId, targetId);
     const suffix = detail ? ` ${escapeHtml(detail)}` : '';
@@ -161,6 +169,10 @@ function formatEmptyMessage(label, { runId, targetId, detail } = {}) {
 function renderRuntimeBindingEntries(runInfo) {
     const binding = runInfo?.runtime_binding || null;
     return `
+        <div class="layout-entry">
+            <strong>VARIANT</strong>
+            <span>${escapeHtml(runtimeVariantLabel(binding))}</span>
+        </div>
         <div class="layout-entry">
             <strong>RUNTIME</strong>
             <span>${escapeHtml(binding?.runtime_label || 'N/A')}</span>
@@ -1696,7 +1708,7 @@ async function init() {
         elements.runSelector.innerHTML = State.runs.map(r => {
             const disabled = !r.reviewable ? ' disabled' : '';
             const suffix = !r.reviewable ? ` (${escapeHtml(r.disabled_reason_code || 'not reviewable')})` : '';
-            return `<option value="${escapeHtml(r.run_id)}"${disabled}>${escapeHtml(r.display_label || r.run_id)}${suffix}</option>`;
+            return `<option value="${escapeHtml(r.run_id)}"${disabled}>${escapeHtml(runOptionLabel(r))}${suffix}</option>`;
         }).join('');
 
         let runToLoad = initialRunId;
