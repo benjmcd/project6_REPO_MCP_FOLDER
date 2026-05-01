@@ -7,8 +7,8 @@ It is not runtime/service authority and does not imply Candidate B admission.
 
 Post-runtime-admission-reopen note:
 - The non-admitted statements in this pack describe the earlier bundle-scoped Candidate B workbench/trace posture.
-- A later explicit product/operator requirement has now reopened Candidate B runtime admission as the opt-in `document_processing_engine="candidate_b_opendataloader_pdf"` processing path on the existing NRC APS run-submit flow, plus optional runtime metadata on the existing review `/runs` selector response.
-- This pack remains guardrail/status history for bundle-scoped compare/trace behavior, execution envelope, package pinning, output isolation, non-interference, and provenance semantics. It is not proof that rendered selector UI, Workbench Compare integration, Candidate B Trace parity, routes, schemas, models, migrations, or persistence were widened.
+- A later explicit product/operator requirement has now reopened Candidate B runtime admission as the opt-in `document_processing_engine="candidate_b_opendataloader_pdf"` processing path on the existing NRC APS run-submit flow, plus optional runtime metadata on the existing review `/runs` selector response, rendered review/document-trace selector labeling, and explicit Workbench Compare runtime-source selection.
+- This pack remains guardrail/status history for bundle-scoped compare/trace behavior, execution envelope, package pinning, output isolation, non-interference, and provenance semantics. It is not proof that Candidate B Trace parity, document-trace parity expansion, broad routes, DB schemas/models/migrations, persistence redesign, or new run-submission UI were widened.
 
 v6 exists because v5 was repo-grounded but still left too much execution-day inference.
 The remaining weakness was not macro-scope. It was determinism.
@@ -60,7 +60,7 @@ Current inspection-surface note:
 - the current merged-main implementation adds the separate additive `Candidate B Trace` page and API family for bundle-scoped inspection
 - current support now requests annotated PDF output and retains it under the approved Candidate B raw-output root
 - current compare deep links now include `candidate_b_trace` alongside the existing baseline and Candidate A trace links
-- At that shipped trace point, Candidate B remained workbench-only, non-admitted, and outside the normal review runtime selector. The later explicit Phase 1 runtime-admission reopen is limited to the processing-engine path and still does not make Candidate B visible in the normal review runtime selector.
+- At that shipped trace point, Candidate B remained workbench-only, non-admitted, and outside the normal review runtime selector. Later explicit runtime-admission tranches now add the processing-engine path, `/runs` metadata, rendered review/document-trace selector labels, and Workbench Compare runtime-source selection while preserving the bundle-scoped Candidate B Trace boundary.
 
 Post-PR50 shipped-baseline note:
 - the shipped baseline is now:
@@ -85,11 +85,11 @@ Post-PR50 shipped-baseline note:
 Ordered next-decision note:
 - the repo-native browser regression lane is now landed, and the root Playwright workflow is now targeted at the shipped NRC APS compare + Candidate B Trace flow rather than placeholder browser smoke
 - future browser work should now be explicit expansion or refinement of that targeted coverage, not a question of whether the root workflow is authoritative at all
-- the current-horizon Candidate B scope decision is now resolved:
-  - keep Candidate B at the shipped bundle-scoped compare + trace boundary
-  - do not drift into runtime admission or selector integration by implication
-- a wider runtime-admission program remains available only as a later explicit reopen if the shipped bundle-scoped model proves insufficient for a concrete operator/product requirement
-- that later explicit reopen now exists at the document-processing engine layer and existing `/runs` runtime-metadata layer; the bundle-scoped compare + trace boundary remains distinct from admitted runtime Candidate B runs
+- the earlier current-horizon Candidate B scope decision remains resolved for bundle-scoped Trace:
+  - keep Candidate B Trace at the shipped bundle-scoped boundary
+  - do not drift from bundle Trace into runtime parity by implication
+- a wider runtime-admission program exists only because a later explicit product/operator requirement reopened it
+- that later explicit reopen now exists at the document-processing engine layer, existing `/runs` runtime-metadata layer, rendered review/document-trace selector layer, and Workbench Compare runtime-source layer; the bundle-scoped Candidate B Trace boundary remains distinct from admitted runtime Candidate B runs
 - prepared-state/operator workflow hardening is now landed via the canonical `tools/validate_wb_prep.py` same-checkout prep gate
 - if bundle-scoped posture remains correct, only then consider narrow operator ergonomics improvements
 - documentation closeout is now landed for the active operator front doors:
@@ -183,7 +183,8 @@ It was the separate Candidate B Trace surface for the existing workbench-only pa
 Current runtime-admission status:
 - Phase 1 has since reopened Candidate B admission as an opt-in processing engine only.
 - The existing review `/runs` selector response now exposes runtime metadata so admitted Candidate B runs are distinguishable from baseline.
-- Rendered runtime-selector UI, Workbench Compare integration, Candidate B Trace parity, route/schema/model/migration work, and broader persistence changes remain outside the current runtime-admission commits.
+- Follow-up bounded tranches now render Candidate B / OpenDataLoader PDF in the existing review/document-trace run selectors and expose admitted Candidate B runtime runs as an explicit Workbench Compare source kind alongside the preserved bundle source path.
+- Candidate B Trace parity, document-trace parity expansion, broad route work, DB schema/model/migration work, new run-submission UI, and broader persistence changes remain outside the current runtime-admission commits.
 
 That lane is scoped in:
 
@@ -191,9 +192,9 @@ That lane is scoped in:
 - `05U_CANDIDATE_B_OPENDATALOADER_CANDIDATE_B_TRACE_IMPLEMENTATION_PLAN.md`
 - `08F_CANDIDATE_B_OPENDATALOADER_CANDIDATE_B_TRACE_VALIDATION_PLAN.md`
 
-Those docs assume:
+Those historical Candidate B Trace docs assume:
 
-- no Candidate B admission into the normal run selector
+- no Candidate B Trace parity for admitted runtime rows
 - no widening of the existing single-run `document-trace` contract
 - additive page/API/service work only for bundle-scoped Candidate B inspection
 - annotated PDF retention under the approved Candidate B raw-output root only

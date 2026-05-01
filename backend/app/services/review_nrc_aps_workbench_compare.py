@@ -61,6 +61,9 @@ _REQUIRED_BUNDLE_FILES: tuple[str, ...] = (
     "proof.json",
     "retain.json",
 )
+_CANDIDATE_B_RUNTIME_VARIANT = "candidate_b_opendataloader_pdf"
+_CANDIDATE_B_SOURCE_KIND_BUNDLE = "bundle"
+_CANDIDATE_B_SOURCE_KIND_RUNTIME = "runtime"
 
 
 @dataclass(frozen=True)
@@ -83,6 +86,15 @@ class _BundleArtifacts:
     compare: dict[str, Any]
     proof: dict[str, Any]
     retain: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class _CandidateBCompareSource:
+    source_kind: str
+    bundle: _BundleArtifacts | None
+    binding: ReviewRuntimeBinding | None
+    targets: dict[str, _RuntimeCompareTarget]
+    bundle_docs: dict[str, dict[str, Any]]
 
 
 def _checkout_root() -> Path:
@@ -204,6 +216,13 @@ def _bundle_documents_by_fixture(compare_payload: dict[str, Any]) -> dict[str, d
     return out
 
 
+def _normalize_candidate_b_source_kind(candidate_b_source_kind: str | None) -> str:
+    normalized = str(candidate_b_source_kind or _CANDIDATE_B_SOURCE_KIND_BUNDLE).strip().lower()
+    if normalized not in {_CANDIDATE_B_SOURCE_KIND_BUNDLE, _CANDIDATE_B_SOURCE_KIND_RUNTIME}:
+        raise ValueError("candidate_b_source_kind_invalid")
+    return normalized
+
+
 def _variant_sort_key(item: NrcApsWorkbenchCompareRunSourceItemOut) -> tuple[str, str]:
     return (item.completed_at or "", item.run_id)
 
@@ -218,13 +237,14 @@ def discover_workbench_compare_sources(checkout_root: Path | None = None) -> Nrc
 
     baseline_runs: list[NrcApsWorkbenchCompareRunSourceItemOut] = []
     candidate_a_runs: list[NrcApsWorkbenchCompareRunSourceItemOut] = []
+    candidate_b_runtime_runs: list[NrcApsWorkbenchCompareRunSourceItemOut] = []
 
     for binding in discover_runtime_bindings():
         selector_item = selector_by_run_id.get(binding.run_id)
         if selector_item is None or not selector_item.reviewable:
             continue
         variant_kind = classify_runtime_binding_variant(binding)
-        if variant_kind not in {"baseline", "candidate_a_page_evidence_v1"}:
+        if variant_kind not in {"baseline", "candidate_a_page_evidence_v1", _CANDIDATE_B_RUNTIME_VARIANT}:
             continue
         item = NrcApsWorkbenchCompareRunSourceItemOut(
             run_id=binding.run_id,
@@ -235,11 +255,14 @@ def discover_workbench_compare_sources(checkout_root: Path | None = None) -> Nrc
         )
         if variant_kind == "baseline":
             baseline_runs.append(item)
-        else:
+        elif variant_kind == "candidate_a_page_evidence_v1":
             candidate_a_runs.append(item)
+        else:
+            candidate_b_runtime_runs.append(item)
 
     baseline_runs.sort(key=_variant_sort_key, reverse=True)
     candidate_a_runs.sort(key=_variant_sort_key, reverse=True)
+    candidate_b_runtime_runs.sort(key=_variant_sort_key, reverse=True)
 
     candidate_b_bundles: list[NrcApsWorkbenchCompareBundleSourceItemOut] = []
     for bundle_root in discover_candidate_b_bundle_roots(root):
@@ -259,14 +282,27 @@ def discover_workbench_compare_sources(checkout_root: Path | None = None) -> Nrc
         )
 
     candidate_b_bundles.sort(key=lambda item: ((item.generated_at_utc or ""), item.bundle_id), reverse=True)
+    default_candidate_b_bundle_id = candidate_b_bundles[0].bundle_id if len(candidate_b_bundles) == 1 else None
+    default_candidate_b_run_id = None if default_candidate_b_bundle_id else (
+        candidate_b_runtime_runs[0].run_id if len(candidate_b_runtime_runs) == 1 else None
+    )
 
     return NrcApsWorkbenchCompareSourcesOut(
         default_baseline_run_id=baseline_runs[0].run_id if len(baseline_runs) == 1 else None,
         default_candidate_a_run_id=candidate_a_runs[0].run_id if len(candidate_a_runs) == 1 else None,
-        default_candidate_b_bundle_id=candidate_b_bundles[0].bundle_id if len(candidate_b_bundles) == 1 else None,
+        default_candidate_b_source_kind=(
+            _CANDIDATE_B_SOURCE_KIND_BUNDLE
+            if default_candidate_b_bundle_id
+            else _CANDIDATE_B_SOURCE_KIND_RUNTIME
+            if default_candidate_b_run_id
+            else None
+        ),
+        default_candidate_b_bundle_id=default_candidate_b_bundle_id,
+        default_candidate_b_run_id=default_candidate_b_run_id,
         baseline_runs=baseline_runs,
         candidate_a_runs=candidate_a_runs,
         candidate_b_bundles=candidate_b_bundles,
+        candidate_b_runtime_runs=candidate_b_runtime_runs,
     )
 
 
@@ -325,43 +361,87 @@ def _load_runtime_targets(binding: ReviewRuntimeBinding, manifest_by_basename: d
     return targets
 
 
+def _load_candidate_b_compare_source(
+    *,
+    candidate_b_source_kind: str | None,
+    candidate_b_bundle_id: str | None,
+    candidate_b_run_id: str | None,
+    checkout_root: Path,
+    manifest_by_basename: dict[str, dict[str, Any] | None],
+) -> _CandidateBCompareSource:
+    source_kind = _normalize_candidate_b_source_kind(candidate_b_source_kind)
+    if source_kind == _CANDIDATE_B_SOURCE_KIND_BUNDLE:
+        bundle = _load_bundle_artifacts(candidate_b_bundle_id or "", checkout_root)
+        return _CandidateBCompareSource(
+            source_kind=source_kind,
+            bundle=bundle,
+            binding=None,
+            targets={},
+            bundle_docs=_bundle_documents_by_fixture(bundle.compare),
+        )
+
+    if not str(candidate_b_run_id or "").strip():
+        raise ValueError("candidate_b_run_id_missing")
+    binding = _require_binding(str(candidate_b_run_id), expected_variant=_CANDIDATE_B_RUNTIME_VARIANT)
+    return _CandidateBCompareSource(
+        source_kind=source_kind,
+        bundle=None,
+        binding=binding,
+        targets=_load_runtime_targets(binding, manifest_by_basename),
+        bundle_docs={},
+    )
+
+
 def _compare_targets_context(
     *,
     baseline_run_id: str,
     candidate_a_run_id: str,
-    candidate_b_bundle_id: str,
+    candidate_b_source_kind: str | None = _CANDIDATE_B_SOURCE_KIND_BUNDLE,
+    candidate_b_bundle_id: str | None = None,
+    candidate_b_run_id: str | None = None,
     checkout_root: Path | None = None,
-) -> tuple[ReviewRuntimeBinding, ReviewRuntimeBinding, _BundleArtifacts, dict[str, _RuntimeCompareTarget], dict[str, _RuntimeCompareTarget], dict[str, dict[str, Any]]]:
+) -> tuple[ReviewRuntimeBinding, ReviewRuntimeBinding, _CandidateBCompareSource, dict[str, _RuntimeCompareTarget], dict[str, _RuntimeCompareTarget]]:
     root = (checkout_root or _checkout_root()).resolve()
     manifest_by_basename = _manifest_entries_by_basename(root)
     baseline_binding = _require_binding(baseline_run_id, expected_variant="baseline")
     candidate_a_binding = _require_binding(candidate_a_run_id, expected_variant="candidate_a_page_evidence_v1")
-    bundle = _load_bundle_artifacts(candidate_b_bundle_id, root)
-    bundle_docs = _bundle_documents_by_fixture(bundle.compare)
+    candidate_b_source = _load_candidate_b_compare_source(
+        candidate_b_source_kind=candidate_b_source_kind,
+        candidate_b_bundle_id=candidate_b_bundle_id,
+        candidate_b_run_id=candidate_b_run_id,
+        checkout_root=root,
+        manifest_by_basename=manifest_by_basename,
+    )
     baseline_targets = _load_runtime_targets(baseline_binding, manifest_by_basename)
     candidate_a_targets = _load_runtime_targets(candidate_a_binding, manifest_by_basename)
-    return baseline_binding, candidate_a_binding, bundle, baseline_targets, candidate_a_targets, bundle_docs
+    return baseline_binding, candidate_a_binding, candidate_b_source, baseline_targets, candidate_a_targets
 
 
 def compose_workbench_compare_targets(
     *,
     baseline_run_id: str,
     candidate_a_run_id: str,
-    candidate_b_bundle_id: str,
+    candidate_b_source_kind: str | None = _CANDIDATE_B_SOURCE_KIND_BUNDLE,
+    candidate_b_bundle_id: str | None = None,
+    candidate_b_run_id: str | None = None,
     checkout_root: Path | None = None,
 ) -> NrcApsWorkbenchCompareTargetsOut:
-    _, _, _, baseline_targets, candidate_a_targets, bundle_docs = _compare_targets_context(
+    _, _, candidate_b_source, baseline_targets, candidate_a_targets = _compare_targets_context(
         baseline_run_id=baseline_run_id,
         candidate_a_run_id=candidate_a_run_id,
+        candidate_b_source_kind=candidate_b_source_kind,
         candidate_b_bundle_id=candidate_b_bundle_id,
+        candidate_b_run_id=candidate_b_run_id,
         checkout_root=checkout_root,
     )
 
-    shared_fixture_ids = sorted(set(baseline_targets) & set(candidate_a_targets) & set(bundle_docs))
+    candidate_b_fixture_ids = set(candidate_b_source.bundle_docs if candidate_b_source.bundle else candidate_b_source.targets)
+    shared_fixture_ids = sorted(set(baseline_targets) & set(candidate_a_targets) & candidate_b_fixture_ids)
     targets: list[NrcApsWorkbenchCompareTargetItemOut] = []
     for fixture_id in shared_fixture_ids:
         baseline_target = baseline_targets[fixture_id]
         candidate_a_target = candidate_a_targets[fixture_id]
+        candidate_b_target = candidate_b_source.targets.get(fixture_id)
         display_label = baseline_target.document_title or baseline_target.source_file_name or fixture_id
         targets.append(
             NrcApsWorkbenchCompareTargetItemOut(
@@ -370,6 +450,7 @@ def compose_workbench_compare_targets(
                 source_file_name=baseline_target.source_file_name,
                 baseline_target_id=baseline_target.target_id,
                 candidate_a_target_id=candidate_a_target.target_id,
+                candidate_b_target_id=candidate_b_target.target_id if candidate_b_target else None,
                 candidate_b_available=True,
                 comparability_state="aligned",
             )
@@ -378,7 +459,9 @@ def compose_workbench_compare_targets(
     return NrcApsWorkbenchCompareTargetsOut(
         baseline_run_id=baseline_run_id,
         candidate_a_run_id=candidate_a_run_id,
-        candidate_b_bundle_id=candidate_b_bundle_id,
+        candidate_b_source_kind=candidate_b_source.source_kind,
+        candidate_b_bundle_id=candidate_b_source.bundle.bundle_id if candidate_b_source.bundle else None,
+        candidate_b_run_id=candidate_b_source.binding.run_id if candidate_b_source.binding else None,
         default_fixture_id=targets[0].fixture_id if len(targets) == 1 else None,
         targets=targets,
     )
@@ -388,25 +471,30 @@ def _resolve_selected_target(
     *,
     baseline_run_id: str,
     candidate_a_run_id: str,
-    candidate_b_bundle_id: str,
+    candidate_b_source_kind: str | None = _CANDIDATE_B_SOURCE_KIND_BUNDLE,
+    candidate_b_bundle_id: str | None = None,
+    candidate_b_run_id: str | None = None,
     fixture_id: str,
     checkout_root: Path | None = None,
-) -> tuple[ReviewRuntimeBinding, ReviewRuntimeBinding, _BundleArtifacts, _RuntimeCompareTarget, _RuntimeCompareTarget, dict[str, Any]]:
-    baseline_binding, candidate_a_binding, bundle, baseline_targets, candidate_a_targets, bundle_docs = _compare_targets_context(
+) -> tuple[ReviewRuntimeBinding, ReviewRuntimeBinding, _CandidateBCompareSource, _RuntimeCompareTarget, _RuntimeCompareTarget, _RuntimeCompareTarget | dict[str, Any]]:
+    baseline_binding, candidate_a_binding, candidate_b_source, baseline_targets, candidate_a_targets = _compare_targets_context(
         baseline_run_id=baseline_run_id,
         candidate_a_run_id=candidate_a_run_id,
+        candidate_b_source_kind=candidate_b_source_kind,
         candidate_b_bundle_id=candidate_b_bundle_id,
+        candidate_b_run_id=candidate_b_run_id,
         checkout_root=checkout_root,
     )
-    if fixture_id not in baseline_targets or fixture_id not in candidate_a_targets or fixture_id not in bundle_docs:
+    candidate_b_fixture_ids = candidate_b_source.bundle_docs if candidate_b_source.bundle else candidate_b_source.targets
+    if fixture_id not in baseline_targets or fixture_id not in candidate_a_targets or fixture_id not in candidate_b_fixture_ids:
         raise ValueError("fixture_id_not_comparable")
     return (
         baseline_binding,
         candidate_a_binding,
-        bundle,
+        candidate_b_source,
         baseline_targets[fixture_id],
         candidate_a_targets[fixture_id],
-        bundle_docs[fixture_id],
+        candidate_b_fixture_ids[fixture_id],
     )
 
 
@@ -449,6 +537,33 @@ def _summary_badges(bundle: _BundleArtifacts, compare_doc: dict[str, Any]) -> li
             label="Limitations",
             value=str(limitation_count),
             severity="warning" if limitation_count else "success",
+        ),
+    ]
+
+
+def _runtime_candidate_b_warning() -> str:
+    return "Candidate B runtime source uses OpenDataLoader PDF through the admitted document-processing engine path."
+
+
+def _runtime_summary_badges() -> list[NrcApsWorkbenchCompareBadgeOut]:
+    return [
+        NrcApsWorkbenchCompareBadgeOut(
+            key="candidate_b_source",
+            label="Candidate B",
+            value="runtime | OpenDataLoader PDF",
+            severity="info",
+        ),
+        NrcApsWorkbenchCompareBadgeOut(
+            key="candidate_b_engine",
+            label="Engine",
+            value=_CANDIDATE_B_RUNTIME_VARIANT,
+            severity="info",
+        ),
+        NrcApsWorkbenchCompareBadgeOut(
+            key="candidate_b_trace_scope",
+            label="Trace",
+            value="document trace",
+            severity="info",
         ),
     ]
 
@@ -512,14 +627,18 @@ def compose_workbench_compare_manifest(
     *,
     baseline_run_id: str,
     candidate_a_run_id: str,
-    candidate_b_bundle_id: str,
+    candidate_b_source_kind: str | None = _CANDIDATE_B_SOURCE_KIND_BUNDLE,
+    candidate_b_bundle_id: str | None = None,
+    candidate_b_run_id: str | None = None,
     fixture_id: str,
     checkout_root: Path | None = None,
 ) -> NrcApsWorkbenchCompareManifestOut:
-    baseline_binding, candidate_a_binding, bundle, baseline_target, candidate_a_target, compare_doc = _resolve_selected_target(
+    baseline_binding, candidate_a_binding, candidate_b_source, baseline_target, candidate_a_target, candidate_b_selected = _resolve_selected_target(
         baseline_run_id=baseline_run_id,
         candidate_a_run_id=candidate_a_run_id,
+        candidate_b_source_kind=candidate_b_source_kind,
         candidate_b_bundle_id=candidate_b_bundle_id,
+        candidate_b_run_id=candidate_b_run_id,
         fixture_id=fixture_id,
         checkout_root=checkout_root,
     )
@@ -539,6 +658,58 @@ def compose_workbench_compare_manifest(
             candidate_a_binding.review_root,
         )
 
+    tabs = [
+        NrcApsWorkbenchCompareTabDefOut(tab_id=tab_id, label=label, available=True)
+        for tab_id, label in _TAB_LABELS.items()
+    ]
+
+    if candidate_b_source.source_kind == _CANDIDATE_B_SOURCE_KIND_RUNTIME:
+        candidate_b_binding = candidate_b_source.binding
+        if candidate_b_binding is None or not isinstance(candidate_b_selected, _RuntimeCompareTarget):
+            raise ValueError("invalid_candidate_b_runtime_run")
+        return NrcApsWorkbenchCompareManifestOut(
+            fixture_id=fixture_id,
+            source_identity=NrcApsWorkbenchCompareSourceIdentityOut(
+                fixture_id=fixture_id,
+                document_title=baseline_manifest.identity.document_title or baseline_target.document_title,
+                document_type=baseline_manifest.identity.document_type or baseline_target.document_type,
+                source_file_name=baseline_manifest.identity.source_file_name or baseline_target.source_file_name,
+                accession_number=baseline_manifest.identity.accession_number or baseline_target.accession_number,
+            ),
+            variant_bindings=NrcApsWorkbenchCompareVariantBindingsOut(
+                baseline=NrcApsWorkbenchCompareRunBindingOut(
+                    run_id=baseline_binding.run_id,
+                    target_id=baseline_target.target_id,
+                    content_id=baseline_target.content_id,
+                ),
+                candidate_a=NrcApsWorkbenchCompareRunBindingOut(
+                    run_id=candidate_a_binding.run_id,
+                    target_id=candidate_a_target.target_id,
+                    content_id=candidate_a_target.content_id,
+                ),
+                candidate_b=NrcApsWorkbenchCompareBundleBindingOut(
+                    source_kind=_CANDIDATE_B_SOURCE_KIND_RUNTIME,
+                    run_id=candidate_b_binding.run_id,
+                    target_id=candidate_b_selected.target_id,
+                    content_id=candidate_b_selected.content_id,
+                    candidate_b_run_id=candidate_b_binding.run_id,
+                ),
+            ),
+            summary_badges=_runtime_summary_badges(),
+            tabs=tabs,
+            warnings=[_runtime_candidate_b_warning()],
+            limitations=[],
+            deep_links=NrcApsWorkbenchCompareDeepLinksOut(
+                baseline_trace=_trace_link(baseline_binding.run_id, baseline_target.target_id),
+                candidate_a_trace=_trace_link(candidate_a_binding.run_id, candidate_a_target.target_id),
+                candidate_b_runtime_trace=_trace_link(candidate_b_binding.run_id, candidate_b_selected.target_id),
+            ),
+        )
+
+    bundle = candidate_b_source.bundle
+    if bundle is None or not isinstance(candidate_b_selected, dict):
+        raise ValueError("candidate_b_bundle_unavailable")
+    compare_doc = candidate_b_selected
     candidate_b_data = compare_doc.get("candidate_b") or {}
     warnings = _candidate_b_manifest_warnings(bundle, compare_doc, fixture_id)
     limitations = sorted(
@@ -548,11 +719,6 @@ def compose_workbench_compare_manifest(
             + (bundle.compare.get("non_equivalent_repo_fields") or [])
         )
     )
-
-    tabs = [
-        NrcApsWorkbenchCompareTabDefOut(tab_id=tab_id, label=label, available=True)
-        for tab_id, label in _TAB_LABELS.items()
-    ]
 
     return NrcApsWorkbenchCompareManifestOut(
         fixture_id=fixture_id,
@@ -672,7 +838,9 @@ def compose_workbench_compare_tab(
     *,
     baseline_run_id: str,
     candidate_a_run_id: str,
-    candidate_b_bundle_id: str,
+    candidate_b_source_kind: str | None = _CANDIDATE_B_SOURCE_KIND_BUNDLE,
+    candidate_b_bundle_id: str | None = None,
+    candidate_b_run_id: str | None = None,
     fixture_id: str,
     tab_id: str,
     checkout_root: Path | None = None,
@@ -680,17 +848,18 @@ def compose_workbench_compare_tab(
     if tab_id not in _TAB_LABELS:
         raise ValueError("unsupported_tab")
 
-    baseline_binding, candidate_a_binding, bundle, baseline_target, candidate_a_target, compare_doc = _resolve_selected_target(
+    baseline_binding, candidate_a_binding, candidate_b_source, baseline_target, candidate_a_target, candidate_b_selected = _resolve_selected_target(
         baseline_run_id=baseline_run_id,
         candidate_a_run_id=candidate_a_run_id,
+        candidate_b_source_kind=candidate_b_source_kind,
         candidate_b_bundle_id=candidate_b_bundle_id,
+        candidate_b_run_id=candidate_b_run_id,
         fixture_id=fixture_id,
         checkout_root=checkout_root,
     )
 
     baseline_link = _trace_link(baseline_binding.run_id, baseline_target.target_id, tab=tab_id)
     candidate_a_link = _trace_link(candidate_a_binding.run_id, candidate_a_target.target_id, tab=tab_id)
-    candidate_b_link = _candidate_b_trace_link(bundle.bundle_id, fixture_id)
 
     with runtime_db_session_for_binding(baseline_binding) as baseline_session:
         baseline_manifest = compose_trace_manifest(
@@ -746,6 +915,51 @@ def compose_workbench_compare_tab(
             storage_root=candidate_a_binding.storage_dir,
         )
 
+    candidate_b_link: str
+    candidate_b_manifest = None
+    candidate_b_diagnostics = None
+    candidate_b_normalized = None
+    candidate_b_structure = None
+    bundle: _BundleArtifacts | None = None
+    compare_doc: dict[str, Any] | None = None
+    if candidate_b_source.source_kind == _CANDIDATE_B_SOURCE_KIND_RUNTIME:
+        candidate_b_binding = candidate_b_source.binding
+        if candidate_b_binding is None or not isinstance(candidate_b_selected, _RuntimeCompareTarget):
+            raise ValueError("invalid_candidate_b_runtime_run")
+        candidate_b_link = _trace_link(candidate_b_binding.run_id, candidate_b_selected.target_id, tab=tab_id)
+        with runtime_db_session_for_binding(candidate_b_binding) as candidate_b_session:
+            candidate_b_manifest = compose_trace_manifest(
+                candidate_b_session,
+                candidate_b_binding.run_id,
+                candidate_b_selected.target_id,
+                candidate_b_binding.review_root,
+            )
+            candidate_b_diagnostics = compose_diagnostics_payload(
+                candidate_b_session,
+                candidate_b_binding.run_id,
+                candidate_b_selected.target_id,
+                candidate_b_binding.review_root,
+            )
+            candidate_b_normalized = compose_normalized_text_payload(
+                candidate_b_session,
+                candidate_b_binding.run_id,
+                candidate_b_selected.target_id,
+                candidate_b_binding.review_root,
+            )
+            candidate_b_structure = compose_extracted_units_payload(
+                candidate_b_session,
+                candidate_b_binding.run_id,
+                candidate_b_selected.target_id,
+                candidate_b_binding.review_root,
+                storage_root=candidate_b_binding.storage_dir,
+            )
+    else:
+        bundle = candidate_b_source.bundle
+        if bundle is None or not isinstance(candidate_b_selected, dict):
+            raise ValueError("candidate_b_bundle_unavailable")
+        compare_doc = candidate_b_selected
+        candidate_b_link = _candidate_b_trace_link(bundle.bundle_id, fixture_id)
+
     columns: dict[str, NrcApsWorkbenchCompareColumnOut] = {}
 
     if tab_id == "summary":
@@ -783,16 +997,37 @@ def compose_workbench_compare_tab(
             },
             deep_link=candidate_a_link,
         )
-        columns["candidate_b"] = NrcApsWorkbenchCompareColumnOut(
-            variant_id="candidate_b",
-            available=True,
-            comparability_class="direct",
-            label="Candidate B",
-            data=_candidate_b_summary_data(bundle, compare_doc),
-            warnings=list((compare_doc.get("candidate_b") or {}).get("warning_flags") or []),
-            limitations=list((compare_doc.get("candidate_b") or {}).get("limitation_flags") or []),
-            deep_link=candidate_b_link,
-        )
+        if candidate_b_source.source_kind == _CANDIDATE_B_SOURCE_KIND_RUNTIME:
+            columns["candidate_b"] = NrcApsWorkbenchCompareColumnOut(
+                variant_id="candidate_b",
+                available=True,
+                comparability_class="direct",
+                label="Candidate B / OpenDataLoader PDF",
+                data={
+                    "page_count": candidate_b_manifest.summary.page_count,
+                    "normalized_char_count": candidate_b_normalized.char_count if candidate_b_normalized.available else 0,
+                    "document_class": candidate_b_manifest.summary.document_class,
+                    "quality_status": candidate_b_manifest.summary.quality_status,
+                    "degradation_codes": list(candidate_b_diagnostics.degradation_codes or []),
+                    "ordered_unit_count": candidate_b_manifest.summary.ordered_unit_count,
+                    "indexed_chunk_count": candidate_b_manifest.summary.indexed_chunk_count,
+                    "visual_derivative_unit_count": candidate_b_manifest.summary.visual_derivative_unit_count,
+                    "document_processing_engine": _CANDIDATE_B_RUNTIME_VARIANT,
+                },
+                warnings=sorted(set(list(candidate_b_diagnostics.warnings or []) + [_runtime_candidate_b_warning()])),
+                deep_link=candidate_b_link,
+            )
+        else:
+            columns["candidate_b"] = NrcApsWorkbenchCompareColumnOut(
+                variant_id="candidate_b",
+                available=True,
+                comparability_class="direct",
+                label="Candidate B",
+                data=_candidate_b_summary_data(bundle, compare_doc),
+                warnings=list((compare_doc.get("candidate_b") or {}).get("warning_flags") or []),
+                limitations=list((compare_doc.get("candidate_b") or {}).get("limitation_flags") or []),
+                deep_link=candidate_b_link,
+            )
     elif tab_id == "normalized_text":
         columns["baseline"] = (
             NrcApsWorkbenchCompareColumnOut(
@@ -826,20 +1061,40 @@ def compose_workbench_compare_tab(
             if candidate_a_normalized.available
             else _missing_column("candidate_a", "Candidate A", "Normalized text is unavailable for the selected Candidate A target.", deep_link=candidate_a_link)
         )
-        columns["candidate_b"] = NrcApsWorkbenchCompareColumnOut(
-            variant_id="candidate_b",
-            available=True,
-            comparability_class="derived_only",
-            label="Candidate B",
-            data={
-                "char_count": (compare_doc.get("candidate_b") or {}).get("candidate_b_normalized_char_count"),
-                "mapping_precision": "document",
-                "text": (compare_doc.get("candidate_b") or {}).get("candidate_b_normalized_text") or "",
-            },
-            warnings=["Candidate B normalized text is workbench-only and not a replacement for owner-path normalized text."],
-            limitations=list((compare_doc.get("candidate_b") or {}).get("limitation_flags") or []),
-            deep_link=candidate_b_link,
-        )
+        if candidate_b_source.source_kind == _CANDIDATE_B_SOURCE_KIND_RUNTIME:
+            columns["candidate_b"] = (
+                NrcApsWorkbenchCompareColumnOut(
+                    variant_id="candidate_b",
+                    available=True,
+                    comparability_class="direct",
+                    label="Candidate B / OpenDataLoader PDF",
+                    data={
+                        "char_count": candidate_b_normalized.char_count,
+                        "mapping_precision": candidate_b_normalized.mapping_precision,
+                        "text": candidate_b_normalized.text or "",
+                        "document_processing_engine": _CANDIDATE_B_RUNTIME_VARIANT,
+                    },
+                    warnings=[_runtime_candidate_b_warning()],
+                    deep_link=candidate_b_link,
+                )
+                if candidate_b_normalized.available
+                else _missing_column("candidate_b", "Candidate B / OpenDataLoader PDF", "Normalized text is unavailable for the selected Candidate B runtime target.", deep_link=candidate_b_link)
+            )
+        else:
+            columns["candidate_b"] = NrcApsWorkbenchCompareColumnOut(
+                variant_id="candidate_b",
+                available=True,
+                comparability_class="derived_only",
+                label="Candidate B",
+                data={
+                    "char_count": (compare_doc.get("candidate_b") or {}).get("candidate_b_normalized_char_count"),
+                    "mapping_precision": "document",
+                    "text": (compare_doc.get("candidate_b") or {}).get("candidate_b_normalized_text") or "",
+                },
+                warnings=["Candidate B normalized text is workbench-only and not a replacement for owner-path normalized text."],
+                limitations=list((compare_doc.get("candidate_b") or {}).get("limitation_flags") or []),
+                deep_link=candidate_b_link,
+            )
     elif tab_id == "diagnostics":
         columns["baseline"] = (
             NrcApsWorkbenchCompareColumnOut(
@@ -881,16 +1136,39 @@ def compose_workbench_compare_tab(
             if candidate_a_diagnostics.available
             else _missing_column("candidate_a", "Candidate A", "Diagnostics are unavailable for the selected Candidate A target.", deep_link=candidate_a_link)
         )
-        columns["candidate_b"] = NrcApsWorkbenchCompareColumnOut(
-            variant_id="candidate_b",
-            available=True,
-            comparability_class="non_equivalent",
-            label="Candidate B",
-            data=_candidate_b_diagnostics_data(bundle, compare_doc),
-            warnings=list((compare_doc.get("candidate_b") or {}).get("warning_flags") or []),
-            limitations=list((compare_doc.get("candidate_b") or {}).get("limitation_flags") or []),
-            deep_link=candidate_b_link,
-        )
+        if candidate_b_source.source_kind == _CANDIDATE_B_SOURCE_KIND_RUNTIME:
+            columns["candidate_b"] = (
+                NrcApsWorkbenchCompareColumnOut(
+                    variant_id="candidate_b",
+                    available=True,
+                    comparability_class="direct",
+                    label="Candidate B / OpenDataLoader PDF",
+                    data={
+                        "quality_status": candidate_b_diagnostics.quality_status,
+                        "document_class": candidate_b_diagnostics.document_class,
+                        "page_count": candidate_b_diagnostics.page_count,
+                        "ordered_unit_count": candidate_b_diagnostics.ordered_unit_count,
+                        "unit_kind_counts": dict(candidate_b_diagnostics.unit_kind_counts or {}),
+                        "degradation_codes": list(candidate_b_diagnostics.degradation_codes or []),
+                        "document_processing_engine": _CANDIDATE_B_RUNTIME_VARIANT,
+                    },
+                    warnings=sorted(set(list(candidate_b_diagnostics.warnings or []) + [_runtime_candidate_b_warning()])),
+                    deep_link=candidate_b_link,
+                )
+                if candidate_b_diagnostics.available
+                else _missing_column("candidate_b", "Candidate B / OpenDataLoader PDF", "Diagnostics are unavailable for the selected Candidate B runtime target.", deep_link=candidate_b_link)
+            )
+        else:
+            columns["candidate_b"] = NrcApsWorkbenchCompareColumnOut(
+                variant_id="candidate_b",
+                available=True,
+                comparability_class="non_equivalent",
+                label="Candidate B",
+                data=_candidate_b_diagnostics_data(bundle, compare_doc),
+                warnings=list((compare_doc.get("candidate_b") or {}).get("warning_flags") or []),
+                limitations=list((compare_doc.get("candidate_b") or {}).get("limitation_flags") or []),
+                deep_link=candidate_b_link,
+            )
     else:
         columns["baseline"] = (
             NrcApsWorkbenchCompareColumnOut(
@@ -916,16 +1194,34 @@ def compose_workbench_compare_tab(
             if candidate_a_structure.available
             else _missing_column("candidate_a", "Candidate A", "Structure data are unavailable for the selected Candidate A target.", deep_link=candidate_a_link)
         )
-        columns["candidate_b"] = NrcApsWorkbenchCompareColumnOut(
-            variant_id="candidate_b",
-            available=True,
-            comparability_class="derived_only",
-            label="Candidate B",
-            data=_candidate_b_structure_data(compare_doc),
-            warnings=list((compare_doc.get("candidate_b") or {}).get("warning_flags") or []),
-            limitations=list((compare_doc.get("candidate_b") or {}).get("limitation_flags") or []),
-            deep_link=candidate_b_link,
-        )
+        if candidate_b_source.source_kind == _CANDIDATE_B_SOURCE_KIND_RUNTIME:
+            columns["candidate_b"] = (
+                NrcApsWorkbenchCompareColumnOut(
+                    variant_id="candidate_b",
+                    available=True,
+                    comparability_class="direct",
+                    label="Candidate B / OpenDataLoader PDF",
+                    data={
+                        **_structure_data_from_extracted(candidate_b_structure, candidate_b_diagnostics),
+                        "document_processing_engine": _CANDIDATE_B_RUNTIME_VARIANT,
+                    },
+                    warnings=[_runtime_candidate_b_warning()],
+                    deep_link=candidate_b_link,
+                )
+                if candidate_b_structure.available
+                else _missing_column("candidate_b", "Candidate B / OpenDataLoader PDF", "Structure data are unavailable for the selected Candidate B runtime target.", deep_link=candidate_b_link)
+            )
+        else:
+            columns["candidate_b"] = NrcApsWorkbenchCompareColumnOut(
+                variant_id="candidate_b",
+                available=True,
+                comparability_class="derived_only",
+                label="Candidate B",
+                data=_candidate_b_structure_data(compare_doc),
+                warnings=list((compare_doc.get("candidate_b") or {}).get("warning_flags") or []),
+                limitations=list((compare_doc.get("candidate_b") or {}).get("limitation_flags") or []),
+                deep_link=candidate_b_link,
+            )
 
     warnings = sorted(
         set(
