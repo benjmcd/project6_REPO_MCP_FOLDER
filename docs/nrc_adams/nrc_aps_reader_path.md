@@ -28,7 +28,7 @@ For the shipped NRC APS review surfaces on current `main`, use these docs in ord
 1. `docs/nrc_adams/nrc_aps_ui_launch_runbook.md` - canonical launch contract for binding and starting the shipped review/document-trace/workbench/Candidate B Trace surfaces
 2. `frontend_UI_plans/README.md` - retained UI reference index and supporting operator/reference docs
 3. `frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md` - concise startup walkthrough layered on top of the launch runbook
-4. `frontend_UI_plans/wb-compare-validation.md` - same-checkout prep, `tools/validate_wb_prep.py`, and populated Workbench Compare plus Candidate B Trace validation
+4. `frontend_UI_plans/wb-compare-validation.md` - same-checkout prep, `tools/validate_wb_prep.py`, populated Workbench Compare plus Candidate B Trace validation, and explicit runtime-source Candidate B validation
 5. `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md` - broader manual validation pass after launch and prep succeed
 
 Candidate B runtime-admission note:
