@@ -132,6 +132,10 @@ def _repo_rel(checkout_root: Path, path: Path | None) -> str | None:
         return str(resolved)
 
 
+def _checkout_root_display(checkout_root: Path) -> str:
+    return str(checkout_root.resolve())
+
+
 def _normalize_candidate_b_source_kind(value: str | None) -> str:
     normalized = str(value or _CANDIDATE_B_SOURCE_KIND_BUNDLE).strip().lower()
     if normalized not in {_CANDIDATE_B_SOURCE_KIND_BUNDLE, _CANDIDATE_B_SOURCE_KIND_RUNTIME}:
@@ -488,7 +492,7 @@ def validate_prepared_state(
         return {
             "schema_id": "aps.workbench_prep_validation.v1",
             "passed": True,
-            "checkout_root": _repo_rel(checkout_root, checkout_root),
+            "checkout_root": _checkout_root_display(checkout_root),
             "selection": {
                 "candidate_b_source_kind": _CANDIDATE_B_SOURCE_KIND_RUNTIME,
                 "baseline_run_id": baseline_binding.run_id,
@@ -622,7 +626,7 @@ def validate_prepared_state(
     return {
         "schema_id": "aps.workbench_prep_validation.v1",
         "passed": True,
-        "checkout_root": _repo_rel(checkout_root, checkout_root),
+        "checkout_root": _checkout_root_display(checkout_root),
         "selection": {
             "candidate_b_source_kind": _CANDIDATE_B_SOURCE_KIND_BUNDLE,
             "baseline_run_id": baseline_binding.run_id,
@@ -694,7 +698,7 @@ def main(argv: list[str] | None = None) -> int:
         failure_payload = {
             "schema_id": "aps.workbench_prep_validation.v1",
             "passed": False,
-            "checkout_root": _repo_rel(checkout_root, checkout_root),
+            "checkout_root": _checkout_root_display(checkout_root),
             "error": {
                 "code": exc.code,
                 "detail": exc.detail,
