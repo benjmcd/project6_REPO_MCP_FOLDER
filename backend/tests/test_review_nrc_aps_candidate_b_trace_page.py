@@ -35,6 +35,7 @@ def test_candidate_b_trace_page_shell_content() -> None:
 
     assert "<title>NRC APS Candidate B Trace</title>" in html
     assert 'href="/review/nrc-aps/workbench-compare"' in html
+    assert 'id="workbench-return-link"' in html
     assert 'id="theme-selector"' in html
     assert 'id="identity-summary"' in html
     assert 'id="tabs-header"' in html
@@ -82,13 +83,27 @@ def test_candidate_b_trace_js_uses_page_local_query_params_and_routes() -> None:
     js_content = js_path.read_text(encoding="utf-8")
 
     assert "candidate_b_bundle_id" in js_content
+    assert "candidate_b_source_kind" in js_content
     assert "fixture_id" in js_content
     assert "tab" in js_content
     assert "const API_ROOT = '/api/v1/review/nrc-aps/candidate-b-trace';" in js_content
+    assert "const WORKBENCH_ROUTE = '/review/nrc-aps/workbench-compare';" in js_content
     assert "annotated_pdf" in js_content
     assert "raw_json" in js_content
     assert "raw_markdown" in js_content
     assert "document-trace?run_id=" not in js_content
+
+
+def test_candidate_b_trace_js_preserves_bundle_context_for_workbench_return() -> None:
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "candidate_b_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "baseline_run_id" in js_content
+    assert "candidate_a_run_id" in js_content
+    assert "candidate_b_source_kind', 'bundle'" in js_content
+    assert "params.get('candidate_b_run_id')" not in js_content
+    assert "params.set('candidate_b_run_id'" not in js_content
+    assert "syncReturnLink();" in js_content
 
 
 def test_candidate_b_trace_js_defers_blank_query_tab_to_manifest_default() -> None:

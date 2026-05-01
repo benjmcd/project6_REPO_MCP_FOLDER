@@ -1,5 +1,6 @@
 const PAGE_ROUTE = '/review/nrc-aps/candidate-b-trace';
 const API_ROOT = '/api/v1/review/nrc-aps/candidate-b-trace';
+const WORKBENCH_ROUTE = '/review/nrc-aps/workbench-compare';
 const TAB_ORDER = ['annotated_pdf', 'summary', 'raw_json', 'raw_markdown'];
 const THEME_KEY = 'nrc_aps_review_theme';
 
@@ -10,6 +11,8 @@ const state = {
     candidateBBundleId: '',
     fixtureId: '',
     tabId: '',
+    baselineRunId: '',
+    candidateARunId: '',
 };
 
 const els = {
@@ -24,6 +27,7 @@ const els = {
     limitationList: document.getElementById('limitation-list'),
     tabsHeader: document.getElementById('tabs-header'),
     tabContentArea: document.getElementById('tab-content-area'),
+    returnLink: document.getElementById('workbench-return-link'),
 };
 
 function readQueryState() {
@@ -31,8 +35,29 @@ function readQueryState() {
     state.candidateBBundleId = params.get('candidate_b_bundle_id') || '';
     state.fixtureId = params.get('fixture_id') || '';
     state.tabId = params.get('tab') || '';
+    state.baselineRunId = params.get('baseline_run_id') || '';
+    state.candidateARunId = params.get('candidate_a_run_id') || '';
     if (!TAB_ORDER.includes(state.tabId)) {
         state.tabId = '';
+    }
+}
+
+function buildWorkbenchReturnUrl() {
+    const params = new URLSearchParams();
+    if (state.baselineRunId) params.set('baseline_run_id', state.baselineRunId);
+    if (state.candidateARunId) params.set('candidate_a_run_id', state.candidateARunId);
+    if (state.candidateBBundleId) {
+        params.set('candidate_b_source_kind', 'bundle');
+        params.set('candidate_b_bundle_id', state.candidateBBundleId);
+    }
+    if (state.fixtureId) params.set('fixture_id', state.fixtureId);
+    const query = params.toString();
+    return query ? `${WORKBENCH_ROUTE}?${query}` : WORKBENCH_ROUTE;
+}
+
+function syncReturnLink() {
+    if (els.returnLink) {
+        els.returnLink.href = buildWorkbenchReturnUrl();
     }
 }
 
@@ -336,6 +361,7 @@ async function loadManifest() {
     state.cachedJson = null;
     state.cachedMarkdown = null;
     syncQueryState();
+    syncReturnLink();
     renderIdentitySummary(state.manifest);
     renderBadges(state.manifest);
     renderNoticeList(els.warningList, state.manifest.warnings || [], 'No warnings.');
@@ -372,6 +398,7 @@ async function init() {
     bootstrapTheme();
     readQueryState();
     syncQueryState();
+    syncReturnLink();
     try {
         await loadManifest();
     } catch (error) {

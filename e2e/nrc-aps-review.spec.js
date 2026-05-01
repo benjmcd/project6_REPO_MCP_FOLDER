@@ -136,6 +136,27 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
 
   expectNoLocalPath(await page.content());
   expectNoLocalPath(page.url());
+
+  const returnLink = page.locator('#workbench-return-link');
+  await expect(returnLink).toHaveCount(1);
+  const returnHref = await returnLink.getAttribute('href');
+  expect(returnHref).toContain('/review/nrc-aps/workbench-compare?');
+  expectNoLocalPath(returnHref);
+  const returnUrl = new URL(returnHref, 'http://127.0.0.1:8098');
+  expect(returnUrl.searchParams.get('candidate_b_source_kind')).toBe('bundle');
+  expect(returnUrl.searchParams.get('candidate_b_bundle_id')).toBe(traceManifest.candidate_b_bundle_id);
+  expect(returnUrl.searchParams.get('fixture_id')).toBe(traceManifest.fixture_id);
+  expect(returnUrl.searchParams.get('candidate_b_run_id')).toBeNull();
+
+  await Promise.all([
+    page.waitForURL(/\/review\/nrc-aps\/workbench-compare\?/),
+    returnLink.click(),
+  ]);
+  const returnedUrl = new URL(page.url());
+  expect(returnedUrl.searchParams.get('candidate_b_source_kind')).toBe('bundle');
+  expect(returnedUrl.searchParams.get('candidate_b_bundle_id')).toBe(traceManifest.candidate_b_bundle_id);
+  expect(returnedUrl.searchParams.get('fixture_id')).toBe(traceManifest.fixture_id);
+  expect(returnedUrl.searchParams.get('candidate_b_run_id')).toBeNull();
 });
 
 test('Workbench Compare can switch Candidate B from bundle source to admitted runtime source', async ({ page }) => {
