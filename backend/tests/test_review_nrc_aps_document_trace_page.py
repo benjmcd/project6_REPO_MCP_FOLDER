@@ -244,6 +244,20 @@ def test_document_trace_js_non_reviewable_run_guard() -> None:
     assert "not reviewable" in js_content
 
 
+def test_document_trace_js_exposes_runtime_variant_labels() -> None:
+    """Verify document_trace.js renders runtime variant metadata in selectors and identity."""
+    static_dir = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static"
+    html_content = (static_dir / "document_trace.html").read_text(encoding="utf-8")
+    js_content = (static_dir / "document_trace.js").read_text(encoding="utf-8")
+
+    assert "runtime_labels.js" in html_content
+    assert html_content.index("runtime_labels.js") < html_content.index("document_trace.js")
+    assert "NrcApsRuntimeLabels" in js_content
+    assert "runOptionLabel(r)" in js_content
+    assert "<strong>VARIANT</strong>" in js_content
+    assert "runtimeVariantLabel(binding)" in js_content
+
+
 def test_document_trace_js_tab_error_includes_identity() -> None:
     """Verify tab-level fetch errors include run and target identity."""
     js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
