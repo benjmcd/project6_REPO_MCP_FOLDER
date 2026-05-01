@@ -9,6 +9,8 @@ This doc exists because the compare surface is supposed to become easier to run,
 Scope note:
 - this validation plan remains compare-surface specific
 - it does not replace the separate `Candidate B Trace` validation burden frozen in `08F`
+- it describes the original bundle/comparator proof path; later current-main runtime-source Workbench Compare prep/validation is governed by `frontend_UI_plans/wb-compare-validation.md` and `06R_CANDIDATE_B_OPENDATALOADER_REMAINING_OPEN_ITEMS_AND_DECISION_GATES.md`
+- bundle-sourced Candidate B Trace and runtime-sourced Candidate B Compare remain separate source models
 
 ---
 
