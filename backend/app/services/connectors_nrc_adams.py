@@ -74,6 +74,14 @@ APS_KNOWN_BAD_FORCED_DIALECTS = {"guide_native", "shape_b"}
 APS_SYNC_WATERMARK_FIELD = "DateAddedTimestamp"
 APS_SYNC_MODES = {"full_scan", "incremental", "reconciliation"}
 _APS_ADMITTED_VISUAL_LANE_MODES: frozenset[str] = frozenset({"baseline", "candidate_a_page_evidence_v1"})
+APS_DOCUMENT_PROCESSING_ENGINE_BASELINE = nrc_aps_artifact_ingestion.nrc_aps_document_processing.APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
+APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B = nrc_aps_artifact_ingestion.nrc_aps_document_processing.APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+_APS_ADMITTED_DOCUMENT_PROCESSING_ENGINES: frozenset[str] = frozenset(
+    {
+        APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
+        APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
+    }
+)
 APS_SYNC_BASELINE_ELIGIBLE_STATUSES = {"completed", "completed_with_errors"}
 APS_DEFAULT_SYNC_OVERLAP_SECONDS = 259200
 APS_DEFAULT_RECONCILIATION_LOOKBACK_DAYS = 30
@@ -607,6 +615,7 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
                 "safeguard_policy",
                 "client_request_id",
                 "visual_lane_mode",
+                "document_processing_engine",
             }
             query_payload = {key: value for key, value in config.items() if key not in control_keys and value is not None}
         else:
@@ -650,6 +659,11 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
     visual_lane_mode = str(config.get("visual_lane_mode", "baseline")).strip().lower() or "baseline"
     if visual_lane_mode not in _APS_ADMITTED_VISUAL_LANE_MODES:
         visual_lane_mode = "baseline"
+    document_processing_engine = str(
+        config.get("document_processing_engine", APS_DOCUMENT_PROCESSING_ENGINE_BASELINE)
+    ).strip().lower() or APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
+    if document_processing_engine not in _APS_ADMITTED_DOCUMENT_PROCESSING_ENGINES:
+        document_processing_engine = APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
 
     allowed_hosts = [str(v).strip().lower() for v in config.get("allowed_hosts", []) if str(v).strip()]
     allowed_hosts = list(dict.fromkeys(APS_DEFAULT_ALLOWED_HOSTS + allowed_hosts))
@@ -712,6 +726,7 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
         "report_verbosity": report_verbosity,
         "sync_mode": sync_mode,
         "visual_lane_mode": visual_lane_mode,
+        "document_processing_engine": document_processing_engine,
         "incremental_overlap_seconds": max(0, _coerce_int(config.get("incremental_overlap_seconds", APS_DEFAULT_SYNC_OVERLAP_SECONDS), APS_DEFAULT_SYNC_OVERLAP_SECONDS)),
         "reconciliation_lookback_days": max(1, _coerce_int(config.get("reconciliation_lookback_days", APS_DEFAULT_RECONCILIATION_LOOKBACK_DAYS), APS_DEFAULT_RECONCILIATION_LOOKBACK_DAYS)),
         "max_rps": max(0.1, float(config.get("max_rps", limiter_cfg.get("max_rps", APS_DEFAULT_RATE_LIMIT_RPS)) or APS_DEFAULT_RATE_LIMIT_RPS)),
