@@ -101,6 +101,7 @@ The connector runtime is in-process and currently includes ScienceBase public/MC
 - NRC APS lower document-processing layers are now reopened additively:
   - deterministic media detection (`aps_media_detection_v1`)
   - PyMuPDF-based PDF extraction (`aps_document_extraction_v1`)
+  - opt-in Candidate B OpenDataLoader PDF processing via `document_processing_engine="candidate_b_opendataloader_pdf"` for the existing NRC APS run-submit path; this is a later explicit runtime-admission reopen and does not by itself add review-runtime selector, Workbench Compare, Candidate B Trace, schema, model, migration, or route widening
   - BOM-aware plain-text decoding
   - OCR adapter wiring via the Tesseract CLI
   - cooperative enforcement of `content_parse_timeout_seconds`

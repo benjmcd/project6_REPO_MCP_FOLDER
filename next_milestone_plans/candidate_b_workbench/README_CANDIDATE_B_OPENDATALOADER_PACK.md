@@ -5,6 +5,11 @@
 This folder is the committed planning/workbench pack for Candidate B OpenDataLoader on current `main`.
 It is not runtime/service authority and does not imply Candidate B admission.
 
+Post-runtime-admission-reopen note:
+- The non-admitted statements in this pack describe the earlier bundle-scoped Candidate B workbench/trace posture.
+- A later explicit product/operator requirement has now reopened Candidate B runtime admission for Phase 1 only as the opt-in `document_processing_engine="candidate_b_opendataloader_pdf"` processing path on the existing NRC APS run-submit flow.
+- This pack remains guardrail/status history for bundle-scoped compare/trace behavior, execution envelope, package pinning, output isolation, non-interference, and provenance semantics. It is not proof that selector visibility, Workbench Compare integration, Candidate B Trace parity, routes, schemas, models, migrations, or persistence were widened.
+
 v6 exists because v5 was repo-grounded but still left too much execution-day inference.
 The remaining weakness was not macro-scope. It was determinism.
 
@@ -24,12 +29,12 @@ v6 therefore hardens five specific areas:
 
 ---
 
-## Core program truth retained in v6
+## Historical v6 program truth
 
 - `baseline` remains the integrated default posture.
-- `candidate_a_page_evidence_v1` remains the only admitted non-`baseline` value.
-- Candidate B remains **workbench-only, non-admitted, non-integrated**.
-- No runtime admission/defaulting/promotion work begins by implication.
+- At the time of this v6 bundle-scoped pack, `candidate_a_page_evidence_v1` remained the only admitted non-`baseline` visual-lane value.
+- Candidate B v1 remained **workbench-only, non-admitted, non-integrated**.
+- No runtime admission/defaulting/promotion work began by implication from the v6 pack.
 - No service/API/review/evidence/context/export surface is modified in Candidate B v1.
 - Candidate B v1 is still a **tests/report comparator over the existing lower-layer proof harness**.
 
@@ -55,7 +60,7 @@ Current inspection-surface note:
 - the current merged-main implementation adds the separate additive `Candidate B Trace` page and API family for bundle-scoped inspection
 - current support now requests annotated PDF output and retains it under the approved Candidate B raw-output root
 - current compare deep links now include `candidate_b_trace` alongside the existing baseline and Candidate A trace links
-- Candidate B still remains workbench-only, non-admitted, and outside the normal review runtime selector
+- At that shipped trace point, Candidate B remained workbench-only, non-admitted, and outside the normal review runtime selector. The later explicit Phase 1 runtime-admission reopen is limited to the processing-engine path and still does not make Candidate B visible in the normal review runtime selector.
 
 Post-PR50 shipped-baseline note:
 - the shipped baseline is now:
@@ -84,6 +89,7 @@ Ordered next-decision note:
   - keep Candidate B at the shipped bundle-scoped compare + trace boundary
   - do not drift into runtime admission or selector integration by implication
 - a wider runtime-admission program remains available only as a later explicit reopen if the shipped bundle-scoped model proves insufficient for a concrete operator/product requirement
+- that later explicit reopen now exists for Phase 1 only at the document-processing engine layer; the bundle-scoped compare + trace boundary remains distinct from admitted runtime Candidate B runs
 - prepared-state/operator workflow hardening is now landed via the canonical `tools/validate_wb_prep.py` same-checkout prep gate
 - if bundle-scoped posture remains correct, only then consider narrow operator ergonomics improvements
 - documentation closeout is now landed for the active operator front doors:
@@ -171,8 +177,12 @@ Ordered next-decision note:
 
 ## Current bounded additive lane
 
-The active Candidate B implementation lane is still not runtime integration.
-It is the separate Candidate B Trace surface for the existing workbench-only path.
+The earlier bounded additive lane was not runtime integration.
+It was the separate Candidate B Trace surface for the existing workbench-only path.
+
+Current runtime-admission status:
+- Phase 1 has since reopened Candidate B admission as an opt-in processing engine only.
+- Runtime-selector visibility, Workbench Compare integration, Candidate B Trace parity, route/schema/model/migration work, and broader persistence changes remain outside that Phase 1 commit.
 
 That lane is scoped in:
 

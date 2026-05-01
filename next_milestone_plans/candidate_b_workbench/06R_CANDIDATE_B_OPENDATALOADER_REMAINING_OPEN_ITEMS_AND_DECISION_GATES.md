@@ -253,6 +253,11 @@ Resolved posture:
 - do not open runtime admission, selector admission, or widened runtime classification for Candidate B in the current horizon
 - treat any later runtime-style Candidate B move as a separate explicit reopen rather than as continuation of the current shipped lane
 
+Post-reopen status:
+- A later concrete product/operator requirement has now explicitly opened Option B for Phase 1.
+- The Phase 1 implementation admits Candidate B only as `document_processing_engine="candidate_b_opendataloader_pdf"` on the existing NRC APS run-submit flow.
+- This does not revise the shipped bundle-scoped compare + Candidate B Trace surface, does not make Candidate B visible in the normal review run selector, and does not widen routes, schemas, models, migrations, document-trace parity, or persistence semantics.
+
 ### Option A - retain bundle-scoped compare + trace as the current-horizon boundary
 Posture:
 
@@ -281,8 +286,9 @@ Posture:
 
 Current recommendation:
 
-- this program is not opened by the current-horizon decision
-- only open it if an explicit product requirement cannot be satisfied by the shipped bundle-scoped compare + trace model
+- this program was not opened by the earlier current-horizon decision
+- it is now opened only because an explicit product requirement requires Candidate B / OpenDataLoader PDF to run through the corpus ingestion/processing path
+- the current admitted scope is Phase 1 processing-engine admission only; selector visibility and runtime classification remain follow-on decisions
 
 ### Reopen triggers required before Option B is justified
 At least one of these must be true:
@@ -309,12 +315,12 @@ It would likely widen at least:
 ### Current default posture remains:
 
 - bundle-scoped inspection surface
-- no runtime admission
+- runtime admission exists only for the opt-in processing engine path
 - no normal run-selector entry
 
 ### Hard rule
-Do not drift into runtime-style integration, selector admission, or widened runtime classification by incidental follow-on edits.
-Do not describe Option B as a small follow-up to Candidate B Trace; it is a separate widened program if reopened.
+Do not drift from Phase 1 processing-engine admission into selector admission, Workbench Compare integration, Candidate B Trace parity, document-trace parity, routes, schemas, models, migrations, or widened persistence by incidental follow-on edits.
+Do not describe Option B as a small follow-up to Candidate B Trace; it is a separate widened program and is now being reopened only in explicit bounded tranches.
 
 ---
 
