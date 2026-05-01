@@ -118,6 +118,12 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
   const traceManifest = await expectJsonResponse(await traceManifestResponsePromise);
   expect(traceManifest.default_tab).toBe('annotated_pdf');
   expect(traceManifest.artifacts.annotated_pdf).toContain('/api/v1/review/nrc-aps/candidate-b-trace/annotated-pdf?');
+  const artifactStatusStrip = page.locator('#artifact-status-strip');
+  await expect(artifactStatusStrip).toContainText('Annotated PDF');
+  await expect(artifactStatusStrip).toContainText('Raw JSON');
+  await expect(artifactStatusStrip).toContainText('Raw Markdown');
+  await expect(artifactStatusStrip.locator('.artifact-status-card.available')).toHaveCount(3);
+  await expect(artifactStatusStrip).not.toContainText('No artifact was retained');
 
   const annotatedPdfResponse = await annotatedPdfResponsePromise;
   expect(annotatedPdfResponse.status()).toBe(200);
