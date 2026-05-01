@@ -181,14 +181,74 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
   traceManifest = await expectJsonResponse(await nextTraceManifestResponsePromise);
   expect(traceManifest.fixture_id).toBe(targets.targets[1].fixture_id);
   expect(traceManifest.default_tab).toBe('annotated_pdf');
-  await expectJsonResponse(await nextTraceTargetsResponsePromise);
+  const nextTraceTargets = await expectJsonResponse(await nextTraceTargetsResponsePromise);
+  expect(nextTraceTargets.candidate_b_source_kind).toBe('bundle');
+  expect(nextTraceTargets.candidate_b_run_id).toBeNull();
   const nextAnnotatedPdfResponse = await nextAnnotatedPdfResponsePromise;
   expect(nextAnnotatedPdfResponse.status()).toBe(200);
+  const nextPageUrl = new URL(page.url());
+  expect(nextPageUrl.searchParams.get('baseline_run_id')).toBe(sources.baseline_runs[0].run_id);
+  expect(nextPageUrl.searchParams.get('candidate_a_run_id')).toBe(sources.candidate_a_runs[0].run_id);
+  expect(nextPageUrl.searchParams.get('candidate_b_source_kind')).toBe('bundle');
+  expect(nextPageUrl.searchParams.get('candidate_b_bundle_id')).toBe(traceManifest.candidate_b_bundle_id);
+  expect(nextPageUrl.searchParams.get('fixture_id')).toBe(targets.targets[1].fixture_id);
+  expect(nextPageUrl.searchParams.get('candidate_b_run_id')).toBeNull();
   await expect(fixtureNavigation).toContainText('Fixture 2 of 2');
   await expect(fixtureNavigation).toContainText(targets.targets[1].display_label);
   await expect(fixtureNavigation.locator('.fixture-nav-link.disabled')).toHaveCount(1);
   await expect(fixtureNavigation.locator('a.fixture-nav-link')).toHaveCount(1);
-  await expect(fixtureNavigation.locator('a.fixture-nav-link').filter({ hasText: 'Previous' })).toHaveCount(1);
+  const previousFixtureLink = fixtureNavigation.locator('a.fixture-nav-link').filter({ hasText: 'Previous' });
+  await expect(previousFixtureLink).toHaveCount(1);
+  const previousHref = await previousFixtureLink.getAttribute('href');
+  expectNoLocalPath(previousHref);
+  const previousUrl = new URL(previousHref, 'http://127.0.0.1:8098');
+  expect(previousUrl.searchParams.get('baseline_run_id')).toBe(sources.baseline_runs[0].run_id);
+  expect(previousUrl.searchParams.get('candidate_a_run_id')).toBe(sources.candidate_a_runs[0].run_id);
+  expect(previousUrl.searchParams.get('candidate_b_source_kind')).toBe('bundle');
+  expect(previousUrl.searchParams.get('candidate_b_bundle_id')).toBe(traceManifest.candidate_b_bundle_id);
+  expect(previousUrl.searchParams.get('fixture_id')).toBe(targets.targets[0].fixture_id);
+  expect(previousUrl.searchParams.get('candidate_b_run_id')).toBeNull();
+
+  const previousTraceManifestResponsePromise = page.waitForResponse(
+    (response) => response.url().includes('/candidate-b-trace/manifest')
+      && response.url().includes(`fixture_id=${targets.targets[0].fixture_id}`),
+  );
+  const previousTraceTargetsResponsePromise = page.waitForResponse(
+    (response) => response.url().includes('/workbench-compare/targets?')
+      && response.url().includes('candidate_b_source_kind=bundle'),
+  );
+  const previousAnnotatedPdfResponsePromise = page.waitForResponse(
+    (response) => response.url().includes('/candidate-b-trace/annotated-pdf')
+      && response.url().includes(`fixture_id=${targets.targets[0].fixture_id}`),
+  );
+  await Promise.all([
+    page.waitForURL(new RegExp(`/review/nrc-aps/candidate-b-trace\\?.*fixture_id=${targets.targets[0].fixture_id}`)),
+    previousFixtureLink.click(),
+  ]);
+  traceManifest = await expectJsonResponse(await previousTraceManifestResponsePromise);
+  expect(traceManifest.fixture_id).toBe(targets.targets[0].fixture_id);
+  expect(traceManifest.default_tab).toBe('annotated_pdf');
+  const previousTraceTargets = await expectJsonResponse(await previousTraceTargetsResponsePromise);
+  expect(previousTraceTargets.candidate_b_source_kind).toBe('bundle');
+  expect(previousTraceTargets.candidate_b_run_id).toBeNull();
+  const previousAnnotatedPdfResponse = await previousAnnotatedPdfResponsePromise;
+  expect(previousAnnotatedPdfResponse.status()).toBe(200);
+  const previousPageUrl = new URL(page.url());
+  expect(previousPageUrl.searchParams.get('baseline_run_id')).toBe(sources.baseline_runs[0].run_id);
+  expect(previousPageUrl.searchParams.get('candidate_a_run_id')).toBe(sources.candidate_a_runs[0].run_id);
+  expect(previousPageUrl.searchParams.get('candidate_b_source_kind')).toBe('bundle');
+  expect(previousPageUrl.searchParams.get('candidate_b_bundle_id')).toBe(traceManifest.candidate_b_bundle_id);
+  expect(previousPageUrl.searchParams.get('fixture_id')).toBe(targets.targets[0].fixture_id);
+  expect(previousPageUrl.searchParams.get('candidate_b_run_id')).toBeNull();
+  await expect(fixtureNavigation).toContainText('Fixture 1 of 2');
+  await expect(fixtureNavigation).toContainText(targets.targets[0].display_label);
+  await expect(fixtureNavigation.locator('.fixture-nav-link.disabled')).toHaveCount(1);
+  await expect(fixtureNavigation.locator('a.fixture-nav-link')).toHaveCount(1);
+  await expect(fixtureNavigation.locator('a.fixture-nav-link').filter({ hasText: 'Next' })).toHaveCount(1);
+  await expect(artifactStatusStrip).toContainText('Annotated PDF');
+  await expect(artifactStatusStrip).toContainText('Raw JSON');
+  await expect(artifactStatusStrip).toContainText('Raw Markdown');
+  await expect(artifactStatusStrip.locator('.artifact-status-card.available')).toHaveCount(3);
 
   await page.getByRole('button', { name: 'Summary' }).click();
   await expect(page.locator('#tabs-header .tab-btn.active')).toHaveText('Summary');
