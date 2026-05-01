@@ -75,7 +75,14 @@ def _write_runtime_summary(runtime_dir: Path, *, run_id: str) -> None:
     )
 
 
-def _write_runtime_db(runtime_dir: Path, *, run_id: str, visual_lane_mode: str | None, include_connector_run_row: bool) -> None:
+def _write_runtime_db(
+    runtime_dir: Path,
+    *,
+    run_id: str,
+    visual_lane_mode: str | None,
+    include_connector_run_row: bool,
+    document_processing_engine: str | None = None,
+) -> None:
     database_path = runtime_dir / "lc.db"
     connection = sqlite3.connect(str(database_path))
     try:
@@ -94,7 +101,12 @@ def _write_runtime_db(runtime_dir: Path, *, run_id: str, visual_lane_mode: str |
         connection.execute("CREATE TABLE aps_content_document (content_id TEXT)")
         connection.execute("CREATE TABLE aps_content_chunk (chunk_id TEXT)")
         if include_connector_run_row:
-            request_config_json = json.dumps({"visual_lane_mode": visual_lane_mode}) if visual_lane_mode is not None else json.dumps({})
+            request_config: dict[str, str | None] = {}
+            if visual_lane_mode is not None:
+                request_config["visual_lane_mode"] = visual_lane_mode
+            if document_processing_engine is not None:
+                request_config["document_processing_engine"] = document_processing_engine
+            request_config_json = json.dumps(request_config)
             connection.execute(
                 """
                 INSERT INTO connector_run (connector_run_id, connector_key, request_config_json, status)
@@ -114,6 +126,7 @@ def _create_temp_review_runtime(
     run_id: str,
     visual_lane_mode: str | None,
     include_connector_run_row: bool,
+    document_processing_engine: str | None = None,
 ) -> Path:
     runtime_dir = base_storage_root / "lc_e2e" / runtime_name
     runtime_dir.mkdir(parents=True, exist_ok=True)
@@ -123,6 +136,7 @@ def _create_temp_review_runtime(
         run_id=run_id,
         visual_lane_mode=visual_lane_mode,
         include_connector_run_row=include_connector_run_row,
+        document_processing_engine=document_processing_engine,
     )
     return runtime_dir
 
@@ -317,3 +331,26 @@ def test_api_runs_admit_candidate_a_page_evidence_v1_as_visible(tmp_path, monkey
     returned_run_ids = {item["run_id"] for item in data["runs"]}
     assert admitted_run_id in returned_run_ids
     assert unapproved_run_id not in returned_run_ids
+
+
+def test_api_runs_exposes_candidate_b_document_processing_engine(tmp_path, monkeypatch):
+    storage_root = tmp_path / "storage_test_runtime"
+    candidate_b_run_id = "00000000-0000-0000-0000-00000000b501"
+    _create_temp_review_runtime(
+        storage_root,
+        runtime_name="candidate_b_runtime",
+        run_id=candidate_b_run_id,
+        visual_lane_mode="baseline",
+        document_processing_engine="candidate_b_opendataloader_pdf",
+        include_connector_run_row=True,
+    )
+
+    monkeypatch.setattr("app.services.review_nrc_aps_runtime.settings.storage_dir", str(storage_root))
+    response = client.get("/api/v1/review/nrc-aps/runs")
+
+    assert response.status_code == 200
+    data = response.json()
+    candidate = next(item for item in data["runs"] if item["run_id"] == candidate_b_run_id)
+    assert candidate["runtime_binding"]["visual_lane_mode"] == "baseline"
+    assert candidate["runtime_binding"]["document_processing_engine"] == "candidate_b_opendataloader_pdf"
+    assert candidate["runtime_binding"]["variant_kind"] == "candidate_b_opendataloader_pdf"

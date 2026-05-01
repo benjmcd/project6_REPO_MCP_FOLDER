@@ -15,6 +15,9 @@ class NrcApsReviewRuntimeBindingSummaryOut(BaseModel):
     runtime_label: str
     database_label: str | None = None
     storage_label: str | None = None
+    visual_lane_mode: str | None = None
+    document_processing_engine: str | None = None
+    variant_kind: str | None = None
 
 
 class NrcApsReviewRunSelectorItemOut(BaseModel):

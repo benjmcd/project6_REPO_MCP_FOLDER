@@ -9,7 +9,11 @@ from app.schemas.review_nrc_aps import (
     NrcApsReviewRunSummaryCountersOut,
 )
 from app.services.nrc_aps_contract import parse_iso_datetime
-from app.services.review_nrc_aps_runtime import ReviewRuntimeBinding, discover_runtime_bindings
+from app.services.review_nrc_aps_runtime import (
+    ReviewRuntimeBinding,
+    discover_runtime_bindings,
+    runtime_binding_request_metadata,
+)
 from app.services.review_nrc_aps_runtime_db import runtime_db_session_for_binding
 from app.models import ConnectorRun
 
@@ -61,10 +65,14 @@ def _display_label(run_id: str, binding: ReviewRuntimeBinding, status: str, coun
 
 
 def build_runtime_binding_summary(binding: ReviewRuntimeBinding) -> NrcApsReviewRuntimeBindingSummaryOut:
+    metadata = runtime_binding_request_metadata(binding)
     return NrcApsReviewRuntimeBindingSummaryOut(
         runtime_label=binding.review_root.name,
         database_label=binding.database_path.name if binding.database_path is not None else None,
         storage_label=binding.storage_dir.name if binding.storage_dir is not None else None,
+        visual_lane_mode=metadata["visual_lane_mode"],
+        document_processing_engine=metadata["document_processing_engine"],
+        variant_kind=metadata["variant_kind"],
     )
 
 
