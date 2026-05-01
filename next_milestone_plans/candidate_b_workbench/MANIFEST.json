@@ -2,7 +2,7 @@
   "pack_id": "candidate_b_opendataloader_planning_pack_v6",
   "version": "v6",
   "title": "Candidate B OpenDataLoader Planning Pack (Execution-Determinism Hardening)",
-  "status": "docs-only planning pack; compare surface landed; workbench-only Candidate B remains non-integrated",
+  "status": "docs-only planning pack; original bundle/comparator compare surface landed; later runtime-source Candidate B admission is separately bounded; Candidate B Trace remains bundle-scoped",
   "source_pack": "candidate_b_opendataloader_planning_pack_combined_v5.md",
   "new_docs": [
     "00N_CANDIDATE_B_OPENDATALOADER_EXECUTION_ENVELOPE_AND_PACKAGE_VERIFICATION.md",
