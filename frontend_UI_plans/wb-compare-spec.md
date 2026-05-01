@@ -194,11 +194,13 @@ Those identities are retained in the compare payload, but they do not replace `f
 
 ### 9.3 Candidate B identity
 
-Candidate B remains bundle-scoped and fixture-scoped with:
+Bundle-sourced Candidate B remains bundle-scoped and fixture-scoped with:
 
 - `bundle_id`
 - `fixture_id`
 - historical run metadata from `compare.json` / `proof.json`
+
+Runtime-sourced Candidate B remains an admitted review runtime source selected by `candidate_b_source_kind=runtime` plus `candidate_b_run_id`; it retains `run_id`, `target_id`, and `content_id` in the compare payload while still using `fixture_id` as the shared compare key.
 
 ### 9.4 Mapping rule
 
@@ -212,8 +214,9 @@ Expected match order:
 This is intentionally strict. A missed compare target is better than a false match.
 If multiple manifest entries share the same case-insensitive basename, the mapping is ambiguous and the fixture must be excluded.
 
-The effective three-way target set for v1 is constrained by Candidate B bundle coverage, not by the full corpus manifest.
+For bundle-sourced Candidate B, the effective three-way target set for v1 is constrained by Candidate B bundle coverage, not by the full corpus manifest.
 If a selected Candidate B bundle covers only a subset of corpus fixtures, only that surviving subset may appear in the compare target list.
+For runtime-sourced Candidate B, the effective target set is constrained by the strict intersection of the selected baseline run, Candidate A run, and Candidate B runtime run after corpus-manifest mapping.
 
 ## 10. Workspace Layout
 
