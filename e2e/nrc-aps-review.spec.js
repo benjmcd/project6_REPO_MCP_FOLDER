@@ -82,6 +82,7 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
   expect(sources.baseline_runs).toHaveLength(1);
   expect(sources.candidate_a_runs).toHaveLength(1);
   expect(sources.candidate_b_bundles).toHaveLength(1);
+  expect(sources.candidate_b_runtime_runs).toHaveLength(1);
   expect(targets.targets).toHaveLength(1);
   expect(manifest.deep_links.candidate_b_trace).toContain('/review/nrc-aps/candidate-b-trace?');
   expectNoLocalPath(manifest.deep_links.candidate_b_trace);
@@ -135,6 +136,50 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
 
   expectNoLocalPath(await page.content());
   expectNoLocalPath(page.url());
+});
+
+test('Workbench Compare can switch Candidate B from bundle source to admitted runtime source', async ({ page }) => {
+  await openWorkbenchCompare(page);
+
+  const runtimeOption = page.locator('#candidate-b-bundle-selector option')
+    .filter({ hasText: 'Runtime | Candidate B / OpenDataLoader PDF' });
+  await expect(runtimeOption).toHaveCount(1);
+  const runtimeOptionValue = await runtimeOption.getAttribute('value');
+  expect(runtimeOptionValue).toContain('runtime:candidate-b-runtime-001');
+
+  const targetsResponsePromise = page.waitForResponse(
+    (response) => response.url().includes('/workbench-compare/targets?')
+      && response.url().includes('candidate_b_source_kind=runtime'),
+  );
+  const manifestResponsePromise = page.waitForResponse(
+    (response) => response.url().includes('/workbench-compare/targets/')
+      && response.url().includes('/manifest')
+      && response.url().includes('candidate_b_source_kind=runtime'),
+  );
+  await page.selectOption('#candidate-b-bundle-selector', runtimeOptionValue);
+
+  const targets = await expectJsonResponse(await targetsResponsePromise);
+  const manifest = await expectJsonResponse(await manifestResponsePromise);
+
+  expect(targets.candidate_b_source_kind).toBe('runtime');
+  expect(targets.candidate_b_run_id).toBe('candidate-b-runtime-001');
+  expect(targets.candidate_b_bundle_id).toBeNull();
+  expect(targets.targets).toHaveLength(1);
+  expect(targets.targets[0].candidate_b_target_id).toBeTruthy();
+  expect(manifest.variant_bindings.candidate_b.source_kind).toBe('runtime');
+  expect(manifest.deep_links.candidate_b_trace).toBeNull();
+  expect(manifest.deep_links.candidate_b_runtime_trace).toContain('/review/nrc-aps/document-trace?');
+  expectNoLocalPath(JSON.stringify(manifest));
+
+  const currentUrl = new URL(page.url());
+  expect(currentUrl.searchParams.get('candidate_b_source_kind')).toBe('runtime');
+  expect(currentUrl.searchParams.get('candidate_b_run_id')).toBe('candidate-b-runtime-001');
+  expect(currentUrl.searchParams.get('candidate_b_bundle_id')).toBeNull();
+
+  await expect(page.locator('#compare-workspace')).toBeVisible();
+  await expect(page.locator('#trace-link-cluster')).toContainText('Candidate B Runtime Trace');
+  await expect(page.locator('#compare-identity-summary')).toContainText('Runtime | Candidate B Runtime');
+  await expect(page.locator('.compare-column h3').filter({ hasText: 'Candidate B / OpenDataLoader PDF' })).toHaveCount(1);
 });
 
 test('Workbench Compare keeps baseline and Candidate A trace links on Document Trace', async ({ page }) => {

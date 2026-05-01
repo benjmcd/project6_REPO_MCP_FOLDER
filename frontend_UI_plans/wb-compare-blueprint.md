@@ -25,7 +25,8 @@ flowchart LR
   E --> F["Three-column workspace"]
   F --> G["Deep link to baseline document-trace"]
   F --> H["Deep link to candidate_a document-trace"]
-  F --> I["Deep link to Candidate B Trace"]
+  F --> I["Deep link to Candidate B Trace for bundle source"]
+  F --> J["Deep link to Candidate B document-trace for runtime source"]
 ```
 
 ## 4. Planned Area Of Effect
@@ -72,7 +73,9 @@ Expected responsibilities:
 - discover compare sources
 - classify baseline vs Candidate A runs
 - discover allowlisted Candidate B bundles
+- discover admitted Candidate B runtime runs as a separate source kind
 - resolve a validated Candidate B bundle root from `candidate_b_bundle_id`
+- resolve a validated Candidate B runtime binding from `candidate_b_run_id`
 - map review-run targets to corpus `fixture_id`
 - intersect targets across the selected sources
 - compose compare manifest and compare tabs
@@ -133,7 +136,7 @@ The workbench compare workspace is a separate page because:
 
 - existing review/document-trace v1 scopes already freeze single-run behavior
 - tri-run comparison needs different identity, different tabs, and different warnings
-- Candidate B data is bundle-based rather than review-runtime-based
+- Candidate B data can be bundle-based or admitted-runtime-based, and the selected source kind must remain explicit
 
 ### 5.2 Shared source header, not three source viewers
 
@@ -142,8 +145,9 @@ The compare page should show one shared source context header and deep links to 
 Current shipped compare truth:
 
 - baseline and Candidate A deep links point into the existing single-run document-trace page
-- Candidate B deep links point into the separate additive `Candidate B Trace` page
-- Candidate B Trace remains a separate additive surface and not a stealth widening of `document-trace`
+- bundle-sourced Candidate B deep links point into the separate additive `Candidate B Trace` page
+- runtime-sourced Candidate B deep links point into the existing single-run document-trace page for the admitted Candidate B runtime target
+- Candidate B Trace remains a separate additive bundle surface and not a stealth document-trace parity claim
 
 Do not render three full source viewers in v1.
 
@@ -183,6 +187,7 @@ The compare workspace must:
 - not assume a committed or tracked bundle root exists
 - not assume a local archived proof bundle exists in every fresh implementation worktree
 - not permit arbitrary bundle-path entry from the browser
+- preserve `candidate_b_bundle_id` as bundle identity only; runtime Candidate B uses `candidate_b_source_kind=runtime` plus `candidate_b_run_id`
 
 ## 6. Data-Flow Breakdown
 

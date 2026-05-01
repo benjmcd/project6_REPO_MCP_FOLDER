@@ -67,11 +67,14 @@ def _raise_workbench_compare_http_error(exc: Exception) -> None:
     if detail in {
         "candidate_b_bundle_id_missing",
         "candidate_b_bundle_id_invalid",
+        "candidate_b_source_kind_invalid",
+        "candidate_b_run_id_missing",
         "unsupported_tab",
     }:
         raise HTTPException(status_code=400, detail=detail)
     if detail in {
         "candidate_b_bundle_unavailable",
+        "candidate_b_opendataloader_pdf_run_not_found",
         "fixture_id_not_comparable",
     }:
         raise HTTPException(status_code=404, detail=detail)
@@ -111,7 +114,7 @@ def get_runs():
 
 @router.get("/workbench-compare/sources", response_model=NrcApsWorkbenchCompareSourcesOut)
 def get_workbench_compare_sources():
-    """List compare-eligible baseline/Candidate A runs and Candidate B bundles."""
+    """List compare-eligible baseline/Candidate A runs and Candidate B sources."""
     try:
         return discover_workbench_compare_sources()
     except ValueError as exc:
@@ -122,14 +125,18 @@ def get_workbench_compare_sources():
 def get_workbench_compare_targets(
     baseline_run_id: str,
     candidate_a_run_id: str,
-    candidate_b_bundle_id: str,
+    candidate_b_source_kind: str = Query("bundle"),
+    candidate_b_bundle_id: str | None = None,
+    candidate_b_run_id: str | None = None,
 ):
     """Return the strict three-way target set for the selected compare sources."""
     try:
         return compose_workbench_compare_targets(
             baseline_run_id=baseline_run_id,
             candidate_a_run_id=candidate_a_run_id,
+            candidate_b_source_kind=candidate_b_source_kind,
             candidate_b_bundle_id=candidate_b_bundle_id,
+            candidate_b_run_id=candidate_b_run_id,
         )
     except (ValueError, KeyError, FileNotFoundError) as exc:
         _raise_workbench_compare_http_error(exc)
@@ -140,14 +147,18 @@ def get_workbench_compare_manifest(
     fixture_id: str,
     baseline_run_id: str,
     candidate_a_run_id: str,
-    candidate_b_bundle_id: str,
+    candidate_b_source_kind: str = Query("bundle"),
+    candidate_b_bundle_id: str | None = None,
+    candidate_b_run_id: str | None = None,
 ):
     """Return the shared compare manifest for one selected fixture."""
     try:
         return compose_workbench_compare_manifest(
             baseline_run_id=baseline_run_id,
             candidate_a_run_id=candidate_a_run_id,
+            candidate_b_source_kind=candidate_b_source_kind,
             candidate_b_bundle_id=candidate_b_bundle_id,
+            candidate_b_run_id=candidate_b_run_id,
             fixture_id=fixture_id,
         )
     except (ValueError, KeyError, FileNotFoundError) as exc:
@@ -160,14 +171,18 @@ def get_workbench_compare_tab(
     tab_id: str,
     baseline_run_id: str,
     candidate_a_run_id: str,
-    candidate_b_bundle_id: str,
+    candidate_b_source_kind: str = Query("bundle"),
+    candidate_b_bundle_id: str | None = None,
+    candidate_b_run_id: str | None = None,
 ):
     """Return one compare tab payload for the selected fixture."""
     try:
         return compose_workbench_compare_tab(
             baseline_run_id=baseline_run_id,
             candidate_a_run_id=candidate_a_run_id,
+            candidate_b_source_kind=candidate_b_source_kind,
             candidate_b_bundle_id=candidate_b_bundle_id,
+            candidate_b_run_id=candidate_b_run_id,
             fixture_id=fixture_id,
             tab_id=tab_id,
         )

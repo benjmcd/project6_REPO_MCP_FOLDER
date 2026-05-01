@@ -7,6 +7,7 @@ Design a read-only internal workbench workspace for comparing the same corpus-ba
 - `baseline`
 - `candidate_a_page_evidence_v1`
 - Candidate B OpenDataLoader workbench bundles
+- admitted Candidate B OpenDataLoader PDF runtime runs
 
 This feature is not a broad cross-run explorer and it is not an extension of the shipped single-run document-trace page.
 
@@ -54,9 +55,9 @@ Repo-confirmed constraints that shape this feature:
 - the shipped document-trace page is also run-scoped and target-scoped
 - `frontend_UI_plans\nrc_aps_document_trace_ui_spec.md` explicitly keeps multi-document comparison out of scope for document-trace v1
 - `frontend_UI_plans\nrc_aps_review_ui_spec.md` explicitly keeps cross-run comparison views out of scope for review UI v1
-- Candidate B is workbench-only, non-admitted, non-integrated
-- the landed Candidate B compare surface intentionally added no API routes and no review UI route
-- fresh isolated checkouts may legitimately have no eligible baseline runs, no eligible Candidate A runs, and no eligible Candidate B bundles
+- Candidate B originally shipped as workbench-only bundle evidence, but a later explicit runtime-admission reopen now admits `document_processing_engine="candidate_b_opendataloader_pdf"` as an opt-in runtime path
+- the Workbench Compare runtime-source tranche preserves the bundle path and adds runtime Candidate B as an explicit source kind instead of reusing `candidate_b_bundle_id`
+- fresh isolated checkouts may legitimately have no eligible baseline runs, no eligible Candidate A runs, no eligible Candidate B bundles, and no admitted Candidate B runtime runs
 
 Therefore the workbench compare workspace must be a separate additive page and API family.
 
@@ -70,13 +71,14 @@ The page must allow a user to:
 
 - choose one `baseline` review run
 - choose one `candidate_a_page_evidence_v1` review run
-- choose one Candidate B compare bundle
+- choose one Candidate B source: either an allowlisted compare bundle or an admitted Candidate B runtime run
 - choose one shared corpus-backed document
 - see aligned document-level and page-level comparison outputs
 - distinguish direct comparisons from derived overlays and non-equivalent fields
 - jump from baseline and Candidate A back into the existing single-run document-trace page
-- jump from Candidate B into the separate additive `Candidate B Trace` page
-- keep Candidate B inspection separate from document-trace parity and separate from runtime admission
+- jump from bundle-sourced Candidate B into the separate additive `Candidate B Trace` page
+- jump from runtime-sourced Candidate B into the existing document-trace page for that admitted runtime target
+- keep Candidate B Trace parity and document-trace parity expansion separate from the runtime-source Compare tranche
 
 ## 5. Product Identity
 
@@ -90,19 +92,22 @@ The page shell route for v1 should be:
 
 The canonical workspace identity is:
 
-- `baseline_run_id + candidate_a_run_id + candidate_b_bundle_id + fixture_id`
+- `baseline_run_id + candidate_a_run_id + candidate_b_source_kind + (candidate_b_bundle_id or candidate_b_run_id) + fixture_id`
 
 The page shell should use query parameters for deep-linkable state:
 
 - `baseline_run_id`
 - `candidate_a_run_id`
+- `candidate_b_source_kind`
 - `candidate_b_bundle_id`
+- `candidate_b_run_id`
 - `fixture_id`
 - optional `tab`
 
 Those query parameters are page-local to `/review/nrc-aps/workbench-compare`.
 They do not extend or modify the existing document-trace query-string contract.
 For v1, `candidate_b_bundle_id` should be serialized in URL-safe POSIX-style relative-path form rather than Windows backslash form.
+When `candidate_b_source_kind=runtime`, the page must use `candidate_b_run_id` and must clear stale `candidate_b_bundle_id` state.
 
 ## 6. In Scope For V1
 
@@ -127,7 +132,8 @@ For v1, `candidate_b_bundle_id` should be serialized in URL-safe POSIX-style rel
   - `non_equivalent`
   - `missing`
 - deep links for baseline and Candidate A into the existing document-trace page
-- deep links for Candidate B into the separate `Candidate B Trace` page
+- deep links for bundle-sourced Candidate B into the separate `Candidate B Trace` page
+- deep links for runtime-sourced Candidate B into the existing document-trace page
 - read-only API routes and read-only UI behavior
 - explicit unavailable states when any required source class is absent in the current checkout
 - review-page header navigation affordance into the compare page
@@ -138,8 +144,9 @@ For v1, `candidate_b_bundle_id` should be serialized in URL-safe POSIX-style rel
 - changing the shipped document-trace page into a compare page
 - changing the shipped review page into a compare page
 - arbitrary cross-run comparison outside the shared corpus-backed fixture set
-- Candidate B admission, promotion, or defaulting
-- widening Candidate B Trace into the normal review run selector or `visual_lane_mode` family
+- Candidate B promotion or defaulting
+- Candidate B Trace parity for admitted runtime runs
+- widening Candidate B into the `visual_lane_mode` family
 - run execution from the browser
 - editing, annotation, or mutation
 - direct browser reads from arbitrary filesystem paths
@@ -156,12 +163,14 @@ For v1, `candidate_b_bundle_id` should be serialized in URL-safe POSIX-style rel
 - if a selected baseline or Candidate A run cannot be mapped to a shared `fixture_id`, that target must be excluded rather than guessed
 - Candidate B fields marked `derived only` or `non-equivalent` by the committed Candidate B crosswalk must remain marked that way in the UI
 - Candidate B local archived bundles must be treated as optional operator evidence, not guaranteed mainline data
+- Candidate B runtime runs must be selected through explicit `candidate_b_source_kind=runtime`, not by overloading `candidate_b_bundle_id`
 - a fresh isolated implementation or test worktree may legitimately have no Candidate B bundle roots at all
+- a fresh isolated implementation or test worktree may legitimately have no admitted Candidate B runtime runs
 - a fresh isolated implementation or test worktree may also legitimately have no eligible baseline runs or no eligible Candidate A runs
 - the existing document-trace page must remain behaviorally unchanged
 - the existing review page may add only the narrow header navigation affordance into `Workbench Compare`; no other review-page behavior change is in scope
 - deep links back into document trace must remain limited to `run_id`, `target_id`, and optional `tab`
-- deep links into `Candidate B Trace` must remain limited to `candidate_b_bundle_id`, `fixture_id`, and optional `tab`
+- deep links into `Candidate B Trace` must remain limited to bundle-sourced `candidate_b_bundle_id`, `fixture_id`, and optional `tab`
 
 ## 9. Compare Identity Model
 
