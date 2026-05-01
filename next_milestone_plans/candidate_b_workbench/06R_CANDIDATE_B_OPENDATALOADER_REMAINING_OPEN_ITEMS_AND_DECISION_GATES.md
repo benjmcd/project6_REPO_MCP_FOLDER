@@ -337,10 +337,10 @@ For the preserved bundle-scoped Candidate B Trace path, the narrow operator-ergo
 - Candidate B Trace surfaces annotated PDF, raw JSON, and raw Markdown availability/status affordances.
 - missing or unavailable artifacts are explicit read-only operator states and do not seed or generate replacement artifacts.
 - Candidate B Trace exposes comparable-fixture navigation/status using the existing Workbench Compare targets API.
-- the current repo-native browser fixture has exactly one comparable target, so the proven browser state is `Fixture 1 of 1` with disabled Previous/Next controls, not active multi-fixture navigation.
+- the current repo-native browser fixture proves active multi-fixture Previous/Next navigation across `fontish` and `ml17123a319`; single-target `Fixture 1 of 1` disabled-navigation remains the correct fallback when only one comparable target is prepared.
 
 ### What remains open
-Future fixture-to-fixture ergonomics can be refined only if a same-checkout prepared state exposes multiple comparable fixtures and the change remains frontend-only or otherwise narrowly justified.
+Future fixture-to-fixture ergonomics should be limited to refinements of the already proven bundle-scoped navigation behavior unless a separate repo-confirmed blocker justifies more.
 
 ### Hard rule
 Do not broaden ergonomics work into runtime admission, schema widening, or document-trace parity by stealth.

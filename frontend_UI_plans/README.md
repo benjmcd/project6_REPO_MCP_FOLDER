@@ -104,7 +104,7 @@ Current shipped-baseline note:
   - `tests/test_validate_wb_prep.py`
 - that prep gate fails closed on empty, donor, ambiguous, missing-runtime-run-id, or incoherent same-checkout prep state and should precede populated operator validation
 - the preserved bundle-scoped Candidate B Trace path now also includes compare/trace return-context preservation, artifact availability/unavailable-state affordances, and fixture navigation/status over the existing Workbench Compare targets API
-- current repo-native browser coverage proves the single-target `Fixture 1 of 1` disabled-navigation state; active multi-fixture Previous/Next navigation requires a prepared state with multiple comparable targets
+- current repo-native browser coverage proves active multi-fixture Previous/Next navigation across `fontish` and `ml17123a319`; single-target `Fixture 1 of 1` disabled-navigation remains the correct behavior when only one comparable fixture is prepared
 - future work should start from that shipped posture rather than from pre-compare or pre-trace assumptions
 - future work should stay additive and lane-scoped unless a repo-confirmed blocker requires a broader reopen
 

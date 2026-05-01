@@ -137,7 +137,7 @@ After automated tests are green, verify manually:
 19. missing or unavailable Candidate B Trace artifacts render explicit read-only states and do not seed or generate replacement artifacts
 20. Workbench Compare to Candidate B Trace to Workbench Compare preserves available baseline, Candidate A, bundle-source, bundle-id, and fixture context
 21. Candidate B Trace fixture navigation/status uses the existing Workbench Compare targets API
-22. in the current repo-native browser fixture, the correct navigation proof is `Fixture 1 of 1` with disabled Previous/Next controls; active multi-fixture navigation requires a prepared state with multiple comparable targets
+22. in the current repo-native browser fixture, active multi-fixture Previous/Next navigation is proven across `fontish` and `ml17123a319`; `Fixture 1 of 1` with disabled Previous/Next remains correct only when the selected source set has one comparable fixture
 23. no network call attempts to pass arbitrary filesystem paths from the browser
 
 ## 5. Validate-Only Rules

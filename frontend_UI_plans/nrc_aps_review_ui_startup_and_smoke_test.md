@@ -206,7 +206,7 @@ On `/review/nrc-aps/candidate-b-trace` after same-checkout prep:
 - artifact availability/status cards are visible for annotated PDF, raw JSON, and raw Markdown
 - unavailable artifact states are explicit read-only states
 - the Back link preserves available Workbench Compare context
-- fixture navigation/status is visible; if only one comparable target exists, `Fixture 1 of 1` with disabled Previous/Next is correct
+- fixture navigation/status is visible; multi-fixture source sets enable Previous/Next and one-fixture source sets render `Fixture 1 of 1` with disabled Previous/Next
 - no raw local filesystem paths are displayed in the UI
 
 ## Step 6: Optional Parameterized API Cross-Checks
