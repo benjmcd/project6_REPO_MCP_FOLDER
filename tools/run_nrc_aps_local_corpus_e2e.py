@@ -35,6 +35,12 @@ from app.services.review_nrc_aps_gate_reports import run_gate_reports_for_run  #
 
 SUMMARY_SCHEMA_ID = "aps.local_corpus_e2e_summary.v1"
 SUMMARY_SCHEMA_VERSION = 1
+DOCUMENT_PROCESSING_ENGINE_BASELINE = "baseline"
+DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B = "candidate_b_opendataloader_pdf"
+DOCUMENT_PROCESSING_ENGINE_CHOICES = (
+    DOCUMENT_PROCESSING_ENGINE_BASELINE,
+    DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
+)
 
 
 def _resolve_expected_interpreter() -> Path:
@@ -299,6 +305,15 @@ def _read_json(path: Path) -> dict[str, Any]:
 def _assert(condition: bool, message: str) -> None:
     if not condition:
         raise ProofError(message)
+
+
+def _normalize_document_processing_engine(value: str) -> str:
+    normalized = str(value or "").strip()
+    _assert(
+        normalized in DOCUMENT_PROCESSING_ENGINE_CHOICES,
+        f"unsupported document_processing_engine: {value!r}",
+    )
+    return normalized
 
 
 def _load_document_types_reference() -> set[str]:
@@ -860,9 +875,62 @@ def _resolve_visual_artifact_path(artifact_storage_dir: Path, visual_ref: str) -
     return artifact_storage_dir / raw.replace("/", os.sep)
 
 
-def _collect_advanced_metrics(runtime: RuntimeContext, run_id: str, docs: list[LocalCorpusDocument]) -> dict[str, Any]:
+def _summarize_advanced_metrics(
+    per_target: list[dict[str, Any]],
+    *,
+    document_processing_engine: str,
+    unknown_doc_type_failures: list[str],
+    unresolved_visual_refs: list[str],
+) -> dict[str, Any]:
+    document_processing_engine = _normalize_document_processing_engine(document_processing_engine)
+    ocr_file_count = sum(1 for row in per_target if bool(row["ocr_exercised"]))
+    table_file_count = sum(1 for row in per_target if int(row["table_unit_count"]) > 0)
+    visual_ref_total = sum(int(row["visual_ref_count"]) for row in per_target)
+    candidate_b_extractor_file_count = sum(
+        1
+        for row in per_target
+        if row["extractor_family"] == "pdf_candidate_b_opendataloader"
+        and row["extractor_id"] == "aps_odl_pdf_extractor"
+    )
+    candidate_b_ordered_unit_file_count = sum(1 for row in per_target if int(row["ordered_unit_count"]) > 0)
+    candidate_b_ordered_unit_total = sum(int(row["ordered_unit_count"]) for row in per_target)
+
+    if document_processing_engine == DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B:
+        _assert(
+            candidate_b_extractor_file_count == len(per_target),
+            "not every persisted local-corpus file used Candidate B / OpenDataLoader PDF extraction",
+        )
+        _assert(
+            candidate_b_ordered_unit_total > 0,
+            "Candidate B local-corpus run produced no ordered units",
+        )
+    else:
+        _assert(ocr_file_count >= 1, "no persisted local-corpus file exercised OCR-assisted extraction")
+        _assert(table_file_count >= 1, "no persisted local-corpus file produced a pdf_table ordered unit")
+    _assert(not unknown_doc_type_failures, f"document_type_known was false outside the technical-spec corpus slice: {unknown_doc_type_failures}")
+    _assert(not unresolved_visual_refs, f"some emitted visual_artifact_ref paths do not resolve: {unresolved_visual_refs}")
+
+    return {
+        "document_processing_engine": document_processing_engine,
+        "ocr_file_count": ocr_file_count,
+        "table_file_count": table_file_count,
+        "candidate_b_extractor_file_count": candidate_b_extractor_file_count,
+        "candidate_b_ordered_unit_file_count": candidate_b_ordered_unit_file_count,
+        "candidate_b_ordered_unit_total": candidate_b_ordered_unit_total,
+        "visual_ref_total": visual_ref_total,
+    }
+
+
+def _collect_advanced_metrics(
+    runtime: RuntimeContext,
+    run_id: str,
+    docs: list[LocalCorpusDocument],
+    *,
+    document_processing_engine: str = DOCUMENT_PROCESSING_ENGINE_BASELINE,
+) -> dict[str, Any]:
     from app.models import ConnectorRunTarget  # noqa: WPS433
 
+    document_processing_engine = _normalize_document_processing_engine(document_processing_engine)
     session = runtime.session_factory()
     try:
         target_rows = (
@@ -906,6 +974,8 @@ def _collect_advanced_metrics(runtime: RuntimeContext, run_id: str, docs: list[L
             or ocr_image_supplement_unit_count > 0
         )
         table_unit_count = sum(1 for item in ordered_units if str(item.get("unit_kind") or "").strip() == "pdf_table")
+        extractor_family = str(diagnostics_payload.get("extractor_family") or extraction.get("extractor_family") or "")
+        extractor_id = str(diagnostics_payload.get("extractor_id") or extraction.get("extractor_id") or "")
         for visual_row in visual_refs:
             visual_artifact_ref = str(visual_row.get("visual_artifact_ref") or "").strip()
             if not visual_artifact_ref:
@@ -935,26 +1005,24 @@ def _collect_advanced_metrics(runtime: RuntimeContext, run_id: str, docs: list[L
                 "ocr_image_supplement_unit_count": ocr_image_supplement_unit_count,
                 "ocr_exercised": ocr_exercised,
                 "table_unit_count": table_unit_count,
+                "ordered_unit_count": len(ordered_units),
                 "visual_ref_count": len(visual_refs),
-                "extractor_id": str(diagnostics_payload.get("extractor_id") or extraction.get("extractor_id") or ""),
+                "extractor_family": extractor_family,
+                "extractor_id": extractor_id,
                 "diagnostics_ref": diagnostics_ref,
                 "target_artifact_ref": target_ref,
             }
         )
 
-    ocr_file_count = sum(1 for row in per_target if bool(row["ocr_exercised"]))
-    table_file_count = sum(1 for row in per_target if int(row["table_unit_count"]) > 0)
-    visual_ref_total = sum(int(row["visual_ref_count"]) for row in per_target)
-
-    _assert(ocr_file_count >= 1, "no persisted local-corpus file exercised OCR-assisted extraction")
-    _assert(table_file_count >= 1, "no persisted local-corpus file produced a pdf_table ordered unit")
-    _assert(not unknown_doc_type_failures, f"document_type_known was false outside the technical-spec corpus slice: {unknown_doc_type_failures}")
-    _assert(not unresolved_visual_refs, f"some emitted visual_artifact_ref paths do not resolve: {unresolved_visual_refs}")
+    summary = _summarize_advanced_metrics(
+        per_target,
+        document_processing_engine=document_processing_engine,
+        unknown_doc_type_failures=unknown_doc_type_failures,
+        unresolved_visual_refs=unresolved_visual_refs,
+    )
 
     return {
-        "ocr_file_count": ocr_file_count,
-        "table_file_count": table_file_count,
-        "visual_ref_total": visual_ref_total,
+        **summary,
         "historical_comparison_only": {
             "historical_ocr_file_count": HISTORICAL_OCR_FILE_COUNT,
             "historical_table_file_count": HISTORICAL_TABLE_FILE_COUNT,
@@ -997,11 +1065,13 @@ def _verify_failure_ref_list(detail_payload: dict[str, Any], key: str) -> None:
     _assert(failures == [], f"expected no failure refs for {key}, found {failures}")
 
 
-def _execute_proof(runtime: RuntimeContext, docs: list[LocalCorpusDocument], runtime_root: Path, fake_client: LocalCorpusNrcClient) -> dict[str, Any]:
-    from app.models import ConnectorRunTarget  # noqa: WPS433
-
-    execution_stamp = runtime_root.name
-    idempotency_key = f"local-corpus-e2e-{execution_stamp}"
+def _build_submit_payload(
+    docs: list[LocalCorpusDocument],
+    *,
+    document_processing_engine: str,
+    idempotency_key: str,
+) -> dict[str, Any]:
+    document_processing_engine = _normalize_document_processing_engine(document_processing_engine)
     total_docs = len(docs)
     page_size = 10
     corpus_total_bytes = sum(_safe_local_stat(doc.file_path).st_size for doc in docs)
@@ -1021,6 +1091,31 @@ def _execute_proof(runtime: RuntimeContext, docs: list[LocalCorpusDocument], run
         "report_verbosity": "standard",
         "client_request_id": idempotency_key,
     }
+    if document_processing_engine != DOCUMENT_PROCESSING_ENGINE_BASELINE:
+        submit_payload["document_processing_engine"] = document_processing_engine
+    return submit_payload
+
+
+def _execute_proof(
+    runtime: RuntimeContext,
+    docs: list[LocalCorpusDocument],
+    runtime_root: Path,
+    fake_client: LocalCorpusNrcClient,
+    *,
+    document_processing_engine: str = DOCUMENT_PROCESSING_ENGINE_BASELINE,
+) -> dict[str, Any]:
+    from app.models import ConnectorRunTarget  # noqa: WPS433
+
+    execution_stamp = runtime_root.name
+    idempotency_key = f"local-corpus-e2e-{execution_stamp}"
+    document_processing_engine = _normalize_document_processing_engine(document_processing_engine)
+    total_docs = len(docs)
+    page_size = 10
+    submit_payload = _build_submit_payload(
+        docs,
+        document_processing_engine=document_processing_engine,
+        idempotency_key=idempotency_key,
+    )
     submitted = _post_json(runtime.client, "/api/v1/connectors/nrc-adams-aps/runs", submit_payload, headers={"Idempotency-Key": idempotency_key})
     run_id = str(submitted.get("connector_run_id") or "").strip()
     _assert(run_id, "run submission did not return connector_run_id")
@@ -1103,7 +1198,12 @@ def _execute_proof(runtime: RuntimeContext, docs: list[LocalCorpusDocument], run
         _verify_failure_ref_list(detail_after_chain, failure_key)
 
     gate_results = _run_gate_scripts(runtime, run_id, runtime_root)
-    advanced_metrics = _collect_advanced_metrics(runtime, run_id, docs)
+    advanced_metrics = _collect_advanced_metrics(
+        runtime,
+        run_id,
+        docs,
+        document_processing_engine=document_processing_engine,
+    )
 
     session = runtime.session_factory()
     try:
@@ -1134,7 +1234,13 @@ def _execute_proof(runtime: RuntimeContext, docs: list[LocalCorpusDocument], run
 
     return {
         "run_id": run_id,
-        "submission": {"connector_run_id": run_id, "status": submitted.get("status"), "poll_url": submitted.get("poll_url"), "idempotency_key": idempotency_key},
+        "submission": {
+            "connector_run_id": run_id,
+            "status": submitted.get("status"),
+            "poll_url": submitted.get("poll_url"),
+            "idempotency_key": idempotency_key,
+            "document_processing_engine": document_processing_engine,
+        },
         "run_detail": detail_after_chain,
         "search_smoke": {"token": token, "hit_count": int(search_payload.get("total") or 0)},
         "selected_branch_rows": [{"target_id": str(row.get("target_id") or ""), "content_id": str(row.get("content_id") or ""), "chunk_id": str(row.get("chunk_id") or ""), "accession_number": str(row.get("accession_number") or "")} for row in selected_rows],
@@ -1164,11 +1270,21 @@ def build_parser() -> argparse.ArgumentParser:
         default="",
         help=f"Optional empty runtime directory under {DEFAULT_RUNTIME_PARENT}. If omitted, the tool creates a fresh timestamped runtime.",
     )
+    parser.add_argument(
+        "--document-processing-engine",
+        choices=DOCUMENT_PROCESSING_ENGINE_CHOICES,
+        default=DOCUMENT_PROCESSING_ENGINE_BASELINE,
+        help=(
+            "Document processing engine for the submitted run. "
+            "Defaults to baseline; candidate_b_opendataloader_pdf requires the pinned Candidate B runtime."
+        ),
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    document_processing_engine = _normalize_document_processing_engine(args.document_processing_engine)
     runtime_root = _resolve_runtime_root(args.runtime_root)
     summary_path = runtime_root / "local_corpus_e2e_summary.json"
     summary: dict[str, Any] = {
@@ -1181,6 +1297,7 @@ def main(argv: list[str] | None = None) -> int:
         "database_url": None,
         "storage_dir": None,
         "interpreter_path": str(Path(sys.executable).resolve()),
+        "document_processing_engine": document_processing_engine,
         "run_id": None,
         "corpus_root": str(DEFAULT_CORPUS_ROOT),
         "corpus_pdf_count": 0,
@@ -1210,7 +1327,13 @@ def main(argv: list[str] | None = None) -> int:
             summary["database_path"] = str(runtime.database_path)
             summary["database_url"] = runtime.env["DATABASE_URL"]
             summary["storage_dir"] = str(runtime.storage_dir)
-            proof_payload = _execute_proof(runtime, docs, runtime_root, fake_client)
+            proof_payload = _execute_proof(
+                runtime,
+                docs,
+                runtime_root,
+                fake_client,
+                document_processing_engine=document_processing_engine,
+            )
             summary.update(proof_payload)
             summary["run_id"] = proof_payload["run_id"]
             summary["passed"] = True
