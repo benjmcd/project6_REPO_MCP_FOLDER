@@ -6,6 +6,11 @@ Provide one place that states exactly what was verified from current `main`,
 what Candidate B planning is allowed to treat as repo truth,
 and what remains unproven at repo-authority level because Candidate B workbench evidence is still local/operator-scoped rather than preserved as tracked clean-`main` rerun proof.
 
+Status note:
+- this file originally captured the pre-runtime-admission Candidate B v1 repo-truth boundary
+- later current-main work explicitly reopened Candidate B as the opt-in `document_processing_engine="candidate_b_opendataloader_pdf"` runtime path, existing `/runs` metadata, rendered review/document-trace selector labeling, Workbench Compare runtime-source selection, and fixed-fixture runtime-source prep/validation
+- the older non-admission statements below still apply to visual-lane admission and to bundle-scoped Candidate B Trace; they do not supersede `README.md`, `docs/nrc_adams/nrc_aps_status_handoff.md`, `frontend_UI_plans/wb-compare-validation.md`, or `06R_CANDIDATE_B_OPENDATALOADER_REMAINING_OPEN_ITEMS_AND_DECISION_GATES.md`
+
 ---
 
 ## Verified live repo anchors
@@ -22,12 +27,13 @@ These are higher authority than any Candidate B planning note in this pack.
 ### B. Current merged-main MVVLC/PageEvidence posture
 Verified from current merged-main control docs:
 - `baseline` remains the default runtime mode
-- `candidate_a_page_evidence_v1` remains the only admitted non-`baseline` value
-- Candidate B and Candidate C remain non-admitted
+- `candidate_a_page_evidence_v1` remains the only admitted non-`baseline` `visual_lane_mode` value
+- Candidate B runtime admission is now represented by `document_processing_engine="candidate_b_opendataloader_pdf"`, not by adding a new `visual_lane_mode`
+- Candidate C remains non-admitted
 - the PageEvidence planning/hold-state pack exists on current `main` under `next_milestone_plans/pageevidence/`; do not confuse its planning status with runtime/service authority
 - PageEvidence Pass 1 is complete, Pass 2 is not needed on current merged `main`, and any future PageEvidence work requires a new explicit freeze
 
-Candidate B must not reopen or imply more than that.
+Candidate B work must not reopen or imply more than the explicitly landed runtime-source scope named in the current authority docs.
 
 ### C. Root authority references explicitly named by the live root README
 The live root `README.md` names these as the authoritative NRC APS status/navigation surfaces:
@@ -101,7 +107,7 @@ The visible `backend/app/services` tree includes, among many others:
 - review/runtime/document-trace services
 
 Interpretation:
-Candidate B v1 should not open service-layer work unless separately authorized later.
+Original Candidate B v1 bundle/comparator work should not open service-layer work unless separately authorized later. The later runtime-admission program is the separate authorization; it remains bounded to the surfaces named in the current authority docs.
 
 ### J. Live lower-layer implementation invariants visible in `nrc_aps_document_processing.py`
 Verified from the live file page:
@@ -172,7 +178,7 @@ The correct Candidate B planning posture is now:
 - repo-truth grounded
 - merged-main closure aware
 - PageEvidence-lane non-reopening
-- service-layer frozen
+- service-layer frozen for original bundle/comparator work unless a later explicit runtime-admission tranche names the reopened surface
 - proof-harness anchored
 - outward-surface non-interference enforced
 - live lower-layer invariant preserving

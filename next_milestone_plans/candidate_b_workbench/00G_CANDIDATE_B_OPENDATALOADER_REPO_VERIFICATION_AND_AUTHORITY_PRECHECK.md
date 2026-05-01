@@ -7,6 +7,11 @@ Prevent implementation from drifting away from the current repo truth.
 
 This precheck is mandatory before any Candidate B v1 code/doc adoption work.
 
+Status note:
+- this precheck froze the original Candidate B v1 bundle/comparator boundary before Candidate B runtime admission was explicitly reopened
+- current `main` now includes a bounded later runtime-admission program for `document_processing_engine="candidate_b_opendataloader_pdf"`, `/runs` metadata, rendered review/document-trace selector labels, Workbench Compare runtime-source selection, and fixed-fixture runtime-source prep/validation
+- therefore stop condition 5 below remains a stop condition for treating this original v1 pack as live implementation authority; it is not a veto over the separately reopened runtime-source tranches documented in the current front-door/status docs
+
 ---
 
 ## A. Required on-disk confirmations
