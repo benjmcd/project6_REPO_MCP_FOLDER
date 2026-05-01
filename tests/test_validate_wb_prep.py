@@ -209,6 +209,7 @@ def test_validate_wb_prep_returns_canonical_selection(tmp_path: Path, monkeypatc
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["passed"] is True
+    assert payload["checkout_root"] == str(checkout_root.resolve())
     assert payload["selection"]["baseline_run_id"] == "baseline-run-001"
     assert payload["selection"]["candidate_a_run_id"] == "candidate-a-run-001"
     assert payload["selection"]["candidate_b_source_kind"] == "bundle"
@@ -271,7 +272,7 @@ def test_validate_wb_prep_accepts_candidate_b_runtime_source(
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["passed"] is True
-    assert payload["checkout_root"] == "."
+    assert payload["checkout_root"] == str(checkout_root.resolve())
     assert payload["selection"] == {
         "candidate_b_source_kind": "runtime",
         "baseline_run_id": "baseline-run-001",
@@ -399,7 +400,7 @@ def test_validate_wb_prep_runtime_source_rejects_invalid_candidate_b_run_id(
     assert exit_code == 1
     payload = json.loads(capsys.readouterr().err)
     assert payload["passed"] is False
-    assert payload["checkout_root"] == "."
+    assert payload["checkout_root"] == str(checkout_root.resolve())
     assert payload["error"]["code"] == "candidate_b_run_unavailable"
     assert payload["error"]["context"]["requested_run_id"] == "not-a-runtime-run"
     assert payload["error"]["context"]["eligible_runs"][0]["run_id"] == "candidate-b-runtime-001"
