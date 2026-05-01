@@ -155,6 +155,8 @@ Candidate B Trace UI:
 
 - `http://127.0.0.1:8098/review/nrc-aps/candidate-b-trace?candidate_b_bundle_id=<BUNDLE_ID>&fixture_id=<FIXTURE_ID>`
 - preferred access path is via a Candidate B deep link from Workbench Compare after same-checkout prep
+- the Workbench Compare deep link should carry `baseline_run_id`, `candidate_a_run_id`, `candidate_b_source_kind=bundle`, `candidate_b_bundle_id`, and `fixture_id` so the Candidate B Trace Back link and fixture navigation/status keep compare context
+- direct bundle/fixture URLs can inspect one Candidate B fixture but do not prove compare-context preservation by themselves
 
 If you want to open Document Trace directly for a specific run:
 
@@ -201,6 +203,10 @@ On `/review/nrc-aps/candidate-b-trace` after same-checkout prep:
 - `annotated_pdf` is the default tab when present
 - the annotated PDF renders inline in the page rather than forcing a download response
 - `summary`, `raw_json`, and `raw_markdown` tabs render or degrade explicitly
+- artifact availability/status cards are visible for annotated PDF, raw JSON, and raw Markdown
+- unavailable artifact states are explicit read-only states
+- the Back link preserves available Workbench Compare context
+- fixture navigation/status is visible; if only one comparable target exists, `Fixture 1 of 1` with disabled Previous/Next is correct
 - no raw local filesystem paths are displayed in the UI
 
 ## Step 6: Optional Parameterized API Cross-Checks
