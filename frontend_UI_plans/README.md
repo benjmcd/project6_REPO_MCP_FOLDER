@@ -83,7 +83,7 @@ Important implementation-scope note:
 - the live document-trace implementation currently ships the page shell, document selector, trace manifest, source stream, diagnostics, normalized-text, indexed-chunks, and extracted-units surfaces
 - the retained planning docs still describe a broader downstream-usage concept, but current live root implementation only carries that as an unavailable manifest tab placeholder, not as a shipped API route
 - the workbench-compare planning docs in this folder now describe the separate shipped compare page and compare API family; they still do not revise the single-run contract of the shipped review page or document-trace page
-- Candidate B-specific inspection still ships as the separate additive `Candidate B Trace` page and API family for bundle-scoped ODL inspection; it does not widen the single-run `document-trace` contract. A later explicit runtime-admission reopen now admits Candidate B as the opt-in `document_processing_engine="candidate_b_opendataloader_pdf"` processing path and exposes that engine metadata on the existing review `/runs` selector response. Rendered selector UI remains a separate follow-on.
+- Candidate B-specific inspection still ships as the separate additive `Candidate B Trace` page and API family for bundle-scoped ODL inspection; it does not widen the single-run `document-trace` contract. A later explicit runtime-admission reopen now admits Candidate B as the opt-in `document_processing_engine="candidate_b_opendataloader_pdf"` processing path, exposes that engine metadata on the existing review `/runs` selector response, and renders Candidate B / OpenDataLoader PDF labels in the existing review and document-trace run selectors plus run identity panels.
 
 Current shipped-baseline note:
 
@@ -114,7 +114,7 @@ Ordered next-decision note:
   - retain the shipped bundle-scoped compare + Candidate B Trace boundary
   - do not drift into runtime-style admission or selector integration by accident
 - only reopen a wider Candidate B runtime-admission program if a concrete operator/product requirement proves the shipped bundle-scoped model insufficient
-- that wider program has now been explicitly reopened through processing-engine admission plus existing `/runs` runtime metadata; it is not yet Workbench Compare, Candidate B Trace, document-trace parity, schema, route, or rendered runtime-selector work
+- that wider program has now been explicitly reopened through processing-engine admission, existing `/runs` runtime metadata, and rendered review/document-trace selector visibility; it is not yet Workbench Compare runtime integration, Candidate B Trace parity for admitted runtime runs, document-trace parity expansion, schema, route, persistence, or new run-submission UI work
 - same-checkout prepared-state workflow hardening is now landed through the validate-only prep gate and canonical prep sequence
 - if Candidate B remains bundle-scoped, operator ergonomics should improve only where justified
 - current `main` also includes the merged planning-only broader-workbench prep packet rooted in `next_milestone_plans/Layer3_planning_docs/24_L3_WB_FREEZE.md` from PR `#165` and `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md` from PR `#168`; that deferred additive lane still does not rename, replace, or activate the currently shipped review/document-trace/workbench/Candidate B surfaces
