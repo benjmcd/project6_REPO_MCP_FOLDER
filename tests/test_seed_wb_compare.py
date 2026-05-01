@@ -5,6 +5,8 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tools import seed_wb_compare
@@ -35,6 +37,24 @@ def test_inject_visual_lane_mode_only_marks_candidate_a() -> None:
     assert candidate_payload["visual_lane_mode"] == "candidate_a_page_evidence_v1"
 
 
+def test_candidate_b_document_processing_requires_baseline_visual_lane() -> None:
+    visual_lane_mode, document_processing_engine = seed_wb_compare._validate_seed_modes(
+        visual_lane_mode="baseline",
+        document_processing_engine="candidate_b_opendataloader_pdf",
+    )
+
+    assert visual_lane_mode == "baseline"
+    assert document_processing_engine == "candidate_b_opendataloader_pdf"
+
+    with pytest.raises(seed_wb_compare.local_corpus_e2e.ProofError) as exc_info:
+        seed_wb_compare._validate_seed_modes(
+            visual_lane_mode="candidate_a_page_evidence_v1",
+            document_processing_engine="candidate_b_opendataloader_pdf",
+        )
+
+    assert "candidate_b_document_processing_engine_requires_baseline_visual_lane" in str(exc_info.value)
+
+
 def test_main_writes_summary_for_candidate_a_seed(tmp_path: Path, monkeypatch) -> None:
     runtime_root = tmp_path / "seed-runtime"
     docs = ["fixture-doc"]
@@ -63,15 +83,15 @@ def test_main_writes_summary_for_candidate_a_seed(tmp_path: Path, monkeypatch) -
     monkeypatch.setattr(
         seed_wb_compare,
         "execute_seed",
-        lambda runtime, seed_docs, candidate_runtime_root, fake_client, *, visual_lane_mode: {
+        lambda runtime, seed_docs, candidate_runtime_root, fake_client, *, visual_lane_mode, document_processing_engine: {
             "run_id": "seed-run-001",
             "submission": {"visual_lane_mode": visual_lane_mode},
             "run_detail": {"status": "completed", "selected_count": len(seed_docs)},
+            "advanced_metrics": {"document_processing_engine": document_processing_engine},
             "search_smoke": {},
             "selected_branch_rows": [],
             "downstream_artifacts": {},
             "gate_results": {},
-            "advanced_metrics": {},
             "client_trace": {},
         },
     )
@@ -85,6 +105,76 @@ def test_main_writes_summary_for_candidate_a_seed(tmp_path: Path, monkeypatch) -
     assert summary["passed"] is True
     assert summary["run_id"] == "seed-run-001"
     assert summary["visual_lane_mode"] == "candidate_a_page_evidence_v1"
+    assert summary["document_processing_engine"] == "baseline"
+    assert summary["corpus_fixture_ids"] == list(seed_wb_compare.FROZEN_FIXTURE_IDS)
+
+
+def test_main_writes_summary_for_candidate_b_runtime_seed(tmp_path: Path, monkeypatch) -> None:
+    runtime_root = tmp_path / "candidate-b-runtime"
+    docs = ["fixture-doc"]
+    preflight = {"runtime_root": str(runtime_root)}
+    findings = [{"code": "seed"}]
+
+    monkeypatch.setattr(seed_wb_compare, "run_preflight", lambda candidate: (docs, preflight, findings))
+
+    @contextmanager
+    def fake_runtime_context(fake_client, candidate_runtime_root):
+        del fake_client
+        assert candidate_runtime_root == runtime_root
+        runtime = type(
+            "FakeRuntime",
+            (),
+            {
+                "database_path": runtime_root / "lc.db",
+                "storage_dir": runtime_root / "storage",
+                "env": {"DATABASE_URL": "sqlite:///fake.db"},
+            },
+        )()
+        yield runtime
+
+    observed: dict[str, str] = {}
+
+    def fake_execute_seed(runtime, seed_docs, candidate_runtime_root, fake_client, *, visual_lane_mode, document_processing_engine):
+        del runtime, candidate_runtime_root, fake_client
+        observed["visual_lane_mode"] = visual_lane_mode
+        observed["document_processing_engine"] = document_processing_engine
+        return {
+            "run_id": "candidate-b-runtime-001",
+            "submission": {"document_processing_engine": document_processing_engine},
+            "run_detail": {"status": "completed", "selected_count": len(seed_docs)},
+            "search_smoke": {},
+            "selected_branch_rows": [],
+            "downstream_artifacts": {},
+            "gate_results": {},
+            "advanced_metrics": {"document_processing_engine": document_processing_engine},
+            "client_trace": {},
+        }
+
+    monkeypatch.setattr(seed_wb_compare, "_isolated_runtime", fake_runtime_context)
+    monkeypatch.setattr(seed_wb_compare, "LocalCorpusNrcClient", lambda seed_docs: object())
+    monkeypatch.setattr(seed_wb_compare, "execute_seed", fake_execute_seed)
+    monkeypatch.setattr(seed_wb_compare, "_resolve_runtime_root", lambda raw: runtime_root)
+    monkeypatch.setattr(seed_wb_compare, "EXPECTED_INTERPRETER", Path(sys.executable))
+
+    exit_code = seed_wb_compare.main(
+        [
+            "--runtime-root",
+            str(runtime_root),
+            "--document-processing-engine",
+            "candidate_b_opendataloader_pdf",
+        ]
+    )
+
+    assert exit_code == 0
+    assert observed == {
+        "visual_lane_mode": "baseline",
+        "document_processing_engine": "candidate_b_opendataloader_pdf",
+    }
+    summary = json.loads((runtime_root / "local_corpus_e2e_summary.json").read_text(encoding="utf-8"))
+    assert summary["passed"] is True
+    assert summary["run_id"] == "candidate-b-runtime-001"
+    assert summary["visual_lane_mode"] == "baseline"
+    assert summary["document_processing_engine"] == "candidate_b_opendataloader_pdf"
     assert summary["corpus_fixture_ids"] == list(seed_wb_compare.FROZEN_FIXTURE_IDS)
 
 

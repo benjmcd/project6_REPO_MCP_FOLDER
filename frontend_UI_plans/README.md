@@ -99,10 +99,10 @@ Current shipped-baseline note:
   - `backend/tests/review_browser_fixture.py`
   - `backend/tests/review_browser_server.py`
   - `backend/tests/requirements-browser.txt`
-- the root repo now also carries a validate-only same-checkout prep gate for populated compare + Candidate B Trace operator validation via:
+- the root repo now also carries fixed-fixture same-checkout prep plus validate-only gates for populated compare, bundle-sourced Candidate B Trace validation, and explicit runtime-sourced Candidate B Compare validation via:
   - `tools/validate_wb_prep.py`
   - `tests/test_validate_wb_prep.py`
-- that prep gate fails closed on empty, donor, ambiguous, or incoherent same-checkout prep state and should precede populated operator validation
+- that prep gate fails closed on empty, donor, ambiguous, missing-runtime-run-id, or incoherent same-checkout prep state and should precede populated operator validation
 - future work should start from that shipped posture rather than from pre-compare or pre-trace assumptions
 - future work should stay additive and lane-scoped unless a repo-confirmed blocker requires a broader reopen
 
