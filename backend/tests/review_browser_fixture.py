@@ -27,7 +27,7 @@ from app.services.review_nrc_aps_runtime import ReviewRuntimeBinding
 FIXTURES_ROOT = Path(__file__).resolve().parents[2] / "tests" / "fixtures" / "nrc_aps_docs" / "v1"
 SUMMARY_SCHEMA_ID = "aps.local_corpus_e2e_summary.v1"
 SUMMARY_SCHEMA_VERSION = 1
-SOURCE_FIXTURE_ID = "fontish"
+SOURCE_FIXTURE_IDS = ("fontish", "ml17123a319")
 APS_CONTENT_CONTRACT_ID = "aps_content_units_v2"
 APS_CHUNKING_CONTRACT_ID = "aps_chunking_v2"
 APS_NORMALIZATION_CONTRACT_ID = "aps_text_normalization_v2"
@@ -49,6 +49,7 @@ class ReviewBrowserFixture:
     checkout_root: Path
     bundle_id: str
     fixture_id: str
+    fixture_ids: tuple[str, ...]
     selector: NrcApsReviewRunSelectorOut
 
 
@@ -65,40 +66,37 @@ def _write_json(path: Path, payload: dict[str, object]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
-def _load_browser_corpus_fixture() -> _BrowserCorpusFixture:
+def _load_browser_corpus_fixtures() -> tuple[_BrowserCorpusFixture, ...]:
     manifest_path = FIXTURES_ROOT / "manifest.json"
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
     entries = payload.get("entries") or []
     if not isinstance(entries, list):
         raise AssertionError("Expected corpus manifest entries list")
 
-    selected: dict[str, str] | None = None
+    selected: dict[str, _BrowserCorpusFixture] = {}
     for entry in entries:
         if not isinstance(entry, dict):
             continue
-        if str(entry.get("fixture_id") or "").strip() != SOURCE_FIXTURE_ID:
+        fixture_id = str(entry.get("fixture_id") or "").strip()
+        if fixture_id not in SOURCE_FIXTURE_IDS:
             continue
         basename = Path(str(entry.get("path") or "")).name.strip()
         if not basename:
             continue
-        selected = {
-            "fixture_id": SOURCE_FIXTURE_ID,
-            "basename": basename,
-        }
-        break
+        source_path = FIXTURES_ROOT / basename
+        if not source_path.is_file():
+            raise AssertionError(f"Expected corpus source fixture on disk: {source_path}")
+        selected[fixture_id] = _BrowserCorpusFixture(
+            fixture_id=fixture_id,
+            basename=basename,
+            source_path=source_path,
+        )
 
-    if selected is None:
-        raise AssertionError(f"Expected corpus manifest fixture {SOURCE_FIXTURE_ID}")
+    missing = [fixture_id for fixture_id in SOURCE_FIXTURE_IDS if fixture_id not in selected]
+    if missing:
+        raise AssertionError(f"Expected corpus manifest fixtures: {', '.join(missing)}")
 
-    source_path = FIXTURES_ROOT / selected["basename"]
-    if not source_path.is_file():
-        raise AssertionError(f"Expected corpus source fixture on disk: {source_path}")
-
-    return _BrowserCorpusFixture(
-        fixture_id=selected["fixture_id"],
-        basename=selected["basename"],
-        source_path=source_path,
-    )
+    return tuple(selected[fixture_id] for fixture_id in SOURCE_FIXTURE_IDS)
 
 
 def _runtime_summary(
@@ -106,6 +104,7 @@ def _runtime_summary(
     run_id: str,
     submitted_at: str,
     completed_at: str,
+    selected_count: int,
 ) -> dict[str, object]:
     return {
         "schema_id": SUMMARY_SCHEMA_ID,
@@ -122,8 +121,8 @@ def _runtime_summary(
         "run_detail": {
             "status": "completed",
             "completed_at": completed_at,
-            "selected_count": 1,
-            "downloaded_count": 1,
+            "selected_count": selected_count,
+            "downloaded_count": selected_count,
             "failed_count": 0,
             "report_refs": {
                 "aps_artifact_ingestion": "reports/aps_artifact_ingestion.json",
@@ -141,7 +140,7 @@ def _seed_runtime_binding(
     accession_number: str,
     submitted_at: str,
     completed_at: str,
-    corpus_fixture: _BrowserCorpusFixture,
+    corpus_fixtures: tuple[_BrowserCorpusFixture, ...],
     document_processing_engine: str | None = None,
 ) -> ReviewRuntimeBinding:
     runtime_root = tmp_path / run_id
@@ -150,42 +149,6 @@ def _seed_runtime_binding(
     storage_dir = runtime_root / "storage"
     storage_dir.mkdir(parents=True, exist_ok=True)
 
-    source_pdf_path = runtime_root / corpus_fixture.basename
-    shutil.copy2(corpus_fixture.source_path, source_pdf_path)
-    normalized_text = f"Normalized text for {corpus_fixture.fixture_id} in {run_id}.\n"
-
-    (runtime_root / "normalized.txt").write_text(normalized_text, encoding="utf-8")
-    _write_json(
-        runtime_root / "diagnostics-linkage.json",
-        {
-            "extractor_metadata": {
-                "fixture_id": corpus_fixture.fixture_id,
-                "run_id": run_id,
-            },
-            "warnings": [],
-            "degradation_codes": [],
-            "ordered_units": [
-                {
-                    "page_number": 1,
-                    "unit_kind": "pdf_paragraph",
-                    "text": normalized_text.strip(),
-                    "start_char": 0,
-                    "end_char": len(normalized_text.strip()),
-                    "bbox": [72.0, 72.0, 240.0, 96.0],
-                }
-            ],
-        },
-    )
-    _write_json(
-        runtime_root / "diagnostics-document.json",
-        {
-            "page_count": 1,
-            "quality_status": "strong",
-        },
-    )
-    _write_json(runtime_root / "download.json", {"run_id": run_id})
-    _write_json(runtime_root / "discovery.json", {"fixture_id": corpus_fixture.fixture_id})
-    _write_json(runtime_root / "selection.json", {"fixture_id": corpus_fixture.fixture_id})
     _write_json(runtime_root / "reports" / "aps_artifact_ingestion.json", {"status": "completed"})
     _write_json(runtime_root / "reports" / "aps_content_index.json", {"status": "completed"})
 
@@ -193,6 +156,7 @@ def _seed_runtime_binding(
         run_id=run_id,
         submitted_at=submitted_at,
         completed_at=completed_at,
+        selected_count=len(corpus_fixtures),
     )
     _write_json(runtime_root / "local_corpus_e2e_summary.json", summary)
 
@@ -200,11 +164,6 @@ def _seed_runtime_binding(
     engine = create_engine(f"sqlite:///{database_path.as_posix()}", future=True)
     SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
 
-    source_pdf_bytes = source_pdf_path.read_bytes()
-    normalized_sha256 = _sha256_text(normalized_text)
-    blob_sha256 = _sha256_bytes(source_pdf_bytes)
-    content_id = f"{run_id}-content-001"
-    target_id = f"{run_id}-target-001"
     request_config = {"visual_lane_mode": visual_lane_mode}
     if document_processing_engine is not None:
         request_config["document_processing_engine"] = document_processing_engine
@@ -227,78 +186,130 @@ def _seed_runtime_binding(
         )
         session.flush()
 
-        session.add(
-            ConnectorRunTarget(
-                connector_run_target_id=target_id,
-                connector_run_id=run_id,
-                artifact_surface="documents",
-                ordinal=0,
-                sciencebase_file_name=corpus_fixture.basename,
-                status="completed",
-                public_read_confirmed=True,
-                source_reference_json={
-                    "aps_normalized": {
-                        "document_title": f"Browser Fixture {corpus_fixture.fixture_id}",
-                        "document_type": "layout_complex_pdf",
-                    }
+        for ordinal, corpus_fixture in enumerate(corpus_fixtures, start=1):
+            fixture_dir = runtime_root / corpus_fixture.fixture_id
+            fixture_dir.mkdir(parents=True, exist_ok=True)
+            source_pdf_path = runtime_root / corpus_fixture.basename
+            shutil.copy2(corpus_fixture.source_path, source_pdf_path)
+            normalized_text = f"Normalized text for {corpus_fixture.fixture_id} in {run_id}.\n"
+            normalized_ref = f"{corpus_fixture.fixture_id}/normalized.txt"
+            diagnostics_linkage_ref = f"{corpus_fixture.fixture_id}/diagnostics-linkage.json"
+            diagnostics_document_ref = f"{corpus_fixture.fixture_id}/diagnostics-document.json"
+            download_ref = f"{corpus_fixture.fixture_id}/download.json"
+            discovery_ref = f"{corpus_fixture.fixture_id}/discovery.json"
+            selection_ref = f"{corpus_fixture.fixture_id}/selection.json"
+
+            (runtime_root / normalized_ref).write_text(normalized_text, encoding="utf-8")
+            _write_json(
+                runtime_root / diagnostics_linkage_ref,
+                {
+                    "extractor_metadata": {
+                        "fixture_id": corpus_fixture.fixture_id,
+                        "run_id": run_id,
+                    },
+                    "warnings": [],
+                    "degradation_codes": [],
+                    "ordered_units": [
+                        {
+                            "page_number": 1,
+                            "unit_kind": "pdf_paragraph",
+                            "text": normalized_text.strip(),
+                            "start_char": 0,
+                            "end_char": len(normalized_text.strip()),
+                            "bbox": [72.0, 72.0, 240.0, 96.0],
+                        }
+                    ],
                 },
             )
-        )
-        session.add(
-            ApsContentDocument(
-                content_id=content_id,
-                content_contract_id=APS_CONTENT_CONTRACT_ID,
-                chunking_contract_id=APS_CHUNKING_CONTRACT_ID,
-                normalization_contract_id=APS_NORMALIZATION_CONTRACT_ID,
-                normalized_text_sha256=normalized_sha256,
-                normalized_char_count=len(normalized_text),
-                chunk_count=1,
-                content_status=APS_CONTENT_STATUS_INDEXED,
-                media_type="application/pdf",
-                document_class="layout_complex_pdf",
-                quality_status="strong",
-                page_count=1,
-                diagnostics_ref="diagnostics-document.json",
-                visual_page_refs_json="[]",
-                updated_at=timestamp,
+            _write_json(
+                runtime_root / diagnostics_document_ref,
+                {
+                    "page_count": 1,
+                    "quality_status": "strong",
+                },
             )
-        )
-        session.add(
-            ApsContentChunk(
-                content_id=content_id,
-                chunk_id=f"{run_id}-chunk-001",
-                content_contract_id=APS_CONTENT_CONTRACT_ID,
-                chunking_contract_id=APS_CHUNKING_CONTRACT_ID,
-                chunk_ordinal=0,
-                start_char=0,
-                end_char=len(normalized_text.strip()),
-                chunk_text=normalized_text.strip(),
-                chunk_text_sha256=_sha256_text(normalized_text.strip()),
-                page_start=1,
-                page_end=1,
-                unit_kind="pdf_paragraph",
-                quality_status="strong",
-                updated_at=timestamp,
+            _write_json(runtime_root / download_ref, {"run_id": run_id, "fixture_id": corpus_fixture.fixture_id})
+            _write_json(runtime_root / discovery_ref, {"fixture_id": corpus_fixture.fixture_id})
+            _write_json(runtime_root / selection_ref, {"fixture_id": corpus_fixture.fixture_id})
+
+            source_pdf_bytes = source_pdf_path.read_bytes()
+            normalized_sha256 = _sha256_text(normalized_text)
+            blob_sha256 = _sha256_bytes(source_pdf_bytes)
+            content_id = f"{run_id}-content-{ordinal:03d}"
+            target_id = f"{run_id}-target-{ordinal:03d}"
+
+            session.add(
+                ConnectorRunTarget(
+                    connector_run_target_id=target_id,
+                    connector_run_id=run_id,
+                    artifact_surface="documents",
+                    ordinal=ordinal - 1,
+                    sciencebase_file_name=corpus_fixture.basename,
+                    status="completed",
+                    public_read_confirmed=True,
+                    source_reference_json={
+                        "aps_normalized": {
+                            "document_title": f"Browser Fixture {corpus_fixture.fixture_id}",
+                            "document_type": "layout_complex_pdf",
+                        }
+                    },
+                )
             )
-        )
-        session.add(
-            ApsContentLinkage(
-                content_id=content_id,
-                run_id=run_id,
-                target_id=target_id,
-                accession_number=accession_number,
-                content_contract_id=APS_CONTENT_CONTRACT_ID,
-                chunking_contract_id=APS_CHUNKING_CONTRACT_ID,
-                normalized_text_ref="normalized.txt",
-                normalized_text_sha256=normalized_sha256,
-                blob_ref=corpus_fixture.basename,
-                blob_sha256=blob_sha256,
-                download_exchange_ref="download.json",
-                discovery_ref="discovery.json",
-                selection_ref="selection.json",
-                diagnostics_ref="diagnostics-linkage.json",
+            session.add(
+                ApsContentDocument(
+                    content_id=content_id,
+                    content_contract_id=APS_CONTENT_CONTRACT_ID,
+                    chunking_contract_id=APS_CHUNKING_CONTRACT_ID,
+                    normalization_contract_id=APS_NORMALIZATION_CONTRACT_ID,
+                    normalized_text_sha256=normalized_sha256,
+                    normalized_char_count=len(normalized_text),
+                    chunk_count=1,
+                    content_status=APS_CONTENT_STATUS_INDEXED,
+                    media_type="application/pdf",
+                    document_class="layout_complex_pdf",
+                    quality_status="strong",
+                    page_count=1,
+                    diagnostics_ref=diagnostics_document_ref,
+                    visual_page_refs_json="[]",
+                    updated_at=timestamp,
+                )
             )
-        )
+            session.add(
+                ApsContentChunk(
+                    content_id=content_id,
+                    chunk_id=f"{run_id}-chunk-{ordinal:03d}",
+                    content_contract_id=APS_CONTENT_CONTRACT_ID,
+                    chunking_contract_id=APS_CHUNKING_CONTRACT_ID,
+                    chunk_ordinal=0,
+                    start_char=0,
+                    end_char=len(normalized_text.strip()),
+                    chunk_text=normalized_text.strip(),
+                    chunk_text_sha256=_sha256_text(normalized_text.strip()),
+                    page_start=1,
+                    page_end=1,
+                    unit_kind="pdf_paragraph",
+                    quality_status="strong",
+                    updated_at=timestamp,
+                )
+            )
+            session.add(
+                ApsContentLinkage(
+                    content_id=content_id,
+                    run_id=run_id,
+                    target_id=target_id,
+                    accession_number=f"{accession_number}-{ordinal:03d}",
+                    content_contract_id=APS_CONTENT_CONTRACT_ID,
+                    chunking_contract_id=APS_CHUNKING_CONTRACT_ID,
+                    normalized_text_ref=normalized_ref,
+                    normalized_text_sha256=normalized_sha256,
+                    blob_ref=corpus_fixture.basename,
+                    blob_sha256=blob_sha256,
+                    download_exchange_ref=download_ref,
+                    discovery_ref=discovery_ref,
+                    selection_ref=selection_ref,
+                    diagnostics_ref=diagnostics_linkage_ref,
+                )
+            )
         session.commit()
     finally:
         session.close()
@@ -316,7 +327,7 @@ def _seed_runtime_binding(
 def _write_candidate_b_bundle(
     tmp_path: Path,
     *,
-    corpus_fixture: _BrowserCorpusFixture,
+    corpus_fixtures: tuple[_BrowserCorpusFixture, ...],
 ) -> tuple[Path, str]:
     checkout_root = tmp_path / "checkout"
     manifest_source = FIXTURES_ROOT / "manifest.json"
@@ -327,27 +338,76 @@ def _write_candidate_b_bundle(
     bundle_rel = Path("tests") / "reports" / "cb-compare-browser-test"
     bundle_root = checkout_root / bundle_rel
     raw_root = bundle_root / "raw"
-    annotated_path = raw_root / "annotated" / f"{corpus_fixture.fixture_id}.pdf"
-    raw_json_path = raw_root / f"{corpus_fixture.fixture_id}.json"
-    raw_markdown_path = raw_root / f"{corpus_fixture.fixture_id}.md"
     raw_root.mkdir(parents=True, exist_ok=True)
-
-    annotated_path.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(corpus_fixture.source_path, annotated_path)
-    raw_json_path.write_text(
-        json.dumps({"fixture_id": corpus_fixture.fixture_id, "kind": "candidate_b"}, indent=2),
-        encoding="utf-8",
-    )
-    raw_markdown_path.write_text(f"# Candidate B\n\nFixture: {corpus_fixture.fixture_id}\n", encoding="utf-8")
-
-    annotated_ref = (bundle_rel / "raw" / "annotated" / f"{corpus_fixture.fixture_id}.pdf").as_posix()
-    raw_json_ref = (bundle_rel / "raw" / f"{corpus_fixture.fixture_id}.json").as_posix()
-    raw_markdown_ref = (bundle_rel / "raw" / f"{corpus_fixture.fixture_id}.md").as_posix()
     raw_output_root = (bundle_rel / "raw").as_posix()
+    bundle_docs: list[dict[str, object]] = []
+    baseline_docs: list[dict[str, object]] = []
+    retained_files: list[dict[str, str]] = []
+
+    for ordinal, corpus_fixture in enumerate(corpus_fixtures, start=1):
+        annotated_path = raw_root / "annotated" / f"{corpus_fixture.fixture_id}.pdf"
+        raw_json_path = raw_root / f"{corpus_fixture.fixture_id}.json"
+        raw_markdown_path = raw_root / f"{corpus_fixture.fixture_id}.md"
+
+        annotated_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(corpus_fixture.source_path, annotated_path)
+        raw_json_path.write_text(
+            json.dumps({"fixture_id": corpus_fixture.fixture_id, "kind": "candidate_b"}, indent=2),
+            encoding="utf-8",
+        )
+        raw_markdown_path.write_text(f"# Candidate B\n\nFixture: {corpus_fixture.fixture_id}\n", encoding="utf-8")
+
+        annotated_ref = (bundle_rel / "raw" / "annotated" / f"{corpus_fixture.fixture_id}.pdf").as_posix()
+        raw_json_ref = (bundle_rel / "raw" / f"{corpus_fixture.fixture_id}.json").as_posix()
+        raw_markdown_ref = (bundle_rel / "raw" / f"{corpus_fixture.fixture_id}.md").as_posix()
+        baseline_docs.append({"fixture_id": corpus_fixture.fixture_id, "baseline": {"char_count": 1200 + ordinal}})
+        bundle_docs.append(
+            {
+                "fixture_id": corpus_fixture.fixture_id,
+                "document_ref": f"doc-ref-browser-{ordinal:03d}",
+                "document_sha256": f"sha256-browser-{ordinal:03d}",
+                "baseline": {"char_count": 1200 + ordinal},
+                "expected_gain_claims": ["heading_count"],
+                "expected_non_equivalences": ["element_counts_by_type"],
+                "regime_labels": ["browser_regression"],
+                "review_notes": f"Browser regression fixture {corpus_fixture.fixture_id}.",
+                "candidate_b": {
+                    "file_name": corpus_fixture.basename,
+                    "processing_status": "succeeded",
+                    "candidate_b_normalized_char_count": 1188 + ordinal,
+                    "candidate_b_normalized_text": f"Candidate B normalized text body for {corpus_fixture.fixture_id}",
+                    "odl_page_count": 1,
+                    "heading_count": 2,
+                    "list_count": 1,
+                    "image_count": 0,
+                    "table_count": 1,
+                    "hidden_text_present": False,
+                    "hidden_text_node_count": 0,
+                    "struct_tree_state": "struct_tree_absent",
+                    "element_counts_by_type": {"Text": 14, "Title": 2},
+                    "page_summaries": [{"page_number": 1, "element_count": 5}],
+                    "footer_page_numbers": [1],
+                    "image_sources": [],
+                    "limitation_flags": ["footer_page_numbers_detected"],
+                    "warning_flags": ["footer_warning"],
+                    "annotated_pdf_status": "present",
+                    "annotated_pdf_ref": annotated_ref,
+                    "raw_json_ref": raw_json_ref,
+                    "raw_markdown_ref": raw_markdown_ref,
+                },
+            }
+        )
+        retained_files.extend(
+            [
+                {"path": annotated_ref, "category": "candidate_b_annotated_pdf"},
+                {"path": raw_json_ref, "category": "candidate_b_raw_json"},
+                {"path": raw_markdown_ref, "category": "candidate_b_raw_markdown"},
+            ]
+        )
 
     _write_json(
         bundle_root / "baseline-summary.json",
-        {"documents": [{"fixture_id": corpus_fixture.fixture_id, "baseline": {"char_count": 1200}}]},
+        {"documents": baseline_docs},
     )
     _write_json(
         bundle_root / "compare.json",
@@ -359,49 +419,14 @@ def _write_candidate_b_bundle(
             "derived_comparison_only": ["candidate_b_normalized_text"],
             "non_equivalent_repo_fields": ["element_counts_by_type"],
             "raw_output_root": raw_output_root,
-            "documents": [
-                {
-                    "fixture_id": corpus_fixture.fixture_id,
-                    "document_ref": "doc-ref-browser-001",
-                    "document_sha256": "sha256-browser-001",
-                    "baseline": {"char_count": 1200},
-                    "expected_gain_claims": ["heading_count"],
-                    "expected_non_equivalences": ["element_counts_by_type"],
-                    "regime_labels": ["browser_regression"],
-                    "review_notes": "Browser regression fixture.",
-                    "candidate_b": {
-                        "file_name": corpus_fixture.basename,
-                        "processing_status": "succeeded",
-                        "candidate_b_normalized_char_count": 1188,
-                        "candidate_b_normalized_text": "Candidate B normalized text body",
-                        "odl_page_count": 1,
-                        "heading_count": 2,
-                        "list_count": 1,
-                        "image_count": 0,
-                        "table_count": 1,
-                        "hidden_text_present": False,
-                        "hidden_text_node_count": 0,
-                        "struct_tree_state": "struct_tree_absent",
-                        "element_counts_by_type": {"Text": 14, "Title": 2},
-                        "page_summaries": [{"page_number": 1, "element_count": 5}],
-                        "footer_page_numbers": [1],
-                        "image_sources": [],
-                        "limitation_flags": ["footer_page_numbers_detected"],
-                        "warning_flags": ["footer_warning"],
-                        "annotated_pdf_status": "present",
-                        "annotated_pdf_ref": annotated_ref,
-                        "raw_json_ref": raw_json_ref,
-                        "raw_markdown_ref": raw_markdown_ref,
-                    },
-                }
-            ],
+            "documents": bundle_docs,
         },
     )
     _write_json(
         bundle_root / "proof.json",
         {
             "warnings": {
-                "header_footer_emitted_despite_config": [corpus_fixture.fixture_id],
+                "header_footer_emitted_despite_config": [fixture.fixture_id for fixture in corpus_fixtures],
                 "image_source_collisions": [],
                 "labels_sidecar_manifest_hash_status": {"status": "matched"},
             },
@@ -411,11 +436,7 @@ def _write_candidate_b_bundle(
     _write_json(
         bundle_root / "retain.json",
         {
-            "raw_file_inventory": [
-                {"path": annotated_ref, "category": "candidate_b_annotated_pdf"},
-                {"path": raw_json_ref, "category": "candidate_b_raw_json"},
-                {"path": raw_markdown_ref, "category": "candidate_b_raw_markdown"},
-            ],
+            "raw_file_inventory": retained_files,
             "outputs_outside_approved_roots": [],
         },
     )
@@ -424,7 +445,7 @@ def _write_candidate_b_bundle(
 
 
 def build_review_browser_fixture(tmp_path: Path) -> ReviewBrowserFixture:
-    corpus_fixture = _load_browser_corpus_fixture()
+    corpus_fixtures = _load_browser_corpus_fixtures()
     baseline_binding = _seed_runtime_binding(
         tmp_path,
         run_id="baseline-run-001",
@@ -432,7 +453,7 @@ def build_review_browser_fixture(tmp_path: Path) -> ReviewBrowserFixture:
         accession_number="ML-BROWSER-001",
         submitted_at="2026-04-13T22:50:00Z",
         completed_at="2026-04-13T23:00:00Z",
-        corpus_fixture=corpus_fixture,
+        corpus_fixtures=corpus_fixtures,
     )
     candidate_a_binding = _seed_runtime_binding(
         tmp_path,
@@ -441,7 +462,7 @@ def build_review_browser_fixture(tmp_path: Path) -> ReviewBrowserFixture:
         accession_number="ML-BROWSER-002",
         submitted_at="2026-04-13T22:55:00Z",
         completed_at="2026-04-13T23:05:00Z",
-        corpus_fixture=corpus_fixture,
+        corpus_fixtures=corpus_fixtures,
     )
     candidate_b_binding = _seed_runtime_binding(
         tmp_path,
@@ -451,11 +472,11 @@ def build_review_browser_fixture(tmp_path: Path) -> ReviewBrowserFixture:
         accession_number="ML-BROWSER-003",
         submitted_at="2026-04-13T23:00:00Z",
         completed_at="2026-04-13T23:10:00Z",
-        corpus_fixture=corpus_fixture,
+        corpus_fixtures=corpus_fixtures,
     )
     checkout_root, bundle_id = _write_candidate_b_bundle(
         tmp_path,
-        corpus_fixture=corpus_fixture,
+        corpus_fixtures=corpus_fixtures,
     )
     selector = NrcApsReviewRunSelectorOut(
         default_run_id=baseline_binding.run_id,
@@ -495,7 +516,8 @@ def build_review_browser_fixture(tmp_path: Path) -> ReviewBrowserFixture:
         candidate_b_binding=candidate_b_binding,
         checkout_root=checkout_root,
         bundle_id=bundle_id,
-        fixture_id=corpus_fixture.fixture_id,
+        fixture_id=corpus_fixtures[0].fixture_id,
+        fixture_ids=tuple(fixture.fixture_id for fixture in corpus_fixtures),
         selector=selector,
     )
 

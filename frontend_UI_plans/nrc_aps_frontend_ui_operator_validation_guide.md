@@ -111,7 +111,7 @@ Important workbench-compare note:
 - the canonical compare prep flow now includes the validate-only same-checkout prep gate in `tools/validate_wb_prep.py`
 - once same-checkout prep exists, this guide should also validate Candidate B Trace follow-through from the compare page
 - Candidate B Trace follow-through should preserve available Workbench Compare return context, show artifact availability/unavailable states, and show fixture navigation/status from the existing Workbench Compare targets API
-- the current repo-native browser fixture proves the truthful one-target state (`Fixture 1 of 1` with disabled Previous/Next), not active multi-fixture navigation
+- the current repo-native browser fixture proves active multi-fixture Previous/Next navigation across `fontish` and `ml17123a319`; one-target source sets should still render `Fixture 1 of 1` with disabled Previous/Next
 - use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated same-corpus compare prep, `tools/validate_wb_prep.py` gate, and populated operator-validation sequence
 
 ## Preconditions
@@ -282,7 +282,7 @@ On `/review/nrc-aps/candidate-b-trace`, once same-checkout compare prep is prese
 - artifact availability/status cards are visible for annotated PDF, raw JSON, and raw Markdown
 - unavailable artifact states are explicit read-only states
 - the Back link preserves available Workbench Compare context
-- fixture navigation/status is visible; if only one comparable target exists, `Fixture 1 of 1` with disabled Previous/Next is correct
+- fixture navigation/status is visible; multi-fixture source sets enable Previous/Next and one-fixture source sets render `Fixture 1 of 1` with disabled Previous/Next
 - no raw local filesystem paths are displayed in the browser UI
 
 If 3 or more reviewable runs are available:

@@ -83,7 +83,8 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
   expect(sources.candidate_a_runs).toHaveLength(1);
   expect(sources.candidate_b_bundles).toHaveLength(1);
   expect(sources.candidate_b_runtime_runs).toHaveLength(1);
-  expect(targets.targets).toHaveLength(1);
+  expect(targets.targets).toHaveLength(2);
+  expect(targets.targets.map((target) => target.fixture_id)).toEqual(['fontish', 'ml17123a319']);
   expect(manifest.deep_links.candidate_b_trace).toContain('/review/nrc-aps/candidate-b-trace?');
   expectNoLocalPath(manifest.deep_links.candidate_b_trace);
 
@@ -119,20 +120,32 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
   expect(tracePageUrl.searchParams.get('candidate_b_source_kind')).toBe('bundle');
   expect(tracePageUrl.searchParams.get('candidate_b_run_id')).toBeNull();
 
-  const traceManifest = await expectJsonResponse(await traceManifestResponsePromise);
+  let traceManifest = await expectJsonResponse(await traceManifestResponsePromise);
   expect(traceManifest.default_tab).toBe('annotated_pdf');
   expect(traceManifest.artifacts.annotated_pdf).toContain('/api/v1/review/nrc-aps/candidate-b-trace/annotated-pdf?');
   const traceTargets = await expectJsonResponse(await traceTargetsResponsePromise);
   expect(traceTargets.candidate_b_source_kind).toBe('bundle');
   expect(traceTargets.candidate_b_run_id).toBeNull();
-  expect(traceTargets.targets).toHaveLength(1);
+  expect(traceTargets.targets).toHaveLength(2);
+  expect(traceTargets.targets.map((target) => target.fixture_id)).toEqual(targets.targets.map((target) => target.fixture_id));
   const fixtureNavigation = page.locator('#fixture-navigation');
   await expect(fixtureNavigation).toContainText('Comparable fixtures');
-  await expect(fixtureNavigation).toContainText('Fixture 1 of 1');
+  await expect(fixtureNavigation).toContainText('Fixture 1 of 2');
   await expect(fixtureNavigation).toContainText(targets.targets[0].display_label);
-  await expect(fixtureNavigation).toContainText('Only one comparable fixture is available');
-  await expect(fixtureNavigation.locator('.fixture-nav-link.disabled')).toHaveCount(2);
-  await expect(fixtureNavigation.locator('a.fixture-nav-link')).toHaveCount(0);
+  await expect(fixtureNavigation).toContainText('Use previous and next');
+  await expect(fixtureNavigation.locator('.fixture-nav-link.disabled')).toHaveCount(1);
+  await expect(fixtureNavigation.locator('a.fixture-nav-link')).toHaveCount(1);
+  const nextFixtureLink = fixtureNavigation.locator('a.fixture-nav-link').filter({ hasText: 'Next' });
+  await expect(nextFixtureLink).toHaveCount(1);
+  const nextHref = await nextFixtureLink.getAttribute('href');
+  expectNoLocalPath(nextHref);
+  const nextUrl = new URL(nextHref, 'http://127.0.0.1:8098');
+  expect(nextUrl.searchParams.get('baseline_run_id')).toBe(sources.baseline_runs[0].run_id);
+  expect(nextUrl.searchParams.get('candidate_a_run_id')).toBe(sources.candidate_a_runs[0].run_id);
+  expect(nextUrl.searchParams.get('candidate_b_source_kind')).toBe('bundle');
+  expect(nextUrl.searchParams.get('candidate_b_bundle_id')).toBe(traceManifest.candidate_b_bundle_id);
+  expect(nextUrl.searchParams.get('fixture_id')).toBe(targets.targets[1].fixture_id);
+  expect(nextUrl.searchParams.get('candidate_b_run_id')).toBeNull();
   const artifactStatusStrip = page.locator('#artifact-status-strip');
   await expect(artifactStatusStrip).toContainText('Annotated PDF');
   await expect(artifactStatusStrip).toContainText('Raw JSON');
@@ -151,6 +164,31 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
   const artifactSrc = await artifactFrame.getAttribute('src');
   expect(artifactSrc).toContain('/api/v1/review/nrc-aps/candidate-b-trace/annotated-pdf?');
   expectNoLocalPath(artifactSrc);
+
+  const nextTraceManifestResponsePromise = page.waitForResponse(
+    (response) => response.url().includes('/candidate-b-trace/manifest')
+      && response.url().includes(`fixture_id=${targets.targets[1].fixture_id}`),
+  );
+  const nextTraceTargetsResponsePromise = page.waitForResponse(
+    (response) => response.url().includes('/workbench-compare/targets?')
+      && response.url().includes('candidate_b_source_kind=bundle'),
+  );
+  const nextAnnotatedPdfResponsePromise = page.waitForResponse((response) => response.url().includes('/candidate-b-trace/annotated-pdf'));
+  await Promise.all([
+    page.waitForURL(new RegExp(`/review/nrc-aps/candidate-b-trace\\?.*fixture_id=${targets.targets[1].fixture_id}`)),
+    nextFixtureLink.click(),
+  ]);
+  traceManifest = await expectJsonResponse(await nextTraceManifestResponsePromise);
+  expect(traceManifest.fixture_id).toBe(targets.targets[1].fixture_id);
+  expect(traceManifest.default_tab).toBe('annotated_pdf');
+  await expectJsonResponse(await nextTraceTargetsResponsePromise);
+  const nextAnnotatedPdfResponse = await nextAnnotatedPdfResponsePromise;
+  expect(nextAnnotatedPdfResponse.status()).toBe(200);
+  await expect(fixtureNavigation).toContainText('Fixture 2 of 2');
+  await expect(fixtureNavigation).toContainText(targets.targets[1].display_label);
+  await expect(fixtureNavigation.locator('.fixture-nav-link.disabled')).toHaveCount(1);
+  await expect(fixtureNavigation.locator('a.fixture-nav-link')).toHaveCount(1);
+  await expect(fixtureNavigation.locator('a.fixture-nav-link').filter({ hasText: 'Previous' })).toHaveCount(1);
 
   await page.getByRole('button', { name: 'Summary' }).click();
   await expect(page.locator('#tabs-header .tab-btn.active')).toHaveText('Summary');
@@ -225,7 +263,7 @@ test('Workbench Compare can switch Candidate B from bundle source to admitted ru
   expect(targets.candidate_b_source_kind).toBe('runtime');
   expect(targets.candidate_b_run_id).toBe('candidate-b-runtime-001');
   expect(targets.candidate_b_bundle_id).toBeNull();
-  expect(targets.targets).toHaveLength(1);
+  expect(targets.targets).toHaveLength(2);
   expect(targets.targets[0].candidate_b_target_id).toBeTruthy();
   expect(manifest.variant_bindings.candidate_b.source_kind).toBe('runtime');
   expect(manifest.deep_links.candidate_b_trace).toBeNull();

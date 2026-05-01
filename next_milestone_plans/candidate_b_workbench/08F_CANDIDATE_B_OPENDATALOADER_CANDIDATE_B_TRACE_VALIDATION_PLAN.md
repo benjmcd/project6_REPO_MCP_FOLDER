@@ -24,7 +24,7 @@ Status note:
   - `tests/test_validate_wb_prep.py`
 - populated operator validation should now treat that prep gate as the canonical readiness check before opening the compare or Candidate B Trace pages
 - current merged-main coverage also includes bundle-scoped compare-to-trace-and-back context preservation, artifact availability/unavailable states, and fixture navigation/status over existing Workbench Compare targets metadata
-- the repo-native browser fixture currently proves the truthful one-target state, `Fixture 1 of 1` with disabled Previous/Next controls; it does not prove active multi-fixture navigation
+- the repo-native browser fixture now proves active multi-fixture Previous/Next navigation across `fontish` and `ml17123a319`; one-target `Fixture 1 of 1` disabled-navigation remains the correct fallback for one-fixture source sets
 
 ---
 
@@ -137,13 +137,13 @@ Then verify:
 10. Candidate B Trace surfaces artifact availability/status affordances for annotated PDF, raw JSON, and raw Markdown.
 11. Missing or unavailable artifacts render explicit read-only operator states rather than seeding or generating replacements.
 12. Candidate B Trace fixture navigation/status is driven by the existing Workbench Compare targets API.
-13. In the current repo-native browser fixture, the correct fixture-navigation proof is `Fixture 1 of 1` with disabled Previous/Next controls.
+13. In the current repo-native browser fixture, active Previous/Next navigation changes `fixture_id` between `fontish` and `ml17123a319` while preserving bundle-source return context.
 14. No compare query params leak into baseline/Candidate A document trace pages.
 15. No browser-visible absolute local paths appear in the DOM, network payloads, or console.
 
 Minimum fixture coverage:
 
-Current repo-native browser coverage exercises `fontish` as one comparable target. The broader list below remains the populated operator-validation target when same-checkout prepared data contains multiple comparable fixtures; it is not proven by the current single-target browser fixture.
+Current repo-native browser coverage exercises `fontish` and `ml17123a319` as comparable targets. The broader list below remains the populated operator-validation target when same-checkout prepared data contains additional comparable fixtures.
 
 - `fontish`
 - `ml17123a319`
@@ -191,7 +191,7 @@ Current minimum covered assertions:
 - unavailable artifact states render as explicit read-only states rather than 500s or generated replacements
 - Workbench Compare to Candidate B Trace to Workbench Compare preserves bundle-source return context
 - Candidate B Trace renders fixture navigation/status from Workbench Compare targets metadata
-- the current browser fixture proves `Fixture 1 of 1` with disabled Previous/Next controls, not active multi-fixture navigation
+- the current browser fixture proves active Previous/Next navigation across `fontish` and `ml17123a319`
 - baseline and Candidate A deep links still route to `document-trace`
 - no query/path leakage reaches browser-visible surfaces in the covered flow
 
