@@ -122,7 +122,7 @@ Ordered next-decision note:
   - `frontend_UI_plans/README.md` remains the front-door index
   - `docs/nrc_adams/nrc_aps_ui_launch_runbook.md` owns the canonical launch contract
   - `nrc_aps_review_ui_startup_and_smoke_test.md` is the concise startup walkthrough layered on top of that launch contract
-  - `wb-compare-validation.md` owns same-checkout prep, `tools/validate_wb_prep.py`, and populated compare + Candidate B Trace validation
+  - `wb-compare-validation.md` owns same-checkout prep, `tools/validate_wb_prep.py`, populated compare + Candidate B Trace validation, and explicit runtime-source Candidate B validation
   - `nrc_aps_frontend_ui_operator_validation_guide.md` owns the broader manual validation pass after launch and prep succeed
 
 ## Retained Documents
@@ -166,7 +166,7 @@ Ordered next-decision note:
 - `wb-compare-blueprint.md`
   - repo-fit module, route, and implementation blueprint for the workbench compare lane
 - `wb-compare-validation.md`
-  - canonical same-checkout prep and populated compare/Candidate B Trace validation flow
+  - canonical same-checkout prep plus populated compare/Candidate B Trace validation and explicit runtime-source Candidate B validation flows
 - `nrc_aps_review_ui_startup_and_smoke_test.md`
   - concise startup walkthrough for the review/document-trace/compare surfaces, layered on top of the root launch runbook
 - `nrc_aps_frontend_ui_operator_validation_guide.md`
