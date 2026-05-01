@@ -132,11 +132,11 @@ Resolved posture:
 Resolved posture:
 - the first Candidate B inspection lane must remain bundle-scoped
 - it must not modify `visual_lane_mode`
-- it must not add Candidate B to the normal review run selector
+- it did not add Candidate B to the normal review run selector in that first inspection pass
 
 ### Hard rule
 Do not describe Candidate B Trace as if it requires runtime admission in the first pass.
-If a later program wants true runtime admission, that must be reopened explicitly.
+The later runtime-admission program was reopened explicitly and remains distinct from Candidate B Trace.
 
 ---
 
@@ -157,7 +157,7 @@ Do not widen annotated PDF retention beyond the approved Candidate B raw-output 
 Resolved posture:
 - compare manifests and Candidate B compare columns now expose `candidate_b_trace`
 - the separate Candidate B-specific inspection page and API family now exist in the additive lane
-- Candidate B still does not enter the normal run selector or `visual_lane_mode` family
+- Candidate B Trace still does not enter the normal run selector or `visual_lane_mode` family
 
 ### Hard rule
 Do not describe Candidate B Trace as document-trace parity or runtime admission.
@@ -256,19 +256,20 @@ Resolved posture:
 Post-reopen status:
 - A later concrete product/operator requirement has now explicitly opened Option B for Phase 1.
 - The implementation admits Candidate B as `document_processing_engine="candidate_b_opendataloader_pdf"` on the existing NRC APS run-submit flow and exposes optional runtime metadata on the existing review `/runs` selector response.
-- This does not revise the shipped bundle-scoped compare + Candidate B Trace surface, does not add rendered selector UI, and does not widen routes, schemas, models, migrations, document-trace parity, or persistence semantics.
+- Bounded follow-ups render Candidate B / OpenDataLoader PDF in the existing review/document-trace selectors and add an explicit Workbench Compare runtime-source option while preserving the shipped bundle-scoped compare + Candidate B Trace path.
+- This does not add Candidate B Trace parity for admitted runtime runs, document-trace parity expansion, broad routes, DB schemas, DB models, migrations, new run-submission UI, or persistence redesign.
 
-### Option A - retain bundle-scoped compare + trace as the current-horizon boundary
+### Option A - historical bundle-scoped compare + trace boundary
 Posture:
 
-- Candidate B remains available through Workbench Compare plus Candidate B Trace only
-- Candidate B remains outside `visual_lane_mode`
-- Candidate B remains outside the normal review run selector
-- Candidate B continues to use bundle-root identity rather than runtime-root identity
+- This was the earlier current-horizon boundary for Candidate B workbench inspection.
+- Candidate B bundle evidence remains available through Workbench Compare plus Candidate B Trace.
+- Candidate B still remains outside `visual_lane_mode`.
+- Candidate B bundle evidence continues to use bundle-root identity rather than runtime-root identity.
 
 Recommendation:
 
-- this is now the adopted current-horizon posture
+- this remains the correct boundary for bundle-scoped Candidate B Trace, but it no longer describes the full current runtime-admission program after the explicit Option B reopen
 
 Why this is the repo-fit default:
 
@@ -276,7 +277,7 @@ Why this is the repo-fit default:
 - Candidate B artifacts are bundle-root and ODL-native, not current owner-path review-runtime rows
 - the current Candidate B Trace page already exposes the ODL-native inspection surface that the compare lane needed
 - the repo now has targeted browser enforcement for the shipped compare + Candidate B Trace flow
-- keeping Candidate B bundle-scoped avoids widening runtime classification, run-selector semantics, and document-trace semantics without a repo-confirmed need
+- keeping Candidate B Trace bundle-scoped still avoids widening that trace surface without a repo-confirmed need
 
 ### Option B - open a separate Candidate B runtime-admission program
 Posture:
@@ -288,10 +289,10 @@ Current recommendation:
 
 - this program was not opened by the earlier current-horizon decision
 - it is now opened only because an explicit product requirement requires Candidate B / OpenDataLoader PDF to run through the corpus ingestion/processing path
-- the current admitted scope is processing-engine admission plus existing `/runs` runtime metadata; rendered selector UI, Workbench Compare, and Trace behavior remain follow-on decisions
+- the current admitted scope is processing-engine admission plus existing `/runs` runtime metadata, rendered review/document-trace selector visibility, and explicit Workbench Compare runtime-source selection; Candidate B Trace parity for admitted runtime runs and document-trace parity expansion remain follow-on decisions
 
-### Reopen triggers required before Option B is justified
-At least one of these must be true:
+### Reopen triggers that justified Option B
+At least one of these had to become true before runtime-style Candidate B work was justified:
 
 - operators must select Candidate B from the normal run selector rather than arriving through compare or bundle-backed deep links
 - Candidate B must participate in runtime-root-only workflows that cannot consume bundle-backed inspection
@@ -316,10 +317,12 @@ It would likely widen at least:
 
 - bundle-scoped inspection surface
 - runtime admission exists for the opt-in processing engine path
-- the normal `/runs` response exposes Candidate B runtime metadata, but no rendered selector UI entry has been added
+- the normal `/runs` response exposes Candidate B runtime metadata
+- existing review/document-trace selectors render Candidate B / OpenDataLoader PDF labels
+- Workbench Compare can select admitted Candidate B runtime runs through `candidate_b_source_kind=runtime` without reusing `candidate_b_bundle_id`
 
 ### Hard rule
-Do not drift from processing-engine admission and existing `/runs` metadata into rendered selector UI, Workbench Compare integration, Candidate B Trace parity, document-trace parity, routes, schemas, models, migrations, or widened persistence by incidental follow-on edits.
+Do not drift from the explicitly reopened processing-engine, `/runs` metadata, rendered-selector, and Workbench Compare runtime-source tranches into Candidate B Trace parity, document-trace parity expansion, broad routes, DB schemas/models/migrations, new run-submission UI, or widened persistence by incidental follow-on edits.
 Do not describe Option B as a small follow-up to Candidate B Trace; it is a separate widened program and is now being reopened only in explicit bounded tranches.
 
 ---

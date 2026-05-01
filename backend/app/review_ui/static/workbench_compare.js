@@ -10,7 +10,9 @@ const state = {
     tabPayload: null,
     baselineRunId: '',
     candidateARunId: '',
+    candidateBSourceKind: 'bundle',
     candidateBBundleId: '',
+    candidateBRunId: '',
     fixtureId: '',
     tabId: 'summary',
 };
@@ -38,7 +40,12 @@ function readQueryState() {
     const params = new URLSearchParams(window.location.search);
     state.baselineRunId = params.get('baseline_run_id') || '';
     state.candidateARunId = params.get('candidate_a_run_id') || '';
+    state.candidateBSourceKind = params.get('candidate_b_source_kind') || (params.get('candidate_b_run_id') ? 'runtime' : 'bundle');
+    if (!['bundle', 'runtime'].includes(state.candidateBSourceKind)) {
+        state.candidateBSourceKind = 'bundle';
+    }
     state.candidateBBundleId = params.get('candidate_b_bundle_id') || '';
+    state.candidateBRunId = params.get('candidate_b_run_id') || '';
     state.fixtureId = params.get('fixture_id') || '';
     state.tabId = params.get('tab') || 'summary';
     if (!TAB_ORDER.includes(state.tabId)) {
@@ -50,7 +57,14 @@ function syncQueryState() {
     const params = new URLSearchParams();
     if (state.baselineRunId) params.set('baseline_run_id', state.baselineRunId);
     if (state.candidateARunId) params.set('candidate_a_run_id', state.candidateARunId);
-    if (state.candidateBBundleId) params.set('candidate_b_bundle_id', state.candidateBBundleId);
+    if (selectedCandidateBSource()) {
+        params.set('candidate_b_source_kind', state.candidateBSourceKind);
+        if (state.candidateBSourceKind === 'runtime') {
+            params.set('candidate_b_run_id', state.candidateBRunId);
+        } else {
+            params.set('candidate_b_bundle_id', state.candidateBBundleId);
+        }
+    }
     if (state.fixtureId) params.set('fixture_id', state.fixtureId);
     if (state.tabId && state.tabId !== 'summary') params.set('tab', state.tabId);
     const next = params.toString();
@@ -142,6 +156,85 @@ function selectedBundleSource() {
     return bundles.find((item) => item.bundle_id === state.candidateBBundleId) || null;
 }
 
+function selectedCandidateBSource() {
+    if (state.candidateBSourceKind === 'runtime') {
+        const runtimeRun = (state.sources?.candidate_b_runtime_runs || [])
+            .find((item) => item.run_id === state.candidateBRunId);
+        return runtimeRun ? {
+            kind: 'runtime',
+            id: runtimeRun.run_id,
+            label: runtimeRun.display_label || runtimeRun.run_id,
+            runtimeBinding: runtimeRun.runtime_binding || null,
+        } : null;
+    }
+    const bundle = selectedBundleSource();
+    return bundle ? {
+        kind: 'bundle',
+        id: bundle.bundle_id,
+        label: bundle.display_label || bundle.bundle_id,
+        runtimeBinding: null,
+    } : null;
+}
+
+function candidateBSourceOptionValue(kind, id) {
+    return `${kind}:${id}`;
+}
+
+function parseCandidateBSourceOptionValue(value) {
+    const separatorIndex = String(value || '').indexOf(':');
+    if (separatorIndex < 1) {
+        return { kind: 'bundle', id: '' };
+    }
+    const kind = value.slice(0, separatorIndex);
+    const id = value.slice(separatorIndex + 1);
+    return { kind: kind === 'runtime' ? 'runtime' : 'bundle', id };
+}
+
+function candidateBSourceOptions() {
+    const bundleOptions = (state.sources?.candidate_b_bundles || []).map((item) => ({
+        value: candidateBSourceOptionValue('bundle', item.bundle_id),
+        label: `Bundle | ${item.display_label || item.bundle_id}`,
+    }));
+    const runtimeOptions = (state.sources?.candidate_b_runtime_runs || []).map((item) => ({
+        value: candidateBSourceOptionValue('runtime', item.run_id),
+        label: `Runtime | Candidate B / OpenDataLoader PDF | ${item.display_label || item.run_id}`,
+    }));
+    return [...bundleOptions, ...runtimeOptions];
+}
+
+function currentCandidateBSourceOptionValue() {
+    if (state.candidateBSourceKind === 'runtime') {
+        return state.candidateBRunId ? candidateBSourceOptionValue('runtime', state.candidateBRunId) : '';
+    }
+    return state.candidateBBundleId ? candidateBSourceOptionValue('bundle', state.candidateBBundleId) : '';
+}
+
+function defaultCandidateBSourceOptionValue() {
+    const kind = state.sources?.default_candidate_b_source_kind;
+    if (kind === 'runtime' && state.sources?.default_candidate_b_run_id) {
+        return candidateBSourceOptionValue('runtime', state.sources.default_candidate_b_run_id);
+    }
+    if (state.sources?.default_candidate_b_bundle_id) {
+        return candidateBSourceOptionValue('bundle', state.sources.default_candidate_b_bundle_id);
+    }
+    if (state.sources?.default_candidate_b_run_id) {
+        return candidateBSourceOptionValue('runtime', state.sources.default_candidate_b_run_id);
+    }
+    return '';
+}
+
+function applyCandidateBSourceSelection(selectedValue) {
+    const selected = parseCandidateBSourceOptionValue(selectedValue);
+    state.candidateBSourceKind = selected.kind;
+    if (selected.kind === 'runtime') {
+        state.candidateBRunId = selected.id;
+        state.candidateBBundleId = '';
+    } else {
+        state.candidateBBundleId = selected.id;
+        state.candidateBRunId = '';
+    }
+}
+
 function formatRuntimeBinding(binding) {
     if (!binding) {
         return 'n/a';
@@ -156,11 +249,14 @@ function buildAuthoritySummaryText() {
     const parts = [];
     const baseline = selectedRunSource('baseline');
     const candidateA = selectedRunSource('candidate_a');
-    const candidateB = selectedBundleSource();
+    const candidateB = selectedCandidateBSource();
     parts.push(`baseline ${formatRuntimeBinding(baseline?.runtime_binding || null)}`);
     parts.push(`candidate A ${formatRuntimeBinding(candidateA?.runtime_binding || null)}`);
     if (candidateB) {
-        parts.push(`candidate B ${candidateB.display_label || candidateB.bundle_id}`);
+        const sourceLabel = candidateB.kind === 'runtime'
+            ? `${candidateB.label} (${formatRuntimeBinding(candidateB.runtimeBinding)})`
+            : candidateB.label;
+        parts.push(`candidate B ${sourceLabel}`);
     } else {
         parts.push('candidate B none selected');
     }
@@ -171,7 +267,10 @@ function renderIdentitySummary(manifest) {
     const identity = manifest.source_identity;
     const baseline = selectedRunSource('baseline');
     const candidateA = selectedRunSource('candidate_a');
-    const candidateB = selectedBundleSource();
+    const candidateB = selectedCandidateBSource();
+    const candidateBText = candidateB
+        ? `${candidateB.kind === 'runtime' ? 'Runtime' : 'Bundle'} | ${candidateB.label}`
+        : 'n/a';
     els.identitySummary.innerHTML = `
         <div class="meta-item"><span class="meta-label">Fixture</span><span>${escapeHtml(identity.fixture_id || 'n/a')}</span></div>
         <div class="meta-item"><span class="meta-label">Title</span><span>${escapeHtml(identity.document_title || 'n/a')}</span></div>
@@ -181,7 +280,7 @@ function renderIdentitySummary(manifest) {
         <div class="meta-item"><span class="meta-label">Document Ref</span><span>${escapeHtml(identity.document_ref || 'n/a')}</span></div>
         <div class="meta-item"><span class="meta-label">Baseline Runtime</span><span>${escapeHtml(formatRuntimeBinding(baseline?.runtime_binding || null))}</span></div>
         <div class="meta-item"><span class="meta-label">Candidate A Runtime</span><span>${escapeHtml(formatRuntimeBinding(candidateA?.runtime_binding || null))}</span></div>
-        <div class="meta-item"><span class="meta-label">Candidate B Source</span><span>${escapeHtml(candidateB?.display_label || candidateB?.bundle_id || 'n/a')}</span></div>
+        <div class="meta-item"><span class="meta-label">Candidate B Source</span><span>${escapeHtml(candidateBText)}</span></div>
     `;
 }
 
@@ -222,7 +321,19 @@ function renderTraceLinks(manifest) {
     if (manifest.deep_links?.candidate_b_trace) {
         links.push(`<a href="${manifest.deep_links.candidate_b_trace}">Candidate B Trace</a>`);
     }
+    if (manifest.deep_links?.candidate_b_runtime_trace) {
+        links.push(`<a href="${manifest.deep_links.candidate_b_runtime_trace}">Candidate B Runtime Trace</a>`);
+    }
     els.traceLinkCluster.innerHTML = links.length ? links.join('') : '<span class="meta-item">No trace links available.</span>';
+}
+
+function appendCandidateBParams(params) {
+    params.set('candidate_b_source_kind', state.candidateBSourceKind);
+    if (state.candidateBSourceKind === 'runtime') {
+        params.set('candidate_b_run_id', state.candidateBRunId);
+    } else {
+        params.set('candidate_b_bundle_id', state.candidateBBundleId);
+    }
 }
 
 function renderTabs(manifest) {
@@ -363,16 +474,17 @@ async function loadSources() {
         state.candidateARunId || state.sources.default_candidate_a_run_id || '',
         'No Candidate A runs found',
     );
-    state.candidateBBundleId = setOptions(
+    const candidateBSourceValue = setOptions(
         els.candidateBBundleSelector,
-        state.sources.candidate_b_bundles || [],
-        'bundle_id',
-        'display_label',
-        state.candidateBBundleId || state.sources.default_candidate_b_bundle_id || '',
-        'No Candidate B bundles found',
+        candidateBSourceOptions(),
+        'value',
+        'label',
+        currentCandidateBSourceOptionValue() || defaultCandidateBSourceOptionValue(),
+        'No Candidate B sources found',
     );
+    applyCandidateBSourceSelection(candidateBSourceValue);
 
-    if (!state.baselineRunId || !state.candidateARunId || !state.candidateBBundleId) {
+    if (!state.baselineRunId || !state.candidateARunId || !selectedCandidateBSource()) {
         setOverlay(
             'Compare Unavailable',
             'This checkout does not currently expose a full baseline, Candidate A, and Candidate B source set.',
@@ -386,8 +498,8 @@ async function loadTargets() {
     const params = new URLSearchParams({
         baseline_run_id: state.baselineRunId,
         candidate_a_run_id: state.candidateARunId,
-        candidate_b_bundle_id: state.candidateBBundleId,
     });
+    appendCandidateBParams(params);
     state.targets = await fetchJson(`${API_ROOT}/targets`, params);
     state.fixtureId = setOptions(
         els.targetSelector,
@@ -411,8 +523,8 @@ async function loadManifest() {
     const params = new URLSearchParams({
         baseline_run_id: state.baselineRunId,
         candidate_a_run_id: state.candidateARunId,
-        candidate_b_bundle_id: state.candidateBBundleId,
     });
+    appendCandidateBParams(params);
     state.manifest = await fetchJson(`${API_ROOT}/targets/${encodeURIComponent(state.fixtureId)}/manifest`, params);
     renderIdentitySummary(state.manifest);
     renderBadges(state.manifest.summary_badges || []);
@@ -426,8 +538,8 @@ async function loadTab() {
     const params = new URLSearchParams({
         baseline_run_id: state.baselineRunId,
         candidate_a_run_id: state.candidateARunId,
-        candidate_b_bundle_id: state.candidateBBundleId,
     });
+    appendCandidateBParams(params);
     state.tabPayload = await fetchJson(`${API_ROOT}/targets/${encodeURIComponent(state.fixtureId)}/tabs/${encodeURIComponent(state.tabId)}`, params);
     renderTab(state.tabPayload);
 }
@@ -465,7 +577,7 @@ function attachSelectorListeners() {
         await refreshWorkspace();
     });
     els.candidateBBundleSelector.addEventListener('change', async () => {
-        state.candidateBBundleId = els.candidateBBundleSelector.value;
+        applyCandidateBSourceSelection(els.candidateBBundleSelector.value);
         state.fixtureId = '';
         await refreshWorkspace();
     });

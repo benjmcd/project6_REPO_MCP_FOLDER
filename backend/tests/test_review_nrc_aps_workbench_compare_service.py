@@ -265,7 +265,7 @@ def test_discover_workbench_compare_sources_returns_visible_runs_and_local_bundl
     assert payload.baseline_runs[0].runtime_binding.storage_label == expected_storage_label
 
 
-def test_discover_workbench_compare_sources_omits_admitted_candidate_b_runtime(compare_runtime_fixture: dict[str, object], tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_discover_workbench_compare_sources_exposes_admitted_candidate_b_runtime_without_leaking(compare_runtime_fixture: dict[str, object], tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     manifest_entry = _load_unique_manifest_entry()
     baseline_binding = compare_runtime_fixture["baseline_binding"]
     candidate_a_binding = compare_runtime_fixture["candidate_a_binding"]
@@ -304,6 +304,9 @@ def test_discover_workbench_compare_sources_omits_admitted_candidate_b_runtime(c
 
     assert [item.run_id for item in payload.baseline_runs] == [baseline_binding.run_id]
     assert [item.run_id for item in payload.candidate_a_runs] == [candidate_a_binding.run_id]
+    assert [item.run_id for item in payload.candidate_b_runtime_runs] == [candidate_b_runtime.run_id]
+    assert payload.candidate_b_runtime_runs[0].runtime_binding is not None
+    assert payload.candidate_b_runtime_runs[0].runtime_binding.document_processing_engine == "candidate_b_opendataloader_pdf"
     assert candidate_b_runtime.run_id not in {item.run_id for item in payload.baseline_runs}
     assert candidate_b_runtime.run_id not in {item.run_id for item in payload.candidate_a_runs}
 
@@ -364,6 +367,105 @@ def test_compose_workbench_compare_payloads_align_selected_fixture(compare_runti
     )
     assert text_tab.columns["candidate_b"].comparability_class == "derived_only"
     assert text_tab.columns["candidate_b"].data["text"] == "Candidate B text body"
+
+
+def test_compose_workbench_compare_payloads_accept_candidate_b_runtime_source(
+    compare_runtime_fixture: dict[str, object], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest_entry = _load_unique_manifest_entry()
+    baseline_binding = compare_runtime_fixture["baseline_binding"]
+    candidate_a_binding = compare_runtime_fixture["candidate_a_binding"]
+    checkout_root = compare_runtime_fixture["checkout_root"]
+    fixture_id = compare_runtime_fixture["fixture_id"]
+    candidate_b_runtime = _copy_runtime_binding(
+        tmp_path,
+        run_id="candidate-b-runtime-001",
+        visual_lane_mode="baseline",
+        document_processing_engine="candidate_b_opendataloader_pdf",
+        target_id=_source_target_id(),
+        sciencebase_basename=manifest_entry["basename"],
+    )
+    selector = NrcApsReviewRunSelectorOut(
+        default_run_id=baseline_binding.run_id,
+        runs=[
+            *compare_runtime_fixture["selector"].runs,
+            NrcApsReviewRunSelectorItemOut(
+                run_id=candidate_b_runtime.run_id,
+                display_label="Candidate B Runtime",
+                status="completed",
+                submitted_at="2026-04-12T08:10:00Z",
+                completed_at="2026-04-12T08:15:00Z",
+                reviewable=True,
+            ),
+        ],
+    )
+
+    monkeypatch.setattr(
+        compare_service,
+        "discover_runtime_bindings",
+        lambda: [baseline_binding, candidate_a_binding, candidate_b_runtime],
+    )
+    monkeypatch.setattr(compare_service, "discover_candidate_runs", lambda: selector)
+
+    targets = compare_service.compose_workbench_compare_targets(
+        baseline_run_id=baseline_binding.run_id,
+        candidate_a_run_id=candidate_a_binding.run_id,
+        candidate_b_source_kind="runtime",
+        candidate_b_run_id=candidate_b_runtime.run_id,
+        checkout_root=checkout_root,
+    )
+    assert targets.candidate_b_source_kind == "runtime"
+    assert targets.candidate_b_bundle_id is None
+    assert targets.candidate_b_run_id == candidate_b_runtime.run_id
+    assert targets.default_fixture_id == fixture_id
+    assert targets.targets[0].candidate_b_target_id
+
+    manifest = compare_service.compose_workbench_compare_manifest(
+        baseline_run_id=baseline_binding.run_id,
+        candidate_a_run_id=candidate_a_binding.run_id,
+        candidate_b_source_kind="runtime",
+        candidate_b_run_id=candidate_b_runtime.run_id,
+        fixture_id=fixture_id,
+        checkout_root=checkout_root,
+    )
+    assert manifest.variant_bindings.candidate_b.source_kind == "runtime"
+    assert manifest.variant_bindings.candidate_b.run_id == candidate_b_runtime.run_id
+    assert manifest.variant_bindings.candidate_b.bundle_id is None
+    assert manifest.deep_links.candidate_b_trace is None
+    assert (manifest.deep_links.candidate_b_runtime_trace or "").startswith("/review/nrc-aps/document-trace?")
+
+    summary_tab = compare_service.compose_workbench_compare_tab(
+        baseline_run_id=baseline_binding.run_id,
+        candidate_a_run_id=candidate_a_binding.run_id,
+        candidate_b_source_kind="runtime",
+        candidate_b_run_id=candidate_b_runtime.run_id,
+        fixture_id=fixture_id,
+        tab_id="summary",
+        checkout_root=checkout_root,
+    )
+    candidate_b_column = summary_tab.columns["candidate_b"]
+    assert candidate_b_column.label == "Candidate B / OpenDataLoader PDF"
+    assert candidate_b_column.comparability_class == "direct"
+    assert candidate_b_column.data["document_processing_engine"] == "candidate_b_opendataloader_pdf"
+    assert (candidate_b_column.deep_link or "").startswith("/review/nrc-aps/document-trace?")
+
+
+def test_candidate_b_runtime_source_fails_closed_without_run_id(compare_runtime_fixture: dict[str, object], monkeypatch: pytest.MonkeyPatch) -> None:
+    baseline_binding = compare_runtime_fixture["baseline_binding"]
+    candidate_a_binding = compare_runtime_fixture["candidate_a_binding"]
+    checkout_root = compare_runtime_fixture["checkout_root"]
+    selector = compare_runtime_fixture["selector"]
+
+    monkeypatch.setattr(compare_service, "discover_runtime_bindings", lambda: [baseline_binding, candidate_a_binding])
+    monkeypatch.setattr(compare_service, "discover_candidate_runs", lambda: selector)
+
+    with pytest.raises(ValueError, match="candidate_b_run_id_missing"):
+        compare_service.compose_workbench_compare_targets(
+            baseline_run_id=baseline_binding.run_id,
+            candidate_a_run_id=candidate_a_binding.run_id,
+            candidate_b_source_kind="runtime",
+            checkout_root=checkout_root,
+        )
 
 
 def test_compose_workbench_compare_manifest_accepts_dict_shaped_proof_warnings(

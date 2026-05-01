@@ -1,7 +1,7 @@
 # NRC Local Corpus E2E Runbook
 
 ## Purpose
-This proof runner exercises the live NRC ADAMS APS route chain against the local 43-PDF corpus under `data_demo/nrc_adams_documents_for_testing` inside a fresh isolated runtime. It is a verification surface, not a new operator lane.
+This proof runner exercises the live NRC ADAMS APS route chain against the local 69-PDF corpus under `data_demo/nrc_adams_documents_for_testing` inside a fresh isolated runtime. It is a verification surface, not a new operator lane.
 
 ## Invocation
 Run it directly with the repo-local Phase 7A interpreter:
@@ -41,7 +41,7 @@ Allowed `--document-processing-engine` values are `baseline` and `candidate_b_op
 - Writes `local_corpus_e2e_summary.json` into the runtime root, records `document_processing_engine`, and leaves the runtime intact on both pass and fail.
 
 ## Success Criteria
-- 43 PDFs discovered, selected, and downloaded.
+- 69 PDFs discovered, selected, and downloaded.
 - Zero failed targets.
 - Persisted downstream chain reaches deterministic challenge review packet.
 - Baseline mode observes at least one persisted OCR-derived file and at least one persisted table-bearing file from the generated artifacts.
