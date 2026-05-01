@@ -23,6 +23,8 @@ if str(TESTS_DIR) not in sys.path:
 
 from tools.run_nrc_aps_local_corpus_e2e import (  # noqa: E402
     ALEMBIC_STUB_FINDING,
+    DOCUMENT_PROCESSING_ENGINE_BASELINE,
+    DOCUMENT_PROCESSING_ENGINE_CHOICES,
     EXPECTED_INTERPRETER,
     LEASE_TTL_OVERRIDE_FINDING,
     LOCAL_PROOF_CONNECTOR_LEASE_TTL_SECONDS,
@@ -45,6 +47,7 @@ FIXTURE_DOCUMENT_TYPE = "Inspection Report"
 FIXTURE_FOLDER_NAME = "fixture_compare_documents_for_testing"
 FIXTURE_FOLDER_SLUG = "fixture-compare"
 _SUPPORTED_VISUAL_LANE_MODES = {"baseline", "candidate_a_page_evidence_v1"}
+_SUPPORTED_DOCUMENT_PROCESSING_ENGINES = set(DOCUMENT_PROCESSING_ENGINE_CHOICES)
 
 
 def utc_now() -> str:
@@ -209,6 +212,22 @@ def _normalize_visual_lane_mode(value: str) -> str:
     return normalized
 
 
+def _normalize_document_processing_engine(value: str) -> str:
+    normalized = str(value or "").strip().lower() or DOCUMENT_PROCESSING_ENGINE_BASELINE
+    _assert(normalized in _SUPPORTED_DOCUMENT_PROCESSING_ENGINES, "invalid_document_processing_engine")
+    return normalized
+
+
+def _validate_seed_modes(*, visual_lane_mode: str, document_processing_engine: str) -> tuple[str, str]:
+    normalized_lane = _normalize_visual_lane_mode(visual_lane_mode)
+    normalized_engine = _normalize_document_processing_engine(document_processing_engine)
+    _assert(
+        normalized_engine == DOCUMENT_PROCESSING_ENGINE_BASELINE or normalized_lane == "baseline",
+        "candidate_b_document_processing_engine_requires_baseline_visual_lane",
+    )
+    return normalized_lane, normalized_engine
+
+
 def _inject_visual_lane_mode(payload: dict[str, Any], visual_lane_mode: str) -> dict[str, Any]:
     normalized = _normalize_visual_lane_mode(visual_lane_mode)
     outbound = dict(payload)
@@ -237,9 +256,24 @@ def _patched_submit_visual_lane_mode(visual_lane_mode: str) -> Iterator[None]:
         local_corpus_e2e._post_json = original_post_json
 
 
-def execute_seed(runtime: Any, docs: list[LocalCorpusDocument], runtime_root: Path, fake_client: LocalCorpusNrcClient, *, visual_lane_mode: str) -> dict[str, Any]:
+def execute_seed(
+    runtime: Any,
+    docs: list[LocalCorpusDocument],
+    runtime_root: Path,
+    fake_client: LocalCorpusNrcClient,
+    *,
+    visual_lane_mode: str,
+    document_processing_engine: str,
+) -> dict[str, Any]:
+    document_processing_engine = _normalize_document_processing_engine(document_processing_engine)
     with _patched_submit_visual_lane_mode(visual_lane_mode):
-        return _execute_proof(runtime, docs, runtime_root, fake_client)
+        return _execute_proof(
+            runtime,
+            docs,
+            runtime_root,
+            fake_client,
+            document_processing_engine=document_processing_engine,
+        )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -260,12 +294,24 @@ def build_parser() -> argparse.ArgumentParser:
         default="baseline",
         help="Seed either a baseline or Candidate A review runtime for the fixed workbench-compare fixture set.",
     )
+    parser.add_argument(
+        "--document-processing-engine",
+        choices=sorted(_SUPPORTED_DOCUMENT_PROCESSING_ENGINES),
+        default=DOCUMENT_PROCESSING_ENGINE_BASELINE,
+        help=(
+            "Document processing engine for the fixed workbench-compare fixture seed. "
+            "Use candidate_b_opendataloader_pdf with baseline visual lane to create a Candidate B runtime source."
+        ),
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    visual_lane_mode = _normalize_visual_lane_mode(args.visual_lane_mode)
+    visual_lane_mode, document_processing_engine = _validate_seed_modes(
+        visual_lane_mode=args.visual_lane_mode,
+        document_processing_engine=args.document_processing_engine,
+    )
     runtime_root = _resolve_runtime_root(args.runtime_root)
     summary_path = runtime_root / "local_corpus_e2e_summary.json"
     summary: dict[str, Any] = {
@@ -284,6 +330,7 @@ def main(argv: list[str] | None = None) -> int:
         "corpus_fixture_ids": list(FROZEN_FIXTURE_IDS),
         "seed_kind": "workbench_compare_fixture_seed",
         "visual_lane_mode": visual_lane_mode,
+        "document_processing_engine": document_processing_engine,
         "preflight": {},
         "submission": {},
         "run_detail": {},
@@ -318,6 +365,7 @@ def main(argv: list[str] | None = None) -> int:
                 runtime_root,
                 fake_client,
                 visual_lane_mode=visual_lane_mode,
+                document_processing_engine=document_processing_engine,
             )
             summary.update(proof_payload)
             summary["run_id"] = proof_payload["run_id"]

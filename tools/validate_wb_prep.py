@@ -46,6 +46,9 @@ from support_nrc_aps_candidate_b_opendataloader import FROZEN_FIXTURE_IDS  # noq
 WORKBENCH_SEED_KIND = "workbench_compare_fixture_seed"
 REQUIRED_FOLLOW_THROUGH_FIXTURES: tuple[str, ...] = ("fontish", "ml17123a319")
 MIN_SHARED_FIXTURE_COUNT = 3
+_CANDIDATE_B_RUNTIME_VARIANT = "candidate_b_opendataloader_pdf"
+_CANDIDATE_B_SOURCE_KIND_BUNDLE = "bundle"
+_CANDIDATE_B_SOURCE_KIND_RUNTIME = "runtime"
 
 
 class PreparedStateError(RuntimeError):
@@ -86,9 +89,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional explicit Candidate A run id when multiple eligible seeded Candidate A runs exist.",
     )
     parser.add_argument(
+        "--candidate-b-source-kind",
+        choices=(_CANDIDATE_B_SOURCE_KIND_BUNDLE, _CANDIDATE_B_SOURCE_KIND_RUNTIME),
+        default=_CANDIDATE_B_SOURCE_KIND_BUNDLE,
+        help="Candidate B source to validate. Bundle mode remains the default Candidate B Trace prep gate.",
+    )
+    parser.add_argument(
         "--candidate-b-bundle-id",
         default="",
-        help="Optional explicit Candidate B bundle id when multiple eligible bundles exist.",
+        help="Optional explicit Candidate B bundle id when multiple eligible bundles exist in bundle mode.",
+    )
+    parser.add_argument(
+        "--candidate-b-run-id",
+        default="",
+        help="Required Candidate B runtime run id when --candidate-b-source-kind runtime is selected.",
     )
     parser.add_argument(
         "--fixture-id",
@@ -116,6 +130,16 @@ def _repo_rel(checkout_root: Path, path: Path | None) -> str | None:
         return resolved.relative_to(checkout_root.resolve()).as_posix()
     except ValueError:
         return str(resolved)
+
+
+def _normalize_candidate_b_source_kind(value: str | None) -> str:
+    normalized = str(value or _CANDIDATE_B_SOURCE_KIND_BUNDLE).strip().lower()
+    if normalized not in {_CANDIDATE_B_SOURCE_KIND_BUNDLE, _CANDIDATE_B_SOURCE_KIND_RUNTIME}:
+        raise PreparedStateError(
+            "candidate_b_source_kind_invalid",
+            f"Unsupported Candidate B source kind: {value}",
+        )
+    return normalized
 
 
 def _binding_is_same_checkout(binding: ReviewRuntimeBinding, checkout_root: Path) -> bool:
@@ -157,9 +181,12 @@ def _binding_is_workbench_seed(
         return False
 
     summary_visual_lane = str(binding.summary.get("visual_lane_mode") or "").strip().lower()
+    summary_document_engine = str(binding.summary.get("document_processing_engine") or "").strip().lower()
     if expected_variant == "candidate_a_page_evidence_v1":
-        return summary_visual_lane == "candidate_a_page_evidence_v1"
-    return summary_visual_lane in {"", "baseline"}
+        return summary_visual_lane == "candidate_a_page_evidence_v1" and summary_document_engine in {"", "baseline"}
+    if expected_variant == _CANDIDATE_B_RUNTIME_VARIANT:
+        return summary_visual_lane in {"", "baseline"} and summary_document_engine == _CANDIDATE_B_RUNTIME_VARIANT
+    return summary_visual_lane in {"", "baseline"} and summary_document_engine in {"", "baseline"}
 
 
 def _discover_runtime_bindings_for_checkout(checkout_root: Path) -> list[ReviewRuntimeBinding]:
@@ -201,7 +228,7 @@ def _discover_runtime_bindings_for_checkout(checkout_root: Path) -> list[ReviewR
     return [binding for binding in bindings_by_run_id.values() if binding_is_baseline_visible(binding)]
 
 
-def _source_display(source: Any) -> dict[str, Any]:
+def _source_display(source: Any, *, checkout_root: Path | None = None) -> dict[str, Any]:
     if isinstance(source, ReviewRuntimeBinding):
         run_detail = source.summary.get("run_detail") or {}
         submission = source.summary.get("submission") or {}
@@ -214,7 +241,7 @@ def _source_display(source: Any) -> dict[str, Any]:
                 or str(source.summary.get("generated_at_utc") or "").strip()
                 or None
             ),
-            "review_root": str(source.review_root),
+            "review_root": _repo_rel(checkout_root, source.review_root) if checkout_root else str(source.review_root),
         }
 
     if isinstance(source, dict):
@@ -241,6 +268,7 @@ def _select_binding(
     explicit_run_id: str,
     checkout_root: Path,
 ) -> ReviewRuntimeBinding:
+    label_code = label.replace("-", "_")
     eligible: list[ReviewRuntimeBinding] = []
     for binding in bindings:
         if _binding_is_workbench_seed(binding, expected_variant=expected_variant, checkout_root=checkout_root):
@@ -252,24 +280,24 @@ def _select_binding(
             if binding.run_id == requested:
                 return binding
         raise PreparedStateError(
-            f"{label}_run_unavailable",
+            f"{label_code}_run_unavailable",
             f"Requested {label} run is not an eligible same-checkout workbench seed: {requested}",
             context={
                 "requested_run_id": requested,
-                "eligible_runs": [_source_display(item) for item in eligible],
+                "eligible_runs": [_source_display(item, checkout_root=checkout_root) for item in eligible],
             },
         )
 
     if not eligible:
         raise PreparedStateError(
-            f"{label}_run_missing",
+            f"{label_code}_run_missing",
             f"No eligible same-checkout {label} workbench seed was discovered.",
         )
     if len(eligible) > 1:
         raise PreparedStateError(
-            f"{label}_run_ambiguous",
+            f"{label_code}_run_ambiguous",
             f"Multiple eligible same-checkout {label} workbench seeds were discovered; pass --{label}-run-id explicitly or use a clean checkout.",
-            context={"eligible_runs": [_source_display(item) for item in eligible]},
+            context={"eligible_runs": [_source_display(item, checkout_root=checkout_root) for item in eligible]},
         )
     return eligible[0]
 
@@ -392,9 +420,12 @@ def validate_prepared_state(
     checkout_root: Path,
     baseline_run_id: str = "",
     candidate_a_run_id: str = "",
+    candidate_b_source_kind: str = _CANDIDATE_B_SOURCE_KIND_BUNDLE,
     candidate_b_bundle_id: str = "",
+    candidate_b_run_id: str = "",
     fixture_id: str = "",
 ) -> dict[str, Any]:
+    source_kind = _normalize_candidate_b_source_kind(candidate_b_source_kind)
     bindings = _discover_runtime_bindings_for_checkout(checkout_root)
 
     baseline_binding = _select_binding(
@@ -411,6 +442,116 @@ def validate_prepared_state(
         explicit_run_id=candidate_a_run_id,
         checkout_root=checkout_root,
     )
+    if source_kind == _CANDIDATE_B_SOURCE_KIND_RUNTIME:
+        if not str(candidate_b_run_id or "").strip():
+            eligible_candidate_b_runs = [
+                _source_display(binding, checkout_root=checkout_root)
+                for binding in bindings
+                if _binding_is_workbench_seed(
+                    binding,
+                    expected_variant=_CANDIDATE_B_RUNTIME_VARIANT,
+                    checkout_root=checkout_root,
+                )
+            ]
+            raise PreparedStateError(
+                "candidate_b_run_id_missing",
+                "Pass --candidate-b-run-id explicitly for runtime Candidate B validation.",
+                context={"eligible_runs": eligible_candidate_b_runs},
+            )
+        manifest_by_basename = _manifest_entries_by_basename(checkout_root)
+        baseline_targets = _load_runtime_targets(baseline_binding, manifest_by_basename)
+        candidate_a_targets = _load_runtime_targets(candidate_a_binding, manifest_by_basename)
+        candidate_b_binding = _select_binding(
+            label="candidate-b",
+            bindings=bindings,
+            expected_variant=_CANDIDATE_B_RUNTIME_VARIANT,
+            explicit_run_id=candidate_b_run_id,
+            checkout_root=checkout_root,
+        )
+        candidate_b_targets = _load_runtime_targets(candidate_b_binding, manifest_by_basename)
+        shared_fixture_ids = sorted(set(baseline_targets) & set(candidate_a_targets) & set(candidate_b_targets))
+        _validate_shared_fixtures(shared_fixture_ids)
+        follow_through_fixture_id = _select_follow_through_fixture_id(
+            shared_fixture_ids=shared_fixture_ids,
+            explicit_fixture_id=fixture_id,
+            annotated_fixture_ids=[],
+        )
+        compare_params = urlencode(
+            {
+                "baseline_run_id": baseline_binding.run_id,
+                "candidate_a_run_id": candidate_a_binding.run_id,
+                "candidate_b_source_kind": _CANDIDATE_B_SOURCE_KIND_RUNTIME,
+                "candidate_b_run_id": candidate_b_binding.run_id,
+                "fixture_id": follow_through_fixture_id,
+            }
+        )
+        return {
+            "schema_id": "aps.workbench_prep_validation.v1",
+            "passed": True,
+            "checkout_root": _repo_rel(checkout_root, checkout_root),
+            "selection": {
+                "candidate_b_source_kind": _CANDIDATE_B_SOURCE_KIND_RUNTIME,
+                "baseline_run_id": baseline_binding.run_id,
+                "candidate_a_run_id": candidate_a_binding.run_id,
+                "candidate_b_run_id": candidate_b_binding.run_id,
+                "follow_through_fixture_id": follow_through_fixture_id,
+            },
+            "review_roots": {
+                "baseline_review_root": _repo_rel(checkout_root, baseline_binding.review_root),
+                "candidate_a_review_root": _repo_rel(checkout_root, candidate_a_binding.review_root),
+                "candidate_b_review_root": _repo_rel(checkout_root, candidate_b_binding.review_root),
+            },
+            "shared_fixture_ids": shared_fixture_ids,
+            "required_follow_through_fixture_ids": list(REQUIRED_FOLLOW_THROUGH_FIXTURES),
+            "required_follow_through_fixture_ids_present": [
+                fixture_value for fixture_value in REQUIRED_FOLLOW_THROUGH_FIXTURES if fixture_value in shared_fixture_ids
+            ],
+            "recommended_urls": {
+                "workbench_compare": f"/review/nrc-aps/workbench-compare?{compare_params}",
+                "baseline_trace": _trace_link(
+                    baseline_binding.run_id,
+                    baseline_targets[follow_through_fixture_id].target_id,
+                ),
+                "candidate_a_trace": _trace_link(
+                    candidate_a_binding.run_id,
+                    candidate_a_targets[follow_through_fixture_id].target_id,
+                ),
+                "candidate_b_runtime_trace": _trace_link(
+                    candidate_b_binding.run_id,
+                    candidate_b_targets[follow_through_fixture_id].target_id,
+                ),
+            },
+            "sources_snapshot": {
+                "baseline_runs": [
+                    _source_display(binding, checkout_root=checkout_root)
+                    for binding in bindings
+                    if _binding_is_workbench_seed(
+                        binding,
+                        expected_variant="baseline",
+                        checkout_root=checkout_root,
+                    )
+                ],
+                "candidate_a_runs": [
+                    _source_display(binding, checkout_root=checkout_root)
+                    for binding in bindings
+                    if _binding_is_workbench_seed(
+                        binding,
+                        expected_variant="candidate_a_page_evidence_v1",
+                        checkout_root=checkout_root,
+                    )
+                ],
+                "candidate_b_runtime_runs": [
+                    _source_display(binding, checkout_root=checkout_root)
+                    for binding in bindings
+                    if _binding_is_workbench_seed(
+                        binding,
+                        expected_variant=_CANDIDATE_B_RUNTIME_VARIANT,
+                        checkout_root=checkout_root,
+                    )
+                ],
+            },
+        }
+
     candidate_b_bundle_sources = _discover_candidate_b_bundle_sources(checkout_root)
     selected_bundle_id = _select_bundle_id(
         bundle_sources=candidate_b_bundle_sources,
@@ -481,8 +622,9 @@ def validate_prepared_state(
     return {
         "schema_id": "aps.workbench_prep_validation.v1",
         "passed": True,
-        "checkout_root": str(checkout_root.resolve()),
+        "checkout_root": _repo_rel(checkout_root, checkout_root),
         "selection": {
+            "candidate_b_source_kind": _CANDIDATE_B_SOURCE_KIND_BUNDLE,
             "baseline_run_id": baseline_binding.run_id,
             "candidate_a_run_id": candidate_a_binding.run_id,
             "candidate_b_bundle_id": selected_bundle_id,
@@ -513,7 +655,7 @@ def validate_prepared_state(
         },
         "sources_snapshot": {
             "baseline_runs": [
-                _source_display(binding)
+                _source_display(binding, checkout_root=checkout_root)
                 for binding in bindings
                 if _binding_is_workbench_seed(
                     binding,
@@ -522,7 +664,7 @@ def validate_prepared_state(
                 )
             ],
             "candidate_a_runs": [
-                _source_display(binding)
+                _source_display(binding, checkout_root=checkout_root)
                 for binding in bindings
                 if _binding_is_workbench_seed(
                     binding,
@@ -543,14 +685,16 @@ def main(argv: list[str] | None = None) -> int:
             checkout_root=checkout_root,
             baseline_run_id=args.baseline_run_id,
             candidate_a_run_id=args.candidate_a_run_id,
+            candidate_b_source_kind=args.candidate_b_source_kind,
             candidate_b_bundle_id=args.candidate_b_bundle_id,
+            candidate_b_run_id=args.candidate_b_run_id,
             fixture_id=args.fixture_id,
         )
     except PreparedStateError as exc:
         failure_payload = {
             "schema_id": "aps.workbench_prep_validation.v1",
             "passed": False,
-            "checkout_root": str(checkout_root.resolve()),
+            "checkout_root": _repo_rel(checkout_root, checkout_root),
             "error": {
                 "code": exc.code,
                 "detail": exc.detail,
