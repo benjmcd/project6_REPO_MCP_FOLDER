@@ -101,7 +101,7 @@ Add a page-route test covering at minimum:
 
 After automated tests are green, verify manually:
 
-0. populate and validate the same checkout with the canonical prep sequence:
+0. populate and validate the same checkout with the canonical bundle-source prep sequence:
    - `py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode baseline`
    - `py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode candidate_a_page_evidence_v1`
    - `.\project6.ps1 -Action compare-nrc-aps-candidate-b`
@@ -110,6 +110,12 @@ After automated tests are green, verify manually:
    - baseline and Candidate A review roots must be seeded with `tools/seed_wb_compare.py`, not `tools/run_nrc_aps_local_corpus_e2e.py`
    - the seeded review roots must use the fixed five-fixture PDF set shared with the Candidate B workbench bundle
    - any Candidate B bundle used for validation must be discovered from the same checkout root as the compare page
+0. for runtime-sourced Candidate B operator proof, use the same fixed five-fixture seed tool and validate the explicit Candidate B runtime run id:
+   - `py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode baseline`
+   - `py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode candidate_a_page_evidence_v1`
+   - `py -3.12 .\tools\seed_wb_compare.py --document-processing-engine candidate_b_opendataloader_pdf`
+   - `py -3.12 .\tools\validate_wb_prep.py --candidate-b-source-kind runtime --candidate-b-run-id <candidate_b_runtime_run_id>`
+   - runtime-source validation is validate-only, must use same-checkout fixed-fixture seeds, and must fail closed rather than infer a stale Candidate B runtime id
 1. the review page header shows `Workbench Compare` immediately before `Document Trace`
 2. the new header link opens `/review/nrc-aps/workbench-compare`
 3. the page loads with no Candidate B bundle selected and surfaces a clear unavailable state
@@ -139,8 +145,8 @@ The workbench compare validation lane must:
 - mutate no review runtime state
 
 The compare page may read already-existing local archived bundles, but test and page validation must not invoke a new Candidate B compare run.
-The separate same-corpus prep step may seed baseline and Candidate A review roots for operator validation, but that prep step is outside validate-only test execution and must use the dedicated fixture-corpus seed tool rather than the 69-document local-corpus demo runner.
-The canonical same-checkout prep check is now `tools/validate_wb_prep.py`; it is validate-only, fails closed on empty or incoherent prep state, and should gate populated operator validation rather than ad hoc manual prep guesses.
+The separate same-corpus prep step may seed baseline, Candidate A, and Candidate B runtime review roots for operator validation, but that prep step is outside validate-only test execution and must use the dedicated fixture-corpus seed tool rather than the 69-document local-corpus demo runner.
+The canonical same-checkout prep check is now `tools/validate_wb_prep.py`; it is validate-only, defaults to the bundle/Candidate B Trace source path, supports explicit runtime-source validation by run id, fails closed on empty or incoherent prep state, and should gate populated operator validation rather than ad hoc manual prep guesses.
 
 Existing review and document-trace regression suites must continue to pass after implementation, including:
 
