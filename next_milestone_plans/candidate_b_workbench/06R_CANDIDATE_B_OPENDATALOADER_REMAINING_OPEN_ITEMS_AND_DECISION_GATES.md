@@ -289,7 +289,7 @@ Current recommendation:
 
 - this program was not opened by the earlier current-horizon decision
 - it is now opened only because an explicit product requirement requires Candidate B / OpenDataLoader PDF to run through the corpus ingestion/processing path
-- the current admitted scope is processing-engine admission plus existing `/runs` runtime metadata, rendered review/document-trace selector visibility, and explicit Workbench Compare runtime-source selection; Candidate B Trace parity for admitted runtime runs and document-trace parity expansion remain follow-on decisions
+- the current admitted scope is processing-engine admission plus existing `/runs` runtime metadata, rendered review/document-trace selector visibility, explicit Workbench Compare runtime-source selection, and fixed-fixture runtime-source prep/validation; Candidate B Trace parity for admitted runtime runs and document-trace parity expansion remain follow-on decisions
 
 ### Reopen triggers that justified Option B
 At least one of these had to become true before runtime-style Candidate B work was justified:
@@ -322,7 +322,7 @@ It would likely widen at least:
 - Workbench Compare can select admitted Candidate B runtime runs through `candidate_b_source_kind=runtime` without reusing `candidate_b_bundle_id`
 
 ### Hard rule
-Do not drift from the explicitly reopened processing-engine, `/runs` metadata, rendered-selector, and Workbench Compare runtime-source tranches into Candidate B Trace parity, document-trace parity expansion, broad routes, DB schemas/models/migrations, new run-submission UI, or widened persistence by incidental follow-on edits.
+Do not drift from the explicitly reopened processing-engine, `/runs` metadata, rendered-selector, Workbench Compare runtime-source, and fixed-fixture runtime-source prep/validation tranches into Candidate B Trace parity, document-trace parity expansion, broad routes, DB schemas/models/migrations, new run-submission UI, or widened persistence by incidental follow-on edits.
 Do not describe Option B as a small follow-up to Candidate B Trace; it is a separate widened program and is now being reopened only in explicit bounded tranches.
 
 ---
@@ -352,8 +352,11 @@ Resolved posture:
   - `py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode candidate_a_page_evidence_v1`
   - `.\project6.ps1 -Action compare-nrc-aps-candidate-b`
   - `py -3.12 .\tools\validate_wb_prep.py`
+- the same fixed-fixture seed path now supports runtime-source Candidate B prep without using the 69-PDF local-corpus demo runner:
+  - `py -3.12 .\tools\seed_wb_compare.py --document-processing-engine candidate_b_opendataloader_pdf`
+  - `py -3.12 .\tools\validate_wb_prep.py --candidate-b-source-kind runtime --candidate-b-run-id <candidate_b_runtime_run_id>`
 - `tools/validate_wb_prep.py` is now the validate-only fail-closed prep gate for same-checkout readiness
-- the validator fails closed on empty, donor, ambiguous, or incoherent same-checkout prep state
+- the validator fails closed on empty, donor, ambiguous, missing-runtime-run-id, or incoherent same-checkout prep state
 - populated operator validation should now start from that canonical prep gate rather than from ad hoc source discovery or donor-worktree assumptions
 
 ### Hard rule
@@ -368,7 +371,7 @@ Resolved posture:
 - active operator/front-door docs now point at one canonical flow:
   - `frontend_UI_plans/README.md` = front-door index
   - `frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md` = explicit backend binding and route bring-up
-  - `frontend_UI_plans/wb-compare-validation.md` = same-checkout prep, `tools/validate_wb_prep.py`, and populated compare/Candidate B Trace validation
+  - `frontend_UI_plans/wb-compare-validation.md` = same-checkout prep, `tools/validate_wb_prep.py`, populated compare/Candidate B Trace validation, and explicit runtime-source Candidate B validation
   - `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md` = broader manual validation pass after startup and prep succeed
 - this pack stays focused on Candidate B planning/control rather than duplicated operator walkthrough steps
 
