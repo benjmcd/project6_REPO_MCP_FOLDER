@@ -92,6 +92,16 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
 
   const candidateBTraceLink = page.locator('#trace-link-cluster a').filter({ hasText: 'Candidate B Trace' });
   await expect(candidateBTraceLink).toHaveCount(1);
+  const traceHref = await candidateBTraceLink.getAttribute('href');
+  expectNoLocalPath(traceHref);
+  const manifestTraceUrl = new URL(manifest.deep_links.candidate_b_trace, 'http://127.0.0.1:8098');
+  const traceUrl = new URL(traceHref, 'http://127.0.0.1:8098');
+  expect(traceUrl.searchParams.get('baseline_run_id')).toBe(sources.baseline_runs[0].run_id);
+  expect(traceUrl.searchParams.get('candidate_a_run_id')).toBe(sources.candidate_a_runs[0].run_id);
+  expect(traceUrl.searchParams.get('candidate_b_source_kind')).toBe('bundle');
+  expect(traceUrl.searchParams.get('candidate_b_bundle_id')).toBe(manifestTraceUrl.searchParams.get('candidate_b_bundle_id'));
+  expect(traceUrl.searchParams.get('fixture_id')).toBe(manifestTraceUrl.searchParams.get('fixture_id'));
+  expect(traceUrl.searchParams.get('candidate_b_run_id')).toBeNull();
 
   const traceManifestResponsePromise = page.waitForResponse((response) => response.url().includes('/candidate-b-trace/manifest'));
   const annotatedPdfResponsePromise = page.waitForResponse((response) => response.url().includes('/candidate-b-trace/annotated-pdf'));
@@ -99,6 +109,11 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
     page.waitForURL(/\/review\/nrc-aps\/candidate-b-trace\?/),
     candidateBTraceLink.click(),
   ]);
+  const tracePageUrl = new URL(page.url());
+  expect(tracePageUrl.searchParams.get('baseline_run_id')).toBe(sources.baseline_runs[0].run_id);
+  expect(tracePageUrl.searchParams.get('candidate_a_run_id')).toBe(sources.candidate_a_runs[0].run_id);
+  expect(tracePageUrl.searchParams.get('candidate_b_source_kind')).toBe('bundle');
+  expect(tracePageUrl.searchParams.get('candidate_b_run_id')).toBeNull();
 
   const traceManifest = await expectJsonResponse(await traceManifestResponsePromise);
   expect(traceManifest.default_tab).toBe('annotated_pdf');
@@ -143,6 +158,8 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
   expect(returnHref).toContain('/review/nrc-aps/workbench-compare?');
   expectNoLocalPath(returnHref);
   const returnUrl = new URL(returnHref, 'http://127.0.0.1:8098');
+  expect(returnUrl.searchParams.get('baseline_run_id')).toBe(sources.baseline_runs[0].run_id);
+  expect(returnUrl.searchParams.get('candidate_a_run_id')).toBe(sources.candidate_a_runs[0].run_id);
   expect(returnUrl.searchParams.get('candidate_b_source_kind')).toBe('bundle');
   expect(returnUrl.searchParams.get('candidate_b_bundle_id')).toBe(traceManifest.candidate_b_bundle_id);
   expect(returnUrl.searchParams.get('fixture_id')).toBe(traceManifest.fixture_id);
@@ -153,6 +170,8 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
     returnLink.click(),
   ]);
   const returnedUrl = new URL(page.url());
+  expect(returnedUrl.searchParams.get('baseline_run_id')).toBe(sources.baseline_runs[0].run_id);
+  expect(returnedUrl.searchParams.get('candidate_a_run_id')).toBe(sources.candidate_a_runs[0].run_id);
   expect(returnedUrl.searchParams.get('candidate_b_source_kind')).toBe('bundle');
   expect(returnedUrl.searchParams.get('candidate_b_bundle_id')).toBe(traceManifest.candidate_b_bundle_id);
   expect(returnedUrl.searchParams.get('fixture_id')).toBe(traceManifest.fixture_id);

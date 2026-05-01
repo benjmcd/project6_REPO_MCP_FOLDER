@@ -313,18 +313,29 @@ function renderNoticeList(listEl, items, emptyMessage) {
 function renderTraceLinks(manifest) {
     const links = [];
     if (manifest.deep_links?.baseline_trace) {
-        links.push(`<a href="${manifest.deep_links.baseline_trace}">Baseline Trace</a>`);
+        links.push(`<a href="${escapeHtml(manifest.deep_links.baseline_trace)}">Baseline Trace</a>`);
     }
     if (manifest.deep_links?.candidate_a_trace) {
-        links.push(`<a href="${manifest.deep_links.candidate_a_trace}">Candidate A Trace</a>`);
+        links.push(`<a href="${escapeHtml(manifest.deep_links.candidate_a_trace)}">Candidate A Trace</a>`);
     }
     if (manifest.deep_links?.candidate_b_trace) {
-        links.push(`<a href="${manifest.deep_links.candidate_b_trace}">Candidate B Trace</a>`);
+        links.push(`<a href="${escapeHtml(withBundleTraceContext(manifest.deep_links.candidate_b_trace))}">Candidate B Trace</a>`);
     }
     if (manifest.deep_links?.candidate_b_runtime_trace) {
-        links.push(`<a href="${manifest.deep_links.candidate_b_runtime_trace}">Candidate B Runtime Trace</a>`);
+        links.push(`<a href="${escapeHtml(manifest.deep_links.candidate_b_runtime_trace)}">Candidate B Runtime Trace</a>`);
     }
     els.traceLinkCluster.innerHTML = links.length ? links.join('') : '<span class="meta-item">No trace links available.</span>';
+}
+
+function withBundleTraceContext(rawUrl) {
+    const url = new URL(rawUrl, window.location.origin);
+    if (state.baselineRunId) url.searchParams.set('baseline_run_id', state.baselineRunId);
+    if (state.candidateARunId) url.searchParams.set('candidate_a_run_id', state.candidateARunId);
+    if (url.searchParams.has('candidate_b_bundle_id')) {
+        url.searchParams.set('candidate_b_source_kind', 'bundle');
+    }
+    url.searchParams.delete('candidate_b_run_id');
+    return `${url.pathname}${url.search}${url.hash}`;
 }
 
 function appendCandidateBParams(params) {

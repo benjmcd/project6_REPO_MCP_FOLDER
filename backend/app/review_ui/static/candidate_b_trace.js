@@ -63,7 +63,12 @@ function syncReturnLink() {
 
 function syncQueryState() {
     const params = new URLSearchParams();
-    if (state.candidateBBundleId) params.set('candidate_b_bundle_id', state.candidateBBundleId);
+    if (state.baselineRunId) params.set('baseline_run_id', state.baselineRunId);
+    if (state.candidateARunId) params.set('candidate_a_run_id', state.candidateARunId);
+    if (state.candidateBBundleId) {
+        params.set('candidate_b_source_kind', 'bundle');
+        params.set('candidate_b_bundle_id', state.candidateBBundleId);
+    }
     if (state.fixtureId) params.set('fixture_id', state.fixtureId);
     if (state.tabId && state.tabId !== 'summary') params.set('tab', state.tabId);
     const next = params.toString();
