@@ -1,5 +1,6 @@
 const PAGE_ROUTE = '/review/nrc-aps/candidate-b-trace';
 const API_ROOT = '/api/v1/review/nrc-aps/candidate-b-trace';
+const WORKBENCH_API_ROOT = '/api/v1/review/nrc-aps/workbench-compare';
 const WORKBENCH_ROUTE = '/review/nrc-aps/workbench-compare';
 const TAB_ORDER = ['annotated_pdf', 'summary', 'raw_json', 'raw_markdown'];
 const THEME_KEY = 'nrc_aps_review_theme';
@@ -23,6 +24,7 @@ const els = {
     workspace: document.getElementById('candidate-b-trace-workspace'),
     identitySummary: document.getElementById('identity-summary'),
     badgeStrip: document.getElementById('badge-strip'),
+    fixtureNavigation: document.getElementById('fixture-navigation'),
     artifactStatusStrip: document.getElementById('artifact-status-strip'),
     warningList: document.getElementById('warning-list'),
     limitationList: document.getElementById('limitation-list'),
@@ -216,6 +218,90 @@ function renderArtifactStatusStrip(manifest) {
             </div>
         `;
     }).join('');
+}
+
+function buildTraceFixtureUrl(fixtureId) {
+    const params = new URLSearchParams();
+    if (state.baselineRunId) params.set('baseline_run_id', state.baselineRunId);
+    if (state.candidateARunId) params.set('candidate_a_run_id', state.candidateARunId);
+    params.set('candidate_b_source_kind', 'bundle');
+    params.set('candidate_b_bundle_id', state.candidateBBundleId);
+    params.set('fixture_id', fixtureId);
+    if (state.tabId && state.tabId !== 'summary') params.set('tab', state.tabId);
+    return `${PAGE_ROUTE}?${params.toString()}`;
+}
+
+function buildWorkbenchTargetsUrl() {
+    const params = new URLSearchParams({
+        baseline_run_id: state.baselineRunId,
+        candidate_a_run_id: state.candidateARunId,
+        candidate_b_source_kind: 'bundle',
+        candidate_b_bundle_id: state.candidateBBundleId,
+    });
+    return `${WORKBENCH_API_ROOT}/targets?${params.toString()}`;
+}
+
+function renderFixtureNavControl(label, target, direction) {
+    if (!target) {
+        return `<span class="fixture-nav-link disabled" aria-disabled="true">${escapeHtml(label)}</span>`;
+    }
+    const fixtureId = target.fixture_id || '';
+    const targetLabel = target.display_label || fixtureId;
+    return `
+        <a class="fixture-nav-link" data-direction="${escapeHtml(direction)}" data-fixture-id="${escapeHtml(fixtureId)}" href="${escapeHtml(buildTraceFixtureUrl(fixtureId))}">
+            ${escapeHtml(label)}
+            <span>${escapeHtml(targetLabel)}</span>
+        </a>
+    `;
+}
+
+function renderFixtureNavigation(payload, unavailableReason = '') {
+    if (!els.fixtureNavigation) {
+        return;
+    }
+    const targets = Array.isArray(payload?.targets) ? payload.targets : [];
+    const currentIndex = targets.findIndex((target) => target.fixture_id === state.fixtureId);
+    const currentTarget = currentIndex >= 0 ? targets[currentIndex] : null;
+    const currentLabel = currentTarget?.display_label || state.manifest?.identity?.document_title || state.fixtureId || 'current fixture';
+    const positionLabel = currentIndex >= 0 ? `Fixture ${currentIndex + 1} of ${targets.length}` : 'Fixture not in target set';
+    const previousTarget = currentIndex > 0 ? targets[currentIndex - 1] : null;
+    const nextTarget = currentIndex >= 0 && currentIndex < targets.length - 1 ? targets[currentIndex + 1] : null;
+    let detail = unavailableReason;
+    if (!detail && currentIndex < 0 && targets.length > 0) {
+        detail = 'The current fixture is not part of the selected Workbench Compare target intersection.';
+    } else if (!detail && targets.length === 1) {
+        detail = 'Only one comparable fixture is available for the selected baseline, Candidate A, and Candidate B bundle.';
+    } else if (!detail && targets.length > 1) {
+        detail = 'Use previous and next to inspect the same bundle-scoped Candidate B trace across comparable fixtures.';
+    } else if (!detail) {
+        detail = 'Open from Workbench Compare with baseline and Candidate A context to enable fixture navigation.';
+    }
+    els.fixtureNavigation.innerHTML = `
+        <div class="fixture-nav-copy">
+            <span class="fixture-nav-kicker">Comparable fixtures</span>
+            <strong>${escapeHtml(positionLabel)}</strong>
+            <span>${escapeHtml(currentLabel)}</span>
+            <small>${escapeHtml(detail)}</small>
+        </div>
+        <div class="fixture-nav-actions">
+            ${renderFixtureNavControl('Previous', previousTarget, 'previous')}
+            ${renderFixtureNavControl('Next', nextTarget, 'next')}
+        </div>
+    `;
+}
+
+async function loadFixtureNavigation() {
+    if (!state.baselineRunId || !state.candidateARunId || !state.candidateBBundleId) {
+        renderFixtureNavigation(null);
+        return;
+    }
+    try {
+        const payload = await fetchJson(buildWorkbenchTargetsUrl());
+        renderFixtureNavigation(payload);
+    } catch (error) {
+        const detail = error instanceof Error ? error.message : 'Unknown error';
+        renderFixtureNavigation(null, `Fixture navigation could not load Workbench targets: ${detail}`);
+    }
 }
 
 function renderNoticeList(listEl, items, emptyMessage) {
@@ -424,6 +510,7 @@ async function loadManifest() {
     syncReturnLink();
     renderIdentitySummary(state.manifest);
     renderBadges(state.manifest);
+    await loadFixtureNavigation();
     renderArtifactStatusStrip(state.manifest);
     renderNoticeList(els.warningList, state.manifest.warnings || [], 'No warnings.');
     renderNoticeList(els.limitationList, state.manifest.limitations || [], 'No limitations.');

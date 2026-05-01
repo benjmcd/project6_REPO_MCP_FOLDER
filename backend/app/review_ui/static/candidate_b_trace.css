@@ -156,6 +156,80 @@
     letter-spacing: 0.03em;
 }
 
+.fixture-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--layout-section-bg);
+}
+
+.fixture-nav-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.fixture-nav-copy strong {
+    font-size: 1rem;
+}
+
+.fixture-nav-copy span,
+.fixture-nav-copy small {
+    color: var(--muted-text);
+    line-height: 1.35;
+}
+
+.fixture-nav-copy .fixture-nav-kicker {
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.fixture-nav-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.fixture-nav-link {
+    display: inline-flex;
+    min-width: 92px;
+    flex-direction: column;
+    gap: 2px;
+    padding: 9px 12px;
+    border: 1px solid var(--primary-color);
+    border-radius: 10px;
+    background: rgba(24, 100, 217, 0.08);
+    color: var(--primary-color);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.fixture-nav-link span {
+    max-width: 180px;
+    overflow: hidden;
+    color: var(--muted-text);
+    font-size: 0.74rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fixture-nav-link.disabled {
+    border-color: var(--border-color);
+    background: var(--pane-header-bg);
+    color: var(--muted-text);
+    cursor: not-allowed;
+}
+
 .notice-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -367,6 +441,19 @@
     .detail-grid,
     .notice-grid {
         grid-template-columns: 1fr;
+    }
+
+    .fixture-navigation {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .fixture-nav-actions {
+        justify-content: stretch;
+    }
+
+    .fixture-nav-link {
+        flex: 1;
     }
 
     .detail-list {
