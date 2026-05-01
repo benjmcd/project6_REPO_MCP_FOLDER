@@ -40,6 +40,7 @@ def test_candidate_b_trace_page_shell_content() -> None:
     assert 'id="identity-summary"' in html
     assert 'id="tabs-header"' in html
     assert 'id="tab-content-area"' in html
+    assert 'id="artifact-status-strip"' in html
     assert "/review/nrc-aps/static/candidate_b_trace.css" in html
     assert "/review/nrc-aps/static/candidate_b_trace.js" in html
     assert "/review/nrc-aps/static/document_trace.css" not in html
@@ -118,6 +119,21 @@ def test_candidate_b_trace_js_defers_blank_query_tab_to_manifest_default() -> No
     assert "state.tabId = params.get('tab') || 'summary';" not in js_content
 
 
+def test_candidate_b_trace_js_surfaces_artifact_availability_states() -> None:
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "candidate_b_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "artifactStatusStrip" in js_content
+    assert "function renderArtifactStatusStrip(manifest)" in js_content
+    assert "artifactTabAvailable(manifest, 'annotated_pdf')" in js_content
+    assert "artifactTabAvailable(manifest, 'raw_json')" in js_content
+    assert "artifactTabAvailable(manifest, 'raw_markdown')" in js_content
+    assert "No artifact was retained for this fixture; validation remains read-only." in js_content
+    assert "`${tab.label} (Unavailable)`" in js_content
+    assert "function renderArtifactUnavailable(label, detail)" in js_content
+    assert "does not generate or seed replacement artifacts" in js_content
+
+
 def test_candidate_b_trace_css_styles_local_shell_elements() -> None:
     css_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "candidate_b_trace.css"
     css_content = css_path.read_text(encoding="utf-8")
@@ -128,3 +144,6 @@ def test_candidate_b_trace_css_styles_local_shell_elements() -> None:
     assert ".tab-btn" in css_content
     assert ".placeholder" in css_content
     assert ".artifact-frame" in css_content
+    assert ".artifact-status-strip" in css_content
+    assert ".artifact-status-card" in css_content
+    assert ".artifact-empty-state" in css_content
