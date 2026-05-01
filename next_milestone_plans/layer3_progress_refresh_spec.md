@@ -258,18 +258,21 @@ Do not:
 
 ## Current Program Boundary
 
-The current bounded chain on `main` ends at:
+The current bounded chain on `main` now extends through:
 - the landed dedicated validate-only runtime/report-ref continuation freeze from PR `#140`
 - the post-PR140 docs/progress sync from PR `#141`
 - the post-PR141 docs/progress sync from PR `#142`
 - the landed dedicated validate-only runtime/report-ref implementation lane from PR `#143`
 - the post-PR143 docs/progress sync from PR `#144`
+- the later Layer 3 workbench execution/package/handoff/export/download chain through PR `#289`
+- docs `70`/`71` as planning-only current-methods `AnalysisMethod` registry governance from PR `#315`
+- PR `#316` as the separate current-main current-methods `AnalysisMethod` registry implementation
 
 The preserved source-branch rule on current `main` is:
 - dossier input must remain paired export-derived context packets rather than package-derived context
 
-The current landed continuation at the end of current `main` is:
-- the bounded dedicated validate-only runtime/report-ref implementation lane from PR `#143`, rooted in the dedicated validate-only contract/runtime/gate trio plus the bounded review graph/tree/runtime/report-ref integrations selected by `22_GATED_APS_VALIDATE_ONLY_RUNTIME_FREEZE.md`
+The current landed support guardrail at the end of the control packet is:
+- PR `#316` implements the bounded current-methods `AnalysisMethod` registry for existing `cross_correlation`, `decomposition`, and `structural_break` methods only, without admitting new methods, execution behavior changes, schema/runtime/source widening, UI activation, qualitative/hybrid/RAG/vector expansion, or full mockup activation
 
 The current settled state in this checkout is:
 - current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, and the post-PR147 progress-packet closeout from PR `#148`
