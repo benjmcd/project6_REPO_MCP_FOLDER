@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from collections import Counter, defaultdict
 import hashlib
+import importlib.metadata
+import json
 import os
 import re
 import tempfile
@@ -34,6 +37,8 @@ APS_IMAGE_EXTRACTOR_ID = "aps_image_ocr_extractor"
 APS_IMAGE_EXTRACTOR_VERSION = "1.0.0"
 APS_ZIP_EXTRACTOR_ID = "aps_zip_bundle_extractor"
 APS_ZIP_EXTRACTOR_VERSION = "1.0.0"
+APS_ODL_PDF_EXTRACTOR_ID = "aps_odl_pdf_extractor"
+APS_ODL_PDF_EXPECTED_VERSION = "2.0.0"
 APS_QUALITY_STATUS_STRONG = "strong"
 APS_QUALITY_STATUS_LIMITED = "limited"
 APS_QUALITY_STATUS_WEAK = "weak"
@@ -49,6 +54,14 @@ APS_VISUAL_CLASS_DIAGRAM = "diagram_or_visual"
 APS_VISUAL_CLASS_TEXT_HEAVY = "text_heavy_or_empty"
 
 _ADMITTED_VISUAL_LANE_MODES: frozenset[str] = frozenset({"baseline", "candidate_a_page_evidence_v1"})
+APS_DOCUMENT_PROCESSING_ENGINE_BASELINE = "baseline"
+APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B = "candidate_b_opendataloader_pdf"
+_ADMITTED_DOCUMENT_PROCESSING_ENGINES: frozenset[str] = frozenset(
+    {
+        APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
+        APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
+    }
+)
 
 # Minimum drawing-command count to consider a page visually significant
 _VISUAL_DRAWING_THRESHOLD = 20
@@ -90,6 +103,13 @@ def _normalize_visual_lane_mode(value: Any) -> str:
     if visual_lane_mode not in _ADMITTED_VISUAL_LANE_MODES:
         return "baseline"
     return visual_lane_mode
+
+
+def _normalize_document_processing_engine(value: Any) -> str:
+    processing_engine = str(value or APS_DOCUMENT_PROCESSING_ENGINE_BASELINE).strip().lower() or APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
+    if processing_engine not in _ADMITTED_DOCUMENT_PROCESSING_ENGINES:
+        return APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
+    return processing_engine
 
 
 def _capture_visual_page_ref(page: Any, page_number: int, visual_page_class: str) -> dict[str, Any]:
@@ -271,6 +291,7 @@ def default_processing_config(overrides: dict[str, Any] | None = None) -> dict[s
         "content_min_searchable_tokens": 30,
         "visual_render_dpi": APS_VISUAL_RENDER_DPI_DEFAULT,
         "visual_lane_mode": "baseline",
+        "document_processing_engine": APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
     }
     config.update(dict(overrides or {}))
     return config
@@ -297,6 +318,8 @@ def process_document(
     config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     config = default_processing_config(config)
+    processing_engine = _normalize_document_processing_engine(config.get("document_processing_engine"))
+    config = {**config, "document_processing_engine": processing_engine}
     deadline = _deadline_from_config(config)
     detection = nrc_aps_media_detection.detect_media_type(
         content,
@@ -308,10 +331,14 @@ def process_document(
         raise ValueError(f"unsupported_content_type:{effective_type or 'unknown'}")
     if not content:
         raise ValueError("empty_content")
+    if processing_engine == APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B and effective_type != "application/pdf":
+        raise ValueError("document_processing_engine_requires_pdf")
     _raise_if_deadline_exceeded(deadline)
     if effective_type == "text/plain":
         return _process_plain_text(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type == "application/pdf":
+        if processing_engine == APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B:
+            return _process_pdf_candidate_b(content=content, detection=detection, config=config, deadline=deadline)
         return _process_pdf(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type in APS_IMAGE_CONTENT_TYPES:
         return _process_image(content=content, detection=detection, config=config, deadline=deadline)
@@ -880,6 +907,263 @@ def _process_pdf(
     # Populate external proof collector for next-pass analysis
 
     return final_result
+
+
+def _candidate_b_output_root(*, artifact_storage_dir: str | Path, content: bytes) -> Path:
+    digest = hashlib.sha256(content).hexdigest()
+    output_root = (
+        Path(artifact_storage_dir)
+        / "nrc_adams_aps"
+        / "candidate_b_runtime"
+        / "sha256"
+        / digest[0:2]
+        / digest[2:4]
+        / digest
+    )
+    output_root.mkdir(parents=True, exist_ok=True)
+    return output_root
+
+
+def _write_bytes_once(path: Path, content: bytes) -> None:
+    if path.exists():
+        return
+    fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), prefix="._", suffix=".tmp")
+    temp = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(content)
+        os.replace(temp, path)
+    except Exception:
+        try:
+            temp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
+
+
+def _candidate_b_typed_nodes(root: Any) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+
+    def _walk(node: Any) -> None:
+        if isinstance(node, dict):
+            if isinstance(node.get("type"), str):
+                out.append(node)
+            kids = node.get("kids")
+            if isinstance(kids, list):
+                for child in kids:
+                    _walk(child)
+        elif isinstance(node, list):
+            for item in node:
+                _walk(item)
+
+    _walk(root)
+    return out
+
+
+def _candidate_b_page_number(node: dict[str, Any]) -> int | None:
+    raw = node.get("page number")
+    if isinstance(raw, int):
+        return raw
+    if isinstance(raw, str) and raw.strip().isdigit():
+        return int(raw.strip())
+    return None
+
+
+def _candidate_b_bbox(node: dict[str, Any]) -> list[float] | None:
+    raw = node.get("bounding box")
+    if not isinstance(raw, list) or len(raw) != 4:
+        return None
+    out: list[float] = []
+    for value in raw:
+        if not isinstance(value, (int, float)):
+            return None
+        out.append(float(value))
+    return out
+
+
+def _candidate_b_unit_kind(node_type: str) -> str:
+    normalized = str(node_type or "").strip().lower().replace("_", "-")
+    if normalized == "table":
+        return "pdf_table"
+    return "paragraph"
+
+
+def _candidate_b_page_quality(
+    text: str,
+    *,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    return _quality_metrics(
+        text,
+        min_chars=max(40, int(config["content_min_searchable_chars"]) // 4),
+        min_tokens=max(6, int(config["content_min_searchable_tokens"]) // 5),
+    )
+
+
+def _candidate_b_document_class(
+    *,
+    page_count: int,
+    page_text_by_number: dict[int, str],
+    image_count_by_page: dict[int, int],
+    node_type_counts: Counter[str],
+    quality_status: str,
+) -> str:
+    text_pages = sum(1 for page in range(1, page_count + 1) if str(page_text_by_number.get(page) or "").strip())
+    image_only_pages = sum(
+        1
+        for page in range(1, page_count + 1)
+        if not str(page_text_by_number.get(page) or "").strip() and int(image_count_by_page.get(page, 0) or 0) > 0
+    )
+    if image_only_pages > 0 and text_pages == 0:
+        return "scanned_pdf"
+    if image_only_pages > 0 and text_pages > 0:
+        return "mixed_pdf"
+    if quality_status in {APS_QUALITY_STATUS_WEAK, APS_QUALITY_STATUS_UNUSABLE}:
+        return "font_encoded_pdf"
+    if (
+        page_count > 1
+        or int(node_type_counts.get("table", 0) or 0) > 0
+        or int(node_type_counts.get("heading", 0) or 0) > 0
+        or int(node_type_counts.get("list", 0) or 0) > 0
+    ):
+        return "layout_complex_pdf"
+    return "born_digital_pdf"
+
+
+def _process_pdf_candidate_b(
+    *,
+    content: bytes,
+    detection: dict[str, Any],
+    config: dict[str, Any],
+    deadline: float | None,
+) -> dict[str, Any]:
+    _raise_if_deadline_exceeded(deadline)
+    artifact_storage_dir = str(config.get("artifact_storage_dir") or "").strip()
+    if not artifact_storage_dir:
+        raise ValueError("candidate_b_artifact_storage_dir_required")
+
+    try:
+        package_version = importlib.metadata.version("opendataloader-pdf")
+        from opendataloader_pdf import convert
+    except importlib.metadata.PackageNotFoundError as exc:
+        raise ValueError("candidate_b_package_unavailable") from exc
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError("candidate_b_package_unavailable") from exc
+    if package_version != APS_ODL_PDF_EXPECTED_VERSION:
+        raise ValueError("candidate_b_package_version_mismatch")
+
+    output_root = _candidate_b_output_root(artifact_storage_dir=artifact_storage_dir, content=content)
+    input_pdf_path = output_root / "input.pdf"
+    _write_bytes_once(input_pdf_path, content)
+    json_output_path = output_root / "input.json"
+    try:
+        convert(
+            input_path=str(input_pdf_path),
+            output_dir=str(output_root),
+            format="json",
+            quiet=True,
+            replace_invalid_chars=" ",
+            use_struct_tree=True,
+            table_method="default",
+            reading_order="xycut",
+            hybrid="off",
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError("candidate_b_processing_failed") from exc
+    if not json_output_path.exists():
+        raise ValueError("candidate_b_output_missing")
+
+    root = json_output_path.read_text(encoding="utf-8")
+    candidate_b_json = json.loads(root)
+    if not isinstance(candidate_b_json, dict):
+        raise ValueError("candidate_b_output_invalid")
+
+    typed_nodes = _candidate_b_typed_nodes(candidate_b_json)
+    page_count = int(candidate_b_json.get("number of pages") or 0)
+    page_text_parts: dict[int, list[str]] = defaultdict(list)
+    image_count_by_page: dict[int, int] = defaultdict(int)
+    node_type_counts: Counter[str] = Counter()
+    ordered_units: list[dict[str, Any]] = []
+
+    for node in typed_nodes:
+        node_type = str(node.get("type") or "").strip().lower()
+        if not node_type:
+            continue
+        node_type_counts[node_type] += 1
+        page_number = _candidate_b_page_number(node) or 1
+        if node_type == "image":
+            image_count_by_page[page_number] += 1
+        content_value = node.get("content")
+        if not isinstance(content_value, str):
+            continue
+        text = _normalize_text(" ".join(content_value.split()))
+        if not text:
+            continue
+        page_text_parts[page_number].append(text)
+        unit: dict[str, Any] = {
+            "page_number": page_number,
+            "unit_kind": _candidate_b_unit_kind(node_type),
+            "text": text,
+            "candidate_b_node_type": node_type,
+        }
+        bbox = _candidate_b_bbox(node)
+        if bbox is not None:
+            unit["bbox"] = bbox
+        ordered_units.append(unit)
+
+    page_text_by_number: dict[int, str] = {
+        page_number: _normalize_text("\n".join(parts))
+        for page_number, parts in page_text_parts.items()
+    }
+    normalized_text = _normalize_text("\n".join(unit["text"] for unit in ordered_units))
+    quality = _quality_metrics(
+        normalized_text,
+        min_chars=int(config["content_min_searchable_chars"]),
+        min_tokens=int(config["content_min_searchable_tokens"]),
+    )
+    page_summaries: list[dict[str, Any]] = []
+    for page_number in range(1, max(page_count, 0) + 1):
+        page_text = str(page_text_by_number.get(page_number) or "")
+        page_quality = _candidate_b_page_quality(page_text, config=config)
+        page_summaries.append(
+            {
+                "page_number": page_number,
+                "unit_count": sum(1 for unit in ordered_units if int(unit.get("page_number") or 0) == page_number),
+                "source": "candidate_b_odl",
+                "ocr_attempted": False,
+                "quality_status": page_quality["quality_status"],
+                "searchable_chars": page_quality["char_count"],
+                "visual_page_class": APS_VISUAL_CLASS_TEXT_HEAVY,
+            }
+        )
+
+    degradation_codes = _degradation_codes_for_detection(detection, quality["quality_status"])
+    document_class = _candidate_b_document_class(
+        page_count=page_count,
+        page_text_by_number=page_text_by_number,
+        image_count_by_page=image_count_by_page,
+        node_type_counts=node_type_counts,
+        quality_status=quality["quality_status"],
+    )
+    return {
+        **detection,
+        "document_processing_contract_id": APS_DOCUMENT_EXTRACTION_CONTRACT_ID,
+        "extractor_family": "pdf_candidate_b_opendataloader",
+        "extractor_id": APS_ODL_PDF_EXTRACTOR_ID,
+        "extractor_version": package_version,
+        "normalization_contract_id": APS_TEXT_NORMALIZATION_CONTRACT_ID,
+        "document_class": document_class,
+        "page_count": page_count,
+        "quality_status": quality["quality_status"],
+        "quality_metrics": quality,
+        "degradation_codes": sorted(list(dict.fromkeys(code for code in degradation_codes if code))),
+        "ordered_units": _with_char_offsets(ordered_units),
+        "page_summaries": page_summaries,
+        "visual_page_refs": [],
+        "normalized_text": normalized_text,
+        "normalized_text_sha256": hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
+        "normalized_char_count": len(normalized_text),
+    }
 
 
 def _decode_plain_text(content: bytes) -> str:

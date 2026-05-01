@@ -2192,6 +2192,66 @@ def test_nrc_hydrate_process_emits_normalization_contract(monkeypatch):
     assert extraction["quality_status"] in {"limited", "strong"}
 
 
+def test_nrc_hydrate_process_supports_candidate_b_document_processing_engine(monkeypatch):
+    from app.models import ConnectorRun
+    from app.services import connectors_nrc_adams as nrc
+
+    fake = _FakeNrcClient(fixture_name="layout.pdf")
+    monkeypatch.setattr(nrc, "get_nrc_adams_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/nrc-adams-aps/runs",
+        json={
+            "mode": "strict_builder",
+            "query_payload": {
+                "searchCriteria": {
+                    "q": "inspection report candidate b",
+                    "mainLibFilter": True,
+                    "legacyLibFilter": False,
+                    "properties": [],
+                },
+                "sort": "DateAddedTimestamp",
+                "sortDirection": 1,
+                "skip": 0,
+            },
+            "page_size": 10,
+            "max_items": 5,
+            "run_mode": "metadata_only",
+            "artifact_pipeline_mode": "hydrate_process",
+            "artifact_required_for_target_success": True,
+            "document_processing_engine": "candidate_b_opendataloader_pdf",
+        },
+        headers={"Idempotency-Key": "nrc-hydrate-process-candidate-b"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    db = TestingSessionLocal()
+    try:
+        run = db.get(ConnectorRun, run_id)
+        assert run is not None
+        assert (run.request_config_json or {}).get("document_processing_engine") == "candidate_b_opendataloader_pdf"
+    finally:
+        db.close()
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    payload = detail.json()
+    assert payload["status"] in {"completed", "completed_with_errors"}
+    assert payload["report_refs"]["aps_artifact_ingestion"]
+
+    run_artifact = json.loads(Path(payload["report_refs"]["aps_artifact_ingestion"]).read_text(encoding="utf-8"))
+    target_ref = run_artifact["target_artifacts"][0]["ref"]
+    target_artifact = json.loads(Path(target_ref).read_text(encoding="utf-8"))
+    extraction = target_artifact["extraction"]
+
+    assert extraction["effective_content_type"] == "application/pdf"
+    assert extraction["extractor_family"] == "pdf_candidate_b_opendataloader"
+    assert extraction["extractor_id"] == "aps_odl_pdf_extractor"
+    assert extraction["extractor_version"] == "2.0.0"
+    assert extraction["visual_page_refs"] == []
+
+
 def test_nrc_download_only_missing_url_emits_artifact_not_available(monkeypatch):
     from app.services import connectors_nrc_adams as nrc
 
