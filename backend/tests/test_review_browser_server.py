@@ -42,6 +42,24 @@ def test_review_browser_server_health_and_compare_sources(client: TestClient) ->
     assert "C:\\" not in str(payload)
 
 
+def test_review_browser_server_runs_expose_candidate_b_runtime_metadata(client: TestClient) -> None:
+    runs_response = client.get("/api/v1/review/nrc-aps/runs")
+
+    assert runs_response.status_code == 200
+    payload = runs_response.json()
+    runs = payload["runs"]
+    assert [run["display_label"] for run in runs] == [
+        "Baseline Run",
+        "Candidate A Run",
+        "Candidate B Runtime",
+    ]
+
+    candidate_b = next(run for run in runs if run["run_id"] == "candidate-b-runtime-001")
+    assert candidate_b["runtime_binding"]["visual_lane_mode"] == "baseline"
+    assert candidate_b["runtime_binding"]["document_processing_engine"] == "candidate_b_opendataloader_pdf"
+    assert candidate_b["runtime_binding"]["variant_kind"] == "candidate_b_opendataloader_pdf"
+
+
 def test_review_browser_server_candidate_b_trace_defaults_to_annotated_pdf(client: TestClient) -> None:
     sources_payload = client.get("/api/v1/review/nrc-aps/workbench-compare/sources").json()
     targets_payload = client.get(

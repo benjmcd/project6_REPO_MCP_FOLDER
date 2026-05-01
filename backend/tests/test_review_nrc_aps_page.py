@@ -91,8 +91,15 @@ def test_review_js_has_identity_aware_overlay_messages():
 def test_review_js_exposes_runtime_binding_in_identity_bar() -> None:
     js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "review.js"
     js_content = js_path.read_text(encoding="utf-8")
+    html_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "index.html"
+    html_content = html_path.read_text(encoding="utf-8")
 
+    assert "runtime_labels.js" in html_content
+    assert html_content.index("runtime_labels.js") < html_content.index("review.js")
     assert "runtime_binding" in js_content
+    assert "NrcApsRuntimeLabels" in js_content
+    assert "runOptionLabel(run)" in js_content
+    assert "Variant:" in js_content
     assert "Runtime:" in js_content
     assert "DB:" in js_content
     assert "Storage:" in js_content
