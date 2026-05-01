@@ -19,6 +19,7 @@ class TestNrcApsRunConfig(unittest.TestCase):
                 "ocr_timeout_seconds": 45,
                 "content_min_searchable_chars": 10,
                 "content_min_searchable_tokens": 2,
+                "document_processing_engine": "candidate_b_opendataloader_pdf",
             },
             "local-proof",
         )
@@ -33,6 +34,7 @@ class TestNrcApsRunConfig(unittest.TestCase):
         self.assertEqual(config["ocr_timeout_seconds"], 45)
         self.assertEqual(config["content_min_searchable_chars"], 10)
         self.assertEqual(config["content_min_searchable_tokens"], 2)
+        self.assertEqual(config["document_processing_engine"], "candidate_b_opendataloader_pdf")
 
     def test_lenient_pass_through_excludes_processing_controls_from_query_payload(self):
         config = connectors_nrc_adams._normalize_request_config(
@@ -42,6 +44,7 @@ class TestNrcApsRunConfig(unittest.TestCase):
                 "q": "inspection",
                 "content_parse_timeout_seconds": 0,
                 "ocr_enabled": False,
+                "document_processing_engine": "candidate_b_opendataloader_pdf",
             },
             "local-proof",
         )
@@ -49,8 +52,10 @@ class TestNrcApsRunConfig(unittest.TestCase):
         self.assertEqual(config["query_payload_inbound"]["q"], "inspection")
         self.assertNotIn("content_parse_timeout_seconds", config["query_payload_inbound"])
         self.assertNotIn("ocr_enabled", config["query_payload_inbound"])
+        self.assertNotIn("document_processing_engine", config["query_payload_inbound"])
         self.assertEqual(config["content_parse_timeout_seconds"], 0)
         self.assertFalse(config["ocr_enabled"])
+        self.assertEqual(config["document_processing_engine"], "candidate_b_opendataloader_pdf")
 
     def test_visual_lane_mode_defaults_to_baseline(self):
         """Absent visual_lane_mode must default to baseline (fail-closed)."""
@@ -143,3 +148,52 @@ class TestNrcApsRunConfig(unittest.TestCase):
 
         self.assertEqual(config["visual_lane_mode"], "baseline")
         self.assertNotIn("visual_lane_mode", config["query_payload_inbound"])
+
+    def test_document_processing_engine_defaults_to_baseline(self):
+        config = connectors_nrc_adams._normalize_request_config(
+            {
+                "mode": "strict_builder",
+                "wire_shape_mode": "shape_a",
+            },
+            "local-proof",
+        )
+
+        self.assertEqual(config["document_processing_engine"], "baseline")
+
+    def test_document_processing_engine_preserves_candidate_b(self):
+        config = connectors_nrc_adams._normalize_request_config(
+            {
+                "mode": "strict_builder",
+                "wire_shape_mode": "shape_a",
+                "document_processing_engine": "candidate_b_opendataloader_pdf",
+            },
+            "local-proof",
+        )
+
+        self.assertEqual(config["document_processing_engine"], "candidate_b_opendataloader_pdf")
+
+    def test_document_processing_engine_fail_closed_for_invalid_value(self):
+        config = connectors_nrc_adams._normalize_request_config(
+            {
+                "mode": "strict_builder",
+                "wire_shape_mode": "shape_a",
+                "document_processing_engine": "candidate_c_other_pdf",
+            },
+            "local-proof",
+        )
+
+        self.assertEqual(config["document_processing_engine"], "baseline")
+
+    def test_document_processing_engine_excluded_from_query_payload(self):
+        config = connectors_nrc_adams._normalize_request_config(
+            {
+                "mode": "lenient_pass_through",
+                "wire_shape_mode": "shape_a",
+                "q": "inspection",
+                "document_processing_engine": "candidate_b_opendataloader_pdf",
+            },
+            "local-proof",
+        )
+
+        self.assertEqual(config["document_processing_engine"], "candidate_b_opendataloader_pdf")
+        self.assertNotIn("document_processing_engine", config["query_payload_inbound"])

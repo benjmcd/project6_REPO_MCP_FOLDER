@@ -11,6 +11,7 @@ sys.path.insert(0, str(BACKEND))
 
 TEST_DB_PATH = ROOT / "test_method_aware.db"
 TEST_STORAGE_DIR = BACKEND / "app" / "storage_test_runtime"
+FIXTURE_DIR = ROOT / "tests" / "fixtures" / "nrc_aps_docs" / "v1"
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test_method_aware.db")
 os.environ.setdefault("STORAGE_DIR", str(TEST_STORAGE_DIR))
 os.environ.setdefault("DB_INIT_MODE", "none")
@@ -18,6 +19,10 @@ os.environ.setdefault("NRC_ADAMS_APS_SUBSCRIPTION_KEY", "test-nrc-key")
 os.environ.setdefault("NRC_ADAMS_APS_API_BASE_URL", "https://adams-api.nrc.gov")
 
 from app.services import nrc_aps_artifact_ingestion  # noqa: E402
+
+
+def _fixture_bytes(name: str) -> bytes:
+    return (FIXTURE_DIR / name).read_bytes()
 
 
 def test_resolve_required_for_target_success_defaults_and_off_override():
@@ -51,6 +56,36 @@ def test_content_addressed_blob_dedupes_identical_bytes(tmp_path: Path):
     assert first["blob_sha256"] == second["blob_sha256"]
     assert first["blob_ref"] == second["blob_ref"]
     assert Path(first["blob_ref"]).exists()
+
+
+def test_processing_config_from_run_config_preserves_candidate_b_engine(tmp_path: Path):
+    config = nrc_aps_artifact_ingestion.processing_config_from_run_config(
+        {
+            "document_processing_engine": "candidate_b_opendataloader_pdf",
+            "artifact_storage_dir": str(tmp_path),
+        }
+    )
+
+    assert config["document_processing_engine"] == "candidate_b_opendataloader_pdf"
+    assert config["artifact_storage_dir"] == str(tmp_path)
+
+
+def test_extract_and_normalize_forwards_candidate_b_engine(tmp_path: Path):
+    result = nrc_aps_artifact_ingestion.extract_and_normalize(
+        content=_fixture_bytes("layout.pdf"),
+        content_type="application/pdf",
+        config={
+            "document_processing_engine": "candidate_b_opendataloader_pdf",
+            "artifact_storage_dir": str(tmp_path),
+        },
+    )
+
+    assert result["effective_content_type"] == "application/pdf"
+    assert result["extractor_family"] == "pdf_candidate_b_opendataloader"
+    assert result["extractor_id"] == nrc_aps_artifact_ingestion.nrc_aps_document_processing.APS_ODL_PDF_EXTRACTOR_ID
+    assert result["extractor_version"] == nrc_aps_artifact_ingestion.nrc_aps_document_processing.APS_ODL_PDF_EXPECTED_VERSION
+    assert result["ordered_units"]
+    assert result["visual_page_refs"] == []
 
 
 def test_validate_target_artifact_rejects_missing_normalization_contract():

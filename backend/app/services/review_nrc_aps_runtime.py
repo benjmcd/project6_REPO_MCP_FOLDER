@@ -17,6 +17,14 @@ from app.services.review_nrc_aps_runtime_roots import candidate_review_runtime_r
 GOLDEN_RUN_ID = "d6be0fff-bbd7-468a-9b00-7103d5995494"
 PIPELINE_ID = "nrc_aps_review_v1"
 _BASELINE_VISIBLE_VISUAL_LANE_MODES: frozenset[str] = frozenset({"baseline", "candidate_a_page_evidence_v1"})
+_DOCUMENT_PROCESSING_ENGINE_BASELINE = "baseline"
+_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B = "candidate_b_opendataloader_pdf"
+_ADMITTED_DOCUMENT_PROCESSING_ENGINES: frozenset[str] = frozenset(
+    {
+        _DOCUMENT_PROCESSING_ENGINE_BASELINE,
+        _DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -42,15 +50,46 @@ def classify_visual_lane_mode(value: Any) -> str | None:
     return None
 
 
+def _normalize_document_processing_engine_for_visibility(value: Any) -> str:
+    normalized = str(value or "").strip().lower()
+    if normalized in _ADMITTED_DOCUMENT_PROCESSING_ENGINES:
+        return normalized
+    return _DOCUMENT_PROCESSING_ENGINE_BASELINE
+
+
 def request_config_is_baseline_visible(request_config: Any) -> bool:
     if not isinstance(request_config, dict):
         return True
     return _normalize_visual_lane_mode_for_visibility(request_config.get("visual_lane_mode")) in _BASELINE_VISIBLE_VISUAL_LANE_MODES
 
 
+def request_config_runtime_metadata(request_config: Any) -> dict[str, str]:
+    if not isinstance(request_config, dict):
+        visual_lane_mode = "baseline"
+        document_processing_engine = _DOCUMENT_PROCESSING_ENGINE_BASELINE
+    else:
+        visual_lane_mode = _normalize_visual_lane_mode_for_visibility(request_config.get("visual_lane_mode"))
+        document_processing_engine = _normalize_document_processing_engine_for_visibility(
+            request_config.get("document_processing_engine")
+        )
+    variant_kind = (
+        _DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+        if document_processing_engine == _DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+        else classify_visual_lane_mode(visual_lane_mode)
+    )
+    return {
+        "visual_lane_mode": visual_lane_mode,
+        "document_processing_engine": document_processing_engine,
+        "variant_kind": variant_kind or "baseline",
+    }
+
+
 def classify_request_config_variant(request_config: Any) -> str | None:
     if not isinstance(request_config, dict):
         return "baseline"
+    metadata = request_config_runtime_metadata(request_config)
+    if metadata["document_processing_engine"] == _DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B:
+        return _DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
     return classify_visual_lane_mode(request_config.get("visual_lane_mode"))
 
 
@@ -132,6 +171,18 @@ def classify_runtime_binding_variant(binding: ReviewRuntimeBinding) -> str | Non
     if request_config is None:
         return "baseline"
     return classify_request_config_variant(request_config)
+
+
+def runtime_binding_request_metadata(binding: ReviewRuntimeBinding) -> dict[str, str]:
+    if binding.database_path is None:
+        return request_config_runtime_metadata(None)
+    try:
+        request_config = _load_binding_request_config_json(str(binding.database_path.resolve()), binding.run_id)
+    except OSError:
+        return request_config_runtime_metadata(None)
+    if request_config is None:
+        return request_config_runtime_metadata(None)
+    return request_config_runtime_metadata(request_config)
 
 
 def get_allowlisted_roots() -> list[Path]:
