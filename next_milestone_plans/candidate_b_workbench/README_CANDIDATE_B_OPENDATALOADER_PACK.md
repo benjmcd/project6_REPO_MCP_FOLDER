@@ -7,8 +7,8 @@ It is not runtime/service authority and does not imply Candidate B admission.
 
 Post-runtime-admission-reopen note:
 - The non-admitted statements in this pack describe the earlier bundle-scoped Candidate B workbench/trace posture.
-- A later explicit product/operator requirement has now reopened Candidate B runtime admission for Phase 1 only as the opt-in `document_processing_engine="candidate_b_opendataloader_pdf"` processing path on the existing NRC APS run-submit flow.
-- This pack remains guardrail/status history for bundle-scoped compare/trace behavior, execution envelope, package pinning, output isolation, non-interference, and provenance semantics. It is not proof that selector visibility, Workbench Compare integration, Candidate B Trace parity, routes, schemas, models, migrations, or persistence were widened.
+- A later explicit product/operator requirement has now reopened Candidate B runtime admission as the opt-in `document_processing_engine="candidate_b_opendataloader_pdf"` processing path on the existing NRC APS run-submit flow, plus optional runtime metadata on the existing review `/runs` selector response.
+- This pack remains guardrail/status history for bundle-scoped compare/trace behavior, execution envelope, package pinning, output isolation, non-interference, and provenance semantics. It is not proof that rendered selector UI, Workbench Compare integration, Candidate B Trace parity, routes, schemas, models, migrations, or persistence were widened.
 
 v6 exists because v5 was repo-grounded but still left too much execution-day inference.
 The remaining weakness was not macro-scope. It was determinism.
@@ -89,7 +89,7 @@ Ordered next-decision note:
   - keep Candidate B at the shipped bundle-scoped compare + trace boundary
   - do not drift into runtime admission or selector integration by implication
 - a wider runtime-admission program remains available only as a later explicit reopen if the shipped bundle-scoped model proves insufficient for a concrete operator/product requirement
-- that later explicit reopen now exists for Phase 1 only at the document-processing engine layer; the bundle-scoped compare + trace boundary remains distinct from admitted runtime Candidate B runs
+- that later explicit reopen now exists at the document-processing engine layer and existing `/runs` runtime-metadata layer; the bundle-scoped compare + trace boundary remains distinct from admitted runtime Candidate B runs
 - prepared-state/operator workflow hardening is now landed via the canonical `tools/validate_wb_prep.py` same-checkout prep gate
 - if bundle-scoped posture remains correct, only then consider narrow operator ergonomics improvements
 - documentation closeout is now landed for the active operator front doors:
@@ -182,7 +182,8 @@ It was the separate Candidate B Trace surface for the existing workbench-only pa
 
 Current runtime-admission status:
 - Phase 1 has since reopened Candidate B admission as an opt-in processing engine only.
-- Runtime-selector visibility, Workbench Compare integration, Candidate B Trace parity, route/schema/model/migration work, and broader persistence changes remain outside that Phase 1 commit.
+- The existing review `/runs` selector response now exposes runtime metadata so admitted Candidate B runs are distinguishable from baseline.
+- Rendered runtime-selector UI, Workbench Compare integration, Candidate B Trace parity, route/schema/model/migration work, and broader persistence changes remain outside the current runtime-admission commits.
 
 That lane is scoped in:
 

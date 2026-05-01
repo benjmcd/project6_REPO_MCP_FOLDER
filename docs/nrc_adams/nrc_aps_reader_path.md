@@ -33,5 +33,5 @@ For the shipped NRC APS review surfaces on current `main`, use these docs in ord
 
 Candidate B runtime-admission note:
 - The older Candidate B workbench pack remains the authority for bundle-scoped compare/trace history and guardrails, but it did not authorize runtime admission.
-- The later explicit runtime-admission reopen is currently implemented only as the opt-in `document_processing_engine="candidate_b_opendataloader_pdf"` processing path on the existing NRC APS run-submit flow.
+- The later explicit runtime-admission reopen is currently implemented as the opt-in `document_processing_engine="candidate_b_opendataloader_pdf"` processing path on the existing NRC APS run-submit flow, plus optional runtime metadata on the existing review `/runs` selector response.
 - Use `docs/nrc_adams/nrc_aps_status_handoff.md` and the live source files named there before making runtime-selector, Workbench Compare, Candidate B Trace, schema, route, or persistence claims.
