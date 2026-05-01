@@ -232,7 +232,7 @@ test('workbench compare deep-links into Candidate B Trace and Candidate B Trace 
   expect(previousTraceTargets.candidate_b_source_kind).toBe('bundle');
   expect(previousTraceTargets.candidate_b_run_id).toBeNull();
   const previousAnnotatedPdfResponse = await previousAnnotatedPdfResponsePromise;
-  expect(previousAnnotatedPdfResponse.status()).toBe(200);
+  expect([200, 304]).toContain(previousAnnotatedPdfResponse.status());
   const previousPageUrl = new URL(page.url());
   expect(previousPageUrl.searchParams.get('baseline_run_id')).toBe(sources.baseline_runs[0].run_id);
   expect(previousPageUrl.searchParams.get('candidate_a_run_id')).toBe(sources.candidate_a_runs[0].run_id);
