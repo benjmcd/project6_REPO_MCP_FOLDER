@@ -12,7 +12,7 @@
     "purpose": "Record the selected-pass associated-cohort descriptive_summary chain through the branch-local docs 88/89 package-construction implementation candidate while preserving downstream no-go boundaries.",
     "live_behavior_change": true,
     "live_behavior_change_summary": "This branch changes backend/API and rendered /review/layer3 behavior for the exact associated-cohort package-construction commit path only; package-review submit, handoff/export, APS dispatch, external export/download, connector, schema/runtime/source, retry/recovery, pass-entry, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior remain out.",
-    "latest_implementation_pr": "pending",
+    "latest_implementation_pr": "#451",
     "latest_implementation_branch": "codex/l3-cohort-package-construction-impl-p61",
     "latest_implementation_summary": "Branch-local implementation candidate for docs 88/89: exact selected-pass associated-cohort descriptive_summary package-review preview readiness can commit exactly one reconciliation row, three package rows, and three payload files, with submit/downstream disabled.",
     "latest_planning_pr": "#450",
@@ -23,7 +23,7 @@
     "latest_implementation_merge_commit": "170a99edb3a466fa7651725c567deb656a3ec59e",
     "latest_planning_base_commit": "6f1a2ff41d12f1fa3df1d174f5b29e69813ac3fa",
     "latest_branch_only_implementation_branch": "codex/l3-cohort-package-construction-impl-p61",
-    "latest_branch_only_implementation_pr": "pending",
+    "latest_branch_only_implementation_pr": "#451",
     "latest_branch_only_implementation_summary": "Bounded associated-cohort package-construction implementation candidate over docs 88/89; creates one reconciliation row, three package rows, and three payload files, while submit and downstream behavior remain disabled.",
     "latest_ui_planning_pr": "#441",
     "latest_ui_planning_branch": "codex/l3-cohort-result-review-ui-freeze-p51",
@@ -2610,7 +2610,7 @@
   },
   "descriptive_summary_selected_pass_cohort_package_construction_implementation_candidate_proof": {
     "implementation_branch": "codex/l3-cohort-package-construction-impl-p61",
-    "implementation_pr": "pending",
+    "implementation_pr": "#451",
     "base_commit": "22f873ceff722ca786bb3c201fdfc8725b007979",
     "scope": "Bounded selected-pass associated-cohort descriptive_summary package-construction commit over existing package-review commit route/UI after exact PR #432/#438/#443/#447 authority.",
     "files_changed": [
