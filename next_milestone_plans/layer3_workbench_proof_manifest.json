@@ -1,25 +1,25 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus PR #411 bounded lower-level descriptive_summary analysis API support and PR #417 bounded single-item Gate C admission implementation plus doc 77 planning-only associated-cohort descriptive_summary requirements",
+  "status": "current-main readiness proof plus PR #411 lower-level descriptive_summary support, PR #417 single-item Gate C admission, doc 77 cohort requirements, and branch-local docs 78/79 service-materialize cohort freeze/contract",
   "scope": {
-    "source_branch": "codex/l3-desc-gatec-docsync-p28",
-    "merged_pr": "post-PR417 docs/control sync branch",
+    "source_branch": "codex/l3-desc-cohort-freeze-p32",
+    "merged_pr": "branch-local docs-only PR pending",
     "merge_commit": "",
     "base_remote": "project6-origin/main",
-    "base_commit": "811b2e14",
-    "source_base_commit": "811b2e14ef23b4643e5b9c004890013f41836bf5",
-    "purpose": "Record current-main PR #417 bounded single-item descriptive_summary Gate C admission and doc 77 planning-only associated-cohort descriptive_summary requirements, while preserving current-main PR #411 lower-level method support and the still-blocked associated-cohort/broader deferred boundaries.",
-    "live_behavior_change": true,
-    "live_behavior_change_summary": "PR #417 changed runtime behavior only by admitting descriptive_summary through the existing single-item Gate C wrapped quantitative path. This docs/control branch changes no runtime behavior and keeps associated-cohort admission, UI, schema/runtime/source, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector, and full mockup behavior blocked.",
+    "base_commit": "b3f0ac59",
+    "source_base_commit": "b3f0ac59d8486090ebec7b21d8b480a7c0ee6802",
+    "purpose": "Record branch-local docs 78/79 planning-only service-materialize associated-cohort descriptive_summary freeze/contract while preserving current-main PR #411, PR #417, and doc 77 boundaries.",
+    "live_behavior_change": false,
+    "live_behavior_change_summary": "This branch changes no runtime behavior. Docs 78/79 select a future service-only implementation-entry contract, while associated-cohort admission, selected-pass workbench cohort breadth, UI, schema/runtime/source, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector, and full mockup behavior remain blocked.",
     "latest_implementation_pr": "#417",
     "latest_implementation_branch": "codex/l3-desc-gatec-impl-p27",
     "latest_implementation_summary": "PR #417 implements bounded single-item descriptive_summary Gate C admission through the existing wrapped quantitative pass-entry path while preserving associated-cohort fail-closed behavior and broader no-go scope.",
-    "latest_planning_pr": "#416",
-    "latest_planning_branch": "codex/l3-desc-gatec-planning-p26",
-    "latest_planning_summary": "Docs 75/76 freeze the single-item descriptive_summary Gate C admission boundary now satisfied by PR #417.",
-    "latest_planning_live_behavior_change": true,
-    "latest_planning_behavior_summary": "Single-item Gate C admission is live after PR #417; associated-cohort admission remains blocked.",
+    "latest_planning_pr": "pending",
+    "latest_planning_branch": "codex/l3-desc-cohort-freeze-p32",
+    "latest_planning_summary": "Docs 78/79 freeze the branch-local service-materialize associated-cohort descriptive_summary contract with aligned_wide_table shape and explicit formation_basis_json requested_method_name metadata.",
+    "latest_planning_live_behavior_change": false,
+    "latest_planning_behavior_summary": "Docs 78/79 are planning/control only by themselves. They do not make associated-cohort descriptive_summary behavior live and do not widen selected-pass workbench breadth or API/UI/schema/runtime/source/package/handoff/export scope.",
     "latest_implementation_merge_commit": "811b2e14ef23b4643e5b9c004890013f41836bf5",
     "latest_planning_base_commit": "9893b293645ccefed0e8dff31cd6b4bbe68b3b58",
     "latest_branch_only_implementation_branch": "",
@@ -159,8 +159,12 @@
     "latest_descriptive_summary_gatec_admission_base_commit": "811b2e14ef23b4643e5b9c004890013f41836bf5",
     "latest_descriptive_summary_cohort_requirements_branch": "codex/l3-desc-cohort-reqs-p31",
     "latest_descriptive_summary_cohort_requirements_pr": "#422",
-    "latest_descriptive_summary_cohort_requirements_summary": "Doc 77 records planning-only requirements before any future associated-cohort descriptive_summary freeze: cohort data shape, execution surface, method selection, provenance, failure behavior, and proof expectations.",
-    "latest_descriptive_summary_cohort_requirements_live_behavior_change": false
+    "latest_descriptive_summary_cohort_requirements_summary": "Doc 77 records requirements; branch-local docs 78/79 select service_materialize_only plus aligned_wide_table and explicit requested_method_name metadata as planning-only governance.",
+    "latest_descriptive_summary_cohort_requirements_live_behavior_change": false,
+    "latest_branch_only_planning_branch": "codex/l3-desc-cohort-freeze-p32",
+    "latest_branch_only_planning_pr": "pending",
+    "latest_branch_only_planning_summary": "Docs 78/79 select the service_materialize_only associated-cohort descriptive_summary freeze/contract using aligned_wide_table shape and explicit formation_basis_json requested_method_name metadata.",
+    "latest_branch_only_planning_live_behavior_change": false
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -1268,7 +1272,9 @@
     "backend/tests/test_layer3_pass_entry.py",
     "next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/76_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_CONTRACT.md",
-    "next_milestone_plans/Layer3_planning_docs/77_COHORT_REQS.md"
+    "next_milestone_plans/Layer3_planning_docs/77_COHORT_REQS.md",
+    "next_milestone_plans/Layer3_planning_docs/78_COHORT_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/79_COHORT_CONTRACT.md"
   ],
   "handoff_export_prepare_ui_implementation_proof": {
     "implementation_branch": "codex/l3-handoff-prepare-ui-impl",
@@ -2202,6 +2208,37 @@
       "no schema/runtime/source widening",
       "no package/handoff/export behavior",
       "no qualitative/hybrid/RAG/vector/full mockup behavior"
+    ]
+  },
+  "descriptive_summary_cohort_service_freeze_proof": {
+    "planning_branch": "codex/l3-desc-cohort-freeze-p32",
+    "planning_pr": "pending",
+    "scope": "Branch-local planning-only service-materialize associated-cohort descriptive_summary freeze/contract. This does not make cohort behavior live and does not widen selected-pass workbench execution.",
+    "docs_added": [
+      "next_milestone_plans/Layer3_planning_docs/78_COHORT_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/79_COHORT_CONTRACT.md"
+    ],
+    "authority_basis": [
+      "backend/app/services/layer3_pass_entry.py currently chooses cross_correlation for exact-time-aligned quantitative cohorts",
+      "backend/app/services/layer3_pass_entry.py execute_selected_pass_run admits only single_item pass runs",
+      "backend/app/services/layer3_workbench.py execution-start and result/status paths reject non-single-item pass runs",
+      "docs 78/79 select only materialize_pass_entry(...) service flow with explicit formation_basis_json requested_method_name metadata"
+    ],
+    "live_behavior_change": false,
+    "no_go_preserved": [
+      "no live associated-cohort Gate C admission for descriptive_summary",
+      "no selected-pass cohort execution-start breadth",
+      "no route or UI activation",
+      "no schema/runtime/source widening",
+      "no package/handoff/export behavior",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior"
+    ],
+    "required_future_proof": [
+      "single-item descriptive_summary remains unchanged",
+      "existing associated-cohort cross_correlation remains unchanged without explicit metadata",
+      "explicit service-only cohort descriptive_summary succeeds with provenance if implemented",
+      "incompatible or implicit cohorts fail closed before unsupported state is created",
+      "selected-pass workbench breadth remains single-item-only"
     ]
   }
 }

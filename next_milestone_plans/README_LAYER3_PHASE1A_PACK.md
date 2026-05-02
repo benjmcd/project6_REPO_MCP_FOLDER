@@ -206,6 +206,12 @@ And to the planning-only associated-cohort `descriptive_summary` requirements ga
 
 The requirements gate records the decisions needed before any future associated-cohort `descriptive_summary` freeze: cohort data shape, method-selection rule, execution surface, provenance manifest, failure behavior, and proof expectations. Associated-cohort behavior and selected-pass workbench cohort execution remain blocked.
 
+And to the planning-only service-materialize associated-cohort `descriptive_summary` freeze/contract:
+- `next_milestone_plans/Layer3_planning_docs/78_COHORT_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/79_COHORT_CONTRACT.md`
+
+The service freeze/contract selects only the `aligned_wide_table` plus `service_materialize_only` path with explicit `formation_basis_json["requested_method_name"] == "descriptive_summary"` method-selection metadata. It is implementation-entry governance only; it does not make associated-cohort behavior live, widen selected-pass workbench execution, change API/UI/schema/runtime/source scope, or activate package/handoff/export/connector/qualitative/hybrid/RAG/vector/full mockup behavior.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
