@@ -49,6 +49,7 @@ MIN_SHARED_FIXTURE_COUNT = 3
 _CANDIDATE_B_RUNTIME_VARIANT = "candidate_b_opendataloader_pdf"
 _CANDIDATE_B_SOURCE_KIND_BUNDLE = "bundle"
 _CANDIDATE_B_SOURCE_KIND_RUNTIME = "runtime"
+_POWERSHELL_SAFE_CHARS = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.\\/=:")
 
 
 class PreparedStateError(RuntimeError):
@@ -262,6 +263,155 @@ def _source_display(source: Any, *, checkout_root: Path | None = None) -> dict[s
         if value is not None:
             payload[key] = value
     return payload
+
+
+def _command_spec(*args: str, copy_paste_ready: bool = True, note: str = "") -> dict[str, Any]:
+    argv = [str(item) for item in args if str(item)]
+    payload: dict[str, Any] = {
+        "argv": argv,
+        "powershell": " ".join(_powershell_arg(item) for item in argv),
+        "copy_paste_ready": copy_paste_ready,
+    }
+    if note:
+        payload["note"] = note
+    return payload
+
+
+def _powershell_arg(value: str) -> str:
+    if value and all(char in _POWERSHELL_SAFE_CHARS for char in value):
+        return value
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _canonical_prep_sequences(*, candidate_b_run_id: str = "") -> dict[str, list[dict[str, Any]]]:
+    runtime_run_value = candidate_b_run_id or "CANDIDATE_B_RUNTIME_RUN_ID"
+    runtime_validation_note = (
+        ""
+        if candidate_b_run_id
+        else "Replace CANDIDATE_B_RUNTIME_RUN_ID with the run_id from the preceding Candidate B runtime seed summary."
+    )
+    return {
+        "bundle_source": [
+            _command_spec("py", "-3.12", ".\\tools\\seed_wb_compare.py", "--visual-lane-mode", "baseline"),
+            _command_spec(
+                "py",
+                "-3.12",
+                ".\\tools\\seed_wb_compare.py",
+                "--visual-lane-mode",
+                "candidate_a_page_evidence_v1",
+            ),
+            _command_spec(".\\project6.ps1", "-Action", "compare-nrc-aps-candidate-b"),
+            _command_spec("py", "-3.12", ".\\tools\\validate_wb_prep.py"),
+        ],
+        "runtime_source": [
+            _command_spec("py", "-3.12", ".\\tools\\seed_wb_compare.py", "--visual-lane-mode", "baseline"),
+            _command_spec(
+                "py",
+                "-3.12",
+                ".\\tools\\seed_wb_compare.py",
+                "--visual-lane-mode",
+                "candidate_a_page_evidence_v1",
+            ),
+            _command_spec(
+                "py",
+                "-3.12",
+                ".\\tools\\seed_wb_compare.py",
+                "--document-processing-engine",
+                _CANDIDATE_B_RUNTIME_VARIANT,
+            ),
+            _command_spec(
+                "py",
+                "-3.12",
+                ".\\tools\\validate_wb_prep.py",
+                "--candidate-b-source-kind",
+                _CANDIDATE_B_SOURCE_KIND_RUNTIME,
+                "--candidate-b-run-id",
+                runtime_run_value,
+                copy_paste_ready=bool(candidate_b_run_id),
+                note=runtime_validation_note,
+            ),
+        ],
+    }
+
+
+def _selected_validation_command(
+    *,
+    source_kind: str,
+    baseline_run_id: str,
+    candidate_a_run_id: str,
+    candidate_b_bundle_id: str = "",
+    candidate_b_run_id: str = "",
+    fixture_id: str = "",
+) -> dict[str, Any]:
+    command = ["py", "-3.12", ".\\tools\\validate_wb_prep.py"]
+    if baseline_run_id:
+        command.extend(["--baseline-run-id", baseline_run_id])
+    if candidate_a_run_id:
+        command.extend(["--candidate-a-run-id", candidate_a_run_id])
+    if source_kind == _CANDIDATE_B_SOURCE_KIND_RUNTIME:
+        command.extend(["--candidate-b-source-kind", _CANDIDATE_B_SOURCE_KIND_RUNTIME])
+        if candidate_b_run_id:
+            command.extend(["--candidate-b-run-id", candidate_b_run_id])
+    elif candidate_b_bundle_id:
+        command.extend(["--candidate-b-bundle-id", candidate_b_bundle_id])
+    if fixture_id:
+        command.extend(["--fixture-id", fixture_id])
+    return _command_spec(*command)
+
+
+def _operator_handoff(
+    *,
+    checkout_root: Path,
+    source_kind: str,
+    rerun_validation_command: dict[str, Any],
+    candidate_b_run_id: str = "",
+) -> dict[str, Any]:
+    return {
+        "working_directory": _checkout_root_display(checkout_root),
+        "selected_source_kind": source_kind,
+        "rerun_selected_validation": rerun_validation_command,
+        "canonical_prep_sequences": _canonical_prep_sequences(candidate_b_run_id=candidate_b_run_id),
+        "validation_boundaries": [
+            "tools/validate_wb_prep.py is validate-only and must not seed or generate artifacts.",
+            "Seed commands are an explicit operator prep step outside validate-only test execution.",
+            "Bundle-sourced Candidate B opens Candidate B Trace; runtime-sourced Candidate B opens the existing document-trace route.",
+            "Runtime-sourced Candidate B is not Candidate B Trace parity and must keep using an explicit candidate_b_run_id.",
+        ],
+    }
+
+
+def _attempted_validation_command(args: argparse.Namespace) -> dict[str, Any]:
+    command = ["py", "-3.12", ".\\tools\\validate_wb_prep.py"]
+    if str(args.checkout_root or "").strip():
+        command.extend(["--checkout-root", str(args.checkout_root).strip()])
+    if str(args.baseline_run_id or "").strip():
+        command.extend(["--baseline-run-id", str(args.baseline_run_id).strip()])
+    if str(args.candidate_a_run_id or "").strip():
+        command.extend(["--candidate-a-run-id", str(args.candidate_a_run_id).strip()])
+    if str(args.candidate_b_source_kind or "").strip() != _CANDIDATE_B_SOURCE_KIND_BUNDLE:
+        command.extend(["--candidate-b-source-kind", str(args.candidate_b_source_kind).strip()])
+    if str(args.candidate_b_bundle_id or "").strip():
+        command.extend(["--candidate-b-bundle-id", str(args.candidate_b_bundle_id).strip()])
+    if str(args.candidate_b_run_id or "").strip():
+        command.extend(["--candidate-b-run-id", str(args.candidate_b_run_id).strip()])
+    if str(args.fixture_id or "").strip():
+        command.extend(["--fixture-id", str(args.fixture_id).strip()])
+    return _command_spec(*command)
+
+
+def _failure_operator_handoff(*, checkout_root: Path, args: argparse.Namespace) -> dict[str, Any]:
+    source_kind = _normalize_candidate_b_source_kind(args.candidate_b_source_kind)
+    handoff = _operator_handoff(
+        checkout_root=checkout_root,
+        source_kind=source_kind,
+        rerun_validation_command=_attempted_validation_command(args),
+    )
+    handoff["failure_next_steps"] = [
+        "Inspect error.context for eligible same-checkout runs or bundles before choosing explicit ids.",
+        "If required prep is absent or incoherent, run the matching canonical prep sequence, then rerun validation.",
+        "Do not reuse donor checkout runtimes or stale query-string run ids to force a populated compare state.",
+    ]
+    return handoff
 
 
 def _select_binding(
@@ -489,6 +639,13 @@ def validate_prepared_state(
                 "fixture_id": follow_through_fixture_id,
             }
         )
+        rerun_validation_command = _selected_validation_command(
+            source_kind=_CANDIDATE_B_SOURCE_KIND_RUNTIME,
+            baseline_run_id=baseline_binding.run_id,
+            candidate_a_run_id=candidate_a_binding.run_id,
+            candidate_b_run_id=candidate_b_binding.run_id,
+            fixture_id=follow_through_fixture_id,
+        )
         return {
             "schema_id": "aps.workbench_prep_validation.v1",
             "passed": True,
@@ -525,6 +682,12 @@ def validate_prepared_state(
                     candidate_b_targets[follow_through_fixture_id].target_id,
                 ),
             },
+            "operator_handoff": _operator_handoff(
+                checkout_root=checkout_root,
+                source_kind=_CANDIDATE_B_SOURCE_KIND_RUNTIME,
+                rerun_validation_command=rerun_validation_command,
+                candidate_b_run_id=candidate_b_binding.run_id,
+            ),
             "sources_snapshot": {
                 "baseline_runs": [
                     _source_display(binding, checkout_root=checkout_root)
@@ -623,6 +786,13 @@ def validate_prepared_state(
         candidate_a_targets[follow_through_fixture_id].target_id,
     )
     candidate_b_trace = _candidate_b_trace_link(selected_bundle_id, follow_through_fixture_id)
+    rerun_validation_command = _selected_validation_command(
+        source_kind=_CANDIDATE_B_SOURCE_KIND_BUNDLE,
+        baseline_run_id=baseline_binding.run_id,
+        candidate_a_run_id=candidate_a_binding.run_id,
+        candidate_b_bundle_id=selected_bundle_id,
+        fixture_id=follow_through_fixture_id,
+    )
     return {
         "schema_id": "aps.workbench_prep_validation.v1",
         "passed": True,
@@ -657,6 +827,11 @@ def validate_prepared_state(
             "raw_json_endpoint": trace_manifest.artifacts.raw_json,
             "raw_markdown_endpoint": trace_manifest.artifacts.raw_markdown,
         },
+        "operator_handoff": _operator_handoff(
+            checkout_root=checkout_root,
+            source_kind=_CANDIDATE_B_SOURCE_KIND_BUNDLE,
+            rerun_validation_command=rerun_validation_command,
+        ),
         "sources_snapshot": {
             "baseline_runs": [
                 _source_display(binding, checkout_root=checkout_root)
@@ -704,6 +879,7 @@ def main(argv: list[str] | None = None) -> int:
                 "detail": exc.detail,
                 "context": exc.context,
             },
+            "operator_handoff": _failure_operator_handoff(checkout_root=checkout_root, args=args),
         }
         print(json.dumps(failure_payload, indent=2, sort_keys=False), file=sys.stderr)
         return 1
