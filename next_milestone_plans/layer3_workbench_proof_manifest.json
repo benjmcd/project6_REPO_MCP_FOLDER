@@ -1,30 +1,30 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus branch-local selected-pass associated-cohort descriptive_summary package-construction implementation candidate after PR #450 docs 88/89 governance",
+  "status": "current-main readiness proof plus merged selected-pass associated-cohort descriptive_summary package-construction implementation from PR #451 after PR #450 docs 88/89 governance",
   "scope": {
     "source_branch": "codex/l3-cohort-package-construction-impl-p61",
-    "merged_pr": "pending",
-    "merge_commit": "pending",
+    "merged_pr": "#451",
+    "merge_commit": "9fda3a5a16d2156f5508def1f452c74aef65585c",
     "base_remote": "project6-origin/main",
-    "base_commit": "22f873ce",
-    "source_base_commit": "22f873ceff722ca786bb3c201fdfc8725b007979",
-    "purpose": "Record the selected-pass associated-cohort descriptive_summary chain through the branch-local docs 88/89 package-construction implementation candidate while preserving downstream no-go boundaries.",
+    "base_commit": "9fda3a5a",
+    "source_base_commit": "9fda3a5a16d2156f5508def1f452c74aef65585c",
+    "purpose": "Record the selected-pass associated-cohort descriptive_summary chain through the merged docs 88/89 package-construction implementation while preserving downstream no-go boundaries.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "This branch changes backend/API and rendered /review/layer3 behavior for the exact associated-cohort package-construction commit path only; package-review submit, handoff/export, APS dispatch, external export/download, connector, schema/runtime/source, retry/recovery, pass-entry, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior remain out.",
+    "live_behavior_change_summary": "PR #451 changes backend/API and rendered /review/layer3 behavior for the exact associated-cohort package-construction commit path only; package-review submit, handoff/export, APS dispatch, external export/download, connector, schema/runtime/source, retry/recovery, pass-entry, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior remain out.",
     "latest_implementation_pr": "#451",
     "latest_implementation_branch": "codex/l3-cohort-package-construction-impl-p61",
-    "latest_implementation_summary": "Branch-local implementation candidate for docs 88/89: exact selected-pass associated-cohort descriptive_summary package-review preview readiness can commit exactly one reconciliation row, three package rows, and three payload files, with submit/downstream disabled.",
+    "latest_implementation_summary": "PR #451 implements docs 88/89: exact selected-pass associated-cohort descriptive_summary package-review preview readiness can commit exactly one reconciliation row, three package rows, and three payload files, with submit/downstream disabled.",
     "latest_planning_pr": "#450",
     "latest_planning_branch": "codex/l3-cohort-package-construction-freeze-p60",
-    "latest_planning_summary": "Docs 88/89 define selected-pass associated-cohort descriptive_summary package-construction governance after PR #447 read-only package-review preview/readiness; this branch implements only that bounded construction step.",
+    "latest_planning_summary": "Docs 88/89 define selected-pass associated-cohort descriptive_summary package-construction governance after PR #447 read-only package-review preview/readiness; PR #451 implements only that bounded construction step.",
     "latest_planning_live_behavior_change": false,
-    "latest_planning_behavior_summary": "Docs 88/89 remain planning/control by themselves. The branch-local implementation candidate is separate and still does not admit package-review submit, handoff/export, APS dispatch, external export/download, connector, schema/runtime/source, retry/recovery, pass-entry, broader UI, qualitative/hybrid/RAG/vector, or full mockup behavior.",
-    "latest_implementation_merge_commit": "170a99edb3a466fa7651725c567deb656a3ec59e",
+    "latest_planning_behavior_summary": "Docs 88/89 remain planning/control by themselves. PR #451 is the separate bounded implementation and still does not admit package-review submit, handoff/export, APS dispatch, external export/download, connector, schema/runtime/source, retry/recovery, pass-entry, broader UI, qualitative/hybrid/RAG/vector, or full mockup behavior.",
+    "latest_implementation_merge_commit": "9fda3a5a16d2156f5508def1f452c74aef65585c",
     "latest_planning_base_commit": "6f1a2ff41d12f1fa3df1d174f5b29e69813ac3fa",
-    "latest_branch_only_implementation_branch": "codex/l3-cohort-package-construction-impl-p61",
-    "latest_branch_only_implementation_pr": "#451",
-    "latest_branch_only_implementation_summary": "Bounded associated-cohort package-construction implementation candidate over docs 88/89; creates one reconciliation row, three package rows, and three payload files, while submit and downstream behavior remain disabled.",
+    "latest_branch_only_implementation_branch": "",
+    "latest_branch_only_implementation_pr": "",
+    "latest_branch_only_implementation_summary": "No branch-only implementation remains for this package-construction tranche after PR #451 merged to current main.",
     "latest_ui_planning_pr": "#441",
     "latest_ui_planning_branch": "codex/l3-cohort-result-review-ui-freeze-p51",
     "latest_ui_planning_summary": "PR #441 lands docs 84/85 as planning-only rendered /review/layer3 associated-cohort result-review UI governance over exact PR #432 selected-pass execution-start/result/status authority and PR #438 backend/API result-review authority.",
@@ -2608,11 +2608,11 @@
       "headed and headless Chrome proof if rendered UI behavior changes"
     ]
   },
-  "descriptive_summary_selected_pass_cohort_package_construction_implementation_candidate_proof": {
+  "descriptive_summary_selected_pass_cohort_package_construction_implementation_proof": {
     "implementation_branch": "codex/l3-cohort-package-construction-impl-p61",
     "implementation_pr": "#451",
     "base_commit": "22f873ceff722ca786bb3c201fdfc8725b007979",
-    "scope": "Bounded selected-pass associated-cohort descriptive_summary package-construction commit over existing package-review commit route/UI after exact PR #432/#438/#443/#447 authority.",
+    "scope": "Merged bounded selected-pass associated-cohort descriptive_summary package-construction commit over existing package-review commit route/UI after exact PR #432/#438/#443/#447 authority.",
     "files_changed": [
       "backend/app/services/layer3_workbench.py",
       "backend/app/services/layer3_package_entry.py",
@@ -2624,7 +2624,7 @@
       "next_milestone_plans/layer3_workbench_proof_manifest.json"
     ],
     "live_behavior_change": true,
-    "live_behavior": "The branch admits package construction only for exact selected-pass associated-cohort descriptive_summary authority after approved result review and matching server-recomputed package-review preview hash. Successful commit creates exactly one L3ReconciliationRecord, exactly three L3OutputPackage rows, and exactly three payload files.",
+    "live_behavior": "PR #451 admits package construction only for exact selected-pass associated-cohort descriptive_summary authority after approved result review and matching server-recomputed package-review preview hash. Successful commit creates exactly one L3ReconciliationRecord, exactly three L3OutputPackage rows, and exactly three payload files.",
     "authority_basis": [
       "backend/app/services/layer3_workbench.py still uses execution_result_status and approved result-review state before package construction.",
       "associated-cohort construction admission reuses the exact PR #432/#438/#447 provenance gate: pass_type associated_cohort, quantitative_associated_cohort_dataset_version scope, descriptive_summary method, 78_COHORT_FREEZE source gate, aligned_wide_table shape, source_dataset_version_ids, requested-method provenance, and server-recomputed package-review preview hash.",
@@ -2649,6 +2649,7 @@
       "npx playwright test e2e/layer3-workbench.spec.js --grep \"Layer 3 workbench records bounded associated-cohort result review\" --project=chromium -> 1 passed",
       "npx playwright test e2e/layer3-workbench.spec.js --grep \"Layer 3 workbench records bounded associated-cohort result review\" --project=chromium --headed -> 1 passed",
       "npx playwright test e2e/layer3-workbench.spec.js --project=chromium -> 14 passed"
-    ]
+    ],
+    "merge_commit": "9fda3a5a16d2156f5508def1f452c74aef65585c"
   }
 }
