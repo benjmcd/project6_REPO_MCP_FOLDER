@@ -75,8 +75,8 @@ Workbench-compare scope note:
 
 - this guide covers route reachability and shell bring-up for `/review/nrc-aps/workbench-compare`
 - populated compare validation requires same-checkout prep for baseline, Candidate A, and Candidate B sources
-- the canonical populated prep flow now includes the validate-only same-checkout prep gate in `tools/validate_wb_prep.py`
-- use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated prep, `tools/validate_wb_prep.py` gate, and populated compare validation flow
+- the canonical populated prep flow now includes the validate-only same-checkout prep gate in `tools/validate_wb_prep.py`, including its emitted operator handoff metadata for prep/recovery
+- use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated prep, `tools/validate_wb_prep.py` gate, emitted operator handoff metadata, and populated compare validation flow
 - after same-checkout prep, Candidate B follow-through should use the separate `Candidate B Trace` page rather than widening `document-trace`
 
 ## Preconditions
