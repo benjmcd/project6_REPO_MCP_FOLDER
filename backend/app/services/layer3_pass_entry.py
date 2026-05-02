@@ -79,6 +79,7 @@ COHORT_TIME_COLUMN = "observed_at"
 SUPPORTED_WRAPPED_QUANTITATIVE_METHODS = frozenset(
     {
         "cross_correlation",
+        "descriptive_summary",
         "decomposition",
         "structural_break",
     }
@@ -1340,6 +1341,7 @@ def _execute_passes(
             "analysis_run_id": analysis_run.analysis_run_id,
             "dataset_version_id": dataset_version_id,
             "artifact_refs_json": [artifact.storage_ref for artifact in artifacts],
+            "artifact_types_json": [artifact.artifact_type for artifact in artifacts],
             "pass_status_from_analysis": analysis_run.status,
         }
         db.flush()

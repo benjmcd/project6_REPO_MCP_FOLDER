@@ -33,6 +33,7 @@ from app.services.dataframe_io import load_version_dataframe
 from app.services.layer3_pass_entry import (
     Layer3PassEntryError,
     approve_pass_entry_plan,
+    execute_selected_pass_run,
     materialize_pass_entry,
     preview_pass_entry,
 )
@@ -926,12 +927,142 @@ def test_gatec_pass_entry_marks_session_failed_when_wrapped_analysis_errors(tmp_
         settings.storage_dir = original_storage_dir
 
 
-def test_gatec_pass_entry_excludes_unsupported_recommended_method_and_fails_closed(tmp_path):
+def test_gatec_pass_entry_executes_descriptive_summary_single_item_without_widening_scope(tmp_path):
     original_storage_dir = settings.storage_dir
     settings.storage_dir = str(tmp_path)
     try:
         db = _make_session()
         session_id, phase1a_status, phase1a_completed_at = _build_non_timeseries_quant_ready_session(db, tmp_path)
+
+        result = materialize_pass_entry(db, session_id=session_id)
+        db.commit()
+
+        stored_plan = db.query(L3AnalysisPlan).one()
+        stored_pass = db.query(L3PassRun).one()
+        session = db.get(L3Session, session_id)
+
+        assert result.analysis_plan.analysis_plan_id == stored_plan.analysis_plan_id
+        assert len(result.pass_runs) == 1
+        planned_pass = stored_plan.plan_json["planned_passes_json"][0]
+        assert planned_pass["pass_type"] == "single_item"
+        assert planned_pass["pass_scope"] == "quantitative_single_item_dataset_version"
+        assert planned_pass["selected_method_name"] == "descriptive_summary"
+        assert planned_pass["dataset_version_id"] == "dv-pass-003"
+        assert stored_plan.plan_json["source_gate"] == "06_GATEC_PASS_FREEZE"
+        assert stored_plan.plan_json["excluded_sets_json"] == []
+
+        assert stored_pass.pass_type == "single_item"
+        assert stored_pass.engine_family == "wrapped_quantitative_analysis"
+        assert stored_pass.status in {"completed", "completed_with_warnings"}
+        assert stored_pass.input_payload_ref
+        assert stored_pass.output_payload_ref
+        assert Path(stored_pass.output_payload_ref).exists()
+        assert stored_pass.summary_json["dataset_version_id"] == "dv-pass-003"
+        assert stored_pass.summary_json["selected_method_name"] == "descriptive_summary"
+        assert stored_pass.summary_json["pass_scope"] == "quantitative_single_item_dataset_version"
+        assert stored_pass.summary_json["analysis_run_id"]
+        assert stored_pass.summary_json["artifact_types_json"] == ["descriptive_summary_result"]
+
+        output_manifest = json.loads(Path(stored_pass.output_payload_ref).read_text(encoding="utf-8"))
+        assert output_manifest["selected_method_name"] == "descriptive_summary"
+        assert output_manifest["artifact_types_json"] == ["descriptive_summary_result"]
+        assert "source_dataset_version_ids_json" not in output_manifest
+        assert "column_map_json" not in output_manifest
+
+        analysis_run = db.query(AnalysisRun).one()
+        assert analysis_run.method_name == "descriptive_summary"
+        preserved = session.summary_json["phase1a_loading_closure"]
+        assert preserved["status"] == phase1a_status
+        assert preserved["completed_at"] == _utc_isoformat(phase1a_completed_at)
+        assert session.summary_json["pass_entry"]["excluded_set_count"] == 0
+        assert session.status in {"completed", "completed_with_warnings"}
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_gatec_pass_entry_selected_pass_execution_runs_descriptive_summary(tmp_path):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, phase1a_status, phase1a_completed_at = _build_non_timeseries_quant_ready_session(db, tmp_path)
+
+        preview = preview_pass_entry(db, session_id=session_id)
+        approval = approve_pass_entry_plan(
+            db,
+            session_id=session_id,
+            preview_hash=preview.preview_hash,
+            source_preview_id="descriptive-plan-preview",
+        )
+        db.commit()
+
+        stored_plan = db.query(L3AnalysisPlan).one()
+        planned_pass = stored_plan.plan_json["planned_passes_json"][0]
+        pass_run = L3PassRun(
+            pass_run_id="pass-run-descriptive-selected",
+            session_id=session_id,
+            analysis_plan_id=stored_plan.analysis_plan_id,
+            analysis_set_id=planned_pass["analysis_set_id"],
+            pass_type="single_item",
+            engine_family="wrapped_quantitative_analysis",
+            status="selected_not_started",
+            started_at=None,
+            completed_at=None,
+            input_payload_ref="selected-pass-input-ref",
+            output_payload_ref=None,
+            summary_json={
+                "dataset_version_id": "dv-pass-003",
+                "selected_method_name": "descriptive_summary",
+                "analysis_run_id": None,
+            },
+            created_at=datetime.now(timezone.utc),
+        )
+        db.add(pass_run)
+        db.flush()
+
+        result = execute_selected_pass_run(
+            db,
+            pass_run=pass_run,
+            planned_pass=planned_pass,
+            client_request_id="descriptive-selected-start",
+        )
+        db.commit()
+
+        stored_pass = db.get(L3PassRun, pass_run.pass_run_id)
+        session = db.get(L3Session, session_id)
+
+        assert approval.analysis_plan.analysis_plan_id == stored_plan.analysis_plan_id
+        assert result.execution_started is True
+        assert result.selected_method_name == "descriptive_summary"
+        assert result.dataset_version_id == "dv-pass-003"
+        assert result.analysis_run_id
+        assert result.output_payload_ref
+        assert stored_pass.status in {"completed", "completed_with_warnings"}
+        assert stored_pass.summary_json["selected_method_name"] == "descriptive_summary"
+        assert stored_pass.summary_json["artifact_types_json"] == ["descriptive_summary_result"]
+        assert stored_pass.summary_json["analysis_execution_start"]["client_request_id"] == "descriptive-selected-start"
+
+        output_manifest = json.loads(Path(stored_pass.output_payload_ref).read_text(encoding="utf-8"))
+        assert output_manifest["selected_method_name"] == "descriptive_summary"
+        assert output_manifest["artifact_types_json"] == ["descriptive_summary_result"]
+        assert db.query(AnalysisRun).one().method_name == "descriptive_summary"
+        assert session.status == phase1a_status
+        assert _utc_isoformat(session.completed_at) == _utc_isoformat(phase1a_completed_at)
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_gatec_pass_entry_excludes_unknown_recommended_method_and_fails_closed(tmp_path, monkeypatch):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, phase1a_status, phase1a_completed_at = _build_quant_ready_session(db, tmp_path)
+
+        def _unsupported(*args, **kwargs):
+            return {"recommended_sequence": ["unsupported_quant_method"]}
+
+        monkeypatch.setattr(layer3_pass_entry_module, "recommend_analysis", _unsupported)
 
         with pytest.raises(Layer3PassEntryError, match="has no admissible analysis sets"):
             materialize_pass_entry(db, session_id=session_id)
