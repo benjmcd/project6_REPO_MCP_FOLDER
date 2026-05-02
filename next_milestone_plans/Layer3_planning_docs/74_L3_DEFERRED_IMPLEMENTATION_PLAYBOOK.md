@@ -2,16 +2,16 @@
 
 Status: planning-only operational playbook for activating and implementing remaining deferred Layer 3 scope.
 
-This document does not by itself select a new implementation lane, make deferred behavior live, widen schema/runtime/source scope, change UI, or activate package, handoff, connector, qualitative, hybrid, RAG, vector, or full mockup behavior. PR `#411` used this playbook to land only the lower-level `descriptive_summary` analysis-service tranche, and PR `#417` later used docs `75`/`76` to land only single-item `descriptive_summary` Gate C admission. Docs `78`/`79` now select a planning-only service-materialize associated-cohort freeze/contract, but they still do not make cohort behavior live.
+This document does not by itself select a new implementation lane, make deferred behavior live, widen schema/runtime/source scope, change UI, or activate package, handoff, connector, qualitative, hybrid, RAG, vector, or full mockup behavior. PR `#411` used this playbook to land only the lower-level `descriptive_summary` analysis-service tranche, PR `#417` later used docs `75`/`76` to land only single-item `descriptive_summary` Gate C admission, and PR `#424`/`#425` used docs `78`/`79` to land only the service-owned associated-cohort materialization path with exact method metadata.
 
 ## Purpose
 
-The active progress packet has two distinct future-work concepts:
+The active progress packet has distinct current and future-work concepts:
 
 - `descriptive_summary` lower-level analysis-service support is now landed on current `main` by PR `#411`, governed by `72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md` and `73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md`.
 - single-item `descriptive_summary` Gate C admission is now landed on current `main` by PR `#417`, governed by `75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md` and `76_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_CONTRACT.md`.
-- `77_COHORT_REQS.md` is a planning-only requirements gate for any future associated-cohort `descriptive_summary` freeze.
-- `78_COHORT_FREEZE.md` and `79_COHORT_CONTRACT.md` select only the `service_materialize_only` associated-cohort candidate with explicit `formation_basis_json["requested_method_name"] == "descriptive_summary"` metadata; they still do not implement or make cohort behavior live.
+- `77_COHORT_REQS.md` is the requirements gate that led to the service-only associated-cohort `descriptive_summary` freeze while preserving selected-pass cohort breadth as separate future work.
+- `78_COHORT_FREEZE.md` and `79_COHORT_CONTRACT.md` select only the `service_materialize_only` associated-cohort candidate with explicit `formation_basis_json["requested_method_name"] == "descriptive_summary"` metadata; PR `#424` implements that service path and PR `#425` hardens exact matching.
 - The eight `deferred_scope` categories remain blocked unless their activation contracts are satisfied by live repo truth and a separately explicit freeze.
 
 This playbook defines the operational requirements for moving any remaining deferred item from planning to implementation without over-claiming, silently widening scope, or accumulating uncontrolled tech debt.
@@ -45,7 +45,7 @@ Current `main` supports these analysis method ids through `ANALYSIS_METHOD_REGIS
 
 `descriptive_summary` exists as a bounded lower-level analysis API method for datasets outside starter time-series assumptions. It now passes Gate C only through the PR `#417` single-item dataset-version path.
 
-Current Layer 3 pass-entry behavior still rejects unsupported Gate C methods before creating Layer 3 plan/pass/run state. Associated-cohort `descriptive_summary` remains blocked until a separate implementation PR satisfies the service-only shape, method-selection, manifest, and proof contract in `78_COHORT_FREEZE.md` and `79_COHORT_CONTRACT.md`.
+Current Layer 3 pass-entry behavior still rejects unsupported Gate C methods before creating unsupported Layer 3 plan/pass/run state. Associated-cohort `descriptive_summary` is live only for the PR `#424`/`#425` service-owned `materialize_pass_entry(...)` path with exact `formation_basis_json["requested_method_name"] == "descriptive_summary"` metadata; selected-pass cohort execution breadth remains blocked until a separate freeze admits it.
 
 ## Non-Negotiable Operating Practices
 
@@ -167,7 +167,7 @@ Landed implementation surfaces:
 - `backend/app/services/analysis.py`
 - `tests/test_api.py`
 
-PR `#411` did not include UI, schema, migration, source ingestion, package/handoff/export, connector dispatch, or runtime DB changes in the first `descriptive_summary` implementation tranche. PR `#417` also did not include those broader changes; it admitted only the existing single-item pass-entry path. `77_COHORT_REQS.md` records the required decisions for future associated-cohort `descriptive_summary` governance, and docs `78`/`79` now narrow that future candidate to a service-only implementation-entry contract. None of those docs make associated-cohort behavior live by themselves.
+PR `#411` did not include UI, schema, migration, source ingestion, package/handoff/export, connector dispatch, or runtime DB changes in the first `descriptive_summary` implementation tranche. PR `#417` also did not include those broader changes; it admitted only the existing single-item pass-entry path. `77_COHORT_REQS.md` records the required decisions for associated-cohort `descriptive_summary` governance, and docs `78`/`79` narrow that candidate to a service-only implementation-entry contract. PR `#424`/`#425` satisfy only that service-owned cohort path; selected-pass cohort breadth and all broader deferred surfaces remain blocked.
 
 ## Deferred Category Gates
 
@@ -214,7 +214,7 @@ Stop and return to planning if any implementation requires:
 - changing package/handoff/export/download behavior
 - adding source ingestion, local upload, local directory, connector input, public/signed URL, or generic dispatch behavior
 - adding qualitative, hybrid, RAG, vector, LLM, DAG, background job, retry, cancellation, or agent-conductor behavior
-- allowing `descriptive_summary` through Layer 3 pass-entry outside the PR `#417` single-item Gate C admission rule
+- allowing `descriptive_summary` through Layer 3 pass-entry outside the PR `#417` single-item Gate C path or the PR `#424`/`#425` service-owned associated-cohort path
 - treating docs-only governance as live implementation
 
 ## Posture Summary
@@ -224,5 +224,6 @@ The adequate next posture is not "implement all deferred items." It is:
 1. Keep the eight deferred categories blocked behind their activation contracts.
 2. Treat `descriptive_summary` lower-level analysis API support as landed by PR `#411`.
 3. Treat docs `75`/`76` as satisfied by PR `#417` only for single-item Gate C admission.
-4. Preserve associated-cohort and broader Layer 3 pass-entry fail-closed behavior until a separately governed cohort freeze chooses the data shape and execution surface.
-5. Land any implementation with focused tests, CI, review-state checks, and a post-merge progress/control sync.
+4. Treat docs `78`/`79` as satisfied by PR `#424`/`#425` only for the service-owned associated-cohort `materialize_pass_entry(...)` path.
+5. Preserve selected-pass associated-cohort and broader Layer 3 pass-entry fail-closed behavior until a separately governed cohort freeze chooses the data shape, execution surface, and downstream compatibility.
+6. Land any implementation with focused tests, CI, review-state checks, and a post-merge progress/control sync.

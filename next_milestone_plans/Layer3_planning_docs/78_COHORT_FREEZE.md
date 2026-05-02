@@ -1,8 +1,8 @@
 # Layer 3 Descriptive Summary Cohort Service Freeze
 
-Status: planning-only freeze for a future service-only associated-cohort `descriptive_summary` Gate C implementation.
+Status: service-only associated-cohort `descriptive_summary` freeze; satisfied on current `main` by PR `#424` and exact-gate hardening in PR `#425`.
 
-This document does not make associated-cohort `descriptive_summary` live, change `backend/app/services/layer3_pass_entry.py`, widen selected-pass workbench execution, change API, change UI, add schema/runtime/source behavior, or activate package, handoff, export, connector dispatch, qualitative, hybrid, RAG, vector, or full mockup behavior.
+This document did not by itself make associated-cohort `descriptive_summary` live, change `backend/app/services/layer3_pass_entry.py`, widen selected-pass workbench execution, change API, change UI, add schema/runtime/source behavior, or activate package, handoff, export, connector dispatch, qualitative, hybrid, RAG, vector, or full mockup behavior. PR `#424`/`#425` implement only the service-owned path admitted here.
 
 ## Decision
 
@@ -11,21 +11,21 @@ This freeze selects exactly one path from `77_COHORT_REQS.md`:
 - cohort data shape: `aligned_wide_table`
 - execution surface: `service_materialize_only`
 - method-selection gate: explicit service-owned request metadata on `L3AnalysisSet.formation_basis_json["requested_method_name"] == "descriptive_summary"`
-- owner module for any future implementation: `backend/app/services/layer3_pass_entry.py`
-- proof file for any future implementation: `backend/tests/test_layer3_pass_entry.py`
+- owner module for the implementation: `backend/app/services/layer3_pass_entry.py`
+- proof file for the implementation: `backend/tests/test_layer3_pass_entry.py`
 
 No selected-pass workbench breadth is admitted by this freeze.
 No route, API DTO, rendered UI, schema, migration, runtime DB, source ingestion, package, handoff, export, connector, qualitative, hybrid, RAG, vector, or full mockup surface is admitted by this freeze.
 
 ## Current Live Boundary
 
-Current repo authority for this planning branch was checked against `project6-origin/main` at `b3f0ac59`.
+Current repo authority for this live-state sync was checked against `project6-origin/main` at `7c93bebb`.
 
 Live facts this freeze must preserve:
 
 - PR `#411` added lower-level `descriptive_summary` support in `backend/app/services/analysis.py`.
 - PR `#417` admitted `descriptive_summary` only through the existing single-item Gate C path.
-- PR `#422` added `77_COHORT_REQS.md` as requirements-only governance for any future associated-cohort `descriptive_summary` work.
+- PR `#422` added `77_COHORT_REQS.md` as requirements-only governance for associated-cohort `descriptive_summary` work.
 - `07_GATEC_COHORT_FREEZE.md` governs the already-live exact-time-aligned quantitative associated-cohort path.
 - `backend/app/services/layer3_pass_entry.py` currently selects `cross_correlation` for shaped quantitative cohorts that have `observed_at` plus at least two numeric series.
 - `backend/app/services/layer3_pass_entry.py::execute_selected_pass_run(...)` admits only `single_item` selected-pass execution.
@@ -35,7 +35,7 @@ Therefore, this freeze must not silently reinterpret existing valid cohorts as `
 
 ## Frozen Admission
 
-A future implementation governed by this freeze may admit associated-cohort `descriptive_summary` only when all are true:
+The implementation governed by this freeze may admit associated-cohort `descriptive_summary` only when all are true:
 
 - `analysis_set.set_type == "associated_cohort"`
 - `analysis_set.formation_basis_json["analysis_modality"] == "quantitative"`
@@ -45,9 +45,9 @@ A future implementation governed by this freeze may admit associated-cohort `des
 - each source dataset version is loadable
 - each source contributes exactly one admitted non-time numeric measure series
 - exact UTC `observed_at` intersection creates a non-empty derived dataset
-- the future implementation can preserve column-to-unit provenance in the input manifest and pass summary
+- the implementation preserves column-to-unit provenance in the input manifest and pass summary
 
-If `requested_method_name` is absent, empty, not exactly `descriptive_summary`, or supplied from any ungoverned location, the future implementation must preserve current behavior. Existing valid associated cohorts must continue to select `cross_correlation`.
+If `requested_method_name` is absent, empty, not exactly `descriptive_summary`, or supplied from any ungoverned location, the implementation must preserve current behavior. Existing valid associated cohorts must continue to select `cross_correlation`.
 
 ## Frozen Service Surface
 
@@ -57,13 +57,13 @@ The only admitted execution surface is the immediate service flow:
 - `backend/app/services/layer3_pass_entry.py`
 - `backend/tests/test_layer3_pass_entry.py`
 
-The future implementation must not use selected-pass workbench execution as a shortcut.
+The implementation must not use selected-pass workbench execution as a shortcut.
 It must not touch `backend/app/services/layer3_workbench.py`.
 It must not add route/API/UI method-selection controls in the same tranche.
 
 ## Provenance And Manifest Requirements
 
-The future implementation must reuse the existing derived dataset-version posture from `07_GATEC_COHORT_FREEZE.md` and record at minimum:
+The implementation must reuse the existing derived dataset-version posture from `07_GATEC_COHORT_FREEZE.md` and record at minimum:
 
 - `selected_method_name == "descriptive_summary"`
 - `requested_method_name == "descriptive_summary"`
@@ -84,7 +84,7 @@ It does not replace Layer 3 unit, snapshot, set, plan, or pass truth.
 
 ## Fail-Closed Requirements
 
-Any future implementation must use machine-readable failure or exclusion reasons. Minimum names:
+Any implementation or follow-up hardening under this freeze must use machine-readable failure or exclusion reasons. Minimum names:
 
 - `cohort_descriptive_method_not_requested`
 - `cohort_descriptive_method_source_not_admitted`
@@ -113,7 +113,7 @@ Minimum focused command shape:
 python -m pytest .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_executes_descriptive_summary_single_item_without_widening_scope .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_selected_pass_execution_runs_descriptive_summary .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_executes_quantitative_associated_cohort_with_shaped_manifest .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_fails_closed_on_unsupported_cohort_recommended_method -q
 ```
 
-The future implementation must add the new cohort-specific positive and negative tests next to those existing tests before broadening to larger suites.
+Implementation and hardening PRs under this freeze must add or preserve the cohort-specific positive and negative tests next to those existing tests before broadening to larger suites.
 
 ## Stop Conditions
 
@@ -126,9 +126,9 @@ Stop and return to planning if implementation requires:
 - adding API, route, rendered UI, browser control, schema, migration, runtime DB, source ingestion, package, handoff, export, connector, qualitative, hybrid, RAG, vector, or full mockup behavior
 - accepting method selection from an ungoverned request field or inferred recommendation fallback
 - hiding column-to-unit provenance in an opaque artifact
-- using this planning-only freeze as evidence of live behavior
+- using this freeze document alone as evidence of live behavior without the merged PR `#424`/`#425` implementation proof
 
 ## Readiness Judgment
 
-This freeze is implementation-entry governance for the smallest safe associated-cohort `descriptive_summary` tranche.
-The next code-bearing step may proceed only inside `backend/app/services/layer3_pass_entry.py` and `backend/tests/test_layer3_pass_entry.py`, and only if it preserves the explicit method-selection gate and all no-go surfaces above.
+This freeze was implementation-entry governance for the smallest safe associated-cohort `descriptive_summary` tranche.
+PR `#424`/`#425` satisfy only that service-owned path. Any further code-bearing step, including selected-pass cohort breadth, requires a separate freeze unless it is narrow hardening inside `backend/app/services/layer3_pass_entry.py` and `backend/tests/test_layer3_pass_entry.py` that preserves the explicit method-selection gate and all no-go surfaces above.
