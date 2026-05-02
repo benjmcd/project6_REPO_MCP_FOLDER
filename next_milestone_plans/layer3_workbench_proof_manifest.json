@@ -1,26 +1,26 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status, result-review, result-review UI implementation, package-review preview/construction/submit and rendered package-review UI proof, handoff/export prepare-only backend/API and UI, APS handoff dispatch backend/API and UI, external export/download readiness backend/API and UI, external export/download delivery backend/API, rendered external export/download delivery UI from PR #282, PR #285/#286 delivery review hardening, and PR #289 delivery lock-release hardening, docs 70/71 AnalysisMethod registry governance, and PR #316 current-methods registry implementation, plus current-main PR #402 docs 72/73 descriptive_summary governance, PR #404 docs/control sync, and PR #407 deferred implementation playbook governance with no runtime behavior change",
+  "status": "current-main readiness proof plus bounded result/status, result-review, package/handoff/export/download chain, docs 70/71 registry governance, PR #316 current-methods registry implementation, docs 72/73 descriptive_summary governance, PR #407 deferred implementation playbook governance, and PR #411 bounded lower-level descriptive_summary analysis API support with Gate C/UI/schema/runtime/source/package/handoff/export still deferred",
   "scope": {
-    "source_branch": "codex/l3-pr407-self-index",
-    "merged_pr": "post-PR407 docs/control self-index branch",
+    "source_branch": "codex/l3-desc-summary-docsync-p25",
+    "merged_pr": "post-PR411 docs/control sync branch",
     "merge_commit": "",
     "base_remote": "project6-origin/main",
-    "base_commit": "ca3890a3",
-    "source_base_commit": "ca3890a34b4c7d4a1261404f8adc6a5e856b3c2b",
-    "purpose": "Define, prove, and track readiness gates through current-main result/status, bounded selected-pass result-review, the PR #232 bounded /review/layer3 result-review UI implementation, PR #235 read-only package-review preview implementation, docs 50/51 package-construction governance, PR #238 bounded package-construction commit implementation, PR #241 docs 52/53 package-review submit governance, PR #243 bounded backend package-review submit implementation, the merged PR #245 bounded rendered package-review UI implementation, and PR #247 post-review fallback hardening for submit readiness after a failed post-commit session refresh. PR #250 adds planning-only docs 54/55 for handoff/export preparation governance after package-review approval; PR #251 implements only the bounded backend/API prepare-only endpoint; PR #252 aligns downstream blocker vocabulary and session-summary priority without widening behavior. PR #253 synchronizes docs/progress after PR #251/#252 reached main; PR #254 fixes the manifest seed-checkout reference. Docs 56/57 freeze the rendered /review/layer3 handoff/export prepare-only UI boundary over the already-live backend endpoint, and PR #256 implements only that bounded rendered prepare-only UI. PR #258 adds docs 58/59 as governance for a bounded workbench APS handoff dispatch bridge into the existing aps_evidence_bundle_handoff owner-service family; PR #260 implements only the bounded backend/API APS handoff dispatch endpoint after handoff_export_prepared authority; PR #261 hardens malformed canonical APS provenance and unexpected package-kind fail-closed behavior, and PR #263 restricts APS handoff package-row allowance to recorded dispatch state. Docs 60/61 add planning-only rendered APS dispatch UI governance over the already-live backend/API APS dispatch endpoint; PR #266 separately implements that bounded rendered UI. Docs 62/63 add planning-only external export/download readiness governance after recorded aps_handoff_dispatched state; PR #269 separately implements only bounded backend/API external export/download readiness as a reference-only descriptor over the existing APS evidence-bundle handoff artifact. Docs 64/65 add planning-only rendered /review/layer3 external export/download readiness UI governance over the already-live PR #269 backend/API readiness endpoint; PR #274 fixes the docs 65 request-field typo to the admitted export_download_target field; PR #275 separately implements the bounded rendered readiness UI. PR #275 renders server-authoritative readiness, sends one admitted-field-only prepare_external_export_download request to POST /api/v1/layer3/handoff/export/download/prepare, renders recorded descriptors read-only, and still does not admit rendered browser download controls, public or signed URLs, same-origin file streaming beyond the PR #278 validated APS evidence-bundle artifact, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, additional rows, AnalysisArtifact expansion, schema/runtime/source widening, or full mockup activation. Docs 66/67 add planning-only governance for same-origin external export/download delivery after external_export_download_prepared; PR #278 separately implements the bounded backend/API delivery endpoint. Docs 66/67 make no behavior live by themselves, and PR #278 still does not render download controls, generate public/signed URLs, dispatch connectors or generic downstream targets, select destinations, mutate packages, create extra rows, widen schema/runtime/source scope, or activate the full mockup. PR #282 separately implements rendered delivery UI; PR #285/#286 harden that same delivery UI/API boundary with browser-managed form delivery, UI-local submitted fallback state, and malformed-JSON fail-closed handling. PR #289 hardens the existing backend/API external export/download delivery endpoint by releasing the read-only DB transaction/row lock before APS bundle artifact validation/read/hash/stat; it changes no rendered UI behavior and admits no new delivery capability. PR #315 adds docs 70/71 as planning-only current-methods AnalysisMethod registry governance; PR #316 separately implements the current-methods registry in backend/app/services/analysis.py without adding methods, changing execution behavior, widening schema/runtime/source scope, activating UI, or admitting qualitative/hybrid/RAG/vector/full mockup behavior. Current main also includes PR #400/#401 NRC APS workbench-prep validation/docs updates outside this method-governance scope, PR #402 docs 72/73 as planning-only descriptive_summary governance, and PR #407 doc 74 as planning-only deferred implementation playbook governance. It does not implement descriptive_summary, add it to ANALYSIS_METHOD_REGISTRY, change recommendation or execution behavior, change Gate C pass-entry behavior, widen schema/runtime/source scope, activate UI, or admit qualitative/hybrid/RAG/vector/full mockup behavior.",
+    "base_commit": "c9581231",
+    "source_base_commit": "c958123183f06bdd758037b0f89d5d2ce73c99cb",
+    "purpose": "Record current-main truth after PR #411: descriptive_summary is now live only as a bounded lower-level analysis API method, while Gate C pass-entry, UI, schema/runtime/source, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector, and full mockup behavior remain deferred.",
     "live_behavior_change": false,
-    "live_behavior_change_summary": "This docs/control sync branch changes no runtime behavior. Current main already includes PR #402 docs 72/73 as current-main planning-only descriptive_summary governance and PR #407 doc 74 as planning-only deferred implementation playbook guidance, while PR #316 remains the current-methods AnalysisMethod registry implementation over cross_correlation, decomposition, and structural_break.",
-    "latest_implementation_pr": "#316",
-    "latest_implementation_branch": "codex/l3-analysis-method-registry",
-    "latest_implementation_summary": "PR #316 implements the docs 70/71 current-methods AnalysisMethod registry in backend/app/services/analysis.py for cross_correlation, decomposition, and structural_break while preserving existing recommendation/execution behavior and adding registry shape coverage in tests/test_api.py.",
+    "live_behavior_change_summary": "This docs/control sync branch changes no runtime behavior. Current main already includes PR #411 bounded lower-level descriptive_summary analysis API support; this manifest records that support without admitting Gate C pass-entry, UI, schema/runtime/source, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector behavior, or full mockup activation.",
+    "latest_implementation_pr": "#411",
+    "latest_implementation_branch": "codex/l3-descriptive-summary-impl-p24",
+    "latest_implementation_summary": "PR #411 implements bounded lower-level descriptive_summary analysis API support: registry membership, fallback execution for datasets outside starter time-series assumptions, deterministic JSON artifacts, and assumption/caveat rows while preserving Gate C fail-closed behavior.",
     "latest_planning_pr": "#402",
     "latest_planning_branch": "codex/l3-descriptive-summary-governance",
-    "latest_planning_summary": "PR #402 lands docs 72/73 as current-main planning-only governance for a future descriptive_summary method-expansion candidate; it does not admit the method or change behavior.",
+    "latest_planning_summary": "PR #402 lands docs 72/73 as descriptive_summary governance; PR #407 lands the deferred implementation playbook; PR #411 implements the first lower-level method tranche only.",
     "latest_planning_live_behavior_change": false,
-    "latest_planning_behavior_summary": "Docs 72/73 are planning/control only by themselves. A separate implementation PR is required before descriptive_summary can be supported, added to ANALYSIS_METHOD_REGISTRY, or admitted through Gate C.",
-    "latest_implementation_merge_commit": "4ee1c95b1558eb45e821a5637fe74ef64920b175",
+    "latest_planning_behavior_summary": "Docs 72/73/74 govern the already-landed lower-level descriptive_summary analysis API method and still block Gate C admission, UI, schema/runtime/source, package/handoff/export, qualitative/hybrid/RAG/vector, and full mockup behavior unless separately governed.",
+    "latest_implementation_merge_commit": "c958123183f06bdd758037b0f89d5d2ce73c99cb",
     "latest_planning_base_commit": "341f156d821df8eb5402eca93059add686ef5be6",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
@@ -154,7 +154,7 @@
     "latest_ui_implementation_merge_commit": "cce1a55eaf53709e807f8a45862096aa5cba24bb",
     "latest_descriptive_summary_governance_branch": "codex/l3-descriptive-summary-governance",
     "latest_descriptive_summary_governance_base_commit": "341f156d821df8eb5402eca93059add686ef5be6",
-    "latest_descriptive_summary_governance_summary": "PR #402 lands docs 72/73 as current-main planning-only descriptive_summary governance; no implementation or runtime behavior is included."
+    "latest_descriptive_summary_governance_summary": "PR #402 lands docs 72/73 as descriptive_summary governance; PR #411 later implements only the lower-level analysis API method under that governance."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -2065,27 +2065,25 @@
     "planning_pr": "#402",
     "base_commit": "341f156d",
     "base_source": "project6-origin/main at 341f156d821df8eb5402eca93059add686ef5be6 before PR #402 merged",
-    "scope": "Current-main planning-only docs 72/73 descriptive_summary governance from PR #402. The packet decides only the future method-expansion boundary for the existing descriptive_summary recommendation label and makes no implementation or runtime behavior live by itself.",
+    "scope": "Current-main docs 72/73 descriptive_summary governance from PR #402, now partially satisfied by PR #411 for lower-level analysis API method support only. The governance still blocks Gate C pass-entry, UI, source/runtime/schema, package/handoff/export, qualitative/hybrid/RAG/vector, and full mockup behavior.",
     "docs_added": [
       "next_milestone_plans/Layer3_planning_docs/72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md"
     ],
     "authority_basis": [
-      "backend/app/services/analysis.py currently supports ANALYSIS_METHOD_REGISTRY only for cross_correlation, decomposition, and structural_break",
-      "backend/app/services/analysis.py may recommend descriptive_summary as a fallback label, but run_analysis has no descriptive_summary runner",
-      "backend/app/services/layer3_pass_entry.py fails closed on unsupported recommended methods before pass/run state",
+      "backend/app/services/analysis.py now supports ANALYSIS_METHOD_REGISTRY for cross_correlation, decomposition, structural_break, and descriptive_summary",
+      "backend/app/services/analysis.py may recommend descriptive_summary for datasets outside starter time-series assumptions and run_analysis dispatches a bounded descriptive_summary runner",
+      "backend/app/services/layer3_pass_entry.py still fails closed on unsupported Gate C methods before pass/run state; descriptive_summary is not admitted there",
+      "tests/test_api.py covers registry shape, deterministic descriptive_summary execution, nested-value robustness, and adjacent analysis regressions",
       "backend/tests/test_layer3_pass_entry.py covers unsupported-method fail-closed behavior"
     ],
     "live_behavior_change": false,
     "no_go_preserved": [
-      "no descriptive_summary implementation",
-      "no ANALYSIS_METHOD_REGISTRY membership for descriptive_summary",
-      "no recommendation behavior change",
-      "no execution behavior change",
-      "no Gate C pass-entry behavior change",
+      "no Gate C pass-entry admission for descriptive_summary",
+      "no UI activation",
+      "no recommendation changes for starter time-series datasets",
       "no schema/model/migration change",
       "no source/runtime widening",
-      "no UI activation",
       "no package/handoff/export behavior",
       "no qualitative/hybrid/RAG/vector/full mockup activation"
     ],
@@ -2123,6 +2121,30 @@
       "planning path/numbering/reference validation",
       "git diff --check",
       "focused method-registry and unsupported-method fail-closed pytest coverage"
+    ]
+  },
+  "descriptive_summary_implementation_proof": {
+    "implementation_branch": "codex/l3-descriptive-summary-impl-p24",
+    "implementation_pr": "#411",
+    "merge_commit": "c958123183f06bdd758037b0f89d5d2ce73c99cb",
+    "scope": "Bounded lower-level descriptive_summary analysis API support only.",
+    "files_changed": [
+      ".gitignore",
+      "backend/app/services/analysis.py",
+      "tests/test_api.py"
+    ],
+    "live_behavior": "ANALYSIS_METHOD_REGISTRY includes descriptive_summary; run_analysis can produce one descriptive_summary_result JSON artifact plus assumption/caveat rows for existing dataset-version data.",
+    "no_go_preserved": [
+      "no Layer 3 Gate C admission",
+      "no UI behavior",
+      "no schema/model/migration change",
+      "no source/runtime widening",
+      "no package/handoff/export/connector dispatch behavior",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior"
+    ],
+    "verification": [
+      "PR #411 checks passed: test and backend-layer3-api",
+      "focused local pytest covered registry, descriptive_summary execution, nested values, adjacent analysis regressions, and Gate C fail-closed preservation"
     ]
   }
 }

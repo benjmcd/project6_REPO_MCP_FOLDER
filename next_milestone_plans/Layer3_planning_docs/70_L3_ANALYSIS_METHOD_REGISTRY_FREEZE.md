@@ -1,5 +1,7 @@
 # Layer 3 Analysis Method Registry Freeze
 
+Status: historical current-methods registry governance for the initial three-method registry tranche. PR `#411` later added the separately governed `descriptive_summary` lower-level analysis API method; this document should no longer be read as a current-main claim that the registry contains only three methods.
+
 Status: planning-only governance for the current wrapped quantitative method registry boundary.
 
 This document freezes the smallest safe boundary for governing the existing `backend/app/services/analysis.py` method family before any method expansion. It does not implement a registry, add methods, change execution behavior, change Layer 3 workbench UI, or widen source/runtime/schema scope.
@@ -13,7 +15,7 @@ Current `main` has an existing quantitative analysis spine:
 - `layer3_pass_entry.py` and the Layer 3 workbench execution path reuse that wrapped quantitative spine for already admitted execution slices.
 - Unsupported method names are not admitted as new methods by this governance packet.
 
-The live repo does not currently expose a typed `AnalysisMethod` registry object, registry-derived OpenAPI enum, method capability catalog, DAG engine, qualitative method engine, hybrid/RAG/vector execution, or method-extension workflow.
+At the time of this freeze, the live repo did not expose a typed `AnalysisMethod` registry object, registry-derived OpenAPI enum, method capability catalog, DAG engine, qualitative method engine, hybrid/RAG/vector execution, or method-extension workflow. Current `main` now includes the bounded registry implementation from PR `#316` and the separately governed `descriptive_summary` lower-level method support from PR `#411`.
 
 ## Problem Statement
 
@@ -23,7 +25,7 @@ The existing method spine works for the current starter methods, but new quantit
 
 The next safe support boundary is:
 
-> Freeze a current-methods-only `AnalysisMethod` registry contract for `cross_correlation`, `decomposition`, and `structural_break`, without adding methods or changing runtime behavior.
+> Freeze a current-methods-only `AnalysisMethod` registry contract for the then-current `cross_correlation`, `decomposition`, and `structural_break` methods, without adding methods or changing runtime behavior from this document alone.
 
 This is intentionally governance first. It gives future implementation work a precise target while preserving the working execution path.
 

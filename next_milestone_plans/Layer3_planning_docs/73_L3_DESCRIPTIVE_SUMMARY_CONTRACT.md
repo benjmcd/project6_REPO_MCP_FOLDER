@@ -1,12 +1,12 @@
 # Layer 3 Descriptive Summary Contract
 
-Status: planning-only companion for `72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md`.
+Status: contract companion for `72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md`, partially satisfied by PR `#411`.
 
-This document defines the contract a future `descriptive_summary` implementation must satisfy before the existing recommendation label can become a real supported method. It is not an implementation and does not add the method.
+This document defines the contract the PR `#411` lower-level `descriptive_summary` implementation satisfies before the existing recommendation label becomes a real supported analysis method. The contract still does not admit Layer 3 Gate C pass-entry, UI, schema/runtime/source, package, handoff, export, connector dispatch, qualitative/hybrid/RAG/vector, or full mockup behavior.
 
 ## Registry Entry Shape
 
-A future registry entry should describe `descriptive_summary` with the same plain metadata shape used by the current method registry:
+The current registry entry describes `descriptive_summary` with the same plain metadata shape used by the existing method registry:
 
 | Field | Rule |
 | --- | --- |
@@ -21,11 +21,11 @@ A future registry entry should describe `descriptive_summary` with the same plai
 | `artifact_types` | deterministic JSON summary artifact; plot artifacts are not admitted by this planning packet |
 | `runner` | existing analysis-service callable or dispatcher target owned adjacent to current method runners |
 
-The registry entry must be code-owned by `backend/app/services/analysis.py` or a directly adjacent analysis-service support module. It must not depend on browser state, generated docs, runtime operator text, external connectors, or LLM output as authority.
+The registry entry is code-owned by `backend/app/services/analysis.py`. It must not depend on browser state, generated docs, runtime operator text, external connectors, or LLM output as authority.
 
 ## Method Semantics
 
-The future method may summarize only the already-loaded dataset frame:
+The method may summarize only the already-loaded dataset frame:
 
 - row count and column count
 - column names and inferred primitive column classes
@@ -43,9 +43,9 @@ Current recommendation behavior is:
 
 - multivariate time-indexed data: `cross_correlation`, `decomposition`, `structural_break`
 - single numeric time-indexed data: `decomposition`, `structural_break`
-- datasets outside starter time-series assumptions: `descriptive_summary` as a label only
+- datasets outside starter time-series assumptions: `descriptive_summary` as the bounded lower-level analysis method
 
-A future implementation may formalize that fallback into a supported method only if:
+PR `#411` formalized that fallback into a supported lower-level analysis method because:
 
 - existing time-series recommendation sequences remain unchanged
 - `descriptive_summary` is not prepended to every recommendation by default
@@ -54,7 +54,7 @@ A future implementation may formalize that fallback into a supported method only
 
 ## Execution Contract
 
-The future runner must preserve:
+The runner must preserve:
 
 - existing `AnalysisRun` creation semantics
 - existing artifact persistence helpers and storage refs
@@ -66,7 +66,7 @@ The runner may create only deterministic artifacts from local dataframe content.
 
 ## Layer 3 Integration
 
-Layer 3 pass-entry integration must be explicit. A future implementation has two safe options:
+Layer 3 pass-entry integration must be explicit. PR `#411` uses the first safe option; the second remains a future option only after separate governance:
 
 - keep Layer 3 pass-entry fail-closed for `descriptive_summary` while making the method available only through the lower-level analysis API
 - separately govern a Gate C admission rule that allows `descriptive_summary` pass creation for a named dataset class and proves package/review/handoff downstream compatibility
@@ -75,7 +75,7 @@ Do not silently allow `descriptive_summary` through `materialize_pass_entry(...)
 
 ## Proof Requirements
 
-Future implementation tests should cover:
+PR `#411` implementation tests cover:
 
 - registry contains exactly `cross_correlation`, `decomposition`, `structural_break`, and `descriptive_summary`
 - existing registry metadata for the current three methods remains unchanged
@@ -90,7 +90,7 @@ Future implementation tests should cover:
 
 Still deferred after this contract:
 
-- implementation of `descriptive_summary`
+- Layer 3 Gate C admission for `descriptive_summary`
 - any other quantitative method
 - qualitative/hybrid/RAG/vector execution
 - LLM-generated narrative summaries

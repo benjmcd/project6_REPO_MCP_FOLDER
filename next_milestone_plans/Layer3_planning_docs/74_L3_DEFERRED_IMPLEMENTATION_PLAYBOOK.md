@@ -2,13 +2,13 @@
 
 Status: planning-only operational playbook for activating and implementing remaining deferred Layer 3 scope.
 
-This document does not select a new implementation lane, make `descriptive_summary` executable, change recommendation or execution behavior, change Gate C pass-entry behavior, widen schema/runtime/source scope, change UI, or activate package, handoff, connector, qualitative, hybrid, RAG, vector, or full mockup behavior.
+This document does not by itself select a new implementation lane, make deferred behavior live, change Gate C pass-entry behavior, widen schema/runtime/source scope, change UI, or activate package, handoff, connector, qualitative, hybrid, RAG, vector, or full mockup behavior. PR `#411` later used this playbook to land only the lower-level `descriptive_summary` analysis-service tranche.
 
 ## Purpose
 
 The active progress packet has two distinct future-work concepts:
 
-- `descriptive_summary` is the current-main planning-only method-expansion candidate governed by `72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md` and `73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md`.
+- `descriptive_summary` lower-level analysis-service support is now landed on current `main` by PR `#411`, governed by `72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md` and `73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md`.
 - The eight `deferred_scope` categories remain blocked unless their activation contracts are satisfied by live repo truth and a separately explicit freeze.
 
 This playbook defines the operational requirements for moving any remaining deferred item from planning to implementation without over-claiming, silently widening scope, or accumulating uncontrolled tech debt.
@@ -38,8 +38,9 @@ Current `main` supports these analysis method ids through `ANALYSIS_METHOD_REGIS
 - `cross_correlation`
 - `decomposition`
 - `structural_break`
+- `descriptive_summary`
 
-`descriptive_summary` exists only as a fallback recommendation label for datasets outside starter time-series assumptions. It is not currently a supported registry method and must not pass Gate C by implication.
+`descriptive_summary` exists as a bounded lower-level analysis API method for datasets outside starter time-series assumptions, but it must not pass Gate C by implication.
 
 Current Layer 3 pass-entry behavior rejects unsupported Gate C methods before creating Layer 3 plan/pass/run state. That fail-closed behavior remains the default unless a later Gate C admission freeze explicitly changes it.
 
@@ -147,25 +148,23 @@ After merge:
 
 ## Current Next Functional Candidate
 
-The only currently specified method-expansion candidate is `descriptive_summary`.
+The only currently specified method-expansion candidate, `descriptive_summary`, has landed its first lower-level analysis-service tranche in PR `#411`.
 
-A safe first implementation tranche may add lower-level analysis support only if it stays within docs `72`/`73`:
+That first implementation tranche stayed within docs `72`/`73` and added:
 
-- add one `descriptive_summary` registry entry
-- add one deterministic runner over already loaded dataset-version data
-- emit one deterministic JSON artifact family only
-- emit assumption/caveat rows for data availability, column classification, missingness, high cardinality, non-time-series interpretation, and empty/degenerate input
-- preserve existing recommendation sequences for time-series datasets
-- keep Layer 3 pass-entry fail-closed unless a separate Gate C admission freeze is created
+- one `descriptive_summary` registry entry
+- one deterministic runner over already loaded dataset-version data
+- one deterministic JSON artifact family only
+- assumption/caveat rows for data availability, column classification, missingness, high cardinality, non-time-series interpretation, and empty/degenerate input
+- unchanged recommendation sequences for time-series datasets
+- preserved Layer 3 pass-entry fail-closed behavior unless a separate Gate C admission freeze is created
 
-Expected implementation surfaces:
+Landed implementation surfaces:
 
 - `backend/app/services/analysis.py`
 - `tests/test_api.py`
-- optional adjacent analysis-service helper only if `analysis.py` would become materially less maintainable
-- optional `backend/tests/test_layer3_pass_entry.py` only to preserve or prove fail-closed behavior
 
-Do not include UI, schema, migration, source ingestion, package/handoff/export, connector dispatch, or runtime DB changes in the first `descriptive_summary` implementation tranche.
+PR `#411` did not include UI, schema, migration, source ingestion, package/handoff/export, connector dispatch, or runtime DB changes in the first `descriptive_summary` implementation tranche.
 
 ## Deferred Category Gates
 
@@ -180,9 +179,9 @@ Do not include UI, schema, migration, source ingestion, package/handoff/export, 
 | schema widening | A freeze proves new schema is unavoidable and names migration/compatibility behavior | Current method candidate requires no schema/model/migration change | migration proof, model/API compatibility tests, rollback risk review |
 | route/UI widening | A freeze names exact route, page, API, state, and browser behavior | Docs `72`/`73` admit no UI or route changes | API/OpenAPI tests, static/UI tests, headed/headless browser proof |
 
-## Descriptive Summary Test Plan
+## Descriptive Summary Proof Status
 
-A future `descriptive_summary` implementation should add or update tests proving:
+PR `#411` added or updated tests proving:
 
 - registry contains exactly the existing three methods plus `descriptive_summary`
 - current three registry entries remain unchanged
@@ -194,14 +193,13 @@ A future `descriptive_summary` implementation should add or update tests proving
 - current Layer 3 pass-entry fail-closed tests remain unless a separate Gate C freeze changes admission
 - no schema/model/migration/UI/source/runtime widening occurs
 
-Recommended focused commands for that tranche:
+Focused commands for the landed tranche:
 
 ```powershell
-python -m pytest .\tests\test_api.py::test_analysis_method_registry_describes_current_methods_only -q
-python -m pytest .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_fails_closed_on_unsupported_cohort_recommended_method .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_excludes_unsupported_recommended_method_and_fails_closed -q
+python -m pytest .\tests\test_api.py::test_analysis_method_registry_describes_current_methods_only .\tests\test_api.py::test_descriptive_summary_runs_deterministic_json_without_widening_scope .\tests\test_api.py::test_descriptive_summary_column_summary_handles_nested_values_deterministically .\tests\test_api.py::test_decomposition_and_break_detection_persist_artifacts .\tests\test_api.py::test_structural_break_zero_breakpoint_path_returns_caveat_not_blank_artifact .\tests\test_api.py::test_decomposition_short_series_returns_caveat_not_exception .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_fails_closed_on_unsupported_cohort_recommended_method .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_excludes_unsupported_recommended_method_and_fails_closed -q
 ```
 
-Add new focused tests adjacent to the changed behavior before broadening to larger suites.
+Add new focused tests adjacent to any future changed behavior before broadening to larger suites.
 
 ## Stop Conditions
 
@@ -221,7 +219,7 @@ Stop and return to planning if any implementation requires:
 The adequate next posture is not "implement all deferred items." It is:
 
 1. Keep the eight deferred categories blocked behind their activation contracts.
-2. Treat `descriptive_summary` as the only current-main named method-expansion candidate.
-3. If implementation is authorized, start with a lower-level deterministic analysis-service tranche only.
+2. Treat `descriptive_summary` lower-level analysis API support as landed by PR `#411`, with Gate C admission still deferred.
+3. If another implementation is authorized, start only after a new freeze names the exact remaining deferred behavior.
 4. Preserve Layer 3 pass-entry fail-closed behavior until separately governed.
 5. Land any implementation with focused tests, CI, review-state checks, and a post-merge progress/control sync.
