@@ -99,6 +99,24 @@ ANALYSIS_METHOD_REGISTRY: dict[str, AnalysisMethodSpec] = {
         artifact_types=('structural_break_result', 'structural_break_plot'),
         runner='structural_break',
     ),
+    'descriptive_summary': AnalysisMethodSpec(
+        method_id='descriptive_summary',
+        label='Descriptive summary',
+        engine_family='wrapped_quantitative',
+        input_scope='dataset_version_with_optional_annotation_window',
+        required_dataset_features=('loadable_dataset_frame', 'at_least_one_data_column'),
+        parameters={},
+        assumption_checks=('data_availability', 'column_classification', 'missingness_scan', 'time_column_coverage'),
+        caveats=(
+            'missing_values_present',
+            'high_cardinality',
+            'unsupported_nested_values',
+            'non_time_series_interpretation',
+            'empty_or_degenerate_data',
+        ),
+        artifact_types=('descriptive_summary_result',),
+        runner='descriptive_summary',
+    ),
 }
 
 
@@ -142,6 +160,8 @@ def _json_default(value: Any) -> Any:
         return value.item()
     if isinstance(value, float) and (np.isnan(value) or np.isinf(value)):
         return None
+    if isinstance(value, set):
+        return sorted(value, key=str)
     return value
 
 
@@ -467,6 +487,228 @@ def _run_cross_correlation(db: Session, run: AnalysisRun, dataset_version_id: st
         db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='degenerate_pairs', severity='medium', message='No variable pair produced a valid lag-correlation curve.'))
 
 
+def _is_nested_value(value: Any) -> bool:
+    return isinstance(value, (dict, list, tuple, set))
+
+
+def _json_scalar(value: Any) -> Any:
+    if _is_nested_value(value):
+        try:
+            return json.loads(json.dumps(value, sort_keys=True, default=_json_default))
+        except TypeError:
+            return str(value)
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        return str(value)
+    if isinstance(value, pd.Timestamp):
+        return value.isoformat()
+    if isinstance(value, np.generic):
+        return value.item()
+    return value
+
+
+def _unique_value_count(series: pd.Series) -> int:
+    unique_values = {
+        json.dumps(_json_scalar(value), sort_keys=True, default=_json_default)
+        for value in series.dropna()
+    }
+    return int(len(unique_values))
+
+
+def _is_boolean_like(series: pd.Series) -> bool:
+    clean = series.dropna()
+    if clean.empty:
+        return False
+    if bool(clean.map(_is_nested_value).any()):
+        return False
+    if pd.api.types.is_bool_dtype(clean):
+        return True
+    normalized = {str(value).strip().lower() for value in clean.unique()}
+    return bool(normalized) and normalized.issubset({'true', 'false'})
+
+
+def _top_values(series: pd.Series, limit: int = 5) -> list[dict[str, Any]]:
+    counts: dict[str, tuple[Any, int]] = {}
+    for value in series.dropna():
+        key = json.dumps(_json_scalar(value), sort_keys=True, default=_json_default)
+        original, count = counts.get(key, (_json_scalar(value), 0))
+        counts[key] = (original, count + 1)
+    ranked = sorted(counts.values(), key=lambda item: (-item[1], str(item[0])))
+    return [{'value': value, 'count': int(count)} for value, count in ranked[:limit]]
+
+
+def _descriptive_column_summary(series: pd.Series, *, is_time_column: bool) -> dict[str, Any]:
+    row_count = int(len(series))
+    missing_count = int(series.isna().sum())
+    non_null_count = row_count - missing_count
+    missing_fraction = float(missing_count / row_count) if row_count else 0.0
+    has_nested_values = bool(series.map(_is_nested_value).any())
+    numeric = coerce_numeric_series(series)
+    numeric_non_null = numeric.dropna()
+    boolean_like = _is_boolean_like(series)
+    if is_time_column:
+        inferred_class = 'time'
+    elif boolean_like:
+        inferred_class = 'boolean'
+    elif non_null_count > 0 and len(numeric_non_null) == non_null_count:
+        inferred_class = 'numeric'
+    else:
+        inferred_class = 'categorical'
+
+    summary: dict[str, Any] = {
+        'inferred_class': inferred_class,
+        'non_null_count': non_null_count,
+        'missing_count': missing_count,
+        'missing_fraction': missing_fraction,
+        'unsupported_nested_values': has_nested_values,
+    }
+    if inferred_class == 'numeric':
+        summary['numeric_summary'] = {
+            'non_null_count': int(len(numeric_non_null)),
+            'min': float(numeric_non_null.min()) if len(numeric_non_null) else None,
+            'max': float(numeric_non_null.max()) if len(numeric_non_null) else None,
+            'mean': float(numeric_non_null.mean()) if len(numeric_non_null) else None,
+            'median': float(numeric_non_null.median()) if len(numeric_non_null) else None,
+            'std_dev': float(numeric_non_null.std(ddof=1)) if len(numeric_non_null) > 1 else 0.0,
+        }
+    elif inferred_class == 'boolean':
+        normalized = series.dropna().map(lambda value: str(value).strip().lower())
+        summary['boolean_summary'] = {
+            'true_count': int((normalized == 'true').sum()),
+            'false_count': int((normalized == 'false').sum()),
+        }
+    elif inferred_class == 'time':
+        parsed = pd.to_datetime(series, errors='coerce', utc=True).dropna()
+        summary['time_summary'] = {
+            'valid_time_count': int(len(parsed)),
+            'min': parsed.min().isoformat() if len(parsed) else None,
+            'max': parsed.max().isoformat() if len(parsed) else None,
+        }
+    else:
+        summary['unique_count'] = _unique_value_count(series)
+        summary['top_values'] = _top_values(series)
+    if inferred_class != 'categorical':
+        summary['top_values'] = _top_values(series)
+    return summary
+
+
+def _run_descriptive_summary(db: Session, run: AnalysisRun, dataset_version_id: str, dataset: Dataset, df: pd.DataFrame) -> None:
+    row_count = int(len(df))
+    column_count = int(len(df.columns))
+    has_data = row_count > 0 and column_count > 0
+    db.add(AssumptionCheck(
+        analysis_run_id=run.analysis_run_id,
+        assumption_name='data_availability',
+        check_method='dataframe_shape',
+        check_result='pass' if has_data else 'fail',
+        severity='high',
+        notes=f'rows={row_count}; columns={column_count}',
+    ))
+    if not has_data:
+        db.add(CaveatNote(
+            analysis_run_id=run.analysis_run_id,
+            caveat_type='empty_or_degenerate_data',
+            severity='high',
+            message='Descriptive summary requires at least one row and one column.',
+        ))
+
+    columns: dict[str, Any] = {}
+    for column in df.columns:
+        columns[str(column)] = _descriptive_column_summary(df[column], is_time_column=bool(dataset.time_column and column == dataset.time_column))
+
+    class_counts: dict[str, int] = {}
+    for column_summary in columns.values():
+        inferred_class = str(column_summary['inferred_class'])
+        class_counts[inferred_class] = class_counts.get(inferred_class, 0) + 1
+
+    missing_cells = sum(int(summary['missing_count']) for summary in columns.values())
+    total_cells = row_count * column_count
+    missing_fraction = float(missing_cells / total_cells) if total_cells else 0.0
+    db.add(AssumptionCheck(
+        analysis_run_id=run.analysis_run_id,
+        assumption_name='column_classification',
+        check_method='deterministic_dtype_scan',
+        check_result='pass' if column_count else 'fail',
+        severity='medium',
+        notes=json.dumps(class_counts, sort_keys=True),
+    ))
+    db.add(AssumptionCheck(
+        analysis_run_id=run.analysis_run_id,
+        assumption_name='missingness_scan',
+        check_method='cell_missingness',
+        check_result='warn' if missing_cells else 'pass',
+        severity='medium',
+        notes=f'missing_cells={missing_cells}; missing_fraction={missing_fraction:.6f}',
+    ))
+    time_column_present = bool(dataset.time_column and dataset.time_column in df.columns)
+    db.add(AssumptionCheck(
+        analysis_run_id=run.analysis_run_id,
+        assumption_name='time_column_coverage',
+        check_method='declared_time_column_scan',
+        check_result='pass' if time_column_present else 'warn',
+        severity='medium',
+        notes=f'time_column={dataset.time_column or ""}; present={time_column_present}',
+    ))
+
+    if missing_cells:
+        db.add(CaveatNote(
+            analysis_run_id=run.analysis_run_id,
+            caveat_type='missing_values_present',
+            severity='high' if missing_fraction >= 0.5 else 'medium',
+            message=f'Dataset contains {missing_cells} missing cells across {total_cells} scanned cells.',
+        ))
+    if not time_column_present:
+        db.add(CaveatNote(
+            analysis_run_id=run.analysis_run_id,
+            caveat_type='non_time_series_interpretation',
+            severity='medium',
+            message='Dataset does not declare a usable time column; descriptive summary is non-time-series only.',
+        ))
+    for column_name, column_summary in columns.items():
+        unique_count = int(column_summary.get('unique_count') or 0)
+        non_null_count = int(column_summary.get('non_null_count') or 0)
+        if column_summary.get('unsupported_nested_values'):
+            db.add(CaveatNote(
+                analysis_run_id=run.analysis_run_id,
+                caveat_type='unsupported_nested_values',
+                severity='medium',
+                message=f'{column_name}: nested values were stringified for descriptive summary output.',
+            ))
+        if column_summary['inferred_class'] == 'categorical' and non_null_count and unique_count >= 20 and unique_count / non_null_count >= 0.8:
+            db.add(CaveatNote(
+                analysis_run_id=run.analysis_run_id,
+                caveat_type='high_cardinality',
+                severity='medium',
+                message=f'{column_name}: categorical column has high cardinality ({unique_count} unique values).',
+            ))
+
+    payload = {
+        'dataset_version_id': dataset_version_id,
+        'dataset_id': dataset.dataset_id,
+        'method_id': 'descriptive_summary',
+        'columns': columns,
+        'summary_stats': {
+            'row_count': row_count,
+            'column_count': column_count,
+            'numeric_column_count': class_counts.get('numeric', 0),
+            'categorical_column_count': class_counts.get('categorical', 0),
+            'boolean_column_count': class_counts.get('boolean', 0),
+            'time_column_count': class_counts.get('time', 0),
+            'missing_cell_count': missing_cells,
+            'missing_fraction': missing_fraction,
+        },
+    }
+    db.add(_persist_artifact_json(
+        run,
+        'descriptive_summary_result',
+        'Descriptive summary results',
+        payload,
+        summary=f'Descriptive summary for {row_count} rows and {column_count} columns.',
+    ))
+
+
 def _run_decomposition(db: Session, run: AnalysisRun, dataset_version_id: str, dataset: Dataset, df: pd.DataFrame) -> None:
     profile_map, _, numeric_cols, has_time = _profile_maps(db, dataset_version_id)
     if not has_time:
@@ -672,6 +914,8 @@ def run_analysis(db: Session, dataset_version_id: str, method_name: str, goal_ty
         _run_decomposition(db, run, dataset_version_id, dataset, df)
     elif method_spec.runner == 'structural_break':
         _run_structural_break(db, run, dataset_version_id, dataset, df)
+    elif method_spec.runner == 'descriptive_summary':
+        _run_descriptive_summary(db, run, dataset_version_id, dataset, df)
     else:
         raise RuntimeError(f'Analysis method registry runner is unsupported: {method_spec.runner}')
 

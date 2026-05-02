@@ -7,6 +7,7 @@ import uuid
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+import pandas as pd
 import pytest
 import requests
 from sqlalchemy import create_engine, event
@@ -93,7 +94,11 @@ app = main_module.app
 from app.core.config import bootstrap_storage_tree  # noqa: E402
 from app.api.deps import get_db  # noqa: E402
 from app.db.session import Base  # noqa: E402
-from app.services.analysis import SUPPORTED_ANALYSIS_METHOD_IDS, analysis_method_registry  # noqa: E402
+from app.services.analysis import (  # noqa: E402
+    SUPPORTED_ANALYSIS_METHOD_IDS,
+    _descriptive_column_summary,
+    analysis_method_registry,
+)
 
 SQLALCHEMY_DATABASE_URL = TEST_DATABASE_URL
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={'check_same_thread': False})
@@ -119,12 +124,90 @@ client = TestClient(app)
 def test_analysis_method_registry_describes_current_methods_only() -> None:
     registry = analysis_method_registry()
 
-    assert list(SUPPORTED_ANALYSIS_METHOD_IDS) == ["cross_correlation", "decomposition", "structural_break"]
+    assert list(SUPPORTED_ANALYSIS_METHOD_IDS) == [
+        "cross_correlation",
+        "decomposition",
+        "structural_break",
+        "descriptive_summary",
+    ]
     assert list(registry) == list(SUPPORTED_ANALYSIS_METHOD_IDS)
     assert registry["cross_correlation"]["parameters"]["max_lag"]["default"] == 10
     assert registry["decomposition"]["artifact_types"] == ("decomposition_components", "decomposition_plot")
     assert registry["structural_break"]["parameters"]["penalty"]["default"] == 8.0
     assert registry["structural_break"]["parameters"]["model"]["default"] == "l2"
+    assert registry["descriptive_summary"]["artifact_types"] == ("descriptive_summary_result",)
+    assert registry["descriptive_summary"]["parameters"] == {}
+
+
+def test_descriptive_summary_runs_deterministic_json_without_widening_scope():
+    csv_bytes = (
+        b"category,amount,flag,notes\n"
+        b"A,10,true,alpha\n"
+        b"A,,false,beta\n"
+        b"B,30,true,alpha\n"
+        b"C,40,,gamma\n"
+    )
+    response = client.post(
+        '/api/v1/sources/upload',
+        files={'file': ('summary.csv', io.BytesIO(csv_bytes), 'text/csv')},
+        data={'name': 'Summary', 'description': 'Descriptive summary dataset', 'domain_pack': 'general'},
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    dataset_id = payload['dataset_id']
+    version_id = payload['dataset_version_id']
+
+    rec_response = client.post(
+        f'/api/v1/datasets/{dataset_id}/versions/{version_id}/analysis/recommend',
+        json={'goal_type': 'exploratory'},
+    )
+    assert rec_response.status_code == 200, rec_response.text
+    rec_payload = rec_response.json()
+    assert rec_payload['recommended_sequence'] == ['descriptive_summary']
+    assert 'does not meet starter time-series assumptions' in rec_payload['rationale']
+
+    analysis_response = client.post(
+        '/api/v1/analysis-runs',
+        json={
+            'dataset_version_id': version_id,
+            'method_name': 'descriptive_summary',
+            'goal_type': 'exploratory',
+            'parameters': {},
+            'annotation_window_id': None,
+        },
+    )
+    assert analysis_response.status_code == 200, analysis_response.text
+    analysis = analysis_response.json()
+    artifact_types = [item['artifact_type'] for item in analysis['artifacts']]
+    assert artifact_types == ['descriptive_summary_result']
+    assert all(not item['artifact_type'].endswith('_plot') for item in analysis['artifacts'])
+    assumption_names = {item['assumption_name'] for item in analysis['assumptions']}
+    assert {'data_availability', 'column_classification', 'missingness_scan'}.issubset(assumption_names)
+    caveat_types = {item['caveat_type'] for item in analysis['caveats']}
+    assert {'non_time_series_interpretation', 'missing_values_present'}.issubset(caveat_types)
+
+    artifact = analysis['artifacts'][0]
+    artifact_path = Path(os.environ['STORAGE_DIR']) / 'artifacts' / Path(artifact['storage_ref']).name
+    result_payload = json.loads(artifact_path.read_text())
+    assert result_payload['summary_stats']['row_count'] == 4
+    assert result_payload['summary_stats']['column_count'] == 4
+    assert result_payload['summary_stats']['numeric_column_count'] == 1
+    assert result_payload['summary_stats']['boolean_column_count'] == 1
+    assert result_payload['columns']['amount']['inferred_class'] == 'numeric'
+    assert result_payload['columns']['amount']['numeric_summary']['non_null_count'] == 3
+    assert result_payload['columns']['amount']['numeric_summary']['mean'] == pytest.approx(26.6666666667)
+    assert result_payload['columns']['category']['top_values'][0] == {'value': 'A', 'count': 2}
+    assert result_payload['columns']['flag']['inferred_class'] == 'boolean'
+
+
+def test_descriptive_summary_column_summary_handles_nested_values_deterministically():
+    summary = _descriptive_column_summary(pd.Series([{'b': 2, 'a': 1}, {'a': 1, 'b': 2}, None]), is_time_column=False)
+
+    assert summary['inferred_class'] == 'categorical'
+    assert summary['unsupported_nested_values'] is True
+    assert summary['missing_count'] == 1
+    assert summary['unique_count'] == 1
+    assert summary['top_values'] == [{'value': {'a': 1, 'b': 2}, 'count': 2}]
 
 
 def _read_nrc_fixture_bytes(name: str) -> bytes:
