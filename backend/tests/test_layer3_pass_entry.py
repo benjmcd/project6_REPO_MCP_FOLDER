@@ -936,6 +936,33 @@ def test_gatec_pass_entry_preserves_cross_correlation_for_non_descriptive_cohort
         settings.storage_dir = original_storage_dir
 
 
+def test_gatec_pass_entry_preserves_cross_correlation_for_malformed_descriptive_cohort_request(tmp_path):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, _, _ = _build_quant_cohort_ready_session(
+            db,
+            tmp_path,
+            requested_method_name=" descriptive_summary ",
+        )
+
+        materialize_pass_entry(db, session_id=session_id)
+        db.commit()
+
+        stored_plan = db.query(L3AnalysisPlan).one()
+        stored_pass = db.query(L3PassRun).one()
+        planned_pass = stored_plan.plan_json["planned_passes_json"][0]
+        assert planned_pass["selected_method_name"] == "cross_correlation"
+        assert planned_pass["source_gate"] == "07_GATEC_COHORT_FREEZE"
+        assert "requested_method_name" not in planned_pass
+        assert stored_pass.summary_json["selected_method_name"] == "cross_correlation"
+        assert stored_pass.summary_json["source_gate"] == "07_GATEC_COHORT_FREEZE"
+        assert "requested_method_name" not in stored_pass.summary_json
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
 def test_gatec_pass_entry_selected_pass_execution_still_rejects_associated_cohort(tmp_path):
     original_storage_dir = settings.storage_dir
     settings.storage_dir = str(tmp_path)
