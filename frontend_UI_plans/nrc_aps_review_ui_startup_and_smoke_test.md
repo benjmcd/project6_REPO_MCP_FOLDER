@@ -35,7 +35,7 @@ Use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Deskto
 
 - same-checkout prep
 - `tools/validate_wb_prep.py`
-- populated Workbench Compare and Candidate B Trace follow-through
+- populated Workbench Compare and bundle-sourced Candidate B Trace follow-through
 
 Use [frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md) for the broader manual validation pass after launch and prep succeed.
 
@@ -77,7 +77,7 @@ Workbench-compare scope note:
 - populated compare validation requires same-checkout prep for baseline, Candidate A, and Candidate B sources
 - the canonical populated prep flow now includes the validate-only same-checkout prep gate in `tools/validate_wb_prep.py`, including its emitted operator handoff metadata for prep/recovery
 - use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated prep, `tools/validate_wb_prep.py` gate, emitted operator handoff metadata, and populated compare validation flow
-- after same-checkout prep, Candidate B follow-through should use the separate `Candidate B Trace` page rather than widening `document-trace`
+- after same-checkout prep, bundle-sourced Candidate B follow-through should use the separate `Candidate B Trace` page rather than widening `document-trace`; runtime-sourced Candidate B follow-through uses the existing `document-trace` route and must not be described as Candidate B Trace parity
 
 ## Preconditions
 
@@ -154,7 +154,7 @@ Workbench Compare UI:
 Candidate B Trace UI:
 
 - `http://127.0.0.1:8098/review/nrc-aps/candidate-b-trace?candidate_b_bundle_id=<BUNDLE_ID>&fixture_id=<FIXTURE_ID>`
-- preferred access path is via a Candidate B deep link from Workbench Compare after same-checkout prep
+- preferred access path is via a bundle-sourced Candidate B deep link from Workbench Compare after same-checkout prep
 - the Workbench Compare deep link should carry `baseline_run_id`, `candidate_a_run_id`, `candidate_b_source_kind=bundle`, `candidate_b_bundle_id`, and `fixture_id` so the Candidate B Trace Back link and fixture navigation/status keep compare context
 - direct bundle/fixture URLs can inspect one Candidate B fixture but do not prove compare-context preservation by themselves
 
