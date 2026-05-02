@@ -1,10 +1,10 @@
 # Layer 3 Descriptive Summary Cohort Requirements
 
-Status: planning-only requirements gate for any future associated-cohort `descriptive_summary` Gate C admission.
+Status: requirements gate for associated-cohort `descriptive_summary`; the service-only subset is live through PR `#424`/`#425`, while selected-pass cohort breadth remains future work.
 
-This document does not make associated-cohort `descriptive_summary` live, select an implementation branch, change `backend/app/services/layer3_pass_entry.py`, widen the workbench execution-start path, change UI, add schema/runtime/source behavior, or activate package, handoff, export, connector dispatch, qualitative, hybrid, RAG, vector, or full mockup behavior.
+This document did not by itself make associated-cohort `descriptive_summary` live, select an implementation branch, change `backend/app/services/layer3_pass_entry.py`, widen the workbench execution-start path, change UI, add schema/runtime/source behavior, or activate package, handoff, export, connector dispatch, qualitative, hybrid, RAG, vector, or full mockup behavior. PR `#424`/`#425` later implemented only the service-owned `materialize_pass_entry(...)` subset governed by docs `78`/`79`.
 
-Follow-on docs `78_COHORT_FREEZE.md` and `79_COHORT_CONTRACT.md` now select the narrow `service_materialize_only` path with the `aligned_wide_table` shape and an explicit service-owned method-selection gate. Those docs are also planning-only and still do not make associated-cohort `descriptive_summary` live.
+Follow-on docs `78_COHORT_FREEZE.md` and `79_COHORT_CONTRACT.md` select the narrow `service_materialize_only` path with the `aligned_wide_table` shape and an explicit service-owned method-selection gate. PR `#424` implements that path and PR `#425` hardens exact matching; those PRs still do not admit selected-pass cohort execution breadth.
 
 ## Current Live Boundary
 
@@ -13,7 +13,7 @@ Current `main` has these relevant truths:
 - PR `#411` made `descriptive_summary` a lower-level `ANALYSIS_METHOD_REGISTRY` method in `backend/app/services/analysis.py`.
 - PR `#417` admitted `descriptive_summary` only through the existing single-item wrapped quantitative Gate C path.
 - `07_GATEC_COHORT_FREEZE.md` governs the already-landed quantitative associated-cohort path for exact-time-aligned dataset-version-backed cohorts.
-- `backend/app/services/layer3_pass_entry.py` currently chooses `cross_correlation` for shaped cohorts with `observed_at` plus at least two numeric series and treats the non-admitted cohort alternative as unsupported `descriptive_summary`.
+- `backend/app/services/layer3_pass_entry.py` currently chooses `cross_correlation` for shaped cohorts with `observed_at` plus at least two numeric series unless exact service-owned `formation_basis_json["requested_method_name"] == "descriptive_summary"` metadata admits the PR `#424`/`#425` service path.
 - `backend/app/services/layer3_pass_entry.py::execute_selected_pass_run(...)` and `backend/app/services/layer3_workbench.py` still admit selected-pass execution-start/result-status only for `single_item` pass runs.
 
 Therefore, associated-cohort `descriptive_summary` is not a small allowlist change. It crosses both a derived-data semantics boundary and a selected-pass/source-breadth boundary.
@@ -93,7 +93,7 @@ For `selected_pass_workbench_breadth`:
 
 No future choice may edit schema, migrations, source ingestion, runtime DB helpers, package/handoff/export behavior, connector dispatch, qualitative/hybrid/RAG/vector execution, or full mockup files unless a separate freeze admits that surface.
 
-## Required Proof For A Future Implementation
+## Required Proof For Service Or Follow-On Implementation
 
 Any implementation must prove:
 
@@ -111,7 +111,7 @@ Minimum local proof shape:
 python -m pytest .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_executes_descriptive_summary_single_item_without_widening_scope .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_executes_quantitative_associated_cohort_with_shaped_manifest .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_fails_closed_on_unsupported_cohort_recommended_method -q
 ```
 
-Add new focused tests adjacent to the selected future behavior before broadening to larger suites.
+Add new focused tests adjacent to the selected behavior before broadening to larger suites.
 
 ## Stop Conditions
 
@@ -127,4 +127,4 @@ Stop and return to planning if implementation requires:
 
 ## Readiness Judgment
 
-Associated-cohort `descriptive_summary` is a valid future candidate, but this requirements document alone is not implementation-ready. The next implementation-capable artifacts are the planning-only service freeze and contract in `78_COHORT_FREEZE.md` and `79_COHORT_CONTRACT.md`; code changes still require a separate implementation PR that proves the explicit method-selection gate and no-go boundaries.
+Associated-cohort `descriptive_summary` was a valid future candidate when this requirements gate landed. The service-only candidate is now live through PR `#424`/`#425` under `78_COHORT_FREEZE.md` and `79_COHORT_CONTRACT.md`; selected-pass associated-cohort execution remains not implementation-ready and requires a separate freeze that proves downstream result/status compatibility and no-go boundaries.
