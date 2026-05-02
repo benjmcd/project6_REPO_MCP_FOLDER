@@ -150,6 +150,13 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "getJson(`/session/${encodeURIComponent(sessionId)}`)" in js.text
     assert "postJson('/execution/result/status'" in js.text
     assert "postJson('/execution/result/review'" in js.text
+    assert "associatedCohortProjection" in js.text
+    assert "associatedCohortReviewedOutputItems" in js.text
+    assert "cohort_result_review_ui_review_ready" in js.text
+    assert "cohort_result_review_ui_recorded" in js.text
+    assert "ASSOCIATED_COHORT_SOURCE_GATE = '78_COHORT_FREEZE'" in js.text
+    assert "ASSOCIATED_COHORT_METHOD = 'descriptive_summary'" in js.text
+    assert "payload.reviewed_output_items = reviewedOutputItems" in js.text
     assert "postJson('/package/review/commit'" in js.text
     assert "postJson('/package/review/submit'" in js.text
     assert "postJson('/handoff/export/prepare'" in js.text
@@ -164,23 +171,34 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "operator_decision: 'dispatch_aps_handoff'" in js.text
     assert "operator_decision: 'prepare_external_export_download'" in js.text
     assert "operator_decision: 'deliver_external_export_download'" in js.text
+    review_start = js.text.find("function resultReviewPayload")
+    review_end = js.text.find("function packageReviewPreviewPayload")
     package_start = js.text.find("function packageReviewSubmitPayload")
     handoff_start = js.text.find("function handoffExportPreparePayload")
     aps_start = js.text.find("function apsHandoffDispatchPayload")
     external_start = js.text.find("function externalExportDownloadPreparePayload")
     delivery_start = js.text.find("function externalExportDownloadDeliveryPayload")
     refresh_start = js.text.find("async function refreshSessionSummary")
+    assert review_start != -1
+    assert review_end != -1
     assert package_start != -1
     assert handoff_start != -1
     assert aps_start != -1
     assert external_start != -1
     assert delivery_start != -1
     assert refresh_start != -1
+    result_review_slice = js.text[review_start:review_end]
     package_submit_slice = js.text[package_start:handoff_start]
     handoff_prepare_slice = js.text[handoff_start:aps_start]
     aps_dispatch_slice = js.text[aps_start:external_start]
     external_prepare_slice = js.text[external_start:delivery_start]
     external_delivery_slice = js.text[delivery_start:refresh_start]
+    assert "payload.reviewed_output_items = reviewedOutputItems" in result_review_slice
+    assert "package" not in result_review_slice
+    assert "handoff" not in result_review_slice
+    assert "rerun" not in result_review_slice
+    assert "pass_run_ids" not in result_review_slice
+    assert "artifact_manifest" not in result_review_slice
     assert "handoff_target" not in package_submit_slice
     assert "export_mode" not in package_submit_slice
     assert "payload_refs" not in package_submit_slice

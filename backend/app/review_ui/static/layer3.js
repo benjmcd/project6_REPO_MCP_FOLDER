@@ -116,6 +116,12 @@ const TERMINAL_PASS_STATUSES = new Set(['completed', 'completed_with_warnings', 
 const RESULT_REVIEW_DECISIONS_REQUIRING_NOTES = new Set(['changes_requested', 'rejected', 'blocked']);
 const PACKAGE_REVIEW_DECISIONS_REQUIRING_NOTES = new Set(['changes_requested', 'rejected', 'blocked']);
 const HANDOFF_EXPORT_PREPARE_DECISIONS_REQUIRING_NOTES = new Set(['hold', 'decline', 'blocked']);
+const ASSOCIATED_COHORT_PASS_TYPE = 'associated_cohort';
+const ASSOCIATED_COHORT_PASS_SCOPE = 'quantitative_associated_cohort_dataset_version';
+const ASSOCIATED_COHORT_METHOD = 'descriptive_summary';
+const ASSOCIATED_COHORT_METHOD_SOURCE = 'analysis_set.formation_basis_json.requested_method_name';
+const ASSOCIATED_COHORT_SOURCE_GATE = '78_COHORT_FREEZE';
+const ASSOCIATED_COHORT_SHAPE = 'aligned_wide_table';
 const HANDOFF_EXPORT_PREPARE_RECORDED_STATES = new Set([
     'handoff_export_prepared',
     'handoff_export_held',
@@ -579,6 +585,119 @@ function recordedApprovedResultReview() {
         : null;
 }
 
+function arrayFromServer(value) {
+    return Array.isArray(value) ? value.filter((item) => item !== null && item !== undefined && String(item).trim()) : [];
+}
+
+function nullIfBlank(value) {
+    const normalized = String(value ?? '').trim();
+    return normalized || null;
+}
+
+function selectedPassRunSummary(authority = selectedResultAuthority()) {
+    const passRuns = Array.isArray(State.sessionSummary?.sublayer_visualization?.pass_runs)
+        ? State.sessionSummary.sublayer_visualization.pass_runs
+        : [];
+    return passRuns.find((passRun) => passRun?.pass_run_id === authority.passRunId) || {};
+}
+
+function associatedCohortProjection(authority = selectedResultAuthority()) {
+    const statusBody = State.resultStatus || {};
+    const metadata = statusBody.output_metadata_summary || {};
+    const reviewState = recordedResultReview() || {};
+    const passRun = selectedPassRunSummary(authority);
+    const traceSummary = State.resultReview?.trace_summary || reviewState.trace_summary || {};
+    const sourceDatasetVersionIds = arrayFromServer(
+        metadata.source_dataset_version_ids
+        || traceSummary.source_dataset_version_ids
+        || passRun.source_dataset_version_ids
+        || passRun.source_dataset_version_ids_json
+    );
+    const passType = nullIfBlank(statusBody.pass_type || passRun.pass_type || metadata.pass_type || traceSummary.pass_type);
+    const passScope = nullIfBlank(statusBody.pass_scope || passRun.pass_scope || metadata.pass_scope || traceSummary.pass_scope);
+    const selectedMethod = nullIfBlank(
+        statusBody.selected_method_name || passRun.selected_method_name || metadata.selected_method_name || traceSummary.selected_method_name
+    );
+    const requestedMethod = nullIfBlank(metadata.requested_method_name || traceSummary.requested_method_name || passRun.requested_method_name);
+    const requestedMethodSource = nullIfBlank(
+        metadata.requested_method_source || traceSummary.requested_method_source || passRun.requested_method_source
+    );
+    const sourceGate = nullIfBlank(metadata.source_gate || traceSummary.source_gate || passRun.source_gate);
+    const cohortShape = nullIfBlank(metadata.cohort_shape || traceSummary.cohort_shape || passRun.cohort_shape);
+    const outputPayloadRef = nullIfBlank(
+        statusBody.output_payload_ref || metadata.output_payload_ref || traceSummary.output_payload_ref
+    );
+    const unresolvedTraceCount = Number(
+        State.resultReview?.unresolved_trace_count
+        ?? reviewState.unresolved_trace_count
+        ?? statusBody.unresolved_trace_count
+        ?? 0
+    );
+    const isAssociated = passType === ASSOCIATED_COHORT_PASS_TYPE
+        || (
+            passScope === ASSOCIATED_COHORT_PASS_SCOPE
+            && sourceGate === ASSOCIATED_COHORT_SOURCE_GATE
+            && cohortShape === ASSOCIATED_COHORT_SHAPE
+        );
+    const ready = Boolean(
+        isAssociated
+        && hasResultAuthorityIdentity(authority)
+        && authority.selected
+        && authority.terminal
+        && statusBody.result_status_available === true
+        && metadata.readable === true
+        && passType === ASSOCIATED_COHORT_PASS_TYPE
+        && passScope === ASSOCIATED_COHORT_PASS_SCOPE
+        && selectedMethod === ASSOCIATED_COHORT_METHOD
+        && requestedMethod === ASSOCIATED_COHORT_METHOD
+        && requestedMethodSource === ASSOCIATED_COHORT_METHOD_SOURCE
+        && sourceGate === ASSOCIATED_COHORT_SOURCE_GATE
+        && cohortShape === ASSOCIATED_COHORT_SHAPE
+        && sourceDatasetVersionIds.length > 0
+        && outputPayloadRef
+        && unresolvedTraceCount === 0
+    );
+    return {
+        isAssociated,
+        ready,
+        passType,
+        passScope,
+        selectedMethod,
+        requestedMethod,
+        requestedMethodSource,
+        sourceGate,
+        cohortShape,
+        sourceDatasetVersionIds,
+        outputPayloadRef,
+        unresolvedTraceCount,
+    };
+}
+
+function associatedCohortReviewedOutputItems(authority = selectedResultAuthority()) {
+    const projection = associatedCohortProjection(authority);
+    if (!projection.ready) return [];
+    const trace = {
+        session_id: authority.sessionId,
+        analysis_plan_id: authority.analysisPlanId,
+        pass_run_id: authority.passRunId,
+        output_payload_ref: projection.outputPayloadRef,
+    };
+    if (authority.analysisRunId) {
+        trace.analysis_run_id = authority.analysisRunId;
+    }
+    return [
+        {
+            item_ref: projection.outputPayloadRef,
+            item_type: 'finding',
+            trace,
+        },
+    ];
+}
+
+function associatedCohortReviewContext() {
+    return associatedCohortProjection().isAssociated;
+}
+
 function canRefreshSessionSummary() {
     return Boolean(
         currentSessionId()
@@ -617,6 +736,7 @@ function reviewDecisionNeedsNotes() {
 function canSubmitResultReview() {
     const authority = selectedResultAuthority();
     const notes = elements.resultReviewNotes.value.trim();
+    const cohort = associatedCohortProjection(authority);
     return Boolean(
         hasResultAuthorityIdentity(authority)
         && authority.selected
@@ -632,6 +752,7 @@ function canSubmitResultReview() {
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
         && (!reviewDecisionNeedsNotes() || notes)
+        && (!cohort.isAssociated || cohort.ready)
     );
 }
 
@@ -642,6 +763,7 @@ function canInspectPackageReviewPreview() {
         && authority.selected
         && authority.terminal
         && recordedApprovedResultReview()
+        && !associatedCohortReviewContext()
         && !State.resultReviewPending
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
@@ -843,6 +965,7 @@ function canCommitPackageConstruction() {
         && authority.selected
         && authority.terminal
         && recordedApprovedResultReview()
+        && !associatedCohortReviewContext()
         && preview.package_review_preview_enabled === true
         && preview.package_review_preview_hash
         && construction.state !== 'package_constructed'
@@ -869,6 +992,7 @@ function canSubmitPackageReview() {
         && authority.selected
         && authority.terminal
         && review?.review_record_ref
+        && !associatedCohortReviewContext()
         && preview.package_review_preview_hash
         && submit.package_review_submit_enabled === true
         && submit.reconciliation_record_id
@@ -1064,7 +1188,7 @@ function isPackageActive() {
     const submit = packageReviewSubmitState() || {};
     const construction = packageConstructionState() || {};
     return Boolean(
-        recordedApprovedResultReview()
+        (recordedApprovedResultReview() && !associatedCohortReviewContext())
         || State.packageReviewPreview?.package_review_preview_enabled === true
         || construction.state === 'package_constructed'
         || construction.next_state === 'package_constructed'
@@ -2205,14 +2329,27 @@ function summarizeTrace(value) {
 }
 
 function resultReviewPanelState(authority) {
+    const cohort = associatedCohortProjection(authority);
     if (State.resultReviewPending) {
-        return { label: 'result_review_ui_recording', pill: 'preview', message: 'Recording one bounded operator decision.' };
+        return {
+            label: cohort.isAssociated ? 'cohort_result_review_ui_recording' : 'result_review_ui_recording',
+            pill: 'preview',
+            message: 'Recording one bounded operator decision.',
+        };
     }
     if (recordedResultReview()) {
-        return { label: 'result_review_ui_recorded', pill: 'ok', message: 'Server state already contains a result-review record.' };
+        return {
+            label: cohort.isAssociated ? 'cohort_result_review_ui_recorded' : 'result_review_ui_recorded',
+            pill: 'ok',
+            message: 'Server state already contains a result-review record.',
+        };
     }
     if (State.resultReviewError || State.resultStatusError) {
-        return { label: 'result_review_ui_blocked', pill: 'blocked', message: 'Server authority rejected or blocked the latest result-review action.' };
+        return {
+            label: cohort.isAssociated ? 'cohort_result_review_ui_blocked' : 'result_review_ui_blocked',
+            pill: 'blocked',
+            message: 'Server authority rejected or blocked the latest result-review action.',
+        };
     }
     if (!authority.sessionId) {
         return { label: 'result_review_ui_unavailable', pill: 'blocked', message: 'No Layer 3 session id is available.' };
@@ -2224,13 +2361,35 @@ function resultReviewPanelState(authority) {
         return { label: 'result_review_ui_waiting_for_selection', pill: 'blocked', message: 'Server summary has no selected pass authority.' };
     }
     if (!authority.terminal) {
-        return { label: 'result_review_ui_waiting_for_execution_start', pill: 'blocked', message: 'Selected pass is not terminal.' };
+        return {
+            label: cohort.isAssociated ? 'cohort_result_review_ui_waiting_for_execution' : 'result_review_ui_waiting_for_execution_start',
+            pill: 'blocked',
+            message: 'Selected pass is not terminal.',
+        };
     }
     if (State.resultStatus?.result_status_available === true) {
+        if (cohort.isAssociated && !cohort.ready) {
+            return {
+                label: 'cohort_result_review_ui_blocked',
+                pill: 'blocked',
+                message: 'Associated-cohort status is available, but exact method, provenance, or trace readiness is incomplete.',
+            };
+        }
+        if (cohort.ready) {
+            return {
+                label: 'cohort_result_review_ui_review_ready',
+                pill: 'ok',
+                message: 'Exact selected-pass associated-cohort descriptive result/status authority is ready for one review.',
+            };
+        }
         return { label: 'result_review_ui_review_ready', pill: 'ok', message: 'Result/status authority is available for one selected terminal pass.' };
     }
     if (State.resultStatus) {
-        return { label: 'result_review_ui_blocked', pill: 'blocked', message: 'Result/status authority is not available for review.' };
+        return {
+            label: cohort.isAssociated ? 'cohort_result_review_ui_blocked' : 'result_review_ui_blocked',
+            pill: 'blocked',
+            message: 'Result/status authority is not available for review.',
+        };
     }
     return { label: 'result_review_ui_unavailable', pill: 'preview', message: 'Selected terminal pass can be inspected for result/status availability.' };
 }
@@ -2261,6 +2420,7 @@ function renderResultReviewPanel() {
     const reviewState = recordedResultReview();
     const panelState = resultReviewPanelState(authority);
     const metadata = statusBody.output_metadata_summary || {};
+    const cohort = associatedCohortProjection(authority);
     const traceSummary = State.resultReview?.trace_summary || reviewState?.trace_summary;
     const error = State.resultReviewError || State.resultStatusError;
     const downstream = State.resultReview?.downstream_unavailable
@@ -2294,6 +2454,22 @@ function renderResultReviewPanel() {
                     ${fieldItem('output ref', statusBody.output_payload_ref, { code: true })}
                     ${fieldItem('metadata readable', metadata.readable)}
                     ${fieldItem('artifact count', metadata.artifact_count)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Associated Cohort Authority</strong>
+                <ul>
+                    ${fieldItem('pass type', cohort.passType)}
+                    ${fieldItem('pass scope', cohort.passScope)}
+                    ${fieldItem('selected method', cohort.selectedMethod)}
+                    ${fieldItem('requested method', cohort.requestedMethod)}
+                    ${fieldItem('requested method source', cohort.requestedMethodSource)}
+                    ${fieldItem('source gate', cohort.sourceGate)}
+                    ${fieldItem('cohort shape', cohort.cohortShape)}
+                    ${fieldItem('source dataset versions', cohort.sourceDatasetVersionIds.join(', '))}
+                    ${fieldItem('output ref', cohort.outputPayloadRef, { code: true })}
+                    ${fieldItem('unresolved trace', cohort.unresolvedTraceCount)}
+                    ${fieldItem('cohort review ready', cohort.ready)}
                 </ul>
             </section>
             <section class="result-review-card">
@@ -2341,6 +2517,9 @@ function packageReviewPanelState() {
     }
     if (State.packageReviewPreview?.package_review_preview_enabled === true) {
         return { label: State.packageReviewPreview.next_state || 'package_review_preview_ready', pill: 'ok', message: 'Package-review preview is available and can be committed as a package set.' };
+    }
+    if (recordedApprovedResultReview() && associatedCohortReviewContext()) {
+        return { label: 'package_review_preview_unavailable', pill: 'blocked', message: 'Associated-cohort result review does not admit package, handoff, or export controls in this tranche.' };
     }
     if (recordedApprovedResultReview()) {
         return { label: 'package_review_preview_unavailable', pill: 'preview', message: 'Approved result review can be inspected for package-preview readiness.' };
@@ -3255,6 +3434,10 @@ function resultReviewPayload(authority = selectedResultAuthority()) {
     };
     if (authority.analysisRunId) {
         payload.analysis_run_id = authority.analysisRunId;
+    }
+    const reviewedOutputItems = associatedCohortReviewedOutputItems(authority);
+    if (reviewedOutputItems.length) {
+        payload.reviewed_output_items = reviewedOutputItems;
     }
     return payload;
 }
