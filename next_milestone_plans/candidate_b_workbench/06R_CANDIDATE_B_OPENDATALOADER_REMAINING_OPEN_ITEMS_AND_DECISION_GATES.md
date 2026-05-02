@@ -46,7 +46,7 @@ Resolved posture:
 
 ---
 
-## Resolved post-PR412 - invocation tightening vs committed implementation
+## Resolved post-PR414 - invocation tightening vs committed implementation
 
 ### Resolved posture
 The committed workbench support now invokes `opendataloader_pdf.convert(...)` directly while preserving the same raw JSON, raw Markdown, annotated PDF, external image, log-capture, and failure-metadata contract.
