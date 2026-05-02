@@ -1,25 +1,25 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus PR #432 bounded selected-pass associated-cohort execution-start/result-status implementation, PR #433 post-PR432 docs/control sync, PR #434 docs 82/83 planning/control associated-cohort result-review governance, PR #435/#436 metadata syncs, PR #438 bounded selected-pass associated-cohort result-review backend/API implementation, and PR #441 docs 84/85 planning-control associated-cohort result-review UI governance",
+  "status": "current-main readiness proof plus selected-pass associated-cohort descriptive_summary chain through PR #447 read-only package-review preview/readiness and PR #450 docs 88/89 planning-control package-construction governance",
   "scope": {
-    "source_branch": "codex/l3-post441-ui-freeze-sync-p52",
-    "merged_pr": "#441",
+    "source_branch": "codex/l3-cohort-package-construction-freeze-p60",
+    "merged_pr": "#450",
     "merge_commit": "8eeceec1c7a22f2e70b8d06ff4eac463ee623a695",
     "base_remote": "project6-origin/main",
-    "base_commit": "8eeceec1",
-    "source_base_commit": "8eeceec1c7a22f2e70b8d06ff4eac463ee623a695",
-    "purpose": "Record PR #432 bounded selected-pass associated-cohort descriptive_summary execution-start/result-status implementation, PR #434 docs 82/83 planning/control result-review governance, PR #438 bounded selected-pass associated-cohort result-review backend/API implementation, and PR #441 docs 84/85 associated-cohort result-review UI planning governance while preserving downstream no-go boundaries.",
-    "live_behavior_change": true,
-    "live_behavior_change_summary": "PR #438 changed backend/API behavior only for exact selected-pass associated-cohort descriptive_summary result review over existing /api/v1/layer3/execution/result/review. PR #433, PR #434, PR #435, PR #436, and PR #441 changed docs/control metadata only.",
-    "latest_implementation_pr": "#438",
-    "latest_implementation_branch": "codex/l3-cohort-result-review-impl-p48",
-    "latest_implementation_summary": "PR #438 implements only exact selected-pass associated-cohort descriptive_summary result review through the existing backend/API result-review endpoint, reusing the existing write envelope and preserving package, handoff, export, UI, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, retry/recovery, pass-entry, and full mockup no-go boundaries.",
-    "latest_planning_pr": "#441",
-    "latest_planning_branch": "codex/l3-cohort-result-review-ui-freeze-p51",
-    "latest_planning_summary": "Docs 84/85 define selected-pass associated-cohort descriptive_summary result-review UI governance over exact PR #432 execution-start/result/status authority and PR #438 backend/API result-review authority; they do not make UI behavior live by themselves.",
+    "base_commit": "3c81a74b",
+    "source_base_commit": "3c81a74b78b3091959f704f90aef96e06efdc9a7",
+    "purpose": "Record the selected-pass associated-cohort descriptive_summary chain through PR #447 read-only package-review preview/readiness and docs 88/89 planning-only package-construction governance while preserving downstream no-go boundaries.",
+    "live_behavior_change": false,
+    "live_behavior_change_summary": "This planning pass changes docs/control metadata only. PR #447 is the latest live behavior in this associated-cohort package chain and remains read-only preview/readiness; docs 88/89 do not make package construction live.",
+    "latest_implementation_pr": "#447",
+    "latest_implementation_branch": "codex/l3-cohort-package-preview-impl-p57",
+    "latest_implementation_summary": "PR #447 implements only read-only selected-pass associated-cohort descriptive_summary package-review preview/readiness over exact PR #432/#438/#443 authority and creates no package/reconciliation rows or payload files.",
+    "latest_planning_pr": "#450",
+    "latest_planning_branch": "codex/l3-cohort-package-construction-freeze-p60",
+    "latest_planning_summary": "Docs 88/89 define selected-pass associated-cohort descriptive_summary package-construction governance after PR #447 read-only package-review preview/readiness; they do not make package construction live by themselves.",
     "latest_planning_live_behavior_change": false,
-    "latest_planning_behavior_summary": "Docs 84/85 are planning/control by themselves. A separate implementation PR is required before rendered associated-cohort result-review UI behavior is live; docs 84/85 do not admit backend/API behavior changes, package, handoff, export, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, retry/recovery, pass-entry, broader cohort review, or full mockup behavior.",
+    "latest_planning_behavior_summary": "Docs 88/89 are planning/control only by themselves. A separate implementation PR is required before associated-cohort package construction behavior is live; package-review submit, handoff/export, APS dispatch, external export/download, connector, schema/runtime/source, retry/recovery, pass-entry, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior remain out.",
     "latest_implementation_merge_commit": "170a99edb3a466fa7651725c567deb656a3ec59e",
     "latest_planning_base_commit": "6f1a2ff41d12f1fa3df1d174f5b29e69813ac3fa",
     "latest_branch_only_implementation_branch": "",
@@ -188,7 +188,10 @@
     "latest_descriptive_summary_selected_pass_cohort_result_review_implementation_pr": "#438",
     "latest_descriptive_summary_selected_pass_cohort_result_review_implementation_merge_commit": "170a99edb3a466fa7651725c567deb656a3ec59e",
     "latest_descriptive_summary_selected_pass_cohort_result_review_implementation_summary": "PR #438 implements bounded backend/API result review for exact selected-pass associated-cohort descriptive_summary terminal outputs admitted by PR #432, with source gate, cohort shape, requested-method provenance, source dataset-version provenance, readable output metadata, trace-resolution, duplicate/conflict, and forbidden downstream-field checks.",
-    "latest_descriptive_summary_selected_pass_cohort_result_review_implementation_live_behavior_change": true
+    "latest_descriptive_summary_selected_pass_cohort_result_review_implementation_live_behavior_change": true,
+    "latest_associated_cohort_package_preview_planning_pr": "#446",
+    "latest_associated_cohort_package_preview_implementation_pr": "#447",
+    "latest_associated_cohort_package_construction_planning_pr": "#450"
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -2491,6 +2494,118 @@
       "git diff --check over docs 84/85 and progress/control updates",
       "python -m json.tool next_milestone_plans/layer3_progress_manifest.json",
       "python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ]
+  },
+  "descriptive_summary_selected_pass_cohort_result_review_ui_implementation_proof": {
+    "implementation_branch": "codex/l3-cohort-result-review-ui-impl-p53",
+    "implementation_pr": "#443",
+    "merge_commit": "0ad0da0f",
+    "scope": "Bounded rendered /review/layer3 selected-pass associated-cohort descriptive_summary result-review UI over exact PR #432 execution-start/result/status authority and PR #438 backend/API result-review authority.",
+    "files_changed": [
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js"
+    ],
+    "live_behavior_change": true,
+    "live_behavior": "PR #443 renders only the exact associated-cohort result-review presentation/control path and keeps package/handoff/export controls unavailable for associated-cohort review state.",
+    "no_go_preserved": [
+      "no backend/API behavior changes",
+      "no package construction or package-review submit",
+      "no handoff/export/download behavior",
+      "no schema/runtime/source widening",
+      "no connector dispatch",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior",
+      "no pass-entry behavior changes",
+      "no retry/recovery/replay behavior"
+    ],
+    "verification": [
+      "PR #443 checks passed: test and backend-layer3-api",
+      "local backend page/API tests plus headed and headless targeted Playwright proof were recorded in the progress manifest"
+    ]
+  },
+  "descriptive_summary_selected_pass_cohort_package_review_preview_freeze_proof": {
+    "planning_branch": "codex/l3-cohort-package-freeze-p56",
+    "planning_pr": "#446",
+    "base_commit": "020d02ba",
+    "merge_commit": "ed3dd0d77c4311cdc4a18d29fc3615434cfb3b57",
+    "scope": "Docs 86/87 are planning/control selected-pass associated-cohort descriptive_summary package-review preview/readiness governance after exact PR #432/#438/#443 authority.",
+    "docs_added": [
+      "next_milestone_plans/Layer3_planning_docs/86_COHORT_PACKAGE_REVIEW_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/87_COHORT_PACKAGE_REVIEW_CONTRACT.md"
+    ],
+    "live_behavior_change": false,
+    "no_go_preserved": [
+      "docs 86/87 by themselves do not make package-preview behavior live",
+      "no package construction or package commit",
+      "no package-review submit",
+      "no handoff/export/download behavior",
+      "no schema/runtime/source widening",
+      "no connector dispatch",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior"
+    ]
+  },
+  "descriptive_summary_selected_pass_cohort_package_review_preview_implementation_proof": {
+    "implementation_branch": "codex/l3-cohort-package-preview-impl-p57",
+    "implementation_pr": "#447",
+    "base_commit": "ed3dd0d7",
+    "merge_commit": "c5baf51961862841dc7929737cd506bf62f19965",
+    "scope": "Bounded read-only selected-pass associated-cohort descriptive_summary package-review preview/readiness over existing backend/UI package-preview surfaces after exact PR #432/#438/#443 authority.",
+    "files_changed": [
+      "backend/app/services/layer3_workbench.py",
+      "backend/app/api/layer3.py",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_api.py",
+      "e2e/layer3-workbench.spec.js"
+    ],
+    "live_behavior_change": true,
+    "live_behavior": "PR #447 makes only read-only associated-cohort package-review preview/readiness live. The existing package commit endpoint still rejects associated-cohort construction with associated_cohort_package_construction_commit_not_admitted.",
+    "no_go_preserved": [
+      "no L3OutputPackage rows",
+      "no L3ReconciliationRecord rows",
+      "no package payload files",
+      "no package construction or package commit",
+      "no package-review submit",
+      "no handoff/export/download behavior",
+      "no schema/runtime/source widening",
+      "no connector dispatch",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior",
+      "single-item package chain unchanged"
+    ],
+    "verification": [
+      "PR #447 checks passed: test and backend-layer3-api",
+      "focused backend API proof covers preview success, no package/reconciliation rows, associated-cohort package commit blocking, and single-item package-preview preservation",
+      "headless and headed Chromium proof covers associated-cohort result-review to package-preview inspection with commit/submit/handoff/export controls disabled"
+    ]
+  },
+  "descriptive_summary_selected_pass_cohort_package_construction_freeze_proof": {
+    "planning_branch": "codex/l3-cohort-package-construction-freeze-p60",
+    "planning_pr": "#450",
+    "base_commit": "3c81a74b78b3091959f704f90aef96e06efdc9a7",
+    "scope": "Docs 88/89 are planning/control selected-pass associated-cohort descriptive_summary package-construction governance after exact PR #432/#438/#443/#447 authority.",
+    "docs_added": [
+      "next_milestone_plans/Layer3_planning_docs/88_COHORT_PACKAGE_CONSTRUCTION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/89_COHORT_PACKAGE_CONSTRUCTION_CONTRACT.md"
+    ],
+    "authority_basis": [
+      "PR #447 read-only package-review preview/readiness is the latest live associated-cohort package behavior",
+      "backend/app/services/layer3_workbench.py currently blocks associated-cohort package construction with associated_cohort_package_construction_commit_not_admitted",
+      "backend/app/services/layer3_package_entry.py and docs 50/51 provide the single-item package-construction pattern source, not direct associated-cohort authority"
+    ],
+    "live_behavior_change": false,
+    "no_go_preserved": [
+      "docs 88/89 by themselves do not make package construction live",
+      "no package-review submit",
+      "no handoff/export/download behavior",
+      "no schema/runtime/source widening",
+      "no connector dispatch",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior",
+      "single-item package chain unchanged"
+    ],
+    "required_future_proof": [
+      "separate implementation PR before narrowing associated_cohort_package_construction_commit_not_admitted",
+      "exactly one reconciliation row, exactly three package rows, and exactly three payload files for successful commit",
+      "fail-closed stale/mismatched provenance and forbidden downstream fields",
+      "headed and headless Chrome proof if rendered UI behavior changes"
     ]
   }
 }
