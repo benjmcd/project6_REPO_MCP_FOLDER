@@ -1,30 +1,30 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus PR #411 lower-level descriptive_summary support, PR #417 single-item Gate C admission, doc 77 cohort requirements, and PR #423 docs 78/79 service-materialize cohort freeze/contract",
+  "status": "current-main readiness proof plus PR #411 lower-level descriptive_summary support, PR #417 single-item Gate C admission, doc 77 cohort requirements, PR #423 docs 78/79 service-materialize cohort governance, PR #424 explicit service-only cohort implementation, and PR #425 exact-request hardening",
   "scope": {
-    "source_branch": "codex/l3-desc-cohort-freeze-p32",
-    "merged_pr": "#423",
-    "merge_commit": "",
+    "source_branch": "codex/l3-desc-cohort-audit-p33",
+    "merged_pr": "#425",
+    "merge_commit": "7fa3d9b44b91f33da9f2c7d7d063495ab580eade",
     "base_remote": "project6-origin/main",
-    "base_commit": "b3f0ac59",
-    "source_base_commit": "b3f0ac59d8486090ebec7b21d8b480a7c0ee6802",
-    "purpose": "Record PR #423 docs 78/79 planning-only service-materialize associated-cohort descriptive_summary freeze/contract while preserving current-main PR #411, PR #417, and doc 77 boundaries.",
-    "live_behavior_change": false,
-    "live_behavior_change_summary": "This branch changes no runtime behavior. Docs 78/79 select a future service-only implementation-entry contract, while associated-cohort admission, selected-pass workbench cohort breadth, UI, schema/runtime/source, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector, and full mockup behavior remain blocked.",
-    "latest_implementation_pr": "#417",
-    "latest_implementation_branch": "codex/l3-desc-gatec-impl-p27",
-    "latest_implementation_summary": "PR #417 implements bounded single-item descriptive_summary Gate C admission through the existing wrapped quantitative pass-entry path while preserving associated-cohort fail-closed behavior and broader no-go scope.",
+    "base_commit": "24d4911a",
+    "source_base_commit": "24d4911ae07aeb8d05c0644a95632c30c3752ea5",
+    "purpose": "Record PR #425 exact-request hardening for the PR #424 explicit service-owned associated-cohort descriptive_summary materialization path while preserving PR #411, PR #417, doc 77, docs 78/79, and PR #428 planning-doc live-state sync boundaries.",
+    "live_behavior_change": true,
+    "live_behavior_change_summary": "PR #424 admits explicit service-owned associated-cohort descriptive_summary through materialize_pass_entry(...) only when L3AnalysisSet.formation_basis_json[\"requested_method_name\"] == \"descriptive_summary\". PR #425 hardens malformed, whitespace-padded, absent, and non-string metadata so default cohort behavior is preserved. Selected-pass cohort breadth, API/UI, schema/runtime/source, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector, and full mockup behavior remain blocked.",
+    "latest_implementation_pr": "#425",
+    "latest_implementation_branch": "codex/l3-desc-cohort-audit-p33",
+    "latest_implementation_summary": "PR #425 hardens the PR #424 service-only associated-cohort descriptive_summary path so only an exact string requested_method_name selects descriptive_summary; default cross_correlation behavior and selected-pass cohort rejection are preserved.",
     "latest_planning_pr": "#423",
     "latest_planning_branch": "codex/l3-desc-cohort-freeze-p32",
-    "latest_planning_summary": "Docs 78/79 freeze the PR #423 service-materialize associated-cohort descriptive_summary contract with aligned_wide_table shape and explicit formation_basis_json requested_method_name metadata.",
+    "latest_planning_summary": "Docs 78/79 define the service-materialize associated-cohort descriptive_summary contract; PR #424 satisfies that service path, PR #425 hardens exact requested-method matching, and PR #428 synchronizes the planning docs to that live state.",
     "latest_planning_live_behavior_change": false,
-    "latest_planning_behavior_summary": "Docs 78/79 are planning/control only by themselves. They do not make associated-cohort descriptive_summary behavior live and do not widen selected-pass workbench breadth or API/UI/schema/runtime/source/package/handoff/export scope.",
-    "latest_implementation_merge_commit": "811b2e14ef23b4643e5b9c004890013f41836bf5",
+    "latest_planning_behavior_summary": "Docs 78/79 are planning/control by themselves; PR #424 makes only the explicit service-owned materialize_pass_entry(...) path live, and PR #425 hardens exact request matching. Neither widens selected-pass workbench breadth, API/UI, schema/runtime/source, package/handoff/export, connector, qualitative/hybrid/RAG/vector, or full mockup scope.",
+    "latest_implementation_merge_commit": "7fa3d9b44b91f33da9f2c7d7d063495ab580eade",
     "latest_planning_base_commit": "9893b293645ccefed0e8dff31cd6b4bbe68b3b58",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
-    "latest_branch_only_implementation_summary": "No active branch-only implementation is included in this docs-sync branch. Docs 72/73 and 75/76 are current-main governance; PR #411 and PR #417 are the corresponding bounded implementations.",
+    "latest_branch_only_implementation_summary": "No active branch-only implementation is included in this docs-sync branch. Docs 72/73, 75/76, and 78/79 are current-main governance; PR #411, PR #417, and PR #424/#425 are the corresponding bounded live implementation/hardening steps for their admitted surfaces.",
     "latest_ui_planning_pr": "#281",
     "latest_ui_planning_branch": "codex/l3-download-delivery-ui-freeze",
     "latest_ui_planning_summary": "PR #281 lands docs 68/69 as planning-only rendered /review/layer3 external export/download delivery UI governance over the already-live PR #278 backend/API delivery endpoint.",
@@ -159,8 +159,13 @@
     "latest_descriptive_summary_gatec_admission_base_commit": "811b2e14ef23b4643e5b9c004890013f41836bf5",
     "latest_descriptive_summary_cohort_requirements_branch": "codex/l3-desc-cohort-reqs-p31",
     "latest_descriptive_summary_cohort_requirements_pr": "#422",
-    "latest_descriptive_summary_cohort_requirements_summary": "Doc 77 records requirements; PR #423 docs 78/79 select service_materialize_only plus aligned_wide_table and explicit requested_method_name metadata as planning-only governance.",
-    "latest_descriptive_summary_cohort_requirements_live_behavior_change": false
+    "latest_descriptive_summary_cohort_requirements_summary": "Doc 77 records associated-cohort requirements; PR #423 adds docs 78/79 service-materialize governance; PR #424 implements the explicit service-owned associated-cohort path; PR #425 hardens exact requested-method matching; PR #428 synchronizes planning docs to the live state.",
+    "latest_descriptive_summary_cohort_requirements_live_behavior_change": false,
+    "latest_descriptive_summary_cohort_implementation_branch": "codex/l3-desc-cohort-audit-p33",
+    "latest_descriptive_summary_cohort_implementation_pr": "#425",
+    "latest_descriptive_summary_cohort_implementation_merge_commit": "7fa3d9b44b91f33da9f2c7d7d063495ab580eade",
+    "latest_descriptive_summary_cohort_implementation_summary": "PR #424 implements service-only associated-cohort descriptive_summary through explicit formation_basis_json metadata; PR #425 requires the exact descriptive_summary string and preserves selected-pass/broader no-go boundaries.",
+    "latest_descriptive_summary_cohort_implementation_live_behavior_change": true
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -2076,7 +2081,7 @@
     "planning_pr": "#402",
     "base_commit": "341f156d",
     "base_source": "project6-origin/main at 341f156d821df8eb5402eca93059add686ef5be6 before PR #402 merged",
-    "scope": "Current-main docs 72/73 descriptive_summary governance from PR #402, now satisfied by PR #411 for lower-level analysis API method support and by PR #417 for single-item Gate C admission. The governance still blocks associated-cohort admission, UI, source/runtime/schema, package/handoff/export, qualitative/hybrid/RAG/vector, and full mockup behavior.",
+    "scope": "Current-main docs 72/73 descriptive_summary governance from PR #402, now satisfied by PR #411 for lower-level analysis API method support, by PR #417 for single-item Gate C admission, and by PR #424/#425 for exact service-owned associated-cohort materialization. The governance still blocks selected-pass cohort breadth, UI, source/runtime/schema, package/handoff/export, qualitative/hybrid/RAG/vector, full mockup behavior, and broader associated-cohort behavior beyond that exact service path.",
     "docs_added": [
       "next_milestone_plans/Layer3_planning_docs/72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md"
@@ -2084,19 +2089,19 @@
     "authority_basis": [
       "backend/app/services/analysis.py now supports ANALYSIS_METHOD_REGISTRY for cross_correlation, decomposition, structural_break, and descriptive_summary",
       "backend/app/services/analysis.py may recommend descriptive_summary for datasets outside starter time-series assumptions and run_analysis dispatches a bounded descriptive_summary runner",
-      "backend/app/services/layer3_pass_entry.py admits descriptive_summary only for single-item Gate C pass-entry and still fails closed for unsupported methods",
+      "backend/app/services/layer3_pass_entry.py admits descriptive_summary for single-item Gate C pass-entry and, after PR #424/#425, only for exact explicit service-owned associated-cohort materialization metadata",
       "tests/test_api.py covers registry shape, deterministic descriptive_summary execution, nested-value robustness, and adjacent analysis regressions",
-      "backend/tests/test_layer3_pass_entry.py covers unsupported-method fail-closed behavior"
+      "backend/tests/test_layer3_pass_entry.py covers unsupported-method fail-closed behavior, explicit service-owned cohort descriptive_summary, default cohort preservation, malformed requested-method preservation, and selected-pass cohort rejection"
     ],
     "live_behavior_change": true,
     "no_go_preserved": [
-      "no associated-cohort Gate C pass-entry admission for descriptive_summary",
-      "no UI activation",
-      "no recommendation changes for starter time-series datasets",
-      "no schema/model/migration change",
-      "no source/runtime widening",
+      "no selected-pass workbench cohort execution breadth",
+      "no route or UI activation",
+      "no schema/runtime/source widening",
       "no package/handoff/export behavior",
-      "no qualitative/hybrid/RAG/vector/full mockup activation"
+      "no connector dispatch",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior",
+      "no broader associated-cohort behavior beyond the exact PR #424/#425 service-owned materialize_pass_entry(...) path"
     ],
     "validation": [
       "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
@@ -2186,55 +2191,110 @@
   "descriptive_summary_cohort_requirements_proof": {
     "planning_branch": "codex/l3-desc-cohort-reqs-p31",
     "planning_pr": "#422",
-    "scope": "Planning-only associated-cohort descriptive_summary requirements. This does not make cohort behavior live and does not widen selected-pass workbench execution.",
+    "scope": "Associated-cohort descriptive_summary requirements governance. PR #424 satisfies only the explicit service-owned materialize_pass_entry(...) subset and PR #425 hardens exact requested-method matching; selected-pass workbench cohort breadth remains out.",
     "docs_added": [
       "next_milestone_plans/Layer3_planning_docs/77_COHORT_REQS.md"
     ],
     "authority_basis": [
-      "backend/app/services/layer3_pass_entry.py chooses cross_correlation for current exact-time-aligned quantitative cohorts and treats non-admitted cohort descriptive_summary as fail-closed",
+      "backend/app/services/layer3_pass_entry.py chooses cross_correlation for exact-time-aligned quantitative cohorts unless exact explicit service-owned descriptive_summary metadata is present",
       "backend/app/services/layer3_pass_entry.py execute_selected_pass_run admits only single_item pass runs",
       "backend/app/services/layer3_workbench.py execution-start and result/status paths reject non-single-item pass runs",
-      "docs 75/76 admit descriptive_summary only for the single-item Gate C path"
+      "docs 75/76 admit descriptive_summary only for the single-item Gate C path; docs 78/79 plus PR #424/#425 admit only the exact service-owned associated-cohort materialization path"
     ],
     "live_behavior_change": false,
     "no_go_preserved": [
-      "no associated-cohort Gate C admission for descriptive_summary",
-      "no selected-pass cohort execution-start breadth",
+      "no selected-pass workbench cohort execution breadth",
       "no route or UI activation",
       "no schema/runtime/source widening",
       "no package/handoff/export behavior",
-      "no qualitative/hybrid/RAG/vector/full mockup behavior"
+      "no connector dispatch",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior",
+      "no broader associated-cohort behavior beyond the exact PR #424/#425 service-owned materialize_pass_entry(...) path"
     ]
   },
   "descriptive_summary_cohort_service_freeze_proof": {
     "planning_branch": "codex/l3-desc-cohort-freeze-p32",
     "planning_pr": "#423",
-    "scope": "PR #423 planning-only service-materialize associated-cohort descriptive_summary freeze/contract. This does not make cohort behavior live and does not widen selected-pass workbench execution.",
+    "scope": "PR #423 docs 78/79 are service-materialize associated-cohort descriptive_summary freeze/contract governance. PR #424 implements only that exact service-owned path, and PR #425 hardens exact requested-method matching; selected-pass workbench cohort breadth remains out.",
     "docs_added": [
       "next_milestone_plans/Layer3_planning_docs/78_COHORT_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/79_COHORT_CONTRACT.md"
     ],
     "authority_basis": [
-      "backend/app/services/layer3_pass_entry.py currently chooses cross_correlation for exact-time-aligned quantitative cohorts",
+      "backend/app/services/layer3_pass_entry.py chooses cross_correlation for exact-time-aligned quantitative cohorts unless exact explicit service-owned descriptive_summary metadata is present",
       "backend/app/services/layer3_pass_entry.py execute_selected_pass_run admits only single_item pass runs",
       "backend/app/services/layer3_workbench.py execution-start and result/status paths reject non-single-item pass runs",
-      "docs 78/79 select only materialize_pass_entry(...) service flow with explicit formation_basis_json requested_method_name metadata"
+      "docs 78/79 select only materialize_pass_entry(...) service flow with explicit formation_basis_json requested_method_name metadata; PR #424 implements it and PR #425 requires the exact string value"
     ],
     "live_behavior_change": false,
     "no_go_preserved": [
-      "no live associated-cohort Gate C admission for descriptive_summary",
-      "no selected-pass cohort execution-start breadth",
+      "no selected-pass workbench cohort execution breadth",
       "no route or UI activation",
       "no schema/runtime/source widening",
       "no package/handoff/export behavior",
-      "no qualitative/hybrid/RAG/vector/full mockup behavior"
+      "no connector dispatch",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior",
+      "no broader associated-cohort behavior beyond the exact PR #424/#425 service-owned materialize_pass_entry(...) path"
     ],
     "required_future_proof": [
       "single-item descriptive_summary remains unchanged",
       "existing associated-cohort cross_correlation remains unchanged without explicit metadata",
-      "explicit service-only cohort descriptive_summary succeeds with provenance if implemented",
+      "explicit service-only cohort descriptive_summary succeeds with provenance under exact requested_method_name metadata",
+      "malformed, whitespace-padded, absent, or non-string requested_method_name metadata preserves default cohort behavior",
       "incompatible or implicit cohorts fail closed before unsupported state is created",
       "selected-pass workbench breadth remains single-item-only"
+    ]
+  },
+  "descriptive_summary_cohort_service_implementation_proof": {
+    "implementation_branch": "codex/l3-cohort-desc-impl-p33",
+    "implementation_pr": "#424",
+    "merge_commit": "24d4911ae07aeb8d05c0644a95632c30c3752ea5",
+    "implementation_hardening_branch": "codex/l3-desc-cohort-audit-p33",
+    "implementation_hardening_pr": "#425",
+    "implementation_hardening_merge_commit": "7fa3d9b44b91f33da9f2c7d7d063495ab580eade",
+    "scope": "Bounded explicit service-owned associated-cohort descriptive_summary materialization through materialize_pass_entry(...) only, hardened to require exact requested_method_name metadata.",
+    "files_changed": [
+      "backend/app/services/layer3_pass_entry.py",
+      "backend/tests/test_layer3_pass_entry.py"
+    ],
+    "live_behavior": "PR #424 selects descriptive_summary for associated-cohort materialization only when L3AnalysisSet.formation_basis_json[\"requested_method_name\"] == \"descriptive_summary\". PR #425 preserves default cohort behavior for absent, whitespace-padded, non-string, malformed, or otherwise non-exact requested-method metadata.",
+    "no_go_preserved": [
+      "no selected-pass workbench cohort execution breadth",
+      "no route or UI activation",
+      "no schema/runtime/source widening",
+      "no package/handoff/export behavior",
+      "no connector dispatch",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior",
+      "no broader associated-cohort behavior beyond the exact PR #424/#425 service-owned materialize_pass_entry(...) path"
+    ],
+    "verification": [
+      "PR #424 checks passed: test and backend-layer3-api",
+      "PR #425 checks passed: test and backend-layer3-api",
+      "backend/tests/test_layer3_pass_entry.py covers explicit associated-cohort descriptive_summary execution, default cross_correlation preservation for non-descriptive requests, malformed requested-method preservation, and selected-pass associated-cohort rejection"
+    ]
+  },
+  "descriptive_summary_cohort_exact_request_hardening_proof": {
+    "implementation_branch": "codex/l3-desc-cohort-audit-p33",
+    "implementation_pr": "#425",
+    "merge_commit": "7fa3d9b44b91f33da9f2c7d7d063495ab580eade",
+    "base_commit": "24d4911ae07aeb8d05c0644a95632c30c3752ea5",
+    "files_changed": [
+      "backend/app/services/layer3_pass_entry.py",
+      "backend/tests/test_layer3_pass_entry.py"
+    ],
+    "live_behavior": "Only the exact string descriptive_summary in formation_basis_json[\"requested_method_name\"] admits associated-cohort descriptive_summary for the service-owned materialize_pass_entry(...) path. Whitespace-padded, non-string, absent, malformed, or other values preserve default cross_correlation behavior for valid aligned cohorts.",
+    "no_go_preserved": [
+      "no selected-pass workbench cohort execution breadth",
+      "no route or UI activation",
+      "no schema/runtime/source widening",
+      "no package/handoff/export behavior",
+      "no connector dispatch",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior",
+      "no broader associated-cohort behavior beyond the exact PR #424/#425 service-owned materialize_pass_entry(...) path"
+    ],
+    "verification": [
+      "python -m pytest .\\backend\\tests\\test_layer3_pass_entry.py::test_gatec_pass_entry_preserves_cross_correlation_for_malformed_descriptive_cohort_request -q",
+      "PR #425 checks passed: test and backend-layer3-api"
     ]
   }
 }
