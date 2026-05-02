@@ -1,17 +1,17 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus PR #432 bounded selected-pass associated-cohort execution-start/result-status implementation, PR #433 post-PR432 docs/control sync, PR #434 docs 82/83 planning-only associated-cohort result-review governance, and PR #435 count metadata correction",
+  "status": "current-main readiness proof plus PR #432 bounded selected-pass associated-cohort execution-start/result-status implementation, PR #433 post-PR432 docs/control sync, PR #434 docs 82/83 planning-only associated-cohort result-review governance, PR #435 count metadata correction, and PR #436 lineage metadata sync",
   "scope": {
-    "source_branch": "codex/l3-post434-count-sync-p45",
-    "merged_pr": "#435",
-    "merge_commit": "40fbd8744958ff4d58a4ebe276e14d35dc264451",
+    "source_branch": "codex/l3-post435-lineage-sync-p46",
+    "merged_pr": "#436",
+    "merge_commit": "690274f305750ad6ec1ead643003027ce2229d87",
     "base_remote": "project6-origin/main",
-    "base_commit": "e313474e",
-    "source_base_commit": "e313474ed09c600e8acbf8068370cc8f0342f450",
-    "purpose": "Record PR #432 bounded selected-pass associated-cohort descriptive_summary execution-start/result-status implementation, PR #433 post-PR432 proof-state docs/control sync, PR #434 docs 82/83 planning-only associated-cohort result-review governance, and PR #435 count metadata correction while preserving downstream no-go boundaries.",
+    "base_commit": "40fbd874",
+    "source_base_commit": "40fbd8744958ff4d58a4ebe276e14d35dc264451",
+    "purpose": "Record PR #432 bounded selected-pass associated-cohort descriptive_summary execution-start/result-status implementation, PR #433 post-PR432 proof-state docs/control sync, PR #434 docs 82/83 planning-only associated-cohort result-review governance, PR #435 count metadata correction, and PR #436 lineage metadata sync while preserving downstream no-go boundaries.",
     "live_behavior_change": false,
-    "live_behavior_change_summary": "PR #433, PR #434, and PR #435 changed docs/control metadata only. Docs 82/83 are planning/control only. PR #432 remains the latest live behavior change for selected-pass associated-cohort execution-start/result-status.",
+    "live_behavior_change_summary": "PR #433, PR #434, PR #435, and PR #436 changed docs/control metadata only. Docs 82/83 are planning/control only. PR #432 remains the latest live behavior change for selected-pass associated-cohort execution-start/result-status.",
     "latest_implementation_pr": "#432",
     "latest_implementation_branch": "codex/l3-selected-cohort-execution-p42",
     "latest_implementation_summary": "PR #432 implements only exact selected-pass associated-cohort descriptive_summary execution-start/result-status over existing backend/API surfaces and preserves result review, UI, package, handoff, export, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, and full mockup no-go boundaries.",
@@ -24,7 +24,7 @@
     "latest_planning_base_commit": "e6ef73f188bae8fe8c91fa780d3527bdcd8a4bb5",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
-    "latest_branch_only_implementation_summary": "No active branch-only implementation is included. This branch adds only planning/control docs 82/83 for future associated-cohort result-review governance.",
+    "latest_branch_only_implementation_summary": "No active branch-only implementation is included. Current main includes docs 82/83 as planning/control governance only for future associated-cohort result-review behavior.",
     "latest_ui_planning_pr": "#281",
     "latest_ui_planning_branch": "codex/l3-download-delivery-ui-freeze",
     "latest_ui_planning_summary": "PR #281 lands docs 68/69 as planning-only rendered /review/layer3 external export/download delivery UI governance over the already-live PR #278 backend/API delivery endpoint.",
@@ -175,13 +175,13 @@
     "latest_descriptive_summary_selected_pass_cohort_implementation_merge_commit": "043f440243a282d47b48bf5a78ffb873d83afd8c",
     "latest_descriptive_summary_selected_pass_cohort_implementation_summary": "PR #432 implements bounded backend/API selected-pass associated-cohort descriptive_summary execution-start/result-status only, with exact selected metadata/provenance gates and fail-closed invalid binding/provenance behavior.",
     "latest_descriptive_summary_selected_pass_cohort_implementation_live_behavior_change": true,
-    "latest_docs_control_sync_pr": "#435",
-    "latest_docs_control_sync_branch": "codex/l3-post434-count-sync-p45",
-    "latest_docs_control_sync_merge_commit": "40fbd8744958ff4d58a4ebe276e14d35dc264451",
-    "latest_docs_control_sync_summary": "PR #435 corrects post-PR434 workbench slice count metadata without changing runtime behavior.",
+    "latest_docs_control_sync_pr": "#436",
+    "latest_docs_control_sync_branch": "codex/l3-post435-lineage-sync-p46",
+    "latest_docs_control_sync_merge_commit": "690274f305750ad6ec1ead643003027ce2229d87",
+    "latest_docs_control_sync_summary": "PR #436 syncs cohort-review lineage metadata after PR #435 without changing runtime behavior.",
     "latest_descriptive_summary_selected_pass_cohort_result_review_planning_branch": "codex/l3-selected-cohort-result-review-freeze-p44",
     "latest_descriptive_summary_selected_pass_cohort_result_review_planning_pr": "#434",
-    "latest_descriptive_summary_selected_pass_cohort_result_review_planning_summary": "PR #434 lands docs 82/83 as planning-only future selected-pass associated-cohort descriptive_summary result-review backend/API governance over the existing execution/result/review endpoint after PR #432 result/status authority.",
+    "latest_descriptive_summary_selected_pass_cohort_result_review_planning_summary": "PR #434 lands docs 82/83 as current-main planning-only future selected-pass associated-cohort descriptive_summary result-review backend/API governance over the existing execution/result/review endpoint after PR #432 result/status authority.",
     "latest_descriptive_summary_selected_pass_cohort_result_review_planning_live_behavior_change": false,
     "latest_descriptive_summary_selected_pass_cohort_result_review_planning_merge_commit": "e313474ed09c600e8acbf8068370cc8f0342f450"
   },
@@ -1259,7 +1259,7 @@
     "pr": "#255"
   },
   "state_notes": [
-    "Branch-local docs 82/83 are planning/control only for a future selected-pass associated-cohort result-review backend/API tranche after PR #432; they are not current-main live result-review behavior."
+    "Docs 82/83 are current-main planning/control only for a future selected-pass associated-cohort result-review backend/API tranche after PR #432; they are not live result-review behavior."
   ],
   "authoritative_file_refs": [
     "next_milestone_plans/Layer3_planning_docs/56_L3_WB_HANDOFF_EXPORT_UI_FREEZE.md",
@@ -2390,7 +2390,7 @@
     "planning_branch": "codex/l3-selected-cohort-result-review-freeze-p44",
     "planning_pr": "#434",
     "merge_commit": "e313474ed09c600e8acbf8068370cc8f0342f450",
-    "scope": "Branch-local docs 82/83 are planning-only selected-pass associated-cohort descriptive_summary result-review governance over the existing backend/API result-review endpoint after PR #432 result/status authority. They do not make result review live by themselves.",
+    "scope": "PR #434 docs 82/83 are current-main planning-only selected-pass associated-cohort descriptive_summary result-review governance over the existing backend/API result-review endpoint after PR #432 result/status authority. They do not make result review live by themselves.",
     "docs_added": [
       "next_milestone_plans/Layer3_planning_docs/82_COHORT_RESULT_REVIEW_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/83_COHORT_RESULT_REVIEW_CONTRACT.md"
