@@ -1501,10 +1501,9 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
       reviewed_item_count: 1,
       unresolved_trace_count: 0,
     },
-    package_review_submit_enabled: false,
+    package_review_submit_enabled: true,
     handoff_enabled: false,
     downstream_unavailable: [
-      'package_review_submit',
       'handoff',
       'export',
       'aps_handoff',
@@ -1516,7 +1515,6 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
       current_gate: 'package',
       persistence_mode: 'durable_package_construction',
       downstream_unavailable: [
-        'package_review_submit',
         'handoff',
         'export',
         'aps_handoff',
@@ -1525,10 +1523,52 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
       ],
     },
   };
+  const packageSubmitResponse = {
+    schema_id: 'layer3.cohort_package_review_submit.v1',
+    status: 'submitted',
+    session_id: sessionId,
+    analysis_plan_id: analysisPlanId,
+    pass_run_id: passRunId,
+    preview_identity: {
+      preview_id: previewId,
+      preview_hash: previewHash,
+    },
+    analysis_run_id: analysisRunId,
+    result_review_record_ref: reviewResponse.review_record_ref,
+    package_review_preview_hash: packagePreviewResponse.package_review_preview_hash,
+    reconciliation_record_id: packageCommitResponse.reconciliation_record_id,
+    output_package_ids: packageCommitResponse.output_packages.map((pkg) => pkg.output_package_id),
+    package_kinds: packageCommitResponse.package_kinds,
+    payload_hashes: packageCommitResponse.payload_hashes,
+    operator_decision: 'approved',
+    decision_notes: null,
+    package_review_state: 'package_review_approved',
+    submit_record_ref: 'submit-cohort-ui',
+    pass_type: 'associated_cohort',
+    pass_scope: 'quantitative_associated_cohort_dataset_version',
+    method: 'descriptive_summary',
+    source_gate: '78_COHORT_FREEZE',
+    package_construction_source_gate: '88_COHORT_PACKAGE_CONSTRUCTION_FREEZE',
+    source_shape: 'aligned_wide_table',
+    source_dataset_version_ids: ['dv-cohort-001', 'dv-cohort-002'],
+    package_review_submit_enabled: false,
+    handoff_enabled: false,
+    export_enabled: false,
+    downstream_unavailable: [
+      'handoff',
+      'export',
+      'aps_handoff',
+      'external_export_download',
+      'connector',
+    ],
+    next_state: 'package_review_approved',
+  };
   let reviewPayload;
   let packagePreviewPayload;
   let packageCommitPayload;
+  let packageSubmitPayload;
   let packageCommitted = false;
+  let packageSubmitted = false;
   await page.route('**/api/v1/layer3/execution/result/review', async (route) => {
     reviewPayload = route.request().postDataJSON();
     await route.fulfill({
@@ -1554,6 +1594,15 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
       body: JSON.stringify(packageCommitResponse),
     });
   });
+  await page.route('**/api/v1/layer3/package/review/submit', async (route) => {
+    packageSubmitPayload = route.request().postDataJSON();
+    packageSubmitted = true;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(packageSubmitResponse),
+    });
+  });
   await page.route(`**/api/v1/layer3/session/${sessionId}`, async (route) => {
     await route.fulfill({
       status: 200,
@@ -1571,9 +1620,11 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
               output_package_ids: packageCommitResponse.output_packages.map((pkg) => pkg.output_package_id),
               package_kinds: packageCommitResponse.package_kinds,
               package_commit_enabled: false,
-              package_review_submit_enabled: false,
+              package_review_submit_enabled: !packageSubmitted,
               handoff_enabled: false,
-              downstream_unavailable: packageCommitResponse.downstream_unavailable,
+              downstream_unavailable: packageSubmitted
+                ? packageSubmitResponse.downstream_unavailable
+                : packageCommitResponse.downstream_unavailable,
             }
           : {
               schema_id: 'layer3.package_construction_commit_state.v1',
@@ -1588,16 +1639,37 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
               downstream_unavailable: ['package_review_submit', 'handoff', 'export'],
             },
         package_review_submit: packageCommitted
-          ? {
+          ? packageSubmitted
+            ? {
               schema_id: 'layer3.package_review_submit_state.v1',
               available: false,
-              state: 'package_review_submit_unavailable',
-              blocked_reason: 'package_review_submit_deferred_for_associated_cohort',
+              state: 'package_review_approved',
+              submit_record_ref: packageSubmitResponse.submit_record_ref,
+              operator_decision: 'approved',
+              analysis_run_id: analysisRunId,
+              result_review_record_ref: reviewResponse.review_record_ref,
+              package_review_preview_hash: packagePreviewResponse.package_review_preview_hash,
               reconciliation_record_id: packageCommitResponse.reconciliation_record_id,
               output_package_ids: packageCommitResponse.output_packages.map((pkg) => pkg.output_package_id),
               package_kinds: packageCommitResponse.package_kinds,
               payload_hashes: packageCommitResponse.payload_hashes,
+              package_construction_source_gate: '88_COHORT_PACKAGE_CONSTRUCTION_FREEZE',
               package_review_submit_enabled: false,
+              handoff_enabled: false,
+              export_enabled: false,
+              downstream_unavailable: packageSubmitResponse.downstream_unavailable,
+            }
+            : {
+              schema_id: 'layer3.package_review_submit_state.v1',
+              available: true,
+              state: 'package_review_submit_ready',
+              blocked_reason: null,
+              reconciliation_record_id: packageCommitResponse.reconciliation_record_id,
+              output_package_ids: packageCommitResponse.output_packages.map((pkg) => pkg.output_package_id),
+              package_kinds: packageCommitResponse.package_kinds,
+              payload_hashes: packageCommitResponse.payload_hashes,
+              package_construction_source_gate: '88_COHORT_PACKAGE_CONSTRUCTION_FREEZE',
+              package_review_submit_enabled: true,
               handoff_enabled: false,
               export_enabled: false,
               downstream_unavailable: packageCommitResponse.downstream_unavailable,
@@ -1613,7 +1685,9 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
               downstream_unavailable: ['package_review_submit', 'handoff', 'export'],
             },
         downstream_unavailable: packageCommitted
-          ? packageCommitResponse.downstream_unavailable
+          ? packageSubmitted
+            ? packageSubmitResponse.downstream_unavailable
+            : packageCommitResponse.downstream_unavailable
           : ['package_review_submit', 'handoff', 'export'],
         execution_result_review: {
           schema_id: 'layer3.execution_result_review_state.v1',
@@ -1720,10 +1794,9 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
   await page.locator('#package-construction-commit').click();
   const packageCommit = await expectJson(await packageCommitResponsePromise);
   expect(packageCommit.schema_id).toBe('layer3.package_construction_commit.v1');
-  expect(packageCommit.package_review_submit_enabled).toBe(false);
+  expect(packageCommit.package_review_submit_enabled).toBe(true);
   expect(packageCommit.package_construction_source_gate).toBe('88_COHORT_PACKAGE_CONSTRUCTION_FREEZE');
   expect(packageCommit.downstream_unavailable).toEqual([
-    'package_review_submit',
     'handoff',
     'export',
     'aps_handoff',
@@ -1750,8 +1823,50 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
   expect(packageCommitPayload).not.toHaveProperty('export');
 
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_constructed');
-  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_submit_unavailable');
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_submit_ready');
   await expect(page.locator('#package-construction-commit')).toBeDisabled();
+  await expect(page.locator('#package-review-submit')).toBeEnabled();
+
+  const packageSubmitResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/package/review/submit'));
+  await page.locator('#package-review-submit').click();
+  const packageSubmit = await expectJson(await packageSubmitResponsePromise);
+  expect(packageSubmit.schema_id).toBe('layer3.cohort_package_review_submit.v1');
+  expect(packageSubmit.package_review_state).toBe('package_review_approved');
+  expect(packageSubmit.pass_type).toBe('associated_cohort');
+  expect(packageSubmit.package_construction_source_gate).toBe('88_COHORT_PACKAGE_CONSTRUCTION_FREEZE');
+  expect(packageSubmit.downstream_unavailable).toEqual([
+    'handoff',
+    'export',
+    'aps_handoff',
+    'external_export_download',
+    'connector',
+  ]);
+  expectOnlyPayloadKeys(packageSubmitPayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'analysis_run_id',
+    'result_review_record_ref',
+    'package_review_preview_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'payload_hashes',
+    'operator_decision',
+    'decision_notes',
+    'expected_package_kinds',
+  ]);
+  expect(packageSubmitPayload.operator_decision).toBe('approved');
+  expect(packageSubmitPayload.reconciliation_record_id).toBe(packageCommit.reconciliation_record_id);
+  expect(packageSubmitPayload.output_package_ids.sort()).toEqual(packageCommit.output_packages.map((pkg) => pkg.output_package_id).sort());
+  expect(packageSubmitPayload.payload_hashes).toEqual(packageCommit.payload_hashes);
+  expect(packageSubmitPayload).not.toHaveProperty('handoff');
+  expect(packageSubmitPayload).not.toHaveProperty('export');
+  expect(packageSubmitPayload).not.toHaveProperty('package_payload');
+
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_approved');
   await expect(page.locator('#package-review-submit')).toBeDisabled();
   await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
   await expect(page.locator('#aps-handoff-dispatch-submit')).toBeDisabled();
