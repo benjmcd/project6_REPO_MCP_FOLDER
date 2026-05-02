@@ -99,12 +99,15 @@ Current shipped-baseline note:
   - `backend/tests/review_browser_fixture.py`
   - `backend/tests/review_browser_server.py`
   - `backend/tests/requirements-browser.txt`
-- the root repo now also carries fixed-fixture same-checkout prep plus validate-only gates for populated compare, bundle-sourced Candidate B Trace validation, and explicit runtime-sourced Candidate B Compare validation via:
+- the root repo now also carries fixed-fixture same-checkout prep plus validate-only gates for populated compare, bundle-sourced Candidate B Trace validation, explicit runtime-sourced Candidate B Compare validation, and runtime-source Workbench Compare follow-through into existing document-trace via:
   - `tools/validate_wb_prep.py`
   - `tests/test_validate_wb_prep.py`
+  - `e2e/nrc-aps-review.spec.js`
+  - `playwright.config.js`
 - that prep gate fails closed on empty, donor, ambiguous, missing-runtime-run-id, or incoherent same-checkout prep state, now emits additive `operator_handoff` metadata for success/failure recovery, and should precede populated operator validation
 - the preserved bundle-scoped Candidate B Trace path now also includes compare/trace return-context preservation, artifact availability/unavailable-state affordances, and fixture navigation/status over the existing Workbench Compare targets API
 - current repo-native browser coverage proves active multi-fixture Previous/Next navigation across `fontish` and `ml17123a319`; single-target `Fixture 1 of 1` disabled-navigation remains the correct behavior when only one comparable fixture is prepared
+- current repo-native browser coverage also proves runtime-source Workbench Compare selection and `Candidate B Runtime Trace` follow-through into the existing `document-trace` route with the selected Candidate B runtime run/target; this is not Candidate B Trace parity for admitted runtime runs
 - future work should start from that shipped posture rather than from pre-compare or pre-trace assumptions
 - future work should stay additive and lane-scoped unless a repo-confirmed blocker requires a broader reopen
 
@@ -124,7 +127,7 @@ Ordered next-decision note:
   - `frontend_UI_plans/README.md` remains the front-door index
   - `docs/nrc_adams/nrc_aps_ui_launch_runbook.md` owns the canonical launch contract
   - `nrc_aps_review_ui_startup_and_smoke_test.md` is the concise startup walkthrough layered on top of that launch contract
-  - `wb-compare-validation.md` owns same-checkout prep, `tools/validate_wb_prep.py`, its emitted operator handoff metadata, populated compare + Candidate B Trace validation, and explicit runtime-source Candidate B validation
+  - `wb-compare-validation.md` owns same-checkout prep, `tools/validate_wb_prep.py`, its emitted operator handoff metadata, populated compare + Candidate B Trace validation, explicit runtime-source Candidate B validation, and runtime-source Workbench Compare follow-through into existing document-trace
   - `nrc_aps_frontend_ui_operator_validation_guide.md` owns the broader manual validation pass after launch and prep succeed
 
 ## Retained Documents
@@ -168,7 +171,7 @@ Ordered next-decision note:
 - `wb-compare-blueprint.md`
   - repo-fit module, route, and implementation blueprint for the workbench compare lane
 - `wb-compare-validation.md`
-  - canonical same-checkout prep plus populated compare/Candidate B Trace validation and explicit runtime-source Candidate B validation flows
+  - canonical same-checkout prep plus populated compare/Candidate B Trace validation, explicit runtime-source Candidate B validation, and runtime-source Workbench Compare follow-through into existing document-trace
 - `nrc_aps_review_ui_startup_and_smoke_test.md`
   - concise startup walkthrough for the review/document-trace/compare surfaces, layered on top of the root launch runbook
 - `nrc_aps_frontend_ui_operator_validation_guide.md`
