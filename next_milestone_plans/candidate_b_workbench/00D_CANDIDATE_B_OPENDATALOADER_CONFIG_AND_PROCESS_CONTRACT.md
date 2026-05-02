@@ -21,10 +21,10 @@ and making output/image handling less implicit.
 ## A. Invocation method
 
 Current committed `main` workbench support launches OpenDataLoader through Python as:
-- `sys.executable -m opendataloader_pdf <fixture_path> ...`
+- `opendataloader_pdf.convert(input_path=<fixture_path>, output_dir=<raw_root>, ...)`
 
 That means the approved current workbench boundary is:
-- Python-launched module invocation only
+- Python-launched direct package invocation only
 - no direct `java -jar ...`
 - no Node.js binding
 - no hybrid backend widening
@@ -33,7 +33,7 @@ Directly verified export/API posture from the exact `opendataloader-pdf==2.0.0` 
 - `opendataloader_pdf.__all__ == ["run", "convert", "run_jar"]`
 - `run(...)` is explicitly deprecated backward-compatibility surface only
 - `run_jar(...)` exists but is not an approved v1 invocation path
-- direct `convert(...)` remains a tighter future hardening target, not a statement of the current committed `main` support implementation
+- direct `convert(...)` is now the committed workbench support invocation path
 
 Exact `convert(...)` signature posture verified from the wheel:
 ```python
