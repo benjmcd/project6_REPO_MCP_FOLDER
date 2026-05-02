@@ -34,7 +34,7 @@ from app.models.models import (
     L3ReconciliationRecord,
 )
 from app.services.layer3_aps_handoff import PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF
-from app.services import layer3_pass_entry as layer3_pass_entry_module
+from app.services import dataframe_io, layer3_pass_entry as layer3_pass_entry_module
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
     SnapshotMaterial,
@@ -46,7 +46,7 @@ from app.services.layer3_session_entry import (
 from app.services.layer3_typing_entry import materialize_typing_entry
 from main import app
 from test_layer3_aps_handoff import _seed_aps_content_fixture, _seed_timeseries_dataset_version
-from test_layer3_pass_entry import _build_quant_ready_session
+from test_layer3_pass_entry import _build_quant_cohort_ready_session, _build_quant_ready_session
 
 
 def _settings_for_test(**values):
@@ -1496,6 +1496,44 @@ def _approve_aps_handoff_plan(client: TestClient, tmp_path) -> tuple[str, dict, 
     return session_id, preview_body, approval.json()
 
 
+def _approve_quant_cohort_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_cohort_ready_session(
+            db,
+            tmp_path,
+            requested_method_name="descriptive_summary",
+        )
+    finally:
+        db.close()
+
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-cohort-execution-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    )
+    assert preview.status_code == 200
+    preview_body = preview.json()
+
+    approval = client.post(
+        "/api/v1/layer3/plan/approve",
+        json={
+            "client_request_id": "api-cohort-execution-approval",
+            "session_id": session_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+        },
+    )
+    assert approval.status_code == 200
+    return session_id, preview_body, approval.json()
+
+
 def _select_quant_pass(
     client: TestClient,
     tmp_path,
@@ -1503,6 +1541,27 @@ def _select_quant_pass(
     request_id: str = "api-analysis-execution-selection",
 ) -> tuple[str, dict, dict, dict]:
     session_id, preview_body, approval_body = _approve_quant_plan(client, tmp_path)
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": request_id,
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert selection.status_code == 200
+    return session_id, preview_body, approval_body, selection.json()
+
+
+def _select_quant_cohort_pass(
+    client: TestClient,
+    tmp_path,
+    *,
+    request_id: str = "api-analysis-execution-cohort-selection",
+) -> tuple[str, dict, dict, dict]:
+    session_id, preview_body, approval_body = _approve_quant_cohort_plan(client, tmp_path)
     selection = client.post(
         "/api/v1/layer3/execution/select",
         json={
@@ -3181,6 +3240,98 @@ def test_layer3_api_execution_result_status_reads_terminal_pass_without_writes(c
             "runs": db.query(AnalysisRun).count(),
             "artifacts": db.query(AnalysisArtifact).count(),
         } == counts_before
+    finally:
+        db.close()
+
+
+def test_layer3_api_selected_cohort_execution_start_and_status_are_bounded(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    def _persist_dataframe_as_csv(db, version, df, time_column) -> None:
+        frame = df.copy()
+        storage_path = tmp_path / "cohort-derived" / f"{version.dataset_version_id}.csv"
+        storage_path.parent.mkdir(parents=True, exist_ok=True)
+        frame.to_csv(storage_path, index=False)
+        version.storage_ref = str(storage_path)
+        version.row_count = int(len(frame))
+        db.flush()
+
+    monkeypatch.setattr(dataframe_io, "persist_dataframe_as_version_rows", _persist_dataframe_as_csv)
+
+    session_id, preview_body, approval_body, selection_body = _select_quant_cohort_pass(
+        client,
+        tmp_path,
+        request_id="api-cohort-result-status-selection",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    start = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-cohort-result-status-start",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert start.status_code == 200
+    start_body = start.json()
+    assert start_body["status"] in {"completed", "completed_with_warnings"}
+    assert start_body["analysis_run_id"]
+    assert start_body["selected_method_name"] == "descriptive_summary"
+
+    status = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "client_request_id": "api-cohort-result-status-read",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "operator_view_mode": "status_only",
+        },
+    )
+    assert status.status_code == 200
+    status_body = status.json()
+    assert status_body["status"] == "available"
+    assert status_body["result_status_available"] is True
+    assert status_body["result_review_enabled"] is False
+    assert status_body["package_review_enabled"] is False
+    assert status_body["handoff_enabled"] is False
+    assert status_body["selected_method_name"] == "descriptive_summary"
+    assert status_body["output_metadata_summary"]["source_gate"] == "78_COHORT_FREEZE"
+
+    review = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={
+            "client_request_id": "api-cohort-result-review-blocked",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "operator_decision": "approved",
+        },
+    )
+    assert review.status_code == 409
+    assert review.json()["error_code"] == "associated_cohort_result_review_not_admitted"
+
+    db = client.layer3_session_factory()
+    try:
+        stored_pass = db.query(L3PassRun).one()
+        assert stored_pass.pass_type == "associated_cohort"
+        assert stored_pass.summary_json["requested_method_name"] == "descriptive_summary"
+        assert stored_pass.summary_json["source_dataset_version_ids_json"] == ["dv-cohort-001", "dv-cohort-002"]
+        assert db.query(AnalysisRun).count() == 1
+        assert db.query(L3ReconciliationRecord).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
     finally:
         db.close()
 
