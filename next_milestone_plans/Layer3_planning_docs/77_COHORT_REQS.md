@@ -4,9 +4,11 @@ Status: planning-only requirements gate for any future associated-cohort `descri
 
 This document does not make associated-cohort `descriptive_summary` live, select an implementation branch, change `backend/app/services/layer3_pass_entry.py`, widen the workbench execution-start path, change UI, add schema/runtime/source behavior, or activate package, handoff, export, connector dispatch, qualitative, hybrid, RAG, vector, or full mockup behavior.
 
+Follow-on docs `78_COHORT_FREEZE.md` and `79_COHORT_CONTRACT.md` now select the narrow `service_materialize_only` path with the `aligned_wide_table` shape and an explicit service-owned method-selection gate. Those docs are also planning-only and still do not make associated-cohort `descriptive_summary` live.
+
 ## Current Live Boundary
 
-Current `main` at `6f83fcfd` has these relevant truths:
+Current `main` has these relevant truths:
 
 - PR `#411` made `descriptive_summary` a lower-level `ANALYSIS_METHOD_REGISTRY` method in `backend/app/services/analysis.py`.
 - PR `#417` admitted `descriptive_summary` only through the existing single-item wrapped quantitative Gate C path.
@@ -26,7 +28,7 @@ Admissible options to evaluate:
 - `per_source_summary_bundle`: run or derive deterministic summaries for each source dataset version and persist a cohort-level manifest that aggregates those summaries without pretending the cohort is one time-aligned table.
 - `long_source_table`: shape rows as source/member observations with explicit source identifiers, preserving uneven or non-time-series source breadth without exact timestamp intersection.
 
-No default is selected here. The later freeze must justify the selected shape against the intended analytical meaning and prove it does not coerce unaligned or non-time-series cohorts into misleading time-series semantics.
+This requirements document did not select a default shape. The follow-on service freeze in `78_COHORT_FREEZE.md` selects only `aligned_wide_table` for the first service-only candidate and preserves the requirement that unaligned or non-time-series cohorts must not be coerced into misleading time-series semantics.
 
 ## Required Decision 2: Method Selection Rule
 
@@ -50,7 +52,7 @@ Allowed planning choices:
 - `service_materialize_only`: admit associated-cohort `descriptive_summary` only through the older immediate `materialize_pass_entry(...)` service flow. This avoids route/UI widening but does not make the newer selected-pass workbench execution-start path support cohorts.
 - `selected_pass_workbench_breadth`: widen selected-pass execution-start, result/status, and downstream result-review/package gates to support associated-cohort pass runs. This is a larger API/workbench tranche and must update `layer3_workbench.py`, API tests, and possibly rendered UI/docs.
 
-Do not mix these choices in one implementation PR. If workbench selected-pass breadth is selected, it is not a docs-only or owner-service-only change.
+Do not mix these choices in one implementation PR. The follow-on docs `78_COHORT_FREEZE.md` and `79_COHORT_CONTRACT.md` select `service_materialize_only` only. If workbench selected-pass breadth is later selected, it is not a docs-only or owner-service-only change and requires a separate freeze.
 
 ## Required Contract Before Implementation
 
@@ -125,4 +127,4 @@ Stop and return to planning if implementation requires:
 
 ## Readiness Judgment
 
-Associated-cohort `descriptive_summary` is a valid future candidate, but it is not implementation-ready from current docs alone. The next implementation-capable artifact must be a cohort-specific freeze that chooses the cohort data shape and execution surface before code changes.
+Associated-cohort `descriptive_summary` is a valid future candidate, but this requirements document alone is not implementation-ready. The next implementation-capable artifacts are the planning-only service freeze and contract in `78_COHORT_FREEZE.md` and `79_COHORT_CONTRACT.md`; code changes still require a separate implementation PR that proves the explicit method-selection gate and no-go boundaries.
