@@ -23,6 +23,7 @@ from app.models.models import (
     Dataset,
     DatasetVersion,
     L3AnalysisPlan,
+    L3AnalysisSet,
     L3PassRun,
     L3Session,
     VariableDefinition,
@@ -273,6 +274,7 @@ def _build_quant_cohort_ready_session(
     tmp_path: Path,
     *,
     second_start: str = "2020-01-01",
+    requested_method_name: str | None = None,
 ) -> tuple[str, str, datetime]:
     _seed_timeseries_dataset_version(
         db,
@@ -345,6 +347,19 @@ def _build_quant_cohort_ready_session(
     db.commit()
 
     materialize_typing_entry(db, session_id=session.session_id)
+    if requested_method_name is not None:
+        associated_set = (
+            db.query(L3AnalysisSet)
+            .filter(
+                L3AnalysisSet.session_id == session.session_id,
+                L3AnalysisSet.set_type == "associated_cohort",
+            )
+            .one()
+        )
+        associated_set.formation_basis_json = {
+            **associated_set.formation_basis_json,
+            "requested_method_name": requested_method_name,
+        }
     db.commit()
     return session.session_id, phase1a_status, phase1a_completed_at
 
@@ -790,6 +805,7 @@ def test_gatec_pass_entry_executes_quantitative_associated_cohort_with_shaped_ma
         assert input_manifest["time_column"] == "observed_at"
         assert input_manifest["row_count"] == 24
         assert input_manifest["column_map_json"] == stored_pass.summary_json["column_map_json"]
+        assert all(entry["source_variable_name"] == "value" for entry in input_manifest["column_map_json"])
 
         derived_dataset_version_id = stored_pass.summary_json["derived_dataset_version_id"]
         assert derived_dataset_version_id == input_manifest["derived_dataset_version_id"]
@@ -814,6 +830,162 @@ def test_gatec_pass_entry_executes_quantitative_associated_cohort_with_shaped_ma
         assert session.summary_json["pass_entry"]["source_gate"] == "07_GATEC_COHORT_FREEZE"
         assert session.status in {"completed", "completed_with_warnings"}
         assert session.completed_at is not None
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_gatec_pass_entry_executes_explicit_descriptive_summary_associated_cohort(tmp_path):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, phase1a_status, phase1a_completed_at = _build_quant_cohort_ready_session(
+            db,
+            tmp_path,
+            requested_method_name="descriptive_summary",
+        )
+
+        result = materialize_pass_entry(db, session_id=session_id)
+        db.commit()
+
+        stored_plan = db.query(L3AnalysisPlan).one()
+        stored_pass = db.query(L3PassRun).one()
+        session = db.get(L3Session, session_id)
+
+        assert result.analysis_plan.analysis_plan_id == stored_plan.analysis_plan_id
+        planned_pass = stored_plan.plan_json["planned_passes_json"][0]
+        assert planned_pass["set_type"] == "associated_cohort"
+        assert planned_pass["pass_type"] == "associated_cohort"
+        assert planned_pass["pass_scope"] == "quantitative_associated_cohort_dataset_version"
+        assert planned_pass["selected_method_name"] == "descriptive_summary"
+        assert planned_pass["source_gate"] == "78_COHORT_FREEZE"
+        assert planned_pass["cohort_shape"] == "aligned_wide_table"
+        assert planned_pass["requested_method_name"] == "descriptive_summary"
+        assert (
+            planned_pass["requested_method_source"]
+            == "analysis_set.formation_basis_json.requested_method_name"
+        )
+        assert stored_plan.plan_json["source_gate"] == "78_COHORT_FREEZE"
+
+        assert stored_pass.pass_type == "associated_cohort"
+        assert stored_pass.status in {"completed", "completed_with_warnings"}
+        assert stored_pass.summary_json["selected_method_name"] == "descriptive_summary"
+        assert stored_pass.summary_json["source_gate"] == "78_COHORT_FREEZE"
+        assert stored_pass.summary_json["cohort_shape"] == "aligned_wide_table"
+        assert stored_pass.summary_json["requested_method_name"] == "descriptive_summary"
+        assert (
+            stored_pass.summary_json["requested_method_source"]
+            == "analysis_set.formation_basis_json.requested_method_name"
+        )
+        assert stored_pass.summary_json["artifact_types_json"] == ["descriptive_summary_result"]
+        assert stored_pass.summary_json["source_dataset_version_ids_json"] == ["dv-cohort-001", "dv-cohort-002"]
+        assert all(entry["source_variable_name"] == "value" for entry in stored_pass.summary_json["column_map_json"])
+
+        input_manifest = json.loads(Path(stored_pass.input_payload_ref).read_text(encoding="utf-8"))
+        assert input_manifest["source_gate"] == "78_COHORT_FREEZE"
+        assert input_manifest["selected_method_name"] == "descriptive_summary"
+        assert input_manifest["cohort_shape"] == "aligned_wide_table"
+        assert input_manifest["requested_method_name"] == "descriptive_summary"
+        assert all(entry["source_variable_name"] == "value" for entry in input_manifest["column_map_json"])
+
+        output_manifest = json.loads(Path(stored_pass.output_payload_ref).read_text(encoding="utf-8"))
+        assert output_manifest["source_gate"] == "78_COHORT_FREEZE"
+        assert output_manifest["selected_method_name"] == "descriptive_summary"
+        assert output_manifest["artifact_types_json"] == ["descriptive_summary_result"]
+        assert output_manifest["cohort_shape"] == "aligned_wide_table"
+        assert output_manifest["requested_method_name"] == "descriptive_summary"
+        assert all(entry["source_variable_name"] == "value" for entry in output_manifest["column_map_json"])
+
+        analysis_run = db.query(AnalysisRun).one()
+        assert analysis_run.method_name == "descriptive_summary"
+        assert db.query(DatasetVersion).count() == 3
+        preserved = session.summary_json["phase1a_loading_closure"]
+        assert preserved["status"] == phase1a_status
+        assert preserved["completed_at"] == _utc_isoformat(phase1a_completed_at)
+        assert session.summary_json["pass_entry"]["source_gate"] == "78_COHORT_FREEZE"
+        assert session.summary_json["pass_entry"]["excluded_set_count"] == 0
+        assert session.status in {"completed", "completed_with_warnings"}
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_gatec_pass_entry_preserves_cross_correlation_for_non_descriptive_cohort_request(tmp_path):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, _, _ = _build_quant_cohort_ready_session(
+            db,
+            tmp_path,
+            requested_method_name="cross_correlation",
+        )
+
+        materialize_pass_entry(db, session_id=session_id)
+        db.commit()
+
+        stored_plan = db.query(L3AnalysisPlan).one()
+        stored_pass = db.query(L3PassRun).one()
+        planned_pass = stored_plan.plan_json["planned_passes_json"][0]
+        assert planned_pass["selected_method_name"] == "cross_correlation"
+        assert planned_pass["source_gate"] == "07_GATEC_COHORT_FREEZE"
+        assert "requested_method_name" not in planned_pass
+        assert stored_pass.summary_json["selected_method_name"] == "cross_correlation"
+        assert stored_pass.summary_json["source_gate"] == "07_GATEC_COHORT_FREEZE"
+        assert "requested_method_name" not in stored_pass.summary_json
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
+def test_gatec_pass_entry_selected_pass_execution_still_rejects_associated_cohort(tmp_path):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, _, _ = _build_quant_cohort_ready_session(
+            db,
+            tmp_path,
+            requested_method_name="descriptive_summary",
+        )
+
+        preview = preview_pass_entry(db, session_id=session_id)
+        approval = approve_pass_entry_plan(
+            db,
+            session_id=session_id,
+            preview_hash=preview.preview_hash,
+            source_preview_id="cohort-selected-pass-preview",
+        )
+        db.commit()
+
+        stored_plan = db.query(L3AnalysisPlan).one()
+        planned_pass = stored_plan.plan_json["planned_passes_json"][0]
+        pass_run = L3PassRun(
+            pass_run_id="pass-run-cohort-selected",
+            session_id=session_id,
+            analysis_plan_id=approval.analysis_plan.analysis_plan_id,
+            analysis_set_id=planned_pass["analysis_set_id"],
+            pass_type="associated_cohort",
+            engine_family="wrapped_quantitative_analysis",
+            status="selected_not_started",
+            started_at=None,
+            completed_at=None,
+            input_payload_ref="selected-cohort-input-ref",
+            output_payload_ref=None,
+            summary_json={
+                "selected_method_name": "descriptive_summary",
+                "analysis_run_id": None,
+            },
+            created_at=datetime.now(timezone.utc),
+        )
+
+        with pytest.raises(Layer3PassEntryError, match="source breadth outside this execution-start slice"):
+            execute_selected_pass_run(
+                db,
+                pass_run=pass_run,
+                planned_pass=planned_pass,
+                client_request_id="cohort-selected-start",
+            )
+
+        assert db.query(AnalysisRun).count() == 0
     finally:
         settings.storage_dir = original_storage_dir
 
