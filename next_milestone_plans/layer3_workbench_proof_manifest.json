@@ -1,30 +1,30 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus PR #411 lower-level descriptive_summary support, PR #417 single-item Gate C admission, doc 77 cohort requirements, PR #423 docs 78/79 service-materialize cohort governance, PR #424 explicit service-only cohort implementation, PR #425 exact-request hardening, PR #429 proof-surface sync, and PR #430 docs 80/81 selected-pass cohort execution planning governance",
+  "status": "current-main readiness proof plus PR #432 bounded selected-pass associated-cohort execution-start/result-status implementation and post-PR432 docs/control sync",
   "scope": {
-    "source_branch": "codex/l3-selected-cohort-freeze-p38",
-    "merged_pr": "#430",
-    "merge_commit": "88effbdef40f8cd738968778894df855b301aec6",
+    "source_branch": "codex/l3-post432-proof-sync-p43",
+    "merged_pr": "post-PR432 docs/control sync pending",
+    "merge_commit": "",
     "base_remote": "project6-origin/main",
-    "base_commit": "e6ef73f1",
-    "source_base_commit": "e6ef73f188bae8fe8c91fa780d3527bdcd8a4bb5",
-    "purpose": "Record PR #429 cohort service proof-surface sync and PR #430 docs 80/81 selected-pass associated-cohort execution-start/result-status planning governance while preserving PR #424/#425 as the only live associated-cohort descriptive_summary behavior.",
+    "base_commit": "043f4402",
+    "source_base_commit": "043f440243a282d47b48bf5a78ffb873d83afd8c",
+    "purpose": "Record PR #432 bounded selected-pass associated-cohort descriptive_summary execution-start/result-status implementation while preserving downstream no-go boundaries.",
     "live_behavior_change": false,
-    "live_behavior_change_summary": "PR #430 is docs-only planning governance. It does not make selected-pass cohort execution live; PR #424/#425 remain the only live associated-cohort descriptive_summary path, through service-owned materialize_pass_entry(...) with exact requested_method_name metadata.",
-    "latest_implementation_pr": "#425",
-    "latest_implementation_branch": "codex/l3-desc-cohort-audit-p33",
-    "latest_implementation_summary": "PR #425 hardens the PR #424 service-only associated-cohort descriptive_summary path so only an exact string requested_method_name selects descriptive_summary; default cross_correlation behavior and selected-pass cohort rejection are preserved.",
+    "live_behavior_change_summary": "This docs-sync branch changes docs/control metadata only. PR #432 already made the exact backend/API selected-pass associated-cohort execution-start/result-status path live on current main.",
+    "latest_implementation_pr": "#432",
+    "latest_implementation_branch": "codex/l3-selected-cohort-execution-p42",
+    "latest_implementation_summary": "PR #432 implements only exact selected-pass associated-cohort descriptive_summary execution-start/result-status over existing backend/API surfaces and preserves result review, UI, package, handoff, export, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, and full mockup no-go boundaries.",
     "latest_planning_pr": "#430",
     "latest_planning_branch": "codex/l3-selected-cohort-freeze-p38",
-    "latest_planning_summary": "Docs 80/81 define planning-only selected-pass associated-cohort descriptive_summary execution-start/result-status governance over existing backend/API surfaces. Implementation still requires a separate code PR.",
+    "latest_planning_summary": "Docs 80/81 define selected-pass associated-cohort descriptive_summary execution-start/result-status governance over existing backend/API surfaces; PR #432 is the separate bounded implementation.",
     "latest_planning_live_behavior_change": false,
-    "latest_planning_behavior_summary": "Docs 80/81 are planning/control by themselves. They do not make selected-pass cohort execution, result review, package, handoff, export, UI, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, or full mockup behavior live.",
-    "latest_implementation_merge_commit": "7fa3d9b44b91f33da9f2c7d7d063495ab580eade",
+    "latest_planning_behavior_summary": "Docs 80/81 are planning/control by themselves. PR #432 implements only execution-start/result-status and does not make result review, package, handoff, export, UI, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, or full mockup behavior live.",
+    "latest_implementation_merge_commit": "043f440243a282d47b48bf5a78ffb873d83afd8c",
     "latest_planning_base_commit": "e6ef73f188bae8fe8c91fa780d3527bdcd8a4bb5",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
-    "latest_branch_only_implementation_summary": "No active branch-only implementation is included in this docs-sync branch. Docs 72/73, 75/76, 78/79, and 80/81 are current-main governance; PR #411, PR #417, and PR #424/#425 are the corresponding bounded live implementation/hardening steps for admitted surfaces. Docs 80/81 still require a future implementation PR.",
+    "latest_branch_only_implementation_summary": "No active branch-only implementation is included in this docs-sync branch. PR #432 is already merged on current main; this branch only updates proof/control surfaces.",
     "latest_ui_planning_pr": "#281",
     "latest_ui_planning_branch": "codex/l3-download-delivery-ui-freeze",
     "latest_ui_planning_summary": "PR #281 lands docs 68/69 as planning-only rendered /review/layer3 external export/download delivery UI governance over the already-live PR #278 backend/API delivery endpoint.",
@@ -159,7 +159,7 @@
     "latest_descriptive_summary_gatec_admission_base_commit": "811b2e14ef23b4643e5b9c004890013f41836bf5",
     "latest_descriptive_summary_cohort_requirements_branch": "codex/l3-desc-cohort-reqs-p31",
     "latest_descriptive_summary_cohort_requirements_pr": "#422",
-    "latest_descriptive_summary_cohort_requirements_summary": "Doc 77 records associated-cohort requirements; PR #423 adds docs 78/79 service-materialize governance; PR #424 implements the explicit service-owned associated-cohort path; PR #425 hardens exact requested-method matching; PR #428 synchronizes planning docs to the live state; PR #429 syncs proof surfaces; PR #430 adds docs 80/81 as planning-only selected-pass cohort execution governance.",
+    "latest_descriptive_summary_cohort_requirements_summary": "Doc 77 records associated-cohort requirements; PR #423 adds docs 78/79 service-materialize governance; PR #424 implements the explicit service-owned associated-cohort path; PR #425 hardens exact requested-method matching; PR #428 synchronizes planning docs to the live state; PR #429 syncs proof surfaces; PR #430 adds docs 80/81 selected-pass cohort execution governance; PR #431 syncs proof state; PR #432 implements only bounded selected-pass associated-cohort execution-start/result-status.",
     "latest_descriptive_summary_cohort_requirements_live_behavior_change": false,
     "latest_descriptive_summary_cohort_implementation_branch": "codex/l3-desc-cohort-audit-p33",
     "latest_descriptive_summary_cohort_implementation_pr": "#425",
@@ -168,8 +168,13 @@
     "latest_descriptive_summary_cohort_implementation_live_behavior_change": true,
     "latest_descriptive_summary_selected_pass_cohort_planning_branch": "codex/l3-selected-cohort-freeze-p38",
     "latest_descriptive_summary_selected_pass_cohort_planning_pr": "#430",
-    "latest_descriptive_summary_selected_pass_cohort_planning_summary": "Docs 80/81 freeze only a future backend/API selected-pass associated-cohort descriptive_summary execution-start/result-status tranche. They preserve current selected-pass cohort rejection until a separate implementation PR satisfies the contract.",
-    "latest_descriptive_summary_selected_pass_cohort_planning_live_behavior_change": false
+    "latest_descriptive_summary_selected_pass_cohort_planning_summary": "Docs 80/81 define selected-pass associated-cohort descriptive_summary execution-start/result-status governance over existing backend/API surfaces; PR #432 is the separate bounded implementation.",
+    "latest_descriptive_summary_selected_pass_cohort_planning_live_behavior_change": false,
+    "latest_descriptive_summary_selected_pass_cohort_implementation_branch": "codex/l3-selected-cohort-execution-p42",
+    "latest_descriptive_summary_selected_pass_cohort_implementation_pr": "#432",
+    "latest_descriptive_summary_selected_pass_cohort_implementation_merge_commit": "043f440243a282d47b48bf5a78ffb873d83afd8c",
+    "latest_descriptive_summary_selected_pass_cohort_implementation_summary": "PR #432 implements bounded backend/API selected-pass associated-cohort descriptive_summary execution-start/result-status only, with exact selected metadata/provenance gates and fail-closed invalid binding/provenance behavior.",
+    "latest_descriptive_summary_selected_pass_cohort_implementation_live_behavior_change": true
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -2305,20 +2310,19 @@
     "planning_branch": "codex/l3-selected-cohort-freeze-p38",
     "planning_pr": "#430",
     "merge_commit": "88effbdef40f8cd738968778894df855b301aec6",
-    "scope": "Docs 80/81 are planning-only selected-pass associated-cohort descriptive_summary execution-start/result/status governance over existing backend/API selected-pass surfaces. They do not implement selected-pass cohort execution.",
+    "scope": "Docs 80/81 are selected-pass associated-cohort descriptive_summary execution-start/result/status governance over existing backend/API selected-pass surfaces. They remain planning/control by themselves; PR #432 separately implements only the bounded execution-start/result-status path.",
     "docs_added": [
       "next_milestone_plans/Layer3_planning_docs/80_COHORT_EXECUTION_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/81_COHORT_EXECUTION_CONTRACT.md"
     ],
     "authority_basis": [
-      "backend/app/services/layer3_pass_entry.py execute_selected_pass_run currently rejects planned pass types outside single_item",
-      "backend/app/services/layer3_workbench.py execution-start rejects non-single-item pass types",
-      "backend/app/services/layer3_workbench.py result/status rejects non-single-item pass types",
-      "backend/tests/test_layer3_pass_entry.py proves selected-pass associated-cohort execution remains rejected before this planning-only freeze is implemented"
+      "Docs 80/81 define exact selected-pass associated-cohort metadata/provenance, execution-start, result/status, failure, and no-go requirements.",
+      "PR #432 implements those requirements in backend/app/services/layer3_pass_entry.py and backend/app/services/layer3_workbench.py.",
+      "backend/tests/test_layer3_pass_entry.py and backend/tests/test_layer3_api.py prove the exact admitted path plus fail-closed and no-go behavior."
     ],
     "live_behavior_change": false,
     "no_go_preserved": [
-      "no live selected-pass associated-cohort execution",
+      "docs 80/81 by themselves do not make behavior live",
       "no selected-pass associated-cohort result review",
       "no package/handoff/export/download behavior",
       "no rendered UI behavior",
@@ -2327,12 +2331,44 @@
       "no qualitative/hybrid/RAG/vector/full mockup behavior"
     ],
     "required_future_proof": [
-      "single-item selected-pass descriptive_summary remains unchanged",
-      "service-owned associated-cohort materialize_pass_entry descriptive_summary remains unchanged",
-      "selected-pass associated-cohort execution-start succeeds only for exact service-owned descriptive_summary metadata",
-      "selected-pass associated-cohort result/status succeeds only after admitted terminal execution output",
-      "invalid metadata, provenance, preview identity, plan binding, or pass scope fails closed before AnalysisRun creation",
-      "result review, package, handoff, export, UI, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, and full mockup surfaces remain unavailable"
+      "Satisfied separately by PR #432 for execution-start/result-status only.",
+      "Any selected-pass associated-cohort result review, package, handoff, export, UI, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, or full mockup behavior still requires separate governance and proof."
+    ]
+  },
+  "descriptive_summary_selected_pass_cohort_execution_implementation_proof": {
+    "implementation_branch": "codex/l3-selected-cohort-execution-p42",
+    "implementation_pr": "#432",
+    "merge_commit": "043f440243a282d47b48bf5a78ffb873d83afd8c",
+    "base_commit": "e882e24c79fb01fb60192a49bf3f892a51943ff6",
+    "scope": "Bounded selected-pass associated-cohort descriptive_summary execution-start/result-status over existing backend/API selected-pass surfaces only.",
+    "files_changed": [
+      "backend/app/services/layer3_pass_entry.py",
+      "backend/app/services/layer3_workbench.py",
+      "backend/tests/test_layer3_pass_entry.py",
+      "backend/tests/test_layer3_api.py"
+    ],
+    "authority_basis": [
+      "backend/app/services/layer3_pass_entry.py execute_selected_pass_run admits associated_cohort only for exact descriptive_summary selected metadata/provenance.",
+      "backend/app/services/layer3_workbench.py execution-start admits associated_cohort only through the docs 80/81 selected-pass cohort contract.",
+      "backend/app/services/layer3_workbench.py result/status reads admitted terminal associated-cohort output while keeping result review, package, handoff, and export unavailable.",
+      "failure summaries scrub rolled-back derived dataset and generated input payload references so failed-run provenance remains resolvable."
+    ],
+    "live_behavior_change": true,
+    "live_behavior": "PR #432 makes only selected-pass associated-cohort execution-start/result-status live for exact descriptive_summary cohort metadata/provenance over the existing aligned_wide_table derived dataset-version path.",
+    "no_go_preserved": [
+      "no selected-pass associated-cohort result review",
+      "no package/handoff/export/download behavior",
+      "no rendered UI behavior",
+      "no schema/model/migration/runtime/source widening",
+      "no connector dispatch",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior",
+      "no broader associated-cohort behavior outside exact selected descriptive_summary metadata/provenance"
+    ],
+    "verification": [
+      "python -m pytest .\\backend\\tests\\test_layer3_pass_entry.py::test_gatec_pass_entry_selected_cohort_failure_does_not_record_rolled_back_dataset .\\backend\\tests\\test_layer3_pass_entry.py::test_gatec_pass_entry_selected_pass_execution_runs_descriptive_summary_associated_cohort .\\backend\\tests\\test_layer3_api.py::test_layer3_api_selected_cohort_execution_start_and_status_are_bounded -q -> 3 passed, 3 warnings",
+      "python -m pytest .\\backend\\tests\\test_layer3_pass_entry.py .\\backend\\tests\\test_layer3_api.py -q -> 90 passed, 4 warnings",
+      "GitHub PR #432 checks passed: backend-layer3-api and test",
+      "Codex review thread on failed-run provenance was resolved before merge"
     ]
   }
 }
