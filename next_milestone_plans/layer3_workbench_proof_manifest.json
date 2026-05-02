@@ -1,35 +1,35 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus PR #432 bounded selected-pass associated-cohort execution-start/result-status implementation, PR #433 post-PR432 docs/control sync, PR #434 docs 82/83 planning/control associated-cohort result-review governance, PR #435/#436 metadata syncs, and PR #438 bounded selected-pass associated-cohort result-review backend/API implementation",
+  "status": "current-main readiness proof plus PR #432 bounded selected-pass associated-cohort execution-start/result-status implementation, PR #433 post-PR432 docs/control sync, PR #434 docs 82/83 planning/control associated-cohort result-review governance, PR #435/#436 metadata syncs, PR #438 bounded selected-pass associated-cohort result-review backend/API implementation, and PR #441 docs 84/85 planning-control associated-cohort result-review UI governance",
   "scope": {
-    "source_branch": "codex/l3-cohort-result-review-impl-p48",
-    "merged_pr": "#438",
-    "merge_commit": "170a99edb3a466fa7651725c567deb656a3ec59e",
+    "source_branch": "codex/l3-cohort-result-review-ui-freeze-p51",
+    "merged_pr": "#441",
+    "merge_commit": "pending PR #441",
     "base_remote": "project6-origin/main",
-    "base_commit": "dfae9279",
-    "source_base_commit": "dfae92797928b582b301264c5a5f6b4f00303d28",
-    "purpose": "Record PR #432 bounded selected-pass associated-cohort descriptive_summary execution-start/result-status implementation, PR #434 docs 82/83 planning/control result-review governance, and PR #438 bounded selected-pass associated-cohort result-review backend/API implementation while preserving downstream no-go boundaries.",
+    "base_commit": "6f1a2ff4",
+    "source_base_commit": "6f1a2ff41d12f1fa3df1d174f5b29e69813ac3fa",
+    "purpose": "Record PR #432 bounded selected-pass associated-cohort descriptive_summary execution-start/result-status implementation, PR #434 docs 82/83 planning/control result-review governance, PR #438 bounded selected-pass associated-cohort result-review backend/API implementation, and PR #441 docs 84/85 associated-cohort result-review UI planning governance while preserving downstream no-go boundaries.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "PR #438 changed backend/API behavior only for exact selected-pass associated-cohort descriptive_summary result review over existing /api/v1/layer3/execution/result/review. PR #433, PR #434, PR #435, and PR #436 changed docs/control metadata only.",
+    "live_behavior_change_summary": "PR #438 changed backend/API behavior only for exact selected-pass associated-cohort descriptive_summary result review over existing /api/v1/layer3/execution/result/review. PR #433, PR #434, PR #435, PR #436, and PR #441 changed docs/control metadata only.",
     "latest_implementation_pr": "#438",
     "latest_implementation_branch": "codex/l3-cohort-result-review-impl-p48",
     "latest_implementation_summary": "PR #438 implements only exact selected-pass associated-cohort descriptive_summary result review through the existing backend/API result-review endpoint, reusing the existing write envelope and preserving package, handoff, export, UI, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, retry/recovery, pass-entry, and full mockup no-go boundaries.",
-    "latest_planning_pr": "#430",
-    "latest_planning_branch": "codex/l3-selected-cohort-freeze-p38",
-    "latest_planning_summary": "Docs 80/81 define selected-pass associated-cohort descriptive_summary execution-start/result-status governance over existing backend/API surfaces; PR #432 is the separate bounded implementation.",
+    "latest_planning_pr": "#441",
+    "latest_planning_branch": "codex/l3-cohort-result-review-ui-freeze-p51",
+    "latest_planning_summary": "Docs 84/85 define selected-pass associated-cohort descriptive_summary result-review UI governance over exact PR #432 execution-start/result/status authority and PR #438 backend/API result-review authority; they do not make UI behavior live by themselves.",
     "latest_planning_live_behavior_change": false,
-    "latest_planning_behavior_summary": "Docs 80/81 are planning/control by themselves. PR #432 implements only execution-start/result-status and does not make package, handoff, export, UI, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, or full mockup behavior live; PR #438 is the separate result-review implementation authority.",
+    "latest_planning_behavior_summary": "Docs 84/85 are planning/control by themselves. A separate implementation PR is required before rendered associated-cohort result-review UI behavior is live; docs 84/85 do not admit backend/API behavior changes, package, handoff, export, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, retry/recovery, pass-entry, broader cohort review, or full mockup behavior.",
     "latest_implementation_merge_commit": "170a99edb3a466fa7651725c567deb656a3ec59e",
-    "latest_planning_base_commit": "e6ef73f188bae8fe8c91fa780d3527bdcd8a4bb5",
+    "latest_planning_base_commit": "6f1a2ff41d12f1fa3df1d174f5b29e69813ac3fa",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
     "latest_branch_only_implementation_summary": "No active branch-only implementation is included. Current main includes PR #438 as the bounded associated-cohort result-review backend/API implementation.",
-    "latest_ui_planning_pr": "#281",
-    "latest_ui_planning_branch": "codex/l3-download-delivery-ui-freeze",
-    "latest_ui_planning_summary": "PR #281 lands docs 68/69 as planning-only rendered /review/layer3 external export/download delivery UI governance over the already-live PR #278 backend/API delivery endpoint.",
+    "latest_ui_planning_pr": "#441",
+    "latest_ui_planning_branch": "codex/l3-cohort-result-review-ui-freeze-p51",
+    "latest_ui_planning_summary": "PR #441 lands docs 84/85 as planning-only rendered /review/layer3 associated-cohort result-review UI governance over exact PR #432 selected-pass execution-start/result/status authority and PR #438 backend/API result-review authority.",
     "latest_ui_planning_live_behavior_change": false,
-    "latest_ui_planning_behavior_summary": "Docs 68/69 are planning/control only by themselves; PR #282 is the separate bounded rendered delivery UI implementation. Public/signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, and full mockup activation remain out.",
+    "latest_ui_planning_behavior_summary": "Docs 84/85 are planning/control only by themselves; a separate implementation PR is required before rendered associated-cohort result-review UI behavior is live. Backend/API changes, package, handoff, export, connector dispatch, schema/runtime/source widening, retry/recovery, pass-entry changes, broader cohort review, and full mockup activation remain out.",
     "latest_backend_implementation_pr": "#316",
     "latest_backend_implementation_summary": "PR #316 adds the current-methods AnalysisMethod registry to backend/app/services/analysis.py without changing runtime execution behavior or admitting new methods.",
     "latest_ui_implementation_pr": "#286",
@@ -2452,6 +2452,45 @@
       "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -> 71 passed",
       "python -m pytest .\\backend\\tests\\test_layer3_pass_entry.py -q -> 20 passed",
       "GitHub PR #438 checks passed: backend-layer3-api and test"
+    ]
+  },
+  "descriptive_summary_selected_pass_cohort_result_review_ui_freeze_proof": {
+    "planning_branch": "codex/l3-cohort-result-review-ui-freeze-p51",
+    "planning_pr": "#441",
+    "base_commit": "6f1a2ff41d12f1fa3df1d174f5b29e69813ac3fa",
+    "merge_commit": "pending PR #441",
+    "scope": "Planning-only rendered /review/layer3 selected-pass associated-cohort descriptive_summary result-review UI governance over exact PR #432 execution-start/result/status authority and PR #438 backend/API result-review authority.",
+    "docs_added": [
+      "next_milestone_plans/Layer3_planning_docs/84_COHORT_RESULT_REVIEW_UI_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/85_COHORT_RESULT_REVIEW_UI_CONTRACT.md"
+    ],
+    "authority_basis": [
+      "PR #432 already admits exact selected-pass associated-cohort descriptive_summary execution-start/result/status through existing backend/API surfaces.",
+      "PR #438 already admits exact selected-pass associated-cohort descriptive_summary result review through the existing backend/API result-review endpoint.",
+      "Docs 46/47 and PR #232 provide the existing single-item result-review UI pattern, but they do not by themselves admit associated-cohort rendered UI behavior."
+    ],
+    "live_behavior_change": false,
+    "no_go_preserved": [
+      "docs 84/85 by themselves do not make rendered UI behavior live",
+      "no backend/API behavior changes",
+      "no package/handoff/export/download behavior",
+      "no schema/runtime/source widening",
+      "no connector dispatch",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior",
+      "no pass-entry behavior changes",
+      "no retry/recovery/replay behavior",
+      "no broader associated-cohort review outside exact PR #432 selected-pass descriptive_summary output authority"
+    ],
+    "required_future_proof": [
+      "A separate implementation PR must prove existing single-item result-review UI behavior unchanged.",
+      "A separate implementation PR must prove PR #432/#438 backend/API gates unchanged.",
+      "A separate implementation PR must prove associated-cohort status/review controls enable only from server authority, submit admitted fields only, render stale/malformed/missing provenance and trace failures as blocked, and keep package/handoff/export/schema/runtime/source/connector/retry/pass-entry/full mockup behavior absent.",
+      "Because rendered UI behavior would change, page/static coverage plus headed and headless Chrome proof are required for implementation."
+    ],
+    "validation": [
+      "git diff --check over docs 84/85 and progress/control updates",
+      "python -m json.tool next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool next_milestone_plans/layer3_workbench_proof_manifest.json"
     ]
   }
 }
