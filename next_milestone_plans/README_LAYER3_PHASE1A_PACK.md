@@ -230,6 +230,12 @@ And to the selected-pass associated-cohort result-review UI freeze/contract from
 
 The associated-cohort result-review UI packet freezes only the rendered `/review/layer3` presentation/control boundary over exact PR `#432` execution-start/result/status authority and PR `#438` backend/API result-review authority. Docs `84`/`85` do not make rendered UI behavior live by themselves; PR `#443` separately implements only that exact rendered associated-cohort result-review path, with server-provenance projection, traceable `reviewed_output_items`, preserved single-item result-review behavior, and package/handoff/export controls unavailable for associated-cohort review state. It does not admit backend/API changes, package, handoff, export, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, retry/recovery, pass-entry changes, broader cohort review, broader UI behavior, or full mockup behavior.
 
+And to the selected-pass associated-cohort package-review preview freeze/contract, which is planning-only and does not make package preview, package construction, package-review submit, handoff, or export live by itself:
+- `next_milestone_plans/Layer3_planning_docs/86_COHORT_PACKAGE_REVIEW_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/87_COHORT_PACKAGE_REVIEW_CONTRACT.md`
+
+The associated-cohort package-review preview packet freezes only a future read-only preview/readiness inspection boundary after exact PR `#432` execution-start/result/status authority, PR `#438` backend/API result-review authority, and PR `#443` rendered result-review UI authority. It treats docs `48`/`49` as the single-item pattern source, not direct cohort package authority. It does not admit package construction, package-review submit, `L3OutputPackage` or `L3ReconciliationRecord` creation, package payload files, handoff/export, APS dispatch, external export/download, connector dispatch, schema/runtime/source widening, retry/recovery, pass-entry changes, broader UI behavior, or full mockup activation.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
