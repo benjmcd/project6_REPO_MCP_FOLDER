@@ -195,6 +195,12 @@ And to the planning-only deferred implementation playbook from PR `#407`, which 
 
 The playbook does not by itself select a new lane or implement deferred behavior. It keeps the eight deferred categories blocked behind their activation contracts; PR `#411` used it only for the first bounded lower-level `descriptive_summary` analysis-service tranche, with Gate C admission and all broader deferred categories still blocked.
 
+And to the planning-only descriptive-summary Gate C admission packet, which freezes the next possible implementation boundary after PR `#411` without making pass-entry behavior live:
+- `next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/76_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_CONTRACT.md`
+
+The Gate C admission packet admits only a future single-item pass-entry implementation for already-live lower-level `descriptive_summary` analysis. It keeps associated-cohort admission, UI, schema/runtime/source, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector behavior, and full mockup activation blocked.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 

@@ -1,25 +1,25 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus bounded result/status, result-review, package/handoff/export/download chain, docs 70/71 registry governance, PR #316 current-methods registry implementation, docs 72/73 descriptive_summary governance, PR #407 deferred implementation playbook governance, and PR #411 bounded lower-level descriptive_summary analysis API support with Gate C/UI/schema/runtime/source/package/handoff/export still deferred",
+  "status": "current-main readiness proof plus PR #411 bounded lower-level descriptive_summary analysis API support, with branch-local docs 75/76 planning-only single-item Gate C admission governance; no Gate C implementation from this docs branch",
   "scope": {
-    "source_branch": "codex/l3-desc-summary-docsync-p25",
+    "source_branch": "codex/l3-desc-gatec-planning-p26",
     "merged_pr": "post-PR411 docs/control sync branch",
     "merge_commit": "",
     "base_remote": "project6-origin/main",
-    "base_commit": "c9581231",
-    "source_base_commit": "c958123183f06bdd758037b0f89d5d2ce73c99cb",
-    "purpose": "Record current-main truth after PR #411: descriptive_summary is now live only as a bounded lower-level analysis API method, while Gate C pass-entry, UI, schema/runtime/source, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector, and full mockup behavior remain deferred.",
+    "base_commit": "2fd023fa",
+    "source_base_commit": "2fd023fafd573a1765f4f39706a4f1fe10ad8dd9",
+    "purpose": "Define and track planning-only docs 75/76 for future single-item descriptive_summary Gate C admission, while preserving current-main PR #411 lower-level method support as distinct from still-blocked pass-entry behavior.",
     "live_behavior_change": false,
-    "live_behavior_change_summary": "This docs/control sync branch changes no runtime behavior. Current main already includes PR #411 bounded lower-level descriptive_summary analysis API support; this manifest records that support without admitting Gate C pass-entry, UI, schema/runtime/source, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector behavior, or full mockup activation.",
+    "live_behavior_change_summary": "This docs/control branch changes no runtime behavior. It adds planning-only single-item descriptive_summary Gate C admission governance and keeps associated-cohort admission, UI, schema/runtime/source, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector, and full mockup behavior blocked.",
     "latest_implementation_pr": "#411",
     "latest_implementation_branch": "codex/l3-descriptive-summary-impl-p24",
     "latest_implementation_summary": "PR #411 implements bounded lower-level descriptive_summary analysis API support: registry membership, fallback execution for datasets outside starter time-series assumptions, deterministic JSON artifacts, and assumption/caveat rows while preserving Gate C fail-closed behavior.",
     "latest_planning_pr": "#402",
-    "latest_planning_branch": "codex/l3-descriptive-summary-governance",
-    "latest_planning_summary": "PR #402 lands docs 72/73 as descriptive_summary governance; PR #407 lands the deferred implementation playbook; PR #411 implements the first lower-level method tranche only.",
+    "latest_planning_branch": "codex/l3-desc-gatec-planning-p26",
+    "latest_planning_summary": "Docs 75/76 freeze a future single-item descriptive_summary Gate C admission implementation boundary only; no pass-entry behavior is live.",
     "latest_planning_live_behavior_change": false,
-    "latest_planning_behavior_summary": "Docs 72/73/74 govern the already-landed lower-level descriptive_summary analysis API method and still block Gate C admission, UI, schema/runtime/source, package/handoff/export, qualitative/hybrid/RAG/vector, and full mockup behavior unless separately governed.",
+    "latest_planning_behavior_summary": "Planning-only Gate C admission governance. A separate implementation PR is required before descriptive_summary can materialize or execute through Gate C.",
     "latest_implementation_merge_commit": "c958123183f06bdd758037b0f89d5d2ce73c99cb",
     "latest_planning_base_commit": "341f156d821df8eb5402eca93059add686ef5be6",
     "latest_branch_only_implementation_branch": "",
@@ -154,7 +154,9 @@
     "latest_ui_implementation_merge_commit": "cce1a55eaf53709e807f8a45862096aa5cba24bb",
     "latest_descriptive_summary_governance_branch": "codex/l3-descriptive-summary-governance",
     "latest_descriptive_summary_governance_base_commit": "341f156d821df8eb5402eca93059add686ef5be6",
-    "latest_descriptive_summary_governance_summary": "PR #402 lands docs 72/73 as descriptive_summary governance; PR #411 later implements only the lower-level analysis API method under that governance."
+    "latest_descriptive_summary_governance_summary": "PR #402 lands docs 72/73 as descriptive_summary governance; PR #411 later implements only the lower-level analysis API method under that governance.",
+    "latest_descriptive_summary_gatec_admission_branch": "codex/l3-desc-gatec-planning-p26",
+    "latest_descriptive_summary_gatec_admission_base_commit": "2fd023fafd573a1765f4f39706a4f1fe10ad8dd9"
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -1259,7 +1261,9 @@
     "next_milestone_plans/Layer3_planning_docs/71_L3_ANALYSIS_METHOD_REGISTRY_CONTRACT.md",
     "backend/app/services/analysis.py",
     "tests/test_api.py",
-    "backend/tests/test_layer3_pass_entry.py"
+    "backend/tests/test_layer3_pass_entry.py",
+    "next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/76_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_CONTRACT.md"
   ],
   "handoff_export_prepare_ui_implementation_proof": {
     "implementation_branch": "codex/l3-handoff-prepare-ui-impl",
@@ -2145,6 +2149,31 @@
     "verification": [
       "PR #411 checks passed: test and backend-layer3-api",
       "focused local pytest covered registry, descriptive_summary execution, nested values, adjacent analysis regressions, and Gate C fail-closed preservation"
+    ]
+  },
+  "descriptive_summary_gatec_admission_governance_proof": {
+    "planning_branch": "codex/l3-desc-gatec-planning-p26",
+    "base_commit": "2fd023fa",
+    "base_source": "project6-origin/main at 2fd023fafd573a1765f4f39706a4f1fe10ad8dd9 before docs 75/76 were added",
+    "scope": "Planning-only single-item descriptive_summary Gate C admission governance. The packet does not implement pass-entry behavior.",
+    "docs_added": [
+      "next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/76_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_CONTRACT.md"
+    ],
+    "authority_basis": [
+      "backend/app/services/analysis.py supports descriptive_summary through ANALYSIS_METHOD_REGISTRY and run_analysis",
+      "backend/app/services/layer3_pass_entry.py still excludes descriptive_summary from SUPPORTED_WRAPPED_QUANTITATIVE_METHODS",
+      "single-item pass-entry already carries one dataset_version_id, selected_method_name, and wrapped quantitative execution path",
+      "associated-cohort pass-entry crosses shaping and derived-dataset boundaries and remains blocked"
+    ],
+    "no_go_preserved": [
+      "no Gate C implementation from docs alone",
+      "no associated-cohort admission",
+      "no UI activation",
+      "no schema/model/migration change",
+      "no source/runtime widening",
+      "no package/handoff/export behavior",
+      "no qualitative/hybrid/RAG/vector/full mockup activation"
     ]
   }
 }
