@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -41,6 +42,7 @@ from app.services.review_nrc_aps_workbench_compare import (  # noqa: E402
     discover_candidate_b_bundle_roots,
 )
 from support_nrc_aps_candidate_b_opendataloader import FROZEN_FIXTURE_IDS  # noqa: E402
+from tools.run_nrc_aps_local_corpus_e2e import EXPECTED_INTERPRETER  # noqa: E402
 
 
 WORKBENCH_SEED_KIND = "workbench_compare_fixture_seed"
@@ -283,7 +285,26 @@ def _powershell_arg(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
 
-def _canonical_prep_sequences(*, candidate_b_run_id: str = "") -> dict[str, list[dict[str, Any]]]:
+def _command_path(path: Path, *, checkout_root: Path) -> str:
+    try:
+        relative_path = os.path.relpath(path.resolve(), checkout_root.resolve())
+    except ValueError:
+        return str(path.resolve())
+    command_path = relative_path.replace("/", "\\")
+    if command_path.startswith("."):
+        return command_path
+    return f".\\{command_path}"
+
+
+def _tool_command(checkout_root: Path, script_name: str, *args: str) -> dict[str, Any]:
+    return _command_spec(
+        _command_path(EXPECTED_INTERPRETER, checkout_root=checkout_root),
+        f".\\tools\\{script_name}",
+        *args,
+    )
+
+
+def _canonical_prep_sequences(*, checkout_root: Path, candidate_b_run_id: str = "") -> dict[str, list[dict[str, Any]]]:
     runtime_run_value = candidate_b_run_id or "CANDIDATE_B_RUNTIME_RUN_ID"
     runtime_validation_note = (
         ""
@@ -292,36 +313,32 @@ def _canonical_prep_sequences(*, candidate_b_run_id: str = "") -> dict[str, list
     )
     return {
         "bundle_source": [
-            _command_spec("py", "-3.12", ".\\tools\\seed_wb_compare.py", "--visual-lane-mode", "baseline"),
-            _command_spec(
-                "py",
-                "-3.12",
-                ".\\tools\\seed_wb_compare.py",
+            _tool_command(checkout_root, "seed_wb_compare.py", "--visual-lane-mode", "baseline"),
+            _tool_command(
+                checkout_root,
+                "seed_wb_compare.py",
                 "--visual-lane-mode",
                 "candidate_a_page_evidence_v1",
             ),
             _command_spec(".\\project6.ps1", "-Action", "compare-nrc-aps-candidate-b"),
-            _command_spec("py", "-3.12", ".\\tools\\validate_wb_prep.py"),
+            _tool_command(checkout_root, "validate_wb_prep.py"),
         ],
         "runtime_source": [
-            _command_spec("py", "-3.12", ".\\tools\\seed_wb_compare.py", "--visual-lane-mode", "baseline"),
-            _command_spec(
-                "py",
-                "-3.12",
-                ".\\tools\\seed_wb_compare.py",
+            _tool_command(checkout_root, "seed_wb_compare.py", "--visual-lane-mode", "baseline"),
+            _tool_command(
+                checkout_root,
+                "seed_wb_compare.py",
                 "--visual-lane-mode",
                 "candidate_a_page_evidence_v1",
             ),
-            _command_spec(
-                "py",
-                "-3.12",
-                ".\\tools\\seed_wb_compare.py",
+            _tool_command(
+                checkout_root,
+                "seed_wb_compare.py",
                 "--document-processing-engine",
                 _CANDIDATE_B_RUNTIME_VARIANT,
             ),
             _command_spec(
-                "py",
-                "-3.12",
+                _command_path(EXPECTED_INTERPRETER, checkout_root=checkout_root),
                 ".\\tools\\validate_wb_prep.py",
                 "--candidate-b-source-kind",
                 _CANDIDATE_B_SOURCE_KIND_RUNTIME,
@@ -336,6 +353,7 @@ def _canonical_prep_sequences(*, candidate_b_run_id: str = "") -> dict[str, list
 
 def _selected_validation_command(
     *,
+    checkout_root: Path,
     source_kind: str,
     baseline_run_id: str,
     candidate_a_run_id: str,
@@ -343,7 +361,7 @@ def _selected_validation_command(
     candidate_b_run_id: str = "",
     fixture_id: str = "",
 ) -> dict[str, Any]:
-    command = ["py", "-3.12", ".\\tools\\validate_wb_prep.py"]
+    command = [_command_path(EXPECTED_INTERPRETER, checkout_root=checkout_root), ".\\tools\\validate_wb_prep.py"]
     if baseline_run_id:
         command.extend(["--baseline-run-id", baseline_run_id])
     if candidate_a_run_id:
@@ -370,7 +388,10 @@ def _operator_handoff(
         "working_directory": _checkout_root_display(checkout_root),
         "selected_source_kind": source_kind,
         "rerun_selected_validation": rerun_validation_command,
-        "canonical_prep_sequences": _canonical_prep_sequences(candidate_b_run_id=candidate_b_run_id),
+        "canonical_prep_sequences": _canonical_prep_sequences(
+            checkout_root=checkout_root,
+            candidate_b_run_id=candidate_b_run_id,
+        ),
         "validation_boundaries": [
             "tools/validate_wb_prep.py is validate-only and must not seed or generate artifacts.",
             "Seed commands are an explicit operator prep step outside validate-only test execution.",
@@ -381,7 +402,8 @@ def _operator_handoff(
 
 
 def _attempted_validation_command(args: argparse.Namespace) -> dict[str, Any]:
-    command = ["py", "-3.12", ".\\tools\\validate_wb_prep.py"]
+    checkout_root = _checkout_root(args.checkout_root)
+    command = [_command_path(EXPECTED_INTERPRETER, checkout_root=checkout_root), ".\\tools\\validate_wb_prep.py"]
     if str(args.checkout_root or "").strip():
         command.extend(["--checkout-root", str(args.checkout_root).strip()])
     if str(args.baseline_run_id or "").strip():
@@ -640,6 +662,7 @@ def validate_prepared_state(
             }
         )
         rerun_validation_command = _selected_validation_command(
+            checkout_root=checkout_root,
             source_kind=_CANDIDATE_B_SOURCE_KIND_RUNTIME,
             baseline_run_id=baseline_binding.run_id,
             candidate_a_run_id=candidate_a_binding.run_id,
@@ -787,6 +810,7 @@ def validate_prepared_state(
     )
     candidate_b_trace = _candidate_b_trace_link(selected_bundle_id, follow_through_fixture_id)
     rerun_validation_command = _selected_validation_command(
+        checkout_root=checkout_root,
         source_kind=_CANDIDATE_B_SOURCE_KIND_BUNDLE,
         baseline_run_id=baseline_binding.run_id,
         candidate_a_run_id=candidate_a_binding.run_id,
