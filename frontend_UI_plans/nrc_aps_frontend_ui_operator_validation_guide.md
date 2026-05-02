@@ -87,7 +87,7 @@ This guide validates all of the following together:
 - Document Trace load
 - Document Trace run switching
 - workbench-compare page shell reachability
-- Candidate B Trace follow-through from a populated compare selection
+- bundle-sourced Candidate B Trace follow-through from a populated compare selection
 - source PDF loading
 - tab loading for diagnostics, normalized text, indexed chunks, and extracted units
 - source-to-units and units-to-source interaction sanity
@@ -109,8 +109,8 @@ Important workbench-compare note:
 
 - populated workbench-compare validation requires same-checkout prep for baseline, Candidate A, and Candidate B sources
 - the canonical compare prep flow now includes the validate-only same-checkout prep gate in `tools/validate_wb_prep.py`, including its emitted `operator_handoff` metadata for selected reruns, canonical prep sequences, and failure recovery
-- once same-checkout prep exists, this guide should also validate Candidate B Trace follow-through from the compare page
-- Candidate B Trace follow-through should preserve available Workbench Compare return context, show artifact availability/unavailable states, and show fixture navigation/status from the existing Workbench Compare targets API
+- once same-checkout prep exists, this guide should also validate bundle-sourced Candidate B Trace follow-through from the compare page
+- bundle-sourced Candidate B Trace follow-through should preserve available Workbench Compare return context, show artifact availability/unavailable states, and show fixture navigation/status from the existing Workbench Compare targets API; runtime-sourced Candidate B follow-through uses the existing `document-trace` route and must not be described as Candidate B Trace parity
 - the current repo-native browser fixture proves active multi-fixture Previous/Next navigation across `fontish` and `ml17123a319`; one-target source sets should still render `Fixture 1 of 1` with disabled Previous/Next
 - use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated same-corpus compare prep, `tools/validate_wb_prep.py` gate, emitted operator handoff metadata, and populated operator-validation sequence
 
@@ -203,7 +203,7 @@ Workbench Compare:
 Candidate B Trace:
 
 - `http://127.0.0.1:8098/review/nrc-aps/candidate-b-trace?candidate_b_bundle_id=<BUNDLE_ID>&fixture_id=<FIXTURE_ID>`
-- the preferred operator path is still to reach this page from a Candidate B deep link inside Workbench Compare after same-checkout prep
+- the preferred operator path is still to reach this page from a bundle-sourced Candidate B deep link inside Workbench Compare after same-checkout prep
 - the Workbench Compare deep link should carry `baseline_run_id`, `candidate_a_run_id`, `candidate_b_source_kind=bundle`, `candidate_b_bundle_id`, and `fixture_id`; that context enables the return link and fixture navigation/status
 - direct bundle/fixture URLs can inspect one Candidate B fixture but do not prove compare-context preservation by themselves
 
