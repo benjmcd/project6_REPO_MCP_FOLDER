@@ -218,7 +218,7 @@ And to the selected-pass associated-cohort execution-start/result-status freeze/
 
 The selected-pass cohort execution packet freezes only the backend/API tranche over the existing `/api/v1/layer3/execution/start` and `/api/v1/layer3/execution/result/status` surfaces. PR `#432` implements that bounded path for exact selected-pass associated-cohort `descriptive_summary` metadata/provenance, while preserving fail-closed behavior for invalid binding/provenance and keeping UI, result review, package, handoff, export, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, and full mockup behavior out.
 
-And to the selected-pass associated-cohort result-review freeze/contract, which remains planning-only until a future implementation PR:
+And to the selected-pass associated-cohort result-review freeze/contract from PR `#434`, which remains planning-only until a future implementation PR:
 - `next_milestone_plans/Layer3_planning_docs/82_COHORT_RESULT_REVIEW_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/83_COHORT_RESULT_REVIEW_CONTRACT.md`
 
