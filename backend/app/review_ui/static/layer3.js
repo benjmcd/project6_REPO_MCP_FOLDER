@@ -985,13 +985,14 @@ function canSubmitPackageReview() {
     const review = recordedApprovedResultReview();
     const preview = State.packageReviewPreview || {};
     const submit = packageReviewSubmitState() || {};
+    const cohort = associatedCohortProjection(authority);
     const notes = elements.packageReviewSubmitNotes.value.trim();
     return Boolean(
         hasResultAuthorityIdentity(authority)
         && authority.selected
         && authority.terminal
         && review?.review_record_ref
-        && !associatedCohortReviewContext()
+        && (!cohort.isAssociated || cohort.ready)
         && preview.package_review_preview_hash
         && submit.package_review_submit_enabled === true
         && submit.reconciliation_record_id
