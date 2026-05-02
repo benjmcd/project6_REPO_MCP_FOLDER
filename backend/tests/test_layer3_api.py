@@ -3371,6 +3371,12 @@ def test_layer3_api_selected_cohort_execution_start_and_status_are_bounded(
     assert review_body["trace_summary"]["requested_method_name"] == "descriptive_summary"
     assert review_body["trace_summary"]["requested_method_source"] == "analysis_set.formation_basis_json.requested_method_name"
     assert review_body["trace_summary"]["reviewed_item_count"] == 1
+    assert review_body["pass_type"] == "associated_cohort"
+    assert review_body["pass_scope"] == "quantitative_associated_cohort_dataset_version"
+    assert review_body["selected_method_name"] == "descriptive_summary"
+    assert review_body["source_gate"] == "78_COHORT_FREEZE"
+    assert review_body["source_dataset_version_ids"] == ["dv-cohort-001", "dv-cohort-002"]
+    assert review_body["cohort_shape"] == "aligned_wide_table"
     assert review_body["package_review_enabled"] is False
     assert review_body["handoff_enabled"] is False
     assert review_body["downstream_unavailable"] == ["package", "handoff", "package_review"]
@@ -3379,6 +3385,76 @@ def test_layer3_api_selected_cohort_execution_start_and_status_are_bounded(
     assert duplicate.status_code == 200
     assert duplicate.json()["status"] == "already_recorded"
     assert duplicate.json()["review_record_ref"] == review_body["review_record_ref"]
+
+    package_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": "api-cohort-package-preview-read-only",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert package_preview.status_code == 200
+    package_preview_body = package_preview.json()
+    _assert_common_response_envelope(package_preview_body)
+    assert package_preview_body["schema_id"] == "layer3.package_review_preview.v1"
+    assert package_preview_body["status"] == "available"
+    assert package_preview_body["package_review_preview_enabled"] is True
+    assert package_preview_body["package_commit_enabled"] is False
+    assert package_preview_body["package_review_enabled"] is False
+    assert package_preview_body["pass_type"] == "associated_cohort"
+    assert package_preview_body["pass_scope"] == "quantitative_associated_cohort_dataset_version"
+    assert package_preview_body["selected_method_name"] == "descriptive_summary"
+    assert package_preview_body["source_gate"] == "78_COHORT_FREEZE"
+    assert package_preview_body["source_dataset_version_ids"] == ["dv-cohort-001", "dv-cohort-002"]
+    assert package_preview_body["cohort_shape"] == "aligned_wide_table"
+    assert package_preview_body["reviewed_output_item_summary"] == {
+        "reviewed_item_count": 1,
+        "unresolved_trace_count": 0,
+    }
+    assert [item["package_kind"] for item in package_preview_body["candidate_package_kinds"]] == [
+        "canonical_internal",
+        "user_facing",
+        "review_facing",
+    ]
+    assert all(item["preview_only"] is True for item in package_preview_body["candidate_package_kinds"])
+    assert all(item["package_commit_enabled"] is False for item in package_preview_body["candidate_package_kinds"])
+    assert package_preview_body["package_owner_compatibility"]["status"] == (
+        "associated_cohort_preview_only_construction_deferred"
+    )
+    assert package_preview_body["package_owner_compatibility"]["construction_compatible_with_current_workbench_state"] is False
+    assert package_preview_body["downstream_unavailable"] == [
+        "package_commit",
+        "package_review_submit",
+        "handoff",
+        "export",
+        "aps_handoff",
+        "external_export_download",
+        "connector",
+    ]
+
+    package_commit = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": "api-cohort-package-commit-blocked",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": package_preview_body["package_review_preview_hash"],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert package_commit.status_code == 409
+    assert package_commit.json()["error_code"] == "associated_cohort_package_construction_commit_not_admitted"
 
     conflict = client.post(
         "/api/v1/layer3/execution/result/review",
@@ -3405,6 +3481,8 @@ def test_layer3_api_selected_cohort_execution_start_and_status_are_bounded(
         assert stored_pass.summary_json["source_dataset_version_ids_json"] == ["dv-cohort-001", "dv-cohort-002"]
         assert stored_pass.summary_json["execution_result_review"]["review_record_ref"] == review_body["review_record_ref"]
         assert stored_pass.summary_json["execution_result_review"]["operator_decision"] == "approved"
+        assert stored_pass.summary_json["execution_result_review"]["pass_type"] == "associated_cohort"
+        assert stored_pass.summary_json["execution_result_review"]["source_gate"] == "78_COHORT_FREEZE"
         assert {
             "plans": db.query(L3AnalysisPlan).count(),
             "passes": db.query(L3PassRun).count(),
