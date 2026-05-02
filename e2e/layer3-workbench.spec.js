@@ -1225,6 +1225,311 @@ test('Layer 3 workbench records selected-pass result review only after status au
   await expect(page.locator('#external-export-download-prepare-submit')).toBeDisabled();
 });
 
+test('Layer 3 workbench records bounded associated-cohort result review from server provenance', async ({ page }) => {
+  const sessionId = 'session-cohort-ui';
+  const analysisPlanId = 'plan-cohort-ui';
+  const passRunId = 'pass-cohort-ui';
+  const previewId = 'preview-cohort-ui';
+  const previewHash = 'preview-hash-cohort-ui';
+  const analysisRunId = 'analysis-run-cohort-ui';
+  const outputPayloadRef = 'artifact://cohort-output-ui';
+  const summary = {
+    session_id: sessionId,
+    execution_selection: {
+      selected: true,
+      execution_started: true,
+      analysis_plan_id: analysisPlanId,
+      pass_run_ids: [passRunId],
+      analysis_run_ids: [analysisRunId],
+      source_preview_id: previewId,
+      source_preview_hash: previewHash,
+      pass_run_statuses: {
+        [passRunId]: 'completed',
+      },
+    },
+    analysis_execution_start: {
+      pass_run_id: passRunId,
+      analysis_plan_id: analysisPlanId,
+      analysis_run_id: analysisRunId,
+      source_preview_id: previewId,
+      source_preview_hash: previewHash,
+      pass_run_status: 'completed',
+      output_payload_ref: outputPayloadRef,
+    },
+    sublayer_visualization: {
+      pass_runs: [
+        {
+          pass_run_id: passRunId,
+          pass_type: 'associated_cohort',
+          pass_scope: 'quantitative_associated_cohort_dataset_version',
+          selected_method_name: 'descriptive_summary',
+          requested_method_name: 'descriptive_summary',
+          requested_method_source: 'analysis_set.formation_basis_json.requested_method_name',
+          source_gate: '78_COHORT_FREEZE',
+          source_dataset_version_ids: ['dv-cohort-001', 'dv-cohort-002'],
+          cohort_shape: 'aligned_wide_table',
+        },
+      ],
+    },
+    downstream_unavailable: ['package', 'handoff', 'package_review'],
+  };
+  const status = {
+    schema_id: 'layer3.execution_result_status.v1',
+    status: 'available',
+    session_id: sessionId,
+    analysis_plan_id: analysisPlanId,
+    pass_run_id: passRunId,
+    preview_identity: {
+      preview_id: previewId,
+      preview_hash: previewHash,
+    },
+    execution_started: true,
+    analysis_run_id: analysisRunId,
+    pass_run_status: 'completed',
+    output_payload_ref: outputPayloadRef,
+    output_metadata_summary: {
+      readable: true,
+      artifact_count: 1,
+      output_payload_ref: outputPayloadRef,
+      pass_scope: 'quantitative_associated_cohort_dataset_version',
+      selected_method_name: 'descriptive_summary',
+      requested_method_name: 'descriptive_summary',
+      requested_method_source: 'analysis_set.formation_basis_json.requested_method_name',
+      source_gate: '78_COHORT_FREEZE',
+      source_dataset_version_ids: ['dv-cohort-001', 'dv-cohort-002'],
+      cohort_shape: 'aligned_wide_table',
+    },
+    result_status_available: true,
+    result_review_enabled: false,
+    package_review_enabled: false,
+    handoff_enabled: false,
+    downstream_unavailable: ['package', 'handoff', 'package_review'],
+    pass_type: 'associated_cohort',
+    pass_scope: 'quantitative_associated_cohort_dataset_version',
+    selected_method_name: 'descriptive_summary',
+  };
+  const reviewResponse = {
+    schema_id: 'layer3.execution_result_review.v1',
+    status: 'recorded',
+    session_id: sessionId,
+    analysis_plan_id: analysisPlanId,
+    pass_run_id: passRunId,
+    preview_identity: {
+      preview_id: previewId,
+      preview_hash: previewHash,
+    },
+    analysis_run_id: analysisRunId,
+    result_status_available: true,
+    result_review_enabled: true,
+    review_state: 'execution_result_review_approved',
+    operator_decision: 'approved',
+    review_record_ref: 'l3-result-review-cohort-ui',
+    trace_summary: {
+      session_id: sessionId,
+      analysis_plan_id: analysisPlanId,
+      pass_run_id: passRunId,
+      analysis_run_id: analysisRunId,
+      output_payload_ref: outputPayloadRef,
+      selected_method_name: 'descriptive_summary',
+      pass_scope: 'quantitative_associated_cohort_dataset_version',
+      source_dataset_version_ids: ['dv-cohort-001', 'dv-cohort-002'],
+      cohort_shape: 'aligned_wide_table',
+      requested_method_name: 'descriptive_summary',
+      requested_method_source: 'analysis_set.formation_basis_json.requested_method_name',
+      source_gate: '78_COHORT_FREEZE',
+      reviewed_item_count: 1,
+      unresolved_trace_count: 0,
+    },
+    reviewed_output_items: [
+      {
+        index: 0,
+        item_ref: outputPayloadRef,
+        item_type: 'finding',
+        trace_status: 'resolved',
+        missing_trace_fields: [],
+      },
+    ],
+    unresolved_trace_count: 0,
+    package_review_enabled: false,
+    handoff_enabled: false,
+    downstream_unavailable: ['package', 'handoff', 'package_review'],
+    review_notes_recorded: false,
+    engine_family: 'layer3',
+  };
+  let reviewPayload;
+  await page.route('**/api/v1/layer3/execution/result/review', async (route) => {
+    reviewPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(reviewResponse),
+    });
+  });
+  await page.route(`**/api/v1/layer3/session/${sessionId}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...summary,
+        execution_result_review: {
+          schema_id: 'layer3.execution_result_review_state.v1',
+          review_record_ref: reviewResponse.review_record_ref,
+          review_state: reviewResponse.review_state,
+          operator_decision: reviewResponse.operator_decision,
+          pass_run_id: passRunId,
+          analysis_plan_id: analysisPlanId,
+          analysis_run_id: analysisRunId,
+          unresolved_trace_count: 0,
+          package_review_enabled: false,
+          handoff_enabled: false,
+          downstream_unavailable: ['package', 'handoff', 'package_review'],
+        },
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(({ summaryState, statusState }) => {
+    State.sessionSummary = summaryState;
+    State.resultStatus = statusState;
+    State.resultReview = null;
+    State.resultReviewError = null;
+    State.resultStatusError = null;
+    renderAll();
+  }, { summaryState: summary, statusState: status });
+
+  await expect(page.locator('#result-review-panel')).toContainText('cohort_result_review_ui_review_ready');
+  await expect(page.locator('#result-review-panel')).toContainText('associated_cohort');
+  await expect(page.locator('#result-review-panel')).toContainText('descriptive_summary');
+  await expect(page.locator('#result-review-panel')).toContainText('78_COHORT_FREEZE');
+  await expect(page.locator('#result-review-panel')).toContainText('dv-cohort-001');
+  await expect(page.locator('#result-review-submit')).toBeEnabled();
+
+  const reviewResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/execution/result/review'));
+  await page.locator('#result-review-submit').click();
+  await expectJson(await reviewResponsePromise);
+  expectOnlyPayloadKeys(reviewPayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'operator_decision',
+    'review_notes',
+    'analysis_run_id',
+    'reviewed_output_items',
+  ]);
+  expect(reviewPayload.session_id).toBe(sessionId);
+  expect(reviewPayload.analysis_plan_id).toBe(analysisPlanId);
+  expect(reviewPayload.pass_run_id).toBe(passRunId);
+  expect(reviewPayload.operator_decision).toBe('approved');
+  expect(reviewPayload.reviewed_output_items).toEqual([
+    {
+      item_ref: outputPayloadRef,
+      item_type: 'finding',
+      trace: {
+        session_id: sessionId,
+        analysis_plan_id: analysisPlanId,
+        pass_run_id: passRunId,
+        output_payload_ref: outputPayloadRef,
+        analysis_run_id: analysisRunId,
+      },
+    },
+  ]);
+  expect(reviewPayload).not.toHaveProperty('package');
+  expect(reviewPayload).not.toHaveProperty('handoff');
+  expect(reviewPayload).not.toHaveProperty('rerun');
+  expect(reviewPayload).not.toHaveProperty('pass_run_ids');
+  expect(reviewPayload).not.toHaveProperty('artifact_manifest');
+
+  await expect(page.locator('#result-review-panel')).toContainText('cohort_result_review_ui_recorded');
+  await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
+  await expect(page.locator('#package-construction-commit')).toBeDisabled();
+  await expect(page.locator('#package-review-submit')).toBeDisabled();
+  await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
+  await expect(page.locator('#aps-handoff-dispatch-submit')).toBeDisabled();
+  await expect(page.locator('#external-export-download-prepare-submit')).toBeDisabled();
+  await expectStepUnavailable(page, 'package');
+});
+
+test('Layer 3 workbench blocks associated-cohort result review when provenance is incomplete', async ({ page }) => {
+  const sessionId = 'session-cohort-ui-blocked';
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.evaluate((id) => {
+    State.sessionSummary = {
+      session_id: id,
+      execution_selection: {
+        selected: true,
+        execution_started: true,
+        analysis_plan_id: 'plan-cohort-ui-blocked',
+        pass_run_ids: ['pass-cohort-ui-blocked'],
+        analysis_run_ids: ['analysis-run-cohort-ui-blocked'],
+        source_preview_id: 'preview-cohort-ui-blocked',
+        source_preview_hash: 'preview-hash-cohort-ui-blocked',
+        pass_run_statuses: {
+          'pass-cohort-ui-blocked': 'completed',
+        },
+      },
+      downstream_unavailable: ['package', 'handoff', 'package_review'],
+      sublayer_visualization: {
+        pass_runs: [
+          {
+            pass_run_id: 'pass-cohort-ui-blocked',
+            pass_type: 'associated_cohort',
+            pass_scope: 'quantitative_associated_cohort_dataset_version',
+            selected_method_name: 'descriptive_summary',
+            requested_method_name: 'descriptive_summary',
+            requested_method_source: 'analysis_set.formation_basis_json.requested_method_name',
+            source_gate: '78_COHORT_FREEZE',
+            cohort_shape: 'aligned_wide_table',
+          },
+        ],
+      },
+    };
+    State.resultStatus = {
+      schema_id: 'layer3.execution_result_status.v1',
+      status: 'available',
+      session_id: id,
+      analysis_plan_id: 'plan-cohort-ui-blocked',
+      pass_run_id: 'pass-cohort-ui-blocked',
+      preview_identity: {
+        preview_id: 'preview-cohort-ui-blocked',
+        preview_hash: 'preview-hash-cohort-ui-blocked',
+      },
+      analysis_run_id: 'analysis-run-cohort-ui-blocked',
+      pass_run_status: 'completed',
+      output_payload_ref: 'artifact://cohort-output-ui-blocked',
+      output_metadata_summary: {
+        readable: true,
+        artifact_count: 1,
+        output_payload_ref: 'artifact://cohort-output-ui-blocked',
+        pass_scope: 'quantitative_associated_cohort_dataset_version',
+        selected_method_name: 'descriptive_summary',
+        requested_method_name: 'descriptive_summary',
+        requested_method_source: 'analysis_set.formation_basis_json.requested_method_name',
+        source_gate: '78_COHORT_FREEZE',
+        cohort_shape: 'aligned_wide_table',
+      },
+      result_status_available: true,
+      downstream_unavailable: ['package', 'handoff', 'package_review'],
+      pass_type: 'associated_cohort',
+      pass_scope: 'quantitative_associated_cohort_dataset_version',
+      selected_method_name: 'descriptive_summary',
+    };
+    State.resultReview = null;
+    State.resultReviewError = null;
+    State.resultStatusError = null;
+    renderAll();
+  }, sessionId);
+
+  await expect(page.locator('#result-review-panel')).toContainText('cohort_result_review_ui_blocked');
+  await expect(page.locator('#result-review-panel')).toContainText('source dataset versions: unknown');
+  await expect(page.locator('#result-review-submit')).toBeDisabled();
+  await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
+  await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
+});
+
 test('Layer 3 workbench prepares handoff and dispatches bounded APS handoff after approved package review', async ({ page, request }) => {
   const setup = await prepareExecutedLayer3Session(request, '/__test/layer3/seed-aps-handoff');
 
