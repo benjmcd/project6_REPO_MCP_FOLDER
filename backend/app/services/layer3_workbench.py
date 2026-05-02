@@ -25,14 +25,19 @@ from app.models.models import (
     uuid_str,
 )
 from app.services.layer3_pass_entry import (
+    COHORT_REQUESTED_METHOD_SOURCE,
+    COHORT_SHAPE_ALIGNED_WIDE_TABLE,
     ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS,
     PASS_STATUS_COMPLETED,
     PASS_STATUS_COMPLETED_WITH_WARNINGS,
     PASS_STATUS_FAILED,
     PASS_STATUS_RUNNING,
     PASS_STATUS_SELECTED_NOT_STARTED,
+    PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
+    PASS_TYPE_ASSOCIATED_COHORT,
     PASS_TYPE_SINGLE_ITEM,
     PLAN_PREVIEW_HASH_SCHEMA_ID,
+    SOURCE_GATE_COHORT_DESC_FREEZE,
     Layer3PassEntryError,
     approve_pass_entry_plan,
     execute_selected_pass_run,
@@ -2910,6 +2915,53 @@ def _output_metadata_summary(pass_run: L3PassRun) -> tuple[dict[str, Any] | None
     )
 
 
+def _planned_pass_admits_associated_cohort_descriptive(
+    *, planned_pass: dict[str, Any], pass_run: L3PassRun
+) -> bool:
+    return (
+        pass_run.pass_type == PASS_TYPE_ASSOCIATED_COHORT
+        and planned_pass.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT
+        and planned_pass.get("pass_scope") == PASS_SCOPE_QUANT_ASSOCIATED_COHORT
+        and planned_pass.get("selected_method_name") == "descriptive_summary"
+        and planned_pass.get("requested_method_name") == "descriptive_summary"
+        and planned_pass.get("requested_method_source") == COHORT_REQUESTED_METHOD_SOURCE
+        and planned_pass.get("cohort_shape") == COHORT_SHAPE_ALIGNED_WIDE_TABLE
+        and planned_pass.get("source_gate") == SOURCE_GATE_COHORT_DESC_FREEZE
+    )
+
+
+def _pass_run_has_admitted_associated_cohort_execution(pass_run: L3PassRun) -> bool:
+    summary = pass_run.summary_json or {}
+    return (
+        pass_run.pass_type == PASS_TYPE_ASSOCIATED_COHORT
+        and summary.get("pass_scope") == PASS_SCOPE_QUANT_ASSOCIATED_COHORT
+        and summary.get("selected_method_name") == "descriptive_summary"
+        and summary.get("requested_method_name") == "descriptive_summary"
+        and summary.get("requested_method_source") == COHORT_REQUESTED_METHOD_SOURCE
+        and summary.get("cohort_shape") == COHORT_SHAPE_ALIGNED_WIDE_TABLE
+        and summary.get("source_gate") == SOURCE_GATE_COHORT_DESC_FREEZE
+        and isinstance(summary.get("source_dataset_version_ids_json"), list)
+        and isinstance(summary.get("column_map_json"), list)
+    )
+
+
+def _ensure_result_status_downstream_source_admitted(
+    status_body: dict[str, Any],
+    *,
+    error_code: str,
+    action_label: str,
+) -> None:
+    if status_body.get("pass_type") != PASS_TYPE_ASSOCIATED_COHORT:
+        return
+    raise Layer3WorkbenchError(
+        error_code,
+        f"{action_label} is not admitted for selected-pass associated-cohort result/status in this tranche.",
+        status="blocked",
+        http_status=409,
+        next_allowed_actions=["inspect_execution_result_status"],
+    )
+
+
 def _execution_result_status_response(
     *,
     request_id: str | None,
@@ -2924,6 +2976,9 @@ def _execution_result_status_response(
     output_metadata_error: str | None,
 ) -> dict[str, Any]:
     summary = pass_run.summary_json or {}
+    planned_pass = summary.get("planned_pass")
+    if not isinstance(planned_pass, dict):
+        planned_pass = {}
     start_state = _analysis_execution_start_from_pass_run(pass_run)
     pass_error = summary.get("error") or ((start_state or {}).get("error"))
     return {
@@ -2958,6 +3013,8 @@ def _execution_result_status_response(
         ),
         "operator_view_mode": "status_only",
         "engine_family": pass_run.engine_family,
+        "pass_type": pass_run.pass_type,
+        "pass_scope": summary.get("pass_scope") or planned_pass.get("pass_scope"),
         "selected_method_name": summary.get("selected_method_name"),
         "dataset_version_id": summary.get("dataset_version_id"),
     }
@@ -3658,10 +3715,11 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
             status="conflict",
             http_status=409,
         )
-    if str(planned_pass.get("pass_type") or pass_run.pass_type) != PASS_TYPE_SINGLE_ITEM:
+    planned_pass_type = str(planned_pass.get("pass_type") or pass_run.pass_type)
+    if planned_pass_type not in {PASS_TYPE_SINGLE_ITEM, PASS_TYPE_ASSOCIATED_COHORT}:
         raise Layer3WorkbenchError(
             "unsupported_analysis_execution_source_breadth",
-            "This execution-start slice admits only selected single-item dataset-version pass runs.",
+            "This execution-start slice admits only selected single-item pass runs or exact descriptive associated-cohort pass runs.",
             status="conflict",
             http_status=409,
         )
@@ -3951,10 +4009,15 @@ def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, A
             status="conflict",
             http_status=409,
         )
-    if str(planned_pass.get("pass_type") or pass_run.pass_type) != PASS_TYPE_SINGLE_ITEM:
+    planned_pass_type = str(planned_pass.get("pass_type") or pass_run.pass_type)
+    associated_cohort_descriptive = _planned_pass_admits_associated_cohort_descriptive(
+        planned_pass=planned_pass,
+        pass_run=pass_run,
+    )
+    if planned_pass_type != PASS_TYPE_SINGLE_ITEM and not associated_cohort_descriptive:
         raise Layer3WorkbenchError(
             "unsupported_execution_result_status_source_breadth",
-            "This result/status slice admits only selected single-item dataset-version pass runs.",
+            "This result/status slice admits only selected single-item pass runs or exact descriptive associated-cohort pass runs.",
             status="conflict",
             http_status=409,
         )
@@ -3967,6 +4030,14 @@ def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, A
             status="blocked",
             http_status=409,
             next_allowed_actions=["submit_analysis_execution_start"],
+        )
+    if associated_cohort_descriptive and not _pass_run_has_admitted_associated_cohort_execution(pass_run):
+        raise Layer3WorkbenchError(
+            "associated_cohort_execution_state_not_admitted",
+            "Execution result/status may inspect associated cohorts only after admitted descriptive selected-pass execution-start state.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
         )
     if pass_run.status not in EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES:
         raise Layer3WorkbenchError(
@@ -4097,6 +4168,11 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
             http_status=409,
             next_allowed_actions=["inspect_execution_result_status"],
         )
+    _ensure_result_status_downstream_source_admitted(
+        status_body,
+        error_code="associated_cohort_result_review_not_admitted",
+        action_label="Execution result-review",
+    )
 
     output_metadata_summary = status_body.get("output_metadata_summary")
     if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
@@ -5112,6 +5188,11 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             next_allowed_actions=["inspect_execution_result_status"],
         )
+    _ensure_result_status_downstream_source_admitted(
+        status_body,
+        error_code="associated_cohort_package_review_preview_not_admitted",
+        action_label="Package-review preview",
+    )
     output_metadata_summary = status_body.get("output_metadata_summary")
     if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
         raise Layer3WorkbenchError(
@@ -5337,6 +5418,11 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             http_status=409,
             next_allowed_actions=["inspect_execution_result_status"],
         )
+    _ensure_result_status_downstream_source_admitted(
+        status_body,
+        error_code="associated_cohort_package_construction_commit_not_admitted",
+        action_label="Package construction commit",
+    )
     output_metadata_summary = status_body.get("output_metadata_summary")
     if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
         raise Layer3WorkbenchError(
@@ -5627,6 +5713,11 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             http_status=409,
             next_allowed_actions=["inspect_execution_result_status"],
         )
+    _ensure_result_status_downstream_source_admitted(
+        status_body,
+        error_code="associated_cohort_package_review_submit_not_admitted",
+        action_label="Package-review submit",
+    )
     output_metadata_summary = status_body.get("output_metadata_summary")
     if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
         raise Layer3WorkbenchError(
@@ -6107,6 +6198,11 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             next_allowed_actions=["inspect_execution_result_status"],
         )
+    _ensure_result_status_downstream_source_admitted(
+        status_body,
+        error_code="associated_cohort_handoff_export_prepare_not_admitted",
+        action_label="Handoff/export preparation",
+    )
     output_metadata_summary = status_body.get("output_metadata_summary")
     if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
         raise Layer3WorkbenchError(
@@ -6720,6 +6816,11 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             http_status=409,
             next_allowed_actions=["inspect_execution_result_status"],
         )
+    _ensure_result_status_downstream_source_admitted(
+        status_body,
+        error_code="associated_cohort_aps_handoff_dispatch_not_admitted",
+        action_label="APS handoff dispatch",
+    )
     output_metadata_summary = status_body.get("output_metadata_summary")
     if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
         raise Layer3WorkbenchError(
@@ -7474,6 +7575,11 @@ def external_export_download_prepare(
             http_status=409,
             next_allowed_actions=["inspect_execution_result_status"],
         )
+    _ensure_result_status_downstream_source_admitted(
+        status_body,
+        error_code="associated_cohort_external_export_download_prepare_not_admitted",
+        action_label="External export/download preparation",
+    )
     output_metadata_summary = status_body.get("output_metadata_summary")
     if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
         raise Layer3WorkbenchError(
