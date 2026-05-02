@@ -1,23 +1,23 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus PR #411 lower-level descriptive_summary support, PR #417 single-item Gate C admission, doc 77 cohort requirements, and branch-local docs 78/79 service-materialize cohort freeze/contract",
+  "status": "current-main readiness proof plus PR #411 lower-level descriptive_summary support, PR #417 single-item Gate C admission, doc 77 cohort requirements, and PR #423 docs 78/79 service-materialize cohort freeze/contract",
   "scope": {
     "source_branch": "codex/l3-desc-cohort-freeze-p32",
-    "merged_pr": "branch-local docs-only PR pending",
+    "merged_pr": "#423",
     "merge_commit": "",
     "base_remote": "project6-origin/main",
     "base_commit": "b3f0ac59",
     "source_base_commit": "b3f0ac59d8486090ebec7b21d8b480a7c0ee6802",
-    "purpose": "Record branch-local docs 78/79 planning-only service-materialize associated-cohort descriptive_summary freeze/contract while preserving current-main PR #411, PR #417, and doc 77 boundaries.",
+    "purpose": "Record PR #423 docs 78/79 planning-only service-materialize associated-cohort descriptive_summary freeze/contract while preserving current-main PR #411, PR #417, and doc 77 boundaries.",
     "live_behavior_change": false,
     "live_behavior_change_summary": "This branch changes no runtime behavior. Docs 78/79 select a future service-only implementation-entry contract, while associated-cohort admission, selected-pass workbench cohort breadth, UI, schema/runtime/source, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector, and full mockup behavior remain blocked.",
     "latest_implementation_pr": "#417",
     "latest_implementation_branch": "codex/l3-desc-gatec-impl-p27",
     "latest_implementation_summary": "PR #417 implements bounded single-item descriptive_summary Gate C admission through the existing wrapped quantitative pass-entry path while preserving associated-cohort fail-closed behavior and broader no-go scope.",
-    "latest_planning_pr": "pending",
+    "latest_planning_pr": "#423",
     "latest_planning_branch": "codex/l3-desc-cohort-freeze-p32",
-    "latest_planning_summary": "Docs 78/79 freeze the branch-local service-materialize associated-cohort descriptive_summary contract with aligned_wide_table shape and explicit formation_basis_json requested_method_name metadata.",
+    "latest_planning_summary": "Docs 78/79 freeze the PR #423 service-materialize associated-cohort descriptive_summary contract with aligned_wide_table shape and explicit formation_basis_json requested_method_name metadata.",
     "latest_planning_live_behavior_change": false,
     "latest_planning_behavior_summary": "Docs 78/79 are planning/control only by themselves. They do not make associated-cohort descriptive_summary behavior live and do not widen selected-pass workbench breadth or API/UI/schema/runtime/source/package/handoff/export scope.",
     "latest_implementation_merge_commit": "811b2e14ef23b4643e5b9c004890013f41836bf5",
@@ -159,12 +159,8 @@
     "latest_descriptive_summary_gatec_admission_base_commit": "811b2e14ef23b4643e5b9c004890013f41836bf5",
     "latest_descriptive_summary_cohort_requirements_branch": "codex/l3-desc-cohort-reqs-p31",
     "latest_descriptive_summary_cohort_requirements_pr": "#422",
-    "latest_descriptive_summary_cohort_requirements_summary": "Doc 77 records requirements; branch-local docs 78/79 select service_materialize_only plus aligned_wide_table and explicit requested_method_name metadata as planning-only governance.",
-    "latest_descriptive_summary_cohort_requirements_live_behavior_change": false,
-    "latest_branch_only_planning_branch": "codex/l3-desc-cohort-freeze-p32",
-    "latest_branch_only_planning_pr": "pending",
-    "latest_branch_only_planning_summary": "Docs 78/79 select the service_materialize_only associated-cohort descriptive_summary freeze/contract using aligned_wide_table shape and explicit formation_basis_json requested_method_name metadata.",
-    "latest_branch_only_planning_live_behavior_change": false
+    "latest_descriptive_summary_cohort_requirements_summary": "Doc 77 records requirements; PR #423 docs 78/79 select service_materialize_only plus aligned_wide_table and explicit requested_method_name metadata as planning-only governance.",
+    "latest_descriptive_summary_cohort_requirements_live_behavior_change": false
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -2212,8 +2208,8 @@
   },
   "descriptive_summary_cohort_service_freeze_proof": {
     "planning_branch": "codex/l3-desc-cohort-freeze-p32",
-    "planning_pr": "pending",
-    "scope": "Branch-local planning-only service-materialize associated-cohort descriptive_summary freeze/contract. This does not make cohort behavior live and does not widen selected-pass workbench execution.",
+    "planning_pr": "#423",
+    "scope": "PR #423 planning-only service-materialize associated-cohort descriptive_summary freeze/contract. This does not make cohort behavior live and does not widen selected-pass workbench execution.",
     "docs_added": [
       "next_milestone_plans/Layer3_planning_docs/78_COHORT_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/79_COHORT_CONTRACT.md"
