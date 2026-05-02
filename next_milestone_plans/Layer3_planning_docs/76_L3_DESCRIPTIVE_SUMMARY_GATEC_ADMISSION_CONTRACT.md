@@ -1,12 +1,12 @@
 # Layer 3 Descriptive Summary Gate C Admission Contract
 
-Status: planning-only companion for `75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md`.
+Status: implementation contract satisfied by PR `#417` for single-item `descriptive_summary` Gate C admission only.
 
-This document defines the contract a future implementation must satisfy before `descriptive_summary` can be admitted through Layer 3 Gate C pass-entry. It is not an implementation and does not change pass-entry behavior.
+This document defines the contract PR `#417` satisfied before `descriptive_summary` was admitted through the single-item Layer 3 Gate C pass-entry path. It remains the no-go contract for associated-cohort admission and broader UI/schema/runtime/source/package/handoff/export scope.
 
 ## Admission Contract
 
-The future implementation may admit `descriptive_summary` only when all are true:
+The implementation admits `descriptive_summary` only when all are true:
 
 - the analysis set is a single-item quantitative set
 - the set already points to one existing `dataset_version_id`
@@ -14,7 +14,7 @@ The future implementation may admit `descriptive_summary` only when all are true
 - the dataset version is loadable by the existing analysis service
 - the pass path stays inside the existing wrapped quantitative engine family
 
-The implementation must not admit `descriptive_summary` for associated cohorts, qualitative sets, multi-source sets, local upload/directory sources, connector sources, runtime snapshots, or derived package/handoff/export artifacts.
+The implementation does not admit `descriptive_summary` for associated cohorts, qualitative sets, multi-source sets, local upload/directory sources, connector sources, runtime snapshots, or derived package/handoff/export artifacts.
 
 ## Pass-Entry Contract
 
@@ -54,7 +54,7 @@ A later cohort-specific freeze would need to name the derived-data semantics, pr
 
 ## Proof Requirements
 
-Future implementation tests must cover:
+Implementation tests cover:
 
 - single-item materialization creates one pass run with `selected_method_name == "descriptive_summary"`
 - execution creates one lower-level `AnalysisRun` for `descriptive_summary`
@@ -64,13 +64,13 @@ Future implementation tests must cover:
 - existing single-item time-series and cohort time-series tests still pass
 - existing unsupported/no-admissible-set tests still pass
 
-Recommended focused command shape:
+Focused command shape:
 
 ```powershell
-python -m pytest .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_executes_quantitative_single_item_and_preserves_loading_closure .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_executes_quantitative_associated_cohort_with_shaped_manifest .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_fails_closed_on_unsupported_cohort_recommended_method -q
+python -m pytest .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_executes_descriptive_summary_single_item_without_widening_scope .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_selected_pass_execution_runs_descriptive_summary .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_executes_quantitative_single_item_and_preserves_loading_closure .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_executes_quantitative_associated_cohort_with_shaped_manifest .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_fails_closed_on_unsupported_cohort_recommended_method .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_excludes_unknown_recommended_method_and_fails_closed -q
 ```
 
-The future implementation should add new focused tests adjacent to the changed behavior before broadening the suite.
+PR `#417` added the focused tests adjacent to the changed behavior before broadening the suite.
 
 ## Non-Goals
 
