@@ -309,6 +309,128 @@ def _cohort_requested_method_name(analysis_set: L3AnalysisSet) -> str | None:
     return requested or None
 
 
+def _selected_cohort_planned_pass_error(
+    *,
+    pass_run: L3PassRun,
+    planned_pass: dict[str, Any],
+    summary: dict[str, Any],
+) -> str | None:
+    if pass_run.pass_type != PASS_TYPE_ASSOCIATED_COHORT:
+        return "selected-pass associated-cohort source-breadth rejection: pass run is not associated_cohort"
+    if str(planned_pass.get("analysis_set_id") or "") != pass_run.analysis_set_id:
+        return "selected-pass associated-cohort provenance rejection: analysis_set_id binding is inconsistent"
+    if planned_pass.get("pass_type") != PASS_TYPE_ASSOCIATED_COHORT:
+        return "selected-pass associated-cohort source-breadth rejection: planned pass is not associated_cohort"
+    if planned_pass.get("pass_scope") != PASS_SCOPE_QUANT_ASSOCIATED_COHORT:
+        return "selected-pass associated-cohort source-breadth rejection: pass scope is not admitted"
+    if planned_pass.get("selected_method_name") != "descriptive_summary":
+        return "selected-pass associated-cohort method-name rejection: selected_method_name is not exactly descriptive_summary"
+    if planned_pass.get(COHORT_REQUESTED_METHOD_KEY) != "descriptive_summary":
+        return "selected-pass associated-cohort method-source rejection: requested_method_name is not exactly descriptive_summary"
+    if planned_pass.get("requested_method_source") != COHORT_REQUESTED_METHOD_SOURCE:
+        return "selected-pass associated-cohort method-source rejection: requested_method_source is not service-owned formation metadata"
+    if planned_pass.get("cohort_shape") != COHORT_SHAPE_ALIGNED_WIDE_TABLE:
+        return "selected-pass associated-cohort provenance rejection: cohort shape is not aligned_wide_table"
+    if planned_pass.get("source_gate") != SOURCE_GATE_COHORT_DESC_FREEZE:
+        return "selected-pass associated-cohort provenance rejection: source gate is not the descriptive cohort freeze"
+
+    source_ids = planned_pass.get("source_dataset_version_ids_json")
+    if not isinstance(source_ids, list) or not source_ids or any(not isinstance(item, str) or not item for item in source_ids):
+        return "selected-pass associated-cohort provenance rejection: source dataset-version ids are missing"
+
+    summary_planned_pass = summary.get("planned_pass")
+    if not isinstance(summary_planned_pass, dict):
+        return "selected-pass associated-cohort provenance rejection: selected pass summary is missing planned_pass"
+    if summary_planned_pass != planned_pass:
+        return "selected-pass associated-cohort provenance rejection: selected pass summary does not match planned_pass"
+    if str(summary.get("analysis_plan_id") or "") != pass_run.analysis_plan_id:
+        return "selected-pass associated-cohort provenance rejection: analysis_plan_id binding is inconsistent"
+    if not str(summary.get("source_preview_id") or "").strip() or not str(summary.get("source_preview_hash") or "").strip():
+        return "selected-pass associated-cohort provenance rejection: preview identity is missing"
+    return None
+
+
+def _prepare_selected_cohort_execution_input(
+    db: Session,
+    *,
+    pass_run: L3PassRun,
+    planned_pass: dict[str, Any],
+    summary: dict[str, Any],
+) -> tuple[str, str, dict[str, Any]]:
+    contract_error = _selected_cohort_planned_pass_error(
+        pass_run=pass_run,
+        planned_pass=planned_pass,
+        summary=summary,
+    )
+    if contract_error is not None:
+        raise Layer3PassEntryError(contract_error)
+
+    analysis_set = db.get(L3AnalysisSet, pass_run.analysis_set_id)
+    if analysis_set is None or analysis_set.session_id != pass_run.session_id:
+        raise Layer3PassEntryError(
+            "selected-pass associated-cohort provenance rejection: analysis set is missing or session-mismatched"
+        )
+    if analysis_set.set_type != SET_TYPE_ASSOCIATED_COHORT:
+        raise Layer3PassEntryError(
+            "selected-pass associated-cohort source-breadth rejection: analysis set is not associated_cohort"
+        )
+    requested_method_name = _cohort_requested_method_name(analysis_set)
+    if requested_method_name != "descriptive_summary":
+        raise Layer3PassEntryError(
+            "selected-pass associated-cohort method-source rejection: formation metadata is not exactly descriptive_summary"
+        )
+
+    _, unit_by_id, snapshot_by_id = _load_sets_units_and_snapshots(db, session_id=pass_run.session_id)
+    analysis_unit_ids = list(analysis_set.analysis_unit_ids_json or [])
+    prepared_cohort, exclusion_reason = _prepare_cohort_candidate(
+        db,
+        analysis_set=analysis_set,
+        analysis_unit_ids=analysis_unit_ids,
+        analysis_modality=analysis_set.formation_basis_json.get("analysis_modality"),
+        unit_by_id=unit_by_id,
+        snapshot_by_id=snapshot_by_id,
+    )
+    if prepared_cohort is None:
+        raise Layer3PassEntryError(
+            f"selected-pass associated-cohort provenance rejection: {exclusion_reason or 'cohort input is not admitted'}"
+        )
+    selected_method_name = _choose_cohort_method_name_or_raise(
+        shaped_dataframe=prepared_cohort.shaped_dataframe,
+        requested_method_name=requested_method_name,
+    )
+    if selected_method_name != "descriptive_summary":
+        raise Layer3PassEntryError(
+            "selected-pass associated-cohort method-name rejection: prepared cohort did not resolve to descriptive_summary"
+        )
+
+    planned_source_ids = [str(item) for item in planned_pass["source_dataset_version_ids_json"]]
+    if list(prepared_cohort.source_dataset_version_ids) != planned_source_ids:
+        raise Layer3PassEntryError(
+            "selected-pass associated-cohort provenance rejection: source dataset-version ids do not match prepared input"
+        )
+
+    derived_dataset_version_id, input_manifest_ref = _persist_cohort_dataset_version(
+        db,
+        session_id=pass_run.session_id,
+        analysis_set_id=analysis_set.analysis_set_id,
+        pass_run_id=pass_run.pass_run_id,
+        prepared_cohort=prepared_cohort,
+        selected_method_name=selected_method_name,
+        source_gate=SOURCE_GATE_COHORT_DESC_FREEZE,
+    )
+    cohort_metadata = {
+        "pass_scope": PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
+        "source_gate": SOURCE_GATE_COHORT_DESC_FREEZE,
+        "derived_dataset_version_id": derived_dataset_version_id,
+        "source_dataset_version_ids_json": list(prepared_cohort.source_dataset_version_ids),
+        "column_map_json": [column.manifest_entry() for column in prepared_cohort.columns],
+        "cohort_shape": COHORT_SHAPE_ALIGNED_WIDE_TABLE,
+        "requested_method_name": "descriptive_summary",
+        "requested_method_source": COHORT_REQUESTED_METHOD_SOURCE,
+    }
+    return derived_dataset_version_id, input_manifest_ref, cohort_metadata
+
+
 def _choose_cohort_method_name_or_raise(
     *,
     shaped_dataframe: pd.DataFrame,
@@ -1165,31 +1287,44 @@ def execute_selected_pass_run(
             f"Selected pass run '{pass_run_id}' planned unsupported engine family '{planned_engine_family}'"
         )
     planned_pass_type = str(planned_pass.get("pass_type") or pass_run.pass_type)
-    if planned_pass_type != PASS_TYPE_SINGLE_ITEM:
+    cohort_execution_metadata: dict[str, Any] | None = None
+    input_payload_ref = pass_run.input_payload_ref
+    if planned_pass_type == PASS_TYPE_SINGLE_ITEM:
+        dataset_version_id = str(planned_pass.get("dataset_version_id") or summary.get("dataset_version_id") or "").strip()
+        selected_method_name = str(
+            planned_pass.get("selected_method_name") or summary.get("selected_method_name") or ""
+        ).strip()
+        if not dataset_version_id:
+            raise Layer3PassEntryError(f"Selected pass run '{pass_run_id}' has no dataset_version_id")
+        if selected_method_name not in SUPPORTED_WRAPPED_QUANTITATIVE_METHODS:
+            raise Layer3PassEntryError(
+                f"Selected pass run '{pass_run_id}' uses unsupported method '{selected_method_name}'"
+            )
+    elif planned_pass_type == PASS_TYPE_ASSOCIATED_COHORT:
+        dataset_version_id, input_payload_ref, cohort_execution_metadata = _prepare_selected_cohort_execution_input(
+            db,
+            pass_run=pass_run,
+            planned_pass=planned_pass,
+            summary=summary,
+        )
+        selected_method_name = "descriptive_summary"
+    else:
         raise Layer3PassEntryError(
             f"Selected pass run '{pass_run_id}' uses source breadth outside this execution-start slice"
-        )
-
-    dataset_version_id = str(planned_pass.get("dataset_version_id") or summary.get("dataset_version_id") or "").strip()
-    selected_method_name = str(
-        planned_pass.get("selected_method_name") or summary.get("selected_method_name") or ""
-    ).strip()
-    if not dataset_version_id:
-        raise Layer3PassEntryError(f"Selected pass run '{pass_run_id}' has no dataset_version_id")
-    if selected_method_name not in SUPPORTED_WRAPPED_QUANTITATIVE_METHODS:
-        raise Layer3PassEntryError(
-            f"Selected pass run '{pass_run_id}' uses unsupported method '{selected_method_name}'"
         )
 
     started_at = _utcnow()
     pass_run.status = PASS_STATUS_RUNNING
     pass_run.started_at = started_at
+    pass_run.input_payload_ref = input_payload_ref
     pass_run.summary_json = {
         **summary,
+        **(cohort_execution_metadata or {}),
         "execution_started": True,
         "analysis_run_id": None,
         "dataset_version_id": dataset_version_id,
         "selected_method_name": selected_method_name,
+        "input_payload_ref": input_payload_ref,
         "analysis_execution_start": {
             "schema_id": "layer3.analysis_execution_start_state.v1",
             "client_request_id": client_request_id,
@@ -1218,12 +1353,15 @@ def execute_selected_pass_run(
         failed_pass_run.status = PASS_STATUS_FAILED
         failed_pass_run.started_at = started_at
         failed_pass_run.completed_at = completed_at
+        failed_pass_run.input_payload_ref = input_payload_ref
         failed_pass_run.summary_json = {
             **failed_summary,
+            **(cohort_execution_metadata or {}),
             "execution_started": True,
             "analysis_run_id": None,
             "dataset_version_id": dataset_version_id,
             "selected_method_name": selected_method_name,
+            "input_payload_ref": input_payload_ref,
             "error": str(exc),
             "analysis_execution_start": {
                 "schema_id": "layer3.analysis_execution_start_state.v1",
@@ -1263,6 +1401,7 @@ def execute_selected_pass_run(
             "artifact_refs_json": [artifact.storage_ref for artifact in artifacts],
             "artifact_types_json": [artifact.artifact_type for artifact in artifacts],
             "source_gate": planned_pass.get("source_gate"),
+            **(cohort_execution_metadata or {}),
         },
     )
     has_warnings = _has_analysis_warnings(db, analysis_run_id=analysis_run.analysis_run_id)
@@ -1272,10 +1411,12 @@ def execute_selected_pass_run(
     pass_run.output_payload_ref = output_manifest_ref
     pass_run.summary_json = {
         **_json_clone(pass_run.summary_json or {}),
+        **(cohort_execution_metadata or {}),
         "execution_started": True,
         "analysis_run_id": analysis_run.analysis_run_id,
         "dataset_version_id": dataset_version_id,
         "selected_method_name": selected_method_name,
+        "input_payload_ref": input_payload_ref,
         "artifact_refs_json": [artifact.storage_ref for artifact in artifacts],
         "artifact_types_json": [artifact.artifact_type for artifact in artifacts],
         "pass_status_from_analysis": analysis_run.status,
