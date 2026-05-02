@@ -1534,6 +1534,19 @@ def _approve_quant_cohort_plan(client: TestClient, tmp_path) -> tuple[str, dict,
     return session_id, preview_body, approval.json()
 
 
+def _patch_cohort_dataframe_persistence(monkeypatch, tmp_path) -> None:
+    def _persist_dataframe_as_csv(db, version, df, time_column) -> None:
+        frame = df.copy()
+        storage_path = tmp_path / "cohort-derived" / f"{version.dataset_version_id}.csv"
+        storage_path.parent.mkdir(parents=True, exist_ok=True)
+        frame.to_csv(storage_path, index=False)
+        version.storage_ref = str(storage_path)
+        version.row_count = int(len(frame))
+        db.flush()
+
+    monkeypatch.setattr(dataframe_io, "persist_dataframe_as_version_rows", _persist_dataframe_as_csv)
+
+
 def _select_quant_pass(
     client: TestClient,
     tmp_path,
@@ -3249,17 +3262,7 @@ def test_layer3_api_selected_cohort_execution_start_and_status_are_bounded(
     tmp_path,
     monkeypatch,
 ) -> None:
-    def _persist_dataframe_as_csv(db, version, df, time_column) -> None:
-        frame = df.copy()
-        storage_path = tmp_path / "cohort-derived" / f"{version.dataset_version_id}.csv"
-        storage_path.parent.mkdir(parents=True, exist_ok=True)
-        frame.to_csv(storage_path, index=False)
-        version.storage_ref = str(storage_path)
-        version.row_count = int(len(frame))
-        db.flush()
-
-    monkeypatch.setattr(dataframe_io, "persist_dataframe_as_version_rows", _persist_dataframe_as_csv)
-
+    _patch_cohort_dataframe_persistence(monkeypatch, tmp_path)
     session_id, preview_body, approval_body, selection_body = _select_quant_cohort_pass(
         client,
         tmp_path,
@@ -3306,11 +3309,220 @@ def test_layer3_api_selected_cohort_execution_start_and_status_are_bounded(
     assert status_body["handoff_enabled"] is False
     assert status_body["selected_method_name"] == "descriptive_summary"
     assert status_body["output_metadata_summary"]["source_gate"] == "78_COHORT_FREEZE"
+    assert status_body["output_metadata_summary"]["source_dataset_version_ids"] == [
+        "dv-cohort-001",
+        "dv-cohort-002",
+    ]
 
-    review = client.post(
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "plans": db.query(L3AnalysisPlan).count(),
+            "passes": db.query(L3PassRun).count(),
+            "runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+    finally:
+        db.close()
+
+    review_payload = {
+        "client_request_id": "api-cohort-result-review-approve",
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_body["preview_id"],
+        "preview_hash": preview_body["preview_hash"],
+        "analysis_run_id": start_body["analysis_run_id"],
+        "operator_decision": "approved",
+        "review_notes": "Cohort descriptive summary output is traceable for this bounded review tranche.",
+        "reviewed_output_items": [
+            {
+                "item_ref": "cohort-output",
+                "item_type": "finding",
+                "trace": {
+                    "session_id": session_id,
+                    "analysis_plan_id": approval_body["analysis_plan_id"],
+                    "pass_run_id": pass_run_id,
+                    "analysis_run_id": start_body["analysis_run_id"],
+                    "output_payload_ref": status_body["output_payload_ref"],
+                },
+            }
+        ],
+    }
+    review = client.post("/api/v1/layer3/execution/result/review", json=review_payload)
+    assert review.status_code == 200
+    review_body = review.json()
+    _assert_common_response_envelope(review_body)
+    assert review_body["schema_id"] == "layer3.execution_result_review.v1"
+    assert review_body["status"] == "recorded"
+    assert review_body["result_status_available"] is True
+    assert review_body["result_review_enabled"] is True
+    assert review_body["review_state"] == "execution_result_review_approved"
+    assert review_body["operator_decision"] == "approved"
+    assert review_body["unresolved_trace_count"] == 0
+    assert review_body["trace_summary"]["output_payload_ref"] == status_body["output_payload_ref"]
+    assert review_body["trace_summary"]["selected_method_name"] == "descriptive_summary"
+    assert review_body["trace_summary"]["pass_scope"] == "quantitative_associated_cohort_dataset_version"
+    assert review_body["trace_summary"]["source_gate"] == "78_COHORT_FREEZE"
+    assert review_body["trace_summary"]["source_dataset_version_ids"] == ["dv-cohort-001", "dv-cohort-002"]
+    assert review_body["trace_summary"]["cohort_shape"] == "aligned_wide_table"
+    assert review_body["trace_summary"]["requested_method_name"] == "descriptive_summary"
+    assert review_body["trace_summary"]["requested_method_source"] == "analysis_set.formation_basis_json.requested_method_name"
+    assert review_body["trace_summary"]["reviewed_item_count"] == 1
+    assert review_body["package_review_enabled"] is False
+    assert review_body["handoff_enabled"] is False
+    assert review_body["downstream_unavailable"] == ["package", "handoff", "package_review"]
+
+    duplicate = client.post("/api/v1/layer3/execution/result/review", json=review_payload)
+    assert duplicate.status_code == 200
+    assert duplicate.json()["status"] == "already_recorded"
+    assert duplicate.json()["review_record_ref"] == review_body["review_record_ref"]
+
+    conflict = client.post(
         "/api/v1/layer3/execution/result/review",
         json={
-            "client_request_id": "api-cohort-result-review-blocked",
+            "client_request_id": "api-cohort-result-review-conflict",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "operator_decision": "rejected",
+            "review_notes": "Conflicting cohort review should fail closed.",
+        },
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["error_code"] == "execution_result_review_already_recorded"
+
+    db = client.layer3_session_factory()
+    try:
+        stored_pass = db.query(L3PassRun).one()
+        assert stored_pass.pass_type == "associated_cohort"
+        assert stored_pass.summary_json["requested_method_name"] == "descriptive_summary"
+        assert stored_pass.summary_json["source_dataset_version_ids_json"] == ["dv-cohort-001", "dv-cohort-002"]
+        assert stored_pass.summary_json["execution_result_review"]["review_record_ref"] == review_body["review_record_ref"]
+        assert stored_pass.summary_json["execution_result_review"]["operator_decision"] == "approved"
+        assert {
+            "plans": db.query(L3AnalysisPlan).count(),
+            "passes": db.query(L3PassRun).count(),
+            "runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_before
+    finally:
+        db.close()
+
+
+def test_layer3_api_selected_cohort_result_review_prechecks_fail_closed(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    _patch_cohort_dataframe_persistence(monkeypatch, tmp_path)
+    session_id, preview_body, approval_body, selection_body = _select_quant_cohort_pass(
+        client,
+        tmp_path,
+        request_id="api-cohort-result-review-precheck-selection",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+    base_payload = {
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_body["preview_id"],
+        "preview_hash": preview_body["preview_hash"],
+        "operator_decision": "approved",
+    }
+
+    not_started = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={**base_payload, "client_request_id": "api-cohort-result-review-before-start"},
+    )
+    assert not_started.status_code == 409
+    assert not_started.json()["error_code"] == "analysis_execution_start_required"
+
+    forbidden = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={
+            **base_payload,
+            "client_request_id": "api-cohort-result-review-forbidden",
+            "package_review": True,
+            "handoff": True,
+            "rewrite_output": True,
+        },
+    )
+    assert forbidden.status_code == 400
+    assert forbidden.json()["error_code"] == "execution_result_review_scope_not_admitted"
+    assert set(forbidden.json()["blocked_fields"]) == {"handoff", "package_review", "rewrite_output"}
+
+    start = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-cohort-result-review-precheck-start",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert start.status_code == 200
+    start_body = start.json()
+
+    stale_preview = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={
+            **base_payload,
+            "client_request_id": "api-cohort-result-review-stale-preview",
+            "analysis_run_id": start_body["analysis_run_id"],
+            "preview_hash": "stale-preview-hash",
+        },
+    )
+    assert stale_preview.status_code == 409
+    assert stale_preview.json()["error_code"] == "preview_mismatch"
+
+    unresolved_trace = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={
+            **base_payload,
+            "client_request_id": "api-cohort-result-review-unresolved-trace",
+            "analysis_run_id": start_body["analysis_run_id"],
+            "reviewed_output_items": [
+                {
+                    "item_ref": "untraceable-cohort-output",
+                    "item_type": "finding",
+                    "trace": {
+                        "session_id": session_id,
+                        "analysis_plan_id": approval_body["analysis_plan_id"],
+                    },
+                }
+            ],
+        },
+    )
+    assert unresolved_trace.status_code == 409
+    assert unresolved_trace.json()["error_code"] == "execution_result_review_trace_unresolved"
+
+    db = client.layer3_session_factory()
+    try:
+        malformed_pass = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).one()
+        original_summary = dict(malformed_pass.summary_json)
+        original_output_payload_ref = malformed_pass.output_payload_ref
+        malformed_pass.summary_json = {
+            **malformed_pass.summary_json,
+            "source_dataset_version_ids_json": "dv-cohort-001",
+        }
+        db.commit()
+    finally:
+        db.close()
+
+    malformed_review = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={
+            "client_request_id": "api-cohort-result-review-malformed-provenance",
             "session_id": session_id,
             "analysis_plan_id": approval_body["analysis_plan_id"],
             "pass_run_id": pass_run_id,
@@ -3320,16 +3532,76 @@ def test_layer3_api_selected_cohort_execution_start_and_status_are_bounded(
             "operator_decision": "approved",
         },
     )
-    assert review.status_code == 409
-    assert review.json()["error_code"] == "associated_cohort_result_review_not_admitted"
+    assert malformed_review.status_code == 409
+    assert malformed_review.json()["error_code"] == "associated_cohort_execution_state_not_admitted"
 
     db = client.layer3_session_factory()
     try:
-        stored_pass = db.query(L3PassRun).one()
-        assert stored_pass.pass_type == "associated_cohort"
-        assert stored_pass.summary_json["requested_method_name"] == "descriptive_summary"
-        assert stored_pass.summary_json["source_dataset_version_ids_json"] == ["dv-cohort-001", "dv-cohort-002"]
-        assert db.query(AnalysisRun).count() == 1
+        missing_output_pass = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).one()
+        missing_output_pass.summary_json = original_summary
+        missing_output_pass.output_payload_ref = original_output_payload_ref
+        db.commit()
+    finally:
+        db.close()
+
+    output_path = Path(original_output_payload_ref)
+    original_output_payload = json.loads(output_path.read_text(encoding="utf-8"))
+    mismatched_output_payload = {
+        **original_output_payload,
+        "source_dataset_version_ids_json": ["dv-cohort-999"],
+    }
+    output_path.write_text(
+        json.dumps(mismatched_output_payload, indent=2, sort_keys=True, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    output_mismatch_review = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={
+            "client_request_id": "api-cohort-result-review-output-mismatch",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "operator_decision": "approved",
+        },
+    )
+    assert output_mismatch_review.status_code == 409
+    assert output_mismatch_review.json()["error_code"] == "associated_cohort_result_review_not_admitted"
+    output_path.write_text(
+        json.dumps(original_output_payload, indent=2, sort_keys=True, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        missing_output_pass = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).one()
+        missing_output_pass.output_payload_ref = None
+        db.commit()
+    finally:
+        db.close()
+
+    missing_output_review = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={
+            "client_request_id": "api-cohort-result-review-missing-output",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "operator_decision": "approved",
+        },
+    )
+    assert missing_output_review.status_code == 409
+    assert missing_output_review.json()["error_code"] == "execution_result_review_not_available"
+
+    db = client.layer3_session_factory()
+    try:
+        pass_rows = db.query(L3PassRun).all()
+        assert all("execution_result_review" not in (row.summary_json or {}) for row in pass_rows)
         assert db.query(L3ReconciliationRecord).count() == 0
         assert db.query(L3OutputPackage).count() == 0
     finally:

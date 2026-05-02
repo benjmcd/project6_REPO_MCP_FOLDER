@@ -2910,6 +2910,15 @@ def _output_metadata_summary(pass_run: L3PassRun) -> tuple[dict[str, Any] | None
             "artifact_refs": list(artifact_refs or []) if isinstance(artifact_refs, list) else [],
             "artifact_types": list(artifact_types or []) if isinstance(artifact_types, list) else [],
             "source_gate": payload.get("source_gate"),
+            "pass_scope": payload.get("pass_scope"),
+            "source_dataset_version_ids": (
+                list(payload.get("source_dataset_version_ids_json"))
+                if isinstance(payload.get("source_dataset_version_ids_json"), list)
+                else None
+            ),
+            "cohort_shape": payload.get("cohort_shape"),
+            "requested_method_name": payload.get("requested_method_name"),
+            "requested_method_source": payload.get("requested_method_source"),
         },
         None,
     )
@@ -2956,6 +2965,39 @@ def _ensure_result_status_downstream_source_admitted(
     raise Layer3WorkbenchError(
         error_code,
         f"{action_label} is not admitted for selected-pass associated-cohort result/status in this tranche.",
+        status="blocked",
+        http_status=409,
+        next_allowed_actions=["inspect_execution_result_status"],
+    )
+
+
+def _ensure_result_review_source_admitted(
+    *,
+    status_body: dict[str, Any],
+    pass_run: L3PassRun,
+    output_metadata_summary: dict[str, Any],
+) -> None:
+    if status_body.get("pass_type") != PASS_TYPE_ASSOCIATED_COHORT:
+        return
+    summary = pass_run.summary_json or {}
+    source_dataset_version_ids = summary.get("source_dataset_version_ids_json")
+    if (
+        status_body.get("pass_scope") == PASS_SCOPE_QUANT_ASSOCIATED_COHORT
+        and status_body.get("selected_method_name") == "descriptive_summary"
+        and output_metadata_summary.get("pass_scope") == PASS_SCOPE_QUANT_ASSOCIATED_COHORT
+        and output_metadata_summary.get("selected_method_name") == "descriptive_summary"
+        and output_metadata_summary.get("source_gate") == SOURCE_GATE_COHORT_DESC_FREEZE
+        and output_metadata_summary.get("dataset_version_id") == summary.get("dataset_version_id")
+        and output_metadata_summary.get("source_dataset_version_ids") == source_dataset_version_ids
+        and output_metadata_summary.get("cohort_shape") == COHORT_SHAPE_ALIGNED_WIDE_TABLE
+        and output_metadata_summary.get("requested_method_name") == "descriptive_summary"
+        and output_metadata_summary.get("requested_method_source") == COHORT_REQUESTED_METHOD_SOURCE
+        and _pass_run_has_admitted_associated_cohort_execution(pass_run)
+    ):
+        return
+    raise Layer3WorkbenchError(
+        "associated_cohort_result_review_not_admitted",
+        "Execution result-review is admitted only for exact selected-pass descriptive associated-cohort result/status output.",
         status="blocked",
         http_status=409,
         next_allowed_actions=["inspect_execution_result_status"],
@@ -3121,6 +3163,19 @@ def _result_review_trace_summary(
         "analysis_set_id": output_metadata_summary.get("analysis_set_id"),
         "dataset_version_id": output_metadata_summary.get("dataset_version_id") or summary.get("dataset_version_id"),
         "selected_method_name": output_metadata_summary.get("selected_method_name") or summary.get("selected_method_name"),
+        "pass_scope": output_metadata_summary.get("pass_scope") or summary.get("pass_scope"),
+        "source_dataset_version_ids": (
+            list(output_metadata_summary.get("source_dataset_version_ids"))
+            if isinstance(output_metadata_summary.get("source_dataset_version_ids"), list)
+            else (
+                list(summary.get("source_dataset_version_ids_json"))
+                if isinstance(summary.get("source_dataset_version_ids_json"), list)
+                else []
+            )
+        ),
+        "cohort_shape": output_metadata_summary.get("cohort_shape") or summary.get("cohort_shape"),
+        "requested_method_name": output_metadata_summary.get("requested_method_name") or summary.get("requested_method_name"),
+        "requested_method_source": output_metadata_summary.get("requested_method_source") or summary.get("requested_method_source"),
         "artifact_count": output_metadata_summary.get("artifact_count", 0),
         "artifact_types": list(output_metadata_summary.get("artifact_types") or []),
         "source_gate": output_metadata_summary.get("source_gate"),
@@ -4168,11 +4223,6 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
             http_status=409,
             next_allowed_actions=["inspect_execution_result_status"],
         )
-    _ensure_result_status_downstream_source_admitted(
-        status_body,
-        error_code="associated_cohort_result_review_not_admitted",
-        action_label="Execution result-review",
-    )
 
     output_metadata_summary = status_body.get("output_metadata_summary")
     if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
@@ -4193,6 +4243,11 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
             status="conflict",
             http_status=409,
         )
+    _ensure_result_review_source_admitted(
+        status_body=status_body,
+        pass_run=pass_run,
+        output_metadata_summary=output_metadata_summary,
+    )
 
     analysis_run_id = str(status_body.get("analysis_run_id") or "").strip() or None
     reviewed_items, unresolved_trace_count = _normalize_result_review_items(
