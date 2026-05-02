@@ -158,7 +158,7 @@
     "latest_descriptive_summary_gatec_admission_branch": "codex/l3-desc-gatec-impl-p27",
     "latest_descriptive_summary_gatec_admission_base_commit": "811b2e14ef23b4643e5b9c004890013f41836bf5",
     "latest_descriptive_summary_cohort_requirements_branch": "codex/l3-desc-cohort-reqs-p31",
-    "latest_descriptive_summary_cohort_requirements_pr": "pending",
+    "latest_descriptive_summary_cohort_requirements_pr": "#422",
     "latest_descriptive_summary_cohort_requirements_summary": "Doc 77 records planning-only requirements before any future associated-cohort descriptive_summary freeze: cohort data shape, execution surface, method selection, provenance, failure behavior, and proof expectations.",
     "latest_descriptive_summary_cohort_requirements_live_behavior_change": false
   },
@@ -2183,7 +2183,7 @@
   },
   "descriptive_summary_cohort_requirements_proof": {
     "planning_branch": "codex/l3-desc-cohort-reqs-p31",
-    "planning_pr": "pending",
+    "planning_pr": "#422",
     "scope": "Planning-only associated-cohort descriptive_summary requirements. This does not make cohort behavior live and does not widen selected-pass workbench execution.",
     "docs_added": [
       "next_milestone_plans/Layer3_planning_docs/77_COHORT_REQS.md"
