@@ -46,14 +46,14 @@ Resolved posture:
 
 ---
 
-## Remaining open item 1 - invocation tightening vs committed implementation
+## Resolved post-PR412 - invocation tightening vs committed implementation
 
-### What remains open
-The current committed workbench support on `main` launches `sys.executable -m opendataloader_pdf`.
-It does not yet use a direct `opendataloader_pdf.convert(...)` call.
+### Resolved posture
+The committed workbench support now invokes `opendataloader_pdf.convert(...)` directly while preserving the same raw JSON, raw Markdown, annotated PDF, external image, log-capture, and failure-metadata contract.
 
 ### Hard rule
-Do not describe direct-wrapper invocation as a current committed `main` fact unless the support module changes.
+Do not describe direct wrapper invocation as backend/runtime integration.
+It remains a workbench/test support path and does not widen service, schema, persistence, or UI behavior.
 
 ---
 

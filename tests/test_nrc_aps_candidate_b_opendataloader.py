@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -113,7 +113,7 @@ def test_build_odl_cli_capability_snapshot_requires_pdf_support(monkeypatch: pyt
         build_odl_cli_capability_snapshot()
 
 
-def test_run_candidate_b_cli_requests_pdf_and_canonicalizes_output(
+def test_run_candidate_b_cli_uses_direct_convert_and_canonicalizes_output(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -126,17 +126,17 @@ def test_run_candidate_b_cli_requests_pdf_and_canonicalizes_output(
 
     monkeypatch.setattr(support, "CORPUS_DIR", corpus_dir)
 
-    def _fake_run(command, *, cwd, capture_output, text, encoding):
-        del capture_output, text, encoding
-        assert "--format" in command
-        assert command[command.index("--format") + 1] == "json,markdown,pdf"
-        working = Path(cwd)
-        (working / "fontish.json").write_text(json.dumps({"kids": [], "number of pages": 1}), encoding="utf-8")
-        (working / "fontish.md").write_text("# fontish", encoding="utf-8")
-        (working / "fontish.pdf").write_bytes(b"%PDF-1.4\n%annotated\n")
-        return subprocess.CompletedProcess(command, 0, stdout="ok", stderr="")
+    def _fake_convert(**kwargs):
+        assert kwargs["format"] == "json,markdown,pdf"
+        assert kwargs["output_dir"] == str(raw_root)
+        assert kwargs["image_output"] == "external"
+        output_dir = Path(kwargs["output_dir"])
+        (output_dir / "fontish.json").write_text(json.dumps({"kids": [], "number of pages": 1}), encoding="utf-8")
+        (output_dir / "fontish.md").write_text("# fontish", encoding="utf-8")
+        (output_dir / "fontish.pdf").write_bytes(b"%PDF-1.4\n%annotated\n")
+        print("ok")
 
-    monkeypatch.setattr(subprocess, "run", _fake_run)
+    monkeypatch.setitem(sys.modules, "opendataloader_pdf", types.SimpleNamespace(convert=_fake_convert))
 
     cli_result, _ = run_candidate_b_cli(
         fixture_entry={"fixture_id": "fontish", "path": "fontish.pdf"},
@@ -146,6 +146,8 @@ def test_run_candidate_b_cli_requests_pdf_and_canonicalizes_output(
     canonical_path = canonical_annotated_pdf_path(raw_root, "fontish")
     assert canonical_path.exists()
     assert not (raw_root / "fontish.pdf").exists()
+    assert cli_result["invocation"] == "opendataloader_pdf.convert"
+    assert cli_result["stdout"] == "ok\n"
     assert cli_result["annotated_pdf_ref"].endswith("annotated/fontish.pdf")
 
 
