@@ -6,6 +6,8 @@ Planning-only freeze for the next bounded Layer 3 workbench tranche after PR `#4
 
 This document does not make associated-cohort package construction live. It selects only the next eligible implementation boundary after the read-only selected-pass associated-cohort `descriptive_summary` package-review preview/readiness path: a bounded package-construction commit for one exact associated-cohort result review that is already approved and package-preview-ready.
 
+Implementation note: branch `codex/l3-cohort-package-construction-impl-p61` implements this exact boundary as a branch-local candidate. The document remains governance by itself; package-review submit, handoff/export, APS dispatch, external export/download, connector, schema/runtime/source, retry/recovery, pass-entry, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior remain deferred.
+
 ## Authority Boundary
 
 Current live authority is limited to:
