@@ -212,6 +212,12 @@ And to the service-materialize associated-cohort `descriptive_summary` freeze/co
 
 The service freeze/contract selects only the `aligned_wide_table` plus `service_materialize_only` path with explicit `formation_basis_json["requested_method_name"] == "descriptive_summary"` method-selection metadata. PR `#424` implements that service-only path in `backend/app/services/layer3_pass_entry.py`, and PR `#425` hardens it so absent, malformed, trimmable, or non-descriptive metadata preserves the default `cross_correlation` cohort path. It does not widen selected-pass workbench execution, change API/UI/schema/runtime/source scope, or activate package/handoff/export/connector/qualitative/hybrid/RAG/vector/full mockup behavior.
 
+And to the planning-only selected-pass associated-cohort execution-start/result-status freeze/contract:
+- `next_milestone_plans/Layer3_planning_docs/80_COHORT_EXECUTION_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/81_COHORT_EXECUTION_CONTRACT.md`
+
+The selected-pass cohort execution packet freezes only a future backend/API tranche over the existing `/api/v1/layer3/execution/start` and `/api/v1/layer3/execution/result/status` surfaces. It does not make selected-pass cohort execution live by itself, and it does not admit UI, result review, package, handoff, export, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, or full mockup behavior.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
