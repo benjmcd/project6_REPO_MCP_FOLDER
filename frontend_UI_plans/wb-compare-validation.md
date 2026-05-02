@@ -152,6 +152,7 @@ The workbench compare validation lane must:
 The compare page may read already-existing local archived bundles, but test and page validation must not invoke a new Candidate B compare run.
 The separate same-corpus prep step may seed baseline, Candidate A, and Candidate B runtime review roots for operator validation, but that prep step is outside validate-only test execution and must use the dedicated fixture-corpus seed tool rather than the 69-document local-corpus demo runner.
 The canonical same-checkout prep check is now `tools/validate_wb_prep.py`; it is validate-only, defaults to the bundle/Candidate B Trace source path, supports explicit runtime-source validation by run id, fails closed on empty or incoherent prep state, and should gate populated operator validation rather than ad hoc manual prep guesses.
+Prep validation now also emits an additive `operator_handoff` block with selected-source rerun commands on success, attempted-validation plus recovery guidance on failure, canonical bundle/runtime prep command sequences, and the runtime Candidate B boundary reminder; this is operator metadata only and does not seed, generate, or promote Candidate B Trace parity for runtime-sourced runs.
 
 Existing review and document-trace regression suites must continue to pass after implementation, including:
 

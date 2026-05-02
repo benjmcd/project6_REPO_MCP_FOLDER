@@ -112,6 +112,14 @@ def _runtime_targets_map(*fixture_ids: str) -> dict[str, SimpleNamespace]:
     }
 
 
+def test_command_spec_keeps_argv_and_quotes_powershell_values() -> None:
+    command = validate_wb_prep._command_spec("py", "-3.12", "--candidate-b-bundle-id", "bundle with 'quote'")
+
+    assert command["argv"] == ["py", "-3.12", "--candidate-b-bundle-id", "bundle with 'quote'"]
+    assert command["powershell"] == "py -3.12 --candidate-b-bundle-id 'bundle with ''quote'''"
+    assert command["copy_paste_ready"] is True
+
+
 def test_discover_runtime_bindings_for_checkout_reads_target_checkout_roots(tmp_path: Path) -> None:
     checkout_root = tmp_path / "checkout"
     review_root = checkout_root / "backend" / "app" / "storage_test_runtime" / "lc_e2e" / "baseline-run-001"
@@ -218,6 +226,28 @@ def test_validate_wb_prep_returns_canonical_selection(tmp_path: Path, monkeypatc
     assert payload["required_follow_through_fixture_ids_present"] == ["fontish", "ml17123a319"]
     assert payload["candidate_b_trace"]["default_tab"] == "annotated_pdf"
     assert payload["recommended_urls"]["workbench_compare"].startswith("/review/nrc-aps/workbench-compare?")
+    assert payload["operator_handoff"]["selected_source_kind"] == "bundle"
+    assert payload["operator_handoff"]["rerun_selected_validation"]["argv"] == [
+        "py",
+        "-3.12",
+        ".\\tools\\validate_wb_prep.py",
+        "--baseline-run-id",
+        "baseline-run-001",
+        "--candidate-a-run-id",
+        "candidate-a-run-001",
+        "--candidate-b-bundle-id",
+        "tests/reports/cb-compare-test",
+        "--fixture-id",
+        "fontish",
+    ]
+    assert payload["operator_handoff"]["canonical_prep_sequences"]["bundle_source"][-1]["powershell"] == (
+        "py -3.12 .\\tools\\validate_wb_prep.py"
+    )
+    assert payload["operator_handoff"]["rerun_selected_validation"]["copy_paste_ready"] is True
+    assert payload["operator_handoff"]["canonical_prep_sequences"]["runtime_source"][-1]["copy_paste_ready"] is False
+    assert "CANDIDATE_B_RUNTIME_RUN_ID" in (
+        payload["operator_handoff"]["canonical_prep_sequences"]["runtime_source"][-1]["powershell"]
+    )
 
 
 def test_validate_wb_prep_accepts_candidate_b_runtime_source(
@@ -289,6 +319,28 @@ def test_validate_wb_prep_accepts_candidate_b_runtime_source(
     assert payload["sources_snapshot"]["candidate_b_runtime_runs"][0]["review_root"].startswith(
         "backend/app/storage_test_runtime/"
     )
+    assert payload["operator_handoff"]["selected_source_kind"] == "runtime"
+    assert payload["operator_handoff"]["rerun_selected_validation"]["argv"] == [
+        "py",
+        "-3.12",
+        ".\\tools\\validate_wb_prep.py",
+        "--baseline-run-id",
+        "baseline-run-001",
+        "--candidate-a-run-id",
+        "candidate-a-run-001",
+        "--candidate-b-source-kind",
+        "runtime",
+        "--candidate-b-run-id",
+        "candidate-b-runtime-001",
+        "--fixture-id",
+        "fontish",
+    ]
+    assert payload["operator_handoff"]["canonical_prep_sequences"]["runtime_source"][-1]["argv"][-1] == (
+        "candidate-b-runtime-001"
+    )
+    assert payload["operator_handoff"]["rerun_selected_validation"]["copy_paste_ready"] is True
+    assert payload["operator_handoff"]["canonical_prep_sequences"]["runtime_source"][-1]["copy_paste_ready"] is True
+    assert "not Candidate B Trace parity" in "\n".join(payload["operator_handoff"]["validation_boundaries"])
 
 
 def test_validate_wb_prep_runtime_source_requires_explicit_candidate_b_run_id(
@@ -346,6 +398,16 @@ def test_validate_wb_prep_runtime_source_requires_explicit_candidate_b_run_id(
     assert payload["error"]["context"]["eligible_runs"][0]["review_root"].startswith(
         "backend/app/storage_test_runtime/"
     )
+    assert payload["operator_handoff"]["selected_source_kind"] == "runtime"
+    assert payload["operator_handoff"]["rerun_selected_validation"]["argv"][-2:] == [
+        "--candidate-b-source-kind",
+        "runtime",
+    ]
+    assert payload["operator_handoff"]["canonical_prep_sequences"]["runtime_source"][-1]["copy_paste_ready"] is False
+    assert "run_id from the preceding Candidate B runtime seed summary" in (
+        payload["operator_handoff"]["canonical_prep_sequences"]["runtime_source"][-1]["note"]
+    )
+    assert "stale query-string run ids" in "\n".join(payload["operator_handoff"]["failure_next_steps"])
 
 
 def test_validate_wb_prep_runtime_source_rejects_invalid_candidate_b_run_id(
@@ -407,6 +469,10 @@ def test_validate_wb_prep_runtime_source_rejects_invalid_candidate_b_run_id(
     assert payload["error"]["context"]["eligible_runs"][0]["review_root"].startswith(
         "backend/app/storage_test_runtime/"
     )
+    assert payload["operator_handoff"]["selected_source_kind"] == "runtime"
+    assert "--candidate-b-run-id" in payload["operator_handoff"]["rerun_selected_validation"]["argv"]
+    assert "not-a-runtime-run" in payload["operator_handoff"]["rerun_selected_validation"]["argv"]
+    assert payload["operator_handoff"]["canonical_prep_sequences"]["runtime_source"][-1]["copy_paste_ready"] is False
 
 
 def test_validate_wb_prep_fails_closed_on_donor_runtime_root(
