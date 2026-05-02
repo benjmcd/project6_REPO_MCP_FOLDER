@@ -1,5 +1,7 @@
 # Layer 3 Analysis Method Registry Contract
 
+Status: historical contract for the initial three-method registry tranche. PR `#411` later added the separately governed `descriptive_summary` lower-level analysis API method; use docs `72`/`73` plus current `backend/app/services/analysis.py` for that method's current-main authority.
+
 Status: planning-only companion for `70_L3_ANALYSIS_METHOD_REGISTRY_FREEZE.md`.
 
 This document defines the current-methods-only registry contract for the existing wrapped quantitative analysis spine. It is not an implementation and does not add methods.
@@ -74,9 +76,9 @@ Current recommendation rules must remain equivalent:
 
 - multivariate time-indexed data: `cross_correlation`, `decomposition`, `structural_break`
 - single numeric time-indexed data: `decomposition`, `structural_break`
-- datasets outside starter time-series assumptions: `descriptive_summary` remains a recommendation label only unless separately implemented as a real method
+- datasets outside starter time-series assumptions: `descriptive_summary` is now separately governed by docs `72`/`73` and implemented as a bounded lower-level analysis API method by PR `#411`
 
-If future implementation discovers that `descriptive_summary` must be formalized as a supported method, stop and create a separate governance decision before treating it as executable.
+PR `#411` is that separate governance-backed implementation. It does not admit `descriptive_summary` through Layer 3 Gate C pass-entry.
 
 ## Execution Contract
 
@@ -104,7 +106,7 @@ Any future API or Layer 3 workbench integration may use the registry to display 
 
 Future implementation tests should cover:
 
-- registry contains exactly `cross_correlation`, `decomposition`, and `structural_break`
+- this historical registry tranche contains exactly `cross_correlation`, `decomposition`, and `structural_break`; `descriptive_summary` is covered by docs `72`/`73` and PR `#411`
 - each registry entry includes method id, parameters, prerequisites, artifacts, assumptions, and caveats
 - recommendation output remains unchanged for existing tested dataset shapes
 - execution dispatch reaches the same current method runners
