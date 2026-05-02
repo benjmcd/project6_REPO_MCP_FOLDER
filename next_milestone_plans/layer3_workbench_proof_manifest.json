@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus PR #411 bounded lower-level descriptive_summary analysis API support and PR #417 bounded single-item Gate C admission implementation",
+  "status": "current-main readiness proof plus PR #411 bounded lower-level descriptive_summary analysis API support and PR #417 bounded single-item Gate C admission implementation plus doc 77 planning-only associated-cohort descriptive_summary requirements",
   "scope": {
     "source_branch": "codex/l3-desc-gatec-docsync-p28",
     "merged_pr": "post-PR417 docs/control sync branch",
@@ -9,7 +9,7 @@
     "base_remote": "project6-origin/main",
     "base_commit": "811b2e14",
     "source_base_commit": "811b2e14ef23b4643e5b9c004890013f41836bf5",
-    "purpose": "Record current-main PR #417 bounded single-item descriptive_summary Gate C admission, while preserving current-main PR #411 lower-level method support and the still-blocked associated-cohort/broader deferred boundaries.",
+    "purpose": "Record current-main PR #417 bounded single-item descriptive_summary Gate C admission and doc 77 planning-only associated-cohort descriptive_summary requirements, while preserving current-main PR #411 lower-level method support and the still-blocked associated-cohort/broader deferred boundaries.",
     "live_behavior_change": true,
     "live_behavior_change_summary": "PR #417 changed runtime behavior only by admitting descriptive_summary through the existing single-item Gate C wrapped quantitative path. This docs/control branch changes no runtime behavior and keeps associated-cohort admission, UI, schema/runtime/source, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector, and full mockup behavior blocked.",
     "latest_implementation_pr": "#417",
@@ -156,7 +156,11 @@
     "latest_descriptive_summary_governance_base_commit": "341f156d821df8eb5402eca93059add686ef5be6",
     "latest_descriptive_summary_governance_summary": "PR #402 lands docs 72/73 as descriptive_summary governance; PR #411 later implements only the lower-level analysis API method under that governance.",
     "latest_descriptive_summary_gatec_admission_branch": "codex/l3-desc-gatec-impl-p27",
-    "latest_descriptive_summary_gatec_admission_base_commit": "811b2e14ef23b4643e5b9c004890013f41836bf5"
+    "latest_descriptive_summary_gatec_admission_base_commit": "811b2e14ef23b4643e5b9c004890013f41836bf5",
+    "latest_descriptive_summary_cohort_requirements_branch": "codex/l3-desc-cohort-reqs-p31",
+    "latest_descriptive_summary_cohort_requirements_pr": "pending",
+    "latest_descriptive_summary_cohort_requirements_summary": "Doc 77 records planning-only requirements before any future associated-cohort descriptive_summary freeze: cohort data shape, execution surface, method selection, provenance, failure behavior, and proof expectations.",
+    "latest_descriptive_summary_cohort_requirements_live_behavior_change": false
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -1263,7 +1267,8 @@
     "tests/test_api.py",
     "backend/tests/test_layer3_pass_entry.py",
     "next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/76_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/76_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/77_COHORT_REQS.md"
   ],
   "handoff_export_prepare_ui_implementation_proof": {
     "implementation_branch": "codex/l3-handoff-prepare-ui-impl",
@@ -2174,6 +2179,29 @@
       "no source/runtime widening",
       "no package/handoff/export behavior",
       "no qualitative/hybrid/RAG/vector/full mockup activation"
+    ]
+  },
+  "descriptive_summary_cohort_requirements_proof": {
+    "planning_branch": "codex/l3-desc-cohort-reqs-p31",
+    "planning_pr": "pending",
+    "scope": "Planning-only associated-cohort descriptive_summary requirements. This does not make cohort behavior live and does not widen selected-pass workbench execution.",
+    "docs_added": [
+      "next_milestone_plans/Layer3_planning_docs/77_COHORT_REQS.md"
+    ],
+    "authority_basis": [
+      "backend/app/services/layer3_pass_entry.py chooses cross_correlation for current exact-time-aligned quantitative cohorts and treats non-admitted cohort descriptive_summary as fail-closed",
+      "backend/app/services/layer3_pass_entry.py execute_selected_pass_run admits only single_item pass runs",
+      "backend/app/services/layer3_workbench.py execution-start and result/status paths reject non-single-item pass runs",
+      "docs 75/76 admit descriptive_summary only for the single-item Gate C path"
+    ],
+    "live_behavior_change": false,
+    "no_go_preserved": [
+      "no associated-cohort Gate C admission for descriptive_summary",
+      "no selected-pass cohort execution-start breadth",
+      "no route or UI activation",
+      "no schema/runtime/source widening",
+      "no package/handoff/export behavior",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior"
     ]
   }
 }
