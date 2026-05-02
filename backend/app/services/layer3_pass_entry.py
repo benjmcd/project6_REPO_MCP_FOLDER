@@ -1288,6 +1288,7 @@ def execute_selected_pass_run(
         )
     planned_pass_type = str(planned_pass.get("pass_type") or pass_run.pass_type)
     cohort_execution_metadata: dict[str, Any] | None = None
+    original_input_payload_ref = pass_run.input_payload_ref
     input_payload_ref = pass_run.input_payload_ref
     if planned_pass_type == PASS_TYPE_SINGLE_ITEM:
         dataset_version_id = str(planned_pass.get("dataset_version_id") or summary.get("dataset_version_id") or "").strip()
@@ -1350,18 +1351,31 @@ def execute_selected_pass_run(
             raise Layer3PassEntryError(f"Selected pass run '{pass_run_id}' disappeared during execution") from exc
         completed_at = _utcnow()
         failed_summary = _json_clone(failed_pass_run.summary_json or {})
+        if cohort_execution_metadata is not None:
+            failed_summary.pop("dataset_version_id", None)
+            failed_summary.pop("derived_dataset_version_id", None)
+            failed_summary.pop("input_payload_ref", None)
+        failed_cohort_metadata = _json_clone(cohort_execution_metadata or {})
+        cohort_dataset_resolvable = (
+            cohort_execution_metadata is not None
+            and bool(dataset_version_id)
+            and db.get(DatasetVersion, dataset_version_id) is not None
+        )
+        if failed_cohort_metadata and not cohort_dataset_resolvable:
+            failed_cohort_metadata.pop("derived_dataset_version_id", None)
         failed_pass_run.status = PASS_STATUS_FAILED
         failed_pass_run.started_at = started_at
         failed_pass_run.completed_at = completed_at
-        failed_pass_run.input_payload_ref = input_payload_ref
+        if cohort_execution_metadata is None or cohort_dataset_resolvable:
+            failed_pass_run.input_payload_ref = input_payload_ref
+        else:
+            failed_pass_run.input_payload_ref = original_input_payload_ref
         failed_pass_run.summary_json = {
             **failed_summary,
-            **(cohort_execution_metadata or {}),
+            **failed_cohort_metadata,
             "execution_started": True,
             "analysis_run_id": None,
-            "dataset_version_id": dataset_version_id,
             "selected_method_name": selected_method_name,
-            "input_payload_ref": input_payload_ref,
             "error": str(exc),
             "analysis_execution_start": {
                 "schema_id": "layer3.analysis_execution_start_state.v1",
@@ -1372,13 +1386,23 @@ def execute_selected_pass_run(
                 "error": str(exc),
             },
         }
+        if cohort_execution_metadata is None or cohort_dataset_resolvable:
+            failed_pass_run.summary_json = {
+                **failed_pass_run.summary_json,
+                "dataset_version_id": dataset_version_id,
+                "input_payload_ref": input_payload_ref,
+            }
         db.flush()
         return Layer3SelectedPassExecutionResult(
             pass_run=failed_pass_run,
             status=PASS_STATUS_FAILED,
             execution_started=True,
             analysis_run_id=None,
-            dataset_version_id=dataset_version_id,
+            dataset_version_id=(
+                dataset_version_id
+                if cohort_execution_metadata is None or cohort_dataset_resolvable
+                else None
+            ),
             selected_method_name=selected_method_name,
             output_payload_ref=None,
             error_message=str(exc),
