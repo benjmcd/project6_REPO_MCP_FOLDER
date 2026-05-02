@@ -371,16 +371,16 @@
     "snapshot_base_main_commit_source": "project6-origin/main at 0ad0da0f27aed6389f5440348fd79fe438070f40 after PR #443 merged the bounded associated-cohort result-review UI implementation; snapshot_base_main_commit records this post-PR443 sync basis and is not a self-updating current-main claim after later branches merge"
   },
   "layer3_workbench_current_decision": {
-    "decision_id": "l3-selected-pass-cohort-result-review-ui-freeze-pr441",
-    "state": "planning_only_descriptive_summary_selected_pass_cohort_result_review_ui",
-    "scope": "PR #441 adds planning-only docs 84/85 for the future rendered /review/layer3 selected-pass associated-cohort descriptive_summary result-review UI boundary over existing PR #432/PR #438 backend/API authority.",
-    "current_live_state": "Current main includes PR #432 selected-pass associated-cohort execution-start/result-status for exact selected metadata/provenance and PR #438 selected-pass associated-cohort result review for exact readable PR #432 terminal outputs. Docs 84/85 freeze the next UI boundary but do not make associated-cohort UI, package, handoff, export, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, retry/recovery, pass-entry, or full mockup behavior live.",
+    "decision_id": "l3-selected-pass-cohort-result-review-ui-implemented-pr443",
+    "state": "live_bounded_descriptive_summary_selected_pass_cohort_result_review_ui",
+    "scope": "PR #443 implements only the exact rendered /review/layer3 selected-pass associated-cohort descriptive_summary result-review UI boundary over existing PR #432 execution-start/result/status authority and PR #438 backend/API result-review authority.",
+    "current_live_state": "Current main includes PR #432 selected-pass associated-cohort execution-start/result/status for exact selected metadata/provenance, PR #438 selected-pass associated-cohort backend/API result review for exact readable PR #432 terminal outputs, and PR #443 rendered /review/layer3 associated-cohort result-review presentation/control over that authority. Docs 84/85 remain planning authority by themselves; PR #443 is the separate implementation authority. Package, handoff, export, backend/API changes beyond PR #438, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, retry/recovery, pass-entry, broader associated-cohort review, broader UI, and full mockup behavior remain deferred.",
     "required_before_next_functional_slice": [
-      "Use docs 84/85 as the current planning authority before implementing the associated-cohort result-review UI tranche.",
+      "Write and land a new freeze/contract before package, handoff, export, connector, schema/runtime/source, qualitative/hybrid/RAG/vector, retry/recovery, pass-entry, broader associated-cohort review, broader UI, or full mockup expansion.",
       "Preserve PR #424/#425 service-owned associated-cohort materialize_pass_entry(...) behavior unchanged.",
       "Preserve PR #432 exact selected metadata/provenance execution-start/result/status gates and fail-closed behavior.",
       "Preserve PR #438 exact result-review admission gates, duplicate/conflict behavior, trace resolution, and no downstream row creation.",
-      "Write a new freeze before package, handoff, export, connector, schema/runtime/source, qualitative/hybrid/RAG/vector, retry/recovery, pass-entry, broader associated-cohort review, or full mockup expansion."
+      "Preserve PR #443 exact rendered UI boundary, reviewed_output_items provenance, single-item result-review behavior, and associated-cohort package/handoff/export control blocking."
     ]
   },
   "layer3_workbench_slices": [
@@ -1663,7 +1663,7 @@
   "summary_counts": {
     "merged_milestones": 29,
     "open_milestones": 0,
-    "planned_decisions": 1,
+    "planned_decisions": 0,
     "deferred_scope_items": 8,
     "branch_only_milestones": 0,
     "workbench_slice_records": 50,
@@ -3021,17 +3021,15 @@
     }
   ],
   "next_required_decision": {
-    "decision_id": "post-pr441-cohort-result-review-ui-implementation-selection",
-    "title": "Implement the bounded associated-cohort result-review UI only after docs 84/85 proof is satisfied, or remain settled",
-    "state": "ready_for_bounded_cohort_result_review_ui_implementation_after_pr441",
-    "why_now": "PR #441 freezes the next rendered /review/layer3 UI boundary over exact PR #432 selected-pass associated-cohort execution-start/result/status authority and PR #438 backend/API result-review authority. The next functional tranche is only the bounded UI implementation if the docs 84/85 contract can be satisfied without backend/API or downstream widening.",
-    "candidate_families": [
-      "descriptive-summary-selected-pass-cohort-result-review-ui-implementation"
-    ],
+    "decision_id": "post-pr443-cohort-result-review-ui-settled",
+    "title": "Associated-cohort result-review UI is settled; no next functional tranche is selected",
+    "state": "settled",
+    "why_now": "PR #443 already implemented the bounded rendered /review/layer3 associated-cohort result-review UI tranche governed by docs 84/85. No package, handoff, export, backend/API, schema/runtime/source, connector, broader UI, qualitative/hybrid/RAG/vector, retry/recovery, pass-entry, or full mockup tranche is active until a new freeze/contract explicitly selects one.",
+    "candidate_families": [],
     "must_not_skip": [
-      "Do not implement backend/API behavior changes, package, handoff, export, connector dispatch, schema/runtime/source widening, qualitative/hybrid/RAG/vector, retry/recovery, pass-entry, or full mockup behavior from docs 84/85.",
-      "Do not broaden associated-cohort result review beyond exact PR #432 selected-pass descriptive_summary output authority without a new freeze.",
-      "Do not treat docs 84/85 by themselves as live UI behavior; a separate implementation PR must prove the UI contract before rendering associated-cohort review controls as live."
+      "Do not treat the completed PR #443 UI implementation as authority for package, handoff, export, backend/API changes beyond PR #438, connector dispatch, schema/runtime/source widening, qualitative/hybrid/RAG/vector, retry/recovery, pass-entry, broader associated-cohort review, broader UI, or full mockup behavior.",
+      "Do not promote a deferred item into candidate-next or current-focus without satisfying the manifest-declared activation criteria and landing a new freeze/contract.",
+      "Do not treat docs 84/85 by themselves as live UI behavior; PR #443 is the separate implementation authority and is limited to the exact rendered associated-cohort result-review path."
     ]
   },
   "deferred_scope": [
