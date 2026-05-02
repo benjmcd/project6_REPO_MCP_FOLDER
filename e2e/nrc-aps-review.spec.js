@@ -324,11 +324,16 @@ test('Workbench Compare can switch Candidate B from bundle source to admitted ru
   expect(targets.candidate_b_run_id).toBe('candidate-b-runtime-001');
   expect(targets.candidate_b_bundle_id).toBeNull();
   expect(targets.targets).toHaveLength(2);
-  expect(targets.targets[0].candidate_b_target_id).toBeTruthy();
+  const candidateBTargetId = targets.targets[0].candidate_b_target_id;
+  expect(candidateBTargetId).toBeTruthy();
   expect(manifest.variant_bindings.candidate_b.source_kind).toBe('runtime');
   expect(manifest.deep_links.candidate_b_trace).toBeNull();
   expect(manifest.deep_links.candidate_b_runtime_trace).toContain('/review/nrc-aps/document-trace?');
   expectNoLocalPath(JSON.stringify(manifest));
+
+  const runtimeTraceUrl = new URL(manifest.deep_links.candidate_b_runtime_trace, 'http://127.0.0.1:8031');
+  expect(runtimeTraceUrl.searchParams.get('run_id')).toBe('candidate-b-runtime-001');
+  expect(runtimeTraceUrl.searchParams.get('target_id')).toBe(candidateBTargetId);
 
   const currentUrl = new URL(page.url());
   expect(currentUrl.searchParams.get('candidate_b_source_kind')).toBe('runtime');
@@ -339,6 +344,31 @@ test('Workbench Compare can switch Candidate B from bundle source to admitted ru
   await expect(page.locator('#trace-link-cluster')).toContainText('Candidate B Runtime Trace');
   await expect(page.locator('#compare-identity-summary')).toContainText('Runtime | Candidate B Runtime');
   await expect(page.locator('.compare-column h3').filter({ hasText: 'Candidate B / OpenDataLoader PDF' })).toHaveCount(1);
+
+  const runtimeTraceLink = page.locator('#trace-link-cluster a').filter({ hasText: 'Candidate B Runtime Trace' });
+  await expect(runtimeTraceLink).toHaveCount(1);
+  const runtimeTraceHref = await runtimeTraceLink.getAttribute('href');
+  expectNoLocalPath(runtimeTraceHref);
+  expect(new URL(runtimeTraceHref, 'http://127.0.0.1:8031').searchParams.get('target_id')).toBe(candidateBTargetId);
+
+  const traceDocumentsResponsePromise = page.waitForResponse(
+    (response) => response.url().includes(`/runs/candidate-b-runtime-001/documents`),
+  );
+  await Promise.all([
+    page.waitForURL(/\/review\/nrc-aps\/document-trace\?/),
+    runtimeTraceLink.click(),
+  ]);
+  await expectJsonResponse(await traceDocumentsResponsePromise);
+
+  const tracePageUrl = new URL(page.url());
+  expect(tracePageUrl.pathname).toBe('/review/nrc-aps/document-trace');
+  expect(tracePageUrl.searchParams.get('run_id')).toBe('candidate-b-runtime-001');
+  expect(tracePageUrl.searchParams.get('target_id')).toBe(candidateBTargetId);
+  expectNoLocalPath(page.url());
+  await expect(page.locator('#trace-workspace')).toBeVisible();
+  await expect(page.locator('#run-selector')).toHaveValue('candidate-b-runtime-001');
+  await expect(page.locator('#doc-selector')).toHaveValue(candidateBTargetId);
+  await expect(page.locator('#run-selector option:checked')).toContainText('Candidate B / OpenDataLoader PDF');
 });
 
 test('Workbench Compare keeps baseline and Candidate A trace links on Document Trace', async ({ page }) => {

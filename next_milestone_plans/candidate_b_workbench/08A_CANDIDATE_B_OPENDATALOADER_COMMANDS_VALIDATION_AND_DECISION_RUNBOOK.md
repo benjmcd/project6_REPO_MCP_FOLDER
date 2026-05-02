@@ -146,11 +146,13 @@ treat that as artifact-generating workbench execution rather than validate-only 
 If the goal is populated operator validation of shipped Workbench Compare + Candidate B Trace behavior on the same checkout, use this canonical prep sequence:
 
 ```powershell
-py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode baseline
-py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode candidate_a_page_evidence_v1
+.\.venvs\phase7a-py311\Scripts\python.exe .\tools\seed_wb_compare.py --visual-lane-mode baseline
+.\.venvs\phase7a-py311\Scripts\python.exe .\tools\seed_wb_compare.py --visual-lane-mode candidate_a_page_evidence_v1
 .\project6.ps1 -Action compare-nrc-aps-candidate-b
-py -3.12 .\tools\validate_wb_prep.py
+.\.venvs\phase7a-py311\Scripts\python.exe .\tools\validate_wb_prep.py
 ```
+
+When running from a git worktree, use the checkout-relative Phase 7A interpreter path emitted by `tools/validate_wb_prep.py` in `operator_handoff`; the root-checkout path above is not a portable worktree command.
 
 Rules:
 
