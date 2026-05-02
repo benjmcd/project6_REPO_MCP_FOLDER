@@ -352,14 +352,15 @@ Do not broaden ergonomics work into runtime admission, schema widening, or docum
 Resolved posture:
 
 - the repo now carries one canonical same-checkout prep sequence for populated compare + Candidate B Trace operator validation:
-  - `py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode baseline`
-  - `py -3.12 .\tools\seed_wb_compare.py --visual-lane-mode candidate_a_page_evidence_v1`
+  - `.\.venvs\phase7a-py311\Scripts\python.exe .\tools\seed_wb_compare.py --visual-lane-mode baseline`
+  - `.\.venvs\phase7a-py311\Scripts\python.exe .\tools\seed_wb_compare.py --visual-lane-mode candidate_a_page_evidence_v1`
   - `.\project6.ps1 -Action compare-nrc-aps-candidate-b`
-  - `py -3.12 .\tools\validate_wb_prep.py`
+  - `.\.venvs\phase7a-py311\Scripts\python.exe .\tools\validate_wb_prep.py`
 - the same fixed-fixture seed path now supports runtime-source Candidate B prep without using the 69-PDF local-corpus demo runner:
-  - `py -3.12 .\tools\seed_wb_compare.py --document-processing-engine candidate_b_opendataloader_pdf`
-  - `py -3.12 .\tools\validate_wb_prep.py --candidate-b-source-kind runtime --candidate-b-run-id <candidate_b_runtime_run_id>`
+  - `.\.venvs\phase7a-py311\Scripts\python.exe .\tools\seed_wb_compare.py --document-processing-engine candidate_b_opendataloader_pdf`
+  - `.\.venvs\phase7a-py311\Scripts\python.exe .\tools\validate_wb_prep.py --candidate-b-source-kind runtime --candidate-b-run-id <candidate_b_runtime_run_id>`
 - `tools/validate_wb_prep.py` is now the validate-only fail-closed prep gate for same-checkout readiness
+- when validating from a git worktree, use the concrete checkout-relative command emitted in `operator_handoff`; the root-checkout Phase 7A path above is illustrative and may need a different relative prefix
 - the validator fails closed on empty, donor, ambiguous, missing-runtime-run-id, or incoherent same-checkout prep state
 - populated operator validation should now start from that canonical prep gate rather than from ad hoc source discovery or donor-worktree assumptions
 
