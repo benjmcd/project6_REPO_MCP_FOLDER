@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -19,11 +20,13 @@ if str(TESTS_DIR) not in sys.path:
 
 from support_nrc_aps_candidate_b_opendataloader import (  # noqa: E402
     approved_output_prefixes,
+    build_protected_diff_inventory,
     compare_surface_auxiliary_inventory,
     load_baseline_source,
     outputs_outside_allowed_paths,
     repo_rel,
     run_cli,
+    write_candidate_b_reports,
 )
 from tools import run_nrc_aps_candidate_b_baseline as baseline_tool  # noqa: E402
 from tools import run_nrc_aps_candidate_b_compare as compare_tool  # noqa: E402
@@ -192,6 +195,104 @@ def test_compare_surface_output_boundary_covers_baseline_artifacts(tmp_path: Pat
     assert repo_rel(baseline_before_dir).rstrip("/") + "/" in approved
     assert repo_rel(baseline_after_dir).rstrip("/") + "/" in approved
     assert repo_rel(baseline_summary_path) in approved
+
+
+def test_protected_diff_inventory_serializes_tracked_and_unexpected_changes() -> None:
+    inventory = build_protected_diff_inventory(
+        [
+            "backend/app/services/nrc_aps_document_processing.py",
+            "outside/protected-set.py",
+        ]
+    )
+
+    assert inventory["status"] == "changed"
+    assert inventory["changed_paths"] == [
+        "backend/app/services/nrc_aps_document_processing.py",
+        "outside/protected-set.py",
+    ]
+    assert inventory["unexpected_changed_paths"] == ["outside/protected-set.py"]
+    protected_by_path = {entry["path"]: entry for entry in inventory["protected_paths"]}
+    assert protected_by_path["backend/app/services/nrc_aps_document_processing.py"]["changed"] is True
+    assert protected_by_path["backend/app/services/nrc_aps_page_evidence.py"]["changed"] is False
+
+
+def test_candidate_b_reports_include_protected_diff_inventory(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    inventory = build_protected_diff_inventory(["backend/app/services/nrc_aps_document_processing.py"])
+    monkeypatch.setattr(
+        "support_nrc_aps_candidate_b_opendataloader.build_protected_diff_inventory",
+        lambda: inventory,
+    )
+    proof_path = tmp_path / "proof.json"
+    compare_path = tmp_path / "compare.json"
+    retain_path = tmp_path / "retain.json"
+    raw_root = tmp_path / "raw"
+    raw_root.mkdir()
+    analysis = {
+        "candidate_convert_elapsed_seconds": 0.0,
+        "control_limitations": [],
+        "documents": [],
+        "element_counts_total": Counter(),
+        "execution_events": [],
+        "failed_documents": [],
+        "hidden_text_signals": [],
+        "image_sources_by_fixture": {},
+        "limitation_counts": Counter(),
+        "page_count_matches": 0,
+        "page_count_mismatches": [],
+        "regime_counts": Counter(),
+        "scanned_control_pages": [],
+        "structural_gain_signals": [],
+        "text_presence_deltas": [],
+    }
+    workbench_context = {
+        "batch_plan": {"batch_count": 0, "batches": []},
+        "java_preflight": {
+            "java_resolution_path": "java",
+            "java_vendor": "OpenJDK",
+            "java_version": "openjdk",
+        },
+        "label_hash_status": {"status": "matched"},
+        "manifest_sha": "manifest-sha",
+        "python_metadata": {
+            "odl_package_location": "site-packages",
+            "odl_package_name": "opendataloader-pdf",
+            "odl_package_sha256_expected": "expected",
+            "odl_package_sha256_verification_reason": "test",
+            "odl_package_sha256_verified": None,
+            "odl_package_version": "2.0.0",
+            "python_executable": sys.executable,
+            "python_version": sys.version,
+        },
+    }
+
+    write_candidate_b_reports(
+        run_id="cb-fixed",
+        proof_report_path=proof_path,
+        compare_report_path=compare_path,
+        retention_manifest_path=retain_path,
+        raw_root=raw_root,
+        workbench_context=workbench_context,
+        analysis=analysis,
+        baseline_before_command={"report_ref": "baseline-before.json"},
+        baseline_before_report={"passed": True},
+        baseline_after_command={"report_ref": "baseline-after.json"},
+        baseline_after_report={"passed": True},
+        baseline_source_ref="baseline-summary.json",
+        baseline_source_kind="baseline_summary",
+        execution_seconds=0.0,
+        run_root=tmp_path,
+    )
+
+    for path in [proof_path, compare_path, retain_path]:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        assert payload["protected_diff_status"] == "changed"
+        assert payload["protected_diff_changed_paths"] == [
+            "backend/app/services/nrc_aps_document_processing.py"
+        ]
+        assert payload["protected_diff_inventory"]["protected_paths"]
 
 
 def test_baseline_tool_returns_clean_error_for_invalid_proof(

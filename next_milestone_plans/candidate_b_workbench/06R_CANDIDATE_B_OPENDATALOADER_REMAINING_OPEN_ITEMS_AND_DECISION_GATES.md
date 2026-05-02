@@ -68,15 +68,15 @@ Do not overstate validate-only green status as if it proves the full artifact-ge
 
 ---
 
-## Remaining open item 3 - non-interference proof serialization depth
+## Resolved post-PR410 - non-interference proof serialization depth
 
-### What remains open
-The committed support module defines `git_protected_diff()`,
-but the committed proof/compare/retention artifacts do not serialize a touched-file inventory.
+### Resolved posture
+The Candidate B compare reporting path now serializes the protected-diff inventory into the proof, compare, and retention artifacts.
+The serialized fields include protected path existence, changed-state, changed paths, unexpected changed paths, and clean/changed status.
 
 ### Hard rule
-Do not overstate the current committed artifacts as if they already include protected-diff inventory.
-Treat that as a future hardening opportunity only.
+Do not treat protected-diff inventory as permission to widen Candidate B execution.
+It is provenance hardening for the existing compare proof path only.
 
 ---
 
