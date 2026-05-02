@@ -190,7 +190,7 @@ And to the current-main Layer 3 descriptive-summary governance packet from PR `#
 
 The descriptive-summary packet admits only governance for deciding whether the existing `descriptive_summary` recommendation label may become a deterministic wrapped quantitative method. The docs do not implement the method, add it to `ANALYSIS_METHOD_REGISTRY`, change recommendation or execution behavior, change Layer 3 pass-entry behavior, widen schema/runtime/source scope, add qualitative/hybrid/RAG/vector behavior, or activate UI/full mockup behavior.
 
-And to the planning-only deferred implementation playbook, which defines the operational requirements, activation gates, test expectations, stop conditions, and post-merge practices for any future deferred item:
+And to the planning-only deferred implementation playbook from PR `#407`, which defines the operational requirements, activation gates, test expectations, stop conditions, and post-merge practices for any future deferred item:
 - `next_milestone_plans/Layer3_planning_docs/74_L3_DEFERRED_IMPLEMENTATION_PLAYBOOK.md`
 
 The playbook does not select a new lane or implement deferred behavior. It keeps the eight deferred categories blocked behind their activation contracts and identifies the only current-main named method-expansion candidate as the separately governed `descriptive_summary` path from docs `72`/`73`.
