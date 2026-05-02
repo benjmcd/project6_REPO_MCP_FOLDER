@@ -111,7 +111,7 @@ Ordered next-decision note:
 
 ### 2. The execution envelope is now explicit
 - Python-launched workbench invocation only
-- current committed support on `main` launches `sys.executable -m opendataloader_pdf`
+- current committed support on `main` calls `opendataloader_pdf.convert(...)` directly from the workbench/test support module
 - Windows PowerShell + `py -3.12` + Java 11+ remains the historical ODL compare-runner envelope; same-checkout Workbench Compare prep now uses the checkout-resolved Phase 7A interpreter emitted in `tools/validate_wb_prep.py` `operator_handoff`
 - current committed reports capture a per-document batch plan with an explicit split reason
 - exact package/version/hash-posture capture

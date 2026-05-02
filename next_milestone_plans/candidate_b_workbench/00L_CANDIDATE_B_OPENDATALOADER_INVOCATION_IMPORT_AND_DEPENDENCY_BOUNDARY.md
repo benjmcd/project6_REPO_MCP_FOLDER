@@ -26,7 +26,7 @@ Freeze the exact import/invocation boundary for Candidate B v1.
 ## B. Invocation boundary
 
 Approved:
-- Python-launched module invocation: `sys.executable -m opendataloader_pdf ...`
+- Python-launched direct package invocation: `opendataloader_pdf.convert(...)`
 
 Forbidden in v1:
 - invoking `java -jar ...`
@@ -35,8 +35,8 @@ Forbidden in v1:
 - writing wrapper code under `backend/app/services/...`
 
 Current committed `main` note:
-- the workbench support module currently launches the package module via Python rather than calling `opendataloader_pdf.convert(...)` directly
-- direct wrapper invocation remains a possible future tightening step, not a fact about the committed `main` implementation
+- the workbench support module now calls `opendataloader_pdf.convert(...)` directly
+- this remains tests/workbench support invocation only and does not turn Candidate B into a backend service integration target
 
 ---
 

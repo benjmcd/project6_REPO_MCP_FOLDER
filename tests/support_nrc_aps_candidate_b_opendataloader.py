@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import importlib.metadata
+import io
 import json
 import os
 import shutil
@@ -725,51 +727,54 @@ def run_candidate_b_cli(
     fixture_id = str(fixture_entry.get("fixture_id") or "").strip()
     image_dir = Path("images") / fixture_id
     preexisting_pdf_paths = {path.resolve() for path in raw_root.rglob("*.pdf")}
-    command = [
-        sys.executable,
-        "-m",
-        "opendataloader_pdf",
-        str(fixture_path),
-        "--output-dir",
-        ".",
-        "--format",
-        "json,markdown,pdf",
-        "--reading-order",
-        "xycut",
-        "--table-method",
-        "default",
-        "--image-output",
-        "external",
-        "--image-format",
-        "png",
-        "--image-dir",
-        image_dir.as_posix(),
-        "--replace-invalid-chars",
-        " ",
-        "--use-struct-tree",
-        "--hybrid",
-        "off",
-    ]
+    convert_options = {
+        "format": "json,markdown,pdf",
+        "reading_order": "xycut",
+        "table_method": "default",
+        "image_output": "external",
+        "image_format": "png",
+        "image_dir": image_dir.as_posix(),
+        "replace_invalid_chars": " ",
+        "use_struct_tree": True,
+        "hybrid": "off",
+    }
+    try:
+        from opendataloader_pdf import convert
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError("odl_package_not_installed") from exc
     started = time.perf_counter()
-    result = subprocess.run(
-        command,
-        cwd=str(raw_root),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-    )
+    stdout_buffer = io.StringIO()
+    stderr_buffer = io.StringIO()
+    exit_code = 0
+    exception_text = ""
+    with contextlib.redirect_stdout(stdout_buffer), contextlib.redirect_stderr(stderr_buffer):
+        try:
+            convert(
+                input_path=str(fixture_path),
+                output_dir=str(raw_root),
+                **convert_options,
+            )
+        except Exception as exc:  # noqa: BLE001
+            exit_code = 1
+            exception_text = f"{type(exc).__name__}: {exc}"
     elapsed = time.perf_counter() - started
-    combined_output = (result.stdout or "") + ("\n" if result.stdout and result.stderr else "") + (result.stderr or "")
+    stdout_text = stdout_buffer.getvalue()
+    stderr_text = stderr_buffer.getvalue()
+    if exception_text:
+        stderr_text = (stderr_text + "\n" + exception_text).strip()
+    combined_output = stdout_text + ("\n" if stdout_text and stderr_text else "") + stderr_text
     json_path = raw_root / f"{fixture_path.stem}.json"
     markdown_path = raw_root / f"{fixture_path.stem}.md"
-    if result.returncode != 0:
+    if exit_code != 0:
         return ({
             "fixture_id": fixture_id,
             "elapsed_seconds": elapsed,
             "passed": False,
-            "exit_code": result.returncode,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
+            "exit_code": exit_code,
+            "invocation": "opendataloader_pdf.convert",
+            "convert_options": convert_options,
+            "stdout": stdout_text,
+            "stderr": stderr_text,
             "raw_json_exists": json_path.exists(),
             "raw_markdown_exists": markdown_path.exists(),
         }, combined_output)
@@ -785,9 +790,11 @@ def run_candidate_b_cli(
         "fixture_id": fixture_id,
         "elapsed_seconds": elapsed,
         "passed": True,
-        "exit_code": result.returncode,
-        "stdout": result.stdout,
-        "stderr": result.stderr,
+        "exit_code": exit_code,
+        "invocation": "opendataloader_pdf.convert",
+        "convert_options": convert_options,
+        "stdout": stdout_text,
+        "stderr": stderr_text,
         "raw_json_ref": repo_rel(json_path),
         "raw_markdown_ref": repo_rel(markdown_path),
         "annotated_pdf_ref": repo_rel(annotated_pdf_path),
