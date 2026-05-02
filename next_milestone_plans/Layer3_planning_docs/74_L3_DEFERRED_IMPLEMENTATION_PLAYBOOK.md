@@ -10,6 +10,7 @@ The active progress packet has two distinct future-work concepts:
 
 - `descriptive_summary` lower-level analysis-service support is now landed on current `main` by PR `#411`, governed by `72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md` and `73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md`.
 - single-item `descriptive_summary` Gate C admission is now landed on current `main` by PR `#417`, governed by `75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md` and `76_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_CONTRACT.md`.
+- `77_COHORT_REQS.md` is a planning-only requirements gate for any future associated-cohort `descriptive_summary` freeze; it does not select implementation or make cohort behavior live.
 - The eight `deferred_scope` categories remain blocked unless their activation contracts are satisfied by live repo truth and a separately explicit freeze.
 
 This playbook defines the operational requirements for moving any remaining deferred item from planning to implementation without over-claiming, silently widening scope, or accumulating uncontrolled tech debt.
@@ -43,7 +44,7 @@ Current `main` supports these analysis method ids through `ANALYSIS_METHOD_REGIS
 
 `descriptive_summary` exists as a bounded lower-level analysis API method for datasets outside starter time-series assumptions. It now passes Gate C only through the PR `#417` single-item dataset-version path.
 
-Current Layer 3 pass-entry behavior still rejects unsupported Gate C methods before creating Layer 3 plan/pass/run state. Associated-cohort `descriptive_summary` remains blocked unless a later cohort-specific freeze explicitly changes it.
+Current Layer 3 pass-entry behavior still rejects unsupported Gate C methods before creating Layer 3 plan/pass/run state. Associated-cohort `descriptive_summary` remains blocked unless a later cohort-specific freeze explicitly changes it after choosing the cohort data shape and execution surface required by `77_COHORT_REQS.md`.
 
 ## Non-Negotiable Operating Practices
 
@@ -165,7 +166,7 @@ Landed implementation surfaces:
 - `backend/app/services/analysis.py`
 - `tests/test_api.py`
 
-PR `#411` did not include UI, schema, migration, source ingestion, package/handoff/export, connector dispatch, or runtime DB changes in the first `descriptive_summary` implementation tranche. PR `#417` also did not include those broader changes; it admitted only the existing single-item pass-entry path.
+PR `#411` did not include UI, schema, migration, source ingestion, package/handoff/export, connector dispatch, or runtime DB changes in the first `descriptive_summary` implementation tranche. PR `#417` also did not include those broader changes; it admitted only the existing single-item pass-entry path. `77_COHORT_REQS.md` now records the required decisions for a future associated-cohort `descriptive_summary` freeze, but it is not itself an implementation-ready contract.
 
 ## Deferred Category Gates
 
@@ -222,5 +223,5 @@ The adequate next posture is not "implement all deferred items." It is:
 1. Keep the eight deferred categories blocked behind their activation contracts.
 2. Treat `descriptive_summary` lower-level analysis API support as landed by PR `#411`.
 3. Treat docs `75`/`76` as satisfied by PR `#417` only for single-item Gate C admission.
-4. Preserve associated-cohort and broader Layer 3 pass-entry fail-closed behavior until separately governed.
+4. Preserve associated-cohort and broader Layer 3 pass-entry fail-closed behavior until a separately governed cohort freeze chooses the data shape and execution surface.
 5. Land any implementation with focused tests, CI, review-state checks, and a post-merge progress/control sync.
