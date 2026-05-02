@@ -206,7 +206,7 @@ And to the planning-only associated-cohort `descriptive_summary` requirements ga
 
 The requirements gate records the decisions needed before associated-cohort `descriptive_summary` service governance: cohort data shape, method-selection rule, execution surface, provenance manifest, failure behavior, and proof expectations. It does not by itself admit selected-pass workbench cohort execution, UI/schema/runtime/source, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
-And to the planning-only service-materialize associated-cohort `descriptive_summary` freeze/contract:
+And to the service-materialize associated-cohort `descriptive_summary` freeze/contract, now satisfied for the bounded service-owned path by PR `#424`/`#425`:
 - `next_milestone_plans/Layer3_planning_docs/78_COHORT_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/79_COHORT_CONTRACT.md`
 

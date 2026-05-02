@@ -1,14 +1,14 @@
 # Layer 3 Descriptive Summary Cohort Service Contract
 
-Status: planning-only implementation contract for the service-only cohort path frozen by `78_COHORT_FREEZE.md`.
+Status: implementation contract for the service-only cohort path frozen by `78_COHORT_FREEZE.md`; satisfied on current `main` by PR `#424` and exact-gate hardening in PR `#425`.
 
-This document is not live behavior. It does not change code, route/API behavior, selected-pass workbench breadth, UI, schema, runtime, source ingestion, package, handoff, export, connector dispatch, qualitative, hybrid, RAG, vector, or full mockup behavior.
+This document did not by itself create live behavior. It does not change route/API behavior, selected-pass workbench breadth, UI, schema, runtime, source ingestion, package, handoff, export, connector dispatch, qualitative, hybrid, RAG, vector, or full mockup behavior. PR `#424`/`#425` implement only the service-owned path described here.
 
 ## Contract Scope
 
-This contract governs only a future associated-cohort `descriptive_summary` implementation in the immediate `materialize_pass_entry(...)` service flow.
+This contract governs only the associated-cohort `descriptive_summary` implementation in the immediate `materialize_pass_entry(...)` service flow.
 
-The future implementation may touch only:
+The implementation and any narrow hardening under this contract may touch only:
 
 - `backend/app/services/layer3_pass_entry.py`
 - `backend/tests/test_layer3_pass_entry.py`
@@ -17,7 +17,7 @@ Any required touch outside those files is a stop condition unless a new freeze a
 
 ## Admission Contract
 
-A future implementation may create a `descriptive_summary` associated-cohort pass only for this exact contract:
+The implementation may create a `descriptive_summary` associated-cohort pass only for this exact contract:
 
 - `set_type`: `associated_cohort`
 - `analysis_modality`: `quantitative`
@@ -43,7 +43,7 @@ When `requested_method_name` is absent or not exactly `descriptive_summary`:
 - invalid cohorts must keep the existing fail-closed behavior
 - no `descriptive_summary` pass may be planned, persisted, or executed
 
-This is the main safety boundary. The future implementation must prove it with tests.
+This is the main safety boundary. The implementation must prove it with tests.
 
 ## Data Shape Contract
 
@@ -58,11 +58,11 @@ The selected shape is the `07_GATEC_COHORT_FREEZE.md` aligned wide-table shape:
 - no imputation
 - no heuristic multi-measure selection
 
-The future implementation must not add `per_source_summary_bundle` or `long_source_table` behavior under this contract.
+The implementation must not add `per_source_summary_bundle` or `long_source_table` behavior under this contract.
 
 ## Planning And Execution Contract
 
-For an admitted explicit cohort `descriptive_summary` request, the future implementation must:
+For an admitted explicit cohort `descriptive_summary` request, the implementation must:
 
 1. shape the cohort through the existing derived dataset-version path
 2. persist the input manifest before execution
@@ -93,7 +93,7 @@ The input manifest must include enough source lineage to trace every derived col
 
 ## Failure Contract
 
-The future implementation must fail closed before unsupported execution state is created when:
+The implementation must fail closed before unsupported execution state is created when:
 
 - method selection is missing, empty, implicit, or not from `formation_basis_json["requested_method_name"]`
 - the cohort is not quantitative
@@ -134,7 +134,7 @@ This contract does not admit:
 
 ## Required Test Contract
 
-Future code must add or preserve focused tests proving:
+Implementation code must add or preserve focused tests proving:
 
 - single-item `descriptive_summary` materialization still works
 - single-item selected-pass `descriptive_summary` execution still works
