@@ -789,6 +789,13 @@ PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
 )
 COHORT_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
 PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = ("handoff", "export")
+COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = (
+    "handoff",
+    "export",
+    "aps_handoff",
+    "external_export_download",
+    "connector",
+)
 HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE = ("aps_handoff", "external_export", "downstream_dispatch")
 APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE = (
     "external_export",
@@ -4709,7 +4716,17 @@ def _canonical_payload_refs(
     return None
 
 
-def _package_review_submit_downstream_unavailable(package_review_state: str | None) -> tuple[str, ...]:
+def _is_cohort_package_construction_source(source_gate: Any) -> bool:
+    return str(source_gate or "") == SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE
+
+
+def _package_review_submit_downstream_unavailable(
+    package_review_state: str | None,
+    *,
+    associated_cohort_submit: bool = False,
+) -> tuple[str, ...]:
+    if associated_cohort_submit:
+        return COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
     if package_review_state == PACKAGE_REVIEW_APPROVED_STATE:
         return HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE
     return PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
@@ -4773,10 +4790,14 @@ def _package_review_submit_response(
     review_state: dict[str, Any],
 ) -> dict[str, Any]:
     ordered_packages = _packages_in_review_order(packages)
-    downstream_unavailable = _package_review_submit_downstream_unavailable(
-        str(review_state.get("package_review_state") or "")
+    associated_cohort_submit = _is_cohort_package_construction_source(
+        review_state.get("package_construction_source_gate")
     )
-    return {
+    downstream_unavailable = _package_review_submit_downstream_unavailable(
+        str(review_state.get("package_review_state") or ""),
+        associated_cohort_submit=associated_cohort_submit,
+    )
+    body = {
         **_base_response(PACKAGE_REVIEW_SUBMIT_SCHEMA_ID, request_id=request_id, status=status),
         "session_id": session_id,
         "analysis_plan_id": analysis_plan_id,
@@ -4793,6 +4814,13 @@ def _package_review_submit_response(
         "decision_notes": review_state.get("decision_notes"),
         "package_review_state": review_state["package_review_state"],
         "submit_record_ref": review_state["submit_record_ref"],
+        "pass_type": review_state.get("pass_type"),
+        "pass_scope": review_state.get("pass_scope"),
+        "method": review_state.get("method"),
+        "source_gate": review_state.get("source_gate"),
+        "package_construction_source_gate": review_state.get("package_construction_source_gate"),
+        "source_shape": review_state.get("source_shape"),
+        "source_dataset_version_ids": _json_clone(review_state.get("source_dataset_version_ids") or []),
         "package_review_submit_enabled": False,
         "handoff_enabled": False,
         "export_enabled": False,
@@ -4807,6 +4835,9 @@ def _package_review_submit_response(
             package_review_enabled=False,
         ),
     }
+    if associated_cohort_submit:
+        body["schema_id"] = "layer3.cohort_package_review_submit.v1"
+    return body
 
 
 def _handoff_export_prepare_response(
@@ -5272,19 +5303,30 @@ def _package_construction_summary(
         commit_summary = reconciliation_summary.get("workbench_package_commit")
         if not isinstance(commit_summary, dict):
             commit_summary = {}
+        cohort_package_construction = _is_cohort_package_construction_source(reconciliation_summary.get("source_gate"))
         package_review_submit_enabled = bool(
             constructed
             and package_review_submit is None
-            and commit_summary.get("package_review_submit_enabled", True) is True
+            and (
+                commit_summary.get("package_review_submit_enabled", True) is True
+                or cohort_package_construction
+            )
         )
-        downstream_unavailable = (
-            commit_summary.get("downstream_unavailable")
-            if constructed
-            else list(PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE)
-        )
+        if package_review_submit_enabled and cohort_package_construction:
+            downstream_unavailable = list(COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE)
+        else:
+            downstream_unavailable = (
+                commit_summary.get("downstream_unavailable")
+                if constructed
+                else list(PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE)
+            )
         if not isinstance(downstream_unavailable, list):
             downstream_unavailable = (
-                list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE)
+                list(
+                    COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+                    if cohort_package_construction
+                    else PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+                )
                 if package_review_submit_enabled
                 else list(PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE)
             )
@@ -5297,6 +5339,7 @@ def _package_construction_summary(
             "output_package_ids": [package.output_package_id for package in review_packages],
             "package_kinds": [package.package_kind for package in review_packages],
             "unexpected_package_kinds": unexpected_package_kinds,
+            "package_construction_source_gate": reconciliation_summary.get("source_gate"),
             "package_commit_enabled": False,
             "package_review_submit_enabled": package_review_submit_enabled,
             "handoff_enabled": False,
@@ -5785,9 +5828,9 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
         if associated_cohort_commit
         else SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE
     )
-    package_review_submit_enabled = not associated_cohort_commit
+    package_review_submit_enabled = True
     downstream_unavailable = (
-        COHORT_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE
+        COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
         if associated_cohort_commit
         else PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
     )
@@ -5985,11 +6028,6 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             http_status=409,
             next_allowed_actions=["inspect_execution_result_status"],
         )
-    _ensure_result_status_downstream_source_admitted(
-        status_body,
-        error_code="associated_cohort_package_review_submit_not_admitted",
-        action_label="Package-review submit",
-    )
     output_metadata_summary = status_body.get("output_metadata_summary")
     if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
         raise Layer3WorkbenchError(
@@ -6018,6 +6056,24 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             status="conflict",
             http_status=409,
         )
+    associated_cohort_submit = False
+    if status_body.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT:
+        associated_cohort_submit = _associated_cohort_result_source_admitted(
+            status_body=status_body,
+            pass_run=pass_run,
+            output_metadata_summary=output_metadata_summary,
+        )
+        if not associated_cohort_submit:
+            raise Layer3WorkbenchError(
+                "associated_cohort_package_review_submit_not_admitted",
+                (
+                    "Package-review submit is admitted only for exact selected-pass descriptive "
+                    "associated-cohort result/status output in this tranche."
+                ),
+                status="blocked",
+                http_status=409,
+                next_allowed_actions=["inspect_execution_result_status"],
+            )
     if pass_run.session_id != session_id or pass_run.analysis_plan_id != analysis_plan_id:
         raise Layer3WorkbenchError(
             "package_review_submit_pass_run_mismatch",
@@ -6191,6 +6247,23 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             http_status=409,
             next_allowed_actions=["inspect_existing_package_state"],
         )
+    package_construction_source_gate = str(reconciliation_summary.get("source_gate") or "")
+    if associated_cohort_submit and package_construction_source_gate != SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE:
+        raise Layer3WorkbenchError(
+            "package_review_submit_construction_source_gate_mismatch",
+            "Associated-cohort package-review submit requires cohort package-construction authority from docs 88/89.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
+    if not associated_cohort_submit and package_construction_source_gate == SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE:
+        raise Layer3WorkbenchError(
+            "package_review_submit_construction_source_gate_mismatch",
+            "Single-item package-review submit cannot use associated-cohort package-construction authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
     commit_mismatches = [
         field
         for field, expected in {
@@ -6225,6 +6298,13 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "payload_hashes": canonical_payload_hashes,
         "operator_decision": operator_decision,
         "decision_notes": decision_notes or None,
+        "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_submit else pass_run.pass_type,
+        "pass_scope": output_metadata_summary.get("pass_scope"),
+        "method": output_metadata_summary.get("selected_method_name"),
+        "source_gate": output_metadata_summary.get("source_gate"),
+        "package_construction_source_gate": package_construction_source_gate,
+        "source_shape": output_metadata_summary.get("cohort_shape"),
+        "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
     }
     submit_record_ref = _stable_id("l3-package-review-submit", submit_basis)
     if existing_submit is not None:
@@ -6253,7 +6333,10 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         )
 
     package_review_state = PACKAGE_REVIEW_SUBMIT_STATE_BY_DECISION[operator_decision]
-    downstream_unavailable = _package_review_submit_downstream_unavailable(package_review_state)
+    downstream_unavailable = _package_review_submit_downstream_unavailable(
+        package_review_state,
+        associated_cohort_submit=associated_cohort_submit,
+    )
     submit_state = {
         "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
         "client_request_id": request_id,
@@ -6273,6 +6356,13 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "output_package_ids": expected_package_ids,
         "package_kinds": [package.package_kind for package in ordered_packages],
         "payload_hashes": canonical_payload_hashes,
+        "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_submit else pass_run.pass_type,
+        "pass_scope": output_metadata_summary.get("pass_scope"),
+        "method": output_metadata_summary.get("selected_method_name"),
+        "source_gate": output_metadata_summary.get("source_gate"),
+        "package_construction_source_gate": package_construction_source_gate,
+        "source_shape": output_metadata_summary.get("cohort_shape"),
+        "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
         "recorded_at": _utcnow_iso(),
         "package_review_submit_enabled": False,
         "handoff_enabled": False,
@@ -6298,6 +6388,13 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             "reconciliation_record_id": reconciliation_record_id,
             "output_package_ids": expected_package_ids,
             "package_kinds": [package.package_kind for package in ordered_packages],
+            "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_submit else pass_run.pass_type,
+            "pass_scope": output_metadata_summary.get("pass_scope"),
+            "method": output_metadata_summary.get("selected_method_name"),
+            "source_gate": output_metadata_summary.get("source_gate"),
+            "package_construction_source_gate": package_construction_source_gate,
+            "source_shape": output_metadata_summary.get("cohort_shape"),
+            "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
             "package_review_submit_enabled": False,
             "handoff_enabled": False,
             "export_enabled": False,
@@ -8831,8 +8928,13 @@ def _package_review_submit_summary(
     commit_summary = reconciliation_summary.get("workbench_package_commit")
     if not isinstance(commit_summary, dict):
         commit_summary = {}
+    cohort_package_construction = _is_cohort_package_construction_source(reconciliation_summary.get("source_gate"))
     recorded_submit = _package_review_submit_from_reconciliation(reconciliation)
-    if recorded_submit is None and commit_summary.get("package_review_submit_enabled", True) is not True:
+    if (
+        recorded_submit is None
+        and commit_summary.get("package_review_submit_enabled", True) is not True
+        and not cohort_package_construction
+    ):
         downstream_unavailable = commit_summary.get("downstream_unavailable")
         if not isinstance(downstream_unavailable, list):
             downstream_unavailable = list(PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE)
@@ -8851,8 +8953,13 @@ def _package_review_submit_summary(
             "downstream_unavailable": list(downstream_unavailable),
         }
     if recorded_submit is not None:
+        recorded_cohort_submit = _is_cohort_package_construction_source(
+            recorded_submit.get("package_construction_source_gate")
+            or reconciliation_summary.get("source_gate")
+        )
         downstream_unavailable = _package_review_submit_downstream_unavailable(
-            str(recorded_submit.get("package_review_state") or "")
+            str(recorded_submit.get("package_review_state") or ""),
+            associated_cohort_submit=recorded_cohort_submit,
         )
         return {
             "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
@@ -8869,11 +8976,26 @@ def _package_review_submit_summary(
             "output_package_ids": [package.output_package_id for package in ordered_packages],
             "package_kinds": [package.package_kind for package in ordered_packages],
             "payload_hashes": [package.payload_hash for package in ordered_packages],
+            "pass_type": recorded_submit.get("pass_type"),
+            "pass_scope": recorded_submit.get("pass_scope"),
+            "method": recorded_submit.get("method"),
+            "source_gate": recorded_submit.get("source_gate"),
+            "package_construction_source_gate": (
+                recorded_submit.get("package_construction_source_gate")
+                or reconciliation_summary.get("source_gate")
+            ),
+            "source_shape": recorded_submit.get("source_shape"),
+            "source_dataset_version_ids": _json_clone(recorded_submit.get("source_dataset_version_ids") or []),
             "package_review_submit_enabled": False,
             "handoff_enabled": False,
             "export_enabled": False,
             "downstream_unavailable": list(downstream_unavailable),
         }
+    ready_downstream_unavailable = (
+        COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+        if cohort_package_construction
+        else PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+    )
     return {
         "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
         "available": True,
@@ -8883,10 +9005,11 @@ def _package_review_submit_summary(
         "output_package_ids": [package.output_package_id for package in ordered_packages],
         "package_kinds": [package.package_kind for package in ordered_packages],
         "payload_hashes": [package.payload_hash for package in ordered_packages],
+        "package_construction_source_gate": reconciliation_summary.get("source_gate"),
         "package_review_submit_enabled": True,
         "handoff_enabled": False,
         "export_enabled": False,
-        "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+        "downstream_unavailable": list(ready_downstream_unavailable),
     }
 
 
@@ -8960,6 +9083,34 @@ def _handoff_export_prepare_summary(
         }
 
     ordered_packages = _packages_in_review_order(packages)
+    reconciliation_summary = reconciliation.summary_json if reconciliation is not None else {}
+    if not isinstance(reconciliation_summary, dict):
+        reconciliation_summary = {}
+    if _is_cohort_package_construction_source(
+        package_review_submit_state.get("package_construction_source_gate")
+        or reconciliation_summary.get("source_gate")
+    ):
+        return {
+            "schema_id": HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID,
+            "available": False,
+            "state": HANDOFF_EXPORT_UNAVAILABLE_STATE,
+            "blocked_reason": "handoff_export_deferred_for_associated_cohort_package_review_submit",
+            "analysis_run_id": package_review_submit_state.get("analysis_run_id"),
+            "result_review_record_ref": package_review_submit_state.get("result_review_record_ref"),
+            "package_review_preview_hash": package_review_submit_state.get("package_review_preview_hash"),
+            "reconciliation_record_id": reconciliation_record_id,
+            "output_package_ids": [package.output_package_id for package in ordered_packages],
+            "package_kinds": [package.package_kind for package in ordered_packages],
+            "payload_refs": [package.payload_ref for package in ordered_packages],
+            "payload_hashes": [package.payload_hash for package in ordered_packages],
+            "package_review_submit_record_ref": submit_record_ref,
+            "package_review_state": package_review_submit_state.get("state"),
+            "handoff_export_prepare_enabled": False,
+            "external_handoff_enabled": False,
+            "external_export_enabled": False,
+            "dispatch_enabled": False,
+            "downstream_unavailable": list(COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+        }
     recorded_prepare = _handoff_export_prepare_from_reconciliation(reconciliation)
     if recorded_prepare is not None:
         recorded_envelope = recorded_prepare.get("handoff_export_envelope")
