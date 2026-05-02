@@ -1120,6 +1120,86 @@ def test_gatec_pass_entry_selected_pass_execution_rejects_malformed_cohort_metho
         settings.storage_dir = original_storage_dir
 
 
+def test_gatec_pass_entry_selected_cohort_failure_does_not_record_rolled_back_dataset(tmp_path, monkeypatch):
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(tmp_path)
+    try:
+        db = _make_session()
+        session_id, _, _ = _build_quant_cohort_ready_session(
+            db,
+            tmp_path,
+            requested_method_name="descriptive_summary",
+        )
+
+        preview = preview_pass_entry(db, session_id=session_id)
+        approval = approve_pass_entry_plan(
+            db,
+            session_id=session_id,
+            preview_hash=preview.preview_hash,
+            source_preview_id="cohort-selected-pass-preview",
+        )
+        db.commit()
+
+        stored_plan = db.query(L3AnalysisPlan).one()
+        planned_pass = stored_plan.plan_json["planned_passes_json"][0]
+        pass_run = L3PassRun(
+            pass_run_id="pass-run-cohort-selected-analysis-fails",
+            session_id=session_id,
+            analysis_plan_id=approval.analysis_plan.analysis_plan_id,
+            analysis_set_id=planned_pass["analysis_set_id"],
+            pass_type="associated_cohort",
+            engine_family="wrapped_quantitative_analysis",
+            status="selected_not_started",
+            started_at=None,
+            completed_at=None,
+            input_payload_ref="layer3://execution-selection/pass-run-cohort-selected-analysis-fails/input",
+            output_payload_ref=None,
+            summary_json={
+                "schema_id": "layer3.pass_run_shell_summary.v1",
+                "analysis_plan_id": approval.analysis_plan.analysis_plan_id,
+                "source_preview_id": "cohort-selected-pass-preview",
+                "source_preview_hash": preview.preview_hash,
+                "planned_pass": dict(planned_pass),
+                "execution_started": False,
+                "analysis_run_id": None,
+            },
+            created_at=datetime.now(timezone.utc),
+        )
+        db.add(pass_run)
+        db.flush()
+        pass_run_id = pass_run.pass_run_id
+        original_input_payload_ref = pass_run.input_payload_ref
+        db.commit()
+
+        def _explode(*args, **kwargs):
+            raise RuntimeError("analysis exploded")
+
+        monkeypatch.setattr(layer3_pass_entry_module, "run_analysis", _explode)
+
+        result = execute_selected_pass_run(
+            db,
+            pass_run=pass_run,
+            planned_pass=planned_pass,
+            client_request_id="cohort-selected-start-fails",
+        )
+        db.commit()
+
+        stored_pass = db.get(L3PassRun, pass_run_id)
+        assert result.status == "failed"
+        assert result.dataset_version_id is None
+        assert result.analysis_run_id is None
+        assert stored_pass.status == "failed"
+        assert stored_pass.input_payload_ref == original_input_payload_ref
+        assert "dataset_version_id" not in stored_pass.summary_json
+        assert "derived_dataset_version_id" not in stored_pass.summary_json
+        assert stored_pass.summary_json["requested_method_name"] == "descriptive_summary"
+        assert stored_pass.summary_json["source_dataset_version_ids_json"] == ["dv-cohort-001", "dv-cohort-002"]
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(DatasetVersion).count() == 2
+    finally:
+        settings.storage_dir = original_storage_dir
+
+
 def test_gatec_pass_entry_fails_closed_on_cohort_time_alignment_empty(tmp_path):
     original_storage_dir = settings.storage_dir
     settings.storage_dir = str(tmp_path)
