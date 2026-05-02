@@ -201,6 +201,11 @@ And to the descriptive-summary Gate C admission packet, whose single-item implem
 
 The Gate C admission packet admits only single-item pass-entry for already-live lower-level `descriptive_summary` analysis. It keeps associated-cohort admission, UI, schema/runtime/source, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector behavior, and full mockup activation blocked.
 
+And to the planning-only associated-cohort `descriptive_summary` requirements gate:
+- `next_milestone_plans/Layer3_planning_docs/77_COHORT_REQS.md`
+
+The requirements gate records the decisions needed before any future associated-cohort `descriptive_summary` freeze: cohort data shape, method-selection rule, execution surface, provenance manifest, failure behavior, and proof expectations. Associated-cohort behavior and selected-pass workbench cohort execution remain blocked.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
