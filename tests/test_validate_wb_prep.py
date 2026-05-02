@@ -226,10 +226,13 @@ def test_validate_wb_prep_returns_canonical_selection(tmp_path: Path, monkeypatc
     assert payload["required_follow_through_fixture_ids_present"] == ["fontish", "ml17123a319"]
     assert payload["candidate_b_trace"]["default_tab"] == "annotated_pdf"
     assert payload["recommended_urls"]["workbench_compare"].startswith("/review/nrc-aps/workbench-compare?")
+    expected_python = validate_wb_prep._command_path(
+        validate_wb_prep.EXPECTED_INTERPRETER,
+        checkout_root=checkout_root,
+    )
     assert payload["operator_handoff"]["selected_source_kind"] == "bundle"
     assert payload["operator_handoff"]["rerun_selected_validation"]["argv"] == [
-        "py",
-        "-3.12",
+        expected_python,
         ".\\tools\\validate_wb_prep.py",
         "--baseline-run-id",
         "baseline-run-001",
@@ -241,8 +244,12 @@ def test_validate_wb_prep_returns_canonical_selection(tmp_path: Path, monkeypatc
         "fontish",
     ]
     assert payload["operator_handoff"]["canonical_prep_sequences"]["bundle_source"][-1]["powershell"] == (
-        "py -3.12 .\\tools\\validate_wb_prep.py"
+        f"{expected_python} .\\tools\\validate_wb_prep.py"
     )
+    assert payload["operator_handoff"]["canonical_prep_sequences"]["bundle_source"][0]["argv"][:2] == [
+        expected_python,
+        ".\\tools\\seed_wb_compare.py",
+    ]
     assert payload["operator_handoff"]["rerun_selected_validation"]["copy_paste_ready"] is True
     assert payload["operator_handoff"]["canonical_prep_sequences"]["runtime_source"][-1]["copy_paste_ready"] is False
     assert "CANDIDATE_B_RUNTIME_RUN_ID" in (
@@ -319,10 +326,13 @@ def test_validate_wb_prep_accepts_candidate_b_runtime_source(
     assert payload["sources_snapshot"]["candidate_b_runtime_runs"][0]["review_root"].startswith(
         "backend/app/storage_test_runtime/"
     )
+    expected_python = validate_wb_prep._command_path(
+        validate_wb_prep.EXPECTED_INTERPRETER,
+        checkout_root=checkout_root,
+    )
     assert payload["operator_handoff"]["selected_source_kind"] == "runtime"
     assert payload["operator_handoff"]["rerun_selected_validation"]["argv"] == [
-        "py",
-        "-3.12",
+        expected_python,
         ".\\tools\\validate_wb_prep.py",
         "--baseline-run-id",
         "baseline-run-001",
@@ -338,6 +348,10 @@ def test_validate_wb_prep_accepts_candidate_b_runtime_source(
     assert payload["operator_handoff"]["canonical_prep_sequences"]["runtime_source"][-1]["argv"][-1] == (
         "candidate-b-runtime-001"
     )
+    assert payload["operator_handoff"]["canonical_prep_sequences"]["runtime_source"][0]["argv"][:2] == [
+        expected_python,
+        ".\\tools\\seed_wb_compare.py",
+    ]
     assert payload["operator_handoff"]["rerun_selected_validation"]["copy_paste_ready"] is True
     assert payload["operator_handoff"]["canonical_prep_sequences"]["runtime_source"][-1]["copy_paste_ready"] is True
     assert "not Candidate B Trace parity" in "\n".join(payload["operator_handoff"]["validation_boundaries"])
