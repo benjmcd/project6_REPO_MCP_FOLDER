@@ -191,7 +191,13 @@
     "latest_descriptive_summary_selected_pass_cohort_result_review_implementation_live_behavior_change": true,
     "latest_associated_cohort_package_preview_planning_pr": "#446",
     "latest_associated_cohort_package_preview_implementation_pr": "#447",
-    "latest_associated_cohort_package_construction_planning_pr": "#450"
+    "latest_associated_cohort_package_construction_planning_pr": "#450",
+    "latest_cohort_package_review_submit_planning_branch": "codex/l3-cohort-package-submit-freeze-p64",
+    "latest_cohort_package_review_submit_planning_pr": "#454",
+    "latest_cohort_package_review_submit_planning_summary": "Docs 90/91 freeze planning-only associated-cohort package-review submit governance after PR #451 package construction. They do not make submit behavior live by themselves and do not admit handoff/export or downstream behavior.",
+    "latest_cohort_package_review_submit_planning_live_behavior_change": false,
+    "latest_cohort_package_review_submit_implementation_pr": "",
+    "latest_cohort_package_review_submit_implementation_summary": "No associated-cohort package-review submit implementation is live yet; current main still blocks it until a separate implementation proves docs 90/91."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -2651,5 +2657,35 @@
       "npx playwright test e2e/layer3-workbench.spec.js --project=chromium -> 14 passed"
     ],
     "merge_commit": "9fda3a5a16d2156f5508def1f452c74aef65585c"
+  },
+  "descriptive_summary_selected_pass_cohort_package_review_submit_planning_proof": {
+    "planning_branch": "codex/l3-cohort-package-submit-freeze-p64",
+    "planning_pr": "#454",
+    "base_commit": "1e7a3b583a445bdf55424a3cd88a3f9b22ca848c",
+    "scope": "Planning-only selected-pass associated-cohort descriptive_summary package-review submit governance after PR #451 package construction.",
+    "files_changed": [
+      "next_milestone_plans/Layer3_planning_docs/90_COHORT_PACKAGE_REVIEW_SUBMIT_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/91_COHORT_PACKAGE_REVIEW_SUBMIT_CONTRACT.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "live_behavior_change": false,
+    "authority_basis": [
+      "PR #451 is the current-main package-construction authority for exactly one reconciliation row, three package rows, and three payload files.",
+      "Docs 52/53 and PR #243 are single-item submit pattern sources only, not direct associated-cohort submit authority.",
+      "Docs 90/91 require a later implementation to prove exact PR #432/#438/#443/#447/#451 authority before narrowing associated_cohort_package_review_submit_not_admitted."
+    ],
+    "no_go_preserved": [
+      "no live associated-cohort package-review submit by docs alone",
+      "no handoff/export, APS dispatch, external export/download, or connector dispatch",
+      "no schema/runtime/source/model/migration widening",
+      "no package payload rewrite or package reconstruction",
+      "no pass-entry changes, retry/recovery, broader UI, qualitative/hybrid/RAG/vector, or full mockup behavior"
+    ],
+    "verification": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "git diff --check"
+    ]
   }
 }
