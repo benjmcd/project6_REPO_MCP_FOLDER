@@ -188,12 +188,12 @@ And to the current-main Layer 3 descriptive-summary governance packet from PR `#
 - `next_milestone_plans/Layer3_planning_docs/72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md`
 
-The descriptive-summary packet governs the bounded method-expansion path for the existing `descriptive_summary` recommendation label. PR `#411` implemented only the lower-level analysis API method: registry membership, fallback execution for datasets outside starter time-series assumptions, deterministic JSON artifacts, and assumption/caveat rows. PR `#417` separately admits that method through the existing single-item Gate C pass-entry path. PR `#424` admits only the explicit service-owned associated-cohort `materialize_pass_entry(...)` path, PR `#425` hardens exact `requested_method_name` matching, and PR `#432` admits only selected-pass associated-cohort execution-start/result-status through existing backend/API surfaces. None of these PRs widens schema/runtime/source scope, qualitative/hybrid/RAG/vector behavior, result review, package/handoff/export behavior, UI, or full mockup behavior.
+The descriptive-summary packet governs the bounded method-expansion path for the existing `descriptive_summary` recommendation label. PR `#411` implemented only the lower-level analysis API method: registry membership, fallback execution for datasets outside starter time-series assumptions, deterministic JSON artifacts, and assumption/caveat rows. PR `#417` separately admits that method through the existing single-item Gate C pass-entry path. PR `#424` admits only the explicit service-owned associated-cohort `materialize_pass_entry(...)` path, PR `#425` hardens exact `requested_method_name` matching, and PR `#432` admits only selected-pass associated-cohort execution-start/result-status through existing backend/API surfaces. Docs `82`/`83` add planning-only governance for a future associated-cohort result-review tranche. None of these PRs or docs widens schema/runtime/source scope, qualitative/hybrid/RAG/vector behavior, current-main result review, package/handoff/export behavior, UI, or full mockup behavior.
 
 And to the planning-only deferred implementation playbook from PR `#407`, which defines the operational requirements, activation gates, test expectations, stop conditions, and post-merge practices for any future deferred item:
 - `next_milestone_plans/Layer3_planning_docs/74_L3_DEFERRED_IMPLEMENTATION_PLAYBOOK.md`
 
-The playbook does not by itself select a new lane or implement deferred behavior. It keeps the broader deferred categories blocked behind their activation contracts; PR `#411` used it for the first bounded lower-level `descriptive_summary` analysis-service tranche, PR `#417` used docs `75`/`76` for the bounded single-item Gate C admission tranche, PR `#424`/`#425` used docs `78`/`79` for the bounded service-only associated-cohort tranche, and PR `#432` used docs `80`/`81` for selected-pass associated-cohort execution-start/result-status. UI/schema/runtime/source widening, result review, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector behavior, and full mockup activation remain blocked.
+The playbook does not by itself select a new lane or implement deferred behavior. It keeps the broader deferred categories blocked behind their activation contracts; PR `#411` used it for the first bounded lower-level `descriptive_summary` analysis-service tranche, PR `#417` used docs `75`/`76` for the bounded single-item Gate C admission tranche, PR `#424`/`#425` used docs `78`/`79` for the bounded service-only associated-cohort tranche, PR `#432` used docs `80`/`81` for selected-pass associated-cohort execution-start/result-status, and docs `82`/`83` freeze only a future selected-pass associated-cohort result-review implementation boundary. UI/schema/runtime/source widening, current-main associated-cohort result review, package/handoff/export, connector dispatch, qualitative/hybrid/RAG/vector behavior, and full mockup activation remain blocked.
 
 And to the descriptive-summary Gate C admission packet, whose single-item implementation boundary was satisfied by PR `#417` after PR `#411` lower-level method support:
 - `next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md`
@@ -217,6 +217,12 @@ And to the selected-pass associated-cohort execution-start/result-status freeze/
 - `next_milestone_plans/Layer3_planning_docs/81_COHORT_EXECUTION_CONTRACT.md`
 
 The selected-pass cohort execution packet freezes only the backend/API tranche over the existing `/api/v1/layer3/execution/start` and `/api/v1/layer3/execution/result/status` surfaces. PR `#432` implements that bounded path for exact selected-pass associated-cohort `descriptive_summary` metadata/provenance, while preserving fail-closed behavior for invalid binding/provenance and keeping UI, result review, package, handoff, export, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, and full mockup behavior out.
+
+And to the selected-pass associated-cohort result-review freeze/contract, which remains planning-only until a future implementation PR:
+- `next_milestone_plans/Layer3_planning_docs/82_COHORT_RESULT_REVIEW_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/83_COHORT_RESULT_REVIEW_CONTRACT.md`
+
+The associated-cohort result-review packet freezes only future reuse of the existing `/api/v1/layer3/execution/result/review` endpoint for exact PR `#432` selected-pass associated-cohort `descriptive_summary` terminal outputs. It does not make result review live on current `main` and does not admit a new route, UI, package, handoff, export, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, retry/recovery, or full mockup behavior.
 
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
@@ -638,6 +644,13 @@ These documents are outside the accepted Phase 1A normative control spine and ou
 They freeze the next eligible planning boundary after merged PR `#222` as one bounded selected-pass result-review decision. They do not make result review live by themselves and do not admit package review, handoff/export, rerun/recovery, approved-plan supersession, runtime DB/schema widening, source expansion, UI change by itself, qualitative/hybrid/RAG/vector execution, local upload/directory ingestion, or full mockup activation:
 - `44_L3_WB_RESULT_REVIEW_FREEZE.md`
 - `45_L3_WB_RESULT_REVIEW_API_AND_STATE_CONTRACT.md`
+
+### Selected-pass associated-cohort result-review branch-local planning docs
+
+These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
+They freeze a branch-local planning boundary after merged PR `#432` as one future bounded result-review decision for an exact selected-pass associated-cohort `descriptive_summary` terminal output. They do not make associated-cohort result review live by themselves and do not admit a new route, UI, package review, handoff/export, rerun/recovery, source/schema/runtime widening, connector dispatch, qualitative/hybrid/RAG/vector execution, or full mockup activation:
+- `82_COHORT_RESULT_REVIEW_FREEZE.md`
+- `83_COHORT_RESULT_REVIEW_CONTRACT.md`
 
 ### Broader workbench result-review UI freeze docs and bounded implementation
 
