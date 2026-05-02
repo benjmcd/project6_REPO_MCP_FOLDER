@@ -194,6 +194,7 @@
     "latest_associated_cohort_package_construction_planning_pr": "#450",
     "latest_cohort_package_review_submit_planning_branch": "codex/l3-cohort-package-submit-freeze-p64",
     "latest_cohort_package_review_submit_planning_pr": "#454",
+    "latest_cohort_package_review_submit_planning_merge_commit": "2768e873fd304f260c7e3c28b0d2cd85bda87ece",
     "latest_cohort_package_review_submit_planning_summary": "Docs 90/91 freeze planning-only associated-cohort package-review submit governance after PR #451 package construction. They do not make submit behavior live by themselves and do not admit handoff/export or downstream behavior.",
     "latest_cohort_package_review_submit_planning_live_behavior_change": false,
     "latest_cohort_package_review_submit_implementation_pr": "",
@@ -2661,6 +2662,7 @@
   "descriptive_summary_selected_pass_cohort_package_review_submit_planning_proof": {
     "planning_branch": "codex/l3-cohort-package-submit-freeze-p64",
     "planning_pr": "#454",
+    "merge_commit": "2768e873fd304f260c7e3c28b0d2cd85bda87ece",
     "base_commit": "1e7a3b583a445bdf55424a3cd88a3f9b22ca848c",
     "scope": "Planning-only selected-pass associated-cohort descriptive_summary package-review submit governance after PR #451 package construction.",
     "files_changed": [
