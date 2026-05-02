@@ -248,6 +248,12 @@ class Layer3ExecutionResultReviewResponse(Layer3BaseResponse):
     downstream_unavailable: list[str]
     review_notes_recorded: bool
     engine_family: str | None
+    pass_type: str | None = None
+    pass_scope: str | None = None
+    selected_method_name: str | None = None
+    source_gate: str | None = None
+    source_dataset_version_ids: list[str] | None = None
+    cohort_shape: str | None = None
 
 
 class Layer3PackageReviewPreviewResponse(Layer3BaseResponse):
@@ -270,7 +276,14 @@ class Layer3PackageReviewPreviewResponse(Layer3BaseResponse):
     next_state: str
     output_metadata_summary: dict[str, Any]
     trace_summary: dict[str, Any] | None
+    reviewed_output_item_summary: dict[str, Any] | None = None
     unresolved_trace_count: int
+    pass_type: str | None = None
+    pass_scope: str | None = None
+    selected_method_name: str | None = None
+    source_gate: str | None = None
+    source_dataset_version_ids: list[str] | None = None
+    cohort_shape: str | None = None
     authority_rail: dict[str, Any]
 
 
