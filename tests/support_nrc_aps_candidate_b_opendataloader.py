@@ -324,6 +324,29 @@ def git_protected_diff() -> list[str]:
     return [line.strip() for line in completed.stdout.splitlines() if line.strip()]
 
 
+def build_protected_diff_inventory(changed_paths: list[str] | None = None) -> dict[str, Any]:
+    changed = [
+        path.replace("\\", "/").strip()
+        for path in (git_protected_diff() if changed_paths is None else changed_paths)
+        if path.replace("\\", "/").strip()
+    ]
+    changed_set = set(changed)
+    protected_entries: list[dict[str, Any]] = []
+    for path in PROTECTED_DIFF_PATHS:
+        protected_entries.append({
+            "path": path,
+            "exists": (ROOT / path).exists(),
+            "changed": path in changed_set,
+        })
+    unexpected_changed = sorted(path for path in changed_set if path not in set(PROTECTED_DIFF_PATHS))
+    return {
+        "status": "changed" if changed else "clean",
+        "changed_paths": sorted(changed_set),
+        "protected_paths": protected_entries,
+        "unexpected_changed_paths": unexpected_changed,
+    }
+
+
 def build_java_preflight() -> dict[str, Any]:
     where_result = subprocess.run(
         ["where.exe", "java"],
@@ -1114,6 +1137,7 @@ def write_candidate_b_reports(
     )
     interference_check_passed = bool(baseline_before_report.get("passed")) and bool(baseline_after_report.get("passed"))
     interference_check_status = "passed" if interference_check_passed else "failed"
+    protected_diff_inventory = build_protected_diff_inventory()
 
     proof_report = {
         "schema_id": "aps.candidate_b_opendataloader.proof_report.v2",
@@ -1181,6 +1205,9 @@ def write_candidate_b_reports(
         "execution_seconds": execution_seconds,
         "interference_check_passed": interference_check_passed,
         "interference_check_status": interference_check_status,
+        "protected_diff_inventory": protected_diff_inventory,
+        "protected_diff_status": protected_diff_inventory["status"],
+        "protected_diff_changed_paths": protected_diff_inventory["changed_paths"],
         "execution_events": [
             {
                 "event": "baseline_before_require_ocr_passed",
@@ -1281,6 +1308,9 @@ def write_candidate_b_reports(
             },
         },
         "interference_check_passed": interference_check_passed,
+        "protected_diff_inventory": protected_diff_inventory,
+        "protected_diff_status": protected_diff_inventory["status"],
+        "protected_diff_changed_paths": protected_diff_inventory["changed_paths"],
         "durable_report_hash_authority": repo_rel(retention_manifest_path),
     }
     write_json(compare_report_path, compare_report)
@@ -1313,6 +1343,9 @@ def write_candidate_b_reports(
         "baseline_output_inventory": baseline_output_inventory,
         "raw_file_inventory": raw_inventory,
         "execution_events": proof_report["execution_events"],
+        "protected_diff_inventory": protected_diff_inventory,
+        "protected_diff_status": protected_diff_inventory["status"],
+        "protected_diff_changed_paths": protected_diff_inventory["changed_paths"],
         "image_source_collisions": image_collisions,
         "label_sidecar_manifest_hash_status": label_hash_status,
         "outputs_outside_approved_roots": outputs_outside_allowed_paths(
