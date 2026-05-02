@@ -220,6 +220,6 @@ The adequate next posture is not "implement all deferred items." It is:
 
 1. Keep the eight deferred categories blocked behind their activation contracts.
 2. Treat `descriptive_summary` lower-level analysis API support as landed by PR `#411`, with Gate C admission still deferred.
-3. If another implementation is authorized, start only after a new freeze names the exact remaining deferred behavior.
+3. Treat docs `75`/`76` as the planning-only boundary for the next possible single-item Gate C admission tranche; they do not implement pass-entry behavior.
 4. Preserve Layer 3 pass-entry fail-closed behavior until separately governed.
 5. Land any implementation with focused tests, CI, review-state checks, and a post-merge progress/control sync.
