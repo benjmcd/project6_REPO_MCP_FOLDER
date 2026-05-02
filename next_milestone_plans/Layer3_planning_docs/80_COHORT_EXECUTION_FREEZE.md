@@ -1,8 +1,8 @@
 # Layer 3 Cohort Execution Freeze
 
-Status: planning-only freeze for a future selected-pass associated-cohort `descriptive_summary` execution-start and result/status tranche.
+Status: governing planning-only freeze for the selected-pass associated-cohort `descriptive_summary` execution-start and result/status tranche; PR `#432` later implemented this exact bounded backend/API slice on current `main`.
 
-This document does not change code, admit selected-pass cohort execution, change API/UI behavior, widen schema/runtime/source scope, or activate result review, package, handoff, export, connector, qualitative, hybrid, RAG, vector, or full mockup behavior. PR `#424`/`#425` remain the only live associated-cohort `descriptive_summary` path, and only through service-owned `materialize_pass_entry(...)`.
+This document does not change code, admit selected-pass cohort execution by itself, change API/UI behavior, widen schema/runtime/source scope, or activate result review, package, handoff, export, connector, qualitative, hybrid, RAG, vector, or full mockup behavior. PR `#432` is the separate implementation authority for this execution-start/result-status boundary; PR `#438` later admitted only exact associated-cohort result review over that authority.
 
 ## Decision
 
@@ -19,20 +19,20 @@ No route, rendered UI, schema, migration, runtime DB, source ingestion, result-r
 
 ## Current Live Boundary
 
-Current repo authority for this planning branch was checked against `project6-origin/main` at `e6ef73f1`.
+Current repo authority for the original planning branch was checked against `project6-origin/main` at `e6ef73f1`. Current `main` later includes PR `#432`, which implemented this exact execution-start/result-status backend/API boundary.
 
 Live facts this freeze must preserve:
 
 - PR `#411` makes `descriptive_summary` a lower-level analysis method.
 - PR `#417` admits only single-item `descriptive_summary` through Gate C selected-pass execution.
 - PR `#424`/`#425` admit only service-owned associated-cohort `descriptive_summary` through `materialize_pass_entry(...)` with exact `formation_basis_json["requested_method_name"] == "descriptive_summary"` metadata.
-- `backend/app/services/layer3_pass_entry.py::execute_selected_pass_run(...)` currently rejects planned pass types outside `single_item`.
-- `backend/app/services/layer3_workbench.py` currently rejects non-`single_item` pass types in both execution-start and result/status.
-- `backend/tests/test_layer3_pass_entry.py::test_gatec_pass_entry_selected_pass_execution_still_rejects_associated_cohort` proves the current blocked boundary.
+- Before PR `#432`, `backend/app/services/layer3_pass_entry.py::execute_selected_pass_run(...)` rejected planned pass types outside `single_item`.
+- Before PR `#432`, `backend/app/services/layer3_workbench.py` rejected non-`single_item` pass types in both execution-start and result/status.
+- PR `#432` later added the exact selected-pass associated-cohort execution-start/result/status gate for this freeze while preserving result-review, package, handoff, export/download, UI, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, and full mockup no-go boundaries. PR `#438` separately admitted only exact associated-cohort result review.
 
 ## Admission Requirements
 
-A future implementation governed by this freeze may start one selected associated-cohort pass only when all are true:
+The governed implementation may start one selected associated-cohort pass only when all are true:
 
 - `L3PassRun.status == "selected_not_started"`
 - `L3PassRun.engine_family == "wrapped_quantitative_analysis"`

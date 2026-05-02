@@ -1,14 +1,14 @@
 # Layer 3 Cohort Execution Contract
 
-Status: planning-only implementation contract for the selected-pass associated-cohort execution breadth frozen by `80_COHORT_EXECUTION_FREEZE.md`.
+Status: governing planning-only implementation contract for the selected-pass associated-cohort execution breadth frozen by `80_COHORT_EXECUTION_FREEZE.md`; PR `#432` later implemented this exact bounded backend/API contract on current `main`.
 
-This document is not live behavior. It does not change API/UI behavior, selected-pass cohort execution, schema, runtime, source ingestion, result review, package, handoff, export, connector dispatch, qualitative, hybrid, RAG, vector, or full mockup behavior.
+This document is not live behavior by itself. It does not change API/UI behavior, selected-pass cohort execution by itself, schema, runtime, source ingestion, result review, package, handoff, export, connector dispatch, qualitative, hybrid, RAG, vector, or full mockup behavior. PR `#432` is the separate implementation authority for this exact execution-start/result-status contract; PR `#438` later admitted only exact associated-cohort result review over that authority.
 
 ## Contract Scope
 
-This contract governs only a future backend/API implementation that widens existing selected-pass execution-start and result/status from `single_item` to the admitted associated-cohort `descriptive_summary` case.
+This contract governs only the backend/API implementation that widens existing selected-pass execution-start and result/status from `single_item` to the admitted associated-cohort `descriptive_summary` case. PR `#432` later implemented that bounded contract.
 
-The future implementation may touch only:
+The governed implementation may touch only:
 
 - `backend/app/services/layer3_pass_entry.py`
 - `backend/app/services/layer3_workbench.py`
@@ -19,7 +19,7 @@ Any required touch outside those files is a stop condition unless a new freeze a
 
 ## Execution-Start Contract
 
-A future implementation may execute a selected associated-cohort pass only for this exact contract:
+The governed implementation may execute a selected associated-cohort pass only for this exact contract:
 
 - `pass_type`: `associated_cohort`
 - `pass_scope`: `quantitative_associated_cohort_dataset_version`
@@ -73,7 +73,7 @@ This contract does not admit:
 
 ## Required Test Contract
 
-Future code must add or preserve focused tests proving:
+Implementation code must add or preserve focused tests proving:
 
 - single-item selected-pass execution and result/status remain unchanged
 - service-owned associated-cohort `materialize_pass_entry(...)` remains unchanged

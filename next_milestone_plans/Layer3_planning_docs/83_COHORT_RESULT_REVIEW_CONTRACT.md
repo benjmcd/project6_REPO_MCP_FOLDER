@@ -1,14 +1,14 @@
 # Layer 3 Cohort Result Review Contract
 
-Status: planning-only API/state companion for `82_COHORT_RESULT_REVIEW_FREEZE.md`.
+Status: governing planning-only API/state companion for `82_COHORT_RESULT_REVIEW_FREEZE.md`; PR `#438` later implemented this exact bounded backend/API contract on current `main`.
 
-This document is not live behavior. It does not change API/UI behavior, make selected-pass associated-cohort result review live, widen schema/runtime/source scope, or activate package, handoff, export, connector, qualitative, hybrid, RAG, vector, retry/recovery, or full mockup behavior.
+This document is not live behavior by itself. It does not change API/UI behavior, make selected-pass associated-cohort result review live by itself, widen schema/runtime/source scope, or activate package, handoff, export, connector, qualitative, hybrid, RAG, vector, retry/recovery, or full mockup behavior. PR `#438` is the separate implementation authority for the exact backend/API contract below.
 
 ## Contract Scope
 
-This contract governs only a future backend/API implementation that extends the existing selected-pass result-review endpoint from single-item results to the exact associated-cohort `descriptive_summary` results admitted by PR `#432`.
+This contract governs only the backend/API implementation that extends the existing selected-pass result-review endpoint from single-item results to the exact associated-cohort `descriptive_summary` results admitted by PR `#432`. PR `#438` later implemented that bounded contract.
 
-The future implementation may touch only:
+The governed implementation may touch only:
 
 - `backend/app/services/layer3_workbench.py`
 - `backend/tests/test_layer3_api.py`
