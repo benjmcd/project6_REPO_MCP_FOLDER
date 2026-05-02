@@ -71,11 +71,15 @@ PASS_STATUS_FAILED = "failed"
 
 SOURCE_GATE_PASS_FREEZE = "06_GATEC_PASS_FREEZE"
 SOURCE_GATE_COHORT_FREEZE = "07_GATEC_COHORT_FREEZE"
+SOURCE_GATE_COHORT_DESC_FREEZE = "78_COHORT_FREEZE"
 PLAN_VERSION = "gatec_pass_entry_v1"
 PASS_SCOPE_QUANT_SINGLE_ITEM = "quantitative_single_item_dataset_version"
 PASS_SCOPE_QUANT_ASSOCIATED_COHORT = "quantitative_associated_cohort_dataset_version"
 PASS_TYPE_ASSOCIATED_COHORT = "associated_cohort"
 COHORT_TIME_COLUMN = "observed_at"
+COHORT_SHAPE_ALIGNED_WIDE_TABLE = "aligned_wide_table"
+COHORT_REQUESTED_METHOD_KEY = "requested_method_name"
+COHORT_REQUESTED_METHOD_SOURCE = "analysis_set.formation_basis_json.requested_method_name"
 SUPPORTED_WRAPPED_QUANTITATIVE_METHODS = frozenset(
     {
         "cross_correlation",
@@ -104,6 +108,7 @@ class _PreparedCohortColumn:
     material_snapshot_id: str
     dataset_version_id: str
     descriptor_id: str
+    source_variable_name: str
     stationarity_hint: str | None
     seasonality_flag: bool | None
 
@@ -114,6 +119,7 @@ class _PreparedCohortColumn:
             "material_snapshot_id": self.material_snapshot_id,
             "dataset_version_id": self.dataset_version_id,
             "descriptor_id": self.descriptor_id,
+            "source_variable_name": self.source_variable_name,
         }
 
 
@@ -296,9 +302,26 @@ def _unit_column_name(analysis_unit_id: str) -> str:
     return f"analysis_unit_{analysis_unit_id.replace('-', '_')}"
 
 
-def _choose_cohort_method_name_or_raise(*, shaped_dataframe: pd.DataFrame) -> str:
+def _cohort_requested_method_name(analysis_set: L3AnalysisSet) -> str | None:
+    requested = analysis_set.formation_basis_json.get(COHORT_REQUESTED_METHOD_KEY)
+    if requested is None:
+        return None
+    requested_method_name = str(requested).strip()
+    return requested_method_name or None
+
+
+def _choose_cohort_method_name_or_raise(
+    *,
+    shaped_dataframe: pd.DataFrame,
+    requested_method_name: str | None = None,
+) -> str:
     numeric_columns = [column for column in shaped_dataframe.columns if column != COHORT_TIME_COLUMN]
-    if COHORT_TIME_COLUMN in shaped_dataframe.columns and len(numeric_columns) >= 2:
+    is_aligned_wide_table = COHORT_TIME_COLUMN in shaped_dataframe.columns and len(numeric_columns) >= 2
+    if requested_method_name == "descriptive_summary":
+        if is_aligned_wide_table:
+            return "descriptive_summary"
+        raise Layer3PassEntryError("shaped cohort descriptive_summary request does not satisfy aligned wide-table shape")
+    if is_aligned_wide_table:
         return "cross_correlation"
     raise Layer3PassEntryError("shaped cohort recommended unsupported Gate C method 'descriptive_summary'")
 
@@ -414,6 +437,7 @@ def _prepare_cohort_candidate(
                     material_snapshot_id=snapshot.material_snapshot_id,
                     dataset_version_id=dataset_version_id,
                     descriptor_id=snapshot.descriptor_id,
+                    source_variable_name=measure_variable.variable_name,
                     stationarity_hint=source_profile.stationarity_hint if source_profile is not None else None,
                     seasonality_flag=source_profile.seasonality_flag if source_profile is not None else None,
                 ),
@@ -483,6 +507,16 @@ def _classify_sets(
                 )
                 continue
             assert prepared_cohort is not None
+            requested_method_name = _cohort_requested_method_name(analysis_set)
+            selected_method_name = _choose_cohort_method_name_or_raise(
+                shaped_dataframe=prepared_cohort.shaped_dataframe,
+                requested_method_name=requested_method_name,
+            )
+            source_gate = (
+                SOURCE_GATE_COHORT_DESC_FREEZE
+                if selected_method_name == "descriptive_summary"
+                else SOURCE_GATE_COHORT_FREEZE
+            )
             admitted.append(
                 _AdmittedSetCandidate(
                     analysis_set=analysis_set,
@@ -493,10 +527,8 @@ def _classify_sets(
                     ),
                     pass_type=PASS_TYPE_ASSOCIATED_COHORT,
                     pass_scope=PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
-                    source_gate=SOURCE_GATE_COHORT_FREEZE,
-                    selected_method_name=_choose_cohort_method_name_or_raise(
-                        shaped_dataframe=prepared_cohort.shaped_dataframe
-                    ),
+                    source_gate=source_gate,
+                    selected_method_name=selected_method_name,
                     prepared_cohort=prepared_cohort,
                 )
             )
@@ -645,6 +677,21 @@ def _plan_payload(
                 "selected_method_name": candidate.selected_method_name,
                 "source_gate": candidate.source_gate,
                 **(
+                    {
+                        "cohort_shape": COHORT_SHAPE_ALIGNED_WIDE_TABLE,
+                        **(
+                            {
+                                "requested_method_name": "descriptive_summary",
+                                "requested_method_source": COHORT_REQUESTED_METHOD_SOURCE,
+                            }
+                            if candidate.selected_method_name == "descriptive_summary"
+                            else {}
+                        ),
+                    }
+                    if candidate.pass_type == PASS_TYPE_ASSOCIATED_COHORT
+                    else {}
+                ),
+                **(
                     {"dataset_version_id": candidate.dataset_version_id}
                     if candidate.dataset_version_id is not None
                     else {
@@ -658,9 +705,15 @@ def _plan_payload(
         ],
         "excluded_sets_json": _json_clone(excluded),
         "formation_reason": "quantitative_dataset_version_backed_gatec_only",
-        "source_gate": SOURCE_GATE_COHORT_FREEZE
-        if any(candidate.pass_type == PASS_TYPE_ASSOCIATED_COHORT for candidate in admitted)
-        else SOURCE_GATE_PASS_FREEZE,
+        "source_gate": (
+            SOURCE_GATE_COHORT_DESC_FREEZE
+            if any(candidate.source_gate == SOURCE_GATE_COHORT_DESC_FREEZE for candidate in admitted)
+            else (
+                SOURCE_GATE_COHORT_FREEZE
+                if any(candidate.pass_type == PASS_TYPE_ASSOCIATED_COHORT for candidate in admitted)
+                else SOURCE_GATE_PASS_FREEZE
+            )
+        ),
     }
 
 
@@ -944,6 +997,7 @@ def _initial_pass_summary(candidate: _AdmittedSetCandidate) -> dict[str, Any]:
         "selected_method_name": candidate.selected_method_name,
         "analysis_set_id": candidate.analysis_set.analysis_set_id,
         "pass_scope": candidate.pass_scope,
+        "source_gate": candidate.source_gate,
         "analysis_run_id": None,
     }
     if candidate.pass_type == PASS_TYPE_SINGLE_ITEM:
@@ -955,6 +1009,10 @@ def _initial_pass_summary(candidate: _AdmittedSetCandidate) -> dict[str, Any]:
         summary["derived_dataset_version_id"] = None
         summary["source_dataset_version_ids_json"] = list(candidate.prepared_cohort.source_dataset_version_ids)
         summary["column_map_json"] = [column.manifest_entry() for column in candidate.prepared_cohort.columns]
+        summary["cohort_shape"] = COHORT_SHAPE_ALIGNED_WIDE_TABLE
+        if candidate.selected_method_name == "descriptive_summary":
+            summary["requested_method_name"] = "descriptive_summary"
+            summary["requested_method_source"] = COHORT_REQUESTED_METHOD_SOURCE
     return summary
 
 
@@ -971,6 +1029,8 @@ def _persist_cohort_dataset_version(
     analysis_set_id: str,
     pass_run_id: str,
     prepared_cohort: _PreparedCohortCandidate,
+    selected_method_name: str,
+    source_gate: str,
 ) -> tuple[str, str]:
     from app.services.dataframe_io import persist_dataframe_as_version_rows
 
@@ -1029,6 +1089,7 @@ def _persist_cohort_dataset_version(
                     "material_snapshot_id": prepared_column.material_snapshot_id,
                     "dataset_version_id": prepared_column.dataset_version_id,
                     "descriptor_id": prepared_column.descriptor_id,
+                    "source_variable_name": prepared_column.source_variable_name,
                 },
             )
         )
@@ -1048,7 +1109,17 @@ def _persist_cohort_dataset_version(
             "column_map_json": [prepared_column.manifest_entry() for prepared_column in prepared_cohort.columns],
             "time_column": COHORT_TIME_COLUMN,
             "row_count": int(len(prepared_cohort.shaped_dataframe)),
-            "source_gate": SOURCE_GATE_COHORT_FREEZE,
+            "source_gate": source_gate,
+            "selected_method_name": selected_method_name,
+            "cohort_shape": COHORT_SHAPE_ALIGNED_WIDE_TABLE,
+            **(
+                {
+                    "requested_method_name": "descriptive_summary",
+                    "requested_method_source": COHORT_REQUESTED_METHOD_SOURCE,
+                }
+                if selected_method_name == "descriptive_summary"
+                else {}
+            ),
         },
     )
     return version.dataset_version_id, manifest_ref
@@ -1253,6 +1324,8 @@ def _execute_passes(
                 analysis_set_id=candidate.analysis_set.analysis_set_id,
                 pass_run_id=pass_run_id,
                 prepared_cohort=candidate.prepared_cohort,
+                selected_method_name=candidate.selected_method_name,
+                source_gate=candidate.source_gate,
             )
             dataset_version_id = derived_dataset_version_id
             input_payload_ref = input_manifest_ref
@@ -1320,12 +1393,22 @@ def _execute_passes(
                 "selected_method_name": candidate.selected_method_name,
                 "artifact_refs_json": [artifact.storage_ref for artifact in artifacts],
                 "artifact_types_json": [artifact.artifact_type for artifact in artifacts],
+                "source_gate": candidate.source_gate,
                 **(
                     {
                         "source_dataset_version_ids_json": list(
                             candidate.prepared_cohort.source_dataset_version_ids
                         ),
                         "column_map_json": [column.manifest_entry() for column in candidate.prepared_cohort.columns],
+                        "cohort_shape": COHORT_SHAPE_ALIGNED_WIDE_TABLE,
+                        **(
+                            {
+                                "requested_method_name": "descriptive_summary",
+                                "requested_method_source": COHORT_REQUESTED_METHOD_SOURCE,
+                            }
+                            if candidate.selected_method_name == "descriptive_summary"
+                            else {}
+                        ),
                     }
                     if candidate.prepared_cohort is not None
                     else {}
