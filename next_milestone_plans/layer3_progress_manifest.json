@@ -1547,10 +1547,10 @@
     "branch_only_milestones": 0,
     "workbench_slice_records": 48,
     "workbench_live_bounded_slices": 27,
-    "workbench_planning_only_slices": 21,
+    "workbench_planning_only_slices": 20,
     "workbench_branch_local_read_only_slices": 0,
     "workbench_branch_only_implementation_slices": 0,
-    "workbench_branch_local_planning_slices": 0
+    "workbench_branch_local_planning_slices": 1
   },
   "artifact_render_contract": {
     "purpose": "Provide a stable view contract for external render surfaces so they do not have to infer layout from prose or depend on runtime JavaScript or Mermaid for critical meaning.",
