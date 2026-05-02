@@ -2,13 +2,14 @@
 
 Status: planning-only operational playbook for activating and implementing remaining deferred Layer 3 scope.
 
-This document does not by itself select a new implementation lane, make deferred behavior live, change Gate C pass-entry behavior, widen schema/runtime/source scope, change UI, or activate package, handoff, connector, qualitative, hybrid, RAG, vector, or full mockup behavior. PR `#411` later used this playbook to land only the lower-level `descriptive_summary` analysis-service tranche.
+This document does not by itself select a new implementation lane, make deferred behavior live, widen schema/runtime/source scope, change UI, or activate package, handoff, connector, qualitative, hybrid, RAG, vector, or full mockup behavior. PR `#411` used this playbook to land only the lower-level `descriptive_summary` analysis-service tranche, and PR `#417` later used docs `75`/`76` to land only single-item `descriptive_summary` Gate C admission.
 
 ## Purpose
 
 The active progress packet has two distinct future-work concepts:
 
 - `descriptive_summary` lower-level analysis-service support is now landed on current `main` by PR `#411`, governed by `72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md` and `73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md`.
+- single-item `descriptive_summary` Gate C admission is now landed on current `main` by PR `#417`, governed by `75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md` and `76_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_CONTRACT.md`.
 - The eight `deferred_scope` categories remain blocked unless their activation contracts are satisfied by live repo truth and a separately explicit freeze.
 
 This playbook defines the operational requirements for moving any remaining deferred item from planning to implementation without over-claiming, silently widening scope, or accumulating uncontrolled tech debt.
@@ -40,9 +41,9 @@ Current `main` supports these analysis method ids through `ANALYSIS_METHOD_REGIS
 - `structural_break`
 - `descriptive_summary`
 
-`descriptive_summary` exists as a bounded lower-level analysis API method for datasets outside starter time-series assumptions, but it must not pass Gate C by implication.
+`descriptive_summary` exists as a bounded lower-level analysis API method for datasets outside starter time-series assumptions. It now passes Gate C only through the PR `#417` single-item dataset-version path.
 
-Current Layer 3 pass-entry behavior rejects unsupported Gate C methods before creating Layer 3 plan/pass/run state. That fail-closed behavior remains the default unless a later Gate C admission freeze explicitly changes it.
+Current Layer 3 pass-entry behavior still rejects unsupported Gate C methods before creating Layer 3 plan/pass/run state. Associated-cohort `descriptive_summary` remains blocked unless a later cohort-specific freeze explicitly changes it.
 
 ## Non-Negotiable Operating Practices
 
@@ -157,14 +158,14 @@ That first implementation tranche stayed within docs `72`/`73` and added:
 - one deterministic JSON artifact family only
 - assumption/caveat rows for data availability, column classification, missingness, high cardinality, non-time-series interpretation, and empty/degenerate input
 - unchanged recommendation sequences for time-series datasets
-- preserved Layer 3 pass-entry fail-closed behavior unless a separate Gate C admission freeze is created
+- preserved Layer 3 pass-entry fail-closed behavior until the separate docs `75`/`76` single-item Gate C admission freeze was satisfied by PR `#417`
 
 Landed implementation surfaces:
 
 - `backend/app/services/analysis.py`
 - `tests/test_api.py`
 
-PR `#411` did not include UI, schema, migration, source ingestion, package/handoff/export, connector dispatch, or runtime DB changes in the first `descriptive_summary` implementation tranche.
+PR `#411` did not include UI, schema, migration, source ingestion, package/handoff/export, connector dispatch, or runtime DB changes in the first `descriptive_summary` implementation tranche. PR `#417` also did not include those broader changes; it admitted only the existing single-item pass-entry path.
 
 ## Deferred Category Gates
 
@@ -196,7 +197,7 @@ PR `#411` added or updated tests proving:
 Focused commands for the landed tranche:
 
 ```powershell
-python -m pytest .\tests\test_api.py::test_analysis_method_registry_describes_current_methods_only .\tests\test_api.py::test_descriptive_summary_runs_deterministic_json_without_widening_scope .\tests\test_api.py::test_descriptive_summary_column_summary_handles_nested_values_deterministically .\tests\test_api.py::test_decomposition_and_break_detection_persist_artifacts .\tests\test_api.py::test_structural_break_zero_breakpoint_path_returns_caveat_not_blank_artifact .\tests\test_api.py::test_decomposition_short_series_returns_caveat_not_exception .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_fails_closed_on_unsupported_cohort_recommended_method .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_excludes_unsupported_recommended_method_and_fails_closed -q
+python -m pytest .\tests\test_api.py::test_analysis_method_registry_describes_current_methods_only .\tests\test_api.py::test_descriptive_summary_runs_deterministic_json_without_widening_scope .\tests\test_api.py::test_descriptive_summary_column_summary_handles_nested_values_deterministically .\tests\test_api.py::test_decomposition_and_break_detection_persist_artifacts .\tests\test_api.py::test_structural_break_zero_breakpoint_path_returns_caveat_not_blank_artifact .\tests\test_api.py::test_decomposition_short_series_returns_caveat_not_exception .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_executes_descriptive_summary_single_item_without_widening_scope .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_selected_pass_execution_runs_descriptive_summary .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_fails_closed_on_unsupported_cohort_recommended_method .\backend\tests\test_layer3_pass_entry.py::test_gatec_pass_entry_excludes_unknown_recommended_method_and_fails_closed -q
 ```
 
 Add new focused tests adjacent to any future changed behavior before broadening to larger suites.
@@ -211,7 +212,7 @@ Stop and return to planning if any implementation requires:
 - changing package/handoff/export/download behavior
 - adding source ingestion, local upload, local directory, connector input, public/signed URL, or generic dispatch behavior
 - adding qualitative, hybrid, RAG, vector, LLM, DAG, background job, retry, cancellation, or agent-conductor behavior
-- allowing `descriptive_summary` through Layer 3 pass-entry without a separate Gate C admission rule
+- allowing `descriptive_summary` through Layer 3 pass-entry outside the PR `#417` single-item Gate C admission rule
 - treating docs-only governance as live implementation
 
 ## Posture Summary
@@ -219,7 +220,7 @@ Stop and return to planning if any implementation requires:
 The adequate next posture is not "implement all deferred items." It is:
 
 1. Keep the eight deferred categories blocked behind their activation contracts.
-2. Treat `descriptive_summary` lower-level analysis API support as landed by PR `#411`, with Gate C admission still deferred.
-3. Treat docs `75`/`76` as the planning-only boundary for the next possible single-item Gate C admission tranche; they do not implement pass-entry behavior.
-4. Preserve Layer 3 pass-entry fail-closed behavior until separately governed.
+2. Treat `descriptive_summary` lower-level analysis API support as landed by PR `#411`.
+3. Treat docs `75`/`76` as satisfied by PR `#417` only for single-item Gate C admission.
+4. Preserve associated-cohort and broader Layer 3 pass-entry fail-closed behavior until separately governed.
 5. Land any implementation with focused tests, CI, review-state checks, and a post-merge progress/control sync.
