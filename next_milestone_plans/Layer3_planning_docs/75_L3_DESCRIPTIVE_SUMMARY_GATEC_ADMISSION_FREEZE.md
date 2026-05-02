@@ -1,31 +1,30 @@
 # Layer 3 Descriptive Summary Gate C Admission Freeze
 
-Status: planning-only governance for a future `descriptive_summary` Gate C admission implementation.
+Status: governance satisfied by PR `#417` for single-item `descriptive_summary` Gate C admission only.
 
-This document freezes the smallest safe Layer 3 pass-entry boundary after PR `#411` made `descriptive_summary` live only as a lower-level analysis API method. It does not implement Gate C admission, change `SUPPORTED_WRAPPED_QUANTITATIVE_METHODS`, create pass/run state, change execution-start behavior, change UI, widen schema/runtime/source scope, or activate package, handoff, export, connector dispatch, qualitative, hybrid, RAG, vector, or full mockup behavior.
+This document froze the smallest safe Layer 3 pass-entry boundary after PR `#411` made `descriptive_summary` live only as a lower-level analysis API method. PR `#417` satisfied this boundary by admitting only single-item `descriptive_summary` Gate C pass-entry through the existing wrapped quantitative path. It did not admit associated-cohort `descriptive_summary`, change lower-level `analysis.py` semantics, change UI, widen schema/runtime/source scope, or activate package, handoff, export, connector dispatch, qualitative, hybrid, RAG, vector, or full mockup behavior.
 
 ## Current Live Boundary
 
-Current `main` has two distinct truths:
+Current `main` has three distinct truths:
 
 - `backend/app/services/analysis.py` supports `descriptive_summary` through `ANALYSIS_METHOD_REGISTRY` and `run_analysis(...)`.
-- `backend/app/services/layer3_pass_entry.py` still rejects `descriptive_summary` before Layer 3 pass/run state because `SUPPORTED_WRAPPED_QUANTITATIVE_METHODS` includes only `cross_correlation`, `decomposition`, and `structural_break`.
-- `execute_selected_pass_run(...)` also rejects selected pass runs whose `selected_method_name` is not in `SUPPORTED_WRAPPED_QUANTITATIVE_METHODS`.
-- `backend/tests/test_layer3_pass_entry.py` still proves unsupported `descriptive_summary` recommendations fail closed.
+- `backend/app/services/layer3_pass_entry.py` admits `descriptive_summary` only for the existing single-item wrapped quantitative Gate C path.
+- `backend/tests/test_layer3_pass_entry.py` proves single-item materialization, selected-pass execution, unknown-method fail-closed behavior, and associated-cohort `descriptive_summary` fail-closed preservation.
 
-That means current `main` can run `descriptive_summary` through the lower-level analysis API, but cannot materialize or execute it through Gate C pass-entry.
+That means current `main` can run `descriptive_summary` through the lower-level analysis API and through single-item Gate C pass-entry, but still cannot admit associated-cohort `descriptive_summary`.
 
 ## Slice Decision
 
-The next safe planning boundary is:
+The admitted implementation boundary is:
 
 > Freeze single-item `descriptive_summary` Gate C admission only for already materialized dataset-version analysis sets whose lower-level recommendation selects `descriptive_summary`, while keeping associated-cohort admission and all broader workbench/package/source/runtime/UI scope blocked.
 
 This boundary is intentionally narrower than "allow `descriptive_summary` everywhere." The existing single-item path already carries one `dataset_version_id`, one selected method, one wrapped quantitative pass run, and one `run_analysis(...)` call. Associated-cohort admission crosses a separate shaping and derived-dataset boundary, so it remains blocked until separately governed.
 
-## Admitted Future Implementation Scope
+## Admitted Implementation Scope
 
-A future implementation PR governed by this freeze may add only:
+PR `#417` added only:
 
 - single-item Gate C pass-entry admission for `descriptive_summary`
 - the minimum allowlist/selection changes needed for `_choose_method_name_or_raise(...)`, `materialize_pass_entry(...)`, and `execute_selected_pass_run(...)` to accept the already-supported method
@@ -63,9 +62,9 @@ This freeze does not admit:
 | Cohort posture | still blocked | Cohort shaping/derived datasets need separate governance |
 | UI posture | no UI changes | Existing backend path is enough to prove admission before rendering controls |
 
-## Required Future Proof
+## Required Proof
 
-A future implementation PR must prove:
+PR `#417` proved:
 
 - single-item Gate C materialization can select `descriptive_summary` when lower-level recommendation returns it
 - selected-pass execution can call `run_analysis(..., method_name="descriptive_summary", ...)`
@@ -95,4 +94,4 @@ This freeze follows:
 - `73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md`
 - `74_L3_DEFERRED_IMPLEMENTATION_PLAYBOOK.md`
 
-It selects only the next planning boundary for Gate C admission. It does not make Gate C admission live.
+It selected only the single-item planning boundary for Gate C admission. PR `#417` made that single-item boundary live while preserving the associated-cohort and broader no-go boundaries above.
