@@ -304,10 +304,9 @@ def _unit_column_name(analysis_unit_id: str) -> str:
 
 def _cohort_requested_method_name(analysis_set: L3AnalysisSet) -> str | None:
     requested = analysis_set.formation_basis_json.get(COHORT_REQUESTED_METHOD_KEY)
-    if requested is None:
+    if requested is None or not isinstance(requested, str):
         return None
-    requested_method_name = str(requested).strip()
-    return requested_method_name or None
+    return requested or None
 
 
 def _choose_cohort_method_name_or_raise(
