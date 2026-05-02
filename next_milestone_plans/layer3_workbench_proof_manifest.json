@@ -2689,5 +2689,77 @@
       "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
       "git diff --check"
     ]
+  },
+  "descriptive_summary_selected_pass_cohort_package_review_submit_implementation_proof": {
+    "implementation_branch": "codex/l3-cohort-package-submit-impl-p66",
+    "implementation_pr": "#456",
+    "merge_commit": "802d504e6e17a6815bedea77b8a3212d8b19e78f",
+    "base_commit": "c692125e",
+    "scope": "Merged bounded selected-pass associated-cohort descriptive_summary package-review submit over existing package-review submit route/UI after exact PR #432/#438/#443/#447/#451 authority.",
+    "files_changed": [
+      "backend/app/services/layer3_workbench.py",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_api.py",
+      "e2e/layer3-workbench.spec.js"
+    ],
+    "live_behavior_change": true,
+    "live_behavior": "PR #456 admits package-review submit only for exact selected-pass associated-cohort descriptive_summary authority after approved result review, rendered result-review UI authority, package-review preview, and package construction. Successful submit records one decision object in existing JSON-bearing state and keeps handoff/export unavailable.",
+    "authority_basis": [
+      "PR #456 requires exact PR #432/#438/#443/#447/#451 authority before associated-cohort submit.",
+      "The response uses cohort-specific submit schema layer3.cohort_package_review_submit.v1 when applicable.",
+      "Session summary reports handoff_export_deferred_for_associated_cohort_package_review_submit after approved cohort submit."
+    ],
+    "no_go_preserved": [
+      "no associated-cohort handoff/export prepare behavior",
+      "no APS dispatch or external export/download behavior",
+      "no connector dispatch",
+      "no schema/model/migration/runtime/source widening",
+      "no pass-entry behavior changes",
+      "no retry/recovery beyond deterministic submit idempotency",
+      "no qualitative/hybrid/RAG/vector/full mockup behavior",
+      "single-item package review, handoff/export, APS dispatch, and download chain unchanged"
+    ],
+    "verification": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_workbench.py .\\backend\\app\\api\\layer3.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"selected_cohort_execution_start_and_status_are_bounded or package_review_submit_records_decision_without_mutating_packages or package_review_submit_prechecks_fail_closed\" -> 3 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -> 71 passed",
+      "npx playwright test e2e/layer3-workbench.spec.js --project=chromium -> 14 passed",
+      "npx playwright test e2e/layer3-workbench.spec.js -g \"records bounded associated-cohort\" --project=chromium --headed -> 1 passed",
+      "GitHub PR #456 checks backend-layer3-api and test -> success"
+    ]
+  },
+  "descriptive_summary_selected_pass_cohort_handoff_export_planning_proof": {
+    "planning_branch": "codex/l3-cohort-handoff-freeze-p68",
+    "planning_pr": "branch-local",
+    "base_commit": "bacf90f07dab58fc0a492faca49adfe9992b69b5",
+    "scope": "Branch-local planning-only selected-pass associated-cohort descriptive_summary handoff/export governance after PR #456 approved package-review submit.",
+    "files_changed": [
+      "next_milestone_plans/Layer3_planning_docs/92_COHORT_HANDOFF_EXPORT_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/93_COHORT_HANDOFF_EXPORT_CONTRACT.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_refresh_spec.md",
+      "next_milestone_plans/progress-prompt.md",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "live_behavior_change": false,
+    "authority_basis": [
+      "PR #456 is the current-main package-review submit authority for exactly one associated-cohort submit decision object in existing JSON-bearing state.",
+      "Docs 54/55 and PR #251/#252 are single-item handoff/export pattern sources only, not direct associated-cohort handoff/export authority.",
+      "Docs 92/93 require a later implementation to prove exact PR #432/#438/#443/#447/#451/#456 authority before narrowing handoff_export_deferred_for_associated_cohort_package_review_submit."
+    ],
+    "no_go_preserved": [
+      "no live associated-cohort handoff/export by docs alone",
+      "no APS dispatch, external export/download, connector dispatch, or generic downstream dispatch",
+      "no schema/runtime/source/model/migration widening",
+      "no package payload copy, rewrite, or reconstruction",
+      "no pass-entry changes, retry/recovery, broader UI, qualitative/hybrid/RAG/vector, or full mockup behavior"
+    ],
+    "verification": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "git diff --check"
+    ]
   }
 }
