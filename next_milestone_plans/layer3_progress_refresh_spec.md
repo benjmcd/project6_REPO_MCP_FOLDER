@@ -36,7 +36,7 @@ Current tracked PR set:
 - `#100`, `#101`, `#102`
 - `#106`, `#107`, `#108`, `#109`
 - `#110`, `#111`, `#112`, `#113`, `#115`, `#116`, `#117`, `#118`, `#119`, `#120`, `#121`, `#122`, `#123`, `#124`, `#125`, `#126`, `#127`, `#128`, `#129`, `#130`, `#131`, `#132`, `#133`, `#134`, `#135`, `#136`, `#137`, `#138`, `#139`, `#140`, `#141`, `#142`, `#143`, `#144`, `#145`, `#146`, `#147`, `#148`, `#165`, `#166`, `#167`, `#168`, `#169`, `#170`, `#172`, `#174`, `#178`, `#181`, `#182`, `#183`, `#184`, `#185`, `#186`, `#187`, `#188`, `#189`, `#190`, `#191`, `#192`, `#193`, `#194`, `#195`, `#196`, `#198`, `#199`, `#200`, `#201`, `#202`, `#203`, `#204`, `#205`, `#206`, `#207`, `#208`, `#209`, `#210`, `#211`, `#212`, `#213`, `#215`, `#216`, `#217`, `#218`, `#219`, `#220`, `#221`, `#222`, `#223`, `#224`, `#225`, `#226`, `#227`, `#228`, `#229`, `#230`, `#232`, `#233`, `#234`, `#235`, `#236`, `#237`, `#238`, `#241`, `#242`, `#243`, `#244`, `#245`, `#246`, `#247`, `#248`, `#249`, `#250`, `#251`, `#252`, `#253`, `#254`, `#255`
-- `#256`, `#257`, `#258`, `#260`, `#261`, `#263`, `#265`, `#266`, `#268`, `#269`, `#273`, `#274`, `#275`, `#277`, `#278`, `#281`, `#282`, `#283`, `#284`, `#285`, `#286`, `#289`, `#315`, `#316`, `#398`, `#399`, `#400`, `#401`, `#402`
+- `#256`, `#257`, `#258`, `#260`, `#261`, `#263`, `#265`, `#266`, `#268`, `#269`, `#273`, `#274`, `#275`, `#277`, `#278`, `#281`, `#282`, `#283`, `#284`, `#285`, `#286`, `#289`, `#315`, `#316`, `#398`, `#399`, `#400`, `#401`, `#402`, `#404`
 
 Tracked metadata-refresh PR rule:
 - include merged PRs that are known completed inputs to the refresh, including prior docs/progress sync PRs
@@ -276,6 +276,7 @@ The current bounded chain on `main` now extends through:
 - PR `#400` as the current-main workbench-prep operator-handoff validation/tooling update, outside this descriptive_summary method-governance scope
 - PR `#401` as the current-main NRC APS workbench-prep handoff status docs sync, outside this descriptive_summary method-governance scope
 - PR `#402` as current-main planning-only docs `72`/`73` descriptive-summary governance, with no runtime behavior change
+- PR `#404` as the current-main post-PR402 docs/control sync that records docs `72`/`73` as current-main planning-only descriptive-summary governance, with no runtime behavior change
 
 The preserved source-branch rule on current `main` is:
 - dossier input must remain paired export-derived context packets rather than package-derived context
@@ -287,6 +288,7 @@ The current landed support guardrail at the end of the control packet is:
 - PR `#400` is outside this method-governance scope and must not be treated as `descriptive_summary` method admission, execution behavior, schema/runtime/source widening, UI activation, or a new functional workbench tranche
 - PR `#401` is outside this method-governance scope and must not be treated as `descriptive_summary` method admission, execution behavior, schema/runtime/source widening, UI activation, or a new functional workbench tranche
 - PR `#402` adds planning-only `descriptive_summary` governance only; it must not be treated as method admission, `ANALYSIS_METHOD_REGISTRY` expansion, recommendation or execution behavior change, Gate C pass-entry change, schema/runtime/source widening, UI activation, qualitative/hybrid/RAG/vector behavior, or full mockup activation
+- PR `#404` is a docs/control sync only; it must not be treated as method admission, implementation, runtime behavior change, schema/runtime/source widening, UI activation, or a new functional workbench tranche
 
 The current settled state in this checkout is:
 - current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, and the post-PR147 progress-packet closeout from PR `#148`
