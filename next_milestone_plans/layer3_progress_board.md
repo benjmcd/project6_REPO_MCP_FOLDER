@@ -53,7 +53,7 @@ As of `2026-05-02`:
 - seed local checkout used to prepare this post-PR402 artifact refresh: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-post402-audit-p23`
 - valid local authority rule: use a clean checkout whose contents match the artifact state being refreshed; prefer current `main` for merged repo truth and the active branch checkout only when an open or branch-only milestone is explicitly declared
 - authoritative remote branch: `project6-origin/main`
-- snapshot base for this post-PR402 docs/control sync branch: current `project6-origin/main` at `77691957c682f647634c9f91fa752150ecb1b1b8` after PR `#403` advanced main on top of PR `#402`; PR `#403` did not modify this Layer 3 progress-control packet
+- snapshot base for this post-PR402 docs/control sync branch: current `project6-origin/main` at `1433605cccff48dace90b38e39ad7f45503fa4bc` after an NRC APS docs-only handoff clarification advanced main on top of PR `#403`; neither that clarification nor PR `#403` modified this Layer 3 progress-control packet
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
 - current `main` also includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the landed export-package first shared-consumer freeze from PR `#106` and its docs-only closeout from PR `#107`
