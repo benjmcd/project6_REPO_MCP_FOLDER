@@ -102,7 +102,7 @@ Current shipped-baseline note:
 - the root repo now also carries fixed-fixture same-checkout prep plus validate-only gates for populated compare, bundle-sourced Candidate B Trace validation, and explicit runtime-sourced Candidate B Compare validation via:
   - `tools/validate_wb_prep.py`
   - `tests/test_validate_wb_prep.py`
-- that prep gate fails closed on empty, donor, ambiguous, missing-runtime-run-id, or incoherent same-checkout prep state and should precede populated operator validation
+- that prep gate fails closed on empty, donor, ambiguous, missing-runtime-run-id, or incoherent same-checkout prep state, now emits additive `operator_handoff` metadata for success/failure recovery, and should precede populated operator validation
 - the preserved bundle-scoped Candidate B Trace path now also includes compare/trace return-context preservation, artifact availability/unavailable-state affordances, and fixture navigation/status over the existing Workbench Compare targets API
 - current repo-native browser coverage proves active multi-fixture Previous/Next navigation across `fontish` and `ml17123a319`; single-target `Fixture 1 of 1` disabled-navigation remains the correct behavior when only one comparable fixture is prepared
 - future work should start from that shipped posture rather than from pre-compare or pre-trace assumptions
@@ -117,14 +117,14 @@ Ordered next-decision note:
   - do not drift into runtime-style admission or selector integration by accident
 - only reopen a wider Candidate B runtime-admission program if a concrete operator/product requirement proves the shipped bundle-scoped model insufficient
 - that wider program has now been explicitly reopened through processing-engine admission, existing `/runs` runtime metadata, rendered review/document-trace selector visibility, and additive Workbench Compare runtime-source integration; it is not yet Candidate B Trace parity for admitted runtime runs, document-trace parity expansion, DB schema/model/migration work, broad route widening, persistence redesign, or new run-submission UI work
-- same-checkout prepared-state workflow hardening is now landed through the validate-only prep gate and canonical prep sequence
+- same-checkout prepared-state workflow hardening is now landed through the validate-only prep gate, canonical prep sequence, and `operator_handoff` metadata emitted by successful and failed prep validation
 - for the preserved bundle-scoped Candidate B Trace path, further operator ergonomics should improve only where justified and should not be described as runtime Candidate B Trace parity
 - current `main` also includes the merged planning-only broader-workbench prep packet rooted in `next_milestone_plans/Layer3_planning_docs/24_L3_WB_FREEZE.md` from PR `#165` and `next_milestone_plans/Layer3_planning_docs/26_L3_WB_INPUTS.md` from PR `#168`; that deferred additive lane still does not rename, replace, or activate the currently shipped review/document-trace/workbench/Candidate B surfaces
 - documentation closeout is now landed for the active UI/operator front doors:
   - `frontend_UI_plans/README.md` remains the front-door index
   - `docs/nrc_adams/nrc_aps_ui_launch_runbook.md` owns the canonical launch contract
   - `nrc_aps_review_ui_startup_and_smoke_test.md` is the concise startup walkthrough layered on top of that launch contract
-  - `wb-compare-validation.md` owns same-checkout prep, `tools/validate_wb_prep.py`, populated compare + Candidate B Trace validation, and explicit runtime-source Candidate B validation
+  - `wb-compare-validation.md` owns same-checkout prep, `tools/validate_wb_prep.py`, its emitted operator handoff metadata, populated compare + Candidate B Trace validation, and explicit runtime-source Candidate B validation
   - `nrc_aps_frontend_ui_operator_validation_guide.md` owns the broader manual validation pass after launch and prep succeed
 
 ## Retained Documents

@@ -108,11 +108,11 @@ It does not attempt to validate:
 Important workbench-compare note:
 
 - populated workbench-compare validation requires same-checkout prep for baseline, Candidate A, and Candidate B sources
-- the canonical compare prep flow now includes the validate-only same-checkout prep gate in `tools/validate_wb_prep.py`
+- the canonical compare prep flow now includes the validate-only same-checkout prep gate in `tools/validate_wb_prep.py`, including its emitted `operator_handoff` metadata for selected reruns, canonical prep sequences, and failure recovery
 - once same-checkout prep exists, this guide should also validate Candidate B Trace follow-through from the compare page
 - Candidate B Trace follow-through should preserve available Workbench Compare return context, show artifact availability/unavailable states, and show fixture navigation/status from the existing Workbench Compare targets API
 - the current repo-native browser fixture proves active multi-fixture Previous/Next navigation across `fontish` and `ml17123a319`; one-target source sets should still render `Fixture 1 of 1` with disabled Previous/Next
-- use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated same-corpus compare prep, `tools/validate_wb_prep.py` gate, and populated operator-validation sequence
+- use [frontend_UI_plans/wb-compare-validation.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/wb-compare-validation.md) for the dedicated same-corpus compare prep, `tools/validate_wb_prep.py` gate, emitted operator handoff metadata, and populated operator-validation sequence
 
 ## Preconditions
 
