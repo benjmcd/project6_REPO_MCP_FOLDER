@@ -130,10 +130,14 @@ def test_run_candidate_b_cli_uses_direct_convert_and_canonicalizes_output(
         assert kwargs["format"] == "json,markdown,pdf"
         assert kwargs["output_dir"] == str(raw_root)
         assert kwargs["image_output"] == "external"
+        assert Path(kwargs["image_dir"]) == raw_root / "images" / "fontish"
         output_dir = Path(kwargs["output_dir"])
+        image_dir = Path(kwargs["image_dir"])
+        image_dir.mkdir(parents=True)
         (output_dir / "fontish.json").write_text(json.dumps({"kids": [], "number of pages": 1}), encoding="utf-8")
         (output_dir / "fontish.md").write_text("# fontish", encoding="utf-8")
         (output_dir / "fontish.pdf").write_bytes(b"%PDF-1.4\n%annotated\n")
+        (image_dir / "imageFile1.png").write_bytes(b"png")
         print("ok")
 
     monkeypatch.setitem(sys.modules, "opendataloader_pdf", types.SimpleNamespace(convert=_fake_convert))
@@ -149,6 +153,7 @@ def test_run_candidate_b_cli_uses_direct_convert_and_canonicalizes_output(
     assert cli_result["invocation"] == "opendataloader_pdf.convert"
     assert cli_result["stdout"] == "ok\n"
     assert cli_result["annotated_pdf_ref"].endswith("annotated/fontish.pdf")
+    assert cli_result["image_dir"] == (raw_root / "images" / "fontish").as_posix()
 
 
 def test_summarize_candidate_output_emits_annotated_pdf_refs(tmp_path: Path) -> None:
