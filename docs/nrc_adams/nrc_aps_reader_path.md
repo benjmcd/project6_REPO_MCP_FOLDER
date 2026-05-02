@@ -28,10 +28,11 @@ For the shipped NRC APS review surfaces on current `main`, use these docs in ord
 1. `docs/nrc_adams/nrc_aps_ui_launch_runbook.md` - canonical launch contract for binding and starting the shipped review/document-trace/workbench/Candidate B Trace surfaces
 2. `frontend_UI_plans/README.md` - retained UI reference index and supporting operator/reference docs
 3. `frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md` - concise startup walkthrough layered on top of the launch runbook
-4. `frontend_UI_plans/wb-compare-validation.md` - same-checkout prep, `tools/validate_wb_prep.py`, populated Workbench Compare plus Candidate B Trace validation, and explicit runtime-source Candidate B validation
+4. `frontend_UI_plans/wb-compare-validation.md` - same-checkout prep, `tools/validate_wb_prep.py`, populated Workbench Compare plus Candidate B Trace validation, explicit runtime-source Candidate B validation, and runtime-source Workbench Compare follow-through into existing document-trace
 5. `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md` - broader manual validation pass after launch and prep succeed
 
 Candidate B runtime-admission note:
 - The older Candidate B workbench pack remains the authority for bundle-scoped compare/trace history and guardrails, but it did not authorize runtime admission.
 - The later explicit runtime-admission reopen is currently implemented as the opt-in `document_processing_engine="candidate_b_opendataloader_pdf"` processing path on the existing NRC APS run-submit flow, optional runtime metadata on the existing review `/runs` selector response, rendered Candidate B / OpenDataLoader PDF labels in the existing review/document-trace run selectors and identity panels, and an explicit Candidate B runtime source kind in Workbench Compare alongside the preserved bundle source path.
+- Current repo-native browser coverage now proves the runtime-source Workbench Compare `Candidate B Runtime Trace` deep link reaches the existing document-trace route with the selected Candidate B runtime run/target; this is not Candidate B Trace parity for admitted runtime runs.
 - Use `docs/nrc_adams/nrc_aps_status_handoff.md` and the live source files named there before making Candidate B Trace parity, document-trace parity expansion, DB schema/model/migration, broad route, persistence, or new run-submission UI claims.
