@@ -300,6 +300,13 @@ class Layer3PackageConstructionCommitResponse(Layer3BaseResponse):
     package_kinds: list[str]
     payload_refs: list[str]
     payload_hashes: list[str]
+    pass_scope: str | None = None
+    method: str | None = None
+    source_gate: str | None = None
+    package_construction_source_gate: str | None = None
+    source_shape: str | None = None
+    source_dataset_version_ids: list[str] | None = None
+    reviewed_output_item_summary: dict[str, Any] | None = None
     package_review_submit_enabled: bool
     handoff_enabled: bool
     downstream_unavailable: list[str]

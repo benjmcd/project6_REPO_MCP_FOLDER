@@ -56,6 +56,7 @@ RECONCILIATION_STATUS_REVIEW_ONLY = "review_only"
 
 SOURCE_GATE_D_PACKAGE_FREEZE = "08_GATED_PACKAGE_FREEZE"
 SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE = "50_L3_WB_PACKAGE_CONSTRUCTION_FREEZE"
+SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE = "88_COHORT_PACKAGE_CONSTRUCTION_FREEZE"
 PACKAGE_SCHEMA_VERSION = 1
 
 FINALIZED_PACKAGE_SESSION_STATUSES = frozenset(
@@ -1030,7 +1031,11 @@ def materialize_workbench_package_commit(
     package_review_preview_hash: str,
     output_metadata_summary: dict[str, Any],
     client_request_id: str,
+    source_gate: str = SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+    package_review_submit_enabled: bool = True,
+    downstream_unavailable: list[str] | tuple[str, ...] | None = None,
 ) -> Layer3PackageEntryResult:
+    unavailable = list(downstream_unavailable or ["handoff", "export"])
     authority_basis = {
         "schema_id": "layer3.workbench_package_construction_authority.v1",
         "client_request_id": client_request_id,
@@ -1044,7 +1049,7 @@ def materialize_workbench_package_commit(
         "package_review_preview_hash": package_review_preview_hash,
         "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
         "unresolved_trace_count": int(result_review_state.get("unresolved_trace_count") or 0),
-        "source_gate": SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+        "source_gate": source_gate,
     }
     authority_basis_hash = _workbench_authority_basis_hash(authority_basis)
     existing = _existing_workbench_package_result(
@@ -1068,16 +1073,16 @@ def materialize_workbench_package_commit(
         "trace_summary": trace_summary,
         "reviewed_output_items": reviewed_items,
         "output_metadata_summary": _json_clone(output_metadata_summary),
-        "package_review_submit_enabled": True,
+        "package_review_submit_enabled": package_review_submit_enabled,
         "handoff_enabled": False,
-        "downstream_unavailable": ["handoff", "export"],
+        "downstream_unavailable": unavailable,
     }
     canonical_payload = {
         "package_header": _package_header(
             session_id=session.session_id,
             package_kind=PACKAGE_KIND_CANONICAL_INTERNAL,
             package_status=package_status,
-            source_gate=SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+            source_gate=source_gate,
         ),
         "workbench_authority_summary": _json_clone(workbench_summary),
         "approved_plan_summary": {
@@ -1101,7 +1106,7 @@ def materialize_workbench_package_commit(
             package_kind=PACKAGE_KIND_USER_FACING,
             package_status=package_status,
             canonical_package_key=canonical_key,
-            source_gate=SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+            source_gate=source_gate,
         ),
         "session_summary": {
             "session_id": session.session_id,
@@ -1115,7 +1120,7 @@ def materialize_workbench_package_commit(
             "review_record_ref": result_review_state.get("review_record_ref"),
             "unresolved_trace_count": int(result_review_state.get("unresolved_trace_count") or 0),
         },
-        "downstream_unavailable": ["handoff", "export"],
+        "downstream_unavailable": unavailable,
     }
     review_facing_payload = {
         "package_header": _package_header(
@@ -1123,7 +1128,7 @@ def materialize_workbench_package_commit(
             package_kind=PACKAGE_KIND_REVIEW_FACING,
             package_status=package_status,
             canonical_package_key=canonical_key,
-            source_gate=SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+            source_gate=source_gate,
         ),
         "workbench_authority_summary": _json_clone(workbench_summary),
         "trace_summary": trace_summary,
@@ -1141,15 +1146,16 @@ def materialize_workbench_package_commit(
         "warning_pass_run_ids_json": [pass_run.pass_run_id] if pass_run.status == PASS_STATUS_COMPLETED_WITH_WARNINGS else [],
         "failed_pass_run_ids_json": [pass_run.pass_run_id] if pass_run.status == PASS_STATUS_FAILED else [],
         "package_status": package_status,
-        "source_gate": SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+        "source_gate": source_gate,
         "workbench_package_commit": {
             "schema_id": "layer3.workbench_package_commit_summary.v1",
             "client_request_id": client_request_id,
             "authority_basis_hash": authority_basis_hash,
             "package_review_preview_hash": package_review_preview_hash,
             "result_review_record_ref": result_review_state.get("review_record_ref"),
-            "package_review_submit_enabled": True,
+            "package_review_submit_enabled": package_review_submit_enabled,
             "handoff_enabled": False,
+            "downstream_unavailable": unavailable,
         },
     }
     reconciliation_record = L3ReconciliationRecord(
@@ -1188,7 +1194,7 @@ def materialize_workbench_package_commit(
                     findings=artifact_inventory,
                     contradictions=[],
                     caveats=[],
-                    source_gate=SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+                    source_gate=source_gate,
                 ),
             )
         )

@@ -964,8 +964,8 @@ function canCommitPackageConstruction() {
         && authority.selected
         && authority.terminal
         && recordedApprovedResultReview()
-        && !associatedCohortReviewContext()
         && preview.package_review_preview_enabled === true
+        && preview.package_commit_enabled === true
         && preview.package_review_preview_hash
         && construction.state !== 'package_constructed'
         && construction.next_state !== 'package_constructed'

@@ -6,6 +6,8 @@ Planning-only API/state contract for the bounded associated-cohort package-const
 
 This contract does not make runtime behavior live by itself. It defines the future proof boundary for admitting associated-cohort package construction after PR `#447` read-only package-review preview/readiness.
 
+Implementation note: branch `codex/l3-cohort-package-construction-impl-p61` implements this contract as a bounded branch-local candidate by reusing the existing package-review commit route, requiring the server-recomputed package-review preview hash, and keeping package-review submit plus all downstream behavior disabled.
+
 ## Authority Order
 
 Future implementation must resolve authority in this order:
