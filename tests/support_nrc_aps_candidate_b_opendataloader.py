@@ -725,7 +725,7 @@ def run_candidate_b_cli(
     if not fixture_path.exists():
         raise RuntimeError(f"missing_fixture:{fixture_entry.get('fixture_id')}")
     fixture_id = str(fixture_entry.get("fixture_id") or "").strip()
-    image_dir = Path("images") / fixture_id
+    image_dir = raw_root / "images" / fixture_id
     preexisting_pdf_paths = {path.resolve() for path in raw_root.rglob("*.pdf")}
     convert_options = {
         "format": "json,markdown,pdf",
@@ -733,7 +733,7 @@ def run_candidate_b_cli(
         "table_method": "default",
         "image_output": "external",
         "image_format": "png",
-        "image_dir": image_dir.as_posix(),
+        "image_dir": str(image_dir),
         "replace_invalid_chars": " ",
         "use_struct_tree": True,
         "hybrid": "off",
@@ -798,7 +798,7 @@ def run_candidate_b_cli(
         "raw_json_ref": repo_rel(json_path),
         "raw_markdown_ref": repo_rel(markdown_path),
         "annotated_pdf_ref": repo_rel(annotated_pdf_path),
-        "image_dir": (raw_root / image_dir).as_posix(),
+        "image_dir": image_dir.as_posix(),
     }, combined_output)
 
 
