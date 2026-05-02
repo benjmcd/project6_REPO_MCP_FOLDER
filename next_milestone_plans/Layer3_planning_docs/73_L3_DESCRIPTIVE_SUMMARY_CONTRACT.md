@@ -1,8 +1,8 @@
 # Layer 3 Descriptive Summary Contract
 
-Status: contract companion for `72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md`, partially satisfied by PR `#411`.
+Status: contract companion for `72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md`, satisfied for lower-level method support by PR `#411` and separately extended to single-item Gate C admission by PR `#417`.
 
-This document defines the contract the PR `#411` lower-level `descriptive_summary` implementation satisfies before the existing recommendation label becomes a real supported analysis method. The contract still does not admit Layer 3 Gate C pass-entry, UI, schema/runtime/source, package, handoff, export, connector dispatch, qualitative/hybrid/RAG/vector, or full mockup behavior.
+This document defines the contract the PR `#411` lower-level `descriptive_summary` implementation satisfies before the existing recommendation label becomes a real supported analysis method. PR `#417` later admitted that method only through the existing single-item Layer 3 Gate C pass-entry path. This contract still does not admit associated-cohort Gate C pass-entry, UI, schema/runtime/source, package, handoff, export, connector dispatch, qualitative/hybrid/RAG/vector, or full mockup behavior.
 
 ## Registry Entry Shape
 
@@ -60,18 +60,18 @@ The runner must preserve:
 - existing artifact persistence helpers and storage refs
 - existing `AssumptionCheck` and `CaveatNote` row families
 - existing optional `annotation_window_id` scope if the current analysis spine supports it
-- current fail-closed Layer 3 behavior until Layer 3 pass-entry admission is separately specified
+- fail-closed Layer 3 behavior outside the separately governed PR `#417` single-item Gate C admission path
 
 The runner may create only deterministic artifacts from local dataframe content. It must not create package, handoff, connector, destination, public/signed URL, runtime snapshot, migration, or UI state.
 
 ## Layer 3 Integration
 
-Layer 3 pass-entry integration must be explicit. PR `#411` uses the first safe option; the second remains a future option only after separate governance:
+Layer 3 pass-entry integration must be explicit. PR `#411` used the first safe option; PR `#417` later satisfied the second option only for the single-item dataset-version path:
 
-- keep Layer 3 pass-entry fail-closed for `descriptive_summary` while making the method available only through the lower-level analysis API
+- first make the method available only through the lower-level analysis API
 - separately govern a Gate C admission rule that allows `descriptive_summary` pass creation for a named dataset class and proves package/review/handoff downstream compatibility
 
-Do not silently allow `descriptive_summary` through `materialize_pass_entry(...)` just because the method exists in the registry.
+Do not silently allow `descriptive_summary` through associated-cohort or broader `materialize_pass_entry(...)` paths just because the method exists in the registry or because PR `#417` admitted the single-item path.
 
 ## Proof Requirements
 
@@ -83,14 +83,14 @@ PR `#411` implementation tests cover:
 - non-time-series recommendation can select `descriptive_summary` under the contract
 - execution creates deterministic JSON artifacts and bounded assumption/caveat rows
 - unsupported/empty/degenerate input remains explicit and fail-closed or high-caveat
-- current Layer 3 pass-entry fail-closed tests are preserved unless a separate Gate C packet changes them
+- current Layer 3 pass-entry tests preserve single-item `descriptive_summary` admission and associated-cohort fail-closed behavior unless a separate cohort Gate C packet changes it
 - no schema/model/migration/UI/source/runtime widening is introduced
 
 ## Deferred Scope
 
 Still deferred after this contract:
 
-- Layer 3 Gate C admission for `descriptive_summary`
+- associated-cohort Layer 3 Gate C admission for `descriptive_summary`
 - any other quantitative method
 - qualitative/hybrid/RAG/vector execution
 - LLM-generated narrative summaries
