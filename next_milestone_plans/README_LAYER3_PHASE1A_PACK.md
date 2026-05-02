@@ -242,11 +242,17 @@ And to the selected-pass associated-cohort package-construction freeze/contract,
 
 The associated-cohort package-construction packet freezes only a bounded package-construction commit boundary after exact PR `#432` execution-start/result/status authority, PR `#438` backend/API result-review authority, PR `#443` rendered result-review UI authority, and PR `#447` read-only package-review preview/readiness authority. It treats docs `50`/`51` and the existing single-item package-construction route/helper as pattern sources, not direct cohort construction authority. PR `#450` adds this planning-only governance; PR `#451` is the bounded implementation that narrows `associated_cohort_package_construction_commit_not_admitted` only for that exact authority chain, creates one reconciliation row, three package rows, and three payload files, and still does not admit package-review submit, handoff/export, APS dispatch, external export/download, connector dispatch, schema/runtime/source widening, retry/recovery, pass-entry changes, broader UI behavior, or full mockup activation.
 
-And to the selected-pass associated-cohort package-review submit freeze/contract, which is planning-only and does not make package-review submit, handoff, or export live by itself:
+And to the selected-pass associated-cohort package-review submit freeze/contract, which is planning-only by itself and does not make package-review submit, handoff, or export live by itself:
 - `next_milestone_plans/Layer3_planning_docs/90_COHORT_PACKAGE_REVIEW_SUBMIT_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/91_COHORT_PACKAGE_REVIEW_SUBMIT_CONTRACT.md`
 
-The associated-cohort package-review submit packet freezes only a bounded operator decision boundary after exact PR `#451` package-construction authority. It treats docs `52`/`53` and the existing single-item package-review submit route/helper as pattern sources, not direct cohort submit authority. It does not implement `associated_cohort_package_review_submit_not_admitted`, package-review approval, handoff/export, APS dispatch, external export/download, connector dispatch, schema/runtime/source widening, retry/recovery, pass-entry changes, broader UI behavior, or full mockup activation by itself.
+The associated-cohort package-review submit packet freezes only a bounded operator decision boundary after exact PR `#451` package-construction authority. It treats docs `52`/`53` and the existing single-item package-review submit route/helper as pattern sources, not direct cohort submit authority. PR `#456` separately implements only that submit boundary. It does not admit handoff/export, APS dispatch, external export/download, connector dispatch, schema/runtime/source widening, retry/recovery, pass-entry changes, broader UI behavior, or full mockup activation.
+
+And to the selected-pass associated-cohort handoff/export freeze/contract, which is planning-only and does not make handoff/export, APS dispatch, external export/download, or connector behavior live by itself:
+- `next_milestone_plans/Layer3_planning_docs/92_COHORT_HANDOFF_EXPORT_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/93_COHORT_HANDOFF_EXPORT_CONTRACT.md`
+
+The associated-cohort handoff/export packet freezes only a bounded internal prepare-only decision boundary after exact PR `#456` approved package-review submit authority. It treats docs `54`/`55` and the existing single-item handoff/export route/helper as pattern sources, not direct cohort handoff/export authority. It does not implement `handoff_export_deferred_for_associated_cohort_package_review_submit`, APS dispatch, external export/download, connector dispatch, package payload copy/rewrite, package reconstruction, schema/runtime/source widening, retry/recovery, pass-entry changes, broader UI behavior, or full mockup activation by itself.
 
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
@@ -669,10 +675,10 @@ They freeze the next eligible planning boundary after merged PR `#222` as one bo
 - `44_L3_WB_RESULT_REVIEW_FREEZE.md`
 - `45_L3_WB_RESULT_REVIEW_API_AND_STATE_CONTRACT.md`
 
-### Selected-pass associated-cohort result-review branch-local planning docs
+### Selected-pass associated-cohort result-review planning docs
 
 These documents are outside the accepted Phase 1A normative control spine and outside the settled later APS family packet.
-They freeze a branch-local planning boundary after merged PR `#432` as one future bounded result-review decision for an exact selected-pass associated-cohort `descriptive_summary` terminal output. They do not make associated-cohort result review live by themselves and do not admit a new route, UI, package review, handoff/export, rerun/recovery, source/schema/runtime widening, connector dispatch, qualitative/hybrid/RAG/vector execution, or full mockup activation:
+They freeze a planning boundary after merged PR `#432` as one bounded result-review decision for an exact selected-pass associated-cohort `descriptive_summary` terminal output. They do not make associated-cohort result review live by themselves; PR `#438` separately implements only the bounded backend/API result-review path. They do not admit UI, package review, handoff/export, rerun/recovery, source/schema/runtime widening, connector dispatch, qualitative/hybrid/RAG/vector execution, or full mockup activation:
 - `82_COHORT_RESULT_REVIEW_FREEZE.md`
 - `83_COHORT_RESULT_REVIEW_CONTRACT.md`
 
