@@ -184,6 +184,7 @@ Current runtime-admission status:
 - Phase 1 has since reopened Candidate B admission as an opt-in processing engine only.
 - The existing review `/runs` selector response now exposes runtime metadata so admitted Candidate B runs are distinguishable from baseline.
 - Follow-up bounded tranches now render Candidate B / OpenDataLoader PDF in the existing review/document-trace run selectors and expose admitted Candidate B runtime runs as an explicit Workbench Compare source kind alongside the preserved bundle source path.
+- Repo-native browser coverage now verifies runtime-source Workbench Compare follow-through into the existing document-trace route for the selected admitted Candidate B runtime run/target.
 - Candidate B Trace parity, document-trace parity expansion, broad route work, DB schema/model/migration work, new run-submission UI, and broader persistence changes remain outside the current runtime-admission commits.
 
 That lane is scoped in:

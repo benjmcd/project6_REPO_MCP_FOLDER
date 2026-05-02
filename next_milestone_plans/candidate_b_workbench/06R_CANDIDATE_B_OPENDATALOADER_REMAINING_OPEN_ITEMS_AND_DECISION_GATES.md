@@ -369,6 +369,21 @@ Do not rely on ambiguous or donor-worktree prep state when validating shipped co
 
 ---
 
+## Resolved post-PR409 - runtime-source trace follow-through proof
+
+### Resolved posture
+For the explicitly reopened runtime-source Candidate B path, the repo-native browser coverage now proves the narrow follow-through behavior:
+
+- Workbench Compare can select an admitted Candidate B runtime run through `candidate_b_source_kind=runtime`.
+- The `Candidate B Runtime Trace` deep link opens the existing `/review/nrc-aps/document-trace` route for the selected Candidate B runtime run and target.
+- The browser assertion verifies route, run selector, target selector, and Candidate B / OpenDataLoader PDF identity.
+- This is follow-through coverage for an already admitted runtime row; it is not Candidate B Trace parity for admitted runtime runs and it is not document-trace parity expansion.
+
+### Hard rule
+Do not describe runtime-source follow-through proof as a new Candidate B Trace surface, a wider document-trace contract, persistence redesign, schema/model/migration work, or new run-submission UI.
+
+---
+
 ## Resolved in this pass - documentation closeout
 
 Resolved posture:
@@ -376,7 +391,7 @@ Resolved posture:
 - active operator/front-door docs now point at one canonical flow:
   - `frontend_UI_plans/README.md` = front-door index
   - `frontend_UI_plans/nrc_aps_review_ui_startup_and_smoke_test.md` = explicit backend binding and route bring-up
-  - `frontend_UI_plans/wb-compare-validation.md` = same-checkout prep, `tools/validate_wb_prep.py`, populated compare/Candidate B Trace validation, and explicit runtime-source Candidate B validation
+  - `frontend_UI_plans/wb-compare-validation.md` = same-checkout prep, `tools/validate_wb_prep.py`, populated compare/Candidate B Trace validation, explicit runtime-source Candidate B validation, and runtime-source Workbench Compare follow-through into existing document-trace
   - `frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md` = broader manual validation pass after startup and prep succeed
 - this pack stays focused on Candidate B planning/control rather than duplicated operator walkthrough steps
 

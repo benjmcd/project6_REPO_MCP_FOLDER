@@ -29,6 +29,7 @@ Use this document for:
 - `tools/validate_wb_prep.py`
 - populated Workbench Compare validation
 - Candidate B Trace follow-through from compare
+- runtime-source Workbench Compare follow-through into existing document-trace
 
 Use [frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/frontend_UI_plans/nrc_aps_frontend_ui_operator_validation_guide.md) for the broader manual validation pass after launch and prep succeed.
 
@@ -130,7 +131,7 @@ After automated tests are green, verify manually:
 12. direct, derived-only, non-equivalent, and missing states are visually distinct
 13. baseline and Candidate A deep links open the correct document-trace routes
 14. bundle-sourced Candidate B deep links open the separate `Candidate B Trace` page rather than `document-trace`
-15. runtime-sourced Candidate B deep links use the existing `document-trace` route for the admitted Candidate B runtime target and do not masquerade as Candidate B Trace parity
+15. runtime-sourced Candidate B deep links use the existing `document-trace` route for the admitted Candidate B runtime target and do not masquerade as Candidate B Trace parity; current repo-native browser coverage clicks `Candidate B Runtime Trace` and asserts the selected Candidate B runtime run/target in document-trace
 16. when annotated PDF output is present, bundle-sourced `Candidate B Trace` defaults to `annotated_pdf` rather than `summary`
 17. the Candidate B annotated PDF renders inline in the page rather than forcing a download response
 18. Candidate B Trace shows artifact availability/status affordances for annotated PDF, raw JSON, and raw Markdown
@@ -153,6 +154,7 @@ The compare page may read already-existing local archived bundles, but test and 
 The separate same-corpus prep step may seed baseline, Candidate A, and Candidate B runtime review roots for operator validation, but that prep step is outside validate-only test execution and must use the dedicated fixture-corpus seed tool rather than the 69-document local-corpus demo runner.
 The canonical same-checkout prep check is now `tools/validate_wb_prep.py`; it is validate-only, defaults to the bundle/Candidate B Trace source path, supports explicit runtime-source validation by run id, fails closed on empty or incoherent prep state, and should gate populated operator validation rather than ad hoc manual prep guesses.
 Prep validation now also emits an additive `operator_handoff` block with selected-source rerun commands on success, attempted-validation plus recovery guidance on failure, canonical bundle/runtime prep command sequences, and the runtime Candidate B boundary reminder; this is operator metadata only and does not seed, generate, or promote Candidate B Trace parity for runtime-sourced runs.
+The repo-native browser fixture now covers both preserved bundle-source Candidate B Trace follow-through and runtime-source Workbench Compare follow-through into existing document-trace; the runtime-source assertion proves route/run/target identity only, not Candidate B Trace parity or document-trace parity expansion.
 The concrete Python executable in `operator_handoff` is the checkout-resolved Phase 7A interpreter required by `tools/seed_wb_compare.py`; use the emitted command when validating from a git worktree where the relative path to `.venvs\phase7a-py311\Scripts\python.exe` differs from the root-checkout examples above.
 
 Existing review and document-trace regression suites must continue to pass after implementation, including:
