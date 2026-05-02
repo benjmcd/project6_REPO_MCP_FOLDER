@@ -184,6 +184,12 @@ The analysis method registry packet admits only governance for the existing wrap
 
 PR `#316` separately implements that current-methods registry in `backend/app/services/analysis.py` without adding methods or changing execution behavior. New quantitative methods, qualitative/hybrid/RAG/vector expansion, source/schema/runtime widening, UI activation, and full mockup behavior remain deferred until separately governed.
 
+And to the branch-local Layer 3 descriptive-summary governance packet, which is planning-only by itself and freezes one future method-expansion candidate before any implementation:
+- `next_milestone_plans/Layer3_planning_docs/72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md`
+
+The descriptive-summary packet admits only governance for deciding whether the existing `descriptive_summary` recommendation label may become a deterministic wrapped quantitative method. The docs do not implement the method, add it to `ANALYSIS_METHOD_REGISTRY`, change recommendation or execution behavior, change Layer 3 pass-entry behavior, widen schema/runtime/source scope, add qualitative/hybrid/RAG/vector behavior, or activate UI/full mockup behavior.
+
 And to the Gate D APS validate-only-gates continuation freeze packet now landed on current `main` for the bounded next verification continuation beyond the landed review-packet boundary:
 - `next_milestone_plans/Layer3_planning_docs/21_GATED_APS_VALIDATE_ONLY_GATES_FREEZE.md`
 
