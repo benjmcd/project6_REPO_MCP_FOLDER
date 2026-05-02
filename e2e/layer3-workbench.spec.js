@@ -1378,42 +1378,41 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
     result_review_state: 'execution_result_review_approved',
     result_review_record_ref: reviewResponse.review_record_ref,
     package_review_preview_enabled: true,
-    package_commit_enabled: false,
+    package_commit_enabled: true,
     package_review_enabled: false,
     candidate_package_kinds: [
       {
         package_kind: 'canonical_internal',
         preview_only: true,
-        package_commit_enabled: false,
+        package_commit_enabled: true,
         package_review_submit_enabled: false,
         handoff_enabled: false,
-        readiness_reason: 'candidate family is preview-only for associated-cohort review; package construction is deferred',
+        readiness_reason: 'candidate family is eligible for bounded package construction commit',
       },
       {
         package_kind: 'user_facing',
         preview_only: true,
-        package_commit_enabled: false,
+        package_commit_enabled: true,
         package_review_submit_enabled: false,
         handoff_enabled: false,
-        readiness_reason: 'candidate family is preview-only for associated-cohort review; package construction is deferred',
+        readiness_reason: 'candidate family is eligible for bounded package construction commit',
       },
       {
         package_kind: 'review_facing',
         preview_only: true,
-        package_commit_enabled: false,
+        package_commit_enabled: true,
         package_review_submit_enabled: false,
         handoff_enabled: false,
-        readiness_reason: 'candidate family is preview-only for associated-cohort review; package construction is deferred',
+        readiness_reason: 'candidate family is eligible for bounded package construction commit',
       },
     ],
     package_owner_compatibility: {
-      status: 'associated_cohort_preview_only_construction_deferred',
+      status: 'associated_cohort_construction_preconditions_satisfied',
       preview_candidate_projection_compatible: true,
-      construction_compatible_with_current_workbench_state: false,
+      construction_compatible_with_current_workbench_state: true,
     },
     blocked_reasons: [],
     downstream_unavailable: [
-      'package_commit',
       'package_review_submit',
       'handoff',
       'export',
@@ -1439,7 +1438,84 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
       current_gate: 'package',
       persistence_mode: 'read_only_package_review_preview',
       downstream_unavailable: [
-        'package_commit',
+        'package_review_submit',
+        'handoff',
+        'export',
+        'aps_handoff',
+        'external_export_download',
+        'connector',
+      ],
+    },
+  };
+  const packageCommitResponse = {
+    schema_id: 'layer3.package_construction_commit.v1',
+    status: 'committed',
+    session_id: sessionId,
+    analysis_plan_id: analysisPlanId,
+    pass_run_id: passRunId,
+    preview_identity: {
+      preview_id: previewId,
+      preview_hash: previewHash,
+    },
+    analysis_run_id: analysisRunId,
+    result_review_record_ref: reviewResponse.review_record_ref,
+    package_review_preview_hash: packagePreviewResponse.package_review_preview_hash,
+    reconciliation_record_id: 'recon-cohort-ui',
+    output_packages: [
+      {
+        output_package_id: 'pkg-cohort-canonical',
+        package_kind: 'canonical_internal',
+        status: 'package_complete',
+        payload_ref: 'artifact://cohort-canonical-package',
+        payload_hash: 'a'.repeat(64),
+      },
+      {
+        output_package_id: 'pkg-cohort-user',
+        package_kind: 'user_facing',
+        status: 'package_complete',
+        payload_ref: 'artifact://cohort-user-package',
+        payload_hash: 'b'.repeat(64),
+      },
+      {
+        output_package_id: 'pkg-cohort-review',
+        package_kind: 'review_facing',
+        status: 'package_complete',
+        payload_ref: 'artifact://cohort-review-package',
+        payload_hash: 'c'.repeat(64),
+      },
+    ],
+    package_kinds: ['canonical_internal', 'user_facing', 'review_facing'],
+    payload_refs: [
+      'artifact://cohort-canonical-package',
+      'artifact://cohort-user-package',
+      'artifact://cohort-review-package',
+    ],
+    payload_hashes: ['a'.repeat(64), 'b'.repeat(64), 'c'.repeat(64)],
+    pass_scope: 'quantitative_associated_cohort_dataset_version',
+    method: 'descriptive_summary',
+    source_gate: '78_COHORT_FREEZE',
+    package_construction_source_gate: '88_COHORT_PACKAGE_CONSTRUCTION_FREEZE',
+    source_shape: 'aligned_wide_table',
+    source_dataset_version_ids: ['dv-cohort-001', 'dv-cohort-002'],
+    reviewed_output_item_summary: {
+      reviewed_item_count: 1,
+      unresolved_trace_count: 0,
+    },
+    package_review_submit_enabled: false,
+    handoff_enabled: false,
+    downstream_unavailable: [
+      'package_review_submit',
+      'handoff',
+      'export',
+      'aps_handoff',
+      'external_export_download',
+      'connector',
+    ],
+    next_state: 'package_constructed',
+    authority_rail: {
+      current_gate: 'package',
+      persistence_mode: 'durable_package_construction',
+      downstream_unavailable: [
         'package_review_submit',
         'handoff',
         'export',
@@ -1451,6 +1527,8 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
   };
   let reviewPayload;
   let packagePreviewPayload;
+  let packageCommitPayload;
+  let packageCommitted = false;
   await page.route('**/api/v1/layer3/execution/result/review', async (route) => {
     reviewPayload = route.request().postDataJSON();
     await route.fulfill({
@@ -1467,12 +1545,76 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
       body: JSON.stringify(packagePreviewResponse),
     });
   });
+  await page.route('**/api/v1/layer3/package/review/commit', async (route) => {
+    packageCommitPayload = route.request().postDataJSON();
+    packageCommitted = true;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(packageCommitResponse),
+    });
+  });
   await page.route(`**/api/v1/layer3/session/${sessionId}`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
         ...summary,
+        current_gate: 'package',
+        package_review_preview: packagePreviewResponse,
+        package_construction: packageCommitted
+          ? {
+              schema_id: 'layer3.package_construction_commit_state.v1',
+              available: false,
+              state: 'package_constructed',
+              reconciliation_record_id: packageCommitResponse.reconciliation_record_id,
+              output_package_ids: packageCommitResponse.output_packages.map((pkg) => pkg.output_package_id),
+              package_kinds: packageCommitResponse.package_kinds,
+              package_commit_enabled: false,
+              package_review_submit_enabled: false,
+              handoff_enabled: false,
+              downstream_unavailable: packageCommitResponse.downstream_unavailable,
+            }
+          : {
+              schema_id: 'layer3.package_construction_commit_state.v1',
+              available: true,
+              state: 'package_commit_ready',
+              reconciliation_record_id: null,
+              output_package_ids: [],
+              package_kinds: ['canonical_internal', 'user_facing', 'review_facing'],
+              package_commit_enabled: true,
+              package_review_submit_enabled: false,
+              handoff_enabled: false,
+              downstream_unavailable: ['package_review_submit', 'handoff', 'export'],
+            },
+        package_review_submit: packageCommitted
+          ? {
+              schema_id: 'layer3.package_review_submit_state.v1',
+              available: false,
+              state: 'package_review_submit_unavailable',
+              blocked_reason: 'package_review_submit_deferred_for_associated_cohort',
+              reconciliation_record_id: packageCommitResponse.reconciliation_record_id,
+              output_package_ids: packageCommitResponse.output_packages.map((pkg) => pkg.output_package_id),
+              package_kinds: packageCommitResponse.package_kinds,
+              payload_hashes: packageCommitResponse.payload_hashes,
+              package_review_submit_enabled: false,
+              handoff_enabled: false,
+              export_enabled: false,
+              downstream_unavailable: packageCommitResponse.downstream_unavailable,
+            }
+          : {
+              schema_id: 'layer3.package_review_submit_state.v1',
+              available: false,
+              state: 'package_review_submit_unavailable',
+              blocked_reason: 'package_not_constructed',
+              package_review_submit_enabled: false,
+              handoff_enabled: false,
+              export_enabled: false,
+              downstream_unavailable: ['package_review_submit', 'handoff', 'export'],
+            },
+        downstream_unavailable: packageCommitted
+          ? packageCommitResponse.downstream_unavailable
+          : ['package_review_submit', 'handoff', 'export'],
         execution_result_review: {
           schema_id: 'layer3.execution_result_review_state.v1',
           review_record_ref: reviewResponse.review_record_ref,
@@ -1571,7 +1713,44 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
   expect(packagePreviewPayload).not.toHaveProperty('reviewed_output_items');
   expect(packagePreviewPayload).not.toHaveProperty('package');
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_preview_ready');
-  await expect(page.locator('#package-review-preview-panel')).toContainText('commit deferred');
+  await expect(page.locator('#package-review-preview-panel')).toContainText('commit ready');
+  await expect(page.locator('#package-construction-commit')).toBeEnabled();
+
+  const packageCommitResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/package/review/commit'));
+  await page.locator('#package-construction-commit').click();
+  const packageCommit = await expectJson(await packageCommitResponsePromise);
+  expect(packageCommit.schema_id).toBe('layer3.package_construction_commit.v1');
+  expect(packageCommit.package_review_submit_enabled).toBe(false);
+  expect(packageCommit.package_construction_source_gate).toBe('88_COHORT_PACKAGE_CONSTRUCTION_FREEZE');
+  expect(packageCommit.downstream_unavailable).toEqual([
+    'package_review_submit',
+    'handoff',
+    'export',
+    'aps_handoff',
+    'external_export_download',
+    'connector',
+  ]);
+  expectOnlyPayloadKeys(packageCommitPayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'analysis_run_id',
+    'result_review_record_ref',
+    'package_review_preview_hash',
+    'expected_package_kinds',
+  ]);
+  expect(packageCommitPayload.result_review_record_ref).toBe(reviewResponse.review_record_ref);
+  expect(packageCommitPayload.package_review_preview_hash).toBe(packagePreviewResponse.package_review_preview_hash);
+  expect(packageCommitPayload.expected_package_kinds).toEqual(['canonical_internal', 'user_facing', 'review_facing']);
+  expect(packageCommitPayload).not.toHaveProperty('package_review_submit');
+  expect(packageCommitPayload).not.toHaveProperty('handoff');
+  expect(packageCommitPayload).not.toHaveProperty('export');
+
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_constructed');
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_submit_unavailable');
   await expect(page.locator('#package-construction-commit')).toBeDisabled();
   await expect(page.locator('#package-review-submit')).toBeDisabled();
   await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();

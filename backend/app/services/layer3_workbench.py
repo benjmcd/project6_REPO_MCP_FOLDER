@@ -47,6 +47,8 @@ from app.services.layer3_package_entry import (
     PACKAGE_KIND_CANONICAL_INTERNAL,
     PACKAGE_KIND_REVIEW_FACING,
     PACKAGE_KIND_USER_FACING,
+    SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
+    SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
     Layer3PackageEntryError,
     materialize_workbench_package_commit,
 )
@@ -768,7 +770,6 @@ PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
     "export",
 )
 COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
-    "package_commit",
     "package_review_submit",
     "handoff",
     "export",
@@ -786,6 +787,7 @@ PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = (
     "handoff",
     "export",
 )
+COHORT_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE = COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
 PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE = ("handoff", "export")
 HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE = ("aps_handoff", "external_export", "downstream_dispatch")
 APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE = (
@@ -2963,6 +2965,23 @@ def _pass_run_has_admitted_associated_cohort_execution(pass_run: L3PassRun) -> b
     )
 
 
+def _review_state_is_admitted_associated_cohort(review_state: dict[str, Any] | None) -> bool:
+    if not isinstance(review_state, dict):
+        return False
+    source_dataset_version_ids = review_state.get("source_dataset_version_ids")
+    return bool(
+        review_state.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT
+        and review_state.get("pass_scope") == PASS_SCOPE_QUANT_ASSOCIATED_COHORT
+        and review_state.get("selected_method_name") == "descriptive_summary"
+        and review_state.get("source_gate") == SOURCE_GATE_COHORT_DESC_FREEZE
+        and isinstance(source_dataset_version_ids, list)
+        and len(source_dataset_version_ids) > 0
+        and review_state.get("cohort_shape") == COHORT_SHAPE_ALIGNED_WIDE_TABLE
+        and review_state.get("requested_method_name") == "descriptive_summary"
+        and review_state.get("requested_method_source") == COHORT_REQUESTED_METHOD_SOURCE
+    )
+
+
 def _ensure_result_status_downstream_source_admitted(
     status_body: dict[str, Any],
     *,
@@ -4436,18 +4455,14 @@ def _package_review_preview_summary(review_state: dict[str, Any] | None) -> dict
         and int(review_state.get("unresolved_trace_count") or 0) == 0
     )
     associated_cohort = bool(
-        isinstance(review_state, dict)
-        and (
-            review_state.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT
-            or review_state.get("pass_scope") == PASS_SCOPE_QUANT_ASSOCIATED_COHORT
-        )
+        _review_state_is_admitted_associated_cohort(review_state)
     )
     downstream_unavailable = (
         COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
         if associated_cohort
         else PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
     )
-    package_commit_enabled = bool(approved and not associated_cohort)
+    package_commit_enabled = bool(approved)
     return {
         "schema_id": PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID,
         "available": approved,
@@ -4489,13 +4504,17 @@ def _package_owner_compatibility(
     session_summary = session.summary_json or {}
     pass_summary = pass_run.summary_json or {}
     required_inputs = {
-        "phase1a_loading_closure": isinstance(session_summary.get("phase1a_loading_closure"), dict),
-        "pass_entry": isinstance(session_summary.get("pass_entry"), dict),
         "selected_pass_output_metadata": output_metadata_summary.get("readable") is True,
         "approved_result_review": review_state.get("review_state") == EXECUTION_RESULT_REVIEW_APPROVED_STATE,
     }
+    if not associated_cohort_preview:
+        required_inputs = {
+            "phase1a_loading_closure": isinstance(session_summary.get("phase1a_loading_closure"), dict),
+            "pass_entry": isinstance(session_summary.get("pass_entry"), dict),
+            **required_inputs,
+        }
     missing_inputs = sorted(key for key, present in required_inputs.items() if not present)
-    construction_compatible = bool(not missing_inputs and not associated_cohort_preview)
+    construction_compatible = bool(not missing_inputs)
     return {
         "schema_id": "layer3.package_owner_compatibility.v1",
         "owner_service": "layer3_package_entry.materialize_package_entry",
@@ -4505,6 +4524,7 @@ def _package_owner_compatibility(
             "read_only_selected_pass_output_metadata",
         ],
         "materialize_package_entry_callable": False,
+        "workbench_package_commit_callable": construction_compatible,
         "preview_candidate_projection_compatible": True,
         "construction_compatible_with_current_workbench_state": construction_compatible,
         "missing_owner_service_inputs": missing_inputs,
@@ -4515,16 +4535,16 @@ def _package_owner_compatibility(
         "source_preview_id": pass_summary.get("source_preview_id"),
         "source_preview_hash": pass_summary.get("source_preview_hash"),
         "status": (
-            "associated_cohort_preview_only_construction_deferred"
-            if associated_cohort_preview
+            "associated_cohort_construction_preconditions_satisfied"
+            if associated_cohort_preview and construction_compatible
             else
             "construction_preconditions_satisfied_but_call_deferred"
             if construction_compatible
             else "construction_preconditions_missing"
         ),
         "reason": (
-            "Associated-cohort package-review preview is admitted as read-only; package construction remains deferred."
-            if associated_cohort_preview
+            "Associated-cohort package construction is admitted for this exact approved descriptive cohort review."
+            if associated_cohort_preview and construction_compatible
             else
             "Current state can be assessed against the owner service, but this endpoint remains read-only."
             if construction_compatible
@@ -5246,6 +5266,28 @@ def _package_construction_summary(
         blocked_reason = None
         if not constructed:
             blocked_reason = "unexpected_package_state" if unexpected_package_kinds else "partial_package_state"
+        reconciliation_summary = reconciliation.summary_json if reconciliation is not None else {}
+        if not isinstance(reconciliation_summary, dict):
+            reconciliation_summary = {}
+        commit_summary = reconciliation_summary.get("workbench_package_commit")
+        if not isinstance(commit_summary, dict):
+            commit_summary = {}
+        package_review_submit_enabled = bool(
+            constructed
+            and package_review_submit is None
+            and commit_summary.get("package_review_submit_enabled", True) is True
+        )
+        downstream_unavailable = (
+            commit_summary.get("downstream_unavailable")
+            if constructed
+            else list(PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE)
+        )
+        if not isinstance(downstream_unavailable, list):
+            downstream_unavailable = (
+                list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE)
+                if package_review_submit_enabled
+                else list(PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE)
+            )
         return {
             "schema_id": PACKAGE_CONSTRUCTION_COMMIT_STATE_SCHEMA_ID,
             "available": False,
@@ -5256,11 +5298,9 @@ def _package_construction_summary(
             "package_kinds": [package.package_kind for package in review_packages],
             "unexpected_package_kinds": unexpected_package_kinds,
             "package_commit_enabled": False,
-            "package_review_submit_enabled": constructed and package_review_submit is None,
+            "package_review_submit_enabled": package_review_submit_enabled,
             "handoff_enabled": False,
-            "downstream_unavailable": list(
-                PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE if constructed else PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE
-            ),
+            "downstream_unavailable": list(downstream_unavailable),
         }
     preview_available = bool(package_review_preview_state.get("available"))
     package_commit_enabled = bool(package_review_preview_state.get("package_commit_enabled", preview_available))
@@ -5473,7 +5513,7 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
         if associated_cohort_preview
         else PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
     )
-    package_commit_enabled = not associated_cohort_preview
+    package_commit_enabled = True
     package_review_preview_hash = _package_review_preview_hash(
         session_id=session_id,
         analysis_plan_id=analysis_plan_id,
@@ -5613,11 +5653,6 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             http_status=409,
             next_allowed_actions=["inspect_execution_result_status"],
         )
-    _ensure_result_status_downstream_source_admitted(
-        status_body,
-        error_code="associated_cohort_package_construction_commit_not_admitted",
-        action_label="Package construction commit",
-    )
     output_metadata_summary = status_body.get("output_metadata_summary")
     if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
         raise Layer3WorkbenchError(
@@ -5659,6 +5694,24 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    associated_cohort_commit = False
+    if status_body.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT:
+        associated_cohort_commit = _associated_cohort_result_source_admitted(
+            status_body=status_body,
+            pass_run=pass_run,
+            output_metadata_summary=output_metadata_summary,
+        )
+        if not associated_cohort_commit:
+            raise Layer3WorkbenchError(
+                "associated_cohort_package_construction_commit_not_admitted",
+                (
+                    "Package construction commit is admitted only for exact selected-pass descriptive "
+                    "associated-cohort result/status output in this tranche."
+                ),
+                status="blocked",
+                http_status=409,
+                next_allowed_actions=["inspect_execution_result_status"],
+            )
     review_state = _execution_result_review_from_pass_run(pass_run)
     if (
         review_state is None
@@ -5727,6 +5780,17 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             next_allowed_actions=["refresh_package_review_preview"],
         )
 
+    source_gate = (
+        SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE
+        if associated_cohort_commit
+        else SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE
+    )
+    package_review_submit_enabled = not associated_cohort_commit
+    downstream_unavailable = (
+        COHORT_PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE
+        if associated_cohort_commit
+        else PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+    )
     try:
         result = materialize_workbench_package_commit(
             db,
@@ -5739,6 +5803,9 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             package_review_preview_hash=supplied_package_preview_hash,
             output_metadata_summary=output_metadata_summary,
             client_request_id=request_id,
+            source_gate=source_gate,
+            package_review_submit_enabled=package_review_submit_enabled,
+            downstream_unavailable=downstream_unavailable,
         )
     except Layer3PackageEntryError as exc:
         raise Layer3WorkbenchError(
@@ -5778,15 +5845,25 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
         "package_kinds": [package.package_kind for package in packages],
         "payload_refs": [package.payload_ref for package in packages],
         "payload_hashes": [package.payload_hash for package in packages],
-        "package_review_submit_enabled": True,
+        "pass_scope": output_metadata_summary.get("pass_scope"),
+        "method": output_metadata_summary.get("selected_method_name"),
+        "source_gate": output_metadata_summary.get("source_gate"),
+        "package_construction_source_gate": source_gate,
+        "source_shape": output_metadata_summary.get("cohort_shape"),
+        "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
+        "reviewed_output_item_summary": {
+            "reviewed_item_count": len(review_state.get("reviewed_output_items") or []),
+            "unresolved_trace_count": int(review_state.get("unresolved_trace_count") or 0),
+        },
+        "package_review_submit_enabled": package_review_submit_enabled,
         "handoff_enabled": False,
-        "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+        "downstream_unavailable": list(downstream_unavailable),
         "next_state": PACKAGE_CONSTRUCTED_STATE,
         "authority_rail": _authority_rail(
             session_id=session_id,
             current_gate="package",
             persistence_mode="durable_package_construction",
-            downstream_unavailable=PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
+            downstream_unavailable=downstream_unavailable,
             execution_enabled=False,
             package_review_enabled=False,
         ),
@@ -8748,7 +8825,31 @@ def _package_review_submit_summary(
         }
 
     ordered_packages = _packages_in_review_order(packages)
+    reconciliation_summary = reconciliation.summary_json if reconciliation is not None else {}
+    if not isinstance(reconciliation_summary, dict):
+        reconciliation_summary = {}
+    commit_summary = reconciliation_summary.get("workbench_package_commit")
+    if not isinstance(commit_summary, dict):
+        commit_summary = {}
     recorded_submit = _package_review_submit_from_reconciliation(reconciliation)
+    if recorded_submit is None and commit_summary.get("package_review_submit_enabled", True) is not True:
+        downstream_unavailable = commit_summary.get("downstream_unavailable")
+        if not isinstance(downstream_unavailable, list):
+            downstream_unavailable = list(PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE)
+        return {
+            "schema_id": PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID,
+            "available": False,
+            "state": PACKAGE_REVIEW_SUBMIT_UNAVAILABLE_STATE,
+            "blocked_reason": "package_review_submit_deferred_for_associated_cohort",
+            "reconciliation_record_id": reconciliation_record_id,
+            "output_package_ids": [package.output_package_id for package in ordered_packages],
+            "package_kinds": [package.package_kind for package in ordered_packages],
+            "payload_hashes": [package.payload_hash for package in ordered_packages],
+            "package_review_submit_enabled": False,
+            "handoff_enabled": False,
+            "export_enabled": False,
+            "downstream_unavailable": list(downstream_unavailable),
+        }
     if recorded_submit is not None:
         downstream_unavailable = _package_review_submit_downstream_unavailable(
             str(recorded_submit.get("package_review_state") or "")
