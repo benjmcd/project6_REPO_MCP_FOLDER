@@ -184,7 +184,7 @@ The analysis method registry packet admits only governance for the existing wrap
 
 PR `#316` separately implements that current-methods registry in `backend/app/services/analysis.py` without adding methods or changing execution behavior. New quantitative methods, qualitative/hybrid/RAG/vector expansion, source/schema/runtime widening, UI activation, and full mockup behavior remain deferred until separately governed.
 
-And to the branch-local Layer 3 descriptive-summary governance packet, which is planning-only by itself and freezes one future method-expansion candidate before any implementation:
+And to the current-main Layer 3 descriptive-summary governance packet from PR `#402`, which is planning-only by itself and freezes one future method-expansion candidate before any implementation:
 - `next_milestone_plans/Layer3_planning_docs/72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md`
 
