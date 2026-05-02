@@ -1,8 +1,8 @@
 # Layer 3 Cohort Result Review Freeze
 
-Status: planning-only freeze for a future selected-pass associated-cohort `descriptive_summary` result-review tranche after PR `#432`.
+Status: governing planning-only freeze for the selected-pass associated-cohort `descriptive_summary` result-review tranche after PR `#432`; PR `#438` later implemented this exact bounded backend/API slice on current `main`.
 
-This document does not change code, make associated-cohort result review live, change UI behavior, widen schema/runtime/source scope, or activate package, handoff, export, connector, qualitative, hybrid, RAG, vector, retry/recovery, or full mockup behavior. It freezes only the next eligible backend/API decision boundary after the PR `#432` selected-pass associated-cohort execution-start/result-status path.
+This document does not change code, make associated-cohort result review live by itself, change UI behavior, widen schema/runtime/source scope, or activate package, handoff, export, connector, qualitative, hybrid, RAG, vector, retry/recovery, or full mockup behavior. It freezes only the backend/API decision boundary after the PR `#432` selected-pass associated-cohort execution-start/result-status path. PR `#438` is the separate implementation authority for that boundary.
 
 ## Decision
 
@@ -10,11 +10,11 @@ The next adequate tranche is:
 
 > Admit one bounded operator result-review decision for one terminal selected-pass associated-cohort `descriptive_summary` result that was produced by the exact PR `#432` execution-start path and is available through the existing `/api/v1/layer3/execution/result/status` authority.
 
-This is the narrowest useful step because current main can execute and inspect the exact selected associated-cohort result, but `/api/v1/layer3/execution/result/review` still fails closed with `associated_cohort_result_review_not_admitted`.
+This was the narrowest useful step because current main after PR `#432` could execute and inspect the exact selected associated-cohort result, while `/api/v1/layer3/execution/result/review` still failed closed with `associated_cohort_result_review_not_admitted`. PR `#438` later implemented this exact backend/API admission while preserving the no-go boundaries below.
 
 ## Current Live Boundary
 
-Current repo authority for this planning branch was checked against `project6-origin/main` at `5fc75c42` after PR `#433`.
+Current repo authority for the original planning branch was checked against `project6-origin/main` at `5fc75c42` after PR `#433`. Current `main` later includes PR `#438`, which implemented this exact result-review backend/API boundary.
 
 Live facts this freeze must preserve:
 
@@ -23,10 +23,10 @@ Live facts this freeze must preserve:
 - PR `#424`/`#425` admit only service-owned associated-cohort `descriptive_summary` through `materialize_pass_entry(...)` with exact `formation_basis_json["requested_method_name"] == "descriptive_summary"` metadata.
 - PR `#432` admits only selected-pass associated-cohort `descriptive_summary` execution-start/result-status over existing backend/API surfaces.
 - `backend/app/services/layer3_workbench.py::execution_result_status(...)` can inspect the admitted selected associated-cohort result while keeping `result_review_enabled`, `package_review_enabled`, and `handoff_enabled` false.
-- `backend/app/services/layer3_workbench.py::execution_result_review(...)` currently calls `_ensure_result_status_downstream_source_admitted(...)`, which blocks associated-cohort result review with `associated_cohort_result_review_not_admitted`.
-- `backend/tests/test_layer3_api.py::test_layer3_api_selected_cohort_execution_start_and_status_are_bounded` proves this current blocked review boundary.
+- Before PR `#438`, `backend/app/services/layer3_workbench.py::execution_result_review(...)` called `_ensure_result_status_downstream_source_admitted(...)`, which blocked associated-cohort result review with `associated_cohort_result_review_not_admitted`.
+- PR `#438` later added the exact result-review admission gate for this freeze while preserving package, handoff, export/download, UI, schema/runtime/source, connector, qualitative/hybrid/RAG/vector, retry/recovery, pass-entry, and full mockup no-go boundaries.
 
-## Admitted Future Implementation Scope
+## Admitted Implementation Scope
 
 An implementation PR governed by this freeze may touch only:
 
