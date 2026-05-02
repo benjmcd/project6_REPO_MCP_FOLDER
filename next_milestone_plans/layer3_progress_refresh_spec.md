@@ -14,6 +14,8 @@ If a future checkout carries additional planning-only workbench prep beyond curr
 If a future checkout carries additional planning-only qualitative single-item companion prep beyond current `main`, preserve it as branch-local until GitHub and current `main` both confirm it. The current `main` version of `27_L3_QUAL1_INPUTS.md` is already merged planning-only prep rather than an open review state.
 Current `main` includes docs `72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md` and `73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md` from PR `#402` as planning-only `descriptive_summary` governance. Do not treat those docs as method admission, `ANALYSIS_METHOD_REGISTRY` expansion, recommendation or execution behavior change, Gate C pass-entry change, schema/runtime/source widening, UI activation, qualitative/hybrid/RAG/vector behavior, or full mockup activation. If a future checkout carries revisions beyond PR `#402`, preserve those revisions as branch-local until GitHub and current `main` both confirm them.
 
+This active progress packet also includes `74_L3_DEFERRED_IMPLEMENTATION_PLAYBOOK.md` as planning-only operational guidance. Use it to evaluate activation requirements, implementation sequencing, proof gates, and stop conditions before any deferred item or future `descriptive_summary` implementation tranche is selected.
+
 ## Canonical Inputs
 
 ### GitHub authority for state
@@ -120,6 +122,7 @@ When present in the current checkout, also read:
 - `next_milestone_plans/Layer3_planning_docs/71_L3_ANALYSIS_METHOD_REGISTRY_CONTRACT.md`
 - `next_milestone_plans/Layer3_planning_docs/72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md`
+- `next_milestone_plans/Layer3_planning_docs/74_L3_DEFERRED_IMPLEMENTATION_PLAYBOOK.md`
 - `backend/app/services/layer3_aps_handoff.py`
 - `backend/tests/test_layer3_aps_handoff.py`
 - `backend/app/services/layer3_workbench.py`

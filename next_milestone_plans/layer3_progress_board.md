@@ -7,6 +7,8 @@ It tracks the bounded Layer3 Phase1A through APS validate-only runtime/report-re
 
 Current `main` additionally includes docs `72`/`73` from PR `#402` as planning-only descriptive-summary governance. They do not make `descriptive_summary` a supported method, do not add it to `ANALYSIS_METHOD_REGISTRY`, do not change recommendation, execution, Gate C pass-entry, UI, schema, runtime, source, package, handoff, or export behavior, and must not be rendered as implementation without a later merged implementation PR.
 
+This active progress packet also includes `74_L3_DEFERRED_IMPLEMENTATION_PLAYBOOK.md` as planning-only operational guidance for activating and implementing future deferred items. It does not select a new lane, alter the settled later-APS decision, change slice counts, or make any deferred behavior live.
+
 It is intentionally scoped to:
 - the landed milestone chain from Phase 1A feeder-ledger foundation through the bounded dedicated validate-only runtime/report-ref implementation lane
 - the landed promotion continuation freeze from PR `#145`, its docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, and the post-PR147 progress-packet closeout from PR `#148`
@@ -555,7 +557,7 @@ Refresh this board against:
 - `next_milestone_plans/Layer3_planning_docs/01_IMPLEMENTATION_ENTRY_BASELINE_REV2.md`
 - `next_milestone_plans/Layer3_planning_docs/02_PHASE1A_IMPLEMENTATION_PREP_SPEC_REV2.md`
 - `next_milestone_plans/Layer3_planning_docs/03_PHASE1A_VALIDATION_AND_EXECUTION_PLAN_REV2.md`
-- `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md`
+- `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md` through `74_L3_DEFERRED_IMPLEMENTATION_PLAYBOOK.md`
 - `backend/app/services/review_nrc_aps_graph.py`
 - `backend/app/services/nrc_aps_validate_only_gates_contract.py`
 - `backend/app/services/nrc_aps_validate_only_gates.py`

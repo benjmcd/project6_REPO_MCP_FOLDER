@@ -155,6 +155,7 @@
       "next_milestone_plans/Layer3_planning_docs/71_L3_ANALYSIS_METHOD_REGISTRY_CONTRACT.md",
       "next_milestone_plans/Layer3_planning_docs/72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/74_L3_DEFERRED_IMPLEMENTATION_PLAYBOOK.md",
       "next_milestone_plans/progress-ui-spec.md"
     ]
   },
@@ -339,14 +340,16 @@
       "status": "Planning-only boundary. A separate implementation PR is required before descriptive_summary can become supported, enter ANALYSIS_METHOD_REGISTRY, or pass Gate C execution admission.",
       "governing_docs_required": [
         "next_milestone_plans/Layer3_planning_docs/72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md",
-        "next_milestone_plans/Layer3_planning_docs/73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md"
+        "next_milestone_plans/Layer3_planning_docs/73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/74_L3_DEFERRED_IMPLEMENTATION_PLAYBOOK.md"
       ]
     },
     "required_before_next_functional_slice": [
       "Do not treat docs 72/73 as live descriptive_summary method support by themselves.",
       "Do not add descriptive_summary to ANALYSIS_METHOD_REGISTRY without separate implementation proof.",
       "Preserve current recommendation behavior and Gate C pass-entry fail-closed behavior unless a future implementation explicitly and narrowly changes them.",
-      "Do not widen schema, runtime, source, UI, package, handoff, qualitative, hybrid, RAG, vector, or full mockup scope from this planning packet."
+      "Do not widen schema, runtime, source, UI, package, handoff, qualitative, hybrid, RAG, vector, or full mockup scope from this planning packet.",
+      "Use 74_L3_DEFERRED_IMPLEMENTATION_PLAYBOOK.md before activating any deferred category or future descriptive_summary implementation tranche."
     ]
   },
   "layer3_workbench_slices": [
@@ -1357,6 +1360,7 @@
       "governing_docs": [
         "next_milestone_plans/Layer3_planning_docs/72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md",
         "next_milestone_plans/Layer3_planning_docs/73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md",
+        "next_milestone_plans/Layer3_planning_docs/74_L3_DEFERRED_IMPLEMENTATION_PLAYBOOK.md",
         "backend/app/services/analysis.py",
         "backend/app/services/layer3_pass_entry.py",
         "tests/test_api.py",
@@ -3262,7 +3266,8 @@
       "next_milestone_plans/Layer3_planning_docs/70_L3_ANALYSIS_METHOD_REGISTRY_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/71_L3_ANALYSIS_METHOD_REGISTRY_CONTRACT.md",
       "next_milestone_plans/Layer3_planning_docs/72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md",
-      "next_milestone_plans/Layer3_planning_docs/73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md"
+      "next_milestone_plans/Layer3_planning_docs/73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/74_L3_DEFERRED_IMPLEMENTATION_PLAYBOOK.md"
     ]
   },
   "snapshot_base_main_commit": "8b3bae68",
