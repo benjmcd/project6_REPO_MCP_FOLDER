@@ -763,7 +763,6 @@ function canInspectPackageReviewPreview() {
         && authority.selected
         && authority.terminal
         && recordedApprovedResultReview()
-        && !associatedCohortReviewContext()
         && !State.resultReviewPending
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
@@ -2516,10 +2515,13 @@ function packageReviewPanelState() {
         return { label: 'package_constructed', pill: 'ok', message: 'Package set is constructed; inspect preview if a current preview hash is needed before submit.' };
     }
     if (State.packageReviewPreview?.package_review_preview_enabled === true) {
+        if (State.packageReviewPreview?.package_commit_enabled === false) {
+            return { label: State.packageReviewPreview.next_state || 'package_review_preview_ready', pill: 'preview', message: 'Associated-cohort package-review preview is available as read-only; package construction remains deferred.' };
+        }
         return { label: State.packageReviewPreview.next_state || 'package_review_preview_ready', pill: 'ok', message: 'Package-review preview is available and can be committed as a package set.' };
     }
     if (recordedApprovedResultReview() && associatedCohortReviewContext()) {
-        return { label: 'package_review_preview_unavailable', pill: 'blocked', message: 'Associated-cohort result review does not admit package, handoff, or export controls in this tranche.' };
+        return { label: 'package_review_preview_available', pill: 'preview', message: 'Approved associated-cohort result review can be inspected for read-only package-preview readiness.' };
     }
     if (recordedApprovedResultReview()) {
         return { label: 'package_review_preview_unavailable', pill: 'preview', message: 'Approved result review can be inspected for package-preview readiness.' };
@@ -2544,6 +2546,7 @@ function renderPackageReviewPreviewPanel() {
                 <code>${escapeHtml(candidate.package_kind)}</code>
                 ${candidate.preview_only ? '<span class="status-pill preview">preview</span>' : ''}
                 ${candidate.package_commit_enabled ? '<span class="status-pill ok">commit ready</span>' : ''}
+                ${candidate.package_commit_enabled === false ? '<span class="status-pill blocked">commit deferred</span>' : ''}
             </li>
         `).join('')
         : '<li>No package candidates loaded.</li>';

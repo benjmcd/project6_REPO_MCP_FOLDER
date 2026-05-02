@@ -1355,14 +1355,116 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
     downstream_unavailable: ['package', 'handoff', 'package_review'],
     review_notes_recorded: false,
     engine_family: 'layer3',
+    pass_type: 'associated_cohort',
+    pass_scope: 'quantitative_associated_cohort_dataset_version',
+    selected_method_name: 'descriptive_summary',
+    source_gate: '78_COHORT_FREEZE',
+    source_dataset_version_ids: ['dv-cohort-001', 'dv-cohort-002'],
+    cohort_shape: 'aligned_wide_table',
+  };
+  const packagePreviewResponse = {
+    schema_id: 'layer3.package_review_preview.v1',
+    status: 'available',
+    session_id: sessionId,
+    analysis_plan_id: analysisPlanId,
+    pass_run_id: passRunId,
+    preview_identity: {
+      preview_id: previewId,
+      preview_hash: previewHash,
+    },
+    package_review_preview_hash: 'l3-package-preview-cohort-ui',
+    analysis_run_id: analysisRunId,
+    result_status_available: true,
+    result_review_state: 'execution_result_review_approved',
+    result_review_record_ref: reviewResponse.review_record_ref,
+    package_review_preview_enabled: true,
+    package_commit_enabled: false,
+    package_review_enabled: false,
+    candidate_package_kinds: [
+      {
+        package_kind: 'canonical_internal',
+        preview_only: true,
+        package_commit_enabled: false,
+        package_review_submit_enabled: false,
+        handoff_enabled: false,
+        readiness_reason: 'candidate family is preview-only for associated-cohort review; package construction is deferred',
+      },
+      {
+        package_kind: 'user_facing',
+        preview_only: true,
+        package_commit_enabled: false,
+        package_review_submit_enabled: false,
+        handoff_enabled: false,
+        readiness_reason: 'candidate family is preview-only for associated-cohort review; package construction is deferred',
+      },
+      {
+        package_kind: 'review_facing',
+        preview_only: true,
+        package_commit_enabled: false,
+        package_review_submit_enabled: false,
+        handoff_enabled: false,
+        readiness_reason: 'candidate family is preview-only for associated-cohort review; package construction is deferred',
+      },
+    ],
+    package_owner_compatibility: {
+      status: 'associated_cohort_preview_only_construction_deferred',
+      preview_candidate_projection_compatible: true,
+      construction_compatible_with_current_workbench_state: false,
+    },
+    blocked_reasons: [],
+    downstream_unavailable: [
+      'package_commit',
+      'package_review_submit',
+      'handoff',
+      'export',
+      'aps_handoff',
+      'external_export_download',
+      'connector',
+    ],
+    next_state: 'package_review_preview_ready',
+    output_metadata_summary: status.output_metadata_summary,
+    trace_summary: reviewResponse.trace_summary,
+    reviewed_output_item_summary: {
+      reviewed_item_count: 1,
+      unresolved_trace_count: 0,
+    },
+    unresolved_trace_count: 0,
+    pass_type: 'associated_cohort',
+    pass_scope: 'quantitative_associated_cohort_dataset_version',
+    selected_method_name: 'descriptive_summary',
+    source_gate: '78_COHORT_FREEZE',
+    source_dataset_version_ids: ['dv-cohort-001', 'dv-cohort-002'],
+    cohort_shape: 'aligned_wide_table',
+    authority_rail: {
+      current_gate: 'package',
+      persistence_mode: 'read_only_package_review_preview',
+      downstream_unavailable: [
+        'package_commit',
+        'package_review_submit',
+        'handoff',
+        'export',
+        'aps_handoff',
+        'external_export_download',
+        'connector',
+      ],
+    },
   };
   let reviewPayload;
+  let packagePreviewPayload;
   await page.route('**/api/v1/layer3/execution/result/review', async (route) => {
     reviewPayload = route.request().postDataJSON();
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(reviewResponse),
+    });
+  });
+  await page.route('**/api/v1/layer3/package/review/preview', async (route) => {
+    packagePreviewPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(packagePreviewResponse),
     });
   });
   await page.route(`**/api/v1/layer3/session/${sessionId}`, async (route) => {
@@ -1379,6 +1481,12 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
           pass_run_id: passRunId,
           analysis_plan_id: analysisPlanId,
           analysis_run_id: analysisRunId,
+          pass_type: 'associated_cohort',
+          pass_scope: 'quantitative_associated_cohort_dataset_version',
+          selected_method_name: 'descriptive_summary',
+          source_gate: '78_COHORT_FREEZE',
+          source_dataset_version_ids: ['dv-cohort-001', 'dv-cohort-002'],
+          cohort_shape: 'aligned_wide_table',
           unresolved_trace_count: 0,
           package_review_enabled: false,
           handoff_enabled: false,
@@ -1444,13 +1552,32 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
   expect(reviewPayload).not.toHaveProperty('artifact_manifest');
 
   await expect(page.locator('#result-review-panel')).toContainText('cohort_result_review_ui_recorded');
-  await expect(page.locator('#package-review-preview-inspect')).toBeDisabled();
+  await expect(page.locator('#package-review-preview-inspect')).toBeEnabled();
+  const packagePreviewResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/package/review/preview'));
+  await page.locator('#package-review-preview-inspect').click();
+  await expectJson(await packagePreviewResponsePromise);
+  expectOnlyPayloadKeys(packagePreviewPayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'analysis_run_id',
+    'result_review_record_ref',
+  ]);
+  expect(packagePreviewPayload.session_id).toBe(sessionId);
+  expect(packagePreviewPayload.result_review_record_ref).toBe(reviewResponse.review_record_ref);
+  expect(packagePreviewPayload).not.toHaveProperty('reviewed_output_items');
+  expect(packagePreviewPayload).not.toHaveProperty('package');
+  await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_preview_ready');
+  await expect(page.locator('#package-review-preview-panel')).toContainText('commit deferred');
   await expect(page.locator('#package-construction-commit')).toBeDisabled();
   await expect(page.locator('#package-review-submit')).toBeDisabled();
   await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
   await expect(page.locator('#aps-handoff-dispatch-submit')).toBeDisabled();
   await expect(page.locator('#external-export-download-prepare-submit')).toBeDisabled();
-  await expectStepUnavailable(page, 'package');
+  await expectStepAvailable(page, 'package');
 });
 
 test('Layer 3 workbench blocks associated-cohort result review when provenance is incomplete', async ({ page }) => {

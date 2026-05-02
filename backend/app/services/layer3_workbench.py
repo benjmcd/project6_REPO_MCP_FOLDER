@@ -767,6 +767,15 @@ PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
     "handoff",
     "export",
 )
+COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE = (
+    "package_commit",
+    "package_review_submit",
+    "handoff",
+    "export",
+    "aps_handoff",
+    "external_export_download",
+    "connector",
+)
 PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS = (
     PACKAGE_KIND_CANONICAL_INTERNAL,
     PACKAGE_KIND_USER_FACING,
@@ -2971,17 +2980,17 @@ def _ensure_result_status_downstream_source_admitted(
     )
 
 
-def _ensure_result_review_source_admitted(
+def _associated_cohort_result_source_admitted(
     *,
     status_body: dict[str, Any],
     pass_run: L3PassRun,
     output_metadata_summary: dict[str, Any],
-) -> None:
+) -> bool:
     if status_body.get("pass_type") != PASS_TYPE_ASSOCIATED_COHORT:
-        return
+        return False
     summary = pass_run.summary_json or {}
     source_dataset_version_ids = summary.get("source_dataset_version_ids_json")
-    if (
+    return bool(
         status_body.get("pass_scope") == PASS_SCOPE_QUANT_ASSOCIATED_COHORT
         and status_body.get("selected_method_name") == "descriptive_summary"
         and output_metadata_summary.get("pass_scope") == PASS_SCOPE_QUANT_ASSOCIATED_COHORT
@@ -2993,6 +3002,21 @@ def _ensure_result_review_source_admitted(
         and output_metadata_summary.get("requested_method_name") == "descriptive_summary"
         and output_metadata_summary.get("requested_method_source") == COHORT_REQUESTED_METHOD_SOURCE
         and _pass_run_has_admitted_associated_cohort_execution(pass_run)
+    )
+
+
+def _ensure_result_review_source_admitted(
+    *,
+    status_body: dict[str, Any],
+    pass_run: L3PassRun,
+    output_metadata_summary: dict[str, Any],
+) -> None:
+    if status_body.get("pass_type") != PASS_TYPE_ASSOCIATED_COHORT:
+        return
+    if _associated_cohort_result_source_admitted(
+        status_body=status_body,
+        pass_run=pass_run,
+        output_metadata_summary=output_metadata_summary,
     ):
         return
     raise Layer3WorkbenchError(
@@ -3216,6 +3240,12 @@ def _execution_result_review_response(
         "downstream_unavailable": list(EXECUTION_RESULT_REVIEW_DOWNSTREAM_UNAVAILABLE),
         "review_notes_recorded": bool(str(review_state.get("review_notes") or "").strip()),
         "engine_family": pass_run.engine_family,
+        "pass_type": review_state.get("pass_type"),
+        "pass_scope": review_state.get("pass_scope"),
+        "selected_method_name": review_state.get("selected_method_name"),
+        "source_gate": review_state.get("source_gate"),
+        "source_dataset_version_ids": _json_clone(review_state.get("source_dataset_version_ids") or []),
+        "cohort_shape": review_state.get("cohort_shape"),
     }
 
 
@@ -4276,6 +4306,12 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
         reviewed_items=reviewed_items,
         unresolved_trace_count=unresolved_trace_count,
     )
+    pass_summary = pass_run.summary_json or {}
+    source_dataset_version_ids = output_metadata_summary.get("source_dataset_version_ids")
+    if not isinstance(source_dataset_version_ids, list):
+        source_dataset_version_ids = pass_summary.get("source_dataset_version_ids_json")
+    if not isinstance(source_dataset_version_ids, list):
+        source_dataset_version_ids = []
     review_record_ref = _stable_id(
         "l3-result-review",
         {
@@ -4332,6 +4368,16 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
         "source_preview_id": preview_id,
         "source_preview_hash": preview_hash,
         "analysis_run_id": analysis_run_id,
+        "pass_type": pass_run.pass_type,
+        "engine_family": pass_run.engine_family,
+        "dataset_version_id": output_metadata_summary.get("dataset_version_id") or pass_summary.get("dataset_version_id"),
+        "selected_method_name": output_metadata_summary.get("selected_method_name") or pass_summary.get("selected_method_name"),
+        "pass_scope": output_metadata_summary.get("pass_scope") or pass_summary.get("pass_scope"),
+        "source_gate": output_metadata_summary.get("source_gate") or pass_summary.get("source_gate"),
+        "source_dataset_version_ids": list(source_dataset_version_ids),
+        "cohort_shape": output_metadata_summary.get("cohort_shape") or pass_summary.get("cohort_shape"),
+        "requested_method_name": output_metadata_summary.get("requested_method_name") or pass_summary.get("requested_method_name"),
+        "requested_method_source": output_metadata_summary.get("requested_method_source") or pass_summary.get("requested_method_source"),
         "recorded_at": _utcnow_iso(),
         "package_review_enabled": False,
         "handoff_enabled": False,
@@ -4351,6 +4397,16 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
             "pass_run_id": pass_run_id,
             "analysis_plan_id": analysis_plan_id,
             "analysis_run_id": analysis_run_id,
+            "pass_type": pass_run.pass_type,
+            "engine_family": pass_run.engine_family,
+            "dataset_version_id": review_state.get("dataset_version_id"),
+            "selected_method_name": review_state.get("selected_method_name"),
+            "pass_scope": review_state.get("pass_scope"),
+            "source_gate": review_state.get("source_gate"),
+            "source_dataset_version_ids": list(source_dataset_version_ids),
+            "cohort_shape": review_state.get("cohort_shape"),
+            "requested_method_name": review_state.get("requested_method_name"),
+            "requested_method_source": review_state.get("requested_method_source"),
             "unresolved_trace_count": unresolved_trace_count,
             "package_review_enabled": False,
             "handoff_enabled": False,
@@ -4379,18 +4435,46 @@ def _package_review_preview_summary(review_state: dict[str, Any] | None) -> dict
         and review_state.get("operator_decision") == "approved"
         and int(review_state.get("unresolved_trace_count") or 0) == 0
     )
+    associated_cohort = bool(
+        isinstance(review_state, dict)
+        and (
+            review_state.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT
+            or review_state.get("pass_scope") == PASS_SCOPE_QUANT_ASSOCIATED_COHORT
+        )
+    )
+    downstream_unavailable = (
+        COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
+        if associated_cohort
+        else PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
+    )
+    package_commit_enabled = bool(approved and not associated_cohort)
     return {
         "schema_id": PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID,
         "available": approved,
-        "state": None,
+        "state": PACKAGE_REVIEW_PREVIEW_READY_STATE if approved else None,
         "result_review_state": review_state.get("review_state") if isinstance(review_state, dict) else None,
         "result_review_record_ref": review_state.get("review_record_ref") if isinstance(review_state, dict) else None,
         "requires_preview_endpoint_validation": True,
         "package_review_preview_enabled": approved,
+        "package_commit_enabled": package_commit_enabled,
         "package_review_enabled": False,
         "handoff_enabled": False,
-        "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS) if approved else [],
-        "downstream_unavailable": list(PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE),
+        "candidate_package_kinds": (
+            _package_review_candidate_projection(package_commit_enabled=package_commit_enabled)
+            if approved
+            else []
+        ),
+        "pass_type": review_state.get("pass_type") if isinstance(review_state, dict) else None,
+        "pass_scope": review_state.get("pass_scope") if isinstance(review_state, dict) else None,
+        "selected_method_name": review_state.get("selected_method_name") if isinstance(review_state, dict) else None,
+        "source_gate": review_state.get("source_gate") if isinstance(review_state, dict) else None,
+        "source_dataset_version_ids": (
+            _json_clone(review_state.get("source_dataset_version_ids") or [])
+            if isinstance(review_state, dict)
+            else []
+        ),
+        "cohort_shape": review_state.get("cohort_shape") if isinstance(review_state, dict) else None,
+        "downstream_unavailable": list(downstream_unavailable),
     }
 
 
@@ -4400,6 +4484,7 @@ def _package_owner_compatibility(
     pass_run: L3PassRun,
     output_metadata_summary: dict[str, Any],
     review_state: dict[str, Any],
+    associated_cohort_preview: bool = False,
 ) -> dict[str, Any]:
     session_summary = session.summary_json or {}
     pass_summary = pass_run.summary_json or {}
@@ -4410,7 +4495,7 @@ def _package_owner_compatibility(
         "approved_result_review": review_state.get("review_state") == EXECUTION_RESULT_REVIEW_APPROVED_STATE,
     }
     missing_inputs = sorted(key for key, present in required_inputs.items() if not present)
-    construction_compatible = not missing_inputs
+    construction_compatible = bool(not missing_inputs and not associated_cohort_preview)
     return {
         "schema_id": "layer3.package_owner_compatibility.v1",
         "owner_service": "layer3_package_entry.materialize_package_entry",
@@ -4424,14 +4509,23 @@ def _package_owner_compatibility(
         "construction_compatible_with_current_workbench_state": construction_compatible,
         "missing_owner_service_inputs": missing_inputs,
         "selected_pass_status": pass_run.status,
+        "pass_type": pass_run.pass_type,
+        "pass_scope": output_metadata_summary.get("pass_scope") or pass_summary.get("pass_scope"),
+        "source_gate": output_metadata_summary.get("source_gate") or pass_summary.get("source_gate"),
         "source_preview_id": pass_summary.get("source_preview_id"),
         "source_preview_hash": pass_summary.get("source_preview_hash"),
         "status": (
+            "associated_cohort_preview_only_construction_deferred"
+            if associated_cohort_preview
+            else
             "construction_preconditions_satisfied_but_call_deferred"
             if construction_compatible
             else "construction_preconditions_missing"
         ),
         "reason": (
+            "Associated-cohort package-review preview is admitted as read-only; package construction remains deferred."
+            if associated_cohort_preview
+            else
             "Current state can be assessed against the owner service, but this endpoint remains read-only."
             if construction_compatible
             else "Current workbench state lacks full Gate D package-entry inputs; candidate projection remains preview-only."
@@ -4439,15 +4533,20 @@ def _package_owner_compatibility(
     }
 
 
-def _package_review_candidate_projection() -> list[dict[str, Any]]:
+def _package_review_candidate_projection(*, package_commit_enabled: bool = True) -> list[dict[str, Any]]:
+    readiness_reason = (
+        "candidate family is eligible for bounded package construction commit"
+        if package_commit_enabled
+        else "candidate family is preview-only for associated-cohort review; package construction is deferred"
+    )
     return [
         {
             "package_kind": package_kind,
             "preview_only": True,
-            "package_commit_enabled": True,
+            "package_commit_enabled": package_commit_enabled,
             "package_review_submit_enabled": False,
             "handoff_enabled": False,
-            "readiness_reason": "candidate family is eligible for bounded package construction commit",
+            "readiness_reason": readiness_reason,
         }
         for package_kind in PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS
     ]
@@ -5163,12 +5262,21 @@ def _package_construction_summary(
                 PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE if constructed else PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE
             ),
         }
-    available = bool(package_review_preview_state.get("available"))
+    preview_available = bool(package_review_preview_state.get("available"))
+    package_commit_enabled = bool(package_review_preview_state.get("package_commit_enabled", preview_available))
+    available = bool(preview_available and package_commit_enabled)
+    blocked_reason = None
+    if not available:
+        blocked_reason = (
+            "package_construction_deferred_for_associated_cohort"
+            if preview_available and not package_commit_enabled
+            else "package_review_preview_not_available"
+        )
     return {
         "schema_id": PACKAGE_CONSTRUCTION_COMMIT_STATE_SCHEMA_ID,
         "available": available,
         "state": PACKAGE_COMMIT_READY_STATE if available else PACKAGE_COMMIT_UNAVAILABLE_STATE,
-        "blocked_reason": None if available else "package_review_preview_not_available",
+        "blocked_reason": blocked_reason,
         "reconciliation_record_id": None,
         "output_package_ids": [],
         "package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS) if available else [],
@@ -5243,11 +5351,6 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             next_allowed_actions=["inspect_execution_result_status"],
         )
-    _ensure_result_status_downstream_source_admitted(
-        status_body,
-        error_code="associated_cohort_package_review_preview_not_admitted",
-        action_label="Package-review preview",
-    )
     output_metadata_summary = status_body.get("output_metadata_summary")
     if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
         raise Layer3WorkbenchError(
@@ -5267,6 +5370,24 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             status="conflict",
             http_status=409,
         )
+    associated_cohort_preview = False
+    if status_body.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT:
+        associated_cohort_preview = _associated_cohort_result_source_admitted(
+            status_body=status_body,
+            pass_run=pass_run,
+            output_metadata_summary=output_metadata_summary,
+        )
+        if not associated_cohort_preview:
+            raise Layer3WorkbenchError(
+                "associated_cohort_package_review_preview_not_admitted",
+                (
+                    "Package-review preview is admitted only for exact selected-pass descriptive "
+                    "associated-cohort result/status output in this tranche."
+                ),
+                status="blocked",
+                http_status=409,
+                next_allowed_actions=["inspect_execution_result_status"],
+            )
 
     review_state = _execution_result_review_from_pass_run(pass_run)
     if (
@@ -5345,7 +5466,14 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
         pass_run=pass_run,
         output_metadata_summary=output_metadata_summary,
         review_state=review_state,
+        associated_cohort_preview=associated_cohort_preview,
     )
+    downstream_unavailable = (
+        COHORT_PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
+        if associated_cohort_preview
+        else PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE
+    )
+    package_commit_enabled = not associated_cohort_preview
     package_review_preview_hash = _package_review_preview_hash(
         session_id=session_id,
         analysis_plan_id=analysis_plan_id,
@@ -5368,21 +5496,33 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
         "result_review_state": review_state.get("review_state"),
         "result_review_record_ref": review_state.get("review_record_ref"),
         "package_review_preview_enabled": True,
-        "package_commit_enabled": True,
+        "package_commit_enabled": package_commit_enabled,
         "package_review_enabled": False,
-        "candidate_package_kinds": _package_review_candidate_projection(),
+        "candidate_package_kinds": _package_review_candidate_projection(
+            package_commit_enabled=package_commit_enabled,
+        ),
         "package_owner_compatibility": compatibility,
         "blocked_reasons": [],
-        "downstream_unavailable": list(PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE),
+        "downstream_unavailable": list(downstream_unavailable),
         "next_state": PACKAGE_REVIEW_PREVIEW_READY_STATE,
         "output_metadata_summary": output_metadata_summary,
         "trace_summary": review_state.get("trace_summary"),
+        "reviewed_output_item_summary": {
+            "reviewed_item_count": len(review_state.get("reviewed_output_items") or []),
+            "unresolved_trace_count": int(review_state.get("unresolved_trace_count") or 0),
+        },
         "unresolved_trace_count": int(review_state.get("unresolved_trace_count") or 0),
+        "pass_type": pass_run.pass_type,
+        "pass_scope": output_metadata_summary.get("pass_scope"),
+        "selected_method_name": output_metadata_summary.get("selected_method_name"),
+        "source_gate": output_metadata_summary.get("source_gate"),
+        "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
+        "cohort_shape": output_metadata_summary.get("cohort_shape"),
         "authority_rail": _authority_rail(
             session_id=session_id,
             current_gate="package",
             persistence_mode="read_only_package_review_preview",
-            downstream_unavailable=PACKAGE_REVIEW_PREVIEW_DOWNSTREAM_UNAVAILABLE,
+            downstream_unavailable=downstream_unavailable,
             execution_enabled=False,
             package_review_enabled=False,
         ),
