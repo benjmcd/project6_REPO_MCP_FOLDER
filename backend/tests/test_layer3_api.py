@@ -34,7 +34,7 @@ from app.models.models import (
     L3ReconciliationRecord,
 )
 from app.services.layer3_aps_handoff import PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF
-from app.services import layer3_pass_entry as layer3_pass_entry_module
+from app.services import dataframe_io, layer3_pass_entry as layer3_pass_entry_module
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
     SnapshotMaterial,
@@ -3244,7 +3244,22 @@ def test_layer3_api_execution_result_status_reads_terminal_pass_without_writes(c
         db.close()
 
 
-def test_layer3_api_selected_cohort_execution_start_and_status_are_bounded(client: TestClient, tmp_path) -> None:
+def test_layer3_api_selected_cohort_execution_start_and_status_are_bounded(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    def _persist_dataframe_as_csv(db, version, df, time_column) -> None:
+        frame = df.copy()
+        storage_path = tmp_path / "cohort-derived" / f"{version.dataset_version_id}.csv"
+        storage_path.parent.mkdir(parents=True, exist_ok=True)
+        frame.to_csv(storage_path, index=False)
+        version.storage_ref = str(storage_path)
+        version.row_count = int(len(frame))
+        db.flush()
+
+    monkeypatch.setattr(dataframe_io, "persist_dataframe_as_version_rows", _persist_dataframe_as_csv)
+
     session_id, preview_body, approval_body, selection_body = _select_quant_cohort_pass(
         client,
         tmp_path,
