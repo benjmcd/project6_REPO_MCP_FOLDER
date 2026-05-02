@@ -1853,7 +1853,9 @@
     {
       "slice_id": "descriptive-summary-selected-pass-cohort-package-review-submit-freeze",
       "main_state": "planning_only_descriptive_summary_selected_pass_cohort_package_review_submit",
-      "key_prs": [],
+      "key_prs": [
+        "#454"
+      ],
       "governing_docs": [
         "next_milestone_plans/Layer3_planning_docs/90_COHORT_PACKAGE_REVIEW_SUBMIT_FREEZE.md",
         "next_milestone_plans/Layer3_planning_docs/91_COHORT_PACKAGE_REVIEW_SUBMIT_CONTRACT.md",
