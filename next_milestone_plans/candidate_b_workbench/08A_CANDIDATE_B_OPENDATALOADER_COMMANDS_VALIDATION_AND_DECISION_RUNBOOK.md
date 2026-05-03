@@ -61,6 +61,10 @@ py -3.12 -m pip show opendataloader-pdf
 
 If the package version is not `2.0.0`, stop and update docs first.
 
+Current runtime-admission note:
+- the live Candidate B proof runner now performs this `opendataloader-pdf==2.0.0` check in Candidate B mode during preflight, before submitting a run
+- a global `python` test runner with `opendataloader-pdf` at another version is expected to fail Candidate B runtime-processing tests; use the pinned Phase 7A package path for focused validation rather than weakening the package pin
+
 ---
 
 ## Phase 2 - freeze labels before running Candidate B
