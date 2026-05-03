@@ -2,9 +2,9 @@
 
 ## Status
 
-Branch-local planning/control freeze for a possible future selected-pass associated-cohort external export/download signed delivery reference.
+Current-main planning/control freeze for the selected-pass associated-cohort external export/download signed delivery reference boundary.
 
-This document does not implement signed URL generation, token minting, URL serving, rendered UI changes, connector dispatch, destination selection, package mutation, schema/runtime/source widening, or any new route by itself. Current live behavior remains the PR `#483` same-origin attachment delivery endpoint plus the PR `#487` explicit server-authoritative rendered delivery UI gate. The PR `#496` package-review submit legacy idempotency hardening remains part of the current upstream authority chain, but it does not widen delivery or URL behavior.
+This document did not implement signed-reference generation, token minting, URL serving, rendered UI changes, connector dispatch, destination selection, package mutation, schema/runtime/source widening, or any route by itself. PR `#499` is the separate implementation authority: current `project6-origin/main` now includes bounded backend/API same-origin signed delivery reference generation and use under the existing Layer 3 external export/download route family. Current live behavior remains limited to same-origin delivery surfaces: the PR `#483` attachment endpoint, the PR `#487` explicit server-authoritative rendered delivery UI gate, and the PR `#499` same-origin signed-reference generation/use endpoints. The PR `#496` package-review submit legacy idempotency hardening remains part of the current upstream authority chain, but it does not widen delivery or URL behavior.
 
 ## Current Live Baseline
 
@@ -21,23 +21,24 @@ Current `project6-origin/main` proves this chain:
 - PR `#466` bounded APS evidence-bundle handoff dispatch;
 - PR `#479` reference-only external export/download readiness;
 - PR `#483` backend/API same-origin delivery proof through the existing delivery endpoint;
-- PR `#487` explicit rendered associated-cohort delivery UI gate over the existing generic same-origin attachment form.
+- PR `#487` explicit rendered associated-cohort delivery UI gate over the existing generic same-origin attachment form;
+- PR `#499` backend/API same-origin signed delivery reference generation and use through dedicated POST endpoints.
 
-The live repo still explicitly rejects or disables public URL, signed URL, download token, connector/generic dispatch, destination selection, package mutation, schema/runtime/source widening, retry/recovery/rerun, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior.
+The live repo still explicitly rejects or disables public URL authority, provider-specific signed URLs, client-supplied download tokens, connector/generic dispatch, destination selection, package mutation, schema/runtime/source widening, retry/recovery/rerun, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior. PR `#499` does not render signed-reference controls in `/review/layer3`.
 
 ## Slice Decision
 
-The only selected planning boundary is:
+The selected planning boundary was:
 
 > Define the minimum governance needed before a future implementation may introduce a short-lived, server-authorized signed delivery reference for the existing associated-cohort APS evidence-bundle download.
 
-This freeze does not admit runtime generation yet. It exists because the current delivery path is intentionally same-origin attachment only, and signed URL behavior has higher blast radius than the PR `#487` rendered gate. A future implementation must first prove the token/signature strategy, route ownership, revalidation behavior, expiry, replay/idempotency behavior, and no-go boundaries before any URL field can become live.
+PR `#499` satisfied that backend/API implementation-entry boundary with a same-origin signed delivery reference, not a public URL or provider URL. The implementation proves token/signature strategy, route ownership, generation-time and use-time revalidation, short expiry, stale-authority failure, and no row/file creation while preserving the PR `#483` same-origin attachment endpoint and the PR `#487` rendered delivery UI gate.
 
-## Candidate Future Behavior
+## Implemented Backend/API Behavior
 
-A later implementation may be considered only if it remains within this future shape:
+PR `#499` remains within this shape:
 
-- generate at most one short-lived server-owned signed delivery reference for the existing APS evidence-bundle artifact already validated by PR `#483`;
+- generate a short-lived server-owned same-origin signed delivery reference for the existing APS evidence-bundle artifact already validated by PR `#483`;
 - bind that reference to exact session, plan, pass, result-review, package-review, package, handoff/export, APS dispatch, readiness, artifact ref/hash/size, and delivery authority;
 - require full server-side authority revalidation at generation time and at use time;
 - keep the current same-origin attachment endpoint valid and unchanged for the existing delivery path;
@@ -45,6 +46,13 @@ A later implementation may be considered only if it remains within this future s
 - expire quickly and fail closed when stale, mismatched, reused outside its allowed policy, or presented against changed upstream authority;
 - avoid holding database locks while streaming or validating artifact bytes, following the existing delivery lock-release boundary;
 - create no package, reconciliation, artifact, connector-run, plan, pass, analysis, runtime DB, source, model, migration, or physical export rows/files unless a separate freeze explicitly admits that write.
+
+The live PR `#499` route surface is:
+
+- `POST /api/v1/layer3/handoff/export/download/signed-reference/generate`;
+- `POST /api/v1/layer3/handoff/export/download/signed-reference/use`.
+
+The implementation uses `same_origin_signed_delivery_reference` delivery mode, HMAC signing, a 300-second TTL, and `LAYER3_SIGNED_REFERENCE_SECRET` when configured; otherwise it uses a process-local fail-closed key, so externally durable or multi-process token stability requires operator-provided secret configuration and remains outside docs-only authority.
 
 ## No-Go List
 
@@ -59,16 +67,16 @@ This freeze does not admit:
 - additional package, reconciliation, artifact, receipt, audit-log, connector-run, plan, pass, analysis, runtime DB, source, model, migration, or physical export rows/files;
 - `AnalysisArtifact` expansion;
 - schema/runtime/source/model/migration widening;
-- durable token tables, delivery receipt tables, or runtime write state;
+- durable token tables, delivery receipt tables, audit tables, revocation tables, or runtime write state;
 - retry/recovery/rerun behavior beyond a separately proven idempotency policy;
 - qualitative/hybrid/RAG/vector behavior;
 - broader UI, broader associated-cohort review, or full mockup activation.
 
-If a future implementation needs any item above, stop and create a narrower freeze before editing code.
+If later work needs any item above, stop and create a narrower freeze before editing code.
 
-## Required Authority Before Future Implementation
+## Required Authority For Signed Reference Generation
 
-A later implementation must prove all of these before it may generate or expose a signed delivery reference:
+PR `#499` proves all of these before it may generate or use a signed delivery reference:
 
 1. exact associated-cohort readiness from PR `#479` remains recorded;
 2. exact same-origin delivery authority from PR `#483` remains valid;
@@ -83,25 +91,26 @@ A later implementation must prove all of these before it may generate or expose 
 11. package-review submit, handoff/export prepare, APS dispatch, readiness, and delivery refs match stored authority;
 12. APS bundle ref/id/schema/hash/size validates through the existing APS evidence-bundle owner-service contract;
 13. the signed reference is bound to the same artifact ref/hash/size and cannot be replayed against a different artifact;
-14. public URL, connector dispatch, destination selection, generic downstream dispatch, package mutation, schema/runtime/source widening, retry/recovery/rerun, and broader UI flags remain disabled unless separately frozen.
+14. public URL, provider URL, connector dispatch, destination selection, generic downstream dispatch, package mutation, schema/runtime/source widening, retry/recovery/rerun, and broader UI flags remain disabled unless separately frozen.
 
-## Implementation Entry Conditions
+## Implementation Entry Answers
 
-Before any code changes for this future slice, the implementation lane must answer these questions from repo evidence:
+PR `#499` answered the implementation-entry questions from repo evidence:
 
-- Is a signed reference required, or is existing same-origin attachment delivery sufficient?
-- Can the implementation stay stateless and server-revalidated without adding durable token or receipt storage?
-- If persistence is required for expiry, revocation, replay prevention, audit, or receipt semantics, which separate freeze admits the exact table/state write?
-- Which exact endpoint owns generation and which exact endpoint owns reference use?
-- How will stale upstream authority fail closed at both generation and use time?
-- How will duplicate generation requests behave under the existing `client_request_id` and idempotency conventions?
-- Which focused API tests prove absent forbidden fields, no URL leakage in existing delivery, expiry, stale mismatch, replay policy, and no row/file creation?
+- a signed reference is admitted only as an additive same-origin backend/API reference; the existing attachment delivery remains valid and unchanged;
+- the implementation stays stateless and server-revalidated, without durable token or receipt storage;
+- no persistence freeze is consumed because no expiry, revocation, replay-prevention, audit, or receipt table/state write is added;
+- generation is owned by `POST /api/v1/layer3/handoff/export/download/signed-reference/generate`;
+- use is owned by `POST /api/v1/layer3/handoff/export/download/signed-reference/use`;
+- stale upstream authority fails closed at both generation and use time through the same associated-cohort delivery authority validation basis;
+- duplicate generation remains stateless and request-scoped; no persistent token clutter is created;
+- focused API tests cover forbidden fields, expiry, stale authority, malformed references, no row/file creation, OpenAPI route presence, and preservation of existing delivery behavior.
 
-Unanswered items keep this slice in planning/recon mode.
+Any later requirement for revocation, durable audit, public/provider URL behavior, rendered controls, or destination/connector dispatch remains outside PR `#499` and requires separate governance.
 
-## Required Proof For Future Implementation
+## Required Proof For PR #499
 
-A future implementation must include focused proof for:
+PR `#499` includes focused proof that:
 
 - current same-origin delivery remains unchanged and still emits no public/signed URL headers;
 - existing delivery requests still reject client-supplied `download_url`, `download_token`, `public_url`, `signed_url`, connector, destination, dispatch, package mutation, schema, runtime, source, retry, and rerun fields;
@@ -111,20 +120,20 @@ A future implementation must include focused proof for:
 - no local filesystem path, source path, connector target, or external provider detail leaks to the client;
 - no package, reconciliation, artifact, connector-run, plan, pass, analysis, runtime DB, source, model, migration, or physical export rows/files are created unless a separate freeze admits them;
 - existing API tests for package-review submit, handoff/export, APS dispatch, readiness, delivery, and rendered delivery UI still pass;
-- browser proof is required only if a later UI freeze admits rendered signed URL behavior.
+- browser proof remains deferred because PR `#499` admits no rendered signed-reference UI behavior.
 
-## Deferred After This Freeze
+## Deferred After PR #499
 
 Still separate and not admitted:
 
-- signed URL implementation;
 - public URL generation;
+- provider-specific signed URL generation;
 - rendered signed URL controls;
 - connector dispatch or connector-run handling;
 - destination selection;
 - generic downstream dispatch;
 - package amendment, rebuild, copy, rewrite, or supersession;
-- durable token, receipt, audit, or runtime write state;
+- durable token, revocation, receipt, audit, or runtime write state;
 - additional reconciliation/package/artifact rows;
 - `AnalysisArtifact` expansion;
 - schema/runtime/source/model/migration widening;

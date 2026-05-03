@@ -195,11 +195,11 @@ And to the planning-only deferred implementation playbook from PR `#407`, which 
 
 The playbook does not by itself select a new lane or implement deferred behavior. It keeps the broader deferred categories blocked behind their activation contracts; PR `#411` used it for the first bounded lower-level `descriptive_summary` analysis-service tranche, PR `#417` used docs `75`/`76` for the bounded single-item Gate C admission tranche, PR `#424`/`#425` used docs `78`/`79` for the bounded service-only associated-cohort tranche, PR `#432` used docs `80`/`81` for selected-pass associated-cohort execution-start/result-status, PR `#438` used docs `82`/`83` for exact selected-pass associated-cohort result review, PR `#443` uses docs `84`/`85` for exact rendered associated-cohort result-review UI implementation, PR `#447` uses docs `86`/`87` for read-only associated-cohort package-review preview/readiness, PR `#451` uses docs `88`/`89` for the bounded associated-cohort package-construction implementation, PR `#456` uses docs `90`/`91` for bounded package-review submit, PR `#458` lands docs `92`/`93` as planning-only handoff/export governance, PR `#460` implements only bounded backend/API associated-cohort handoff/export prepare-only behavior, PR `#464` lands docs `94`/`95` as current-main APS dispatch governance only, PR `#466` implements only bounded backend/API associated-cohort APS evidence-bundle handoff dispatch, docs `96`/`97` govern external export/download readiness, PR `#479` implements only bounded reference-only readiness after exact APS dispatch authority, docs `98`/`99` govern associated-cohort same-origin delivery, PR `#483` proves the backend/API delivery portion through the existing endpoint, PR `#485` docs `100`/`101` settle the separate rendered-control activation gate, and PR `#487` implements only that explicit server-authoritative gate over the existing same-origin attachment form. Connector dispatch, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, retry/recovery/rerun expansion, pass-entry changes, broader UI behavior, and full mockup activation remain blocked until separately implemented.
 
-And to the current-main signed delivery-reference governance packet from PR `#497`, which is planning-only by itself and does not implement signed URL behavior:
+And to the current-main signed delivery-reference governance packet from PR `#497` and the separate bounded backend/API same-origin signed-reference implementation from PR `#499`:
 - `next_milestone_plans/Layer3_planning_docs/102_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/103_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_CONTRACT.md`
 
-The signed URL packet freezes only the minimum questions and no-go boundaries for a possible future short-lived, server-authorized associated-cohort signed delivery reference after PR `#483` same-origin delivery and PR `#487` rendered gate authority. It does not make signed URL generation, token minting, URL serving, rendered signed URL controls, public URLs, connector/generic dispatch, destination selection, package mutation, durable token/receipt/audit state, schema/runtime/source widening, broader UI, or full mockup behavior live.
+The signed URL packet freezes the minimum questions and no-go boundaries for a short-lived, server-authorized associated-cohort signed delivery reference after PR `#483` same-origin delivery and PR `#487` rendered gate authority. Docs `102`/`103` do not make signed-reference behavior live by themselves; PR `#499` separately implements only same-origin signed-reference generation/use through backend/API POST endpoints. It does not make rendered signed URL controls, public/provider URLs, connector/generic dispatch, destination selection, package mutation, durable token/receipt/audit/revocation state, schema/runtime/source widening, broader UI, or full mockup behavior live.
 
 And to the descriptive-summary Gate C admission packet, whose single-item implementation boundary was satisfied by PR `#417` after PR `#411` lower-level method support:
 - `next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md`
@@ -1204,8 +1204,8 @@ Read docs `94`/`95` as current-main planning-only governance from PR `#464` by t
 - PR `#479` proves exact PR `#432`/`#438`/`#443`/`#447`/`#451`/`#456`/`#460`/`#462`/`#466` authority before narrowing `associated_cohort_external_export_download_prepare_not_admitted`
 - docs `98`/`99` govern same-origin associated-cohort delivery after PR `#479`; PR `#483` proves the backend/API path through the existing same-origin endpoint, but that proof does not settle associated-cohort rendered-control activation
 - docs `100`/`101` are the current-main PR `#485` rendered-control settlement boundary, and PR `#487` implements the explicit server-authoritative associated-cohort delivery UI gate over the existing generic `/review/layer3` delivery form from the earlier single-item UI path
-- current-main docs `102`/`103` from PR `#497` govern only a possible future signed delivery-reference implementation audit and contract; they do not make signed URL generation or rendered signed URL behavior live
-- the readiness, delivery, UI-settlement, and signed-reference governance do not admit public URLs, signed URL implementation by docs alone, connector dispatch, generic downstream dispatch, destination selection, package payload copy/rewrite/reconstruction, durable token/receipt/audit state, schema/runtime/source widening, retry/recovery/rerun expansion, pass-entry changes, broader UI, qualitative/hybrid/RAG/vector execution, or full mockup activation
+- current-main docs `102`/`103` from PR `#497` govern the signed delivery-reference implementation audit and contract; PR `#499` is the separate backend/API same-origin signed-reference generation/use implementation
+- the readiness, delivery, UI-settlement, and signed-reference governance plus PR `#499` do not admit public/provider URLs, rendered signed URL controls, connector dispatch, generic downstream dispatch, destination selection, package payload copy/rewrite/reconstruction, durable token/receipt/audit/revocation state, schema/runtime/source widening, retry/recovery/rerun expansion, pass-entry changes, broader UI, qualitative/hybrid/RAG/vector execution, or full mockup activation
 
 ### If you are auditing selected-pass associated-cohort external export/download delivery proof
 
@@ -1260,12 +1260,13 @@ Start with:
 - `backend/tests/test_layer3_page.py`
 - `e2e/layer3-workbench.spec.js`
 
-Read docs `102`/`103` as current-main planning/control only after PR `#497`:
+Read docs `102`/`103` as current-main planning/control from PR `#497`, with PR `#499` as the separate bounded backend/API implementation:
 - current live delivery remains same-origin attachment through PR `#483`, with PR `#487` as the only associated-cohort rendered delivery UI authority
-- signed URL generation remains not live; the docs require a future implementation audit to prove route ownership, token/signature strategy, expiry, replay/idempotency, stale-authority failure, and no row/file creation
-- a future implementation must preserve PR `#496` package-review submit legacy idempotency compatibility in the upstream authority chain
-- if signed delivery needs durable token, receipt, audit, runtime write, schema/model/migration, external object-store ACL, connector, destination, or rendered UI behavior, stop for a separate freeze
-- public URLs, connector/generic dispatch, destination selection, package mutation, schema/runtime/source widening, broader UI, qualitative/hybrid/RAG/vector behavior, and full mockup behavior remain out
+- PR `#499` implements `POST /api/v1/layer3/handoff/export/download/signed-reference/generate` and `POST /api/v1/layer3/handoff/export/download/signed-reference/use`
+- the implementation uses server-owned HMAC signed references with a 300-second TTL, revalidates exact associated-cohort authority at generation and use, and creates no rows/files
+- the implementation preserves PR `#496` package-review submit legacy idempotency compatibility in the upstream authority chain
+- if signed delivery needs durable token, receipt, audit, revocation, runtime write, schema/model/migration, external object-store ACL, connector, destination, or rendered UI behavior, stop for a separate freeze
+- public/provider URLs, connector/generic dispatch, destination selection, package mutation, schema/runtime/source widening, broader UI, qualitative/hybrid/RAG/vector behavior, and full mockup behavior remain out
 
 ### If you are auditing the Layer 3 workbench APS handoff dispatch freeze
 
