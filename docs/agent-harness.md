@@ -75,6 +75,8 @@ For artifact-free `validate-nrc-aps-validate-only-gates` checks, pass `-ActionAr
 
 For root-surface and structural drift checks, use `docs/root-surface-policy.md` and `python ./tools/validate_structure.py`.
 
+The review browser test harness exposes `GET /__test/harness-info` for versioned, path-redacted test-only fixture metadata.
+
 ## Non-Interference
 
 - Recheck open PRs and `project6-origin/main` before creating, pushing, or merging.

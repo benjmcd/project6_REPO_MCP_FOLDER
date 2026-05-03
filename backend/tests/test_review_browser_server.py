@@ -44,6 +44,32 @@ def test_review_browser_server_health_and_compare_sources(client: TestClient) ->
     assert "C:\\" not in str(payload)
 
 
+def test_review_browser_server_harness_info_is_versioned_and_path_redacted(client: TestClient) -> None:
+    response = client.get("/__test/harness-info")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["schema_id"] == "project6.review_browser_harness_info.v1"
+    assert payload["schema_version"] == 1
+    assert payload["harness_name"] == "review_browser_server"
+    assert payload["fixture_version"] == "review-browser-fixture-v1"
+    assert payload["test_only"] is True
+    assert payload["storage_mode"] == "temporary-redacted"
+    assert payload["runtime_binding_count"] == 3
+    assert payload["patch_groups"] == [
+        "review-runtime-bindings",
+        "workbench-compare",
+        "candidate-b-trace",
+        "layer3-deterministic-analysis",
+        "layer3-aps-handoff",
+    ]
+    assert "/__test/layer3/seed-quant" in payload["seed_routes"]
+    windows_user_prefix = "C:" + "\\" + "Users" + "\\"
+    posix_user_prefix = "/" + "Users" + "/"
+    assert windows_user_prefix not in str(payload)
+    assert posix_user_prefix not in str(payload)
+
+
 def test_review_browser_server_runs_expose_candidate_b_runtime_metadata(client: TestClient) -> None:
     runs_response = client.get("/api/v1/review/nrc-aps/runs")
 
