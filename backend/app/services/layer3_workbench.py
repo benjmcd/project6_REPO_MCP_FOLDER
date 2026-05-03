@@ -1901,6 +1901,69 @@ def _serialize_aps_dataset_provenance(row: DatasetSourceProvenance) -> dict[str,
     }
 
 
+def aps_dataset_version_candidates(db: Session, *, limit: int = 50) -> dict[str, Any]:
+    normalized_limit = max(1, min(int(limit or 50), 200))
+    rows = (
+        db.query(DatasetSourceProvenance)
+        .filter(DatasetSourceProvenance.source_system == "nrc_adams_aps")
+        .order_by(
+            DatasetSourceProvenance.created_at.desc(),
+            DatasetSourceProvenance.dataset_source_provenance_id.desc(),
+        )
+        .limit(normalized_limit * 3)
+        .all()
+    )
+    candidates: list[dict[str, Any]] = []
+    seen_dataset_version_ids: set[str] = set()
+    for row in rows:
+        if row.dataset_version_id in seen_dataset_version_ids:
+            continue
+        version = db.get(DatasetVersion, row.dataset_version_id)
+        if version is None:
+            continue
+        dataset = db.get(Dataset, version.dataset_id)
+        variables = _dataset_version_variables(db, dataset_version_id=version.dataset_version_id)
+        provenance = _serialize_aps_dataset_provenance(row)
+        candidates.append(
+            {
+                "schema_id": "layer3.aps_dataset_version_candidate.v1",
+                "dataset_version_id": version.dataset_version_id,
+                "dataset_id": version.dataset_id,
+                "dataset_name": dataset.name if dataset is not None else None,
+                "version_label": version.version_label,
+                "version_type": version.version_type,
+                "status": version.status,
+                "row_count": int(version.row_count or 0),
+                "variable_count": len(variables),
+                "time_column": dataset.time_column if dataset is not None else None,
+                "frequency_hint": dataset.frequency_hint if dataset is not None else None,
+                "source_system": row.source_system,
+                "source_mode": row.source_mode,
+                "source_artifact_key": row.source_artifact_key,
+                "parser_family": provenance.get("parser_family"),
+                "typed_content_contract_id": provenance.get("typed_content_contract_id"),
+                "target_id": provenance.get("target_id"),
+                "accession_number": provenance.get("accession_number"),
+                "diagnostics_ref": provenance.get("diagnostics_ref"),
+                "aps_derived": True,
+            }
+        )
+        seen_dataset_version_ids.add(version.dataset_version_id)
+        if len(candidates) >= normalized_limit:
+            break
+    return {
+        **_base_response("layer3.aps_dataset_version_candidates.v1"),
+        "dataset_version_candidates": candidates,
+        "candidate_count": len(candidates),
+        "source_system": "nrc_adams_aps",
+        "authority_rail": {
+            "authority_source": "dataset_source_provenance",
+            "selection_authority": "material_preview_dataset_version_ids",
+            "read_only": True,
+        },
+    }
+
+
 def _dataset_version_material_candidates(
     db: Session,
     *,

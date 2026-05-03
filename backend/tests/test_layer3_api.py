@@ -424,6 +424,40 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
         "authority_rail",
     } <= set(material_schema["required"])
 
+    dataset_candidate_schema = _openapi_response_schema(spec, "/api/v1/layer3/dataset-version-candidates", "get")
+    assert dataset_candidate_schema["title"] == "Layer3DatasetVersionCandidatesResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "dataset_version_candidates",
+        "candidate_count",
+        "source_system",
+        "authority_rail",
+    } <= set(dataset_candidate_schema["required"])
+
+
+def test_layer3_api_lists_aps_derived_dataset_version_candidates(client: TestClient, tmp_path) -> None:
+    db = client.layer3_session_factory()
+    try:
+        dataset_version_id = _seed_aps_derived_dataset_version(db, tmp_path)
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get("/api/v1/layer3/dataset-version-candidates")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["schema_id"] == "layer3.aps_dataset_version_candidates.v1"
+    assert body["candidate_count"] == 1
+    candidate = body["dataset_version_candidates"][0]
+    assert candidate["dataset_version_id"] == dataset_version_id
+    assert candidate["source_system"] == "nrc_adams_aps"
+    assert candidate["parser_family"] == "csv_table"
+
 
 def test_layer3_gate_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
