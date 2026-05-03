@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main planning/control settlement for selected-pass associated-cohort rendered external export/download delivery UI after PR #485",
+  "status": "current-main selected-pass associated-cohort delivery UI gate proof plus branch-local signed delivery-reference planning/control governance",
   "scope": {
     "source_branch": "codex/l3-cohort-delivery-ui-settle-p20",
     "merged_pr": "#485",
@@ -222,7 +222,11 @@
     "latest_delivery_ui_settlement_branch": "codex/l3-cohort-delivery-ui-settle-p20",
     "latest_delivery_ui_settlement_pr": "#485",
     "latest_delivery_ui_settlement_merge_commit": "ca2adf26d0107e354f7204b84a6216d9f1dd6790",
-    "latest_delivery_ui_settlement_summary": "PR #485 lands docs 100/101 as current-main planning/control settlement: associated-cohort rendered delivery activation over the existing generic delivery form requires explicit server-authoritative UI availability or must remain disabled."
+    "latest_delivery_ui_settlement_summary": "PR #485 lands docs 100/101 as current-main planning/control settlement: associated-cohort rendered delivery activation over the existing generic delivery form requires explicit server-authoritative UI availability or must remain disabled.",
+    "latest_signed_url_planning_branch": "codex/l3-signed-url-freeze-p32",
+    "latest_signed_url_planning_pr": "",
+    "latest_signed_url_planning_live_behavior_change": false,
+    "latest_signed_url_planning_summary": "Docs 102/103 define planning-only signed delivery-reference governance after PR #483 same-origin delivery and PR #487 rendered delivery UI gate authority. They do not implement signed URL generation, token minting, URL serving, rendered signed URL controls, public URLs, connector/generic dispatch, destination selection, durable token/receipt/audit state, package mutation, schema/runtime/source widening, broader UI, or full mockup behavior."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -290,7 +294,9 @@
     "next_milestone_plans/Layer3_planning_docs/98_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/99_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/100_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/101_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/101_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/102_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/103_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_CONTRACT.md"
   ],
   "current_live_workbench_boundary": {
     "live_bounded": [
@@ -378,7 +384,8 @@
       "APS handoff dispatch governance from docs 58/59 governs the PR #260 backend/API implementation; by itself it does not add rendered UI controls, external export/download, generic downstream dispatch, connector dispatch, destination selection, package mutation/reconstruction, source/schema/runtime widening, or full mockup activation",
       "external export/download readiness governance from docs 62/63 is planning-only by itself; a future implementation must remain a backend/API reference-only descriptor after aps_handoff_dispatched unless a later freeze admits browser download routes, public/signed URLs, connector dispatch, destination selection, physical export materialization, or extra rows",
       "docs 70/71 are planning-only current-methods AnalysisMethod registry governance by themselves; PR #316 is the separate implementation and new methods still require separate governance",
-      "docs 100/101 current-main associated-cohort rendered delivery-control settlement over existing generic delivery UI code; no runtime/UI behavior change by docs alone"
+      "docs 100/101 current-main associated-cohort rendered delivery-control settlement over existing generic delivery UI code; no runtime/UI behavior change by docs alone",
+      "docs 102/103 branch-local signed delivery-reference governance; no signed URL generation, token minting, URL serving, rendered signed URL controls, durable token/receipt/audit state, connector/destination dispatch, schema/runtime/source widening, or full mockup activation by docs alone"
     ],
     "current_main_rendered_package_review_ui": [
       "PR #245 renders bounded package construction commit and package-review submit controls on /review/layer3 over the already-live PR #238 and PR #243 backend endpoints; PR #247 hardens stale session-summary fallback after package commit inside the same UI boundary. They do not admit handoff/export, package payload mutation, package reconstruction, source/schema/runtime widening, or full mockup activation."
@@ -939,7 +946,10 @@
     "docs 98/99 create public URLs",
     "docs 98/99 create signed URLs",
     "docs 98/99 create connector dispatch",
-    "docs 98/99 create destination selection"
+    "docs 98/99 create destination selection",
+    "signed URL generation by docs alone",
+    "durable token/receipt/audit state",
+    "rendered signed URL controls"
   ],
   "post_merge_pr_222_proof": {
     "merge_commit": "4409702e66ee40d8e2c63c8ea86fa72cb7ea2b6c",
@@ -1381,7 +1391,9 @@
     "next_milestone_plans/Layer3_planning_docs/98_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/99_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/100_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/101_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/101_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/102_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/103_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_CONTRACT.md"
   ],
   "handoff_export_prepare_ui_implementation_proof": {
     "implementation_branch": "codex/l3-handoff-prepare-ui-impl",
@@ -3192,6 +3204,43 @@
       "stale docs 100/101 branch-local wording/count scan -> no matches",
       "postmerge invariant script -> 65 records, 37 live bounded, 28 planning-only, 0 branch-local planning/control, PR #485 merge metadata present",
       "git diff --check -> passed"
+    ]
+  },
+  "descriptive_summary_selected_pass_cohort_external_export_download_signed_url_planning_proof": {
+    "planning_branch": "codex/l3-signed-url-freeze-p32",
+    "planning_pr": "",
+    "base_commit": "aedf65a4",
+    "scope": "Branch-local planning/control signed delivery-reference governance only. No runtime signed URL behavior changes by this document-only slice.",
+    "files_changed": [
+      "next_milestone_plans/Layer3_planning_docs/102_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/103_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_CONTRACT.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_progress_refresh_spec.md",
+      "next_milestone_plans/progress-prompt.md",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "authority_basis": [
+      "Current main at aedf65a4 includes PR #483 same-origin associated-cohort backend/API delivery proof.",
+      "Current main at aedf65a4 includes PR #487 explicit associated-cohort rendered delivery UI gate.",
+      "Current main at aedf65a4 includes PR #496 package-review submit legacy idempotency compatibility and proof-manifest SHA correction."
+    ],
+    "non_goals": [
+      "signed URL generation, token minting, URL serving, or signed URL consumption by docs alone",
+      "public URLs or long-lived bearer URLs",
+      "rendered signed URL controls",
+      "connector/generic dispatch or destination selection",
+      "durable token/receipt/audit/runtime write state",
+      "package mutation/reconstruction",
+      "schema/runtime/source/model/migration widening",
+      "broader UI or full mockup activation"
+    ],
+    "verification": [
+      "python -m json.tool next_milestone_plans/layer3_progress_manifest.json and layer3_workbench_proof_manifest.json -> passed",
+      "intentional-scope manifest validation -> declared paths exist, docs 102/103 referenced by relevant control surfaces, counts 67/38/28/1, no live signed URL overclaim phrases -> passed",
+      "git diff --check -> passed with expected LF-to-CRLF warnings on edited text files",
+      "git diff --name-only/status -> docs/control-only under next_milestone_plans; no backend/runtime/test/UI/schema/model/migration edits"
     ]
   }
 }
