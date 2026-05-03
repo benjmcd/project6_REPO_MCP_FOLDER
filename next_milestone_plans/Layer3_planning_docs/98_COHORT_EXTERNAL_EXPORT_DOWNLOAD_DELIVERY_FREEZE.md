@@ -6,7 +6,7 @@ Current-main governance from PR `#481`, with current-main implementation proof f
 
 This document does not implement runtime behavior by itself. PR `#483` proves that the existing same-origin `POST /api/v1/layer3/handoff/export/download/deliver` backend/API endpoint can stream an exact associated-cohort readiness artifact after revalidating the recorded PR `#479` descriptor and the APS evidence-bundle handoff artifact. It does not admit associated-cohort rendered-control activation, public URLs, signed URLs, connector dispatch, generic downstream dispatch, destination selection, package mutation/rebuild, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
-Branch-local docs `100`/`101` separately settle the rendered-control governance question by requiring explicit server-authoritative associated-cohort UI activation over the existing generic delivery UI path.
+Current-main PR `#485` docs `100`/`101` separately settle the rendered-control governance question by requiring explicit server-authoritative associated-cohort UI activation over the existing generic delivery UI path.
 
 ## Current Live Baseline
 
