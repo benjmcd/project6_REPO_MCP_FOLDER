@@ -4,7 +4,9 @@
 
 Current-main governance from PR `#481`, with current-main implementation proof from PR `#483`.
 
-This document does not implement runtime behavior by itself. PR `#483` proves that the existing same-origin `POST /api/v1/layer3/handoff/export/download/deliver` backend/API endpoint can stream an exact associated-cohort readiness artifact after revalidating the recorded PR `#479` descriptor and the APS evidence-bundle handoff artifact. It does not admit rendered download controls, public URLs, signed URLs, connector dispatch, generic downstream dispatch, destination selection, package mutation/rebuild, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+This document does not implement runtime behavior by itself. PR `#483` proves that the existing same-origin `POST /api/v1/layer3/handoff/export/download/deliver` backend/API endpoint can stream an exact associated-cohort readiness artifact after revalidating the recorded PR `#479` descriptor and the APS evidence-bundle handoff artifact. It does not admit associated-cohort rendered-control activation, public URLs, signed URLs, connector dispatch, generic downstream dispatch, destination selection, package mutation/rebuild, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+
+Branch-local docs `100`/`101` separately settle the rendered-control governance question by requiring explicit server-authoritative associated-cohort UI activation over the existing generic delivery UI path.
 
 ## Current Live Baseline
 
@@ -16,7 +18,7 @@ Current `project6-origin/main` includes:
 - associated-cohort APS evidence-bundle handoff dispatch from PR `#466`;
 - associated-cohort external export/download readiness from PR `#479`.
 
-The live associated-cohort readiness boundary remains reference-only until a delivery request is made through the existing same-origin backend/API delivery endpoint. PR `#483` adds executable proof that delivery revalidates that recorded descriptor and streams only the existing APS evidence-bundle handoff artifact; it still keeps rendered browser controls, public/signed URL generation, connector dispatch, destination selection, generic downstream dispatch, package mutation, schema/runtime/source widening, broader UI, and full mockup behavior unavailable.
+The live associated-cohort readiness boundary remains reference-only until a delivery request is made through the existing same-origin backend/API delivery endpoint. PR `#483` adds executable proof that delivery revalidates that recorded descriptor and streams only the existing APS evidence-bundle handoff artifact; it does not itself activate associated-cohort rendered browser controls, public/signed URL generation, connector dispatch, destination selection, generic downstream dispatch, package mutation, schema/runtime/source widening, broader UI, or full mockup behavior.
 
 ## Authority Boundary
 
@@ -40,7 +42,7 @@ The planning boundary selected by PR `#481` is:
 This is smaller than a general associated-cohort export feature. It deliberately separates:
 
 - server-side delivery of the already validated APS evidence-bundle artifact;
-- rendered `/review/layer3` download controls, which require separate UI governance;
+- associated-cohort rendered `/review/layer3` download controls, which require separate UI governance now provided branch-locally by docs `100`/`101`;
 - public/signed URL generation, destination selection, and connector/generic dispatch, which remain later higher-blast-radius decisions.
 
 ## Current-Main Implementation Proof
@@ -113,20 +115,20 @@ The response must not include or create:
 
 ## UI Boundary
 
-This freeze does not admit rendered `/review/layer3` download controls.
+This freeze does not admit associated-cohort rendered `/review/layer3` download controls by itself.
 
-A separate UI freeze is required before:
+Separate UI governance is required before:
 
 - showing an active browser download button or link;
 - invoking the delivery endpoint from `/review/layer3`;
 - representing a completed download in page state;
 - retrying, cancelling, or refreshing downloads from the browser.
 
-Until a later UI boundary lands, rendered associated-cohort readiness may remain visible only as readiness state and must keep browser download and URL controls unavailable.
+Until docs `100`/`101` or a later UI implementation proves an explicit server-authoritative associated-cohort delivery gate, rendered associated-cohort readiness may remain visible only as readiness state and must keep browser download and URL controls unavailable.
 
 ## Explicit Non-Goals
 
-- No rendered download button, rendered download link, or browser control activation.
+- No associated-cohort rendered download button, rendered download link, or browser control activation by this backend/API freeze alone.
 - No public URL, signed URL, or local path exposure.
 - No connector dispatch, connector-run creation, destination selection, non-APS downstream dispatch, or generic downstream dispatch.
 - No package payload editing, copying, reconstruction, rebuild, amendment, supersession, or variant rewrite controls.
@@ -153,7 +155,7 @@ At minimum, an implementation must prove:
 
 Still separate and not admitted:
 
-- rendered `/review/layer3` download controls;
+- associated-cohort rendered `/review/layer3` download-control activation unless separately proven under docs `100`/`101` or a later UI freeze;
 - public URL generation;
 - signed URL generation;
 - connector dispatch or connector-run handling;
