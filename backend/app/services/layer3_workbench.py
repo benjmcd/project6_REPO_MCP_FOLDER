@@ -164,6 +164,11 @@ EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_READY_STATE = "external_export_download_delive
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE = "external_export_download_delivered"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BLOCKED_STATE = "external_export_download_delivery_blocked"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONFLICT_STATE = "external_export_download_delivery_conflict"
+EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID = "layer3.external_export_download_delivery_ui.v1"
+ASSOCIATED_COHORT_DELIVERY_UI_UNAVAILABLE_STATE = (
+    "associated_cohort_external_export_download_delivery_ui_unavailable"
+)
+ASSOCIATED_COHORT_DELIVERY_UI_READY_STATE = "associated_cohort_external_export_download_delivery_ui_ready"
 STATE_MODEL_SCHEMA_ID = "layer3.workbench_state_model.v1"
 PLAN_REVISION_DECISIONS = frozenset({"reject_current_preview", "request_revision"})
 PLAN_REVISION_STATE_BY_DECISION = {
@@ -5280,6 +5285,88 @@ def _cohort_readiness_identity(source: dict[str, Any]) -> dict[str, Any]:
     return identity
 
 
+def _is_associated_cohort_external_export_download(readiness_state: dict[str, Any]) -> bool:
+    return readiness_state.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT or (
+        readiness_state.get("pass_scope") == PASS_SCOPE_QUANT_ASSOCIATED_COHORT
+        and readiness_state.get("method") == "descriptive_summary"
+        and readiness_state.get("source_gate") == SOURCE_GATE_COHORT_DESC_FREEZE
+        and readiness_state.get("source_shape") == COHORT_SHAPE_ALIGNED_WIDE_TABLE
+    )
+
+
+def _associated_cohort_delivery_ui_state(
+    readiness_state: dict[str, Any],
+    *,
+    blocked_reason: str | None = None,
+) -> dict[str, Any]:
+    source_dataset_version_ids = readiness_state.get("source_dataset_version_ids")
+    required_refs = (
+        "external_export_download_record_ref",
+        "export_download_descriptor_ref",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "package_review_submit_record_ref",
+        "prepare_record_ref",
+        "handoff_export_envelope_ref",
+        "aps_handoff_record_ref",
+        "aps_output_package_id",
+        "aps_output_package_kind",
+        "aps_bundle_ref",
+        "aps_bundle_id",
+        "aps_schema_id",
+        "source_artifact_hash",
+        "source_artifact_size_bytes",
+    )
+    mismatches = [
+        field
+        for field, expected in {
+            "external_export_download_state": EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE,
+            "pass_type": PASS_TYPE_ASSOCIATED_COHORT,
+            "pass_scope": PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
+            "method": "descriptive_summary",
+            "source_gate": SOURCE_GATE_COHORT_DESC_FREEZE,
+            "package_construction_source_gate": SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
+            "source_shape": COHORT_SHAPE_ALIGNED_WIDE_TABLE,
+            "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+            "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+            "aps_handoff_state": APS_HANDOFF_DISPATCHED_STATE,
+            "aps_output_package_kind": PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+            "export_download_target": "aps_evidence_bundle_download_reference",
+            "download_mode": "reference_only_prepare",
+        }.items()
+        if readiness_state.get(field) != expected
+    ]
+    missing_refs = [field for field in required_refs if readiness_state.get(field) in (None, "", [])]
+    if not isinstance(source_dataset_version_ids, list) or not source_dataset_version_ids:
+        missing_refs.append("source_dataset_version_ids")
+
+    available = not blocked_reason and not mismatches and not missing_refs
+    return {
+        "schema_id": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID,
+        "available": available,
+        "state": (
+            ASSOCIATED_COHORT_DELIVERY_UI_READY_STATE
+            if available
+            else ASSOCIATED_COHORT_DELIVERY_UI_UNAVAILABLE_STATE
+        ),
+        "blocked_reason": blocked_reason
+        or ("missing_or_mismatched_associated_cohort_delivery_authority" if not available else None),
+        "blocked_fields": sorted(set(mismatches + missing_refs)),
+        "operator_decision": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION,
+        "delivery_mode": "same_origin_artifact_stream",
+        "server_authority": "associated_cohort_external_export_download_delivery_ui_gate",
+        "browser_managed_same_origin_attachment_enabled": available,
+        "public_url_enabled": False,
+        "signed_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_selection_enabled": False,
+        "generic_downstream_dispatch_enabled": False,
+        "package_mutation_enabled": False,
+        "schema_runtime_source_widening_enabled": False,
+    }
+
+
 def _external_export_download_prepare_response(
     *,
     request_id: str,
@@ -5354,6 +5441,8 @@ def _external_export_download_prepare_response(
         ),
     }
     body.update(_cohort_readiness_identity(readiness_state))
+    if _is_associated_cohort_external_export_download(readiness_state):
+        body["delivery_ui"] = _associated_cohort_delivery_ui_state(readiness_state)
     descriptor = readiness_state.get("external_export_download_descriptor")
     if isinstance(descriptor, dict):
         body["external_export_download_descriptor"] = descriptor
@@ -8868,6 +8957,7 @@ def external_export_download_prepare(
                 "package_review_submit_schema_id": COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
             }
         )
+        readiness_state["delivery_ui"] = _associated_cohort_delivery_ui_state(readiness_state)
     reconciliation.summary_json = {
         **reconciliation_summary,
         "external_export_download_prepare": readiness_state,
@@ -9765,7 +9855,7 @@ def _external_export_download_prepare_summary(
         }
     recorded_readiness = _external_export_download_prepare_from_reconciliation(reconciliation)
     if recorded_readiness is not None:
-        return {
+        summary = {
             "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
             "available": False,
             "state": recorded_readiness.get("external_export_download_state"),
@@ -9813,6 +9903,11 @@ def _external_export_download_prepare_summary(
             "generic_downstream_dispatch_enabled": False,
             "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
         }
+        if _is_associated_cohort_external_export_download(recorded_readiness):
+            summary["delivery_ui"] = recorded_readiness.get("delivery_ui") or _associated_cohort_delivery_ui_state(
+                recorded_readiness
+            )
+        return summary
 
     try:
         bundle_identity = _aps_bundle_identity_for_external_export_download(

@@ -938,6 +938,42 @@ function recordedExternalExportDownloadPrepare() {
         : null;
 }
 
+function isAssociatedCohortExternalExportDownloadState(external = externalExportDownloadPrepareState() || {}) {
+    return external.pass_type === ASSOCIATED_COHORT_PASS_TYPE
+        || (
+            external.pass_scope === ASSOCIATED_COHORT_PASS_SCOPE
+            && external.method === ASSOCIATED_COHORT_METHOD
+            && external.source_gate === ASSOCIATED_COHORT_SOURCE_GATE
+            && external.source_shape === ASSOCIATED_COHORT_SHAPE
+        );
+}
+
+function associatedCohortDeliveryUiState(external = externalExportDownloadPrepareState() || {}) {
+    return external?.delivery_ui || null;
+}
+
+function externalExportDownloadDeliveryUiAdmitted(external = externalExportDownloadPrepareState() || {}) {
+    if (!isAssociatedCohortExternalExportDownloadState(external)) {
+        return true;
+    }
+    const deliveryUi = associatedCohortDeliveryUiState(external);
+    return Boolean(
+        deliveryUi
+        && deliveryUi.available === true
+        && deliveryUi.state === 'associated_cohort_external_export_download_delivery_ui_ready'
+        && deliveryUi.operator_decision === 'deliver_external_export_download'
+        && deliveryUi.delivery_mode === 'same_origin_artifact_stream'
+        && deliveryUi.browser_managed_same_origin_attachment_enabled === true
+        && deliveryUi.public_url_enabled === false
+        && deliveryUi.signed_url_enabled === false
+        && deliveryUi.connector_dispatch_enabled === false
+        && deliveryUi.destination_selection_enabled === false
+        && deliveryUi.generic_downstream_dispatch_enabled === false
+        && deliveryUi.package_mutation_enabled === false
+        && deliveryUi.schema_runtime_source_widening_enabled === false
+    );
+}
+
 function externalExportDownloadDeliveryStateName(state = State.externalExportDownloadDelivery) {
     return state?.external_export_download_delivery_state || state?.deliveryState || state?.state || null;
 }
@@ -1153,6 +1189,7 @@ function canSubmitExternalExportDownloadDelivery() {
         && prepareState === 'handoff_export_prepared'
         && apsState === 'aps_handoff_dispatched'
         && readinessState === 'external_export_download_prepared'
+        && externalExportDownloadDeliveryUiAdmitted(external)
         && external.external_export_download_record_ref
         && external.export_download_descriptor_ref
         && external.result_review_record_ref
@@ -3007,6 +3044,8 @@ function renderExternalExportDownloadPreparePanel() {
 function externalExportDownloadDeliveryPanelState() {
     const external = externalExportDownloadPrepareState() || {};
     const stateName = externalExportDownloadStateName(external);
+    const associatedCohort = isAssociatedCohortExternalExportDownloadState(external);
+    const deliveryUi = associatedCohortDeliveryUiState(external);
     if (State.externalExportDownloadDeliveryPending) {
         return { label: 'external_export_download_delivery_ui_downloading', pill: 'preview', message: 'Submitting one same-origin attachment request for browser-managed download.' };
     }
@@ -3024,6 +3063,9 @@ function externalExportDownloadDeliveryPanelState() {
     if (stateName === 'external_export_download_prepared' && canSubmitExternalExportDownloadDelivery()) {
         return { label: 'external_export_download_delivery_ui_ready', pill: 'ok', message: 'Recorded readiness can be delivered as a same-origin attachment.' };
     }
+    if (stateName === 'external_export_download_prepared' && associatedCohort && deliveryUi?.available !== true) {
+        return { label: deliveryUi?.state || 'associated_cohort_external_export_download_delivery_ui_unavailable', pill: 'blocked', message: 'Associated-cohort delivery requires explicit server UI authority before the rendered control can submit.' };
+    }
     if (stateName === 'external_export_download_prepared') {
         return { label: 'external_export_download_delivery_ui_unavailable', pill: 'blocked', message: 'Recorded readiness is present, but the server summary is missing required delivery basis.' };
     }
@@ -3033,6 +3075,7 @@ function externalExportDownloadDeliveryPanelState() {
 function renderExternalExportDownloadDeliveryPanel() {
     const external = externalExportDownloadPrepareState() || {};
     const panelState = externalExportDownloadDeliveryPanelState();
+    const deliveryUi = associatedCohortDeliveryUiState(external) || {};
     const downstream = [
         'public_url',
         'signed_url',
@@ -3058,6 +3101,9 @@ function renderExternalExportDownloadDeliveryPanel() {
                     ${fieldItem('download mode', external.download_mode || descriptor.download_mode || 'reference_only_prepare')}
                     ${fieldItem('delivery mode', 'same_origin_artifact_stream')}
                     ${fieldItem('decision', 'deliver_external_export_download')}
+                    ${fieldItem('server UI state', deliveryUi.state)}
+                    ${fieldItem('server UI available', deliveryUi.available)}
+                    ${fieldItem('server UI basis', deliveryUi.server_authority)}
                 </ul>
             </section>
             <section class="result-review-card">
@@ -3363,6 +3409,7 @@ function setGateControls() {
     );
     const externalExportDownloadDeliveryControlsEnabled = Boolean(
         recordedExternalExportDownloadPrepare()
+        && externalExportDownloadDeliveryUiAdmitted()
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
     );

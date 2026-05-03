@@ -471,6 +471,7 @@ class Layer3ExternalExportDownloadPrepareResponse(Layer3BaseResponse):
     destination_selection_enabled: bool
     generic_downstream_dispatch_enabled: bool
     downstream_unavailable: list[str]
+    delivery_ui: dict[str, Any] | None = None
     next_state: str
     authority_rail: dict[str, Any]
 

@@ -216,6 +216,236 @@ test('Layer 3 workbench exposes visible keyboard focus across themes', async ({ 
   }
 });
 
+test('Layer 3 workbench requires explicit associated-cohort delivery UI server authority', async ({ page }) => {
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => {
+    const authorityRail = {
+      session_id: 'session-cohort-delivery-ui',
+      current_gate: 'package',
+      persistence_mode: 'durable_external_export_download_prepare',
+      source_authority: { source_classes: ['dataset_version'] },
+      downstream_unavailable: ['public_url', 'signed_url', 'connector_dispatch'],
+    };
+    const packageIds = ['pkg-canonical', 'pkg-user', 'pkg-review'];
+    const packageKinds = ['canonical_internal', 'user_facing', 'review_facing'];
+    const payloadRefs = ['payload-canonical', 'payload-user', 'payload-review'];
+    const payloadHashes = ['hash-canonical', 'hash-user', 'hash-review'];
+    const external = {
+      schema_id: 'layer3.external_export_download_prepare_state.v1',
+      state: 'external_export_download_prepared',
+      external_export_download_state: 'external_export_download_prepared',
+      external_export_download_record_ref: 'readiness-ref',
+      export_download_descriptor_ref: 'descriptor-ref',
+      result_review_record_ref: 'review-ref',
+      package_review_preview_hash: 'package-preview-hash',
+      reconciliation_record_id: 'reconciliation-id',
+      output_package_ids: packageIds,
+      package_kinds: packageKinds,
+      payload_refs: payloadRefs,
+      payload_hashes: payloadHashes,
+      package_review_submit_record_ref: 'submit-ref',
+      package_review_state: 'package_review_approved',
+      prepare_record_ref: 'prepare-ref',
+      handoff_export_state: 'handoff_export_prepared',
+      handoff_export_envelope_ref: 'envelope-ref',
+      handoff_target: 'internal_export_envelope',
+      export_mode: 'prepare_only',
+      aps_handoff_record_ref: 'aps-record-ref',
+      aps_handoff_state: 'aps_handoff_dispatched',
+      aps_handoff_target: 'aps_evidence_bundle',
+      dispatch_mode: 'server_side_aps_handoff',
+      aps_output_package_id: 'aps-package-id',
+      aps_output_package_kind: 'aps_evidence_bundle_handoff',
+      aps_bundle_ref: 'aps-bundle-ref',
+      aps_bundle_id: 'aps-bundle-id',
+      aps_schema_id: 'aps.evidence_bundle.v2',
+      source_artifact_hash: 'source-artifact-hash',
+      source_artifact_size_bytes: 123,
+      export_download_target: 'aps_evidence_bundle_download_reference',
+      download_mode: 'reference_only_prepare',
+      pass_type: 'associated_cohort',
+      pass_scope: 'quantitative_associated_cohort_dataset_version',
+      method: 'descriptive_summary',
+      source_gate: '78_COHORT_FREEZE',
+      source_shape: 'aligned_wide_table',
+      source_dataset_version_ids: ['dv-1', 'dv-2'],
+    };
+    State.sessionSummary = {
+      session_id: 'session-cohort-delivery-ui',
+      execution_selection: {
+        selected: true,
+        pass_run_ids: ['pass-run-id'],
+        pass_run_statuses: { 'pass-run-id': 'completed' },
+        source_preview_id: 'preview-id',
+        source_preview_hash: 'preview-hash',
+        analysis_plan_id: 'analysis-plan-id',
+      },
+      analysis_execution_start: {
+        analysis_run_id: 'analysis-run-id',
+      },
+      execution_result_review: {
+        review_state: 'execution_result_review_approved',
+        operator_decision: 'approved',
+        review_record_ref: 'review-ref',
+      },
+      package_review_submit: {
+        package_review_state: 'package_review_approved',
+        submit_record_ref: 'submit-ref',
+        output_package_ids: packageIds,
+        package_kinds: packageKinds,
+        payload_refs: payloadRefs,
+        payload_hashes: payloadHashes,
+      },
+      handoff_export_prepare: {
+        prepare_record_ref: 'prepare-ref',
+        handoff_export_state: 'handoff_export_prepared',
+        handoff_export_envelope_ref: 'envelope-ref',
+        result_review_record_ref: 'review-ref',
+        package_review_preview_hash: 'package-preview-hash',
+        reconciliation_record_id: 'reconciliation-id',
+        package_review_submit_record_ref: 'submit-ref',
+        package_review_state: 'package_review_approved',
+        output_package_ids: packageIds,
+        package_kinds: packageKinds,
+        payload_refs: payloadRefs,
+        payload_hashes: payloadHashes,
+      },
+      aps_handoff_dispatch: {
+        aps_handoff_record_ref: 'aps-record-ref',
+        aps_handoff_state: 'aps_handoff_dispatched',
+      },
+      external_export_download: external,
+      sublayer_visualization: {
+        pass_runs: [{
+          pass_run_id: 'pass-run-id',
+          pass_type: 'associated_cohort',
+          pass_scope: 'quantitative_associated_cohort_dataset_version',
+          selected_method_name: 'descriptive_summary',
+          requested_method_name: 'descriptive_summary',
+          requested_method_source: 'analysis_set.formation_basis_json.requested_method_name',
+          source_gate: '78_COHORT_FREEZE',
+          cohort_shape: 'aligned_wide_table',
+          source_dataset_version_ids: ['dv-1', 'dv-2'],
+        }],
+      },
+      authority_rail: authorityRail,
+    };
+    State.resultStatus = {
+      result_status_available: true,
+      pass_run_id: 'pass-run-id',
+      pass_run_status: 'completed',
+      pass_type: 'associated_cohort',
+      pass_scope: 'quantitative_associated_cohort_dataset_version',
+      selected_method_name: 'descriptive_summary',
+      analysis_plan_id: 'analysis-plan-id',
+      analysis_run_id: 'analysis-run-id',
+      preview_identity: { preview_id: 'preview-id', preview_hash: 'preview-hash' },
+      output_payload_ref: 'output-ref',
+      output_metadata_summary: {
+        readable: true,
+        pass_type: 'associated_cohort',
+        pass_scope: 'quantitative_associated_cohort_dataset_version',
+        selected_method_name: 'descriptive_summary',
+        requested_method_name: 'descriptive_summary',
+        requested_method_source: 'analysis_set.formation_basis_json.requested_method_name',
+        source_gate: '78_COHORT_FREEZE',
+        cohort_shape: 'aligned_wide_table',
+        source_dataset_version_ids: ['dv-1', 'dv-2'],
+        output_payload_ref: 'output-ref',
+      },
+    };
+    renderAll();
+  });
+
+  await expect(page.locator('#external-export-download-delivery-submit')).toBeDisabled();
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText(
+    'associated_cohort_external_export_download_delivery_ui_unavailable',
+  );
+
+  await page.evaluate(() => {
+    State.sessionSummary.external_export_download.delivery_ui = {
+      schema_id: 'layer3.external_export_download_delivery_ui.v1',
+      available: true,
+      state: 'associated_cohort_external_export_download_delivery_ui_ready',
+      operator_decision: 'deliver_external_export_download',
+      delivery_mode: 'same_origin_artifact_stream',
+      server_authority: 'associated_cohort_external_export_download_delivery_ui_gate',
+      browser_managed_same_origin_attachment_enabled: true,
+      public_url_enabled: false,
+      signed_url_enabled: false,
+      connector_dispatch_enabled: false,
+      destination_selection_enabled: false,
+      generic_downstream_dispatch_enabled: false,
+      package_mutation_enabled: false,
+      schema_runtime_source_widening_enabled: false,
+    };
+    renderAll();
+  });
+
+  await expect(page.locator('#external-export-download-delivery-submit')).toBeEnabled();
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText(
+    'external_export_download_delivery_ui_ready',
+  );
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText(
+    'associated_cohort_external_export_download_delivery_ui_gate',
+  );
+
+  await page.route('**/api/v1/layer3/handoff/export/download/deliver', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/octet-stream',
+      headers: {
+        'content-disposition': 'attachment; filename="cohort-aps-bundle.json"',
+        'x-layer3-schema-id': 'layer3.external_export_download_delivery.v1',
+        'x-layer3-delivery-state': 'external_export_download_delivered',
+        'x-layer3-source-artifact-hash': 'source-artifact-hash',
+      },
+      body: '{"delivered":true}',
+    });
+  });
+
+  const [deliveryRequest, deliveryResponse] = await Promise.all([
+    page.waitForRequest('**/api/v1/layer3/handoff/export/download/deliver'),
+    page.waitForResponse('**/api/v1/layer3/handoff/export/download/deliver'),
+    page.locator('#external-export-download-delivery-submit').click(),
+  ]);
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText(
+    'external_export_download_delivery_ui_downloading',
+  );
+  expect(deliveryResponse.status()).toBe(200);
+  expect(deliveryResponse.headers()['content-disposition']).toContain('attachment');
+  const submittedPayload = formPostPayload(deliveryRequest);
+  expect(submittedPayload.operator_decision).toBe('deliver_external_export_download');
+  expect(submittedPayload.delivery_mode).toBe('same_origin_artifact_stream');
+  expect(submittedPayload.external_export_download_record_ref).toBe('readiness-ref');
+  expect(submittedPayload.client_request_id).toEqual(expect.any(String));
+  expect(submittedPayload.client_request_id.length).toBeGreaterThan(0);
+  for (const forbiddenKey of [
+    'download_url',
+    'download_token',
+    'public_url',
+    'signed_url',
+    'local_file_path',
+    'connector_run_id',
+    'connector_dispatch',
+    'destination',
+    'destination_id',
+    'generic_dispatch',
+    'runtime_db_write',
+    'analysis_artifact',
+    'artifact_manifest',
+    'create_package',
+    'rebuild_package',
+    'package_payload',
+    'retry',
+    'recover',
+    'schema_migration',
+    'delivery_ui',
+  ]) {
+    expect(submittedPayload).not.toHaveProperty(forbiddenKey);
+  }
+});
+
 test('Layer 3 workbench applies mockup-informed Workbench visual boundaries without degrading shared themes', async ({ page }) => {
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   await page.locator('#theme-selector').selectOption('workbench');
