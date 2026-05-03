@@ -1161,7 +1161,7 @@ Start with:
 Read this as a proof/hardening lane over existing rendered controls, not as a new downstream handoff/export capability:
 - PR `#460` is the backend/API authority for selected-pass associated-cohort `descriptive_summary` prepare-only state.
 - The rendered `/review/layer3` prepare form already exists from the prior workbench handoff/export UI path and is gated by server `handoff_export_prepare.available` state.
-- Branch-local UI proof may add read-only pass type, pass scope, method, source gate, and package source gate projection and focused headed/headless browser proof.
+- PR `#462` adds read-only pass type, pass scope, method, source gate, and package source gate projection plus focused headed/headless browser proof for the existing rendered prepare control.
 - It must not admit APS dispatch, external export/download, connector dispatch, package mutation/reconstruction, schema/runtime/source widening, retry/recovery, pass-entry changes, broader UI, qualitative/hybrid/RAG/vector execution, or full mockup activation.
 
 ### If you are auditing the Layer 3 workbench APS handoff dispatch freeze
