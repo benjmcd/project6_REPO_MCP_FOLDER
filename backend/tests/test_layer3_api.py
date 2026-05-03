@@ -4718,6 +4718,101 @@ def test_layer3_api_package_review_submit_records_decision_without_mutating_pack
     assert summary_body["downstream_unavailable"] == ["aps_handoff", "external_export", "downstream_dispatch"]
 
 
+def test_layer3_api_package_review_submit_preserves_legacy_submit_ref_idempotency(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _commit_payload,
+    ) = _construct_quant_package_set(client, tmp_path, request_id="api-package-submit-legacy-ref")
+    pass_run_id = selection_body["pass_run_ids"][0]
+    submit_payload = {
+        "client_request_id": "api-package-submit-legacy-ref-submit",
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_body["preview_id"],
+        "preview_hash": preview_body["preview_hash"],
+        "analysis_run_id": start_body["analysis_run_id"],
+        "result_review_record_ref": review_body["review_record_ref"],
+        "package_review_preview_hash": commit_body["package_review_preview_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": [package["output_package_id"] for package in commit_body["output_packages"]],
+        "payload_hashes": commit_body["payload_hashes"],
+        "operator_decision": "approved",
+        "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+    }
+    submit = client.post("/api/v1/layer3/package/review/submit", json=submit_payload)
+    assert submit.status_code == 200
+
+    legacy_basis_fields = (
+        "schema_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_id",
+        "preview_hash",
+        "analysis_run_id",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_hashes",
+        "operator_decision",
+        "decision_notes",
+    )
+    added_basis_fields = (
+        "pass_type",
+        "pass_scope",
+        "method",
+        "source_gate",
+        "package_construction_source_gate",
+        "source_shape",
+        "source_dataset_version_ids",
+    )
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        reconciliation_summary = dict(reconciliation.summary_json)
+        submit_state = dict(reconciliation_summary["package_review_submit"])
+        authority_basis = dict(submit_state["authority_basis"])
+        legacy_basis = {field: authority_basis[field] for field in legacy_basis_fields}
+        legacy_encoded = json.dumps(
+            legacy_basis,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+        legacy_ref = f"l3-package-review-submit-{hashlib.sha256(legacy_encoded).hexdigest()[:16]}"
+        for field in added_basis_fields:
+            submit_state.pop(field, None)
+        submit_state["authority_basis"] = legacy_basis
+        submit_state["submit_record_ref"] = legacy_ref
+        reconciliation_summary["package_review_submit"] = submit_state
+        reconciliation.summary_json = reconciliation_summary
+        db.commit()
+    finally:
+        db.close()
+
+    duplicate = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={**submit_payload, "client_request_id": "api-package-submit-legacy-ref-retry"},
+    )
+    assert duplicate.status_code == 200, duplicate.text
+    duplicate_body = duplicate.json()
+    assert duplicate_body["status"] == "already_submitted"
+    assert duplicate_body["submit_record_ref"] == legacy_ref
+
+
 def test_layer3_api_handoff_export_prepare_records_reference_envelope_without_side_effects(
     client: TestClient,
     tmp_path,
