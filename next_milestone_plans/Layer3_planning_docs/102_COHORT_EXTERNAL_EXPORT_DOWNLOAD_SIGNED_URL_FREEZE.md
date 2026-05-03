@@ -52,7 +52,7 @@ The live PR `#499` route surface is:
 - `POST /api/v1/layer3/handoff/export/download/signed-reference/generate`;
 - `POST /api/v1/layer3/handoff/export/download/signed-reference/use`.
 
-The implementation uses `same_origin_signed_delivery_reference` delivery mode, HMAC signing, a 300-second TTL, and `LAYER3_SIGNED_REFERENCE_SECRET` when configured; otherwise it uses a process-local fail-closed key, so externally durable or multi-process token stability requires operator-provided secret configuration and remains outside docs-only authority.
+The implementation uses `same_origin_signed_delivery_reference` delivery mode, HMAC signing, a 300-second TTL, and requires `LAYER3_SIGNED_REFERENCE_SECRET` before generation or use. If the secret is absent, signed-reference generation/use fails closed instead of returning process-local tokens that can break across workers.
 
 ## No-Go List
 

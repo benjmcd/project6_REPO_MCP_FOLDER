@@ -1263,7 +1263,7 @@ Start with:
 Read docs `102`/`103` as current-main planning/control from PR `#497`, with PR `#499` as the separate bounded backend/API implementation:
 - current live delivery remains same-origin attachment through PR `#483`, with PR `#487` as the only associated-cohort rendered delivery UI authority
 - PR `#499` implements `POST /api/v1/layer3/handoff/export/download/signed-reference/generate` and `POST /api/v1/layer3/handoff/export/download/signed-reference/use`
-- the implementation uses server-owned HMAC signed references with a 300-second TTL, revalidates exact associated-cohort authority at generation and use, and creates no rows/files
+- the post-review hardened implementation uses server-owned HMAC signed references with a 300-second TTL, requires `LAYER3_SIGNED_REFERENCE_SECRET` before generation/use, revalidates exact associated-cohort authority at generation and use, and creates no rows/files
 - the implementation preserves PR `#496` package-review submit legacy idempotency compatibility in the upstream authority chain
 - if signed delivery needs durable token, receipt, audit, revocation, runtime write, schema/model/migration, external object-store ACL, connector, destination, or rendered UI behavior, stop for a separate freeze
 - public/provider URLs, connector/generic dispatch, destination selection, package mutation, schema/runtime/source widening, broader UI, qualitative/hybrid/RAG/vector behavior, and full mockup behavior remain out
