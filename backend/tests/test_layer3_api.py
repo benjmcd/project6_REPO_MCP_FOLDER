@@ -3576,31 +3576,57 @@ def test_layer3_api_selected_cohort_execution_start_and_status_are_bounded(
 
     handoff_after_cohort_submit = client.post(
         "/api/v1/layer3/handoff/export/prepare",
-        json={
-            "client_request_id": "api-cohort-package-submit-handoff-blocked",
-            "session_id": session_id,
-            "analysis_plan_id": approval_body["analysis_plan_id"],
-            "pass_run_id": pass_run_id,
-            "preview_id": preview_body["preview_id"],
-            "preview_hash": preview_body["preview_hash"],
-            "analysis_run_id": start_body["analysis_run_id"],
-            "result_review_record_ref": review_body["review_record_ref"],
-            "package_review_preview_hash": package_preview_body["package_review_preview_hash"],
-            "reconciliation_record_id": package_commit_body["reconciliation_record_id"],
-            "output_package_ids": [
-                package["output_package_id"] for package in package_commit_body["output_packages"]
-            ],
-            "payload_hashes": package_commit_body["payload_hashes"],
-            "package_review_submit_record_ref": package_submit_body["submit_record_ref"],
-            "package_review_state": "package_review_approved",
-            "handoff_target": "internal_export_envelope",
-            "export_mode": "prepare_only",
-            "operator_decision": "authorize_prepare",
-            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
-        },
+        json=_handoff_export_prepare_payload(
+            request_id="api-cohort-package-submit-handoff-prepare",
+            session_id=session_id,
+            preview_body=preview_body,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=package_commit_body,
+            submit_body=package_submit_body,
+        ),
     )
-    assert handoff_after_cohort_submit.status_code == 409
-    assert handoff_after_cohort_submit.json()["error_code"] == "associated_cohort_handoff_export_prepare_not_admitted"
+    assert handoff_after_cohort_submit.status_code == 200, handoff_after_cohort_submit.json()
+    handoff_body = handoff_after_cohort_submit.json()
+    _assert_common_response_envelope(handoff_body)
+    assert handoff_body["schema_id"] == "layer3.cohort_handoff_export_prepare.v1"
+    assert handoff_body["status"] == "prepared"
+    assert handoff_body["handoff_export_state"] == "handoff_export_prepared"
+    assert handoff_body["pass_type"] == "associated_cohort"
+    assert handoff_body["pass_scope"] == "quantitative_associated_cohort_dataset_version"
+    assert handoff_body["method"] == "descriptive_summary"
+    assert handoff_body["source_gate"] == "78_COHORT_FREEZE"
+    assert handoff_body["package_construction_source_gate"] == "88_COHORT_PACKAGE_CONSTRUCTION_FREEZE"
+    assert handoff_body["source_shape"] == "aligned_wide_table"
+    assert handoff_body["source_dataset_version_ids"] == ["dv-cohort-001", "dv-cohort-002"]
+    assert handoff_body["package_review_submit_schema_id"] == "layer3.cohort_package_review_submit.v1"
+    assert handoff_body["external_handoff_enabled"] is False
+    assert handoff_body["external_export_enabled"] is False
+    assert handoff_body["dispatch_enabled"] is False
+    assert handoff_body["downstream_unavailable"] == ["aps_handoff", "external_export", "downstream_dispatch"]
+    assert handoff_body["handoff_export_envelope"]["package_review_submit_schema_id"] == (
+        "layer3.cohort_package_review_submit.v1"
+    )
+
+    cohort_aps_dispatch = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json=_aps_handoff_dispatch_payload(
+            request_id="api-cohort-package-submit-aps-dispatch-blocked",
+            session_id=session_id,
+            preview_body=preview_body,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=package_commit_body,
+            submit_body=package_submit_body,
+            prepare_body=handoff_body,
+        ),
+    )
+    assert cohort_aps_dispatch.status_code == 409
+    assert cohort_aps_dispatch.json()["error_code"] == "associated_cohort_aps_handoff_dispatch_not_admitted"
 
     summary = client.get(f"/api/v1/layer3/session/{session_id}")
     assert summary.status_code == 200
@@ -3615,17 +3641,28 @@ def test_layer3_api_selected_cohort_execution_start_and_status_are_bounded(
     assert summary_body["package_review_submit"]["submit_record_ref"] == package_submit_body["submit_record_ref"]
     assert summary_body["package_review_submit"]["package_construction_source_gate"] == "88_COHORT_PACKAGE_CONSTRUCTION_FREEZE"
     assert summary_body["package_review_submit"]["package_review_submit_enabled"] is False
-    assert summary_body["handoff_export_prepare"]["state"] == "handoff_export_unavailable"
-    assert summary_body["handoff_export_prepare"]["blocked_reason"] == (
-        "handoff_export_deferred_for_associated_cohort_package_review_submit"
+    assert summary_body["handoff_export_prepare"]["state"] == "handoff_export_prepared"
+    assert summary_body["handoff_export_prepare"]["blocked_reason"] is None
+    assert summary_body["handoff_export_prepare"]["pass_type"] == "associated_cohort"
+    assert summary_body["handoff_export_prepare"]["pass_scope"] == "quantitative_associated_cohort_dataset_version"
+    assert summary_body["handoff_export_prepare"]["method"] == "descriptive_summary"
+    assert summary_body["handoff_export_prepare"]["source_gate"] == "78_COHORT_FREEZE"
+    assert summary_body["handoff_export_prepare"]["package_construction_source_gate"] == (
+        "88_COHORT_PACKAGE_CONSTRUCTION_FREEZE"
     )
-    assert summary_body["downstream_unavailable"] == [
-        "handoff",
-        "export",
-        "aps_handoff",
-        "external_export_download",
-        "connector",
+    assert summary_body["handoff_export_prepare"]["source_shape"] == "aligned_wide_table"
+    assert summary_body["handoff_export_prepare"]["source_dataset_version_ids"] == [
+        "dv-cohort-001",
+        "dv-cohort-002",
     ]
+    assert summary_body["handoff_export_prepare"]["package_review_submit_schema_id"] == (
+        "layer3.cohort_package_review_submit.v1"
+    )
+    assert summary_body["aps_handoff_dispatch"]["state"] == "aps_handoff_unavailable"
+    assert summary_body["aps_handoff_dispatch"]["blocked_reason"] == (
+        "associated_cohort_aps_handoff_dispatch_not_admitted"
+    )
+    assert summary_body["downstream_unavailable"] == ["aps_handoff", "external_export", "downstream_dispatch"]
 
     conflict = client.post(
         "/api/v1/layer3/execution/result/review",
@@ -3671,6 +3708,15 @@ def test_layer3_api_selected_cohort_execution_start_and_status_are_bounded(
             "external_export_download",
             "connector",
         ]
+        handoff_state = reconciliation.summary_json["handoff_export_prepare"]
+        assert handoff_state["handoff_export_state"] == "handoff_export_prepared"
+        assert handoff_state["pass_type"] == "associated_cohort"
+        assert handoff_state["pass_scope"] == "quantitative_associated_cohort_dataset_version"
+        assert handoff_state["method"] == "descriptive_summary"
+        assert handoff_state["source_gate"] == "78_COHORT_FREEZE"
+        assert handoff_state["package_construction_source_gate"] == "88_COHORT_PACKAGE_CONSTRUCTION_FREEZE"
+        assert handoff_state["package_review_submit_schema_id"] == "layer3.cohort_package_review_submit.v1"
+        assert "aps_handoff_dispatch" not in reconciliation.summary_json
         assert reconciliation.summary_json["workbench_package_commit"]["downstream_unavailable"] == [
             "handoff",
             "export",
