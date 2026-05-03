@@ -4,7 +4,9 @@
 
 Current-main API/state governance paired with `98_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md`, with current-main implementation proof from PR `#483`.
 
-This document defines the request, response, authority, and proof contract for same-origin associated-cohort external export/download delivery after PR `#479` readiness. It does not make rendered delivery controls live by itself and does not admit public URLs, signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+This document defines the request, response, authority, and proof contract for same-origin associated-cohort external export/download delivery after PR `#479` readiness. It does not make associated-cohort rendered delivery controls live by itself and does not admit public URLs, signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+
+Branch-local docs `100`/`101` are the separate rendered-control settlement packet for the existing generic `/review/layer3` delivery UI path. They require explicit server-authoritative associated-cohort UI activation before that existing rendered control can be treated as live for associated-cohort readiness.
 
 ## Authority Order
 
@@ -242,9 +244,9 @@ The current-main PR `#483` proof keeps session summary persistence unchanged: re
 
 ## UI Contract
 
-No rendered UI behavior is admitted by this API/state contract.
+No associated-cohort rendered UI behavior is admitted by this API/state contract alone.
 
-A later UI freeze is required before `/review/layer3` renders an active button, link, or browser download affordance for this endpoint. Until then, any rendered associated-cohort readiness surface must remain read-only after readiness and must not invoke the delivery endpoint.
+Separate UI governance is required before `/review/layer3` renders an active associated-cohort button, link, or browser download affordance for this endpoint. Branch-local docs `100`/`101` provide that governance boundary, but a later implementation/proof is still required before the control can be treated as live for associated-cohort readiness.
 
 ## Proof Requirements
 
@@ -260,4 +262,4 @@ An implementation PR must prove:
 - source package payload refs/hashes/files, APS handoff package refs/hashes, and APS evidence-bundle artifact bytes do not change;
 - existing single-item external export/download readiness and delivery tests still pass;
 - existing associated-cohort readiness tests still pass;
-- rendered UI tests are required only if a separate UI freeze admits rendered controls.
+- rendered UI tests are required when docs `100`/`101` or a later UI freeze are implemented.
