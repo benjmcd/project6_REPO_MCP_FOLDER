@@ -13,6 +13,8 @@
 >
 > **CRITICAL WARNING**: Unverified `tests/...` and `tools/...` paths referenced below may not exist in this specific export workspace and should not be trusted as safe authority paths unless their on-disk presence is directly confirmed.
 
+Agent/operator harness entry point: [docs/agent-harness.md](docs/agent-harness.md).
+
 This repository has three active tracks in one backend:
 
 1. Method-aware tabular analytics flow:
