@@ -2,13 +2,13 @@
 
 ## Status
 
-Current-main planning-only API/state contract for the bounded associated-cohort external export/download readiness tranche selected by `96_COHORT_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md`.
+Current-main API/state contract for the bounded associated-cohort external export/download readiness tranche selected by `96_COHORT_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md` and implemented by PR `#479`.
 
-This contract does not make runtime behavior live by itself. It defines the future proof boundary for admitting associated-cohort reference-only external export/download readiness after PR `#466` associated-cohort APS evidence-bundle handoff dispatch.
+This contract did not make runtime behavior live by itself. PR `#479` is the separate implementation proof for admitting associated-cohort reference-only external export/download readiness after PR `#466` associated-cohort APS evidence-bundle handoff dispatch.
 
 ## Authority Order
 
-Future implementation must resolve authority in this order:
+The implementation must resolve authority in this order:
 
 1. Current `L3Session` state.
 2. Approved `L3AnalysisPlan` and matching preview id/hash.
@@ -37,7 +37,7 @@ Default implementation target:
 
 The existing route may be extended only if the audit proves the associated-cohort path can preserve single-item readiness/delivery behavior and keep request/response semantics unambiguous. A new route is allowed only if route reuse would make single-item and associated-cohort authority ambiguous.
 
-Current main intentionally reports associated-cohort external export/download readiness as unavailable with `associated_cohort_external_export_download_prepare_not_admitted`. A future implementation may remove or narrow that rejection only for the exact authority chain in this contract.
+PR `#479` narrows the associated-cohort `associated_cohort_external_export_download_prepare_not_admitted` rejection only for the exact authority chain in this contract. All stale, partial, mismatched, non-cohort, or downstream-widening states remain fail-closed.
 
 ## Request Fields
 
@@ -167,14 +167,14 @@ If the rendered `/review/layer3` UI is touched in the future implementation:
 
 ## Test Contract
 
-Minimum future implementation proof:
+Minimum PR `#479` implementation proof:
 
 - focused backend/API tests for successful associated-cohort external export/download readiness after PR `#466` APS handoff dispatch state;
 - focused regression tests proving single-item external export/download readiness, delivery, rendered readiness UI, and rendered delivery UI behavior are unchanged;
 - tests proving no package rows, source package rows, source package payload files, reconciliation rows, `AnalysisArtifact` rows, connector-run rows, plan rows, pass rows, or run rows are created;
 - tests proving no source package payload refs, payload hashes, source package payload files, APS handoff package refs/hashes, or APS bundle bytes change;
 - tests for exact duplicate retry, conflicting duplicate retry, partial-state failure, forbidden fields, invalid decisions, non-approved submit states, non-prepared handoff states, non-dispatched APS handoff states, missing APS output package, malformed APS provenance, orphan APS package rows, missing APS artifact, and mismatched provenance;
-- update the current associated-cohort `associated_cohort_external_export_download_prepare_not_admitted` regression only when implementation lands, and replace it with success plus fail-closed cohort-specific proof;
+- replace the prior associated-cohort `associated_cohort_external_export_download_prepare_not_admitted` regression with success plus fail-closed cohort-specific proof;
 - rendered page/static tests if UI changes;
 - headed and headless browser proof if rendered UI changes.
 
