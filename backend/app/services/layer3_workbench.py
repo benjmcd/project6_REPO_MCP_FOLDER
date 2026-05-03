@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+import base64
+import binascii
 import hashlib
+import hmac
 import json
+import os
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -117,6 +122,8 @@ APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID = "layer3.aps_handoff_dispatch_state.v1"
 EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = "layer3.external_export_download_prepare.v1"
 EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID = "layer3.external_export_download_prepare_state.v1"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = "layer3.external_export_download_delivery.v1"
+EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SCHEMA_ID = "layer3.external_export_download_signed_reference.v1"
+EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_SCHEMA_ID = "layer3.external_export_download_signed_reference_use.v1"
 EXECUTION_PASS_RUNNING_STATE = "execution_pass_running"
 EXECUTION_PASS_COMPLETED_STATE = "execution_pass_completed"
 EXECUTION_PASS_FAILED_STATE = "execution_pass_failed"
@@ -164,6 +171,8 @@ EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_READY_STATE = "external_export_download_delive
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE = "external_export_download_delivered"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_BLOCKED_STATE = "external_export_download_delivery_blocked"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONFLICT_STATE = "external_export_download_delivery_conflict"
+EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_READY_STATE = "external_export_download_signed_reference_ready"
+EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_DELIVERED_STATE = "external_export_download_signed_reference_delivered"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_SCHEMA_ID = "layer3.external_export_download_delivery_ui.v1"
 ASSOCIATED_COHORT_DELIVERY_UI_UNAVAILABLE_STATE = (
     "associated_cohort_external_export_download_delivery_ui_unavailable"
@@ -947,6 +956,7 @@ class ExternalExportDownloadDelivery:
     media_type: str
     filename: str
     headers: dict[str, str]
+    authority: dict[str, Any] = field(default_factory=dict)
 
 
 def _utcnow_iso() -> str:
@@ -960,6 +970,32 @@ def _json_clone(value: Any) -> Any:
 def _stable_id(prefix: str, payload: Any) -> str:
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     return f"{prefix}-{hashlib.sha256(encoded).hexdigest()[:16]}"
+
+
+EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_TTL_SECONDS = 300
+_SIGNED_REFERENCE_CONFIGURED_SECRET = os.environ.get("LAYER3_SIGNED_REFERENCE_SECRET", "").strip().encode("utf-8")
+_SIGNED_REFERENCE_PROCESS_KEY = (
+    hashlib.sha256(_SIGNED_REFERENCE_CONFIGURED_SECRET).digest()
+    if _SIGNED_REFERENCE_CONFIGURED_SECRET
+    else os.urandom(32)
+)
+
+
+def _epoch_iso(epoch_seconds: int) -> str:
+    return datetime.fromtimestamp(epoch_seconds, timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _canonical_json_bytes(payload: Any) -> bytes:
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def _urlsafe_b64encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).decode("ascii").rstrip("=")
+
+
+def _urlsafe_b64decode(value: str) -> bytes:
+    padding = "=" * (-len(value) % 4)
+    return base64.urlsafe_b64decode(f"{value}{padding}".encode("ascii"))
 
 
 def _base_response(schema_id: str, *, request_id: str | None = None, status: str = "ok") -> dict[str, Any]:
@@ -9356,6 +9392,308 @@ def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> Ex
             "X-Layer3-Source-Artifact-Hash": artifact_hash,
             "X-Layer3-External-Export-Download-Record-Ref": supplied_readiness_ref,
         },
+        authority=_json_clone(validation_body),
+    )
+
+
+def _signed_reference_required_cohort_authority(authority: dict[str, Any]) -> list[str]:
+    required = (
+        ("pass_type", PASS_TYPE_ASSOCIATED_COHORT),
+        ("pass_scope", PASS_SCOPE_QUANT_ASSOCIATED_COHORT),
+        ("method", "descriptive_summary"),
+        ("source_gate", SOURCE_GATE_COHORT_DESC_FREEZE),
+        ("source_shape", COHORT_SHAPE_ALIGNED_WIDE_TABLE),
+    )
+    return [field for field, expected in required if authority.get(field) != expected]
+
+
+def _signed_reference_authority_basis(
+    *,
+    payload: dict[str, Any],
+    delivery: ExternalExportDownloadDelivery,
+) -> dict[str, Any]:
+    authority = delivery.authority
+    return {
+        "session_id": str(payload.get("session_id") or ""),
+        "analysis_plan_id": str(payload.get("analysis_plan_id") or ""),
+        "pass_run_id": str(payload.get("pass_run_id") or ""),
+        "preview_id": str(payload.get("preview_id") or ""),
+        "preview_hash": str(payload.get("preview_hash") or ""),
+        "result_review_record_ref": str(payload.get("result_review_record_ref") or ""),
+        "package_review_preview_hash": str(payload.get("package_review_preview_hash") or ""),
+        "reconciliation_record_id": str(payload.get("reconciliation_record_id") or ""),
+        "package_review_submit_record_ref": str(payload.get("package_review_submit_record_ref") or ""),
+        "prepare_record_ref": str(payload.get("prepare_record_ref") or ""),
+        "aps_handoff_record_ref": str(payload.get("aps_handoff_record_ref") or ""),
+        "external_export_download_record_ref": str(payload.get("external_export_download_record_ref") or ""),
+        "export_download_descriptor_ref": str(payload.get("export_download_descriptor_ref") or ""),
+        "aps_bundle_ref": str(payload.get("aps_bundle_ref") or ""),
+        "aps_bundle_id": str(payload.get("aps_bundle_id") or ""),
+        "aps_schema_id": str(payload.get("aps_schema_id") or ""),
+        "pass_type": authority.get("pass_type"),
+        "pass_scope": authority.get("pass_scope"),
+        "method": authority.get("method"),
+        "source_gate": authority.get("source_gate"),
+        "source_shape": authority.get("source_shape"),
+        "source_dataset_version_ids": _json_clone(authority.get("source_dataset_version_ids") or []),
+        "source_artifact_ref": authority.get("source_artifact_ref"),
+        "source_artifact_hash": delivery.headers.get("X-Layer3-Source-Artifact-Hash"),
+        "source_artifact_size_bytes": int(delivery.artifact_path.stat().st_size),
+    }
+
+
+def _signed_reference_token_body(
+    *,
+    payload: dict[str, Any],
+    delivery: ExternalExportDownloadDelivery,
+    now_epoch: int,
+) -> dict[str, Any]:
+    bucket_start = now_epoch - (now_epoch % EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_TTL_SECONDS)
+    expires_at_epoch = bucket_start + EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_TTL_SECONDS
+    return {
+        "schema_id": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "issued_at_epoch": bucket_start,
+        "expires_at_epoch": expires_at_epoch,
+        "delivery_payload": _json_clone(payload),
+        "delivery_authority": _signed_reference_authority_basis(payload=payload, delivery=delivery),
+    }
+
+
+def _encode_signed_reference_token(body: dict[str, Any]) -> str:
+    encoded_body = _canonical_json_bytes(body)
+    signature = hmac.digest(_SIGNED_REFERENCE_PROCESS_KEY, encoded_body, "sha256").hex()
+    return f"{_urlsafe_b64encode(encoded_body)}.{signature}"
+
+
+def _decode_signed_reference_token(token: str) -> dict[str, Any]:
+    try:
+        encoded_body, supplied_signature = token.split(".", 1)
+        body_bytes = _urlsafe_b64decode(encoded_body)
+    except (ValueError, UnicodeEncodeError, binascii.Error) as exc:
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_malformed",
+            "Signed delivery reference token is malformed.",
+            status="invalid",
+            blocked_fields=["signed_reference_token"],
+        ) from exc
+    expected_signature = hmac.digest(_SIGNED_REFERENCE_PROCESS_KEY, body_bytes, "sha256").hex()
+    if not hmac.compare_digest(supplied_signature, expected_signature):
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_signature_mismatch",
+            "Signed delivery reference token could not be verified by this server process.",
+            status="invalid",
+            blocked_fields=["signed_reference_token"],
+        )
+    try:
+        body = json.loads(body_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_malformed",
+            "Signed delivery reference token body is malformed.",
+            status="invalid",
+            blocked_fields=["signed_reference_token"],
+        ) from exc
+    if not isinstance(body, dict):
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_malformed",
+            "Signed delivery reference token body must be a JSON object.",
+            status="invalid",
+            blocked_fields=["signed_reference_token"],
+        )
+    return body
+
+
+def _delivery_response_from_signed_reference(
+    *,
+    request_id: str,
+    payload: dict[str, Any],
+    delivery: ExternalExportDownloadDelivery,
+    token_body: dict[str, Any],
+    token: str,
+    now_epoch: int,
+) -> dict[str, Any]:
+    authority_basis = token_body["delivery_authority"]
+    expires_at_epoch = int(token_body["expires_at_epoch"])
+    return {
+        **_base_response(
+            EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SCHEMA_ID,
+            request_id=request_id,
+            status="prepared",
+        ),
+        "session_id": payload["session_id"],
+        "analysis_plan_id": payload["analysis_plan_id"],
+        "pass_run_id": payload["pass_run_id"],
+        "preview_identity": _preview_identity(preview_id=payload["preview_id"], preview_hash=payload["preview_hash"]),
+        "reconciliation_record_id": payload["reconciliation_record_id"],
+        "external_export_download_record_ref": payload["external_export_download_record_ref"],
+        "export_download_descriptor_ref": payload["export_download_descriptor_ref"],
+        "signed_reference_state": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_READY_STATE,
+        "signed_reference_token": token,
+        "signed_reference_expires_at": _epoch_iso(expires_at_epoch),
+        "signed_reference_expires_in_seconds": max(0, expires_at_epoch - now_epoch),
+        "signed_reference_use_endpoint": f"{API_ROOT}/handoff/export/download/signed-reference/use",
+        "delivery_mode": "same_origin_signed_delivery_reference",
+        "server_authority": "associated_cohort_external_export_download_signed_reference_gate",
+        "source_artifact_ref": authority_basis["source_artifact_ref"],
+        "source_artifact_hash": authority_basis["source_artifact_hash"],
+        "source_artifact_size_bytes": authority_basis["source_artifact_size_bytes"],
+        "pass_type": authority_basis["pass_type"],
+        "pass_scope": authority_basis["pass_scope"],
+        "method": authority_basis["method"],
+        "source_gate": authority_basis["source_gate"],
+        "source_shape": authority_basis["source_shape"],
+        "source_dataset_version_ids": authority_basis["source_dataset_version_ids"],
+        "public_url_enabled": False,
+        "external_object_store_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_selection_enabled": False,
+        "generic_downstream_dispatch_enabled": False,
+        "package_mutation_enabled": False,
+        "schema_runtime_source_widening_enabled": False,
+        "authority_rail": {
+            "token_authority": "server_hmac_stateless_reference",
+            "artifact_authority": "existing_external_export_download_delivery_validator",
+            "expires_within_seconds": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_TTL_SECONDS,
+            "revalidated_at_generation": True,
+            "revalidate_at_use_required": True,
+            "configured_secret_present": bool(_SIGNED_REFERENCE_CONFIGURED_SECRET),
+            "process_restart_invalidates_existing_tokens": not bool(_SIGNED_REFERENCE_CONFIGURED_SECRET),
+        },
+        "next_state": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_DELIVERED_STATE,
+    }
+
+
+def external_export_download_generate_signed_reference(
+    db: Session,
+    payload: dict[str, Any],
+    *,
+    now_epoch: int | None = None,
+) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or "").strip()
+    if not request_id:
+        raise Layer3WorkbenchError(
+            "client_request_id_required",
+            "client_request_id is required for signed external export/download delivery reference generation.",
+            status="invalid",
+            blocked_fields=["client_request_id"],
+            next_allowed_actions=["submit_idempotent_external_export_download_signed_reference_request"],
+        )
+    delivery = external_export_download_deliver(db, payload)
+    blocked = _signed_reference_required_cohort_authority(delivery.authority)
+    if blocked:
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_scope_not_admitted",
+            "Signed delivery references are limited to the associated-cohort descriptive-summary download authority rail.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=blocked,
+            next_allowed_actions=["use_same_origin_external_export_download_delivery"],
+        )
+    effective_now = int(time.time() if now_epoch is None else now_epoch)
+    token_body = _signed_reference_token_body(payload=payload, delivery=delivery, now_epoch=effective_now)
+    token = _encode_signed_reference_token(token_body)
+    return _delivery_response_from_signed_reference(
+        request_id=request_id,
+        payload=payload,
+        delivery=delivery,
+        token_body=token_body,
+        token=token,
+        now_epoch=effective_now,
+    )
+
+
+def external_export_download_use_signed_reference(
+    db: Session,
+    payload: dict[str, Any],
+    *,
+    now_epoch: int | None = None,
+) -> ExternalExportDownloadDelivery:
+    token = str(payload.get("signed_reference_token") or "").strip()
+    if not token:
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_token_required",
+            "signed_reference_token is required for signed external export/download delivery reference use.",
+            status="invalid",
+            blocked_fields=["signed_reference_token"],
+            next_allowed_actions=["submit_signed_reference_token"],
+        )
+    extra_fields = sorted(key for key in payload if key != "signed_reference_token")
+    if extra_fields:
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_use_scope_not_admitted",
+            "Signed delivery reference use accepts only the server-generated signed_reference_token.",
+            status="invalid",
+            blocked_fields=extra_fields,
+            next_allowed_actions=["submit_signed_reference_token_only"],
+        )
+    token_body = _decode_signed_reference_token(token)
+    if token_body.get("schema_id") != EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SCHEMA_ID:
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_schema_mismatch",
+            "Signed delivery reference token schema is not admitted for this route.",
+            status="invalid",
+            blocked_fields=["signed_reference_token"],
+        )
+    effective_now = int(time.time() if now_epoch is None else now_epoch)
+    try:
+        expires_at_epoch = int(token_body.get("expires_at_epoch"))
+    except (TypeError, ValueError) as exc:
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_malformed",
+            "Signed delivery reference token expiration is malformed.",
+            status="invalid",
+            blocked_fields=["signed_reference_token"],
+        ) from exc
+    if effective_now >= expires_at_epoch:
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_expired",
+            "Signed delivery reference token has expired.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["signed_reference_token"],
+            next_allowed_actions=["regenerate_external_export_download_signed_reference"],
+        )
+    delivery_payload = token_body.get("delivery_payload")
+    if not isinstance(delivery_payload, dict):
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_payload_missing",
+            "Signed delivery reference token is missing its delivery authority payload.",
+            status="invalid",
+            blocked_fields=["signed_reference_token"],
+        )
+    delivery = external_export_download_deliver(db, delivery_payload)
+    blocked = _signed_reference_required_cohort_authority(delivery.authority)
+    if blocked:
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_scope_not_admitted",
+            "Signed delivery references are limited to the associated-cohort descriptive-summary download authority rail.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=blocked,
+            next_allowed_actions=["use_same_origin_external_export_download_delivery"],
+        )
+    current_basis = _signed_reference_authority_basis(payload=delivery_payload, delivery=delivery)
+    if current_basis != token_body.get("delivery_authority"):
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_authority_mismatch",
+            "Current delivery authority no longer matches the signed delivery reference token.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["signed_reference_token"],
+            next_allowed_actions=["regenerate_external_export_download_signed_reference"],
+        )
+    return ExternalExportDownloadDelivery(
+        artifact_path=delivery.artifact_path,
+        media_type=delivery.media_type,
+        filename=delivery.filename,
+        headers={
+            **delivery.headers,
+            "X-Layer3-Schema-Id": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_SCHEMA_ID,
+            "X-Layer3-Signed-Reference-State": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_DELIVERED_STATE,
+            "X-Layer3-Signed-Reference-Expires-At": _epoch_iso(expires_at_epoch),
+        },
+        authority=delivery.authority,
     )
 
 

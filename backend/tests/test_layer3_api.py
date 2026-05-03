@@ -1201,6 +1201,8 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("/api/v1/layer3/handoff/export/prepare", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/aps/dispatch", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/download/prepare", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/handoff/export/download/signed-reference/generate", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/handoff/export/download/signed-reference/use", "post"): ("400", "404", "409"),
     }
     for (path, method), statuses in route_statuses.items():
         _assert_workbench_error_responses(spec, path, method, statuses)
@@ -1317,6 +1319,56 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
             "blocked_fields",
             "next_allowed_actions",
         } <= set(error_schema["required"])
+
+    signed_generate = spec["paths"]["/api/v1/layer3/handoff/export/download/signed-reference/generate"]["post"]
+    signed_generate_schema = signed_generate["requestBody"]["content"]["application/json"]["schema"]
+    assert signed_generate_schema["additionalProperties"] is False
+    assert set(signed_generate_schema["required"]) == set(deliver_request_schema["required"])
+    assert signed_generate_schema["properties"]["delivery_mode"]["enum"] == ["same_origin_artifact_stream"]
+    assert "download_url" not in signed_generate_schema["properties"]
+    assert "download_token" not in signed_generate_schema["properties"]
+    assert "public_url" not in signed_generate_schema["properties"]
+    assert "signed_url" not in signed_generate_schema["properties"]
+    signed_generate_success = signed_generate["responses"]["200"]["content"]["application/json"]["schema"]
+    assert signed_generate_success["$ref"].endswith("/Layer3ExternalExportDownloadSignedReferenceResponse")
+    for status in ("400", "404", "409"):
+        error_schema = _openapi_response_schema_for_status(
+            spec,
+            "/api/v1/layer3/handoff/export/download/signed-reference/generate",
+            "post",
+            status,
+        )
+        assert error_schema["title"] == "Layer3WorkbenchErrorResponse"
+
+    signed_use = spec["paths"]["/api/v1/layer3/handoff/export/download/signed-reference/use"]["post"]
+    signed_use_schema = signed_use["requestBody"]["content"]["application/json"]["schema"]
+    assert signed_use_schema["type"] == "object"
+    assert signed_use_schema["additionalProperties"] is False
+    assert signed_use_schema["required"] == ["signed_reference_token"]
+    assert signed_use_schema["properties"] == {
+        "signed_reference_token": {
+            "type": "string",
+            "description": "Server-generated short-lived signed delivery reference token.",
+        },
+    }
+    signed_use_success = signed_use["responses"]["200"]["content"]["application/json"]["schema"]
+    assert signed_use_success == {"type": "string", "format": "binary"}
+    assert {
+        "Content-Disposition",
+        "X-Layer3-Schema-Id",
+        "X-Layer3-Delivery-State",
+        "X-Layer3-Source-Artifact-Hash",
+        "X-Layer3-Signed-Reference-State",
+        "X-Layer3-Signed-Reference-Expires-At",
+    } <= set(signed_use["responses"]["200"]["headers"])
+    for status in ("400", "404", "409"):
+        error_schema = _openapi_response_schema_for_status(
+            spec,
+            "/api/v1/layer3/handoff/export/download/signed-reference/use",
+            "post",
+            status,
+        )
+        assert error_schema["title"] == "Layer3WorkbenchErrorResponse"
 
     session_schema = _openapi_response_schema(spec, "/api/v1/layer3/session/{session_id}", "get")
     assert session_schema["title"] == "Layer3SessionSummaryResponse"
@@ -6279,6 +6331,104 @@ def test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_compani
     assert cohort_delivery_replay.status_code == 200
     assert cohort_delivery_replay.content == expected_delivery_bytes
 
+    signed_reference = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/generate",
+        json=cohort_deliver_payload,
+    )
+    assert signed_reference.status_code == 200, signed_reference.text
+    signed_reference_body = signed_reference.json()
+    assert signed_reference_body["schema_id"] == "layer3.external_export_download_signed_reference.v1"
+    assert signed_reference_body["status"] == "prepared"
+    assert signed_reference_body["signed_reference_state"] == "external_export_download_signed_reference_ready"
+    assert signed_reference_body["signed_reference_use_endpoint"] == (
+        "/api/v1/layer3/handoff/export/download/signed-reference/use"
+    )
+    assert signed_reference_body["delivery_mode"] == "same_origin_signed_delivery_reference"
+    assert signed_reference_body["server_authority"] == (
+        "associated_cohort_external_export_download_signed_reference_gate"
+    )
+    assert signed_reference_body["source_artifact_hash"] == download_body["source_artifact_hash"]
+    assert signed_reference_body["source_artifact_size_bytes"] == download_body["source_artifact_size_bytes"]
+    assert signed_reference_body["pass_type"] == "associated_cohort"
+    assert signed_reference_body["pass_scope"] == "quantitative_associated_cohort_dataset_version"
+    assert signed_reference_body["method"] == "descriptive_summary"
+    assert signed_reference_body["source_gate"] == "78_COHORT_FREEZE"
+    assert signed_reference_body["source_shape"] == "aligned_wide_table"
+    assert signed_reference_body["source_dataset_version_ids"] == [
+        "dv-api-cohort-aps-001",
+        "dv-api-cohort-aps-002",
+    ]
+    assert signed_reference_body["public_url_enabled"] is False
+    assert signed_reference_body["external_object_store_url_enabled"] is False
+    assert signed_reference_body["connector_dispatch_enabled"] is False
+    assert signed_reference_body["destination_selection_enabled"] is False
+    assert signed_reference_body["generic_downstream_dispatch_enabled"] is False
+    assert signed_reference_body["package_mutation_enabled"] is False
+    assert signed_reference_body["schema_runtime_source_widening_enabled"] is False
+    for forbidden_field in ("download_url", "download_token", "public_url", "signed_url", "connector_run_id"):
+        assert forbidden_field not in signed_reference_body
+
+    signed_reference_use = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/use",
+        json={"signed_reference_token": signed_reference_body["signed_reference_token"]},
+    )
+    assert signed_reference_use.status_code == 200, signed_reference_use.text
+    assert signed_reference_use.content == expected_delivery_bytes
+    assert signed_reference_use.headers["x-layer3-schema-id"] == (
+        "layer3.external_export_download_signed_reference_use.v1"
+    )
+    assert signed_reference_use.headers["x-layer3-delivery-state"] == "external_export_download_delivered"
+    assert signed_reference_use.headers["x-layer3-signed-reference-state"] == (
+        "external_export_download_signed_reference_delivered"
+    )
+    assert signed_reference_use.headers["x-layer3-source-artifact-hash"] == download_body["source_artifact_hash"]
+    assert "download_url" not in signed_reference_use.headers
+    assert "public_url" not in signed_reference_use.headers
+    assert "signed_url" not in signed_reference_use.headers
+
+    malformed_reference_use = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/use",
+        json={"signed_reference_token": "not-a-valid-reference"},
+    )
+    assert malformed_reference_use.status_code == 400
+    assert malformed_reference_use.json()["error_code"] == "external_export_download_signed_reference_malformed"
+    extra_field_reference_use = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/use",
+        json={
+            "signed_reference_token": signed_reference_body["signed_reference_token"],
+            "download_url": "https://example.invalid/bundle.json",
+        },
+    )
+    assert extra_field_reference_use.status_code == 400
+    assert extra_field_reference_use.json()["error_code"] == (
+        "external_export_download_signed_reference_use_scope_not_admitted"
+    )
+
+    from app.services import layer3_workbench
+
+    direct_db = client.layer3_session_factory()
+    try:
+        direct_signed = layer3_workbench.external_export_download_generate_signed_reference(
+            direct_db,
+            cohort_deliver_payload,
+            now_epoch=1000,
+        )
+        direct_signed_replay = layer3_workbench.external_export_download_generate_signed_reference(
+            direct_db,
+            cohort_deliver_payload,
+            now_epoch=1001,
+        )
+        assert direct_signed_replay["signed_reference_token"] == direct_signed["signed_reference_token"]
+        with pytest.raises(layer3_workbench.Layer3WorkbenchError) as expired:
+            layer3_workbench.external_export_download_use_signed_reference(
+                direct_db,
+                {"signed_reference_token": direct_signed["signed_reference_token"]},
+                now_epoch=1200,
+            )
+        assert expired.value.error_code == "external_export_download_signed_reference_expired"
+    finally:
+        direct_db.close()
+
     db = client.layer3_session_factory()
     try:
         assert {
@@ -6345,6 +6495,15 @@ def test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_compani
         "associated_cohort_external_export_download_prepare_not_admitted"
     )
     assert "source_dataset_version_ids" in stale_dispatch_delivery.json()["blocked_fields"]
+    stale_signed_reference_use = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/use",
+        json={"signed_reference_token": signed_reference_body["signed_reference_token"]},
+    )
+    assert stale_signed_reference_use.status_code == 409
+    assert stale_signed_reference_use.json()["error_code"] == (
+        "associated_cohort_external_export_download_prepare_not_admitted"
+    )
+    assert "source_dataset_version_ids" in stale_signed_reference_use.json()["blocked_fields"]
     assert files_under_tmp() == files_before_delivery
 
     db = client.layer3_session_factory()
