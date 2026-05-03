@@ -2730,9 +2730,9 @@
   },
   "descriptive_summary_selected_pass_cohort_handoff_export_planning_proof": {
     "planning_branch": "codex/l3-cohort-handoff-freeze-p68",
-    "planning_pr": "branch-local",
+    "planning_pr": "#458",
     "base_commit": "bacf90f07dab58fc0a492faca49adfe9992b69b5",
-    "scope": "Branch-local planning-only selected-pass associated-cohort descriptive_summary handoff/export governance after PR #456 approved package-review submit.",
+    "scope": "Merged current-main planning-only selected-pass associated-cohort descriptive_summary handoff/export governance after PR #456 approved package-review submit.",
     "files_changed": [
       "next_milestone_plans/Layer3_planning_docs/92_COHORT_HANDOFF_EXPORT_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/93_COHORT_HANDOFF_EXPORT_CONTRACT.md",
@@ -2746,6 +2746,7 @@
     "live_behavior_change": false,
     "authority_basis": [
       "PR #456 is the current-main package-review submit authority for exactly one associated-cohort submit decision object in existing JSON-bearing state.",
+      "PR #458 merges docs 92/93 as current-main planning/control governance only; the docs do not make handoff/export live by themselves.",
       "Docs 54/55 and PR #251/#252 are single-item handoff/export pattern sources only, not direct associated-cohort handoff/export authority.",
       "Docs 92/93 require a later implementation to prove exact PR #432/#438/#443/#447/#451/#456 authority before narrowing handoff_export_deferred_for_associated_cohort_package_review_submit."
     ],
@@ -2759,7 +2760,10 @@
     "verification": [
       "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
       "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "manifest invariant check for 58 records, 32 live bounded records, 26 planning-only records, and 0 branch-local planning records",
+      "GitHub PR #458 checks backend-layer3-api and test -> success",
       "git diff --check"
-    ]
+    ],
+    "merge_commit": "250028b3efac6fa76a6fc598c33237ebff0822b1"
   }
 }
