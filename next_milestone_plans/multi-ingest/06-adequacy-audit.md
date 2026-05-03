@@ -41,16 +41,16 @@ Confirmed from planning/status docs:
 
 Adequately scoped:
 
-- The initial pack was docs-only. The current branch now also includes Phase P1 source/test changes recorded in `07-p1-closeout.md`, Phase P2 parser-registry source/test changes recorded in `08-p2-closeout.md`, Phase P3 CSV diagnostics source/test changes recorded in `09-p3-closeout.md`, and Phase P4 dataset-bridge source/test changes recorded in `10-p4-closeout.md`.
-- The current verdict is limited to audited document-chunk paths, existing dataset paths, explicit APS-derived CSV dataset admission through `dataset_version`, and selected-pass execution/package proof for that path.
+- The initial pack was docs-only. The current branch now also includes Phase P1 source/test changes recorded in `07-p1-closeout.md`, Phase P2 parser-registry source/test changes recorded in `08-p2-closeout.md`, Phase P3 CSV diagnostics source/test changes recorded in `09-p3-closeout.md`, Phase P4 dataset-bridge source/test changes recorded in `10-p4-closeout.md`, and subsequent closeout files through Phase P7.5.
+- The current verdict is limited to audited document-chunk paths, existing dataset paths, explicit APS-derived CSV/XLSX dataset admission through `dataset_version`, and selected-pass execution/package proof for that path.
 - The target design separates current implementation from future parser/bridge/workbench admission.
 - Phase P1 is narrow: classification/refusal hardening and fixture coverage only.
-- JSON parsing, SEC/EDGAR parsing, broad source-shape expansion, and automatic XLSX connector orchestration are explicitly deferred. Bounded `.xlsx` parsing/materialization is now implemented as Phase P7.
+- JSON parsing, SEC/EDGAR parsing, broad source-shape expansion, archive-member XLSX orchestration, and broad workbook semantics are explicitly deferred. Bounded `.xlsx` parsing/materialization is implemented as Phase P7, and bounded standalone XLSX connector table bridge orchestration is implemented as Phase P7.5.
 
 Not over-scoped:
 
 - The pack does not try to solve all heterogeneous ingestion at once.
-- It does not claim JSON, XML, HTML, SEC/EDGAR, financial filings, mixed-source artifacts, arbitrary workbooks, or time-series APS artifacts are already supported end to end. CSV is end-to-end through the explicit bridge/UI path; XLSX is bounded to parser diagnostics plus explicit table-unit materialization.
+- It does not claim JSON, XML, HTML, SEC/EDGAR, financial filings, mixed-source artifacts, arbitrary workbooks, archive-member XLSX, or arbitrary time-series APS artifacts are already supported end to end. CSV is end-to-end through the explicit bridge/UI path; XLSX is bounded to standalone parser diagnostics plus explicit or opt-in connector table-unit materialization.
 - It does not modify existing progress manifests because doing so would imply governance admission beyond this planning-entry pack.
 
 Not under-scoped:
@@ -90,7 +90,7 @@ Answer: Saying the pipeline supports all CSV or non-PDF typed data merely becaus
 
 Question: What would be the most likely omission?
 
-Answer: Missing the XLSX-as-ZIP ambiguity. The pack explicitly marked XLSX detection/refusal as a P1 requirement and validation target; Phase P7 now admits bounded `.xlsx` parsing without weakening `.xls`/`.xlsm` refusal.
+Answer: Missing the XLSX-as-ZIP ambiguity. The pack explicitly marked XLSX detection/refusal as a P1 requirement and validation target; Phase P7 now admits bounded `.xlsx` parsing without weakening `.xls`/`.xlsm` refusal, and Phase P7.5 adds connector orchestration without widening workbook semantics.
 
 Question: What would create avoidable tech debt?
 
@@ -106,7 +106,7 @@ Answer: Targeted file families must have deterministic detection, parser fixture
 
 Question: Did P2 accidentally widen parser behavior?
 
-Answer: No. P2 introduced metadata-only parser admission for already-existing processor families. CSV and XLSX parser/materialization work were added later in bounded phases; JSON, SEC/EDGAR, schema, new Layer 3 source-shape, and broad UI work remain deferred.
+Answer: No. P2 introduced metadata-only parser admission for already-existing processor families. CSV and XLSX parser/materialization/orchestration work were added later in bounded phases; JSON, SEC/EDGAR, schema, new Layer 3 source-shape, and broad UI work remain deferred.
 
 Question: Did P3 overclaim CSV support?
 
@@ -114,7 +114,7 @@ Answer: No. P3 admits CSV only as bounded parser diagnostics. It produces table 
 
 Question: Did P4 overclaim end-to-end typed ingestion?
 
-Answer: No. P4 adds explicit/callable dataset materialization for CSV parser output. P4.5 adds default-off connector finalization orchestration behind `csv_dataset_bridge_enabled=true`. P5 adds explicit Layer 3 admission for APS-derived dataset versions. UI behavior remains deferred.
+Answer: No. P4 adds explicit/callable dataset materialization for CSV parser output. P4.5 adds default-off CSV connector finalization orchestration behind `csv_dataset_bridge_enabled=true`. P7.5 adds default-off generic table connector orchestration behind `table_dataset_bridge_enabled=true`. P5 adds explicit Layer 3 admission for APS-derived dataset versions, and P10A adds bounded operator selection.
 
 Question: Did P5 create unnecessary source-shape or schema debt?
 

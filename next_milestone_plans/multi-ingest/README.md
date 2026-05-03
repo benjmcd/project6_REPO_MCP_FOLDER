@@ -1,8 +1,8 @@
 # Multi-Type APS Ingestion Plan
 
-Status: planning/design pack plus implemented Phase P1 media hardening, Phase P2 parser registry skeleton, Phase P3 CSV typed diagnostics, Phase P4 callable dataset bridge, Phase P4.5 opt-in connector orchestration, Phase P5 Layer 3 APS-derived dataset admission, Phase P6 execution/package proof, bounded Phase P10A operator selection surfacing, and Phase P7 bounded XLSX parser/materialization on 2026-05-03.
+Status: planning/design pack plus implemented Phase P1 media hardening, Phase P2 parser registry skeleton, Phase P3 CSV typed diagnostics, Phase P4 callable dataset bridge, Phase P4.5 opt-in CSV connector orchestration, Phase P5 Layer 3 APS-derived dataset admission, Phase P6 execution/package proof, bounded Phase P10A operator selection surfacing, Phase P7 bounded XLSX parser/materialization, and Phase P7.5 opt-in generic table dataset bridge orchestration on 2026-05-03.
 
-Last audited implementation authority for the Phase P7 closeout: `project6-origin/main` at `1294ca72e18be6844a514ddcbffbb0fd7b597b82`.
+Last audited main authority before the Phase P7.5 branch: `project6-origin/main` at `5c206332b6fbc8bbef066e8d022847e6ae0017ae`.
 
 Historical seed worktree: `worktrees/multi-ingest-plan`.
 
@@ -20,13 +20,13 @@ The user question is not just "can the pipeline download non-PDF files?" The act
 
 Confirmed live authority comes from tracked source files and tracked planning/status docs in this worktree. The repo-level instructions reference `.codesight/wiki/index.md` and `.codesight/CODESIGHT.md`, but both files are absent in this current worktree; this pack records that as an authority gap rather than treating the wiki as available.
 
-This lane began as a planning/spec/design pack and now also includes Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Phase P5, Phase P6, bounded Phase P10A source/test/UI changes, and bounded Phase P7 XLSX parser/materialization changes. It still does not change schema, migrations, or Layer 3 typing rules. The API changes are limited to material-preview accepting explicit `dataset_version_ids` and a read-only Layer 3 candidate-list endpoint that projects APS-derived `DatasetVersion` rows from existing `DatasetSourceProvenance` authority.
+This lane began as a planning/spec/design pack and now also includes Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Phase P5, Phase P6, bounded Phase P10A source/test/UI changes, bounded Phase P7 XLSX parser/materialization changes, and bounded Phase P7.5 generic table bridge orchestration. It still does not change schema, migrations, or Layer 3 typing rules. The API changes are limited to material-preview accepting explicit `dataset_version_ids`, a read-only Layer 3 candidate-list endpoint that projects APS-derived `DatasetVersion` rows from existing `DatasetSourceProvenance` authority, and connector run/report refs exposing the generic table dataset bridge when explicitly enabled.
 
 This folder is the front door for the new lane. Existing progress manifests and Layer 3 control packets were not modified in this pass because doing so would imply this heterogeneous-ingestion lane has been admitted into the settled milestone-control spine. That should be a separate governance sync after the implementation-entry slice is accepted.
 
 ## Current Verdict
 
-The current implementation is end-to-end for APS document-chunk ingestion and downstream Layer 3 APS evidence-bundle style handoff. It is also end-to-end for APS-derived CSV dataset-version selection through the bounded Layer 3 path, and bounded for explicit XLSX parser/materialization. It is not complete for all first-class typed non-PDF data ingestion families.
+The current implementation is end-to-end for APS document-chunk ingestion and downstream Layer 3 APS evidence-bundle style handoff. It is also end-to-end for APS-derived CSV dataset-version selection through the bounded Layer 3 path, and bounded for XLSX parser/materialization plus opt-in connector finalization through the generic table bridge. It is not complete for all first-class typed non-PDF data ingestion families.
 
 | Source family | Current status | Strict interpretation |
 | --- | --- | --- |
@@ -35,11 +35,11 @@ The current implementation is end-to-end for APS document-chunk ingestion and do
 | `text/plain` | Implemented as qualitative text normalization and text-block units with parser-registry metadata | Partial; this is not a typed qualitative corpus model beyond document chunks |
 | Images | Implemented as OCR text units with parser-registry metadata | Partial; image pixels/regions are not a typed Layer 3 data source |
 | ZIP archives | Implemented as archive bundle for supported member types with parser-registry metadata | Partial; typed/refused member extensions are surfaced as member-level outcomes; CSV members are parsed for table diagnostics and not flattened into text |
-| CSV | Parser, callable dataset bridge, opt-in connector bridge orchestration, Layer 3 APS-derived `DatasetVersion` admission, selected-pass execution/package proof, and bounded workbench selection surfacing implemented for typed diagnostics | Partial; `hydrate_process` runs with `csv_dataset_bridge_enabled=true` can materialize `table_units` into `DatasetVersion` authority and those versions can now be listed/selected in the Layer 3 workbench and enter material preview/Gate B/Gate C/plan/execution/result/package when explicitly selected |
-| XLS/XLSX spreadsheets | Bounded `.xlsx` parser/materialization implemented for a single explicit non-empty sheet/table | Partial; `.xlsx` is detected before generic ZIP, emits `xlsx_workbook` table units with workbook/sheet provenance, and can be materialized through the existing table-unit dataset bridge. `.xls` binary workbooks, `.xlsm` macro workbooks, encrypted workbooks, formulas, ambiguous multi-sheet workbooks without explicit selection, and arbitrary cell ranges remain fail-closed or deferred. Connector finalization remains CSV-gated; XLSX bridge orchestration is not yet automatic. |
+| CSV | Parser, legacy CSV bridge, generic table bridge, opt-in connector bridge orchestration, Layer 3 APS-derived `DatasetVersion` admission, selected-pass execution/package proof, and bounded workbench selection surfacing implemented for typed diagnostics | Partial; `hydrate_process` runs with either legacy `csv_dataset_bridge_enabled=true` or generic `table_dataset_bridge_enabled=true` can materialize CSV `table_units` into `DatasetVersion` authority. Those versions can now be listed/selected in the Layer 3 workbench and enter material preview/Gate B/Gate C/plan/execution/result/package when explicitly selected |
+| XLS/XLSX spreadsheets | Bounded `.xlsx` parser/materialization implemented for a single explicit non-empty sheet/table, with opt-in connector orchestration through the generic table bridge | Partial; `.xlsx` is detected before generic ZIP, emits `xlsx_workbook` table units with workbook/sheet provenance, and can be materialized during connector finalization when `artifact_pipeline_mode="hydrate_process"` and `table_dataset_bridge_enabled=true`. `.xls` binary workbooks, `.xlsm` macro workbooks, encrypted workbooks, formulas, ambiguous multi-sheet workbooks without explicit selection, arbitrary cell ranges, archive-member XLSX orchestration, and new Layer 3 source semantics remain fail-closed or deferred. |
 | JSON/XML/HTML | Explicitly refused today | Declared/sniffed/extension JSON/XML/HTML are refused; no typed recordset, structured document, or filing parser exists yet |
 | SEC/EDGAR filings/submissions | Not first-class | Plain-text filings may flow as text; HTML/XML/SGML/structured filings have no admitted parser family |
-| Existing `dataset_version` time-series/financial/tabular data | Implemented downstream in Layer 3 when already present as dataset records | CSV APS artifacts can now create dataset records behind an explicit bridge gate; explicit Layer 3 material preview can now carry APS-derived dataset provenance into Gate B/Gate C/plan preview |
+| Existing `dataset_version` time-series/financial/tabular data | Implemented downstream in Layer 3 when already present as dataset records | CSV and bounded XLSX APS artifacts can now create dataset records behind explicit bridge gates; explicit Layer 3 material preview can now carry APS-derived dataset provenance into Gate B/Gate C/plan preview |
 
 ## Architecture Quality Bar
 
@@ -72,7 +72,7 @@ flowchart TD
     H --> J
     CSV --> TU["table_units + time_series candidates"]
     XLSX --> TU
-    TU --> U["opt-in DatasetVersion bridge"]
+    TU --> U["opt-in table DatasetVersion bridge"]
     J --> K["APS content index"]
     K --> L["ApsContentDocument + ApsContentChunk"]
     L --> M["Layer 3 source shape: aps_content_document"]
@@ -130,18 +130,18 @@ flowchart TD
 
 The live repo has the APS document pipeline and audited Layer 3 workbench downstream consumers implemented for the existing `aps_content_document` source shape. The live repo also has a separate `dataset_version` source shape that supports quantitative/tabular/time-series work once dataset rows and variable metadata already exist.
 
-The live repo does not yet have a complete plan-plus-implementation for all non-PDF APS artifacts or heterogeneous corpus files. CSV now has parser diagnostics, dataset bridge materialization, explicit Layer 3 admission, selected-pass execution/package proof, and bounded Layer 3 UI/operator selection. XLSX now has bounded parser diagnostics and explicit dataset materialization for one selected/simple sheet, but not connector auto-orchestration, broad workbook semantics, or new Layer 3 source semantics. JSON, SEC/EDGAR, and mixed parser families remain missing.
+The live repo does not yet have a complete plan-plus-implementation for all non-PDF APS artifacts or heterogeneous corpus files. CSV now has parser diagnostics, dataset bridge materialization, explicit Layer 3 admission, selected-pass execution/package proof, and bounded Layer 3 UI/operator selection. XLSX now has bounded parser diagnostics, explicit dataset materialization for one selected/simple sheet, and opt-in connector auto-orchestration through the generic table bridge, but not broad workbook semantics, archive-member XLSX orchestration, or new Layer 3 source semantics. JSON, SEC/EDGAR, and mixed parser families remain missing.
 
 ## Immediate Next Tranche
 
-Phase P1 detection/classification hardening has been implemented in this branch for CSV, XLS/XLSX/XLSM, JSON/XML/HTML, and ZIP typed/refused members. Phase P2 parser-registry metadata has been implemented for the current document processors. Phase P3 CSV/delimited table diagnostics have been implemented for bounded CSV inputs. Phase P4 can materialize admitted CSV table units into dataset authority when explicitly invoked. Phase P4.5 runs that bridge during connector finalization only when `csv_dataset_bridge_enabled=true` and processed CSV table artifacts exist. Phase P5 admits explicitly selected APS-derived dataset versions into Layer 3 using the existing `dataset_version` source shape. Phase P6 proves selected-pass execution/result/package preservation for that path. Phase P10A exposes APS-derived dataset-version candidates in the Layer 3 workbench and passes selected/pasted IDs through material preview. Phase P7 admits bounded `.xlsx` workbook parsing and explicit materialization for one selected/simple sheet table.
+Phase P1 detection/classification hardening has been implemented in this branch for CSV, XLS/XLSX/XLSM, JSON/XML/HTML, and ZIP typed/refused members. Phase P2 parser-registry metadata has been implemented for the current document processors. Phase P3 CSV/delimited table diagnostics have been implemented for bounded CSV inputs. Phase P4 can materialize admitted CSV table units into dataset authority when explicitly invoked. Phase P4.5 runs that bridge during connector finalization only when `csv_dataset_bridge_enabled=true` and processed CSV table artifacts exist. Phase P5 admits explicitly selected APS-derived dataset versions into Layer 3 using the existing `dataset_version` source shape. Phase P6 proves selected-pass execution/result/package preservation for that path. Phase P10A exposes APS-derived dataset-version candidates in the Layer 3 workbench and passes selected/pasted IDs through material preview. Phase P7 admits bounded `.xlsx` workbook parsing and explicit materialization for one selected/simple sheet table. Phase P7.5 adds a separate `table_dataset_bridge_enabled` gate, `aps.table_dataset_bridge_run.v1` report, `aps_table_dataset_bridge_*` target refs, and runtime report-ref exposure for processed CSV/XLSX table-unit artifacts while preserving the legacy CSV-only bridge path.
 
 The next implementation pass should not repeat the APS-derived CSV dataset selection slice. Remaining work is:
 
-1. Decide whether to add opt-in connector finalization for XLSX table-unit artifacts under a renamed/generic table dataset bridge contract, or keep XLSX materialization explicit until a bridge-contract rename is approved.
-2. Implement JSON recordset and SEC/EDGAR parser slices after preserving the same fail-closed parser/materialization discipline.
-3. Broader Phase P10 UI surfacing for typed/refused/mixed source families only as those families become backed by server authority.
-4. Mixed qualitative-plus-table package semantics only after at least one mixed parser contract is implemented and tested.
+1. Implement JSON recordset and SEC/EDGAR parser slices after preserving the same fail-closed parser/materialization discipline.
+2. Broader Phase P10 UI surfacing for typed/refused/mixed source families only as those families become backed by server authority.
+3. Mixed qualitative-plus-table package semantics only after at least one mixed parser contract is implemented and tested.
+4. Decide whether to deprecate the legacy `csv_dataset_bridge_enabled`/`aps.csv_dataset_bridge_run.v1` compatibility path after downstream consumers have adopted the generic table bridge contract.
 
 ## Pack Files
 
@@ -162,3 +162,4 @@ This section intentionally lists the supporting pack files. `README.md` is the f
 - `13-p6-closeout.md` records the implemented Phase P6 selected-pass execution/result/package proof, validation, and residual caveats.
 - `14-p10a-closeout.md` records the bounded Phase P10A Layer 3 UI/operator selection surfacing, validation, and residual caveats.
 - `15-p7-closeout.md` records the bounded Phase P7 XLSX parser/materialization boundary, validation, and residual caveats.
+- `16-p7-5-closeout.md` records the bounded Phase P7.5 generic table bridge orchestration boundary, validation, and residual caveats.

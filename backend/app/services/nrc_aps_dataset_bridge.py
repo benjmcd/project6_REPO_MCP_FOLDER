@@ -26,6 +26,7 @@ from app.services.dataframe_io import persist_dataframe_as_version_rows
 
 
 APS_DATASET_BRIDGE_CONTRACT_ID = "aps_csv_dataset_bridge_v1"
+APS_TABLE_DATASET_BRIDGE_CONTRACT_ID = "aps_table_dataset_bridge_v1"
 APS_DATASET_BRIDGE_VERSION = "1.0.0"
 APS_DATASET_BRIDGE_SOURCE_SYSTEM = "nrc_adams_aps"
 
@@ -48,6 +49,20 @@ _TABLE_PARSER_CONTRACTS = {
         "source_mode": "artifact_xlsx_parser",
     },
 }
+
+
+def table_parser_contract(extraction: dict[str, Any]) -> dict[str, Any] | None:
+    parser_family = str(extraction.get("parser_family") or "").strip()
+    parser_contract = _TABLE_PARSER_CONTRACTS.get(parser_family)
+    if parser_contract is None:
+        return None
+    if str(extraction.get("typed_content_contract_id") or "").strip() != parser_contract["typed_content_contract_id"]:
+        return None
+    return dict(parser_contract)
+
+
+def is_supported_table_unit_extraction(extraction: dict[str, Any]) -> bool:
+    return table_parser_contract(extraction) is not None
 
 
 def _stable_json(value: Any) -> str:
@@ -184,7 +199,13 @@ def _write_dataset_rows(db: Session, *, version: DatasetVersion, frame: pd.DataF
         )
 
 
-def _write_variable_profiles(db: Session, *, version: DatasetVersion, frame: pd.DataFrame) -> None:
+def _write_variable_profiles(
+    db: Session,
+    *,
+    version: DatasetVersion,
+    frame: pd.DataFrame,
+    dataset_bridge_contract_id: str,
+) -> None:
     variables = (
         db.query(VariableDefinition)
         .filter(VariableDefinition.dataset_version_id == version.dataset_version_id)
@@ -214,7 +235,7 @@ def _write_variable_profiles(db: Session, *, version: DatasetVersion, frame: pd.
                 bounded_flag=False,
                 seasonality_flag=False,
                 summary_json={
-                    "dataset_bridge_contract_id": APS_DATASET_BRIDGE_CONTRACT_ID,
+                    "dataset_bridge_contract_id": dataset_bridge_contract_id,
                     "n": int(len(clean)),
                     "unique_n": int(clean.nunique(dropna=True)),
                 },
@@ -252,15 +273,20 @@ def materialize_table_unit_dataset(
     artifact_storage_dir: str | Path | None = None,
     connector_run_id: str | None = None,
     table_index: int = 1,
+    dataset_bridge_contract_id: str | None = None,
     commit: bool = True,
 ) -> dict[str, Any]:
     extraction = dict(target_artifact_payload.get("extraction") or {})
     parser_family = str(extraction.get("parser_family") or "").strip()
     parser_contract = _TABLE_PARSER_CONTRACTS.get(parser_family)
     if parser_contract is None:
-        raise ValueError("dataset_bridge_requires_csv_table_parser")
+        raise ValueError("dataset_bridge_requires_table_unit_parser")
     if str(extraction.get("typed_content_contract_id") or "").strip() != parser_contract["typed_content_contract_id"]:
-        raise ValueError("dataset_bridge_requires_csv_table_contract")
+        raise ValueError("dataset_bridge_requires_table_unit_contract")
+    bridge_contract_id = (
+        str(dataset_bridge_contract_id or APS_TABLE_DATASET_BRIDGE_CONTRACT_ID).strip()
+        or APS_TABLE_DATASET_BRIDGE_CONTRACT_ID
+    )
 
     units = _table_units(extraction)
     table_unit = next((unit for unit in units if int(unit.get("table_index") or 0) == int(table_index)), None)
@@ -282,7 +308,7 @@ def materialize_table_unit_dataset(
     existing_version = db.get(DatasetVersion, version_id)
     if existing_version is not None:
         return {
-            "dataset_bridge_contract_id": APS_DATASET_BRIDGE_CONTRACT_ID,
+            "dataset_bridge_contract_id": bridge_contract_id,
             "dataset_bridge_version": APS_DATASET_BRIDGE_VERSION,
             "created": False,
             "dataset_id": existing_version.dataset_id,
@@ -318,7 +344,7 @@ def materialize_table_unit_dataset(
         version_type="raw",
         status="ready",
         notes=(
-            f"{APS_DATASET_BRIDGE_CONTRACT_ID}; parser_contract_id={extraction.get('parser_contract_id')}; "
+            f"{bridge_contract_id}; parser_contract_id={extraction.get('parser_contract_id')}; "
             f"source_artifact_key={source_artifact_key}"
         ),
     )
@@ -352,7 +378,12 @@ def materialize_table_unit_dataset(
         artifact_storage_dir=artifact_storage_dir,
     )
     _write_dataset_rows(db, version=version, frame=frame, time_column=time_column)
-    _write_variable_profiles(db, version=version, frame=frame)
+    _write_variable_profiles(
+        db,
+        version=version,
+        frame=frame,
+        dataset_bridge_contract_id=bridge_contract_id,
+    )
 
     existing_identity = (
         db.query(DatasetExternalIdentity)
@@ -371,7 +402,7 @@ def materialize_table_unit_dataset(
                 source_system=APS_DATASET_BRIDGE_SOURCE_SYSTEM,
                 logical_dataset_key=logical_dataset_key,
                 metadata_json={
-                    "dataset_bridge_contract_id": APS_DATASET_BRIDGE_CONTRACT_ID,
+                    "dataset_bridge_contract_id": bridge_contract_id,
                     "dataset_bridge_version": APS_DATASET_BRIDGE_VERSION,
                     "table_hash": table_hash,
                     "parser_family": extraction.get("parser_family"),
@@ -416,7 +447,7 @@ def materialize_table_unit_dataset(
         db.flush()
 
     return {
-        "dataset_bridge_contract_id": APS_DATASET_BRIDGE_CONTRACT_ID,
+        "dataset_bridge_contract_id": bridge_contract_id,
         "dataset_bridge_version": APS_DATASET_BRIDGE_VERSION,
         "created": True,
         "dataset_id": dataset.dataset_id,
@@ -442,11 +473,17 @@ def materialize_csv_table_dataset(
     table_index: int = 1,
     commit: bool = True,
 ) -> dict[str, Any]:
+    extraction = dict(target_artifact_payload.get("extraction") or {})
+    if str(extraction.get("parser_family") or "").strip() != "csv_table":
+        raise ValueError("dataset_bridge_requires_csv_table_parser")
+    if str(extraction.get("typed_content_contract_id") or "").strip() != "aps_csv_table_units_v1":
+        raise ValueError("dataset_bridge_requires_csv_table_contract")
     return materialize_table_unit_dataset(
         db,
         target_artifact_payload=target_artifact_payload,
         artifact_storage_dir=artifact_storage_dir,
         connector_run_id=connector_run_id,
         table_index=table_index,
+        dataset_bridge_contract_id=APS_DATASET_BRIDGE_CONTRACT_ID,
         commit=commit,
     )

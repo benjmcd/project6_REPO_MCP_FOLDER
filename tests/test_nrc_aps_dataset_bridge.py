@@ -160,7 +160,7 @@ def test_materialize_xlsx_table_dataset_preserves_sheet_provenance(tmp_path: Pat
     )
 
     assert result["created"] is True
-    assert result["dataset_bridge_contract_id"] == "aps_csv_dataset_bridge_v1"
+    assert result["dataset_bridge_contract_id"] == "aps_table_dataset_bridge_v1"
     assert result["row_count"] == 2
     assert result["time_column"] == "date"
     assert result["numeric_columns"] == ["value"]
@@ -171,6 +171,7 @@ def test_materialize_xlsx_table_dataset_preserves_sheet_provenance(tmp_path: Pat
 
     identity = db.query(DatasetExternalIdentity).one()
     assert identity.logical_dataset_key.startswith("xlsx-table:")
+    assert identity.metadata_json["dataset_bridge_contract_id"] == "aps_table_dataset_bridge_v1"
     assert identity.metadata_json["typed_content_contract_id"] == "aps_xlsx_table_units_v1"
     assert identity.metadata_json["parser_family"] == "xlsx_workbook"
 
@@ -219,6 +220,17 @@ def test_materialize_csv_table_dataset_requires_csv_parser_contract():
         assert str(exc) == "dataset_bridge_requires_csv_table_parser"
     else:
         raise AssertionError("expected bridge to reject non-CSV parser output")
+
+
+def test_materialize_csv_table_dataset_rejects_xlsx_parser_output():
+    db = _make_session()
+
+    try:
+        nrc_aps_dataset_bridge.materialize_csv_table_dataset(db, target_artifact_payload=_xlsx_target_payload())
+    except ValueError as exc:
+        assert str(exc) == "dataset_bridge_requires_csv_table_parser"
+    else:
+        raise AssertionError("expected CSV compatibility bridge to reject XLSX parser output")
 
 
 def test_connector_csv_dataset_bridge_materializes_processed_csv_target(tmp_path: Path):
@@ -280,6 +292,76 @@ def test_connector_csv_dataset_bridge_materializes_processed_csv_target(tmp_path
     assert report["enabled"] is True
     assert report["materialized"][0]["target_id"] == "target-csv-bridge-1"
     assert run.query_plan_json["aps_csv_dataset_bridge_report_refs"]["aps_csv_dataset_bridge"] == summary["run_ref"]
+
+
+def test_connector_table_dataset_bridge_materializes_processed_xlsx_target(tmp_path: Path):
+    db = _make_session()
+    artifact_ref = tmp_path / "target-artifact.json"
+    target_payload = {
+        **_xlsx_target_payload(),
+        "source_reference_json": {"metadata_ref": "metadata.json"},
+    }
+    artifact_ref.write_text(json.dumps(target_payload), encoding="utf-8")
+    run = ConnectorRun(
+        connector_run_id="run-table-bridge-xlsx",
+        connector_key="nrc_adams_aps",
+        source_system="nrc_adams_aps",
+        source_mode="public_api",
+        status="completed",
+        selected_count=1,
+    )
+    target = ConnectorRunTarget(
+        connector_run_target_id="target-table-bridge-xlsx",
+        connector_run_id=run.connector_run_id,
+        ordinal=1,
+        artifact_surface="documents",
+        status="recommended",
+        source_reference_json={"aps_artifact_ingestion_ref": str(artifact_ref)},
+    )
+    db.add(run)
+    db.add(target)
+    db.commit()
+
+    summary = connectors_nrc_adams._generate_table_dataset_bridge_artifacts(
+        db,
+        run=run,
+        config={
+            "table_dataset_bridge_enabled": True,
+            "artifact_storage_dir": str(tmp_path / "storage"),
+            "connector_reports_dir": str(tmp_path / "reports"),
+        },
+    )
+
+    assert summary["run_outcome"] == "datasets_materialized"
+    assert summary["materialized_dataset_versions"] == 1
+    assert summary["created_dataset_versions"] == 1
+    assert summary["failures_count"] == 0
+    assert Path(str(summary["run_ref"])).exists()
+
+    refreshed_target = db.get(ConnectorRunTarget, "target-table-bridge-xlsx")
+    assert refreshed_target is not None
+    assert refreshed_target.dataset_id
+    assert refreshed_target.dataset_version_id
+    assert refreshed_target.source_reference_json["aps_table_dataset_bridge_ref"] == summary["run_ref"]
+    assert refreshed_target.source_reference_json["aps_table_dataset_bridge_contract_id"] == "aps_table_dataset_bridge_v1"
+    assert refreshed_target.source_reference_json["aps_table_dataset_parser_family"] == "xlsx_workbook"
+    assert "aps_csv_dataset_bridge_ref" not in refreshed_target.source_reference_json
+
+    version = db.get(DatasetVersion, refreshed_target.dataset_version_id)
+    assert version is not None
+    assert version.row_count == 2
+    assert version.notes.startswith("aps_table_dataset_bridge_v1;")
+    provenance = db.query(DatasetSourceProvenance).one()
+    assert provenance.connector_run_id == "run-table-bridge-xlsx"
+    assert provenance.source_mode == "artifact_xlsx_parser"
+
+    report = json.loads(Path(str(summary["run_ref"])).read_text(encoding="utf-8"))
+    assert report["schema_id"] == "aps.table_dataset_bridge_run.v1"
+    assert report["enabled"] is True
+    assert report["dataset_bridge_contract_id"] == "aps_table_dataset_bridge_v1"
+    assert report["supported_parser_families"] == ["csv_table", "xlsx_workbook"]
+    assert report["materialized"][0]["parser_family"] == "xlsx_workbook"
+    assert run.query_plan_json["aps_table_dataset_bridge_report_refs"]["aps_table_dataset_bridge"] == summary["run_ref"]
 
 
 def test_connector_csv_dataset_bridge_skips_non_csv_targets_without_materializing(tmp_path: Path):
