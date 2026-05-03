@@ -179,6 +179,20 @@ def test_refresh_validate_only_gates_persists_registry_and_gate(monkeypatch, tmp
     assert flattened_refs["aps_validate_only_gates_failures"] == []
 
 
+def test_validate_only_gate_no_report_skips_report_write(monkeypatch, tmp_path: Path) -> None:
+    run_id = "run/validate only:no-report"
+    storage_root, runtime_root = _create_review_runtime(tmp_path, run_id=run_id)
+    monkeypatch.setattr(settings, "storage_dir", str(storage_root))
+    validate_only_runtime.refresh_validate_only_gates(
+        run_id=run_id,
+        review_root=runtime_root,
+    )
+
+    monkeypatch.chdir(tmp_path)
+    assert validate_only_gate.main(["--run-id", run_id, "--limit", "1", "--no-report"]) == 0
+    assert not (tmp_path / validate_only_gate.DEFAULT_REPORT_PATH).exists()
+
+
 def test_review_graph_and_layout_surface_validate_only_artifact(tmp_path: Path) -> None:
     _storage_root, runtime_root = _create_review_runtime(tmp_path)
     run_id = "run/validate only:001"
