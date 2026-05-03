@@ -53,7 +53,7 @@ Scope:
 | `validate-nrc-aps-deterministic-challenge-review-packet` | `report-gate` | Runs deterministic-challenge-review-packet gate with `--report`. | Report-producing validation under Tier 2. |
 | `refresh-nrc-aps-review-gate-reports` | `artifact-build` | Requires `NrcApsRunId` and runs refresh helper. | Refreshes derived gate reports; not validation-only. |
 | `refresh-nrc-aps-validate-only-gates` | `artifact-build` | Requires `NrcApsRunId` and runs refresh helper under Tier 2. | Refreshes derived validate-only gate artifacts; not validation-only. |
-| `validate-nrc-aps-validate-only-gates` | `report-gate` | Runs validate-only gates gate with `--report` and optional `--run-id`. | Best first behavior-audit candidate, but wrapper still writes a report path. |
+| `validate-nrc-aps-validate-only-gates` | `report-gate` | Runs validate-only gates gate with `--report` by default and optional `--run-id`; the target gate also accepts `--no-report`. | Use `--no-report` when the lane needs artifact-free validation. |
 | `validate-nrc-aps-promotion` | `report-gate` | Resolves live batch manifest and policy, then passes `--report`. | Depends on batch manifest; report-producing under Tier 2. |
 | `validate-nrc-aps-retrieval-cutover` | `live-probe` | Requires `NrcApsRunId`, optionally passes query, and runs under Tier 1. | Runtime/API cutover validation; audit target script before changing behavior. |
 | `compare-nrc-aps-promotion-policy` | `compare-eval` | Requires tuned policy and rationale, then passes `--out-dir`. | Comparison artifact workflow under Tier 2. |
@@ -70,4 +70,4 @@ Scope:
 - Treat every `--report`, `--diff-report`, `--out`, `--out-dir`, `--batch-root`, proof report, and refresh path as a potential artifact write until the target script proves otherwise.
 - Treat Tier 2 and Tier 3 actions as isolated-runtime candidates, not as shared-runtime-safe commands by default.
 - Keep `refresh-*`, `prove-*`, `build-*`, `collect-*`, `gate-nrc-aps`, `bootstrap-sciencebase-live`, and `all` outside validate-only automation unless a lane explicitly owns their runtime and artifacts.
-- The narrowest next behavior lane should start with one command family. `validate-nrc-aps-validate-only-gates` is the clearest candidate because the wrapper name already encodes the intended contract, while the wrapper still exposes report output and optional run-id behavior that can be audited directly.
+- The narrowest next behavior lane should start with one command family. After `validate-nrc-aps-validate-only-gates`, continue only when a target script audit proves whether its report output is intentional or avoidable.

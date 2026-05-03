@@ -102,7 +102,7 @@ def validate_validate_only_gates_gate(
     *,
     run_ids: list[str] | None = None,
     limit: int = 50,
-    report_path: str | Path = DEFAULT_REPORT_PATH,
+    report_path: str | Path | None = DEFAULT_REPORT_PATH,
     require_runs: bool = True,
 ) -> dict[str, Any]:
     run_rows = _load_candidate_runs(run_ids=run_ids, limit=limit)
@@ -240,7 +240,8 @@ def validate_validate_only_gates_gate(
         report["passed"] = not bool(require_runs)
         if require_runs:
             report["no_runs_failure"] = True
-    nrc_aps_sync_drift.write_json_deterministic(report_path, report)
+    if report_path is not None:
+        nrc_aps_sync_drift.write_json_deterministic(report_path, report)
     return report
 
 
@@ -249,12 +250,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--run-id", action="append", default=[], help="Optional specific run id(s) to validate.")
     parser.add_argument("--limit", type=int, default=50, help="Maximum number of latest NRC APS runs to evaluate when --run-id is not supplied.")
     parser.add_argument("--report", default=str(DEFAULT_REPORT_PATH), help="Output JSON report path.")
+    parser.add_argument("--no-report", action="store_true", help="Do not write an output report; only return the gate exit code.")
     parser.add_argument("--allow-empty", action="store_true", help="Allow no matching runs (default fail-closed when no runs are found).")
     args = parser.parse_args(argv)
     report = validate_validate_only_gates_gate(
         run_ids=list(args.run_id or []),
         limit=int(args.limit),
-        report_path=args.report,
+        report_path=None if bool(args.no_report) else args.report,
         require_runs=not bool(args.allow_empty),
     )
     return 0 if bool(report.get("passed")) else 1
