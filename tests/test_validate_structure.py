@@ -36,3 +36,29 @@ def test_local_path_refs_are_warnings(tmp_path: Path) -> None:
     assert [issue.code for issue in issues] == ["LOCAL_PATH_REF"]
     assert issues[0].severity == "warning"
     assert issues[0].line == 1
+
+
+def test_codesight_freshness_warns_when_marker_missing(tmp_path: Path) -> None:
+    (tmp_path / ".codesight").mkdir()
+
+    issues = validate_structure.check_codesight_freshness(tmp_path)
+
+    assert [issue.code for issue in issues] == ["CODESIGHT_FRESHNESS_MISSING"]
+    assert issues[0].severity == "warning"
+
+
+def test_codesight_freshness_accepts_complete_marker(tmp_path: Path) -> None:
+    codesight = tmp_path / ".codesight"
+    codesight.mkdir()
+    (codesight / "freshness.json").write_text(
+        json.dumps(
+            {
+                "source_commit": "abc123",
+                "generated_at": "2026-05-03T00:00:00Z",
+                "command": "generate-codesight",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert validate_structure.check_codesight_freshness(tmp_path) == []
