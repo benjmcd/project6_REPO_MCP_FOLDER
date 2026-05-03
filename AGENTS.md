@@ -4,6 +4,8 @@ This repository is a Python/FastAPI project with SQLAlchemy-backed workflows, NR
 
 Use this file as the stable map. Do not turn it into a full project manual. Prefer focused source reads, tracked docs, generated maps, and executable checks over broad context loading.
 
+For the short command-oriented execution map, read `docs/agent-harness.md` after this file.
+
 ## Authority Order
 
 1. Live git authority: the focused worktree plus `project6-origin/main`.
