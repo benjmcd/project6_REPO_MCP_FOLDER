@@ -1,11 +1,11 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "implementation proof for selected-pass associated-cohort descriptive_summary external export/download readiness in PR #479",
+  "status": "current-main implementation proof for selected-pass associated-cohort descriptive_summary external export/download readiness from PR #479",
   "scope": {
     "source_branch": "codex/l3-cohort-export-ready-impl-p13",
     "merged_pr": "#479",
-    "merge_commit": null,
+    "merge_commit": "7fdcf8ca5ab0acac26fdbfafc67335490d569ba6",
     "base_remote": "project6-origin/main",
     "base_commit": "670711d2",
     "source_base_commit": "670711d226e7e67c3174eb0b3d4ccf7289323234",
@@ -20,7 +20,7 @@
     "latest_planning_summary": "Docs 96/97 define planning-only selected-pass associated-cohort external export/download readiness governance after PR #466 APS evidence-bundle handoff dispatch authority.",
     "latest_planning_live_behavior_change": false,
     "latest_planning_behavior_summary": "Docs 96/97 remain planning/control by themselves; PR #479 is the separate implementation that narrows associated_cohort_external_export_download_prepare_not_admitted only for exact readiness authority.",
-    "latest_implementation_merge_commit": null,
+    "latest_implementation_merge_commit": "7fdcf8ca5ab0acac26fdbfafc67335490d569ba6",
     "latest_planning_base_commit": "9045ee0e06cdfd8ede0d5233df63a4ff33a32ad3",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
@@ -2937,8 +2937,8 @@
     "implementation_branch": "codex/l3-cohort-export-ready-impl-p13",
     "implementation_pr": "#479",
     "base_commit": "670711d2",
-    "head_commit": "3c46be54",
-    "merge_commit": null,
+    "head_commit": "81eec90df837588cfbbb7d3b321b629a8ce331a9",
+    "merge_commit": "7fdcf8ca5ab0acac26fdbfafc67335490d569ba6",
     "scope": "Bounded backend/API selected-pass associated-cohort descriptive_summary external export/download readiness implementation under docs 96/97 after exact PR #466 APS evidence-bundle handoff dispatch authority.",
     "files_changed": [
       "backend/app/services/layer3_workbench.py",
