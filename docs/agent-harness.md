@@ -37,6 +37,7 @@ The root `package.json` exposes browser and harness entry points:
 npm run test:e2e
 npm run test:e2e:headed
 npm run test:layer3-api
+npm run validate:structure
 npm run harness:review:urls
 npm run harness:review:discover
 ```
@@ -61,6 +62,7 @@ It prints the selected run id, review root, runtime root, database, storage root
 Pick checks based on touched files:
 
 - Package/scripts/docs: `npm run test:e2e -- --list`, `npm run harness:review:urls`, `git diff --check`.
+- Structural harness changes: `python ./tools/validate_structure.py`, `./project6.ps1 -Action validate-structure`, `npm run validate:structure`.
 - Layer3 API surface: `npm run test:layer3-api`.
 - Browser/UI behavior: `npm run test:e2e` and a headed slice when practical.
 - JSON manifests: `python -m json.tool <file>`.
@@ -70,6 +72,8 @@ Validation-only actions must fail closed on missing runtime state and must not s
 For current `project6.ps1` action semantics, use `docs/harness-validate-inventory.md` as the wrapper-level inventory before treating any command as validation-only.
 
 For artifact-free `validate-nrc-aps-validate-only-gates` checks, pass `-ActionArgs "--no-report"` so the gate exits from computed state without writing its JSON report.
+
+For root-surface and structural drift checks, use `docs/root-surface-policy.md` and `python ./tools/validate_structure.py`.
 
 ## Non-Interference
 

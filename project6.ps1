@@ -1,6 +1,6 @@
 [CmdletBinding(PositionalBinding = $false)]
 param(
-    [ValidateSet("setup", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "refresh-nrc-aps-review-gate-reports", "refresh-nrc-aps-validate-only-gates", "validate-nrc-aps-validate-only-gates", "validate-nrc-aps-promotion", "validate-nrc-aps-retrieval-cutover", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "compare-nrc-aps-candidate-b", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
+    [ValidateSet("setup", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-structure", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "refresh-nrc-aps-review-gate-reports", "refresh-nrc-aps-validate-only-gates", "validate-nrc-aps-validate-only-gates", "validate-nrc-aps-promotion", "validate-nrc-aps-retrieval-cutover", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "compare-nrc-aps-candidate-b", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
     [string]$Action = "status",
     [string]$BaseUrl = "http://127.0.0.1:8000",
     [int]$ConsecutiveRuns = 3,
@@ -85,6 +85,7 @@ $NrcApsDocumentProcessingProofReportPath = Join-Path $RepoRoot "tests\reports\nr
 $NrcApsCandidateBComparePath = Join-Path $RepoRoot "tools\run_nrc_aps_candidate_b_compare.py"
 $AttachedEvalPath = Join-Path $RepoRoot "tools\run_attached_dataset_eval.py"
 $SQLiteToPostgresMigrationPath = Join-Path $RepoRoot "tools\migrate_sqlite_to_postgres.py"
+$ValidateStructurePath = Join-Path $RepoRoot "tools\validate_structure.py"
 
 function Normalize-AbsPath {
     param(
@@ -364,6 +365,13 @@ switch ($Action) {
             Write-Host "API not reachable at $BaseUrl"
             exit 1
         }
+    }
+    "validate-structure" {
+        if (-not (Test-Path $ValidateStructurePath)) {
+            throw "Structure validator not found: $ValidateStructurePath"
+        }
+        $structureArgs = @($ValidateStructurePath) + $ActionArgs
+        Invoke-Py -Arguments $structureArgs -WorkingDirectory $RepoRoot
     }
     "validate-sciencebase-live" {
         Invoke-Py -Arguments @($LiveValidatorPath, "--base-url", $BaseUrl, "--consecutive-runs", "$ConsecutiveRuns", "--timeout-seconds", "$TimeoutSeconds")
