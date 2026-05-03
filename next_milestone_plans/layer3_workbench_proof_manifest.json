@@ -1,9 +1,9 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main planning proof for selected-pass associated-cohort descriptive_summary external export/download delivery docs 98/99 after PR #481",
+  "status": "branch-local implementation proof for selected-pass associated-cohort descriptive_summary external export/download delivery through the existing same-origin endpoint after docs 98/99",
   "scope": {
-    "source_branch": "codex/l3-cohort-export-ready-impl-p13",
+    "source_branch": "codex/l3-cohort-delivery-impl-p17",
     "merged_pr": "#479",
     "merge_commit": "7fdcf8ca5ab0acac26fdbfafc67335490d569ba6",
     "base_remote": "project6-origin/main",
@@ -22,9 +22,9 @@
     "latest_planning_behavior_summary": "Docs 96/97 remain planning/control by themselves; PR #479 is the separate implementation that narrows associated_cohort_external_export_download_prepare_not_admitted only for exact readiness authority.",
     "latest_implementation_merge_commit": "7fdcf8ca5ab0acac26fdbfafc67335490d569ba6",
     "latest_planning_base_commit": "9045ee0e06cdfd8ede0d5233df63a4ff33a32ad3",
-    "latest_branch_only_implementation_branch": "",
+    "latest_branch_only_implementation_branch": "codex/l3-cohort-delivery-impl-p17",
     "latest_branch_only_implementation_pr": "",
-    "latest_branch_only_implementation_summary": "No branch-only associated-cohort handoff/export prepare UI implementation remains after PR #462 merged to current main.",
+    "latest_branch_only_implementation_summary": "Branch-local backend/API proof that existing POST /api/v1/layer3/handoff/export/download/deliver admits exact associated-cohort external export/download readiness by revalidating PR #479 authority and streaming the existing APS evidence-bundle artifact read-only; no new route or rendered controls are added.",
     "latest_ui_planning_pr": "#441",
     "latest_ui_planning_branch": "codex/l3-cohort-result-review-ui-freeze-p51",
     "latest_ui_planning_summary": "PR #441 lands docs 84/85 as planning-only rendered /review/layer3 associated-cohort result-review UI governance over exact PR #432 selected-pass execution-start/result/status authority and PR #438 backend/API result-review authority.",
@@ -211,7 +211,11 @@
     "latest_delivery_planning_pr": "#481",
     "latest_delivery_planning_live_behavior_change": false,
     "latest_delivery_planning_summary": "PR #481 merged docs 98/99 as current-main planning-only governance for future same-origin associated-cohort external export/download delivery after exact PR #479 readiness; no runtime delivery or rendered controls are live by themselves.",
-    "latest_delivery_planning_merge_commit": "cfd79695d3883625cc7a591b1f61c10411e6a26a"
+    "latest_delivery_planning_merge_commit": "cfd79695d3883625cc7a591b1f61c10411e6a26a",
+    "latest_delivery_implementation_branch": "codex/l3-cohort-delivery-impl-p17",
+    "latest_delivery_implementation_pr": "",
+    "latest_delivery_implementation_live_behavior_change": false,
+    "latest_delivery_implementation_summary": "Branch-local proof/admission over the existing PR #278/#289 delivery endpoint: associated-cohort readiness from PR #479 can be delivered only after server-side revalidation, with no new rows/files and no URL/connector/destination/rendered-control widening."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -834,6 +838,16 @@
       "command": "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null; python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null; manifest invariant check; stale branch-local wording scan; git diff --check",
       "purpose": "Validate post-PR481 docs/control sync from branch-local planning to current-main planning authority.",
       "result": "Passed on codex/l3-cohort-delivery-postmerge-p16; no runtime/UI/schema files changed."
+    },
+    {
+      "command": "python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"cohort_aps_handoff_dispatch or external_export_download_deliver\" -q",
+      "purpose": "Verify associated-cohort delivery through the existing same-origin endpoint plus existing delivery prechecks after the branch-local proof update.",
+      "result": "4 passed, 68 deselected; pytest emitted a Windows temp cleanup PermissionError in atexit after test completion."
+    },
+    {
+      "command": "python -m py_compile .\\backend\\tests\\test_layer3_api.py; python -m pytest .\\backend\\tests\\test_layer3_api.py -q",
+      "purpose": "Validate the edited Layer 3 API test module and full API suite after associated-cohort delivery proof/control updates.",
+      "result": "72 passed, 4 warnings; pytest emitted a Windows temp cleanup PermissionError in atexit after test completion."
     }
   ],
   "browser_proof_rule": "PR #256 changes rendered /review/layer3 behavior on current main, so headed and headless Chrome proof are required for the landed handoff/export prepare-only UI scope. PR #260/#261/#263 are backend/API and service authority changes only; no rendered UI change was made in that lane. Docs 60/61 are planning-only and require no browser proof by themselves. PR #266 changes rendered APS dispatch UI behavior and was proven with both headless Chromium and headed Chromium; its Playwright APS owner-service patch is test/proof infrastructure only, not production behavior. Docs 62/63 are planning-only and require no browser proof by themselves; browser proof is required only if a later implementation changes rendered /review/layer3 behavior or admits download controls.",
@@ -3048,5 +3062,39 @@
       "Post-merge sync validation: python -m json.tool manifests, manifest invariant check, stale branch-local wording scan, and git diff --check -> passed on codex/l3-cohort-delivery-postmerge-p16."
     ],
     "merge_commit": "cfd79695d3883625cc7a591b1f61c10411e6a26a"
+  },
+  "descriptive_summary_selected_pass_cohort_external_export_download_delivery_implementation_proof": {
+    "implementation_branch": "codex/l3-cohort-delivery-impl-p17",
+    "implementation_pr": "",
+    "base_commit": "422084bc",
+    "scope": "Branch-local backend/API proof that selected-pass associated-cohort descriptive_summary external export/download delivery is safely admitted through the existing same-origin delivery endpoint after exact PR #479 readiness.",
+    "files_changed": [
+      "backend/tests/test_layer3_api.py",
+      "next_milestone_plans/Layer3_planning_docs/98_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/99_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_progress_refresh_spec.md",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "live_behavior_change": false,
+    "authority_basis": [
+      "PR #479 is current-main bounded reference-only associated-cohort readiness authority.",
+      "PR #278/#289 provide the existing same-origin delivery endpoint and lock-release behavior for validated APS evidence-bundle artifacts.",
+      "Docs 98/99 require the associated-cohort authority chain to remain explicit and fail-closed when the existing delivery route is reused."
+    ],
+    "no_go_preserved": [
+      "no new delivery route when the existing endpoint remains explicit and fail-closed",
+      "no rendered download controls, public URLs, signed URLs, connector dispatch, generic downstream dispatch, or destination selection",
+      "no package payload copy, rewrite, reconstruction, amendment, or supersession",
+      "no new package rows, source package rows, reconciliation rows, analysis artifacts, connector runs, plans, passes, runs, runtime DB rows, source rows, model files, or migrations",
+      "no schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, retry/recovery/rerun expansion, broader UI, broader associated-cohort review, or full mockup activation"
+    ],
+    "verification": [
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"cohort_aps_handoff_dispatch or external_export_download_deliver\" -q -> 4 passed, 68 deselected; pytest emitted a Windows temp cleanup PermissionError in atexit after test completion",
+      "python -m py_compile .\\backend\\tests\\test_layer3_api.py -> passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -> 72 passed, 4 warnings; pytest emitted a Windows temp cleanup PermissionError in atexit after test completion"
+    ]
   }
 }

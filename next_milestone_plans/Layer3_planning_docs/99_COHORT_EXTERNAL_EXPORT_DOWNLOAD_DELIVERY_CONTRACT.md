@@ -2,13 +2,13 @@
 
 ## Status
 
-Planning-only API/state contract paired with `98_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md`.
+Current-main API/state governance paired with `98_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md`, with branch-local implementation proof on `codex/l3-cohort-delivery-impl-p17`.
 
-This document defines the request, response, authority, and proof contract for a future same-origin associated-cohort external export/download delivery endpoint after PR `#479` readiness. It does not make delivery live by itself and does not admit rendered download controls, public URLs, signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+This document defines the request, response, authority, and proof contract for same-origin associated-cohort external export/download delivery after PR `#479` readiness. It does not make rendered delivery controls live by itself and does not admit public URLs, signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
 ## Authority Order
 
-The future implementation must use this authority order:
+The implementation must use this authority order:
 
 1. server-stored Layer 3 session, approved plan, selected associated-cohort pass, result/status, result-review, package construction, package-review submit, handoff/export prepare, APS handoff dispatch, and external export/download readiness state;
 2. existing `L3ReconciliationRecord.summary_json` and `L3Session.summary_json` JSON-bearing workbench state;
@@ -19,19 +19,21 @@ The future implementation must use this authority order:
 
 Browser state must not authorize delivery, URL generation, connector execution, destination selection, package mutation, artifact creation, rerun, recovery, schema/runtime/source widening, or payload rewriting.
 
-## Planned Endpoint
+## Endpoint
 
-The planned future endpoint is:
+The endpoint is:
 
 `POST /api/v1/layer3/handoff/export/download/deliver`
 
-The endpoint may stream the existing validated APS evidence-bundle handoff artifact as a same-origin response after server-side authority proof. It must not create a public URL, signed URL, connector run, destination binding, copied package payload, rewritten artifact, additional package row, reconciliation row, `AnalysisArtifact` row, source-ingestion row, runtime DB row, or schema migration.
+The existing endpoint may stream the validated APS evidence-bundle handoff artifact as a same-origin response after server-side authority proof. It must not create a public URL, signed URL, connector run, destination binding, copied package payload, rewritten artifact, additional package row, reconciliation row, `AnalysisArtifact` row, source-ingestion row, runtime DB row, or schema migration.
 
-If implementation audit proves that the existing single-item delivery route already owns this path, the future implementation must keep single-item and associated-cohort authority branches explicit and fail closed on ambiguity. If route reuse would blur authority, a cohort-specific route or smaller prerequisite freeze is required before coding.
+If implementation audit proves that the existing single-item delivery route already owns this path, the implementation must keep single-item and associated-cohort authority branches explicit and fail closed on ambiguity. If route reuse would blur authority, a cohort-specific route or smaller prerequisite freeze is required before coding.
+
+Branch `codex/l3-cohort-delivery-impl-p17` takes the route-reuse branch of that decision: no new endpoint is added, and the associated-cohort proof verifies that delivery revalidates recorded readiness through `external_export_download_prepare(...)`, streams the existing artifact, leaves rows/files unchanged, and fails closed on stale associated-cohort dispatch provenance.
 
 ## Request Contract
 
-Required request fields for the planned `POST` shape:
+Required request fields for the `POST` shape:
 
 | Field | Required | Meaning |
 | --- | --- | --- |
@@ -180,7 +182,7 @@ The endpoint must not create or mutate:
 - source-ingestion rows;
 - schema/migration files.
 
-If a future implementation needs persistent delivery receipts, one-shot tokens, access logs, or counters, that is a separate governance question unless the repo already has an admitted non-authoritative audit surface that can be reused without schema/runtime widening.
+If an implementation needs persistent delivery receipts, one-shot tokens, access logs, or counters, that is a separate governance question unless the repo already has an admitted non-authoritative audit surface that can be reused without schema/runtime widening.
 
 ## Idempotency And Concurrency
 
@@ -213,7 +215,7 @@ An implementation must fail closed when:
 
 ## Session Summary Contract
 
-This planning packet does not require session summary to expose a live delivery object before implementation.
+This packet does not require session summary to expose a persistent delivery object.
 
 A future implementation may expose an `associated_cohort_external_export_download_delivery` object only as server-authoritative state. Minimum fields, if exposed:
 
@@ -236,7 +238,7 @@ A future implementation may expose an `associated_cohort_external_export_downloa
 - `downstream_unavailable`;
 - `next_state`.
 
-If delivery is not yet implemented, current session summary must continue to report browser download and download URL as disabled/unavailable through the existing readiness state.
+The current branch-local proof keeps session summary persistence unchanged: readiness remains the recorded server state, while delivery is represented by the same-origin attachment response and headers rather than a durable delivered object.
 
 ## UI Contract
 
@@ -246,7 +248,7 @@ A later UI freeze is required before `/review/layer3` renders an active button, 
 
 ## Proof Requirements
 
-A future implementation PR must prove:
+An implementation PR must prove:
 
 - success only after exact recorded associated-cohort `external_export_download_prepared` state;
 - stale readiness descriptor, APS dispatch, package-review submit, handoff/export prepare, package refs/hashes, APS package row, or APS bundle ref/hash/size fails closed;
