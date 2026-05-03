@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main implementation proof for selected-pass associated-cohort descriptive_summary external export/download readiness from PR #479",
+  "status": "branch-local planning proof for selected-pass associated-cohort descriptive_summary external export/download delivery docs 98/99 after PR #479 readiness",
   "scope": {
     "source_branch": "codex/l3-cohort-export-ready-impl-p13",
     "merged_pr": "#479",
@@ -206,7 +206,11 @@
     "latest_cohort_handoff_prepare_ui_branch": "codex/l3-cohort-handoff-ui-freeze-p72",
     "latest_cohort_handoff_prepare_ui_pr": "#462",
     "latest_cohort_handoff_prepare_ui_merge_commit": "4556ec2127e8d88c8c4879bd333a487cabb4eb20",
-    "latest_cohort_handoff_prepare_ui_summary": "PR #462 adds pass type, pass scope, method, source gate, and package source gate to the existing handoff/export prepare panel and proves associated-cohort prepare-only payloads through the rendered control over PR #460 server readiness."
+    "latest_cohort_handoff_prepare_ui_summary": "PR #462 adds pass type, pass scope, method, source gate, and package source gate to the existing handoff/export prepare panel and proves associated-cohort prepare-only payloads through the rendered control over PR #460 server readiness.",
+    "latest_delivery_planning_branch": "codex/l3-cohort-delivery-freeze-p15",
+    "latest_delivery_planning_pr": "",
+    "latest_delivery_planning_live_behavior_change": false,
+    "latest_delivery_planning_summary": "Docs 98/99 are branch-local planning-only governance for future same-origin associated-cohort external export/download delivery after exact PR #479 readiness; no runtime delivery or rendered controls are live by themselves."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -270,7 +274,9 @@
     "next_milestone_plans/Layer3_planning_docs/82_COHORT_RESULT_REVIEW_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/83_COHORT_RESULT_REVIEW_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/94_COHORT_APS_HANDOFF_DISPATCH_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/95_COHORT_APS_HANDOFF_DISPATCH_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/95_COHORT_APS_HANDOFF_DISPATCH_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/98_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/99_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT.md"
   ],
   "current_live_workbench_boundary": {
     "live_bounded": [
@@ -817,6 +823,11 @@
       "command": "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"external_export_download or aps_handoff_dispatch or handoff_export_prepare\"",
       "purpose": "Post-merge smoke for PR #269 external export/download readiness plus APS dispatch and handoff/export prepare regressions.",
       "result": "16 passed, 30 deselected, 3 warnings on current main merge commit 8bdb15d82f1a98ebfeecefd485ff92ac78da52d6; pytest emitted a non-failing Windows temp cleanup PermissionError after exit code 0."
+    },
+    {
+      "command": "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null; python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null; manifest invariant check; stale/no-go claim scan; git diff --check",
+      "purpose": "Validate branch-local docs 98/99 associated-cohort delivery planning packet and control-artifact consistency.",
+      "result": "Passed on codex/l3-cohort-delivery-freeze-p15; no runtime/UI/schema files changed."
     }
   ],
   "browser_proof_rule": "PR #256 changes rendered /review/layer3 behavior on current main, so headed and headless Chrome proof are required for the landed handoff/export prepare-only UI scope. PR #260/#261/#263 are backend/API and service authority changes only; no rendered UI change was made in that lane. Docs 60/61 are planning-only and require no browser proof by themselves. PR #266 changes rendered APS dispatch UI behavior and was proven with both headless Chromium and headed Chromium; its Playwright APS owner-service patch is test/proof infrastructure only, not production behavior. Docs 62/63 are planning-only and require no browser proof by themselves; browser proof is required only if a later implementation changes rendered /review/layer3 behavior or admits download controls.",
@@ -886,7 +897,14 @@
     "docs 62/63 create browser download",
     "docs 62/63 create connector dispatch",
     "docs 62/63 create destination selection",
-    "external export/download is live after docs 62/63"
+    "external export/download is live after docs 62/63",
+    "docs 98/99 make associated-cohort delivery live",
+    "associated-cohort delivery is live from docs 98/99",
+    "docs 98/99 create rendered download controls",
+    "docs 98/99 create public URLs",
+    "docs 98/99 create signed URLs",
+    "docs 98/99 create connector dispatch",
+    "docs 98/99 create destination selection"
   ],
   "post_merge_pr_222_proof": {
     "merge_commit": "4409702e66ee40d8e2c63c8ea86fa72cb7ea2b6c",
@@ -1324,7 +1342,9 @@
     "next_milestone_plans/Layer3_planning_docs/78_COHORT_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/79_COHORT_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/82_COHORT_RESULT_REVIEW_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/83_COHORT_RESULT_REVIEW_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/83_COHORT_RESULT_REVIEW_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/98_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/99_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT.md"
   ],
   "handoff_export_prepare_ui_implementation_proof": {
     "implementation_branch": "codex/l3-handoff-prepare-ui-impl",
@@ -2979,5 +2999,47 @@
       "separate freeze before public/signed URLs, connector/generic dispatch, destination selection, package mutation/reconstruction, schema/runtime/source widening, or extra rows",
       "headed and headless Chrome proof if rendered UI behavior changes"
     ]
+  },
+  "descriptive_summary_selected_pass_cohort_external_export_download_delivery_planning_proof": {
+    "planning_branch": "codex/l3-cohort-delivery-freeze-p15",
+    "planning_pr": "",
+    "base_commit": "0310de8d",
+    "scope": "Branch-local planning-only selected-pass associated-cohort descriptive_summary external export/download delivery governance after exact PR #479 readiness.",
+    "files_changed": [
+      "next_milestone_plans/Layer3_planning_docs/98_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/99_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/layer3_progress_refresh_spec.md",
+      "next_milestone_plans/progress-prompt.md",
+      "next_milestone_plans/progress-ui-spec.md"
+    ],
+    "live_behavior_change": false,
+    "authority_basis": [
+      "PR #479 is current-main bounded reference-only associated-cohort readiness authority.",
+      "Docs 66/67 and PR #278 are single-item delivery precedent only, not direct associated-cohort authority.",
+      "Docs 98/99 require future implementation to revalidate the exact associated-cohort PR #432/#438/#443/#447/#451/#456/#460/#462/#466/#479 authority chain before streaming bytes."
+    ],
+    "no_go_preserved": [
+      "no runtime delivery endpoint by docs alone",
+      "no rendered download controls, public URLs, signed URLs, connector dispatch, generic downstream dispatch, or destination selection",
+      "no package payload copy, rewrite, reconstruction, amendment, or supersession",
+      "no new package, reconciliation, AnalysisArtifact, connector-run, plan, pass, analysis, runtime DB, source, model, or migration rows/files",
+      "no source package or APS evidence-bundle artifact mutation",
+      "no schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, broader UI, or full mockup activation"
+    ],
+    "required_future_proof": [
+      "separate implementation PR after docs 98/99 land before delivery can become live",
+      "route-shape audit proving single-item and associated-cohort delivery authority are explicit and non-ambiguous",
+      "fail-closed stale/mismatched provenance and forbidden fields",
+      "no new rows/files and no package or APS artifact mutation",
+      "headed and headless Chrome proof only if a later UI freeze admits rendered controls"
+    ],
+    "verification": [
+      "Local validation: python -m json.tool manifests, manifest invariant check, stale/no-go claim scan excluding no_go_scan_terms, and git diff --check -> passed on branch codex/l3-cohort-delivery-freeze-p15."
+    ],
+    "merge_commit": ""
   }
 }
