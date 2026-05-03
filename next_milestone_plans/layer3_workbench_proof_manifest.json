@@ -1,27 +1,27 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main selected-pass associated-cohort delivery UI gate proof plus branch-local signed delivery-reference planning/control governance",
+  "status": "current-main selected-pass associated-cohort delivery UI gate proof plus current-main signed delivery-reference planning/control governance",
   "scope": {
-    "source_branch": "codex/l3-cohort-delivery-ui-settle-p20",
-    "merged_pr": "#485",
-    "merge_commit": "ca2adf26d0107e354f7204b84a6216d9f1dd6790",
+    "source_branch": "codex/l3-signed-url-freeze-p32",
+    "merged_pr": "#497",
+    "merge_commit": "d0925e4f3a5f5779d1c0b08f40c69d691c9a5ecc",
     "base_remote": "project6-origin/main",
-    "base_commit": "d0a39cfe",
-    "source_base_commit": "d0a39cfe6f0067261eec8390d0c6d8770da53c8a",
-    "purpose": "Record PR #485 current-main docs 100/101 settlement for associated-cohort rendered delivery-control governance over the existing generic /review/layer3 delivery UI path after PR #483 backend/API proof.",
+    "base_commit": "aedf65a4",
+    "source_base_commit": "aedf65a452aeeea85e251727ff623d3012213652",
+    "purpose": "Record PR #497 current-main docs 102/103 signed delivery-reference planning/control governance after PR #483 same-origin delivery and PR #487 rendered delivery UI gate authority.",
     "live_behavior_change": false,
-    "live_behavior_change_summary": "PR #485 is docs/control only. It adds no runtime/UI/schema/model/migration behavior and requires a future implementation to add or use an explicit server-authoritative associated-cohort delivery UI gate before activation.",
+    "live_behavior_change_summary": "PR #497 is docs/control only. It adds no signed URL generation, token minting, URL serving, rendered signed URL controls, public URLs, connector/generic dispatch, destination selection, package mutation, durable token/receipt/audit state, schema/runtime/source widening, broader UI, or full mockup behavior.",
     "latest_implementation_pr": "#479",
     "latest_implementation_branch": "codex/l3-cohort-export-ready-impl-p13",
     "latest_implementation_summary": "PR #479 implements docs 96/97: exact selected-pass associated-cohort descriptive_summary APS dispatch authority can record one reference-only external export/download readiness object through the existing prepare route, with delivery and connector/generic downstream dispatch still disabled.",
-    "latest_planning_pr": "#478",
-    "latest_planning_branch": "codex/l3-cohort-export-readiness-p12",
-    "latest_planning_summary": "Docs 96/97 define planning-only selected-pass associated-cohort external export/download readiness governance after PR #466 APS evidence-bundle handoff dispatch authority.",
+    "latest_planning_pr": "#497",
+    "latest_planning_branch": "codex/l3-signed-url-freeze-p32",
+    "latest_planning_summary": "Docs 102/103 define current-main planning/control governance for a possible future short-lived, server-authorized signed delivery reference.",
     "latest_planning_live_behavior_change": false,
-    "latest_planning_behavior_summary": "Docs 96/97 remain planning/control by themselves; PR #479 is the separate implementation that narrows associated_cohort_external_export_download_prepare_not_admitted only for exact readiness authority.",
+    "latest_planning_behavior_summary": "Docs 102/103 remain planning/control by themselves; a separate implementation PR is required before any signed URL behavior can be treated as implemented.",
     "latest_implementation_merge_commit": "7fdcf8ca5ab0acac26fdbfafc67335490d569ba6",
-    "latest_planning_base_commit": "9045ee0e06cdfd8ede0d5233df63a4ff33a32ad3",
+    "latest_planning_base_commit": "aedf65a452aeeea85e251727ff623d3012213652",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
     "latest_branch_only_implementation_summary": "No branch-only associated-cohort external export/download delivery implementation proof remains after PR #483 merged to current main.",
@@ -224,9 +224,10 @@
     "latest_delivery_ui_settlement_merge_commit": "ca2adf26d0107e354f7204b84a6216d9f1dd6790",
     "latest_delivery_ui_settlement_summary": "PR #485 lands docs 100/101 as current-main planning/control settlement: associated-cohort rendered delivery activation over the existing generic delivery form requires explicit server-authoritative UI availability or must remain disabled.",
     "latest_signed_url_planning_branch": "codex/l3-signed-url-freeze-p32",
-    "latest_signed_url_planning_pr": "",
+    "latest_signed_url_planning_pr": "#497",
     "latest_signed_url_planning_live_behavior_change": false,
-    "latest_signed_url_planning_summary": "Docs 102/103 define planning-only signed delivery-reference governance after PR #483 same-origin delivery and PR #487 rendered delivery UI gate authority. They do not implement signed URL generation, token minting, URL serving, rendered signed URL controls, public URLs, connector/generic dispatch, destination selection, durable token/receipt/audit state, package mutation, schema/runtime/source widening, broader UI, or full mockup behavior."
+    "latest_signed_url_planning_summary": "PR #497 merged docs 102/103 as current-main signed delivery-reference governance without runtime behavior changes.",
+    "latest_signed_url_planning_merge_commit": "d0925e4f3a5f5779d1c0b08f40c69d691c9a5ecc"
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -385,7 +386,7 @@
       "external export/download readiness governance from docs 62/63 is planning-only by itself; a future implementation must remain a backend/API reference-only descriptor after aps_handoff_dispatched unless a later freeze admits browser download routes, public/signed URLs, connector dispatch, destination selection, physical export materialization, or extra rows",
       "docs 70/71 are planning-only current-methods AnalysisMethod registry governance by themselves; PR #316 is the separate implementation and new methods still require separate governance",
       "docs 100/101 current-main associated-cohort rendered delivery-control settlement over existing generic delivery UI code; no runtime/UI behavior change by docs alone",
-      "docs 102/103 branch-local signed delivery-reference governance; no signed URL generation, token minting, URL serving, rendered signed URL controls, durable token/receipt/audit state, connector/destination dispatch, schema/runtime/source widening, or full mockup activation by docs alone"
+      "docs 102/103 current-main signed delivery-reference planning/control governance from PR #497; no signed URL generation, token minting, URL serving, rendered signed URL controls, durable token/receipt/audit state, connector/destination dispatch, schema/runtime/source widening, or full mockup activation by docs alone"
     ],
     "current_main_rendered_package_review_ui": [
       "PR #245 renders bounded package construction commit and package-review submit controls on /review/layer3 over the already-live PR #238 and PR #243 backend endpoints; PR #247 hardens stale session-summary fallback after package commit inside the same UI boundary. They do not admit handoff/export, package payload mutation, package reconstruction, source/schema/runtime widening, or full mockup activation."
@@ -3210,7 +3211,7 @@
     "planning_branch": "codex/l3-signed-url-freeze-p32",
     "planning_pr": "#497",
     "base_commit": "aedf65a4",
-    "scope": "Branch-local planning/control signed delivery-reference governance only. No runtime signed URL behavior changes by this document-only slice.",
+    "scope": "Current-main planning/control signed delivery-reference governance after PR #497. No runtime signed URL behavior changes by this document-only slice.",
     "files_changed": [
       "next_milestone_plans/Layer3_planning_docs/102_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/103_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_CONTRACT.md",
@@ -3222,9 +3223,10 @@
       "next_milestone_plans/layer3_workbench_proof_manifest.json"
     ],
     "authority_basis": [
-      "Current main at aedf65a4 includes PR #483 same-origin associated-cohort backend/API delivery proof.",
-      "Current main at aedf65a4 includes PR #487 explicit associated-cohort rendered delivery UI gate.",
-      "Current main at aedf65a4 includes PR #496 package-review submit legacy idempotency compatibility and proof-manifest SHA correction."
+      "Current main at d0925e4f includes PR #497 docs 102/103 signed delivery-reference planning/control governance.",
+      "Current main at d0925e4f includes PR #483 same-origin associated-cohort backend/API delivery proof.",
+      "Current main at d0925e4f includes PR #487 explicit associated-cohort rendered delivery UI gate.",
+      "Current main at d0925e4f includes PR #496 package-review submit legacy idempotency compatibility and proof-manifest SHA correction."
     ],
     "non_goals": [
       "signed URL generation, token minting, URL serving, or signed URL consumption by docs alone",
@@ -3240,7 +3242,12 @@
       "python -m json.tool next_milestone_plans/layer3_progress_manifest.json and layer3_workbench_proof_manifest.json -> passed",
       "intentional-scope manifest validation -> declared paths exist, docs 102/103 referenced by relevant control surfaces, counts 67/38/28/1, no live signed URL overclaim phrases -> passed",
       "git diff --check -> passed with expected LF-to-CRLF warnings on edited text files",
-      "git diff --name-only/status -> docs/control-only under next_milestone_plans; no backend/runtime/test/UI/schema/model/migration edits"
-    ]
+      "git diff --name-only/status -> docs/control-only under next_milestone_plans; no backend/runtime/test/UI/schema/model/migration edits",
+      "Post-merge sync: PR #497 merged at d0925e4f; docs/control metadata reclassified docs 102/103 from branch-local to current-main planning/control without runtime/UI/schema changes.",
+      "Post-PR497 current-main sync validation -> declared paths exist, docs 102/103 current-main state recorded, counts 67/38/29/0, PR #497 merge commit present, no stale branch-local signed URL governance phrases in active surfaces -> passed",
+      "Post-PR497 git diff --check -> passed with expected LF-to-CRLF warnings on edited text files",
+      "Post-PR497 git status/diff -> docs/control-only under next_milestone_plans; no backend/runtime/test/UI/schema/model/migration edits"
+    ],
+    "planning_merge_commit": "d0925e4f3a5f5779d1c0b08f40c69d691c9a5ecc"
   }
 }
