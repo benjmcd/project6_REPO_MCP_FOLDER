@@ -476,6 +476,41 @@ class Layer3ExternalExportDownloadPrepareResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
 
 
+class Layer3ExternalExportDownloadSignedReferenceResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    preview_identity: dict[str, Any]
+    reconciliation_record_id: str
+    external_export_download_record_ref: str
+    export_download_descriptor_ref: str
+    signed_reference_state: str
+    signed_reference_token: str
+    signed_reference_expires_at: str
+    signed_reference_expires_in_seconds: int
+    signed_reference_use_endpoint: str
+    delivery_mode: str
+    server_authority: str
+    source_artifact_ref: str
+    source_artifact_hash: str
+    source_artifact_size_bytes: int
+    pass_type: str
+    pass_scope: str
+    method: str
+    source_gate: str
+    source_shape: str
+    source_dataset_version_ids: list[str]
+    public_url_enabled: bool
+    external_object_store_url_enabled: bool
+    connector_dispatch_enabled: bool
+    destination_selection_enabled: bool
+    generic_downstream_dispatch_enabled: bool
+    package_mutation_enabled: bool
+    schema_runtime_source_widening_enabled: bool
+    authority_rail: dict[str, Any]
+    next_state: str
+
+
 class Layer3WorkbenchErrorResponse(Layer3BaseResponse):
     error_code: str
     message: str
@@ -614,6 +649,28 @@ EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_BODY: dict[str, Any] = {
     "content": {
         "application/json": {"schema": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA},
         "application/x-www-form-urlencoded": {"schema": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORM_REQUEST_SCHEMA},
+    },
+}
+
+
+EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_GENERATE_REQUEST_SCHEMA: dict[str, Any] = {
+    **EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_SCHEMA,
+    "description": (
+        "Server-owned same-origin signed delivery reference generation uses the existing validated "
+        "external export/download delivery authority payload."
+    ),
+}
+
+
+EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["signed_reference_token"],
+    "properties": {
+        "signed_reference_token": {
+            "type": "string",
+            "description": "Server-generated short-lived signed delivery reference token.",
+        },
     },
 }
 
@@ -1459,6 +1516,19 @@ def post_external_export_download_prepare(
 
 
 @router.post(
+    "/handoff/export/download/signed-reference/generate",
+    response_model=Layer3ExternalExportDownloadSignedReferenceResponse,
+    openapi_extra={"requestBody": _json_request_body(EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_GENERATE_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_external_export_download_signed_reference_generate(
+    payload: dict[str, Any],
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.external_export_download_generate_signed_reference(db, payload))
+
+
+@router.post(
     "/handoff/export/download/deliver",
     response_model=None,
     openapi_extra={"requestBody": EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUEST_BODY},
@@ -1489,6 +1559,52 @@ async def post_external_export_download_deliver(
     try:
         payload = await _payload_from_request(request)
         delivery = layer3_workbench.external_export_download_deliver(db, payload)
+    except Layer3WorkbenchError as exc:
+        return JSONResponse(
+            status_code=exc.http_status,
+            content=layer3_workbench.workbench_error_response(exc),
+        )
+    return FileResponse(
+        path=delivery.artifact_path,
+        media_type=delivery.media_type,
+        filename=delivery.filename,
+        content_disposition_type="attachment",
+        headers=delivery.headers,
+    )
+
+
+@router.post(
+    "/handoff/export/download/signed-reference/use",
+    response_model=None,
+    openapi_extra={"requestBody": _json_request_body(EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_REQUEST_SCHEMA)},
+    responses={
+        200: {
+            "description": "APS evidence bundle artifact attachment from a server-owned signed delivery reference.",
+            "content": {
+                "application/json": {
+                    "schema": {"type": "string", "format": "binary"},
+                },
+            },
+            "headers": {
+                "Content-Disposition": {"schema": {"type": "string"}},
+                "X-Layer3-Schema-Id": {"schema": {"type": "string"}},
+                "X-Layer3-Delivery-State": {"schema": {"type": "string"}},
+                "X-Layer3-Source-Artifact-Hash": {"schema": {"type": "string"}},
+                "X-Layer3-Signed-Reference-State": {"schema": {"type": "string"}},
+                "X-Layer3-Signed-Reference-Expires-At": {"schema": {"type": "string"}},
+            },
+        },
+        400: {"model": Layer3WorkbenchErrorResponse},
+        404: {"model": Layer3WorkbenchErrorResponse},
+        409: {"model": Layer3WorkbenchErrorResponse},
+    },
+)
+def post_external_export_download_signed_reference_use(
+    payload: dict[str, Any],
+    db: Session = Depends(get_db),
+) -> FileResponse | JSONResponse:
+    try:
+        delivery = layer3_workbench.external_export_download_use_signed_reference(db, payload)
     except Layer3WorkbenchError as exc:
         return JSONResponse(
             status_code=exc.http_status,
