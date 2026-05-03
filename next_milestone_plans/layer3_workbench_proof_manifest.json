@@ -1,17 +1,17 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "branch-local planning/control settlement for selected-pass associated-cohort rendered external export/download delivery UI after PR #483 backend/API proof",
+  "status": "current-main planning/control settlement for selected-pass associated-cohort rendered external export/download delivery UI after PR #485",
   "scope": {
     "source_branch": "codex/l3-cohort-delivery-ui-settle-p20",
-    "merged_pr": "",
-    "merge_commit": "",
+    "merged_pr": "#485",
+    "merge_commit": "ca2adf26d0107e354f7204b84a6216d9f1dd6790",
     "base_remote": "project6-origin/main",
     "base_commit": "d0a39cfe",
     "source_base_commit": "d0a39cfe6f0067261eec8390d0c6d8770da53c8a",
-    "purpose": "Record branch-local docs 100/101 that settle associated-cohort rendered delivery-control governance over the existing generic /review/layer3 delivery UI path after PR #483 backend/API proof.",
+    "purpose": "Record PR #485 current-main docs 100/101 settlement for associated-cohort rendered delivery-control governance over the existing generic /review/layer3 delivery UI path after PR #483 backend/API proof.",
     "live_behavior_change": false,
-    "live_behavior_change_summary": "Docs 100/101 are planning/control only. They add no runtime/UI/schema/model/migration behavior and require a future implementation to add or use an explicit server-authoritative associated-cohort delivery UI gate before activation.",
+    "live_behavior_change_summary": "PR #485 is docs/control only. It adds no runtime/UI/schema/model/migration behavior and requires a future implementation to add or use an explicit server-authoritative associated-cohort delivery UI gate before activation.",
     "latest_implementation_pr": "#479",
     "latest_implementation_branch": "codex/l3-cohort-export-ready-impl-p13",
     "latest_implementation_summary": "PR #479 implements docs 96/97: exact selected-pass associated-cohort descriptive_summary APS dispatch authority can record one reference-only external export/download readiness object through the existing prepare route, with delivery and connector/generic downstream dispatch still disabled.",
@@ -215,10 +215,14 @@
     "latest_delivery_implementation_branch": "codex/l3-cohort-delivery-impl-p17",
     "latest_delivery_implementation_pr": "#483",
     "latest_delivery_implementation_live_behavior_change": false,
-    "latest_delivery_implementation_summary": "PR #483 proves associated-cohort readiness from PR #479 can be delivered through the existing PR #278/#289 same-origin endpoint only after server-side revalidation, with no new rows/files and no URL/connector/destination widening. PR #483 itself adds no rendered-control code; branch-local docs 100/101 now settle the separate associated-cohort UI activation boundary over the existing generic rendered delivery form.",
-    "latest_branch_local_planning_branch": "codex/l3-cohort-delivery-ui-settle-p20",
+    "latest_delivery_implementation_summary": "PR #483 proves associated-cohort readiness from PR #479 can be delivered through the existing PR #278/#289 same-origin endpoint only after server-side revalidation, with no new rows/files and no URL/connector/destination widening. PR #483 itself adds no rendered-control code; PR #485 docs 100/101 now settle the separate associated-cohort UI activation boundary over the existing generic rendered delivery form.",
+    "latest_branch_local_planning_branch": "",
     "latest_branch_local_planning_pr": "",
-    "latest_branch_local_planning_summary": "Docs 100/101 acknowledge that the generic rendered delivery form already exists from PR #282/#285/#286, but associated-cohort rendered delivery activation remains unsettled until an explicit server-authoritative gate is implemented or the control remains disabled."
+    "latest_branch_local_planning_summary": "No branch-local associated-cohort rendered delivery UI planning/control settlement remains after PR #485 merged to current main.",
+    "latest_delivery_ui_settlement_branch": "codex/l3-cohort-delivery-ui-settle-p20",
+    "latest_delivery_ui_settlement_pr": "#485",
+    "latest_delivery_ui_settlement_merge_commit": "ca2adf26d0107e354f7204b84a6216d9f1dd6790",
+    "latest_delivery_ui_settlement_summary": "PR #485 lands docs 100/101 as current-main planning/control settlement: associated-cohort rendered delivery activation over the existing generic delivery form requires explicit server-authoritative UI availability or must remain disabled."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -373,7 +377,8 @@
       "handoff/export prepare UI freeze/state contract from docs 56/57 governs only a future rendered /review/layer3 prepare-only control over the existing backend endpoint; by itself it does not add rendered UI behavior, APS handoff, external export/download/dispatch, physical artifacts, AnalysisArtifact rows, package mutation/reconstruction, schema/runtime/source widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector execution, or full mockup activation",
       "APS handoff dispatch governance from docs 58/59 governs the PR #260 backend/API implementation; by itself it does not add rendered UI controls, external export/download, generic downstream dispatch, connector dispatch, destination selection, package mutation/reconstruction, source/schema/runtime widening, or full mockup activation",
       "external export/download readiness governance from docs 62/63 is planning-only by itself; a future implementation must remain a backend/API reference-only descriptor after aps_handoff_dispatched unless a later freeze admits browser download routes, public/signed URLs, connector dispatch, destination selection, physical export materialization, or extra rows",
-      "docs 70/71 are planning-only current-methods AnalysisMethod registry governance by themselves; PR #316 is the separate implementation and new methods still require separate governance"
+      "docs 70/71 are planning-only current-methods AnalysisMethod registry governance by themselves; PR #316 is the separate implementation and new methods still require separate governance",
+      "docs 100/101 current-main associated-cohort rendered delivery-control settlement over existing generic delivery UI code; no runtime/UI behavior change by docs alone"
     ],
     "current_main_rendered_package_review_ui": [
       "PR #245 renders bounded package construction commit and package-review submit controls on /review/layer3 over the already-live PR #238 and PR #243 backend endpoints; PR #247 hardens stale session-summary fallback after package commit inside the same UI boundary. They do not admit handoff/export, package payload mutation, package reconstruction, source/schema/runtime widening, or full mockup activation."
@@ -522,9 +527,6 @@
       "handoff/export preparation by package-review approval alone",
       "APS handoff or external export from docs 54/55 by themselves",
       "physical export artifact or AnalysisArtifact creation without a separate freeze"
-    ],
-    "planning_branch_local": [
-      "docs 100/101 branch-local associated-cohort rendered delivery-control settlement over existing generic delivery UI code; no runtime/UI behavior change by docs alone"
     ]
   },
   "readiness_gates": [
@@ -3116,9 +3118,9 @@
   },
   "descriptive_summary_selected_pass_cohort_external_export_download_delivery_ui_settlement_proof": {
     "planning_branch": "codex/l3-cohort-delivery-ui-settle-p20",
-    "planning_pr": "",
+    "planning_pr": "#485",
     "base_commit": "d0a39cfe",
-    "scope": "Branch-local planning/control settlement for associated-cohort rendered same-origin delivery controls after PR #483 backend/API proof. No runtime/UI behavior changes by this document-only slice.",
+    "scope": "Current-main planning/control settlement for associated-cohort rendered same-origin delivery controls after PR #483 backend/API proof. No runtime/UI behavior changes by this document-only slice.",
     "files_changed": [
       "next_milestone_plans/Layer3_planning_docs/98_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/99_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT.md",
@@ -3153,9 +3155,43 @@
       "Get-ChildItem -Path .\\next_milestone_plans -Recurse -File -Include *.md,*.json | Select-String stale rendered-control/count patterns -> no active stale-count or broad rendered-control matches",
       "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null -> passed",
       "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null -> passed",
-      "layer3_progress_manifest invariant script -> 65 records, 37 live bounded, 27 planning-only, 1 branch-local planning/control, branch-local docs 100/101 refs present",
+      "layer3_progress_manifest invariant script -> 65 records, 37 live bounded, 28 planning-only, 0 branch-local planning/control, PR #485 docs 100/101 refs present",
       "layer3_workbench_proof_manifest invariant script -> 9 files_changed refs, live_behavior_change false, verification refs present",
-      "git diff --check -> passed with only expected LF-to-CRLF warnings on edited text files"
+      "git diff --check -> passed with only expected LF-to-CRLF warnings on edited text files",
+      "GitHub PR #485 checks backend-layer3-api and test -> success; no comments, reviews, or review threads before merge",
+      "GitHub PR #485 merged to project6-origin/main at ca2adf26d0107e354f7204b84a6216d9f1dd6790",
+      "post-PR485 stale-branch scan -> no stale docs 100/101 wording or branch-local count matches beyond retained source_branch metadata",
+      "post-PR485 layer3_progress_manifest invariant script -> 65 records, 37 live bounded, 28 planning-only, 0 branch-local planning/control, PR #485 merge metadata present",
+      "post-PR485 layer3_workbench_proof_manifest invariant script -> merged_pr #485, merge_commit ca2adf26d0107e354f7204b84a6216d9f1dd6790, live_behavior_change false"
+    ],
+    "merge_commit": "ca2adf26d0107e354f7204b84a6216d9f1dd6790"
+  },
+  "post_pr485_docs_sync_proof": {
+    "sync_branch": "codex/l3-ui-postmerge-p21",
+    "base_commit": "ca2adf26",
+    "base_merge_commit": "ca2adf26d0107e354f7204b84a6216d9f1dd6790",
+    "scope": "Docs/control-only post-PR485 current-main metadata sync. Converts docs 100/101 from branch-local planning/control to current-main planning/control and preserves runtime no-go boundaries.",
+    "files_changed": [
+      "next_milestone_plans/Layer3_planning_docs/98_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/99_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CONTRACT.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_progress_refresh_spec.md",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "live_behavior_change": false,
+    "authority_basis": [
+      "GitHub PR #485 is merged to project6-origin/main at ca2adf26d0107e354f7204b84a6216d9f1dd6790.",
+      "PR #485 checks backend-layer3-api and test succeeded before merge, with no comments, reviews, or review threads observed.",
+      "Current main includes docs 100/101 as planning/control only; associated-cohort rendered delivery activation still requires a future explicit server-authoritative UI gate or remains disabled."
+    ],
+    "verification": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null -> passed",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null -> passed",
+      "stale docs 100/101 branch-local wording/count scan -> no matches",
+      "postmerge invariant script -> 65 records, 37 live bounded, 28 planning-only, 0 branch-local planning/control, PR #485 merge metadata present",
+      "git diff --check -> passed"
     ]
   }
 }
