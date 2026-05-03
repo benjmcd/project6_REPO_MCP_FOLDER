@@ -78,7 +78,7 @@ For root-surface and structural drift checks, use `docs/root-surface-policy.md` 
 
 The review browser test harness exposes `GET /__test/harness-info` for versioned, path-redacted test-only fixture metadata.
 
-For local log legibility, use `npm run harness:logs -- --tail 80` or pass `--contains <text>` for an exact line filter. The command is read-only and does not create report artifacts.
+For local log legibility, use `npm run harness:logs -- --tail 80` or pass `--contains <text>` for an exact line filter. The command is read-only, redacts absolute local paths by default, and does not create report artifacts.
 
 Treat `.codesight` as generated navigation only. Use `docs/codesight-policy.md` before relying on its route, schema, or map counts.
 

@@ -28,3 +28,29 @@ def test_inspect_logs_accepts_extra_repo_relative_path(tmp_path: Path) -> None:
 
     assert [summary.path for summary in summaries] == ["custom.log"]
     assert summaries[0].lines == ["two", "three"]
+
+
+def test_inspect_logs_redacts_local_paths_by_default(tmp_path: Path) -> None:
+    windows_path = "C:" + "\\" + "Users" + "\\" + "benny" + "\\" + "repo" + "\\" + "runtime.db"
+    spaced_path = "C:" + "\\" + "Program Files" + "\\" + "tool" + "\\" + "tool.exe"
+    posix_path = "/" + "Users" + "/" + "benny" + "/" + "repo" + "/" + "runtime.db"
+    file_uri = "file:" + "/" * 3 + "C:" + "/" + "Users" + "/" + "benny" + "/" + "repo" + "/" + "runtime.db"
+    (tmp_path / ".project6_api_stderr.log").write_text(
+        f"using {windows_path}\n"
+        f"also {posix_path}\n"
+        f"and {file_uri}\n"
+        f"spaced {spaced_path}\n"
+        f"suffix {windows_path} remains\n",
+        encoding="utf-8",
+    )
+
+    summaries = inspect_harness_logs.inspect_logs(tmp_path, [], tail=10, contains=None)
+
+    assert summaries[0].lines == [
+        "using <LOCAL_PATH>",
+        "also <LOCAL_PATH>",
+        "and <LOCAL_PATH>",
+        "spaced <LOCAL_PATH>",
+        "suffix <LOCAL_PATH> remains",
+    ]
+    assert "benny" not in "\n".join(summaries[0].lines)
