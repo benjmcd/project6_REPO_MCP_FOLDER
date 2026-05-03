@@ -58,7 +58,27 @@ function Get-ReviewRuntimeBindings {
     return $bindings
 }
 
-function Resolve-ReviewRuntimeState {
+function Get-SharedReviewRuntimeRoot {
+    param(
+        [string]$LaneRoot
+    )
+
+    if ([string]::IsNullOrWhiteSpace($LaneRoot) -or -not (Test-Path $LaneRoot)) {
+        return $null
+    }
+
+    $current = Get-Item (Resolve-Path $LaneRoot).Path
+    while ($null -ne $current) {
+        if ($current.Name -eq 'worktrees' -and $null -ne $current.Parent) {
+            return (Join-Path $current.Parent.FullName 'backend\app\storage_test_runtime')
+        }
+        $current = $current.Parent
+    }
+
+    return $null
+}
+
+function Get-ReviewRuntimeCandidateStates {
     param(
         [string]$LaneRoot,
         [string]$RuntimeRoot = ''
@@ -66,21 +86,41 @@ function Resolve-ReviewRuntimeState {
 
     $candidateStates = @()
 
-    if ([string]::IsNullOrWhiteSpace($RuntimeRoot)) {
-        $candidateStates += [pscustomobject]@{
-            Source = 'repo-native'
-            RuntimeRoot = (Join-Path $LaneRoot 'backend\app\storage_test_runtime')
-        }
-        $candidateStates += [pscustomobject]@{
-            Source = 'adopted-sibling'
-            RuntimeRoot = (Join-Path $LaneRoot '..\pr45-postmerge-audit\backend\app\storage_test_runtime')
-        }
-    } else {
+    if (-not [string]::IsNullOrWhiteSpace($RuntimeRoot)) {
         $candidateStates += [pscustomobject]@{
             Source = 'explicit'
             RuntimeRoot = $RuntimeRoot
         }
+        return $candidateStates
     }
+
+    $sharedRuntimeRoot = Get-SharedReviewRuntimeRoot -LaneRoot $LaneRoot
+    if (-not [string]::IsNullOrWhiteSpace($sharedRuntimeRoot)) {
+        $candidateStates += [pscustomobject]@{
+            Source = 'shared-repo-root'
+            RuntimeRoot = $sharedRuntimeRoot
+        }
+    }
+
+    $candidateStates += [pscustomobject]@{
+        Source = 'repo-native-app'
+        RuntimeRoot = (Join-Path $LaneRoot 'backend\app\storage_test_runtime')
+    }
+    $candidateStates += [pscustomobject]@{
+        Source = 'repo-native-backend'
+        RuntimeRoot = (Join-Path $LaneRoot 'backend\storage_test_runtime')
+    }
+
+    return $candidateStates
+}
+
+function Resolve-ReviewRuntimeState {
+    param(
+        [string]$LaneRoot,
+        [string]$RuntimeRoot = ''
+    )
+
+    $candidateStates = @(Get-ReviewRuntimeCandidateStates -LaneRoot $LaneRoot -RuntimeRoot $RuntimeRoot)
 
     foreach ($candidateState in $candidateStates) {
         if (-not (Test-Path $candidateState.RuntimeRoot)) {
