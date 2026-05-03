@@ -3056,6 +3056,38 @@ def _ensure_result_review_source_admitted(
     )
 
 
+def _associated_cohort_aps_dispatch_source_admitted(
+    *,
+    status_body: dict[str, Any],
+    pass_run: L3PassRun,
+    output_metadata_summary: dict[str, Any],
+) -> bool:
+    return _associated_cohort_result_source_admitted(
+        status_body=status_body,
+        pass_run=pass_run,
+        output_metadata_summary=output_metadata_summary,
+    )
+
+
+def _associated_cohort_aps_dispatch_prepare_state_admitted(
+    prepare_state: dict[str, Any],
+) -> bool:
+    source_dataset_version_ids = prepare_state.get("source_dataset_version_ids")
+    return bool(
+        prepare_state.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT
+        and prepare_state.get("pass_scope") == PASS_SCOPE_QUANT_ASSOCIATED_COHORT
+        and prepare_state.get("method") == "descriptive_summary"
+        and prepare_state.get("source_gate") == SOURCE_GATE_COHORT_DESC_FREEZE
+        and prepare_state.get("package_construction_source_gate")
+        == SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE
+        and prepare_state.get("source_shape") == COHORT_SHAPE_ALIGNED_WIDE_TABLE
+        and isinstance(source_dataset_version_ids, list)
+        and len(source_dataset_version_ids) > 0
+        and prepare_state.get("package_review_submit_schema_id")
+        == COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    )
+
+
 def _execution_result_status_response(
     *,
     request_id: str | None,
@@ -5011,6 +5043,14 @@ def _aps_handoff_dispatch_response(
         "package_kinds": [package.package_kind for package in ordered_packages],
         "payload_refs": [package.payload_ref for package in ordered_packages],
         "payload_hashes": [package.payload_hash for package in ordered_packages],
+        "pass_type": dispatch_state.get("pass_type"),
+        "pass_scope": dispatch_state.get("pass_scope"),
+        "method": dispatch_state.get("method"),
+        "source_gate": dispatch_state.get("source_gate"),
+        "package_construction_source_gate": dispatch_state.get("package_construction_source_gate"),
+        "source_shape": dispatch_state.get("source_shape"),
+        "source_dataset_version_ids": _json_clone(dispatch_state.get("source_dataset_version_ids") or []),
+        "package_review_submit_schema_id": dispatch_state.get("package_review_submit_schema_id"),
         "package_review_submit_record_ref": dispatch_state["package_review_submit_record_ref"],
         "package_review_state": dispatch_state["package_review_state"],
         "prepare_record_ref": dispatch_state["prepare_record_ref"],
@@ -7284,11 +7324,6 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             http_status=409,
             next_allowed_actions=["inspect_execution_result_status"],
         )
-    _ensure_result_status_downstream_source_admitted(
-        status_body,
-        error_code="associated_cohort_aps_handoff_dispatch_not_admitted",
-        action_label="APS handoff dispatch",
-    )
     output_metadata_summary = status_body.get("output_metadata_summary")
     if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
         raise Layer3WorkbenchError(
@@ -7324,6 +7359,27 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             status="conflict",
             http_status=409,
             blocked_fields=["pass_run_id"],
+        )
+    associated_cohort_dispatch = False
+    if status_body.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT:
+        associated_cohort_dispatch = _associated_cohort_aps_dispatch_source_admitted(
+            status_body=status_body,
+            pass_run=pass_run,
+            output_metadata_summary=output_metadata_summary,
+        )
+        if not associated_cohort_dispatch:
+            raise Layer3WorkbenchError(
+                "associated_cohort_aps_handoff_dispatch_not_admitted",
+                "APS handoff dispatch is admitted only for exact selected-pass descriptive associated-cohort result/status output.",
+                status="blocked",
+                http_status=409,
+                next_allowed_actions=["inspect_execution_result_status"],
+            )
+    else:
+        _ensure_result_status_downstream_source_admitted(
+            status_body,
+            error_code="associated_cohort_aps_handoff_dispatch_not_admitted",
+            action_label="APS handoff dispatch",
         )
     if reconciliation is None:
         raise Layer3WorkbenchError(
@@ -7583,6 +7639,32 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             http_status=409,
             blocked_fields=sorted(set(submit_mismatches)),
         )
+    if associated_cohort_dispatch:
+        cohort_submit_mismatches = [
+            field
+            for field, expected in {
+                "pass_type": PASS_TYPE_ASSOCIATED_COHORT,
+                "pass_scope": PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
+                "method": "descriptive_summary",
+                "source_gate": SOURCE_GATE_COHORT_DESC_FREEZE,
+                "package_construction_source_gate": SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
+                "source_shape": COHORT_SHAPE_ALIGNED_WIDE_TABLE,
+            }.items()
+            if package_review_submit.get(field) != expected
+        ]
+        if list(package_review_submit.get("source_dataset_version_ids") or []) != list(
+            output_metadata_summary.get("source_dataset_version_ids") or []
+        ):
+            cohort_submit_mismatches.append("source_dataset_version_ids")
+        if cohort_submit_mismatches:
+            raise Layer3WorkbenchError(
+                "associated_cohort_aps_handoff_dispatch_not_admitted",
+                "Associated-cohort APS handoff dispatch requires exact approved cohort package-review submit authority.",
+                status="blocked",
+                http_status=409,
+                blocked_fields=sorted(set(cohort_submit_mismatches)),
+                next_allowed_actions=["inspect_package_review_submit_state"],
+            )
 
     prepare_state = _handoff_export_prepare_from_reconciliation(reconciliation)
     if prepare_state is None or prepare_state.get("handoff_export_state") != HANDOFF_EXPORT_PREPARED_STATE:
@@ -7646,6 +7728,23 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             http_status=409,
             blocked_fields=sorted(set(prepare_mismatches)),
         )
+    cohort_prepare_mismatches: list[str] = []
+    if associated_cohort_dispatch:
+        if not _associated_cohort_aps_dispatch_prepare_state_admitted(prepare_state):
+            cohort_prepare_mismatches.append("handoff_export_state")
+        if list(prepare_state.get("source_dataset_version_ids") or []) != list(
+            output_metadata_summary.get("source_dataset_version_ids") or []
+        ):
+            cohort_prepare_mismatches.append("source_dataset_version_ids")
+    if cohort_prepare_mismatches:
+        raise Layer3WorkbenchError(
+            "associated_cohort_aps_handoff_dispatch_not_admitted",
+            "Associated-cohort APS handoff dispatch requires exact prepared cohort handoff/export authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=sorted(set(cohort_prepare_mismatches)),
+            next_allowed_actions=["inspect_handoff_export_prepare_state"],
+        )
 
     source_package_refs = _package_ref_map(ordered_packages)
     source_package_hashes = _package_hash_map(ordered_packages)
@@ -7676,6 +7775,21 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
         "operator_decision": APS_HANDOFF_DISPATCH_OPERATOR_DECISION,
         "decision_notes": decision_notes or None,
     }
+    if associated_cohort_dispatch:
+        dispatch_basis.update(
+            {
+                "pass_type": PASS_TYPE_ASSOCIATED_COHORT,
+                "pass_scope": PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
+                "method": "descriptive_summary",
+                "source_gate": SOURCE_GATE_COHORT_DESC_FREEZE,
+                "package_construction_source_gate": SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
+                "source_shape": COHORT_SHAPE_ALIGNED_WIDE_TABLE,
+                "source_dataset_version_ids": _json_clone(
+                    prepare_state.get("source_dataset_version_ids") or []
+                ),
+                "package_review_submit_schema_id": COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
+            }
+        )
     aps_handoff_record_ref = _stable_id("l3-aps-handoff-dispatch", dispatch_basis)
     existing_aps_package = _aps_handoff_package_for_session(db, session_id=session_id)
     if existing_dispatch is not None:
@@ -7773,6 +7887,14 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
         "package_kinds": expected_package_kinds,
         "payload_refs": canonical_payload_refs,
         "payload_hashes": canonical_payload_hashes,
+        "pass_type": prepare_state.get("pass_type"),
+        "pass_scope": prepare_state.get("pass_scope"),
+        "method": prepare_state.get("method"),
+        "source_gate": prepare_state.get("source_gate"),
+        "package_construction_source_gate": prepare_state.get("package_construction_source_gate"),
+        "source_shape": prepare_state.get("source_shape"),
+        "source_dataset_version_ids": _json_clone(prepare_state.get("source_dataset_version_ids") or []),
+        "package_review_submit_schema_id": prepare_state.get("package_review_submit_schema_id"),
         "recorded_at": recorded_at,
         "external_export_enabled": False,
         "download_enabled": False,
@@ -7797,6 +7919,14 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             "pass_run_id": pass_run_id,
             "analysis_run_id": analysis_run_id,
             "reconciliation_record_id": reconciliation_record_id,
+            "pass_type": prepare_state.get("pass_type"),
+            "pass_scope": prepare_state.get("pass_scope"),
+            "method": prepare_state.get("method"),
+            "source_gate": prepare_state.get("source_gate"),
+            "package_construction_source_gate": prepare_state.get("package_construction_source_gate"),
+            "source_shape": prepare_state.get("source_shape"),
+            "source_dataset_version_ids": _json_clone(prepare_state.get("source_dataset_version_ids") or []),
+            "package_review_submit_schema_id": prepare_state.get("package_review_submit_schema_id"),
             "aps_output_package_id": aps_package.output_package_id,
             "aps_bundle_ref": aps_package.payload_ref,
             "aps_bundle_id": str(aps_summary.get("bundle_id") or ""),
@@ -9307,11 +9437,14 @@ def _aps_handoff_dispatch_summary(
             "connector_dispatch_enabled": False,
             "downstream_unavailable": list(APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE),
         }
-    if (
+    cohort_prepare_source = (
         handoff_export_prepare_state.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT
         or _is_cohort_package_construction_source(
             handoff_export_prepare_state.get("package_construction_source_gate")
         )
+    )
+    if cohort_prepare_source and not _associated_cohort_aps_dispatch_prepare_state_admitted(
+        handoff_export_prepare_state
     ):
         return {
             "schema_id": APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
@@ -9482,6 +9615,29 @@ def _external_export_download_prepare_summary(
             "available": False,
             "state": EXTERNAL_EXPORT_DOWNLOAD_BLOCKED_STATE,
             "blocked_reason": "aps_handoff_dispatch_state_missing",
+            "reconciliation_record_id": reconciliation_record_id,
+            "aps_handoff_record_ref": aps_handoff_record_ref,
+            "export_download_target": "aps_evidence_bundle_download_reference",
+            "download_mode": "reference_only_prepare",
+            "external_export_download_prepare_enabled": False,
+            "browser_download_enabled": False,
+            "download_url_enabled": False,
+            "connector_dispatch_enabled": False,
+            "destination_selection_enabled": False,
+            "generic_downstream_dispatch_enabled": False,
+            "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
+        }
+    if (
+        recorded_dispatch.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT
+        or _is_cohort_package_construction_source(
+            recorded_dispatch.get("package_construction_source_gate")
+        )
+    ):
+        return {
+            "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+            "available": False,
+            "state": EXTERNAL_EXPORT_DOWNLOAD_UNAVAILABLE_STATE,
+            "blocked_reason": "associated_cohort_external_export_download_prepare_not_admitted",
             "reconciliation_record_id": reconciliation_record_id,
             "aps_handoff_record_ref": aps_handoff_record_ref,
             "export_download_target": "aps_evidence_bundle_download_reference",

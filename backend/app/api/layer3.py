@@ -351,6 +351,14 @@ class Layer3HandoffExportPrepareResponse(Layer3BaseResponse):
     package_kinds: list[str]
     payload_refs: list[str]
     payload_hashes: list[str]
+    pass_type: str | None = None
+    pass_scope: str | None = None
+    method: str | None = None
+    source_gate: str | None = None
+    package_construction_source_gate: str | None = None
+    source_shape: str | None = None
+    source_dataset_version_ids: list[str] | None = None
+    package_review_submit_schema_id: str | None = None
     package_review_submit_record_ref: str
     package_review_state: str
     operator_decision: str
@@ -381,6 +389,14 @@ class Layer3ApsHandoffDispatchResponse(Layer3BaseResponse):
     package_kinds: list[str]
     payload_refs: list[str]
     payload_hashes: list[str]
+    pass_type: str | None = None
+    pass_scope: str | None = None
+    method: str | None = None
+    source_gate: str | None = None
+    package_construction_source_gate: str | None = None
+    source_shape: str | None = None
+    source_dataset_version_ids: list[str] | None = None
+    package_review_submit_schema_id: str | None = None
     package_review_submit_record_ref: str
     package_review_state: str
     prepare_record_ref: str

@@ -29,6 +29,7 @@ from app.models.models import (
     AnalysisRun,
     ConnectorRun,
     L3AnalysisPlan,
+    L3AnalysisSet,
     L3OutputPackage,
     L3PassRun,
     L3ReconciliationRecord,
@@ -46,7 +47,11 @@ from app.services.layer3_session_entry import (
 from app.services.layer3_typing_entry import materialize_typing_entry
 from main import app
 from test_layer3_aps_handoff import _seed_aps_content_fixture, _seed_timeseries_dataset_version
-from test_layer3_pass_entry import _build_quant_cohort_ready_session, _build_quant_ready_session
+from test_layer3_pass_entry import (
+    _build_quant_cohort_ready_session,
+    _build_quant_ready_session,
+    _seed_timeseries_dataset_version as _seed_cohort_timeseries_dataset_version,
+)
 
 
 def _settings_for_test(**values):
@@ -1462,6 +1467,121 @@ def _build_aps_handoff_ready_session(db, tmp_path: Path) -> tuple[str, str, str,
     return session.session_id, run_id, target_id, content_id
 
 
+def _build_cohort_aps_handoff_ready_session(db, tmp_path: Path) -> tuple[str, str, str, str]:
+    first_dataset_version_id = "dv-api-cohort-aps-001"
+    second_dataset_version_id = "dv-api-cohort-aps-002"
+    run_id = "run-api-cohort-aps-001"
+    target_id = "target-api-cohort-aps-001"
+    content_id = "content-api-cohort-aps-001"
+    _seed_cohort_timeseries_dataset_version(
+        db,
+        tmp_path,
+        dataset_id="ds-api-cohort-aps-001",
+        dataset_version_id=first_dataset_version_id,
+        values=[50 + index for index in range(24)],
+    )
+    _seed_cohort_timeseries_dataset_version(
+        db,
+        tmp_path,
+        dataset_id="ds-api-cohort-aps-002",
+        dataset_version_id=second_dataset_version_id,
+        values=[150 + (index * 2) for index in range(24)],
+    )
+    _seed_aps_content_fixture(db, tmp_path, run_id=run_id, target_id=target_id, content_id=content_id)
+
+    request = SessionEntryRequest(
+        manifest_items=[
+            {
+                "source_plane": "plane_a",
+                "descriptor_type": "dataset_version",
+                "selector_payload": {"selection_group": "sel-api-cohort-aps-quant"},
+                "selection_basis": {"selection_id": "sel-api-cohort-aps-quant"},
+                "expansion_reason": "committed_selection",
+            },
+            {
+                "source_plane": "plane_b",
+                "descriptor_type": "aps_content_document",
+                "selector_payload": {"run_id": run_id, "target_id": target_id},
+                "selection_basis": {"selection_id": "sel-api-cohort-aps-doc"},
+                "expansion_reason": "committed_selection",
+            },
+        ],
+        source_plane_hints={"plane_a": ["dataset_version"], "plane_b": ["aps_content_document"]},
+        commit_reason="api-cohort-aps-handoff-dispatch-proof",
+        entry_route_context={"entrypoint": "pytest"},
+        operator_context={"operator": "pytest"},
+        summary={"phase": "api_cohort_aps_handoff_dispatch"},
+    )
+
+    session, manifest = commit_selection(db, request)
+    descriptors = expand_descriptors(db, session=session, manifest=manifest)
+    descriptors_by_type = {descriptor.descriptor_type: descriptor for descriptor in descriptors}
+    record_retrieval_event(
+        db,
+        session=session,
+        descriptor=descriptors_by_type["dataset_version"],
+        outcome="loaded",
+        reason_code="loaded",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape="dataset_version",
+                source_identity={"dataset_version_id": first_dataset_version_id},
+                source_provenance={
+                    "dataset_id": "ds-api-cohort-aps-001",
+                    "storage_ref": str(tmp_path / "datasets" / f"{first_dataset_version_id}.csv"),
+                },
+                payload={"dataset_version_id": first_dataset_version_id},
+                load_summary={"loaded_records": 1, "failed_records": 0},
+            ),
+            SnapshotMaterial(
+                source_shape="dataset_version",
+                source_identity={"dataset_version_id": second_dataset_version_id},
+                source_provenance={
+                    "dataset_id": "ds-api-cohort-aps-002",
+                    "storage_ref": str(tmp_path / "datasets" / f"{second_dataset_version_id}.csv"),
+                },
+                payload={"dataset_version_id": second_dataset_version_id},
+                load_summary={"loaded_records": 1, "failed_records": 0},
+            ),
+        ],
+        storage_root=tmp_path,
+    )
+    record_retrieval_event(
+        db,
+        session=session,
+        descriptor=descriptors_by_type["aps_content_document"],
+        outcome="loaded",
+        reason_code="loaded",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape="aps_content_document",
+                source_identity={"content_id": content_id, "run_id": run_id, "target_id": target_id},
+                source_provenance={"linkage_ref": f"aps/linkage/{content_id}"},
+                payload={"content": "aps qualitative companion for cohort handoff"},
+                load_summary={"loaded_records": 1, "failed_records": 0},
+            )
+        ],
+        storage_root=tmp_path,
+    )
+    finalize_session(db, session=session)
+    db.commit()
+    materialize_typing_entry(db, session_id=session.session_id)
+    associated_set = (
+        db.query(L3AnalysisSet)
+        .filter(
+            L3AnalysisSet.session_id == session.session_id,
+            L3AnalysisSet.set_type == "associated_cohort",
+        )
+        .one()
+    )
+    associated_set.formation_basis_json = {
+        **associated_set.formation_basis_json,
+        "requested_method_name": "descriptive_summary",
+    }
+    db.commit()
+    return session.session_id, run_id, target_id, content_id
+
+
 def _approve_aps_handoff_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
     db = client.layer3_session_factory()
     try:
@@ -1485,6 +1605,40 @@ def _approve_aps_handoff_plan(client: TestClient, tmp_path) -> tuple[str, dict, 
         "/api/v1/layer3/plan/approve",
         json={
             "client_request_id": "api-aps-dispatch-approval",
+            "session_id": session_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+        },
+    )
+    assert approval.status_code == 200
+    return session_id, preview_body, approval.json()
+
+
+def _approve_cohort_aps_handoff_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _, _ = _build_cohort_aps_handoff_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-cohort-aps-dispatch-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    )
+    assert preview.status_code == 200
+    preview_body = preview.json()
+
+    approval = client.post(
+        "/api/v1/layer3/plan/approve",
+        json={
+            "client_request_id": "api-cohort-aps-dispatch-approval",
             "session_id": session_id,
             "preview_id": preview_body["preview_id"],
             "preview_hash": preview_body["preview_hash"],
@@ -3626,7 +3780,10 @@ def test_layer3_api_selected_cohort_execution_start_and_status_are_bounded(
         ),
     )
     assert cohort_aps_dispatch.status_code == 409
-    assert cohort_aps_dispatch.json()["error_code"] == "associated_cohort_aps_handoff_dispatch_not_admitted"
+    assert cohort_aps_dispatch.json()["error_code"] == "aps_handoff_dispatch_blocked"
+    assert "contains no aps_content_document provenance admitted for APS handoff" in cohort_aps_dispatch.json()[
+        "message"
+    ]
 
     summary = client.get(f"/api/v1/layer3/session/{session_id}")
     assert summary.status_code == 200
@@ -3658,11 +3815,17 @@ def test_layer3_api_selected_cohort_execution_start_and_status_are_bounded(
     assert summary_body["handoff_export_prepare"]["package_review_submit_schema_id"] == (
         "layer3.cohort_package_review_submit.v1"
     )
-    assert summary_body["aps_handoff_dispatch"]["state"] == "aps_handoff_unavailable"
-    assert summary_body["aps_handoff_dispatch"]["blocked_reason"] == (
-        "associated_cohort_aps_handoff_dispatch_not_admitted"
-    )
-    assert summary_body["downstream_unavailable"] == ["aps_handoff", "external_export", "downstream_dispatch"]
+    assert summary_body["aps_handoff_dispatch"]["state"] == "aps_handoff_blocked"
+    assert "contains no aps_content_document provenance admitted for APS handoff" in summary_body[
+        "aps_handoff_dispatch"
+    ]["blocked_reason"]
+    assert summary_body["downstream_unavailable"] == [
+        "aps_handoff",
+        "external_export",
+        "download",
+        "connector_dispatch",
+        "non_aps_dispatch",
+    ]
 
     conflict = client.post(
         "/api/v1/layer3/execution/result/review",
@@ -5313,6 +5476,407 @@ def test_layer3_api_aps_handoff_dispatch_materializes_owner_service_bundle_witho
     assert summary_body["external_export_download"]["state"] == "external_export_download_ready"
     assert summary_body["external_export_download"]["available"] is True
     assert summary_body["external_export_download"]["aps_handoff_record_ref"] == body["aps_handoff_record_ref"]
+    assert summary_body["downstream_unavailable"] == [
+        "browser_download",
+        "download_url",
+        "connector_dispatch",
+        "destination_selection",
+        "generic_downstream_dispatch",
+    ]
+
+
+def test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_companion_provenance(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    _patch_cohort_dataframe_persistence(monkeypatch, tmp_path)
+    session_id, preview_body, approval_body = _approve_cohort_aps_handoff_plan(client, tmp_path)
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": "api-cohort-aps-dispatch-selection",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert selection.status_code == 200
+    selection_body = selection.json()
+    assert len(selection_body["pass_run_ids"]) == 1
+    pass_run_id = selection_body["pass_run_ids"][0]
+
+    start_body, status_body, review_body = _start_and_approve_quant_result_review(
+        client,
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        request_id="api-cohort-aps-dispatch",
+    )
+    assert status_body["pass_type"] == "associated_cohort"
+
+    package_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": "api-cohort-aps-dispatch-package-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert package_preview.status_code == 200
+    package_preview_body = package_preview.json()
+    assert package_preview_body["pass_type"] == "associated_cohort"
+    assert package_preview_body["pass_scope"] == "quantitative_associated_cohort_dataset_version"
+    assert package_preview_body["selected_method_name"] == "descriptive_summary"
+    assert package_preview_body["source_gate"] == "78_COHORT_FREEZE"
+    assert package_preview_body["source_dataset_version_ids"] == [
+        "dv-api-cohort-aps-001",
+        "dv-api-cohort-aps-002",
+    ]
+    assert package_preview_body["cohort_shape"] == "aligned_wide_table"
+    assert package_preview_body["package_owner_compatibility"]["status"] == (
+        "associated_cohort_construction_preconditions_satisfied"
+    )
+    assert package_preview_body["package_owner_compatibility"][
+        "construction_compatible_with_current_workbench_state"
+    ] is True
+
+    package_commit = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": "api-cohort-aps-dispatch-package-commit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": package_preview_body["package_review_preview_hash"],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert package_commit.status_code == 200
+    commit_body = package_commit.json()
+    assert commit_body["schema_id"] == "layer3.package_construction_commit.v1"
+    assert commit_body["status"] == "committed"
+    assert commit_body["pass_scope"] == "quantitative_associated_cohort_dataset_version"
+    assert commit_body["package_construction_source_gate"] == "88_COHORT_PACKAGE_CONSTRUCTION_FREEZE"
+    assert commit_body["source_shape"] == "aligned_wide_table"
+    assert commit_body["source_dataset_version_ids"] == [
+        "dv-api-cohort-aps-001",
+        "dv-api-cohort-aps-002",
+    ]
+
+    package_submit = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={
+            "client_request_id": "api-cohort-aps-dispatch-package-submit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": commit_body["package_review_preview_hash"],
+            "reconciliation_record_id": commit_body["reconciliation_record_id"],
+            "output_package_ids": [package["output_package_id"] for package in commit_body["output_packages"]],
+            "payload_hashes": commit_body["payload_hashes"],
+            "operator_decision": "approved",
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert package_submit.status_code == 200
+    submit_body = package_submit.json()
+    assert submit_body["schema_id"] == "layer3.cohort_package_review_submit.v1"
+    assert submit_body["package_review_state"] == "package_review_approved"
+    assert submit_body["package_construction_source_gate"] == "88_COHORT_PACKAGE_CONSTRUCTION_FREEZE"
+    assert submit_body["source_dataset_version_ids"] == [
+        "dv-api-cohort-aps-001",
+        "dv-api-cohort-aps-002",
+    ]
+
+    prepare = client.post(
+        "/api/v1/layer3/handoff/export/prepare",
+        json=_handoff_export_prepare_payload(
+            request_id="api-cohort-aps-dispatch-prepare",
+            session_id=session_id,
+            preview_body=preview_body,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=commit_body,
+            submit_body=submit_body,
+        ),
+    )
+    assert prepare.status_code == 200
+    prepare_body = prepare.json()
+    assert prepare_body["schema_id"] == "layer3.cohort_handoff_export_prepare.v1"
+    assert prepare_body["handoff_export_state"] == "handoff_export_prepared"
+    assert prepare_body["package_review_submit_schema_id"] == "layer3.cohort_package_review_submit.v1"
+    assert prepare_body["source_dataset_version_ids"] == [
+        "dv-api-cohort-aps-001",
+        "dv-api-cohort-aps-002",
+    ]
+
+    payload = _aps_handoff_dispatch_payload(
+        request_id="api-cohort-aps-dispatch-success",
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+    )
+
+    def files_under_tmp() -> set[str]:
+        return {str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*") if path.is_file()}
+
+    db = client.layer3_session_factory()
+    try:
+        source_packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage)
+            .filter(L3OutputPackage.output_package_id.in_(payload["output_package_ids"]))
+            .order_by(L3OutputPackage.package_kind.asc())
+            .all()
+        ]
+        counts_before = {
+            "analysis_plans": db.query(L3AnalysisPlan).count(),
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "analysis_sets": db.query(L3AnalysisSet).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "aps_packages": db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+    finally:
+        db.close()
+    files_before = files_under_tmp()
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+        )
+        original_summary_json = dict(reconciliation.summary_json)
+        reconciliation.summary_json = {
+            **original_summary_json,
+            "handoff_export_prepare": {
+                **original_summary_json["handoff_export_prepare"],
+                "source_dataset_version_ids": ["dv-api-cohort-aps-stale"],
+            },
+        }
+        db.commit()
+    finally:
+        db.close()
+
+    stale_prepare_dispatch = client.post("/api/v1/layer3/handoff/aps/dispatch", json=payload)
+    assert stale_prepare_dispatch.status_code == 409
+    assert stale_prepare_dispatch.json()["error_code"] == "associated_cohort_aps_handoff_dispatch_not_admitted"
+    assert "source_dataset_version_ids" in stale_prepare_dispatch.json()["blocked_fields"]
+    assert files_under_tmp() == files_before
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+        )
+        reconciliation.summary_json = original_summary_json
+        db.commit()
+    finally:
+        db.close()
+
+    ready_summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert ready_summary.status_code == 200
+    ready_summary_body = ready_summary.json()
+    assert ready_summary_body["handoff_export_prepare"]["state"] == "handoff_export_prepared"
+    assert ready_summary_body["aps_handoff_dispatch"]["state"] == "aps_handoff_ready"
+    assert ready_summary_body["aps_handoff_dispatch"]["available"] is True
+
+    dispatch = client.post("/api/v1/layer3/handoff/aps/dispatch", json=payload)
+    assert dispatch.status_code == 200, dispatch.json()
+    body = dispatch.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.aps_handoff_dispatch.v1"
+    assert body["status"] == "dispatched"
+    assert body["pass_type"] == "associated_cohort"
+    assert body["pass_scope"] == "quantitative_associated_cohort_dataset_version"
+    assert body["method"] == "descriptive_summary"
+    assert body["source_gate"] == "78_COHORT_FREEZE"
+    assert body["package_construction_source_gate"] == "88_COHORT_PACKAGE_CONSTRUCTION_FREEZE"
+    assert body["source_shape"] == "aligned_wide_table"
+    assert body["source_dataset_version_ids"] == [
+        "dv-api-cohort-aps-001",
+        "dv-api-cohort-aps-002",
+    ]
+    assert body["package_review_submit_schema_id"] == "layer3.cohort_package_review_submit.v1"
+    assert body["aps_handoff_state"] == "aps_handoff_dispatched"
+    assert body["aps_output_package_kind"] == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF
+    assert body["external_export_enabled"] is False
+    assert body["download_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["downstream_unavailable"] == [
+        "external_export",
+        "download",
+        "connector_dispatch",
+        "non_aps_dispatch",
+    ]
+    for forbidden_key in (
+        "download_url",
+        "connector_run_id",
+        "external_target",
+        "package_payload",
+        "package_variant_content",
+        "rewritten_content",
+    ):
+        assert forbidden_key not in body
+
+    db = client.layer3_session_factory()
+    try:
+        source_packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage)
+            .filter(L3OutputPackage.output_package_id.in_(payload["output_package_ids"]))
+            .order_by(L3OutputPackage.package_kind.asc())
+            .all()
+        ]
+        assert source_packages_after == source_packages_before
+        assert db.query(L3AnalysisPlan).count() == counts_before["analysis_plans"]
+        assert db.query(AnalysisRun).count() == counts_before["analysis_runs"]
+        assert db.query(L3AnalysisSet).count() == counts_before["analysis_sets"]
+        assert db.query(AnalysisArtifact).count() == counts_before["artifacts"]
+        assert db.query(ConnectorRun).count() == counts_before["connector_runs"]
+        assert db.query(L3PassRun).count() == counts_before["pass_runs"]
+        assert db.query(L3ReconciliationRecord).count() == counts_before["reconciliations"]
+        assert db.query(L3OutputPackage).count() == counts_before["packages"] + 1
+        assert (
+            db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .count()
+            == counts_before["aps_packages"] + 1
+        )
+        aps_package = (
+            db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .one()
+        )
+        assert aps_package.output_package_id == body["aps_output_package_id"]
+        assert aps_package.payload_ref == body["aps_bundle_ref"]
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+        )
+        dispatch_state = reconciliation.summary_json["aps_handoff_dispatch"]
+        assert dispatch_state["pass_type"] == "associated_cohort"
+        assert dispatch_state["source_dataset_version_ids"] == [
+            "dv-api-cohort-aps-001",
+            "dv-api-cohort-aps-002",
+        ]
+        assert dispatch_state["package_review_submit_schema_id"] == "layer3.cohort_package_review_submit.v1"
+        assert dispatch_state["aps_output_package_id"] == body["aps_output_package_id"]
+    finally:
+        db.close()
+
+    files_after = files_under_tmp()
+    added_files = files_after - files_before
+    assert Path(body["aps_bundle_ref"]).exists()
+    assert str(Path(body["aps_bundle_ref"]).relative_to(tmp_path)) in added_files
+    assert len(added_files) == 1
+
+    replay = client.post("/api/v1/layer3/handoff/aps/dispatch", json=payload)
+    assert replay.status_code == 200
+    replay_body = replay.json()
+    assert replay_body["status"] == "already_dispatched"
+    assert replay_body["aps_handoff_record_ref"] == body["aps_handoff_record_ref"]
+    assert replay_body["aps_output_package_id"] == body["aps_output_package_id"]
+
+    cohort_download_prepare = client.post(
+        "/api/v1/layer3/handoff/export/download/prepare",
+        json=_external_export_download_prepare_payload(
+            request_id="api-cohort-aps-dispatch-download-prepare-blocked",
+            session_id=session_id,
+            preview_body=preview_body,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+            dispatch_body=body,
+        ),
+    )
+    assert cohort_download_prepare.status_code == 409
+    assert cohort_download_prepare.json()["error_code"] == (
+        "associated_cohort_external_export_download_prepare_not_admitted"
+    )
+    assert files_under_tmp() == files_after
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+        )
+        assert "external_export_download_prepare" not in reconciliation.summary_json
+    finally:
+        db.close()
+
+    conflicting_notes = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json={**payload, "decision_notes": "Changing notes after dispatch must fail closed."},
+    )
+    assert conflicting_notes.status_code == 409
+    assert conflicting_notes.json()["error_code"] == "aps_handoff_dispatch_already_recorded"
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200
+    summary_body = summary.json()
+    assert summary_body["handoff_export_prepare"]["state"] == "handoff_export_prepared"
+    assert summary_body["aps_handoff_dispatch"]["state"] == "aps_handoff_dispatched"
+    assert summary_body["aps_handoff_dispatch"]["available"] is False
+    assert summary_body["aps_handoff_dispatch"]["aps_output_package_id"] == body["aps_output_package_id"]
+    assert summary_body["external_export_download"]["state"] == "external_export_download_unavailable"
+    assert summary_body["external_export_download"]["available"] is False
+    assert summary_body["external_export_download"]["blocked_reason"] == (
+        "associated_cohort_external_export_download_prepare_not_admitted"
+    )
     assert summary_body["downstream_unavailable"] == [
         "browser_download",
         "download_url",

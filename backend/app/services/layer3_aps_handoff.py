@@ -19,6 +19,7 @@ from app.services.layer3_package_entry import (
     PACKAGE_KIND_USER_FACING,
     PACKAGE_STATUS_COMPLETE,
     PACKAGE_STATUS_COMPLETE_WITH_WARNINGS,
+    SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
     SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
 )
 from app.services.layer3_session_entry import (
@@ -205,7 +206,11 @@ def _workbench_package_source_gate(canonical_payload: dict[str, Any]) -> bool:
     header = canonical_payload.get("package_header")
     return (
         isinstance(header, dict)
-        and str(header.get("source_gate") or "").strip() == SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE
+        and str(header.get("source_gate") or "").strip()
+        in {
+            SOURCE_WORKBENCH_PACKAGE_CONSTRUCTION_FREEZE,
+            SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE,
+        }
     )
 
 
