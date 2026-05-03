@@ -1,25 +1,25 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus merged selected-pass associated-cohort descriptive_summary handoff/export prepare UI projection/proof from PR #462 over PR #460 authority",
+  "status": "branch-local planning proof for selected-pass associated-cohort descriptive_summary APS handoff dispatch governance after PR #460/#462 authority",
   "scope": {
-    "source_branch": "codex/l3-cohort-handoff-ui-postmerge-sync-p73",
-    "merged_pr": "#462",
-    "merge_commit": "4556ec2127e8d88c8c4879bd333a487cabb4eb20",
+    "source_branch": "codex/l3-cohort-aps-dispatch-freeze-p74",
+    "merged_pr": "#463",
+    "merge_commit": "382358ca23680784940c3d9b217aea2494f71d7d",
     "base_remote": "project6-origin/main",
-    "base_commit": "4556ec21",
-    "source_base_commit": "4556ec2127e8d88c8c4879bd333a487cabb4eb20",
-    "purpose": "Record the selected-pass associated-cohort descriptive_summary chain through PR #460 backend/API handoff/export prepare-only implementation and PR #462 rendered UI authority-projection proof while preserving downstream no-go boundaries.",
-    "live_behavior_change": true,
-    "live_behavior_change_summary": "PR #460 changes backend/API behavior only for exact associated-cohort handoff/export prepare-only admission. PR #462 adds rendered /review/layer3 authority projection/proof over that server state only. APS dispatch, external export/download, connector, schema/runtime/source, retry/recovery, pass-entry, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior remain out.",
+    "base_commit": "382358ca",
+    "source_base_commit": "382358ca23680784940c3d9b217aea2494f71d7d",
+    "purpose": "Record branch-local docs 94/95 as planning-only selected-pass associated-cohort APS handoff dispatch governance after PR #460 backend/API prepare-only authority and PR #462 rendered prepare proof, while preserving downstream no-go boundaries.",
+    "live_behavior_change": false,
+    "live_behavior_change_summary": "Docs 94/95 are planning/control only. They do not make associated-cohort APS dispatch live; current code still blocks it with associated_cohort_aps_handoff_dispatch_not_admitted. External export/download, connector, schema/runtime/source, retry/recovery, pass-entry, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior remain out.",
     "latest_implementation_pr": "#460",
     "latest_implementation_branch": "codex/l3-cohort-handoff-impl-p70",
     "latest_implementation_summary": "PR #460 implements docs 92/93: exact selected-pass associated-cohort descriptive_summary package-review submit authority can record one handoff/export preparation object in existing JSON-bearing state, with APS/external downstream still disabled.",
-    "latest_planning_pr": "#450",
-    "latest_planning_branch": "codex/l3-cohort-package-construction-freeze-p60",
-    "latest_planning_summary": "Docs 88/89 define selected-pass associated-cohort descriptive_summary package-construction governance after PR #447 read-only package-review preview/readiness; PR #451 implements only that bounded construction step.",
+    "latest_planning_pr": "",
+    "latest_planning_branch": "codex/l3-cohort-aps-dispatch-freeze-p74",
+    "latest_planning_summary": "Docs 94/95 define branch-local selected-pass associated-cohort APS handoff dispatch governance after PR #460 prepare-only state and PR #462 rendered prepare proof.",
     "latest_planning_live_behavior_change": false,
-    "latest_planning_behavior_summary": "Docs 88/89 remain planning/control by themselves. PR #451 is the separate bounded implementation and still does not admit package-review submit, handoff/export, APS dispatch, external export/download, connector, schema/runtime/source, retry/recovery, pass-entry, broader UI, qualitative/hybrid/RAG/vector, or full mockup behavior.",
+    "latest_planning_behavior_summary": "Docs 94/95 remain planning/control by themselves. A separate implementation must prove exact PR #432/#438/#443/#447/#451/#456/#460/#462 authority before narrowing associated_cohort_aps_handoff_dispatch_not_admitted.",
     "latest_implementation_merge_commit": "8ca5e8dccc812b7ee42ae16f3f986a97ce3eb336",
     "latest_planning_base_commit": "6f1a2ff41d12f1fa3df1d174f5b29e69813ac3fa",
     "latest_branch_only_implementation_branch": "",
@@ -268,7 +268,9 @@
     "next_milestone_plans/Layer3_planning_docs/70_L3_ANALYSIS_METHOD_REGISTRY_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/71_L3_ANALYSIS_METHOD_REGISTRY_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/82_COHORT_RESULT_REVIEW_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/83_COHORT_RESULT_REVIEW_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/83_COHORT_RESULT_REVIEW_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/94_COHORT_APS_HANDOFF_DISPATCH_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/95_COHORT_APS_HANDOFF_DISPATCH_CONTRACT.md"
   ],
   "current_live_workbench_boundary": {
     "live_bounded": [
@@ -2843,5 +2845,48 @@
     ],
     "implementation_pr": "#462",
     "merge_commit": "4556ec2127e8d88c8c4879bd333a487cabb4eb20"
+  },
+  "descriptive_summary_selected_pass_cohort_aps_handoff_dispatch_planning_proof": {
+    "planning_branch": "codex/l3-cohort-aps-dispatch-freeze-p74",
+    "planning_pr": "",
+    "base_commit": "382358ca",
+    "scope": "Branch-local planning-only selected-pass associated-cohort descriptive_summary APS handoff dispatch governance after PR #460 prepare-only authority and PR #462 rendered prepare proof.",
+    "files_changed": [
+      "next_milestone_plans/Layer3_planning_docs/94_COHORT_APS_HANDOFF_DISPATCH_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/95_COHORT_APS_HANDOFF_DISPATCH_CONTRACT.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_refresh_spec.md",
+      "next_milestone_plans/progress-prompt.md",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "live_behavior_change": false,
+    "authority_basis": [
+      "PR #460 is current-main backend/API authority for associated-cohort handoff/export prepare-only state.",
+      "PR #462 is current-main rendered prepare UI projection/proof over that server authority.",
+      "backend/app/services/layer3_workbench.py currently blocks associated-cohort APS dispatch with associated_cohort_aps_handoff_dispatch_not_admitted.",
+      "Docs 58/59 plus PR #260/#261/#263 are single-item APS dispatch pattern and owner-service compatibility sources only, not direct associated-cohort dispatch authority."
+    ],
+    "no_go_preserved": [
+      "no live associated-cohort APS dispatch by docs alone",
+      "no external export/download, connector dispatch, generic downstream dispatch, or destination selection",
+      "no schema/runtime/source/model/migration widening",
+      "no package payload copy, rewrite, reconstruction, amendment, or supersession",
+      "no pass-entry changes, retry/recovery, broader UI, qualitative/hybrid/RAG/vector, or full mockup behavior"
+    ],
+    "required_future_proof": [
+      "separate implementation PR before narrowing associated_cohort_aps_handoff_dispatch_not_admitted",
+      "exact PR #432/#438/#443/#447/#451/#456/#460/#462 authority and owner-service compatibility proof",
+      "exactly one APS handoff dispatch object, one aps_evidence_bundle_handoff package row, and one APS evidence-bundle artifact on success",
+      "fail-closed stale/mismatched provenance, forbidden fields, duplicate conflicts, orphan APS rows, and owner-service provenance missing",
+      "headed and headless Chrome proof if rendered UI behavior changes"
+    ],
+    "verification": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "manifest invariant check for 61 records, 34 live bounded records, 26 current-main planning-only records, and 1 branch-local planning record",
+      "git diff --check"
+    ]
   }
 }
