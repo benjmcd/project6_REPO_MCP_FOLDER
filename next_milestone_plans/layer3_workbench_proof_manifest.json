@@ -3208,7 +3208,7 @@
   },
   "descriptive_summary_selected_pass_cohort_external_export_download_signed_url_planning_proof": {
     "planning_branch": "codex/l3-signed-url-freeze-p32",
-    "planning_pr": "",
+    "planning_pr": "#497",
     "base_commit": "aedf65a4",
     "scope": "Branch-local planning/control signed delivery-reference governance only. No runtime signed URL behavior changes by this document-only slice.",
     "files_changed": [
