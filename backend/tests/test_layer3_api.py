@@ -5826,38 +5826,6 @@ def test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_compani
     assert replay_body["aps_handoff_record_ref"] == body["aps_handoff_record_ref"]
     assert replay_body["aps_output_package_id"] == body["aps_output_package_id"]
 
-    cohort_download_prepare = client.post(
-        "/api/v1/layer3/handoff/export/download/prepare",
-        json=_external_export_download_prepare_payload(
-            request_id="api-cohort-aps-dispatch-download-prepare-blocked",
-            session_id=session_id,
-            preview_body=preview_body,
-            approval_body=approval_body,
-            selection_body=selection_body,
-            start_body=start_body,
-            review_body=review_body,
-            commit_body=commit_body,
-            submit_body=submit_body,
-            prepare_body=prepare_body,
-            dispatch_body=body,
-        ),
-    )
-    assert cohort_download_prepare.status_code == 409
-    assert cohort_download_prepare.json()["error_code"] == (
-        "associated_cohort_external_export_download_prepare_not_admitted"
-    )
-    assert files_under_tmp() == files_after
-    db = client.layer3_session_factory()
-    try:
-        reconciliation = (
-            db.query(L3ReconciliationRecord)
-            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
-            .one()
-        )
-        assert "external_export_download_prepare" not in reconciliation.summary_json
-    finally:
-        db.close()
-
     conflicting_notes = client.post(
         "/api/v1/layer3/handoff/aps/dispatch",
         json={**payload, "decision_notes": "Changing notes after dispatch must fail closed."},
@@ -5865,19 +5833,249 @@ def test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_compani
     assert conflicting_notes.status_code == 409
     assert conflicting_notes.json()["error_code"] == "aps_handoff_dispatch_already_recorded"
 
-    summary = client.get(f"/api/v1/layer3/session/{session_id}")
-    assert summary.status_code == 200
-    summary_body = summary.json()
-    assert summary_body["handoff_export_prepare"]["state"] == "handoff_export_prepared"
-    assert summary_body["aps_handoff_dispatch"]["state"] == "aps_handoff_dispatched"
-    assert summary_body["aps_handoff_dispatch"]["available"] is False
-    assert summary_body["aps_handoff_dispatch"]["aps_output_package_id"] == body["aps_output_package_id"]
-    assert summary_body["external_export_download"]["state"] == "external_export_download_unavailable"
-    assert summary_body["external_export_download"]["available"] is False
-    assert summary_body["external_export_download"]["blocked_reason"] == (
+    summary_after_dispatch = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary_after_dispatch.status_code == 200
+    summary_after_dispatch_body = summary_after_dispatch.json()
+    assert summary_after_dispatch_body["handoff_export_prepare"]["state"] == "handoff_export_prepared"
+    assert summary_after_dispatch_body["aps_handoff_dispatch"]["state"] == "aps_handoff_dispatched"
+    assert summary_after_dispatch_body["aps_handoff_dispatch"]["available"] is False
+    assert summary_after_dispatch_body["aps_handoff_dispatch"]["aps_output_package_id"] == body["aps_output_package_id"]
+    assert summary_after_dispatch_body["external_export_download"]["state"] == "external_export_download_ready"
+    assert summary_after_dispatch_body["external_export_download"]["available"] is True
+    assert summary_after_dispatch_body["external_export_download"]["pass_type"] == "associated_cohort"
+    assert summary_after_dispatch_body["external_export_download"]["pass_scope"] == (
+        "quantitative_associated_cohort_dataset_version"
+    )
+    assert summary_after_dispatch_body["external_export_download"]["method"] == "descriptive_summary"
+    assert summary_after_dispatch_body["external_export_download"]["source_gate"] == "78_COHORT_FREEZE"
+    assert summary_after_dispatch_body["external_export_download"]["package_construction_source_gate"] == (
+        "88_COHORT_PACKAGE_CONSTRUCTION_FREEZE"
+    )
+    assert summary_after_dispatch_body["external_export_download"]["source_shape"] == "aligned_wide_table"
+    assert summary_after_dispatch_body["external_export_download"]["source_dataset_version_ids"] == [
+        "dv-api-cohort-aps-001",
+        "dv-api-cohort-aps-002",
+    ]
+    assert summary_after_dispatch_body["external_export_download"]["package_review_submit_schema_id"] == (
+        "layer3.cohort_package_review_submit.v1"
+    )
+    assert summary_after_dispatch_body["downstream_unavailable"] == [
+        "browser_download",
+        "download_url",
+        "connector_dispatch",
+        "destination_selection",
+        "generic_downstream_dispatch",
+    ]
+
+    download_payload = _external_export_download_prepare_payload(
+        request_id="api-cohort-aps-dispatch-download-prepare-success",
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=body,
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+        )
+        summary_json_after_dispatch = dict(reconciliation.summary_json)
+        reconciliation.summary_json = {
+            **summary_json_after_dispatch,
+            "aps_handoff_dispatch": {
+                **summary_json_after_dispatch["aps_handoff_dispatch"],
+                "source_dataset_version_ids": ["dv-api-cohort-aps-stale"],
+            },
+        }
+        db.commit()
+    finally:
+        db.close()
+
+    stale_dispatch_download_prepare = client.post(
+        "/api/v1/layer3/handoff/export/download/prepare",
+        json=download_payload,
+    )
+    assert stale_dispatch_download_prepare.status_code == 409
+    assert stale_dispatch_download_prepare.json()["error_code"] == (
         "associated_cohort_external_export_download_prepare_not_admitted"
     )
-    assert summary_body["downstream_unavailable"] == [
+    assert "source_dataset_version_ids" in stale_dispatch_download_prepare.json()["blocked_fields"]
+    assert files_under_tmp() == files_after
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+        )
+        reconciliation.summary_json = summary_json_after_dispatch
+        db.commit()
+        counts_after_dispatch = {
+            "analysis_plans": db.query(L3AnalysisPlan).count(),
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "analysis_sets": db.query(L3AnalysisSet).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "aps_packages": db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+        packages_after_dispatch = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert "external_export_download_prepare" not in reconciliation.summary_json
+    finally:
+        db.close()
+
+    cohort_download_prepare = client.post(
+        "/api/v1/layer3/handoff/export/download/prepare",
+        json=download_payload,
+    )
+    assert cohort_download_prepare.status_code == 200, cohort_download_prepare.json()
+    download_body = cohort_download_prepare.json()
+    _assert_common_response_envelope(download_body)
+    assert download_body["schema_id"] == "layer3.external_export_download_prepare.v1"
+    assert download_body["status"] == "prepared"
+    assert download_body["pass_type"] == "associated_cohort"
+    assert download_body["pass_scope"] == "quantitative_associated_cohort_dataset_version"
+    assert download_body["method"] == "descriptive_summary"
+    assert download_body["source_gate"] == "78_COHORT_FREEZE"
+    assert download_body["package_construction_source_gate"] == "88_COHORT_PACKAGE_CONSTRUCTION_FREEZE"
+    assert download_body["source_shape"] == "aligned_wide_table"
+    assert download_body["source_dataset_version_ids"] == [
+        "dv-api-cohort-aps-001",
+        "dv-api-cohort-aps-002",
+    ]
+    assert download_body["package_review_submit_schema_id"] == "layer3.cohort_package_review_submit.v1"
+    assert download_body["external_export_download_state"] == "external_export_download_prepared"
+    assert download_body["source_artifact_ref"] == body["aps_bundle_ref"]
+    assert download_body["source_artifact_hash"] == download_payload["aps_bundle_hash"]
+    assert download_body["source_artifact_size_bytes"] == download_payload["aps_bundle_size_bytes"]
+    assert download_body["browser_download_enabled"] is False
+    assert download_body["download_url_enabled"] is False
+    assert download_body["connector_dispatch_enabled"] is False
+    assert download_body["destination_selection_enabled"] is False
+    assert download_body["generic_downstream_dispatch_enabled"] is False
+    assert download_body["downstream_unavailable"] == [
+        "browser_download",
+        "download_url",
+        "connector_dispatch",
+        "destination_selection",
+        "generic_downstream_dispatch",
+    ]
+    descriptor = download_body["external_export_download_descriptor"]
+    assert descriptor["descriptor_ref"] == download_body["export_download_descriptor_ref"]
+    assert descriptor["source_artifact_ref"] == body["aps_bundle_ref"]
+    for forbidden_key in (
+        "download_url",
+        "public_url",
+        "signed_url",
+        "connector_run_id",
+        "external_target",
+        "destination",
+        "package_payload",
+        "raw_aps_bundle",
+        "rewritten_content",
+    ):
+        assert forbidden_key not in download_body
+        assert forbidden_key not in descriptor
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "analysis_plans": db.query(L3AnalysisPlan).count(),
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "analysis_sets": db.query(L3AnalysisSet).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "aps_packages": db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_after_dispatch
+        packages_after_download_prepare = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after_download_prepare == packages_after_dispatch
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+        )
+        readiness_state = reconciliation.summary_json["external_export_download_prepare"]
+        assert readiness_state["external_export_download_record_ref"] == (
+            download_body["external_export_download_record_ref"]
+        )
+        assert readiness_state["external_export_download_state"] == "external_export_download_prepared"
+        assert readiness_state["pass_type"] == "associated_cohort"
+        assert readiness_state["source_dataset_version_ids"] == [
+            "dv-api-cohort-aps-001",
+            "dv-api-cohort-aps-002",
+        ]
+    finally:
+        db.close()
+    assert files_under_tmp() == files_after
+
+    download_replay = client.post("/api/v1/layer3/handoff/export/download/prepare", json=download_payload)
+    assert download_replay.status_code == 200
+    assert download_replay.json()["status"] == "already_prepared"
+    assert download_replay.json()["external_export_download_record_ref"] == (
+        download_body["external_export_download_record_ref"]
+    )
+
+    download_same_basis_new_request = client.post(
+        "/api/v1/layer3/handoff/export/download/prepare",
+        json={**download_payload, "client_request_id": "api-cohort-aps-dispatch-download-prepare-new-request"},
+    )
+    assert download_same_basis_new_request.status_code == 409
+    assert download_same_basis_new_request.json()["error_code"] == "external_export_download_prepare_already_recorded"
+
+    summary_after_prepare = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary_after_prepare.status_code == 200
+    summary_after_prepare_body = summary_after_prepare.json()
+    assert summary_after_prepare_body["external_export_download"]["state"] == "external_export_download_prepared"
+    assert summary_after_prepare_body["external_export_download"]["available"] is False
+    assert summary_after_prepare_body["external_export_download"]["blocked_reason"] is None
+    assert summary_after_prepare_body["external_export_download"]["export_download_descriptor_ref"] == (
+        download_body["export_download_descriptor_ref"]
+    )
+    assert summary_after_prepare_body["external_export_download"]["pass_type"] == "associated_cohort"
+    assert summary_after_prepare_body["external_export_download"]["source_dataset_version_ids"] == [
+        "dv-api-cohort-aps-001",
+        "dv-api-cohort-aps-002",
+    ]
+    assert summary_after_prepare_body["downstream_unavailable"] == [
         "browser_download",
         "download_url",
         "connector_dispatch",
