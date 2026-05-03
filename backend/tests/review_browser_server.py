@@ -60,6 +60,16 @@ APS_CONTENT_CONTRACT_ID = "aps_content_units_v2"
 APS_CHUNKING_CONTRACT_ID = "aps_chunking_v2"
 APS_NORMALIZATION_CONTRACT_ID = "aps_text_normalization_v2"
 PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF = "aps_evidence_bundle_handoff"
+HARNESS_INFO_SCHEMA_ID = "project6.review_browser_harness_info.v1"
+HARNESS_INFO_SCHEMA_VERSION = 1
+HARNESS_FIXTURE_VERSION = "review-browser-fixture-v1"
+HARNESS_PATCH_GROUPS = (
+    "review-runtime-bindings",
+    "workbench-compare",
+    "candidate-b-trace",
+    "layer3-deterministic-analysis",
+    "layer3-aps-handoff",
+)
 
 
 def _canonical_json_bytes(payload: dict[str, object]) -> bytes:
@@ -563,6 +573,23 @@ def create_app() -> FastAPI:
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/__test/harness-info")
+    def harness_info() -> dict[str, object]:
+        return {
+            "schema_id": HARNESS_INFO_SCHEMA_ID,
+            "schema_version": HARNESS_INFO_SCHEMA_VERSION,
+            "harness_name": "review_browser_server",
+            "fixture_version": HARNESS_FIXTURE_VERSION,
+            "test_only": True,
+            "storage_mode": "temporary-redacted",
+            "patch_groups": list(HARNESS_PATCH_GROUPS),
+            "runtime_binding_count": len(fixture.selector.runs),
+            "seed_routes": [
+                "/__test/layer3/seed-quant",
+                "/__test/layer3/seed-aps-handoff",
+            ],
+        }
 
     @app.post("/__test/layer3/seed-quant")
     def seed_layer3_quant() -> dict[str, str]:
