@@ -69,6 +69,8 @@ Validation-only actions must fail closed on missing runtime state and must not s
 
 For current `project6.ps1` action semantics, use `docs/harness-validate-inventory.md` as the wrapper-level inventory before treating any command as validation-only.
 
+For artifact-free `validate-nrc-aps-validate-only-gates` checks, pass `-ActionArgs "--no-report"` so the gate exits from computed state without writing its JSON report.
+
 ## Non-Interference
 
 - Recheck open PRs and `project6-origin/main` before creating, pushing, or merging.
