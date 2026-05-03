@@ -2,9 +2,9 @@
 
 ## Status
 
-Current-main governance from PR `#481`, with branch-local implementation proof on `codex/l3-cohort-delivery-impl-p17`.
+Current-main governance from PR `#481`, with current-main implementation proof from PR `#483`.
 
-This document does not implement runtime behavior by itself. The branch-local implementation audit proves that the existing same-origin `POST /api/v1/layer3/handoff/export/download/deliver` backend/API endpoint can stream an exact associated-cohort readiness artifact after revalidating the recorded PR `#479` descriptor and the APS evidence-bundle handoff artifact. It does not admit rendered download controls, public URLs, signed URLs, connector dispatch, generic downstream dispatch, destination selection, package mutation/rebuild, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+This document does not implement runtime behavior by itself. PR `#483` proves that the existing same-origin `POST /api/v1/layer3/handoff/export/download/deliver` backend/API endpoint can stream an exact associated-cohort readiness artifact after revalidating the recorded PR `#479` descriptor and the APS evidence-bundle handoff artifact. It does not admit rendered download controls, public URLs, signed URLs, connector dispatch, generic downstream dispatch, destination selection, package mutation/rebuild, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
 ## Current Live Baseline
 
@@ -16,7 +16,7 @@ Current `project6-origin/main` includes:
 - associated-cohort APS evidence-bundle handoff dispatch from PR `#466`;
 - associated-cohort external export/download readiness from PR `#479`.
 
-The live associated-cohort readiness boundary remains reference-only until a delivery request is made through the existing same-origin backend/API delivery endpoint. This branch adds executable proof that delivery revalidates that recorded descriptor and streams only the existing APS evidence-bundle handoff artifact; it still keeps rendered browser controls, public/signed URL generation, connector dispatch, destination selection, generic downstream dispatch, package mutation, schema/runtime/source widening, broader UI, and full mockup behavior unavailable.
+The live associated-cohort readiness boundary remains reference-only until a delivery request is made through the existing same-origin backend/API delivery endpoint. PR `#483` adds executable proof that delivery revalidates that recorded descriptor and streams only the existing APS evidence-bundle handoff artifact; it still keeps rendered browser controls, public/signed URL generation, connector dispatch, destination selection, generic downstream dispatch, package mutation, schema/runtime/source widening, broader UI, and full mockup behavior unavailable.
 
 ## Authority Boundary
 
@@ -43,9 +43,9 @@ This is smaller than a general associated-cohort export feature. It deliberately
 - rendered `/review/layer3` download controls, which require separate UI governance;
 - public/signed URL generation, destination selection, and connector/generic dispatch, which remain later higher-blast-radius decisions.
 
-## Branch-Local Implementation Proof
+## Current-Main Implementation Proof
 
-Branch `codex/l3-cohort-delivery-impl-p17` does not add a new route or owner-service. It proves that the existing delivery endpoint already re-runs `external_export_download_prepare(...)` from recorded readiness state before streaming bytes, so stale associated-cohort APS dispatch provenance such as mismatched `source_dataset_version_ids` fails closed with `associated_cohort_external_export_download_prepare_not_admitted`. The proof is backend/API only and changes no rendered `/review/layer3` controls.
+PR `#483` does not add a new route or owner-service. It proves that the existing delivery endpoint already re-runs `external_export_download_prepare(...)` from recorded readiness state before streaming bytes, so stale associated-cohort APS dispatch provenance such as mismatched `source_dataset_version_ids` fails closed with `associated_cohort_external_export_download_prepare_not_admitted`. The proof is backend/API only and changes no rendered `/review/layer3` controls.
 
 ## Admitted Implementation Scope
 
