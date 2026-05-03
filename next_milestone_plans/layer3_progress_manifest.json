@@ -2358,7 +2358,9 @@
     {
       "slice_id": "descriptive-summary-selected-pass-cohort-external-export-download-signed-url-governance",
       "main_state": "branch_planning_only_descriptive_summary_selected_pass_cohort_external_export_download_signed_url",
-      "key_prs": [],
+      "key_prs": [
+        "#497"
+      ],
       "source_branch": "codex/l3-signed-url-freeze-p32",
       "base_commit": "aedf65a4",
       "governing_docs": [
