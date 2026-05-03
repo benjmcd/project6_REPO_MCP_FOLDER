@@ -2,7 +2,7 @@
 
 ## Status
 
-Branch-local planning-only API/state contract for the bounded associated-cohort APS handoff dispatch tranche selected by `94_COHORT_APS_HANDOFF_DISPATCH_FREEZE.md`.
+Current-main planning-only API/state contract from PR `#464` for the bounded associated-cohort APS handoff dispatch tranche selected by `94_COHORT_APS_HANDOFF_DISPATCH_FREEZE.md`.
 
 This contract does not make runtime behavior live by itself. It defines the future proof boundary for admitting associated-cohort APS evidence-bundle handoff dispatch after PR `#460` handoff/export prepare-only state and PR `#462` rendered prepare authority projection/proof.
 
@@ -185,4 +185,3 @@ Still deferred after this contract:
 - local upload or local-directory ingestion;
 - qualitative/hybrid/RAG/vector execution;
 - broad UI/full mockup activation.
-

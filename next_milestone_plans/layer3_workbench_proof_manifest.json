@@ -1,23 +1,23 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "branch-local planning proof for selected-pass associated-cohort descriptive_summary APS handoff dispatch governance after PR #460/#462 authority",
+  "status": "current-main planning proof for selected-pass associated-cohort descriptive_summary APS handoff dispatch governance from PR #464",
   "scope": {
-    "source_branch": "codex/l3-cohort-aps-dispatch-freeze-p74",
-    "merged_pr": "#463",
-    "merge_commit": "382358ca23680784940c3d9b217aea2494f71d7d",
+    "source_branch": "codex/l3-cohort-aps-dispatch-postmerge-sync-p75",
+    "merged_pr": "#464",
+    "merge_commit": "5842216a6d7d70195b53bc6d23f1317f3fcbb0a1",
     "base_remote": "project6-origin/main",
-    "base_commit": "382358ca",
-    "source_base_commit": "382358ca23680784940c3d9b217aea2494f71d7d",
-    "purpose": "Record branch-local docs 94/95 as planning-only selected-pass associated-cohort APS handoff dispatch governance after PR #460 backend/API prepare-only authority and PR #462 rendered prepare proof, while preserving downstream no-go boundaries.",
+    "base_commit": "5842216a",
+    "source_base_commit": "5842216a6d7d70195b53bc6d23f1317f3fcbb0a1",
+    "purpose": "Record current-main docs 94/95 as planning-only selected-pass associated-cohort APS handoff dispatch governance after PR #464 while preserving downstream no-go boundaries.",
     "live_behavior_change": false,
-    "live_behavior_change_summary": "Docs 94/95 are planning/control only. They do not make associated-cohort APS dispatch live; current code still blocks it with associated_cohort_aps_handoff_dispatch_not_admitted. External export/download, connector, schema/runtime/source, retry/recovery, pass-entry, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior remain out.",
+    "live_behavior_change_summary": "PR #464 merged docs 94/95 as planning/control only. They do not make associated-cohort APS dispatch live; current code still blocks it with associated_cohort_aps_handoff_dispatch_not_admitted. External export/download, connector, schema/runtime/source, retry/recovery, pass-entry, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior remain out.",
     "latest_implementation_pr": "#460",
     "latest_implementation_branch": "codex/l3-cohort-handoff-impl-p70",
     "latest_implementation_summary": "PR #460 implements docs 92/93: exact selected-pass associated-cohort descriptive_summary package-review submit authority can record one handoff/export preparation object in existing JSON-bearing state, with APS/external downstream still disabled.",
-    "latest_planning_pr": "",
+    "latest_planning_pr": "#464",
     "latest_planning_branch": "codex/l3-cohort-aps-dispatch-freeze-p74",
-    "latest_planning_summary": "Docs 94/95 define branch-local selected-pass associated-cohort APS handoff dispatch governance after PR #460 prepare-only state and PR #462 rendered prepare proof.",
+    "latest_planning_summary": "Docs 94/95 define current-main selected-pass associated-cohort APS handoff dispatch governance after PR #460 prepare-only state and PR #462 rendered prepare proof.",
     "latest_planning_live_behavior_change": false,
     "latest_planning_behavior_summary": "Docs 94/95 remain planning/control by themselves. A separate implementation must prove exact PR #432/#438/#443/#447/#451/#456/#460/#462 authority before narrowing associated_cohort_aps_handoff_dispatch_not_admitted.",
     "latest_implementation_merge_commit": "8ca5e8dccc812b7ee42ae16f3f986a97ce3eb336",
@@ -2848,9 +2848,9 @@
   },
   "descriptive_summary_selected_pass_cohort_aps_handoff_dispatch_planning_proof": {
     "planning_branch": "codex/l3-cohort-aps-dispatch-freeze-p74",
-    "planning_pr": "",
+    "planning_pr": "#464",
     "base_commit": "382358ca",
-    "scope": "Branch-local planning-only selected-pass associated-cohort descriptive_summary APS handoff dispatch governance after PR #460 prepare-only authority and PR #462 rendered prepare proof.",
+    "scope": "Current-main planning-only selected-pass associated-cohort descriptive_summary APS handoff dispatch governance after PR #464.",
     "files_changed": [
       "next_milestone_plans/Layer3_planning_docs/94_COHORT_APS_HANDOFF_DISPATCH_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/95_COHORT_APS_HANDOFF_DISPATCH_CONTRACT.md",
@@ -2883,10 +2883,12 @@
       "headed and headless Chrome proof if rendered UI behavior changes"
     ],
     "verification": [
+      "GitHub PR #464 checks backend-layer3-api and test -> success",
       "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
       "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
-      "manifest invariant check for 61 records, 34 live bounded records, 26 current-main planning-only records, and 1 branch-local planning record",
+      "manifest invariant check for 61 records, 34 live bounded records, 27 current-main planning-only records, and 0 branch-local planning records",
       "git diff --check"
-    ]
+    ],
+    "merge_commit": "5842216a6d7d70195b53bc6d23f1317f3fcbb0a1"
   }
 }

@@ -2,7 +2,7 @@
 
 ## Status
 
-Branch-local planning-only freeze for the next bounded Layer 3 workbench tranche after PR `#460` and PR `#462`.
+Current-main planning-only freeze from PR `#464` for the next bounded Layer 3 workbench tranche after PR `#460` and PR `#462`.
 
 This document does not make associated-cohort APS handoff dispatch live. It selects only the next eligible governance boundary after merged selected-pass associated-cohort `descriptive_summary` handoff/export prepare-only authority: a bounded APS evidence-bundle handoff dispatch decision for one exact prepared associated-cohort internal envelope.
 
@@ -102,4 +102,3 @@ Stop and return to planning if implementation requires:
 - approved-plan supersession;
 - qualitative, hybrid, RAG, or vector execution;
 - broader UI or full mockup activation.
-
