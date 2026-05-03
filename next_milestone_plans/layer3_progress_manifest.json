@@ -2,7 +2,7 @@
   "artifact_version": 1,
   "artifact_name": "layer3-progress-artifact",
   "artifact_scope": {
-    "lane_name": "bounded Layer3 APS progress packet with current-main selected-pass associated-cohort handoff/export prepare-only backend/API implementation from PR #460, rendered prepare UI authority-projection proof from PR #462, current-main planning-only docs 94/95 selecting associated-cohort APS handoff dispatch governance from PR #464, bounded backend/API associated-cohort APS handoff dispatch implementation from PR #466, docs 96/97 plus PR #479 for reference-only readiness, docs 98/99 plus PR #483 for backend/API same-origin delivery proof, current-main docs 100/101 from PR #485 settling associated-cohort rendered delivery controls over the existing generic UI path, PR #487 implementing the explicit server-authoritative associated-cohort delivery UI gate, and PR #488/PR #489 settling the post-implementation progress/control state; public/signed URLs, connector/generic dispatch, destination selection, package mutation, schema/runtime/source widening, retry/recovery/rerun expansion, broader UI, qualitative/hybrid/RAG/vector, and full mockup scope remain deferred behind separate freezes",
+    "lane_name": "bounded Layer3 APS progress packet with current-main selected-pass associated-cohort handoff/export prepare-only backend/API implementation from PR #460, rendered prepare UI authority-projection proof from PR #462, current-main planning-only docs 94/95 selecting associated-cohort APS handoff dispatch governance from PR #464, bounded backend/API associated-cohort APS handoff dispatch implementation from PR #466, docs 96/97 plus PR #479 for reference-only readiness, docs 98/99 plus PR #483 for backend/API same-origin delivery proof, current-main docs 100/101 from PR #485 settling associated-cohort rendered delivery controls over the existing generic UI path, PR #487 implementing the explicit server-authoritative associated-cohort delivery UI gate, and post-implementation progress/control closeouts settling that lane; public/signed URLs, connector/generic dispatch, destination selection, package mutation, schema/runtime/source widening, retry/recovery/rerun expansion, broader UI, qualitative/hybrid/RAG/vector, and full mockup scope remain deferred behind separate freezes",
     "repo": "benjmcd/project6_REPO_MCP_FOLDER",
     "authoritative_remote": "project6-origin/main",
     "authoritative_local_checkout_rule": "Use a clean checkout of benjmcd/project6_REPO_MCP_FOLDER whose contents match the artifact state being refreshed. Prefer current `main` for merged repo truth, and use the active branch checkout only when the manifest declares an open or branch-only milestone.",
@@ -3823,7 +3823,7 @@
     }
   ],
   "next_required_decision": {
-    "decision_id": "associated-cohort-delivery-ui-gate-settled-after-pr488",
+    "decision_id": "associated-cohort-delivery-ui-gate-settled-after-closeout",
     "title": "Associated-cohort rendered delivery UI gate settled after post-implementation closeout",
     "state": "settled",
     "why_now": "PR #487 merged the explicit server-authoritative associated-cohort rendered delivery UI gate required by docs 100/101, and the post-implementation progress/control closeouts have settled the delivery UI gate lane. No current-main evidence selects another associated-cohort delivery UI activation task.",
