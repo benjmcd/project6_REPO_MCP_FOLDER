@@ -2949,6 +2949,7 @@ def _connector_report_refs_for_run(run: ConnectorRun) -> dict[str, Any]:
         **dict((run.query_plan_json or {}).get("aps_safeguard_report_refs") or {}),
         **dict((run.query_plan_json or {}).get("aps_artifact_ingestion_report_refs") or {}),
         **dict((run.query_plan_json or {}).get("aps_content_index_report_refs") or {}),
+        **dict((run.query_plan_json or {}).get("aps_csv_dataset_bridge_report_refs") or {}),
         **dict((run.query_plan_json or {}).get("aps_evidence_bundle_report_refs") or {}),
         **dict((run.query_plan_json or {}).get("aps_evidence_citation_pack_report_refs") or {}),
         **dict((run.query_plan_json or {}).get("aps_evidence_report_report_refs") or {}),

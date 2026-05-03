@@ -164,17 +164,26 @@ def processing_config_from_run_config(config: dict[str, Any] | None = None) -> d
     }
     if incoming.get("artifact_storage_dir"):
         overrides["artifact_storage_dir"] = incoming["artifact_storage_dir"]
+    if incoming.get("source_filename"):
+        overrides["source_filename"] = incoming["source_filename"]
     if incoming.get("visual_render_dpi") is not None:
         overrides["visual_render_dpi"] = incoming["visual_render_dpi"]
     return nrc_aps_document_processing.default_processing_config(overrides)
 
 
-def detect_media_type(*, content: bytes, content_type: Any, config: dict[str, Any] | None = None) -> dict[str, Any]:
+def detect_media_type(
+    *,
+    content: bytes,
+    content_type: Any,
+    config: dict[str, Any] | None = None,
+    source_filename: Any = "",
+) -> dict[str, Any]:
     processing_config = processing_config_from_run_config(config)
     return nrc_aps_media_detection.detect_media_type(
         content,
         declared_content_type=content_type,
         sniff_bytes=int(processing_config["content_sniff_bytes"]),
+        source_filename=source_filename or processing_config.get("source_filename", ""),
     )
 
 

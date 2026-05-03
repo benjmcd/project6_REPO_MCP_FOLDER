@@ -70,3 +70,31 @@ def test_zip_archive_processing():
     assert "Text A" in result["normalized_text"]
     assert "Text B" in result["normalized_text"]
     assert result["extractor_family"] == "archive_bundle"
+    assert result["parser_registry_contract_id"] == "aps_parser_registry_v1"
+    assert result["parser_admission_status"] == "admitted"
+    assert result["parser_family"] == "archive_bundle"
+    assert result["parser_output_family"] == "archive_units"
+
+
+def test_zip_archive_parses_csv_member_diagnostics_without_flattening_to_text():
+    """CSV members remain visible as table diagnostics, not document text."""
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("a.txt", "Text A")
+        zf.writestr("data.csv", "date,value\n2026-01-01,42\n")
+
+    result = dp.process_document(
+        content=buf.getvalue(),
+        declared_content_type="application/zip",
+        config=dp.default_processing_config(),
+    )
+
+    assert result["document_class"] == "archive_bundle"
+    assert "Text A" in result["normalized_text"]
+    assert "2026-01-01" not in result["normalized_text"]
+    data_member = [item for item in result["member_summaries"] if item["filename"] == "data.csv"][0]
+    assert data_member["status"] == "typed_table_parsed"
+    assert data_member["effective_content_type"] == "text/csv"
+    assert data_member["row_count"] == 1
+    assert result["table_units"][0]["archive_member"] == "data.csv"
+    assert result["table_units"][0]["rows"][0]["values"]["value"] == "42"

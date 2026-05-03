@@ -46,8 +46,31 @@ def test_process_document_handles_content_type_mismatch_as_plain_text():
     )
     assert result["effective_content_type"] == "text/plain"
     assert result["document_class"] == "text_plain"
+    assert result["parser_registry_contract_id"] == "aps_parser_registry_v1"
+    assert result["parser_admission_status"] == "admitted"
+    assert result["parser_family"] == "plain_text"
+    assert result["parser_output_family"] == "document_text_units"
     assert "content_type_mismatch" in result["degradation_codes"]
     assert "mismatch alpha beta" in result["normalized_text"].lower()
+
+
+def test_process_document_emits_csv_table_units_without_document_chunks():
+    result = nrc_aps_document_processing.process_document(
+        content=b"date,value\n2026-01-01,42\n2026-01-02,43\n",
+        declared_content_type="text/plain",
+        config=nrc_aps_document_processing.default_processing_config({"source_filename": "observations.csv"}),
+    )
+
+    assert result["effective_content_type"] == "text/csv"
+    assert result["document_class"] == "delimited_table"
+    assert result["parser_family"] == "csv_table"
+    assert result["parser_output_family"] == "table_units"
+    assert result["typed_content_contract_id"] == "aps_csv_table_units_v1"
+    assert result["ordered_units"] == []
+    assert result["normalized_text"] == ""
+    assert result["table_diagnostics"]["row_count"] == 2
+    assert result["table_diagnostics"]["numeric_columns"] == ["value"]
+    assert result["time_series_units"][0]["time_column"] == "date"
 
 
 @pytest.mark.parametrize("fixture_name", ["corrupt.pdf", "truncated.pdf"])
