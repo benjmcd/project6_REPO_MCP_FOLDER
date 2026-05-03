@@ -144,7 +144,7 @@ Important:
 - keep this terminal open while using the UI
 - this helper-backed launch path is the canonical operator path for review-runtime bring-up
 - [project6.ps1](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/project6.ps1) `-Action start-api` is useful for generic API startup, but it is not the canonical path when you need explicit review-runtime binding
-- [tools/start-review-api.ps1](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/tools/start-review-api.ps1) remains a PowerShell-only wrapper; the Python helper above is the shell-neutral authority path
+- [tools/start-review-api.ps1](/C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/tools/start-review-api.ps1) remains a PowerShell-only wrapper; it uses the same shared-root/worktree-local runtime discovery posture as the Python helper and still accepts an explicit `-RuntimeRoot` override
 
 If you need a specific discovered run instead of the default latest one, use:
 
