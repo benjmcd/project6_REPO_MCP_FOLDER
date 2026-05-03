@@ -1,25 +1,34 @@
 {
   "name": "project6_repo_mcp_folder",
   "version": "1.0.0",
-  "description": "> Status note (2026-03-25): Phase 7/7A (Advanced NRC APS Ingestion) is in an `accepted-state`. Phase 8 (Downstream Consumption) is in a **CLOSED** state (all APS-table materialization invariants satisfied in closure-run-005). The authoritative status and navigation surfaces live in: > - [nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md) (Accepted 7A Truth) > - [nrc_aps_authority_matrix.md](docs/nrc_adams/nrc_aps_authority_matrix.md) (Repo-wide Authority Map) > - [nrc_aps_reader_path.md](docs/nrc_adams/nrc_aps_reader_path.md) (Navigational Guide) > - [postgres_status_handoff.md](docs/postgres/postgres_status_handoff.md) (PostgreSQL Tier1 Status) > > **CRITICAL WARNING**: Unverified `tests/...` and `tools/...` paths referenced below may not exist in this specific export workspace and should not be trusted as safe authority paths unless their on-disk presence is directly confirmed.",
-  "main": "qa_live_review_ui.spec.js",
+  "description": "Harness and review tooling for the Project6 FastAPI connector and Layer 3 workbench stack.",
+  "private": true,
   "directories": {
     "doc": "docs",
     "test": "tests"
   },
-  "scripts": {},
+  "scripts": {
+    "test:e2e": "playwright test --project=chromium",
+    "test:e2e:chromium": "playwright test --project=chromium",
+    "test:e2e:headed": "playwright test --project=chromium --headed",
+    "test:layer3-api": "python -m pytest ./backend/tests/test_layer3_api.py -q",
+    "harness:review:discover": "python ./tools/nrc_ui_launch.py discover",
+    "harness:review:serve": "python ./tools/nrc_ui_launch.py serve --latest",
+    "harness:review:urls": "python ./tools/nrc_ui_launch.py urls",
+    "harness:review:verify": "python ./tools/nrc_ui_launch.py verify --latest"
+  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/benjmcd/bakeoff-jules.git"
+    "url": "git+https://github.com/benjmcd/project6_REPO_MCP_FOLDER.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/benjmcd/bakeoff-jules/issues"
+    "url": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER/issues"
   },
-  "homepage": "https://github.com/benjmcd/bakeoff-jules#readme",
+  "homepage": "https://github.com/benjmcd/project6_REPO_MCP_FOLDER#readme",
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@types/node": "^25.5.0"
