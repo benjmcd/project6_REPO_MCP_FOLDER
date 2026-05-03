@@ -2,11 +2,13 @@
 
 Status: planning/design pack plus implemented Phase P1 media hardening, Phase P2 parser registry skeleton, Phase P3 CSV typed diagnostics, Phase P4 callable dataset bridge, Phase P4.5 opt-in connector orchestration, Phase P5 Layer 3 APS-derived dataset admission, Phase P6 execution/package proof, bounded Phase P10A operator selection surfacing, and Phase P7 bounded XLSX parser/materialization on 2026-05-03.
 
-Worktree: `worktrees/multi-ingest-plan`
+Last audited implementation authority for the Phase P7 closeout: `project6-origin/main` at `1294ca72e18be6844a514ddcbffbb0fd7b597b82`.
 
-Branch: `codex/multitype-ingestion-plan-p1`
+Historical seed worktree: `worktrees/multi-ingest-plan`.
 
-Base authority: `project6-origin/main` at `94bd339fb3c76a6151aeb7d0d618f48e0ab2e35f`.
+Historical seed branch: `codex/multitype-ingestion-plan-p1`.
+
+Historical seed base: `project6-origin/main` at `94bd339fb3c76a6151aeb7d0d618f48e0ab2e35f`.
 
 ## Purpose
 
@@ -24,7 +26,7 @@ This folder is the front door for the new lane. Existing progress manifests and 
 
 ## Current Verdict
 
-The current implementation is end-to-end for APS document-chunk ingestion and downstream Layer 3 APS evidence-bundle style handoff, not for first-class typed non-PDF data ingestion.
+The current implementation is end-to-end for APS document-chunk ingestion and downstream Layer 3 APS evidence-bundle style handoff. It is also end-to-end for APS-derived CSV dataset-version selection through the bounded Layer 3 path, and bounded for explicit XLSX parser/materialization. It is not complete for all first-class typed non-PDF data ingestion families.
 
 | Source family | Current status | Strict interpretation |
 | --- | --- | --- |
@@ -60,6 +62,7 @@ flowchart TD
     D --> E["PDF document processor"]
     D --> F["plain text processor"]
     D --> CSV["CSV table diagnostics parser"]
+    D --> XLSX["bounded XLSX workbook parser"]
     D --> G["image OCR processor"]
     D --> H["ZIP archive processor"]
     D --> I["unsupported or refused"]
@@ -68,6 +71,7 @@ flowchart TD
     G --> J
     H --> J
     CSV --> TU["table_units + time_series candidates"]
+    XLSX --> TU
     TU --> U["opt-in DatasetVersion bridge"]
     J --> K["APS content index"]
     K --> L["ApsContentDocument + ApsContentChunk"]
