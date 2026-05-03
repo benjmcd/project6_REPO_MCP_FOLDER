@@ -2,7 +2,7 @@
 
 ## Status
 
-Current-main API/state governance paired with `98_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md`, with branch-local implementation proof on `codex/l3-cohort-delivery-impl-p17`.
+Current-main API/state governance paired with `98_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md`, with current-main implementation proof from PR `#483`.
 
 This document defines the request, response, authority, and proof contract for same-origin associated-cohort external export/download delivery after PR `#479` readiness. It does not make rendered delivery controls live by itself and does not admit public URLs, signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
@@ -29,7 +29,7 @@ The existing endpoint may stream the validated APS evidence-bundle handoff artif
 
 If implementation audit proves that the existing single-item delivery route already owns this path, the implementation must keep single-item and associated-cohort authority branches explicit and fail closed on ambiguity. If route reuse would blur authority, a cohort-specific route or smaller prerequisite freeze is required before coding.
 
-Branch `codex/l3-cohort-delivery-impl-p17` takes the route-reuse branch of that decision: no new endpoint is added, and the associated-cohort proof verifies that delivery revalidates recorded readiness through `external_export_download_prepare(...)`, streams the existing artifact, leaves rows/files unchanged, and fails closed on stale associated-cohort dispatch provenance.
+PR `#483` takes the route-reuse branch of that decision: no new endpoint is added, and the associated-cohort proof verifies that delivery revalidates recorded readiness through `external_export_download_prepare(...)`, streams the existing artifact, leaves rows/files unchanged, and fails closed on stale associated-cohort dispatch provenance.
 
 ## Request Contract
 
@@ -238,7 +238,7 @@ A future implementation may expose an `associated_cohort_external_export_downloa
 - `downstream_unavailable`;
 - `next_state`.
 
-The current branch-local proof keeps session summary persistence unchanged: readiness remains the recorded server state, while delivery is represented by the same-origin attachment response and headers rather than a durable delivered object.
+The current-main PR `#483` proof keeps session summary persistence unchanged: readiness remains the recorded server state, while delivery is represented by the same-origin attachment response and headers rather than a durable delivered object.
 
 ## UI Contract
 
