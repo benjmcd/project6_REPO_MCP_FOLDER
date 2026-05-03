@@ -13,6 +13,7 @@
     "test:e2e:headed": "playwright test --project=chromium --headed",
     "test:layer3-api": "python -m pytest ./backend/tests/test_layer3_api.py -q",
     "validate:structure": "python ./tools/validate_structure.py",
+    "harness:logs": "python ./tools/inspect_harness_logs.py",
     "harness:review:discover": "python ./tools/nrc_ui_launch.py discover",
     "harness:review:serve": "python ./tools/nrc_ui_launch.py serve --latest",
     "harness:review:urls": "python ./tools/nrc_ui_launch.py urls",
