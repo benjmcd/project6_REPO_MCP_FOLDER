@@ -6083,6 +6083,170 @@ def test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_compani
         "generic_downstream_dispatch",
     ]
 
+    cohort_deliver_payload = _external_export_download_deliver_payload(
+        request_id="api-cohort-aps-dispatch-download-deliver-success",
+        prepare_payload=download_payload,
+        readiness_body=download_body,
+        decision_notes="Deliver the associated-cohort APS bundle artifact through the same-origin stream.",
+    )
+    expected_delivery_bytes = Path(download_body["source_artifact_ref"]).read_bytes()
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before_delivery = {
+            "analysis_plans": db.query(L3AnalysisPlan).count(),
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "analysis_sets": db.query(L3AnalysisSet).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "aps_packages": db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+        packages_before_delivery = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        readiness_state_before_delivery = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json["external_export_download_prepare"]
+        )
+    finally:
+        db.close()
+    files_before_delivery = files_under_tmp()
+
+    cohort_delivery = client.post(
+        "/api/v1/layer3/handoff/export/download/deliver",
+        json=cohort_deliver_payload,
+    )
+    assert cohort_delivery.status_code == 200, cohort_delivery.text
+    assert cohort_delivery.content == expected_delivery_bytes
+    assert cohort_delivery.headers["content-type"].startswith("application/json")
+    assert "attachment" in cohort_delivery.headers["content-disposition"]
+    assert "filename=" in cohort_delivery.headers["content-disposition"]
+    assert cohort_delivery.headers["x-layer3-schema-id"] == "layer3.external_export_download_delivery.v1"
+    assert cohort_delivery.headers["x-layer3-delivery-state"] == "external_export_download_delivered"
+    assert cohort_delivery.headers["x-layer3-source-artifact-hash"] == download_body["source_artifact_hash"]
+    assert cohort_delivery.headers["x-layer3-external-export-download-record-ref"] == (
+        download_body["external_export_download_record_ref"]
+    )
+    assert "download_url" not in cohort_delivery.headers
+    assert "public_url" not in cohort_delivery.headers
+    assert "signed_url" not in cohort_delivery.headers
+    assert "connector_run_id" not in cohort_delivery.headers
+
+    cohort_delivery_replay = client.post(
+        "/api/v1/layer3/handoff/export/download/deliver",
+        json=cohort_deliver_payload,
+    )
+    assert cohort_delivery_replay.status_code == 200
+    assert cohort_delivery_replay.content == expected_delivery_bytes
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "analysis_plans": db.query(L3AnalysisPlan).count(),
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "analysis_sets": db.query(L3AnalysisSet).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "aps_packages": db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_before_delivery
+        packages_after_delivery = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after_delivery == packages_before_delivery
+        readiness_state_after_delivery = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json["external_export_download_prepare"]
+        )
+        assert readiness_state_after_delivery == readiness_state_before_delivery
+    finally:
+        db.close()
+    assert files_under_tmp() == files_before_delivery
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+        )
+        summary_json_after_delivery = dict(reconciliation.summary_json)
+        reconciliation.summary_json = {
+            **summary_json_after_delivery,
+            "aps_handoff_dispatch": {
+                **summary_json_after_delivery["aps_handoff_dispatch"],
+                "source_dataset_version_ids": ["dv-api-cohort-aps-stale"],
+            },
+        }
+        db.commit()
+    finally:
+        db.close()
+
+    stale_dispatch_delivery = client.post(
+        "/api/v1/layer3/handoff/export/download/deliver",
+        json=cohort_deliver_payload,
+    )
+    assert stale_dispatch_delivery.status_code == 409
+    assert stale_dispatch_delivery.json()["error_code"] == (
+        "associated_cohort_external_export_download_prepare_not_admitted"
+    )
+    assert "source_dataset_version_ids" in stale_dispatch_delivery.json()["blocked_fields"]
+    assert files_under_tmp() == files_before_delivery
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+        )
+        reconciliation.summary_json = summary_json_after_delivery
+        db.commit()
+        assert {
+            "analysis_plans": db.query(L3AnalysisPlan).count(),
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "analysis_sets": db.query(L3AnalysisSet).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "aps_packages": db.query(L3OutputPackage)
+            .filter(L3OutputPackage.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF)
+            .count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_before_delivery
+    finally:
+        db.close()
+
 
 def test_layer3_api_external_export_download_prepare_records_reference_only_descriptor(
     client: TestClient,

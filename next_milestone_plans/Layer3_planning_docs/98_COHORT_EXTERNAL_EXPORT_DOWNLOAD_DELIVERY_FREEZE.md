@@ -2,9 +2,9 @@
 
 ## Status
 
-Planning-only governance for a future bounded associated-cohort external export/download delivery boundary after PR `#479` readiness.
+Current-main governance from PR `#481`, with branch-local implementation proof on `codex/l3-cohort-delivery-impl-p17`.
 
-This document does not implement runtime behavior by itself. It admits only a future same-origin delivery decision over the already recorded associated-cohort external export/download readiness descriptor and the existing APS evidence-bundle handoff artifact. It does not admit rendered download controls, public URLs, signed URLs, connector dispatch, generic downstream dispatch, destination selection, package mutation/rebuild, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+This document does not implement runtime behavior by itself. The branch-local implementation audit proves that the existing same-origin `POST /api/v1/layer3/handoff/export/download/deliver` backend/API endpoint can stream an exact associated-cohort readiness artifact after revalidating the recorded PR `#479` descriptor and the APS evidence-bundle handoff artifact. It does not admit rendered download controls, public URLs, signed URLs, connector dispatch, generic downstream dispatch, destination selection, package mutation/rebuild, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
 ## Current Live Baseline
 
@@ -16,7 +16,7 @@ Current `project6-origin/main` includes:
 - associated-cohort APS evidence-bundle handoff dispatch from PR `#466`;
 - associated-cohort external export/download readiness from PR `#479`.
 
-The live associated-cohort readiness boundary remains reference-only. It records a server-authoritative descriptor for the existing APS evidence-bundle handoff artifact, but it keeps browser delivery, public/signed URL generation, connector dispatch, destination selection, generic downstream dispatch, package mutation, schema/runtime/source widening, broader UI, and full mockup behavior unavailable.
+The live associated-cohort readiness boundary remains reference-only until a delivery request is made through the existing same-origin backend/API delivery endpoint. This branch adds executable proof that delivery revalidates that recorded descriptor and streams only the existing APS evidence-bundle handoff artifact; it still keeps rendered browser controls, public/signed URL generation, connector dispatch, destination selection, generic downstream dispatch, package mutation, schema/runtime/source widening, broader UI, and full mockup behavior unavailable.
 
 ## Authority Boundary
 
@@ -33,9 +33,9 @@ Docs `66_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FREEZE.md` and `67_L3_WB_EXTERN
 
 ## Slice Decision
 
-The next admitted planning boundary is:
+The planning boundary selected by PR `#481` is:
 
-> Freeze one future backend/API same-origin associated-cohort external export/download delivery endpoint after exact PR `#479` readiness. The endpoint may stream only the existing validated APS evidence-bundle handoff artifact to an authorized workbench caller after the server revalidates the full associated-cohort authority chain. It must not create public or signed URLs, connector runs, destination bindings, generic downstream dispatch, new rows, copied package payloads, rewritten artifacts, schema/runtime/source changes, or rendered download controls.
+> Freeze backend/API same-origin associated-cohort external export/download delivery after exact PR `#479` readiness. The endpoint may stream only the existing validated APS evidence-bundle handoff artifact to an authorized workbench caller after the server revalidates the full associated-cohort authority chain. It must not create public or signed URLs, connector runs, destination bindings, generic downstream dispatch, new rows, copied package payloads, rewritten artifacts, schema/runtime/source changes, or rendered download controls.
 
 This is smaller than a general associated-cohort export feature. It deliberately separates:
 
@@ -43,11 +43,15 @@ This is smaller than a general associated-cohort export feature. It deliberately
 - rendered `/review/layer3` download controls, which require separate UI governance;
 - public/signed URL generation, destination selection, and connector/generic dispatch, which remain later higher-blast-radius decisions.
 
-## Admitted Future Implementation Scope
+## Branch-Local Implementation Proof
 
-A future implementation governed by this freeze may add only:
+Branch `codex/l3-cohort-delivery-impl-p17` does not add a new route or owner-service. It proves that the existing delivery endpoint already re-runs `external_export_download_prepare(...)` from recorded readiness state before streaming bytes, so stale associated-cohort APS dispatch provenance such as mismatched `source_dataset_version_ids` fails closed with `associated_cohort_external_export_download_prepare_not_admitted`. The proof is backend/API only and changes no rendered `/review/layer3` controls.
 
-- one thin backend/API delivery path for associated-cohort readiness;
+## Admitted Implementation Scope
+
+An implementation governed by this freeze may add or prove only:
+
+- one thin backend/API delivery path for associated-cohort readiness, or reuse of the existing delivery path when executable proof shows the cohort-specific authority branch remains explicit and fail-closed;
 - server-side revalidation of the recorded PR `#479` readiness descriptor;
 - server-side revalidation that the APS evidence-bundle handoff artifact still matches the readiness descriptor and APS owner-service artifact contract;
 - a same-origin binary response over the existing artifact using the repo's established streaming pattern;
@@ -83,7 +87,7 @@ If any authority input is absent, stale, malformed, ambiguous, mismatched, non-c
 
 This freeze admits no durable workbench write by default.
 
-The future delivery endpoint should be read-only against Layer 3 workbench state, source package rows, source package payloads, the APS handoff package row, and the APS evidence-bundle artifact. If implementation audit proves that a short-lived in-process delivery nonce, access log, or delivery summary is required, that must be frozen separately unless it can be represented as non-authoritative response metadata without new rows, schema changes, runtime DB widening, or persistent artifact mutation.
+The delivery endpoint must be read-only against Layer 3 workbench state, source package rows, source package payloads, the APS handoff package row, and the APS evidence-bundle artifact. If implementation audit proves that a short-lived in-process delivery nonce, access log, or delivery summary is required, that must be frozen separately unless it can be represented as non-authoritative response metadata without new rows, schema changes, runtime DB widening, or persistent artifact mutation.
 
 ## Response Boundary
 
@@ -111,7 +115,7 @@ The response must not include or create:
 
 This freeze does not admit rendered `/review/layer3` download controls.
 
-A later UI freeze is required before:
+A separate UI freeze is required before:
 
 - showing an active browser download button or link;
 - invoking the delivery endpoint from `/review/layer3`;
@@ -133,7 +137,7 @@ Until a later UI boundary lands, rendered associated-cohort readiness may remain
 
 ## Required Proof For Implementation
 
-At minimum, a future implementation must prove:
+At minimum, an implementation must prove:
 
 - delivery succeeds only after exact recorded associated-cohort `external_export_download_prepared` state;
 - stale or missing package-review, handoff/export prepare, APS handoff dispatch, readiness descriptor, package refs/hashes, APS handoff package row, or APS bundle artifact fails closed;
