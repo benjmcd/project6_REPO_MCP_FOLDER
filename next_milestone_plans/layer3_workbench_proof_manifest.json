@@ -1,25 +1,25 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main selected-pass associated-cohort delivery UI gate proof plus current-main signed delivery-reference planning/control governance",
+  "status": "current-main selected-pass associated-cohort delivery UI gate plus signed delivery-reference backend/API implementation proof",
   "scope": {
-    "source_branch": "codex/l3-signed-url-freeze-p32",
-    "merged_pr": "#497",
-    "merge_commit": "d0925e4f3a5f5779d1c0b08f40c69d691c9a5ecc",
+    "source_branch": "codex/l3-signed-url-impl-p34",
+    "merged_pr": "#499",
+    "merge_commit": "b784ddd52e9316996f89f32c93ab9618dc100cea",
     "base_remote": "project6-origin/main",
-    "base_commit": "aedf65a4",
-    "source_base_commit": "aedf65a452aeeea85e251727ff623d3012213652",
-    "purpose": "Record PR #497 current-main docs 102/103 signed delivery-reference planning/control governance after PR #483 same-origin delivery and PR #487 rendered delivery UI gate authority.",
-    "live_behavior_change": false,
-    "live_behavior_change_summary": "PR #497 is docs/control only. It adds no signed URL generation, token minting, URL serving, rendered signed URL controls, public URLs, connector/generic dispatch, destination selection, package mutation, durable token/receipt/audit state, schema/runtime/source widening, broader UI, or full mockup behavior.",
+    "base_commit": "144a32cd",
+    "source_base_commit": "144a32cd",
+    "purpose": "Record PR #499 current-main bounded backend/API same-origin signed delivery-reference generation/use after PR #497 docs 102/103 governance, PR #483 same-origin delivery, and PR #487 rendered delivery UI gate authority.",
+    "live_behavior_change": true,
+    "live_behavior_change_summary": "PR #499 implements only backend/API same-origin signed-reference generation/use through dedicated POST endpoints. It adds no public/provider URLs, rendered signed URL controls, connector/generic dispatch, destination selection, package mutation, durable token/receipt/audit/revocation state, schema/runtime/source widening, broader UI, or full mockup behavior.",
     "latest_implementation_pr": "#479",
     "latest_implementation_branch": "codex/l3-cohort-export-ready-impl-p13",
     "latest_implementation_summary": "PR #479 implements docs 96/97: exact selected-pass associated-cohort descriptive_summary APS dispatch authority can record one reference-only external export/download readiness object through the existing prepare route, with delivery and connector/generic downstream dispatch still disabled.",
     "latest_planning_pr": "#497",
     "latest_planning_branch": "codex/l3-signed-url-freeze-p32",
-    "latest_planning_summary": "Docs 102/103 define current-main planning/control governance for a possible future short-lived, server-authorized signed delivery reference.",
+    "latest_planning_summary": "Docs 102/103 define current-main planning/control governance for the signed delivery-reference boundary; they remain non-implementing by themselves.",
     "latest_planning_live_behavior_change": false,
-    "latest_planning_behavior_summary": "Docs 102/103 remain planning/control by themselves; a separate implementation PR is required before any signed URL behavior can be treated as implemented.",
+    "latest_planning_behavior_summary": "Docs 102/103 remain planning/control by themselves; PR #499 is the separate bounded backend/API implementation authority.",
     "latest_implementation_merge_commit": "7fdcf8ca5ab0acac26fdbfafc67335490d569ba6",
     "latest_planning_base_commit": "aedf65a452aeeea85e251727ff623d3012213652",
     "latest_branch_only_implementation_branch": "",
@@ -227,7 +227,11 @@
     "latest_signed_url_planning_pr": "#497",
     "latest_signed_url_planning_live_behavior_change": false,
     "latest_signed_url_planning_summary": "PR #497 merged docs 102/103 as current-main signed delivery-reference governance without runtime behavior changes.",
-    "latest_signed_url_planning_merge_commit": "d0925e4f3a5f5779d1c0b08f40c69d691c9a5ecc"
+    "latest_signed_url_planning_merge_commit": "d0925e4f3a5f5779d1c0b08f40c69d691c9a5ecc",
+    "latest_signed_reference_implementation_pr": "#499",
+    "latest_signed_reference_implementation_branch": "codex/l3-signed-url-impl-p34",
+    "latest_signed_reference_implementation_merge_commit": "b784ddd52e9316996f89f32c93ab9618dc100cea",
+    "latest_signed_reference_implementation_summary": "PR #499 implements same-origin signed-reference generation/use with HMAC references, 300-second TTL, generation/use revalidation, no row/file creation, and existing delivery preservation."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -326,7 +330,8 @@
       "bounded backend/API external export/download readiness endpoint through POST /api/v1/layer3/handoff/export/download/prepare, limited to one reference-only readiness descriptor over the existing APS evidence-bundle handoff artifact after recorded aps_handoff_dispatched authority",
       "bounded rendered /review/layer3 external export/download readiness UI controls over POST /api/v1/layer3/handoff/export/download/prepare after server-authoritative external_export_download.available readiness, limited to one prepare_external_export_download action and read-only recorded descriptor rendering",
       "bounded backend/API same-origin external export/download delivery endpoint through POST /api/v1/layer3/handoff/export/download/deliver, limited to streaming the existing validated APS evidence-bundle artifact after server-side authority proof over package-review, handoff/export prepare, APS dispatch, readiness descriptor, package refs/hashes, and APS bundle authority",
-      "current-methods AnalysisMethod registry implementation in backend/app/services/analysis.py for cross_correlation, decomposition, and structural_break, with existing recommendation/execution behavior preserved"
+      "current-methods AnalysisMethod registry implementation in backend/app/services/analysis.py for cross_correlation, decomposition, and structural_break, with existing recommendation/execution behavior preserved",
+      "bounded backend/API same-origin signed delivery-reference generation/use through POST /api/v1/layer3/handoff/export/download/signed-reference/generate and POST /api/v1/layer3/handoff/export/download/signed-reference/use after exact associated-cohort delivery authority"
     ],
     "not_live": [
       "general analysis execution beyond the PR #218 one selected-pass execution-start boundary",
@@ -3249,5 +3254,44 @@
       "Post-PR497 git status/diff -> docs/control-only under next_milestone_plans; no backend/runtime/test/UI/schema/model/migration edits"
     ],
     "planning_merge_commit": "d0925e4f3a5f5779d1c0b08f40c69d691c9a5ecc"
+  },
+  "descriptive_summary_selected_pass_cohort_external_export_download_signed_reference_implementation_proof": {
+    "implementation_branch": "codex/l3-signed-url-impl-p34",
+    "implementation_pr": "#499",
+    "base_commit": "144a32cd",
+    "merge_commit": "b784ddd52e9316996f89f32c93ab9618dc100cea",
+    "scope": "Bounded backend/API same-origin signed delivery-reference generation/use over docs 102/103 governance, PR #483 delivery authority, and PR #487 rendered delivery gate authority. The implementation adds only POST /api/v1/layer3/handoff/export/download/signed-reference/generate and POST /api/v1/layer3/handoff/export/download/signed-reference/use with server-owned HMAC references, 300-second TTL, current authority revalidation, and no row/file creation.",
+    "files_changed": [
+      "backend/app/api/layer3.py",
+      "backend/app/services/layer3_workbench.py",
+      "backend/tests/test_layer3_api.py"
+    ],
+    "commands": [
+      {
+        "command": "python -m compileall ./backend/app/api/layer3.py ./backend/app/services/layer3_workbench.py",
+        "result": "passed before PR #499 merge"
+      },
+      {
+        "command": "python -m pytest ./backend/tests/test_layer3_api.py -q",
+        "result": "73 passed, 4 warnings before PR #499 merge; pytest emitted a non-failing Windows temp cleanup PermissionError after exit code 0"
+      },
+      {
+        "command": "git diff --check",
+        "result": "passed before PR #499 merge with expected LF-to-CRLF warnings on edited text files"
+      }
+    ],
+    "no_go_preserved": [
+      "no public/provider URL behavior",
+      "no rendered signed-reference controls",
+      "no connector dispatch or connector-run handling",
+      "no destination selection",
+      "no generic downstream dispatch",
+      "no durable token/receipt/audit/revocation/runtime write state",
+      "no package mutation/reconstruction/rebuild/supersession",
+      "no additional reconciliation/package/artifact rows",
+      "no AnalysisArtifact expansion",
+      "no schema/runtime/source widening",
+      "no qualitative/hybrid/RAG/vector/full mockup activation"
+    ]
   }
 }

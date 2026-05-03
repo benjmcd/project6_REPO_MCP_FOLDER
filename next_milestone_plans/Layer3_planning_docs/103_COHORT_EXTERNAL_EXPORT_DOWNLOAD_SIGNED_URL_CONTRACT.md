@@ -2,28 +2,29 @@
 
 ## Status
 
-Branch-local planning/control contract paired with `102_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_FREEZE.md`.
+Current-main planning/control contract paired with `102_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_FREEZE.md`.
 
-This contract defines the admissibility rules for a possible future signed delivery reference after the existing associated-cohort same-origin delivery and rendered delivery gate work. It does not make signed URL generation live, allocate a route by itself, add UI behavior, add persistence, widen schema/runtime/source behavior, or permit connector/destination/downstream dispatch.
+This contract defined the admissibility rules for a signed delivery reference after the existing associated-cohort same-origin delivery and rendered delivery gate work. It did not make signed-reference generation live or allocate routes by itself; PR `#499` is the separate implementation authority for bounded backend/API same-origin signed-reference generation and use. The contract still does not add UI behavior, persistence, schema/runtime/source widening, connector/destination/downstream dispatch, public URLs, or provider-specific signed URLs.
 
 ## Authority Order
 
-Use this order before any future implementation:
+Use this order before auditing or extending signed-reference behavior:
 
 1. current `project6-origin/main` source and tests;
 2. live GitHub PR/check/review state for the branch being implemented;
-3. docs `102`/`103` for signed delivery-reference governance;
-4. docs `98`/`99` and PR `#483` for same-origin associated-cohort backend/API delivery proof;
-5. docs `100`/`101` and PR `#487` for rendered delivery UI gate behavior;
-6. docs `96`/`97` and PR `#479` for reference-only readiness;
-7. upstream associated-cohort result, package, submit, handoff/export, APS dispatch, and UI proof docs/PRs;
-8. browser state, rendered labels, request-local data, and operator notes.
+3. PR `#499` for current-main backend/API same-origin signed-reference generation and use;
+4. docs `102`/`103` for signed delivery-reference governance;
+5. docs `98`/`99` and PR `#483` for same-origin associated-cohort backend/API delivery proof;
+6. docs `100`/`101` and PR `#487` for rendered delivery UI gate behavior;
+7. docs `96`/`97` and PR `#479` for reference-only readiness;
+8. upstream associated-cohort result, package, submit, handoff/export, APS dispatch, and UI proof docs/PRs;
+9. browser state, rendered labels, request-local data, and operator notes.
 
 Browser state, client-supplied URLs, request-local tokens, and copied links are never authority for delivery availability, artifact identity, expiry, replay policy, downstream enablement, or package/source mutation.
 
 ## Contract Vocabulary
 
-This contract reserves these planning labels for future implementation design:
+This contract reserves these labels for the signed-reference boundary:
 
 - `associated_cohort_external_export_download_signed_url_not_admitted`;
 - `associated_cohort_external_export_download_signed_url_generation_blocked`;
@@ -31,22 +32,20 @@ This contract reserves these planning labels for future implementation design:
 - `same_origin_signed_delivery_reference`;
 - `short_lived_server_authorized_delivery_reference`.
 
-These labels are not live states by themselves. Existing code should continue to expose `public_url_enabled: false`, `signed_url_enabled: false`, `download_url_enabled: false`, and disabled connector/destination/generic dispatch flags until an implementation PR proves otherwise.
+These labels are not live states by themselves. PR `#499` makes only `same_origin_signed_delivery_reference` generation/use live through backend/API POST endpoints. Existing code should continue to expose public/provider URL and connector/destination/generic dispatch flags as disabled unless a later implementation PR proves otherwise.
 
-## Future Route Boundary
+## Implemented Route Boundary
 
-This planning contract does not allocate live routes. A later implementation may add route behavior only after the implementation audit proves the exact ownership model.
+PR `#499` allocates exactly two backend-owned POST endpoints under the existing Layer 3 external export/download route family:
 
-The acceptable future route shape is constrained to one of these options:
+- `POST /api/v1/layer3/handoff/export/download/signed-reference/generate`;
+- `POST /api/v1/layer3/handoff/export/download/signed-reference/use`.
 
-- reuse the existing delivery route family with a server-owned generation action and a same-origin signed-reference consumption path; or
-- add exactly one backend-owned generation endpoint and exactly one same-origin consumption endpoint under the existing Layer 3 external export/download route family.
+Any later implementation that needs an external object-store URL, public route, connector endpoint, destination selector, provider-specific ACL change, durable token table, revocation table, delivery receipt table, runtime write state, schema/model/migration change, or rendered UI control must stop for a separate freeze.
 
-Any implementation that needs an external object-store URL, public route, connector endpoint, destination selector, provider-specific ACL change, durable token table, delivery receipt table, runtime write state, schema/model/migration change, or rendered UI control must stop for a separate freeze.
+## Generation Request Contract
 
-## Future Generation Request Contract
-
-A future generation request may be considered only if it is built from server-confirmed authority plus a fresh `client_request_id`. It may include the same authority fields already admitted for associated-cohort same-origin delivery, including:
+The generation request is built from server-confirmed authority plus a fresh `client_request_id`. It includes the same authority fields already admitted for associated-cohort same-origin delivery, including:
 
 - `session_id`;
 - `analysis_plan_id`;
@@ -71,7 +70,7 @@ A future generation request may be considered only if it is built from server-co
 - `export_download_target == aps_evidence_bundle_download_reference`;
 - `download_mode == reference_only_prepare`;
 - current delivery authority from PR `#483`;
-- `operator_decision` naming only the future signed-reference action if separately implemented.
+- `operator_decision` naming the signed-reference action admitted by PR `#499`.
 
 The request must not accept:
 
@@ -113,13 +112,13 @@ The request must not accept:
 - `schema_migration`;
 - browser-inferred authority fields.
 
-Any URL or token returned by a future implementation must be server-generated only.
+Any signed reference returned by PR `#499` must be server-generated only.
 
-## Future Response Contract
+## Response Contract
 
-A future signed-reference response may expose only metadata needed by the operator/browser to use the server-authorized reference:
+The signed-reference response may expose only metadata needed by the operator/browser to use the server-authorized reference:
 
-- a server-owned same-origin signed delivery reference or tokenized URL;
+- a server-owned same-origin signed delivery reference;
 - expiry timestamp or short TTL;
 - artifact ref/hash/size basis;
 - server authority state;
@@ -136,13 +135,13 @@ It must not expose:
 - external provider credentials or ACL details;
 - package payload bytes;
 - mutable package content;
-- durable receipt, audit, or runtime write state unless separately frozen and implemented.
+- durable receipt, audit, revocation, or runtime write state unless separately frozen and implemented.
 
-The existing same-origin delivery endpoint must continue to return attachment bytes without public/signed URL headers unless the future implementation separately changes that response under this contract and proves the no-go boundaries.
+The existing same-origin delivery endpoint must continue to return attachment bytes without public/signed URL headers. PR `#499` adds separate signed-reference generation/use endpoints and does not change that response contract.
 
-## Future Use Contract
+## Use Contract
 
-Using a future signed reference must:
+Using a signed reference must:
 
 - revalidate the exact associated-cohort authority chain at use time;
 - bind the reference to the same artifact ref/hash/size that generation proved;
@@ -154,19 +153,20 @@ Using a future signed reference must:
 
 ## Idempotency And Replay Contract
 
-A future implementation must define duplicate and replay behavior before code changes:
+PR `#499` defines duplicate and replay behavior without durable token state:
 
-- duplicate generation with the same valid `client_request_id` must be deterministic or fail closed without creating extra durable state;
-- duplicate generation with different request ids must not create persistent token clutter unless a separate persistence freeze admits it;
-- token replay must either be explicitly allowed within the short TTL and exact authority basis or rejected with a named fail-closed state;
-- revoked, expired, stale, or authority-mismatched references must not fall back to unsigned same-origin delivery automatically;
-- implementation tests must cover duplicate generation, replay, expiry, stale authority, and cross-session mismatch.
+- duplicate generation creates no durable token rows and does not mutate package/reconciliation/artifact state;
+- duplicate generation with different request ids does not create persistent token clutter;
+- reference use is allowed only within the short TTL and exact authority basis;
+- expired, stale, malformed, or authority-mismatched references fail closed;
+- failed signed-reference use does not silently fall back to the existing same-origin attachment endpoint;
+- implementation tests cover generation/use, expiry, malformed references, stale authority, and no row/file creation.
 
-If the correct replay policy requires durable token state, this contract is insufficient by itself.
+If a later replay policy requires revocation, one-time-use semantics, durable audit, or token persistence, this contract and PR `#499` are insufficient by themselves.
 
 ## UI Contract
 
-No rendered UI behavior is admitted by this contract.
+No rendered UI behavior is admitted by this contract or PR `#499`.
 
 A later UI freeze is required before `/review/layer3` can:
 
@@ -178,16 +178,16 @@ A later UI freeze is required before `/review/layer3` can:
 
 Until that separate UI freeze lands, PR `#487` remains the only associated-cohort rendered delivery UI authority, and it remains same-origin attachment only.
 
-## Proof Requirements For Future Implementation
+## PR #499 Proof Requirements
 
-A future implementation must prove:
+PR `#499` proves:
 
 - existing delivery tests still reject client-supplied URL/token fields;
-- existing delivery headers still do not leak `download_url`, `public_url`, `signed_url`, local paths, connector ids, or destination ids unless the future response contract explicitly admits a server-owned signed reference;
+- existing delivery headers still do not leak `download_url`, `public_url`, `signed_url`, local paths, connector ids, or destination ids;
 - generation requires exact associated-cohort authority through PR `#479`, PR `#483`, and upstream package/handoff/APS state;
 - use revalidates authority independently of generation;
 - expiry, malformed token, stale upstream state, artifact hash mismatch, cross-session use, duplicate generation, and replay policy fail closed as specified;
 - no new rows/files are created unless separately frozen;
 - no schema/model/migration/runtime/source widening occurs;
 - no connector/generic dispatch, destination selection, package mutation, qualitative/hybrid/RAG/vector, broader UI, or full mockup activation occurs;
-- browser proof runs only if a later UI freeze admits rendered signed URL behavior.
+- browser proof remains deferred because rendered signed-reference UI behavior is not admitted.
