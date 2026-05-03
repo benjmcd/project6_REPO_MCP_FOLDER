@@ -374,6 +374,8 @@ Stop condition:
 
 ## Phase P10: UI And Operator Surfacing
 
+Status: partially implemented as bounded Phase P10A for Layer 3 APS-derived CSV `DatasetVersion` candidate listing and explicit selection.
+
 Goal:
 
 Expose the new source families in review/workbench surfaces only after backend authority exists.
@@ -384,10 +386,12 @@ Requirements:
 - Document trace remains document-oriented.
 - Dataset trace or typed-source trace is added only if needed; do not overload the PDF document trace page with non-document table semantics.
 - Browser verification uses both headed and headless Chrome when UI assets change.
+- P10A specifically adds a read-only Layer 3 `dataset-version-candidates` endpoint backed by existing `DatasetSourceProvenance`, plus workbench controls that select/paste `DatasetVersion` IDs and pass them to material preview as `dataset_version_ids`.
 
 Stop condition:
 
-- Operator can distinguish PDF documents, text documents, typed datasets, mixed filings, and refused artifacts without reading raw JSON.
+- P10A stop condition is met when an operator can discover/select APS-derived CSV bridge dataset versions in the Layer 3 workbench without reading raw JSON.
+- The broader P10 stop condition remains open until operators can distinguish PDF documents, text documents, typed datasets, mixed filings, and refused artifacts without reading raw JSON.
 
 ## Target Implementation Flow
 
@@ -399,7 +403,7 @@ flowchart TD
     D --> E["P4.5: opt-in connector bridge orchestration"]
     E --> F["P5: Layer 3 typed admission"]
     F --> G["P6: execution and package proof"]
-    G --> H["P10: operator UI surfacing"]
+    G --> H["P10A: APS dataset UI selection"]
     G --> I["P7: spreadsheet parser"]
     G --> J["P8: JSON recordset parser"]
     G --> K["P9: SEC/EDGAR filing parser"]
@@ -407,4 +411,4 @@ flowchart TD
 
 ## Immediate Recommendation
 
-The next implementation PR should start with Phase P10 operator UI surfacing for APS-derived dataset selection, not another parser family or source-shape change. Phase P6 now proves backend selected-pass execution/result/package preservation for explicit APS-derived `DatasetVersion` material; the remaining gap is operator visibility and selection affordance.
+The next implementation PR should not repeat P10A APS-derived dataset selection. Phase P6 proves backend selected-pass execution/result/package preservation for explicit APS-derived `DatasetVersion` material, and P10A now gives that path a bounded workbench selection affordance. The next narrow slice should either add the next typed parser family behind the same fail-closed bridge pattern or expand P10 only where new server-backed source families exist.

@@ -46,6 +46,5 @@ Caveat:
 
 ## Residual Work
 
-- Add UI/operator selection for APS-derived dataset versions.
-- Add browser tests only when UI assets or rendered workbench behavior change.
+- Bounded APS-derived CSV `DatasetVersion` UI/operator selection was added in Phase P10A; see `14-p10a-closeout.md`.
 - Add mixed-source package contracts separately if SEC/EDGAR or other mixed qualitative-plus-table parsers are admitted.

@@ -352,6 +352,24 @@ def test_aps_derived_dataset_version_flows_from_material_preview_to_plan_preview
     assert plan["plan_preview"]["planned_passes"][0]["dataset_version_id"] == dataset_version_id
 
 
+def test_aps_dataset_version_candidates_list_uses_dataset_source_provenance(db_session, tmp_path) -> None:
+    dataset_version_id = _seed_aps_derived_dataset_version(db_session, tmp_path)
+
+    result = layer3_workbench.aps_dataset_version_candidates(db_session)
+
+    assert result["schema_id"] == "layer3.aps_dataset_version_candidates.v1"
+    assert result["candidate_count"] == 1
+    candidate = result["dataset_version_candidates"][0]
+    assert candidate["dataset_version_id"] == dataset_version_id
+    assert candidate["dataset_name"] == "APS CSV bridge dataset"
+    assert candidate["source_system"] == "nrc_adams_aps"
+    assert candidate["parser_family"] == "csv_table"
+    assert candidate["typed_content_contract_id"] == "aps_csv_table_units_v1"
+    assert candidate["row_count"] == 3
+    assert candidate["variable_count"] == 2
+    assert result["authority_rail"]["read_only"] is True
+
+
 def test_gate_c_preview_is_non_authoritative_and_override_is_unavailable(db_session) -> None:
     preflight, source, material = _preflight_source_material()
     gate_b = layer3_workbench.gate_b_decision(db_session, _gate_b_payload(preflight, source, material))

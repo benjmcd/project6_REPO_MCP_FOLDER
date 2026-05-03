@@ -112,6 +112,17 @@
                         <label><input type="checkbox" name="source-class" value="dataset_version" checked> Dataset version</label>
                         <label><input type="checkbox" name="source-class" value="aps_content_document" checked> APS content document</label>
                     </fieldset>
+                    <section class="dataset-version-selector" aria-labelledby="dataset-version-selector-heading">
+                        <div>
+                            <h3 id="dataset-version-selector-heading">APS-derived DatasetVersion selection</h3>
+                            <p>Select bridged APS CSV dataset versions or paste explicit IDs. Selection is sent as <code>dataset_version_ids</code> to material preview.</p>
+                        </div>
+                        <div id="dataset-version-candidates" class="dataset-version-candidates" aria-live="polite">
+                            <span class="dataset-version-empty">DatasetVersion candidates have not loaded yet.</span>
+                        </div>
+                        <label for="dataset-version-ids">Explicit DatasetVersion IDs</label>
+                        <textarea id="dataset-version-ids" name="dataset-version-ids" rows="2" placeholder="dv-aps-csv-001, another-dataset-version-id"></textarea>
+                    </section>
                     <button id="run-preflight" class="primary-btn" type="submit">Run Preflight</button>
                 </form>
             </section>

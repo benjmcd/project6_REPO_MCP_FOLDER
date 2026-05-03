@@ -48,6 +48,7 @@ Caveat:
 
 ## Residual Work
 
-- Add UI/operator selection for APS-derived dataset versions in the workbench compare/source-selection flow; backend execution/package proof is now recorded in `13-p6-closeout.md`.
+- UI/operator selection for APS-derived dataset versions is now addressed by bounded Phase P10A; see `14-p10a-closeout.md`.
+- Backend execution/package proof is recorded in `13-p6-closeout.md`.
 - Add broader parser families only in separate slices after backend contracts are defined and tested.
 - Add mixed qualitative-plus-table package semantics only after there are at least two proven typed parser families and a defined Layer 3 packaging contract.

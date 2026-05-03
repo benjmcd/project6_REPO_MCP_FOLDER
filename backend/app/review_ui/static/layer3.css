@@ -302,6 +302,7 @@ html[data-theme="workbench"] body.layer3-page .step-chip.current {
 }
 
 html[data-theme="workbench"] body.layer3-page .source-fieldset,
+html[data-theme="workbench"] body.layer3-page .dataset-version-selector,
 html[data-theme="workbench"] body.layer3-page .plan-summary-card,
 html[data-theme="workbench"] body.layer3-page .plan-list,
 html[data-theme="workbench"] body.layer3-page .result-review-card,
@@ -3116,6 +3117,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 
 .intent-form label,
 .source-fieldset legend,
+.dataset-version-selector label,
 .filter-row label {
     color: var(--muted-text);
     font-weight: 800;
@@ -3123,6 +3125,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
 }
 
 .intent-form textarea,
+.dataset-version-selector textarea,
 .filter-row input,
 .decision-select,
 .reason-input,
@@ -3155,6 +3158,57 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     align-items: center;
     gap: 8px;
     color: var(--text-color);
+}
+
+.dataset-version-selector {
+    display: grid;
+    gap: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    background: var(--panel-bg);
+}
+
+.dataset-version-selector h3,
+.dataset-version-selector p {
+    margin: 0;
+}
+
+.dataset-version-selector h3 {
+    font-size: 0.94rem;
+}
+
+.dataset-version-selector p,
+.dataset-version-empty {
+    color: var(--muted-text);
+    font-size: 0.82rem;
+    line-height: 1.45;
+}
+
+.dataset-version-candidates {
+    display: grid;
+    gap: 8px;
+}
+
+.dataset-version-candidate {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 10px;
+    align-items: start;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 9px;
+    background: var(--control-bg);
+}
+
+.dataset-version-candidate strong,
+.dataset-version-candidate code {
+    overflow-wrap: anywhere;
+}
+
+.dataset-version-candidate span {
+    color: var(--muted-text);
+    font-size: 0.78rem;
 }
 
 .primary-btn {

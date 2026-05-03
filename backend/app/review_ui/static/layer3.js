@@ -4,6 +4,8 @@ const LAYER3_THEME_STORAGE_KEY = 'layer3_workbench_theme';
 
 const State = {
     bootstrap: null,
+    datasetVersionCandidates: null,
+    datasetVersionCandidateError: null,
     preflight: null,
     sourcePreview: null,
     materialPreview: null,
@@ -55,6 +57,8 @@ const elements = {
     intentForm: document.getElementById('intent-form'),
     intentInput: document.getElementById('layer3-intent'),
     sourceFieldset: document.getElementById('source-fieldset'),
+    datasetVersionCandidates: document.getElementById('dataset-version-candidates'),
+    datasetVersionIds: document.getElementById('dataset-version-ids'),
     runPreflight: document.getElementById('run-preflight'),
     materialLedgerBody: document.getElementById('material-ledger-body'),
     materialFilter: document.getElementById('material-filter'),
@@ -458,12 +462,44 @@ function selectedSourceClasses() {
         .map((input) => input.value);
 }
 
+function parseDatasetVersionIds(value) {
+    const result = [];
+    String(value || '')
+        .split(/[\s,;]+/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .forEach((item) => {
+            if (!result.includes(item)) result.push(item);
+        });
+    return result;
+}
+
+function checkedDatasetVersionCandidateIds() {
+    return Array.from(document.querySelectorAll('input[name="dataset-version-candidate"]:checked'))
+        .map((input) => input.value)
+        .filter(Boolean);
+}
+
+function selectedDatasetVersionIds() {
+    const result = [];
+    [...checkedDatasetVersionCandidateIds(), ...parseDatasetVersionIds(elements.datasetVersionIds?.value)]
+        .forEach((item) => {
+            if (!result.includes(item)) result.push(item);
+        });
+    return result;
+}
+
 function selectedSourceClassLabels() {
-    return Array.from(document.querySelectorAll('input[name="source-class"]'))
+    const labels = Array.from(document.querySelectorAll('input[name="source-class"]'))
         .filter((input) => input.checked)
         .map((input) => input.closest('label')?.textContent || input.value)
         .map((label) => label.replace(/\s+/g, ' ').trim())
         .filter(Boolean);
+    const datasetVersionIds = selectedDatasetVersionIds();
+    if (datasetVersionIds.length) {
+        labels.push(`${datasetVersionIds.length} APS-derived DatasetVersion ID${datasetVersionIds.length === 1 ? '' : 's'}`);
+    }
+    return labels;
 }
 
 function currentIntentText() {
@@ -1971,6 +2007,45 @@ function renderAnalysisPlane(plane) {
     `;
 }
 
+function renderDatasetVersionCandidates() {
+    if (!elements.datasetVersionCandidates) return;
+    if (State.datasetVersionCandidateError) {
+        elements.datasetVersionCandidates.innerHTML = `
+            <span class="dataset-version-empty">DatasetVersion candidate lookup failed: ${escapeHtml(State.datasetVersionCandidateError)}</span>
+        `;
+        return;
+    }
+    const candidates = State.datasetVersionCandidates?.dataset_version_candidates || [];
+    const selectedIds = new Set(selectedDatasetVersionIds());
+    if (!candidates.length) {
+        elements.datasetVersionCandidates.innerHTML = `
+            <span class="dataset-version-empty">No APS-derived dataset versions were found in the active runtime. Paste explicit IDs if you have them from an APS bridge report.</span>
+        `;
+        return;
+    }
+    elements.datasetVersionCandidates.innerHTML = candidates.map((candidate) => {
+        const datasetVersionId = String(candidate.dataset_version_id || '');
+        const title = candidate.dataset_name || candidate.version_label || datasetVersionId;
+        const detail = [
+            candidate.version_type,
+            candidate.parser_family,
+            candidate.typed_content_contract_id,
+            candidate.row_count != null ? `${candidate.row_count} rows` : null,
+            candidate.variable_count != null ? `${candidate.variable_count} variables` : null,
+        ].filter(Boolean).join(' / ');
+        return `
+            <label class="dataset-version-candidate">
+                <input type="checkbox" name="dataset-version-candidate" value="${escapeHtml(datasetVersionId)}" ${selectedIds.has(datasetVersionId) ? 'checked' : ''}>
+                <span>
+                    <strong>${escapeHtml(title)}</strong>
+                    <code>${escapeHtml(datasetVersionId)}</code>
+                    <span>${escapeHtml(detail || 'APS-derived dataset version')}</span>
+                </span>
+            </label>
+        `;
+    }).join('');
+}
+
 function renderSublayerMap() {
     if (!elements.sublayerMapPanel) return;
     const model = currentSublayerVisualizationModel();
@@ -3445,6 +3520,7 @@ function setGateControls() {
 
 function renderAll() {
     renderAuthority();
+    renderDatasetVersionCandidates();
     renderSublayerMap();
     renderUnavailable(currentDownstreamUnavailable());
     renderContext();
@@ -4108,6 +4184,12 @@ async function runPreflightFlow(event) {
     event.preventDefault();
     const intent = elements.intentInput.value.trim();
     const sourceClasses = selectedSourceClasses();
+    const datasetVersionIds = selectedDatasetVersionIds();
+    if (datasetVersionIds.length && !sourceClasses.includes('dataset_version')) {
+        addEvent('DatasetVersion IDs require the Dataset version source class.');
+        renderAll();
+        return;
+    }
     setBusy(elements.runPreflight, true, 'Run Preflight');
     try {
         State.preflight = await postJson('/preflight', {
@@ -4132,11 +4214,12 @@ async function runPreflightFlow(event) {
             client_request_id: requestId(),
             preflight_id: State.preflight.preflight_id,
             source_set_id: State.sourcePreview.source_set_id,
-                source_candidate_ids: State.sourcePreview.source_candidates.map((candidate) => candidate.source_candidate_id),
-                query_basis: {
-                    terms: termsFromIntent(intent),
-                },
-            });
+            source_candidate_ids: State.sourcePreview.source_candidates.map((candidate) => candidate.source_candidate_id),
+            dataset_version_ids: datasetVersionIds,
+            query_basis: {
+                terms: termsFromIntent(intent),
+            },
+        });
         initializeGateBDecisions();
         State.gateB = null;
         State.gateC = null;
@@ -4318,9 +4401,21 @@ async function revisePlan(operatorDecision) {
     }
 }
 
+async function loadDatasetVersionCandidates() {
+    try {
+        State.datasetVersionCandidates = await getJson('/dataset-version-candidates');
+        State.datasetVersionCandidateError = null;
+        addEvent(`Loaded ${State.datasetVersionCandidates.candidate_count || 0} APS-derived DatasetVersion candidate(s).`);
+    } catch (error) {
+        State.datasetVersionCandidateError = error.message;
+        addEvent(`DatasetVersion candidate lookup blocked: ${error.message}`);
+    }
+}
+
 async function init() {
     try {
         State.bootstrap = await getJson('/bootstrap');
+        await loadDatasetVersionCandidates();
         renderUnavailable(State.bootstrap.unavailable_gate_labels);
         renderAuthority(State.bootstrap.authority_rail);
         renderContext();
@@ -4351,6 +4446,8 @@ elements.stepChips.forEach((chip) => {
 elements.intentForm.addEventListener('submit', runPreflightFlow);
 elements.intentInput.addEventListener('input', renderSublayerMap);
 elements.sourceFieldset.addEventListener('change', renderSublayerMap);
+elements.datasetVersionIds.addEventListener('input', renderAll);
+elements.datasetVersionCandidates.addEventListener('change', renderAll);
 elements.gateBSubmit.addEventListener('click', commitGateB);
 elements.gateCPreview.addEventListener('click', previewGateC);
 elements.gateCCommit.addEventListener('click', commitGateC);
