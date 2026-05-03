@@ -51,6 +51,49 @@ def test_document_processing_engine_parser_rejects_invalid() -> None:
         local_corpus_e2e.build_parser().parse_args(["--document-processing-engine", "other"])
 
 
+def test_candidate_b_package_pin_matches_runtime_processor_contract() -> None:
+    from app.services import nrc_aps_document_processing
+
+    assert (
+        local_corpus_e2e.CANDIDATE_B_PACKAGE_EXPECTED_VERSION
+        == nrc_aps_document_processing.APS_ODL_PDF_EXPECTED_VERSION
+    )
+
+
+def test_candidate_b_package_preflight_reports_pinned_package(tmp_path: Path, monkeypatch) -> None:
+    def fake_version(package_name: str) -> str:
+        assert package_name == local_corpus_e2e.CANDIDATE_B_PACKAGE_NAME
+        return local_corpus_e2e.CANDIDATE_B_PACKAGE_EXPECTED_VERSION
+
+    def fake_distribution(package_name: str):  # noqa: ANN202
+        assert package_name == local_corpus_e2e.CANDIDATE_B_PACKAGE_NAME
+        return SimpleNamespace(locate_file=lambda _name: tmp_path)
+
+    observed_imports: list[str] = []
+
+    def fake_import_module(import_name: str):  # noqa: ANN202
+        observed_imports.append(import_name)
+        return object()
+
+    monkeypatch.setattr(local_corpus_e2e.importlib.metadata, "version", fake_version)
+    monkeypatch.setattr(local_corpus_e2e.importlib.metadata, "distribution", fake_distribution)
+    monkeypatch.setattr(local_corpus_e2e.importlib, "import_module", fake_import_module)
+
+    payload = local_corpus_e2e._candidate_b_package_preflight()
+
+    assert observed_imports == [local_corpus_e2e.CANDIDATE_B_PACKAGE_IMPORT_NAME]
+    assert payload["package_name"] == local_corpus_e2e.CANDIDATE_B_PACKAGE_NAME
+    assert payload["installed_version"] == local_corpus_e2e.CANDIDATE_B_PACKAGE_EXPECTED_VERSION
+    assert payload["package_location"] == str(tmp_path)
+
+
+def test_candidate_b_package_preflight_rejects_version_mismatch(monkeypatch) -> None:
+    monkeypatch.setattr(local_corpus_e2e.importlib.metadata, "version", lambda _name: "2.4.0")
+
+    with pytest.raises(local_corpus_e2e.ProofError, match="requires opendataloader-pdf==2.0.0; found 2.4.0"):
+        local_corpus_e2e._candidate_b_package_preflight()
+
+
 def test_build_submit_payload_preserves_baseline_default(tmp_path: Path) -> None:
     doc = _local_doc(tmp_path / "ML26000A001.pdf")
 
@@ -102,7 +145,11 @@ def test_main_summary_records_document_processing_engine(tmp_path: Path, monkeyp
         }
 
     monkeypatch.setattr(local_corpus_e2e, "DEFAULT_RUNTIME_PARENT", runtime_parent)
-    monkeypatch.setattr(local_corpus_e2e, "_run_preflight", lambda actual_runtime_root: ([doc], {"passed": True}, []))
+    monkeypatch.setattr(
+        local_corpus_e2e,
+        "_run_preflight",
+        lambda actual_runtime_root, *, document_processing_engine: ([doc], {"passed": True}, []),
+    )
     monkeypatch.setattr(local_corpus_e2e, "_isolated_runtime", fake_isolated_runtime)
     monkeypatch.setattr(local_corpus_e2e, "_execute_proof", fake_execute_proof)
 

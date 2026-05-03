@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import importlib
+import importlib.metadata
 import json
 import os
 import re
@@ -41,6 +42,9 @@ DOCUMENT_PROCESSING_ENGINE_CHOICES = (
     DOCUMENT_PROCESSING_ENGINE_BASELINE,
     DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
 )
+CANDIDATE_B_PACKAGE_NAME = "opendataloader-pdf"
+CANDIDATE_B_PACKAGE_IMPORT_NAME = "opendataloader_pdf"
+CANDIDATE_B_PACKAGE_EXPECTED_VERSION = "2.0.0"
 
 
 def _resolve_expected_interpreter() -> Path:
@@ -316,6 +320,40 @@ def _normalize_document_processing_engine(value: str) -> str:
     return normalized
 
 
+def _candidate_b_package_preflight() -> dict[str, Any]:
+    try:
+        package_version = importlib.metadata.version(CANDIDATE_B_PACKAGE_NAME)
+    except importlib.metadata.PackageNotFoundError as exc:
+        raise ProofError(
+            f"Candidate B runtime requires {CANDIDATE_B_PACKAGE_NAME}=={CANDIDATE_B_PACKAGE_EXPECTED_VERSION}; "
+            f"package is not installed for {Path(sys.executable).resolve()}"
+        ) from exc
+
+    if package_version != CANDIDATE_B_PACKAGE_EXPECTED_VERSION:
+        raise ProofError(
+            f"Candidate B runtime requires {CANDIDATE_B_PACKAGE_NAME}=={CANDIDATE_B_PACKAGE_EXPECTED_VERSION}; "
+            f"found {package_version} for {Path(sys.executable).resolve()}"
+        )
+
+    try:
+        importlib.import_module(CANDIDATE_B_PACKAGE_IMPORT_NAME)
+        distribution = importlib.metadata.distribution(CANDIDATE_B_PACKAGE_NAME)
+    except Exception as exc:  # noqa: BLE001
+        raise ProofError(
+            f"Candidate B runtime package {CANDIDATE_B_PACKAGE_IMPORT_NAME} could not be imported for "
+            f"{Path(sys.executable).resolve()}"
+        ) from exc
+
+    return {
+        "package_name": CANDIDATE_B_PACKAGE_NAME,
+        "import_name": CANDIDATE_B_PACKAGE_IMPORT_NAME,
+        "expected_version": CANDIDATE_B_PACKAGE_EXPECTED_VERSION,
+        "installed_version": package_version,
+        "package_location": str(distribution.locate_file("")),
+        "python_executable": str(Path(sys.executable).resolve()),
+    }
+
+
 def _load_document_types_reference() -> set[str]:
     payload = _read_json(DOCUMENT_TYPES_JSON)
     values = payload.get("document_types")
@@ -516,7 +554,12 @@ def _ghostscript_path() -> str | None:
     return None
 
 
-def _run_preflight(runtime_root: Path) -> tuple[list[LocalCorpusDocument], dict[str, Any], list[dict[str, Any]]]:
+def _run_preflight(
+    runtime_root: Path,
+    *,
+    document_processing_engine: str,
+) -> tuple[list[LocalCorpusDocument], dict[str, Any], list[dict[str, Any]]]:
+    document_processing_engine = _normalize_document_processing_engine(document_processing_engine)
     docs, corpus_shape = _build_local_corpus_documents(DEFAULT_CORPUS_ROOT)
 
     _assert(EXPECTED_INTERPRETER.exists(), f"expected Phase 7A interpreter missing: {EXPECTED_INTERPRETER}")
@@ -531,6 +574,10 @@ def _run_preflight(runtime_root: Path) -> tuple[list[LocalCorpusDocument], dict[
                 "loaded_from": str(Path(getattr(module, "__file__", "built-in")).resolve()) if getattr(module, "__file__", None) else "built-in",
             }
         )
+
+    candidate_b_runtime: dict[str, Any] | None = None
+    if document_processing_engine == DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B:
+        candidate_b_runtime = _candidate_b_package_preflight()
 
     aps_settings = importlib.import_module("app.services.nrc_aps_settings")
     paddle_dirs = {
@@ -620,6 +667,7 @@ def _run_preflight(runtime_root: Path) -> tuple[list[LocalCorpusDocument], dict[
         "imports": imported_modules,
         "ghostscript_path": ghostscript,
         "paddle_model_dirs": {name: str(path) for name, path in paddle_dirs.items()},
+        "candidate_b_runtime": candidate_b_runtime,
         "isolated_runtime_overrides": {
             "CONNECTOR_LEASE_TTL_SECONDS": LOCAL_PROOF_CONNECTOR_LEASE_TTL_SECONDS,
         },
@@ -1316,7 +1364,10 @@ def main(argv: list[str] | None = None) -> int:
 
     exit_code = 1
     try:
-        docs, preflight, findings = _run_preflight(runtime_root)
+        docs, preflight, findings = _run_preflight(
+            runtime_root,
+            document_processing_engine=document_processing_engine,
+        )
         summary["preflight"] = preflight
         summary["corpus_pdf_count"] = len(docs)
         summary["observed_non_blocking_findings"] = findings
