@@ -1,26 +1,26 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main implementation proof for selected-pass associated-cohort descriptive_summary APS handoff dispatch from PR #466 plus branch planning proof for docs 96/97 external export/download readiness governance",
+  "status": "implementation proof for selected-pass associated-cohort descriptive_summary external export/download readiness in PR #479",
   "scope": {
-    "source_branch": "codex/l3-cohort-aps-dispatch-impl-p76",
-    "merged_pr": "#466",
-    "merge_commit": "2dfd8cba45c6032914b9779c583a914aacdf6001",
+    "source_branch": "codex/l3-cohort-export-ready-impl-p13",
+    "merged_pr": "#479",
+    "merge_commit": null,
     "base_remote": "project6-origin/main",
-    "base_commit": "2dfd8cba",
-    "source_base_commit": "2dfd8cba45c6032914b9779c583a914aacdf6001",
-    "purpose": "Record PR #466 current-main bounded backend/API selected-pass associated-cohort APS handoff dispatch implementation and docs 96/97 planning-only associated-cohort external export/download readiness governance while preserving downstream no-go boundaries.",
+    "base_commit": "670711d2",
+    "source_base_commit": "670711d226e7e67c3174eb0b3d4ccf7289323234",
+    "purpose": "Record PR #479 current-main bounded backend/API selected-pass associated-cohort external export/download readiness implementation while preserving downstream no-go boundaries.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "PR #466 implements only exact associated-cohort APS evidence-bundle handoff dispatch over docs 94/95 authority. Docs 96/97 are planning-only governance for future associated-cohort external export/download readiness and do not change runtime behavior; runtime readiness, delivery, connector, schema/runtime/source, retry/recovery beyond deterministic readiness idempotency, pass-entry, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior remain out.",
-    "latest_implementation_pr": "#466",
-    "latest_implementation_branch": "codex/l3-cohort-aps-dispatch-impl-p76",
-    "latest_implementation_summary": "PR #466 implements docs 94/95: exact selected-pass associated-cohort descriptive_summary handoff/export prepared authority can dispatch one APS evidence-bundle handoff through the existing owner-service family. Docs 96/97 govern only future external export/download readiness, with runtime readiness and connector/generic downstream dispatch still disabled.",
-    "latest_planning_pr": "pending",
+    "live_behavior_change_summary": "PR #479 implements only exact associated-cohort reference-only external export/download readiness over docs 96/97 and PR #466 APS dispatch authority. Delivery, connector, schema/runtime/source, retry/recovery beyond deterministic readiness idempotency, pass-entry, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior remain out.",
+    "latest_implementation_pr": "#479",
+    "latest_implementation_branch": "codex/l3-cohort-export-ready-impl-p13",
+    "latest_implementation_summary": "PR #479 implements docs 96/97: exact selected-pass associated-cohort descriptive_summary APS dispatch authority can record one reference-only external export/download readiness object through the existing prepare route, with delivery and connector/generic downstream dispatch still disabled.",
+    "latest_planning_pr": "#478",
     "latest_planning_branch": "codex/l3-cohort-export-readiness-p12",
     "latest_planning_summary": "Docs 96/97 define planning-only selected-pass associated-cohort external export/download readiness governance after PR #466 APS evidence-bundle handoff dispatch authority.",
     "latest_planning_live_behavior_change": false,
-    "latest_planning_behavior_summary": "Docs 96/97 remain planning/control by themselves; a separate implementation is required before runtime associated-cohort external export/download readiness narrows associated_cohort_external_export_download_prepare_not_admitted.",
-    "latest_implementation_merge_commit": "2dfd8cba45c6032914b9779c583a914aacdf6001",
+    "latest_planning_behavior_summary": "Docs 96/97 remain planning/control by themselves; PR #479 is the separate implementation that narrows associated_cohort_external_export_download_prepare_not_admitted only for exact readiness authority.",
+    "latest_implementation_merge_commit": null,
     "latest_planning_base_commit": "9045ee0e06cdfd8ede0d5233df63a4ff33a32ad3",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
@@ -2876,7 +2876,7 @@
       "no pass-entry changes, retry/recovery, broader UI, qualitative/hybrid/RAG/vector, or full mockup behavior"
     ],
     "required_future_proof": [
-      "separate implementation under docs 96/97 before narrowing associated_cohort_external_export_download_prepare_not_admitted",
+      "satisfied by PR #479 implementation; separate freeze still required before delivery, connector/generic dispatch, destination selection, or schema/runtime/source widening",
       "exact PR #432/#438/#443/#447/#451/#456/#460/#462/#466 authority and owner-service artifact compatibility proof",
       "external export/download readiness proof must not mutate the PR #466 APS handoff package row or APS evidence-bundle artifact",
       "fail-closed stale/mismatched provenance, forbidden fields, duplicate conflicts, orphan APS rows, and owner-service provenance missing",
@@ -2893,7 +2893,7 @@
   },
   "descriptive_summary_selected_pass_cohort_external_export_download_readiness_planning_proof": {
     "planning_branch": "codex/l3-cohort-export-readiness-p12",
-    "planning_pr": "pending",
+    "planning_pr": "#478",
     "base_commit": "9045ee0e",
     "scope": "Planning-only selected-pass associated-cohort descriptive_summary external export/download readiness governance after PR #466 APS evidence-bundle handoff dispatch authority.",
     "files_changed": [
@@ -2906,8 +2906,8 @@
     "live_behavior_change": false,
     "authority_basis": [
       "PR #466 is current-main backend/API authority for exact associated-cohort APS evidence-bundle handoff dispatch over docs 94/95.",
-      "backend/app/services/layer3_workbench.py currently blocks associated-cohort external export/download readiness with associated_cohort_external_export_download_prepare_not_admitted.",
-      "backend/tests/test_layer3_api.py currently asserts associated-cohort external export/download readiness remains blocked until implementation lands."
+      "PR #478 landed docs 96/97 as planning-only associated-cohort external export/download readiness governance before runtime implementation.",
+      "PR #479 is the separate implementation lane that narrows associated_cohort_external_export_download_prepare_not_admitted only for the exact docs 96/97 authority chain."
     ],
     "no_go_preserved": [
       "no runtime external export/download readiness by docs alone",
@@ -2920,7 +2920,7 @@
       "no broader UI, broader associated-cohort review, or full mockup activation"
     ],
     "required_future_proof": [
-      "separate implementation under docs 96/97 before narrowing associated_cohort_external_export_download_prepare_not_admitted",
+      "satisfied by PR #479 implementation; separate freeze still required before delivery, connector/generic dispatch, destination selection, or schema/runtime/source widening",
       "exact PR #432/#438/#443/#447/#451/#456/#460/#462/#466 authority and owner-service artifact compatibility proof",
       "external export/download readiness proof must not mutate the PR #466 APS handoff package row or APS evidence-bundle artifact",
       "fail-closed stale/mismatched provenance, forbidden fields, duplicate conflicts, orphan APS rows, and owner-service provenance missing",
@@ -2931,7 +2931,53 @@
       "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
       "git diff --check"
     ],
-    "merge_commit": null
-
+    "merge_commit": "670711d226e7e67c3174eb0b3d4ccf7289323234"
+  },
+  "descriptive_summary_selected_pass_cohort_external_export_download_readiness_implementation_proof": {
+    "implementation_branch": "codex/l3-cohort-export-ready-impl-p13",
+    "implementation_pr": "#479",
+    "base_commit": "670711d2",
+    "head_commit": "3c46be54",
+    "merge_commit": null,
+    "scope": "Bounded backend/API selected-pass associated-cohort descriptive_summary external export/download readiness implementation under docs 96/97 after exact PR #466 APS evidence-bundle handoff dispatch authority.",
+    "files_changed": [
+      "backend/app/services/layer3_workbench.py",
+      "backend/tests/test_layer3_api.py",
+      "next_milestone_plans/Layer3_planning_docs/96_COHORT_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/97_COHORT_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/progress-prompt.md",
+      "next_milestone_plans/progress-ui-spec.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "live_behavior_change": true,
+    "authority_basis": [
+      "PR #432/#438/#443 prove exact selected-pass associated-cohort execution/result-review authority.",
+      "PR #447/#451/#456 prove exact package-review preview, package construction, and package-review submit authority.",
+      "PR #460/#462 prove associated-cohort handoff/export prepare-only authority and rendered prepare projection.",
+      "PR #466 proves exact associated-cohort APS evidence-bundle handoff dispatch and owner-service artifact compatibility.",
+      "Docs 96/97 freeze the readiness-only external export/download boundary implemented by PR #479."
+    ],
+    "no_go_preserved": [
+      "no browser delivery, file streaming, rendered download controls, public URLs, signed URLs, connector dispatch, generic downstream dispatch, or destination selection",
+      "no package payload copy, rewrite, reconstruction, amendment, or supersession",
+      "no new package rows, source package rows, reconciliation rows, analysis artifacts, connector runs, plans, passes, or runs from readiness",
+      "no source package row mutation, APS handoff package row mutation, APS bundle ref/hash mutation, or APS evidence-bundle artifact byte mutation",
+      "no schema/runtime/source/model/migration widening",
+      "no qualitative/hybrid/RAG/vector behavior, pass-entry changes, broader UI, or full mockup activation"
+    ],
+    "verification": [
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_companion_provenance -q -> 1 passed, 3 warnings; ignored Windows temp cleanup PermissionError after exit code 0",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"external_export_download_prepare\" -q -> 2 passed, 70 deselected, 3 warnings; ignored Windows temp cleanup PermissionError after exit code 0",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"cohort_aps_handoff_dispatch or external_export_download_prepare\" -q -> 3 passed, 69 deselected, 3 warnings; ignored Windows temp cleanup PermissionError after exit code 0",
+      "git diff --check -> passed with CRLF normalization warnings only"
+    ],
+    "required_future_proof": [
+      "separate freeze before associated-cohort delivery or rendered download controls",
+      "separate freeze before public/signed URLs, connector/generic dispatch, destination selection, package mutation/reconstruction, schema/runtime/source widening, or extra rows",
+      "headed and headless Chrome proof if rendered UI behavior changes"
+    ]
   }
 }

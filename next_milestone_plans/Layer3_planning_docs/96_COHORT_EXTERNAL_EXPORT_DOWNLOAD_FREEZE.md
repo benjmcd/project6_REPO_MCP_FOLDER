@@ -2,9 +2,9 @@
 
 ## Status
 
-Current-main planning-only freeze for the next bounded Layer 3 workbench tranche after PR `#466` associated-cohort APS evidence-bundle handoff dispatch.
+Current-main governance freeze for the bounded Layer 3 workbench tranche implemented by PR `#479` after PR `#466` associated-cohort APS evidence-bundle handoff dispatch.
 
-This document does not make associated-cohort external export/download live. It selects only the next eligible governance boundary after merged selected-pass associated-cohort `descriptive_summary` APS handoff dispatch authority: a reference-only external export/download readiness descriptor over the already persisted APS evidence-bundle handoff artifact.
+This document did not make associated-cohort external export/download live by itself. PR `#479` is the separate bounded implementation that narrows readiness only for the exact selected-pass associated-cohort `descriptive_summary` APS dispatch authority chain frozen here: a reference-only external export/download readiness descriptor over the already persisted APS evidence-bundle handoff artifact.
 
 ## Authority Boundary
 
@@ -23,7 +23,7 @@ Current live authority is limited to:
 
 Docs `62_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_FREEZE.md` and `63_L3_WB_EXTERNAL_EXPORT_DOWNLOAD_API_AND_STATE_CONTRACT.md` plus PRs `#269` through `#289` remain the existing general external export/download readiness, delivery, UI, and hardening chain. They are a pattern source and owner-service compatibility source, not direct authority to expose associated-cohort external export/download without the cohort-specific gates in this freeze and `97_COHORT_EXTERNAL_EXPORT_DOWNLOAD_CONTRACT.md`.
 
-Current `backend/app/services/layer3_workbench.py` intentionally blocks associated-cohort external export/download readiness after cohort APS dispatch state with `associated_cohort_external_export_download_prepare_not_admitted`. A future implementation may only narrow that blocker for the exact authority chain in this freeze and the companion contract.
+PR `#479` narrows `backend/app/services/layer3_workbench.py` only for this exact associated-cohort authority chain. Stale, partial, mismatched, non-cohort, or downstream-widening inputs still fail closed with `associated_cohort_external_export_download_prepare_not_admitted` or the existing external export/download precheck errors.
 
 ## Frozen Decision
 
@@ -31,9 +31,9 @@ The next eligible planning tranche is:
 
 > Freeze a bounded associated-cohort external export/download readiness step after one exact selected-pass associated-cohort `descriptive_summary` package set has been dispatched to the existing APS evidence-bundle handoff owner-service family by PR `#466`.
 
-The future tranche may record one reference-only external export/download descriptor for the already persisted APS evidence-bundle handoff artifact. It must not deliver or stream the artifact, expose browser download controls, expose public/signed/local URLs, create connector or generic downstream dispatch, select destinations, mutate or copy package payloads, create new package/reconciliation/source/artifact rows, or widen schema/runtime/source behavior.
+PR `#479` may record one reference-only external export/download descriptor for the already persisted APS evidence-bundle handoff artifact. It must not deliver or stream the artifact, expose browser download controls, expose public/signed/local URLs, create connector or generic downstream dispatch, select destinations, mutate or copy package payloads, create new package/reconciliation/source/artifact rows, or widen schema/runtime/source behavior.
 
-## In Scope For The Future Implementation
+## In Scope For PR #479 Implementation
 
 - Preserve the existing `POST /api/v1/layer3/handoff/export/download/prepare` route family unless implementation audit proves route reuse would make single-item and associated-cohort semantics ambiguous.
 - Admit only the exact selected-pass associated-cohort `descriptive_summary` chain already proven by PR `#432`, PR `#438`, PR `#443`, PR `#447`, PR `#451`, PR `#456`, PR `#460`, PR `#462`, and PR `#466`.
@@ -49,7 +49,7 @@ The future tranche may record one reference-only external export/download descri
 
 ## Decision Vocabulary
 
-A future implementation governed by this freeze may admit only this operator decision:
+The implementation governed by this freeze may admit only this operator decision:
 
 | Decision | Meaning | Allowed next state |
 | --- | --- | --- |
@@ -70,7 +70,7 @@ The decision vocabulary is readiness only. It is not a browser download command,
 - No qualitative, hybrid, RAG, vector, retry, recovery, replay beyond deterministic readiness idempotency, broader associated-cohort review, broader UI, or full mockup activation.
 - No use of docs `62`/`63` as direct associated-cohort readiness authority without the cohort-specific gates in this freeze and the companion contract.
 
-## Required Proof Before Implementation Can Be Considered Settled
+## Required Proof Before PR #479 Can Be Considered Settled
 
 - Existing single-item external export/download readiness, delivery, rendered readiness UI, and rendered delivery UI behavior remains unchanged.
 - Existing associated-cohort APS handoff dispatch behavior from PR `#466` remains unchanged except for admitted external export/download readiness projection/action.
