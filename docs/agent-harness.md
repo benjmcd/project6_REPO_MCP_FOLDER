@@ -54,7 +54,7 @@ python ./tools/nrc_ui_launch.py verify --latest
 python ./tools/nrc_ui_launch.py urls
 ```
 
-It prints the selected run id, review root, runtime root, database, storage root, and base URL. Treat stale sibling-worktree runtime selection as unsafe unless explicitly passed and verified.
+It prints the selected run id, review root, runtime root, database, storage root, and base URL. The PowerShell wrapper follows the same runtime-root discovery posture and treats non-standard runtime roots as explicit operator input, not hidden defaults.
 
 ## Validation Rules
 
