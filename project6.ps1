@@ -279,21 +279,21 @@ function Start-ApiForeground {
     $hostUri = [Uri]$BaseUrl
     $port = $hostUri.Port
     $apiHost = $hostUri.Host
-    $args = @("-m", "uvicorn", "main:app", "--host", $apiHost, "--port", "$port")
+    $uvicornArgs = @("-m", "uvicorn", "main:app", "--host", $apiHost, "--port", "$port")
     if ($Reload) {
-        $args += "--reload"
+        $uvicornArgs += "--reload"
     }
-    Invoke-Py -Arguments $args -WorkingDirectory $BackendDir
+    Invoke-Py -Arguments $uvicornArgs -WorkingDirectory $BackendDir
 }
 
 function Start-ApiBackground {
     $hostUri = [Uri]$BaseUrl
     $port = $hostUri.Port
     $apiHost = $hostUri.Host
-    $args = @("-$PythonVersion", "-m", "uvicorn", "main:app", "--host", $apiHost, "--port", "$port")
+    $uvicornArgs = @("-$PythonVersion", "-m", "uvicorn", "main:app", "--host", $apiHost, "--port", "$port")
     $stdoutPath = Join-Path $RepoRoot ".project6_api_stdout.log"
     $stderrPath = Join-Path $RepoRoot ".project6_api_stderr.log"
-    return Start-Process -FilePath "py" -ArgumentList $args -WorkingDirectory $BackendDir -PassThru -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+    return Start-Process -FilePath "py" -ArgumentList $uvicornArgs -WorkingDirectory $BackendDir -PassThru -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
 }
 
 function Resolve-NrcApsPromotionPolicyPath {
@@ -340,15 +340,15 @@ switch ($Action) {
         if (-not (Test-Path $SQLiteToPostgresMigrationPath)) {
             throw "SQLite-to-PostgreSQL migration script not found: $SQLiteToPostgresMigrationPath"
         }
-        $args = @(
+        $migrationArgs = @(
             $SQLiteToPostgresMigrationPath,
             "--source-url", $Tier1SqliteUrl,
             "--target-url", (Resolve-Tier1DatabaseUrl)
         )
         if ($TruncateTier1PostgresTarget) {
-            $args += "--truncate-target"
+            $migrationArgs += "--truncate-target"
         }
-        Invoke-Py -Arguments $args -WorkingDirectory $RepoRoot
+        Invoke-Py -Arguments $migrationArgs -WorkingDirectory $RepoRoot
     }
     "start-api" {
         Invoke-WithTier1 {
@@ -383,7 +383,7 @@ switch ($Action) {
         if (-not (Test-Path $NrcApsLiveBatchPath)) {
             throw "NRC APS live batch script not found: $NrcApsLiveBatchPath"
         }
-        $args = @(
+        $batchArgs = @(
             $NrcApsLiveBatchPath,
             "--cycle-count", "$ConsecutiveRuns",
             "--spacing-seconds", "$BatchSpacingSeconds",
@@ -391,10 +391,10 @@ switch ($Action) {
             "--batch-root", $NrcApsLiveBatchRoot
         )
         if ($AbortBatchOnCycleFailure) {
-            $args += "--abort-on-failure"
+            $batchArgs += "--abort-on-failure"
         }
         Invoke-WithTier1 {
-            Invoke-Py -Arguments $args -WorkingDirectory $BackendDirAbs
+            Invoke-Py -Arguments $batchArgs -WorkingDirectory $BackendDirAbs
         }
     }
     "build-nrc-aps-replay-corpus" {
@@ -588,11 +588,11 @@ switch ($Action) {
         if ([string]::IsNullOrWhiteSpace($NrcApsRunId)) {
             throw "NrcApsRunId is required for refresh-nrc-aps-review-gate-reports."
         }
-        $args = @(
+        $reviewGateRefreshArgs = @(
             $NrcApsReviewGateRefreshPath,
             "--run-id", $NrcApsRunId
         ) + $ActionArgs
-        Invoke-Py -Arguments $args -WorkingDirectory $RepoRoot
+        Invoke-Py -Arguments $reviewGateRefreshArgs -WorkingDirectory $RepoRoot
     }
     "refresh-nrc-aps-validate-only-gates" {
         if (-not (Test-Path $NrcApsValidateOnlyGatesRefreshPath)) {
@@ -601,28 +601,28 @@ switch ($Action) {
         if ([string]::IsNullOrWhiteSpace($NrcApsRunId)) {
             throw "NrcApsRunId is required for refresh-nrc-aps-validate-only-gates."
         }
-        $args = @(
+        $validateOnlyRefreshArgs = @(
             $NrcApsValidateOnlyGatesRefreshPath,
             "--run-id", $NrcApsRunId
         ) + $ActionArgs
         Invoke-WithTier $Tier2DatabaseUrl $Tier2StorageDir {
-            Invoke-Py -Arguments $args -WorkingDirectory $RepoRoot
+            Invoke-Py -Arguments $validateOnlyRefreshArgs -WorkingDirectory $RepoRoot
         }
     }
     "validate-nrc-aps-validate-only-gates" {
         if (-not (Test-Path $NrcApsValidateOnlyGatesGatePath)) {
             throw "NRC APS validate-only gate script not found: $NrcApsValidateOnlyGatesGatePath"
         }
-        $args = @(
+        $validateOnlyGateArgs = @(
             $NrcApsValidateOnlyGatesGatePath,
             "--report", $NrcApsValidateOnlyGatesValidationReportPath
         )
         if (-not [string]::IsNullOrWhiteSpace($NrcApsRunId)) {
-            $args += @("--run-id", $NrcApsRunId)
+            $validateOnlyGateArgs += @("--run-id", $NrcApsRunId)
         }
-        $args += $ActionArgs
+        $validateOnlyGateArgs += $ActionArgs
         Invoke-WithTier $Tier2DatabaseUrl $Tier2StorageDir {
-            Invoke-Py -Arguments $args -WorkingDirectory $BackendDirAbs
+            Invoke-Py -Arguments $validateOnlyGateArgs -WorkingDirectory $BackendDirAbs
         }
     }
     "validate-nrc-aps-promotion" {
@@ -647,15 +647,15 @@ switch ($Action) {
         if ([string]::IsNullOrWhiteSpace($NrcApsRunId)) {
             throw "NrcApsRunId is required for validate-nrc-aps-retrieval-cutover."
         }
-        $args = @(
+        $retrievalCutoverArgs = @(
             $NrcApsRetrievalCutoverGatePath,
             "--run-id", $NrcApsRunId
         )
         if (-not [string]::IsNullOrWhiteSpace($NrcApsSearchQuery)) {
-            $args += @("--query", $NrcApsSearchQuery)
+            $retrievalCutoverArgs += @("--query", $NrcApsSearchQuery)
         }
         Invoke-WithTier1 {
-            Invoke-Py -Arguments $args -WorkingDirectory $BackendDirAbs
+            Invoke-Py -Arguments $retrievalCutoverArgs -WorkingDirectory $BackendDirAbs
         }
     }
     "compare-nrc-aps-promotion-policy" {
@@ -670,7 +670,7 @@ switch ($Action) {
         }
         $batchManifestPath = Resolve-NrcApsBatchManifestPath
         $policyPath = Resolve-NrcApsPromotionPolicyPath
-        $args = @(
+        $promotionCompareArgs = @(
             $NrcApsPromotionTuningPath,
             "--batch-manifest", $batchManifestPath,
             "--baseline-policy", $policyPath,
@@ -679,35 +679,35 @@ switch ($Action) {
             "--out-dir", (Split-Path -Parent $NrcApsPromotionComparisonReportPath)
         )
         if ($RequireTunedPromotionPass) {
-            $args += "--require-tuned-pass"
+            $promotionCompareArgs += "--require-tuned-pass"
         }
         Invoke-WithTier $Tier2DatabaseUrl $Tier2StorageDir {
-            Invoke-Py -Arguments $args -WorkingDirectory $BackendDirAbs
+            Invoke-Py -Arguments $promotionCompareArgs -WorkingDirectory $BackendDirAbs
         }
     }
     "prove-nrc-aps-document-processing" {
         if (-not (Test-Path $NrcApsDocumentProcessingProofPath)) {
             throw "NRC APS document-processing proof script not found: $NrcApsDocumentProcessingProofPath"
         }
-        $args = @(
+        $documentProofArgs = @(
             $NrcApsDocumentProcessingProofPath,
             "--report", $NrcApsDocumentProcessingProofReportPath,
             "--artifact-report", $NrcApsArtifactIngestionValidationReportPath,
             "--content-index-report", $NrcApsContentIndexValidationReportPath
         )
         if ($RequireOcr) {
-            $args += "--require-ocr"
+            $documentProofArgs += "--require-ocr"
         }
         Invoke-WithTier $Tier3DatabaseUrl $Tier3StorageDir {
-            Invoke-Py -Arguments $args -WorkingDirectory $BackendDirAbs
+            Invoke-Py -Arguments $documentProofArgs -WorkingDirectory $BackendDirAbs
         }
     }
     "compare-nrc-aps-candidate-b" {
         if (-not (Test-Path $NrcApsCandidateBComparePath)) {
             throw "NRC APS Candidate B compare runner not found: $NrcApsCandidateBComparePath"
         }
-        $args = @($NrcApsCandidateBComparePath) + $ActionArgs
-        Invoke-Py -Arguments $args
+        $candidateBCompareArgs = @($NrcApsCandidateBComparePath) + $ActionArgs
+        Invoke-Py -Arguments $candidateBCompareArgs
     }
     "gate-nrc-aps" {
         if (-not (Test-Path $NrcApsReplayGatePath)) {
