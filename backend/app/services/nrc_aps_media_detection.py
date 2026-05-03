@@ -17,6 +17,7 @@ APS_SUPPORTED_CONTENT_TYPES = {
     "image/jpeg",
     "image/png",
     "image/tiff",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 }
 APS_REFUSAL_CONTENT_TYPES = {
     "application/json",
@@ -25,7 +26,6 @@ APS_REFUSAL_CONTENT_TYPES = {
 }
 APS_TYPED_UNADMITTED_CONTENT_TYPES = {
     "application/vnd.ms-excel",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "application/vnd.ms-excel.sheet.macroenabled.12",
 }
 APS_CSV_CONTENT_TYPES = {
@@ -316,6 +316,23 @@ def resolve_effective_content_type(
             reason="declared_typed_parser_not_admitted",
             source_filename=source_filename,
         )
+
+    if extension_content_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" and sniffed in {"", "application/zip"}:
+        if declared in APS_GENERIC_CONTENT_TYPES or declared in {"application/zip", extension_content_type}:
+            return {
+                "declared_content_type": declared,
+                "sniffed_content_type": sniffed,
+                "effective_content_type": extension_content_type,
+                "media_detection_status": APS_MEDIA_DETECTION_STATUS_EXTENSION,
+                "media_detection_reason": "xlsx_extension_admitted_before_generic_zip",
+                "supported_for_processing": True,
+                **_diagnostic_fields(
+                    source_filename=source_filename,
+                    declared=declared,
+                    sniffed=sniffed,
+                    effective=extension_content_type,
+                ),
+            }
 
     if extension_content_type in APS_CSV_CONTENT_TYPES and sniffed in {"", "text/plain"}:
         if declared in APS_GENERIC_CONTENT_TYPES or declared in APS_CSV_CONTENT_TYPES or declared == "text/plain":

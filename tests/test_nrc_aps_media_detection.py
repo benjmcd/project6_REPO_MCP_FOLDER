@@ -1,8 +1,6 @@
 import os
 import sys
 from pathlib import Path
-from io import BytesIO
-import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,19 +16,11 @@ os.environ.setdefault("NRC_ADAMS_APS_SUBSCRIPTION_KEY", "test-nrc-key")
 os.environ.setdefault("NRC_ADAMS_APS_API_BASE_URL", "https://adams-api.nrc.gov")
 
 from app.services import nrc_aps_media_detection  # noqa: E402
+from support_nrc_aps_xlsx import build_xlsx_bytes  # noqa: E402
 
 
 def _fixture_bytes(name: str) -> bytes:
     return (FIXTURE_DIR / name).read_bytes()
-
-
-def _xlsx_bytes() -> bytes:
-    payload = BytesIO()
-    with zipfile.ZipFile(payload, "w") as archive:
-        archive.writestr("[Content_Types].xml", "<Types></Types>")
-        archive.writestr("xl/workbook.xml", "<workbook></workbook>")
-        archive.writestr("xl/worksheets/sheet1.xml", "<worksheet></worksheet>")
-    return payload.getvalue()
 
 
 def test_detect_media_type_sniffs_pdf_when_header_is_generic():
@@ -116,20 +106,20 @@ def test_detect_media_type_admits_csv_extension():
     assert result["supported_for_processing"] is True
 
 
-def test_detect_media_type_marks_xlsx_container_as_unadmitted_spreadsheet():
+def test_detect_media_type_admits_xlsx_container_as_spreadsheet():
     result = nrc_aps_media_detection.detect_media_type(
-        _xlsx_bytes(),
+        build_xlsx_bytes({"Observations": [["date", "value"], ["2026-01-01", 42]]}),
         declared_content_type="application/octet-stream",
     )
     assert result["sniffed_content_type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     assert result["signature_basis"] == "office_open_xml_package"
-    assert result["media_detection_status"] == nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_TYPED_UNADMITTED
-    assert result["media_detection_reason"] == "sniffed_typed_parser_not_admitted"
+    assert result["media_detection_status"] == nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_SNIFFED
+    assert result["media_detection_reason"] == "supported_type_sniffed_from_generic_or_missing_header"
     assert result["content_family"] == "spreadsheet"
-    assert result["supported_for_processing"] is False
+    assert result["supported_for_processing"] is True
 
 
-def test_detect_media_type_marks_xlsx_extension_as_unadmitted_before_generic_zip():
+def test_detect_media_type_admits_xlsx_extension_before_generic_zip():
     result = nrc_aps_media_detection.detect_media_type(
         b"PK\x03\x04not-a-complete-workbook",
         declared_content_type="application/zip",
@@ -138,7 +128,19 @@ def test_detect_media_type_marks_xlsx_extension_as_unadmitted_before_generic_zip
     assert result["source_filename"] == "workbook.xlsx"
     assert result["file_extension"] == ".xlsx"
     assert result["effective_content_type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    assert result["media_detection_status"] == nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_EXTENSION
+    assert result["media_detection_reason"] == "xlsx_extension_admitted_before_generic_zip"
+    assert result["content_family"] == "spreadsheet"
+    assert result["supported_for_processing"] is True
+
+
+def test_detect_media_type_keeps_xlsm_macro_workbook_unadmitted():
+    result = nrc_aps_media_detection.detect_media_type(
+        build_xlsx_bytes({"Observations": [["date", "value"], ["2026-01-01", 42]]}, macro=True),
+        declared_content_type="application/octet-stream",
+    )
+    assert result["sniffed_content_type"] == "application/vnd.ms-excel.sheet.macroenabled.12"
     assert result["media_detection_status"] == nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_TYPED_UNADMITTED
-    assert result["media_detection_reason"] == "extension_typed_parser_not_admitted"
+    assert result["media_detection_reason"] == "sniffed_typed_parser_not_admitted"
     assert result["content_family"] == "spreadsheet"
     assert result["supported_for_processing"] is False

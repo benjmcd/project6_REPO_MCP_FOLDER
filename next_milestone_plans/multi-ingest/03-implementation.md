@@ -71,7 +71,7 @@ Requirements:
 
 - Preserve current PDF/text/image/ZIP behavior where already proven.
 - Add file extension and original filename context to detection when available.
-- Detect Office Open XML containers such as `.xlsx` and refuse or classify them as spreadsheet pending parser admission.
+- Detect Office Open XML containers such as `.xlsx` and classify them as spreadsheet before generic ZIP handling.
 - Treat standalone CSV as candidate table, not generic qualitative text, only when a parser is admitted; before admission, report precise unsupported typed-table status.
 - Keep JSON/XML/HTML refused unless an admitted parser family is requested and available.
 - Record declared/sniffed/effective/media-family/parser-family diagnostics in artifact payloads.
@@ -84,7 +84,7 @@ Stop condition:
 Implemented boundary:
 
 - CSV declared/filename artifacts fail closed as `typed_content_type_not_admitted`.
-- XLS/XLSX/XLSM filename or OOXML package evidence fails closed as unadmitted spreadsheet.
+- XLS/XLSX/XLSM filename or OOXML package evidence is classified as spreadsheet before generic ZIP; `.xlsx` is now parser-admitted by Phase P7, while `.xls` and `.xlsm` remain unadmitted.
 - JSON/XML/HTML declared/sniffed/extension evidence is refused.
 - ZIP members with typed/refused extensions are recorded as member-level unadmitted/refused outcomes instead of flattened into text.
 - Existing PDF/text/image/generic-ZIP behavior is preserved.
@@ -318,6 +318,8 @@ Stop condition:
 - End-to-end test proves APS fixture CSV to dataset to Layer 3 selected-pass result/status/package preview or package construction, depending on selected tranche.
 
 ## Phase P7: Spreadsheet Parser
+
+Status: bounded implementation added for `.xlsx` after the CSV parser and dataset bridge patterns were proven. This does not admit `.xls`, `.xlsm`, encrypted workbooks, formula-bearing workbooks, arbitrary ranges, automatic connector finalization, schema changes, or new Layer 3 source semantics.
 
 Goal:
 

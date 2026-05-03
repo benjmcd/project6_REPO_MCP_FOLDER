@@ -19,6 +19,7 @@ os.environ.setdefault("NRC_ADAMS_APS_SUBSCRIPTION_KEY", "test-nrc-key")
 os.environ.setdefault("NRC_ADAMS_APS_API_BASE_URL", "https://adams-api.nrc.gov")
 
 from app.services import nrc_aps_artifact_ingestion  # noqa: E402
+from support_nrc_aps_xlsx import build_xlsx_bytes  # noqa: E402
 
 
 def _fixture_bytes(name: str) -> bytes:
@@ -115,6 +116,28 @@ def test_extract_and_normalize_preserves_csv_table_diagnostics():
     assert result["typed_content_contract_id"] == "aps_csv_table_units_v1"
     assert result["ordered_units"] == []
     assert result["table_diagnostics"]["row_count"] == 2
+    assert result["time_series_units"][0]["numeric_columns"] == ["value"]
+
+
+def test_extract_and_normalize_preserves_xlsx_workbook_diagnostics():
+    result = nrc_aps_artifact_ingestion.extract_and_normalize(
+        content=build_xlsx_bytes(
+            {
+                "Observations": [
+                    ["date", "value"],
+                    ["2026-01-01", 42],
+                    ["2026-01-02", 43],
+                ],
+            }
+        ),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+    assert result["effective_content_type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    assert result["parser_family"] == "xlsx_workbook"
+    assert result["typed_content_contract_id"] == "aps_xlsx_table_units_v1"
+    assert result["ordered_units"] == []
+    assert result["table_diagnostics"]["workbook_metadata"]["selected_sheet_name"] == "Observations"
     assert result["time_series_units"][0]["numeric_columns"] == ["value"]
 
 
