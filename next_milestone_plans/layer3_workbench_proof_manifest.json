@@ -1,15 +1,15 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main readiness proof plus merged selected-pass associated-cohort descriptive_summary handoff/export prepare-only implementation from PR #460 after PR #458 docs 92/93 governance",
+  "status": "current-main readiness proof plus branch-local selected-pass associated-cohort descriptive_summary handoff/export prepare UI projection/proof over PR #460 authority",
   "scope": {
-    "source_branch": "codex/l3-cohort-handoff-impl-p70",
+    "source_branch": "codex/l3-cohort-handoff-ui-freeze-p72",
     "merged_pr": "#460",
     "merge_commit": "8ca5e8dccc812b7ee42ae16f3f986a97ce3eb336",
     "base_remote": "project6-origin/main",
-    "base_commit": "8ca5e8dc",
-    "source_base_commit": "8ca5e8dccc812b7ee42ae16f3f986a97ce3eb336",
-    "purpose": "Record the selected-pass associated-cohort descriptive_summary chain through the merged docs 92/93 handoff/export prepare-only implementation while preserving downstream no-go boundaries.",
+    "base_commit": "57017a3e",
+    "source_base_commit": "57017a3e7b1bbb489501237ae17c623439e06edc",
+    "purpose": "Record the selected-pass associated-cohort descriptive_summary chain through PR #460 backend/API handoff/export prepare-only implementation and the branch-local rendered UI authority-projection proof while preserving downstream no-go boundaries.",
     "live_behavior_change": true,
     "live_behavior_change_summary": "PR #460 changes backend/API behavior only for exact associated-cohort handoff/export prepare-only admission. APS dispatch, external export/download, connector, schema/runtime/source, retry/recovery, pass-entry, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior remain out.",
     "latest_implementation_pr": "#460",
@@ -22,9 +22,9 @@
     "latest_planning_behavior_summary": "Docs 88/89 remain planning/control by themselves. PR #451 is the separate bounded implementation and still does not admit package-review submit, handoff/export, APS dispatch, external export/download, connector, schema/runtime/source, retry/recovery, pass-entry, broader UI, qualitative/hybrid/RAG/vector, or full mockup behavior.",
     "latest_implementation_merge_commit": "8ca5e8dccc812b7ee42ae16f3f986a97ce3eb336",
     "latest_planning_base_commit": "6f1a2ff41d12f1fa3df1d174f5b29e69813ac3fa",
-    "latest_branch_only_implementation_branch": "",
+    "latest_branch_only_implementation_branch": "codex/l3-cohort-handoff-ui-freeze-p72",
     "latest_branch_only_implementation_pr": "",
-    "latest_branch_only_implementation_summary": "No branch-only implementation remains for this package-construction tranche after PR #451 merged to current main.",
+    "latest_branch_only_implementation_summary": "Branch-local rendered /review/layer3 authority projection and focused headed/headless proof for existing handoff/export prepare controls over PR #460 associated-cohort server readiness; no backend/API or downstream behavior change.",
     "latest_ui_planning_pr": "#441",
     "latest_ui_planning_branch": "codex/l3-cohort-result-review-ui-freeze-p51",
     "latest_ui_planning_summary": "PR #441 lands docs 84/85 as planning-only rendered /review/layer3 associated-cohort result-review UI governance over exact PR #432 selected-pass execution-start/result/status authority and PR #438 backend/API result-review authority.",
@@ -2803,6 +2803,38 @@
       "git diff --check -> passed with CRLF warnings only",
       "GitHub PR #460 checks backend-layer3-api and test -> success",
       "post-merge smoke: python -m pytest .\\backend\\tests\\test_layer3_api.py -k \"selected_cohort_execution_start_and_status_are_bounded or handoff_export_prepare\" -> 9 passed, 62 deselected"
+    ]
+  },
+  "descriptive_summary_selected_pass_cohort_handoff_export_prepare_ui_projection_proof": {
+    "implementation_branch": "codex/l3-cohort-handoff-ui-freeze-p72",
+    "base_commit": "57017a3e",
+    "scope": "Branch-local rendered /review/layer3 associated-cohort handoff/export prepare authority projection and proof over PR #460 backend/API prepare-only state.",
+    "files_changed": [
+      "backend/app/review_ui/static/layer3.js",
+      "e2e/layer3-workbench.spec.js",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_refresh_spec.md",
+      "next_milestone_plans/progress-prompt.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md"
+    ],
+    "live_behavior_change": true,
+    "authority_basis": [
+      "PR #460 is the current-main backend/API authority for associated-cohort handoff/export prepare-only state.",
+      "The existing rendered handoff/export prepare controls from the workbench path use server-authoritative session summary readiness.",
+      "This branch adds read-only pass/method/source-gate/package-source-gate projection and focused browser proof before treating the associated-cohort rendered path as settled."
+    ],
+    "no_go_preserved": [
+      "no new backend/API endpoint or behavior",
+      "no APS dispatch, external export/download, connector dispatch, or generic downstream dispatch",
+      "no schema/runtime/source/model/migration widening",
+      "no package payload copy, rewrite, reconstruction, or package row mutation",
+      "no pass-entry changes, retry/recovery, broader UI, qualitative/hybrid/RAG/vector, or full mockup behavior"
+    ],
+    "verification": [
+      "npx playwright test e2e/layer3-workbench.spec.js --project=chromium --grep \"records bounded associated-cohort\" -> 1 passed",
+      "$env:HEADED=\"1\"; npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed --grep \"records bounded associated-cohort\" -> 1 passed"
     ]
   }
 }
