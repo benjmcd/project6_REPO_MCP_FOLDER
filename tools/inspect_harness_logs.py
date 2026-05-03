@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,6 +17,11 @@ DEFAULT_GLOBS = (
     "test-results/**/*.log",
     "playwright-report/**/*.log",
 )
+LOCAL_PATH_TOKEN_CHARS = r"""(?:[^\s"'<>|)]+|\s+(?=[^\r\n"'<>|)]*[\\/]))+"""
+WINDOWS_PATH_PATTERN = r"[A-Za-z]:[\\/]" + LOCAL_PATH_TOKEN_CHARS
+POSIX_USER_PATH_PATTERN = "/" + r"(?:Users|home)" + "/" + LOCAL_PATH_TOKEN_CHARS
+FILE_URI_PATTERN = "file:" + "/" * 3 + LOCAL_PATH_TOKEN_CHARS
+LOCAL_PATH_RE = re.compile(f"(?:{WINDOWS_PATH_PATTERN}|{POSIX_USER_PATH_PATTERN}|{FILE_URI_PATTERN})")
 
 
 @dataclass(frozen=True)
@@ -68,6 +74,10 @@ def _read_tail(path: Path, limit: int, contains: str | None) -> list[str]:
     return lines[-limit:] if limit > 0 else []
 
 
+def _redact_local_paths(line: str) -> str:
+    return LOCAL_PATH_RE.sub("<LOCAL_PATH>", line)
+
+
 def inspect_logs(root: Path, extra_paths: Iterable[str], tail: int, contains: str | None) -> list[LogSummary]:
     summaries: list[LogSummary] = []
     for path in _candidate_paths(root, extra_paths):
@@ -76,6 +86,7 @@ def inspect_logs(root: Path, extra_paths: Iterable[str], tail: int, contains: st
         lines = _read_tail(path, tail, contains)
         if contains and not lines:
             continue
+        lines = [_redact_local_paths(line) for line in lines]
         summaries.append(
             LogSummary(
                 path=rel_path,
