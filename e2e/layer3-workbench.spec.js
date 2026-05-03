@@ -1563,12 +1563,91 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
     ],
     next_state: 'package_review_approved',
   };
+  const handoffReadyState = {
+    schema_id: 'layer3.handoff_export_prepare_state.v1',
+    available: true,
+    state: 'handoff_export_ready',
+    blocked_reason: null,
+    analysis_run_id: analysisRunId,
+    result_review_record_ref: reviewResponse.review_record_ref,
+    package_review_preview_hash: packagePreviewResponse.package_review_preview_hash,
+    reconciliation_record_id: packageCommitResponse.reconciliation_record_id,
+    output_package_ids: packageCommitResponse.output_packages.map((pkg) => pkg.output_package_id),
+    package_kinds: packageCommitResponse.package_kinds,
+    payload_refs: packageCommitResponse.payload_refs,
+    payload_hashes: packageCommitResponse.payload_hashes,
+    package_review_submit_record_ref: packageSubmitResponse.submit_record_ref,
+    package_review_state: 'package_review_approved',
+    pass_type: 'associated_cohort',
+    pass_scope: 'quantitative_associated_cohort_dataset_version',
+    method: 'descriptive_summary',
+    source_gate: '78_COHORT_FREEZE',
+    package_construction_source_gate: '88_COHORT_PACKAGE_CONSTRUCTION_FREEZE',
+    source_shape: 'aligned_wide_table',
+    source_dataset_version_ids: ['dv-cohort-001', 'dv-cohort-002'],
+    handoff_export_prepare_enabled: true,
+    external_handoff_enabled: false,
+    external_export_enabled: false,
+    dispatch_enabled: false,
+    downstream_unavailable: ['aps_handoff', 'external_export', 'downstream_dispatch'],
+  };
+  const handoffPrepareResponse = {
+    schema_id: 'layer3.cohort_handoff_export_prepare.v1',
+    status: 'prepared',
+    session_id: sessionId,
+    analysis_plan_id: analysisPlanId,
+    pass_run_id: passRunId,
+    preview_identity: {
+      preview_id: previewId,
+      preview_hash: previewHash,
+    },
+    analysis_run_id: analysisRunId,
+    result_review_record_ref: reviewResponse.review_record_ref,
+    package_review_preview_hash: packagePreviewResponse.package_review_preview_hash,
+    reconciliation_record_id: packageCommitResponse.reconciliation_record_id,
+    output_package_ids: packageCommitResponse.output_packages.map((pkg) => pkg.output_package_id),
+    package_kinds: packageCommitResponse.package_kinds,
+    payload_refs: packageCommitResponse.payload_refs,
+    payload_hashes: packageCommitResponse.payload_hashes,
+    package_review_submit_record_ref: packageSubmitResponse.submit_record_ref,
+    package_review_state: 'package_review_approved',
+    operator_decision: 'authorize_prepare',
+    decision_notes: null,
+    handoff_export_state: 'handoff_export_prepared',
+    handoff_target: 'internal_export_envelope',
+    export_mode: 'prepare_only',
+    external_handoff_enabled: false,
+    external_export_enabled: false,
+    dispatch_enabled: false,
+    downstream_unavailable: ['aps_handoff', 'external_export', 'downstream_dispatch'],
+    next_state: 'handoff_export_prepared',
+    prepare_record_ref: 'prepare-cohort-ui',
+    pass_type: 'associated_cohort',
+    pass_scope: 'quantitative_associated_cohort_dataset_version',
+    method: 'descriptive_summary',
+    source_gate: '78_COHORT_FREEZE',
+    package_construction_source_gate: '88_COHORT_PACKAGE_CONSTRUCTION_FREEZE',
+    source_shape: 'aligned_wide_table',
+    source_dataset_version_ids: ['dv-cohort-001', 'dv-cohort-002'],
+    package_review_submit_schema_id: 'layer3.cohort_package_review_submit.v1',
+    handoff_export_envelope: {
+      schema_id: 'layer3.handoff_export_envelope.v1',
+      envelope_ref: 'envelope-cohort-ui',
+      package_review_submit_record_ref: packageSubmitResponse.submit_record_ref,
+      reconciliation_record_id: packageCommitResponse.reconciliation_record_id,
+      output_package_ids: packageCommitResponse.output_packages.map((pkg) => pkg.output_package_id),
+      payload_refs: packageCommitResponse.payload_refs,
+      payload_hashes: packageCommitResponse.payload_hashes,
+    },
+  };
   let reviewPayload;
   let packagePreviewPayload;
   let packageCommitPayload;
   let packageSubmitPayload;
+  let handoffPreparePayload;
   let packageCommitted = false;
   let packageSubmitted = false;
+  let handoffPrepared = false;
   await page.route('**/api/v1/layer3/execution/result/review', async (route) => {
     reviewPayload = route.request().postDataJSON();
     await route.fulfill({
@@ -1601,6 +1680,15 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(packageSubmitResponse),
+    });
+  });
+  await page.route('**/api/v1/layer3/handoff/export/prepare', async (route) => {
+    handoffPreparePayload = route.request().postDataJSON();
+    handoffPrepared = true;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(handoffPrepareResponse),
     });
   });
   await page.route(`**/api/v1/layer3/session/${sessionId}`, async (route) => {
@@ -1686,9 +1774,37 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
             },
         downstream_unavailable: packageCommitted
           ? packageSubmitted
-            ? packageSubmitResponse.downstream_unavailable
+            ? ['aps_handoff', 'external_export', 'downstream_dispatch']
             : packageCommitResponse.downstream_unavailable
           : ['package_review_submit', 'handoff', 'export'],
+        handoff_export_prepare: packageSubmitted
+          ? handoffPrepared
+            ? handoffPrepareResponse
+            : handoffReadyState
+          : {
+              schema_id: 'layer3.handoff_export_prepare_state.v1',
+              available: false,
+              state: 'handoff_export_unavailable',
+              blocked_reason: 'approved_package_review_submit_required',
+              handoff_export_prepare_enabled: false,
+              external_handoff_enabled: false,
+              external_export_enabled: false,
+              dispatch_enabled: false,
+              downstream_unavailable: ['handoff', 'export'],
+            },
+        aps_handoff_dispatch: {
+          schema_id: 'layer3.aps_handoff_dispatch_state.v1',
+          available: false,
+          state: 'aps_handoff_unavailable',
+          blocked_reason: handoffPrepared
+            ? 'associated_cohort_aps_handoff_dispatch_not_admitted'
+            : 'handoff_export_prepared_required',
+          aps_handoff_enabled: false,
+          external_export_enabled: false,
+          download_enabled: false,
+          connector_dispatch_enabled: false,
+          downstream_unavailable: ['aps_handoff', 'external_export', 'downstream_dispatch'],
+        },
         execution_result_review: {
           schema_id: 'layer3.execution_result_review_state.v1',
           review_record_ref: reviewResponse.review_record_ref,
@@ -1868,10 +1984,76 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
 
   await expect(page.locator('#package-review-preview-panel')).toContainText('package_review_approved');
   await expect(page.locator('#package-review-submit')).toBeDisabled();
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('handoff_export_ready');
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('associated_cohort');
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('descriptive_summary');
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('internal_export_envelope');
+  await expect(page.locator('#handoff-export-prepare-submit')).toBeEnabled();
+
+  const handoffPrepareResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/handoff/export/prepare'));
+  const postHandoffSummaryPromise = page.waitForResponse((response) => response.url().includes(`/api/v1/layer3/session/${sessionId}`));
+  await page.locator('#handoff-export-prepare-submit').click();
+  const handoffPrepare = await expectJson(await handoffPrepareResponsePromise);
+  expect(handoffPrepare.schema_id).toBe('layer3.cohort_handoff_export_prepare.v1');
+  expect(handoffPrepare.handoff_export_state).toBe('handoff_export_prepared');
+  expect(handoffPrepare.pass_type).toBe('associated_cohort');
+  expect(handoffPrepare.package_construction_source_gate).toBe('88_COHORT_PACKAGE_CONSTRUCTION_FREEZE');
+  expect(handoffPrepare.downstream_unavailable).toEqual(['aps_handoff', 'external_export', 'downstream_dispatch']);
+  expectOnlyPayloadKeys(handoffPreparePayload, [
+    'client_request_id',
+    'session_id',
+    'analysis_plan_id',
+    'pass_run_id',
+    'preview_id',
+    'preview_hash',
+    'result_review_record_ref',
+    'package_review_preview_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'payload_refs',
+    'payload_hashes',
+    'package_review_submit_record_ref',
+    'package_review_state',
+    'handoff_target',
+    'export_mode',
+    'operator_decision',
+    'expected_package_kinds',
+    'analysis_run_id',
+  ]);
+  expect(handoffPreparePayload.package_review_state).toBe('package_review_approved');
+  expect(handoffPreparePayload.handoff_target).toBe('internal_export_envelope');
+  expect(handoffPreparePayload.export_mode).toBe('prepare_only');
+  expect(handoffPreparePayload.operator_decision).toBe('authorize_prepare');
+  expect(handoffPreparePayload.output_package_ids.sort()).toEqual(packageCommit.output_packages.map((pkg) => pkg.output_package_id).sort());
+  expect(handoffPreparePayload.payload_refs).toEqual(packageCommit.payload_refs);
+  expect(handoffPreparePayload.payload_hashes).toEqual(packageCommit.payload_hashes);
+  for (const forbidden of [
+    'aps_handoff',
+    'dispatch',
+    'send',
+    'external_export',
+    'download',
+    'connector_run_id',
+    'runtime_db_write',
+    'analysis_artifact',
+    'artifact_manifest',
+    'create_package',
+    'rebuild_package',
+    'package_payload',
+    'rewrite_output',
+  ]) {
+    expect(handoffPreparePayload).not.toHaveProperty(forbidden);
+  }
+  await expectJson(await postHandoffSummaryPromise);
+
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('handoff_export_prepared');
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('prepare-cohort-ui');
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('aps handoff');
+  await expect(page.locator('#handoff-export-prepare-panel')).toContainText('external export');
   await expect(page.locator('#handoff-export-prepare-submit')).toBeDisabled();
   await expect(page.locator('#aps-handoff-dispatch-submit')).toBeDisabled();
   await expect(page.locator('#external-export-download-prepare-submit')).toBeDisabled();
-  await expectStepAvailable(page, 'package');
+  await expectStepAvailable(page, 'handoff');
 });
 
 test('Layer 3 workbench blocks associated-cohort result review when provenance is incomplete', async ({ page }) => {
