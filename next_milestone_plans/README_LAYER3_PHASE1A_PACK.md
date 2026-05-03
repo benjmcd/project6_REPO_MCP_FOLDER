@@ -1233,7 +1233,7 @@ Read docs `100`/`101` as current-main PR `#485` planning/control and PR `#487` i
 - the generic delivery form and same-origin attachment submission path already exist from PR `#282`/`#285`/`#286`
 - associated-cohort activation uses PR `#487`'s explicit server-authoritative `delivery_ui` gate because PR `#483` proved backend/API delivery only
 - `browser_download_enabled` remains `false`; if `delivery_ui` is absent or unavailable, associated-cohort delivery must render unavailable
-- PR `#487` proved headed and headless browser behavior for the explicit gate before treating associated-cohort rendered delivery as live
+- PR `#487` proved headed and headless browser behavior for the explicit gate before treating associated-cohort rendered delivery as live, and PR `#488` synced the progress/control surfaces afterward
 - URLs, connectors, destinations, package mutation, schema/runtime/source widening, broader UI, and full mockup behavior remain out
 
 ### If you are auditing the Layer 3 workbench APS handoff dispatch freeze
