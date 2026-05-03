@@ -973,12 +973,25 @@ def _stable_id(prefix: str, payload: Any) -> str:
 
 
 EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_TTL_SECONDS = 300
-_SIGNED_REFERENCE_CONFIGURED_SECRET = os.environ.get("LAYER3_SIGNED_REFERENCE_SECRET", "").strip().encode("utf-8")
-_SIGNED_REFERENCE_PROCESS_KEY = (
-    hashlib.sha256(_SIGNED_REFERENCE_CONFIGURED_SECRET).digest()
-    if _SIGNED_REFERENCE_CONFIGURED_SECRET
-    else os.urandom(32)
-)
+SIGNED_REFERENCE_SECRET_ENV_VAR = "LAYER3_SIGNED_REFERENCE_SECRET"
+
+
+def _signed_reference_configured_secret() -> bytes:
+    return os.environ.get(SIGNED_REFERENCE_SECRET_ENV_VAR, "").strip().encode("utf-8")
+
+
+def _signed_reference_signing_key() -> bytes:
+    configured_secret = _signed_reference_configured_secret()
+    if not configured_secret:
+        raise Layer3WorkbenchError(
+            "external_export_download_signed_reference_secret_required",
+            "LAYER3_SIGNED_REFERENCE_SECRET is required for signed external export/download delivery references.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=[SIGNED_REFERENCE_SECRET_ENV_VAR],
+            next_allowed_actions=["configure_layer3_signed_reference_secret"],
+        )
+    return hashlib.sha256(configured_secret).digest()
 
 
 def _epoch_iso(epoch_seconds: int) -> str:
@@ -9462,7 +9475,7 @@ def _signed_reference_token_body(
 
 def _encode_signed_reference_token(body: dict[str, Any]) -> str:
     encoded_body = _canonical_json_bytes(body)
-    signature = hmac.digest(_SIGNED_REFERENCE_PROCESS_KEY, encoded_body, "sha256").hex()
+    signature = hmac.digest(_signed_reference_signing_key(), encoded_body, "sha256").hex()
     return f"{_urlsafe_b64encode(encoded_body)}.{signature}"
 
 
@@ -9477,7 +9490,7 @@ def _decode_signed_reference_token(token: str) -> dict[str, Any]:
             status="invalid",
             blocked_fields=["signed_reference_token"],
         ) from exc
-    expected_signature = hmac.digest(_SIGNED_REFERENCE_PROCESS_KEY, body_bytes, "sha256").hex()
+    expected_signature = hmac.digest(_signed_reference_signing_key(), body_bytes, "sha256").hex()
     if not hmac.compare_digest(supplied_signature, expected_signature):
         raise Layer3WorkbenchError(
             "external_export_download_signed_reference_signature_mismatch",
@@ -9557,8 +9570,8 @@ def _delivery_response_from_signed_reference(
             "expires_within_seconds": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_TTL_SECONDS,
             "revalidated_at_generation": True,
             "revalidate_at_use_required": True,
-            "configured_secret_present": bool(_SIGNED_REFERENCE_CONFIGURED_SECRET),
-            "process_restart_invalidates_existing_tokens": not bool(_SIGNED_REFERENCE_CONFIGURED_SECRET),
+            "configured_secret_present": True,
+            "process_restart_invalidates_existing_tokens": False,
         },
         "next_state": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_DELIVERED_STATE,
     }
@@ -9579,6 +9592,7 @@ def external_export_download_generate_signed_reference(
             blocked_fields=["client_request_id"],
             next_allowed_actions=["submit_idempotent_external_export_download_signed_reference_request"],
         )
+    _signed_reference_signing_key()
     delivery = external_export_download_deliver(db, payload)
     blocked = _signed_reference_required_cohort_authority(delivery.authority)
     if blocked:
@@ -9627,6 +9641,7 @@ def external_export_download_use_signed_reference(
             blocked_fields=extra_fields,
             next_allowed_actions=["submit_signed_reference_token_only"],
         )
+    _signed_reference_signing_key()
     token_body = _decode_signed_reference_token(token)
     if token_body.get("schema_id") != EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_SCHEMA_ID:
         raise Layer3WorkbenchError(

@@ -11,16 +11,16 @@
     "source_base_commit": "144a32cd",
     "purpose": "Record PR #499 current-main bounded backend/API same-origin signed delivery-reference generation/use after PR #497 docs 102/103 governance, PR #483 same-origin delivery, and PR #487 rendered delivery UI gate authority.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "PR #499 implements only backend/API same-origin signed-reference generation/use through dedicated POST endpoints. It adds no public/provider URLs, rendered signed URL controls, connector/generic dispatch, destination selection, package mutation, durable token/receipt/audit/revocation state, schema/runtime/source widening, broader UI, or full mockup behavior.",
-    "latest_implementation_pr": "#479",
-    "latest_implementation_branch": "codex/l3-cohort-export-ready-impl-p13",
-    "latest_implementation_summary": "PR #479 implements docs 96/97: exact selected-pass associated-cohort descriptive_summary APS dispatch authority can record one reference-only external export/download readiness object through the existing prepare route, with delivery and connector/generic downstream dispatch still disabled.",
+    "live_behavior_change_summary": "PR #499 implements only backend/API same-origin signed-reference generation/use through dedicated POST endpoints; post-review hardening requires LAYER3_SIGNED_REFERENCE_SECRET before generation/use so process-local tokens are not emitted. It adds no public/provider URLs, rendered signed URL controls, connector/generic dispatch, destination selection, package mutation, durable token/receipt/audit/revocation state, schema/runtime/source widening, broader UI, or full mockup behavior.",
+    "latest_implementation_pr": "#499",
+    "latest_implementation_branch": "codex/l3-signed-url-impl-p34",
+    "latest_implementation_summary": "PR #499 implements same-origin signed-reference generation/use with HMAC references, 300-second TTL, generation/use revalidation, no row/file creation, and existing delivery preservation; post-review hardening requires configured LAYER3_SIGNED_REFERENCE_SECRET before generation/use.",
     "latest_planning_pr": "#497",
     "latest_planning_branch": "codex/l3-signed-url-freeze-p32",
     "latest_planning_summary": "Docs 102/103 define current-main planning/control governance for the signed delivery-reference boundary; they remain non-implementing by themselves.",
     "latest_planning_live_behavior_change": false,
     "latest_planning_behavior_summary": "Docs 102/103 remain planning/control by themselves; PR #499 is the separate bounded backend/API implementation authority.",
-    "latest_implementation_merge_commit": "7fdcf8ca5ab0acac26fdbfafc67335490d569ba6",
+    "latest_implementation_merge_commit": "b784ddd52e9316996f89f32c93ab9618dc100cea",
     "latest_planning_base_commit": "aedf65a452aeeea85e251727ff623d3012213652",
     "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
@@ -231,7 +231,7 @@
     "latest_signed_reference_implementation_pr": "#499",
     "latest_signed_reference_implementation_branch": "codex/l3-signed-url-impl-p34",
     "latest_signed_reference_implementation_merge_commit": "b784ddd52e9316996f89f32c93ab9618dc100cea",
-    "latest_signed_reference_implementation_summary": "PR #499 implements same-origin signed-reference generation/use with HMAC references, 300-second TTL, generation/use revalidation, no row/file creation, and existing delivery preservation."
+    "latest_signed_reference_implementation_summary": "PR #499 implements same-origin signed-reference generation/use with HMAC references, 300-second TTL, generation/use revalidation, no row/file creation, and existing delivery preservation; post-review hardening requires configured LAYER3_SIGNED_REFERENCE_SECRET before generation/use."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -3260,7 +3260,7 @@
     "implementation_pr": "#499",
     "base_commit": "144a32cd",
     "merge_commit": "b784ddd52e9316996f89f32c93ab9618dc100cea",
-    "scope": "Bounded backend/API same-origin signed delivery-reference generation/use over docs 102/103 governance, PR #483 delivery authority, and PR #487 rendered delivery gate authority. The implementation adds only POST /api/v1/layer3/handoff/export/download/signed-reference/generate and POST /api/v1/layer3/handoff/export/download/signed-reference/use with server-owned HMAC references, 300-second TTL, current authority revalidation, and no row/file creation.",
+    "scope": "Bounded backend/API same-origin signed delivery-reference generation/use over docs 102/103 governance, PR #483 delivery authority, and PR #487 rendered delivery gate authority. The implementation adds only POST /api/v1/layer3/handoff/export/download/signed-reference/generate and POST /api/v1/layer3/handoff/export/download/signed-reference/use with server-owned HMAC references, 300-second TTL, current authority revalidation, and no row/file creation; post-review hardening requires configured LAYER3_SIGNED_REFERENCE_SECRET before generation/use.",
     "files_changed": [
       "backend/app/api/layer3.py",
       "backend/app/services/layer3_workbench.py",
@@ -3278,6 +3278,10 @@
       {
         "command": "git diff --check",
         "result": "passed before PR #499 merge with expected LF-to-CRLF warnings on edited text files"
+      },
+      {
+        "command": "python -m pytest ./backend/tests/test_layer3_api.py -q -k \"external_export_download\"",
+        "result": "6 passed, 67 deselected, 4 warnings on corrective branch before merge; pytest emitted a non-failing Windows temp cleanup PermissionError after exit code 0"
       }
     ],
     "no_go_preserved": [
