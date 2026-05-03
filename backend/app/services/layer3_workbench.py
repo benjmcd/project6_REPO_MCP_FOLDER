@@ -107,8 +107,10 @@ PACKAGE_REVIEW_PREVIEW_STATE_SCHEMA_ID = "layer3.package_review_preview_state.v1
 PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID = "layer3.package_construction_commit.v1"
 PACKAGE_CONSTRUCTION_COMMIT_STATE_SCHEMA_ID = "layer3.package_construction_commit_state.v1"
 PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.package_review_submit.v1"
+COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID = "layer3.cohort_package_review_submit.v1"
 PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID = "layer3.package_review_submit_state.v1"
 HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.handoff_export_prepare.v1"
+COHORT_HANDOFF_EXPORT_PREPARE_SCHEMA_ID = "layer3.cohort_handoff_export_prepare.v1"
 HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID = "layer3.handoff_export_prepare_state.v1"
 APS_HANDOFF_DISPATCH_SCHEMA_ID = "layer3.aps_handoff_dispatch.v1"
 APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID = "layer3.aps_handoff_dispatch_state.v1"
@@ -4836,7 +4838,7 @@ def _package_review_submit_response(
         ),
     }
     if associated_cohort_submit:
-        body["schema_id"] = "layer3.cohort_package_review_submit.v1"
+        body["schema_id"] = COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
     return body
 
 
@@ -4896,6 +4898,21 @@ def _handoff_export_prepare_response(
     envelope = prepare_state.get("handoff_export_envelope")
     if isinstance(envelope, dict):
         body["handoff_export_envelope"] = envelope
+    if _is_cohort_package_construction_source(prepare_state.get("package_construction_source_gate")):
+        body["schema_id"] = COHORT_HANDOFF_EXPORT_PREPARE_SCHEMA_ID
+        body["package_review_submit_schema_id"] = COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    for key in (
+        "pass_type",
+        "pass_scope",
+        "method",
+        "source_gate",
+        "package_construction_source_gate",
+        "source_shape",
+        "source_dataset_version_ids",
+        "package_review_submit_schema_id",
+    ):
+        if key in prepare_state:
+            body[key] = _json_clone(prepare_state[key])
     return body
 
 
@@ -6567,11 +6584,6 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             next_allowed_actions=["inspect_execution_result_status"],
         )
-    _ensure_result_status_downstream_source_admitted(
-        status_body,
-        error_code="associated_cohort_handoff_export_prepare_not_admitted",
-        action_label="Handoff/export preparation",
-    )
     output_metadata_summary = status_body.get("output_metadata_summary")
     if not isinstance(output_metadata_summary, dict) or output_metadata_summary.get("readable") is not True:
         raise Layer3WorkbenchError(
@@ -6608,6 +6620,24 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    associated_cohort_prepare = False
+    if status_body.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT:
+        associated_cohort_prepare = _associated_cohort_result_source_admitted(
+            status_body=status_body,
+            pass_run=pass_run,
+            output_metadata_summary=output_metadata_summary,
+        )
+        if not associated_cohort_prepare:
+            raise Layer3WorkbenchError(
+                "associated_cohort_handoff_export_prepare_not_admitted",
+                (
+                    "Handoff/export preparation is admitted only for exact selected-pass descriptive "
+                    "associated-cohort result/status output in this tranche."
+                ),
+                status="blocked",
+                http_status=409,
+                next_allowed_actions=["inspect_execution_result_status"],
+            )
     if reconciliation is None:
         raise Layer3WorkbenchError(
             "handoff_export_prepare_requires_package_construction",
@@ -6794,6 +6824,23 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             next_allowed_actions=["inspect_existing_package_state"],
         )
+    package_construction_source_gate = str(reconciliation_summary.get("source_gate") or "")
+    if associated_cohort_prepare and package_construction_source_gate != SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE:
+        raise Layer3WorkbenchError(
+            "handoff_export_prepare_construction_source_gate_mismatch",
+            "Associated-cohort handoff/export preparation requires cohort package-construction authority from docs 88/89.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
+    if not associated_cohort_prepare and package_construction_source_gate == SOURCE_WORKBENCH_COHORT_PACKAGE_CONSTRUCTION_FREEZE:
+        raise Layer3WorkbenchError(
+            "handoff_export_prepare_construction_source_gate_mismatch",
+            "Single-item handoff/export preparation cannot use associated-cohort package-construction authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
     commit_mismatches = [
         field
         for field, expected in {
@@ -6850,6 +6897,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "result_review_record_ref": supplied_review_ref,
             "package_review_preview_hash": supplied_package_preview_hash,
             "reconciliation_record_id": reconciliation_record_id,
+            "package_construction_source_gate": package_construction_source_gate,
         }.items()
         if str(package_review_submit.get(field) or "") != str(expected or "")
     ]
@@ -6859,6 +6907,23 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         submit_mismatches.append("package_kinds")
     if list(package_review_submit.get("payload_hashes") or []) != canonical_payload_hashes:
         submit_mismatches.append("payload_hashes")
+    if associated_cohort_prepare:
+        cohort_submit_expectations = {
+            "pass_type": PASS_TYPE_ASSOCIATED_COHORT,
+            "pass_scope": PASS_SCOPE_QUANT_ASSOCIATED_COHORT,
+            "method": "descriptive_summary",
+            "source_gate": SOURCE_GATE_COHORT_DESC_FREEZE,
+            "source_shape": COHORT_SHAPE_ALIGNED_WIDE_TABLE,
+        }
+        submit_mismatches.extend(
+            field
+            for field, expected in cohort_submit_expectations.items()
+            if str(package_review_submit.get(field) or "") != expected
+        )
+        if list(package_review_submit.get("source_dataset_version_ids") or []) != list(
+            output_metadata_summary.get("source_dataset_version_ids") or []
+        ):
+            submit_mismatches.append("source_dataset_version_ids")
     if submit_mismatches:
         raise Layer3WorkbenchError(
             "handoff_export_prepare_package_review_submit_mismatch",
@@ -6889,7 +6954,16 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         "export_mode": "prepare_only",
         "operator_decision": operator_decision,
         "decision_notes": decision_notes or None,
+        "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_prepare else pass_run.pass_type,
+        "pass_scope": output_metadata_summary.get("pass_scope"),
+        "method": output_metadata_summary.get("selected_method_name"),
+        "source_gate": output_metadata_summary.get("source_gate"),
+        "package_construction_source_gate": package_construction_source_gate,
+        "source_shape": output_metadata_summary.get("cohort_shape"),
+        "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
     }
+    if associated_cohort_prepare:
+        preparation_basis["package_review_submit_schema_id"] = COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
     prepare_record_ref = _stable_id("l3-handoff-export-prepare", preparation_basis)
     if existing_prepare is not None:
         if existing_prepare.get("prepare_record_ref") == prepare_record_ref:
@@ -6940,12 +7014,21 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "package_kinds": [package.package_kind for package in ordered_packages],
             "payload_refs": canonical_payload_refs,
             "payload_hashes": canonical_payload_hashes,
+            "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_prepare else pass_run.pass_type,
+            "pass_scope": output_metadata_summary.get("pass_scope"),
+            "method": output_metadata_summary.get("selected_method_name"),
+            "source_gate": output_metadata_summary.get("source_gate"),
+            "package_construction_source_gate": package_construction_source_gate,
+            "source_shape": output_metadata_summary.get("cohort_shape"),
+            "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
             "prepared_at": recorded_at,
             "external_handoff_enabled": False,
             "external_export_enabled": False,
             "dispatch_enabled": False,
             "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
         }
+        if associated_cohort_prepare:
+            envelope["package_review_submit_schema_id"] = COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
     prepare_state = {
         "schema_id": HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID,
         "client_request_id": request_id,
@@ -6970,12 +7053,21 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         "package_kinds": [package.package_kind for package in ordered_packages],
         "payload_refs": canonical_payload_refs,
         "payload_hashes": canonical_payload_hashes,
+        "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_prepare else pass_run.pass_type,
+        "pass_scope": output_metadata_summary.get("pass_scope"),
+        "method": output_metadata_summary.get("selected_method_name"),
+        "source_gate": output_metadata_summary.get("source_gate"),
+        "package_construction_source_gate": package_construction_source_gate,
+        "source_shape": output_metadata_summary.get("cohort_shape"),
+        "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
         "recorded_at": recorded_at,
         "external_handoff_enabled": False,
         "external_export_enabled": False,
         "dispatch_enabled": False,
         "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
     }
+    if associated_cohort_prepare:
+        prepare_state["package_review_submit_schema_id"] = COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
     if envelope is not None:
         prepare_state["handoff_export_envelope"] = envelope
 
@@ -6997,6 +7089,13 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "reconciliation_record_id": reconciliation_record_id,
             "output_package_ids": expected_package_ids,
             "package_kinds": [package.package_kind for package in ordered_packages],
+            "pass_type": PASS_TYPE_ASSOCIATED_COHORT if associated_cohort_prepare else pass_run.pass_type,
+            "pass_scope": output_metadata_summary.get("pass_scope"),
+            "method": output_metadata_summary.get("selected_method_name"),
+            "source_gate": output_metadata_summary.get("source_gate"),
+            "package_construction_source_gate": package_construction_source_gate,
+            "source_shape": output_metadata_summary.get("cohort_shape"),
+            "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
             "external_handoff_enabled": False,
             "external_export_enabled": False,
             "dispatch_enabled": False,
@@ -9086,31 +9185,10 @@ def _handoff_export_prepare_summary(
     reconciliation_summary = reconciliation.summary_json if reconciliation is not None else {}
     if not isinstance(reconciliation_summary, dict):
         reconciliation_summary = {}
-    if _is_cohort_package_construction_source(
+    package_construction_source_gate = (
         package_review_submit_state.get("package_construction_source_gate")
         or reconciliation_summary.get("source_gate")
-    ):
-        return {
-            "schema_id": HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID,
-            "available": False,
-            "state": HANDOFF_EXPORT_UNAVAILABLE_STATE,
-            "blocked_reason": "handoff_export_deferred_for_associated_cohort_package_review_submit",
-            "analysis_run_id": package_review_submit_state.get("analysis_run_id"),
-            "result_review_record_ref": package_review_submit_state.get("result_review_record_ref"),
-            "package_review_preview_hash": package_review_submit_state.get("package_review_preview_hash"),
-            "reconciliation_record_id": reconciliation_record_id,
-            "output_package_ids": [package.output_package_id for package in ordered_packages],
-            "package_kinds": [package.package_kind for package in ordered_packages],
-            "payload_refs": [package.payload_ref for package in ordered_packages],
-            "payload_hashes": [package.payload_hash for package in ordered_packages],
-            "package_review_submit_record_ref": submit_record_ref,
-            "package_review_state": package_review_submit_state.get("state"),
-            "handoff_export_prepare_enabled": False,
-            "external_handoff_enabled": False,
-            "external_export_enabled": False,
-            "dispatch_enabled": False,
-            "downstream_unavailable": list(COHORT_PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
-        }
+    )
     recorded_prepare = _handoff_export_prepare_from_reconciliation(reconciliation)
     if recorded_prepare is not None:
         recorded_envelope = recorded_prepare.get("handoff_export_envelope")
@@ -9144,6 +9222,20 @@ def _handoff_export_prepare_summary(
             "payload_hashes": [package.payload_hash for package in ordered_packages],
             "package_review_submit_record_ref": submit_record_ref,
             "package_review_state": package_review_submit_state.get("state"),
+            "pass_type": recorded_prepare.get("pass_type") or package_review_submit_state.get("pass_type"),
+            "pass_scope": recorded_prepare.get("pass_scope") or package_review_submit_state.get("pass_scope"),
+            "method": recorded_prepare.get("method") or package_review_submit_state.get("method"),
+            "source_gate": recorded_prepare.get("source_gate") or package_review_submit_state.get("source_gate"),
+            "package_construction_source_gate": (
+                recorded_prepare.get("package_construction_source_gate") or package_construction_source_gate
+            ),
+            "source_shape": recorded_prepare.get("source_shape") or package_review_submit_state.get("source_shape"),
+            "source_dataset_version_ids": _json_clone(
+                recorded_prepare.get("source_dataset_version_ids")
+                or package_review_submit_state.get("source_dataset_version_ids")
+                or []
+            ),
+            "package_review_submit_schema_id": recorded_prepare.get("package_review_submit_schema_id"),
             "handoff_export_prepare_enabled": False,
             "external_handoff_enabled": False,
             "external_export_enabled": False,
@@ -9165,6 +9257,18 @@ def _handoff_export_prepare_summary(
         "payload_hashes": [package.payload_hash for package in ordered_packages],
         "package_review_submit_record_ref": submit_record_ref,
         "package_review_state": package_review_submit_state.get("state"),
+        "pass_type": package_review_submit_state.get("pass_type"),
+        "pass_scope": package_review_submit_state.get("pass_scope"),
+        "method": package_review_submit_state.get("method"),
+        "source_gate": package_review_submit_state.get("source_gate"),
+        "package_construction_source_gate": package_construction_source_gate,
+        "source_shape": package_review_submit_state.get("source_shape"),
+        "source_dataset_version_ids": _json_clone(package_review_submit_state.get("source_dataset_version_ids") or []),
+        "package_review_submit_schema_id": (
+            COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+            if _is_cohort_package_construction_source(package_construction_source_gate)
+            else None
+        ),
         "handoff_export_prepare_enabled": True,
         "external_handoff_enabled": False,
         "external_export_enabled": False,
@@ -9202,6 +9306,32 @@ def _aps_handoff_dispatch_summary(
             "download_enabled": False,
             "connector_dispatch_enabled": False,
             "downstream_unavailable": list(APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE),
+        }
+    if (
+        handoff_export_prepare_state.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT
+        or _is_cohort_package_construction_source(
+            handoff_export_prepare_state.get("package_construction_source_gate")
+        )
+    ):
+        return {
+            "schema_id": APS_HANDOFF_DISPATCH_STATE_SCHEMA_ID,
+            "available": False,
+            "state": APS_HANDOFF_UNAVAILABLE_STATE,
+            "blocked_reason": "associated_cohort_aps_handoff_dispatch_not_admitted",
+            "reconciliation_record_id": reconciliation_record_id,
+            "prepare_record_ref": prepare_record_ref,
+            "handoff_export_envelope_ref": envelope_ref,
+            "aps_handoff_target": "aps_evidence_bundle",
+            "dispatch_mode": "server_side_aps_handoff",
+            "aps_output_package_id": None,
+            "aps_output_package_kind": None,
+            "aps_bundle_ref": None,
+            "aps_bundle_id": None,
+            "aps_schema_id": None,
+            "external_export_enabled": False,
+            "download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
         }
 
     reconciliation = (
