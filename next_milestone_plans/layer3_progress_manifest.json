@@ -404,19 +404,19 @@
   },
   "layer3_workbench_current_decision": {
     "decision_id": "l3-selected-pass-cohort-external-export-download-readiness-implementation",
-    "state": "implementation_pr_open",
+    "state": "merged_live_bounded",
     "scope": "PR #479 implements the bounded docs 96/97 associated-cohort external export/download readiness boundary after PR #466 associated-cohort APS evidence-bundle handoff dispatch authority.",
-    "current_live_state": "On the PR #479 branch, exact selected-pass associated-cohort descriptive_summary APS dispatch can become external_export_download_ready and then external_export_download_prepared through the existing prepare route. Browser delivery, connector/generic dispatch, destination selection, package mutation, schema/runtime/source widening, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior remain out.",
+    "current_live_state": "On current main after merge commit 7fdcf8ca, exact selected-pass associated-cohort descriptive_summary APS dispatch can become external_export_download_ready and then external_export_download_prepared through the existing prepare route. Browser delivery, connector/generic dispatch, destination selection, package mutation, schema/runtime/source widening, broader UI, qualitative/hybrid/RAG/vector, and full mockup behavior remain out.",
     "required_before_next_functional_slice": [
-      "Land PR #479 and confirm checks/review state before treating readiness as current-main live.",
+      "Treat PR #479 as the settled readiness authority on current main after merge commit 7fdcf8ca.",
       "Use a separate freeze before associated-cohort delivery, rendered download controls, public/signed URLs, connector/generic dispatch, destination selection, or schema/runtime/source widening.",
       "Keep deterministic readiness idempotency only; retry/recovery beyond that remains deferred."
     ],
-    "next_required_decision": "after PR #479 lands, decide whether to govern associated-cohort delivery or rendered controls, or keep downstream behavior deferred",
+    "next_required_decision": "decide whether to govern associated-cohort delivery or rendered controls, or keep downstream behavior deferred",
     "next_allowed_actions": [
-      "finish PR #479 checks/review and merge if green",
       "post-merge docs/control sync only",
-      "separate delivery/UI/downstream governance if a new slice is selected"
+      "separate delivery/UI/downstream governance if a new slice is selected",
+      "no delivery, connector, destination, schema/runtime/source, broader UI, or full mockup expansion without its own freeze"
     ]
   },
   "layer3_workbench_slices": [
@@ -2158,9 +2158,9 @@
       ],
       "next_allowed": [
         "separate governance before associated-cohort delivery, rendered download controls, public/signed URLs, connector/generic dispatch, destination selection, package mutation/reconstruction, schema/runtime/source widening, or extra rows",
-        "post-merge docs/control sync only if PR #479 lands and metadata needs final merge-commit reconciliation"
+        "post-merge docs/control sync only if metadata needs future reconciliation"
       ],
-      "merge_commit": null
+      "merge_commit": "7fdcf8ca5ab0acac26fdbfafc67335490d569ba6"
     }
   ],
   "summary_counts": {
@@ -3631,8 +3631,8 @@
   "next_required_decision": {
     "decision_id": "settle-cohort-external-export-download-readiness-pr479",
     "title": "Settle associated-cohort external export/download readiness implementation",
-    "state": "implementation_pr_open",
-    "why_now": "PR #479 is the bounded implementation under docs 96/97. It must be checked, reviewed, and merged before associated-cohort readiness is treated as current-main live.",
+    "state": "candidate_after_merged_readiness",
+    "why_now": "PR #479 is merged as the bounded implementation under docs 96/97. Any next behavior beyond reference-only readiness now requires a separate freeze and implementation decision.",
     "candidate_families": [
       {
         "family_id": "selected_pass_cohort_external_export_download_delivery_or_ui",
