@@ -511,6 +511,32 @@ PACKAGE_REVIEW_SUBMIT_ALLOWED_FIELDS = frozenset(
         "expected_package_kinds",
     }
 )
+PACKAGE_REVIEW_SUBMIT_LEGACY_AUTHORITY_FIELDS = (
+    "schema_id",
+    "session_id",
+    "analysis_plan_id",
+    "pass_run_id",
+    "preview_id",
+    "preview_hash",
+    "analysis_run_id",
+    "result_review_record_ref",
+    "package_review_preview_hash",
+    "reconciliation_record_id",
+    "output_package_ids",
+    "package_kinds",
+    "payload_hashes",
+    "operator_decision",
+    "decision_notes",
+)
+PACKAGE_REVIEW_SUBMIT_PROVENANCE_AUTHORITY_FIELDS = (
+    "pass_type",
+    "pass_scope",
+    "method",
+    "source_gate",
+    "package_construction_source_gate",
+    "source_shape",
+    "source_dataset_version_ids",
+)
 HANDOFF_EXPORT_PREPARE_FORBIDDEN_FIELDS = frozenset(
     {
         "aps_handoff",
@@ -4689,6 +4715,20 @@ def _package_review_submit_from_reconciliation(reconciliation: L3ReconciliationR
     return state
 
 
+def _legacy_package_review_submit_record_ref(
+    *,
+    submit_basis: dict[str, Any],
+    existing_submit: dict[str, Any],
+) -> str | None:
+    authority_basis = existing_submit.get("authority_basis")
+    if not isinstance(authority_basis, dict):
+        return None
+    if any(field in authority_basis for field in PACKAGE_REVIEW_SUBMIT_PROVENANCE_AUTHORITY_FIELDS):
+        return None
+    legacy_basis = {field: submit_basis[field] for field in PACKAGE_REVIEW_SUBMIT_LEGACY_AUTHORITY_FIELDS}
+    return _stable_id("l3-package-review-submit", legacy_basis)
+
+
 def _handoff_export_prepare_from_reconciliation(reconciliation: L3ReconciliationRecord | None) -> dict[str, Any] | None:
     if reconciliation is None:
         return None
@@ -6494,7 +6534,12 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
     }
     submit_record_ref = _stable_id("l3-package-review-submit", submit_basis)
     if existing_submit is not None:
-        if existing_submit.get("submit_record_ref") == submit_record_ref:
+        existing_submit_ref = str(existing_submit.get("submit_record_ref") or "")
+        legacy_submit_record_ref = _legacy_package_review_submit_record_ref(
+            submit_basis=submit_basis,
+            existing_submit=existing_submit,
+        )
+        if existing_submit_ref == submit_record_ref or existing_submit_ref == legacy_submit_record_ref:
             return _package_review_submit_response(
                 request_id=request_id,
                 status="already_submitted",
