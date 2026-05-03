@@ -2535,7 +2535,7 @@
     "planning_branch": "codex/l3-cohort-result-review-ui-freeze-p51",
     "planning_pr": "#441",
     "base_commit": "6f1a2ff41d12f1fa3df1d174f5b29e69813ac3fa",
-    "merge_commit": "8eeceec1c7a22f2e70b8d06ff4eac463ee623a695",
+    "merge_commit": "8eeceec17b7d4e08f9c12b2bb44b49b8791f597a",
     "scope": "Planning-only rendered /review/layer3 selected-pass associated-cohort descriptive_summary result-review UI governance over exact PR #432 execution-start/result/status authority and PR #438 backend/API result-review authority.",
     "docs_added": [
       "next_milestone_plans/Layer3_planning_docs/84_COHORT_RESULT_REVIEW_UI_FREEZE.md",
