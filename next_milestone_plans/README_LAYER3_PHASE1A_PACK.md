@@ -1145,6 +1145,25 @@ Read docs `56`/`57` as planning-only UI governance by themselves and PR `#256` a
 - headed and headless Chrome proof is required when a later implementation changes rendered `/review/layer3` behavior; PR `#256` supplied that proof
 - they do not admit APS handoff, external export/download, downstream dispatch, physical artifacts, `AnalysisArtifact`, package payload mutation/reconstruction, source/schema/runtime widening, execution selection/start UI expansion, qualitative/hybrid/RAG/vector execution, or full mockup activation
 
+
+### If you are auditing selected-pass associated-cohort handoff/export prepare UI proof
+
+Start with:
+- `Layer3_planning_docs/92_COHORT_HANDOFF_EXPORT_FREEZE.md`
+- `Layer3_planning_docs/93_COHORT_HANDOFF_EXPORT_CONTRACT.md`
+- `backend/app/services/layer3_workbench.py`
+- `backend/app/review_ui/static/layer3.js`
+- `backend/tests/test_layer3_api.py`
+- `e2e/layer3-workbench.spec.js`
+- `next_milestone_plans/layer3_progress_manifest.json`
+- `next_milestone_plans/layer3_workbench_proof_manifest.json`
+
+Read this as a proof/hardening lane over existing rendered controls, not as a new downstream handoff/export capability:
+- PR `#460` is the backend/API authority for selected-pass associated-cohort `descriptive_summary` prepare-only state.
+- The rendered `/review/layer3` prepare form already exists from the prior workbench handoff/export UI path and is gated by server `handoff_export_prepare.available` state.
+- Branch-local UI proof may add read-only pass type, pass scope, method, source gate, and package source gate projection and focused headed/headless browser proof.
+- It must not admit APS dispatch, external export/download, connector dispatch, package mutation/reconstruction, schema/runtime/source widening, retry/recovery, pass-entry changes, broader UI, qualitative/hybrid/RAG/vector execution, or full mockup activation.
+
 ### If you are auditing the Layer 3 workbench APS handoff dispatch freeze
 
 Start with:

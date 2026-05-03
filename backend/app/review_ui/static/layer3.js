@@ -2695,6 +2695,11 @@ function renderHandoffExportPreparePanel() {
                     ${fieldItem('preview', authority.previewId, { code: true })}
                     ${fieldItem('preview hash', authority.previewHash, { code: true })}
                     ${fieldItem('analysis run', handoff.analysis_run_id || authority.analysisRunId, { code: true })}
+                    ${fieldItem('pass type', handoff.pass_type || submit.pass_type || authority.passType)}
+                    ${fieldItem('pass scope', handoff.pass_scope || submit.pass_scope || authority.passScope)}
+                    ${fieldItem('method', handoff.method || submit.method || authority.selectedMethod)}
+                    ${fieldItem('source gate', handoff.source_gate || submit.source_gate || authority.sourceGate)}
+                    ${fieldItem('package source gate', handoff.package_construction_source_gate || submit.package_construction_source_gate)}
                 </ul>
             </section>
             <section class="result-review-card">
