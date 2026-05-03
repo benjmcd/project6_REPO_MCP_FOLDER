@@ -52,6 +52,7 @@ from test_layer3_pass_entry import (
     _build_quant_ready_session,
     _seed_timeseries_dataset_version as _seed_cohort_timeseries_dataset_version,
 )
+from test_layer3_workbench import _seed_aps_derived_dataset_version
 
 
 def _settings_for_test(**values):
@@ -2536,6 +2537,209 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     summary_body = summary.json()
     _assert_common_response_envelope(summary_body)
     assert summary_body["gate_c_summary"]["typing_committed"] is False
+
+
+def test_layer3_api_aps_derived_dataset_version_reaches_package_commit(client: TestClient, tmp_path) -> None:
+    with client.layer3_session_factory() as db:
+        dataset_version_id = _seed_aps_derived_dataset_version(db, tmp_path)
+        db.commit()
+
+    preflight = client.post(
+        "/api/v1/layer3/preflight",
+        json={
+            "client_request_id": "api-preflight-aps-dataset",
+            "natural_language_intent": "Review APS-derived CSV table as quantitative source material.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+        },
+    )
+    assert preflight.status_code == 200
+    source = client.post(
+        "/api/v1/layer3/source-preview",
+        json={
+            "client_request_id": "api-source-aps-dataset",
+            "preflight_id": preflight.json()["preflight_id"],
+            "selected_source_classes": ["dataset_version"],
+        },
+    )
+    assert source.status_code == 200
+    material = client.post(
+        "/api/v1/layer3/material-preview",
+        json={
+            "client_request_id": "api-material-aps-dataset",
+            "preflight_id": preflight.json()["preflight_id"],
+            "source_set_id": source.json()["source_set_id"],
+            "source_candidate_ids": [source.json()["source_candidates"][0]["source_candidate_id"]],
+            "dataset_version_ids": [dataset_version_id],
+            "query_basis": {"terms": ["aps", "csv"]},
+        },
+    )
+    assert material.status_code == 200
+    candidate = material.json()["material_candidates"][0]
+    assert candidate["source_identity"]["dataset_version_id"] == dataset_version_id
+    assert candidate["source_provenance"]["aps_derived"] is True
+
+    gate_b = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": "api-gate-b-aps-dataset",
+            "preflight_id": preflight.json()["preflight_id"],
+            "source_set_id": source.json()["source_set_id"],
+            "material_preview_id": material.json()["material_preview_id"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": candidate["candidate_id"],
+                    "decision": "approved",
+                    "decision_basis": {
+                        "source_ref": candidate["source_ref"],
+                        "query_basis": candidate["query_basis"],
+                        "provenance_ref": candidate["provenance_ref"],
+                        "source_identity": candidate["source_identity"],
+                        "source_provenance": candidate["source_provenance"],
+                        "payload": candidate["payload"],
+                        "load_summary": candidate["load_summary"],
+                    },
+                }
+            ],
+        },
+    )
+    assert gate_b.status_code == 200
+    gate_c = client.post(
+        "/api/v1/layer3/gate-c/preview",
+        json={
+            "client_request_id": "api-gate-c-aps-dataset",
+            "session_id": gate_b.json()["session_id"],
+            "commit_typing": True,
+        },
+    )
+    assert gate_c.status_code == 200
+    assert gate_c.json()["typing_records"][0]["planning_shape_family"] == "tabular_numeric"
+
+    plan = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={"client_request_id": "api-plan-aps-dataset", "session_id": gate_b.json()["session_id"]},
+    )
+    assert plan.status_code == 200
+    assert plan.json()["plan_preview"]["planned_passes"][0]["dataset_version_id"] == dataset_version_id
+
+    approval = client.post(
+        "/api/v1/layer3/plan/approve",
+        json={
+            "client_request_id": "api-plan-approval-aps-dataset",
+            "session_id": gate_b.json()["session_id"],
+            "preview_id": plan.json()["preview_id"],
+            "preview_hash": plan.json()["preview_hash"],
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+        },
+    )
+    assert approval.status_code == 200
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": "api-execution-selection-aps-dataset",
+            "session_id": gate_b.json()["session_id"],
+            "analysis_plan_id": approval.json()["analysis_plan_id"],
+            "preview_id": plan.json()["preview_id"],
+            "preview_hash": plan.json()["preview_hash"],
+        },
+    )
+    assert selection.status_code == 200
+    pass_run_id = selection.json()["pass_run_ids"][0]
+    start = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-execution-start-aps-dataset",
+            "session_id": gate_b.json()["session_id"],
+            "analysis_plan_id": approval.json()["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": plan.json()["preview_id"],
+            "preview_hash": plan.json()["preview_hash"],
+        },
+    )
+    assert start.status_code == 200
+    assert start.json()["dataset_version_id"] == dataset_version_id
+
+    status = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "client_request_id": "api-result-status-aps-dataset",
+            "session_id": gate_b.json()["session_id"],
+            "analysis_plan_id": approval.json()["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": plan.json()["preview_id"],
+            "preview_hash": plan.json()["preview_hash"],
+            "analysis_run_id": start.json()["analysis_run_id"],
+            "operator_view_mode": "status_only",
+        },
+    )
+    assert status.status_code == 200
+    assert status.json()["dataset_version_id"] == dataset_version_id
+    assert status.json()["output_metadata_summary"]["dataset_version_id"] == dataset_version_id
+
+    review = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={
+            "client_request_id": "api-result-review-aps-dataset",
+            "session_id": gate_b.json()["session_id"],
+            "analysis_plan_id": approval.json()["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": plan.json()["preview_id"],
+            "preview_hash": plan.json()["preview_hash"],
+            "analysis_run_id": start.json()["analysis_run_id"],
+            "operator_decision": "approved",
+            "review_notes": "APS-derived dataset output preserves dataset identity for package proof.",
+            "reviewed_output_items": [
+                {
+                    "item_ref": "aps-derived-output",
+                    "item_type": "finding",
+                    "trace": {
+                        "session_id": gate_b.json()["session_id"],
+                        "analysis_plan_id": approval.json()["analysis_plan_id"],
+                        "pass_run_id": pass_run_id,
+                        "analysis_run_id": start.json()["analysis_run_id"],
+                        "output_payload_ref": status.json()["output_payload_ref"],
+                    },
+                }
+            ],
+        },
+    )
+    assert review.status_code == 200
+    assert review.json()["trace_summary"]["dataset_version_id"] == dataset_version_id
+
+    package_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": "api-package-preview-aps-dataset",
+            "session_id": gate_b.json()["session_id"],
+            "analysis_plan_id": approval.json()["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": plan.json()["preview_id"],
+            "preview_hash": plan.json()["preview_hash"],
+            "analysis_run_id": start.json()["analysis_run_id"],
+            "result_review_record_ref": review.json()["review_record_ref"],
+        },
+    )
+    assert package_preview.status_code == 200
+    assert package_preview.json()["trace_summary"]["dataset_version_id"] == dataset_version_id
+
+    package_commit = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": "api-package-commit-aps-dataset",
+            "session_id": gate_b.json()["session_id"],
+            "analysis_plan_id": approval.json()["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": plan.json()["preview_id"],
+            "preview_hash": plan.json()["preview_hash"],
+            "analysis_run_id": start.json()["analysis_run_id"],
+            "result_review_record_ref": review.json()["review_record_ref"],
+            "package_review_preview_hash": package_preview.json()["package_review_preview_hash"],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert package_commit.status_code == 200
+    assert package_commit.json()["source_shape"] == "dataset_version"
+    assert all(Path(payload_ref).exists() for payload_ref in package_commit.json()["payload_refs"])
 
 
 def test_layer3_api_gate_b_no_approved_material_is_blocked_error(client: TestClient) -> None:

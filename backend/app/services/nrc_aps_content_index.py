@@ -372,6 +372,13 @@ def _build_processing_diagnostics_payload(
         "media_detection_reason": processed.get("media_detection_reason"),
         "signature_basis": processed.get("signature_basis"),
         "document_processing_contract_id": processed.get("document_processing_contract_id"),
+        "parser_registry_contract_id": processed.get("parser_registry_contract_id"),
+        "parser_registry_version": processed.get("parser_registry_version"),
+        "parser_admission_status": processed.get("parser_admission_status"),
+        "parser_family": processed.get("parser_family"),
+        "parser_output_family": processed.get("parser_output_family"),
+        "parser_contract_id": processed.get("parser_contract_id"),
+        "typed_content_contract_id": processed.get("typed_content_contract_id"),
         "extractor_family": processed.get("extractor_family"),
         "extractor_id": processed.get("extractor_id"),
         "extractor_version": processed.get("extractor_version"),
@@ -382,6 +389,9 @@ def _build_processing_diagnostics_payload(
         "page_count": processed.get("page_count"),
         "page_summaries": processed.get("page_summaries"),
         "ordered_units": processed.get("ordered_units"),
+        "table_units": processed.get("table_units"),
+        "time_series_units": processed.get("time_series_units"),
+        "table_diagnostics": processed.get("table_diagnostics"),
     }
 
 

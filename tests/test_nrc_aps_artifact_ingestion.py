@@ -88,6 +88,36 @@ def test_extract_and_normalize_forwards_candidate_b_engine(tmp_path: Path):
     assert result["visual_page_refs"] == []
 
 
+def test_detect_media_type_forwards_source_filename_for_csv_admission():
+    result = nrc_aps_artifact_ingestion.detect_media_type(
+        content=b"date,value\n2026-01-01,42\n",
+        content_type="text/plain",
+        source_filename="observations.csv",
+    )
+
+    assert result["source_filename"] == "observations.csv"
+    assert result["file_extension"] == ".csv"
+    assert result["effective_content_type"] == "text/csv"
+    assert result["media_detection_status"] == (
+        nrc_aps_artifact_ingestion.nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_EXTENSION
+    )
+    assert result["supported_for_processing"] is True
+
+
+def test_extract_and_normalize_preserves_csv_table_diagnostics():
+    result = nrc_aps_artifact_ingestion.extract_and_normalize(
+        content=b"date,value\n2026-01-01,42\n2026-01-02,43\n",
+        content_type="text/csv",
+    )
+
+    assert result["effective_content_type"] == "text/csv"
+    assert result["parser_family"] == "csv_table"
+    assert result["typed_content_contract_id"] == "aps_csv_table_units_v1"
+    assert result["ordered_units"] == []
+    assert result["table_diagnostics"]["row_count"] == 2
+    assert result["time_series_units"][0]["numeric_columns"] == ["value"]
+
+
 def test_validate_target_artifact_rejects_missing_normalization_contract():
     payload = {
         "schema_id": "aps.artifact_ingestion_target.v1",

@@ -32,6 +32,7 @@ from app.models import (
 from app.services import nrc_aps_artifact_ingestion
 from app.services import nrc_aps_content_index
 from app.services import nrc_aps_contract
+from app.services import nrc_aps_dataset_bridge
 from app.services import nrc_aps_safeguards
 from app.services import nrc_aps_sync_drift
 from app.services.connectors_sciencebase import _finalize_run, _record_run_event
@@ -95,6 +96,8 @@ APS_ARTIFACT_PIPELINE_MODES = {
 APS_CONTENT_INDEX_DEFAULT_CHUNK_SIZE = nrc_aps_content_index.APS_CONTENT_INDEX_DEFAULT_CHUNK_SIZE
 APS_CONTENT_INDEX_DEFAULT_CHUNK_OVERLAP = nrc_aps_content_index.APS_CONTENT_INDEX_DEFAULT_CHUNK_OVERLAP
 APS_CONTENT_INDEX_DEFAULT_MIN_CHUNK = nrc_aps_content_index.APS_CONTENT_INDEX_DEFAULT_MIN_CHUNK
+APS_CSV_DATASET_BRIDGE_RUN_SCHEMA_ID = "aps.csv_dataset_bridge_run.v1"
+APS_CSV_DATASET_BRIDGE_RUN_SCHEMA_VERSION = 1
 
 
 @dataclass
@@ -407,6 +410,8 @@ def _lint_submission_config(config: dict[str, Any]) -> list[str]:
         raise SubmissionConflictError(f"artifact_pipeline_mode={pipeline_mode or 'unknown'} is invalid")
     if pipeline_mode == nrc_aps_artifact_ingestion.APS_PIPELINE_MODE_OFF and bool(config.get("artifact_required_for_target_success")):
         warnings.append("artifact_required_for_target_success ignored when artifact_pipeline_mode=off")
+    if _coerce_bool(config.get("csv_dataset_bridge_enabled")) and pipeline_mode != nrc_aps_artifact_ingestion.APS_PIPELINE_MODE_HYDRATE_PROCESS:
+        warnings.append("csv_dataset_bridge_enabled requires artifact_pipeline_mode=hydrate_process to materialize datasets")
     chunk_size_chars = _coerce_int(config.get("content_chunk_size_chars"), APS_CONTENT_INDEX_DEFAULT_CHUNK_SIZE)
     chunk_overlap_chars = _coerce_int(config.get("content_chunk_overlap_chars"), APS_CONTENT_INDEX_DEFAULT_CHUNK_OVERLAP)
     min_chunk_chars = _coerce_int(config.get("content_chunk_min_chars"), APS_CONTENT_INDEX_DEFAULT_MIN_CHUNK)
@@ -500,6 +505,21 @@ def _coerce_int(value: Any, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _coerce_bool(value: Any, *, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    text = str(value).strip().lower()
+    if text in {"1", "true", "yes", "y", "on"}:
+        return True
+    if text in {"0", "false", "no", "n", "off"}:
+        return False
+    return default
 
 
 def _parse_sort(raw_sort: Any, explicit_sort_direction: Any) -> tuple[str, int]:
@@ -611,6 +631,7 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
                 "content_chunk_size_chars",
                 "content_chunk_overlap_chars",
                 "content_chunk_min_chars",
+                "csv_dataset_bridge_enabled",
                 "report_verbosity",
                 "safeguard_policy",
                 "client_request_id",
@@ -721,6 +742,7 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
             APS_CONTENT_INDEX_DEFAULT_CHUNK_OVERLAP,
         ),
         "content_chunk_min_chars": _coerce_int(config.get("content_chunk_min_chars", APS_CONTENT_INDEX_DEFAULT_MIN_CHUNK), APS_CONTENT_INDEX_DEFAULT_MIN_CHUNK),
+        "csv_dataset_bridge_enabled": _coerce_bool(config.get("csv_dataset_bridge_enabled"), default=False),
         "allowed_hosts": allowed_hosts,
         "fetch_policy_mode": str(config.get("fetch_policy_mode", "strict_public_safe") or "strict_public_safe"),
         "report_verbosity": report_verbosity,
@@ -1466,6 +1488,11 @@ def _content_index_failure_report_path(run_id: str) -> Path:
     return nrc_aps_content_index.failure_artifact_path(run_id=run_id, reports_dir=settings.connector_reports_dir)
 
 
+def _csv_dataset_bridge_run_report_path(run_id: str, *, reports_dir: str | Path | None = None) -> Path:
+    root = Path(reports_dir or settings.connector_reports_dir)
+    return root / f"{run_id}_aps_csv_dataset_bridge_run_v1.json"
+
+
 def _persist_artifact_ingestion_run_artifact(
     db: Session,
     *,
@@ -1764,6 +1791,178 @@ def _generate_content_index_artifacts(
         "indexing_failures_count": int(run_payload.get("indexing_failures_count") or 0),
         "content_status_counts": dict(run_payload.get("content_status_counts") or {}),
         "indexing_failure_code_counts": dict(run_payload.get("indexing_failure_code_counts") or {}),
+    }
+
+
+def _generate_csv_dataset_bridge_artifacts(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    enabled = _coerce_bool(config.get("csv_dataset_bridge_enabled"), default=False)
+    target_rows = (
+        db.query(ConnectorRunTarget)
+        .filter(ConnectorRunTarget.connector_run_id == run.connector_run_id)
+        .order_by(ConnectorRunTarget.ordinal.asc())
+        .all()
+    )
+    materialized: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+    failures: list[dict[str, Any]] = []
+
+    for target in target_rows:
+        source_ref = dict(target.source_reference_json or {})
+        target_artifact_ref = str(source_ref.get("aps_artifact_ingestion_ref") or "").strip()
+        if not target_artifact_ref:
+            skipped.append({"target_id": target.connector_run_target_id, "reason": "artifact_ref_missing"})
+            continue
+        target_artifact_payload = nrc_aps_sync_drift.read_json_object(target_artifact_ref)
+        if not target_artifact_payload:
+            failures.append(
+                {
+                    "target_id": target.connector_run_target_id,
+                    "code": "dataset_bridge_target_artifact_unreadable",
+                    "message": f"Unable to parse target artifact: {target_artifact_ref}",
+                }
+            )
+            continue
+        outcome_status = str(target_artifact_payload.get("outcome_status") or "").strip().lower()
+        extraction = dict(target_artifact_payload.get("extraction") or {})
+        parser_family = str(extraction.get("parser_family") or "").strip()
+        typed_contract = str(extraction.get("typed_content_contract_id") or "").strip()
+        if not enabled:
+            skipped.append({"target_id": target.connector_run_target_id, "reason": "dataset_bridge_disabled"})
+            continue
+        if outcome_status != "processed":
+            skipped.append({"target_id": target.connector_run_target_id, "reason": f"outcome_{outcome_status or 'unknown'}"})
+            continue
+        if parser_family != "csv_table" or typed_contract != "aps_csv_table_units_v1":
+            skipped.append(
+                {
+                    "target_id": target.connector_run_target_id,
+                    "reason": "not_csv_table_parser",
+                    "parser_family": parser_family or None,
+                    "typed_content_contract_id": typed_contract or None,
+                }
+            )
+            continue
+        try:
+            result = nrc_aps_dataset_bridge.materialize_csv_table_dataset(
+                db,
+                target_artifact_payload=target_artifact_payload,
+                artifact_storage_dir=config.get("artifact_storage_dir") or settings.artifact_storage_dir,
+                connector_run_id=run.connector_run_id,
+                commit=False,
+            )
+        except Exception as exc:  # noqa: BLE001
+            failures.append(
+                {
+                    "target_id": target.connector_run_target_id,
+                    "code": "dataset_bridge_materialization_failed",
+                    "error_class": exc.__class__.__name__,
+                    "message": str(exc),
+                    "target_artifact_ref": target_artifact_ref,
+                }
+            )
+            continue
+
+        target.source_reference_json = {
+            **(target.source_reference_json or {}),
+            "aps_csv_dataset_bridge_ref": None,
+            "aps_csv_dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_DATASET_BRIDGE_CONTRACT_ID,
+            "aps_dataset_id": result.get("dataset_id"),
+            "aps_dataset_version_id": result.get("dataset_version_id"),
+            "aps_dataset_source_artifact_key": result.get("source_artifact_key"),
+        }
+        target.dataset_id = str(result.get("dataset_id") or "") or None
+        target.dataset_version_id = str(result.get("dataset_version_id") or "") or None
+        db.flush()
+        materialized.append(
+            {
+                "target_id": target.connector_run_target_id,
+                "dataset_id": result.get("dataset_id"),
+                "dataset_version_id": result.get("dataset_version_id"),
+                "source_artifact_key": result.get("source_artifact_key"),
+                "row_count": int(result.get("row_count") or 0),
+                "created": bool(result.get("created", False)),
+            }
+        )
+
+    run_payload = {
+        "schema_id": APS_CSV_DATASET_BRIDGE_RUN_SCHEMA_ID,
+        "schema_version": APS_CSV_DATASET_BRIDGE_RUN_SCHEMA_VERSION,
+        "run_id": run.connector_run_id,
+        "run_status": str(run.status or ""),
+        "dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_DATASET_BRIDGE_CONTRACT_ID,
+        "dataset_bridge_version": nrc_aps_dataset_bridge.APS_DATASET_BRIDGE_VERSION,
+        "enabled": enabled,
+        "selected_targets": int(run.selected_count or 0),
+        "processed_targets": len(materialized),
+        "created_dataset_versions": sum(1 for item in materialized if bool(item.get("created"))),
+        "materialized_dataset_versions": len(materialized),
+        "skipped_targets": len(skipped),
+        "failures_count": len(failures),
+        "materialized": materialized,
+        "skipped": skipped,
+        "failures": failures,
+    }
+    run_payload["run_outcome"] = (
+        "dataset_bridge_disabled"
+        if not enabled
+        else "dataset_bridge_failed"
+        if failures
+        else "datasets_materialized"
+        if materialized
+        else "no_csv_table_targets"
+    )
+    report_ref = nrc_aps_content_index.write_json_atomic(
+        _csv_dataset_bridge_run_report_path(
+            run.connector_run_id,
+            reports_dir=config.get("connector_reports_dir"),
+        ),
+        run_payload,
+    )
+    for target in target_rows:
+        source_ref = dict(target.source_reference_json or {})
+        if source_ref.get("aps_csv_dataset_bridge_contract_id") == nrc_aps_dataset_bridge.APS_DATASET_BRIDGE_CONTRACT_ID:
+            target.source_reference_json = {
+                **source_ref,
+                "aps_csv_dataset_bridge_ref": report_ref,
+            }
+    if failures:
+        run.error_summary = _append_error_summary_token(
+            run.error_summary,
+            token="aps_csv_dataset_bridge_failed",
+        )
+        if run.status not in {"failed", "cancelled"}:
+            run.status = "completed_with_errors"
+    run.query_plan_json = {
+        **(run.query_plan_json or {}),
+        "aps_csv_dataset_bridge_report_refs": {
+            "aps_csv_dataset_bridge": report_ref,
+        },
+        "aps_csv_dataset_bridge_summary": {
+            "run_outcome": run_payload.get("run_outcome"),
+            "enabled": enabled,
+            "selected_targets": int(run_payload.get("selected_targets") or 0),
+            "processed_targets": int(run_payload.get("processed_targets") or 0),
+            "materialized_dataset_versions": int(run_payload.get("materialized_dataset_versions") or 0),
+            "created_dataset_versions": int(run_payload.get("created_dataset_versions") or 0),
+            "skipped_targets": int(run_payload.get("skipped_targets") or 0),
+            "failures_count": int(run_payload.get("failures_count") or 0),
+        },
+    }
+    db.flush()
+    return {
+        "run_ref": report_ref,
+        "run_outcome": run_payload.get("run_outcome"),
+        "enabled": enabled,
+        "processed_targets": int(run_payload.get("processed_targets") or 0),
+        "materialized_dataset_versions": int(run_payload.get("materialized_dataset_versions") or 0),
+        "created_dataset_versions": int(run_payload.get("created_dataset_versions") or 0),
+        "skipped_targets": int(run_payload.get("skipped_targets") or 0),
+        "failures_count": int(run_payload.get("failures_count") or 0),
     }
 
 
@@ -2493,6 +2692,7 @@ def _run_target_artifact_pipeline(
         content=download_result.content,
         content_type=download_result.content_type,
         config=config,
+        source_filename=target.sciencebase_file_name,
     )
     detected_content_type = str(detection.get("effective_content_type") or "")
     if not bool(detection.get("supported_for_processing")):
@@ -2516,6 +2716,11 @@ def _run_target_artifact_pipeline(
                     "sniffed_content_type": detection.get("sniffed_content_type"),
                     "detected_content_type": detected_content_type,
                     "media_detection_status": detection.get("media_detection_status"),
+                    "media_detection_reason": detection.get("media_detection_reason"),
+                    "source_filename": detection.get("source_filename"),
+                    "file_extension": detection.get("file_extension"),
+                    "extension_content_type": detection.get("extension_content_type"),
+                    "content_family": detection.get("content_family"),
                     "allowed_content_types": sorted(nrc_aps_artifact_ingestion.APS_SUPPORTED_CONTENT_TYPES),
                     "blob_ref": blob_info.get("blob_ref"),
                 },
@@ -2647,8 +2852,19 @@ def _run_target_artifact_pipeline(
         "media_detection_contract_id": extraction.get("media_detection_contract_id"),
         "media_detection_status": extraction.get("media_detection_status"),
         "media_detection_reason": extraction.get("media_detection_reason"),
+        "source_filename": extraction.get("source_filename"),
+        "file_extension": extraction.get("file_extension"),
+        "extension_content_type": extraction.get("extension_content_type"),
+        "content_family": extraction.get("content_family"),
         "signature_basis": extraction.get("signature_basis"),
         "document_processing_contract_id": extraction.get("document_processing_contract_id"),
+        "parser_registry_contract_id": extraction.get("parser_registry_contract_id"),
+        "parser_registry_version": extraction.get("parser_registry_version"),
+        "parser_admission_status": extraction.get("parser_admission_status"),
+        "parser_family": extraction.get("parser_family"),
+        "parser_output_family": extraction.get("parser_output_family"),
+        "parser_contract_id": extraction.get("parser_contract_id"),
+        "typed_content_contract_id": extraction.get("typed_content_contract_id"),
         "extractor_family": extraction.get("extractor_family"),
         "extractor_id": extraction.get("extractor_id"),
         "extractor_version": extraction.get("extractor_version"),
@@ -2659,6 +2875,9 @@ def _run_target_artifact_pipeline(
         "page_count": extraction.get("page_count"),
         "page_summaries": extraction.get("page_summaries"),
         "ordered_units": extraction.get("ordered_units"),
+        "table_units": extraction.get("table_units"),
+        "time_series_units": extraction.get("time_series_units"),
+        "table_diagnostics": extraction.get("table_diagnostics"),
         "visual_page_refs": extraction.get("visual_page_refs", []),
     }
     diagnostics_blob = nrc_aps_artifact_ingestion.write_processing_diagnostics(
@@ -2685,7 +2904,18 @@ def _run_target_artifact_pipeline(
             "media_detection_contract_id": extraction.get("media_detection_contract_id"),
             "media_detection_status": extraction.get("media_detection_status"),
             "media_detection_reason": extraction.get("media_detection_reason"),
+            "source_filename": extraction.get("source_filename"),
+            "file_extension": extraction.get("file_extension"),
+            "extension_content_type": extraction.get("extension_content_type"),
+            "content_family": extraction.get("content_family"),
             "document_processing_contract_id": extraction.get("document_processing_contract_id"),
+            "parser_registry_contract_id": extraction.get("parser_registry_contract_id"),
+            "parser_registry_version": extraction.get("parser_registry_version"),
+            "parser_admission_status": extraction.get("parser_admission_status"),
+            "parser_family": extraction.get("parser_family"),
+            "parser_output_family": extraction.get("parser_output_family"),
+            "parser_contract_id": extraction.get("parser_contract_id"),
+            "typed_content_contract_id": extraction.get("typed_content_contract_id"),
             "document_class": extraction.get("document_class"),
             "extractor_id": extraction.get("extractor_id"),
             "extractor_version": extraction.get("extractor_version"),
@@ -2698,6 +2928,9 @@ def _run_target_artifact_pipeline(
             "quality_metrics": extraction.get("quality_metrics"),
             "degradation_codes": extraction.get("degradation_codes"),
             "page_count": extraction.get("page_count"),
+            "table_units": extraction.get("table_units"),
+            "time_series_units": extraction.get("time_series_units"),
+            "table_diagnostics": extraction.get("table_diagnostics"),
             "visual_page_refs": extraction.get("visual_page_refs", []),
             **diagnostics_blob,
         },
@@ -3459,6 +3692,8 @@ def execute_nrc_adams_run(connector_run_id: str) -> None:
             "aps_text_normalization_contract_id": nrc_aps_artifact_ingestion.APS_TEXT_NORMALIZATION_CONTRACT_ID,
             "aps_content_contract_id": nrc_aps_content_index.APS_CONTENT_CONTRACT_ID,
             "aps_chunking_contract_id": nrc_aps_content_index.APS_CHUNKING_CONTRACT_ID,
+            "aps_csv_dataset_bridge_enabled": bool(config.get("csv_dataset_bridge_enabled", False)),
+            "aps_csv_dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_DATASET_BRIDGE_CONTRACT_ID,
             "aps_content_chunking_policy": {
                 "chunk_size_chars": int(config.get("content_chunk_size_chars") or APS_CONTENT_INDEX_DEFAULT_CHUNK_SIZE),
                 "chunk_overlap_chars": int(config.get("content_chunk_overlap_chars") or APS_CONTENT_INDEX_DEFAULT_CHUNK_OVERLAP),
@@ -3541,6 +3776,73 @@ def execute_nrc_adams_run(connector_run_id: str) -> None:
                     "failure_ref": failure_ref,
                 }
 
+        csv_dataset_bridge_summary: dict[str, Any] | None = None
+        if run.status in {"completed", "completed_with_errors"} and bool(config.get("csv_dataset_bridge_enabled", False)):
+            try:
+                csv_dataset_bridge_summary = _generate_csv_dataset_bridge_artifacts(
+                    db,
+                    run=run,
+                    config=config,
+                )
+                _record_run_event(
+                    db,
+                    run=run,
+                    event_type="aps_csv_dataset_bridge_artifacts_generated",
+                    phase="finalizing",
+                    stage="reporting",
+                    status_after=run.status,
+                    metrics_json={
+                        "aps_csv_dataset_bridge_ref": csv_dataset_bridge_summary.get("run_ref"),
+                        "run_outcome": csv_dataset_bridge_summary.get("run_outcome"),
+                        "processed_targets": csv_dataset_bridge_summary.get("processed_targets"),
+                        "materialized_dataset_versions": csv_dataset_bridge_summary.get("materialized_dataset_versions"),
+                        "created_dataset_versions": csv_dataset_bridge_summary.get("created_dataset_versions"),
+                        "failures_count": csv_dataset_bridge_summary.get("failures_count"),
+                    },
+                )
+            except Exception as csv_bridge_exc:  # noqa: BLE001
+                failure_payload = {
+                    "schema_id": APS_CSV_DATASET_BRIDGE_RUN_SCHEMA_ID,
+                    "schema_version": APS_CSV_DATASET_BRIDGE_RUN_SCHEMA_VERSION,
+                    "run_id": run.connector_run_id,
+                    "run_status": str(run.status or ""),
+                    "dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_DATASET_BRIDGE_CONTRACT_ID,
+                    "enabled": True,
+                    "run_outcome": "dataset_bridge_artifact_generation_failed",
+                    "failures_count": 1,
+                    "failures": [
+                        {
+                            "code": "dataset_bridge_artifact_generation_failed",
+                            "error_class": csv_bridge_exc.__class__.__name__,
+                            "message": str(csv_bridge_exc),
+                        }
+                    ],
+                }
+                failure_ref = nrc_aps_content_index.write_json_atomic(
+                    _csv_dataset_bridge_run_report_path(run.connector_run_id),
+                    failure_payload,
+                )
+                run.error_summary = _append_error_summary_token(
+                    run.error_summary,
+                    token="aps_csv_dataset_bridge_failed",
+                )
+                if run.status not in {"failed", "cancelled"}:
+                    run.status = "completed_with_errors"
+                run.query_plan_json = {
+                    **(run.query_plan_json or {}),
+                    "aps_csv_dataset_bridge_report_refs": {"aps_csv_dataset_bridge": failure_ref},
+                    "aps_csv_dataset_bridge_summary": {
+                        "artifact_generation_failed": True,
+                        "error_class": csv_bridge_exc.__class__.__name__,
+                        "error_message": str(csv_bridge_exc),
+                    },
+                }
+                csv_dataset_bridge_summary = {
+                    "artifact_generation_failed": True,
+                    "run_ref": failure_ref,
+                    "failures_count": 1,
+                }
+
         sync_drift_summary: dict[str, Any] | None = None
         if run.status in APS_SYNC_BASELINE_ELIGIBLE_STATUSES:
             try:
@@ -3584,6 +3886,7 @@ def execute_nrc_adams_run(connector_run_id: str) -> None:
                 "run_mode": config.get("run_mode"),
                 "artifact_ingestion_summary": artifact_ingestion_summary or {},
                 "content_index_summary": content_index_summary or {},
+                "csv_dataset_bridge_summary": csv_dataset_bridge_summary or {},
                 "sync_drift_summary": sync_drift_summary or {},
             },
         )
@@ -3630,6 +3933,7 @@ def execute_nrc_adams_run(connector_run_id: str) -> None:
                 "aps_artifact_ingestion_failure_ref": dict((run.query_plan_json or {}).get("aps_artifact_ingestion_report_refs") or {}).get("aps_artifact_ingestion_failure"),
                 "aps_content_index_report_ref": dict((run.query_plan_json or {}).get("aps_content_index_report_refs") or {}).get("aps_content_index"),
                 "aps_content_index_failure_ref": dict((run.query_plan_json or {}).get("aps_content_index_report_refs") or {}).get("aps_content_index_failure"),
+                "aps_csv_dataset_bridge_report_ref": dict((run.query_plan_json or {}).get("aps_csv_dataset_bridge_report_refs") or {}).get("aps_csv_dataset_bridge"),
             },
             commit=True,
         )

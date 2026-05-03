@@ -16,6 +16,9 @@ from sqlalchemy.orm import Session
 
 from app.models.models import (
     AnalysisRun,
+    Dataset,
+    DatasetSourceProvenance,
+    DatasetVersion,
     L3AnalysisGroup,
     L3AnalysisPlan,
     L3AnalysisSet,
@@ -27,6 +30,7 @@ from app.models.models import (
     L3SelectionManifest,
     L3Session,
     L3TypingRecord,
+    VariableDefinition,
     uuid_str,
 )
 from app.services.layer3_pass_entry import (
@@ -1841,18 +1845,184 @@ def _source_class_from_material_candidate_id(candidate_id: str) -> str | None:
     return None
 
 
-def material_preview(payload: dict[str, Any]) -> dict[str, Any]:
+def _requested_dataset_version_ids(payload: dict[str, Any]) -> list[str]:
+    query_basis = payload.get("query_basis") if isinstance(payload.get("query_basis"), dict) else {}
+    filters = query_basis.get("filters") if isinstance(query_basis.get("filters"), dict) else {}
+    raw_ids = payload.get("dataset_version_ids") or filters.get("dataset_version_ids") or []
+    if isinstance(raw_ids, str):
+        raw_ids = [raw_ids]
+    if not isinstance(raw_ids, list):
+        return []
+    result: list[str] = []
+    for raw_id in raw_ids:
+        dataset_version_id = str(raw_id or "").strip()
+        if dataset_version_id and dataset_version_id not in result:
+            result.append(dataset_version_id)
+    return result
+
+
+def _dataset_version_variables(db: Session, *, dataset_version_id: str) -> list[VariableDefinition]:
+    return (
+        db.query(VariableDefinition)
+        .filter(VariableDefinition.dataset_version_id == dataset_version_id)
+        .order_by(VariableDefinition.ordinal_position.asc())
+        .all()
+    )
+
+
+def _aps_dataset_provenance_rows(db: Session, *, dataset_version_id: str) -> list[DatasetSourceProvenance]:
+    return (
+        db.query(DatasetSourceProvenance)
+        .filter(DatasetSourceProvenance.dataset_version_id == dataset_version_id)
+        .filter(DatasetSourceProvenance.source_system == "nrc_adams_aps")
+        .order_by(DatasetSourceProvenance.dataset_source_provenance_id.asc())
+        .all()
+    )
+
+
+def _serialize_aps_dataset_provenance(row: DatasetSourceProvenance) -> dict[str, Any]:
+    source_reference = row.source_reference_json or {}
+    return {
+        "dataset_source_provenance_id": row.dataset_source_provenance_id,
+        "connector_run_id": row.connector_run_id,
+        "source_system": row.source_system,
+        "source_mode": row.source_mode,
+        "source_artifact_key": row.source_artifact_key,
+        "downloaded_sha256": row.downloaded_sha256,
+        "raw_storage_ref": row.raw_storage_ref,
+        "parser_family": source_reference.get("parser_family"),
+        "parser_contract_id": source_reference.get("parser_contract_id"),
+        "typed_content_contract_id": source_reference.get("typed_content_contract_id"),
+        "target_id": source_reference.get("target_id"),
+        "accession_number": source_reference.get("accession_number"),
+        "table_index": source_reference.get("table_index"),
+        "table_hash": source_reference.get("table_hash"),
+        "diagnostics_ref": source_reference.get("diagnostics_ref"),
+    }
+
+
+def _dataset_version_material_candidates(
+    db: Session,
+    *,
+    source_id: str,
+    dataset_version_ids: list[str],
+    query_label: str,
+) -> list[dict[str, Any]]:
+    candidates: list[dict[str, Any]] = []
+    for dataset_version_id in dataset_version_ids:
+        version = db.get(DatasetVersion, dataset_version_id)
+        if version is None:
+            raise Layer3WorkbenchError(
+                "dataset_version_not_found",
+                f"Dataset version '{dataset_version_id}' was not found for material preview.",
+                status="blocked",
+                blocked_fields=["dataset_version_ids"],
+                next_allowed_actions=["revise_dataset_version_selection"],
+            )
+        dataset = db.get(Dataset, version.dataset_id)
+        variables = _dataset_version_variables(db, dataset_version_id=dataset_version_id)
+        aps_provenance = [
+            _serialize_aps_dataset_provenance(row)
+            for row in _aps_dataset_provenance_rows(db, dataset_version_id=dataset_version_id)
+        ]
+        storage_ref = str(version.storage_ref or "").strip()
+        source_identity = {
+            "schema_id": "layer3.dataset_version_source_identity.v1",
+            "source_class": "dataset_version",
+            "dataset_version_id": version.dataset_version_id,
+            "dataset_id": version.dataset_id,
+            "dataset_name": dataset.name if dataset is not None else None,
+            "version_label": version.version_label,
+            "version_type": version.version_type,
+            "status": version.status,
+        }
+        source_provenance = {
+            "schema_id": "layer3.dataset_version_source_provenance.v1",
+            "dataset_id": version.dataset_id,
+            "storage_ref": storage_ref or None,
+            "row_count": int(version.row_count or 0),
+            "variable_count": len(variables),
+            "time_column": dataset.time_column if dataset is not None else None,
+            "frequency_hint": dataset.frequency_hint if dataset is not None else None,
+            "domain_pack": dataset.domain_pack if dataset is not None else None,
+            "aps_source_provenance": aps_provenance,
+            "aps_derived": bool(aps_provenance),
+        }
+        load_summary = {
+            "loaded_records": int(version.row_count or 0),
+            "failed_records": 0,
+            "preview_material": True,
+            "storage_available": bool(storage_ref and Path(storage_ref).exists()),
+            "variable_count": len(variables),
+            "aps_derived": bool(aps_provenance),
+        }
+        short_id = _stable_id(
+            "mat",
+            {
+                "source_id": source_id,
+                "dataset_version_id": dataset_version_id,
+                "query_basis": query_label,
+            },
+        ).split("-", 1)[1]
+        candidates.append(
+            {
+                "candidate_id": f"mat-dataset_version-{short_id}",
+                "source_label": "Dataset Version",
+                "source_class": "dataset_version",
+                "source_ref": f"dataset_version:{dataset_version_id}",
+                "owner_service_source_shape": "dataset_version",
+                "planning_shape_family": "tabular_numeric",
+                "query_basis": query_label,
+                "validation_status": "valid" if variables else "incomplete",
+                "duplicate_status": "unique",
+                "size_or_unit_count": int(version.row_count or 0),
+                "preview_payload_ref": None,
+                "provenance_ref": (
+                    aps_provenance[0]["source_artifact_key"]
+                    if aps_provenance
+                    else f"dataset_version:{dataset_version_id}"
+                ),
+                "source_identity": source_identity,
+                "source_provenance": source_provenance,
+                "payload": {"dataset_version_id": dataset_version_id},
+                "load_summary": load_summary,
+                "current_decision_state": "candidate",
+            }
+        )
+    return candidates
+
+
+def material_preview(payload: dict[str, Any], db: Session | None = None) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or uuid_str())
     source_ids = [str(item) for item in payload.get("source_candidate_ids") or []]
     if not source_ids:
         raise Layer3WorkbenchError("no_source_candidates", "At least one source candidate is required.", status="blocked")
     terms = [str(item) for item in (payload.get("query_basis") or {}).get("terms") or []]
     query_label = ", ".join(terms) if terms else "operator_intent"
+    dataset_version_ids = _requested_dataset_version_ids(payload)
+    if dataset_version_ids and db is None:
+        raise Layer3WorkbenchError(
+            "dataset_version_preview_requires_db",
+            "Real dataset_version material preview requires a database session.",
+            status="blocked",
+            blocked_fields=["dataset_version_ids"],
+        )
     candidates = []
     for source_id in source_ids:
         source_class = _source_class_from_source_candidate_id(source_id)
         if source_class is None:
             raise Layer3WorkbenchError("invalid_material_candidate", f"Unknown source candidate: {source_id}.")
+        if source_class == "dataset_version" and dataset_version_ids:
+            assert db is not None
+            candidates.extend(
+                _dataset_version_material_candidates(
+                    db,
+                    source_id=source_id,
+                    dataset_version_ids=dataset_version_ids,
+                    query_label=query_label,
+                )
+            )
+            continue
         short_id = _stable_id("mat", {"source_id": source_id, "query_basis": query_label}).split("-", 1)[1]
         planning_shape = "tabular_numeric" if source_class == "dataset_version" else "document_chunks"
         candidates.append(
@@ -1869,6 +2039,10 @@ def material_preview(payload: dict[str, Any]) -> dict[str, Any]:
                 "size_or_unit_count": 1,
                 "preview_payload_ref": None,
                 "provenance_ref": f"layer3-preview:{short_id}",
+                "source_identity": {"candidate_id": f"mat-{source_class}-{short_id}", "source_class": source_class},
+                "source_provenance": {"provenance_ref": f"layer3-preview:{short_id}"},
+                "payload": {"candidate_id": f"mat-{source_class}-{short_id}", "source_class": source_class},
+                "load_summary": {"loaded_records": 1, "failed_records": 0, "preview_material": True},
                 "current_decision_state": "candidate",
             }
         )
@@ -1921,6 +2095,12 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                 blocked_fields=["candidate_decisions.operator_reason"],
             )
         decision_basis = raw.get("decision_basis") if isinstance(raw.get("decision_basis"), dict) else {}
+        source_identity = decision_basis.get("source_identity") if isinstance(decision_basis.get("source_identity"), dict) else {}
+        source_provenance = (
+            decision_basis.get("source_provenance") if isinstance(decision_basis.get("source_provenance"), dict) else {}
+        )
+        payload_basis = decision_basis.get("payload") if isinstance(decision_basis.get("payload"), dict) else {}
+        load_summary = decision_basis.get("load_summary") if isinstance(decision_basis.get("load_summary"), dict) else {}
         decisions.append(
             {
                 "candidate_id": candidate_id,
@@ -1928,6 +2108,10 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                 "decision": decision,
                 "operator_reason": reason,
                 "decision_basis": _json_clone(decision_basis),
+                "source_identity": _json_clone(source_identity),
+                "source_provenance": _json_clone(source_provenance),
+                "payload": _json_clone(payload_basis),
+                "load_summary": _json_clone(load_summary),
             }
         )
 
@@ -1952,6 +2136,11 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                 "selector_payload": {
                     "candidate_id": item["candidate_id"],
                     "source_ref": item["decision_basis"].get("source_ref", item["candidate_id"]),
+                    **(
+                        {"dataset_version_id": item["source_identity"]["dataset_version_id"]}
+                        if item["source_identity"].get("dataset_version_id")
+                        else {}
+                    ),
                 },
                 "selection_basis": {
                     "candidate_id": item["candidate_id"],
@@ -1989,10 +2178,20 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             loaded_materials=[
                 SnapshotMaterial(
                     source_shape=item["source_class"],
-                    source_identity={"candidate_id": item["candidate_id"], "source_class": item["source_class"]},
-                    source_provenance=item["decision_basis"],
-                    payload={"candidate_id": item["candidate_id"], "source_class": item["source_class"], "decision": "approved"},
-                    load_summary={"loaded_records": 1, "failed_records": 0, "preview_material": True},
+                    source_identity={
+                        "candidate_id": item["candidate_id"],
+                        "source_class": item["source_class"],
+                        **item["source_identity"],
+                    },
+                    source_provenance=(item["source_provenance"] or item["decision_basis"]),
+                    payload=(
+                        item["payload"]
+                        or {"candidate_id": item["candidate_id"], "source_class": item["source_class"], "decision": "approved"}
+                    ),
+                    load_summary=(
+                        item["load_summary"]
+                        or {"loaded_records": 1, "failed_records": 0, "preview_material": True}
+                    ),
                 )
             ],
         )
@@ -4704,6 +4903,38 @@ def _package_owner_compatibility(
     }
 
 
+def _package_source_shape(
+    *,
+    output_metadata_summary: dict[str, Any],
+    pass_summary: dict[str, Any],
+) -> str | None:
+    cohort_shape = str(output_metadata_summary.get("cohort_shape") or pass_summary.get("cohort_shape") or "").strip()
+    if cohort_shape:
+        return cohort_shape
+    dataset_version_id = str(
+        output_metadata_summary.get("dataset_version_id") or pass_summary.get("dataset_version_id") or ""
+    ).strip()
+    if dataset_version_id:
+        return "dataset_version"
+    return None
+
+
+def _package_source_dataset_version_ids(
+    *,
+    output_metadata_summary: dict[str, Any],
+    pass_summary: dict[str, Any],
+) -> list[str]:
+    source_dataset_version_ids = output_metadata_summary.get("source_dataset_version_ids")
+    if not isinstance(source_dataset_version_ids, list):
+        source_dataset_version_ids = pass_summary.get("source_dataset_version_ids_json")
+    if isinstance(source_dataset_version_ids, list) and source_dataset_version_ids:
+        return [str(item) for item in source_dataset_version_ids if str(item or "").strip()]
+    dataset_version_id = str(
+        output_metadata_summary.get("dataset_version_id") or pass_summary.get("dataset_version_id") or ""
+    ).strip()
+    return [dataset_version_id] if dataset_version_id else []
+
+
 def _package_review_candidate_projection(*, package_commit_enabled: bool = True) -> list[dict[str, Any]]:
     readiness_reason = (
         "candidate family is eligible for bounded package construction commit"
@@ -5728,6 +5959,7 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             status="conflict",
             http_status=409,
         )
+    pass_summary = pass_run.summary_json or {}
     associated_cohort_preview = False
     if status_body.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT:
         associated_cohort_preview = _associated_cohort_result_source_admitted(
@@ -5874,8 +6106,15 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
         "pass_scope": output_metadata_summary.get("pass_scope"),
         "selected_method_name": output_metadata_summary.get("selected_method_name"),
         "source_gate": output_metadata_summary.get("source_gate"),
-        "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
+        "source_dataset_version_ids": _package_source_dataset_version_ids(
+            output_metadata_summary=output_metadata_summary,
+            pass_summary=pass_summary,
+        ),
         "cohort_shape": output_metadata_summary.get("cohort_shape"),
+        "source_shape": _package_source_shape(
+            output_metadata_summary=output_metadata_summary,
+            pass_summary=pass_summary,
+        ),
         "authority_rail": _authority_rail(
             session_id=session_id,
             current_gate="package",
@@ -6136,6 +6375,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
     db.commit()
 
     packages = list(result.output_packages)
+    pass_summary = pass_run.summary_json or {}
     return {
         **_base_response(
             PACKAGE_CONSTRUCTION_COMMIT_SCHEMA_ID,
@@ -6167,8 +6407,14 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
         "method": output_metadata_summary.get("selected_method_name"),
         "source_gate": output_metadata_summary.get("source_gate"),
         "package_construction_source_gate": source_gate,
-        "source_shape": output_metadata_summary.get("cohort_shape"),
-        "source_dataset_version_ids": _json_clone(output_metadata_summary.get("source_dataset_version_ids") or []),
+        "source_shape": _package_source_shape(
+            output_metadata_summary=output_metadata_summary,
+            pass_summary=pass_summary,
+        ),
+        "source_dataset_version_ids": _package_source_dataset_version_ids(
+            output_metadata_summary=output_metadata_summary,
+            pass_summary=pass_summary,
+        ),
         "reviewed_output_item_summary": {
             "reviewed_item_count": len(review_state.get("reviewed_output_items") or []),
             "unresolved_trace_count": int(review_state.get("unresolved_trace_count") or 0),
