@@ -30,6 +30,24 @@ APS_DATASET_BRIDGE_VERSION = "1.0.0"
 APS_DATASET_BRIDGE_SOURCE_SYSTEM = "nrc_adams_aps"
 
 _UUID_NAMESPACE = uuid.UUID("6fb6e746-3de8-4bd4-9b2b-c97df1f14f13")
+_TABLE_PARSER_CONTRACTS = {
+    "csv_table": {
+        "typed_content_contract_id": "aps_csv_table_units_v1",
+        "logical_prefix": "csv-table",
+        "dataset_label": "CSV table",
+        "description": "Materialized from NRC APS CSV parser diagnostics.",
+        "version_label": "aps_csv_table_v1",
+        "source_mode": "artifact_csv_parser",
+    },
+    "xlsx_workbook": {
+        "typed_content_contract_id": "aps_xlsx_table_units_v1",
+        "logical_prefix": "xlsx-table",
+        "dataset_label": "XLSX workbook table",
+        "description": "Materialized from NRC APS XLSX workbook parser diagnostics.",
+        "version_label": "aps_xlsx_table_v1",
+        "source_mode": "artifact_xlsx_parser",
+    },
+}
 
 
 def _stable_json(value: Any) -> str:
@@ -227,7 +245,7 @@ def _persist_bridge_frame(
     persist_dataframe_as_version_rows(db, version, frame, time_column)
 
 
-def materialize_csv_table_dataset(
+def materialize_table_unit_dataset(
     db: Session,
     *,
     target_artifact_payload: dict[str, Any],
@@ -237,9 +255,11 @@ def materialize_csv_table_dataset(
     commit: bool = True,
 ) -> dict[str, Any]:
     extraction = dict(target_artifact_payload.get("extraction") or {})
-    if str(extraction.get("parser_family") or "").strip() != "csv_table":
+    parser_family = str(extraction.get("parser_family") or "").strip()
+    parser_contract = _TABLE_PARSER_CONTRACTS.get(parser_family)
+    if parser_contract is None:
         raise ValueError("dataset_bridge_requires_csv_table_parser")
-    if str(extraction.get("typed_content_contract_id") or "").strip() != "aps_csv_table_units_v1":
+    if str(extraction.get("typed_content_contract_id") or "").strip() != parser_contract["typed_content_contract_id"]:
         raise ValueError("dataset_bridge_requires_csv_table_contract")
 
     units = _table_units(extraction)
@@ -257,7 +277,7 @@ def materialize_csv_table_dataset(
     )
     dataset_id = _stable_uuid(f"dataset:{source_artifact_key}")
     version_id = _stable_uuid(f"dataset-version:{source_artifact_key}")
-    logical_dataset_key = f"csv-table:{source_artifact_key}"
+    logical_dataset_key = f"{parser_contract['logical_prefix']}:{source_artifact_key}"
 
     existing_version = db.get(DatasetVersion, version_id)
     if existing_version is not None:
@@ -282,8 +302,8 @@ def materialize_csv_table_dataset(
         dataset = Dataset(
             dataset_id=dataset_id,
             source_id=connector.source_id,
-            name=f"APS CSV table {target_artifact_payload.get('target_id') or table_index}",
-            description="Materialized from NRC APS CSV parser diagnostics.",
+            name=f"APS {parser_contract['dataset_label']} {target_artifact_payload.get('target_id') or table_index}",
+            description=parser_contract["description"],
             domain_pack="nrc_aps",
             frequency_hint=frequency_hint,
             time_column=time_column,
@@ -294,7 +314,7 @@ def materialize_csv_table_dataset(
     version = DatasetVersion(
         dataset_version_id=version_id,
         dataset_id=dataset.dataset_id,
-        version_label="aps_csv_table_v1",
+        version_label=parser_contract["version_label"],
         version_type="raw",
         status="ready",
         notes=(
@@ -368,7 +388,7 @@ def materialize_csv_table_dataset(
             dataset_version_id=version.dataset_version_id,
             connector_run_id=str(connector_run_id or "").strip() or None,
             source_system=APS_DATASET_BRIDGE_SOURCE_SYSTEM,
-            source_mode="artifact_csv_parser",
+            source_mode=parser_contract["source_mode"],
             source_artifact_key=source_artifact_key,
             sciencebase_file_name=str(extraction.get("source_filename") or "").strip() or None,
             downloaded_sha256=str(download.get("blob_sha256") or "").strip() or None,
@@ -411,3 +431,22 @@ def materialize_csv_table_dataset(
         ],
         "storage_ref": version.storage_ref,
     }
+
+
+def materialize_csv_table_dataset(
+    db: Session,
+    *,
+    target_artifact_payload: dict[str, Any],
+    artifact_storage_dir: str | Path | None = None,
+    connector_run_id: str | None = None,
+    table_index: int = 1,
+    commit: bool = True,
+) -> dict[str, Any]:
+    return materialize_table_unit_dataset(
+        db,
+        target_artifact_payload=target_artifact_payload,
+        artifact_storage_dir=artifact_storage_dir,
+        connector_run_id=connector_run_id,
+        table_index=table_index,
+        commit=commit,
+    )

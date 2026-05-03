@@ -45,12 +45,12 @@ Adequately scoped:
 - The current verdict is limited to audited document-chunk paths, existing dataset paths, explicit APS-derived CSV dataset admission through `dataset_version`, and selected-pass execution/package proof for that path.
 - The target design separates current implementation from future parser/bridge/workbench admission.
 - Phase P1 is narrow: classification/refusal hardening and fixture coverage only.
-- UI work, spreadsheet parsing, JSON parsing, SEC/EDGAR parsing, and broad source-shape expansion are explicitly deferred.
+- JSON parsing, SEC/EDGAR parsing, broad source-shape expansion, and automatic XLSX connector orchestration are explicitly deferred. Bounded `.xlsx` parsing/materialization is now implemented as Phase P7.
 
 Not over-scoped:
 
 - The pack does not try to solve all heterogeneous ingestion at once.
-- It does not claim CSV, XLSX, JSON, XML, HTML, SEC/EDGAR, financial filings, or time-series APS artifacts are already supported end to end.
+- It does not claim JSON, XML, HTML, SEC/EDGAR, financial filings, mixed-source artifacts, arbitrary workbooks, or time-series APS artifacts are already supported end to end. CSV is end-to-end through the explicit bridge/UI path; XLSX is bounded to parser diagnostics plus explicit table-unit materialization.
 - It does not modify existing progress manifests because doing so would imply governance admission beyond this planning-entry pack.
 
 Not under-scoped:
@@ -68,7 +68,7 @@ The docs are internally consistent on these boundaries:
 - Candidate B means PDF-only OpenDataLoader PDF processing.
 - CSV-as-text is not tabular support.
 - JSON/XML/HTML remain refused until parser families are explicitly admitted.
-- XLSX must not be accepted as generic ZIP.
+- XLSX must not be accepted as generic ZIP; `.xlsx` must route through `xlsx_workbook`, while `.xls`, `.xlsm`, encrypted, formula-bearing, empty, or ambiguous workbooks fail closed.
 - UI projection must not become parser/source authority.
 - Schema or migration work requires a separate freeze.
 
@@ -90,7 +90,7 @@ Answer: Saying the pipeline supports all CSV or non-PDF typed data merely becaus
 
 Question: What would be the most likely omission?
 
-Answer: Missing the XLSX-as-ZIP ambiguity. The pack explicitly marks XLSX detection/refusal as a P1 requirement and validation target.
+Answer: Missing the XLSX-as-ZIP ambiguity. The pack explicitly marked XLSX detection/refusal as a P1 requirement and validation target; Phase P7 now admits bounded `.xlsx` parsing without weakening `.xls`/`.xlsm` refusal.
 
 Question: What would create avoidable tech debt?
 
@@ -106,7 +106,7 @@ Answer: Targeted file families must have deterministic detection, parser fixture
 
 Question: Did P2 accidentally widen parser behavior?
 
-Answer: No. P2 introduced metadata-only parser admission for already-existing processor families. CSV, spreadsheet, JSON, SEC/EDGAR, dataset bridge, schema, Layer 3 source-shape, and UI work remain deferred.
+Answer: No. P2 introduced metadata-only parser admission for already-existing processor families. CSV and XLSX parser/materialization work were added later in bounded phases; JSON, SEC/EDGAR, schema, new Layer 3 source-shape, and broad UI work remain deferred.
 
 Question: Did P3 overclaim CSV support?
 

@@ -52,7 +52,7 @@ Architecture regression checks:
 | Image JPEG/PNG/TIFF | OCR into text chunks | Preserve; add source-family diagnostics |
 | Generic ZIP | Archive bundle for selected members | Preserve only with visible member outcome accounting |
 | ZIP with CSV | CSV member is parsed into table diagnostics and is not flattened into text | Future dataset bridge should materialize table units only when explicitly admitted |
-| XLSX | Risk of ZIP-signature ambiguity | Detect as spreadsheet or refuse until parser is admitted |
+| XLSX | Risk of ZIP-signature ambiguity | Detect as spreadsheet and admit only through the bounded `.xlsx` parser |
 | CSV standalone | Not first-class | Detect as table candidate; refuse or parse explicitly |
 | JSON | Explicitly refused | Keep refused until `json_recordset` parser exists |
 | XML | Explicitly refused | Keep refused until selected structured parser exists |
@@ -69,7 +69,7 @@ Unit tests:
 - Supported text still resolves to text.
 - Supported images still resolve to image types.
 - Generic ZIP still resolves to archive only when it is truly generic archive content.
-- XLSX fixture is not classified as generic ZIP.
+- XLSX fixture is not classified as generic ZIP and is parser-admitted only through `xlsx_workbook`.
 - CSV fixture is not silently claimed as qualitative document support when typed parser is disabled.
 - JSON/XML/HTML fixtures are refused with stable tokens.
 - Declared/sniffed conflicts fail closed or resolve according to explicit precedence.
@@ -87,6 +87,7 @@ Regression risks:
 - Accidental widening of JSON/XML/HTML behavior.
 - Candidate B accepting non-PDF input.
 - XLSX being accepted as archive.
+- XLSM, encrypted, formula-bearing, ambiguous, or empty workbooks being silently accepted.
 
 ## Phase P2 Validation
 
@@ -355,6 +356,10 @@ Assertions:
 - Sheet/table provenance is retained.
 - Formula/value policy is explicit.
 - Dataset bridge sees sheet/table origin.
+
+Implemented P7 focused command:
+
+- `python -m pytest .\tests\test_nrc_aps_spreadsheet_parser.py .\tests\test_nrc_aps_media_detection.py .\tests\test_nrc_aps_parser_registry.py .\tests\test_nrc_aps_document_processing.py .\tests\test_nrc_aps_artifact_ingestion.py .\tests\test_nrc_aps_dataset_bridge.py -k "not candidate_b"`: `66 passed`, `9 deselected` for the XLSX/CSV/media/bridge surface while excluding the known local Candidate B package-version mismatch.
 
 ## Phase P8 JSON Recordset Validation
 
