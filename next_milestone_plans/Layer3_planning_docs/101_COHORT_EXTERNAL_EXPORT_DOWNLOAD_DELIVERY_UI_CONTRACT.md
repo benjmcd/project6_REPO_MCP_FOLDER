@@ -2,13 +2,13 @@
 
 ## Status
 
-Branch-local planning/control contract paired with `100_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_FREEZE.md`.
+Current-main planning/control contract paired with `100_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_FREEZE.md`.
 
-This contract defines how a future rendered `/review/layer3` implementation may intentionally settle associated-cohort delivery UI activation over the current PR `#483` backend/API proof. It does not change runtime behavior by itself and does not admit public URLs, signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
+This contract defines how PR `#487` intentionally settles associated-cohort delivery UI activation over the PR `#483` backend/API proof. It does not admit public URLs, signed URLs, connector dispatch, destination selection, generic downstream dispatch, package mutation/reconstruction, schema/runtime/source widening, qualitative/hybrid/RAG/vector behavior, or full mockup activation.
 
 ## Authority Order
 
-The future UI must use this authority order:
+The implemented UI uses this authority order:
 
 1. server-stored Layer 3 session, approved plan, selected associated-cohort pass, result/status, result-review, package construction, package-review submit, handoff/export prepare, APS dispatch, and external export/download readiness state;
 2. server summary or response field that explicitly admits associated-cohort rendered delivery activation;
@@ -31,17 +31,19 @@ The rendered delivery control may be enabled only when all of these are true:
 - external export/download record ref and descriptor ref are present;
 - APS output package kind is `aps_evidence_bundle_handoff`;
 - APS bundle ref/id/schema/hash/size are present and server-derived;
-- the server explicitly marks associated-cohort rendered delivery as available, for example through a dedicated delivery UI state object or an updated `browser_download_enabled` semantics;
+- the server explicitly marks associated-cohort rendered delivery as available through `delivery_ui.available == true`, `delivery_ui.state == associated_cohort_external_export_download_delivery_ui_ready`, and `delivery_ui.server_authority == associated_cohort_external_export_download_delivery_ui_gate`;
 - no downstream flag requires public/signed URL generation, connector dispatch, destination selection, generic dispatch, package mutation, schema/runtime/source widening, or broader UI activation.
 
-If any field is missing, stale, ambiguous, or not explicitly server-admitted, the UI must render delivery unavailable. In particular, if `browser_download_enabled` remains `false` and no explicit replacement gate is provided, the control must stay disabled.
+If any field is missing, stale, ambiguous, or not explicitly server-admitted, the UI must render delivery unavailable. PR `#487` preserves `browser_download_enabled: false` and uses `delivery_ui` as the explicit replacement gate; if that object is absent or unavailable, the control stays disabled.
 
 ## State Vocabulary
 
-UI states are presentation-only:
+UI states are presentation-only. PR `#487` makes the server `delivery_ui.state` associated-cohort-specific while preserving existing generic rendered delivery labels for shared ready/in-flight attempt presentation:
 
 - `associated_cohort_external_export_download_delivery_ui_unavailable`;
 - `associated_cohort_external_export_download_delivery_ui_ready`;
+- `external_export_download_delivery_ui_ready`;
+- `external_export_download_delivery_ui_downloading`;
 - `associated_cohort_external_export_download_delivery_ui_downloading`;
 - `associated_cohort_external_export_download_delivery_ui_submitted`;
 - `associated_cohort_external_export_download_delivery_ui_completed`;
@@ -144,7 +146,7 @@ The UI must not:
 
 ## Proof Requirements
 
-A future implementation PR must prove:
+PR `#487` proves:
 
 - unavailable state when server delivery UI authority is absent, including the current `browser_download_enabled: false` case if no replacement gate is added;
 - ready state only after exact associated-cohort server authority;
@@ -155,4 +157,4 @@ A future implementation PR must prove:
 - no connector/destination/generic dispatch, package mutation, row creation, schema/runtime/source widening, or full mockup activation occurs;
 - existing PR `#483` backend/API tests still pass;
 - page/static tests cover the explicit server gate;
-- headed and headless Chromium tests cover unavailable, ready, and successful same-origin attachment behavior.
+- headed and headless Chromium tests cover unavailable, ready, and same-origin attachment response behavior.
