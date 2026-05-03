@@ -1177,6 +1177,7 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
         "next_state",
         "authority_rail",
     } <= set(prepare_schema["required"])
+    assert "delivery_ui" in prepare_schema["properties"]
 
 
 def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> None:
@@ -5977,6 +5978,24 @@ def test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_compani
     assert download_body["connector_dispatch_enabled"] is False
     assert download_body["destination_selection_enabled"] is False
     assert download_body["generic_downstream_dispatch_enabled"] is False
+    assert download_body["delivery_ui"] == {
+        "schema_id": "layer3.external_export_download_delivery_ui.v1",
+        "available": True,
+        "state": "associated_cohort_external_export_download_delivery_ui_ready",
+        "blocked_reason": None,
+        "blocked_fields": [],
+        "operator_decision": "deliver_external_export_download",
+        "delivery_mode": "same_origin_artifact_stream",
+        "server_authority": "associated_cohort_external_export_download_delivery_ui_gate",
+        "browser_managed_same_origin_attachment_enabled": True,
+        "public_url_enabled": False,
+        "signed_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_selection_enabled": False,
+        "generic_downstream_dispatch_enabled": False,
+        "package_mutation_enabled": False,
+        "schema_runtime_source_widening_enabled": False,
+    }
     assert download_body["downstream_unavailable"] == [
         "browser_download",
         "download_url",
@@ -6075,6 +6094,17 @@ def test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_compani
         "dv-api-cohort-aps-001",
         "dv-api-cohort-aps-002",
     ]
+    assert summary_after_prepare_body["external_export_download"]["delivery_ui"]["available"] is True
+    assert summary_after_prepare_body["external_export_download"]["delivery_ui"]["state"] == (
+        "associated_cohort_external_export_download_delivery_ui_ready"
+    )
+    assert (
+        summary_after_prepare_body["external_export_download"]["delivery_ui"][
+            "browser_managed_same_origin_attachment_enabled"
+        ]
+        is True
+    )
+    assert summary_after_prepare_body["external_export_download"]["delivery_ui"]["public_url_enabled"] is False
     assert summary_after_prepare_body["downstream_unavailable"] == [
         "browser_download",
         "download_url",

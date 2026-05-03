@@ -163,6 +163,10 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "postJson('/handoff/aps/dispatch'" in js.text
     assert "postJson('/handoff/export/download/prepare'" in js.text
     assert "submitAttachmentForm('/handoff/export/download/deliver'" in js.text
+    assert "function externalExportDownloadDeliveryUiAdmitted" in js.text
+    assert "deliveryUi.state === 'associated_cohort_external_export_download_delivery_ui_ready'" in js.text
+    assert "deliveryUi.browser_managed_same_origin_attachment_enabled === true" in js.text
+    assert "deliveryUi.public_url_enabled === false" in js.text
     assert ".blob()" not in js.text
     assert "operator_view_mode: 'status_only'" in js.text
     assert "operator_decision: elements.resultReviewDecision.value" in js.text
@@ -319,6 +323,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "external_export_download_state: externalExportDownloadStateName(external)" in external_delivery_slice
     assert "delivery_mode: 'same_origin_artifact_stream'" in external_delivery_slice
     assert "operator_decision: 'deliver_external_export_download'" in external_delivery_slice
+    assert "delivery_ui:" not in external_delivery_slice
     for forbidden in (
         "download_url",
         "download_token",
