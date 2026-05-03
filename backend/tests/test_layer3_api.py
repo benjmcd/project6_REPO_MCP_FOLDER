@@ -6331,6 +6331,25 @@ def test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_compani
     assert cohort_delivery_replay.status_code == 200
     assert cohort_delivery_replay.content == expected_delivery_bytes
 
+    monkeypatch.delenv("LAYER3_SIGNED_REFERENCE_SECRET", raising=False)
+    missing_secret_reference = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/generate",
+        json=cohort_deliver_payload,
+    )
+    assert missing_secret_reference.status_code == 409
+    assert missing_secret_reference.json()["error_code"] == (
+        "external_export_download_signed_reference_secret_required"
+    )
+    assert missing_secret_reference.json()["blocked_fields"] == ["LAYER3_SIGNED_REFERENCE_SECRET"]
+
+    missing_secret_use = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/use",
+        json={"signed_reference_token": "not-a-valid-reference"},
+    )
+    assert missing_secret_use.status_code == 409
+    assert missing_secret_use.json()["error_code"] == "external_export_download_signed_reference_secret_required"
+
+    monkeypatch.setenv("LAYER3_SIGNED_REFERENCE_SECRET", "test-layer3-signed-reference-secret")
     signed_reference = client.post(
         "/api/v1/layer3/handoff/export/download/signed-reference/generate",
         json=cohort_deliver_payload,
@@ -6365,6 +6384,8 @@ def test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_compani
     assert signed_reference_body["generic_downstream_dispatch_enabled"] is False
     assert signed_reference_body["package_mutation_enabled"] is False
     assert signed_reference_body["schema_runtime_source_widening_enabled"] is False
+    assert signed_reference_body["authority_rail"]["configured_secret_present"] is True
+    assert signed_reference_body["authority_rail"]["process_restart_invalidates_existing_tokens"] is False
     for forbidden_field in ("download_url", "download_token", "public_url", "signed_url", "connector_run_id"):
         assert forbidden_field not in signed_reference_body
 
