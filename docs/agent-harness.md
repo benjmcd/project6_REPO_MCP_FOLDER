@@ -67,6 +67,8 @@ Pick checks based on touched files:
 
 Validation-only actions must fail closed on missing runtime state and must not seed or generate runtime artifacts unless the command explicitly declares that behavior.
 
+For current `project6.ps1` action semantics, use `docs/harness-validate-inventory.md` as the wrapper-level inventory before treating any command as validation-only.
+
 ## Non-Interference
 
 - Recheck open PRs and `project6-origin/main` before creating, pushing, or merging.
