@@ -197,6 +197,44 @@ def check_oversized_files(repo_root: Path, files: Iterable[str]) -> list[Issue]:
     return issues
 
 
+def check_codesight_freshness(repo_root: Path) -> list[Issue]:
+    codesight = repo_root / ".codesight"
+    if not codesight.exists():
+        return []
+    marker = codesight / "freshness.json"
+    if not marker.exists():
+        return [
+            Issue(
+                code="CODESIGHT_FRESHNESS_MISSING",
+                severity="warning",
+                path=".codesight",
+                message="local generated navigation exists without .codesight/freshness.json",
+            )
+        ]
+    try:
+        payload = json.loads(marker.read_text(encoding="utf-8-sig"))
+    except Exception as exc:  # noqa: BLE001
+        return [
+            Issue(
+                code="CODESIGHT_FRESHNESS_INVALID",
+                severity="warning",
+                path=".codesight/freshness.json",
+                message=f"freshness marker could not be parsed: {type(exc).__name__}: {exc}",
+            )
+        ]
+    missing = [key for key in ("source_commit", "generated_at", "command") if not payload.get(key)]
+    if missing:
+        return [
+            Issue(
+                code="CODESIGHT_FRESHNESS_INCOMPLETE",
+                severity="warning",
+                path=".codesight/freshness.json",
+                message=f"freshness marker is missing required field(s): {', '.join(missing)}",
+            )
+        ]
+    return []
+
+
 def run_checks(repo_root: Path) -> list[Issue]:
     files = git_ls_files(repo_root)
     issues: list[Issue] = []
@@ -204,6 +242,7 @@ def run_checks(repo_root: Path) -> list[Issue]:
     issues.extend(check_json_syntax(repo_root, files))
     issues.extend(scan_local_path_refs(repo_root, files))
     issues.extend(check_oversized_files(repo_root, files))
+    issues.extend(check_codesight_freshness(repo_root))
     return issues
 
 
