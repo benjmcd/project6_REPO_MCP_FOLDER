@@ -4,19 +4,20 @@ Status: required checks for the planning pack and later implementation phases.
 
 ## Current Branch Validation
 
-This branch now contains Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Phase P5, and Phase P6 source/test changes plus the planning pack. Required validation for this pass:
+This branch now contains Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Phase P5, Phase P6, and bounded Phase P10A source/test/UI changes plus the planning pack. Required validation for this pass:
 
 - `git diff --check`
 - `git status --short --branch`
 - Re-read created docs for internal consistency.
-- Confirm no UI asset, schema, migration, or model changed.
-- Confirm the only API route-definition change is the existing Layer 3 material-preview endpoint accepting DB-backed explicit `dataset_version_ids`.
+- Confirm no schema, migration, or model changed.
+- Confirm UI asset changes are limited to bounded APS-derived `DatasetVersion` operator selection in the Layer 3 workbench.
+- Confirm API route-definition changes are limited to material-preview accepting DB-backed explicit `dataset_version_ids` and read-only APS-derived dataset-version candidate listing.
 - Run focused dataset-bridge, CSV parser, parser-registry, media/artifact/document-processing tests.
 - Run the route-level CSV dataset bridge test proving connector finalization can invoke the bridge under `csv_dataset_bridge_enabled=true`.
 - Run Layer 3 workbench/API tests proving APS-derived dataset material reaches Gate B, Gate C, and plan preview.
 - Run Layer 3 API tests proving APS-derived dataset material reaches execution, result review, package preview, and package commit.
 
-Browser tests are not required because no UI assets changed.
+Browser tests are required for Phase P10A because UI assets changed.
 
 ## General Test Doctrine
 
@@ -253,9 +254,9 @@ Caveat:
 
 - Both commands exited successfully but emitted the known Windows temp cleanup `PermissionError` after the green result for `pytest-current`.
 
-## Post-P5 UI/State Validation Still Deferred
+## Phase P10A UI/State Validation
 
-Future UI/operator tests:
+Status: implemented for bounded Layer 3 APS-derived CSV `DatasetVersion` selection surfacing.
 
 - Source preview shows existing `aps_content_document` unchanged.
 - Source preview shows pre-existing `dataset_version` unchanged.
@@ -264,6 +265,31 @@ Future UI/operator tests:
 - Gate B records source identity and provenance.
 - Gate C typing uses quantitative dataset rules.
 - Unsupported source shape fails closed.
+
+Additional P10A validation:
+
+- Read-only Layer 3 candidate endpoint returns APS-derived dataset versions from existing `DatasetSourceProvenance` rows.
+- Workbench static UI includes APS-derived `DatasetVersion` candidate display, explicit ID input, and material-preview `dataset_version_ids` wiring.
+- Headless and headed Chromium both pass the Layer 3 workbench browser spec after the UI asset change.
+
+Commands:
+
+- `python -m pytest .\backend\tests\test_layer3_page.py .\backend\tests\test_layer3_workbench.py .\backend\tests\test_layer3_api.py -k "aps_dataset_version_candidates or dataset_version_candidates or first_slice_preview_openapi_contracts or layer3_page_route_serves_workbench_shell or layer3_static_assets_are_mounted"`
+- `python -m pytest .\backend\tests\test_layer3_page.py .\backend\tests\test_layer3_workbench.py .\backend\tests\test_layer3_api.py`
+- `npm run test:e2e:chromium -- e2e/layer3-workbench.spec.js`
+- `npm run test:e2e:headed -- e2e/layer3-workbench.spec.js`
+
+Result:
+
+- Focused page/workbench/API selection: `5 passed, 84 deselected`.
+- Full Layer 3 page/workbench/API files: `89 passed`.
+- Headless Chromium Layer 3 workbench spec: `8 passed`.
+- Headed Chromium Layer 3 workbench spec: `8 passed`.
+
+Caveat:
+
+- Pytest exited successfully but emitted the known Windows temp cleanup `PermissionError` after green results for `pytest-current`.
+- The first Playwright attempt used a Windows backslash file argument and found no tests; cleanup verification showed no live listener on port `8031`, and the rerun with a forward-slash path passed.
 
 Future state consistency tests:
 

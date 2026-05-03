@@ -104,6 +104,13 @@ class Layer3MaterialPreviewResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
 
 
+class Layer3DatasetVersionCandidatesResponse(Layer3BaseResponse):
+    dataset_version_candidates: list[dict[str, Any]]
+    candidate_count: int
+    source_system: str
+    authority_rail: dict[str, Any]
+
+
 class Layer3GateBDecisionResponse(Layer3BaseResponse):
     session_id: str
     selection_manifest_id: str
@@ -1333,6 +1340,15 @@ def post_source_preview(payload: dict[str, Any]) -> dict[str, Any] | JSONRespons
 )
 def post_material_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.material_preview(payload, db))
+
+
+@router.get(
+    "/dataset-version-candidates",
+    response_model=Layer3DatasetVersionCandidatesResponse,
+    responses=_workbench_error_responses(400),
+)
+def get_dataset_version_candidates(limit: int = 50, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.aps_dataset_version_candidates(db, limit=limit))
 
 
 @router.post(
