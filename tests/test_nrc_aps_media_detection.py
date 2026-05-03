@@ -1,6 +1,8 @@
 import os
 import sys
 from pathlib import Path
+from io import BytesIO
+import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +22,15 @@ from app.services import nrc_aps_media_detection  # noqa: E402
 
 def _fixture_bytes(name: str) -> bytes:
     return (FIXTURE_DIR / name).read_bytes()
+
+
+def _xlsx_bytes() -> bytes:
+    payload = BytesIO()
+    with zipfile.ZipFile(payload, "w") as archive:
+        archive.writestr("[Content_Types].xml", "<Types></Types>")
+        archive.writestr("xl/workbook.xml", "<workbook></workbook>")
+        archive.writestr("xl/worksheets/sheet1.xml", "<worksheet></worksheet>")
+    return payload.getvalue()
 
 
 def test_detect_media_type_sniffs_pdf_when_header_is_generic():
@@ -61,4 +72,73 @@ def test_detect_media_type_rejects_unknown_binary_without_supported_header():
     )
     assert result["sniffed_content_type"] == ""
     assert result["media_detection_status"] == nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_UNKNOWN
+    assert result["supported_for_processing"] is False
+
+
+def test_detect_media_type_refuses_declared_json_even_when_body_is_pdf():
+    result = nrc_aps_media_detection.detect_media_type(
+        b"%PDF-1.4\nbody",
+        declared_content_type="application/json",
+    )
+    assert result["sniffed_content_type"] == "application/pdf"
+    assert result["effective_content_type"] == "application/json"
+    assert result["media_detection_status"] == nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_REFUSED
+    assert result["media_detection_reason"] == "declared_refusal_type"
+    assert result["content_family"] == "recordset"
+    assert result["supported_for_processing"] is False
+
+
+def test_detect_media_type_admits_csv_declared_type():
+    result = nrc_aps_media_detection.detect_media_type(
+        b"date,value\n2026-01-01,42\n",
+        declared_content_type="text/csv",
+    )
+    assert result["sniffed_content_type"] == "text/plain"
+    assert result["effective_content_type"] == "text/csv"
+    assert result["media_detection_status"] == nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_DECLARED_ONLY
+    assert result["media_detection_reason"] == "csv_declared_type_admitted_with_text_signature"
+    assert result["content_family"] == "table"
+    assert result["supported_for_processing"] is True
+
+
+def test_detect_media_type_admits_csv_extension():
+    result = nrc_aps_media_detection.detect_media_type(
+        b"date,value\n2026-01-01,42\n",
+        declared_content_type="text/plain",
+        source_filename="observations.csv",
+    )
+    assert result["file_extension"] == ".csv"
+    assert result["extension_content_type"] == "text/csv"
+    assert result["effective_content_type"] == "text/csv"
+    assert result["media_detection_status"] == nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_EXTENSION
+    assert result["media_detection_reason"] == "csv_extension_admitted_with_text_signature"
+    assert result["content_family"] == "table"
+    assert result["supported_for_processing"] is True
+
+
+def test_detect_media_type_marks_xlsx_container_as_unadmitted_spreadsheet():
+    result = nrc_aps_media_detection.detect_media_type(
+        _xlsx_bytes(),
+        declared_content_type="application/octet-stream",
+    )
+    assert result["sniffed_content_type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    assert result["signature_basis"] == "office_open_xml_package"
+    assert result["media_detection_status"] == nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_TYPED_UNADMITTED
+    assert result["media_detection_reason"] == "sniffed_typed_parser_not_admitted"
+    assert result["content_family"] == "spreadsheet"
+    assert result["supported_for_processing"] is False
+
+
+def test_detect_media_type_marks_xlsx_extension_as_unadmitted_before_generic_zip():
+    result = nrc_aps_media_detection.detect_media_type(
+        b"PK\x03\x04not-a-complete-workbook",
+        declared_content_type="application/zip",
+        source_filename=r"C:\tmp\workbook.xlsx",
+    )
+    assert result["source_filename"] == "workbook.xlsx"
+    assert result["file_extension"] == ".xlsx"
+    assert result["effective_content_type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    assert result["media_detection_status"] == nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_TYPED_UNADMITTED
+    assert result["media_detection_reason"] == "extension_typed_parser_not_admitted"
+    assert result["content_family"] == "spreadsheet"
     assert result["supported_for_processing"] is False

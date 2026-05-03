@@ -16,7 +16,9 @@ from typing import Any
 import fitz
 
 from app.services import nrc_aps_media_detection
+from app.services import nrc_aps_csv_parser
 from app.services import nrc_aps_ocr
+from app.services import nrc_aps_parser_registry
 from app.services import nrc_aps_settings
 from app.services import nrc_aps_advanced_table_parser
 from app.services import nrc_aps_advanced_ocr
@@ -44,6 +46,7 @@ APS_QUALITY_STATUS_LIMITED = "limited"
 APS_QUALITY_STATUS_WEAK = "weak"
 APS_QUALITY_STATUS_UNUSABLE = "unusable"
 APS_IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png", "image/tiff"}
+APS_CSV_CONTENT_TYPES = {"text/csv", "application/csv"}
 # Safety limits for ZIP extraction
 APS_ZIP_MAX_TOTAL_EXTRACTED_SIZE = 500 * 1024 * 1024  # 500MB
 APS_ZIP_MAX_MEMBER_SIZE = 100 * 1024 * 1024  # 100MB
@@ -110,6 +113,18 @@ def _normalize_document_processing_engine(value: Any) -> str:
     if processing_engine not in _ADMITTED_DOCUMENT_PROCESSING_ENGINES:
         return APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
     return processing_engine
+
+
+def _parser_registry_fields(config: dict[str, Any]) -> dict[str, Any]:
+    entry = dict(config.get("_parser_registry_entry") or {})
+    return {
+        "parser_registry_contract_id": entry.get("parser_registry_contract_id"),
+        "parser_registry_version": entry.get("parser_registry_version"),
+        "parser_admission_status": entry.get("parser_admission_status"),
+        "parser_family": entry.get("parser_family"),
+        "parser_output_family": entry.get("parser_output_family"),
+        "parser_contract_id": entry.get("parser_contract_id"),
+    }
 
 
 def _capture_visual_page_ref(page: Any, page_number: int, visual_page_class: str) -> dict[str, Any]:
@@ -289,6 +304,9 @@ def default_processing_config(overrides: dict[str, Any] | None = None) -> dict[s
         "ocr_timeout_seconds": 120,
         "content_min_searchable_chars": 200,
         "content_min_searchable_tokens": 30,
+        "csv_parse_max_bytes": 5_000_000,
+        "csv_parse_max_rows": 10_000,
+        "csv_parse_max_columns": 200,
         "visual_render_dpi": APS_VISUAL_RENDER_DPI_DEFAULT,
         "visual_lane_mode": "baseline",
         "document_processing_engine": APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
@@ -325,6 +343,7 @@ def process_document(
         content,
         declared_content_type=declared_content_type,
         sniff_bytes=int(config["content_sniff_bytes"]),
+        source_filename=config.get("source_filename", ""),
     )
     effective_type = str(detection.get("effective_content_type") or "")
     if not bool(detection.get("supported_for_processing")):
@@ -333,7 +352,18 @@ def process_document(
         raise ValueError("empty_content")
     if processing_engine == APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B and effective_type != "application/pdf":
         raise ValueError("document_processing_engine_requires_pdf")
+    parser_entry = nrc_aps_parser_registry.resolve_parser(
+        effective_content_type=effective_type,
+        document_processing_engine=processing_engine,
+        supported_for_processing=detection.get("supported_for_processing"),
+    )
+    config = {**config, "_parser_registry_entry": parser_entry}
+    if parser_entry.get("parser_admission_status") != nrc_aps_parser_registry.APS_PARSER_ADMISSION_STATUS_ADMITTED:
+        failure_code = str(parser_entry.get("parser_failure_code") or effective_type or "unknown")
+        raise ValueError(f"unsupported_parser:{failure_code}")
     _raise_if_deadline_exceeded(deadline)
+    if effective_type in APS_CSV_CONTENT_TYPES:
+        return _process_csv(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type == "text/plain":
         return _process_plain_text(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type == "application/pdf":
@@ -345,6 +375,61 @@ def process_document(
     if effective_type == "application/zip":
         return _process_zip(content=content, detection=detection, config=config, deadline=deadline)
     raise ValueError(f"unsupported_content_type:{effective_type or 'unknown'}")
+
+
+def _process_csv(
+    *,
+    content: bytes,
+    detection: dict[str, Any],
+    config: dict[str, Any],
+    deadline: float | None,
+) -> dict[str, Any]:
+    _raise_if_deadline_exceeded(deadline)
+    parsed = nrc_aps_csv_parser.parse_csv_table(
+        content=content,
+        max_bytes=int(config["csv_parse_max_bytes"]),
+        max_rows=int(config["csv_parse_max_rows"]),
+        max_columns=int(config["csv_parse_max_columns"]),
+    )
+    _raise_if_deadline_exceeded(deadline)
+    normalized_text = ""
+    return {
+        **detection,
+        "document_processing_contract_id": APS_DOCUMENT_EXTRACTION_CONTRACT_ID,
+        **_parser_registry_fields(config),
+        "extractor_family": "csv_table",
+        "extractor_id": nrc_aps_csv_parser.APS_CSV_PARSER_ID,
+        "extractor_version": nrc_aps_csv_parser.APS_CSV_PARSER_VERSION,
+        "normalization_contract_id": None,
+        "typed_content_contract_id": nrc_aps_csv_parser.APS_CSV_TABLE_CONTRACT_ID,
+        "document_class": "delimited_table",
+        "page_count": 1,
+        "quality_status": APS_QUALITY_STATUS_STRONG,
+        "quality_metrics": {
+            "quality_status": APS_QUALITY_STATUS_STRONG,
+            "row_count": parsed["row_count"],
+            "column_count": parsed["column_count"],
+        },
+        "degradation_codes": _degradation_codes_for_detection(detection, APS_QUALITY_STATUS_STRONG),
+        "ordered_units": [],
+        "table_units": parsed["table_units"],
+        "time_series_units": parsed["time_series_units"],
+        "table_diagnostics": {
+            "csv_table_contract_id": parsed["csv_table_contract_id"],
+            "encoding": parsed["encoding"],
+            "delimiter": parsed["delimiter"],
+            "header_present": parsed["header_present"],
+            "row_count": parsed["row_count"],
+            "column_count": parsed["column_count"],
+            "null_markers": parsed["null_markers"],
+            "columns": parsed["columns"],
+            "numeric_columns": parsed["numeric_columns"],
+            "time_column_candidates": parsed["time_column_candidates"],
+        },
+        "normalized_text": normalized_text,
+        "normalized_text_sha256": hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
+        "normalized_char_count": 0,
+    }
 
 
 def _process_plain_text(
@@ -367,6 +452,7 @@ def _process_plain_text(
     return {
         **detection,
         "document_processing_contract_id": APS_DOCUMENT_EXTRACTION_CONTRACT_ID,
+        **_parser_registry_fields(config),
         "extractor_family": "plain_text",
         "extractor_id": APS_TEXT_EXTRACTOR_ID,
         "extractor_version": APS_TEXT_EXTRACTOR_VERSION,
@@ -524,6 +610,7 @@ def _process_image(
     return {
         **detection,
         "document_processing_contract_id": APS_DOCUMENT_EXTRACTION_CONTRACT_ID,
+        **_parser_registry_fields(config),
         "extractor_family": "image_ocr",
         "extractor_id": APS_IMAGE_EXTRACTOR_ID,
         "extractor_version": APS_IMAGE_EXTRACTOR_VERSION,
@@ -557,6 +644,8 @@ def _process_zip(
                 raise ValueError("zip_member_limit_exceeded")
 
             all_units: list[dict[str, Any]] = []
+            table_units: list[dict[str, Any]] = []
+            time_series_units: list[dict[str, Any]] = []
             member_summaries: list[dict[str, Any]] = []
             total_extracted_size = 0
             degradation_codes = _degradation_codes_for_detection(detection, None)
@@ -571,10 +660,74 @@ def _process_zip(
 
                 # Simple extension-based filtering for inner members to avoid infinite recursion or heavy sniffing
                 ext = Path(member.filename).suffix.lower()
+                extension_content_type = nrc_aps_media_detection.APS_EXTENSION_CONTENT_TYPES.get(ext, "")
+                if extension_content_type in APS_CSV_CONTENT_TYPES:
+                    try:
+                        member_content = zf.read(member)
+                        total_extracted_size += len(member_content)
+                        if total_extracted_size > APS_ZIP_MAX_TOTAL_EXTRACTED_SIZE:
+                            degradation_codes.append("zip_total_size_limit_exceeded")
+                            break
+                        parsed = nrc_aps_csv_parser.parse_csv_table(
+                            content=member_content,
+                            max_bytes=int(config["csv_parse_max_bytes"]),
+                            max_rows=int(config["csv_parse_max_rows"]),
+                            max_columns=int(config["csv_parse_max_columns"]),
+                        )
+                        member_table_units = [
+                            {
+                                **unit,
+                                "archive_member": member.filename,
+                            }
+                            for unit in parsed["table_units"]
+                        ]
+                        member_time_units = [
+                            {
+                                **unit,
+                                "archive_member": member.filename,
+                            }
+                            for unit in parsed["time_series_units"]
+                        ]
+                        table_units.extend(member_table_units)
+                        time_series_units.extend(member_time_units)
+                        member_summaries.append({
+                            "filename": member.filename,
+                            "status": "typed_table_parsed",
+                            "effective_content_type": "text/csv",
+                            "row_count": parsed["row_count"],
+                            "column_count": parsed["column_count"],
+                            "numeric_columns": parsed["numeric_columns"],
+                            "time_column_candidates": parsed["time_column_candidates"],
+                        })
+                    except Exception as exc:  # noqa: BLE001
+                        degradation_codes.append(f"archive_member_typed_table_failed:{member.filename}")
+                        member_summaries.append({
+                            "filename": member.filename,
+                            "status": "typed_table_failed",
+                            "effective_content_type": "text/csv",
+                            "error": str(exc),
+                        })
+                    continue
+                if extension_content_type in nrc_aps_media_detection.APS_TYPED_UNADMITTED_CONTENT_TYPES:
+                    degradation_codes.append(f"archive_member_typed_parser_not_admitted:{member.filename}")
+                    member_summaries.append({
+                        "filename": member.filename,
+                        "status": "typed_parser_not_admitted",
+                        "effective_content_type": extension_content_type,
+                    })
+                    continue
+                if extension_content_type in nrc_aps_media_detection.APS_REFUSAL_CONTENT_TYPES:
+                    degradation_codes.append(f"archive_member_refused:{member.filename}")
+                    member_summaries.append({
+                        "filename": member.filename,
+                        "status": "refused",
+                        "effective_content_type": extension_content_type,
+                    })
+                    continue
                 inner_declared = "application/octet-stream"
                 if ext == ".pdf":
                     inner_declared = "application/pdf"
-                elif ext in {".txt", ".md", ".csv"}:
+                elif ext in {".txt", ".md"}:
                     inner_declared = "text/plain"
                 elif ext in {".png", ".jpg", ".jpeg", ".tiff", ".tif"}:
                     inner_declared = "image/png" if ext == ".png" else "image/jpeg" # approximation
@@ -592,7 +745,7 @@ def _process_zip(
                     member_result = process_document(
                         content=member_content,
                         declared_content_type=inner_declared,
-                        config=config
+                        config={**config, "source_filename": member.filename}
                     )
                     # Merge units
                     for unit in member_result.get("ordered_units", []):
@@ -624,6 +777,7 @@ def _process_zip(
             return {
                 **detection,
                 "document_processing_contract_id": APS_DOCUMENT_EXTRACTION_CONTRACT_ID,
+                **_parser_registry_fields(config),
                 "extractor_family": "archive_bundle",
                 "extractor_id": APS_ZIP_EXTRACTOR_ID,
                 "extractor_version": APS_ZIP_EXTRACTOR_VERSION,
@@ -635,6 +789,8 @@ def _process_zip(
                 "quality_metrics": quality,
                 "degradation_codes": sorted(list(dict.fromkeys(code for code in degradation_codes if code))),
                 "ordered_units": _with_char_offsets(all_units),
+                "table_units": table_units,
+                "time_series_units": time_series_units,
                 "member_summaries": member_summaries,
                 "normalized_text": normalized_text,
                 "normalized_text_sha256": hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
@@ -884,6 +1040,7 @@ def _process_pdf(
     final_result = {
         **detection,
         "document_processing_contract_id": APS_DOCUMENT_EXTRACTION_CONTRACT_ID,
+        **_parser_registry_fields(config),
         "extractor_family": "pdf",
         "extractor_id": APS_PDF_OCR_EXTRACTOR_ID if ocr_page_count > 0 else APS_PDF_EXTRACTOR_ID,
         "extractor_version": APS_PDF_OCR_EXTRACTOR_VERSION if ocr_page_count > 0 else APS_PDF_EXTRACTOR_VERSION,
@@ -1148,6 +1305,7 @@ def _process_pdf_candidate_b(
     return {
         **detection,
         "document_processing_contract_id": APS_DOCUMENT_EXTRACTION_CONTRACT_ID,
+        **_parser_registry_fields(config),
         "extractor_family": "pdf_candidate_b_opendataloader",
         "extractor_id": APS_ODL_PDF_EXTRACTOR_ID,
         "extractor_version": package_version,

@@ -17,6 +17,9 @@ sys.path.insert(0, str(BACKEND))
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
 from app.models.models import (
+    Dataset,
+    DatasetSourceProvenance,
+    DatasetVersion,
     L3AnalysisGroup,
     L3AnalysisSet,
     L3AnalysisUnit,
@@ -24,6 +27,7 @@ from app.models.models import (
     L3SelectionManifest,
     L3Session,
     L3TypingRecord,
+    VariableDefinition,
 )
 from app.services import layer3_workbench
 from app.services.layer3_workbench import Layer3WorkbenchError
@@ -111,6 +115,77 @@ def _gate_b_payload(preflight: dict, source: dict, material: dict) -> dict:
     }
 
 
+def _seed_aps_derived_dataset_version(db, tmp_path: Path, *, dataset_version_id: str = "dv-aps-csv-001") -> str:
+    dataset_id = "ds-aps-csv-001"
+    dataset = Dataset(
+        dataset_id=dataset_id,
+        name="APS CSV bridge dataset",
+        description="APS-derived CSV dataset for Layer 3 workbench proof",
+        frequency_hint="MS",
+        time_column="observed_at",
+    )
+    version = DatasetVersion(
+        dataset_version_id=dataset_version_id,
+        dataset_id=dataset_id,
+        version_label="table-0",
+        version_type="aps_csv_bridge",
+        status="ready",
+        notes="aps_csv_bridge_contract_id=aps_csv_dataset_bridge_v1",
+        row_count=3,
+    )
+    observed_at = VariableDefinition(
+        variable_id="var-time-aps-csv-001",
+        dataset_version_id=dataset_version_id,
+        variable_name="observed_at",
+        dtype="datetime64[ns]",
+        role="time_index",
+        is_numeric=False,
+        is_time_index=True,
+        ordinal_position=0,
+    )
+    value = VariableDefinition(
+        variable_id="var-value-aps-csv-001",
+        dataset_version_id=dataset_version_id,
+        variable_name="value",
+        dtype="float64",
+        role="measure",
+        is_numeric=True,
+        is_time_index=False,
+        ordinal_position=1,
+    )
+    dataset_dir = tmp_path / "datasets"
+    dataset_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = dataset_dir / f"{dataset_version_id}.csv"
+    csv_path.write_text(
+        "observed_at,value\n2025-01-01,1.0\n2025-02-01,2.5\n2025-03-01,3.0\n",
+        encoding="utf-8",
+    )
+    version.storage_ref = str(csv_path)
+    provenance = DatasetSourceProvenance(
+        dataset_version_id=dataset_version_id,
+        connector_run_id=None,
+        source_system="nrc_adams_aps",
+        source_mode="artifact_csv_parser",
+        source_artifact_key="aps-target-artifacts/run-001/target-001/extraction.json",
+        sciencebase_file_name="fixture.csv",
+        downloaded_sha256="0" * 64,
+        raw_storage_ref="aps-target-artifacts/run-001/target-001/blob.csv",
+        source_reference_json={
+            "target_id": "target-001",
+            "accession_number": "ML000000001",
+            "table_index": 0,
+            "table_hash": "hash-table-001",
+            "parser_family": "csv_table",
+            "parser_contract_id": "aps_csv_parser_v1",
+            "typed_content_contract_id": "aps_csv_table_units_v1",
+            "diagnostics_ref": "aps-target-artifacts/run-001/target-001/diagnostics.json",
+        },
+    )
+    db.add_all([dataset, version, observed_at, value, provenance])
+    db.flush()
+    return dataset_version_id
+
+
 def test_bootstrap_is_explicit_about_first_slice_limits() -> None:
     result = layer3_workbench.bootstrap()
 
@@ -190,6 +265,91 @@ def test_gate_b_persists_only_approved_material_through_layer3_owner_services(db
     assert len(snapshots) == 1
     assert snapshots[0].source_shape == "dataset_version"
     assert Path(snapshots[0].payload_ref).is_file()
+
+
+def test_aps_derived_dataset_version_flows_from_material_preview_to_plan_preview(db_session, tmp_path) -> None:
+    dataset_version_id = _seed_aps_derived_dataset_version(db_session, tmp_path)
+    preflight = layer3_workbench.preflight(
+        {
+            "client_request_id": "req-preflight-aps-dataset",
+            "natural_language_intent": "Review APS-derived CSV table as quantitative source material.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+        }
+    )
+    source = layer3_workbench.source_preview(
+        {
+            "client_request_id": "req-source-aps-dataset",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version"],
+        }
+    )
+    material = layer3_workbench.material_preview(
+        {
+            "client_request_id": "req-material-aps-dataset",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "source_candidate_ids": [source["source_candidates"][0]["source_candidate_id"]],
+            "dataset_version_ids": [dataset_version_id],
+            "query_basis": {"terms": ["aps", "csv"]},
+        },
+        db_session,
+    )
+
+    candidate = material["material_candidates"][0]
+    assert candidate["source_ref"] == f"dataset_version:{dataset_version_id}"
+    assert candidate["planning_shape_family"] == "tabular_numeric"
+    assert candidate["source_identity"]["dataset_version_id"] == dataset_version_id
+    assert candidate["source_provenance"]["aps_derived"] is True
+    assert candidate["source_provenance"]["aps_source_provenance"][0]["parser_family"] == "csv_table"
+
+    gate_b = layer3_workbench.gate_b_decision(
+        db_session,
+        {
+            "client_request_id": "req-gate-b-aps-dataset",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": candidate["candidate_id"],
+                    "decision": "approved",
+                    "operator_reason": "",
+                    "decision_basis": {
+                        "source_ref": candidate["source_ref"],
+                        "query_basis": candidate["query_basis"],
+                        "provenance_ref": candidate["provenance_ref"],
+                        "source_identity": candidate["source_identity"],
+                        "source_provenance": candidate["source_provenance"],
+                        "payload": candidate["payload"],
+                        "load_summary": candidate["load_summary"],
+                    },
+                }
+            ],
+            "commit_reason": "pytest_aps_dataset_gate_b",
+            "actor": "pytest",
+        },
+    )
+
+    snapshot = db_session.query(L3MaterialSnapshot).one()
+    assert snapshot.source_shape == "dataset_version"
+    assert snapshot.source_identity_json["dataset_version_id"] == dataset_version_id
+    assert snapshot.source_provenance_json["aps_source_provenance"][0]["typed_content_contract_id"] == (
+        "aps_csv_table_units_v1"
+    )
+
+    committed = layer3_workbench.gate_c_preview(
+        db_session,
+        {"client_request_id": "req-gate-c-aps-dataset", "session_id": gate_b["session_id"], "commit_typing": True},
+    )
+    assert committed["typing_records"][0]["planning_shape_family"] == "tabular_numeric"
+    assert committed["analysis_units"][0]["analysis_modality"] == "quantitative"
+
+    plan = layer3_workbench.plan_preview(
+        db_session,
+        {"client_request_id": "req-plan-aps-dataset", "session_id": gate_b["session_id"]},
+    )
+    assert plan["plan_preview"]["admitted_sets"][0]["readiness"] == "admitted"
+    assert plan["plan_preview"]["planned_passes"][0]["dataset_version_id"] == dataset_version_id
 
 
 def test_gate_c_preview_is_non_authoritative_and_override_is_unavailable(db_session) -> None:

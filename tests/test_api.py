@@ -2069,6 +2069,66 @@ class _FakeNrcClient:
         )
 
 
+class _FakeNrcCsvClient(_FakeNrcClient):
+    def search(self, payload):
+        self.search_payloads.append(payload)
+        skip = int(payload.get("skip", 0))
+        if skip > 0:
+            body = {"count": 0, "results": []}
+        else:
+            body = {
+                "count": 1,
+                "results": [
+                    {
+                        "score": 0.9,
+                        "document": {
+                            "AccessionNumber": "MLCSV000001",
+                            "DocumentTitle": "CSV Table",
+                            "DocumentType": "Data",
+                            "DocumentDate": "2025-02-01",
+                            "DateAddedTimestamp": "2025-02-02T00:00:00Z",
+                            "Url": "https://adams.nrc.gov/wba/table.csv",
+                        },
+                    }
+                ],
+            }
+        return _FakeJsonResponse(url="https://adams-api.nrc.gov/aps/api/search", status_code=200, payload=body)
+
+    def get_document(self, accession_number):
+        self.document_ids.append(accession_number)
+        body = {
+            "document": {
+                "AccessionNumber": accession_number,
+                "DocumentTitle": "CSV Table (Detailed)",
+                "DocumentType": "Data",
+                "DocumentDate": "2025-02-01",
+                "DateAddedTimestamp": "2025-02-02T00:00:00Z",
+                "Url": "https://adams.nrc.gov/wba/table.csv",
+                "content": "date,value,label",
+            }
+        }
+        return _FakeJsonResponse(url=f"https://adams-api.nrc.gov/aps/api/search/{accession_number}", status_code=200, payload=body)
+
+    def download_artifact(self, url, *, max_redirects, max_file_bytes=None):
+        from app.services.connectors_nrc_adams import ApsDownloadResult
+        import hashlib
+
+        self.download_urls.append(url)
+        content = b"date,value,label\n2026-01-01,42,alpha\n2026-01-02,43,beta\n"
+        return ApsDownloadResult(
+            content=content,
+            status_code=200,
+            final_url=url,
+            redirect_count=0,
+            etag="etag-csv-1",
+            last_modified="Mon, 01 Jan 2025 00:00:00 GMT",
+            content_type="text/csv",
+            sha256=hashlib.sha256(content).hexdigest(),
+            headers={"content-type": "text/csv"},
+            auth_required=True,
+        )
+
+
 class _FakeNrcNoUrlClient(_FakeNrcClient):
     def search(self, payload):
         self.search_payloads.append(payload)
@@ -2549,6 +2609,70 @@ def test_nrc_content_index_artifacts_and_search_route(monkeypatch):
     assert searched_payload["items"][0]["matched_unique_query_terms"] == 2
     assert searched_payload["items"][0]["summed_term_frequency"] >= 2
     assert searched_payload["items"][0]["effective_content_type"] == "application/pdf"
+
+
+def test_nrc_csv_dataset_bridge_materializes_dataset_from_runtime_run(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRunTarget, DatasetVersion
+    from app.services import connectors_nrc_adams as nrc
+
+    fake = _FakeNrcCsvClient()
+    monkeypatch.setattr(nrc, "get_nrc_adams_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/nrc-adams-aps/runs",
+        json={
+            "mode": "strict_builder",
+            "query_payload": {
+                "searchCriteria": {
+                    "q": "csv table",
+                    "mainLibFilter": True,
+                    "legacyLibFilter": False,
+                    "properties": [],
+                },
+                "sort": "DateAddedTimestamp",
+                "sortDirection": 1,
+                "skip": 0,
+            },
+            "run_mode": "metadata_only",
+            "artifact_pipeline_mode": "hydrate_process",
+            "csv_dataset_bridge_enabled": True,
+        },
+        headers={"Idempotency-Key": "nrc-csv-dataset-bridge-runtime"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    payload = detail.json()
+    assert payload["status"] in {"completed", "completed_with_errors"}
+    bridge_ref = payload["report_refs"]["aps_csv_dataset_bridge"]
+    assert bridge_ref
+
+    bridge_report = json.loads(Path(bridge_ref).read_text(encoding="utf-8"))
+    assert bridge_report["schema_id"] == "aps.csv_dataset_bridge_run.v1"
+    assert bridge_report["enabled"] is True
+    assert bridge_report["run_outcome"] == "datasets_materialized"
+    assert bridge_report["materialized_dataset_versions"] == 1
+    assert bridge_report["failures_count"] == 0
+
+    db = SessionLocal()
+    try:
+        target = (
+            db.query(ConnectorRunTarget)
+            .filter(ConnectorRunTarget.connector_run_id == run_id)
+            .one()
+        )
+        assert target.dataset_id
+        assert target.dataset_version_id
+        assert target.source_reference_json["aps_csv_dataset_bridge_ref"] == bridge_ref
+        assert target.source_reference_json["aps_csv_dataset_bridge_contract_id"] == "aps_csv_dataset_bridge_v1"
+        version = db.get(DatasetVersion, target.dataset_version_id)
+        assert version is not None
+        assert version.row_count == 2
+    finally:
+        db.close()
 
 
 def test_nrc_real_born_digital_content_search_and_evidence_bundle(monkeypatch):

@@ -745,12 +745,19 @@ MATERIAL_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
         "preflight_id": {"type": "string"},
         "source_set_id": {"type": "string"},
         "source_candidate_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "dataset_version_ids": {"type": "array", "items": {"type": "string"}},
         "query_basis": {
             "type": "object",
             "additionalProperties": True,
             "properties": {
                 "terms": {"type": "array", "items": {"type": "string"}},
-                "filters": {"type": "object", "additionalProperties": True},
+                "filters": {
+                    "type": "object",
+                    "additionalProperties": True,
+                    "properties": {
+                        "dataset_version_ids": {"type": "array", "items": {"type": "string"}},
+                    },
+                },
             },
         },
         "actor": {"type": "string"},
@@ -1324,8 +1331,8 @@ def post_source_preview(payload: dict[str, Any]) -> dict[str, Any] | JSONRespons
     openapi_extra={"requestBody": _json_request_body(MATERIAL_PREVIEW_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400),
 )
-def post_material_preview(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.material_preview(payload))
+def post_material_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.material_preview(payload, db))
 
 
 @router.post(
