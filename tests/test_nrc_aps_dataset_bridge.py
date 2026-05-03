@@ -33,6 +33,7 @@ from app.models import (  # noqa: E402
 from app.services import connectors_nrc_adams  # noqa: E402
 from app.services import nrc_aps_dataset_bridge  # noqa: E402
 from app.services import nrc_aps_document_processing  # noqa: E402
+from support_nrc_aps_xlsx import build_xlsx_bytes  # noqa: E402
 
 
 def _make_session():
@@ -56,6 +57,33 @@ def _csv_target_payload() -> dict:
             "content_type": "text/csv",
             "blob_sha256": "a" * 64,
             "blob_ref": "/tmp/raw.csv",
+        },
+        "extraction": extraction,
+    }
+
+
+def _xlsx_target_payload() -> dict:
+    extraction = nrc_aps_document_processing.process_document(
+        content=build_xlsx_bytes(
+            {
+                "Observations": [
+                    ["date", "value", "label"],
+                    ["2026-01-01", 42, "alpha"],
+                    ["2026-01-02", 43, "beta"],
+                ],
+            }
+        ),
+        declared_content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    return {
+        "run_id": "run-xlsx-1",
+        "target_id": "target-xlsx-1",
+        "accession_number": "MLXLSX0001",
+        "outcome_status": "processed",
+        "download": {
+            "content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "blob_sha256": "b" * 64,
+            "blob_ref": "/tmp/raw.xlsx",
         },
         "extraction": extraction,
     }
@@ -120,6 +148,38 @@ def test_materialize_csv_table_dataset_creates_dataset_authority(tmp_path: Path)
     assert provenance.downloaded_sha256 == "a" * 64
     assert provenance.source_reference_json["target_id"] == "target-csv-1"
     assert provenance.source_reference_json["parser_family"] == "csv_table"
+
+
+def test_materialize_xlsx_table_dataset_preserves_sheet_provenance(tmp_path: Path):
+    db = _make_session()
+
+    result = nrc_aps_dataset_bridge.materialize_table_unit_dataset(
+        db,
+        target_artifact_payload=_xlsx_target_payload(),
+        artifact_storage_dir=tmp_path,
+    )
+
+    assert result["created"] is True
+    assert result["dataset_bridge_contract_id"] == "aps_csv_dataset_bridge_v1"
+    assert result["row_count"] == 2
+    assert result["time_column"] == "date"
+    assert result["numeric_columns"] == ["value"]
+
+    dataset = db.get(Dataset, result["dataset_id"])
+    assert dataset is not None
+    assert dataset.name.startswith("APS XLSX workbook table")
+
+    identity = db.query(DatasetExternalIdentity).one()
+    assert identity.logical_dataset_key.startswith("xlsx-table:")
+    assert identity.metadata_json["typed_content_contract_id"] == "aps_xlsx_table_units_v1"
+    assert identity.metadata_json["parser_family"] == "xlsx_workbook"
+
+    provenance = db.query(DatasetSourceProvenance).one()
+    assert provenance.source_mode == "artifact_xlsx_parser"
+    assert provenance.sciencebase_file_name is None
+    assert provenance.downloaded_sha256 == "b" * 64
+    assert provenance.source_reference_json["parser_family"] == "xlsx_workbook"
+    assert provenance.source_reference_json["typed_content_contract_id"] == "aps_xlsx_table_units_v1"
 
 
 def test_materialize_csv_table_dataset_is_idempotent(tmp_path: Path):

@@ -20,6 +20,7 @@ os.environ.setdefault("NRC_ADAMS_APS_API_BASE_URL", "https://adams-api.nrc.gov")
 
 from app.services import nrc_aps_document_processing  # noqa: E402
 from app.services import nrc_aps_ocr  # noqa: E402
+from support_nrc_aps_xlsx import build_xlsx_bytes  # noqa: E402
 
 
 def _fixture_bytes(name: str) -> bytes:
@@ -70,6 +71,34 @@ def test_process_document_emits_csv_table_units_without_document_chunks():
     assert result["normalized_text"] == ""
     assert result["table_diagnostics"]["row_count"] == 2
     assert result["table_diagnostics"]["numeric_columns"] == ["value"]
+    assert result["time_series_units"][0]["time_column"] == "date"
+
+
+def test_process_document_emits_xlsx_table_units_with_workbook_metadata():
+    result = nrc_aps_document_processing.process_document(
+        content=build_xlsx_bytes(
+            {
+                "Observations": [
+                    ["date", "value", "label"],
+                    ["2026-01-01", 42, "alpha"],
+                    ["2026-01-02", 43, "beta"],
+                ],
+            }
+        ),
+        declared_content_type="application/octet-stream",
+    )
+
+    assert result["effective_content_type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    assert result["document_class"] == "spreadsheet_table"
+    assert result["parser_family"] == "xlsx_workbook"
+    assert result["parser_output_family"] == "table_units"
+    assert result["typed_content_contract_id"] == "aps_xlsx_table_units_v1"
+    assert result["ordered_units"] == []
+    assert result["normalized_text"] == ""
+    assert result["table_diagnostics"]["row_count"] == 2
+    assert result["table_diagnostics"]["numeric_columns"] == ["value"]
+    assert result["table_diagnostics"]["workbook_metadata"]["selected_sheet_name"] == "Observations"
+    assert result["workbook_units"][0]["formula_policy"] == "fail_closed_formula_cells_not_admitted"
     assert result["time_series_units"][0]["time_column"] == "date"
 
 
