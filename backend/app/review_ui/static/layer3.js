@@ -44,6 +44,11 @@ const State = {
     externalExportDownloadDelivery: null,
     externalExportDownloadDeliveryError: null,
     externalExportDownloadDeliveryPending: false,
+    externalExportDownloadSignedReference: null,
+    externalExportDownloadSignedReferenceError: null,
+    externalExportDownloadSignedReferencePending: false,
+    externalExportDownloadSignedReferenceUse: null,
+    externalExportDownloadSignedReferenceUsePending: false,
     gateBDecisions: {},
     materialFilter: '',
     events: [],
@@ -108,6 +113,10 @@ const elements = {
     externalExportDownloadDeliveryForm: document.getElementById('external-export-download-delivery-form'),
     externalExportDownloadDeliveryPanel: document.getElementById('external-export-download-delivery-panel'),
     externalExportDownloadDeliverySubmit: document.getElementById('external-export-download-delivery-submit'),
+    externalExportDownloadSignedReferenceForm: document.getElementById('external-export-download-signed-reference-form'),
+    externalExportDownloadSignedReferencePanel: document.getElementById('external-export-download-signed-reference-panel'),
+    externalExportDownloadSignedReferenceGenerate: document.getElementById('external-export-download-signed-reference-generate'),
+    externalExportDownloadSignedReferenceUse: document.getElementById('external-export-download-signed-reference-use'),
     contextList: document.getElementById('context-list'),
     eventList: document.getElementById('event-list'),
     unavailableList: document.getElementById('unavailable-list'),
@@ -425,6 +434,7 @@ function renderContext() {
         aps_handoff_dispatch: State.apsHandoffDispatch?.next_state || State.apsHandoffDispatchError?.error_code || State.sessionSummary?.aps_handoff_dispatch?.state || 'none',
         external_export_download: State.externalExportDownloadPrepare?.next_state || State.externalExportDownloadPrepareError?.error_code || State.sessionSummary?.external_export_download?.state || 'none',
         external_export_download_delivery: State.externalExportDownloadDelivery?.state || State.externalExportDownloadDeliveryError?.error_code || 'none',
+        signed_reference: State.externalExportDownloadSignedReferenceUse?.state || State.externalExportDownloadSignedReference?.signed_reference_state || State.externalExportDownloadSignedReferenceError?.error_code || 'none',
     };
     elements.contextList.innerHTML = Object.entries(context)
         .map(([key, value]) => `
@@ -561,6 +571,15 @@ function clearExternalExportDownloadDeliveryState() {
     State.externalExportDownloadDelivery = null;
     State.externalExportDownloadDeliveryError = null;
     State.externalExportDownloadDeliveryPending = false;
+    clearExternalExportDownloadSignedReferenceState();
+}
+
+function clearExternalExportDownloadSignedReferenceState() {
+    State.externalExportDownloadSignedReference = null;
+    State.externalExportDownloadSignedReferenceError = null;
+    State.externalExportDownloadSignedReferencePending = false;
+    State.externalExportDownloadSignedReferenceUse = null;
+    State.externalExportDownloadSignedReferenceUsePending = false;
 }
 
 function clearResultReviewState({ keepSummary = false } = {}) {
@@ -1048,6 +1067,29 @@ function recordedExternalExportDownloadDelivery() {
     return EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RECORDED_STATES.has(recordedState)
         ? state
         : null;
+}
+
+function canGenerateExternalExportDownloadSignedReference() {
+    return Boolean(
+        recordedExternalExportDownloadPrepare()
+        && externalExportDownloadDeliveryUiAdmitted()
+        && !State.externalExportDownloadSignedReference?.signed_reference_token
+        && !State.externalExportDownloadPreparePending
+        && !State.externalExportDownloadDeliveryPending
+        && !State.externalExportDownloadSignedReferencePending
+        && !State.externalExportDownloadSignedReferenceUsePending
+    );
+}
+
+function canUseExternalExportDownloadSignedReference() {
+    return Boolean(
+        State.externalExportDownloadSignedReference?.signed_reference_token
+        && State.externalExportDownloadSignedReference?.signed_reference_state === 'external_export_download_signed_reference_ready'
+        && !State.externalExportDownloadPreparePending
+        && !State.externalExportDownloadDeliveryPending
+        && !State.externalExportDownloadSignedReferencePending
+        && !State.externalExportDownloadSignedReferenceUsePending
+    );
 }
 
 function handoffExportEnvelopeRef(handoff = State.sessionSummary?.handoff_export_prepare || handoffExportPrepareState() || {}) {
@@ -3411,6 +3453,106 @@ function renderExternalExportDownloadDeliveryPanel() {
     `;
 }
 
+function externalExportDownloadSignedReferencePanelState() {
+    const external = externalExportDownloadPrepareState() || {};
+    const stateName = externalExportDownloadStateName(external);
+    if (State.externalExportDownloadSignedReferenceUsePending) {
+        return { label: 'external_export_download_signed_reference_using', pill: 'preview', message: 'Using one server-generated same-origin signed reference.' };
+    }
+    if (State.externalExportDownloadSignedReferenceUse) {
+        return { label: State.externalExportDownloadSignedReferenceUse.state || 'external_export_download_signed_reference_delivered', pill: 'ok', message: 'The signed reference was accepted and used through the same-origin endpoint.' };
+    }
+    if (State.externalExportDownloadSignedReferencePending) {
+        return { label: 'external_export_download_signed_reference_generating', pill: 'preview', message: 'Requesting one short-lived server-owned signed reference.' };
+    }
+    if (State.externalExportDownloadSignedReferenceError) {
+        return {
+            label: State.externalExportDownloadSignedReferenceError.error_code || 'external_export_download_signed_reference_ui_error',
+            pill: 'blocked',
+            message: 'Server authority rejected or blocked the signed-reference request.',
+        };
+    }
+    if (State.externalExportDownloadSignedReference?.signed_reference_state === 'external_export_download_signed_reference_ready') {
+        return { label: 'external_export_download_signed_reference_ready', pill: 'ok', message: 'A short-lived same-origin signed reference is ready for use.' };
+    }
+    if (stateName === 'external_export_download_prepared' && externalExportDownloadDeliveryUiAdmitted()) {
+        return { label: 'external_export_download_signed_reference_ui_ready', pill: 'ok', message: 'Recorded readiness and explicit delivery UI authority can generate a same-origin signed reference.' };
+    }
+    if (stateName === 'external_export_download_prepared') {
+        return { label: 'external_export_download_signed_reference_ui_blocked', pill: 'blocked', message: 'Signed-reference controls require the same server delivery UI authority used by same-origin delivery.' };
+    }
+    return { label: 'external_export_download_signed_reference_ui_unavailable', pill: 'blocked', message: 'Prepare external export/download readiness before signed-reference generation.' };
+}
+
+function renderExternalExportDownloadSignedReferencePanel() {
+    const external = externalExportDownloadPrepareState() || {};
+    const signed = State.externalExportDownloadSignedReference || {};
+    const used = State.externalExportDownloadSignedReferenceUse || {};
+    const panelState = externalExportDownloadSignedReferencePanelState();
+    const downstream = [
+        'public_url',
+        'provider_signed_url',
+        'connector_dispatch',
+        'destination_selection',
+        'durable_token_state',
+        'receipt_audit_revocation_state',
+    ];
+    elements.externalExportDownloadSignedReferencePanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Signed Reference Gate</strong>
+                <ul>
+                    ${fieldItem('readiness state', externalExportDownloadStateName(external))}
+                    ${fieldItem('readiness ref', external.external_export_download_record_ref, { code: true })}
+                    ${fieldItem('descriptor ref', external.export_download_descriptor_ref, { code: true })}
+                    ${fieldItem('delivery UI admitted', externalExportDownloadDeliveryUiAdmitted(external))}
+                    ${fieldItem('delivery mode', 'same_origin_signed_delivery_reference')}
+                    ${fieldItem('server authority', signed.server_authority || 'associated_cohort_external_export_download_signed_reference_gate')}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Generated Reference</strong>
+                <ul>
+                    ${fieldItem('state', signed.signed_reference_state)}
+                    ${fieldItem('expires at', signed.signed_reference_expires_at)}
+                    ${fieldItem('expires in seconds', signed.signed_reference_expires_in_seconds)}
+                    ${fieldItem('use endpoint', signed.signed_reference_use_endpoint, { code: true })}
+                    ${fieldItem('token prefix', signed.signed_reference_token ? `${String(signed.signed_reference_token).slice(0, 18)}...` : 'none', { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Artifact Basis</strong>
+                <ul>
+                    ${fieldItem('artifact ref', signed.source_artifact_ref || external.source_artifact_ref || external.aps_bundle_ref, { code: true })}
+                    ${fieldItem('artifact hash', signed.source_artifact_hash || external.source_artifact_hash, { code: true })}
+                    ${fieldItem('artifact size bytes', signed.source_artifact_size_bytes || external.source_artifact_size_bytes)}
+                    ${fieldItem('pass type', signed.pass_type || external.pass_type)}
+                    ${fieldItem('method', signed.method || external.method)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Use Result</strong>
+                <ul>
+                    ${fieldItem('state', used.state)}
+                    ${fieldItem('schema', used.schemaId)}
+                    ${fieldItem('source hash', used.sourceArtifactHash, { code: true })}
+                    ${fieldItem('expires at', used.expiresAt)}
+                    ${fieldItem('content type', used.contentType)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Still Disabled</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+            ${renderErrorCard(State.externalExportDownloadSignedReferenceError)}
+        </div>
+    `;
+}
+
 function setBusy(button, busy, label) {
     button.disabled = busy;
     if (label) {
@@ -3679,6 +3821,14 @@ function setGateControls() {
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
     );
+    const externalExportDownloadSignedReferenceControlsEnabled = Boolean(
+        recordedExternalExportDownloadPrepare()
+        && externalExportDownloadDeliveryUiAdmitted()
+        && !State.externalExportDownloadPreparePending
+        && !State.externalExportDownloadDeliveryPending
+        && !State.externalExportDownloadSignedReferencePending
+        && !State.externalExportDownloadSignedReferenceUsePending
+    );
     elements.gateBSubmit.disabled = !(State.materialPreview?.material_candidates || []).length;
     elements.gateCPreview.disabled = !State.gateB?.session_id || gateCCommitted;
     elements.gateCCommit.disabled = !State.gateB?.session_id || gateCCommitted;
@@ -3702,6 +3852,8 @@ function setGateControls() {
     elements.apsHandoffDispatchSubmit.disabled = !apsHandoffControlsEnabled || !canSubmitApsHandoffDispatch();
     elements.externalExportDownloadPrepareSubmit.disabled = !externalExportDownloadControlsEnabled || !canSubmitExternalExportDownloadPrepare();
     elements.externalExportDownloadDeliverySubmit.disabled = !externalExportDownloadDeliveryControlsEnabled || !canSubmitExternalExportDownloadDelivery();
+    elements.externalExportDownloadSignedReferenceGenerate.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canGenerateExternalExportDownloadSignedReference();
+    elements.externalExportDownloadSignedReferenceUse.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canUseExternalExportDownloadSignedReference();
     setStepChip(elements.planStep, canPlanPreview());
     setStepChip(elements.executionStep, Boolean(State.sessionSummary?.execution_selection?.selected));
     setStepChip(elements.resultsStep, Boolean(authority.selected && authority.terminal));
@@ -3725,6 +3877,7 @@ function renderAll() {
     renderApsHandoffDispatchPanel();
     renderExternalExportDownloadPreparePanel();
     renderExternalExportDownloadDeliveryPanel();
+    renderExternalExportDownloadSignedReferencePanel();
     setGateControls();
     renderOperationsDock();
 }
@@ -4001,6 +4154,33 @@ function externalExportDownloadDeliveryPayload(authority = selectedResultAuthori
     return payload;
 }
 
+function externalExportDownloadSignedReferencePayload(authority = selectedResultAuthority()) {
+    return externalExportDownloadDeliveryPayload(authority);
+}
+
+async function useExternalExportDownloadSignedReferenceToken(token) {
+    const res = await fetch(`${API_ROOT}/handoff/export/download/signed-reference/use`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signed_reference_token: token }),
+    });
+    if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        const err = new Error(data?.message || `HTTP ${res.status}`);
+        err.status = res.status;
+        err.payload = data;
+        throw err;
+    }
+    await res.arrayBuffer();
+    return {
+        state: res.headers.get('x-layer3-signed-reference-state') || res.headers.get('x-layer3-delivery-state') || 'external_export_download_signed_reference_delivered',
+        schemaId: res.headers.get('x-layer3-schema-id') || 'layer3.external_export_download_signed_reference_use.v1',
+        sourceArtifactHash: res.headers.get('x-layer3-source-artifact-hash'),
+        expiresAt: res.headers.get('x-layer3-signed-reference-expires-at'),
+        contentType: res.headers.get('content-type'),
+    };
+}
+
 async function refreshSessionSummary() {
     const sessionId = currentSessionId();
     if (!sessionId) return;
@@ -4019,6 +4199,7 @@ async function refreshSessionSummary() {
         State.handoffExportPrepareError = null;
         State.apsHandoffDispatchError = null;
         State.externalExportDownloadPrepareError = null;
+        State.externalExportDownloadSignedReferenceError = null;
         addEvent('Session state refreshed.');
         renderAll();
     } catch (error) {
@@ -4325,6 +4506,66 @@ async function submitExternalExportDownloadDelivery(event) {
     } finally {
         State.externalExportDownloadDeliveryPending = false;
         setBusy(elements.externalExportDownloadDeliverySubmit, false, 'Deliver External Bundle');
+        renderAll();
+    }
+}
+
+async function submitExternalExportDownloadSignedReference(event) {
+    event.preventDefault();
+    if (!canGenerateExternalExportDownloadSignedReference()) return;
+    State.externalExportDownloadSignedReferencePending = true;
+    State.externalExportDownloadSignedReferenceError = null;
+    State.externalExportDownloadSignedReferenceUse = null;
+    renderAll();
+    setBusy(elements.externalExportDownloadSignedReferenceGenerate, true, 'Generate Signed Reference');
+    try {
+        State.externalExportDownloadSignedReference = await postJson(
+            '/handoff/export/download/signed-reference/generate',
+            externalExportDownloadSignedReferencePayload(),
+        );
+        State.externalExportDownloadSignedReferenceError = null;
+        addEvent('External export/download signed reference generated.');
+        renderAll();
+    } catch (error) {
+        State.externalExportDownloadSignedReference = null;
+        State.externalExportDownloadSignedReferenceError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'external_export_download_signed_reference_request_failed',
+            message: error.message,
+        };
+        addEvent(`External export/download signed reference blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.externalExportDownloadSignedReferencePending = false;
+        setBusy(elements.externalExportDownloadSignedReferenceGenerate, false, 'Generate Signed Reference');
+        renderAll();
+    }
+}
+
+async function useExternalExportDownloadSignedReference() {
+    if (!canUseExternalExportDownloadSignedReference()) return;
+    State.externalExportDownloadSignedReferenceUsePending = true;
+    State.externalExportDownloadSignedReferenceError = null;
+    renderAll();
+    setBusy(elements.externalExportDownloadSignedReferenceUse, true, 'Use Signed Reference');
+    try {
+        State.externalExportDownloadSignedReferenceUse = await useExternalExportDownloadSignedReferenceToken(
+            State.externalExportDownloadSignedReference.signed_reference_token,
+        );
+        addEvent('External export/download signed reference used through same-origin endpoint.');
+        renderAll();
+    } catch (error) {
+        State.externalExportDownloadSignedReferenceUse = null;
+        State.externalExportDownloadSignedReferenceError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'external_export_download_signed_reference_use_failed',
+            message: error.message,
+        };
+        addEvent(`External export/download signed reference use blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.externalExportDownloadSignedReferenceUsePending = false;
+        setBusy(elements.externalExportDownloadSignedReferenceUse, false, 'Use Signed Reference');
         renderAll();
     }
 }
@@ -4678,6 +4919,8 @@ elements.handoffExportPrepareForm.addEventListener('submit', submitHandoffExport
 elements.apsHandoffDispatchForm.addEventListener('submit', submitApsHandoffDispatch);
 elements.externalExportDownloadPrepareForm.addEventListener('submit', submitExternalExportDownloadPrepare);
 elements.externalExportDownloadDeliveryForm.addEventListener('submit', submitExternalExportDownloadDelivery);
+elements.externalExportDownloadSignedReferenceForm.addEventListener('submit', submitExternalExportDownloadSignedReference);
+elements.externalExportDownloadSignedReferenceUse.addEventListener('click', useExternalExportDownloadSignedReference);
 elements.resultReviewDecision.addEventListener('change', setGateControls);
 elements.resultReviewNotes.addEventListener('input', setGateControls);
 elements.packageReviewSubmitDecision.addEventListener('change', setGateControls);

@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main selected-pass associated-cohort delivery UI gate plus signed delivery-reference backend/API implementation proof",
+  "status": "current-main selected-pass associated-cohort delivery UI gate plus signed delivery-reference backend/API implementation proof, with branch-local rendered signed-reference UI proof on codex/l3-signed-ui-p14",
   "scope": {
     "source_branch": "codex/l3-signed-url-impl-p34",
     "merged_pr": "#499",
@@ -22,9 +22,16 @@
     "latest_planning_behavior_summary": "Docs 102/103 remain planning/control by themselves; PR #499 is the separate bounded backend/API implementation authority.",
     "latest_implementation_merge_commit": "b784ddd52e9316996f89f32c93ab9618dc100cea",
     "latest_planning_base_commit": "aedf65a452aeeea85e251727ff623d3012213652",
-    "latest_branch_only_implementation_branch": "",
+    "latest_branch_only_implementation_branch": "codex/l3-signed-ui-p14",
     "latest_branch_only_implementation_pr": "",
-    "latest_branch_only_implementation_summary": "No branch-only associated-cohort external export/download delivery implementation proof remains after PR #483 merged to current main.",
+    "latest_branch_only_implementation_summary": "Active branch codex/l3-signed-ui-p14 adds rendered /review/layer3 same-origin signed-reference controls over PR #499 endpoints and PR #487 delivery UI authority; provider/public URLs, connector/destination dispatch, durable token/receipt/audit/revocation state, qualitative execution, schema/runtime/source widening, package mutation, and full mockup activation remain deferred.",
+    "latest_theme_alignment_pr": "#513",
+    "latest_theme_alignment_summary": "PR #513 is current-main UI/theme trace alignment for the Claude Layer 3 prototype over one APS content document trace sample; it does not make qualitative APS content document execution or downstream runtime behavior live.",
+    "latest_signed_reference_ui_branch": "codex/l3-signed-ui-p14",
+    "latest_signed_reference_ui_docs": [
+      "next_milestone_plans/Layer3_planning_docs/104_signed-ui.md",
+      "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md"
+    ],
     "latest_ui_planning_pr": "#441",
     "latest_ui_planning_branch": "codex/l3-cohort-result-review-ui-freeze-p51",
     "latest_ui_planning_summary": "PR #441 lands docs 84/85 as planning-only rendered /review/layer3 associated-cohort result-review UI governance over exact PR #432 selected-pass execution-start/result/status authority and PR #438 backend/API result-review authority.",
@@ -1399,7 +1406,9 @@
     "next_milestone_plans/Layer3_planning_docs/100_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/101_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/102_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/103_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/103_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/104_signed-ui.md",
+    "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md"
   ],
   "handoff_export_prepare_ui_implementation_proof": {
     "implementation_branch": "codex/l3-handoff-prepare-ui-impl",
@@ -3296,6 +3305,48 @@
       "no AnalysisArtifact expansion",
       "no schema/runtime/source widening",
       "no qualitative/hybrid/RAG/vector/full mockup activation"
+    ]
+  },
+  "descriptive_summary_selected_pass_cohort_external_export_download_signed_reference_ui_proof": {
+    "implementation_branch": "codex/l3-signed-ui-p14",
+    "base_commit": "e7413f6a6c06de3d3b60195a906185dd2b865dbe",
+    "scope": "Branch-local rendered /review/layer3 same-origin signed-reference UI over current-main PR #499 backend/API endpoints and PR #487 delivery UI authority. The UI can generate one server-owned signed reference for loaded state and use it through a token-only same-origin request. It creates no provider/public URL behavior, connector/destination dispatch, durable state, runtime/schema/source widening, package mutation, qualitative execution, broader UI, or full mockup activation.",
+    "files_changed": [
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js",
+      "next_milestone_plans/Layer3_planning_docs/104_signed-ui.md",
+      "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "next_milestone_plans/progress-prompt.md"
+    ],
+    "live_behavior_change": "branch-local rendered UI only; not current-main until merged",
+    "authority_basis": [
+      "PR #487 is current-main explicit associated-cohort delivery UI gate authority.",
+      "PR #499 is current-main backend/API same-origin signed-reference generation/use authority.",
+      "PR #513 is current-main UI/theme trace alignment only and does not admit qualitative execution or downstream runtime behavior.",
+      "Docs 104/105 are branch-local governance for the rendered signed-reference UI tranche and deferred gates."
+    ],
+    "no_go_preserved": [
+      "no public/provider URL behavior",
+      "no connector/destination dispatch or generic downstream dispatch",
+      "no durable token, receipt, audit, revocation, runtime write, model, or migration state",
+      "no package mutation/reconstruction or additional rows/files",
+      "no schema/runtime/source widening",
+      "no qualitative APS content document execution, hybrid/RAG/vector behavior, broader UI, or full mockup activation"
+    ],
+    "verification": [
+      "node --check .\\backend\\app\\review_ui\\static\\layer3.js -> passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_page.py -q -> 3 passed, 3 warnings",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -> 77 passed, 4 warnings; pytest emitted a non-failing Windows temp cleanup PermissionError after exit code 0",
+      "npm run validate:structure -> 0 errors, 221 pre-existing warnings",
+      "npx playwright test e2e/layer3-workbench.spec.js --project=chromium -> 11 passed",
+      "npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed -> 11 passed",
+      "git diff --check -> passed with LF-to-CRLF normalization warnings only"
     ]
   }
 }
