@@ -113,6 +113,49 @@ def _json_target_payload() -> dict:
     }
 
 
+def _sec_edgar_target_payload() -> dict:
+    extraction = nrc_aps_document_processing.process_document(
+        content=b"""<SEC-DOCUMENT>0000320193-24-000123.txt : 20241101
+<SEC-HEADER>
+<ACCESSION-NUMBER>0000320193-24-000123
+<CONFORMED-SUBMISSION-TYPE>10-K
+<FILED-AS-OF-DATE>20241101
+<COMPANY-CONFORMED-NAME>EXAMPLE INDUSTRIES INC
+<CENTRAL-INDEX-KEY>0000320193
+</SEC-HEADER>
+<DOCUMENT>
+<TYPE>10-K
+<SEQUENCE>1
+<FILENAME>example-20241101.txt
+<DESCRIPTION>Primary filing document
+<TEXT>
+ITEM 1. Business
+Registrant manufactures industrial widgets.
+<TABLE>
+date|revenue|segment
+2026-01-01|42|alpha
+2026-01-02|43|beta
+</TABLE>
+</TEXT>
+</DOCUMENT>
+</SEC-DOCUMENT>
+""",
+        declared_content_type="text/plain",
+    )
+    return {
+        "run_id": "run-sec-edgar-1",
+        "target_id": "target-sec-edgar-1",
+        "accession_number": "0000320193-24-000123",
+        "outcome_status": "processed",
+        "download": {
+            "content_type": "text/plain",
+            "blob_sha256": "d" * 64,
+            "blob_ref": "/tmp/sec-edgar.txt",
+        },
+        "extraction": extraction,
+    }
+
+
 def test_materialize_csv_table_dataset_creates_dataset_authority(tmp_path: Path):
     db = _make_session()
 
@@ -237,6 +280,32 @@ def test_materialize_json_recordset_table_dataset_preserves_recordset_provenance
     assert provenance.downloaded_sha256 == "c" * 64
     assert provenance.source_reference_json["parser_family"] == "json_recordset"
     assert provenance.source_reference_json["typed_content_contract_id"] == "aps_json_recordset_units_v1"
+
+
+def test_materialize_sec_edgar_table_dataset_preserves_filing_provenance(tmp_path: Path):
+    db = _make_session()
+
+    result = nrc_aps_dataset_bridge.materialize_table_unit_dataset(
+        db,
+        target_artifact_payload=_sec_edgar_target_payload(),
+        artifact_storage_dir=tmp_path,
+    )
+
+    assert result["created"] is True
+    assert result["dataset_bridge_contract_id"] == "aps_table_dataset_bridge_v1"
+    assert result["row_count"] == 2
+    assert result["numeric_columns"] == ["revenue"]
+
+    identity = db.query(DatasetExternalIdentity).one()
+    assert identity.logical_dataset_key.startswith("sec-edgar-table:")
+    assert identity.metadata_json["typed_content_contract_id"] == "aps_sec_edgar_filing_units_v1"
+    assert identity.metadata_json["parser_family"] == "sec_edgar_filing"
+
+    provenance = db.query(DatasetSourceProvenance).one()
+    assert provenance.source_mode == "artifact_sec_edgar_filing_parser"
+    assert provenance.downloaded_sha256 == "d" * 64
+    assert provenance.source_reference_json["parser_family"] == "sec_edgar_filing"
+    assert provenance.source_reference_json["typed_content_contract_id"] == "aps_sec_edgar_filing_units_v1"
 
 
 def test_materialize_csv_table_dataset_is_idempotent(tmp_path: Path):
@@ -415,7 +484,7 @@ def test_connector_table_dataset_bridge_materializes_processed_xlsx_target(tmp_p
     assert report["schema_id"] == "aps.table_dataset_bridge_run.v1"
     assert report["enabled"] is True
     assert report["dataset_bridge_contract_id"] == "aps_table_dataset_bridge_v1"
-    assert report["supported_parser_families"] == ["csv_table", "xlsx_workbook", "json_recordset"]
+    assert report["supported_parser_families"] == ["csv_table", "xlsx_workbook", "json_recordset", "sec_edgar_filing"]
     assert report["materialized"][0]["parser_family"] == "xlsx_workbook"
     assert run.query_plan_json["aps_table_dataset_bridge_report_refs"]["aps_table_dataset_bridge"] == summary["run_ref"]
 
@@ -476,7 +545,7 @@ def test_connector_table_dataset_bridge_materializes_processed_json_target(tmp_p
 
     report = json.loads(Path(str(summary["run_ref"])).read_text(encoding="utf-8"))
     assert report["schema_id"] == "aps.table_dataset_bridge_run.v1"
-    assert report["supported_parser_families"] == ["csv_table", "xlsx_workbook", "json_recordset"]
+    assert report["supported_parser_families"] == ["csv_table", "xlsx_workbook", "json_recordset", "sec_edgar_filing"]
     assert report["materialized"][0]["parser_family"] == "json_recordset"
 
 

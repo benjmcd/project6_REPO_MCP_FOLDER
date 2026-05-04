@@ -434,6 +434,15 @@ def _lint_submission_config(config: dict[str, Any]) -> list[str]:
         raise SubmissionConflictError("json_parse_max_columns must be > 0")
     if json_parse_max_bytes < 1:
         raise SubmissionConflictError("json_parse_max_bytes must be > 0")
+    sec_edgar_parse_max_rows = _coerce_int(config.get("sec_edgar_parse_max_rows", 10_000), 10_000)
+    sec_edgar_parse_max_columns = _coerce_int(config.get("sec_edgar_parse_max_columns", 200), 200)
+    sec_edgar_parse_max_bytes = _coerce_int(config.get("sec_edgar_parse_max_bytes", 10_000_000), 10_000_000)
+    if sec_edgar_parse_max_rows < 1:
+        raise SubmissionConflictError("sec_edgar_parse_max_rows must be > 0")
+    if sec_edgar_parse_max_columns < 1:
+        raise SubmissionConflictError("sec_edgar_parse_max_columns must be > 0")
+    if sec_edgar_parse_max_bytes < 1:
+        raise SubmissionConflictError("sec_edgar_parse_max_bytes must be > 0")
     safeguard_lint = dict(config.get("safeguard_lint") or {})
     blocking_errors = [dict(item or {}) for item in safeguard_lint.get("blocking_errors", []) if isinstance(item, dict)]
     if blocking_errors:
@@ -533,6 +542,15 @@ def _coerce_bool(value: Any, *, default: bool = False) -> bool:
     if text in {"0", "false", "no", "n", "off"}:
         return False
     return default
+
+
+def _coerce_upper_string_list(value: Any, default: list[str]) -> list[str]:
+    raw_items = default if value is None else value
+    if isinstance(raw_items, str):
+        raw_items = [item.strip() for item in raw_items.split(",")]
+    elif not isinstance(raw_items, (list, tuple, set)):
+        raw_items = [raw_items]
+    return [str(item or "").strip().upper() for item in list(raw_items or []) if str(item or "").strip()]
 
 
 def _parse_sort(raw_sort: Any, explicit_sort_direction: Any) -> tuple[str, int]:
@@ -650,6 +668,10 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
                 "json_parse_max_rows",
                 "json_parse_max_columns",
                 "json_record_path",
+                "sec_edgar_parse_max_bytes",
+                "sec_edgar_parse_max_rows",
+                "sec_edgar_parse_max_columns",
+                "sec_edgar_admitted_form_types",
                 "report_verbosity",
                 "safeguard_policy",
                 "client_request_id",
@@ -766,6 +788,13 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
         "json_parse_max_rows": max(1, _coerce_int(config.get("json_parse_max_rows", 10_000), 10_000)),
         "json_parse_max_columns": max(1, _coerce_int(config.get("json_parse_max_columns", 200), 200)),
         "json_record_path": str(config.get("json_record_path") or "").strip() or None,
+        "sec_edgar_parse_max_bytes": max(1, _coerce_int(config.get("sec_edgar_parse_max_bytes", 10_000_000), 10_000_000)),
+        "sec_edgar_parse_max_rows": max(1, _coerce_int(config.get("sec_edgar_parse_max_rows", 10_000), 10_000)),
+        "sec_edgar_parse_max_columns": max(1, _coerce_int(config.get("sec_edgar_parse_max_columns", 200), 200)),
+        "sec_edgar_admitted_form_types": _coerce_upper_string_list(
+            config.get("sec_edgar_admitted_form_types"),
+            ["10-K", "10-Q", "8-K"],
+        ),
         "allowed_hosts": allowed_hosts,
         "fetch_policy_mode": str(config.get("fetch_policy_mode", "strict_public_safe") or "strict_public_safe"),
         "report_verbosity": report_verbosity,
@@ -2112,7 +2141,7 @@ def _generate_table_dataset_bridge_artifacts(
         "materialized_dataset_versions": len(materialized),
         "skipped_targets": len(skipped),
         "failures_count": len(failures),
-        "supported_parser_families": ["csv_table", "xlsx_workbook", "json_recordset"],
+        "supported_parser_families": ["csv_table", "xlsx_workbook", "json_recordset", "sec_edgar_filing"],
         "materialized": materialized,
         "skipped": skipped,
         "failures": failures,

@@ -28,6 +28,36 @@ def _fixture_bytes(name: str) -> bytes:
     return (FIXTURE_DIR / name).read_bytes()
 
 
+def _sec_edgar_filing_bytes() -> bytes:
+    return b"""<SEC-DOCUMENT>0000320193-24-000123.txt : 20241101
+<SEC-HEADER>
+<ACCESSION-NUMBER>0000320193-24-000123
+<CONFORMED-SUBMISSION-TYPE>10-K
+<FILED-AS-OF-DATE>20241101
+<COMPANY-CONFORMED-NAME>EXAMPLE INDUSTRIES INC
+<CENTRAL-INDEX-KEY>0000320193
+</SEC-HEADER>
+<DOCUMENT>
+<TYPE>10-K
+<SEQUENCE>1
+<FILENAME>example-20241101.txt
+<DESCRIPTION>Primary filing document
+<TEXT>
+ITEM 1. Business
+Registrant manufactures industrial widgets.
+<TABLE>
+date|revenue|segment
+2026-01-01|42|alpha
+2026-01-02|43|beta
+</TABLE>
+ITEM 7. Management Discussion
+Revenue increased in the period.
+</TEXT>
+</DOCUMENT>
+</SEC-DOCUMENT>
+"""
+
+
 def test_process_document_extracts_born_digital_pdf_text():
     result = nrc_aps_document_processing.process_document(
         content=_fixture_bytes("born_digital.pdf"),
@@ -133,6 +163,39 @@ def test_process_document_fails_closed_for_non_recordset_json():
         nrc_aps_document_processing.process_document(
             content=b'{"meta":"not a standalone recordset","records":[{"a":1}]}',
             declared_content_type="application/json",
+        )
+
+
+def test_process_document_emits_sec_edgar_mixed_document_and_table_units():
+    result = nrc_aps_document_processing.process_document(
+        content=_sec_edgar_filing_bytes(),
+        declared_content_type="text/plain",
+        config=nrc_aps_document_processing.default_processing_config(
+            {"source_filename": "0000320193-24-000123.txt"}
+        ),
+    )
+
+    assert result["effective_content_type"] == "application/x-sec-edgar-submission"
+    assert result["document_class"] == "sec_edgar_filing"
+    assert result["parser_family"] == "sec_edgar_filing"
+    assert result["parser_output_family"] == "mixed_document_table_units"
+    assert result["typed_content_contract_id"] == "aps_sec_edgar_filing_units_v1"
+    assert result["filing_units"][0]["filing_metadata"]["form_type"] == "10-K"
+    assert result["ordered_units"][0]["unit_kind"] == "filing_section"
+    assert result["table_units"][0]["row_count"] == 2
+    assert result["table_diagnostics"]["table_count"] == 1
+    assert result["time_series_units"][0]["time_column"] == "date"
+    assert "industrial widgets" in result["normalized_text"]
+
+
+def test_process_document_fails_closed_for_html_sec_edgar_document():
+    with pytest.raises(ValueError, match="sec_edgar_html_document_not_admitted"):
+        nrc_aps_document_processing.process_document(
+            content=_sec_edgar_filing_bytes().replace(
+                b"ITEM 1. Business\nRegistrant manufactures industrial widgets.",
+                b"<html><body>Inline filing</body></html>",
+            ),
+            declared_content_type="text/plain",
         )
 
 

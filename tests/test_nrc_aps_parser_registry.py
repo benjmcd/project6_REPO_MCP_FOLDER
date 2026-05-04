@@ -58,6 +58,7 @@ def test_registry_admits_current_text_image_and_archive_processors():
         ("text/csv", "csv_table", "table_units"),
         ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx_workbook", "table_units"),
         ("application/json", "json_recordset", "table_units"),
+        ("application/x-sec-edgar-submission", "sec_edgar_filing", "mixed_document_table_units"),
         ("image/png", "ocr_image", "document_units"),
         ("image/jpeg", "ocr_image", "document_units"),
         ("image/tiff", "ocr_image", "document_units"),
@@ -96,4 +97,5 @@ def test_admitted_parser_specs_are_stable_and_explicit():
     assert ("text/csv", "baseline") in keys
     assert ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "baseline") in keys
     assert ("application/json", "baseline") in keys
+    assert ("application/x-sec-edgar-submission", "baseline") in keys
     assert ("application/zip", "baseline") in keys

@@ -19,6 +19,7 @@ from app.services import nrc_aps_media_detection
 from app.services import nrc_aps_csv_parser
 from app.services import nrc_aps_spreadsheet_parser
 from app.services import nrc_aps_json_parser
+from app.services import nrc_aps_sec_edgar_parser
 from app.services import nrc_aps_ocr
 from app.services import nrc_aps_parser_registry
 from app.services import nrc_aps_settings
@@ -51,6 +52,7 @@ APS_IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png", "image/tiff"}
 APS_CSV_CONTENT_TYPES = {"text/csv", "application/csv"}
 APS_XLSX_CONTENT_TYPES = {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
 APS_JSON_CONTENT_TYPES = {"application/json"}
+APS_SEC_EDGAR_CONTENT_TYPES = {nrc_aps_sec_edgar_parser.APS_SEC_EDGAR_CONTENT_TYPE}
 # Safety limits for ZIP extraction
 APS_ZIP_MAX_TOTAL_EXTRACTED_SIZE = 500 * 1024 * 1024  # 500MB
 APS_ZIP_MAX_MEMBER_SIZE = 100 * 1024 * 1024  # 100MB
@@ -319,6 +321,10 @@ def default_processing_config(overrides: dict[str, Any] | None = None) -> dict[s
         "json_parse_max_rows": 10_000,
         "json_parse_max_columns": 200,
         "json_record_path": None,
+        "sec_edgar_parse_max_bytes": 10_000_000,
+        "sec_edgar_parse_max_rows": 10_000,
+        "sec_edgar_parse_max_columns": 200,
+        "sec_edgar_admitted_form_types": ["10-K", "10-Q", "8-K"],
         "visual_render_dpi": APS_VISUAL_RENDER_DPI_DEFAULT,
         "visual_lane_mode": "baseline",
         "document_processing_engine": APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
@@ -380,6 +386,8 @@ def process_document(
         return _process_xlsx(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type in APS_JSON_CONTENT_TYPES:
         return _process_json(content=content, detection=detection, config=config, deadline=deadline)
+    if effective_type in APS_SEC_EDGAR_CONTENT_TYPES:
+        return _process_sec_edgar(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type == "text/plain":
         return _process_plain_text(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type == "application/pdf":
@@ -560,6 +568,79 @@ def _process_json(
         "normalized_text": normalized_text,
         "normalized_text_sha256": hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
         "normalized_char_count": 0,
+    }
+
+
+def _process_sec_edgar(
+    *,
+    content: bytes,
+    detection: dict[str, Any],
+    config: dict[str, Any],
+    deadline: float | None,
+) -> dict[str, Any]:
+    _raise_if_deadline_exceeded(deadline)
+    parsed = nrc_aps_sec_edgar_parser.parse_sec_edgar_filing(
+        content=content,
+        max_bytes=int(config["sec_edgar_parse_max_bytes"]),
+        max_rows=int(config["sec_edgar_parse_max_rows"]),
+        max_columns=int(config["sec_edgar_parse_max_columns"]),
+        admitted_form_types=list(config.get("sec_edgar_admitted_form_types") or []),
+    )
+    _raise_if_deadline_exceeded(deadline)
+    normalized_text = str(parsed["normalized_text"] or "")
+    quality = _quality_metrics(
+        normalized_text,
+        min_chars=int(config["content_min_searchable_chars"]),
+        min_tokens=int(config["content_min_searchable_tokens"]),
+    )
+    return {
+        **detection,
+        "document_processing_contract_id": APS_DOCUMENT_EXTRACTION_CONTRACT_ID,
+        **_parser_registry_fields(config),
+        "extractor_family": "sec_edgar_filing",
+        "extractor_id": nrc_aps_sec_edgar_parser.APS_SEC_EDGAR_PARSER_ID,
+        "extractor_version": nrc_aps_sec_edgar_parser.APS_SEC_EDGAR_PARSER_VERSION,
+        "normalization_contract_id": APS_TEXT_NORMALIZATION_CONTRACT_ID,
+        "typed_content_contract_id": nrc_aps_sec_edgar_parser.APS_SEC_EDGAR_FILING_CONTRACT_ID,
+        "document_class": "sec_edgar_filing",
+        "page_count": max(1, int(parsed["document_count"] or 1)),
+        "quality_status": quality["quality_status"],
+        "quality_metrics": {
+            **quality,
+            "document_count": parsed["document_count"],
+            "section_count": parsed["section_count"],
+            "table_count": parsed["table_count"],
+        },
+        "degradation_codes": _degradation_codes_for_detection(detection, quality["quality_status"]),
+        "ordered_units": parsed["ordered_units"],
+        "page_summaries": [
+            {
+                "page_number": 1,
+                "source": "sec_edgar_filing",
+                **quality,
+            }
+        ],
+        "filing_units": [
+            {
+                "unit_kind": "sec_edgar_filing",
+                "filing_metadata": parsed["filing_metadata"],
+                "documents": parsed["documents"],
+                "document_count": parsed["document_count"],
+                "section_count": parsed["section_count"],
+                "table_count": parsed["table_count"],
+            }
+        ],
+        "table_units": parsed["table_units"],
+        "time_series_units": parsed["time_series_units"],
+        "table_diagnostics": {
+            "sec_edgar_filing_contract_id": parsed["sec_edgar_filing_contract_id"],
+            "filing_metadata": parsed["filing_metadata"],
+            "table_count": parsed["table_count"],
+            "tables": parsed["table_diagnostics"],
+        },
+        "normalized_text": normalized_text,
+        "normalized_text_sha256": hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
+        "normalized_char_count": len(normalized_text),
     }
 
 

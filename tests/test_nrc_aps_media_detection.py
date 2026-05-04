@@ -92,6 +92,20 @@ def test_detect_media_type_admits_json_extension_with_generic_header():
     assert result["supported_for_processing"] is True
 
 
+def test_detect_media_type_sniffs_sec_edgar_submission_before_plain_text():
+    result = nrc_aps_media_detection.detect_media_type(
+        b"<SEC-DOCUMENT>0000320193-24-000123.txt\n<SEC-HEADER>\n<CONFORMED-SUBMISSION-TYPE>10-K\n</SEC-HEADER>",
+        declared_content_type="text/plain",
+        source_filename="0000320193-24-000123.txt",
+    )
+    assert result["sniffed_content_type"] == "application/x-sec-edgar-submission"
+    assert result["effective_content_type"] == "application/x-sec-edgar-submission"
+    assert result["signature_basis"] == "sec_edgar_submission_signature"
+    assert result["media_detection_status"] == nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_MISMATCH
+    assert result["content_family"] == "structured_filing"
+    assert result["supported_for_processing"] is True
+
+
 def test_detect_media_type_admits_csv_declared_type():
     result = nrc_aps_media_detection.detect_media_type(
         b"date,value\n2026-01-01,42\n",

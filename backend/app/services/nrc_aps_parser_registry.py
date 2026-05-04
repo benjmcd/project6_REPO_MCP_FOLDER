@@ -61,6 +61,13 @@ _PARSER_SPECS: tuple[ApsParserSpec, ...] = (
         parser_contract_id="aps_json_recordset_parser_v1",
     ),
     ApsParserSpec(
+        content_type="application/x-sec-edgar-submission",
+        document_processing_engine=APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
+        parser_family="sec_edgar_filing",
+        parser_output_family="mixed_document_table_units",
+        parser_contract_id="aps_sec_edgar_filing_parser_v1",
+    ),
+    ApsParserSpec(
         content_type="application/pdf",
         document_processing_engine=APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
         parser_family="pdf_document",

@@ -166,6 +166,46 @@ def test_extract_and_normalize_preserves_json_recordset_diagnostics():
     assert result["time_series_units"][0]["numeric_columns"] == ["value"]
 
 
+def test_extract_and_normalize_preserves_sec_edgar_filing_diagnostics():
+    result = nrc_aps_artifact_ingestion.extract_and_normalize(
+        content=b"""<SEC-DOCUMENT>0000320193-24-000123.txt : 20241101
+<SEC-HEADER>
+<ACCESSION-NUMBER>0000320193-24-000123
+<CONFORMED-SUBMISSION-TYPE>10-K
+<FILED-AS-OF-DATE>20241101
+<COMPANY-CONFORMED-NAME>EXAMPLE INDUSTRIES INC
+<CENTRAL-INDEX-KEY>0000320193
+</SEC-HEADER>
+<DOCUMENT>
+<TYPE>10-K
+<SEQUENCE>1
+<FILENAME>example-20241101.txt
+<DESCRIPTION>Primary filing document
+<TEXT>
+ITEM 1. Business
+Registrant manufactures industrial widgets.
+<TABLE>
+date|revenue
+2026-01-01|42
+2026-01-02|43
+</TABLE>
+</TEXT>
+</DOCUMENT>
+</SEC-DOCUMENT>
+""",
+        content_type="text/plain",
+        config={"source_filename": "0000320193-24-000123.txt"},
+    )
+
+    assert result["effective_content_type"] == "application/x-sec-edgar-submission"
+    assert result["parser_family"] == "sec_edgar_filing"
+    assert result["typed_content_contract_id"] == "aps_sec_edgar_filing_units_v1"
+    assert result["filing_units"][0]["filing_metadata"]["accession_number"] == "0000320193-24-000123"
+    assert result["ordered_units"][0]["section_label"] == "ITEM 1"
+    assert result["table_diagnostics"]["table_count"] == 1
+    assert result["time_series_units"][0]["numeric_columns"] == ["revenue"]
+
+
 def test_validate_target_artifact_rejects_missing_normalization_contract():
     payload = {
         "schema_id": "aps.artifact_ingestion_target.v1",

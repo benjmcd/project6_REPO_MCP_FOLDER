@@ -19,6 +19,7 @@ APS_SUPPORTED_CONTENT_TYPES = {
     "image/tiff",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "application/json",
+    "application/x-sec-edgar-submission",
 }
 APS_REFUSAL_CONTENT_TYPES = {
     "application/xml",
@@ -55,6 +56,7 @@ APS_CONTENT_FAMILIES = {
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "spreadsheet",
     "application/vnd.ms-excel.sheet.macroenabled.12": "spreadsheet",
     "application/json": "recordset",
+    "application/x-sec-edgar-submission": "structured_filing",
     "application/xml": "structured_document",
     "text/html": "structured_document",
 }
@@ -188,6 +190,12 @@ def sniff_content_type(content: bytes, *, sniff_bytes: int = 4096) -> dict[str, 
         return {"sniffed_content_type": "application/xml", "signature_basis": "xml_signature", "confidence": "medium"}
     if stripped.startswith((b"{", b"[")):
         return {"sniffed_content_type": "application/json", "signature_basis": "json_signature", "confidence": "medium"}
+    if b"<sec-document" in lower or b"<sec-header" in lower:
+        return {
+            "sniffed_content_type": "application/x-sec-edgar-submission",
+            "signature_basis": "sec_edgar_submission_signature",
+            "confidence": "high",
+        }
     if is_probably_text_bytes(sample):
         return {"sniffed_content_type": "text/plain", "signature_basis": "text_heuristic", "confidence": "medium"}
     return {
