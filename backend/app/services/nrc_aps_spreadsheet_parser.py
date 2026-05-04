@@ -104,22 +104,29 @@ def _is_bool(value: str) -> bool:
 
 def _dedupe_headers(headers: list[str]) -> list[str]:
     seen: dict[str, int] = {}
+    used: set[str] = set()
     result: list[str] = []
     for index, header in enumerate(headers, start=1):
         base = str(header or "").strip() or f"column_{index}"
         seen[base] = int(seen.get(base, 0)) + 1
-        result.append(f"{base}_{seen[base]}" if seen[base] > 1 else base)
+        key = base if seen[base] == 1 else f"{base}_{seen[base]}"
+        while key in used:
+            seen[base] += 1
+            key = f"{base}_{seen[base]}"
+        used.add(key)
+        result.append(key)
     return result
 
 
 def _looks_like_header(row: list[str], next_row: list[str]) -> bool:
     if not row or any(_is_null(value) for value in row):
         return False
-    if len(set(str(value).strip() for value in row)) != len(row):
-        return False
+    has_duplicate_labels = len(set(str(value).strip() for value in row)) != len(row)
     headerish = sum(1 for value in row if not _is_number(value) and not _is_datetime(value))
     dataish = sum(1 for value in next_row if _is_number(value) or _is_datetime(value) or _is_bool(value))
-    return headerish == len(row) or (headerish >= max(1, len(row) // 2) and dataish >= 1)
+    return (headerish == len(row) and (not has_duplicate_labels or dataish >= 1)) or (
+        headerish >= max(1, len(row) // 2) and dataish >= 1
+    )
 
 
 def _column_kind(values: list[str]) -> str:
@@ -222,7 +229,7 @@ def _cell_value(cell: ET.Element, shared_strings: list[str]) -> str:
     return raw
 
 
-def _sheet_rows(root: ET.Element, shared_strings: list[str]) -> list[list[str]]:
+def _sheet_rows(root: ET.Element, shared_strings: list[str], *, max_columns: int) -> list[list[str]]:
     sheet_data = _first_child(root, "sheetData")
     if sheet_data is None:
         return []
@@ -233,7 +240,10 @@ def _sheet_rows(root: ET.Element, shared_strings: list[str]) -> list[list[str]]:
             cell_ref = str(cell.attrib.get("r") or "").strip()
             if not cell_ref:
                 raise ValueError("xlsx_cell_reference_missing")
-            values_by_index[_column_index(cell_ref)] = _cell_value(cell, shared_strings)
+            column_index = _column_index(cell_ref)
+            if column_index > int(max_columns):
+                raise ValueError("xlsx_column_limit_exceeded")
+            values_by_index[column_index] = _cell_value(cell, shared_strings)
         if not values_by_index:
             continue
         width = max(values_by_index)
@@ -366,7 +376,7 @@ def parse_xlsx_workbook(
             if selected_name and sheet.name != selected_name:
                 continue
             root = _read_xml(archive, sheet.path)
-            rows = _sheet_rows(root, shared_strings)
+            rows = _sheet_rows(root, shared_strings, max_columns=max_columns)
             if rows:
                 candidates.append((sheet, rows))
 

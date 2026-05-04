@@ -180,6 +180,7 @@ def _parse_table_block(
         "columns": parsed["columns"],
         "row_count": parsed["row_count"],
         "column_count": parsed["column_count"],
+        "time_column_candidates": parsed["time_column_candidates"],
     }
 
 
@@ -211,6 +212,7 @@ def parse_sec_edgar_filing(
     table_units: list[dict[str, Any]] = []
     time_series_units: list[dict[str, Any]] = []
     table_diagnostics: list[dict[str, Any]] = []
+    time_column_candidates: list[str] = []
     normalized_text_parts: list[str] = []
 
     document_matches = list(_DOCUMENT_RE.finditer(text))
@@ -244,6 +246,9 @@ def parse_sec_edgar_filing(
             )
             table_units.append(parsed_table["table_unit"])
             time_series_units.extend(parsed_table["time_series_units"])
+            for column_name in parsed_table["time_column_candidates"]:
+                if column_name not in time_column_candidates:
+                    time_column_candidates.append(column_name)
             table_diagnostics.append(
                 {
                     "table_index": parsed_table["table_unit"]["table_index"],
@@ -251,6 +256,7 @@ def parse_sec_edgar_filing(
                     "row_count": parsed_table["row_count"],
                     "column_count": parsed_table["column_count"],
                     "columns": parsed_table["columns"],
+                    "time_column_candidates": parsed_table["time_column_candidates"],
                 }
             )
 
@@ -279,6 +285,7 @@ def parse_sec_edgar_filing(
         "ordered_units": ordered_units,
         "table_units": table_units,
         "time_series_units": time_series_units,
+        "time_column_candidates": time_column_candidates,
         "table_diagnostics": table_diagnostics,
         "normalized_text": normalized_text,
     }

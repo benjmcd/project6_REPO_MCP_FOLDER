@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -469,6 +470,73 @@ def test_aps_derived_dataset_version_flows_from_material_preview_to_plan_preview
     )
     assert plan["plan_preview"]["admitted_sets"][0]["readiness"] == "admitted"
     assert plan["plan_preview"]["planned_passes"][0]["dataset_version_id"] == dataset_version_id
+
+
+def test_aps_derived_dataset_material_preview_uses_newest_provenance(db_session, tmp_path) -> None:
+    dataset_version_id = _seed_aps_derived_dataset_version(db_session, tmp_path)
+    older = (
+        db_session.query(DatasetSourceProvenance)
+        .filter(DatasetSourceProvenance.dataset_version_id == dataset_version_id)
+        .one()
+    )
+    older.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    db_session.add(
+        DatasetSourceProvenance(
+            dataset_version_id=dataset_version_id,
+            connector_run_id=None,
+            source_system="nrc_adams_aps",
+            source_mode="artifact_xlsx_parser",
+            source_artifact_key="aps-target-artifacts/run-002/target-002/extraction.json",
+            sciencebase_file_name="fixture.xlsx",
+            downloaded_sha256="1" * 64,
+            raw_storage_ref="aps-target-artifacts/run-002/target-002/blob.xlsx",
+            source_reference_json={
+                "target_id": "target-002",
+                "accession_number": "ML000000002",
+                "table_index": 0,
+                "table_hash": "hash-table-002",
+                "parser_family": "xlsx_workbook",
+                "parser_contract_id": "aps_xlsx_workbook_parser_v1",
+                "typed_content_contract_id": "aps_xlsx_workbook_units_v1",
+                "diagnostics_ref": "aps-target-artifacts/run-002/target-002/diagnostics.json",
+            },
+            created_at=datetime(2026, 1, 2, tzinfo=timezone.utc),
+        )
+    )
+    db_session.flush()
+    preflight = layer3_workbench.preflight(
+        {
+            "client_request_id": "req-preflight-aps-dataset-newest",
+            "natural_language_intent": "Review latest APS-derived table provenance.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+        }
+    )
+    source = layer3_workbench.source_preview(
+        {
+            "client_request_id": "req-source-aps-dataset-newest",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version"],
+        }
+    )
+
+    material = layer3_workbench.material_preview(
+        {
+            "client_request_id": "req-material-aps-dataset-newest",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "source_candidate_ids": [source["source_candidates"][0]["source_candidate_id"]],
+            "dataset_version_ids": [dataset_version_id],
+            "query_basis": {"terms": ["aps", "latest"]},
+        },
+        db_session,
+    )
+
+    candidate = material["material_candidates"][0]
+    assert candidate["source_family"] == "xlsx"
+    assert candidate["provenance_ref"] == "aps-target-artifacts/run-002/target-002/extraction.json"
+    assert candidate["source_trace"]["aps_trace_refs"]["target_id"] == "target-002"
+    assert candidate["source_trace"]["aps_trace_refs"]["typed_content_contract_id"] == "aps_xlsx_workbook_units_v1"
+    assert candidate["source_provenance"]["aps_source_provenance"][0]["parser_family"] == "xlsx_workbook"
 
 
 def test_aps_dataset_version_candidates_list_uses_dataset_source_provenance(db_session, tmp_path) -> None:
