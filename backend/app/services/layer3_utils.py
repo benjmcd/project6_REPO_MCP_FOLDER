@@ -32,6 +32,18 @@ def stable_hash(value: Any) -> str:
     return hashlib.sha256(stable_json_bytes(value)).hexdigest()
 
 
+def stable_id(prefix: str, value: Any, *, digest_chars: int = 16) -> str:
+    return f"{prefix}-{stable_hash(value)[:digest_chars]}"
+
+
+def utcnow_iso_z() -> str:
+    return utcnow().isoformat().replace("+00:00", "Z")
+
+
+def epoch_seconds_iso_z(epoch_seconds: int) -> str:
+    return datetime.fromtimestamp(epoch_seconds, timezone.utc).isoformat().replace("+00:00", "Z")
+
+
 def stable_json_text(value: Any) -> str:
     return json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False)
 
