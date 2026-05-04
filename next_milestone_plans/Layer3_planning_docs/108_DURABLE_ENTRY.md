@@ -2,21 +2,21 @@
 
 ## Status
 
-Implementation-entry freeze for the first durable signed-reference runtime lane after current-main PR `#516`, PR `#518`, and PR `#519`.
+Implementation-entry freeze for the first durable signed-reference runtime lane after current-main PR `#516`, PR `#518`, PR `#519`, and landed runtime PR `#520`.
 
-This file constrains branch `codex/l3-durable-runtime-p23`. The lane may implement only same-origin durable token/receipt/revocation/audit backing state behind the existing signed-reference endpoints.
+This file constrained branch `codex/l3-durable-runtime-p23`, which landed as PR `#520`. The admitted runtime remains only same-origin durable token/receipt/revocation/audit backing state behind the existing signed-reference endpoints.
 
 ## Canonical Authority
 
 Use this authority order:
 
-1. current `project6-origin/main` at branch base `5896b9b5910d61ff94b27ff0c142b35319dd5fa1`;
+1. current `project6-origin/main` at PR `#520` merge commit `721b892b88ef88bf1364e2c71f762fabccdeb171`;
 2. PR `#499` stateless same-origin signed-reference backend/API behavior in `backend/app/services/layer3_workbench.py` and `backend/app/api/layer3.py`;
 3. PR `#514` rendered same-origin signed-reference UI behavior in `/review/layer3`;
 4. current-main docs `106_DURABLE_FREEZE.md` and `107_DURABLE_CONTRACT.md`;
 5. this entry freeze and `109_DURABLE_STATE.md`.
 
-If `project6-origin/main` gains another Alembic migration, Layer 3 model change, or signed-reference API change before this branch lands, stop and refresh this entry freeze before continuing.
+After PR `#520`, if a later branch needs another Alembic migration, Layer 3 model change, or signed-reference API change, stop and create a fresh freeze before continuing.
 
 ## Entry Decision
 
@@ -42,7 +42,7 @@ This implementation may touch only these code surfaces unless a refreshed freeze
 - `backend/app/api/layer3.py`
 - `backend/tests/test_layer3_api.py`
 
-`0016_layer3_signed_reference_state.py` is the selected migration filename because branch base `5896b9b5910d61ff94b27ff0c142b35319dd5fa1` has `backend/alembic/versions` ending at `0015_layer3_package_entry.py`. If that is no longer true before landing, the migration filename must be renumbered and this freeze must be updated before code changes.
+`0016_layer3_signed_reference_state.py` was the selected migration filename because branch base `5896b9b5910d61ff94b27ff0c142b35319dd5fa1` had `backend/alembic/versions` ending at `0015_layer3_package_entry.py`; PR `#520` landed that migration. A later migration must use the next available revision in a fresh freeze.
 
 ## State Tables
 
