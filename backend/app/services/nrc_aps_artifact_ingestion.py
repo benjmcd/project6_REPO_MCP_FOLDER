@@ -160,6 +160,10 @@ def processing_config_from_run_config(config: dict[str, Any] | None = None) -> d
         "json_parse_max_rows": incoming.get("json_parse_max_rows", 10_000),
         "json_parse_max_columns": incoming.get("json_parse_max_columns", 200),
         "json_record_path": incoming.get("json_record_path"),
+        "sec_edgar_parse_max_bytes": incoming.get("sec_edgar_parse_max_bytes", 10_000_000),
+        "sec_edgar_parse_max_rows": incoming.get("sec_edgar_parse_max_rows", 10_000),
+        "sec_edgar_parse_max_columns": incoming.get("sec_edgar_parse_max_columns", 200),
+        "sec_edgar_admitted_form_types": incoming.get("sec_edgar_admitted_form_types", ["10-K", "10-Q", "8-K"]),
         "visual_lane_mode": incoming.get("visual_lane_mode", "baseline"),
         "document_processing_engine": incoming.get(
             "document_processing_engine",

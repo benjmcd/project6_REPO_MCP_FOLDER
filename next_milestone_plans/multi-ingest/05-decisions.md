@@ -206,7 +206,7 @@ Avoids source-shape proliferation and keeps typed quantitative data aligned with
 
 Current status:
 
-CSV/delimited table diagnostics, bounded XLSX parsing, bounded JSON recordset parsing, the callable dataset bridge, opt-in legacy CSV connector/runtime orchestration, generic CSV/XLSX/JSON table connector/runtime orchestration, explicit Layer 3 APS-derived dataset admission, selected-pass execution/package proof, and bounded operator/UI selection are implemented. The next decision is broader parser-family sequencing.
+CSV/delimited table diagnostics, bounded XLSX parsing, bounded JSON recordset parsing, bounded SEC/EDGAR complete-submission parsing, the callable dataset bridge, opt-in legacy CSV connector/runtime orchestration, generic CSV/XLSX/JSON/SEC-EDGAR table connector/runtime orchestration, explicit Layer 3 APS-derived dataset admission, selected-pass execution/package proof, and bounded operator/UI selection are implemented. The next decision is broader parser-family and UI sequencing.
 
 Why:
 
@@ -214,7 +214,7 @@ CSV is simpler than spreadsheets and SEC filings, and it exercises the key downs
 
 Decision needed later:
 
-Which SEC/EDGAR slice should be the next parser family, and when the legacy CSV bridge contract can be deprecated after generic table bridge adoption.
+Implemented for Phase P9: bounded SEC/EDGAR complete submission text files with plain document text, admitted default forms, filing metadata, section ordered units, simple delimited `<TABLE>` table units, and generic table bridge materialization. Remaining sequencing decisions are broader typed/refused UI surfacing, HTML/XML/inline-XBRL filing parser admission, mixed-source package semantics, and when the legacy CSV bridge contract can be deprecated after generic table bridge adoption.
 
 ### Q2: Reuse Dataset Models Or Add A Bridge Table?
 
@@ -240,11 +240,11 @@ Whether nested JSON flattening is allowed, and if so, what field-path and type s
 
 Current recommendation:
 
-Choose one narrow filing format first, likely a deterministic plain-text/SGML fixture before Inline XBRL/HTML/XML.
+Implemented for Phase P9: choose complete submission text files first, sniffed by `<SEC-DOCUMENT>` or `<SEC-HEADER>`, with plain document text and simple delimited `<TABLE>` blocks. Default admitted forms are `10-K`, `10-Q`, and `8-K`.
 
 Decision needed later:
 
-Which forms, encodings, metadata fields, and table extraction rules are in the first SEC/EDGAR tranche.
+Whether and how to admit HTML/XML/inline XBRL filings, richer financial-statement table semantics, unsupported form families, archive-member filing orchestration, and governed mixed-source package behavior.
 
 ### Q5: Does Workbench Need A New Source Shape?
 
@@ -274,15 +274,19 @@ Answer: The docs say the PDF path is complete only for document/text/chunk seman
 
 Question: Are we underclaiming existing quantitative capability?
 
-Answer: The docs preserve the fact that `dataset_version` time-series/tabular analysis exists downstream. They distinguish that from APS ingestion now creating datasets only for admitted CSV, bounded XLSX, and bounded JSON recordset artifacts under explicit bridge gates, not for arbitrary typed files.
+Answer: The docs preserve the fact that `dataset_version` time-series/tabular analysis exists downstream. They distinguish that from APS ingestion now creating datasets only for admitted CSV, bounded XLSX, bounded JSON recordset, and bounded SEC/EDGAR table artifacts under explicit bridge gates, not for arbitrary typed files.
 
 Question: Is CSV support being represented accurately?
 
-Answer: Yes. The docs state standalone CSV and ZIP CSV members now emit typed parser diagnostics, can be materialized through an explicit dataset bridge, can be invoked from connector finalization through the legacy CSV gate or generic table gate, and can enter Layer 3 when selected by explicit `dataset_version_id`. That is not broad heterogeneous support because arbitrary JSON, SEC/EDGAR, and mixed parser families remain deferred.
+Answer: Yes. The docs state standalone CSV and ZIP CSV members now emit typed parser diagnostics, can be materialized through an explicit dataset bridge, can be invoked from connector finalization through the legacy CSV gate or generic table gate, and can enter Layer 3 when selected by explicit `dataset_version_id`. That is not broad heterogeneous support because arbitrary JSON, broad SEC/EDGAR HTML/XML/inline-XBRL parsing, and mixed package semantics remain deferred.
 
 Question: Is JSON/XML/HTML support being represented accurately?
 
 Answer: Yes. The docs state JSON is admitted only for bounded recordset parsing and materialization. Arbitrary JSON, XML, and HTML remain refused until specific parser families are admitted.
+
+Question: Is SEC/EDGAR support being represented accurately?
+
+Answer: Yes. The docs state Phase P9 admits only complete submission text files with plain document text, deterministic metadata/section extraction, and simple delimited `<TABLE>` materialization. HTML/XML/inline XBRL, unsupported forms, ambiguous financial statement extraction, archive-member orchestration, schema changes, new Layer 3 source shapes, and mixed-source package semantics remain out of scope.
 
 Question: Is XLSX risk explicitly handled?
 
@@ -302,11 +306,11 @@ Answer: Yes. `04-validation.md` requires positive and negative fixture coverage 
 
 Question: What could still be missing?
 
-Answer: Two items must be resolved during implementation planning: whether typed/refused UI surfacing is sufficient for CSV/XLSX/JSON datasets, and which SEC/EDGAR filing format is admitted first. These are recorded as open questions rather than assumed.
+Answer: The remaining items are typed/refused UI surfacing for server-backed source families, whether and how to admit SEC/EDGAR HTML/XML/inline-XBRL, and when to connect mixed SEC/EDGAR narrative-plus-table output into governed package semantics. These are recorded as open questions rather than assumed.
 
 ## Immediate Next Action
 
-Proceed with either SEC/EDGAR parser scoping or a narrow typed/refused UI surfacing pass only after auditing the active workbench UI state:
+Proceed with a narrow typed/refused UI surfacing pass only after auditing the active workbench UI state, or with a separately scoped SEC/EDGAR HTML/XML/inline-XBRL parser contract if UI surfacing is intentionally deferred:
 
 - Expose APS-derived `DatasetVersion` candidates and parser/refusal diagnostics without treating UI state as source authority.
 - Preserve backend-owned material-preview, Gate B, execution/result, and package contracts.

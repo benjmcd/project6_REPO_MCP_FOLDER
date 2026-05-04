@@ -68,4 +68,4 @@ Caveat:
 
 ## Next
 
-The next implementation tranche should be either a narrow SEC/EDGAR parser slice or a bounded typed/refused UI surfacing pass. Do not combine SEC/EDGAR, arbitrary JSON flattening, schema changes, and UI expansion in one PR.
+At P8 closeout time, the next implementation tranche was either a narrow SEC/EDGAR parser slice or a bounded typed/refused UI surfacing pass. Phase P9 has since implemented the bounded SEC/EDGAR complete-submission text slice; remaining work is captured in `18-p9-closeout.md`.

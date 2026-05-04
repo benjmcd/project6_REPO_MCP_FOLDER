@@ -432,6 +432,8 @@ Caveat:
 
 ## Phase P9 SEC/EDGAR Validation
 
+Status: implemented for bounded complete submission text files with plain document text and simple delimited `<TABLE>` blocks.
+
 Positive fixtures:
 
 - Narrow first admitted plain-text filing.
@@ -452,6 +454,19 @@ Assertions:
 - Extracted tables map to table units.
 - Mixed source envelope links both branches.
 - Downstream package can prove source identity without conflating text sections and tables.
+
+Implemented P9 focused commands:
+
+- `python -m pytest .\tests\test_nrc_aps_sec_edgar_parser.py .\tests\test_nrc_aps_media_detection.py .\tests\test_nrc_aps_parser_registry.py .\tests\test_nrc_aps_document_processing.py .\tests\test_nrc_aps_artifact_ingestion.py .\tests\test_nrc_aps_dataset_bridge.py .\tests\test_api.py -k "sec_edgar or parser_registry or media_detection or dataset_bridge" -q`: `43 passed`, `112 deselected`.
+- `python -m pytest .\tests\test_nrc_aps_sec_edgar_parser.py .\tests\test_nrc_aps_document_processing.py .\tests\test_nrc_aps_artifact_ingestion.py .\tests\test_nrc_aps_dataset_bridge.py .\tests\test_api.py -k "sec_edgar" -q`: `11 passed`, `126 deselected`.
+- `python -m pytest .\tests\test_nrc_aps_sec_edgar_parser.py .\tests\test_nrc_aps_json_parser.py .\tests\test_nrc_aps_spreadsheet_parser.py .\tests\test_nrc_aps_csv_parser.py .\tests\test_nrc_aps_media_detection.py .\tests\test_nrc_aps_parser_registry.py .\tests\test_nrc_aps_document_processing.py .\tests\test_nrc_aps_artifact_ingestion.py .\tests\test_nrc_aps_dataset_bridge.py .\tests\test_nrc_aps_content_index.py .\tests\test_nrc_aps_expansion.py .\tests\test_api.py -k "not candidate_b" -q`: `181 passed`, `10 deselected`.
+- `python -m pytest .\backend\tests\test_layer3_workbench.py .\backend\tests\test_layer3_api.py -q`: `86 passed`.
+- `npm run validate:structure`: `errors: 0`, `warnings: 221` existing local-path/documentation warnings.
+- `git diff --check`: passed with line-ending conversion warnings only.
+
+Caveat:
+
+- The commands exited successfully, but pytest emitted the known Windows temp cleanup `PermissionError` after the green result for `pytest-current`.
 
 ## Browser Validation
 

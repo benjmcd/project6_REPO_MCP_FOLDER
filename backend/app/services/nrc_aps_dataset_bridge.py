@@ -56,6 +56,14 @@ _TABLE_PARSER_CONTRACTS = {
         "version_label": "aps_json_recordset_v1",
         "source_mode": "artifact_json_recordset_parser",
     },
+    "sec_edgar_filing": {
+        "typed_content_contract_id": "aps_sec_edgar_filing_units_v1",
+        "logical_prefix": "sec-edgar-table",
+        "dataset_label": "SEC EDGAR filing table",
+        "description": "Materialized from NRC APS SEC EDGAR filing parser diagnostics.",
+        "version_label": "aps_sec_edgar_table_v1",
+        "source_mode": "artifact_sec_edgar_filing_parser",
+    },
 }
 
 
