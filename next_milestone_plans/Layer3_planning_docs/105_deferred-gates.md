@@ -4,7 +4,7 @@
 
 Current-main decision freeze for the remaining requested deferred categories after PR `#499`, PR `#513`, and PR `#514` rendered signed-reference UI slice in `104_signed-ui.md`.
 
-On this branch, docs `106_DURABLE_FREEZE.md` and `107_DURABLE_CONTRACT.md` select durable token, receipt, revocation, and audit state as the next planning/control question only. They do not implement durable behavior.
+Current-main docs `106_DURABLE_FREEZE.md` and `107_DURABLE_CONTRACT.md` select durable token, receipt, revocation, and audit state as the next planning/control question only after PR `#516`. They do not implement durable behavior.
 
 This file does not implement deferred behavior. It defines the minimum questions, blockers, and proof gates required before any of the following can become an implementation lane:
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Branch-local planning/control freeze for durable token, receipt, revocation, and audit state after PR `#499` backend/API same-origin signed-reference generation/use and PR `#514` rendered same-origin signed-reference UI.
+Current-main planning/control freeze for durable token, receipt, revocation, and audit state after PR `#499` backend/API same-origin signed-reference generation/use, PR `#514` rendered same-origin signed-reference UI, and PR `#516` durable-state planning/control merge.
 
 This file does not implement durable behavior. It selects the durable-state question as the next workbench planning slice because provider/public URLs and connector/destination dispatch both need a settled replay, revocation, receipt, and audit model before they can be exposed safely.
 
