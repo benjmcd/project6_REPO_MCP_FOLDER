@@ -148,7 +148,7 @@ Avoids claiming end-to-end typed ingestion before the dataset bridge, Layer 3 so
 
 Decision:
 
-P4 implements an explicit callable CSV dataset bridge instead of automatically invoking it from connector finalization.
+P4 implemented an explicit callable CSV dataset bridge before connector finalization. P4.5 later added the legacy CSV-only runtime gate, and P7.5 later added the generic table runtime gate.
 
 Reason:
 
@@ -157,6 +157,20 @@ The bridge needs its own idempotency, provenance, row, variable, profile, and st
 Risk avoided:
 
 Avoids making every CSV artifact alter durable dataset state before the admission and operator policy for automatic materialization is settled.
+
+### D13: Generic Table Bridge Does Not Broaden The Legacy CSV Gate
+
+Decision:
+
+Phase P7.5 adds `table_dataset_bridge_enabled` and `aps.table_dataset_bridge_run.v1` instead of making `csv_dataset_bridge_enabled` accept XLSX.
+
+Reason:
+
+The legacy CSV gate and report names are already observable runtime contracts. Broadening them to include XLSX would make downstream consumers infer that generic table support is still CSV-specific, and would obscure whether a run used the compatibility bridge or the generic table-unit bridge.
+
+Risk avoided:
+
+Avoids CSV-named contract debt while preserving existing CSV consumers.
 
 ### D12: P5 Uses Existing DatasetVersion Source Shape
 
@@ -178,7 +192,7 @@ Avoids source-shape proliferation and keeps typed quantitative data aligned with
 
 Current status:
 
-CSV/delimited table diagnostics, the callable dataset bridge, opt-in connector/runtime orchestration, explicit Layer 3 APS-derived dataset admission, and selected-pass execution/package proof are implemented. The next decision is operator/UI selection and broader parser-family sequencing.
+CSV/delimited table diagnostics, the callable dataset bridge, opt-in legacy CSV connector/runtime orchestration, generic CSV/XLSX table connector/runtime orchestration, explicit Layer 3 APS-derived dataset admission, selected-pass execution/package proof, and bounded operator/UI selection are implemented. The next decision is broader parser-family sequencing.
 
 Why:
 
@@ -186,7 +200,7 @@ CSV is simpler than spreadsheets and SEC filings, and it exercises the key downs
 
 Decision needed later:
 
-Whether connector finalization should auto-materialize every admitted CSV table beyond the current explicit `csv_dataset_bridge_enabled` gate, and how UI should expose candidate dataset versions.
+Whether JSON recordset or SEC/EDGAR should be the next parser family, and when the legacy CSV bridge contract can be deprecated after generic table bridge adoption.
 
 ### Q2: Reuse Dataset Models Or Add A Bridge Table?
 
@@ -250,7 +264,7 @@ Answer: The docs preserve the fact that `dataset_version` time-series/tabular an
 
 Question: Is CSV support being represented accurately?
 
-Answer: Yes. The docs state standalone CSV and ZIP CSV members now emit typed parser diagnostics, can be materialized through an explicit dataset bridge, can be invoked from connector finalization only when `csv_dataset_bridge_enabled=true`, and can enter Layer 3 when selected by explicit `dataset_version_id`. That is not broad heterogeneous support because UI selection and non-CSV parser families remain deferred.
+Answer: Yes. The docs state standalone CSV and ZIP CSV members now emit typed parser diagnostics, can be materialized through an explicit dataset bridge, can be invoked from connector finalization through the legacy CSV gate or generic table gate, and can enter Layer 3 when selected by explicit `dataset_version_id`. That is not broad heterogeneous support because JSON, SEC/EDGAR, and mixed parser families remain deferred.
 
 Question: Is JSON/XML/HTML support being represented accurately?
 
@@ -258,7 +272,7 @@ Answer: Yes. The docs state these are explicitly refused today and should remain
 
 Question: Is XLSX risk explicitly handled?
 
-Answer: Yes. The docs call out the ZIP-signature ambiguity and require XLSX to be classified as spreadsheet or refused, not processed as generic archive.
+Answer: Yes. The docs call out the ZIP-signature ambiguity, require XLSX to be classified as spreadsheet or refused, and now distinguish bounded standalone XLSX connector table-bridge orchestration from broad workbook/archive-member support.
 
 Question: Does the plan preserve modularity and scalability?
 

@@ -54,7 +54,7 @@ Implications:
 
 - JSON, XML, and HTML are not pending "maybe supported" file types. They are explicitly refused today.
 - XLSX files are no longer accepted as generic ZIP when filename or OOXML package evidence identifies them as spreadsheets. Macro-enabled XLSM remains fail-closed.
-- CSV is parser-admitted for typed diagnostics and can be materialized through the callable dataset bridge. XLSX can now emit table units and be materialized explicitly through the same table-unit bridge path. Connector finalization still invokes the bridge only for processed CSV table artifacts when `csv_dataset_bridge_enabled=true`. Explicit Layer 3 material preview can admit resulting APS-derived `DatasetVersion` records through the existing `dataset_version` source shape.
+- CSV is parser-admitted for typed diagnostics and can be materialized through the legacy CSV bridge or the generic table-unit bridge. XLSX can now emit table units and be materialized explicitly or during connector finalization when `table_dataset_bridge_enabled=true`. Explicit Layer 3 material preview can admit resulting APS-derived `DatasetVersion` records through the existing `dataset_version` source shape.
 
 ## Document Processing Facts
 
@@ -69,7 +69,7 @@ Confirmed:
 - The top-level processor dispatches `text/plain`, PDF, image types, and `application/zip`; unsupported types fail outside those branches.
 - `_process_plain_text` emits `document_class="text_plain"` and `ordered_units` text blocks beginning at `backend/app/services/nrc_aps_document_processing.py:351`.
 - `_process_image` emits `document_class="standalone_image"` and OCR-derived ordered units at `backend/app/services/nrc_aps_document_processing.py:403`, `backend/app/services/nrc_aps_document_processing.py:531`, and `backend/app/services/nrc_aps_document_processing.py:536`.
-- `_process_zip` maps supported document/image members into the existing handlers, parses CSV members for table diagnostics, and keeps spreadsheet/JSON/XML/HTML members visible as typed/refused outcomes instead of flattening them into text. XLSX inside archives remains outside the first P7 connector-orchestration tranche.
+- `_process_zip` maps supported document/image members into the existing handlers, parses CSV members for table diagnostics, and keeps spreadsheet/JSON/XML/HTML members visible as typed/refused outcomes instead of flattening them into text. XLSX inside archives remains outside the bounded Phase P7.5 connector-orchestration tranche.
 - PDF baseline processing emits a document class and ordered units at `backend/app/services/nrc_aps_document_processing.py:882`, `backend/app/services/nrc_aps_document_processing.py:891`, and `backend/app/services/nrc_aps_document_processing.py:896`.
 - Candidate B emits ordered units and a document class through the same existing contract shape at `backend/app/services/nrc_aps_document_processing.py:1086` through `backend/app/services/nrc_aps_document_processing.py:1160`.
 
@@ -149,7 +149,7 @@ Implications:
 
 - The project already has downstream structures for time-series/tabular analysis once a `DatasetVersion` exists.
 - APS ingestion can now create that dataset/variable/row/provenance shape from CSV parser output when the bridge is explicitly invoked.
-- Connector finalization can invoke the bridge behind the `csv_dataset_bridge_enabled` gate for processed CSV table artifacts, and records bridge report refs plus target dataset refs.
+- Connector finalization can invoke the legacy CSV bridge behind the `csv_dataset_bridge_enabled` gate for processed CSV table artifacts. It can also invoke the generic table bridge behind the `table_dataset_bridge_enabled` gate for processed CSV/XLSX table-unit artifacts, and records bridge report refs plus target dataset refs.
 - Layer 3 does not auto-discover all APS-derived dataset versions and does not add a distinct typed APS source class. Explicit material preview can admit selected APS-derived dataset versions through `dataset_version`.
 
 ## Test Coverage Facts
@@ -174,7 +174,7 @@ Confirmed:
 Implications:
 
 - Existing tests prove the current document/text and pre-seeded dataset paths.
-- They now prove APS CSV and bounded XLSX table-unit materialization into a typed dataset path. They do not prove JSON, SEC/EDGAR, mixed-source, arbitrary workbook, or connector-automatic XLSX ingestion into that path.
+- They now prove APS CSV and bounded XLSX table-unit materialization into a typed dataset path, including opt-in connector automatic XLSX materialization through the generic table bridge. They do not prove JSON, SEC/EDGAR, mixed-source, arbitrary workbook, archive-member XLSX orchestration, or broad workbook ingestion into that path.
 
 ## Completion Boundary
 
@@ -205,5 +205,5 @@ Not implemented today:
 - JSON recordset parser.
 - SEC/EDGAR filing parser.
 - Parser families beyond CSV/XLSX.
-- Automatic connector finalization for XLSX table artifacts.
+- Broad workbook and archive-member XLSX connector orchestration beyond the bounded processed standalone `.xlsx` table-unit path.
 - End-to-end UI tests proving heterogeneous corpus artifacts reach Layer 3 with preserved source semantics.

@@ -98,6 +98,8 @@ APS_CONTENT_INDEX_DEFAULT_CHUNK_OVERLAP = nrc_aps_content_index.APS_CONTENT_INDE
 APS_CONTENT_INDEX_DEFAULT_MIN_CHUNK = nrc_aps_content_index.APS_CONTENT_INDEX_DEFAULT_MIN_CHUNK
 APS_CSV_DATASET_BRIDGE_RUN_SCHEMA_ID = "aps.csv_dataset_bridge_run.v1"
 APS_CSV_DATASET_BRIDGE_RUN_SCHEMA_VERSION = 1
+APS_TABLE_DATASET_BRIDGE_RUN_SCHEMA_ID = "aps.table_dataset_bridge_run.v1"
+APS_TABLE_DATASET_BRIDGE_RUN_SCHEMA_VERSION = 1
 
 
 @dataclass
@@ -412,6 +414,8 @@ def _lint_submission_config(config: dict[str, Any]) -> list[str]:
         warnings.append("artifact_required_for_target_success ignored when artifact_pipeline_mode=off")
     if _coerce_bool(config.get("csv_dataset_bridge_enabled")) and pipeline_mode != nrc_aps_artifact_ingestion.APS_PIPELINE_MODE_HYDRATE_PROCESS:
         warnings.append("csv_dataset_bridge_enabled requires artifact_pipeline_mode=hydrate_process to materialize datasets")
+    if _coerce_bool(config.get("table_dataset_bridge_enabled")) and pipeline_mode != nrc_aps_artifact_ingestion.APS_PIPELINE_MODE_HYDRATE_PROCESS:
+        warnings.append("table_dataset_bridge_enabled requires artifact_pipeline_mode=hydrate_process to materialize datasets")
     chunk_size_chars = _coerce_int(config.get("content_chunk_size_chars"), APS_CONTENT_INDEX_DEFAULT_CHUNK_SIZE)
     chunk_overlap_chars = _coerce_int(config.get("content_chunk_overlap_chars"), APS_CONTENT_INDEX_DEFAULT_CHUNK_OVERLAP)
     min_chunk_chars = _coerce_int(config.get("content_chunk_min_chars"), APS_CONTENT_INDEX_DEFAULT_MIN_CHUNK)
@@ -632,6 +636,7 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
                 "content_chunk_overlap_chars",
                 "content_chunk_min_chars",
                 "csv_dataset_bridge_enabled",
+                "table_dataset_bridge_enabled",
                 "report_verbosity",
                 "safeguard_policy",
                 "client_request_id",
@@ -743,6 +748,7 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
         ),
         "content_chunk_min_chars": _coerce_int(config.get("content_chunk_min_chars", APS_CONTENT_INDEX_DEFAULT_MIN_CHUNK), APS_CONTENT_INDEX_DEFAULT_MIN_CHUNK),
         "csv_dataset_bridge_enabled": _coerce_bool(config.get("csv_dataset_bridge_enabled"), default=False),
+        "table_dataset_bridge_enabled": _coerce_bool(config.get("table_dataset_bridge_enabled"), default=False),
         "allowed_hosts": allowed_hosts,
         "fetch_policy_mode": str(config.get("fetch_policy_mode", "strict_public_safe") or "strict_public_safe"),
         "report_verbosity": report_verbosity,
@@ -1493,6 +1499,11 @@ def _csv_dataset_bridge_run_report_path(run_id: str, *, reports_dir: str | Path 
     return root / f"{run_id}_aps_csv_dataset_bridge_run_v1.json"
 
 
+def _table_dataset_bridge_run_report_path(run_id: str, *, reports_dir: str | Path | None = None) -> Path:
+    root = Path(reports_dir or settings.connector_reports_dir)
+    return root / f"{run_id}_aps_table_dataset_bridge_run_v1.json"
+
+
 def _persist_artifact_ingestion_run_artifact(
     db: Session,
     *,
@@ -1943,6 +1954,188 @@ def _generate_csv_dataset_bridge_artifacts(
             "aps_csv_dataset_bridge": report_ref,
         },
         "aps_csv_dataset_bridge_summary": {
+            "run_outcome": run_payload.get("run_outcome"),
+            "enabled": enabled,
+            "selected_targets": int(run_payload.get("selected_targets") or 0),
+            "processed_targets": int(run_payload.get("processed_targets") or 0),
+            "materialized_dataset_versions": int(run_payload.get("materialized_dataset_versions") or 0),
+            "created_dataset_versions": int(run_payload.get("created_dataset_versions") or 0),
+            "skipped_targets": int(run_payload.get("skipped_targets") or 0),
+            "failures_count": int(run_payload.get("failures_count") or 0),
+        },
+    }
+    db.flush()
+    return {
+        "run_ref": report_ref,
+        "run_outcome": run_payload.get("run_outcome"),
+        "enabled": enabled,
+        "processed_targets": int(run_payload.get("processed_targets") or 0),
+        "materialized_dataset_versions": int(run_payload.get("materialized_dataset_versions") or 0),
+        "created_dataset_versions": int(run_payload.get("created_dataset_versions") or 0),
+        "skipped_targets": int(run_payload.get("skipped_targets") or 0),
+        "failures_count": int(run_payload.get("failures_count") or 0),
+    }
+
+
+def _generate_table_dataset_bridge_artifacts(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    enabled = _coerce_bool(config.get("table_dataset_bridge_enabled"), default=False)
+    target_rows = (
+        db.query(ConnectorRunTarget)
+        .filter(ConnectorRunTarget.connector_run_id == run.connector_run_id)
+        .order_by(ConnectorRunTarget.ordinal.asc())
+        .all()
+    )
+    materialized: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+    failures: list[dict[str, Any]] = []
+
+    for target in target_rows:
+        source_ref = dict(target.source_reference_json or {})
+        target_artifact_ref = str(source_ref.get("aps_artifact_ingestion_ref") or "").strip()
+        if not target_artifact_ref:
+            skipped.append({"target_id": target.connector_run_target_id, "reason": "artifact_ref_missing"})
+            continue
+        target_artifact_payload = nrc_aps_sync_drift.read_json_object(target_artifact_ref)
+        if not target_artifact_payload:
+            failures.append(
+                {
+                    "target_id": target.connector_run_target_id,
+                    "code": "dataset_bridge_target_artifact_unreadable",
+                    "message": f"Unable to parse target artifact: {target_artifact_ref}",
+                }
+            )
+            continue
+        outcome_status = str(target_artifact_payload.get("outcome_status") or "").strip().lower()
+        extraction = dict(target_artifact_payload.get("extraction") or {})
+        parser_family = str(extraction.get("parser_family") or "").strip()
+        typed_contract = str(extraction.get("typed_content_contract_id") or "").strip()
+        if not enabled:
+            skipped.append({"target_id": target.connector_run_target_id, "reason": "dataset_bridge_disabled"})
+            continue
+        if outcome_status != "processed":
+            skipped.append({"target_id": target.connector_run_target_id, "reason": f"outcome_{outcome_status or 'unknown'}"})
+            continue
+        if nrc_aps_dataset_bridge.table_parser_contract(extraction) is None:
+            skipped.append(
+                {
+                    "target_id": target.connector_run_target_id,
+                    "reason": "not_table_unit_parser",
+                    "parser_family": parser_family or None,
+                    "typed_content_contract_id": typed_contract or None,
+                }
+            )
+            continue
+        try:
+            result = nrc_aps_dataset_bridge.materialize_table_unit_dataset(
+                db,
+                target_artifact_payload=target_artifact_payload,
+                artifact_storage_dir=config.get("artifact_storage_dir") or settings.artifact_storage_dir,
+                connector_run_id=run.connector_run_id,
+                dataset_bridge_contract_id=nrc_aps_dataset_bridge.APS_TABLE_DATASET_BRIDGE_CONTRACT_ID,
+                commit=False,
+            )
+        except Exception as exc:  # noqa: BLE001
+            failures.append(
+                {
+                    "target_id": target.connector_run_target_id,
+                    "code": "dataset_bridge_materialization_failed",
+                    "error_class": exc.__class__.__name__,
+                    "message": str(exc),
+                    "target_artifact_ref": target_artifact_ref,
+                    "parser_family": parser_family or None,
+                    "typed_content_contract_id": typed_contract or None,
+                }
+            )
+            continue
+
+        bridge_contract_id = str(result.get("dataset_bridge_contract_id") or nrc_aps_dataset_bridge.APS_TABLE_DATASET_BRIDGE_CONTRACT_ID)
+        target.source_reference_json = {
+            **(target.source_reference_json or {}),
+            "aps_table_dataset_bridge_ref": None,
+            "aps_table_dataset_bridge_contract_id": bridge_contract_id,
+            "aps_table_dataset_parser_family": parser_family or None,
+            "aps_table_dataset_typed_content_contract_id": typed_contract or None,
+            "aps_dataset_id": result.get("dataset_id"),
+            "aps_dataset_version_id": result.get("dataset_version_id"),
+            "aps_dataset_source_artifact_key": result.get("source_artifact_key"),
+        }
+        target.dataset_id = str(result.get("dataset_id") or "") or None
+        target.dataset_version_id = str(result.get("dataset_version_id") or "") or None
+        db.flush()
+        materialized.append(
+            {
+                "target_id": target.connector_run_target_id,
+                "dataset_id": result.get("dataset_id"),
+                "dataset_version_id": result.get("dataset_version_id"),
+                "source_artifact_key": result.get("source_artifact_key"),
+                "row_count": int(result.get("row_count") or 0),
+                "created": bool(result.get("created", False)),
+                "parser_family": parser_family or None,
+                "typed_content_contract_id": typed_contract or None,
+                "dataset_bridge_contract_id": bridge_contract_id,
+            }
+        )
+
+    run_payload = {
+        "schema_id": APS_TABLE_DATASET_BRIDGE_RUN_SCHEMA_ID,
+        "schema_version": APS_TABLE_DATASET_BRIDGE_RUN_SCHEMA_VERSION,
+        "run_id": run.connector_run_id,
+        "run_status": str(run.status or ""),
+        "dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_TABLE_DATASET_BRIDGE_CONTRACT_ID,
+        "dataset_bridge_version": nrc_aps_dataset_bridge.APS_DATASET_BRIDGE_VERSION,
+        "enabled": enabled,
+        "selected_targets": int(run.selected_count or 0),
+        "processed_targets": len(materialized),
+        "created_dataset_versions": sum(1 for item in materialized if bool(item.get("created"))),
+        "materialized_dataset_versions": len(materialized),
+        "skipped_targets": len(skipped),
+        "failures_count": len(failures),
+        "supported_parser_families": ["csv_table", "xlsx_workbook"],
+        "materialized": materialized,
+        "skipped": skipped,
+        "failures": failures,
+    }
+    run_payload["run_outcome"] = (
+        "dataset_bridge_disabled"
+        if not enabled
+        else "dataset_bridge_failed"
+        if failures
+        else "datasets_materialized"
+        if materialized
+        else "no_table_unit_targets"
+    )
+    report_ref = nrc_aps_content_index.write_json_atomic(
+        _table_dataset_bridge_run_report_path(
+            run.connector_run_id,
+            reports_dir=config.get("connector_reports_dir"),
+        ),
+        run_payload,
+    )
+    for target in target_rows:
+        source_ref = dict(target.source_reference_json or {})
+        if source_ref.get("aps_table_dataset_bridge_contract_id") == nrc_aps_dataset_bridge.APS_TABLE_DATASET_BRIDGE_CONTRACT_ID:
+            target.source_reference_json = {
+                **source_ref,
+                "aps_table_dataset_bridge_ref": report_ref,
+            }
+    if failures:
+        run.error_summary = _append_error_summary_token(
+            run.error_summary,
+            token="aps_table_dataset_bridge_failed",
+        )
+        if run.status not in {"failed", "cancelled"}:
+            run.status = "completed_with_errors"
+    run.query_plan_json = {
+        **(run.query_plan_json or {}),
+        "aps_table_dataset_bridge_report_refs": {
+            "aps_table_dataset_bridge": report_ref,
+        },
+        "aps_table_dataset_bridge_summary": {
             "run_outcome": run_payload.get("run_outcome"),
             "enabled": enabled,
             "selected_targets": int(run_payload.get("selected_targets") or 0),
@@ -3694,6 +3887,8 @@ def execute_nrc_adams_run(connector_run_id: str) -> None:
             "aps_chunking_contract_id": nrc_aps_content_index.APS_CHUNKING_CONTRACT_ID,
             "aps_csv_dataset_bridge_enabled": bool(config.get("csv_dataset_bridge_enabled", False)),
             "aps_csv_dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_DATASET_BRIDGE_CONTRACT_ID,
+            "aps_table_dataset_bridge_enabled": bool(config.get("table_dataset_bridge_enabled", False)),
+            "aps_table_dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_TABLE_DATASET_BRIDGE_CONTRACT_ID,
             "aps_content_chunking_policy": {
                 "chunk_size_chars": int(config.get("content_chunk_size_chars") or APS_CONTENT_INDEX_DEFAULT_CHUNK_SIZE),
                 "chunk_overlap_chars": int(config.get("content_chunk_overlap_chars") or APS_CONTENT_INDEX_DEFAULT_CHUNK_OVERLAP),
@@ -3776,8 +3971,82 @@ def execute_nrc_adams_run(connector_run_id: str) -> None:
                     "failure_ref": failure_ref,
                 }
 
+        table_dataset_bridge_summary: dict[str, Any] | None = None
         csv_dataset_bridge_summary: dict[str, Any] | None = None
-        if run.status in {"completed", "completed_with_errors"} and bool(config.get("csv_dataset_bridge_enabled", False)):
+        if run.status in {"completed", "completed_with_errors"} and bool(config.get("table_dataset_bridge_enabled", False)):
+            try:
+                table_dataset_bridge_summary = _generate_table_dataset_bridge_artifacts(
+                    db,
+                    run=run,
+                    config=config,
+                )
+                _record_run_event(
+                    db,
+                    run=run,
+                    event_type="aps_table_dataset_bridge_artifacts_generated",
+                    phase="finalizing",
+                    stage="reporting",
+                    status_after=run.status,
+                    metrics_json={
+                        "aps_table_dataset_bridge_ref": table_dataset_bridge_summary.get("run_ref"),
+                        "run_outcome": table_dataset_bridge_summary.get("run_outcome"),
+                        "processed_targets": table_dataset_bridge_summary.get("processed_targets"),
+                        "materialized_dataset_versions": table_dataset_bridge_summary.get("materialized_dataset_versions"),
+                        "created_dataset_versions": table_dataset_bridge_summary.get("created_dataset_versions"),
+                        "failures_count": table_dataset_bridge_summary.get("failures_count"),
+                    },
+                )
+            except Exception as table_bridge_exc:  # noqa: BLE001
+                failure_payload = {
+                    "schema_id": APS_TABLE_DATASET_BRIDGE_RUN_SCHEMA_ID,
+                    "schema_version": APS_TABLE_DATASET_BRIDGE_RUN_SCHEMA_VERSION,
+                    "run_id": run.connector_run_id,
+                    "run_status": str(run.status or ""),
+                    "dataset_bridge_contract_id": nrc_aps_dataset_bridge.APS_TABLE_DATASET_BRIDGE_CONTRACT_ID,
+                    "enabled": True,
+                    "run_outcome": "dataset_bridge_artifact_generation_failed",
+                    "failures_count": 1,
+                    "failures": [
+                        {
+                            "code": "dataset_bridge_artifact_generation_failed",
+                            "error_class": table_bridge_exc.__class__.__name__,
+                            "message": str(table_bridge_exc),
+                        }
+                    ],
+                }
+                failure_ref = nrc_aps_content_index.write_json_atomic(
+                    _table_dataset_bridge_run_report_path(
+                        run.connector_run_id,
+                        reports_dir=config.get("connector_reports_dir"),
+                    ),
+                    failure_payload,
+                )
+                run.error_summary = _append_error_summary_token(
+                    run.error_summary,
+                    token="aps_table_dataset_bridge_failed",
+                )
+                if run.status not in {"failed", "cancelled"}:
+                    run.status = "completed_with_errors"
+                run.query_plan_json = {
+                    **(run.query_plan_json or {}),
+                    "aps_table_dataset_bridge_report_refs": {"aps_table_dataset_bridge": failure_ref},
+                    "aps_table_dataset_bridge_summary": {
+                        "artifact_generation_failed": True,
+                        "error_class": table_bridge_exc.__class__.__name__,
+                        "error_message": str(table_bridge_exc),
+                    },
+                }
+                table_dataset_bridge_summary = {
+                    "artifact_generation_failed": True,
+                    "run_ref": failure_ref,
+                    "failures_count": 1,
+                }
+
+        if (
+            run.status in {"completed", "completed_with_errors"}
+            and not bool(config.get("table_dataset_bridge_enabled", False))
+            and bool(config.get("csv_dataset_bridge_enabled", False))
+        ):
             try:
                 csv_dataset_bridge_summary = _generate_csv_dataset_bridge_artifacts(
                     db,
@@ -3886,6 +4155,7 @@ def execute_nrc_adams_run(connector_run_id: str) -> None:
                 "run_mode": config.get("run_mode"),
                 "artifact_ingestion_summary": artifact_ingestion_summary or {},
                 "content_index_summary": content_index_summary or {},
+                "table_dataset_bridge_summary": table_dataset_bridge_summary or {},
                 "csv_dataset_bridge_summary": csv_dataset_bridge_summary or {},
                 "sync_drift_summary": sync_drift_summary or {},
             },
@@ -3933,6 +4203,7 @@ def execute_nrc_adams_run(connector_run_id: str) -> None:
                 "aps_artifact_ingestion_failure_ref": dict((run.query_plan_json or {}).get("aps_artifact_ingestion_report_refs") or {}).get("aps_artifact_ingestion_failure"),
                 "aps_content_index_report_ref": dict((run.query_plan_json or {}).get("aps_content_index_report_refs") or {}).get("aps_content_index"),
                 "aps_content_index_failure_ref": dict((run.query_plan_json or {}).get("aps_content_index_report_refs") or {}).get("aps_content_index_failure"),
+                "aps_table_dataset_bridge_report_ref": dict((run.query_plan_json or {}).get("aps_table_dataset_bridge_report_refs") or {}).get("aps_table_dataset_bridge"),
                 "aps_csv_dataset_bridge_report_ref": dict((run.query_plan_json or {}).get("aps_csv_dataset_bridge_report_refs") or {}).get("aps_csv_dataset_bridge"),
             },
             commit=True,

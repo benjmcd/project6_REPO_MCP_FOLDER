@@ -361,6 +361,35 @@ Implemented P7 focused command:
 
 - `python -m pytest .\tests\test_nrc_aps_spreadsheet_parser.py .\tests\test_nrc_aps_media_detection.py .\tests\test_nrc_aps_parser_registry.py .\tests\test_nrc_aps_document_processing.py .\tests\test_nrc_aps_artifact_ingestion.py .\tests\test_nrc_aps_dataset_bridge.py -k "not candidate_b"`: `66 passed`, `9 deselected` for the XLSX/CSV/media/bridge surface while excluding the known local Candidate B package-version mismatch.
 
+## Phase P7.5 Generic Table Bridge Validation
+
+Positive fixtures:
+
+- Legacy CSV connector bridge run with `csv_dataset_bridge_enabled=true`.
+- Generic XLSX connector bridge run with `table_dataset_bridge_enabled=true`.
+- Runtime APS run that surfaces `aps_table_dataset_bridge` in connector run report refs.
+
+Negative or compatibility fixtures:
+
+- Legacy `materialize_csv_table_dataset(...)` rejects XLSX parser output.
+- Generic table bridge skips non-table parser output as `not_table_unit_parser`.
+- `csv_dataset_bridge_enabled` remains CSV-only and does not silently auto-materialize XLSX.
+
+Assertions:
+
+- Generic bridge reports use `aps.table_dataset_bridge_run.v1`.
+- Generic target refs use `aps_table_dataset_bridge_*` and do not masquerade as `aps_csv_dataset_bridge_*`.
+- Legacy CSV bridge reports and target refs remain `aps.csv_dataset_bridge_run.v1` / `aps_csv_dataset_bridge_*`.
+- XLSX provenance keeps `source_mode="artifact_xlsx_parser"` and parser family `xlsx_workbook`.
+
+Implemented P7.5 focused commands:
+
+- `python -m pytest .\tests\test_nrc_aps_dataset_bridge.py -q`: `8 passed`.
+- `python -m pytest .\tests\test_nrc_aps_dataset_bridge.py .\tests\test_api.py -k "dataset_bridge" -q`: `10 passed`, `62 deselected`.
+- `python -m pytest .\tests\test_nrc_aps_spreadsheet_parser.py .\tests\test_nrc_aps_media_detection.py .\tests\test_nrc_aps_parser_registry.py .\tests\test_nrc_aps_document_processing.py .\tests\test_nrc_aps_artifact_ingestion.py .\tests\test_nrc_aps_dataset_bridge.py .\tests\test_api.py -k "not candidate_b" -q`: `131 passed`, `10 deselected`.
+- `python -m pytest .\backend\tests\test_layer3_workbench.py .\backend\tests\test_layer3_api.py -q`: `86 passed`.
+- `npm run validate:structure`: `errors: 0`, `warnings: 221` existing local-path/documentation warnings.
+
 ## Phase P8 JSON Recordset Validation
 
 Positive fixtures:

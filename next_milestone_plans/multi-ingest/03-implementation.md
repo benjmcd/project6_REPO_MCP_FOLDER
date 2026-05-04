@@ -319,7 +319,7 @@ Stop condition:
 
 ## Phase P7: Spreadsheet Parser
 
-Status: bounded implementation added for `.xlsx` after the CSV parser and dataset bridge patterns were proven. This does not admit `.xls`, `.xlsm`, encrypted workbooks, formula-bearing workbooks, arbitrary ranges, automatic connector finalization, schema changes, or new Layer 3 source semantics.
+Status: bounded implementation added for `.xlsx` after the CSV parser and dataset bridge patterns were proven. Connector finalization for bounded standalone XLSX table units is handled separately by Phase P7.5. This does not admit `.xls`, `.xlsm`, encrypted workbooks, formula-bearing workbooks, arbitrary ranges, archive-member XLSX orchestration, schema changes, or new Layer 3 source semantics.
 
 Goal:
 
@@ -337,6 +337,28 @@ Stop condition:
 
 - XLSX is no longer a ZIP ambiguity risk.
 - At least one simple workbook fixture is parsed and materialized with sheet/table provenance.
+
+## Phase P7.5: Generic Table Bridge Orchestration
+
+Status: bounded implementation added after Phase P7 to avoid carrying CSV-named connector orchestration into XLSX.
+
+Goal:
+
+Allow processed CSV/XLSX table-unit artifacts to be materialized during connector finalization under an explicit generic table bridge gate, while preserving the legacy CSV-only bridge gate for compatibility.
+
+Requirements:
+
+- Add a separate `table_dataset_bridge_enabled` config gate with default `false`; do not silently broaden `csv_dataset_bridge_enabled`.
+- Emit `aps.table_dataset_bridge_run.v1` reports and `aps_table_dataset_bridge_*` refs for generic table bridge runs.
+- Keep `csv_dataset_bridge_enabled`, `aps.csv_dataset_bridge_run.v1`, and `aps_csv_dataset_bridge_*` refs stable for existing CSV consumers.
+- Invoke the generic bridge only for processed artifacts with admitted table-unit parser contracts: `csv_table`/`aps_csv_table_units_v1` or `xlsx_workbook`/`aps_xlsx_table_units_v1`.
+- Preserve deterministic `Dataset`, `DatasetVersion`, variable, row, and provenance materialization with parser-family-specific source modes.
+- Expose generic bridge report refs through connector run detail responses.
+- Do not add schema/model/migration changes, new Layer 3 source semantics, or broad workbook semantics in this phase.
+
+Stop condition:
+
+- Focused tests prove legacy CSV bridge compatibility, generic XLSX connector materialization, route-level generic bridge report refs, target dataset refs, and XLSX provenance.
 
 ## Phase P8: JSON Recordset Parser
 

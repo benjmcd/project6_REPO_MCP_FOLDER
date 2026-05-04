@@ -2129,6 +2129,76 @@ class _FakeNrcCsvClient(_FakeNrcClient):
         )
 
 
+class _FakeNrcXlsxClient(_FakeNrcClient):
+    def search(self, payload):
+        self.search_payloads.append(payload)
+        skip = int(payload.get("skip", 0))
+        if skip > 0:
+            body = {"count": 0, "results": []}
+        else:
+            body = {
+                "count": 1,
+                "results": [
+                    {
+                        "score": 0.9,
+                        "document": {
+                            "AccessionNumber": "MLXLSX000001",
+                            "DocumentTitle": "XLSX Table",
+                            "DocumentType": "Data",
+                            "DocumentDate": "2025-02-01",
+                            "DateAddedTimestamp": "2025-02-02T00:00:00Z",
+                            "Url": "https://adams.nrc.gov/wba/table.xlsx",
+                        },
+                    }
+                ],
+            }
+        return _FakeJsonResponse(url="https://adams-api.nrc.gov/aps/api/search", status_code=200, payload=body)
+
+    def get_document(self, accession_number):
+        self.document_ids.append(accession_number)
+        body = {
+            "document": {
+                "AccessionNumber": accession_number,
+                "DocumentTitle": "XLSX Table (Detailed)",
+                "DocumentType": "Data",
+                "DocumentDate": "2025-02-01",
+                "DateAddedTimestamp": "2025-02-02T00:00:00Z",
+                "Url": "https://adams.nrc.gov/wba/table.xlsx",
+                "content": "",
+            }
+        }
+        return _FakeJsonResponse(url=f"https://adams-api.nrc.gov/aps/api/search/{accession_number}", status_code=200, payload=body)
+
+    def download_artifact(self, url, *, max_redirects, max_file_bytes=None):
+        from app.services.connectors_nrc_adams import ApsDownloadResult
+        from support_nrc_aps_xlsx import build_xlsx_bytes
+        import hashlib
+
+        self.download_urls.append(url)
+        content = build_xlsx_bytes(
+            {
+                "Observations": [
+                    ["date", "value", "label"],
+                    ["2026-01-01", 42, "alpha"],
+                    ["2026-01-02", 43, "beta"],
+                ],
+            }
+        )
+        content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        return ApsDownloadResult(
+            content=content,
+            status_code=200,
+            final_url=url,
+            redirect_count=0,
+            etag="etag-xlsx-1",
+            last_modified="Mon, 01 Jan 2025 00:00:00 GMT",
+            content_type=content_type,
+            sha256=hashlib.sha256(content).hexdigest(),
+            headers={"content-type": content_type},
+            auth_required=True,
+        )
+
+
 class _FakeNrcNoUrlClient(_FakeNrcClient):
     def search(self, payload):
         self.search_payloads.append(payload)
@@ -2671,6 +2741,82 @@ def test_nrc_csv_dataset_bridge_materializes_dataset_from_runtime_run(monkeypatc
         version = db.get(DatasetVersion, target.dataset_version_id)
         assert version is not None
         assert version.row_count == 2
+    finally:
+        db.close()
+
+
+def test_nrc_table_dataset_bridge_materializes_xlsx_dataset_from_runtime_run(monkeypatch):
+    from app.db.session import SessionLocal
+    from app.models import ConnectorRunTarget, DatasetSourceProvenance, DatasetVersion
+    from app.services import connectors_nrc_adams as nrc
+
+    fake = _FakeNrcXlsxClient()
+    monkeypatch.setattr(nrc, "get_nrc_adams_client", lambda config: fake)
+
+    submit = client.post(
+        "/api/v1/connectors/nrc-adams-aps/runs",
+        json={
+            "mode": "strict_builder",
+            "query_payload": {
+                "searchCriteria": {
+                    "q": "xlsx table",
+                    "mainLibFilter": True,
+                    "legacyLibFilter": False,
+                    "properties": [],
+                },
+                "sort": "DateAddedTimestamp",
+                "sortDirection": 1,
+                "skip": 0,
+            },
+            "run_mode": "metadata_only",
+            "artifact_pipeline_mode": "hydrate_process",
+            "table_dataset_bridge_enabled": True,
+        },
+        headers={"Idempotency-Key": "nrc-table-dataset-bridge-xlsx-runtime"},
+    )
+    assert submit.status_code == 202, submit.text
+    run_id = submit.json()["connector_run_id"]
+
+    detail = client.get(f"/api/v1/connectors/runs/{run_id}")
+    assert detail.status_code == 200, detail.text
+    payload = detail.json()
+    assert payload["status"] in {"completed", "completed_with_errors"}
+    bridge_ref = payload["report_refs"]["aps_table_dataset_bridge"]
+    assert bridge_ref
+    assert "aps_csv_dataset_bridge" not in payload["report_refs"]
+
+    bridge_report = json.loads(Path(bridge_ref).read_text(encoding="utf-8"))
+    assert bridge_report["schema_id"] == "aps.table_dataset_bridge_run.v1"
+    assert bridge_report["enabled"] is True
+    assert bridge_report["run_outcome"] == "datasets_materialized"
+    assert bridge_report["dataset_bridge_contract_id"] == "aps_table_dataset_bridge_v1"
+    assert bridge_report["materialized_dataset_versions"] == 1
+    assert bridge_report["materialized"][0]["parser_family"] == "xlsx_workbook"
+    assert bridge_report["failures_count"] == 0
+
+    db = SessionLocal()
+    try:
+        target = (
+            db.query(ConnectorRunTarget)
+            .filter(ConnectorRunTarget.connector_run_id == run_id)
+            .one()
+        )
+        assert target.dataset_id
+        assert target.dataset_version_id
+        assert target.source_reference_json["aps_table_dataset_bridge_ref"] == bridge_ref
+        assert target.source_reference_json["aps_table_dataset_bridge_contract_id"] == "aps_table_dataset_bridge_v1"
+        assert target.source_reference_json["aps_table_dataset_parser_family"] == "xlsx_workbook"
+        assert "aps_csv_dataset_bridge_ref" not in target.source_reference_json
+        version = db.get(DatasetVersion, target.dataset_version_id)
+        assert version is not None
+        assert version.row_count == 2
+        provenance = (
+            db.query(DatasetSourceProvenance)
+            .filter(DatasetSourceProvenance.dataset_version_id == target.dataset_version_id)
+            .one()
+        )
+        assert provenance.connector_run_id == run_id
+        assert provenance.source_mode == "artifact_xlsx_parser"
     finally:
         db.close()
 
