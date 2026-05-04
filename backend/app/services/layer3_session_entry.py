@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import hashlib
-import json
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
@@ -18,6 +17,12 @@ from app.models.models import (
     L3SelectionManifest,
     L3Session,
     uuid_str,
+)
+from app.services.layer3_utils import (
+    json_clone as _json_clone,
+    stable_hash as _hash_json,
+    stable_json_bytes as _stable_json_bytes,
+    utcnow as _utcnow,
 )
 
 SESSION_STATUS_ACTIVE_LOADING = "active_loading"
@@ -62,22 +67,6 @@ class SnapshotMaterial:
     payload: Any
     load_summary: dict[str, Any] = field(default_factory=dict)
     co_retrieval_group_id: str | None = None
-
-
-def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
-
-
-def _stable_json_bytes(value: Any) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-
-
-def _json_clone(value: Any) -> Any:
-    return json.loads(_stable_json_bytes(value).decode("utf-8"))
-
-
-def _hash_json(value: Any) -> str:
-    return hashlib.sha256(_stable_json_bytes(value)).hexdigest()
 
 
 def _default_storage_root() -> Path:
