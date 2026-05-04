@@ -313,6 +313,12 @@ def test_aps_derived_dataset_version_flows_from_material_preview_to_plan_preview
     assert candidate["source_provenance"]["aps_derived"] is True
     assert candidate["source_provenance"]["source_family_label"] == "CSV table"
     assert candidate["source_provenance"]["aps_source_provenance"][0]["parser_family"] == "csv_table"
+    assert candidate["source_trace"]["schema_id"] == "layer3.dataset_version_source_trace.v1"
+    assert candidate["source_trace"]["trace_readiness"] == "traceable_aps_dataset_version"
+    assert candidate["source_trace"]["dataset_identity"]["dataset_version_id"] == dataset_version_id
+    assert candidate["source_trace"]["variable_summary"]["numeric_variables"] == ["value"]
+    assert candidate["source_trace"]["aps_trace_refs"]["typed_content_contract_id"] == "aps_csv_table_units_v1"
+    assert candidate["source_provenance"]["source_trace"]["aps_trace_refs"]["target_id"] == "target-001"
 
     gate_b = layer3_workbench.gate_b_decision(
         db_session,
@@ -348,6 +354,7 @@ def test_aps_derived_dataset_version_flows_from_material_preview_to_plan_preview
     assert snapshot.source_provenance_json["aps_source_provenance"][0]["typed_content_contract_id"] == (
         "aps_csv_table_units_v1"
     )
+    assert snapshot.source_provenance_json["source_trace"]["trace_readiness"] == "traceable_aps_dataset_version"
 
     committed = layer3_workbench.gate_c_preview(
         db_session,

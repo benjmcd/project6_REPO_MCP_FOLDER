@@ -1,6 +1,6 @@
 # Adequacy Audit
 
-Status: planning-pack self-audit for scope, justification, consistency, and implementation readiness. This audit now accounts for Phase P1 through Phase P10B implementation closeouts; see `07-p1-closeout.md` through `19-p10b-closeout.md`.
+Status: planning-pack self-audit for scope, justification, consistency, and implementation readiness. This audit now accounts for Phase P1 through Phase P10C implementation closeouts; see `07-p1-closeout.md` through `20-p10c-closeout.md`.
 
 ## Audit Question
 
@@ -32,6 +32,7 @@ Confirmed from live source:
 - Layer 3 APS handoff reads APS content document/chunk/linkage rows, not typed dataset rows.
 - Layer 3 material preview can now admit explicitly selected APS-derived `DatasetVersion` records while preserving APS source provenance.
 - Layer 3 selected-pass execution/result/package commit now preserves single `dataset_version` source identity for APS-derived dataset packages.
+- Layer 3 material preview now emits selected-material source trace detail for APS-derived `DatasetVersion` rows, and the Gate B material ledger renders that trace without requiring raw JSON inspection.
 
 Confirmed from planning/status docs:
 
@@ -82,7 +83,7 @@ No contradiction found:
 - `03-implementation.md` converts the contract into bounded phases.
 - `04-validation.md` defines the fixture and regression matrix.
 - `05-decisions.md` records settled decisions and open questions.
-- `07-p1-closeout.md` through `19-p10b-closeout.md` record implemented branch state and validation caveats.
+- `07-p1-closeout.md` through `20-p10c-closeout.md` record implemented branch state and validation caveats.
 
 ## Grill-Me Self-Audit
 
@@ -275,4 +276,4 @@ Caveat:
 
 ## Final Planning Verdict
 
-The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P10B are now implemented in this branch; the next correct action is a narrow typed/refused trace/detail surfacing pass or a separately scoped SEC/EDGAR HTML/XML/inline-XBRL contract, while preserving all existing PDF/document, Candidate B PDF-only, and Layer 3 source-shape behavior.
+The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P10C are now implemented in this branch; the next correct action is a narrow document/refused/mixed-source trace/detail surfacing pass backed by server authority or a separately scoped SEC/EDGAR HTML/XML/inline-XBRL contract, while preserving all existing PDF/document, Candidate B PDF-only, and Layer 3 source-shape behavior.

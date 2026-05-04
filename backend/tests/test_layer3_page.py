@@ -141,6 +141,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "getJson('/dataset-version-candidates')" in js.text
     assert "renderSourceFamilySummary" in js.text
     assert "not_admitted_or_deferred_families" in js.text
+    assert "renderMaterialTrace" in js.text
+    assert "source_trace" in js.text
+    assert ".material-trace-card" in css.text
     assert "User Natural Language Query Input" in js.text
     assert "ledger-chip-field" in js.text
     assert "diagram-chip" in js.text
