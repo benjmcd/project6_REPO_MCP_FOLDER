@@ -5,6 +5,29 @@ from typing import Any, Iterable
 from app.models.models import L3OutputPackage
 
 
+def state_downstream_unavailable(
+    state: Any,
+    *,
+    fallback: tuple[str, ...],
+) -> tuple[str, ...]:
+    values = state.get("downstream_unavailable") if isinstance(state, dict) else None
+    if isinstance(values, (list, tuple)) and values:
+        return tuple(str(item) for item in values)
+    return fallback
+
+
+def active_downstream_unavailable(
+    *,
+    transitions: Iterable[tuple[Any, str, Any, tuple[str, ...]]],
+    default_state: Any,
+    default_fallback: tuple[str, ...],
+) -> tuple[str, ...]:
+    for completed_state, completed_value, next_state, next_fallback in transitions:
+        if isinstance(completed_state, dict) and completed_state.get("state") == completed_value:
+            return state_downstream_unavailable(next_state, fallback=next_fallback)
+    return state_downstream_unavailable(default_state, fallback=default_fallback)
+
+
 def packages_in_kind_order(
     packages: list[L3OutputPackage],
     *,
