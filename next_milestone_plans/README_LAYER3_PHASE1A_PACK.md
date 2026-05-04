@@ -201,6 +201,13 @@ And to the current-main signed delivery-reference governance packet from PR `#49
 
 The signed URL packet freezes the minimum questions and no-go boundaries for a short-lived, server-authorized associated-cohort signed delivery reference after PR `#483` same-origin delivery and PR `#487` rendered gate authority. Docs `102`/`103` do not make signed-reference behavior live by themselves; PR `#499` separately implements only same-origin signed-reference generation/use through backend/API POST endpoints. It does not make rendered signed URL controls, public/provider URLs, connector/generic dispatch, destination selection, package mutation, durable token/receipt/audit/revocation state, schema/runtime/source widening, broader UI, or full mockup behavior live.
 
+And to the current branch-local rendered signed-reference UI freeze plus deferred-gate decision freeze:
+
+- `next_milestone_plans/Layer3_planning_docs/104_signed-ui.md`
+- `next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md`
+
+`104_signed-ui.md` admits only the rendered `/review/layer3` same-origin signed-reference controls over the already-live PR `#499` endpoints, preserving PR `#487` delivery UI authority and all public/provider/connector/destination/durable-state no-go boundaries. `105_deferred-gates.md` keeps provider/public signed URLs, connector/destination dispatch, durable token/receipt/audit/revocation state, and qualitative APS content document execution as separately frozen decisions rather than hidden side effects of this UI tranche. PR `#513` is current-main UI/theme trace alignment only and does not make qualitative execution or new downstream runtime behavior live.
+
 And to the descriptive-summary Gate C admission packet, whose single-item implementation boundary was satisfied by PR `#417` after PR `#411` lower-level method support:
 - `next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/76_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_CONTRACT.md`

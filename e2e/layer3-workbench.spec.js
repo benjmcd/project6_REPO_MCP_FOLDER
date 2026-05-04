@@ -513,6 +513,128 @@ test('Layer 3 workbench requires explicit associated-cohort delivery UI server a
   await expect(page.locator('#external-export-download-delivery-panel')).toContainText(
     'associated_cohort_external_export_download_delivery_ui_gate',
   );
+  await expect(page.locator('#external-export-download-signed-reference-generate')).toBeEnabled();
+  await expect(page.locator('#external-export-download-signed-reference-use')).toBeDisabled();
+  await expect(page.locator('#external-export-download-signed-reference-panel')).toContainText(
+    'external_export_download_signed_reference_ui_ready',
+  );
+
+  await page.route('**/api/v1/layer3/handoff/export/download/signed-reference/generate', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.external_export_download_signed_reference.v1',
+        status: 'prepared',
+        session_id: 'session-cohort-delivery-ui',
+        analysis_plan_id: 'analysis-plan-id',
+        pass_run_id: 'pass-run-id',
+        preview_identity: { preview_id: 'preview-id', preview_hash: 'preview-hash' },
+        reconciliation_record_id: 'reconciliation-id',
+        external_export_download_record_ref: 'readiness-ref',
+        export_download_descriptor_ref: 'descriptor-ref',
+        signed_reference_state: 'external_export_download_signed_reference_ready',
+        signed_reference_token: 'signed-token-from-server',
+        signed_reference_expires_at: '2026-05-04T12:00:00+00:00',
+        signed_reference_expires_in_seconds: 300,
+        signed_reference_use_endpoint: '/api/v1/layer3/handoff/export/download/signed-reference/use',
+        delivery_mode: 'same_origin_signed_delivery_reference',
+        server_authority: 'associated_cohort_external_export_download_signed_reference_gate',
+        source_artifact_ref: 'aps-bundle-ref',
+        source_artifact_hash: 'source-artifact-hash',
+        source_artifact_size_bytes: 123,
+        pass_type: 'associated_cohort',
+        pass_scope: 'quantitative_associated_cohort_dataset_version',
+        method: 'descriptive_summary',
+        source_gate: '78_COHORT_FREEZE',
+        source_shape: 'aligned_wide_table',
+        source_dataset_version_ids: ['dv-1', 'dv-2'],
+        public_url_enabled: false,
+        external_object_store_url_enabled: false,
+        connector_dispatch_enabled: false,
+        destination_selection_enabled: false,
+        generic_downstream_dispatch_enabled: false,
+        package_mutation_enabled: false,
+        schema_runtime_source_widening_enabled: false,
+        authority_rail: {
+          token_authority: 'server_hmac_stateless_reference',
+          artifact_authority: 'existing_external_export_download_delivery_validator',
+          expires_within_seconds: 300,
+          revalidated_at_generation: true,
+          revalidate_at_use_required: true,
+          configured_secret_present: true,
+        },
+      }),
+    });
+  });
+
+  const signedRequestPromise = page.waitForRequest(
+    '**/api/v1/layer3/handoff/export/download/signed-reference/generate',
+  );
+  await page.locator('#external-export-download-signed-reference-generate').click();
+  const signedRequest = await signedRequestPromise;
+  const signedPayload = signedRequest.postDataJSON();
+  expect(signedPayload.operator_decision).toBe('deliver_external_export_download');
+  expect(signedPayload.delivery_mode).toBe('same_origin_artifact_stream');
+  expect(signedPayload.external_export_download_record_ref).toBe('readiness-ref');
+  expect(signedPayload.client_request_id).toEqual(expect.any(String));
+  for (const forbiddenKey of [
+    'download_url',
+    'download_token',
+    'public_url',
+    'signed_url',
+    'local_file_path',
+    'connector_run_id',
+    'connector_dispatch',
+    'destination',
+    'destination_id',
+    'generic_dispatch',
+    'runtime_db_write',
+    'analysis_artifact',
+    'artifact_manifest',
+    'create_package',
+    'rebuild_package',
+    'package_payload',
+    'retry',
+    'recover',
+    'schema_migration',
+    'delivery_ui',
+  ]) {
+    expect(signedPayload).not.toHaveProperty(forbiddenKey);
+  }
+  await expect(page.locator('#external-export-download-signed-reference-panel')).toContainText(
+    'external_export_download_signed_reference_ready',
+  );
+  await expect(page.locator('#external-export-download-signed-reference-panel')).toContainText(
+    'same_origin_signed_delivery_reference',
+  );
+  await expect(page.locator('#external-export-download-signed-reference-generate')).toBeDisabled();
+  await expect(page.locator('#external-export-download-signed-reference-use')).toBeEnabled();
+
+  await page.route('**/api/v1/layer3/handoff/export/download/signed-reference/use', async (route) => {
+    const payload = route.request().postDataJSON();
+    expect(payload).toEqual({ signed_reference_token: 'signed-token-from-server' });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: {
+        'x-layer3-schema-id': 'layer3.external_export_download_signed_reference_use.v1',
+        'x-layer3-delivery-state': 'external_export_download_delivered',
+        'x-layer3-signed-reference-state': 'external_export_download_signed_reference_delivered',
+        'x-layer3-signed-reference-expires-at': '2026-05-04T12:00:00+00:00',
+        'x-layer3-source-artifact-hash': 'source-artifact-hash',
+      },
+      body: '{"delivered":true}',
+    });
+  });
+
+  await Promise.all([
+    page.waitForResponse('**/api/v1/layer3/handoff/export/download/signed-reference/use'),
+    page.locator('#external-export-download-signed-reference-use').click(),
+  ]);
+  await expect(page.locator('#external-export-download-signed-reference-panel')).toContainText(
+    'external_export_download_signed_reference_delivered',
+  );
 
   await page.route('**/api/v1/layer3/handoff/export/download/deliver', async (route) => {
     await route.fulfill({
