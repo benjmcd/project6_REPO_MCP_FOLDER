@@ -497,6 +497,27 @@ When required:
 - Compare headed/headless findings rather than treating one as sufficient if they disagree.
 - Verify source cards, material preview, Gate B/Gate C state, package/source summaries, and unsupported/refusal messaging.
 
+## Phase P10C Selected-Material Trace Detail Validation
+
+Status: implemented for APS-derived `DatasetVersion` material candidates selected into material preview.
+
+Required assertions:
+
+- Material preview emits `source_trace` for selected APS-derived `DatasetVersion` rows.
+- `source_trace` is server-owned and carries dataset/version identity, variable summary, storage summary, parser family, parser contract, typed content contract, source artifact key, diagnostics ref, target id, and accession number where present.
+- The same trace detail is nested under `source_provenance` so Gate B persistence preserves it through `L3MaterialSnapshot.source_provenance_json`.
+- The Gate B material ledger renders selected-material trace detail without requiring operators to inspect raw JSON.
+- The material filter can match trace fields such as parser contract or typed content contract.
+- No document trace, Candidate B, parser, schema, migration, or new source-shape behavior changes are implied.
+
+Focused commands:
+
+- `python -m pytest .\backend\tests\test_layer3_workbench.py .\backend\tests\test_layer3_api.py .\backend\tests\test_layer3_page.py -q`
+- `python -m pytest .\backend\tests\test_layer3_workbench.py .\backend\tests\test_layer3_api.py -k "aps_derived_dataset_version" -q`
+- `npm run validate:structure`
+- `git diff --check`
+- Headless and headed browser coverage for `e2e/layer3-workbench.spec.js` because rendered UI assets changed.
+
 ## Completion Definition
 
 The overall heterogeneous ingestion lane is complete only when all of the following are true:

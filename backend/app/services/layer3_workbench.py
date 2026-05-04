@@ -1997,6 +1997,72 @@ def _source_family_summary(candidates: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _dataset_version_source_trace(
+    *,
+    dataset: Dataset | None,
+    version: DatasetVersion,
+    variables: list[VariableDefinition],
+    aps_provenance: list[dict[str, Any]],
+    source_family: dict[str, Any],
+    storage_available: bool,
+) -> dict[str, Any]:
+    numeric_variables = [variable.variable_name for variable in variables if variable.is_numeric]
+    time_variables = [variable.variable_name for variable in variables if variable.is_time_index]
+    primary_provenance = aps_provenance[0] if aps_provenance else {}
+    trace_readiness = (
+        "traceable_aps_dataset_version"
+        if aps_provenance
+        else "traceable_dataset_version_without_aps_provenance"
+    )
+    return {
+        "schema_id": "layer3.dataset_version_source_trace.v1",
+        "trace_scope": "selected_material_candidate",
+        "selection_shape": "dataset_version",
+        "trace_readiness": trace_readiness,
+        "ui_summary": (
+            "Selected material is traceable through DatasetVersion authority, "
+            "DatasetSourceProvenance, parser contract metadata, and source artifact refs."
+            if aps_provenance
+            else "Selected material is traceable as an existing DatasetVersion; APS source provenance was not present."
+        ),
+        "source_family": source_family["source_family"],
+        "source_family_label": source_family["source_family_label"],
+        "source_admission_state": source_family["admission_state"],
+        "source_family_scope": source_family["scope"],
+        "dataset_identity": {
+            "dataset_id": version.dataset_id,
+            "dataset_version_id": version.dataset_version_id,
+            "dataset_name": dataset.name if dataset is not None else None,
+            "version_label": version.version_label,
+            "version_type": version.version_type,
+            "status": version.status,
+        },
+        "variable_summary": {
+            "variable_count": len(variables),
+            "time_column": dataset.time_column if dataset is not None else None,
+            "frequency_hint": dataset.frequency_hint if dataset is not None else None,
+            "numeric_variables": numeric_variables,
+            "time_variables": time_variables,
+        },
+        "storage_summary": {
+            "row_count": int(version.row_count or 0),
+            "storage_available": storage_available,
+        },
+        "aps_trace_refs": {
+            "source_artifact_key": primary_provenance.get("source_artifact_key"),
+            "raw_storage_ref": primary_provenance.get("raw_storage_ref"),
+            "diagnostics_ref": primary_provenance.get("diagnostics_ref"),
+            "target_id": primary_provenance.get("target_id"),
+            "accession_number": primary_provenance.get("accession_number"),
+            "parser_family": primary_provenance.get("parser_family"),
+            "parser_contract_id": primary_provenance.get("parser_contract_id"),
+            "typed_content_contract_id": primary_provenance.get("typed_content_contract_id"),
+            "table_index": primary_provenance.get("table_index"),
+            "table_hash": primary_provenance.get("table_hash"),
+        },
+    }
+
+
 def aps_dataset_version_candidates(db: Session, *, limit: int = 50) -> dict[str, Any]:
     normalized_limit = max(1, min(int(limit or 50), 200))
     rows = (
@@ -2101,6 +2167,15 @@ def _dataset_version_material_candidates(
             }
         )
         storage_ref = str(version.storage_ref or "").strip()
+        storage_available = bool(storage_ref and Path(storage_ref).exists())
+        source_trace = _dataset_version_source_trace(
+            dataset=dataset,
+            version=version,
+            variables=variables,
+            aps_provenance=aps_provenance,
+            source_family=source_family,
+            storage_available=storage_available,
+        )
         source_identity = {
             "schema_id": "layer3.dataset_version_source_identity.v1",
             "source_class": "dataset_version",
@@ -2126,12 +2201,13 @@ def _dataset_version_material_candidates(
             "source_family_label": source_family["source_family_label"],
             "source_admission_state": source_family["admission_state"],
             "source_family_scope": source_family["scope"],
+            "source_trace": source_trace,
         }
         load_summary = {
             "loaded_records": int(version.row_count or 0),
             "failed_records": 0,
             "preview_material": True,
-            "storage_available": bool(storage_ref and Path(storage_ref).exists()),
+            "storage_available": storage_available,
             "variable_count": len(variables),
             "aps_derived": bool(aps_provenance),
             "source_family": source_family["source_family"],
@@ -2157,6 +2233,7 @@ def _dataset_version_material_candidates(
                 "source_family_label": source_family["source_family_label"],
                 "source_admission_state": source_family["admission_state"],
                 "source_family_scope": source_family["scope"],
+                "source_trace": source_trace,
                 "query_basis": query_label,
                 "validation_status": "valid" if variables else "incomplete",
                 "duplicate_status": "unique",
