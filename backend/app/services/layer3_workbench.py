@@ -16,6 +16,9 @@ from sqlalchemy.orm import Session
 
 from app.models.models import (
     AnalysisRun,
+    ApsContentChunk,
+    ApsContentDocument,
+    ApsContentLinkage,
     Dataset,
     DatasetSourceProvenance,
     DatasetVersion,
@@ -1924,6 +1927,22 @@ def _requested_dataset_version_ids(payload: dict[str, Any]) -> list[str]:
     return result
 
 
+def _requested_aps_content_document_ids(payload: dict[str, Any]) -> list[str]:
+    query_basis = payload.get("query_basis") if isinstance(payload.get("query_basis"), dict) else {}
+    filters = query_basis.get("filters") if isinstance(query_basis.get("filters"), dict) else {}
+    raw_ids = payload.get("aps_content_document_ids") or filters.get("aps_content_document_ids") or []
+    if isinstance(raw_ids, str):
+        raw_ids = [raw_ids]
+    if not isinstance(raw_ids, list):
+        return []
+    result: list[str] = []
+    for raw_id in raw_ids:
+        content_id = str(raw_id or "").strip()
+        if content_id and content_id not in result:
+            result.append(content_id)
+    return result
+
+
 def _dataset_version_variables(db: Session, *, dataset_version_id: str) -> list[VariableDefinition]:
     return (
         db.query(VariableDefinition)
@@ -2063,6 +2082,129 @@ def _dataset_version_source_trace(
     }
 
 
+def _aps_content_linkage_rows(db: Session, *, content_id: str) -> list[ApsContentLinkage]:
+    return (
+        db.query(ApsContentLinkage)
+        .filter(ApsContentLinkage.content_id == content_id)
+        .order_by(ApsContentLinkage.created_at.desc(), ApsContentLinkage.aps_content_linkage_id.desc())
+        .all()
+    )
+
+
+def _aps_content_chunks(db: Session, *, content_id: str, limit: int = 200) -> list[ApsContentChunk]:
+    return (
+        db.query(ApsContentChunk)
+        .filter(ApsContentChunk.content_id == content_id)
+        .order_by(ApsContentChunk.chunk_ordinal.asc(), ApsContentChunk.chunk_id.asc())
+        .limit(max(1, min(int(limit or 200), 1000)))
+        .all()
+    )
+
+
+def _visual_page_ref_count(document: ApsContentDocument) -> int:
+    if not document.visual_page_refs_json:
+        return 0
+    try:
+        refs = json.loads(document.visual_page_refs_json)
+    except (TypeError, ValueError):
+        return 0
+    return len(refs) if isinstance(refs, list) else 0
+
+
+def _serialize_aps_content_linkage(linkage: ApsContentLinkage) -> dict[str, Any]:
+    return {
+        "aps_content_linkage_id": linkage.aps_content_linkage_id,
+        "content_id": linkage.content_id,
+        "run_id": linkage.run_id,
+        "target_id": linkage.target_id,
+        "accession_number": linkage.accession_number,
+        "content_contract_id": linkage.content_contract_id,
+        "chunking_contract_id": linkage.chunking_contract_id,
+        "content_units_ref": linkage.content_units_ref,
+        "normalized_text_ref": linkage.normalized_text_ref,
+        "normalized_text_sha256": linkage.normalized_text_sha256,
+        "blob_ref": linkage.blob_ref,
+        "blob_sha256": linkage.blob_sha256,
+        "download_exchange_ref": linkage.download_exchange_ref,
+        "discovery_ref": linkage.discovery_ref,
+        "selection_ref": linkage.selection_ref,
+        "diagnostics_ref": linkage.diagnostics_ref,
+    }
+
+
+def _aps_content_document_source_trace(
+    *,
+    document: ApsContentDocument,
+    linkages: list[ApsContentLinkage],
+    chunks: list[ApsContentChunk],
+) -> dict[str, Any]:
+    primary_linkage = linkages[0] if linkages else None
+    unit_kinds = sorted({str(chunk.unit_kind) for chunk in chunks if chunk.unit_kind})
+    page_starts = [chunk.page_start for chunk in chunks if chunk.page_start is not None]
+    page_ends = [chunk.page_end for chunk in chunks if chunk.page_end is not None]
+    page_span = None
+    if page_starts or page_ends:
+        page_span = {
+            "page_start": min(page_starts) if page_starts else None,
+            "page_end": max(page_ends) if page_ends else None,
+        }
+    return {
+        "schema_id": "layer3.aps_content_document_source_trace.v1",
+        "trace_scope": "selected_material_candidate",
+        "selection_shape": "aps_content_document",
+        "trace_readiness": (
+            "traceable_aps_content_document"
+            if primary_linkage
+            else "traceable_aps_content_document_without_linkage"
+        ),
+        "ui_summary": (
+            "Selected APS content document is traceable through ApsContentDocument, chunks, and linkage refs."
+            if primary_linkage
+            else "Selected APS content document is indexed, but APS linkage refs were not present."
+        ),
+        "source_family": "aps_content_document",
+        "source_family_label": "APS content document",
+        "source_admission_state": "admitted_content_document",
+        "source_family_scope": "indexed APS document content with chunk-level qualitative material",
+        "document_identity": {
+            "content_id": document.content_id,
+            "content_contract_id": document.content_contract_id,
+            "chunking_contract_id": document.chunking_contract_id,
+            "normalization_contract_id": document.normalization_contract_id,
+            "content_status": document.content_status,
+            "media_type": document.media_type,
+            "document_class": document.document_class,
+            "quality_status": document.quality_status,
+        },
+        "chunk_summary": {
+            "chunk_count": int(document.chunk_count or len(chunks)),
+            "loaded_chunk_count": len(chunks),
+            "normalized_char_count": int(document.normalized_char_count or 0),
+            "page_count": int(document.page_count or 0),
+            "visual_page_ref_count": _visual_page_ref_count(document),
+            "page_span": page_span,
+            "unit_kinds": unit_kinds,
+        },
+        "aps_trace_refs": {
+            "run_id": primary_linkage.run_id if primary_linkage else None,
+            "target_id": primary_linkage.target_id if primary_linkage else None,
+            "accession_number": primary_linkage.accession_number if primary_linkage else None,
+            "content_units_ref": primary_linkage.content_units_ref if primary_linkage else None,
+            "normalized_text_ref": primary_linkage.normalized_text_ref if primary_linkage else None,
+            "blob_ref": primary_linkage.blob_ref if primary_linkage else None,
+            "blob_sha256": primary_linkage.blob_sha256 if primary_linkage else None,
+            "download_exchange_ref": primary_linkage.download_exchange_ref if primary_linkage else None,
+            "discovery_ref": primary_linkage.discovery_ref if primary_linkage else None,
+            "selection_ref": primary_linkage.selection_ref if primary_linkage else None,
+            "normalized_text_sha256": (
+                (primary_linkage.normalized_text_sha256 if primary_linkage else None)
+                or document.normalized_text_sha256
+            ),
+            "diagnostics_ref": (primary_linkage.diagnostics_ref if primary_linkage else None) or document.diagnostics_ref,
+        },
+    }
+
+
 def aps_dataset_version_candidates(db: Session, *, limit: int = 50) -> dict[str, Any]:
     normalized_limit = max(1, min(int(limit or 50), 200))
     rows = (
@@ -2127,6 +2269,68 @@ def aps_dataset_version_candidates(db: Session, *, limit: int = 50) -> dict[str,
         "authority_rail": {
             "authority_source": "dataset_source_provenance",
             "selection_authority": "material_preview_dataset_version_ids",
+            "read_only": True,
+        },
+    }
+
+
+def aps_content_document_candidates(db: Session, *, limit: int = 50) -> dict[str, Any]:
+    normalized_limit = max(1, min(int(limit or 50), 200))
+    rows = (
+        db.query(ApsContentDocument)
+        .order_by(ApsContentDocument.updated_at.desc(), ApsContentDocument.aps_content_document_id.desc())
+        .limit(normalized_limit * 3)
+        .all()
+    )
+    candidates: list[dict[str, Any]] = []
+    seen_content_ids: set[str] = set()
+    for document in rows:
+        if document.content_id in seen_content_ids:
+            continue
+        linkages = _aps_content_linkage_rows(db, content_id=document.content_id)
+        primary_linkage = linkages[0] if linkages else None
+        candidates.append(
+            {
+                "schema_id": "layer3.aps_content_document_candidate.v1",
+                "content_id": document.content_id,
+                "content_contract_id": document.content_contract_id,
+                "chunking_contract_id": document.chunking_contract_id,
+                "normalization_contract_id": document.normalization_contract_id,
+                "content_status": document.content_status,
+                "media_type": document.media_type,
+                "document_class": document.document_class,
+                "quality_status": document.quality_status,
+                "page_count": int(document.page_count or 0),
+                "chunk_count": int(document.chunk_count or 0),
+                "normalized_char_count": int(document.normalized_char_count or 0),
+                "visual_page_ref_count": _visual_page_ref_count(document),
+                "diagnostics_ref": document.diagnostics_ref,
+                "run_id": primary_linkage.run_id if primary_linkage else None,
+                "target_id": primary_linkage.target_id if primary_linkage else None,
+                "accession_number": primary_linkage.accession_number if primary_linkage else None,
+                "content_units_ref": primary_linkage.content_units_ref if primary_linkage else None,
+                "normalized_text_ref": primary_linkage.normalized_text_ref if primary_linkage else None,
+                "blob_ref": primary_linkage.blob_ref if primary_linkage else None,
+                "selection_ref": primary_linkage.selection_ref if primary_linkage else None,
+                "discovery_ref": primary_linkage.discovery_ref if primary_linkage else None,
+                "source_family": "aps_content_document",
+                "source_family_label": "APS content document",
+                "source_admission_state": "admitted_content_document",
+                "source_family_scope": "indexed APS document content with chunk-level qualitative material",
+                "aps_derived": bool(primary_linkage),
+            }
+        )
+        seen_content_ids.add(document.content_id)
+        if len(candidates) >= normalized_limit:
+            break
+    return {
+        **_base_response("layer3.aps_content_document_candidates.v1"),
+        "aps_content_document_candidates": candidates,
+        "candidate_count": len(candidates),
+        "source_system": "nrc_adams_aps",
+        "authority_rail": {
+            "authority_source": "aps_content_document_and_linkage",
+            "selection_authority": "material_preview_aps_content_document_ids",
             "read_only": True,
         },
     }
@@ -2254,6 +2458,110 @@ def _dataset_version_material_candidates(
     return candidates
 
 
+def _aps_content_document_material_candidates(
+    db: Session,
+    *,
+    source_id: str,
+    content_ids: list[str],
+    query_label: str,
+) -> list[dict[str, Any]]:
+    candidates: list[dict[str, Any]] = []
+    for content_id in content_ids:
+        document = (
+            db.query(ApsContentDocument)
+            .filter(ApsContentDocument.content_id == content_id)
+            .order_by(ApsContentDocument.updated_at.desc(), ApsContentDocument.aps_content_document_id.desc())
+            .first()
+        )
+        if document is None:
+            raise Layer3WorkbenchError(
+                "aps_content_document_not_found",
+                f"APS content document '{content_id}' was not found for material preview.",
+                status="blocked",
+                blocked_fields=["aps_content_document_ids"],
+                next_allowed_actions=["revise_aps_content_document_selection"],
+            )
+        linkages = _aps_content_linkage_rows(db, content_id=content_id)
+        chunks = _aps_content_chunks(db, content_id=content_id)
+        source_trace = _aps_content_document_source_trace(document=document, linkages=linkages, chunks=chunks)
+        serialized_linkages = [_serialize_aps_content_linkage(linkage) for linkage in linkages]
+        primary_linkage = serialized_linkages[0] if serialized_linkages else {}
+        source_identity = {
+            "schema_id": "layer3.aps_content_document_source_identity.v1",
+            "source_class": "aps_content_document",
+            "content_id": document.content_id,
+            "content_contract_id": document.content_contract_id,
+            "chunking_contract_id": document.chunking_contract_id,
+            "normalization_contract_id": document.normalization_contract_id,
+            "content_status": document.content_status,
+            "media_type": document.media_type,
+            "document_class": document.document_class,
+            "quality_status": document.quality_status,
+        }
+        source_provenance = {
+            "schema_id": "layer3.aps_content_document_source_provenance.v1",
+            "aps_derived": bool(serialized_linkages),
+            "content_id": document.content_id,
+            "linkage_count": len(serialized_linkages),
+            "aps_content_linkages": serialized_linkages,
+            "diagnostics_ref": document.diagnostics_ref,
+            "source_family": "aps_content_document",
+            "source_family_label": "APS content document",
+            "source_admission_state": "admitted_content_document",
+            "source_family_scope": "indexed APS document content with chunk-level qualitative material",
+            "source_trace": source_trace,
+        }
+        load_summary = {
+            "loaded_records": len(chunks),
+            "failed_records": 0,
+            "preview_material": True,
+            "chunk_count": int(document.chunk_count or len(chunks)),
+            "loaded_chunk_count": len(chunks),
+            "page_count": int(document.page_count or 0),
+            "source_family": "aps_content_document",
+            "source_admission_state": "admitted_content_document",
+        }
+        short_id = _stable_id(
+            "mat",
+            {
+                "source_id": source_id,
+                "content_id": content_id,
+                "query_basis": query_label,
+            },
+        ).split("-", 1)[1]
+        candidates.append(
+            {
+                "candidate_id": f"mat-aps_content_document-{short_id}",
+                "source_label": "APS Content Document",
+                "source_class": "aps_content_document",
+                "source_ref": f"aps_content_document:{content_id}",
+                "owner_service_source_shape": "aps_content_document",
+                "planning_shape_family": "document_chunks",
+                "source_family": "aps_content_document",
+                "source_family_label": "APS content document",
+                "source_admission_state": "admitted_content_document",
+                "source_family_scope": "indexed APS document content with chunk-level qualitative material",
+                "source_trace": source_trace,
+                "query_basis": query_label,
+                "validation_status": "valid" if chunks else "incomplete",
+                "duplicate_status": "unique",
+                "size_or_unit_count": len(chunks) or int(document.chunk_count or 0),
+                "preview_payload_ref": None,
+                "provenance_ref": (
+                    primary_linkage.get("content_units_ref")
+                    or document.diagnostics_ref
+                    or f"aps_content_document:{content_id}"
+                ),
+                "source_identity": source_identity,
+                "source_provenance": source_provenance,
+                "payload": {"content_id": content_id},
+                "load_summary": load_summary,
+                "current_decision_state": "candidate",
+            }
+        )
+    return candidates
+
+
 def material_preview(payload: dict[str, Any], db: Session | None = None) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or uuid_str())
     source_ids = [str(item) for item in payload.get("source_candidate_ids") or []]
@@ -2262,12 +2570,20 @@ def material_preview(payload: dict[str, Any], db: Session | None = None) -> dict
     terms = [str(item) for item in (payload.get("query_basis") or {}).get("terms") or []]
     query_label = ", ".join(terms) if terms else "operator_intent"
     dataset_version_ids = _requested_dataset_version_ids(payload)
+    aps_content_document_ids = _requested_aps_content_document_ids(payload)
     if dataset_version_ids and db is None:
         raise Layer3WorkbenchError(
             "dataset_version_preview_requires_db",
             "Real dataset_version material preview requires a database session.",
             status="blocked",
             blocked_fields=["dataset_version_ids"],
+        )
+    if aps_content_document_ids and db is None:
+        raise Layer3WorkbenchError(
+            "aps_content_document_preview_requires_db",
+            "Real APS content document material preview requires a database session.",
+            status="blocked",
+            blocked_fields=["aps_content_document_ids"],
         )
     candidates = []
     for source_id in source_ids:
@@ -2281,6 +2597,17 @@ def material_preview(payload: dict[str, Any], db: Session | None = None) -> dict
                     db,
                     source_id=source_id,
                     dataset_version_ids=dataset_version_ids,
+                    query_label=query_label,
+                )
+            )
+            continue
+        if source_class == "aps_content_document" and aps_content_document_ids:
+            assert db is not None
+            candidates.extend(
+                _aps_content_document_material_candidates(
+                    db,
+                    source_id=source_id,
+                    content_ids=aps_content_document_ids,
                     query_label=query_label,
                 )
             )

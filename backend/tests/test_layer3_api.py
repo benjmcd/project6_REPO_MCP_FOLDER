@@ -439,6 +439,24 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
         "authority_rail",
     } <= set(dataset_candidate_schema["required"])
 
+    aps_content_candidate_schema = _openapi_response_schema(
+        spec,
+        "/api/v1/layer3/aps-content-document-candidates",
+        "get",
+    )
+    assert aps_content_candidate_schema["title"] == "Layer3ApsContentDocumentCandidatesResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "aps_content_document_candidates",
+        "candidate_count",
+        "source_system",
+        "authority_rail",
+    } <= set(aps_content_candidate_schema["required"])
+
 
 def test_layer3_api_lists_aps_derived_dataset_version_candidates(client: TestClient, tmp_path) -> None:
     db = client.layer3_session_factory()
@@ -460,6 +478,38 @@ def test_layer3_api_lists_aps_derived_dataset_version_candidates(client: TestCli
     assert candidate["parser_family"] == "csv_table"
     assert candidate["source_family_label"] == "CSV table"
     assert body["source_family_summary"]["observed_candidate_counts"] == {"csv_table": 1}
+
+
+def test_layer3_api_lists_aps_content_document_candidates(client: TestClient, tmp_path) -> None:
+    run_id = "api-aps-doc-run-001"
+    target_id = "api-aps-doc-target-001"
+    content_id = "api-aps-doc-content-001"
+    db = client.layer3_session_factory()
+    try:
+        _seed_aps_content_fixture(
+            db,
+            tmp_path,
+            run_id=run_id,
+            target_id=target_id,
+            content_id=content_id,
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get("/api/v1/layer3/aps-content-document-candidates")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["schema_id"] == "layer3.aps_content_document_candidates.v1"
+    assert body["candidate_count"] == 1
+    candidate = body["aps_content_document_candidates"][0]
+    assert candidate["content_id"] == content_id
+    assert candidate["source_family_label"] == "APS content document"
+    assert candidate["source_admission_state"] == "admitted_content_document"
+    assert candidate["run_id"] == run_id
+    assert candidate["target_id"] == target_id
+    assert candidate["accession_number"] == "ML26001A001"
 
 
 def test_layer3_gate_openapi_contracts(client: TestClient) -> None:
@@ -2780,6 +2830,61 @@ def test_layer3_api_aps_derived_dataset_version_reaches_package_commit(client: T
     assert package_commit.status_code == 200
     assert package_commit.json()["source_shape"] == "dataset_version"
     assert all(Path(payload_ref).exists() for payload_ref in package_commit.json()["payload_refs"])
+
+
+def test_layer3_api_aps_content_document_material_preview_carries_trace(client: TestClient, tmp_path) -> None:
+    run_id = "api-aps-doc-material-run-001"
+    target_id = "api-aps-doc-material-target-001"
+    content_id = "api-aps-doc-material-content-001"
+    with client.layer3_session_factory() as db:
+        _seed_aps_content_fixture(
+            db,
+            tmp_path,
+            run_id=run_id,
+            target_id=target_id,
+            content_id=content_id,
+        )
+        db.commit()
+
+    preflight = client.post(
+        "/api/v1/layer3/preflight",
+        json={
+            "client_request_id": "api-preflight-aps-doc-material",
+            "natural_language_intent": "Review indexed APS document chunks as qualitative source material.",
+            "manual_constraints": {"source_classes": ["aps_content_document"]},
+        },
+    )
+    assert preflight.status_code == 200
+    source = client.post(
+        "/api/v1/layer3/source-preview",
+        json={
+            "client_request_id": "api-source-aps-doc-material",
+            "preflight_id": preflight.json()["preflight_id"],
+            "selected_source_classes": ["aps_content_document"],
+        },
+    )
+    assert source.status_code == 200
+    material = client.post(
+        "/api/v1/layer3/material-preview",
+        json={
+            "client_request_id": "api-material-aps-doc-material",
+            "preflight_id": preflight.json()["preflight_id"],
+            "source_set_id": source.json()["source_set_id"],
+            "source_candidate_ids": [source.json()["source_candidates"][0]["source_candidate_id"]],
+            "aps_content_document_ids": [content_id],
+            "query_basis": {"terms": ["aps", "document"]},
+        },
+    )
+
+    assert material.status_code == 200
+    candidate = material.json()["material_candidates"][0]
+    assert candidate["source_identity"]["content_id"] == content_id
+    assert candidate["source_provenance"]["aps_derived"] is True
+    assert candidate["source_trace"]["trace_readiness"] == "traceable_aps_content_document"
+    assert candidate["source_trace"]["source_family_label"] == "APS content document"
+    assert candidate["source_trace"]["chunk_summary"]["loaded_chunk_count"] == 2
+    assert candidate["source_trace"]["aps_trace_refs"]["run_id"] == run_id
+    assert candidate["source_trace"]["aps_trace_refs"]["target_id"] == target_id
 
 
 def test_layer3_api_gate_b_no_approved_material_is_blocked_error(client: TestClient) -> None:
