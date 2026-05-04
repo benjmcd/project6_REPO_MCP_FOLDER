@@ -224,6 +224,20 @@ And to the provider/public URL planning/control freeze:
 
 Docs `110`/`111` freeze provider/public URL behavior as not admitted after PR `#520` durable same-origin signed-reference runtime and PR `#522` residual settlement. They require a future implementation-entry freeze to choose exactly one provider/public mode, prove concrete provider/object-store authority, define ACL/expiry/revocation/header/security behavior, and preserve same-origin delivery plus durable same-origin signed references unless explicitly superseded. They do not implement provider URLs, public URLs, object-store ACL changes, connector/destination dispatch, rendered controls, package mutation, schema/runtime/source widening, qualitative execution, or any route by themselves.
 
+And to the connector/destination dispatch planning/control freeze:
+
+- `next_milestone_plans/Layer3_planning_docs/112_CONNECTOR_DISPATCH_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/113_CONNECTOR_DISPATCH_CONTRACT.md`
+
+Docs `112`/`113` freeze connector/destination/generic downstream dispatch behavior as not admitted after the same-origin delivery, same-origin signed-reference, durable state, residual-settlement, and provider/public URL governance chain. They require a future implementation-entry freeze to choose exactly one dispatch mode and prove connector/destination authority, lifecycle, idempotency, authorization, receipt/audit, failure, and tests before code. They do not implement connector runs, destination selection, generic downstream dispatch, rendered controls, provider/public URLs, package mutation, schema/runtime/source widening, qualitative execution, queue/retry/cancel behavior, or any route by themselves.
+
+And to the qualitative APS content document execution planning/control freeze:
+
+- `next_milestone_plans/Layer3_planning_docs/114_QUAL_APS_EXEC_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/115_QUAL_APS_EXEC_CONTRACT.md`
+
+Docs `114`/`115` freeze qualitative APS content document execution as not admitted after PR `#525` connector/destination dispatch governance. Current code supports APS content documents through source preview, material preview, source trace, Gate B snapshots, and qualitative/document-chunk typing; current pass execution remains wrapped quantitative over `DatasetVersion` inputs and qualitative-only sets still fail closed. A future implementation-entry freeze must choose the exact `single_aps_doc_qualitative_pass` mode and prove chunk/citation/trace authority, execution owner, result/review vocabulary, anti-`DatasetVersion` isolation, failure behavior, and tests before code.
+
 And to the descriptive-summary Gate C admission packet, whose single-item implementation boundary was satisfied by PR `#417` after PR `#411` lower-level method support:
 - `next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/76_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_CONTRACT.md`
@@ -1358,6 +1372,30 @@ Read docs `112`/`113` as planning/control only:
 - a future connector/destination implementation must choose exactly one mode: `internal_dispatch_record_only`, `single_named_connector_dispatch`, or `single_named_destination_dispatch`
 - connector/destination authority, allowlisted ids, lifecycle, idempotency, authorization, receipt/audit payloads, failure states, and tests must be named before code
 - provider/public URLs, package mutation, schema/runtime/source widening, rendered controls, qualitative execution, queue/retry/cancel behavior, and full mockup activation remain out unless separately frozen
+
+### If you are auditing qualitative APS content document execution planning
+
+Start with:
+- `Layer3_planning_docs/114_QUAL_APS_EXEC_FREEZE.md`
+- `Layer3_planning_docs/115_QUAL_APS_EXEC_CONTRACT.md`
+- `Layer3_planning_docs/105_deferred-gates.md`
+- `Layer3_planning_docs/25_L3_QUAL1_FREEZE.md`
+- `Layer3_planning_docs/27_L3_QUAL1_INPUTS.md`
+- `backend/app/services/layer3_workbench.py`
+- `backend/app/services/layer3_typing_entry.py`
+- `backend/app/services/layer3_pass_entry.py`
+- `backend/app/models/models.py`
+- `backend/tests/test_layer3_workbench.py`
+- `backend/tests/test_layer3_typing_entry.py`
+- `backend/tests/test_layer3_pass_entry.py`
+
+Read docs `114`/`115` as planning/control only:
+- qualitative APS content document execution remains blocked by default
+- current live APS document support stops at selection, trace, material preview, Gate B snapshot, and qualitative/document-chunk typing
+- current pass execution is wrapped quantitative and requires `DatasetVersion` authority; qualitative-only pass-entry sets still fail closed
+- a future qualitative APS execution implementation must choose exactly one mode: `single_aps_doc_qualitative_pass`
+- APS document identity, chunk ordering/limits, citation/trace refs, execution owner, result/review vocabulary, idempotency, failure states, no-leakage behavior, and tests must be named before code
+- `DatasetVersion` conversion, wrapped quantitative `run_analysis(...)`, associated-cohort qualitative execution, document trace changes, rendered controls, package/handoff/export, provider/public URLs, connector/destination dispatch, source ingestion, schema/runtime/source widening, and full mockup activation remain out unless separately frozen
 
 ### If you are auditing the Layer 3 workbench APS handoff dispatch freeze
 
