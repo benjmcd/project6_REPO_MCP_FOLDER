@@ -2,9 +2,9 @@
 
 ## Status
 
-Current-main planning/control freeze for durable token, receipt, revocation, and audit state after PR `#499` backend/API same-origin signed-reference generation/use, PR `#514` rendered same-origin signed-reference UI, PR `#516` durable-state planning/control merge, and PR `#518`/PR `#519` implementation-entry planning/docs sync.
+Current-main freeze for durable token, receipt, revocation, and audit state after PR `#499` backend/API same-origin signed-reference generation/use, PR `#514` rendered same-origin signed-reference UI, PR `#516` durable-state planning/control merge, PR `#518`/PR `#519` implementation-entry planning/docs sync, and PR `#520` durable runtime implementation.
 
-This file remains the durable-state freeze. The active `codex/l3-durable-runtime-p23` lane implements only the bounded same-origin durable backing state selected by docs `108`/`109`: token hash state, generation/use receipts, revocation table support without a public endpoint, and audit rows.
+This file remains the durable-state freeze. PR `#520` implements only the bounded same-origin durable backing state selected by docs `108`/`109`: token hash state, generation/use receipts, revocation table support without a public endpoint, and audit rows.
 
 Docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` are now the current implementation-entry contract for this runtime lane. They do not admit provider/public URLs, connector/destination dispatch, qualitative execution, package mutation, source widening, or rendered revoke/copy/share UI behavior.
 
@@ -12,14 +12,14 @@ Docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` are now the current imple
 
 Use this authority order:
 
-1. current `project6-origin/main` source/tests at branch base `5896b9b5910d61ff94b27ff0c142b35319dd5fa1`;
+1. current `project6-origin/main` source/tests at PR `#520` merge commit `721b892b88ef88bf1364e2c71f762fabccdeb171`;
 2. PR `#499` stateless HMAC signed-reference backend/API behavior;
 3. PR `#514` rendered same-origin signed-reference UI behavior;
 4. docs `102`/`103` signed-reference governance;
 5. docs `104`/`105` signed-reference UI and deferred-gate governance;
 6. this freeze, `107_DURABLE_CONTRACT.md`, `108_DURABLE_ENTRY.md`, and `109_DURABLE_STATE.md` for the durable-state implementation boundary.
 
-Current main before this lane is stateless, short-lived, server-owned, same-origin, and revalidated at generation/use. This lane intentionally supersedes only the stateless replay posture by adding durable single-use state behind the same endpoints. Provider/public URL, connector, destination, package mutation, source-widening, and qualitative execution semantics remain unavailable.
+Current main after PR `#520` remains short-lived, server-owned, same-origin, and revalidated at generation/use, but now has durable single-use state behind the same endpoints. PR `#520` intentionally supersedes only the stateless replay posture. Provider/public URL, connector, destination, package mutation, source-widening, and qualitative execution semantics remain unavailable.
 
 ## Admitted Planning Scope
 

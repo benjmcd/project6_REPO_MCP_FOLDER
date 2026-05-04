@@ -215,7 +215,7 @@ And to the durable signed-reference state planning/control freeze:
 - `next_milestone_plans/Layer3_planning_docs/108_DURABLE_ENTRY.md`
 - `next_milestone_plans/Layer3_planning_docs/109_DURABLE_STATE.md`
 
-Current-main docs `106`/`107` select durable token, receipt, revocation, and audit state after the current same-origin signed-reference chain. Current-main docs `108`/`109` from PR `#518` name the implementation-entry surfaces, durable table family, service seam, API compatibility rule, and test obligations. Active branch `codex/l3-durable-runtime-p23` implements only the bounded durable runtime backing state behind the existing PR `#499` endpoints: token hash records, generation/use receipts, audit rows, revocation table awareness without a public endpoint, and single-use replay denial. It does not expose provider/public URLs, dispatch to connectors/destinations, change rendered UI, mutate packages, widen source/schema/runtime scope, or admit qualitative APS content document execution.
+Current-main docs `106`/`107` select durable token, receipt, revocation, and audit state after the current same-origin signed-reference chain. Current-main docs `108`/`109` from PR `#518` name the implementation-entry surfaces, durable table family, service seam, API compatibility rule, and test obligations. PR `#520` implements only the bounded durable runtime backing state behind the existing PR `#499` endpoints: token hash records, generation/use receipts, audit rows, revocation table awareness without a public endpoint, durable missing-state failure, and single-use replay denial. It does not expose provider/public URLs, dispatch to connectors/destinations, change rendered UI, mutate packages, widen source/schema/runtime scope, or admit qualitative APS content document execution.
 
 And to the descriptive-summary Gate C admission packet, whose single-item implementation boundary was satisfied by PR `#417` after PR `#411` lower-level method support:
 - `next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md`
@@ -1280,7 +1280,7 @@ Read docs `102`/`103` as current-main planning/control from PR `#497`, with PR `
 - current live delivery remains same-origin attachment through PR `#483`, with PR `#487` as the only associated-cohort rendered delivery UI authority
 - PR `#499` implements `POST /api/v1/layer3/handoff/export/download/signed-reference/generate` and `POST /api/v1/layer3/handoff/export/download/signed-reference/use`
 - the post-review hardened implementation uses server-owned HMAC signed references with a 300-second TTL, requires `LAYER3_SIGNED_REFERENCE_SECRET` before generation/use, and revalidates exact associated-cohort authority at generation and use
-- active branch `codex/l3-durable-runtime-p23` intentionally supersedes only the no-row/no-replay part by adding durable token hash records, generation/use receipts, audit rows, and single-use replay denial behind the same endpoints
+- PR `#520` intentionally supersedes only the no-row/no-replay part by adding durable token hash records, generation/use receipts, audit rows, durable missing-state failure, and single-use replay denial behind the same endpoints
 - the implementation preserves PR `#496` package-review submit legacy idempotency compatibility in the upstream authority chain
 - if signed delivery needs external object-store ACL, connector, destination, rendered UI behavior, package mutation, qualitative execution, or source/schema/runtime widening beyond the named durable table family, stop for a separate freeze
 - public/provider URLs, connector/generic dispatch, destination selection, package mutation, schema/runtime/source widening, broader UI, qualitative/hybrid/RAG/vector behavior, and full mockup behavior remain out
@@ -1300,10 +1300,10 @@ Start with:
 - `backend/alembic/versions/0016_layer3_signed_reference_state.py`
 - `backend/tests/test_layer3_api.py`
 
-Read docs `108`/`109` as the current implementation-entry contract for branch `codex/l3-durable-runtime-p23`:
+Read docs `108`/`109` as the current implementation-entry contract landed by PR `#520`:
 - they name the durable control-plane table family, service seam, API compatibility rule, and tests
-- they select `backend/alembic/versions/0016_layer3_signed_reference_state.py` for base commit `5896b9b5910d61ff94b27ff0c142b35319dd5fa1`, where `0015_layer3_package_entry.py` was the latest migration
-- if main gains a newer migration or signed-reference API change before merge, refresh the entry freeze before landing
+- they selected `backend/alembic/versions/0016_layer3_signed_reference_state.py` for base commit `5896b9b5910d61ff94b27ff0c142b35319dd5fa1`, where `0015_layer3_package_entry.py` was the latest migration; PR `#520` landed that migration
+- if a later branch needs a newer migration or signed-reference API change, create a fresh freeze before landing
 - they admit only bounded durable backing state behind existing same-origin signed-reference endpoints, not provider/public URLs, connector/destination dispatch, rendered UI changes, qualitative execution, package mutation, or source/schema/runtime widening
 
 ### If you are auditing the Layer 3 workbench APS handoff dispatch freeze
