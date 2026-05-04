@@ -2,7 +2,7 @@
 
 ## Status
 
-Branch-local implementation-entry freeze for the rendered `/review/layer3` signed-reference control after PR `#499` backend/API same-origin signed-reference generation/use and PR `#513` Claude theme APS content-document trace alignment.
+Current-main implementation freeze for the rendered `/review/layer3` signed-reference control after PR `#499` backend/API same-origin signed-reference generation/use, PR `#513` Claude theme APS content-document trace alignment, and PR `#514` rendered signed-reference UI merge.
 
 This freeze admits only an operator-visible same-origin signed-reference control over the existing PR `#499` endpoints:
 
@@ -21,7 +21,7 @@ Use this authority order:
 4. PR `#487` rendered delivery UI gate behavior;
 5. docs `100`/`101` rendered delivery gate governance;
 6. PR `#513` UI/theme trace alignment for current `/review/layer3` related theme surfaces;
-7. this branch-local freeze for the rendered signed-reference control only.
+7. PR `#514` rendered signed-reference UI implementation for the control described here.
 
 Browser state and copied token text are never authority for artifact identity, expiry, replay policy, downstream enablement, package mutation, or delivery availability.
 

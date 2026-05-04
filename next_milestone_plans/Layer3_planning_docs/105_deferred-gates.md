@@ -2,7 +2,7 @@
 
 ## Status
 
-Branch-local decision freeze for the remaining requested deferred categories after PR `#499`, PR `#513`, and the rendered signed-reference UI slice in `104_signed-ui.md`.
+Current-main decision freeze for the remaining requested deferred categories after PR `#499`, PR `#513`, and PR `#514` rendered signed-reference UI slice in `104_signed-ui.md`.
 
 This file does not implement deferred behavior. It defines the minimum questions, blockers, and proof gates required before any of the following can become an implementation lane:
 
