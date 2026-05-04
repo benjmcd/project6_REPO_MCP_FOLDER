@@ -206,7 +206,7 @@ Avoids source-shape proliferation and keeps typed quantitative data aligned with
 
 Current status:
 
-CSV/delimited table diagnostics, bounded XLSX parsing, bounded JSON recordset parsing, bounded SEC/EDGAR complete-submission parsing, the callable dataset bridge, opt-in legacy CSV connector/runtime orchestration, generic CSV/XLSX/JSON/SEC-EDGAR table connector/runtime orchestration, explicit Layer 3 APS-derived dataset admission, selected-pass execution/package proof, and bounded operator/UI selection are implemented. The next decision is broader parser-family and UI sequencing.
+CSV/delimited table diagnostics, bounded XLSX parsing, bounded JSON recordset parsing, bounded SEC/EDGAR complete-submission parsing, the callable dataset bridge, opt-in legacy CSV connector/runtime orchestration, generic CSV/XLSX/JSON/SEC-EDGAR table connector/runtime orchestration, explicit Layer 3 APS-derived dataset admission, selected-pass execution/package proof, bounded operator/UI selection, and bounded typed/refused source-family guardrails are implemented. The next decision is deeper trace/detail UI sequencing versus new parser-family admission.
 
 Why:
 
@@ -260,7 +260,7 @@ Whether `aps_dataset_version`, `aps_tabular_dataset`, or another source shape is
 
 Current recommendation:
 
-Backend authority now proves explicit typed source admission and selected-pass execution/package preservation for APS-derived CSV datasets. The next UI step should be minimal source-family selection/diagnostics before broader trace pages.
+Backend authority now proves explicit typed source admission and selected-pass execution/package preservation for APS-derived CSV, XLSX, JSON recordset, and bounded SEC/EDGAR table datasets. The workbench candidate panel now surfaces admitted/materialized source families and non-selectable deferred/refused guardrails. The next UI step should be deeper trace/detail surfacing only if the candidate-panel guardrails are insufficient.
 
 Decision needed later:
 
@@ -306,13 +306,13 @@ Answer: Yes. `04-validation.md` requires positive and negative fixture coverage 
 
 Question: What could still be missing?
 
-Answer: The remaining items are typed/refused UI surfacing for server-backed source families, whether and how to admit SEC/EDGAR HTML/XML/inline-XBRL, and when to connect mixed SEC/EDGAR narrative-plus-table output into governed package semantics. These are recorded as open questions rather than assumed.
+Answer: The remaining items are deeper typed/refused trace/detail surfacing beyond the Layer 3 candidate panel, whether and how to admit SEC/EDGAR HTML/XML/inline-XBRL, and when to connect mixed SEC/EDGAR narrative-plus-table output into governed package semantics. These are recorded as open questions rather than assumed.
 
 ## Immediate Next Action
 
-Proceed with a narrow typed/refused UI surfacing pass only after auditing the active workbench UI state, or with a separately scoped SEC/EDGAR HTML/XML/inline-XBRL parser contract if UI surfacing is intentionally deferred:
+Proceed with a narrow trace/detail UI surfacing pass only after auditing the active workbench UI state, or with a separately scoped SEC/EDGAR HTML/XML/inline-XBRL parser contract if trace/detail surfacing is intentionally deferred:
 
-- Expose APS-derived `DatasetVersion` candidates and parser/refusal diagnostics without treating UI state as source authority.
+- Reuse the P10B candidate-panel guardrails as server authority for what is admitted/materialized versus deferred/refused.
 - Preserve backend-owned material-preview, Gate B, execution/result, and package contracts.
 - Do not add schema changes or source shapes in the same PR.
 - Keep document trace/document chunks separate from typed dataset selection unless a new mixed-source contract is explicitly defined.

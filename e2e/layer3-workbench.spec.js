@@ -170,6 +170,44 @@ test('Layer 3 workbench keeps page-level scrolling and step navigation across vi
   }
 });
 
+test('Layer 3 workbench surfaces typed and deferred APS source-family guardrails', async ({ page }) => {
+  const candidatesResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/dataset-version-candidates')
+  ));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const candidates = await expectJson(await candidatesResponsePromise);
+
+  expect(candidates.source_family_summary.selection_shape).toBe('dataset_version');
+  expect(
+    candidates.source_family_summary.admitted_materialized_families.map((family) => family.parser_family),
+  ).toEqual(expect.arrayContaining([
+    'csv_table',
+    'xlsx_workbook',
+    'json_recordset',
+    'sec_edgar_filing',
+  ]));
+  expect(
+    candidates.source_family_summary.not_admitted_or_deferred_families.map((family) => family.source_family),
+  ).toEqual(expect.arrayContaining([
+    'xml_html_inline_xbrl',
+    'broad_workbook_semantics',
+    'archive_member_table_or_filing_orchestration',
+    'mixed_source_package_semantics',
+  ]));
+
+  const summary = page.locator('.source-family-summary');
+  await expect(summary).toContainText('Server-backed typed families');
+  await expect(summary).toContainText('CSV table');
+  await expect(summary).toContainText('XLSX workbook table');
+  await expect(summary).toContainText('JSON recordset');
+  await expect(summary).toContainText('SEC/EDGAR text table');
+  await expect(summary).toContainText('Deferred / refused guardrails');
+  await expect(summary).toContainText('XML/HTML/inline XBRL');
+  await expect(summary).toContainText(
+    'This endpoint surfaces server-backed APS-derived DatasetVersion choices only; refused/deferred families are explanatory guardrails, not selectable source classes.',
+  );
+});
+
 test('Layer 3 workbench exposes visible keyboard focus across themes', async ({ page }) => {
   for (const theme of ['light', 'dark', 'workbench']) {
     await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });

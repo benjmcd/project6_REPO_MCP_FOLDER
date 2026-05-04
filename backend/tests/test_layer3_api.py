@@ -435,6 +435,7 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
         "dataset_version_candidates",
         "candidate_count",
         "source_system",
+        "source_family_summary",
         "authority_rail",
     } <= set(dataset_candidate_schema["required"])
 
@@ -457,6 +458,8 @@ def test_layer3_api_lists_aps_derived_dataset_version_candidates(client: TestCli
     assert candidate["dataset_version_id"] == dataset_version_id
     assert candidate["source_system"] == "nrc_adams_aps"
     assert candidate["parser_family"] == "csv_table"
+    assert candidate["source_family_label"] == "CSV table"
+    assert body["source_family_summary"]["observed_candidate_counts"] == {"csv_table": 1}
 
 
 def test_layer3_gate_openapi_contracts(client: TestClient) -> None:

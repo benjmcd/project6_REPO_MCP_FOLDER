@@ -472,6 +472,24 @@ Caveat:
 
 Browser tests are required only when UI assets or rendered workbench behavior changes.
 
+## Phase P10B Typed/Refused Workbench Surfacing Validation
+
+Status: implemented for the existing Layer 3 APS-derived `DatasetVersion` candidate-selection panel.
+
+Required assertions:
+
+- The candidate endpoint returns admitted/materialized source-family metadata for CSV, XLSX, JSON recordset, and bounded SEC/EDGAR text table parser families.
+- The same endpoint returns deferred/refused guardrails for XML/HTML/inline-XBRL, broad workbook semantics, archive-member typed orchestration, and mixed-source package semantics.
+- Candidate rows carry source-family label, admission state, and scope without changing the `dataset_version` source shape.
+- Material preview preserves source-family metadata inside source provenance/load summary for selected APS-derived `DatasetVersion` rows.
+- Static Layer 3 UI copy and rendering distinguish selectable server-backed dataset versions from non-selectable deferred/refused families.
+
+Implemented P10B focused commands:
+
+- `python -m pytest .\backend\tests\test_layer3_workbench.py .\backend\tests\test_layer3_api.py .\backend\tests\test_layer3_page.py -q`
+- `python -m pytest .\backend\tests\test_layer3_workbench.py .\backend\tests\test_layer3_api.py -k "dataset_version_candidates or aps_derived_dataset_version" -q`
+- Headless and headed browser checks should be run before landing because this phase changes rendered UI assets.
+
 When required:
 
 - Run headless browser coverage.
