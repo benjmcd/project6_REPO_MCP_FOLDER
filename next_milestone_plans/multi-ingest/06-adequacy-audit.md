@@ -1,6 +1,6 @@
 # Adequacy Audit
 
-Status: planning-pack self-audit for scope, justification, consistency, and implementation readiness. This audit now accounts for Phase P1 through Phase P8 implementation closeouts; see `07-p1-closeout.md` through `17-p8-closeout.md`.
+Status: planning-pack self-audit for scope, justification, consistency, and implementation readiness. This audit now accounts for Phase P1 through Phase P9 implementation closeouts; see `07-p1-closeout.md` through `18-p9-closeout.md`.
 
 ## Audit Question
 
@@ -11,7 +11,7 @@ Answer: yes for the current bounded implementation lane. The pack is ready to go
 Residual decisions:
 
 - Whether existing dataset provenance models are sufficient or a dedicated APS artifact-to-dataset bridge table is required.
-- Which SEC/EDGAR filing format is admitted first after CSV/XLSX/JSON table-bridge patterns are proven.
+- Which SEC/EDGAR filing format is admitted after the bounded complete-submission text-file slice.
 
 ## Evidence Recheck
 
@@ -24,6 +24,7 @@ Confirmed from live source:
 - Parser registry metadata is implemented for current PDF, Candidate B PDF, plain text, image OCR, and archive bundle processors.
 - CSV parser diagnostics are implemented for bounded standalone CSV and ZIP CSV members.
 - JSON parser diagnostics are implemented for bounded standalone JSON recordsets.
+- SEC/EDGAR parser diagnostics are implemented for bounded complete submission text files with plain document text and simple delimited `<TABLE>` blocks.
 - A callable CSV dataset bridge is implemented using existing dataset, row, profile, identity, and provenance models.
 - Content indexing is built around normalized text, ordered units, content documents, content chunks, and chunk unit kinds.
 - Layer 3 workbench supports `dataset_version` and `aps_content_document`.
@@ -42,16 +43,16 @@ Confirmed from planning/status docs:
 
 Adequately scoped:
 
-- The initial pack was docs-only. The current branch now also includes Phase P1 source/test changes recorded in `07-p1-closeout.md`, Phase P2 parser-registry source/test changes recorded in `08-p2-closeout.md`, Phase P3 CSV diagnostics source/test changes recorded in `09-p3-closeout.md`, Phase P4 dataset-bridge source/test changes recorded in `10-p4-closeout.md`, and subsequent closeout files through Phase P8.
-- The current verdict is limited to audited document-chunk paths, existing dataset paths, explicit APS-derived CSV/XLSX/JSON dataset admission through `dataset_version`, and selected-pass execution/package proof for that path.
+- The initial pack was docs-only. The current branch now also includes Phase P1 source/test changes recorded in `07-p1-closeout.md`, Phase P2 parser-registry source/test changes recorded in `08-p2-closeout.md`, Phase P3 CSV diagnostics source/test changes recorded in `09-p3-closeout.md`, Phase P4 dataset-bridge source/test changes recorded in `10-p4-closeout.md`, and subsequent closeout files through Phase P9.
+- The current verdict is limited to audited document-chunk paths, existing dataset paths, explicit APS-derived CSV/XLSX/JSON/SEC-EDGAR table dataset admission through `dataset_version`, and selected-pass execution/package proof for that path.
 - The target design separates current implementation from future parser/bridge/workbench admission.
 - Phase P1 is narrow: classification/refusal hardening and fixture coverage only.
-- SEC/EDGAR parsing, broad source-shape expansion, archive-member XLSX/JSON orchestration, arbitrary JSON document semantics, nested JSON flattening, and broad workbook semantics are explicitly deferred. Bounded `.xlsx` parsing/materialization is implemented as Phase P7, bounded standalone XLSX connector table bridge orchestration is implemented as Phase P7.5, and bounded standalone JSON recordset parser/materialization is implemented as Phase P8.
+- Broad SEC/EDGAR HTML/XML/inline-XBRL parsing, broad source-shape expansion, archive-member XLSX/JSON/SEC-EDGAR orchestration, arbitrary JSON document semantics, nested JSON flattening, broad workbook semantics, and mixed-source package semantics are explicitly deferred. Bounded `.xlsx` parsing/materialization is implemented as Phase P7, bounded standalone XLSX connector table bridge orchestration is implemented as Phase P7.5, bounded standalone JSON recordset parser/materialization is implemented as Phase P8, and bounded SEC/EDGAR complete-submission text parsing/materialization is implemented as Phase P9.
 
 Not over-scoped:
 
 - The pack does not try to solve all heterogeneous ingestion at once.
-- It does not claim arbitrary JSON, XML, HTML, SEC/EDGAR, financial filings, mixed-source artifacts, arbitrary workbooks, archive-member XLSX/JSON, or arbitrary time-series APS artifacts are already supported end to end. CSV is end-to-end through the explicit bridge/UI path; XLSX is bounded to standalone parser diagnostics plus explicit or opt-in connector table-unit materialization; JSON is bounded to standalone recordset parser diagnostics plus explicit or opt-in connector table-unit materialization.
+- It does not claim arbitrary JSON, XML, HTML, broad SEC/EDGAR, financial filings, mixed-source packages, arbitrary workbooks, archive-member XLSX/JSON/SEC-EDGAR, or arbitrary time-series APS artifacts are already supported end to end. CSV is end-to-end through the explicit bridge/UI path; XLSX is bounded to standalone parser diagnostics plus explicit or opt-in connector table-unit materialization; JSON is bounded to standalone recordset parser diagnostics plus explicit or opt-in connector table-unit materialization; SEC/EDGAR is bounded to complete submission text files with plain document text and simple delimited table blocks.
 - It does not modify existing progress manifests because doing so would imply governance admission beyond this planning-entry pack.
 
 Not under-scoped:
@@ -81,7 +82,7 @@ No contradiction found:
 - `03-implementation.md` converts the contract into bounded phases.
 - `04-validation.md` defines the fixture and regression matrix.
 - `05-decisions.md` records settled decisions and open questions.
-- `07-p1-closeout.md` through `17-p8-closeout.md` record implemented branch state and validation caveats.
+- `07-p1-closeout.md` through `18-p9-closeout.md` record implemented branch state and validation caveats.
 
 ## Grill-Me Self-Audit
 
@@ -107,7 +108,7 @@ Answer: Targeted file families must have deterministic detection, parser fixture
 
 Question: Did P2 accidentally widen parser behavior?
 
-Answer: No. P2 introduced metadata-only parser admission for already-existing processor families. CSV, XLSX, and JSON recordset parser/materialization/orchestration work were added later in bounded phases; arbitrary JSON, SEC/EDGAR, schema, new Layer 3 source-shape, and broad UI work remain deferred.
+Answer: No. P2 introduced metadata-only parser admission for already-existing processor families. CSV, XLSX, JSON recordset, and bounded SEC/EDGAR parser/materialization/orchestration work were added later in bounded phases; arbitrary JSON, broad SEC/EDGAR HTML/XML/inline-XBRL support, schema, new Layer 3 source-shape, and broad UI work remain deferred.
 
 Question: Did P3 overclaim CSV support?
 
@@ -128,6 +129,10 @@ Answer: No. P6 proves selected-pass quantitative execution/result/package constr
 Question: Did P8 overclaim JSON support?
 
 Answer: No. P8 admits only standalone table-like JSON recordsets with flat records or configured record paths. It keeps arbitrary nested JSON, archive-member JSON orchestration, structured-document JSON, SEC/EDGAR JSON/XML/HTML filing semantics, schema changes, and new Layer 3 source semantics out of scope.
+
+Question: Did P9 overclaim SEC/EDGAR support?
+
+Answer: No. P9 admits only complete submission text files with SEC signature sniffing, admitted form types, plain document text, deterministic metadata/section extraction, and simple delimited `<TABLE>` materialization. It keeps HTML/XML/inline XBRL, unsupported forms, ambiguous financial statements, archive-member filing orchestration, schema changes, new Layer 3 source semantics, and mixed-source package semantics out of scope.
 
 ## Validation Performed For The Initial Planning Pass
 
@@ -244,6 +249,30 @@ Caveat:
 
 - Pytest emitted the known Windows temp cleanup `PermissionError` after the green result for `pytest-current`.
 
+## Validation Performed For Phase P9
+
+Passed:
+
+- `python -m pytest .\tests\test_nrc_aps_sec_edgar_parser.py .\tests\test_nrc_aps_media_detection.py .\tests\test_nrc_aps_parser_registry.py .\tests\test_nrc_aps_document_processing.py .\tests\test_nrc_aps_artifact_ingestion.py .\tests\test_nrc_aps_dataset_bridge.py .\tests\test_api.py -k "sec_edgar or parser_registry or media_detection or dataset_bridge" -q`
+- `python -m pytest .\tests\test_nrc_aps_sec_edgar_parser.py .\tests\test_nrc_aps_document_processing.py .\tests\test_nrc_aps_artifact_ingestion.py .\tests\test_nrc_aps_dataset_bridge.py .\tests\test_api.py -k "sec_edgar" -q`
+- `python -m pytest .\tests\test_nrc_aps_sec_edgar_parser.py .\tests\test_nrc_aps_json_parser.py .\tests\test_nrc_aps_spreadsheet_parser.py .\tests\test_nrc_aps_csv_parser.py .\tests\test_nrc_aps_media_detection.py .\tests\test_nrc_aps_parser_registry.py .\tests\test_nrc_aps_document_processing.py .\tests\test_nrc_aps_artifact_ingestion.py .\tests\test_nrc_aps_dataset_bridge.py .\tests\test_nrc_aps_content_index.py .\tests\test_nrc_aps_expansion.py .\tests\test_api.py -k "not candidate_b" -q`
+- `python -m pytest .\backend\tests\test_layer3_workbench.py .\backend\tests\test_layer3_api.py -q`
+- `npm run validate:structure`
+- `git diff --check`
+
+Result:
+
+- `43 passed, 112 deselected`.
+- `11 passed, 126 deselected`.
+- `181 passed, 10 deselected`.
+- `86 passed`.
+- Structure validation: `errors: 0`, `warnings: 221` existing local-path/documentation warnings.
+- Diff check: passed with line-ending conversion warnings only.
+
+Caveat:
+
+- Pytest emitted the known Windows temp cleanup `PermissionError` after the green result for `pytest-current`.
+
 ## Final Planning Verdict
 
-The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P8 are now implemented in this branch; the next correct action is either SEC/EDGAR parser scoping or a narrow typed/refused UI surfacing pass, while preserving all existing PDF/document, Candidate B PDF-only, and Layer 3 source-shape behavior.
+The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P9 are now implemented in this branch; the next correct action is a narrow typed/refused UI surfacing pass or a separately scoped SEC/EDGAR HTML/XML/inline-XBRL contract, while preserving all existing PDF/document, Candidate B PDF-only, and Layer 3 source-shape behavior.

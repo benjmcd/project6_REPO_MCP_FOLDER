@@ -392,6 +392,8 @@ Implemented boundary:
 
 ## Phase P9: SEC/EDGAR Filing Parser
 
+Status: implemented for bounded complete submission text files with plain document text and simple delimited `<TABLE>` blocks.
+
 Goal:
 
 Handle filings as mixed qualitative plus structured data, not as one generic document text blob.
@@ -407,6 +409,17 @@ Requirements:
 Stop condition:
 
 - One narrow EDGAR fixture proves mixed output with both document evidence and table/dataset provenance.
+
+Implemented P9 focused commands:
+
+- `python -m pytest .\tests\test_nrc_aps_sec_edgar_parser.py .\tests\test_nrc_aps_media_detection.py .\tests\test_nrc_aps_parser_registry.py .\tests\test_nrc_aps_document_processing.py .\tests\test_nrc_aps_artifact_ingestion.py .\tests\test_nrc_aps_dataset_bridge.py .\tests\test_api.py -k "sec_edgar or parser_registry or media_detection or dataset_bridge" -q`: `43 passed`, `112 deselected`.
+- `python -m pytest .\tests\test_nrc_aps_sec_edgar_parser.py .\tests\test_nrc_aps_document_processing.py .\tests\test_nrc_aps_artifact_ingestion.py .\tests\test_nrc_aps_dataset_bridge.py .\tests\test_api.py -k "sec_edgar" -q`: `11 passed`, `126 deselected`.
+
+P9 residual no-go list:
+
+- HTML/XML/inline XBRL filing documents remain refused.
+- Unsupported form types remain fail-closed unless explicitly admitted by config.
+- Ambiguous financial statement extraction, nested filing semantics, archive-member filing orchestration, schema/model/migration changes, new Layer 3 source shapes, and mixed-source package semantics remain deferred.
 
 ## Phase P10: UI And Operator Surfacing
 
@@ -447,4 +460,4 @@ flowchart TD
 
 ## Immediate Recommendation
 
-The next implementation PR should not repeat P10A APS-derived dataset selection or P8 JSON recordset materialization. The next narrow slice should either add a SEC/EDGAR parser behind the same fail-closed parser/materialization discipline or expand P10 only where existing server-backed source families need clearer operator surfacing.
+The next implementation PR should not repeat P10A APS-derived dataset selection, P8 JSON recordset materialization, or P9 bounded SEC/EDGAR complete-submission materialization. The next narrow slice should either expand P10 only where existing server-backed source families need clearer operator surfacing, or add a separate SEC/EDGAR HTML/XML/inline-XBRL parser only after a dedicated contract is specified.
