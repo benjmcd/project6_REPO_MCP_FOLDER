@@ -213,7 +213,7 @@ And to the durable signed-reference state planning/control freeze:
 - `next_milestone_plans/Layer3_planning_docs/106_DURABLE_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/107_DURABLE_CONTRACT.md`
 
-On this branch, docs `106`/`107` select durable token, receipt, revocation, and audit state as the next planning/control question after the current same-origin signed-reference chain. They do not implement durable state, add model or migration files, change PR `#499` stateless HMAC behavior, change PR `#514` rendered controls, expose provider/public URLs, dispatch to connectors/destinations, or admit qualitative APS content document execution.
+Current-main docs `106`/`107` select durable token, receipt, revocation, and audit state as the next planning/control question after the current same-origin signed-reference chain. They do not implement durable state, add model or migration files, change PR `#499` stateless HMAC behavior, change PR `#514` rendered controls, expose provider/public URLs, dispatch to connectors/destinations, or admit qualitative APS content document execution.
 
 And to the descriptive-summary Gate C admission packet, whose single-item implementation boundary was satisfied by PR `#417` after PR `#411` lower-level method support:
 - `next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md`

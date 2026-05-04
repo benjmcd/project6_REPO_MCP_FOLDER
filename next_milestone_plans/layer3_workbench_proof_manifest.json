@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main selected-pass associated-cohort delivery UI gate, signed-reference backend/API implementation, rendered signed-reference UI proof through PR #514, and branch-local durable-state planning/control docs 106/107",
+  "status": "current-main selected-pass associated-cohort delivery UI gate, signed-reference backend/API implementation, rendered signed-reference UI proof through PR #514, and durable-state planning/control docs 106/107 from PR #516",
   "scope": {
     "source_branch": "codex/l3-signed-url-impl-p34",
     "merged_pr": "#499",
@@ -9,7 +9,7 @@
     "base_remote": "project6-origin/main",
     "base_commit": "144a32cd",
     "source_base_commit": "144a32cd",
-    "purpose": "Record PR #514 current-main bounded rendered same-origin signed-reference UI controls after PR #499 backend/API signed-reference implementation, PR #487 rendered delivery UI gate authority, and PR #513 UI/theme trace alignment, plus branch-local docs 106/107 durable-state planning/control selection.",
+    "purpose": "Record PR #514 current-main bounded rendered same-origin signed-reference UI controls after PR #499 backend/API signed-reference implementation, PR #487 rendered delivery UI gate authority, and PR #513 UI/theme trace alignment, plus current-main PR #516 docs 106/107 durable-state planning/control selection.",
     "live_behavior_change": true,
     "live_behavior_change_summary": "PR #514 implements only rendered /review/layer3 same-origin signed-reference generate/use controls. It adds no public/provider URLs, connector/generic dispatch, destination selection, package mutation, durable token/receipt/audit/revocation state, schema/runtime/source widening, qualitative execution, broader UI, or full mockup behavior.",
     "latest_implementation_pr": "#514",
@@ -33,8 +33,10 @@
       "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md"
     ],
     "latest_durable_state_planning_branch": "codex/l3-durable-freeze-p16",
+    "latest_durable_state_planning_pr": "#516",
+    "latest_durable_state_planning_merge_commit": "55a8403ca39b3078a1b7551759fee031a5375793",
     "latest_durable_state_planning_live_behavior_change": false,
-    "latest_durable_state_planning_summary": "Docs 106/107 select durable token, receipt, revocation, and audit state as planning/control only after PR #499 backend/API same-origin signed-reference behavior and PR #514 rendered same-origin signed-reference UI. They do not implement durable runtime state, model/migration changes, token persistence, receipt creation, revocation behavior, audit writes, provider/public URLs, connector/destination dispatch, qualitative execution, or rendered UI changes.",
+    "latest_durable_state_planning_summary": "PR #516 merged docs 106/107 as current-main planning/control only for durable token, receipt, revocation, and audit state after PR #499 backend/API same-origin signed-reference behavior and PR #514 rendered same-origin signed-reference UI. They do not implement durable runtime state, model/migration changes, token persistence, receipt creation, revocation behavior, audit writes, provider/public URLs, connector/destination dispatch, qualitative execution, or rendered UI changes.",
     "latest_durable_state_planning_docs": [
       "next_milestone_plans/Layer3_planning_docs/106_DURABLE_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/107_DURABLE_CONTRACT.md"
@@ -3338,9 +3340,9 @@
       "PR #487 is current-main explicit associated-cohort delivery UI gate authority.",
       "PR #499 is current-main backend/API same-origin signed-reference generation/use authority.",
       "PR #513 is current-main UI/theme trace alignment only and does not admit qualitative execution or downstream runtime behavior.",
-      "Docs 104/105 are branch-local governance for the rendered signed-reference UI tranche and deferred gates.",
       "PR #514 is current-main rendered same-origin signed-reference UI authority after merge commit 56fb184af598667855d0c166e960d12882e25606.",
-      "Docs 104/105 are now current-main governance for the rendered signed-reference UI tranche and deferred gates."
+      "Docs 104/105 are current-main governance for the rendered signed-reference UI tranche and deferred gates.",
+      "PR #516 is current-main planning/control governance for durable token, receipt, revocation, and audit state only."
     ],
     "no_go_preserved": [
       "no public/provider URL behavior",
