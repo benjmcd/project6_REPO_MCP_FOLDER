@@ -40,6 +40,7 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="dataset-version-candidates"' in response.text
     assert 'id="dataset-version-ids"' in response.text
     assert "APS-derived DatasetVersion selection" in response.text
+    assert "CSV, XLSX, JSON recordset, or bounded SEC/EDGAR text tables" in response.text
     assert 'id="gate-b-band"' in response.text
     assert 'id="result-review-band"' in response.text
     assert 'id="intent-form"' in response.text
@@ -115,6 +116,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".source-spec-chip-grid" in css.text
     assert ".dataset-version-selector" in css.text
     assert ".dataset-version-candidate" in css.text
+    assert ".source-family-summary" in css.text
     assert ".ledger-chip-field" in css.text
     assert ".diagram-chip-grid" in css.text
     assert ".plane-arrow" in css.text
@@ -137,6 +139,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "postJson('/material-preview'" in js.text
     assert "dataset_version_ids: datasetVersionIds" in js.text
     assert "getJson('/dataset-version-candidates')" in js.text
+    assert "renderSourceFamilySummary" in js.text
+    assert "not_admitted_or_deferred_families" in js.text
     assert "User Natural Language Query Input" in js.text
     assert "ledger-chip-field" in js.text
     assert "diagram-chip" in js.text

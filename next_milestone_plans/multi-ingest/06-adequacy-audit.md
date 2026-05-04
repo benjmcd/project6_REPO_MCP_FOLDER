@@ -1,6 +1,6 @@
 # Adequacy Audit
 
-Status: planning-pack self-audit for scope, justification, consistency, and implementation readiness. This audit now accounts for Phase P1 through Phase P9 implementation closeouts; see `07-p1-closeout.md` through `18-p9-closeout.md`.
+Status: planning-pack self-audit for scope, justification, consistency, and implementation readiness. This audit now accounts for Phase P1 through Phase P10B implementation closeouts; see `07-p1-closeout.md` through `19-p10b-closeout.md`.
 
 ## Audit Question
 
@@ -82,7 +82,7 @@ No contradiction found:
 - `03-implementation.md` converts the contract into bounded phases.
 - `04-validation.md` defines the fixture and regression matrix.
 - `05-decisions.md` records settled decisions and open questions.
-- `07-p1-closeout.md` through `18-p9-closeout.md` record implemented branch state and validation caveats.
+- `07-p1-closeout.md` through `19-p10b-closeout.md` record implemented branch state and validation caveats.
 
 ## Grill-Me Self-Audit
 
@@ -275,4 +275,4 @@ Caveat:
 
 ## Final Planning Verdict
 
-The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P9 are now implemented in this branch; the next correct action is a narrow typed/refused UI surfacing pass or a separately scoped SEC/EDGAR HTML/XML/inline-XBRL contract, while preserving all existing PDF/document, Candidate B PDF-only, and Layer 3 source-shape behavior.
+The pack is adequately scoped for the current bounded implementation lane and adequately specific for the next implementation step. It should not be treated as a completed heterogeneous-ingestion implementation. Phase P1 through Phase P10B are now implemented in this branch; the next correct action is a narrow typed/refused trace/detail surfacing pass or a separately scoped SEC/EDGAR HTML/XML/inline-XBRL contract, while preserving all existing PDF/document, Candidate B PDF-only, and Layer 3 source-shape behavior.

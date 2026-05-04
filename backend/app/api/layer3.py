@@ -108,6 +108,7 @@ class Layer3DatasetVersionCandidatesResponse(Layer3BaseResponse):
     dataset_version_candidates: list[dict[str, Any]]
     candidate_count: int
     source_system: str
+    source_family_summary: dict[str, Any]
     authority_rail: dict[str, Any]
 
 
