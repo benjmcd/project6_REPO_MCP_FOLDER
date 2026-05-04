@@ -97,6 +97,13 @@ from app.services.layer3_utils import (
     stable_json_bytes as _canonical_json_bytes,
     utcnow_iso_z as _utcnow_iso,
 )
+from app.services.layer3_workbench_package_state import (
+    canonical_payload_values,
+    dispatched_package_id,
+    packages_in_kind_order,
+    packages_with_kinds,
+    unexpected_package_kinds as package_state_unexpected_package_kinds,
+)
 
 SCHEMA_VERSION = 1
 ROUTE = "/review/layer3"
@@ -5616,24 +5623,19 @@ def _handoff_export_prepare_from_reconciliation(reconciliation: L3Reconciliation
 
 
 def _packages_in_review_order(packages: list[L3OutputPackage]) -> list[L3OutputPackage]:
-    packages_by_kind = {package.package_kind: package for package in packages}
-    return [packages_by_kind[package_kind] for package_kind in PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS]
+    return packages_in_kind_order(packages, package_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
 
 
 def _review_source_packages(packages: list[L3OutputPackage]) -> list[L3OutputPackage]:
-    source_kinds = set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
-    return [package for package in packages if package.package_kind in source_kinds]
+    return packages_with_kinds(packages, package_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
 
 
 def _dispatched_aps_handoff_package_id(dispatch_state: dict[str, Any] | None) -> str | None:
-    if not isinstance(dispatch_state, dict):
-        return None
-    if dispatch_state.get("aps_handoff_state") != APS_HANDOFF_DISPATCHED_STATE:
-        return None
-    if dispatch_state.get("aps_output_package_kind") != PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF:
-        return None
-    output_package_id = str(dispatch_state.get("aps_output_package_id") or "").strip()
-    return output_package_id or None
+    return dispatched_package_id(
+        dispatch_state,
+        dispatched_state=APS_HANDOFF_DISPATCHED_STATE,
+        expected_package_kind=PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+    )
 
 
 def _unexpected_package_kinds(
@@ -5641,19 +5643,13 @@ def _unexpected_package_kinds(
     *,
     aps_handoff_dispatch_state: dict[str, Any] | None = None,
 ) -> list[str]:
-    allowed_source_kinds = set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
-    allowed_aps_package_id = _dispatched_aps_handoff_package_id(aps_handoff_dispatch_state)
-    unexpected_kinds = set()
-    for package in packages:
-        if package.package_kind in allowed_source_kinds:
-            continue
-        if (
-            package.package_kind == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF
-            and package.output_package_id == allowed_aps_package_id
-        ):
-            continue
-        unexpected_kinds.add(package.package_kind)
-    return sorted(unexpected_kinds)
+    return package_state_unexpected_package_kinds(
+        packages,
+        source_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS,
+        aps_handoff_dispatch_state=aps_handoff_dispatch_state,
+        aps_dispatched_state=APS_HANDOFF_DISPATCHED_STATE,
+        aps_package_kind=PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+    )
 
 
 def _canonical_payload_hashes(
@@ -5661,21 +5657,12 @@ def _canonical_payload_hashes(
     payload_hashes: Any,
     packages: list[L3OutputPackage],
 ) -> list[str] | None:
-    ordered_packages = _packages_in_review_order(packages)
-    if isinstance(payload_hashes, list):
-        hashes = [str(item or "").strip() for item in payload_hashes]
-        if len(hashes) == len(ordered_packages) and set(hashes) == {package.payload_hash for package in ordered_packages}:
-            return [package.payload_hash for package in ordered_packages]
-        return None
-    if isinstance(payload_hashes, dict):
-        by_kind = {package.package_kind: package.payload_hash for package in ordered_packages}
-        by_id = {package.output_package_id: package.payload_hash for package in ordered_packages}
-        normalized = {str(key or "").strip(): str(value or "").strip() for key, value in payload_hashes.items()}
-        if normalized == by_kind:
-            return [package.payload_hash for package in ordered_packages]
-        if normalized == by_id:
-            return [package.payload_hash for package in ordered_packages]
-    return None
+    return canonical_payload_values(
+        values=payload_hashes,
+        packages=packages,
+        package_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS,
+        package_attr="payload_hash",
+    )
 
 
 def _canonical_payload_refs(
@@ -5683,21 +5670,12 @@ def _canonical_payload_refs(
     payload_refs: Any,
     packages: list[L3OutputPackage],
 ) -> list[str] | None:
-    ordered_packages = _packages_in_review_order(packages)
-    if isinstance(payload_refs, list):
-        refs = [str(item or "").strip() for item in payload_refs]
-        if len(refs) == len(ordered_packages) and set(refs) == {package.payload_ref for package in ordered_packages}:
-            return [package.payload_ref for package in ordered_packages]
-        return None
-    if isinstance(payload_refs, dict):
-        by_kind = {package.package_kind: package.payload_ref for package in ordered_packages}
-        by_id = {package.output_package_id: package.payload_ref for package in ordered_packages}
-        normalized = {str(key or "").strip(): str(value or "").strip() for key, value in payload_refs.items()}
-        if normalized == by_kind:
-            return [package.payload_ref for package in ordered_packages]
-        if normalized == by_id:
-            return [package.payload_ref for package in ordered_packages]
-    return None
+    return canonical_payload_values(
+        values=payload_refs,
+        packages=packages,
+        package_kinds=PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS,
+        package_attr="payload_ref",
+    )
 
 
 def _is_cohort_package_construction_source(source_gate: Any) -> bool:
