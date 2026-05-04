@@ -98,6 +98,7 @@ from app.services.layer3_utils import (
     utcnow_iso_z as _utcnow_iso,
 )
 from app.services.layer3_workbench_package_state import (
+    active_downstream_unavailable as package_state_active_downstream_unavailable,
     canonical_payload_values,
     dispatched_package_id,
     packages_in_kind_order,
@@ -5694,13 +5695,6 @@ def _package_review_submit_downstream_unavailable(
     return PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
 
 
-def _state_downstream_unavailable(state: dict[str, Any], fallback: tuple[str, ...]) -> tuple[str, ...]:
-    values = state.get("downstream_unavailable") if isinstance(state, dict) else None
-    if isinstance(values, (list, tuple)) and values:
-        return tuple(str(item) for item in values)
-    return fallback
-
-
 def _active_package_downstream_unavailable(
     *,
     package_construction_state: dict[str, Any],
@@ -5709,29 +5703,35 @@ def _active_package_downstream_unavailable(
     aps_handoff_dispatch_state: dict[str, Any],
     external_export_download_state: dict[str, Any],
 ) -> tuple[str, ...]:
-    if aps_handoff_dispatch_state.get("state") == APS_HANDOFF_DISPATCHED_STATE:
-        return _state_downstream_unavailable(
-            external_export_download_state,
-            EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE,
-        )
-    if handoff_export_prepare_state.get("state") == HANDOFF_EXPORT_PREPARED_STATE:
-        return _state_downstream_unavailable(
-            aps_handoff_dispatch_state,
-            APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE,
-        )
-    if package_review_submit_state.get("state") == PACKAGE_REVIEW_APPROVED_STATE:
-        return _state_downstream_unavailable(
-            handoff_export_prepare_state,
-            HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE,
-        )
-    if package_construction_state.get("state") == PACKAGE_CONSTRUCTED_STATE:
-        return _state_downstream_unavailable(
-            package_review_submit_state,
-            PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
-        )
-    return _state_downstream_unavailable(
-        package_construction_state,
-        PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE,
+    return package_state_active_downstream_unavailable(
+        transitions=(
+            (
+                aps_handoff_dispatch_state,
+                APS_HANDOFF_DISPATCHED_STATE,
+                external_export_download_state,
+                EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE,
+            ),
+            (
+                handoff_export_prepare_state,
+                HANDOFF_EXPORT_PREPARED_STATE,
+                aps_handoff_dispatch_state,
+                APS_HANDOFF_DISPATCH_DOWNSTREAM_UNAVAILABLE,
+            ),
+            (
+                package_review_submit_state,
+                PACKAGE_REVIEW_APPROVED_STATE,
+                handoff_export_prepare_state,
+                HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE,
+            ),
+            (
+                package_construction_state,
+                PACKAGE_CONSTRUCTED_STATE,
+                package_review_submit_state,
+                PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE,
+            ),
+        ),
+        default_state=package_construction_state,
+        default_fallback=PACKAGE_CONSTRUCTION_DOWNSTREAM_UNAVAILABLE,
     )
 
 
