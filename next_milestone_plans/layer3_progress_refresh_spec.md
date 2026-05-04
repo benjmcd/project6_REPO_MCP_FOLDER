@@ -118,6 +118,8 @@ When present in the current checkout, also read:
 - `next_milestone_plans/Layer3_planning_docs/72_L3_DESCRIPTIVE_SUMMARY_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/73_L3_DESCRIPTIVE_SUMMARY_CONTRACT.md`
 - `next_milestone_plans/Layer3_planning_docs/74_L3_DEFERRED_IMPLEMENTATION_PLAYBOOK.md`
+- `next_milestone_plans/Layer3_planning_docs/106_DURABLE_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/107_DURABLE_CONTRACT.md`
 - `backend/app/services/layer3_aps_handoff.py`
 - `backend/tests/test_layer3_aps_handoff.py`
 - `backend/app/services/layer3_workbench.py`
