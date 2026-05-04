@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import hashlib
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -34,6 +33,13 @@ from app.services.layer3_typing_entry import (
     MODALITY_QUANTITATIVE,
     SET_TYPE_ASSOCIATED_COHORT,
     SET_TYPE_SINGLE_ITEM,
+)
+from app.services.layer3_utils import (
+    json_clone as _json_clone,
+    stable_hash as _stable_hash,
+    stable_json_bytes as _stable_json_bytes,
+    utc_isoformat as _utc_isoformat,
+    utcnow as _utcnow,
 )
 
 if TYPE_CHECKING:
@@ -185,32 +191,6 @@ class Layer3SelectedPassExecutionResult:
     selected_method_name: str | None
     output_payload_ref: str | None
     error_message: str | None = None
-
-
-def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
-
-
-def _utc_isoformat(value: datetime | None) -> str | None:
-    if value is None:
-        return None
-    if value.tzinfo is None:
-        value = value.replace(tzinfo=timezone.utc)
-    else:
-        value = value.astimezone(timezone.utc)
-    return value.isoformat()
-
-
-def _stable_json_bytes(value: Any) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-
-
-def _json_clone(value: Any) -> Any:
-    return json.loads(_stable_json_bytes(value).decode("utf-8"))
-
-
-def _stable_hash(value: Any) -> str:
-    return hashlib.sha256(_stable_json_bytes(value)).hexdigest()
 
 
 def _layer3_artifact_dir() -> Path:
