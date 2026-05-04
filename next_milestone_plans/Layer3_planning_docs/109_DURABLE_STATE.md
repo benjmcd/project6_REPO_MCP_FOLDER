@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This contract specifies the durable token, receipt, revocation, and audit state shape for branch `codex/l3-durable-runtime-p23`. It is the implementation contract for the bounded same-origin durable signed-reference state slice.
+This contract specifies the durable token, receipt, revocation, and audit state shape landed by PR `#520` from branch `codex/l3-durable-runtime-p23`. It is the implementation contract for the bounded same-origin durable signed-reference state slice.
 
 ## State Model
 

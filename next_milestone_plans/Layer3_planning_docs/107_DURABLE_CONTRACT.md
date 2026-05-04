@@ -4,7 +4,7 @@
 
 This contract defines the minimum shape the durable signed-reference implementation must satisfy. It exists to prevent durable token, receipt, revocation, and audit work from being hidden inside provider/public URL, connector/destination, qualitative execution, or UI-only patches.
 
-Docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` provide the implementation-entry refinement of this contract for branch `codex/l3-durable-runtime-p23`, based on `project6-origin/main` `5896b9b5910d61ff94b27ff0c142b35319dd5fa1`.
+Docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` provide the implementation-entry refinement of this contract. PR `#520` landed the bounded runtime implementation on `project6-origin/main` at merge commit `721b892b88ef88bf1364e2c71f762fabccdeb171`.
 
 ## Contract Boundary
 
