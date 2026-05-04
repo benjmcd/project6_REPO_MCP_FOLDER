@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON
 
@@ -958,3 +958,94 @@ class L3OutputPackage(Base, TimestampMixin):
 
     session: Mapped[L3Session] = relationship()
     reconciliation_record: Mapped[L3ReconciliationRecord] = relationship()
+
+
+class L3SignedReferenceToken(Base):
+    __tablename__ = "l3_signed_reference_token"
+    __table_args__ = (
+        UniqueConstraint("token_hash", name="uq_l3_signed_reference_token_hash"),
+        UniqueConstraint("request_basis_hash", name="uq_l3_signed_reference_request_basis"),
+        Index("ix_l3_signed_reference_token_session", "session_id"),
+        Index("ix_l3_signed_reference_token_reconciliation", "reconciliation_record_id"),
+        Index("ix_l3_signed_reference_token_state_expiry", "state", "expires_at"),
+    )
+
+    signed_reference_token_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    reconciliation_record_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_reconciliation_record.reconciliation_record_id"),
+        nullable=False,
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    token_prefix: Mapped[str] = mapped_column(String(16), nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False, default="ready")
+    replay_policy: Mapped[str] = mapped_column(String(32), nullable=False, default="single_use")
+    max_use_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    use_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    authority_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    authority_snapshot_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    request_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_by_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class L3SignedReferenceReceipt(Base):
+    __tablename__ = "l3_signed_reference_receipt"
+    __table_args__ = (Index("ix_l3_signed_reference_receipt_token", "signed_reference_token_id"),)
+
+    signed_reference_receipt_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    signed_reference_token_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_signed_reference_token.signed_reference_token_id"),
+        nullable=False,
+    )
+    receipt_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    receipt_status: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_id: Mapped[str | None] = mapped_column(String(255))
+    authority_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    artifact_ref: Mapped[str | None] = mapped_column(String(1024))
+    artifact_hash: Mapped[str | None] = mapped_column(String(64))
+    artifact_size_bytes: Mapped[int | None] = mapped_column(Integer)
+    receipt_payload_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class L3SignedReferenceRevocation(Base):
+    __tablename__ = "l3_signed_reference_revocation"
+    __table_args__ = (
+        UniqueConstraint("signed_reference_token_id", "idempotency_key", name="uq_l3_signed_reference_revoke_token_key"),
+        Index("ix_l3_signed_reference_revocation_token", "signed_reference_token_id"),
+    )
+
+    signed_reference_revocation_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    signed_reference_token_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_signed_reference_token.signed_reference_token_id"),
+        nullable=False,
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    revoked_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    revocation_reason: Mapped[str] = mapped_column(String(128), nullable=False)
+    revocation_payload_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class L3SignedReferenceAuditEvent(Base):
+    __tablename__ = "l3_signed_reference_audit_event"
+    __table_args__ = (
+        Index("ix_l3_signed_reference_audit_token", "signed_reference_token_id"),
+        Index("ix_l3_signed_reference_audit_type_created", "event_type", "created_at"),
+    )
+
+    signed_reference_audit_event_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    signed_reference_token_id: Mapped[str | None] = mapped_column(
+        ForeignKey("l3_signed_reference_token.signed_reference_token_id"),
+    )
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    event_status: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_id: Mapped[str | None] = mapped_column(String(255))
+    authority_hash: Mapped[str | None] = mapped_column(String(64))
+    reason_code: Mapped[str] = mapped_column(String(128), nullable=False)
+    event_payload_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

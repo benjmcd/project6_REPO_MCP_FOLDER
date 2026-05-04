@@ -501,6 +501,14 @@ class Layer3ExternalExportDownloadSignedReferenceResponse(Layer3BaseResponse):
     export_download_descriptor_ref: str
     signed_reference_state: str
     signed_reference_token: str
+    signed_reference_token_id: str
+    signed_reference_token_prefix: str
+    signed_reference_receipt_id: str
+    signed_reference_replay_policy: str
+    signed_reference_use_count: int
+    signed_reference_max_use_count: int
+    signed_reference_revoked: bool
+    signed_reference_audit_event_id: str
     signed_reference_expires_at: str
     signed_reference_expires_in_seconds: int
     signed_reference_use_endpoint: str
@@ -1634,6 +1642,10 @@ async def post_external_export_download_deliver(
                 "X-Layer3-Source-Artifact-Hash": {"schema": {"type": "string"}},
                 "X-Layer3-Signed-Reference-State": {"schema": {"type": "string"}},
                 "X-Layer3-Signed-Reference-Expires-At": {"schema": {"type": "string"}},
+                "X-Layer3-Signed-Reference-Token-Id": {"schema": {"type": "string"}},
+                "X-Layer3-Signed-Reference-Receipt-Id": {"schema": {"type": "string"}},
+                "X-Layer3-Signed-Reference-Replay-Policy": {"schema": {"type": "string"}},
+                "X-Layer3-Signed-Reference-Use-Count": {"schema": {"type": "string"}},
             },
         },
         400: {"model": Layer3WorkbenchErrorResponse},

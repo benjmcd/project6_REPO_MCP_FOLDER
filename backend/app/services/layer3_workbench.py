@@ -64,6 +64,12 @@ from app.services.layer3_package_entry import (
     Layer3PackageEntryError,
     materialize_workbench_package_commit,
 )
+from app.services.layer3_signed_reference_state import (
+    SignedReferenceDurableState,
+    SignedReferenceStateError,
+    record_generated_signed_reference,
+    record_used_signed_reference,
+)
 from app.services.layer3_aps_handoff import (
     APS_HANDOFF_SCHEMA_ID,
     PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
@@ -1027,6 +1033,17 @@ class ExternalExportDownloadDelivery:
     filename: str
     headers: dict[str, str]
     authority: dict[str, Any] = field(default_factory=dict)
+
+
+def _signed_reference_state_workbench_error(exc: SignedReferenceStateError) -> Layer3WorkbenchError:
+    return Layer3WorkbenchError(
+        exc.error_code,
+        exc.message,
+        status=exc.status,
+        http_status=exc.http_status,
+        blocked_fields=list(exc.blocked_fields),
+        next_allowed_actions=list(exc.next_allowed_actions),
+    )
 
 
 def _utcnow_iso() -> str:
@@ -10360,6 +10377,7 @@ def _delivery_response_from_signed_reference(
     token_body: dict[str, Any],
     token: str,
     now_epoch: int,
+    durable_state: SignedReferenceDurableState,
 ) -> dict[str, Any]:
     authority_basis = token_body["delivery_authority"]
     expires_at_epoch = int(token_body["expires_at_epoch"])
@@ -10378,6 +10396,7 @@ def _delivery_response_from_signed_reference(
         "export_download_descriptor_ref": payload["export_download_descriptor_ref"],
         "signed_reference_state": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_READY_STATE,
         "signed_reference_token": token,
+        **durable_state.response_fields(),
         "signed_reference_expires_at": _epoch_iso(expires_at_epoch),
         "signed_reference_expires_in_seconds": max(0, expires_at_epoch - now_epoch),
         "signed_reference_use_endpoint": f"{API_ROOT}/handoff/export/download/signed-reference/use",
@@ -10400,11 +10419,13 @@ def _delivery_response_from_signed_reference(
         "package_mutation_enabled": False,
         "schema_runtime_source_widening_enabled": False,
         "authority_rail": {
-            "token_authority": "server_hmac_stateless_reference",
+            "token_authority": "server_hmac_with_durable_state",
             "artifact_authority": "existing_external_export_download_delivery_validator",
             "expires_within_seconds": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_TTL_SECONDS,
             "revalidated_at_generation": True,
             "revalidate_at_use_required": True,
+            "durable_state_required": True,
+            "replay_policy": durable_state.signed_reference_replay_policy,
             "configured_secret_present": True,
             "process_restart_invalidates_existing_tokens": False,
         },
@@ -10442,6 +10463,17 @@ def external_export_download_generate_signed_reference(
     effective_now = int(time.time() if now_epoch is None else now_epoch)
     token_body = _signed_reference_token_body(payload=payload, delivery=delivery, now_epoch=effective_now)
     token = _encode_signed_reference_token(token_body)
+    try:
+        durable_state = record_generated_signed_reference(
+            db,
+            raw_token=token,
+            token_body=token_body,
+            request_id=request_id,
+            payload=payload,
+            authority_basis=token_body["delivery_authority"],
+        )
+    except SignedReferenceStateError as exc:
+        raise _signed_reference_state_workbench_error(exc) from exc
     return _delivery_response_from_signed_reference(
         request_id=request_id,
         payload=payload,
@@ -10449,6 +10481,7 @@ def external_export_download_generate_signed_reference(
         token_body=token_body,
         token=token,
         now_epoch=effective_now,
+        durable_state=durable_state,
     )
 
 
@@ -10533,6 +10566,17 @@ def external_export_download_use_signed_reference(
             blocked_fields=["signed_reference_token"],
             next_allowed_actions=["regenerate_external_export_download_signed_reference"],
         )
+    try:
+        durable_state = record_used_signed_reference(
+            db,
+            raw_token=token,
+            token_body=token_body,
+            request_id=str(delivery_payload.get("client_request_id") or "").strip() or None,
+            authority_basis=current_basis,
+            now_epoch=effective_now,
+        )
+    except SignedReferenceStateError as exc:
+        raise _signed_reference_state_workbench_error(exc) from exc
     return ExternalExportDownloadDelivery(
         artifact_path=delivery.artifact_path,
         media_type=delivery.media_type,
@@ -10542,6 +10586,10 @@ def external_export_download_use_signed_reference(
             "X-Layer3-Schema-Id": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_USE_SCHEMA_ID,
             "X-Layer3-Signed-Reference-State": EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_DELIVERED_STATE,
             "X-Layer3-Signed-Reference-Expires-At": _epoch_iso(expires_at_epoch),
+            "X-Layer3-Signed-Reference-Token-Id": durable_state.signed_reference_token_id,
+            "X-Layer3-Signed-Reference-Receipt-Id": durable_state.signed_reference_receipt_id,
+            "X-Layer3-Signed-Reference-Replay-Policy": durable_state.signed_reference_replay_policy,
+            "X-Layer3-Signed-Reference-Use-Count": str(durable_state.signed_reference_use_count),
         },
         authority=delivery.authority,
     )
