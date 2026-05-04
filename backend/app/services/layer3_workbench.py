@@ -1974,7 +1974,10 @@ def _aps_dataset_provenance_rows(db: Session, *, dataset_version_id: str) -> lis
         db.query(DatasetSourceProvenance)
         .filter(DatasetSourceProvenance.dataset_version_id == dataset_version_id)
         .filter(DatasetSourceProvenance.source_system == "nrc_adams_aps")
-        .order_by(DatasetSourceProvenance.dataset_source_provenance_id.asc())
+        .order_by(
+            DatasetSourceProvenance.created_at.desc(),
+            DatasetSourceProvenance.dataset_source_provenance_id.desc(),
+        )
         .all()
     )
 

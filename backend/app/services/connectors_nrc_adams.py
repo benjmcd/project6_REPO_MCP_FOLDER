@@ -544,6 +544,12 @@ def _coerce_bool(value: Any, *, default: bool = False) -> bool:
     return default
 
 
+def _should_generate_csv_dataset_bridge_artifacts(*, run: ConnectorRun, config: dict[str, Any]) -> bool:
+    return run.status in {"completed", "completed_with_errors"} and _coerce_bool(
+        config.get("csv_dataset_bridge_enabled"), default=False
+    )
+
+
 def _coerce_upper_string_list(value: Any, default: list[str]) -> list[str]:
     raw_items = default if value is None else value
     if isinstance(raw_items, str):
@@ -4089,9 +4095,10 @@ def execute_nrc_adams_run(connector_run_id: str) -> None:
                 }
 
         if (
-            run.status in {"completed", "completed_with_errors"}
-            and not bool(config.get("table_dataset_bridge_enabled", False))
-            and bool(config.get("csv_dataset_bridge_enabled", False))
+            _should_generate_csv_dataset_bridge_artifacts(
+                run=run,
+                config=config,
+            )
         ):
             try:
                 csv_dataset_bridge_summary = _generate_csv_dataset_bridge_artifacts(
