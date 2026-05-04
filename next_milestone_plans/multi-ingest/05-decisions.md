@@ -186,6 +186,20 @@ Risk avoided:
 
 Avoids turning `application/json` admission into broad structured data support and preserves fail-closed behavior for non-recordset JSON.
 
+### D15: P10D Uses Existing APS Content Authority
+
+Decision:
+
+Indexed APS documents should be surfaced in the Layer 3 workbench through existing `ApsContentDocument`, `ApsContentChunk`, and `ApsContentLinkage` authority, not through new parser behavior, schema changes, or document-trace-page semantics.
+
+Reason:
+
+The repo already stores document identity, chunk counts, page spans, content refs, normalized text refs, blob refs, accession, run, and target linkage. The narrow operator gap was selection and source trace visibility in the Gate B material ledger.
+
+Risk avoided:
+
+Avoids duplicating APS document provenance, widening Candidate B, or implying that mixed-source package semantics are solved merely because indexed document chunks are selectable.
+
 ### D12: P5 Uses Existing DatasetVersion Source Shape
 
 Decision:
@@ -206,7 +220,7 @@ Avoids source-shape proliferation and keeps typed quantitative data aligned with
 
 Current status:
 
-CSV/delimited table diagnostics, bounded XLSX parsing, bounded JSON recordset parsing, bounded SEC/EDGAR complete-submission parsing, the callable dataset bridge, opt-in legacy CSV connector/runtime orchestration, generic CSV/XLSX/JSON/SEC-EDGAR table connector/runtime orchestration, explicit Layer 3 APS-derived dataset admission, selected-pass execution/package proof, bounded operator/UI selection, bounded typed/refused source-family guardrails, and selected APS-derived `DatasetVersion` material trace/detail are implemented. The next decision is document/refused/mixed-source trace-detail sequencing versus new parser-family admission.
+CSV/delimited table diagnostics, bounded XLSX parsing, bounded JSON recordset parsing, bounded SEC/EDGAR complete-submission parsing, the callable dataset bridge, opt-in legacy CSV connector/runtime orchestration, generic CSV/XLSX/JSON/SEC-EDGAR table connector/runtime orchestration, explicit Layer 3 APS-derived dataset admission, selected-pass execution/package proof, bounded operator/UI selection, bounded typed/refused source-family guardrails, selected APS-derived `DatasetVersion` material trace/detail, and selected APS content-document trace/detail are implemented. The next decision is refused/mixed-source trace-detail sequencing versus new parser-family admission.
 
 Why:
 

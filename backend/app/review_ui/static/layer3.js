@@ -6,6 +6,8 @@ const State = {
     bootstrap: null,
     datasetVersionCandidates: null,
     datasetVersionCandidateError: null,
+    apsContentDocumentCandidates: null,
+    apsContentDocumentCandidateError: null,
     preflight: null,
     sourcePreview: null,
     materialPreview: null,
@@ -59,6 +61,8 @@ const elements = {
     sourceFieldset: document.getElementById('source-fieldset'),
     datasetVersionCandidates: document.getElementById('dataset-version-candidates'),
     datasetVersionIds: document.getElementById('dataset-version-ids'),
+    apsContentDocumentCandidates: document.getElementById('aps-content-document-candidates'),
+    apsContentDocumentIds: document.getElementById('aps-content-document-ids'),
     runPreflight: document.getElementById('run-preflight'),
     materialLedgerBody: document.getElementById('material-ledger-body'),
     materialFilter: document.getElementById('material-filter'),
@@ -474,8 +478,18 @@ function parseDatasetVersionIds(value) {
     return result;
 }
 
+function parseApsContentDocumentIds(value) {
+    return parseDatasetVersionIds(value);
+}
+
 function checkedDatasetVersionCandidateIds() {
     return Array.from(document.querySelectorAll('input[name="dataset-version-candidate"]:checked'))
+        .map((input) => input.value)
+        .filter(Boolean);
+}
+
+function checkedApsContentDocumentCandidateIds() {
+    return Array.from(document.querySelectorAll('input[name="aps-content-document-candidate"]:checked'))
         .map((input) => input.value)
         .filter(Boolean);
 }
@@ -483,6 +497,15 @@ function checkedDatasetVersionCandidateIds() {
 function selectedDatasetVersionIds() {
     const result = [];
     [...checkedDatasetVersionCandidateIds(), ...parseDatasetVersionIds(elements.datasetVersionIds?.value)]
+        .forEach((item) => {
+            if (!result.includes(item)) result.push(item);
+        });
+    return result;
+}
+
+function selectedApsContentDocumentIds() {
+    const result = [];
+    [...checkedApsContentDocumentCandidateIds(), ...parseApsContentDocumentIds(elements.apsContentDocumentIds?.value)]
         .forEach((item) => {
             if (!result.includes(item)) result.push(item);
         });
@@ -498,6 +521,10 @@ function selectedSourceClassLabels() {
     const datasetVersionIds = selectedDatasetVersionIds();
     if (datasetVersionIds.length) {
         labels.push(`${datasetVersionIds.length} APS-derived DatasetVersion ID${datasetVersionIds.length === 1 ? '' : 's'}`);
+    }
+    const apsContentDocumentIds = selectedApsContentDocumentIds();
+    if (apsContentDocumentIds.length) {
+        labels.push(`${apsContentDocumentIds.length} APS content document ID${apsContentDocumentIds.length === 1 ? '' : 's'}`);
     }
     return labels;
 }
@@ -1328,6 +1355,12 @@ function candidateSearchText(candidate) {
         traceRefs.target_id,
         traceRefs.accession_number,
         traceRefs.diagnostics_ref,
+        traceRefs.content_units_ref,
+        traceRefs.normalized_text_ref,
+        traceRefs.blob_ref,
+        trace.document_identity?.content_id,
+        trace.document_identity?.content_contract_id,
+        trace.document_identity?.chunking_contract_id,
         candidate.validation_status,
         candidate.duplicate_status,
     ].join(' ').toLowerCase();
@@ -2107,6 +2140,48 @@ function renderDatasetVersionCandidates() {
     elements.datasetVersionCandidates.innerHTML = `${summaryMarkup}${candidateMarkup}`;
 }
 
+function renderApsContentDocumentCandidates() {
+    if (!elements.apsContentDocumentCandidates) return;
+    if (State.apsContentDocumentCandidateError) {
+        elements.apsContentDocumentCandidates.innerHTML = `
+            <span class="aps-content-document-empty">APS content document lookup failed: ${escapeHtml(State.apsContentDocumentCandidateError)}</span>
+        `;
+        return;
+    }
+    const candidates = State.apsContentDocumentCandidates?.aps_content_document_candidates || [];
+    const selectedIds = new Set(selectedApsContentDocumentIds());
+    if (!candidates.length) {
+        elements.apsContentDocumentCandidates.innerHTML = `
+            <span class="aps-content-document-empty">No indexed APS content documents were found in the active runtime. Paste explicit content IDs if you have them from an APS content report.</span>
+        `;
+        return;
+    }
+    elements.apsContentDocumentCandidates.innerHTML = candidates.map((candidate) => {
+        const contentId = String(candidate.content_id || '');
+        const title = candidate.accession_number || candidate.document_class || contentId;
+        const detail = [
+            candidate.source_family_label,
+            candidate.source_admission_state ? humanizeToken(candidate.source_admission_state) : null,
+            candidate.media_type,
+            candidate.document_class,
+            candidate.content_contract_id,
+            candidate.chunk_count != null ? `${candidate.chunk_count} chunks` : null,
+            candidate.page_count != null ? `${candidate.page_count} pages` : null,
+        ].filter(Boolean).join(' / ');
+        return `
+            <label class="aps-content-document-candidate">
+                <input type="checkbox" name="aps-content-document-candidate" value="${escapeHtml(contentId)}" ${selectedIds.has(contentId) ? 'checked' : ''}>
+                <span>
+                    <strong>${escapeHtml(title)}</strong>
+                    <code>${escapeHtml(contentId)}</code>
+                    <span>${escapeHtml(detail || 'Indexed APS content document')}</span>
+                    ${candidate.source_family_scope ? `<small>${escapeHtml(candidate.source_family_scope)}</small>` : ''}
+                </span>
+            </label>
+        `;
+    }).join('');
+}
+
 function renderSublayerMap() {
     if (!elements.sublayerMapPanel) return;
     const model = currentSublayerVisualizationModel();
@@ -2233,6 +2308,8 @@ function renderMaterialTrace(candidate) {
     const refs = trace.aps_trace_refs || {};
     const variables = trace.variable_summary || {};
     const storage = trace.storage_summary || {};
+    const documentIdentity = trace.document_identity || {};
+    const chunks = trace.chunk_summary || {};
     const numericVariables = Array.isArray(variables.numeric_variables)
         ? variables.numeric_variables
         : [];
@@ -2243,13 +2320,21 @@ function renderMaterialTrace(candidate) {
         ['family', trace.source_family_label || trace.source_family],
         ['readiness', trace.trace_readiness],
         ['parser', refs.parser_family],
-        ['contract', refs.typed_content_contract_id || refs.parser_contract_id],
+        ['contract', refs.typed_content_contract_id || refs.parser_contract_id || documentIdentity.content_contract_id],
+        ['content', documentIdentity.content_id],
+        ['chunking', documentIdentity.chunking_contract_id],
         ['target', refs.target_id],
         ['accession', refs.accession_number],
         ['rows', storage.row_count],
+        ['chunks', chunks.loaded_chunk_count ?? chunks.chunk_count],
+        ['pages', chunks.page_count],
+        ['media', documentIdentity.media_type],
+        ['class', documentIdentity.document_class],
         ['variables', variables.variable_count],
         ['numeric', numericVariables.join(', ')],
         ['time', variables.time_column || timeVariables.join(', ')],
+        ['units', refs.content_units_ref],
+        ['blob', refs.blob_ref],
         ['diagnostics', refs.diagnostics_ref],
     ].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '');
     return `
@@ -3627,6 +3712,7 @@ function setGateControls() {
 function renderAll() {
     renderAuthority();
     renderDatasetVersionCandidates();
+    renderApsContentDocumentCandidates();
     renderSublayerMap();
     renderUnavailable(currentDownstreamUnavailable());
     renderContext();
@@ -4291,8 +4377,14 @@ async function runPreflightFlow(event) {
     const intent = elements.intentInput.value.trim();
     const sourceClasses = selectedSourceClasses();
     const datasetVersionIds = selectedDatasetVersionIds();
+    const apsContentDocumentIds = selectedApsContentDocumentIds();
     if (datasetVersionIds.length && !sourceClasses.includes('dataset_version')) {
         addEvent('DatasetVersion IDs require the Dataset version source class.');
+        renderAll();
+        return;
+    }
+    if (apsContentDocumentIds.length && !sourceClasses.includes('aps_content_document')) {
+        addEvent('APS content document IDs require the APS content document source class.');
         renderAll();
         return;
     }
@@ -4322,6 +4414,7 @@ async function runPreflightFlow(event) {
             source_set_id: State.sourcePreview.source_set_id,
             source_candidate_ids: State.sourcePreview.source_candidates.map((candidate) => candidate.source_candidate_id),
             dataset_version_ids: datasetVersionIds,
+            aps_content_document_ids: apsContentDocumentIds,
             query_basis: {
                 terms: termsFromIntent(intent),
             },
@@ -4518,10 +4611,22 @@ async function loadDatasetVersionCandidates() {
     }
 }
 
+async function loadApsContentDocumentCandidates() {
+    try {
+        State.apsContentDocumentCandidates = await getJson('/aps-content-document-candidates');
+        State.apsContentDocumentCandidateError = null;
+        addEvent(`Loaded ${State.apsContentDocumentCandidates.candidate_count || 0} APS content document candidate(s).`);
+    } catch (error) {
+        State.apsContentDocumentCandidateError = error.message;
+        addEvent(`APS content document lookup blocked: ${error.message}`);
+    }
+}
+
 async function init() {
     try {
         State.bootstrap = await getJson('/bootstrap');
         await loadDatasetVersionCandidates();
+        await loadApsContentDocumentCandidates();
         renderUnavailable(State.bootstrap.unavailable_gate_labels);
         renderAuthority(State.bootstrap.authority_rail);
         renderContext();
@@ -4554,6 +4659,8 @@ elements.intentInput.addEventListener('input', renderSublayerMap);
 elements.sourceFieldset.addEventListener('change', renderSublayerMap);
 elements.datasetVersionIds.addEventListener('input', renderAll);
 elements.datasetVersionCandidates.addEventListener('change', renderAll);
+elements.apsContentDocumentIds.addEventListener('input', renderAll);
+elements.apsContentDocumentCandidates.addEventListener('change', renderAll);
 elements.gateBSubmit.addEventListener('click', commitGateB);
 elements.gateCPreview.addEventListener('click', previewGateC);
 elements.gateCCommit.addEventListener('click', commitGateC);

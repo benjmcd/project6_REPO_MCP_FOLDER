@@ -4,7 +4,7 @@ Status: required checks for the planning pack and later implementation phases.
 
 ## Current Branch Validation
 
-This branch now contains Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Phase P5, Phase P6, bounded Phase P10A source/test/UI changes, Phase P7 XLSX parser/materialization, Phase P7.5 generic table bridge orchestration, Phase P8 JSON recordset parser/materialization, and the planning pack. Required validation for this pass:
+This branch now contains Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Phase P5, Phase P6, bounded Phase P10A source/test/UI changes, Phase P7 XLSX parser/materialization, Phase P7.5 generic table bridge orchestration, Phase P8 JSON recordset parser/materialization, bounded Phase P9 SEC/EDGAR text filing parser/materialization, bounded Phase P10B typed/refused workbench guardrails, bounded Phase P10C selected dataset trace/detail surfacing, bounded Phase P10D selected APS content-document trace/detail surfacing, and the planning pack. Required validation for this pass:
 
 - `git diff --check`
 - `git status --short --branch`
@@ -17,8 +17,9 @@ This branch now contains Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Pha
 - Run the route-level JSON generic table bridge test proving connector finalization can invoke the bridge under `table_dataset_bridge_enabled=true`.
 - Run Layer 3 workbench/API tests proving APS-derived dataset material reaches Gate B, Gate C, and plan preview.
 - Run Layer 3 API tests proving APS-derived dataset material reaches execution, result review, package preview, and package commit.
+- Run Layer 3 workbench/API/page tests proving indexed APS content documents can be listed, selected, previewed, rendered with source trace detail, and persisted through Gate B as `aps_content_document` material snapshots.
 
-Browser tests are required for Phase P10A because UI assets changed.
+Browser tests are required for Phase P10A, P10B, P10C, and P10D because UI assets changed.
 
 ## General Test Doctrine
 
