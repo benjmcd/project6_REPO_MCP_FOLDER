@@ -2007,10 +2007,54 @@ function renderAnalysisPlane(plane) {
     `;
 }
 
+function renderSourceFamilySummary(summary) {
+    if (!summary) return '';
+    const admitted = Array.isArray(summary.admitted_materialized_families)
+        ? summary.admitted_materialized_families
+        : [];
+    const deferred = Array.isArray(summary.not_admitted_or_deferred_families)
+        ? summary.not_admitted_or_deferred_families
+        : [];
+    const observed = summary.observed_candidate_counts || {};
+    const admittedRows = admitted.map((family) => {
+        const parserFamily = family.parser_family || family.source_family || 'unknown';
+        const observedCount = observed[parserFamily] || 0;
+        return `
+            <li>
+                <strong>${escapeHtml(family.source_family_label || parserFamily)}</strong>
+                <span>${escapeHtml(family.scope || family.admission_state || 'server-backed dataset_version selection')}</span>
+                <em>${escapeHtml(observedCount ? `${observedCount} candidate${observedCount === 1 ? '' : 's'}` : 'no candidates loaded')}</em>
+            </li>
+        `;
+    }).join('');
+    const deferredRows = deferred.map((family) => `
+            <li>
+                <strong>${escapeHtml(family.source_family_label || family.source_family || 'Deferred source family')}</strong>
+                <span>${escapeHtml(family.scope || family.admission_state || 'not admitted')}</span>
+                <em>${escapeHtml(humanizeToken(family.admission_state || 'deferred'))}</em>
+            </li>
+        `).join('');
+    return `
+        <section class="source-family-summary" aria-label="APS typed and refused source family boundary">
+            <div>
+                <span class="source-family-kicker">Server-backed typed families</span>
+                <ul>${admittedRows || '<li><strong>No admitted table families reported</strong><span>Candidate endpoint did not report admitted families.</span></li>'}</ul>
+            </div>
+            <div>
+                <span class="source-family-kicker">Deferred / refused guardrails</span>
+                <ul>${deferredRows || '<li><strong>No deferred families reported</strong><span>Candidate endpoint did not report refusal guardrails.</span></li>'}</ul>
+            </div>
+            <p>${escapeHtml(summary.ui_scope || 'Only materialized APS-derived DatasetVersion records are selectable here.')}</p>
+        </section>
+    `;
+}
+
 function renderDatasetVersionCandidates() {
     if (!elements.datasetVersionCandidates) return;
+    const summaryMarkup = renderSourceFamilySummary(State.datasetVersionCandidates?.source_family_summary);
     if (State.datasetVersionCandidateError) {
         elements.datasetVersionCandidates.innerHTML = `
+            ${summaryMarkup}
             <span class="dataset-version-empty">DatasetVersion candidate lookup failed: ${escapeHtml(State.datasetVersionCandidateError)}</span>
         `;
         return;
@@ -2019,14 +2063,17 @@ function renderDatasetVersionCandidates() {
     const selectedIds = new Set(selectedDatasetVersionIds());
     if (!candidates.length) {
         elements.datasetVersionCandidates.innerHTML = `
+            ${summaryMarkup}
             <span class="dataset-version-empty">No APS-derived dataset versions were found in the active runtime. Paste explicit IDs if you have them from an APS bridge report.</span>
         `;
         return;
     }
-    elements.datasetVersionCandidates.innerHTML = candidates.map((candidate) => {
+    const candidateMarkup = candidates.map((candidate) => {
         const datasetVersionId = String(candidate.dataset_version_id || '');
         const title = candidate.dataset_name || candidate.version_label || datasetVersionId;
         const detail = [
+            candidate.source_family_label,
+            candidate.source_admission_state ? humanizeToken(candidate.source_admission_state) : null,
             candidate.version_type,
             candidate.parser_family,
             candidate.typed_content_contract_id,
@@ -2040,10 +2087,12 @@ function renderDatasetVersionCandidates() {
                     <strong>${escapeHtml(title)}</strong>
                     <code>${escapeHtml(datasetVersionId)}</code>
                     <span>${escapeHtml(detail || 'APS-derived dataset version')}</span>
+                    ${candidate.source_family_scope ? `<small>${escapeHtml(candidate.source_family_scope)}</small>` : ''}
                 </span>
             </label>
         `;
     }).join('');
+    elements.datasetVersionCandidates.innerHTML = `${summaryMarkup}${candidateMarkup}`;
 }
 
 function renderSublayerMap() {

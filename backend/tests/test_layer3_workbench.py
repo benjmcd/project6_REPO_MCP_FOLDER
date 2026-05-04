@@ -115,8 +115,17 @@ def _gate_b_payload(preflight: dict, source: dict, material: dict) -> dict:
     }
 
 
-def _seed_aps_derived_dataset_version(db, tmp_path: Path, *, dataset_version_id: str = "dv-aps-csv-001") -> str:
-    dataset_id = "ds-aps-csv-001"
+def _seed_aps_derived_dataset_version(
+    db,
+    tmp_path: Path,
+    *,
+    dataset_version_id: str = "dv-aps-csv-001",
+    parser_family: str = "csv_table",
+    typed_content_contract_id: str = "aps_csv_table_units_v1",
+    source_mode: str = "artifact_csv_parser",
+    parser_contract_id: str = "aps_csv_parser_v1",
+) -> str:
+    dataset_id = f"ds-{dataset_version_id}"
     dataset = Dataset(
         dataset_id=dataset_id,
         name="APS CSV bridge dataset",
@@ -165,7 +174,7 @@ def _seed_aps_derived_dataset_version(db, tmp_path: Path, *, dataset_version_id:
         dataset_version_id=dataset_version_id,
         connector_run_id=None,
         source_system="nrc_adams_aps",
-        source_mode="artifact_csv_parser",
+        source_mode=source_mode,
         source_artifact_key="aps-target-artifacts/run-001/target-001/extraction.json",
         sciencebase_file_name="fixture.csv",
         downloaded_sha256="0" * 64,
@@ -175,9 +184,9 @@ def _seed_aps_derived_dataset_version(db, tmp_path: Path, *, dataset_version_id:
             "accession_number": "ML000000001",
             "table_index": 0,
             "table_hash": "hash-table-001",
-            "parser_family": "csv_table",
-            "parser_contract_id": "aps_csv_parser_v1",
-            "typed_content_contract_id": "aps_csv_table_units_v1",
+            "parser_family": parser_family,
+            "parser_contract_id": parser_contract_id,
+            "typed_content_contract_id": typed_content_contract_id,
             "diagnostics_ref": "aps-target-artifacts/run-001/target-001/diagnostics.json",
         },
     )
@@ -298,8 +307,11 @@ def test_aps_derived_dataset_version_flows_from_material_preview_to_plan_preview
     candidate = material["material_candidates"][0]
     assert candidate["source_ref"] == f"dataset_version:{dataset_version_id}"
     assert candidate["planning_shape_family"] == "tabular_numeric"
+    assert candidate["source_family"] == "csv"
+    assert candidate["source_admission_state"] == "admitted_materialized_dataset_version"
     assert candidate["source_identity"]["dataset_version_id"] == dataset_version_id
     assert candidate["source_provenance"]["aps_derived"] is True
+    assert candidate["source_provenance"]["source_family_label"] == "CSV table"
     assert candidate["source_provenance"]["aps_source_provenance"][0]["parser_family"] == "csv_table"
 
     gate_b = layer3_workbench.gate_b_decision(
@@ -365,9 +377,40 @@ def test_aps_dataset_version_candidates_list_uses_dataset_source_provenance(db_s
     assert candidate["source_system"] == "nrc_adams_aps"
     assert candidate["parser_family"] == "csv_table"
     assert candidate["typed_content_contract_id"] == "aps_csv_table_units_v1"
+    assert candidate["source_family"] == "csv"
+    assert candidate["source_family_label"] == "CSV table"
+    assert candidate["source_admission_state"] == "admitted_materialized_dataset_version"
     assert candidate["row_count"] == 3
     assert candidate["variable_count"] == 2
+    summary = result["source_family_summary"]
+    assert summary["selection_shape"] == "dataset_version"
+    assert summary["observed_candidate_counts"] == {"csv_table": 1}
+    admitted_parser_families = {item["parser_family"] for item in summary["admitted_materialized_families"]}
+    assert {"csv_table", "xlsx_workbook", "json_recordset", "sec_edgar_filing"} <= admitted_parser_families
+    assert any(item["source_family"] == "xml_html_inline_xbrl" for item in summary["not_admitted_or_deferred_families"])
     assert result["authority_rail"]["read_only"] is True
+
+
+def test_aps_dataset_version_candidates_surface_sec_edgar_family_scope(db_session, tmp_path) -> None:
+    dataset_version_id = _seed_aps_derived_dataset_version(
+        db_session,
+        tmp_path,
+        dataset_version_id="dv-aps-sec-edgar-001",
+        parser_family="sec_edgar_filing",
+        typed_content_contract_id="aps_sec_edgar_filing_units_v1",
+        source_mode="artifact_sec_edgar_filing_parser",
+        parser_contract_id="aps_sec_edgar_filing_parser_v1",
+    )
+
+    result = layer3_workbench.aps_dataset_version_candidates(db_session)
+
+    candidate = result["dataset_version_candidates"][0]
+    assert candidate["dataset_version_id"] == dataset_version_id
+    assert candidate["parser_family"] == "sec_edgar_filing"
+    assert candidate["source_family"] == "sec_edgar_text_table"
+    assert candidate["source_family_label"] == "SEC/EDGAR text table"
+    assert "complete-submission text" in candidate["source_family_scope"]
+    assert result["source_family_summary"]["observed_candidate_counts"] == {"sec_edgar_filing": 1}
 
 
 def test_gate_c_preview_is_non_authoritative_and_override_is_unavailable(db_session) -> None:

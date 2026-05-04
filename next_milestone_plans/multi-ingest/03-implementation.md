@@ -423,7 +423,7 @@ P9 residual no-go list:
 
 ## Phase P10: UI And Operator Surfacing
 
-Status: partially implemented as bounded Phase P10A for Layer 3 APS-derived `DatasetVersion` candidate listing and explicit selection.
+Status: partially implemented as bounded Phase P10A for Layer 3 APS-derived `DatasetVersion` candidate listing and explicit selection, plus bounded Phase P10B for source-family admission/refusal guardrails in that same workbench panel.
 
 Goal:
 
@@ -436,11 +436,13 @@ Requirements:
 - Dataset trace or typed-source trace is added only if needed; do not overload the PDF document trace page with non-document table semantics.
 - Browser verification uses both headed and headless Chrome when UI assets change.
 - P10A specifically adds a read-only Layer 3 `dataset-version-candidates` endpoint backed by existing `DatasetSourceProvenance`, plus workbench controls that select/paste `DatasetVersion` IDs and pass them to material preview as `dataset_version_ids`.
+- P10B specifically adds server-owned source-family metadata for admitted/materialized APS table families and deferred/refused guardrails, then renders that metadata in the existing Layer 3 candidate-selection panel without adding schema, migration, parser, or source-shape changes.
 
 Stop condition:
 
 - P10A stop condition is met when an operator can discover/select APS-derived bridge dataset versions in the Layer 3 workbench without reading raw JSON.
-- The broader P10 stop condition remains open until operators can distinguish PDF documents, text documents, typed datasets, mixed filings, and refused artifacts without reading raw JSON.
+- P10B stop condition is met when an operator can distinguish server-backed CSV, XLSX, JSON recordset, and bounded SEC/EDGAR text table dataset-version candidates from explicitly deferred/refused families in the Layer 3 workbench without reading raw JSON.
+- A broader trace/detail UI tranche remains separate from P10B and should not be claimed as completed until operators can inspect richer detail views for PDF documents, text documents, typed datasets, mixed filings, and refused artifacts without reading raw JSON.
 
 ## Target Implementation Flow
 
@@ -456,8 +458,9 @@ flowchart TD
     G --> I["P7: spreadsheet parser"]
     I --> J["P8: JSON recordset parser"]
     J --> K["P9: SEC/EDGAR filing parser"]
+    K --> L["P10B: typed/refused UI guardrails"]
 ```
 
 ## Immediate Recommendation
 
-The next implementation PR should not repeat P10A APS-derived dataset selection, P8 JSON recordset materialization, or P9 bounded SEC/EDGAR complete-submission materialization. The next narrow slice should either expand P10 only where existing server-backed source families need clearer operator surfacing, or add a separate SEC/EDGAR HTML/XML/inline-XBRL parser only after a dedicated contract is specified.
+The next implementation PR should not repeat P10A APS-derived dataset selection, P10B source-family guardrails, P8 JSON recordset materialization, or P9 bounded SEC/EDGAR complete-submission materialization. The next narrow slice should either add deeper trace/detail surfacing for already server-backed source families, or add a separate SEC/EDGAR HTML/XML/inline-XBRL parser only after a dedicated contract is specified.
