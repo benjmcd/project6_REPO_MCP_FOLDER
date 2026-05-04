@@ -156,6 +156,10 @@ def processing_config_from_run_config(config: dict[str, Any] | None = None) -> d
         "ocr_timeout_seconds": incoming.get("ocr_timeout_seconds", 120),
         "content_min_searchable_chars": incoming.get("content_min_searchable_chars", 200),
         "content_min_searchable_tokens": incoming.get("content_min_searchable_tokens", 30),
+        "json_parse_max_bytes": incoming.get("json_parse_max_bytes", 5_000_000),
+        "json_parse_max_rows": incoming.get("json_parse_max_rows", 10_000),
+        "json_parse_max_columns": incoming.get("json_parse_max_columns", 200),
+        "json_record_path": incoming.get("json_record_path"),
         "visual_lane_mode": incoming.get("visual_lane_mode", "baseline"),
         "document_processing_engine": incoming.get(
             "document_processing_engine",

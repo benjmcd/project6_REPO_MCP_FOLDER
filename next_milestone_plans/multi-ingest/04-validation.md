@@ -4,16 +4,17 @@ Status: required checks for the planning pack and later implementation phases.
 
 ## Current Branch Validation
 
-This branch now contains Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Phase P5, Phase P6, and bounded Phase P10A source/test/UI changes plus the planning pack. Required validation for this pass:
+This branch now contains Phase P1, Phase P2, Phase P3, Phase P4, Phase P4.5, Phase P5, Phase P6, bounded Phase P10A source/test/UI changes, Phase P7 XLSX parser/materialization, Phase P7.5 generic table bridge orchestration, Phase P8 JSON recordset parser/materialization, and the planning pack. Required validation for this pass:
 
 - `git diff --check`
 - `git status --short --branch`
 - Re-read created docs for internal consistency.
 - Confirm no schema, migration, or model changed.
-- Confirm UI asset changes are limited to bounded APS-derived `DatasetVersion` operator selection in the Layer 3 workbench.
-- Confirm API route-definition changes are limited to material-preview accepting DB-backed explicit `dataset_version_ids` and read-only APS-derived dataset-version candidate listing.
-- Run focused dataset-bridge, CSV parser, parser-registry, media/artifact/document-processing tests.
+- Confirm no UI asset changes were made in Phase P8.
+- Confirm API route-definition changes are unchanged by Phase P8.
+- Run focused dataset-bridge, CSV/XLSX/JSON parser, parser-registry, media/artifact/document-processing tests.
 - Run the route-level CSV dataset bridge test proving connector finalization can invoke the bridge under `csv_dataset_bridge_enabled=true`.
+- Run the route-level JSON generic table bridge test proving connector finalization can invoke the bridge under `table_dataset_bridge_enabled=true`.
 - Run Layer 3 workbench/API tests proving APS-derived dataset material reaches Gate B, Gate C, and plan preview.
 - Run Layer 3 API tests proving APS-derived dataset material reaches execution, result review, package preview, and package commit.
 
@@ -54,7 +55,8 @@ Architecture regression checks:
 | ZIP with CSV | CSV member is parsed into table diagnostics and is not flattened into text | Future dataset bridge should materialize table units only when explicitly admitted |
 | XLSX | Risk of ZIP-signature ambiguity | Detect as spreadsheet and admit only through the bounded `.xlsx` parser |
 | CSV standalone | Not first-class | Detect as table candidate; refuse or parse explicitly |
-| JSON | Explicitly refused | Keep refused until `json_recordset` parser exists |
+| JSON recordset | Bounded parser/materialization path | Admit only flat record arrays or configured record paths through `json_recordset`; fail closed for non-recordset JSON |
+| Arbitrary JSON document | Explicitly refused by parser contract | Keep refused until a structured JSON parser exists |
 | XML | Explicitly refused | Keep refused until selected structured parser exists |
 | HTML | Explicitly refused | Keep refused until selected filing/document parser exists |
 | SEC/EDGAR text filing | May flow as plain text | Preserve as text only when no structured parser is admitted; do not claim filing support |
@@ -71,7 +73,7 @@ Unit tests:
 - Generic ZIP still resolves to archive only when it is truly generic archive content.
 - XLSX fixture is not classified as generic ZIP and is parser-admitted only through `xlsx_workbook`.
 - CSV fixture is not silently claimed as qualitative document support when typed parser is disabled.
-- JSON/XML/HTML fixtures are refused with stable tokens.
+- XML/HTML fixtures are refused with stable tokens; JSON fixtures are admitted only to the bounded recordset parser and non-recordset JSON fails closed.
 - Declared/sniffed conflicts fail closed or resolve according to explicit precedence.
 - Empty bytes fail closed.
 
@@ -84,7 +86,7 @@ Integration tests:
 Regression risks:
 
 - Accidental breakage of current APS PDF ingestion.
-- Accidental widening of JSON/XML/HTML behavior.
+- Accidental widening of arbitrary JSON/XML/HTML behavior.
 - Candidate B accepting non-PDF input.
 - XLSX being accepted as archive.
 - XLSM, encrypted, formula-bearing, ambiguous, or empty workbooks being silently accepted.
@@ -257,7 +259,7 @@ Caveat:
 
 ## Phase P10A UI/State Validation
 
-Status: implemented for bounded Layer 3 APS-derived CSV `DatasetVersion` selection surfacing.
+Status: implemented for bounded Layer 3 APS-derived `DatasetVersion` selection surfacing.
 
 - Source preview shows existing `aps_content_document` unchanged.
 - Source preview shows pre-existing `dataset_version` unchanged.
@@ -392,6 +394,8 @@ Implemented P7.5 focused commands:
 
 ## Phase P8 JSON Recordset Validation
 
+Status: implemented for bounded standalone JSON recordsets.
+
 Positive fixtures:
 
 - Array of flat objects.
@@ -410,7 +414,21 @@ Negative fixtures:
 Assertions:
 
 - Record path, field paths, types, null/missing behavior, and row counts are recorded.
-- Non-recordset JSON remains refused.
+- Non-recordset JSON fails closed without table materialization.
+- Generic table bridge reports list `json_recordset` as an admitted table parser family.
+- JSON materialization preserves `source_mode="artifact_json_recordset_parser"`.
+
+Implemented P8 focused command:
+
+- `python -m pytest .\tests\test_nrc_aps_json_parser.py .\tests\test_nrc_aps_media_detection.py .\tests\test_nrc_aps_parser_registry.py .\tests\test_nrc_aps_document_processing.py .\tests\test_nrc_aps_artifact_ingestion.py .\tests\test_nrc_aps_dataset_bridge.py .\tests\test_nrc_aps_expansion.py .\tests\test_api.py -k "json or dataset_bridge or media_detection_expansion" -q`: `28 passed`, `126 deselected`.
+- `python -m pytest .\tests\test_nrc_aps_json_parser.py .\tests\test_nrc_aps_spreadsheet_parser.py .\tests\test_nrc_aps_csv_parser.py .\tests\test_nrc_aps_media_detection.py .\tests\test_nrc_aps_parser_registry.py .\tests\test_nrc_aps_document_processing.py .\tests\test_nrc_aps_artifact_ingestion.py .\tests\test_nrc_aps_dataset_bridge.py .\tests\test_nrc_aps_content_index.py .\tests\test_nrc_aps_expansion.py .\tests\test_api.py -k "not candidate_b" -q`: `169 passed`, `10 deselected`.
+- `python -m pytest .\backend\tests\test_layer3_workbench.py .\backend\tests\test_layer3_api.py -q`: `86 passed`.
+- `npm run validate:structure`: `errors: 0`, `warnings: 221` existing local-path/documentation warnings.
+- `git diff --check`: passed with line-ending conversion warnings only.
+
+Caveat:
+
+- The command exited successfully, but pytest emitted the known Windows temp cleanup `PermissionError` after the green result for `pytest-current`.
 
 ## Phase P9 SEC/EDGAR Validation
 

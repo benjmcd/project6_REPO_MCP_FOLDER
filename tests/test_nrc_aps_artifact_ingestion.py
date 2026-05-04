@@ -141,6 +141,31 @@ def test_extract_and_normalize_preserves_xlsx_workbook_diagnostics():
     assert result["time_series_units"][0]["numeric_columns"] == ["value"]
 
 
+def test_extract_and_normalize_preserves_json_recordset_diagnostics():
+    result = nrc_aps_artifact_ingestion.extract_and_normalize(
+        content=json.dumps(
+            {
+                "data": {
+                    "records": [
+                        {"date": "2026-01-01", "value": 42},
+                        {"date": "2026-01-02", "value": 43},
+                    ]
+                }
+            }
+        ).encode("utf-8"),
+        content_type="application/json",
+        config={"json_record_path": "data.records"},
+    )
+
+    assert result["effective_content_type"] == "application/json"
+    assert result["parser_family"] == "json_recordset"
+    assert result["typed_content_contract_id"] == "aps_json_recordset_units_v1"
+    assert result["ordered_units"] == []
+    assert result["table_diagnostics"]["record_path"] == "$.data.records"
+    assert result["table_diagnostics"]["row_count"] == 2
+    assert result["time_series_units"][0]["numeric_columns"] == ["value"]
+
+
 def test_validate_target_artifact_rejects_missing_normalization_contract():
     payload = {
         "schema_id": "aps.artifact_ingestion_target.v1",

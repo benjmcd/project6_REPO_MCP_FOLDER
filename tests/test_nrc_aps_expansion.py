@@ -22,7 +22,7 @@ def test_media_detection_expansion():
         (b"\x89PNG\r\n\x1a\n", "image/png", True),
         (b"\xff\xd8\xff", "image/jpeg", True),
         (b"II*\x00", "image/tiff", True),
-        (b"{\"key\": \"value\"}", "application/json", False), # Refused
+        (b"[{\"date\":\"2026-01-01\",\"value\":42}]", "application/json", True),
     ]
     for content, expected_type, expected_supported in test_cases:
         result = md.detect_media_type(content, declared_content_type="")

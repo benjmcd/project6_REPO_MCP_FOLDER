@@ -1,6 +1,6 @@
 # Target Contract
 
-Status: proposed target-state contract. Nothing in this file should be read as live implementation until a later implementation PR changes source and tests.
+Status: target-state contract with current implementation notes. Phase P8 now admits a bounded `json_recordset` parser; broader structured JSON remains target-state only until a later implementation PR changes source and tests.
 
 ## Requirement
 
@@ -60,7 +60,7 @@ Initial parser registry:
 | `archive_bundle` | ZIP archives | `archive_units`, child parser refs | child-dependent |
 | `csv_table` | `.csv`, `text/csv`, delimited table text | `table_units`, optional `time_series_units` | `dataset_version` if admitted |
 | `xlsx_workbook` | `.xlsx` workbooks admitted by the bounded parser | `workbook_units`, `table_units`, optional `time_series_units` | `dataset_version` if explicitly materialized |
-| `json_recordset` | table-like JSON arrays/objects | `table_units`, optional `time_series_units` | `dataset_version` if admitted |
+| `json_recordset` | table-like JSON arrays/objects with flat records or configured record paths | `table_units`, optional `time_series_units` | `dataset_version` if admitted |
 | `edgar_filing` | SEC/EDGAR text, SGML, HTML, XML, Inline XBRL where admitted | `filing_units`, `text_units`, `table_units` | mixed |
 | `unsupported_refusal` | unknown, unsafe, ambiguous, or unadmitted files | diagnostics only | none |
 
@@ -70,7 +70,7 @@ Fail closed:
 
 - Empty runtime input must not seed or generate artifacts.
 - Unsupported, ambiguous, or unsafe media must produce a precise failure record, not a downgraded success.
-- JSON/XML/HTML remain refused until a specific parser family is admitted with tests.
+- Arbitrary structured JSON, XML, and HTML remain refused until a specific parser family is admitted with tests. The current JSON admission is limited to bounded `json_recordset` input and must fail closed for non-recordset JSON.
 - XLSX must not be accepted as generic ZIP. It must be detected as spreadsheet and admitted only through the bounded `xlsx_workbook` parser, while `.xls`, `.xlsm`, encrypted, formula-bearing, empty, or ambiguous workbooks fail closed until explicitly admitted.
 - CSV must not be described as tabular support if it is only processed as text.
 - Archive extraction must record every member as processed, refused, skipped, or failed; skipped members must be intentional and visible.

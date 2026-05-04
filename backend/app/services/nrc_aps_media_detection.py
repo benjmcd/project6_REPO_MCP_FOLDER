@@ -18,9 +18,9 @@ APS_SUPPORTED_CONTENT_TYPES = {
     "image/png",
     "image/tiff",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/json",
 }
 APS_REFUSAL_CONTENT_TYPES = {
-    "application/json",
     "application/xml",
     "text/html",
 }

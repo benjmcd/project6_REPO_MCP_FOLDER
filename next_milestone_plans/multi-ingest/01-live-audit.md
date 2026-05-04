@@ -8,6 +8,7 @@ Confirmed authority:
 
 - `backend/app/services/nrc_aps_media_detection.py`
 - `backend/app/services/nrc_aps_csv_parser.py`
+- `backend/app/services/nrc_aps_json_parser.py`
 - `backend/app/services/nrc_aps_parser_registry.py`
 - `backend/app/services/nrc_aps_document_processing.py`
 - `backend/app/services/nrc_aps_artifact_ingestion.py`
@@ -21,6 +22,7 @@ Confirmed authority:
 - `backend/app/services/analysis.py`
 - `tests/test_nrc_aps_document_processing.py`
 - `tests/test_nrc_aps_csv_parser.py`
+- `tests/test_nrc_aps_json_parser.py`
 - `tests/test_nrc_aps_parser_registry.py`
 - `tests/test_nrc_aps_content_index.py`
 - `tests/test_nrc_aps_dataset_bridge.py`
@@ -38,23 +40,23 @@ Authority gap:
 
 Confirmed:
 
-- `APS_SUPPORTED_CONTENT_TYPES` includes `application/pdf`, `text/plain`, `application/zip`, `image/jpeg`, `image/png`, and `image/tiff` at `backend/app/services/nrc_aps_media_detection.py:11`.
-- `APS_REFUSAL_CONTENT_TYPES` includes `application/json`, `application/xml`, and `text/html` at `backend/app/services/nrc_aps_media_detection.py:19`.
-- CSV media types are admitted for bounded parser diagnostics. `.xlsx` spreadsheet media is now parser-admitted for the bounded `xlsx_workbook` parser; `.xls` and `.xlsm` remain typed but not parser-admitted.
+- `APS_SUPPORTED_CONTENT_TYPES` includes `application/pdf`, `text/plain`, `application/zip`, `image/jpeg`, `image/png`, `image/tiff`, and `application/json`.
+- `APS_REFUSAL_CONTENT_TYPES` includes `application/xml` and `text/html`.
+- CSV media types are admitted for bounded parser diagnostics. `.xlsx` spreadsheet media is parser-admitted for the bounded `xlsx_workbook` parser. `application/json` is parser-admitted for bounded `json_recordset` parsing. `.xls` and `.xlsm` remain typed but not parser-admitted.
 - Optional filename/extension diagnostics now include `source_filename`, `file_extension`, `extension_content_type`, and `content_family`.
 - The sniffing path maps supported/refused signatures and text heuristics in `sniff_content_type(...)` beginning at `backend/app/services/nrc_aps_media_detection.py:151`.
 - OOXML spreadsheet packages are now sniffed as spreadsheet media rather than generic ZIP when the package contains workbook markers at `backend/app/services/nrc_aps_media_detection.py:176`.
 - If the sniffed type is refused, resolution returns unsupported/refused before supported fallbacks at `backend/app/services/nrc_aps_media_detection.py:261`.
-- If declared, sniffed, or extension context identifies JSON/XML/HTML, resolution refuses the artifact.
+- If declared, sniffed, or extension context identifies XML/HTML, resolution refuses the artifact. JSON is admitted only to the bounded `json_recordset` parser path; arbitrary non-recordset JSON fails closed during parser execution.
 - If declared or extension context identifies CSV and the body has a compatible text signature, resolution admits `text/csv`.
 - If declared, sniffed, or extension context identifies `.xlsx`, resolution admits the spreadsheet parser before generic ZIP handling. `.xls` and `.xlsm` still return `typed_content_type_not_admitted` with `supported_for_processing=False`.
 - If the sniffed type is supported, resolution accepts it at `backend/app/services/nrc_aps_media_detection.py:315`.
 
 Implications:
 
-- JSON, XML, and HTML are not pending "maybe supported" file types. They are explicitly refused today.
+- XML and HTML are not pending "maybe supported" file types. They are explicitly refused today. JSON is admitted only for the bounded recordset parser contract, not as arbitrary structured-document support.
 - XLSX files are no longer accepted as generic ZIP when filename or OOXML package evidence identifies them as spreadsheets. Macro-enabled XLSM remains fail-closed.
-- CSV is parser-admitted for typed diagnostics and can be materialized through the legacy CSV bridge or the generic table-unit bridge. XLSX can now emit table units and be materialized explicitly or during connector finalization when `table_dataset_bridge_enabled=true`. Explicit Layer 3 material preview can admit resulting APS-derived `DatasetVersion` records through the existing `dataset_version` source shape.
+- CSV is parser-admitted for typed diagnostics and can be materialized through the legacy CSV bridge or the generic table-unit bridge. XLSX and JSON recordsets can now emit table units and be materialized explicitly or during connector finalization when `table_dataset_bridge_enabled=true`. Explicit Layer 3 material preview can admit resulting APS-derived `DatasetVersion` records through the existing `dataset_version` source shape.
 
 ## Document Processing Facts
 
@@ -62,14 +64,16 @@ Confirmed:
 
 - `backend/app/services/nrc_aps_parser_registry.py` now defines metadata-only parser admission for current baseline PDF, Candidate B PDF, plain text, image OCR, and archive bundle processors.
 - `backend/app/services/nrc_aps_csv_parser.py` now parses bounded CSV/delimited tables into `table_units`, optional `time_series_units`, and table diagnostics.
+- `backend/app/services/nrc_aps_json_parser.py` now parses bounded JSON recordsets into `table_units`, optional `time_series_units`, field-path diagnostics, and record-path provenance.
 - The parser registry returns stable `parser_registry_contract_id`, `parser_registry_version`, `parser_admission_status`, `parser_family`, `parser_output_family`, and `parser_contract_id` fields for admitted processors.
 - Unsupported parser lookups and media-not-supported lookups fail closed with stable parser failure codes.
 - Candidate B is named `candidate_b_opendataloader_pdf` at `backend/app/services/nrc_aps_document_processing.py:58`.
 - Candidate B fails closed on non-PDF input with `document_processing_engine_requires_pdf`.
-- The top-level processor dispatches `text/plain`, PDF, image types, and `application/zip`; unsupported types fail outside those branches.
+- The top-level processor dispatches `text/plain`, bounded table media, PDF, image types, and `application/zip`; unsupported types fail outside those branches.
 - `_process_plain_text` emits `document_class="text_plain"` and `ordered_units` text blocks beginning at `backend/app/services/nrc_aps_document_processing.py:351`.
 - `_process_image` emits `document_class="standalone_image"` and OCR-derived ordered units at `backend/app/services/nrc_aps_document_processing.py:403`, `backend/app/services/nrc_aps_document_processing.py:531`, and `backend/app/services/nrc_aps_document_processing.py:536`.
-- `_process_zip` maps supported document/image members into the existing handlers, parses CSV members for table diagnostics, and keeps spreadsheet/JSON/XML/HTML members visible as typed/refused outcomes instead of flattening them into text. XLSX inside archives remains outside the bounded Phase P7.5 connector-orchestration tranche.
+- `_process_zip` maps supported document/image members into the existing handlers, parses CSV members for table diagnostics, and keeps spreadsheet/XML/HTML members visible as typed/refused outcomes instead of flattening them into text. XLSX and JSON inside archives remain outside the bounded connector-orchestration tranches.
+- `_process_json` emits `document_class="json_recordset"`, `parser_family="json_recordset"`, `typed_content_contract_id="aps_json_recordset_units_v1"`, `table_units`, `time_series_units`, and table diagnostics for admitted standalone JSON recordsets.
 - PDF baseline processing emits a document class and ordered units at `backend/app/services/nrc_aps_document_processing.py:882`, `backend/app/services/nrc_aps_document_processing.py:891`, and `backend/app/services/nrc_aps_document_processing.py:896`.
 - Candidate B emits ordered units and a document class through the same existing contract shape at `backend/app/services/nrc_aps_document_processing.py:1086` through `backend/app/services/nrc_aps_document_processing.py:1160`.
 
@@ -111,7 +115,7 @@ Confirmed:
 Implications:
 
 - The APS connector is already wired for download, media detection, extraction, normalization, content indexing, and report references.
-- The connector wiring is no longer the missing piece for CSV. Remaining connector/parser work is for non-CSV parser families and operator/UI selection surfaces.
+- The connector wiring is no longer the missing piece for CSV, bounded XLSX, or bounded JSON recordsets. Remaining connector/parser work is for SEC/EDGAR, mixed parser families, broader typed/refused UI surfacing, and operator clarity.
 
 ## Layer 3 Facts
 
@@ -149,7 +153,7 @@ Implications:
 
 - The project already has downstream structures for time-series/tabular analysis once a `DatasetVersion` exists.
 - APS ingestion can now create that dataset/variable/row/provenance shape from CSV parser output when the bridge is explicitly invoked.
-- Connector finalization can invoke the legacy CSV bridge behind the `csv_dataset_bridge_enabled` gate for processed CSV table artifacts. It can also invoke the generic table bridge behind the `table_dataset_bridge_enabled` gate for processed CSV/XLSX table-unit artifacts, and records bridge report refs plus target dataset refs.
+- Connector finalization can invoke the legacy CSV bridge behind the `csv_dataset_bridge_enabled` gate for processed CSV table artifacts. It can also invoke the generic table bridge behind the `table_dataset_bridge_enabled` gate for processed CSV/XLSX/JSON table-unit artifacts, and records bridge report refs plus target dataset refs.
 - Layer 3 does not auto-discover all APS-derived dataset versions and does not add a distinct typed APS source class. Explicit material preview can admit selected APS-derived dataset versions through `dataset_version`.
 
 ## Test Coverage Facts
@@ -159,11 +163,11 @@ Confirmed:
 - Document processing tests assert text/plain behavior at `tests/test_nrc_aps_document_processing.py:42`.
 - Document processing tests assert Candidate B requires PDF at `tests/test_nrc_aps_document_processing.py:211`.
 - Document processing tests assert Candidate B processes PDF through the existing contract shape at `tests/test_nrc_aps_document_processing.py:247`.
-- Media detection tests now cover declared JSON refusal, declared/extension CSV admission behavior, OOXML spreadsheet sniffing, XLSX extension admission before generic ZIP, and XLSM fail-closed behavior.
-- Document processing tests now cover CSV table-unit extraction and XLSX table-unit extraction with workbook metadata.
-- Parser registry tests cover baseline PDF, Candidate B PDF, Candidate B non-PDF refusal, text, images, archives, and media-not-supported failure behavior.
+- Media detection tests now cover declared/extension JSON admission, declared/extension CSV admission behavior, OOXML spreadsheet sniffing, XLSX extension admission before generic ZIP, and XLSM fail-closed behavior.
+- Document processing tests now cover CSV table-unit extraction, XLSX table-unit extraction with workbook metadata, JSON recordset table-unit extraction, and non-recordset JSON failure.
+- Parser registry tests cover baseline PDF, Candidate B PDF, Candidate B non-PDF refusal, text, JSON recordsets, images, archives, and media-not-supported failure behavior.
 - CSV parser tests cover positive table/time-series diagnostics, quoted delimiters, null markers, empty/header-only/ragged/invalid-encoding/formula-risk failures, and size bounds.
-- Dataset bridge tests cover CSV parser output materialization, deterministic idempotency, dataset rows/profiles/provenance, and fail-closed rejection of non-CSV parser output.
+- Dataset bridge tests cover CSV, XLSX, and JSON parser output materialization, deterministic idempotency, dataset rows/profiles/provenance, and fail-closed rejection of non-CSV parser output by the legacy CSV bridge.
 - Archive tests now cover ZIP CSV member table diagnostics without text flattening.
 - Content index tests cover chunking over ordered text units at `tests/test_nrc_aps_content_index.py:39` through `tests/test_nrc_aps_content_index.py:87`.
 - Content index tests cover `text_plain` and PDF-like content rows at `tests/test_nrc_aps_content_index.py:210`, `tests/test_nrc_aps_content_index.py:233`, `tests/test_nrc_aps_content_index.py:267`, and `tests/test_nrc_aps_content_index.py:308`.
@@ -174,7 +178,7 @@ Confirmed:
 Implications:
 
 - Existing tests prove the current document/text and pre-seeded dataset paths.
-- They now prove APS CSV and bounded XLSX table-unit materialization into a typed dataset path, including opt-in connector automatic XLSX materialization through the generic table bridge. They do not prove JSON, SEC/EDGAR, mixed-source, arbitrary workbook, archive-member XLSX orchestration, or broad workbook ingestion into that path.
+- They now prove APS CSV, bounded XLSX, and bounded JSON recordset table-unit materialization into a typed dataset path, including opt-in connector automatic XLSX/JSON materialization through the generic table bridge. They do not prove SEC/EDGAR, mixed-source, arbitrary JSON document parsing, arbitrary workbook, archive-member XLSX/JSON orchestration, or broad workbook ingestion into that path.
 
 ## Completion Boundary
 
@@ -185,6 +189,7 @@ Complete today:
 - PDF/text/image/ZIP document processing into normalized text and ordered units.
 - Parser-registry metadata for the currently admitted document processors.
 - CSV typed diagnostics for standalone CSV and ZIP CSV members.
+- JSON recordset typed diagnostics for standalone JSON arrays of flat records or configured record paths.
 - Callable CSV dataset bridge into `DatasetVersion` authority.
 - Explicit Layer 3 material-preview/Gate B/Gate C/plan-preview admission for APS-derived `DatasetVersion` records.
 - Selected-pass execution/result/package proof for APS-derived `DatasetVersion` records.
@@ -198,12 +203,12 @@ Partial today:
 - Plain qualitative text as document chunks.
 - Image OCR as document chunks.
 - ZIP bundles with supported member extraction into flattened document chunks.
-- CSV as typed parser diagnostics, explicit/callable durable dataset materialization, default-off connector bridge orchestration, explicit Layer 3 admission, and selected-pass execution/package proof. UI/operator selection is still not implemented.
+- CSV as typed parser diagnostics, explicit/callable durable dataset materialization, default-off connector bridge orchestration, explicit Layer 3 admission, selected-pass execution/package proof, and bounded workbench selection.
+- JSON recordsets as bounded typed parser diagnostics, explicit/generic durable dataset materialization, and default-off connector bridge orchestration. Layer 3 still consumes the resulting records through the existing `dataset_version` path when explicitly selected.
 
 Not implemented today:
 
-- JSON recordset parser.
 - SEC/EDGAR filing parser.
-- Parser families beyond CSV/XLSX.
-- Broad workbook and archive-member XLSX connector orchestration beyond the bounded processed standalone `.xlsx` table-unit path.
+- Parser families beyond CSV/XLSX/JSON recordsets.
+- Broad workbook and archive-member XLSX/JSON connector orchestration beyond bounded processed standalone table-unit paths.
 - End-to-end UI tests proving heterogeneous corpus artifacts reach Layer 3 with preserved source semantics.
