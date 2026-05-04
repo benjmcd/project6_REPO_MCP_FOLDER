@@ -34,6 +34,7 @@ from app.models.models import (
     ConnectorRun,
     ConnectorRunTarget,
     Dataset,
+    DatasetSourceProvenance,
     DatasetVersion,
     L3OutputPackage,
     L3ReconciliationRecord,
@@ -274,6 +275,47 @@ def _seed_browser_dataset_version(db, temp_path: Path, *, seed_id: str, dataset_
     version.row_count = 24
     db.flush()
     return csv_path
+
+
+def _seed_browser_aps_dataset_version_candidate(db, temp_path: Path) -> dict[str, str]:
+    seed_id = uuid_str()
+    dataset_id = f"ds-aps-{seed_id}"
+    dataset_version_id = f"dv-aps-{seed_id}"
+    csv_path = _seed_browser_dataset_version(
+        db,
+        temp_path,
+        seed_id=f"aps-{seed_id}",
+        dataset_id=dataset_id,
+        dataset_version_id=dataset_version_id,
+    )
+    db.add(
+        DatasetSourceProvenance(
+            dataset_version_id=dataset_version_id,
+            connector_run_id=None,
+            source_system="nrc_adams_aps",
+            source_mode="artifact_csv_parser",
+            source_artifact_key=f"aps-target-artifacts/run-{seed_id}/target-{seed_id}/extraction.json",
+            sciencebase_file_name="browser-fixture.csv",
+            downloaded_sha256="1" * 64,
+            raw_storage_ref=f"aps-target-artifacts/run-{seed_id}/target-{seed_id}/blob.csv",
+            source_reference_json={
+                "target_id": f"target-{seed_id}",
+                "accession_number": "ML26001A777",
+                "table_index": 0,
+                "table_hash": f"hash-table-{seed_id}",
+                "parser_family": "csv_table",
+                "parser_contract_id": "aps_csv_parser_v1",
+                "typed_content_contract_id": "aps_csv_table_units_v1",
+                "diagnostics_ref": f"aps-target-artifacts/run-{seed_id}/target-{seed_id}/diagnostics.json",
+            },
+        )
+    )
+    db.commit()
+    return {
+        "dataset_id": dataset_id,
+        "dataset_version_id": dataset_version_id,
+        "storage_ref": str(csv_path),
+    }
 
 
 def _seed_browser_aps_content_fixture(
@@ -587,6 +629,7 @@ def create_app() -> FastAPI:
             "runtime_binding_count": len(fixture.selector.runs),
             "seed_routes": [
                 "/__test/layer3/seed-quant",
+                "/__test/layer3/seed-aps-dataset",
                 "/__test/layer3/seed-aps-handoff",
             ],
         }
@@ -597,6 +640,14 @@ def create_app() -> FastAPI:
         try:
             session_id = _build_browser_quant_ready_session(db, temp_path)
             return {"session_id": session_id}
+        finally:
+            db.close()
+
+    @app.post("/__test/layer3/seed-aps-dataset")
+    def seed_layer3_aps_dataset() -> dict[str, str]:
+        db = SessionLocal()
+        try:
+            return _seed_browser_aps_dataset_version_candidate(db, temp_path)
         finally:
             db.close()
 

@@ -3350,6 +3350,61 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     word-break: break-word;
 }
 
+.material-trace-card {
+    min-width: 220px;
+    display: grid;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--control-bg);
+}
+
+.material-trace-card strong,
+.material-trace-card dt {
+    color: var(--text-color);
+    font-weight: 700;
+}
+
+.material-trace-card span,
+.material-trace-card dd {
+    color: var(--muted-text);
+}
+
+.material-trace-card span {
+    font-size: 0.76rem;
+    line-height: 1.35;
+}
+
+.material-trace-card dl {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+}
+
+.material-trace-card dl div {
+    display: grid;
+    grid-template-columns: 74px minmax(0, 1fr);
+    gap: 8px;
+}
+
+.material-trace-card dt,
+.material-trace-card dd {
+    margin: 0;
+    font-size: 0.72rem;
+}
+
+.material-trace-card dt {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.material-trace-empty {
+    min-width: 0;
+    color: var(--muted-text);
+    font-size: 0.78rem;
+}
+
 .empty-cell,
 .empty-panel {
     color: var(--muted-text);

@@ -2614,6 +2614,9 @@ def test_layer3_api_aps_derived_dataset_version_reaches_package_commit(client: T
     candidate = material.json()["material_candidates"][0]
     assert candidate["source_identity"]["dataset_version_id"] == dataset_version_id
     assert candidate["source_provenance"]["aps_derived"] is True
+    assert candidate["source_trace"]["trace_readiness"] == "traceable_aps_dataset_version"
+    assert candidate["source_trace"]["source_family_label"] == "CSV table"
+    assert candidate["source_trace"]["aps_trace_refs"]["diagnostics_ref"].endswith("/diagnostics.json")
 
     gate_b = client.post(
         "/api/v1/layer3/gate-b/decision",

@@ -1310,12 +1310,24 @@ function termsFromIntent(intent) {
 }
 
 function candidateSearchText(candidate) {
+    const trace = candidate.source_trace || {};
+    const traceRefs = trace.aps_trace_refs || {};
     return [
         candidate.candidate_id,
         candidate.source_label,
         candidate.source_class,
         candidate.owner_service_source_shape,
         candidate.planning_shape_family,
+        candidate.source_family,
+        candidate.source_family_label,
+        candidate.source_admission_state,
+        trace.trace_readiness,
+        traceRefs.parser_family,
+        traceRefs.parser_contract_id,
+        traceRefs.typed_content_contract_id,
+        traceRefs.target_id,
+        traceRefs.accession_number,
+        traceRefs.diagnostics_ref,
         candidate.validation_status,
         candidate.duplicate_status,
     ].join(' ').toLowerCase();
@@ -2213,6 +2225,49 @@ function renderSublayerMap() {
     `;
 }
 
+function renderMaterialTrace(candidate) {
+    const trace = candidate.source_trace || candidate.source_provenance?.source_trace;
+    if (!trace) {
+        return '<div class="material-trace-card material-trace-empty">No server trace detail.</div>';
+    }
+    const refs = trace.aps_trace_refs || {};
+    const variables = trace.variable_summary || {};
+    const storage = trace.storage_summary || {};
+    const numericVariables = Array.isArray(variables.numeric_variables)
+        ? variables.numeric_variables
+        : [];
+    const timeVariables = Array.isArray(variables.time_variables)
+        ? variables.time_variables
+        : [];
+    const detailRows = [
+        ['family', trace.source_family_label || trace.source_family],
+        ['readiness', trace.trace_readiness],
+        ['parser', refs.parser_family],
+        ['contract', refs.typed_content_contract_id || refs.parser_contract_id],
+        ['target', refs.target_id],
+        ['accession', refs.accession_number],
+        ['rows', storage.row_count],
+        ['variables', variables.variable_count],
+        ['numeric', numericVariables.join(', ')],
+        ['time', variables.time_column || timeVariables.join(', ')],
+        ['diagnostics', refs.diagnostics_ref],
+    ].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '');
+    return `
+        <div class="material-trace-card" data-trace-readiness="${escapeHtml(trace.trace_readiness || 'unknown')}">
+            <strong>${escapeHtml(trace.source_family_label || 'DatasetVersion trace')}</strong>
+            <span>${escapeHtml(trace.ui_summary || trace.source_family_scope || 'Server trace detail available.')}</span>
+            <dl>
+                ${detailRows.map(([label, value]) => `
+                    <div>
+                        <dt>${escapeHtml(label)}</dt>
+                        <dd>${escapeHtml(shortText(value, 48))}</dd>
+                    </div>
+                `).join('')}
+            </dl>
+        </div>
+    `;
+}
+
 function renderMaterialLedger() {
     const candidates = State.materialPreview?.material_candidates || [];
     const filter = State.materialFilter.trim().toLowerCase();
@@ -2221,11 +2276,12 @@ function renderMaterialLedger() {
         : candidates;
     if (!visible.length) {
         const message = candidates.length ? 'No material candidates match the filter.' : 'No material preview loaded.';
-        elements.materialLedgerBody.innerHTML = `<tr><td colspan="6" class="empty-cell">${escapeHtml(message)}</td></tr>`;
+        elements.materialLedgerBody.innerHTML = `<tr><td colspan="7" class="empty-cell">${escapeHtml(message)}</td></tr>`;
         return;
     }
     elements.materialLedgerBody.innerHTML = visible.map((candidate) => {
         const currentDecision = decisionState(candidate.candidate_id);
+        const traceMarkup = renderMaterialTrace(candidate);
         return `
         <tr data-candidate-id="${escapeHtml(candidate.candidate_id)}">
             <td>
@@ -2237,6 +2293,7 @@ function renderMaterialLedger() {
                 <div>${escapeHtml(candidate.owner_service_source_shape)}</div>
                 <div class="rail-label">${escapeHtml(candidate.planning_shape_family)}</div>
             </td>
+            <td>${traceMarkup}</td>
             <td>
                 <div>${escapeHtml(candidate.duplicate_status)}</div>
                 <div class="rail-label">${escapeHtml(candidate.query_basis)}</div>
