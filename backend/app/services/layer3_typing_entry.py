@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import hashlib
-import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Sequence
 
 from sqlalchemy.orm import Session
@@ -20,6 +18,12 @@ from app.models.models import (
 from app.services.layer3_session_entry import (
     SESSION_STATUS_COMPLETED,
     SESSION_STATUS_COMPLETED_WITH_WARNINGS,
+)
+from app.services.layer3_utils import (
+    json_clone as _json_clone,
+    stable_hash as _hash_json,
+    stable_json_bytes as _stable_json_bytes,
+    utcnow as _utcnow,
 )
 
 MODALITY_QUANTITATIVE = "quantitative"
@@ -98,22 +102,6 @@ FINALIZED_TYPING_SESSION_STATUSES = frozenset(
         SESSION_STATUS_COMPLETED_WITH_WARNINGS,
     }
 )
-
-
-def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
-
-
-def _stable_json_bytes(value: Any) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-
-
-def _json_clone(value: Any) -> Any:
-    return json.loads(_stable_json_bytes(value).decode("utf-8"))
-
-
-def _hash_json(value: Any) -> str:
-    return hashlib.sha256(_stable_json_bytes(value)).hexdigest()
 
 
 def _load_session_or_raise(db: Session, *, session_id: str) -> L3Session:

@@ -20,6 +20,12 @@ from app.services.layer3_session_entry import (
     SESSION_STATUS_COMPLETED_WITH_WARNINGS,
     SESSION_STATUS_FAILED,
 )
+from app.services.layer3_utils import (
+    json_text_clone as _json_clone,
+    stable_json_text as _stable_json_text,
+    stable_json_text_bytes as _stable_json_bytes,
+    stable_json_text_hash as _stable_hash,
+)
 
 
 PACKAGE_KIND_APS_MULTISOURCE_ADMISSION = "aps_multisource_admission"
@@ -51,22 +57,6 @@ class Layer3ApsMultisourceError(ValueError):
 class Layer3ApsMultisourceResult:
     output_package: L3OutputPackage
     admission_payload: dict[str, Any]
-
-
-def _stable_json_text(payload: Any) -> str:
-    return json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False)
-
-
-def _stable_json_bytes(payload: Any) -> bytes:
-    return _stable_json_text(payload).encode("utf-8")
-
-
-def _stable_hash(payload: Any) -> str:
-    return hashlib.sha256(_stable_json_bytes(payload)).hexdigest()
-
-
-def _json_clone(payload: Any) -> Any:
-    return json.loads(_stable_json_text(payload))
 
 
 def _safe_token(value: str) -> str:
