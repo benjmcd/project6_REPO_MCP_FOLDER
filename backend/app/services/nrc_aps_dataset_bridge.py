@@ -183,6 +183,19 @@ def _column_dtype(column: dict[str, Any], *, is_time: bool) -> str:
     return "object"
 
 
+def _coerce_boolean_value(value: Any) -> Any:
+    if pd.isna(value):
+        return pd.NA
+    text = str(value).strip().lower()
+    if text in {"", "na", "n/a", "null", "none", "nan"}:
+        return pd.NA
+    if text in {"true", "yes"}:
+        return True
+    if text in {"false", "no"}:
+        return False
+    return pd.NA
+
+
 def _coerce_frame(frame: pd.DataFrame, columns: list[dict[str, Any]], time_column: str | None) -> pd.DataFrame:
     coerced = frame.copy()
     for column in columns:
@@ -195,7 +208,7 @@ def _coerce_frame(frame: pd.DataFrame, columns: list[dict[str, Any]], time_colum
         elif kind in {"integer", "number"}:
             coerced[name] = pd.to_numeric(coerced[name], errors="coerce")
         elif kind == "boolean":
-            coerced[name] = coerced[name].map(lambda value: str(value).strip().lower() in {"true", "yes"})
+            coerced[name] = coerced[name].map(_coerce_boolean_value).astype("boolean")
     return coerced
 
 
