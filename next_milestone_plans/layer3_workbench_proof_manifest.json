@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "Layer 3 signed-reference proof readiness through PR #522 plus provider/public URL planning-control governance from docs 110/111",
+  "status": "Layer 3 signed-reference proof readiness through PR #522 plus provider/public URL governance from docs 110/111 and connector/destination dispatch planning-control governance from docs 112/113",
   "scope": {
     "source_branch": "codex/l3-review-residuals-p24",
     "merged_pr": "#522",
@@ -339,7 +339,10 @@
     "next_milestone_plans/Layer3_planning_docs/100_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/101_COHORT_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UI_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/102_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_FREEZE.md",
-    "next_milestone_plans/Layer3_planning_docs/103_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_CONTRACT.md"
+    "next_milestone_plans/Layer3_planning_docs/103_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/112_CONNECTOR_DISPATCH_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/113_CONNECTOR_DISPATCH_CONTRACT.md",
+    "backend/app/api/router.py"
   ],
   "current_live_workbench_boundary": {
     "live_bounded": [
@@ -413,7 +416,8 @@
       "runtime external export/download from docs 62/63 by themselves",
       "rendered browser download control, public or signed download URL, connector dispatch, destination selection, and generic downstream dispatch from docs 62/63 by themselves",
       "new quantitative methods beyond cross_correlation, decomposition, and structural_break without separate governance",
-      "qualitative/hybrid/RAG/vector analysis method expansion without separate governance"
+      "qualitative/hybrid/RAG/vector analysis method expansion without separate governance",
+      "connector/destination/generic downstream dispatch remains unavailable after docs 112/113; current APS owner-service handoff dispatch is not a generic connector/destination dispatch lane"
     ],
     "planning_only": [
       "analysis-execution-start freeze/API-state contract from PR #217 remains the governing scope contract for the PR #218 bounded implementation",
@@ -429,7 +433,8 @@
       "external export/download readiness governance from docs 62/63 is planning-only by itself; a future implementation must remain a backend/API reference-only descriptor after aps_handoff_dispatched unless a later freeze admits browser download routes, public/signed URLs, connector dispatch, destination selection, physical export materialization, or extra rows",
       "docs 70/71 are planning-only current-methods AnalysisMethod registry governance by themselves; PR #316 is the separate implementation and new methods still require separate governance",
       "docs 100/101 current-main associated-cohort rendered delivery-control settlement over existing generic delivery UI code; no runtime/UI behavior change by docs alone",
-      "docs 102/103 current-main signed delivery-reference planning/control governance from PR #497; no signed URL generation, token minting, URL serving, rendered signed URL controls, durable token/receipt/audit state, connector/destination dispatch, schema/runtime/source widening, or full mockup activation by docs alone"
+      "docs 102/103 current-main signed delivery-reference planning/control governance from PR #497; no signed URL generation, token minting, URL serving, rendered signed URL controls, durable token/receipt/audit state, connector/destination dispatch, schema/runtime/source widening, or full mockup activation by docs alone",
+      "docs 112/113 connector/destination dispatch governance; no connector-run creation, destination selection, generic downstream dispatch, provider/public URL behavior, rendered controls, package mutation, schema/runtime/source widening, qualitative execution, queue/retry/cancel behavior, or route behavior by docs alone"
     ],
     "current_main_rendered_package_review_ui": [
       "PR #245 renders bounded package construction commit and package-review submit controls on /review/layer3 over the already-live PR #238 and PR #243 backend endpoints; PR #247 hardens stale session-summary fallback after package commit inside the same UI boundary. They do not admit handoff/export, package payload mutation, package reconstruction, source/schema/runtime widening, or full mockup activation."
@@ -1445,7 +1450,10 @@
     "next_milestone_plans/Layer3_planning_docs/108_DURABLE_ENTRY.md",
     "next_milestone_plans/Layer3_planning_docs/109_DURABLE_STATE.md",
     "backend/app/models/models.py",
-    "backend/alembic/versions"
+    "backend/alembic/versions",
+    "next_milestone_plans/Layer3_planning_docs/112_CONNECTOR_DISPATCH_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/113_CONNECTOR_DISPATCH_CONTRACT.md",
+    "backend/app/api/router.py"
   ],
   "handoff_export_prepare_ui_implementation_proof": {
     "implementation_branch": "codex/l3-handoff-prepare-ui-impl",
@@ -3437,6 +3445,47 @@
       "backend/alembic/versions/0016_layer3_signed_reference_state.py",
       "backend/app/services/layer3_signed_reference_state.py",
       "backend/tests/test_layer3_signed_reference_state.py"
+    ]
+  },
+  "descriptive_summary_selected_pass_cohort_connector_dispatch_governance_proof": {
+    "planning_branch": "codex/l3-connector-dispatch-freeze-p27",
+    "base_commit": "540b3a3b9600ae67660388905796d3efc57f7e06",
+    "scope": "Planning/control connector/destination dispatch governance after PR #524 current-main state. No runtime connector/destination behavior changes by this document-only slice.",
+    "files_changed": [
+      "next_milestone_plans/Layer3_planning_docs/112_CONNECTOR_DISPATCH_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/113_CONNECTOR_DISPATCH_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_progress_refresh_spec.md",
+      "next_milestone_plans/progress-prompt.md",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "authority_basis": [
+      "Current main at 540b3a3b9600ae67660388905796d3efc57f7e06 includes PR #524 provider/public URL governance.",
+      "Current Layer 3 APS handoff dispatch is bounded to aps_handoff_target == \"aps_evidence_bundle\" and dispatch_mode == \"server_side_aps_handoff\".",
+      "Current Layer 3 readiness, delivery, and signed-reference response surfaces keep connector_dispatch_enabled, destination_selection_enabled, and generic_downstream_dispatch_enabled false."
+    ],
+    "non_goals": [
+      "connector-run creation or external connector invocation",
+      "destination selection or external destination writes",
+      "generic downstream dispatch",
+      "provider/public URL generation or object-store ACL behavior",
+      "rendered connector/destination controls",
+      "package mutation/reconstruction",
+      "schema/runtime/source/model/migration widening",
+      "qualitative/hybrid/RAG/vector execution",
+      "queue/retry/cancel/recovery behavior",
+      "broader UI or full mockup activation"
+    ],
+    "verification": [
+      "python -m json.tool next_milestone_plans/layer3_progress_manifest.json and layer3_workbench_proof_manifest.json -> passed",
+      "State/visual/count validation -> passed with 75 layer3_workbench_slices, 33 planning-only slices, and 42 current-main live bounded slices",
+      "Declared-path validation across manifest authoritative refs, refresh inputs, proof refs, and slice governing docs -> passed with 206 unique declared paths checked",
+      "Stale/no-go scan for connector/destination live-overclaim terms -> only existing forbidden-example rows in 60_L3_WB_APS_HANDOFF_DISPATCH_UI_FREEZE.md matched; no active docs 112/113 live overclaim found",
+      "Scope validation -> only next_milestone_plans docs/control paths changed; no backend/runtime/test/UI/schema/model/migration files changed",
+      "git diff --check -- next_milestone_plans -> passed with expected LF-to-CRLF warnings on edited text files"
     ]
   }
 }
