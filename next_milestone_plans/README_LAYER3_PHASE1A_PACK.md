@@ -212,8 +212,10 @@ And to the durable signed-reference state planning/control freeze:
 
 - `next_milestone_plans/Layer3_planning_docs/106_DURABLE_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/107_DURABLE_CONTRACT.md`
+- `next_milestone_plans/Layer3_planning_docs/108_DURABLE_ENTRY.md`
+- `next_milestone_plans/Layer3_planning_docs/109_DURABLE_STATE.md`
 
-Current-main docs `106`/`107` select durable token, receipt, revocation, and audit state as the next planning/control question after the current same-origin signed-reference chain. They do not implement durable state, add model or migration files, change PR `#499` stateless HMAC behavior, change PR `#514` rendered controls, expose provider/public URLs, dispatch to connectors/destinations, or admit qualitative APS content document execution.
+Current-main docs `106`/`107` select durable token, receipt, revocation, and audit state as the next planning/control question after the current same-origin signed-reference chain. Branch-local docs `108`/`109` name the implementation-entry surfaces, durable table family, service seam, API compatibility rule, and test obligations for a later code lane. They do not implement durable state, add model or migration files, change PR `#499` stateless HMAC behavior, change PR `#514` rendered controls, expose provider/public URLs, dispatch to connectors/destinations, or admit qualitative APS content document execution.
 
 And to the descriptive-summary Gate C admission packet, whose single-item implementation boundary was satisfied by PR `#417` after PR `#411` lower-level method support:
 - `next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md`
@@ -1281,6 +1283,26 @@ Read docs `102`/`103` as current-main planning/control from PR `#497`, with PR `
 - the implementation preserves PR `#496` package-review submit legacy idempotency compatibility in the upstream authority chain
 - if signed delivery needs durable token, receipt, audit, revocation, runtime write, schema/model/migration, external object-store ACL, connector, destination, or rendered UI behavior, stop for a separate freeze
 - public/provider URLs, connector/generic dispatch, destination selection, package mutation, schema/runtime/source widening, broader UI, qualitative/hybrid/RAG/vector behavior, and full mockup behavior remain out
+
+### If you are auditing durable signed-reference state planning
+
+Start with:
+- `Layer3_planning_docs/106_DURABLE_FREEZE.md`
+- `Layer3_planning_docs/107_DURABLE_CONTRACT.md`
+- `Layer3_planning_docs/108_DURABLE_ENTRY.md`
+- `Layer3_planning_docs/109_DURABLE_STATE.md`
+- `Layer3_planning_docs/105_deferred-gates.md`
+- `backend/app/services/layer3_workbench.py`
+- `backend/app/api/layer3.py`
+- `backend/app/models/models.py`
+- `backend/alembic/versions`
+- `backend/tests/test_layer3_api.py`
+
+Read docs `108`/`109` as branch-local implementation-entry planning/control only:
+- they name a future durable control-plane table family, service seam, API compatibility rule, and tests
+- they select `backend/alembic/versions/0016_layer3_signed_reference_state.py` only for the current branch base where `0015_layer3_package_entry.py` is the latest migration
+- if main has gained a newer migration or signed-reference API change, refresh the entry freeze before implementation
+- they do not add runtime behavior, model/migration files, token persistence, receipt creation, revocation behavior, audit writes, provider/public URLs, connector/destination dispatch, rendered UI changes, qualitative execution, or source/schema/runtime widening
 
 ### If you are auditing the Layer 3 workbench APS handoff dispatch freeze
 

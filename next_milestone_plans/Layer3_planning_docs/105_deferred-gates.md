@@ -6,11 +6,13 @@ Current-main decision freeze for the remaining requested deferred categories aft
 
 Current-main docs `106_DURABLE_FREEZE.md` and `107_DURABLE_CONTRACT.md` select durable token, receipt, revocation, and audit state as the next planning/control question only after PR `#516`. They do not implement durable behavior.
 
+Branch-local docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` name the implementation-entry surfaces and state contract for a later durable same-origin signed-reference code lane. They remain planning/control only and do not admit implementation by themselves.
+
 This file does not implement deferred behavior. It defines the minimum questions, blockers, and proof gates required before any of the following can become an implementation lane:
 
 - provider/public signed URL generation;
 - connector/destination dispatch;
-- durable token, receipt, revocation, and audit state implementation, with docs `106`/`107` admitted as planning/control only;
+- durable token, receipt, revocation, and audit state implementation, with docs `106`/`107` plus branch-local docs `108`/`109` admitted as planning/control only;
 - qualitative APS content document execution.
 
 ## Provider/Public Signed URLs
@@ -47,7 +49,7 @@ This lane must not be folded into signed-reference UI work. The signed-reference
 
 ## Durable Token/Receipt/Audit State
 
-Current decision: planning/control admitted by docs `106`/`107`; implementation not admitted.
+Current decision: planning/control admitted by docs `106`/`107`; branch-local implementation-entry planning/control named by docs `108`/`109`; implementation not admitted.
 
 Implementation cannot begin until these are specified:
 

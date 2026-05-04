@@ -4,6 +4,8 @@
 
 This contract defines the minimum shape a future durable signed-reference implementation must satisfy. It is planning-only and exists to prevent durable token, receipt, revocation, and audit work from being hidden inside provider/public URL, connector/destination, qualitative execution, or UI-only patches.
 
+Branch-local docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` provide the next implementation-entry refinement of this contract. They remain planning/control only until merged and revalidated against current `project6-origin/main`.
+
 ## Contract Boundary
 
 The future durable-state layer, if admitted, must sit between the already-live same-origin signed-reference endpoints and any future provider/public URL or connector/destination behavior.
@@ -94,3 +96,5 @@ Do not implement durable state until:
 - revocation authority and response semantics are specified;
 - security review expectations are written down;
 - the workbench progress docs classify the lane as planned/open rather than inferred from adjacent signed-reference wording.
+
+On this branch, docs `108`/`109` name the proposed entry surfaces and state contract, but implementation still requires a separate code lane after merge/revalidation.

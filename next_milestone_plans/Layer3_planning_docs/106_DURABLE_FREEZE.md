@@ -6,6 +6,8 @@ Current-main planning/control freeze for durable token, receipt, revocation, and
 
 This file does not implement durable behavior. It selects the durable-state question as the next workbench planning slice because provider/public URLs and connector/destination dispatch both need a settled replay, revocation, receipt, and audit model before they can be exposed safely.
 
+Branch-local docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` refine this freeze into a future implementation-entry contract. They do not implement durable behavior or change current-main PR `#499`/PR `#514` behavior.
+
 ## Current Authority
 
 Use this authority order:
