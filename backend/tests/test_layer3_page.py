@@ -99,10 +99,19 @@ def test_layer3_static_assets_are_mounted() -> None:
     review_css = client.get("/review/layer3/static/review.css")
     css = client.get("/review/layer3/static/layer3.css")
     js = client.get("/review/layer3/static/layer3.js")
+    claude = client.get("/review/layer3/static/claude.html")
 
     assert review_css.status_code == 200
     assert css.status_code == 200
     assert js.status_code == 200
+    assert claude.status_code == 200
+    assert "mockup spec §8A plus one bounded APS content document trace sample" in claude.text
+    assert "APS content document<br>selection" in claude.text
+    assert "aps-doc-operator-evidence-001" in claude.text
+    assert "ML26001A001" in claude.text
+    assert "aps_content_units_v2" in claude.text
+    assert "traceable_aps_content_document" in claude.text
+    assert "String(MATERIALS.length)" in claude.text
     assert 'html[data-theme="workbench"]' in review_css.text
     assert ".authority-rail" in css.text
     assert "body.layer3-page" in css.text
