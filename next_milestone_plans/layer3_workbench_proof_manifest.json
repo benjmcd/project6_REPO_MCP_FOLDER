@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main selected-pass associated-cohort delivery UI gate plus signed delivery-reference backend/API implementation proof, with branch-local rendered signed-reference UI proof on codex/l3-signed-ui-p14",
+  "status": "current-main selected-pass associated-cohort delivery UI gate, signed-reference backend/API implementation, and rendered signed-reference UI proof through PR #514",
   "scope": {
     "source_branch": "codex/l3-signed-url-impl-p34",
     "merged_pr": "#499",
@@ -9,22 +9,22 @@
     "base_remote": "project6-origin/main",
     "base_commit": "144a32cd",
     "source_base_commit": "144a32cd",
-    "purpose": "Record PR #499 current-main bounded backend/API same-origin signed delivery-reference generation/use after PR #497 docs 102/103 governance, PR #483 same-origin delivery, and PR #487 rendered delivery UI gate authority.",
+    "purpose": "Record PR #514 current-main bounded rendered same-origin signed-reference UI controls after PR #499 backend/API signed-reference implementation, PR #487 rendered delivery UI gate authority, and PR #513 UI/theme trace alignment.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "PR #499 implements only backend/API same-origin signed-reference generation/use through dedicated POST endpoints; post-review hardening requires LAYER3_SIGNED_REFERENCE_SECRET before generation/use so process-local tokens are not emitted. It adds no public/provider URLs, rendered signed URL controls, connector/generic dispatch, destination selection, package mutation, durable token/receipt/audit/revocation state, schema/runtime/source widening, broader UI, or full mockup behavior.",
-    "latest_implementation_pr": "#499",
-    "latest_implementation_branch": "codex/l3-signed-url-impl-p34",
-    "latest_implementation_summary": "PR #499 implements same-origin signed-reference generation/use with HMAC references, 300-second TTL, generation/use revalidation, no row/file creation, and existing delivery preservation; post-review hardening requires configured LAYER3_SIGNED_REFERENCE_SECRET before generation/use.",
+    "live_behavior_change_summary": "PR #514 implements only rendered /review/layer3 same-origin signed-reference generate/use controls. It adds no public/provider URLs, connector/generic dispatch, destination selection, package mutation, durable token/receipt/audit/revocation state, schema/runtime/source widening, qualitative execution, broader UI, or full mockup behavior.",
+    "latest_implementation_pr": "#514",
+    "latest_implementation_branch": "codex/l3-signed-ui-p14",
+    "latest_implementation_summary": "PR #514 implements rendered /review/layer3 same-origin signed-reference controls over PR #499 endpoints and PR #487 delivery UI authority; provider/public URLs, connector/destination dispatch, durable state, qualitative execution, schema/runtime/source widening, package mutation, and full mockup activation remain deferred.",
     "latest_planning_pr": "#497",
     "latest_planning_branch": "codex/l3-signed-url-freeze-p32",
     "latest_planning_summary": "Docs 102/103 define current-main planning/control governance for the signed delivery-reference boundary; they remain non-implementing by themselves.",
     "latest_planning_live_behavior_change": false,
     "latest_planning_behavior_summary": "Docs 102/103 remain planning/control by themselves; PR #499 is the separate bounded backend/API implementation authority.",
-    "latest_implementation_merge_commit": "b784ddd52e9316996f89f32c93ab9618dc100cea",
+    "latest_implementation_merge_commit": "56fb184af598667855d0c166e960d12882e25606",
     "latest_planning_base_commit": "aedf65a452aeeea85e251727ff623d3012213652",
-    "latest_branch_only_implementation_branch": "codex/l3-signed-ui-p14",
+    "latest_branch_only_implementation_branch": "",
     "latest_branch_only_implementation_pr": "",
-    "latest_branch_only_implementation_summary": "Active branch codex/l3-signed-ui-p14 adds rendered /review/layer3 same-origin signed-reference controls over PR #499 endpoints and PR #487 delivery UI authority; provider/public URLs, connector/destination dispatch, durable token/receipt/audit/revocation state, qualitative execution, schema/runtime/source widening, package mutation, and full mockup activation remain deferred.",
+    "latest_branch_only_implementation_summary": "No active branch-only signed-reference UI implementation remains after PR #514 merged to current main.",
     "latest_theme_alignment_pr": "#513",
     "latest_theme_alignment_summary": "PR #513 is current-main UI/theme trace alignment for the Claude Layer 3 prototype over one APS content document trace sample; it does not make qualitative APS content document execution or downstream runtime behavior live.",
     "latest_signed_reference_ui_branch": "codex/l3-signed-ui-p14",
@@ -238,7 +238,9 @@
     "latest_signed_reference_implementation_pr": "#499",
     "latest_signed_reference_implementation_branch": "codex/l3-signed-url-impl-p34",
     "latest_signed_reference_implementation_merge_commit": "b784ddd52e9316996f89f32c93ab9618dc100cea",
-    "latest_signed_reference_implementation_summary": "PR #499 implements same-origin signed-reference generation/use with HMAC references, 300-second TTL, generation/use revalidation, no row/file creation, and existing delivery preservation; post-review hardening requires configured LAYER3_SIGNED_REFERENCE_SECRET before generation/use."
+    "latest_signed_reference_implementation_summary": "PR #499 implements same-origin signed-reference generation/use with HMAC references, 300-second TTL, generation/use revalidation, no row/file creation, and existing delivery preservation; post-review hardening requires configured LAYER3_SIGNED_REFERENCE_SECRET before generation/use.",
+    "latest_signed_reference_ui_pr": "#514",
+    "latest_signed_reference_ui_merge_commit": "56fb184af598667855d0c166e960d12882e25606"
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -3310,7 +3312,7 @@
   "descriptive_summary_selected_pass_cohort_external_export_download_signed_reference_ui_proof": {
     "implementation_branch": "codex/l3-signed-ui-p14",
     "base_commit": "e7413f6a6c06de3d3b60195a906185dd2b865dbe",
-    "scope": "Branch-local rendered /review/layer3 same-origin signed-reference UI over current-main PR #499 backend/API endpoints and PR #487 delivery UI authority. The UI can generate one server-owned signed reference for loaded state and use it through a token-only same-origin request. It creates no provider/public URL behavior, connector/destination dispatch, durable state, runtime/schema/source widening, package mutation, qualitative execution, broader UI, or full mockup activation.",
+    "scope": "Current-main rendered /review/layer3 same-origin signed-reference UI from PR #514 over current-main PR #499 backend/API endpoints and PR #487 delivery UI authority. The UI can generate one server-owned signed reference for loaded state and use it through a token-only same-origin request. It creates no provider/public URL behavior, connector/destination dispatch, durable state, runtime/schema/source widening, package mutation, qualitative execution, broader UI, or full mockup activation.",
     "files_changed": [
       "backend/app/review_ui/static/layer3.html",
       "backend/app/review_ui/static/layer3.js",
@@ -3324,12 +3326,14 @@
       "next_milestone_plans/layer3_workbench_proof_manifest.json",
       "next_milestone_plans/progress-prompt.md"
     ],
-    "live_behavior_change": "branch-local rendered UI only; not current-main until merged",
+    "live_behavior_change": true,
     "authority_basis": [
       "PR #487 is current-main explicit associated-cohort delivery UI gate authority.",
       "PR #499 is current-main backend/API same-origin signed-reference generation/use authority.",
       "PR #513 is current-main UI/theme trace alignment only and does not admit qualitative execution or downstream runtime behavior.",
-      "Docs 104/105 are branch-local governance for the rendered signed-reference UI tranche and deferred gates."
+      "Docs 104/105 are branch-local governance for the rendered signed-reference UI tranche and deferred gates.",
+      "PR #514 is current-main rendered same-origin signed-reference UI authority after merge commit 56fb184af598667855d0c166e960d12882e25606.",
+      "Docs 104/105 are now current-main governance for the rendered signed-reference UI tranche and deferred gates."
     ],
     "no_go_preserved": [
       "no public/provider URL behavior",
@@ -3346,7 +3350,12 @@
       "npm run validate:structure -> 0 errors, 221 pre-existing warnings",
       "npx playwright test e2e/layer3-workbench.spec.js --project=chromium -> 11 passed",
       "npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed -> 11 passed",
-      "git diff --check -> passed with LF-to-CRLF normalization warnings only"
-    ]
+      "git diff --check -> passed with LF-to-CRLF normalization warnings only",
+      "GitHub PR #514 checks backend-layer3-api and test -> passed before merge.",
+      "PR #514 merged to project6-origin/main at 56fb184af598667855d0c166e960d12882e25606.",
+      "Post-PR514 docs/control sync reclassifies the UI proof as current-main without runtime/UI/schema/model/migration changes."
+    ],
+    "implementation_pr": "#514",
+    "merge_commit": "56fb184af598667855d0c166e960d12882e25606"
   }
 }

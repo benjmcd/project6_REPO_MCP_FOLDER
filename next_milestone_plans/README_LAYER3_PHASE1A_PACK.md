@@ -201,7 +201,7 @@ And to the current-main signed delivery-reference governance packet from PR `#49
 
 The signed URL packet freezes the minimum questions and no-go boundaries for a short-lived, server-authorized associated-cohort signed delivery reference after PR `#483` same-origin delivery and PR `#487` rendered gate authority. Docs `102`/`103` do not make signed-reference behavior live by themselves; PR `#499` separately implements only same-origin signed-reference generation/use through backend/API POST endpoints. It does not make rendered signed URL controls, public/provider URLs, connector/generic dispatch, destination selection, package mutation, durable token/receipt/audit/revocation state, schema/runtime/source widening, broader UI, or full mockup behavior live.
 
-And to the current branch-local rendered signed-reference UI freeze plus deferred-gate decision freeze:
+And to the current-main rendered signed-reference UI freeze plus deferred-gate decision freeze:
 
 - `next_milestone_plans/Layer3_planning_docs/104_signed-ui.md`
 - `next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md`
