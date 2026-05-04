@@ -1,17 +1,17 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "Layer 3 signed-reference proof readiness through PR #522 plus provider/public URL governance from docs 110/111 and connector/destination dispatch planning-control governance from docs 112/113",
+  "status": "Layer 3 signed-reference proof readiness through PR #522 plus provider/public URL governance from docs 110/111, connector/destination dispatch planning-control governance from docs 112/113, and qualitative APS content document execution planning-control governance from docs 114/115",
   "scope": {
-    "source_branch": "codex/l3-review-residuals-p24",
+    "source_branch": "codex/l3-qual-exec-freeze-p28",
     "merged_pr": "#522",
     "merge_commit": "06225beec51d4114ba6b155a773feff20eca021d",
     "base_remote": "project6-origin/main",
-    "base_commit": "fcab4b6f2802a82f0c65a51d041fd8fa9fe76d44",
-    "source_base_commit": "fcab4b6f2802a82f0c65a51d041fd8fa9fe76d44",
-    "purpose": "Record signed-reference proof readiness through PR #522 and provider/public URL planning-control governance from docs 110/111: PR #499 backend/API same-origin signed-reference generation/use, PR #514 rendered same-origin signed-reference UI, PR #516 and PR #518 durable-state planning/control, PR #520 bounded durable token/receipt/revocation/audit runtime backing state, PR #521 post-PR520 docs/control sync, PR #522 bounded APS parser/bridge/provenance review-residual settlement, and docs 110/111 provider/public URL governance. Historical per-slice records below preserve their original no-go boundaries.",
-    "live_behavior_change": true,
-    "live_behavior_change_summary": "PR #520 implements only bounded same-origin durable signed-reference backing state behind existing PR #499 endpoints after PR #514 rendered signed-reference controls. PR #522 separately settles only bounded APS parser/bridge/provenance residuals after PR #520/PR #521. Together they add no public/provider URLs, connector/generic dispatch, destination selection, rendered UI behavior beyond PR #514, package mutation, qualitative execution, schema/runtime/source widening beyond the durable signed-reference state tables and bounded parser/bridge/provenance corrections, broader UI, or full mockup behavior.",
+    "base_commit": "ec4dbca091842a288f7bc5f50e4a31b9c12fbc5c",
+    "source_base_commit": "ec4dbca091842a288f7bc5f50e4a31b9c12fbc5c",
+    "purpose": "Record signed-reference proof readiness through PR #522, provider/public URL planning-control governance from docs 110/111, connector/destination dispatch planning-control governance from docs 112/113, and qualitative APS content document execution planning-control governance from docs 114/115. Historical per-slice records below preserve their original no-go boundaries.",
+    "live_behavior_change": false,
+    "live_behavior_change_summary": "This docs/control lane adds no runtime behavior. Docs 114/115 freeze qualitative APS content document execution as not admitted; current APS document support remains selection, trace, material preview, Gate B snapshot, and qualitative/document-chunk typing only, while pass execution remains wrapped quantitative over DatasetVersion inputs.",
     "latest_implementation_pr": "#520",
     "latest_implementation_branch": "codex/l3-durable-runtime-p23",
     "latest_implementation_summary": "PR #520 implements durable same-origin signed-reference token, receipt, revocation, and audit state behind the existing PR #499 generation/use endpoints while preserving token-only response semantics and keeping provider/public URLs, connector/destination dispatch, qualitative execution, package mutation, broader UI, and full mockup activation deferred.",
@@ -269,7 +269,13 @@
       "next_milestone_plans/Layer3_planning_docs/108_DURABLE_ENTRY.md",
       "next_milestone_plans/Layer3_planning_docs/109_DURABLE_STATE.md"
     ],
-    "latest_durable_entry_planning_summary": "PR #518 merged docs 108/109 as current-main planning/control only. They name the future durable same-origin signed-reference implementation surfaces, table family, service seam, API compatibility rule, tests, and stop conditions, without adding runtime behavior, model/migration files, token persistence, receipts, revocation, audit writes, provider/public URLs, connector/destination dispatch, rendered UI changes, qualitative execution, or source/schema/runtime widening."
+    "latest_durable_entry_planning_summary": "PR #518 merged docs 108/109 as current-main planning/control only. They name the future durable same-origin signed-reference implementation surfaces, table family, service seam, API compatibility rule, tests, and stop conditions, without adding runtime behavior, model/migration files, token persistence, receipts, revocation, audit writes, provider/public URLs, connector/destination dispatch, rendered UI changes, qualitative execution, or source/schema/runtime widening.",
+    "latest_qualitative_aps_execution_planning_docs": [
+      "next_milestone_plans/Layer3_planning_docs/114_QUAL_APS_EXEC_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/115_QUAL_APS_EXEC_CONTRACT.md"
+    ],
+    "latest_qualitative_aps_execution_planning_summary": "Docs 114/115 require a future implementation-entry freeze to choose exactly single_aps_doc_qualitative_pass and prove APS document unit authority, chunk ordering/limits, citation/trace refs, execution owner, result/review vocabulary, idempotency, failure behavior, no-leakage behavior, and anti-DatasetVersion tests before code.",
+    "latest_qualitative_aps_execution_planning_live_behavior_change": false
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -342,7 +348,19 @@
     "next_milestone_plans/Layer3_planning_docs/103_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/112_CONNECTOR_DISPATCH_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/113_CONNECTOR_DISPATCH_CONTRACT.md",
-    "backend/app/api/router.py"
+    "backend/app/api/router.py",
+    "next_milestone_plans/Layer3_planning_docs/114_QUAL_APS_EXEC_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/115_QUAL_APS_EXEC_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md",
+    "next_milestone_plans/Layer3_planning_docs/25_L3_QUAL1_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/27_L3_QUAL1_INPUTS.md",
+    "backend/app/services/layer3_workbench.py",
+    "backend/app/services/layer3_typing_entry.py",
+    "backend/app/services/layer3_pass_entry.py",
+    "backend/app/models/models.py",
+    "backend/tests/test_layer3_workbench.py",
+    "backend/tests/test_layer3_typing_entry.py",
+    "backend/tests/test_layer3_pass_entry.py"
   ],
   "current_live_workbench_boundary": {
     "live_bounded": [
@@ -998,7 +1016,16 @@
     "docs 98/99 create destination selection",
     "signed URL generation by docs alone",
     "durable token/receipt/audit state",
-    "rendered signed URL controls"
+    "rendered signed URL controls",
+    "docs 114/115 make qualitative APS execution live",
+    "qualitative APS content document execution is live",
+    "APS document qualitative execution is live",
+    "PR #513 made qualitative execution live",
+    "aps_content_document execution uses DatasetVersion",
+    "qualitative APS execution uses run_analysis",
+    "docs 114/115 change document trace rendering",
+    "docs 114/115 add rendered controls",
+    "docs 114/115 make package or handoff live"
   ],
   "post_merge_pr_222_proof": {
     "merge_commit": "4409702e66ee40d8e2c63c8ea86fa72cb7ea2b6c",
@@ -1453,7 +1480,15 @@
     "backend/alembic/versions",
     "next_milestone_plans/Layer3_planning_docs/112_CONNECTOR_DISPATCH_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/113_CONNECTOR_DISPATCH_CONTRACT.md",
-    "backend/app/api/router.py"
+    "backend/app/api/router.py",
+    "next_milestone_plans/Layer3_planning_docs/114_QUAL_APS_EXEC_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/115_QUAL_APS_EXEC_CONTRACT.md",
+    "next_milestone_plans/Layer3_planning_docs/25_L3_QUAL1_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/27_L3_QUAL1_INPUTS.md",
+    "backend/app/services/layer3_typing_entry.py",
+    "backend/app/services/layer3_pass_entry.py",
+    "backend/tests/test_layer3_workbench.py",
+    "backend/tests/test_layer3_typing_entry.py"
   ],
   "handoff_export_prepare_ui_implementation_proof": {
     "implementation_branch": "codex/l3-handoff-prepare-ui-impl",
@@ -3486,6 +3521,45 @@
       "Stale/no-go scan for connector/destination live-overclaim terms -> only existing forbidden-example rows in 60_L3_WB_APS_HANDOFF_DISPATCH_UI_FREEZE.md matched; no active docs 112/113 live overclaim found",
       "Scope validation -> only next_milestone_plans docs/control paths changed; no backend/runtime/test/UI/schema/model/migration files changed",
       "git diff --check -- next_milestone_plans -> passed with expected LF-to-CRLF warnings on edited text files"
+    ]
+  },
+  "descriptive_summary_selected_pass_cohort_qualitative_aps_document_execution_governance_proof": {
+    "planning_branch": "codex/l3-qual-exec-freeze-p28",
+    "base_commit": "ec4dbca091842a288f7bc5f50e4a31b9c12fbc5c",
+    "scope": "Planning/control qualitative APS content document execution governance after PR #525 current-main connector/destination dispatch governance. No runtime qualitative execution behavior changes by this document-only slice.",
+    "files_changed": [
+      "next_milestone_plans/Layer3_planning_docs/114_QUAL_APS_EXEC_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/115_QUAL_APS_EXEC_CONTRACT.md",
+      "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md",
+      "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_progress_refresh_spec.md",
+      "next_milestone_plans/progress-prompt.md",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json"
+    ],
+    "authority_basis": [
+      "Current main at ec4dbca091842a288f7bc5f50e4a31b9c12fbc5c includes PR #525 connector/destination dispatch governance.",
+      "layer3_workbench supports aps_content_document selection, material-preview source trace, Gate B snapshot persistence, and APS content-document candidate listing.",
+      "layer3_typing_entry maps aps_content_document snapshots to qualitative document_chunks typing.",
+      "layer3_pass_entry execution remains wrapped_quantitative_analysis over DatasetVersion pass scopes, and qualitative-only sets fail closed without creating plan, pass, or analysis rows."
+    ],
+    "non_goals": [
+      "qualitative execution implementation",
+      "qualitative associated-cohort, hybrid, comparative, cross-modal, RAG, vector, LLM, queue, retry, cancel, or recovery behavior",
+      "DatasetVersion conversion or wrapped quantitative run_analysis(...) for APS document execution",
+      "document trace rendering changes or rendered /review/layer3 controls",
+      "package/handoff/export/provider/public URL/connector/destination behavior",
+      "source ingestion/upload/local-directory expansion",
+      "schema/model/migration/runtime/source widening",
+      "broader UI or full mockup activation"
+    ],
+    "verification": [
+      "Validated JSON parse for layer3_progress_manifest.json and layer3_workbench_proof_manifest.json.",
+      "Validated manifest invariants: 76 workbench slice records, 42 live-bounded slices, 34 planning-only slices, every slice state has state_model and state_visuals entries, and all 1090 declared path references resolve or are route/URL labels.",
+      "Validated docs-only scope: git status shows 9 changed files, all under next_milestone_plans/.",
+      "Validated stale/no-go overclaim scan: no unqualified claim that qualitative APS content document execution is live, implemented, PR #513-live, run_analysis-backed, or DatasetVersion-backed was found outside explicit no-go scan terms.",
+      "No pytest or Playwright was required because this lane changes planning/control docs and manifest metadata only; no executable code or UI assets changed."
     ]
   }
 }
