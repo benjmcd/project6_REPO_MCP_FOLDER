@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This contract specifies the durable token, receipt, revocation, and audit state shape required before a runtime implementation can begin. It is branch-local planning/control only.
+This contract specifies the durable token, receipt, revocation, and audit state shape for branch `codex/l3-durable-runtime-p23`. It is the implementation contract for the bounded same-origin durable signed-reference state slice.
 
 ## State Model
 
@@ -15,9 +15,9 @@ Required fields:
 - `reconciliation_record_id`: foreign key to `l3_reconciliation_record.reconciliation_record_id`.
 - `token_hash`: unique hash of the bearer token or opaque handle.
 - `token_prefix`: short response-safe diagnostic prefix.
-- `state`: one of `created`, `ready`, `used`, `revoked`, `expired`, `denied`.
+- `state`: one of `ready`, `used`, `revoked`, `expired`; `created` and `denied` remain reserved for later endpoint/read-model expansion.
 - `replay_policy`: one of `single_use`, `bounded_replay`, `replay_allowed`.
-- `max_use_count`: integer, default selected by the implementation contract.
+- `max_use_count`: integer, fixed at `1` for this first `single_use` implementation.
 - `use_count`: integer.
 - `expires_at`: timezone-aware datetime.
 - `authority_hash`: hash of the PR `#499` delivery authority basis.
@@ -40,7 +40,7 @@ Required fields:
 
 - `signed_reference_receipt_id`: primary key UUID string.
 - `signed_reference_token_id`: foreign key to `l3_signed_reference_token`.
-- `receipt_type`: one of `generated`, `used`, `delivered`, `denied`, `revoked`.
+- `receipt_type`: one of `generated`, `used`; `delivered`, `denied`, and `revoked` remain reserved for later endpoint/read-model expansion.
 - `receipt_status`: response-safe status.
 - `request_id`: client request id when present.
 - `authority_hash`: authority basis hash observed for the receipt.
@@ -70,7 +70,7 @@ Required fields:
 
 - `signed_reference_audit_event_id`: primary key UUID string.
 - `signed_reference_token_id`: nullable foreign key to `l3_signed_reference_token`.
-- `event_type`: one of `generate`, `use`, `deliver`, `deny`, `expire`, `revoke`, `replay_deny`, `stale_authority_deny`, `malformed_token_deny`.
+- `event_type`: one of `generate`, `use`; deny, expiry, revoke, replay, stale-authority, and malformed-token distinctions are encoded in `event_status` and `reason_code` for this first implementation.
 - `event_status`: response-safe status.
 - `request_id`: client request id when present.
 - `authority_hash`: authority hash when available.
@@ -100,13 +100,13 @@ The existing use endpoint may add response headers:
 - `X-Layer3-Signed-Reference-Replay-Policy`
 - `X-Layer3-Signed-Reference-Use-Count`
 
-The use request body must remain token-only unless a later freeze admits a revoke or receipt-read endpoint. Provider URL fields, connector fields, destination fields, package mutation fields, source-widening fields, and qualitative execution fields remain outside the request schema.
+The use request body remains token-only unless a later freeze admits a revoke or receipt-read endpoint. Provider URL fields, connector fields, destination fields, package mutation fields, source-widening fields, and qualitative execution fields remain outside the request schema.
 
 ## Revocation Endpoint Decision
 
 Do not add a revocation endpoint in the first durable implementation unless the implementation freeze explicitly admits it.
 
-The first implementation may include model/service revocation primitives and tests, but rendered UI and public API revocation must remain out until a separate endpoint/UI freeze names:
+The first implementation includes revocation table awareness but no public/API/UI revocation route. Rendered UI and public API revocation must remain out until a separate endpoint/UI freeze names:
 
 - route path;
 - request schema;
@@ -117,12 +117,12 @@ The first implementation may include model/service revocation primitives and tes
 
 ## Compatibility Rule
 
-PR `#499` stateless HMAC behavior is preserved as the authority validator and token envelope baseline. The durable layer may add lookup state and fail-closed revocation/replay checks, but it must still:
+PR `#499` stateless HMAC behavior is preserved as the authority validator and token envelope baseline. The durable layer adds lookup state and fail-closed revocation/replay checks, but it must still:
 
 - require `LAYER3_SIGNED_REFERENCE_SECRET`;
 - reject malformed tokens;
 - reject signature mismatch;
-- reject expired tokens;
+- reject expired tokens through the HMAC expiry guard and durable expiry state when reached through a recorded token row;
 - reject extra use-request fields;
 - revalidate current associated-cohort delivery authority;
 - keep public/provider URLs, connector/destination dispatch, package mutation, schema/runtime/source widening, qualitative execution, and broader UI out.
@@ -133,12 +133,12 @@ The implementation must use database transactions around state transitions. Simu
 
 - `revoked` beats `ready` and `used`;
 - `expired` beats `ready` and `used` when current time is at or after expiry;
-- replay is allowed only according to `replay_policy` and `max_use_count`;
+- replay is denied after one accepted use because this implementation selects `single_use` and `max_use_count=1`;
 - receipt creation and audit creation must be in the same committed unit as the token transition unless the implementation documents a stricter fail-closed order.
 
 ## Retention Rule
 
-The first implementation must specify a retention window before code changes. Cleanup may be a later lane, but the schema must include enough indexed state for cleanup by `expires_at`, terminal state, and creation time.
+Cleanup remains a later lane, but the schema includes indexed state for cleanup by `expires_at`, terminal state, and creation time.
 
 ## Security Rules
 

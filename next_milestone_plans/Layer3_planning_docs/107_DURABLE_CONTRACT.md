@@ -2,27 +2,26 @@
 
 ## Purpose
 
-This contract defines the minimum shape a future durable signed-reference implementation must satisfy. It is planning-only and exists to prevent durable token, receipt, revocation, and audit work from being hidden inside provider/public URL, connector/destination, qualitative execution, or UI-only patches.
+This contract defines the minimum shape the durable signed-reference implementation must satisfy. It exists to prevent durable token, receipt, revocation, and audit work from being hidden inside provider/public URL, connector/destination, qualitative execution, or UI-only patches.
 
-Branch-local docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` provide the next implementation-entry refinement of this contract. They remain planning/control only until merged and revalidated against current `project6-origin/main`.
+Docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` provide the implementation-entry refinement of this contract for branch `codex/l3-durable-runtime-p23`, based on `project6-origin/main` `5896b9b5910d61ff94b27ff0c142b35319dd5fa1`.
 
 ## Contract Boundary
 
-The future durable-state layer, if admitted, must sit between the already-live same-origin signed-reference endpoints and any future provider/public URL or connector/destination behavior.
+The durable-state layer sits between the already-live same-origin signed-reference endpoints and any future provider/public URL or connector/destination behavior.
 
 Current live endpoints remain:
 
 - `POST /api/v1/layer3/handoff/export/download/signed-reference/generate`
 - `POST /api/v1/layer3/handoff/export/download/signed-reference/use`
 
-Any durable implementation must either:
+This implementation preserves those endpoints and adds durable backing state behind the same admitted same-origin contract. Future successor endpoints remain out of scope unless a later freeze admits them.
 
-- preserve those endpoints and add durable backing state behind the same admitted same-origin contract; or
-- introduce explicitly named successor endpoints while preserving or deprecating the existing endpoints through a documented compatibility rule.
+The compatibility rule is: preserve the PR `#499` HMAC envelope, missing-secret failure, 300-second TTL posture, token-only use request, and generation/use authority revalidation, while intentionally adding durable missing-state, revocation, and single-use replay failure modes.
 
 ## State Requirements
 
-A future durable implementation must define:
+The durable implementation defines:
 
 - `token_record`: persisted token identity, token hash or opaque lookup key, authority snapshot, expiry, state, and creation metadata;
 - `receipt_record`: immutable proof of generation/use/delivery outcome, artifact basis, authority basis, and response-safe receipt id;
@@ -43,11 +42,11 @@ The durable token state machine must be explicit:
 - `expired`: token lifetime elapsed and must fail closed;
 - `denied`: malformed, stale-authority, missing-secret, or policy-denied use attempt was recorded without granting access.
 
-The contract must state whether `used` is terminal. If replay is allowed, the contract must define maximum replay count, receipt behavior for repeated use, and audit event differences between first use and replay.
+For this first runtime slice, `used` is terminal. Replay is denied after one accepted use with `single_use` and `max_use_count=1`. A replay attempt records an audit denial and does not create a delivery receipt.
 
 ## API Requirements
 
-A later implementation must define response fields for:
+The implementation defines response fields for:
 
 - token readiness and expiry;
 - durable token id or token prefix only, never raw token echo beyond the existing generated token response if that response remains admitted;
@@ -60,13 +59,13 @@ Request payloads must remain admitted-field-only. Provider URL fields, destinati
 
 ## Security And Operational Requirements
 
-The durable implementation must specify:
+The durable implementation specifies:
 
 - token TTL and maximum retention;
 - token hashing and log-redaction rules;
 - secret/key rotation behavior;
 - whether tokens survive process restart and multi-worker deployment;
-- cleanup job or retention process ownership;
+- cleanup job or retention process ownership remains deferred, but the table family is indexed by state/expiry for a later cleanup lane;
 - audit log retention and operator inspection limits;
 - idempotency key requirements for generate, use, revoke, and receipt reads;
 - concurrency rules for simultaneous use/revoke/expiry transitions;
@@ -74,27 +73,27 @@ The durable implementation must specify:
 
 ## Testing Requirements
 
-Required tests for a later implementation:
+Required tests for this implementation:
 
 - migration/model tests for every new or changed table/model/index;
 - focused API tests for every state transition and failure code;
 - authority-chain tests proving stale or mismatched associated-cohort delivery state fails closed;
 - security tests proving raw tokens are not persisted or logged by normal response paths;
 - idempotency and concurrency tests for generate/use/revoke;
-- compatibility tests for PR `#499` stateless HMAC behavior, whether preserved, wrapped, or deliberately superseded;
+- compatibility tests for PR `#499` HMAC behavior, with replay deliberately superseded by durable single-use state;
 - negative tests proving provider/public URL, connector/destination, package mutation, source widening, and qualitative execution remain unavailable.
 
 Browser tests are required only when a later lane changes rendered UI. If UI changes are admitted, both headed and headless Chrome proof are required.
 
 ## Implementation Entry Conditions
 
-Do not implement durable state until:
+Implementation entry has been admitted for only these surfaces:
 
-- exact model/migration files are named;
-- compatibility with PR `#499` is decided;
-- receipt and audit schemas are specified;
-- revocation authority and response semantics are specified;
-- security review expectations are written down;
-- the workbench progress docs classify the lane as planned/open rather than inferred from adjacent signed-reference wording.
+- `backend/app/models/models.py`
+- `backend/alembic/versions/0016_layer3_signed_reference_state.py`
+- `backend/app/services/layer3_signed_reference_state.py`
+- `backend/app/services/layer3_workbench.py`
+- `backend/app/api/layer3.py`
+- `backend/tests/test_layer3_api.py`
 
-On this branch, docs `108`/`109` name the proposed entry surfaces and state contract, but implementation still requires a separate code lane after merge/revalidation.
+Do not broaden beyond those surfaces without a refreshed freeze. Provider/public URL, connector/destination, qualitative execution, package mutation, source widening, and rendered revoke/copy/share UI remain deferred.
