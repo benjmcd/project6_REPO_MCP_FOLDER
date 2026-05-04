@@ -86,6 +86,10 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="external-export-download-delivery-form"' in response.text
     assert 'id="external-export-download-delivery-panel"' in response.text
     assert 'id="external-export-download-delivery-submit"' in response.text
+    assert 'id="external-export-download-signed-reference-form"' in response.text
+    assert 'id="external-export-download-signed-reference-panel"' in response.text
+    assert 'id="external-export-download-signed-reference-generate"' in response.text
+    assert 'id="external-export-download-signed-reference-use"' in response.text
     assert 'href="/review/layer3/static/layer3.css"' in response.text
     assert 'src="/review/layer3/static/layer3.js"' in response.text
     assert "Plan</button>" in response.text
@@ -198,6 +202,12 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "postJson('/handoff/aps/dispatch'" in js.text
     assert "postJson('/handoff/export/download/prepare'" in js.text
     assert "submitAttachmentForm('/handoff/export/download/deliver'" in js.text
+    assert "'/handoff/export/download/signed-reference/generate'" in js.text
+    assert "handoff/export/download/signed-reference/use" in js.text
+    assert "same_origin_signed_delivery_reference" in js.text
+    assert "external_export_download_signed_reference_ui_ready" in js.text
+    assert "provider_signed_url" in js.text
+    assert "durable_token_state" in js.text
     assert "function externalExportDownloadDeliveryUiAdmitted" in js.text
     assert "deliveryUi.state === 'associated_cohort_external_export_download_delivery_ui_ready'" in js.text
     assert "deliveryUi.browser_managed_same_origin_attachment_enabled === true" in js.text
@@ -210,6 +220,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "operator_decision: 'dispatch_aps_handoff'" in js.text
     assert "operator_decision: 'prepare_external_export_download'" in js.text
     assert "operator_decision: 'deliver_external_export_download'" in js.text
+    assert "function externalExportDownloadSignedReferencePayload" in js.text
     review_start = js.text.find("function resultReviewPayload")
     review_end = js.text.find("function packageReviewPreviewPayload")
     package_start = js.text.find("function packageReviewSubmitPayload")
@@ -400,6 +411,20 @@ def test_layer3_static_assets_are_mounted() -> None:
         assert f"{forbidden}:" not in external_delivery_slice
     assert "planRevisionPending" in js.text
     assert "State.planRevisionPending = true" in js.text
+    signed_start = js.text.find("function externalExportDownloadSignedReferencePayload")
+    signed_end = js.text.find("async function refreshSessionSummary")
+    assert signed_start != -1
+    assert signed_end != -1
+    signed_slice = js.text[signed_start:signed_end]
+    assert "externalExportDownloadDeliveryPayload(authority)" in signed_slice
+    assert "signed_reference_token" in signed_slice
+    assert "download_url:" not in signed_slice
+    assert "public_url:" not in signed_slice
+    assert "signed_url:" not in signed_slice
+    assert "connector_run_id:" not in signed_slice
+    assert "destination:" not in signed_slice
+    assert "runtime_db_write:" not in signed_slice
+    assert "schema_migration:" not in signed_slice
 
 
 def test_layer3_shell_does_not_remove_adjacent_review_pages() -> None:
