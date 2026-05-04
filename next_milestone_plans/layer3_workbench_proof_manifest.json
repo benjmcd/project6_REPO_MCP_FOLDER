@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "branch-local durable signed-reference implementation-entry planning/control docs 108/109 after current-main PR #516 durable-state planning docs 106/107; no runtime behavior changes",
+  "status": "current-main durable signed-reference implementation-entry planning/control docs 108/109 after PR #518; no runtime behavior changes",
   "scope": {
     "source_branch": "codex/l3-signed-url-impl-p34",
     "merged_pr": "#499",
@@ -9,7 +9,7 @@
     "base_remote": "project6-origin/main",
     "base_commit": "144a32cd",
     "source_base_commit": "144a32cd",
-    "purpose": "Record PR #514 current-main bounded rendered same-origin signed-reference UI controls after PR #499 backend/API signed-reference implementation, PR #487 rendered delivery UI gate authority, and PR #513 UI/theme trace alignment, plus current-main PR #516 docs 106/107 durable-state planning/control selection.",
+    "purpose": "Record PR #514 current-main bounded rendered same-origin signed-reference UI controls after PR #499 backend/API signed-reference implementation, PR #487 rendered delivery UI gate authority, and PR #513 UI/theme trace alignment, plus current-main PR #516 docs 106/107 durable-state planning/control selection and PR #518 docs 108/109 durable implementation-entry planning/control selection.",
     "live_behavior_change": true,
     "live_behavior_change_summary": "PR #514 implements only rendered /review/layer3 same-origin signed-reference generate/use controls. It adds no public/provider URLs, connector/generic dispatch, destination selection, package mutation, durable token/receipt/audit/revocation state, schema/runtime/source widening, qualitative execution, broader UI, or full mockup behavior.",
     "latest_implementation_pr": "#514",
@@ -250,14 +250,16 @@
     "latest_signed_reference_implementation_summary": "PR #499 implements same-origin signed-reference generation/use with HMAC references, 300-second TTL, generation/use revalidation, no row/file creation, and existing delivery preservation; post-review hardening requires configured LAYER3_SIGNED_REFERENCE_SECRET before generation/use.",
     "latest_signed_reference_ui_pr": "#514",
     "latest_signed_reference_ui_merge_commit": "56fb184af598667855d0c166e960d12882e25606",
-    "latest_branch_local_durable_entry_branch": "codex/l3-durable-entry-p21",
-    "latest_branch_local_durable_entry_base_commit": "3e3141902b45ef1d27d2d768e0b52440fd468814",
-    "latest_branch_local_durable_entry_live_behavior_change": false,
-    "latest_branch_local_durable_entry_docs": [
+    "latest_durable_entry_planning_branch": "codex/l3-durable-entry-p21",
+    "latest_durable_entry_planning_pr": "#518",
+    "latest_durable_entry_planning_base_commit": "3e3141902b45ef1d27d2d768e0b52440fd468814",
+    "latest_durable_entry_planning_merge_commit": "3fa4183e84ac4dad37e40fd84110cfd6ae621d20",
+    "latest_durable_entry_planning_live_behavior_change": false,
+    "latest_durable_entry_planning_docs": [
       "next_milestone_plans/Layer3_planning_docs/108_DURABLE_ENTRY.md",
       "next_milestone_plans/Layer3_planning_docs/109_DURABLE_STATE.md"
     ],
-    "latest_branch_local_durable_entry_summary": "Docs 108/109 are branch-local planning/control only. They name the future durable same-origin signed-reference implementation surfaces, table family, service seam, API compatibility rule, tests, and stop conditions, without adding runtime behavior, model/migration files, token persistence, receipts, revocation, audit writes, provider/public URLs, connector/destination dispatch, rendered UI changes, qualitative execution, or source/schema/runtime widening."
+    "latest_durable_entry_planning_summary": "PR #518 merged docs 108/109 as current-main planning/control only. They name the future durable same-origin signed-reference implementation surfaces, table family, service seam, API compatibility rule, tests, and stop conditions, without adding runtime behavior, model/migration files, token persistence, receipts, revocation, audit writes, provider/public URLs, connector/destination dispatch, rendered UI changes, qualitative execution, or source/schema/runtime widening."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",

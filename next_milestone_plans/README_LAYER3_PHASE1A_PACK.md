@@ -215,7 +215,7 @@ And to the durable signed-reference state planning/control freeze:
 - `next_milestone_plans/Layer3_planning_docs/108_DURABLE_ENTRY.md`
 - `next_milestone_plans/Layer3_planning_docs/109_DURABLE_STATE.md`
 
-Current-main docs `106`/`107` select durable token, receipt, revocation, and audit state as the next planning/control question after the current same-origin signed-reference chain. Branch-local docs `108`/`109` name the implementation-entry surfaces, durable table family, service seam, API compatibility rule, and test obligations for a later code lane. They do not implement durable state, add model or migration files, change PR `#499` stateless HMAC behavior, change PR `#514` rendered controls, expose provider/public URLs, dispatch to connectors/destinations, or admit qualitative APS content document execution.
+Current-main docs `106`/`107` select durable token, receipt, revocation, and audit state as the next planning/control question after the current same-origin signed-reference chain. Current-main docs `108`/`109` from PR `#518` name the implementation-entry surfaces, durable table family, service seam, API compatibility rule, and test obligations for a later code lane. They do not implement durable state, add model or migration files, change PR `#499` stateless HMAC behavior, change PR `#514` rendered controls, expose provider/public URLs, dispatch to connectors/destinations, or admit qualitative APS content document execution.
 
 And to the descriptive-summary Gate C admission packet, whose single-item implementation boundary was satisfied by PR `#417` after PR `#411` lower-level method support:
 - `next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md`
@@ -1298,9 +1298,9 @@ Start with:
 - `backend/alembic/versions`
 - `backend/tests/test_layer3_api.py`
 
-Read docs `108`/`109` as branch-local implementation-entry planning/control only:
+Read docs `108`/`109` as current-main implementation-entry planning/control only after PR `#518`:
 - they name a future durable control-plane table family, service seam, API compatibility rule, and tests
-- they select `backend/alembic/versions/0016_layer3_signed_reference_state.py` only for the current branch base where `0015_layer3_package_entry.py` is the latest migration
+- they select `backend/alembic/versions/0016_layer3_signed_reference_state.py` only for the PR `#518` base where `0015_layer3_package_entry.py` was the latest migration
 - if main has gained a newer migration or signed-reference API change, refresh the entry freeze before implementation
 - they do not add runtime behavior, model/migration files, token persistence, receipt creation, revocation behavior, audit writes, provider/public URLs, connector/destination dispatch, rendered UI changes, qualitative execution, or source/schema/runtime widening
 
