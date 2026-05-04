@@ -6,7 +6,7 @@ Status: implemented on 2026-05-03 in the `codex/l3-table-bridge` worktree.
 
 Phase P7.5 resolves the immediate post-P7 bridge-contract decision. XLSX connector orchestration is now supported only through a new generic table bridge path, not by broadening the existing CSV-named gate.
 
-This phase does not admit `.xls`, `.xlsm`, encrypted workbooks, formula-bearing workbooks, arbitrary named ranges, ambiguous multi-sheet workbooks without explicit selection, XLSX files nested inside archives, JSON recordsets, SEC/EDGAR filings, schema/model/migration changes, or new Layer 3 source semantics.
+This phase does not admit `.xls`, `.xlsm`, encrypted workbooks, formula-bearing workbooks, arbitrary named ranges, ambiguous multi-sheet workbooks without explicit selection, XLSX files nested inside archives, JSON recordsets, SEC/EDGAR filings, schema/model/migration changes, or new Layer 3 source semantics. JSON recordsets are handled by the later bounded Phase P8 slice.
 
 ## Implemented Boundary
 
@@ -42,8 +42,8 @@ Validated assertions:
 - The legacy CSV bridge path remains intentionally supported for existing consumers.
 - Generic table bridge orchestration is opt-in and requires the existing hydrate/process artifact pipeline.
 - Layer 3 still consumes the resulting records through the existing `dataset_version` source shape.
-- Broader workbook semantics, JSON recordsets, SEC/EDGAR filings, and mixed qualitative-plus-table package semantics remain separate phases.
+- Broader workbook semantics, SEC/EDGAR filings, arbitrary JSON document semantics, archive-member JSON orchestration, and mixed qualitative-plus-table package semantics remain separate phases.
 
 ## Next
 
-The next implementation tranche should be either JSON recordset parsing or SEC/EDGAR filing parsing, with the same fail-closed parser admission, explicit materialization, provenance, and downstream Layer 3 validation discipline.
+The next implementation tranche after P8 should be SEC/EDGAR filing parsing or narrow typed/refused UI surfacing, with the same fail-closed parser admission, explicit materialization, provenance, and downstream Layer 3 validation discipline.

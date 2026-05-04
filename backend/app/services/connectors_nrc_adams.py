@@ -425,6 +425,15 @@ def _lint_submission_config(config: dict[str, Any]) -> list[str]:
         raise SubmissionConflictError("content_chunk_overlap_chars must satisfy 0 <= overlap < chunk_size")
     if min_chunk_chars < 1 or min_chunk_chars > chunk_size_chars:
         raise SubmissionConflictError("content_chunk_min_chars must satisfy 1 <= min <= chunk_size")
+    json_parse_max_rows = _coerce_int(config.get("json_parse_max_rows", 10_000), 10_000)
+    json_parse_max_columns = _coerce_int(config.get("json_parse_max_columns", 200), 200)
+    json_parse_max_bytes = _coerce_int(config.get("json_parse_max_bytes", 5_000_000), 5_000_000)
+    if json_parse_max_rows < 1:
+        raise SubmissionConflictError("json_parse_max_rows must be > 0")
+    if json_parse_max_columns < 1:
+        raise SubmissionConflictError("json_parse_max_columns must be > 0")
+    if json_parse_max_bytes < 1:
+        raise SubmissionConflictError("json_parse_max_bytes must be > 0")
     safeguard_lint = dict(config.get("safeguard_lint") or {})
     blocking_errors = [dict(item or {}) for item in safeguard_lint.get("blocking_errors", []) if isinstance(item, dict)]
     if blocking_errors:
@@ -637,6 +646,10 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
                 "content_chunk_min_chars",
                 "csv_dataset_bridge_enabled",
                 "table_dataset_bridge_enabled",
+                "json_parse_max_bytes",
+                "json_parse_max_rows",
+                "json_parse_max_columns",
+                "json_record_path",
                 "report_verbosity",
                 "safeguard_policy",
                 "client_request_id",
@@ -749,6 +762,10 @@ def _normalize_request_config(payload: dict[str, Any], submission_idempotency_ke
         "content_chunk_min_chars": _coerce_int(config.get("content_chunk_min_chars", APS_CONTENT_INDEX_DEFAULT_MIN_CHUNK), APS_CONTENT_INDEX_DEFAULT_MIN_CHUNK),
         "csv_dataset_bridge_enabled": _coerce_bool(config.get("csv_dataset_bridge_enabled"), default=False),
         "table_dataset_bridge_enabled": _coerce_bool(config.get("table_dataset_bridge_enabled"), default=False),
+        "json_parse_max_bytes": max(1, _coerce_int(config.get("json_parse_max_bytes", 5_000_000), 5_000_000)),
+        "json_parse_max_rows": max(1, _coerce_int(config.get("json_parse_max_rows", 10_000), 10_000)),
+        "json_parse_max_columns": max(1, _coerce_int(config.get("json_parse_max_columns", 200), 200)),
+        "json_record_path": str(config.get("json_record_path") or "").strip() or None,
         "allowed_hosts": allowed_hosts,
         "fetch_policy_mode": str(config.get("fetch_policy_mode", "strict_public_safe") or "strict_public_safe"),
         "report_verbosity": report_verbosity,
@@ -2095,7 +2112,7 @@ def _generate_table_dataset_bridge_artifacts(
         "materialized_dataset_versions": len(materialized),
         "skipped_targets": len(skipped),
         "failures_count": len(failures),
-        "supported_parser_families": ["csv_table", "xlsx_workbook"],
+        "supported_parser_families": ["csv_table", "xlsx_workbook", "json_recordset"],
         "materialized": materialized,
         "skipped": skipped,
         "failures": failures,

@@ -48,6 +48,14 @@ _TABLE_PARSER_CONTRACTS = {
         "version_label": "aps_xlsx_table_v1",
         "source_mode": "artifact_xlsx_parser",
     },
+    "json_recordset": {
+        "typed_content_contract_id": "aps_json_recordset_units_v1",
+        "logical_prefix": "json-recordset",
+        "dataset_label": "JSON recordset table",
+        "description": "Materialized from NRC APS JSON recordset parser diagnostics.",
+        "version_label": "aps_json_recordset_v1",
+        "source_mode": "artifact_json_recordset_parser",
+    },
 }
 
 

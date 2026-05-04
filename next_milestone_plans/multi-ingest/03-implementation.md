@@ -85,7 +85,7 @@ Implemented boundary:
 
 - CSV declared/filename artifacts fail closed as `typed_content_type_not_admitted`.
 - XLS/XLSX/XLSM filename or OOXML package evidence is classified as spreadsheet before generic ZIP; `.xlsx` is now parser-admitted by Phase P7, while `.xls` and `.xlsm` remain unadmitted.
-- JSON/XML/HTML declared/sniffed/extension evidence is refused.
+- At the P1 boundary, JSON/XML/HTML declared/sniffed/extension evidence was refused; Phase P8 later admits only bounded JSON recordsets while XML/HTML remain refused.
 - ZIP members with typed/refused extensions are recorded as member-level unadmitted/refused outcomes instead of flattened into text.
 - Existing PDF/text/image/generic-ZIP behavior is preserved.
 
@@ -362,6 +362,8 @@ Stop condition:
 
 ## Phase P8: JSON Recordset Parser
 
+Status: bounded implementation added for standalone JSON recordsets after the generic table bridge was proven. This does not admit arbitrary structured JSON, nested flattening, archive-member JSON orchestration, schema changes, new Layer 3 source semantics, or JSON/XML/HTML filing semantics.
+
 Goal:
 
 Admit only table-like JSON, not arbitrary JSON documents.
@@ -377,6 +379,16 @@ Stop condition:
 
 - JSON recordset fixture materializes as dataset rows.
 - Non-recordset JSON fails closed with explicit diagnostics.
+
+Implemented boundary:
+
+- `application/json` is admitted only to the `json_recordset` parser path.
+- Root JSON arrays of flat objects are accepted.
+- Object roots require a configured record path such as `data.records`.
+- Nested/list/object values, heterogeneous keys, empty arrays, invalid JSON, oversized JSON, and object roots without a configured record path fail closed.
+- Parser output emits `table_units`, optional `time_series_units`, field paths, record paths, row counts, column kinds, numeric columns, and time-column candidates.
+- Generic table bridge materialization supports `json_recordset` under `aps_table_dataset_bridge_v1` with `source_mode="artifact_json_recordset_parser"`.
+- Connector finalization can materialize processed JSON recordset artifacts only when `table_dataset_bridge_enabled=true`.
 
 ## Phase P9: SEC/EDGAR Filing Parser
 
@@ -398,7 +410,7 @@ Stop condition:
 
 ## Phase P10: UI And Operator Surfacing
 
-Status: partially implemented as bounded Phase P10A for Layer 3 APS-derived CSV `DatasetVersion` candidate listing and explicit selection.
+Status: partially implemented as bounded Phase P10A for Layer 3 APS-derived `DatasetVersion` candidate listing and explicit selection.
 
 Goal:
 
@@ -414,7 +426,7 @@ Requirements:
 
 Stop condition:
 
-- P10A stop condition is met when an operator can discover/select APS-derived CSV bridge dataset versions in the Layer 3 workbench without reading raw JSON.
+- P10A stop condition is met when an operator can discover/select APS-derived bridge dataset versions in the Layer 3 workbench without reading raw JSON.
 - The broader P10 stop condition remains open until operators can distinguish PDF documents, text documents, typed datasets, mixed filings, and refused artifacts without reading raw JSON.
 
 ## Target Implementation Flow
@@ -429,10 +441,10 @@ flowchart TD
     F --> G["P6: execution and package proof"]
     G --> H["P10A: APS dataset UI selection"]
     G --> I["P7: spreadsheet parser"]
-    G --> J["P8: JSON recordset parser"]
-    G --> K["P9: SEC/EDGAR filing parser"]
+    I --> J["P8: JSON recordset parser"]
+    J --> K["P9: SEC/EDGAR filing parser"]
 ```
 
 ## Immediate Recommendation
 
-The next implementation PR should not repeat P10A APS-derived dataset selection. Phase P6 proves backend selected-pass execution/result/package preservation for explicit APS-derived `DatasetVersion` material, and P10A now gives that path a bounded workbench selection affordance. The next narrow slice should either add the next typed parser family behind the same fail-closed bridge pattern or expand P10 only where new server-backed source families exist.
+The next implementation PR should not repeat P10A APS-derived dataset selection or P8 JSON recordset materialization. The next narrow slice should either add a SEC/EDGAR parser behind the same fail-closed parser/materialization discipline or expand P10 only where existing server-backed source families need clearer operator surfacing.

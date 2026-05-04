@@ -54,6 +54,13 @@ _PARSER_SPECS: tuple[ApsParserSpec, ...] = (
         parser_contract_id="aps_xlsx_workbook_parser_v1",
     ),
     ApsParserSpec(
+        content_type="application/json",
+        document_processing_engine=APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
+        parser_family="json_recordset",
+        parser_output_family="table_units",
+        parser_contract_id="aps_json_recordset_parser_v1",
+    ),
+    ApsParserSpec(
         content_type="application/pdf",
         document_processing_engine=APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
         parser_family="pdf_document",
