@@ -90,6 +90,13 @@ from app.services.layer3_typing_entry import (
     Layer3TypingEntryError,
     materialize_typing_entry,
 )
+from app.services.layer3_utils import (
+    epoch_seconds_iso_z as _epoch_iso,
+    json_clone as _json_clone,
+    stable_id as _stable_id,
+    stable_json_bytes as _canonical_json_bytes,
+    utcnow_iso_z as _utcnow_iso,
+)
 
 SCHEMA_VERSION = 1
 ROUTE = "/review/layer3"
@@ -1046,19 +1053,6 @@ def _signed_reference_state_workbench_error(exc: SignedReferenceStateError) -> L
     )
 
 
-def _utcnow_iso() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-def _json_clone(value: Any) -> Any:
-    return json.loads(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False))
-
-
-def _stable_id(prefix: str, payload: Any) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    return f"{prefix}-{hashlib.sha256(encoded).hexdigest()[:16]}"
-
-
 EXTERNAL_EXPORT_DOWNLOAD_SIGNED_REFERENCE_TTL_SECONDS = 300
 SIGNED_REFERENCE_SECRET_ENV_VAR = "LAYER3_SIGNED_REFERENCE_SECRET"
 
@@ -1079,14 +1073,6 @@ def _signed_reference_signing_key() -> bytes:
             next_allowed_actions=["configure_layer3_signed_reference_secret"],
         )
     return hashlib.sha256(configured_secret).digest()
-
-
-def _epoch_iso(epoch_seconds: int) -> str:
-    return datetime.fromtimestamp(epoch_seconds, timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-def _canonical_json_bytes(payload: Any) -> bytes:
-    return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
 def _urlsafe_b64encode(data: bytes) -> str:
