@@ -333,6 +333,23 @@ def default_processing_config(overrides: dict[str, Any] | None = None) -> dict[s
     return config
 
 
+def _normalize_upper_string_list(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        raw_values = value.split(",")
+    elif isinstance(value, (list, tuple, set)):
+        raw_values = list(value)
+    else:
+        raw_values = [value]
+    result: list[str] = []
+    for item in raw_values:
+        normalized = str(item or "").strip().upper()
+        if normalized and normalized not in result:
+            result.append(normalized)
+    return result
+
+
 def _deadline_from_config(config: dict[str, Any]) -> float | None:
     timeout_seconds = float(config.get("content_parse_timeout_seconds") or 0)
     if timeout_seconds <= 0:
@@ -584,7 +601,7 @@ def _process_sec_edgar(
         max_bytes=int(config["sec_edgar_parse_max_bytes"]),
         max_rows=int(config["sec_edgar_parse_max_rows"]),
         max_columns=int(config["sec_edgar_parse_max_columns"]),
-        admitted_form_types=list(config.get("sec_edgar_admitted_form_types") or []),
+        admitted_form_types=_normalize_upper_string_list(config.get("sec_edgar_admitted_form_types")),
     )
     _raise_if_deadline_exceeded(deadline)
     normalized_text = str(parsed["normalized_text"] or "")
@@ -636,6 +653,7 @@ def _process_sec_edgar(
             "sec_edgar_filing_contract_id": parsed["sec_edgar_filing_contract_id"],
             "filing_metadata": parsed["filing_metadata"],
             "table_count": parsed["table_count"],
+            "time_column_candidates": parsed["time_column_candidates"],
             "tables": parsed["table_diagnostics"],
         },
         "normalized_text": normalized_text,

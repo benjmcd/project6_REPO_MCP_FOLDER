@@ -104,13 +104,16 @@ def _unsafe_formula_cell(value: str) -> bool:
 
 def _dedupe_headers(headers: list[str]) -> list[str]:
     seen: dict[str, int] = {}
+    used: set[str] = set()
     result: list[str] = []
     for index, header in enumerate(headers, start=1):
         base = str(header or "").strip() or f"column_{index}"
-        key = base
-        seen[key] = int(seen.get(key, 0)) + 1
-        if seen[key] > 1:
+        seen[base] = int(seen.get(base, 0)) + 1
+        key = base if seen[base] == 1 else f"{base}_{seen[base]}"
+        while key in used:
+            seen[base] += 1
             key = f"{base}_{seen[base]}"
+        used.add(key)
         result.append(key)
     return result
 
@@ -118,11 +121,12 @@ def _dedupe_headers(headers: list[str]) -> list[str]:
 def _looks_like_header(row: list[str], next_row: list[str]) -> bool:
     if not row or any(_is_null(value) for value in row):
         return False
-    if len(set(str(value).strip() for value in row)) != len(row):
-        return False
+    has_duplicate_labels = len(set(str(value).strip() for value in row)) != len(row)
     headerish = sum(1 for value in row if not _is_number(value) and not _is_datetime(value))
     dataish = sum(1 for value in next_row if _is_number(value) or _is_datetime(value) or _is_bool(value))
-    return headerish == len(row) or (headerish >= max(1, len(row) // 2) and dataish >= 1)
+    return (headerish == len(row) and (not has_duplicate_labels or dataish >= 1)) or (
+        headerish >= max(1, len(row) // 2) and dataish >= 1
+    )
 
 
 def _column_kind(values: list[str]) -> str:
