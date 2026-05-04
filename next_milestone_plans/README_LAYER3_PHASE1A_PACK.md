@@ -217,6 +217,13 @@ And to the durable signed-reference state planning/control freeze:
 
 Current-main docs `106`/`107` select durable token, receipt, revocation, and audit state after the current same-origin signed-reference chain. Current-main docs `108`/`109` from PR `#518` name the implementation-entry surfaces, durable table family, service seam, API compatibility rule, and test obligations. PR `#520` implements only the bounded durable runtime backing state behind the existing PR `#499` endpoints: token hash records, generation/use receipts, audit rows, revocation table awareness without a public endpoint, durable missing-state failure, and single-use replay denial. It does not expose provider/public URLs, dispatch to connectors/destinations, change rendered UI, mutate packages, widen source/schema/runtime scope, or admit qualitative APS content document execution.
 
+And to the provider/public URL planning/control freeze:
+
+- `next_milestone_plans/Layer3_planning_docs/110_PROVIDER_URL_FREEZE.md`
+- `next_milestone_plans/Layer3_planning_docs/111_PROVIDER_URL_CONTRACT.md`
+
+Docs `110`/`111` freeze provider/public URL behavior as not admitted after PR `#520` durable same-origin signed-reference runtime and PR `#522` residual settlement. They require a future implementation-entry freeze to choose exactly one provider/public mode, prove concrete provider/object-store authority, define ACL/expiry/revocation/header/security behavior, and preserve same-origin delivery plus durable same-origin signed references unless explicitly superseded. They do not implement provider URLs, public URLs, object-store ACL changes, connector/destination dispatch, rendered controls, package mutation, schema/runtime/source widening, qualitative execution, or any route by themselves.
+
 And to the descriptive-summary Gate C admission packet, whose single-item implementation boundary was satisfied by PR `#417` after PR `#411` lower-level method support:
 - `next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/76_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_CONTRACT.md`
@@ -1305,6 +1312,31 @@ Read docs `108`/`109` as the current implementation-entry contract landed by PR 
 - they selected `backend/alembic/versions/0016_layer3_signed_reference_state.py` for base commit `5896b9b5910d61ff94b27ff0c142b35319dd5fa1`, where `0015_layer3_package_entry.py` was the latest migration; PR `#520` landed that migration
 - if a later branch needs a newer migration or signed-reference API change, create a fresh freeze before landing
 - they admit only bounded durable backing state behind existing same-origin signed-reference endpoints, not provider/public URLs, connector/destination dispatch, rendered UI changes, qualitative execution, package mutation, or source/schema/runtime widening
+
+### If you are auditing provider/public URL planning
+
+Start with:
+- `Layer3_planning_docs/110_PROVIDER_URL_FREEZE.md`
+- `Layer3_planning_docs/111_PROVIDER_URL_CONTRACT.md`
+- `Layer3_planning_docs/102_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_FREEZE.md`
+- `Layer3_planning_docs/103_COHORT_EXTERNAL_EXPORT_DOWNLOAD_SIGNED_URL_CONTRACT.md`
+- `Layer3_planning_docs/104_signed-ui.md`
+- `Layer3_planning_docs/105_deferred-gates.md`
+- `Layer3_planning_docs/106_DURABLE_FREEZE.md`
+- `Layer3_planning_docs/107_DURABLE_CONTRACT.md`
+- `Layer3_planning_docs/108_DURABLE_ENTRY.md`
+- `Layer3_planning_docs/109_DURABLE_STATE.md`
+- `backend/app/services/layer3_workbench.py`
+- `backend/app/services/layer3_signed_reference_state.py`
+- `backend/app/api/layer3.py`
+- `backend/tests/test_layer3_api.py`
+
+Read docs `110`/`111` as planning/control only:
+- provider/public URL behavior remains blocked by default
+- same-origin attachment delivery plus same-origin durable signed references remain the current live path
+- a future provider/public implementation must choose exactly one mode: `provider_private_signed_url`, `provider_public_url`, or `public_proxy_url`
+- provider/object-store authority, credentials/config, ACL ownership, expiry, revocation, response headers, leakage review, audit/receipt behavior, and tests must be named before code
+- connector/destination dispatch, package mutation, schema/runtime/source widening, rendered controls, qualitative execution, and full mockup activation remain out
 
 ### If you are auditing the Layer 3 workbench APS handoff dispatch freeze
 

@@ -4,20 +4,22 @@
 
 Current-main decision freeze for the remaining requested deferred categories after PR `#499`, PR `#513`, and PR `#514` rendered signed-reference UI slice in `104_signed-ui.md`.
 
-Current-main docs `106_DURABLE_FREEZE.md` and `107_DURABLE_CONTRACT.md` select durable token, receipt, revocation, and audit state as the next planning/control question only after PR `#516`. They do not implement durable behavior.
+Current-main docs `106_DURABLE_FREEZE.md` and `107_DURABLE_CONTRACT.md` selected durable token, receipt, revocation, and audit state as the next planning/control question only after PR `#516`. PR `#520` later implemented only bounded same-origin durable signed-reference runtime behavior behind the existing PR `#499` endpoints.
 
-Branch-local docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` name the implementation-entry surfaces and state contract for a later durable same-origin signed-reference code lane. They remain planning/control only and do not admit implementation by themselves.
+Current-main docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` named the implementation-entry surfaces and state contract for that durable same-origin signed-reference code lane. They remain the implementation-entry authority for PR `#520` and do not admit provider/public URLs, connector/destination dispatch, rendered revoke/copy/share UI behavior, qualitative execution, or package/source/schema/runtime widening beyond the named durable table family.
+
+Current-main docs `110_PROVIDER_URL_FREEZE.md` and `111_PROVIDER_URL_CONTRACT.md` freeze provider/public URL behavior as not admitted. They require a future implementation-entry freeze to choose exactly one provider/public mode and prove provider/object-store authority, ACL/expiry/revocation/header/security behavior, leakage controls, and tests before code.
 
 This file does not implement deferred behavior. It defines the minimum questions, blockers, and proof gates required before any of the following can become an implementation lane:
 
 - provider/public signed URL generation;
 - connector/destination dispatch;
-- durable token, receipt, revocation, and audit state implementation, with docs `106`/`107` plus branch-local docs `108`/`109` admitted as planning/control only;
+- durable token, receipt, revocation, and audit behavior beyond PR `#520`, including public/API/UI revocation or cleanup/read-model expansion;
 - qualitative APS content document execution.
 
 ## Provider/Public Signed URLs
 
-Current decision: not admitted.
+Current decision: planning/control frozen by docs `110`/`111`; implementation not admitted.
 
 Implementation cannot begin until these are specified:
 
@@ -49,19 +51,19 @@ This lane must not be folded into signed-reference UI work. The signed-reference
 
 ## Durable Token/Receipt/Audit State
 
-Current decision: planning/control admitted by docs `106`/`107`; branch-local implementation-entry planning/control named by docs `108`/`109`; implementation not admitted.
+Current decision: bounded same-origin durable runtime state is live through PR `#520`; public/API/UI revocation, cleanup/read-model expansion, provider/public URL coupling, and rendered revoke/copy/share controls are not admitted.
 
-Implementation cannot begin until these are specified:
+Additional implementation cannot begin until these are specified:
 
-- whether tokens are stateless, persisted, one-time-use, replayable, or revocable;
-- table/model/migration requirements;
-- audit event schema;
-- receipt schema;
+- whether the next behavior changes the existing `single_use` replay policy;
+- table/model/migration requirements beyond PR `#520`, if any;
+- audit event schema beyond current generate/use events;
+- receipt schema beyond current generate/use receipts;
 - retention and cleanup policy;
 - concurrency and idempotency behavior;
-- proof that existing PR `#499` stateless HMAC behavior is either preserved or intentionally superseded.
+- proof that existing PR `#499` HMAC behavior and PR `#520` durable state are either preserved or intentionally superseded.
 
-This lane likely requires schema/model/migration review and must not be hidden inside a UI-only patch.
+This lane likely requires schema/model/migration review if it changes the current table family and must not be hidden inside provider/public URL, connector/destination, or UI-only patches.
 
 ## Qualitative APS Content Document Execution
 
