@@ -65,17 +65,31 @@ def test_detect_media_type_rejects_unknown_binary_without_supported_header():
     assert result["supported_for_processing"] is False
 
 
-def test_detect_media_type_refuses_declared_json_even_when_body_is_pdf():
+def test_detect_media_type_admits_declared_json_recordset():
     result = nrc_aps_media_detection.detect_media_type(
-        b"%PDF-1.4\nbody",
+        b'[{"date":"2026-01-01","value":42}]',
         declared_content_type="application/json",
     )
-    assert result["sniffed_content_type"] == "application/pdf"
+    assert result["sniffed_content_type"] == "application/json"
     assert result["effective_content_type"] == "application/json"
-    assert result["media_detection_status"] == nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_REFUSED
-    assert result["media_detection_reason"] == "declared_refusal_type"
+    assert result["media_detection_status"] == nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_MATCH
+    assert result["media_detection_reason"] == "declared_matches_sniffed"
     assert result["content_family"] == "recordset"
-    assert result["supported_for_processing"] is False
+    assert result["supported_for_processing"] is True
+
+
+def test_detect_media_type_admits_json_extension_with_generic_header():
+    result = nrc_aps_media_detection.detect_media_type(
+        b'[{"date":"2026-01-01","value":42}]',
+        declared_content_type="application/octet-stream",
+        source_filename="observations.json",
+    )
+    assert result["file_extension"] == ".json"
+    assert result["extension_content_type"] == "application/json"
+    assert result["effective_content_type"] == "application/json"
+    assert result["media_detection_status"] == nrc_aps_media_detection.APS_MEDIA_DETECTION_STATUS_SNIFFED
+    assert result["content_family"] == "recordset"
+    assert result["supported_for_processing"] is True
 
 
 def test_detect_media_type_admits_csv_declared_type():

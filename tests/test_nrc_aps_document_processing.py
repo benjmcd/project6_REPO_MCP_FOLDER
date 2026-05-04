@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 from pathlib import Path
 from itertools import chain, repeat
 
@@ -100,6 +101,39 @@ def test_process_document_emits_xlsx_table_units_with_workbook_metadata():
     assert result["table_diagnostics"]["workbook_metadata"]["selected_sheet_name"] == "Observations"
     assert result["workbook_units"][0]["formula_policy"] == "fail_closed_formula_cells_not_admitted"
     assert result["time_series_units"][0]["time_column"] == "date"
+
+
+def test_process_document_emits_json_recordset_table_units():
+    content = json.dumps(
+        [
+            {"date": "2026-01-01", "value": 42, "label": "alpha"},
+            {"date": "2026-01-02", "value": 43, "label": "beta"},
+        ]
+    ).encode("utf-8")
+    result = nrc_aps_document_processing.process_document(
+        content=content,
+        declared_content_type="application/json",
+    )
+
+    assert result["effective_content_type"] == "application/json"
+    assert result["document_class"] == "json_recordset"
+    assert result["parser_family"] == "json_recordset"
+    assert result["parser_output_family"] == "table_units"
+    assert result["typed_content_contract_id"] == "aps_json_recordset_units_v1"
+    assert result["ordered_units"] == []
+    assert result["normalized_text"] == ""
+    assert result["table_diagnostics"]["record_path"] == "$"
+    assert result["table_diagnostics"]["row_count"] == 2
+    assert result["table_diagnostics"]["numeric_columns"] == ["value"]
+    assert result["time_series_units"][0]["time_column"] == "date"
+
+
+def test_process_document_fails_closed_for_non_recordset_json():
+    with pytest.raises(ValueError, match="json_record_path_required_for_object_root"):
+        nrc_aps_document_processing.process_document(
+            content=b'{"meta":"not a standalone recordset","records":[{"a":1}]}',
+            declared_content_type="application/json",
+        )
 
 
 @pytest.mark.parametrize("fixture_name", ["corrupt.pdf", "truncated.pdf"])

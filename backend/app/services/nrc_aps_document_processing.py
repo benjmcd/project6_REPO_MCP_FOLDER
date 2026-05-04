@@ -18,6 +18,7 @@ import fitz
 from app.services import nrc_aps_media_detection
 from app.services import nrc_aps_csv_parser
 from app.services import nrc_aps_spreadsheet_parser
+from app.services import nrc_aps_json_parser
 from app.services import nrc_aps_ocr
 from app.services import nrc_aps_parser_registry
 from app.services import nrc_aps_settings
@@ -49,6 +50,7 @@ APS_QUALITY_STATUS_UNUSABLE = "unusable"
 APS_IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png", "image/tiff"}
 APS_CSV_CONTENT_TYPES = {"text/csv", "application/csv"}
 APS_XLSX_CONTENT_TYPES = {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+APS_JSON_CONTENT_TYPES = {"application/json"}
 # Safety limits for ZIP extraction
 APS_ZIP_MAX_TOTAL_EXTRACTED_SIZE = 500 * 1024 * 1024  # 500MB
 APS_ZIP_MAX_MEMBER_SIZE = 100 * 1024 * 1024  # 100MB
@@ -313,6 +315,10 @@ def default_processing_config(overrides: dict[str, Any] | None = None) -> dict[s
         "xlsx_parse_max_rows": 10_000,
         "xlsx_parse_max_columns": 200,
         "xlsx_selected_sheet_name": None,
+        "json_parse_max_bytes": 5_000_000,
+        "json_parse_max_rows": 10_000,
+        "json_parse_max_columns": 200,
+        "json_record_path": None,
         "visual_render_dpi": APS_VISUAL_RENDER_DPI_DEFAULT,
         "visual_lane_mode": "baseline",
         "document_processing_engine": APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
@@ -372,6 +378,8 @@ def process_document(
         return _process_csv(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type in APS_XLSX_CONTENT_TYPES:
         return _process_xlsx(content=content, detection=detection, config=config, deadline=deadline)
+    if effective_type in APS_JSON_CONTENT_TYPES:
+        return _process_json(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type == "text/plain":
         return _process_plain_text(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type == "application/pdf":
@@ -492,6 +500,59 @@ def _process_xlsx(
             "row_count": parsed["row_count"],
             "column_count": parsed["column_count"],
             "null_markers": [],
+            "columns": parsed["columns"],
+            "numeric_columns": parsed["numeric_columns"],
+            "time_column_candidates": parsed["time_column_candidates"],
+        },
+        "normalized_text": normalized_text,
+        "normalized_text_sha256": hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
+        "normalized_char_count": 0,
+    }
+
+
+def _process_json(
+    *,
+    content: bytes,
+    detection: dict[str, Any],
+    config: dict[str, Any],
+    deadline: float | None,
+) -> dict[str, Any]:
+    _raise_if_deadline_exceeded(deadline)
+    parsed = nrc_aps_json_parser.parse_json_recordset(
+        content=content,
+        max_bytes=int(config["json_parse_max_bytes"]),
+        max_rows=int(config["json_parse_max_rows"]),
+        max_columns=int(config["json_parse_max_columns"]),
+        record_path=config.get("json_record_path"),
+    )
+    _raise_if_deadline_exceeded(deadline)
+    normalized_text = ""
+    return {
+        **detection,
+        "document_processing_contract_id": APS_DOCUMENT_EXTRACTION_CONTRACT_ID,
+        **_parser_registry_fields(config),
+        "extractor_family": "json_recordset",
+        "extractor_id": nrc_aps_json_parser.APS_JSON_PARSER_ID,
+        "extractor_version": nrc_aps_json_parser.APS_JSON_PARSER_VERSION,
+        "normalization_contract_id": None,
+        "typed_content_contract_id": nrc_aps_json_parser.APS_JSON_RECORDSET_CONTRACT_ID,
+        "document_class": "json_recordset",
+        "page_count": 1,
+        "quality_status": APS_QUALITY_STATUS_STRONG,
+        "quality_metrics": {
+            "quality_status": APS_QUALITY_STATUS_STRONG,
+            "row_count": parsed["row_count"],
+            "column_count": parsed["column_count"],
+        },
+        "degradation_codes": _degradation_codes_for_detection(detection, APS_QUALITY_STATUS_STRONG),
+        "ordered_units": [],
+        "table_units": parsed["table_units"],
+        "time_series_units": parsed["time_series_units"],
+        "table_diagnostics": {
+            "json_recordset_contract_id": parsed["json_recordset_contract_id"],
+            "record_path": parsed["record_path"],
+            "row_count": parsed["row_count"],
+            "column_count": parsed["column_count"],
             "columns": parsed["columns"],
             "numeric_columns": parsed["numeric_columns"],
             "time_column_candidates": parsed["time_column_candidates"],

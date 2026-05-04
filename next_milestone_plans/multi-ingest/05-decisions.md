@@ -172,6 +172,20 @@ Risk avoided:
 
 Avoids CSV-named contract debt while preserving existing CSV consumers.
 
+### D14: P8 JSON Recordset Is Table-Only
+
+Decision:
+
+Phase P8 admits JSON only as bounded `json_recordset` table output: root arrays of flat objects or object roots with configured record paths. It does not admit arbitrary JSON documents, nested flattening, archive-member JSON orchestration, or JSON filing semantics.
+
+Reason:
+
+The generic table bridge can safely materialize row/column JSON recordsets once parser diagnostics prove a stable table shape. Arbitrary JSON needs a separate structured-document or mixed-source contract because flattening nested objects without policy would create unstable field paths and misleading dataset semantics.
+
+Risk avoided:
+
+Avoids turning `application/json` admission into broad structured data support and preserves fail-closed behavior for non-recordset JSON.
+
 ### D12: P5 Uses Existing DatasetVersion Source Shape
 
 Decision:
@@ -192,7 +206,7 @@ Avoids source-shape proliferation and keeps typed quantitative data aligned with
 
 Current status:
 
-CSV/delimited table diagnostics, the callable dataset bridge, opt-in legacy CSV connector/runtime orchestration, generic CSV/XLSX table connector/runtime orchestration, explicit Layer 3 APS-derived dataset admission, selected-pass execution/package proof, and bounded operator/UI selection are implemented. The next decision is broader parser-family sequencing.
+CSV/delimited table diagnostics, bounded XLSX parsing, bounded JSON recordset parsing, the callable dataset bridge, opt-in legacy CSV connector/runtime orchestration, generic CSV/XLSX/JSON table connector/runtime orchestration, explicit Layer 3 APS-derived dataset admission, selected-pass execution/package proof, and bounded operator/UI selection are implemented. The next decision is broader parser-family sequencing.
 
 Why:
 
@@ -200,7 +214,7 @@ CSV is simpler than spreadsheets and SEC filings, and it exercises the key downs
 
 Decision needed later:
 
-Whether JSON recordset or SEC/EDGAR should be the next parser family, and when the legacy CSV bridge contract can be deprecated after generic table bridge adoption.
+Which SEC/EDGAR slice should be the next parser family, and when the legacy CSV bridge contract can be deprecated after generic table bridge adoption.
 
 ### Q2: Reuse Dataset Models Or Add A Bridge Table?
 
@@ -216,7 +230,7 @@ Whether a dedicated APS artifact-to-dataset bridge table is required for source 
 
 Current recommendation:
 
-Only admit JSON arrays of flat records or configured record paths. Keep arbitrary JSON refused.
+Implemented for Phase P8: only admit JSON arrays of flat records or object roots with configured record paths. Keep arbitrary nested JSON refused.
 
 Decision needed later:
 
@@ -260,15 +274,15 @@ Answer: The docs say the PDF path is complete only for document/text/chunk seman
 
 Question: Are we underclaiming existing quantitative capability?
 
-Answer: The docs preserve the fact that `dataset_version` time-series/tabular analysis exists downstream. They distinguish that from APS ingestion now creating datasets only for admitted CSV artifacts under an explicit runtime gate, not for arbitrary typed files.
+Answer: The docs preserve the fact that `dataset_version` time-series/tabular analysis exists downstream. They distinguish that from APS ingestion now creating datasets only for admitted CSV, bounded XLSX, and bounded JSON recordset artifacts under explicit bridge gates, not for arbitrary typed files.
 
 Question: Is CSV support being represented accurately?
 
-Answer: Yes. The docs state standalone CSV and ZIP CSV members now emit typed parser diagnostics, can be materialized through an explicit dataset bridge, can be invoked from connector finalization through the legacy CSV gate or generic table gate, and can enter Layer 3 when selected by explicit `dataset_version_id`. That is not broad heterogeneous support because JSON, SEC/EDGAR, and mixed parser families remain deferred.
+Answer: Yes. The docs state standalone CSV and ZIP CSV members now emit typed parser diagnostics, can be materialized through an explicit dataset bridge, can be invoked from connector finalization through the legacy CSV gate or generic table gate, and can enter Layer 3 when selected by explicit `dataset_version_id`. That is not broad heterogeneous support because arbitrary JSON, SEC/EDGAR, and mixed parser families remain deferred.
 
 Question: Is JSON/XML/HTML support being represented accurately?
 
-Answer: Yes. The docs state these are explicitly refused today and should remain refused until specific parser families are admitted.
+Answer: Yes. The docs state JSON is admitted only for bounded recordset parsing and materialization. Arbitrary JSON, XML, and HTML remain refused until specific parser families are admitted.
 
 Question: Is XLSX risk explicitly handled?
 
@@ -288,13 +302,13 @@ Answer: Yes. `04-validation.md` requires positive and negative fixture coverage 
 
 Question: What could still be missing?
 
-Answer: Two items must be resolved during implementation planning: how UI should select/display APS-derived dataset versions, and which SEC/EDGAR filing format is admitted first. These are recorded as open questions rather than assumed.
+Answer: Two items must be resolved during implementation planning: whether typed/refused UI surfacing is sufficient for CSV/XLSX/JSON datasets, and which SEC/EDGAR filing format is admitted first. These are recorded as open questions rather than assumed.
 
 ## Immediate Next Action
 
-Implement a UI/operator surfacing pass only after auditing the active workbench UI state:
+Proceed with either SEC/EDGAR parser scoping or a narrow typed/refused UI surfacing pass only after auditing the active workbench UI state:
 
-- Expose APS-derived `DatasetVersion` candidates without treating UI state as source authority.
+- Expose APS-derived `DatasetVersion` candidates and parser/refusal diagnostics without treating UI state as source authority.
 - Preserve backend-owned material-preview, Gate B, execution/result, and package contracts.
-- Do not add new parser families, schema changes, or source shapes in the same PR.
+- Do not add schema changes or source shapes in the same PR.
 - Keep document trace/document chunks separate from typed dataset selection unless a new mixed-source contract is explicitly defined.
