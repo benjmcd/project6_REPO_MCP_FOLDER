@@ -1213,7 +1213,7 @@ html, body {
 
         <div class="intent-panels-wrap">
           <div class="proto-notice">
-            <strong>PROTOTYPE STATE:</strong> Inputs below are pre-populated with the specific-scenario example from the mockup spec (section 8A).
+          <strong>PROTOTYPE STATE:</strong> Inputs below are pre-populated with the specific-scenario example from the mockup spec (section 8A) plus the bounded APS content document trace sample used to keep this selectable theme aligned with the live Layer 3 workbench lane.
             In live implementation these would be empty or session-recalled.
           </div>
 
@@ -1363,7 +1363,7 @@ html, body {
           <div class="detail-sub">Gate B / Session Entry / Material Ledger · ( Source-plane Material Intake )</div>
         </div>
         <div class="proto-notice">
-          <strong>PROTOTYPE STATE:</strong> Ingress objects use sample materials from mockup spec §8A.
+          <strong>PROTOTYPE STATE:</strong> Ingress objects use sample materials from mockup spec §8A plus one bounded APS content document trace sample.
           Live: requires L3MaterialSnapshot + L3SelectionManifest backend. Approve/deny/isolate actions are prototype-only.
         </div>
         <div class="detail-3a-layout">
@@ -1481,7 +1481,7 @@ const sessionData = {
 };
 
 /* ── Material Data ─────────────────────────────────────── */
-// 20 Gate B ingress objects, typed per mockup color groupings
+// 20 Gate B ingress objects from mockup color groupings plus one APS content document trace sample.
 const MATERIALS = [
   // Quantitative — green (#1–7)
   { id: 1,  type: 'quant',  label: 'Dept. of Commerce — Semiconductor Investment Report',    shortId: 'OBJ-001' },
@@ -1491,7 +1491,7 @@ const MATERIALS = [
   { id: 5,  type: 'quant',  label: 'Auto Industry CapEx / Plant Expansion Report',           shortId: 'OBJ-005' },
   { id: 6,  type: 'quant',  label: 'Taiwan / Korea Semiconductor Export Data',               shortId: 'OBJ-006' },
   { id: 7,  type: 'quant',  label: 'BEA — Balance of Trade / Import Declarations',           shortId: 'OBJ-007' },
-  // Qualitative — purple (#8–14)
+  // Qualitative — purple (#8–14, #21)
   { id: 8,  type: 'qual',   label: 'NSC / OSTP Policy Framework Documents',                  shortId: 'OBJ-008' },
   { id: 9,  type: 'qual',   label: 'UAW — United Auto Workers Reports / Workforce Trends',   shortId: 'OBJ-009' },
   { id: 10, type: 'qual',   label: 'NAM — National Assoc. of Manufacturers Workforce Data',  shortId: 'OBJ-010' },
@@ -1506,12 +1506,23 @@ const MATERIALS = [
   { id: 18, type: 'hybrid', label: 'State Economic Development Agency Reports',              shortId: 'OBJ-018' },
   { id: 19, type: 'hybrid', label: 'Policy / Subsidies / Incentives Analysis',               shortId: 'OBJ-019' },
   { id: 20, type: 'hybrid', label: 'NRC APS — Project Run Artifacts',                        shortId: 'OBJ-020' },
+  {
+    id: 21,
+    type: 'qual',
+    label: 'NRC APS content document - Operator evidence narrative',
+    shortId: 'APS-DOC-001',
+    sourceFamily: 'aps_content_document',
+    contentId: 'aps-doc-operator-evidence-001',
+    accessionNumber: 'ML26001A001',
+    contentContract: 'aps_content_units_v2',
+    sourceTrace: 'traceable_aps_content_document'
+  },
 ];
 
 // 3C analysis planes: which objects go to which plane
-// (per sublayer3C.png: quant+#15-17 → Quantitative plane; qual+#18-20 → Qualitative plane)
+// (per sublayer3C.png: quant+#15-17 -> Quantitative plane; qual+#18-20 plus APS content document -> Qualitative plane)
 const PLANE_QUANT_IDS  = [1, 2, 3, 4, 5, 6, 7, 15, 16, 17];
-const PLANE_QUAL_IDS   = [8, 9, 10, 11, 12, 13, 14, 18, 19, 20];
+const PLANE_QUAL_IDS   = [8, 9, 10, 11, 12, 13, 14, 18, 19, 20, 21];
 
 // Sample output cards
 const OUTPUTS_QUANT = [
@@ -1537,6 +1548,13 @@ const OUTPUTS_QUAL = [
   { id: 'L-018', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #18' },
   { id: 'L-019', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #19' },
   { id: 'L-020', text: 'Insights/Facts/Data Generated', objRef: 'specific to Ingress Obj #20' },
+  { id: 'L-021', text: 'APS content document trace inspected', objRef: 'traceable_aps_content_document / aps_content_units_v2' },
+];
+
+const SOURCE_NODES = [
+  { title: 'APS DatasetVersion<br>selection', sub: 'dataset_version' },
+  { title: 'APS content document<br>selection', sub: 'aps_content_document' },
+  { title: 'Manual source classes<br>and intent chips', sub: 'operator_spec' },
 ];
 
 // Manual spec chips
@@ -1552,6 +1570,7 @@ const SPEC_CHIPS = [
   { label: 'UAW',                        group: 'qual' },
   { label: 'NAM',                        group: 'qual' },
   { label: 'NRC APS',                    group: 'hybrid' },
+  { label: 'APS content documents',       group: 'qual' },
   { label: 'NIST Supply Chain',          group: 'qual' },
   { label: 'NSF / STEM',                 group: 'qual' },
   { label: 'DOE / AMO',                  group: 'qual' },
@@ -1581,6 +1600,19 @@ function getMaterialById(id) {
   return MATERIALS.find(m => m.id === id);
 }
 
+function sourceNodeHtml(source) {
+  return `<div class="source-node">
+    <div class="source-node-title">${source.title}</div>
+    <div class="source-node-sub">${source.sub}</div>
+  </div>`;
+}
+
+function feedArrowHtml() {
+  return `<div style="height:14px;display:flex;align-items:center;justify-content:center">
+    <svg width="12" height="8" viewBox="0 0 12 8" fill="#4a4a4a"><polygon points="0,2 8,2 8,0 12,4 8,8 8,6 0,6"/></svg>
+  </div>`;
+}
+
 function makeIngressChip(mat, options = {}) {
   const { showActions = false, singleLine = false } = options;
   const actions = showActions ? `
@@ -1593,8 +1625,15 @@ function makeIngressChip(mat, options = {}) {
     ? `<span class="chip-name">${mat.label}</span>`
     : `<span class="chip-id">Gate B Ingress Object #${mat.id}</span>
        <span class="chip-name">${mat.label}</span>`;
+  const trace = mat.sourceFamily ? `
+       <span class="chip-name">${mat.sourceFamily}</span>
+       <span class="chip-name">${mat.contentId}</span>
+       <span class="chip-name">${mat.accessionNumber}</span>
+       <span class="chip-name">${mat.contentContract}</span>
+       <span class="chip-name">${mat.sourceTrace}</span>` : '';
   return `<div class="ingress-chip ${mat.type}" title="${mat.label} (${mat.shortId})" data-id="${mat.id}">
     ${name}
+    ${trace}
     ${actions}
   </div>`;
 }
@@ -1684,26 +1723,9 @@ function renderOverviewSources() {
     el.innerHTML = makeEmptySlot('sources not yet specified');
     return;
   }
-  el.innerHTML = `
-    <div class="source-node">
-      <div class="source-node-title">Upstream feeder<br>and/or DB</div>
-      <div class="source-node-sub">feeder-1</div>
-    </div>
-    <div style="height:14px;display:flex;align-items:center;justify-content:center">
-      <svg width="12" height="8" viewBox="0 0 12 8" fill="#4a4a4a"><polygon points="0,2 8,2 8,0 12,4 8,8 8,6 0,6"/></svg>
-    </div>
-    <div class="source-node">
-      <div class="source-node-title">Upstream feeder<br>and/or DB</div>
-      <div class="source-node-sub">feeder-2</div>
-    </div>
-    <div style="height:14px;display:flex;align-items:center;justify-content:center">
-      <svg width="12" height="8" viewBox="0 0 12 8" fill="#4a4a4a"><polygon points="0,2 8,2 8,0 12,4 8,8 8,6 0,6"/></svg>
-    </div>
-    <div class="source-node">
-      <div class="source-node-title">Upstream feeder<br>and/or DB</div>
-      <div class="source-node-sub">feeder-3</div>
-    </div>
-  `;
+  el.innerHTML = SOURCE_NODES.map((source, index) => (
+    (index ? feedArrowHtml() : '') + sourceNodeHtml(source)
+  )).join('');
 }
 
 function renderOverview3A() {
@@ -1746,9 +1768,9 @@ function renderOverview3B() {
   }
   // typed or analyzed
   const groups = [
-    { type: 'quant',  label: 'Quantitative Data',  ids: [1,2,3,4,5,6,7] },
-    { type: 'qual',   label: 'Qualitative Data',    ids: [8,9,10,11,12,13,14] },
-    { type: 'hybrid', label: 'Hybrid/Mixed Data',   ids: [15,16,17,18,19,20] },
+    { type: 'quant',  label: 'Quantitative Data',  ids: getMaterialsByType('quant').map(m => m.id) },
+    { type: 'qual',   label: 'Qualitative Data',    ids: getMaterialsByType('qual').map(m => m.id) },
+    { type: 'hybrid', label: 'Hybrid/Mixed Data',   ids: getMaterialsByType('hybrid').map(m => m.id) },
   ];
   el.innerHTML = `
     <div class="gate-container">
@@ -1898,11 +1920,14 @@ function render3ADetail() {
     return;
   }
 
+  const quantCount = getMaterialsByType('quant').length;
+  const qualCount = getMaterialsByType('qual').length;
+  const hybridCount = getMaterialsByType('hybrid').length;
   const legend = `
     <div class="gate-b-legend">
-      <div class="legend-item"><div class="legend-dot quant"></div>Quantitative (#1–7)</div>
-      <div class="legend-item"><div class="legend-dot qual"></div>Qualitative (#8–14)</div>
-      <div class="legend-item"><div class="legend-dot hybrid"></div>Hybrid/Mixed (#15–20)</div>
+      <div class="legend-item"><div class="legend-dot quant"></div>Quantitative (${quantCount})</div>
+      <div class="legend-item"><div class="legend-dot qual"></div>Qualitative (${qualCount})</div>
+      <div class="legend-item"><div class="legend-dot hybrid"></div>Hybrid/Mixed (${hybridCount})</div>
     </div>
     <div style="font-size:9px;color:#3a3a3a;text-align:center;margin-bottom:8px;font-family:var(--f-mono);">
       hover a chip to see approve / deny / isolate actions
@@ -1925,7 +1950,7 @@ function render3ADetail() {
 function statusRows(state) {
   const rows = [
     ['session_id',          state === 'empty' ? '—' : 'L3-SESS-0042',          state !== 'empty' ? 'ok' : 'pending'],
-    ['material_count',      state === 'empty' ? '0' : '20',                     state !== 'empty' ? 'ok' : 'pending'],
+    ['material_count',      state === 'empty' ? '0' : String(MATERIALS.length), state !== 'empty' ? 'ok' : 'pending'],
     ['gate_b_status',       state === 'empty' ? 'empty' : 'loaded',             state !== 'empty' ? 'ok' : 'pending'],
     ['snapshot_frozen',     ['typed','analyzed'].includes(state) ? 'yes' : 'no', ['typed','analyzed'].includes(state) ? 'ok' : 'pending'],
     ['L3MaterialSnapshot',  'prototype/sample-state',  'deferred'],
@@ -1953,9 +1978,9 @@ function render3BDetail() {
   }
 
   const groups = [
-    { type: 'quant',  title: 'Quantitative Data',  sub: 'deterministic / numeric analysis path',  ids: [1,2,3,4,5,6,7] },
-    { type: 'qual',   title: 'Qualitative Data',    sub: 'narrative / policy / documentary path',  ids: [8,9,10,11,12,13,14] },
-    { type: 'hybrid', title: 'Hybrid / Mixed Data', sub: 'mixed-modality analysis path',           ids: [15,16,17,18,19,20] },
+    { type: 'quant',  title: 'Quantitative Data',  sub: 'deterministic / numeric analysis path',  ids: getMaterialsByType('quant').map(m => m.id) },
+    { type: 'qual',   title: 'Qualitative Data',    sub: 'narrative / policy / documentary path', ids: getMaterialsByType('qual').map(m => m.id) },
+    { type: 'hybrid', title: 'Hybrid / Mixed Data', sub: 'mixed-modality analysis path',          ids: getMaterialsByType('hybrid').map(m => m.id) },
   ];
 
   el.innerHTML = groups.map(g => `

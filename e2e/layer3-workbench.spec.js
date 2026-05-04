@@ -102,6 +102,14 @@ test('Layer 3 workbench keeps Layer 3-only theme preferences page-local', async 
   await expect(page.locator('a.back-link')).toHaveAttribute('href', '/review/nrc-aps');
   await expect(page.locator('.proto-badge')).toHaveText('PROTOTYPE');
   await expect(page.locator('#theme-selector')).toHaveValue('claude');
+  await page.locator('[data-screen="overview"]').click();
+  await expect(page.locator('#ov-sources')).toContainText('APS content document');
+  await page.locator('[data-screen="3a"]').click();
+  await expect(page.locator('#detail-3a-gate')).toContainText('aps-doc-operator-evidence-001');
+  await expect(page.locator('#detail-3a-gate')).toContainText('ML26001A001');
+  await expect(page.locator('#detail-3a-gate')).toContainText('aps_content_units_v2');
+  await expect(page.locator('#detail-3a-gate')).toContainText('traceable_aps_content_document');
+  await expect(page.locator('#detail-3a-status')).toContainText('21');
   const storageAfterClaude = await page.evaluate(() => ({
     sharedTheme: localStorage.getItem('nrc_aps_review_theme'),
     layer3Theme: localStorage.getItem('layer3_workbench_theme'),
