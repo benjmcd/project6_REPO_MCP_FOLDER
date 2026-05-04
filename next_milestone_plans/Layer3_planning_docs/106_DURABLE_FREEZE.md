@@ -2,28 +2,28 @@
 
 ## Status
 
-Current-main planning/control freeze for durable token, receipt, revocation, and audit state after PR `#499` backend/API same-origin signed-reference generation/use, PR `#514` rendered same-origin signed-reference UI, and PR `#516` durable-state planning/control merge.
+Current-main planning/control freeze for durable token, receipt, revocation, and audit state after PR `#499` backend/API same-origin signed-reference generation/use, PR `#514` rendered same-origin signed-reference UI, PR `#516` durable-state planning/control merge, and PR `#518`/PR `#519` implementation-entry planning/docs sync.
 
-This file does not implement durable behavior. It selects the durable-state question as the next workbench planning slice because provider/public URLs and connector/destination dispatch both need a settled replay, revocation, receipt, and audit model before they can be exposed safely.
+This file remains the durable-state freeze. The active `codex/l3-durable-runtime-p23` lane implements only the bounded same-origin durable backing state selected by docs `108`/`109`: token hash state, generation/use receipts, revocation table support without a public endpoint, and audit rows.
 
-Branch-local docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` refine this freeze into a future implementation-entry contract. They do not implement durable behavior or change current-main PR `#499`/PR `#514` behavior.
+Docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` are now the current implementation-entry contract for this runtime lane. They do not admit provider/public URLs, connector/destination dispatch, qualitative execution, package mutation, source widening, or rendered revoke/copy/share UI behavior.
 
 ## Current Authority
 
 Use this authority order:
 
-1. current `project6-origin/main` source/tests at the branch base;
+1. current `project6-origin/main` source/tests at branch base `5896b9b5910d61ff94b27ff0c142b35319dd5fa1`;
 2. PR `#499` stateless HMAC signed-reference backend/API behavior;
 3. PR `#514` rendered same-origin signed-reference UI behavior;
 4. docs `102`/`103` signed-reference governance;
 5. docs `104`/`105` signed-reference UI and deferred-gate governance;
-6. this freeze and `107_DURABLE_CONTRACT.md` for the next durable-state planning boundary.
+6. this freeze, `107_DURABLE_CONTRACT.md`, `108_DURABLE_ENTRY.md`, and `109_DURABLE_STATE.md` for the durable-state implementation boundary.
 
-The current live signed-reference behavior is stateless, short-lived, server-owned, same-origin, and revalidated at generation/use. It creates no rows/files and does not provide revocation, receipt, audit, one-time-use, persistence, public/provider URL, connector, or destination semantics.
+Current main before this lane is stateless, short-lived, server-owned, same-origin, and revalidated at generation/use. This lane intentionally supersedes only the stateless replay posture by adding durable single-use state behind the same endpoints. Provider/public URL, connector, destination, package mutation, source-widening, and qualitative execution semantics remain unavailable.
 
 ## Admitted Planning Scope
 
-This freeze admits planning only for a future durable signed-reference state layer:
+This freeze admits only the bounded durable signed-reference state layer:
 
 - token persistence and replay policy;
 - receipt creation and receipt identity;
@@ -32,7 +32,7 @@ This freeze admits planning only for a future durable signed-reference state lay
 - token/receipt binding to the existing associated-cohort delivery authority chain;
 - idempotency and concurrency behavior;
 - migration/model/table requirements, if any;
-- compatibility rules for preserving or superseding PR `#499` stateless HMAC behavior.
+- compatibility rules for wrapping PR `#499` HMAC tokens with durable single-use state while preserving the HMAC envelope, missing-secret failure, TTL, and authority revalidation.
 
 ## Non-Goals
 
@@ -45,30 +45,28 @@ This lane must not implement or imply:
 - source ingestion, non-PDF ingestion, runtime source widening, or schema/runtime widening beyond a separately admitted durable-state model/migration lane;
 - rendered UI controls beyond already-live PR `#514` same-origin signed-reference controls;
 - token copy/share/refresh/revoke UI behavior;
-- runtime writes before an implementation contract explicitly admits them.
+- runtime writes outside the named durable control-plane table family.
 
-## Required Decisions Before Implementation
+## Required Decisions For This Implementation
 
-A later implementation lane cannot begin until `107_DURABLE_CONTRACT.md` or a successor freeze answers:
+The implementation lane must continue to honor these answered decisions:
 
-- whether durable signed references are persisted bearer tokens, persisted opaque token ids, one-time-use references, replayable references, or revocable handles over PR `#499` stateless references;
-- whether PR `#499` stateless HMAC tokens remain supported as the default path, are wrapped by persisted state, or are intentionally superseded;
-- exact database table/model/migration surfaces and whether they belong to existing control-plane models or a new bounded table family;
-- token uniqueness, token hashing, secret rotation, and token lookup behavior;
-- receipt identity, receipt payload, response contract, and whether receipts are created at generation, use, delivery, or all three;
-- revocation authority, revocation timing, idempotent revoke behavior, and revoked-token response semantics;
-- audit event taxonomy, event payload constraints, retention, cleanup, and operator-visible surfaces;
-- concurrency and idempotency rules for generate, use, revoke, and receipt reads;
-- failure modes for missing secret, stale authority, expired token, revoked token, replay conflict, receipt mismatch, and audit persistence failure;
-- security review expectations for bearer token leakage, token hashing, log redaction, response headers, and cross-worker/process stability.
+- signed references remain HMAC bearer tokens, but raw tokens are never persisted;
+- token lookup uses the token hash and response-safe token prefix;
+- `used` is terminal for this first runtime slice with `single_use`, `max_use_count=1`;
+- generation and accepted use create receipts and audit events;
+- revocation has table/service awareness but no public/API/UI endpoint in this slice;
+- audit persistence failure fails closed for durable generation/use;
+- missing secret, malformed token, expired token, stale authority, missing durable state, revoked token, and replay conflict fail closed;
+- public/provider URLs, connector/destination dispatch, package mutation, source widening, and qualitative execution remain unavailable.
 
-## Proof Requirements For A Later Implementation
+## Proof Requirements For This Implementation
 
-The later implementation proof must include, at minimum:
+The implementation proof must include, at minimum:
 
 - model/migration tests if a table or schema changes;
 - backend/API tests for generation, use, replay, expiry, revocation, stale authority, missing secret, malformed token, and receipt/audit creation;
-- tests proving PR `#499` stateless behavior is preserved or intentionally superseded with explicit migration/compatibility coverage;
+- tests proving PR `#499` HMAC validation is preserved while replay behavior is intentionally superseded by durable single-use state;
 - tests proving no provider/public URL or connector/destination dispatch appears as a side effect;
 - tests proving empty or isolated runtime state fails closed and validate-only actions do not seed or generate artifacts;
 - `npm run validate:structure` and `git diff --check`;

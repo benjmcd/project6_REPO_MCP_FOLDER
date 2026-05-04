@@ -33,6 +33,9 @@ from app.models.models import (
     L3OutputPackage,
     L3PassRun,
     L3ReconciliationRecord,
+    L3SignedReferenceAuditEvent,
+    L3SignedReferenceReceipt,
+    L3SignedReferenceToken,
 )
 from app.services.layer3_aps_handoff import PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF
 from app.services import dataframe_io, layer3_pass_entry as layer3_pass_entry_module
@@ -1448,6 +1451,10 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
         "X-Layer3-Source-Artifact-Hash",
         "X-Layer3-Signed-Reference-State",
         "X-Layer3-Signed-Reference-Expires-At",
+        "X-Layer3-Signed-Reference-Token-Id",
+        "X-Layer3-Signed-Reference-Receipt-Id",
+        "X-Layer3-Signed-Reference-Replay-Policy",
+        "X-Layer3-Signed-Reference-Use-Count",
     } <= set(signed_use["responses"]["200"]["headers"])
     for status in ("400", "404", "409"):
         error_schema = _openapi_response_schema_for_status(
@@ -6708,6 +6715,14 @@ def test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_compani
     assert signed_reference_body["schema_id"] == "layer3.external_export_download_signed_reference.v1"
     assert signed_reference_body["status"] == "prepared"
     assert signed_reference_body["signed_reference_state"] == "external_export_download_signed_reference_ready"
+    assert signed_reference_body["signed_reference_token_id"]
+    assert len(signed_reference_body["signed_reference_token_prefix"]) == 16
+    assert signed_reference_body["signed_reference_receipt_id"]
+    assert signed_reference_body["signed_reference_replay_policy"] == "single_use"
+    assert signed_reference_body["signed_reference_use_count"] == 0
+    assert signed_reference_body["signed_reference_max_use_count"] == 1
+    assert signed_reference_body["signed_reference_revoked"] is False
+    assert signed_reference_body["signed_reference_audit_event_id"]
     assert signed_reference_body["signed_reference_use_endpoint"] == (
         "/api/v1/layer3/handoff/export/download/signed-reference/use"
     )
@@ -6733,6 +6748,9 @@ def test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_compani
     assert signed_reference_body["generic_downstream_dispatch_enabled"] is False
     assert signed_reference_body["package_mutation_enabled"] is False
     assert signed_reference_body["schema_runtime_source_widening_enabled"] is False
+    assert signed_reference_body["authority_rail"]["token_authority"] == "server_hmac_with_durable_state"
+    assert signed_reference_body["authority_rail"]["durable_state_required"] is True
+    assert signed_reference_body["authority_rail"]["replay_policy"] == "single_use"
     assert signed_reference_body["authority_rail"]["configured_secret_present"] is True
     assert signed_reference_body["authority_rail"]["process_restart_invalidates_existing_tokens"] is False
     for forbidden_field in ("download_url", "download_token", "public_url", "signed_url", "connector_run_id"):
@@ -6751,10 +6769,63 @@ def test_layer3_api_cohort_aps_handoff_dispatch_materializes_bundle_with_compani
     assert signed_reference_use.headers["x-layer3-signed-reference-state"] == (
         "external_export_download_signed_reference_delivered"
     )
+    assert signed_reference_use.headers["x-layer3-signed-reference-token-id"] == (
+        signed_reference_body["signed_reference_token_id"]
+    )
+    assert signed_reference_use.headers["x-layer3-signed-reference-receipt-id"]
+    assert signed_reference_use.headers["x-layer3-signed-reference-replay-policy"] == "single_use"
+    assert signed_reference_use.headers["x-layer3-signed-reference-use-count"] == "1"
     assert signed_reference_use.headers["x-layer3-source-artifact-hash"] == download_body["source_artifact_hash"]
     assert "download_url" not in signed_reference_use.headers
     assert "public_url" not in signed_reference_use.headers
     assert "signed_url" not in signed_reference_use.headers
+
+    signed_reference_replay = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/use",
+        json={"signed_reference_token": signed_reference_body["signed_reference_token"]},
+    )
+    assert signed_reference_replay.status_code == 409
+    assert signed_reference_replay.json()["error_code"] == "external_export_download_signed_reference_replay_denied"
+
+    signed_reference_regenerate_after_use = client.post(
+        "/api/v1/layer3/handoff/export/download/signed-reference/generate",
+        json=cohort_deliver_payload,
+    )
+    assert signed_reference_regenerate_after_use.status_code == 409
+    assert signed_reference_regenerate_after_use.json()["error_code"] == (
+        "external_export_download_signed_reference_replay_denied"
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        durable_token = (
+            db.query(L3SignedReferenceToken)
+            .filter(L3SignedReferenceToken.signed_reference_token_id == signed_reference_body["signed_reference_token_id"])
+            .one()
+        )
+        assert durable_token.token_hash != signed_reference_body["signed_reference_token"]
+        assert durable_token.token_prefix == signed_reference_body["signed_reference_token_prefix"]
+        assert durable_token.state == "used"
+        assert durable_token.replay_policy == "single_use"
+        assert durable_token.use_count == 1
+        assert durable_token.max_use_count == 1
+        durable_snapshot = json.dumps(durable_token.authority_snapshot_json, sort_keys=True)
+        assert signed_reference_body["signed_reference_token"] not in durable_snapshot
+        assert download_body["source_artifact_ref"] not in durable_snapshot
+        receipts = db.query(L3SignedReferenceReceipt).filter(
+            L3SignedReferenceReceipt.signed_reference_token_id == durable_token.signed_reference_token_id
+        ).all()
+        assert len(receipts) == 2
+        for receipt in receipts:
+            receipt_payload = json.dumps(receipt.receipt_payload_json, sort_keys=True)
+            assert signed_reference_body["signed_reference_token"] not in receipt_payload
+            assert download_body["source_artifact_ref"] not in receipt_payload
+            assert "internal_artifact_ref_bound_by_hash" in receipt_payload
+        assert db.query(L3SignedReferenceAuditEvent).filter(
+            L3SignedReferenceAuditEvent.signed_reference_token_id == durable_token.signed_reference_token_id
+        ).count() == 3
+    finally:
+        db.close()
 
     malformed_reference_use = client.post(
         "/api/v1/layer3/handoff/export/download/signed-reference/use",
