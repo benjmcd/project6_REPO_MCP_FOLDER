@@ -23,6 +23,7 @@ SIGNED_REFERENCE_TOKEN_STATE_READY = "ready"
 SIGNED_REFERENCE_TOKEN_STATE_USED = "used"
 SIGNED_REFERENCE_TOKEN_STATE_REVOKED = "revoked"
 SIGNED_REFERENCE_TOKEN_STATE_EXPIRED = "expired"
+INTERNAL_ARTIFACT_REF_PLACEHOLDER = "internal_artifact_ref_bound_by_hash"
 
 
 @dataclass(frozen=True)
@@ -96,10 +97,18 @@ def _artifact_receipt_payload(*, authority_basis: dict[str, Any], token_body: di
 
 
 def _response_safe_authority_basis(authority_basis: dict[str, Any]) -> dict[str, Any]:
-    safe_basis = dict(authority_basis)
-    if "source_artifact_ref" in safe_basis:
-        safe_basis["source_artifact_ref"] = "internal_artifact_ref_bound_by_hash"
-    return safe_basis
+    internal_artifact_ref = authority_basis.get("source_artifact_ref")
+
+    def make_response_safe(value: Any) -> Any:
+        if internal_artifact_ref and value == internal_artifact_ref:
+            return INTERNAL_ARTIFACT_REF_PLACEHOLDER
+        if isinstance(value, dict):
+            return {key: make_response_safe(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [make_response_safe(item) for item in value]
+        return value
+
+    return make_response_safe(authority_basis)
 
 
 def _token_revoked(db: Session, token_id: str) -> bool:
