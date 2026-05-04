@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "current-main selected-pass associated-cohort delivery UI gate, signed-reference backend/API implementation, and rendered signed-reference UI proof through PR #514",
+  "status": "current-main selected-pass associated-cohort delivery UI gate, signed-reference backend/API implementation, rendered signed-reference UI proof through PR #514, and branch-local durable-state planning/control docs 106/107",
   "scope": {
     "source_branch": "codex/l3-signed-url-impl-p34",
     "merged_pr": "#499",
@@ -9,7 +9,7 @@
     "base_remote": "project6-origin/main",
     "base_commit": "144a32cd",
     "source_base_commit": "144a32cd",
-    "purpose": "Record PR #514 current-main bounded rendered same-origin signed-reference UI controls after PR #499 backend/API signed-reference implementation, PR #487 rendered delivery UI gate authority, and PR #513 UI/theme trace alignment.",
+    "purpose": "Record PR #514 current-main bounded rendered same-origin signed-reference UI controls after PR #499 backend/API signed-reference implementation, PR #487 rendered delivery UI gate authority, and PR #513 UI/theme trace alignment, plus branch-local docs 106/107 durable-state planning/control selection.",
     "live_behavior_change": true,
     "live_behavior_change_summary": "PR #514 implements only rendered /review/layer3 same-origin signed-reference generate/use controls. It adds no public/provider URLs, connector/generic dispatch, destination selection, package mutation, durable token/receipt/audit/revocation state, schema/runtime/source widening, qualitative execution, broader UI, or full mockup behavior.",
     "latest_implementation_pr": "#514",
@@ -31,6 +31,13 @@
     "latest_signed_reference_ui_docs": [
       "next_milestone_plans/Layer3_planning_docs/104_signed-ui.md",
       "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md"
+    ],
+    "latest_durable_state_planning_branch": "codex/l3-durable-freeze-p16",
+    "latest_durable_state_planning_live_behavior_change": false,
+    "latest_durable_state_planning_summary": "Docs 106/107 select durable token, receipt, revocation, and audit state as planning/control only after PR #499 backend/API same-origin signed-reference behavior and PR #514 rendered same-origin signed-reference UI. They do not implement durable runtime state, model/migration changes, token persistence, receipt creation, revocation behavior, audit writes, provider/public URLs, connector/destination dispatch, qualitative execution, or rendered UI changes.",
+    "latest_durable_state_planning_docs": [
+      "next_milestone_plans/Layer3_planning_docs/106_DURABLE_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/107_DURABLE_CONTRACT.md"
     ],
     "latest_ui_planning_pr": "#441",
     "latest_ui_planning_branch": "codex/l3-cohort-result-review-ui-freeze-p51",
