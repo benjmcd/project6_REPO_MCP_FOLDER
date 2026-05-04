@@ -12,6 +12,8 @@ Current-main docs `110_PROVIDER_URL_FREEZE.md` and `111_PROVIDER_URL_CONTRACT.md
 
 Current-main docs `112_CONNECTOR_DISPATCH_FREEZE.md` and `113_CONNECTOR_DISPATCH_CONTRACT.md` freeze connector/destination/generic downstream dispatch behavior as not admitted. They require a future implementation-entry freeze to choose exactly one dispatch mode and prove connector/destination authority, lifecycle, idempotency, authorization, receipt/audit, failure, and test behavior before code.
 
+Current-main docs `114_QUAL_APS_EXEC_FREEZE.md` and `115_QUAL_APS_EXEC_CONTRACT.md` freeze qualitative APS content document execution behavior as not admitted. They require a future implementation-entry freeze to choose the one initial `single_aps_doc_qualitative_pass` mode and prove APS document unit authority, chunk/citation/trace input rules, execution owner, result/review vocabulary, anti-`DatasetVersion` isolation, failure behavior, and tests before code.
+
 This file does not implement deferred behavior. It defines the minimum questions, blockers, and proof gates required before any of the following can become an implementation lane:
 
 - provider/public signed URL generation;
@@ -72,19 +74,20 @@ This lane likely requires schema/model/migration review if it changes the curren
 
 ## Qualitative APS Content Document Execution
 
-Current decision: not admitted.
+Current decision: planning/control frozen by docs `114`/`115`; implementation not admitted.
 
 Implementation cannot begin until these are specified:
 
+- exact initial execution mode: `single_aps_doc_qualitative_pass`;
 - qualitative unit contract for APS content documents;
 - method admission policy for qualitative and qualitative-document inputs;
 - execution engine owner;
-- input chunk, citation, and trace requirements;
+- input chunk ordering, limits, citation, and trace requirements;
 - result schema and review semantics;
 - whether output is fact/finding/insight/caveat/result, and how those terms are constrained;
 - tests proving DatasetVersion quantitative execution is not reused accidentally for qualitative content.
 
-The currently live APS content document path is selection, trace, material preview, typing/display support, and theme alignment. It is not a qualitative execution engine.
+The currently live APS content document path is selection, trace, material preview, typing/display support, and theme alignment. It is not a qualitative execution engine. Current tests prove APS content documents can be listed, previewed, traced, snapshotted, and typed as qualitative document chunks, while qualitative-only pass-entry sets still fail closed without creating plan, pass, or analysis rows.
 
 ## Common Stop Conditions
 
