@@ -10,6 +10,8 @@ Current-main docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` named the im
 
 Current-main docs `110_PROVIDER_URL_FREEZE.md` and `111_PROVIDER_URL_CONTRACT.md` freeze provider/public URL behavior as not admitted. They require a future implementation-entry freeze to choose exactly one provider/public mode and prove provider/object-store authority, ACL/expiry/revocation/header/security behavior, leakage controls, and tests before code.
 
+Current-main docs `112_CONNECTOR_DISPATCH_FREEZE.md` and `113_CONNECTOR_DISPATCH_CONTRACT.md` freeze connector/destination/generic downstream dispatch behavior as not admitted. They require a future implementation-entry freeze to choose exactly one dispatch mode and prove connector/destination authority, lifecycle, idempotency, authorization, receipt/audit, failure, and test behavior before code.
+
 This file does not implement deferred behavior. It defines the minimum questions, blockers, and proof gates required before any of the following can become an implementation lane:
 
 - provider/public signed URL generation;
@@ -35,17 +37,20 @@ This lane must stay separate from same-origin signed references. A same-origin s
 
 ## Connector/Destination Dispatch
 
-Current decision: not admitted.
+Current decision: planning/control frozen by docs `112`/`113`; implementation not admitted.
 
 Implementation cannot begin until these are specified:
 
 - destination model and allowed destination ids;
+- exact dispatch mode: `internal_dispatch_record_only`, `single_named_connector_dispatch`, or `single_named_destination_dispatch`;
 - connector-run lifecycle;
+- server-side connector/destination allowlist and configuration authority;
 - retry, cancel, and failure semantics;
 - delivery receipt format;
 - operator-visible state transitions;
 - authorization boundary between Layer 3 and the external destination;
-- tests proving the UI/API cannot dispatch without explicit destination authority.
+- idempotency and stale-authority behavior;
+- tests proving the UI/API cannot dispatch without explicit connector/destination authority.
 
 This lane must not be folded into signed-reference UI work. The signed-reference UI may display connector/destination as disabled only.
 

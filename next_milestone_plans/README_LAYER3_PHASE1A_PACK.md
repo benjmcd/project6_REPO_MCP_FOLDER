@@ -1338,6 +1338,27 @@ Read docs `110`/`111` as planning/control only:
 - provider/object-store authority, credentials/config, ACL ownership, expiry, revocation, response headers, leakage review, audit/receipt behavior, and tests must be named before code
 - connector/destination dispatch, package mutation, schema/runtime/source widening, rendered controls, qualitative execution, and full mockup activation remain out
 
+### If you are auditing connector/destination dispatch planning
+
+Start with:
+- `Layer3_planning_docs/112_CONNECTOR_DISPATCH_FREEZE.md`
+- `Layer3_planning_docs/113_CONNECTOR_DISPATCH_CONTRACT.md`
+- `Layer3_planning_docs/105_deferred-gates.md`
+- `Layer3_planning_docs/94_COHORT_APS_HANDOFF_DISPATCH_FREEZE.md`
+- `Layer3_planning_docs/95_COHORT_APS_HANDOFF_DISPATCH_CONTRACT.md`
+- `Layer3_planning_docs/110_PROVIDER_URL_FREEZE.md`
+- `Layer3_planning_docs/111_PROVIDER_URL_CONTRACT.md`
+- `backend/app/services/layer3_workbench.py`
+- `backend/app/api/layer3.py`
+- `backend/app/api/router.py`
+
+Read docs `112`/`113` as planning/control only:
+- connector/destination/generic downstream dispatch remains blocked by default
+- current live APS dispatch is only owner-service `aps_evidence_bundle_handoff` through `aps_handoff_target == "aps_evidence_bundle"` and `dispatch_mode == "server_side_aps_handoff"`
+- a future connector/destination implementation must choose exactly one mode: `internal_dispatch_record_only`, `single_named_connector_dispatch`, or `single_named_destination_dispatch`
+- connector/destination authority, allowlisted ids, lifecycle, idempotency, authorization, receipt/audit payloads, failure states, and tests must be named before code
+- provider/public URLs, package mutation, schema/runtime/source widening, rendered controls, qualitative execution, queue/retry/cancel behavior, and full mockup activation remain out unless separately frozen
+
 ### If you are auditing the Layer 3 workbench APS handoff dispatch freeze
 
 Start with:
