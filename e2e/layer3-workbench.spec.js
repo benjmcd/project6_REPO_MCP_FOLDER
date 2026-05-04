@@ -247,6 +247,45 @@ test('Layer 3 workbench renders selected APS DatasetVersion trace detail from ma
   await expect(page.locator('#material-ledger-body tr[data-candidate-id]')).toHaveCount(1);
 });
 
+test('Layer 3 workbench renders selected APS content document trace detail from material preview', async ({ page, request }) => {
+  const seed = await expectJson(await request.post('/__test/layer3/seed-aps-document'));
+  const candidatesResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/aps-content-document-candidates')
+  ));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const candidates = await expectJson(await candidatesResponsePromise);
+  expect(candidates.aps_content_document_candidates.map((candidate) => candidate.content_id)).toContain(
+    seed.content_id,
+  );
+
+  await page.locator(`input[name="aps-content-document-candidate"][value="${seed.content_id}"]`).check();
+  await page.locator('input[name="source-class"][value="dataset_version"]').uncheck();
+  const materialResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/material-preview')
+  ));
+  await page.locator('#layer3-intent').fill('Review selected APS content document trace detail.');
+  await page.locator('#run-preflight').click();
+  const material = await expectJson(await materialResponsePromise);
+  const materialCandidate = material.material_candidates.find((candidate) => (
+    candidate.payload?.content_id === seed.content_id
+  ));
+  expect(materialCandidate).toBeTruthy();
+  expect(materialCandidate.source_trace.trace_readiness).toBe('traceable_aps_content_document');
+  expect(materialCandidate.source_trace.aps_trace_refs.content_units_ref).toContain('_content_units.json');
+
+  const row = page.locator('#material-ledger-body tr[data-candidate-id]');
+  await expect(row).toHaveCount(1);
+  const trace = row.locator('.material-trace-card');
+  await expect(trace).toContainText('APS content document');
+  await expect(trace).toContainText('traceable_aps_content_document');
+  await expect(trace).toContainText(seed.content_id);
+  await expect(trace).toContainText('aps_content_units_v2');
+  await expect(trace).toContainText('ML26001A001');
+
+  await page.locator('#material-filter').fill(seed.content_id);
+  await expect(page.locator('#material-ledger-body tr[data-candidate-id]')).toHaveCount(1);
+});
+
 test('Layer 3 workbench exposes visible keyboard focus across themes', async ({ page }) => {
   for (const theme of ['light', 'dark', 'workbench']) {
     await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });

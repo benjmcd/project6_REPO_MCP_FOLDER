@@ -112,6 +112,13 @@ class Layer3DatasetVersionCandidatesResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
 
 
+class Layer3ApsContentDocumentCandidatesResponse(Layer3BaseResponse):
+    aps_content_document_candidates: list[dict[str, Any]]
+    candidate_count: int
+    source_system: str
+    authority_rail: dict[str, Any]
+
+
 class Layer3GateBDecisionResponse(Layer3BaseResponse):
     session_id: str
     selection_manifest_id: str
@@ -754,6 +761,7 @@ MATERIAL_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
         "source_set_id": {"type": "string"},
         "source_candidate_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1},
         "dataset_version_ids": {"type": "array", "items": {"type": "string"}},
+        "aps_content_document_ids": {"type": "array", "items": {"type": "string"}},
         "query_basis": {
             "type": "object",
             "additionalProperties": True,
@@ -764,6 +772,7 @@ MATERIAL_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
                     "additionalProperties": True,
                     "properties": {
                         "dataset_version_ids": {"type": "array", "items": {"type": "string"}},
+                        "aps_content_document_ids": {"type": "array", "items": {"type": "string"}},
                     },
                 },
             },
@@ -1350,6 +1359,15 @@ def post_material_preview(payload: dict[str, Any], db: Session = Depends(get_db)
 )
 def get_dataset_version_candidates(limit: int = 50, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.aps_dataset_version_candidates(db, limit=limit))
+
+
+@router.get(
+    "/aps-content-document-candidates",
+    response_model=Layer3ApsContentDocumentCandidatesResponse,
+    responses=_workbench_error_responses(400),
+)
+def get_aps_content_document_candidates(limit: int = 50, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.aps_content_document_candidates(db, limit=limit))
 
 
 @router.post(

@@ -630,6 +630,7 @@ def create_app() -> FastAPI:
             "seed_routes": [
                 "/__test/layer3/seed-quant",
                 "/__test/layer3/seed-aps-dataset",
+                "/__test/layer3/seed-aps-document",
                 "/__test/layer3/seed-aps-handoff",
             ],
         }
@@ -648,6 +649,26 @@ def create_app() -> FastAPI:
         db = SessionLocal()
         try:
             return _seed_browser_aps_dataset_version_candidate(db, temp_path)
+        finally:
+            db.close()
+
+    @app.post("/__test/layer3/seed-aps-document")
+    def seed_layer3_aps_document() -> dict[str, str]:
+        db = SessionLocal()
+        try:
+            seed_id = uuid_str()
+            run_id = f"run-{seed_id}"
+            target_id = f"target-{seed_id}"
+            content_id = f"content-{seed_id}"
+            _seed_browser_aps_content_fixture(
+                db,
+                temp_path,
+                run_id=run_id,
+                target_id=target_id,
+                content_id=content_id,
+            )
+            db.commit()
+            return {"run_id": run_id, "target_id": target_id, "content_id": content_id}
         finally:
             db.close()
 

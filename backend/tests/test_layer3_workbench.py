@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import sys
 from pathlib import Path
@@ -17,6 +19,11 @@ sys.path.insert(0, str(BACKEND))
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
 from app.models.models import (
+    ApsContentChunk,
+    ApsContentDocument,
+    ApsContentLinkage,
+    ConnectorRun,
+    ConnectorRunTarget,
     Dataset,
     DatasetSourceProvenance,
     DatasetVersion,
@@ -193,6 +200,99 @@ def _seed_aps_derived_dataset_version(
     db.add_all([dataset, version, observed_at, value, provenance])
     db.flush()
     return dataset_version_id
+
+
+def _seed_aps_content_document(
+    db,
+    tmp_path: Path,
+    *,
+    content_id: str = "content-layer3-doc-001",
+    run_id: str = "run-layer3-doc-001",
+    target_id: str = "target-layer3-doc-001",
+) -> str:
+    content_contract_id = "aps_pdf_content_units_v1"
+    chunking_contract_id = "aps_pdf_chunking_v1"
+    normalization_contract_id = "aps_pdf_normalization_v1"
+    artifact_root = tmp_path / "aps"
+    artifact_root.mkdir(parents=True, exist_ok=True)
+    chunk_texts = [
+        "Inspection findings confirm stable cooling performance.",
+        "No safety-significant degradation was identified during the interval.",
+    ]
+    normalized_text = "\n".join(chunk_texts)
+    content_units_ref = str(artifact_root / f"{content_id}_content_units.json")
+    normalized_text_ref = str(artifact_root / f"{content_id}_normalized.txt")
+    blob_ref = str(artifact_root / f"{content_id}.pdf")
+    diagnostics_ref = str(artifact_root / f"{content_id}_diagnostics.json")
+    Path(content_units_ref).write_text(json.dumps({"content_id": content_id}), encoding="utf-8")
+    Path(normalized_text_ref).write_text(normalized_text, encoding="utf-8")
+    Path(blob_ref).write_text("pdf-placeholder", encoding="utf-8")
+    Path(diagnostics_ref).write_text(json.dumps({"quality_status": "strong"}), encoding="utf-8")
+
+    db.add_all(
+        [
+            ConnectorRun(connector_run_id=run_id, connector_key="nrc_adams_aps", status="completed"),
+            ConnectorRunTarget(
+                connector_run_target_id=target_id,
+                connector_run_id=run_id,
+                status="completed",
+                ordinal=0,
+            ),
+            ApsContentDocument(
+                content_id=content_id,
+                content_contract_id=content_contract_id,
+                chunking_contract_id=chunking_contract_id,
+                normalization_contract_id=normalization_contract_id,
+                normalized_text_sha256=hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
+                normalized_char_count=len(normalized_text),
+                chunk_count=len(chunk_texts),
+                content_status="indexed",
+                media_type="application/pdf",
+                document_class="inspection_report",
+                quality_status="strong",
+                page_count=2,
+                diagnostics_ref=diagnostics_ref,
+                visual_page_refs_json=json.dumps([]),
+            ),
+            ApsContentLinkage(
+                content_id=content_id,
+                run_id=run_id,
+                target_id=target_id,
+                accession_number="ML26001A001",
+                content_contract_id=content_contract_id,
+                chunking_contract_id=chunking_contract_id,
+                content_units_ref=content_units_ref,
+                normalized_text_ref=normalized_text_ref,
+                normalized_text_sha256=hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
+                blob_ref=blob_ref,
+                blob_sha256=hashlib.sha256(Path(blob_ref).read_bytes()).hexdigest(),
+                download_exchange_ref="aps/download_exchange.json",
+                discovery_ref="aps/discovery.json",
+                selection_ref="aps/selection.json",
+                diagnostics_ref=diagnostics_ref,
+            ),
+        ]
+    )
+    for ordinal, chunk_text in enumerate(chunk_texts):
+        db.add(
+            ApsContentChunk(
+                content_id=content_id,
+                chunk_id=f"{content_id}-chunk-{ordinal + 1}",
+                content_contract_id=content_contract_id,
+                chunking_contract_id=chunking_contract_id,
+                chunk_ordinal=ordinal,
+                start_char=ordinal * 64,
+                end_char=(ordinal * 64) + len(chunk_text),
+                chunk_text=chunk_text,
+                chunk_text_sha256=hashlib.sha256(chunk_text.encode("utf-8")).hexdigest(),
+                page_start=ordinal + 1,
+                page_end=ordinal + 1,
+                unit_kind="pdf_paragraph",
+                quality_status="strong",
+            )
+        )
+    db.flush()
+    return content_id
 
 
 def test_bootstrap_is_explicit_about_first_slice_limits() -> None:
@@ -418,6 +518,102 @@ def test_aps_dataset_version_candidates_surface_sec_edgar_family_scope(db_sessio
     assert candidate["source_family_label"] == "SEC/EDGAR text table"
     assert "complete-submission text" in candidate["source_family_scope"]
     assert result["source_family_summary"]["observed_candidate_counts"] == {"sec_edgar_filing": 1}
+
+
+def test_aps_content_document_candidates_list_uses_content_linkage(db_session, tmp_path) -> None:
+    content_id = _seed_aps_content_document(db_session, tmp_path)
+
+    result = layer3_workbench.aps_content_document_candidates(db_session)
+
+    assert result["schema_id"] == "layer3.aps_content_document_candidates.v1"
+    assert result["candidate_count"] == 1
+    assert result["authority_rail"]["authority_source"] == "aps_content_document_and_linkage"
+    candidate = result["aps_content_document_candidates"][0]
+    assert candidate["content_id"] == content_id
+    assert candidate["source_family"] == "aps_content_document"
+    assert candidate["source_admission_state"] == "admitted_content_document"
+    assert candidate["accession_number"] == "ML26001A001"
+    assert candidate["content_units_ref"].endswith("_content_units.json")
+    assert candidate["chunk_count"] == 2
+    assert candidate["page_count"] == 2
+
+
+def test_aps_content_document_flows_from_material_preview_to_gate_b(db_session, tmp_path) -> None:
+    content_id = _seed_aps_content_document(db_session, tmp_path)
+    preflight = layer3_workbench.preflight(
+        {
+            "client_request_id": "req-preflight-aps-doc",
+            "natural_language_intent": "Review indexed APS document chunks as qualitative source material.",
+            "manual_constraints": {"source_classes": ["aps_content_document"]},
+        }
+    )
+    source = layer3_workbench.source_preview(
+        {
+            "client_request_id": "req-source-aps-doc",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["aps_content_document"],
+        }
+    )
+    material = layer3_workbench.material_preview(
+        {
+            "client_request_id": "req-material-aps-doc",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "source_candidate_ids": [source["source_candidates"][0]["source_candidate_id"]],
+            "aps_content_document_ids": [content_id],
+            "query_basis": {"terms": ["aps", "document"]},
+        },
+        db_session,
+    )
+
+    candidate = material["material_candidates"][0]
+    assert candidate["source_ref"] == f"aps_content_document:{content_id}"
+    assert candidate["planning_shape_family"] == "document_chunks"
+    assert candidate["source_family"] == "aps_content_document"
+    assert candidate["source_admission_state"] == "admitted_content_document"
+    assert candidate["source_identity"]["content_id"] == content_id
+    assert candidate["source_provenance"]["aps_derived"] is True
+    assert candidate["source_provenance"]["linkage_count"] == 1
+    assert candidate["source_trace"]["schema_id"] == "layer3.aps_content_document_source_trace.v1"
+    assert candidate["source_trace"]["trace_readiness"] == "traceable_aps_content_document"
+    assert candidate["source_trace"]["document_identity"]["content_id"] == content_id
+    assert candidate["source_trace"]["chunk_summary"]["loaded_chunk_count"] == 2
+    assert candidate["source_trace"]["aps_trace_refs"]["accession_number"] == "ML26001A001"
+    assert candidate["source_trace"]["aps_trace_refs"]["content_units_ref"].endswith("_content_units.json")
+
+    layer3_workbench.gate_b_decision(
+        db_session,
+        {
+            "client_request_id": "req-gate-b-aps-doc",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": candidate["candidate_id"],
+                    "decision": "approved",
+                    "operator_reason": "",
+                    "decision_basis": {
+                        "source_ref": candidate["source_ref"],
+                        "query_basis": candidate["query_basis"],
+                        "provenance_ref": candidate["provenance_ref"],
+                        "source_identity": candidate["source_identity"],
+                        "source_provenance": candidate["source_provenance"],
+                        "payload": candidate["payload"],
+                        "load_summary": candidate["load_summary"],
+                    },
+                }
+            ],
+            "commit_reason": "pytest_aps_doc_gate_b",
+            "actor": "pytest",
+        },
+    )
+
+    snapshot = db_session.query(L3MaterialSnapshot).one()
+    assert snapshot.source_shape == "aps_content_document"
+    assert snapshot.source_identity_json["content_id"] == content_id
+    assert snapshot.source_provenance_json["source_trace"]["trace_readiness"] == "traceable_aps_content_document"
+    assert snapshot.source_provenance_json["source_trace"]["aps_trace_refs"]["target_id"] == "target-layer3-doc-001"
 
 
 def test_gate_c_preview_is_non_authoritative_and_override_is_unavailable(db_session) -> None:

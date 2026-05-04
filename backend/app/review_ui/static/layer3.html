@@ -123,6 +123,17 @@
                         <label for="dataset-version-ids">Explicit DatasetVersion IDs</label>
                         <textarea id="dataset-version-ids" name="dataset-version-ids" rows="2" placeholder="dv-aps-csv-001, another-dataset-version-id"></textarea>
                     </section>
+                    <section class="aps-content-document-selector" aria-labelledby="aps-content-document-selector-heading">
+                        <div>
+                            <h3 id="aps-content-document-selector-heading">APS content document selection</h3>
+                            <p>Select server-backed indexed APS content documents for qualitative document-chunk trace detail, or paste explicit content IDs. Selection is sent as <code>aps_content_document_ids</code> to material preview and uses <code>ApsContentDocument</code>, chunk, and linkage authority.</p>
+                        </div>
+                        <div id="aps-content-document-candidates" class="aps-content-document-candidates" aria-live="polite">
+                            <span class="aps-content-document-empty">APS content document candidates have not loaded yet.</span>
+                        </div>
+                        <label for="aps-content-document-ids">Explicit APS content document IDs</label>
+                        <textarea id="aps-content-document-ids" name="aps-content-document-ids" rows="2" placeholder="content-aps-001, another-content-id"></textarea>
+                    </section>
                     <button id="run-preflight" class="primary-btn" type="submit">Run Preflight</button>
                 </form>
             </section>
