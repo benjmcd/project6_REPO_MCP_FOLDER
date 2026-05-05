@@ -1297,11 +1297,18 @@ def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
             "125_MOCKUP_TRUTH_STATE_FREEZE.md",
             "full_mockup_activation",
             "mockups_target_state_only",
+            "PR #544 separately established the `mockups_target_state_only` truth-state boundary with `274 passed`",
         ],
         CLOSEOUT_DOC: [
+            "refreshed after PR #544 merged at `project6-origin/main=005ef212`",
+            "current_branch: `codex/l3-pr544-postmerge-doc-sync`",
+            "latest_merged_pr: `#544`",
+            "merged_main_head: `005ef212`",
             "125_MOCKUP_TRUTH_STATE_FREEZE.md",
             "mockup_truth_state_contract()",
             "full mockup activation remains blocked",
+            "Pre-merge PR #544 checks: backend-layer3-api SUCCESS; test SUCCESS.",
+            "Merged main head after PR #544: 005ef212753adf2feb859b28362a0bee3d7d72d1.",
         ],
     }
     for path, terms in required_doc_terms.items():
