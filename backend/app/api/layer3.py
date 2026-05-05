@@ -190,6 +190,37 @@ class Layer3PlanRevisionRequest(BaseModel):
     vector_plan: Any | None = None
 
 
+class Layer3AnalysisExecutionStartRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    execution_mode: str | None = None
+    operator_reason: str | None = None
+    run_all: Any | None = None
+    batch: Any | None = None
+    package: Any | None = None
+    package_review: Any | None = None
+    handoff: Any | None = None
+    result_review: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    rag_plan: Any | None = None
+    vector_plan: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_plan: Any | None = None
+    approved_plan_supersession: Any | None = None
+    schema_migration: Any | None = None
+    artifact_manifest: Any | None = None
+    results: Any | None = None
+    source_expansion: Any | None = None
+    schema_widening: Any | None = None
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -1064,6 +1095,7 @@ EXECUTION_SELECTION_REQUEST_SCHEMA: dict[str, Any] = {
 ANALYSIS_EXECUTION_START_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
+    "description": "Strict analysis execution-start fields; explicit batch/package/handoff/source-widening fields remain fail-closed.",
     "required": ["client_request_id", "session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"],
     "properties": {
         "client_request_id": {"type": "string"},
@@ -1074,6 +1106,24 @@ ANALYSIS_EXECUTION_START_REQUEST_SCHEMA: dict[str, Any] = {
         "preview_hash": {"type": "string"},
         "execution_mode": {"type": "string", "enum": ["synchronous_single_pass"]},
         "operator_reason": {"type": "string"},
+        "run_all": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "batch": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "vector_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "qualitative_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hybrid_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "approved_plan_supersession": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_migration": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "results": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_expansion": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_widening": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -1628,8 +1678,11 @@ def post_execution_select(
     openapi_extra={"requestBody": _json_request_body(ANALYSIS_EXECUTION_START_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409),
 )
-def post_execution_start(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.analysis_execution_start(db, payload))
+def post_execution_start(
+    payload: Layer3AnalysisExecutionStartRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.analysis_execution_start(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(

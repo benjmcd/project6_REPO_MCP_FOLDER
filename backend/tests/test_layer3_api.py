@@ -762,6 +762,8 @@ def test_layer3_execution_openapi_contracts(client: TestClient) -> None:
         "preview_hash",
     }
     assert start_request_schema["properties"]["execution_mode"]["enum"] == ["synchronous_single_pass"]
+    assert start_request_schema["properties"]["run_all"]["description"].startswith("Known but non-admitted")
+    assert start_request_schema["properties"]["source_expansion"]["description"].startswith("Known but non-admitted")
 
     start_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/start", "post")
     assert start_schema["title"] == "Layer3AnalysisExecutionStartResponse"
@@ -9576,6 +9578,25 @@ def test_layer3_api_analysis_execution_start_prechecks_fail_closed(client: TestC
         "schema_widening",
         "source_expansion",
     }
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-analysis-execution-start-unknown-extra",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "destination_connector": "not-admitted",
+        },
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
 
     stale_preview = client.post(
         "/api/v1/layer3/execution/start",
