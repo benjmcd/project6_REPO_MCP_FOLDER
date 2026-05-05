@@ -130,6 +130,14 @@ from app.services.layer3_workbench_package_state import (
 )
 from app.services.layer3_state_action_contract import build_state_action_contract
 from app.services.layer3_state_model_contract import build_workbench_state_model
+from app.services.layer3_handoff_contract import (
+    APS_HANDOFF_DISPATCH_ALLOWED_FIELDS,
+    APS_HANDOFF_DISPATCH_FORBIDDEN_FIELDS,
+    HANDOFF_EXPORT_PREPARE_ALLOWED_FIELDS,
+    HANDOFF_EXPORT_PREPARE_FORBIDDEN_FIELDS,
+    aps_handoff_dispatch_blocked_fields,
+    handoff_export_prepare_blocked_fields,
+)
 from app.services.layer3_external_export_contract import (
     EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ALLOWED_FIELDS,
     EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORBIDDEN_FIELDS,
@@ -672,130 +680,6 @@ PACKAGE_REVIEW_SUBMIT_PROVENANCE_AUTHORITY_FIELDS = (
     "package_construction_source_gate",
     "source_shape",
     "source_dataset_version_ids",
-)
-HANDOFF_EXPORT_PREPARE_FORBIDDEN_FIELDS = frozenset(
-    {
-        "aps_handoff",
-        "dispatch",
-        "send",
-        "external_export",
-        "external_target",
-        "download",
-        "connector_run_id",
-        "runtime_db_write",
-        "analysis_artifact",
-        "artifact_manifest",
-        "create_package",
-        "rebuild_package",
-        "package_payload",
-        "package_variant_content",
-        "rewrite_output",
-        "edited_findings",
-        "result_review_amendment",
-        "package_review_amendment",
-        "rerun",
-        "retry",
-        "recover",
-        "cancel",
-        "selected_pass_ids",
-        "pass_run_ids",
-        "new_analysis_plan",
-        "plan_revision",
-        "source_expansion",
-        "local_upload",
-        "local_directory",
-        "schema_migration",
-    }
-)
-HANDOFF_EXPORT_PREPARE_ALLOWED_FIELDS = frozenset(
-    {
-        "session_id",
-        "analysis_plan_id",
-        "pass_run_id",
-        "preview_id",
-        "preview_hash",
-        "result_review_record_ref",
-        "package_review_preview_hash",
-        "reconciliation_record_id",
-        "output_package_ids",
-        "payload_refs",
-        "payload_hashes",
-        "package_review_submit_record_ref",
-        "package_review_state",
-        "handoff_target",
-        "export_mode",
-        "operator_decision",
-        "client_request_id",
-        "decision_notes",
-        "analysis_run_id",
-        "expected_package_kinds",
-    }
-)
-APS_HANDOFF_DISPATCH_FORBIDDEN_FIELDS = frozenset(
-    {
-        "external_export",
-        "external_target",
-        "download",
-        "download_url",
-        "destination",
-        "destination_selector",
-        "connector_run_id",
-        "connector_dispatch",
-        "dispatch",
-        "send",
-        "runtime_db_write",
-        "analysis_artifact",
-        "artifact_manifest",
-        "create_package",
-        "rebuild_package",
-        "package_payload",
-        "package_variant_content",
-        "rewrite_output",
-        "edited_findings",
-        "result_review_amendment",
-        "package_review_amendment",
-        "rerun",
-        "retry",
-        "recover",
-        "cancel",
-        "selected_pass_ids",
-        "pass_run_ids",
-        "new_analysis_plan",
-        "plan_revision",
-        "source_expansion",
-        "local_upload",
-        "local_directory",
-        "schema_migration",
-    }
-)
-APS_HANDOFF_DISPATCH_ALLOWED_FIELDS = frozenset(
-    {
-        "session_id",
-        "analysis_plan_id",
-        "pass_run_id",
-        "preview_id",
-        "preview_hash",
-        "result_review_record_ref",
-        "package_review_preview_hash",
-        "reconciliation_record_id",
-        "output_package_ids",
-        "package_kinds",
-        "payload_refs",
-        "payload_hashes",
-        "package_review_submit_record_ref",
-        "package_review_state",
-        "prepare_record_ref",
-        "handoff_export_state",
-        "handoff_export_envelope_ref",
-        "handoff_target",
-        "export_mode",
-        "aps_handoff_target",
-        "dispatch_mode",
-        "operator_decision",
-        "client_request_id",
-        "decision_notes",
-        "analysis_run_id",
-    }
 )
 EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 ANALYSIS_EXECUTION_START_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
@@ -7139,9 +7023,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             next_allowed_actions=["submit_complete_handoff_export_prepare_request"],
         )
 
-    unknown = sorted(key for key in payload if key not in HANDOFF_EXPORT_PREPARE_ALLOWED_FIELDS)
-    forbidden = sorted(key for key in HANDOFF_EXPORT_PREPARE_FORBIDDEN_FIELDS if key in payload)
-    blocked_payload_fields = sorted(set(unknown) | set(forbidden))
+    blocked_payload_fields = handoff_export_prepare_blocked_fields(payload)
     if blocked_payload_fields:
         blocked_text = ", ".join(blocked_payload_fields)
         raise Layer3WorkbenchError(
@@ -7838,9 +7720,7 @@ def aps_handoff_dispatch(db: Session, payload: dict[str, Any]) -> dict[str, Any]
             next_allowed_actions=["submit_complete_aps_handoff_dispatch_request"],
         )
 
-    unknown = sorted(key for key in payload if key not in APS_HANDOFF_DISPATCH_ALLOWED_FIELDS)
-    forbidden = sorted(key for key in APS_HANDOFF_DISPATCH_FORBIDDEN_FIELDS if key in payload)
-    blocked_payload_fields = sorted(set(unknown) | set(forbidden))
+    blocked_payload_fields = aps_handoff_dispatch_blocked_fields(payload)
     if blocked_payload_fields:
         blocked_text = ", ".join(blocked_payload_fields)
         raise Layer3WorkbenchError(
