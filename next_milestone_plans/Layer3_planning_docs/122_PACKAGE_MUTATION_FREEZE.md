@@ -64,7 +64,7 @@ This implementation may include only:
 - write behavior: no database writes and no filesystem writes
 - authority source: existing package construction rows, existing reconciliation record, existing payload refs/hashes, and existing downstream state only
 
-This freeze does not admit a commit route. If preview proof later shows a commit is needed, that commit requires a separate freeze with model/migration and downstream invalidation or lineage rules.
+This freeze does not admit a commit route. Doc `126_PACKAGE_COMMIT_FREEZE.md` now records that separate implementation-entry freeze for a future `package_supersession_commit_entry`; it is docs/proof-only and still does not admit a commit route, model, migration, package row update, package payload write, UI control, or runtime behavior.
 
 ## Required Preview Request Fields
 
@@ -193,6 +193,7 @@ This runtime slice is accepted when:
 - `backend/app/services/layer3_workbench.py` still treats `package_payload`, `package_variant_content`, `rewrite_output`, and `rebuild_package` as forbidden downstream fields;
 - `backend/tests/test_layer3_api.py` contains success, downstream-dependency, no-side-effect, API-boundary, and fail-closed proof for this exact preview route;
 - `tools/l3-progress-check.py` requires this runtime contract and still verifies package mutation/reconstruction commit remains unadmitted;
+- `126_PACKAGE_COMMIT_FREEZE.md` may exist only as docs/proof-only implementation-entry and must not make `package_mutation_reconstruction` or `package_supersession_commit` admitted runtime behavior;
 - `python .\tools\l3-progress-check.py` passes;
 - `git diff --check` reports no whitespace errors.
 
