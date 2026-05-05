@@ -37,6 +37,7 @@ from app.models.models import (
     L3PackageSupersessionCommit,
     L3PassRun,
     L3ReconciliationRecord,
+    L3ReplacementOutputPackage,
     L3ReplacementPackageArtifactManifest,
     L3ReplacementPackageSetAuthority,
     L3Session,
@@ -52,6 +53,7 @@ from app.services import (
     layer3_package_supersession_commit,
     layer3_pass_entry as layer3_pass_entry_module,
     layer3_replacement_package_artifact_manifest,
+    layer3_replacement_package_namespace,
     layer3_replacement_package_set_authority,
     layer3_workbench,
 )
@@ -1664,6 +1666,79 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
         "authority_rail",
     } <= set(artifact_manifest_schema["required"])
 
+    namespace_request_schema = spec["paths"]["/api/v1/layer3/package/replacement-namespace/record"]["post"][
+        "requestBody"
+    ]["content"]["application/json"]["schema"]
+    assert namespace_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "replacement_artifact_manifest_id",
+        "replacement_package_set_authority_id",
+        "package_supersession_commit_id",
+        "source_output_package_id",
+        "package_kind",
+        "package_schema_id",
+        "artifact_ref",
+        "artifact_hash",
+        "authority_basis_hash",
+        "operator_decision",
+    } == set(namespace_request_schema["required"])
+    assert namespace_request_schema["properties"]["operator_decision"]["enum"] == [
+        "record_replacement_package_namespace"
+    ]
+    assert namespace_request_schema["properties"]["package_payload"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert namespace_request_schema["properties"]["connector_destination"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert namespace_request_schema["properties"]["auth_security_directive"]["description"].startswith(
+        "Known but non-admitted"
+    )
+
+    namespace_schema = _openapi_response_schema(
+        spec,
+        "/api/v1/layer3/package/replacement-namespace/record",
+        "post",
+    )
+    assert namespace_schema["title"] == "Layer3ReplacementPackageNamespaceRecordResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "replacement_output_package_id",
+        "session_id",
+        "source_output_package_id",
+        "replacement_artifact_manifest_id",
+        "replacement_package_set_authority_id",
+        "package_supersession_commit_id",
+        "package_kind",
+        "package_schema_id",
+        "artifact_ref",
+        "artifact_hash",
+        "authority_basis_hash",
+        "summary",
+        "operator_decision",
+        "replacement_package_namespace_mode",
+        "source_gate",
+        "namespace_row_persisted",
+        "package_row_mutation_enabled",
+        "package_payload_write_enabled",
+        "l3_output_package_write_enabled",
+        "broad_package_mutation_enabled",
+        "source_widening_enabled",
+        "connector_dispatch_enabled",
+        "provider_public_url_enabled",
+        "qualitative_hybrid_rag_execution_enabled",
+        "frontend_only_durable_state_enabled",
+        "downstream_unavailable",
+        "next_state",
+        "authority_rail",
+    } <= set(namespace_schema["required"])
+
     record_request_schema = spec["paths"]["/api/v1/layer3/handoff/connector/record"]["post"]["requestBody"][
         "content"
     ]["application/json"]["schema"]
@@ -1782,6 +1857,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("/api/v1/layer3/package/review/submit", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/package/mutation/preview", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/package/replacement-artifact/manifest/record", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/package/replacement-namespace/record", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/prepare", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/aps/dispatch", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/download/prepare", "post"): ("400", "404", "409"),
@@ -1953,6 +2029,40 @@ def test_layer3_replacement_package_artifact_manifest_api_boundary_returns_workb
     assert body["recoverable"] is False
     assert body["blocked_fields"] == ["forced_field"]
     assert body["next_allowed_actions"] == ["inspect_replacement_artifact_manifest_boundary"]
+
+
+def test_layer3_replacement_package_namespace_api_boundary_returns_workbench_error_envelope(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    def _raise_forced_boundary_error(*_args, **_kwargs):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "forced_replacement_package_namespace_boundary_error",
+            "Forced replacement package namespace boundary proof.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+            blocked_fields=["forced_field"],
+            next_allowed_actions=["inspect_replacement_package_namespace_boundary"],
+        )
+
+    monkeypatch.setattr(
+        layer3_replacement_package_namespace,
+        "record_replacement_package_namespace",
+        _raise_forced_boundary_error,
+    )
+
+    response = client.post("/api/v1/layer3/package/replacement-namespace/record", json={})
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="forced_replacement_package_namespace_boundary_error",
+    )
+    assert body["message"] == "Forced replacement package namespace boundary proof."
+    assert body["recoverable"] is False
+    assert body["blocked_fields"] == ["forced_field"]
+    assert body["next_allowed_actions"] == ["inspect_replacement_package_namespace_boundary"]
 
 
 def test_layer3_package_supersession_preview_api_boundary_returns_workbench_error_envelope(
@@ -3698,6 +3808,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap_body["features"]["replacement_package_set_authority"] is True
     assert bootstrap_body["features"]["package_supersession_commit"] is True
     assert bootstrap_body["features"]["replacement_package_artifact_manifest"] is True
+    assert bootstrap_body["features"]["replacement_package_namespace"] is True
     assert bootstrap_body["features"]["package_review"] is False
     assert bootstrap_body["features"]["external_export"] is False
     assert bootstrap_body["features"]["dispatch"] is False
@@ -3754,6 +3865,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         bootstrap_body["execution_readiness"]["replacement_package_artifact_manifest_endpoint"]
         == "/api/v1/layer3/package/replacement-artifact/manifest/record"
     )
+    assert bootstrap_body["execution_readiness"]["replacement_package_namespace_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["replacement_package_namespace_endpoint"]
+        == "/api/v1/layer3/package/replacement-namespace/record"
+    )
     assert bootstrap_body["execution_readiness"]["package_review_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_handoff_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_export_admitted"] is False
@@ -3806,6 +3922,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         readiness_body["replacement_package_artifact_manifest_endpoint"]
         == "/api/v1/layer3/package/replacement-artifact/manifest/record"
     )
+    assert readiness_body["replacement_package_namespace_admitted"] is True
+    assert (
+        readiness_body["replacement_package_namespace_endpoint"]
+        == "/api/v1/layer3/package/replacement-namespace/record"
+    )
     assert readiness_body["package_review_admitted"] is False
     assert readiness_body["external_handoff_admitted"] is False
     assert readiness_body["external_export_admitted"] is False
@@ -3819,6 +3940,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert "package_supersession_preview" in readiness_body["state_action_contract"]["action_ids"]
     assert "record_replacement_package_set_authority" in readiness_body["state_action_contract"]["action_ids"]
     assert "package_supersession_commit" in readiness_body["state_action_contract"]["action_ids"]
+    assert "replacement_package_namespace" in readiness_body["state_action_contract"]["action_ids"]
     admitted_capabilities = {
         item["capability"]: item for item in readiness_body["state_action_contract"]["admitted_capabilities"]
     }
@@ -3851,6 +3973,15 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         admitted_capabilities["package_supersession_commit_entry"]["owner_service"]
         == "backend/app/services/layer3_package_supersession_commit.py"
     )
+    assert admitted_capabilities["replacement_package_namespace_rows"]["admitted"] is True
+    assert (
+        admitted_capabilities["replacement_package_namespace_rows"]["source_gate"]
+        == "131_PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE"
+    )
+    assert (
+        admitted_capabilities["replacement_package_namespace_rows"]["owner_service"]
+        == "backend/app/services/layer3_replacement_package_namespace.py"
+    )
     deferred_capabilities = {
         item["capability"]: item for item in readiness_body["state_action_contract"]["deferred_capabilities"]
     }
@@ -3872,9 +4003,18 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         is True
     )
     assert readiness_body["idempotency_contract"]["client_request_id_required_for_package_supersession_commit"] is True
+    assert (
+        readiness_body["idempotency_contract"]["client_request_id_required_for_replacement_package_namespace"]
+        is True
+    )
     assert "duplicate_package_supersession_preview" in readiness_body["idempotency_contract"]
     assert "duplicate_replacement_package_set_authority" in readiness_body["idempotency_contract"]
     assert "duplicate_package_supersession_commit" in readiness_body["idempotency_contract"]
+    assert "duplicate_replacement_package_namespace" in readiness_body["idempotency_contract"]
+    assert (
+        readiness_body["concurrency_contract"]["replacement_package_namespace_uses_unique_request_basis_and_manifest_kind"]
+        is True
+    )
     assert "duplicate_gate_b_decision" in readiness_body["idempotency_contract"]
     assert readiness_body["idempotency_contract"]["gate_b_decision_idempotency_scope"] == "durable_claim_and_post_commit_retry"
     assert readiness_body["idempotency_contract"]["gate_b_decision_concurrent_duplicate_lock"] is True

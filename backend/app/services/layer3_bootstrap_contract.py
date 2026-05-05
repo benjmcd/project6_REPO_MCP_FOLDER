@@ -28,6 +28,7 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "replacement_package_set_authority": True,
     "package_supersession_commit": True,
     "replacement_package_artifact_manifest": True,
+    "replacement_package_namespace": True,
     "analysis_execution": False,
     "single_aps_doc_qualitative_execution": True,
     "broad_qualitative_execution": False,
@@ -106,6 +107,8 @@ def build_bootstrap_contract(
             "replacement_package_artifact_manifest_endpoint": (
                 f"{api_root}/package/replacement-artifact/manifest/record"
             ),
+            "replacement_package_namespace_admitted": True,
+            "replacement_package_namespace_endpoint": f"{api_root}/package/replacement-namespace/record",
             "package_review_admitted": False,
             "external_handoff_admitted": False,
             "external_export_admitted": False,
