@@ -1,14 +1,14 @@
 # Layer 3 Replacement Package Namespace Entry Freeze
 
-Status: implementation-entry freeze only for `replacement_package_namespace_rows`. No runtime behavior is admitted by this document.
+Status: live bounded runtime for `replacement_package_namespace_rows`.
 
-This artifact narrows the future runtime contract after `130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md`. The predecessor freeze selected a separate replacement package namespace because current `L3OutputPackage` source rows are unique by `(session_id, package_kind)` through `uq_l3_output_package_session_kind`. This entry freeze names the future route, owner service, DTOs, table, idempotency basis, stale-authority behavior, and tests required before implementation can be considered.
+This artifact governs the bounded runtime contract after `130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md`. The predecessor freeze selected a separate replacement package namespace because current `L3OutputPackage` source rows are unique by `(session_id, package_kind)` through `uq_l3_output_package_session_kind`. This runtime creates authority metadata rows only in `l3_replacement_output_package`, preserves source package rows as immutable authority, and keeps payload writes plus broad package mutation/reconstruction blocked.
 
 ## Authority Snapshot
 
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
 - baseline_ref: `project6-origin/main`
-- baseline_commit: `26435167c4ef56c8b4c8e6b8366e1e9eae4fab36`
+- baseline_commit: `c208c424bda012892c0dab7412fd2cb6a1fbb460`
 - predecessor package mutation freeze: `122_PACKAGE_MUTATION_FREEZE.md`
 - predecessor package lineage freeze: `126_PACKAGE_COMMIT_FREEZE.md`
 - predecessor replacement set freeze: `127_PACKAGE_REPLACEMENT_SET_FREEZE.md`
@@ -19,22 +19,22 @@ This artifact narrows the future runtime contract after `130_PACKAGE_REPLACEMENT
 - current source package uniqueness: `uq_l3_output_package_session_kind`
 - selected_package_lifecycle_mode: `replacement_package_namespace_rows`
 - selected_namespace_design: `separate_replacement_output_package_table`
-- future runtime route: `/api/v1/layer3/package/replacement-namespace/record`
-- future owner service: `backend/app/services/layer3_replacement_package_namespace.py`
-- future authority model: `L3ReplacementOutputPackage`
-- future table: `l3_replacement_output_package`
-- future migration: `0021_layer3_replacement_output_package.py`
-- future request DTO: `Layer3ReplacementPackageNamespaceRecordRequest`
-- future response DTO: `Layer3ReplacementPackageNamespaceRecordResponse`
+- runtime route: `/api/v1/layer3/package/replacement-namespace/record`
+- owner service: `backend/app/services/layer3_replacement_package_namespace.py`
+- authority model: `L3ReplacementOutputPackage`
+- table: `l3_replacement_output_package`
+- migration: `0021_layer3_replacement_output_package.py`
+- request DTO: `Layer3ReplacementPackageNamespaceRecordRequest`
+- response DTO: `Layer3ReplacementPackageNamespaceRecordResponse`
 - evidence boundary: live source/tests and `tools/l3-progress-check.py` outrank this document
 
 ## Entry Decision
 
-The only future runtime this entry freeze allows a later implementation PR to attempt is `replacement_package_namespace_rows`.
+The only runtime this entry freeze admits is `replacement_package_namespace_rows`.
 
-The future runtime may create replacement output-package authority rows only in `l3_replacement_output_package`, never in the source `l3_output_package` table. It must not weaken, remove, or reinterpret `uq_l3_output_package_session_kind`.
+The runtime may create replacement output-package authority rows only in `l3_replacement_output_package`, never in the source `l3_output_package` table. It must not weaken, remove, or reinterpret `uq_l3_output_package_session_kind`.
 
-The future runtime must bind each replacement row to existing, immutable authority:
+The runtime must bind each replacement row to existing, immutable authority:
 
 - one `L3ReplacementPackageArtifactManifest` row;
 - one `L3ReplacementPackageSetAuthority` row;
@@ -42,11 +42,11 @@ The future runtime must bind each replacement row to existing, immutable authori
 - one source `L3OutputPackage` row for the same `session_id` and `package_kind`;
 - one verified replacement artifact ref/hash from the manifest for that `package_kind`.
 
-This document does not create that route, service, model, migration, DTO, or row. It freezes the contract required before implementation.
+This document now governs the bounded runtime route, service, model, migration, DTOs, and row contract.
 
-## Future Row Contract
+## Runtime Row Contract
 
-The future `L3ReplacementOutputPackage` row must be authority metadata only:
+The `L3ReplacementOutputPackage` row must be authority metadata only:
 
 - `replacement_output_package_id`;
 - `session_id`;
@@ -65,7 +65,7 @@ The future `L3ReplacementOutputPackage` row must be authority metadata only:
 - `created_at`;
 - `summary_json`.
 
-The future migration must include:
+The migration must include:
 
 - primary key on `replacement_output_package_id`;
 - foreign keys to source `l3_output_package`, `l3_replacement_package_artifact_manifest`, `l3_replacement_package_set_authority`, `l3_package_supersession_commit`, and `l3_session`;
@@ -75,11 +75,11 @@ The future migration must include:
 - indexes for session, source output package, manifest, replacement set, supersession commit, and package kind;
 - check constraints for `operator_decision == "record_replacement_package_namespace"` and `status == "recorded"`.
 
-The future response must expose only response-safe ids, refs, hashes, package kind, schema id, status, authority basis hash, idempotency result, blocked downstream capabilities, and next allowed actions. It must not expose package bytes, file contents, secret paths, connector credentials, or provider URLs.
+The response must expose only response-safe ids, refs, hashes, package kind, schema id, status, authority basis hash, idempotency result, blocked downstream capabilities, and next allowed actions. It must not expose package bytes, file contents, secret paths, connector credentials, or provider URLs.
 
-## Future Request Contract
+## Runtime Request Contract
 
-The future request body must be strict and fail closed on extra fields. Required fields:
+The request body must be strict and fail closed on extra fields. Required fields:
 
 - `session_id`;
 - `replacement_artifact_manifest_id`;
@@ -96,9 +96,9 @@ The future request body must be strict and fail closed on extra fields. Required
 
 Forbidden request fields include package bytes, package payloads, replacement content, generated file bytes, connector destination, provider URL, source upload, source directory, RAG/vector input, qualitative execution instruction, hidden LLM prompt/plan, rendered-control state, and auth/security directives.
 
-## Future Authority Basis
+## Runtime Authority Basis
 
-The future `authority_basis_hash` must include:
+The `authority_basis_hash` must include:
 
 - session id;
 - source output package id, kind, schema id, payload ref, and payload hash;
@@ -113,7 +113,7 @@ Changing any basis value after a row is recorded must fail closed rather than mu
 
 ## Positive Invariants
 
-A later implementation is acceptable only if:
+This runtime is acceptable only if:
 
 - `replacement_package_namespace_rows` is the only new package lifecycle runtime selected;
 - rows are created only in `l3_replacement_output_package`;
@@ -131,10 +131,10 @@ A later implementation is acceptable only if:
 
 This freeze must not accidentally admit:
 
-- runtime behavior;
-- model or migration changes;
-- route or DTO changes;
-- replacement package row creation;
+- runtime behavior outside the exact namespace route and owner service;
+- model or migration changes outside `L3ReplacementOutputPackage` and `0021_layer3_replacement_output_package.py`;
+- route or DTO changes outside `/api/v1/layer3/package/replacement-namespace/record`;
+- replacement package row creation outside `l3_replacement_output_package`;
 - source `L3OutputPackage` row creation, update, or deletion;
 - weakening or removing `uq_l3_output_package_session_kind`;
 - package payload creation, rewrite, overwrite, deletion, or reconstruction;
@@ -159,9 +159,9 @@ This freeze must not accidentally admit:
 - full mockup activation;
 - authentication/security hardening.
 
-## Required Future Tests
+## Required Tests
 
-A later implementation PR must include tests proving:
+The implementation must include tests proving:
 
 - migration constraints, unique indexes, and foreign keys exist;
 - the API rejects extra fields before service execution;
@@ -204,12 +204,12 @@ Stop before implementation if the intended change requires:
 
 ## Acceptance Criteria
 
-This implementation-entry freeze is accepted when:
+This bounded runtime is accepted when:
 
 - this file exists and contains `selected_package_lifecycle_mode: replacement_package_namespace_rows`;
 - this file preserves `selected_namespace_design: separate_replacement_output_package_table`;
-- this file names the future route, owner service, model, table, migration, request DTO, response DTO, idempotency basis, stale-authority behavior, and required tests;
-- `105_deferred-gates.md`, `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`, `118_L3_GOAL_AUDIT.md`, and `120_L3_CLOSEOUT.md` keep `replacement_package_namespace_rows` implementation-entry only and broad package mutation/reconstruction blocked;
-- `tools/l3-progress-check.py` fails closed if this freeze is missing, if the future contract terms are missing, if `uq_l3_output_package_session_kind` is not preserved, or if broad package mutation/reconstruction is accidentally marked admitted;
+- this file names the route, owner service, model, table, migration, request DTO, response DTO, idempotency basis, stale-authority behavior, and required tests;
+- `105_deferred-gates.md`, `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`, `118_L3_GOAL_AUDIT.md`, and `120_L3_CLOSEOUT.md` classify `replacement_package_namespace_rows` as a live bounded runtime while keeping broad package mutation/reconstruction blocked;
+- `tools/l3-progress-check.py` fails closed if this runtime contract is missing, if the contract terms are missing, if `uq_l3_output_package_session_kind` is not preserved, or if broad package mutation/reconstruction is accidentally marked admitted;
 - `python .\tools\l3-progress-check.py` passes;
 - `git diff --check` reports no whitespace errors.
