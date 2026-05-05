@@ -75,13 +75,13 @@ Local merge-prep command:
 git merge-tree --write-tree project6-origin/main HEAD
 ```
 
-Observed local result after `HEAD=099c0da3` and `project6-origin/main=81deeb24`:
+Expected local result:
 
 ```text
-93e8a66d215633e2321829df6c141165b185f1be
+command exits 0 and prints a merge-tree object id
 ```
 
-This proves the current branch has no local merge conflict against the current local baseline only. Re-run the command before landing if `project6-origin/main` moves.
+Observed locally during merge-prep against `project6-origin/main=81deeb24`: the command exited 0 and printed a merge-tree object id. This proves the branch had no local merge conflict against that local baseline at command time only. Re-run the command before landing, especially if `HEAD` or `project6-origin/main` moves.
 
 ## Merge-Readiness Boundary
 
