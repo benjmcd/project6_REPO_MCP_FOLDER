@@ -33,6 +33,7 @@ from app.models.models import (
     L3OutputPackage,
     L3PassRun,
     L3ReconciliationRecord,
+    L3Session,
     L3SignedReferenceAuditEvent,
     L3SignedReferenceReceipt,
     L3SignedReferenceToken,
@@ -346,6 +347,7 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
         "execution_enabled",
         "state_model",
         "preview_hash_contract",
+        "material_preview_hash_contract",
         "idempotency_contract",
         "concurrency_contract",
         "deferred_decisions",
@@ -422,6 +424,7 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
         "server_time",
         "status",
         "material_preview_id",
+        "material_preview_hash",
         "material_candidates",
         "partial_retrieval",
         "authority_rail",
@@ -524,6 +527,7 @@ def test_layer3_gate_openapi_contracts(client: TestClient) -> None:
     assert gate_b_request_schema["additionalProperties"] is True
     assert set(gate_b_request_schema["required"]) == {"candidate_decisions"}
     assert gate_b_request_schema["properties"]["candidate_decisions"]["minItems"] == 1
+    assert gate_b_request_schema["properties"]["material_preview_hash"]["type"] == "string"
     gate_b_decision_item_schema = gate_b_request_schema["properties"]["candidate_decisions"]["items"]
     assert gate_b_decision_item_schema["additionalProperties"] is True
     assert set(gate_b_decision_item_schema["required"]) == {"candidate_id", "decision"}
@@ -545,6 +549,7 @@ def test_layer3_gate_openapi_contracts(client: TestClient) -> None:
         "status",
         "session_id",
         "selection_manifest_id",
+        "material_preview_hash",
         "gate_b_decision_manifest_id",
         "approved_candidate_ids",
         "denied_candidate_ids",
@@ -1277,7 +1282,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("/api/v1/layer3/preflight", "post"): ("400",),
         ("/api/v1/layer3/source-preview", "post"): ("400",),
         ("/api/v1/layer3/material-preview", "post"): ("400",),
-        ("/api/v1/layer3/gate-b/decision", "post"): ("400",),
+        ("/api/v1/layer3/gate-b/decision", "post"): ("400", "409"),
         ("/api/v1/layer3/gate-c/preview", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/plan/preview", "post"): ("400", "404", "409", "500"),
         ("/api/v1/layer3/plan/approve", "post"): ("400", "404", "409", "500"),
@@ -2501,8 +2506,14 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["dispatch_admitted"] is False
     assert readiness_body["readiness_state"] == "execution_readiness_blocked"
     assert readiness_body["preview_hash_contract"]["schema_id"] == "layer3.plan_preview_hash.v1"
+    assert readiness_body["material_preview_hash_contract"]["schema_id"] == "layer3.material_preview_hash.v1"
+    assert readiness_body["material_preview_hash_contract"]["supplied_hash_required_current_slice"] is False
     assert readiness_body["idempotency_contract"]["client_request_id_supported"] is True
     assert readiness_body["idempotency_contract"]["client_request_id_required_current_slice"] is False
+    assert readiness_body["idempotency_contract"]["client_request_id_required_for_gate_b_decision"] is False
+    assert "duplicate_gate_b_decision" in readiness_body["idempotency_contract"]
+    assert readiness_body["idempotency_contract"]["gate_b_decision_idempotency_scope"] == "post_commit_retry_only"
+    assert readiness_body["idempotency_contract"]["gate_b_decision_concurrent_duplicate_lock"] is False
     assert "preview-hash" in readiness_body["implemented_gates"]
     assert "analysis-execution-start" in readiness_body["implemented_gates"]
     assert "result-status" in readiness_body["implemented_gates"]
@@ -2569,6 +2580,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert preflight["status"] == "ok"
     assert source["authority_rail"]["current_gate"] == "gate_b"
     assert len(material["material_candidates"]) == 2
+    assert len(material["material_preview_hash"]) == 64
 
     first, second = material["material_candidates"]
     gate_b = client.post(
@@ -2578,6 +2590,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
             "preflight_id": preflight["preflight_id"],
             "source_set_id": source["source_set_id"],
             "material_preview_id": material["material_preview_id"],
+            "material_preview_hash": material["material_preview_hash"],
             "candidate_decisions": [
                 {
                     "candidate_id": first["candidate_id"],
@@ -2606,6 +2619,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert gate_b.status_code == 200
     gate_b_body = gate_b.json()
     _assert_common_response_envelope(gate_b_body)
+    assert gate_b_body["material_preview_hash"] == material["material_preview_hash"]
     assert gate_b_body["authority_rail"]["approved_material_count"] == 1
     assert gate_b_body["authority_rail"]["denied_material_count"] == 1
 
@@ -2928,6 +2942,166 @@ def test_layer3_api_gate_b_no_approved_material_is_blocked_error(client: TestCli
     assert body["status"] == "blocked"
     assert body["error_code"] == "no_approved_material"
     assert "session_id" not in body
+
+
+def test_layer3_api_gate_b_material_preview_hash_mismatch_fails_closed(client: TestClient) -> None:
+    preflight, source, material = _prepare_material(client)
+    first = material["material_candidates"][0]
+
+    mismatch = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": "api-gate-b-stale-material-preview",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "material_preview_hash": "stale-material-preview-hash",
+            "candidate_decisions": [
+                {
+                    "candidate_id": first["candidate_id"],
+                    "decision": "approved",
+                    "operator_reason": "",
+                    "decision_basis": {
+                        "source_ref": first["source_ref"],
+                        "query_basis": first["query_basis"],
+                        "provenance_ref": first["provenance_ref"],
+                    },
+                },
+            ],
+            "actor": "pytest",
+        },
+    )
+
+    assert mismatch.status_code == 409
+    body = mismatch.json()
+    _assert_common_response_envelope(body)
+    assert body["error_code"] == "material_preview_mismatch"
+    assert body["blocked_fields"] == ["material_preview_hash", "candidate_decisions"]
+    with client.layer3_session_factory() as db:
+        assert db.query(L3Session).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+
+
+def test_layer3_api_gate_b_duplicate_candidate_decisions_fail_closed(client: TestClient) -> None:
+    preflight, source, material = _prepare_material(client)
+    first = material["material_candidates"][0]
+    decision = {
+        "candidate_id": first["candidate_id"],
+        "decision": "approved",
+        "operator_reason": "",
+        "decision_basis": {
+            "source_ref": first["source_ref"],
+            "query_basis": first["query_basis"],
+            "provenance_ref": first["provenance_ref"],
+        },
+    }
+
+    duplicate = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": "api-gate-b-duplicate-candidate",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "material_preview_hash": material["material_preview_hash"],
+            "candidate_decisions": [decision, decision],
+            "actor": "pytest",
+        },
+    )
+
+    assert duplicate.status_code == 400
+    body = duplicate.json()
+    _assert_common_response_envelope(body)
+    assert body["error_code"] == "duplicate_material_candidate_decision"
+    with client.layer3_session_factory() as db:
+        assert db.query(L3Session).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+
+
+def test_layer3_api_gate_b_duplicate_client_request_id_is_idempotent(client: TestClient) -> None:
+    preflight, source, material = _prepare_material(client)
+    first, second = material["material_candidates"]
+    payload = {
+        "client_request_id": "api-gate-b-idempotent",
+        "preflight_id": preflight["preflight_id"],
+        "source_set_id": source["source_set_id"],
+        "material_preview_id": material["material_preview_id"],
+        "material_preview_hash": material["material_preview_hash"],
+        "candidate_decisions": [
+            {
+                "candidate_id": first["candidate_id"],
+                "decision": "approved",
+                "operator_reason": "",
+                "decision_basis": {
+                    "source_ref": first["source_ref"],
+                    "query_basis": first["query_basis"],
+                    "provenance_ref": first["provenance_ref"],
+                },
+            },
+            {
+                "candidate_id": second["candidate_id"],
+                "decision": "denied",
+                "operator_reason": "Not in first-slice scope.",
+                "decision_basis": {
+                    "source_ref": second["source_ref"],
+                    "query_basis": second["query_basis"],
+                    "provenance_ref": second["provenance_ref"],
+                },
+            },
+        ],
+        "actor": "pytest",
+    }
+
+    committed = client.post("/api/v1/layer3/gate-b/decision", json=payload)
+    assert committed.status_code == 200
+    committed_body = committed.json()
+    _assert_common_response_envelope(committed_body)
+    assert committed_body["status"] == "ok"
+
+    duplicate = client.post("/api/v1/layer3/gate-b/decision", json=payload)
+    assert duplicate.status_code == 200
+    duplicate_body = duplicate.json()
+    _assert_common_response_envelope(duplicate_body)
+    assert duplicate_body["status"] == "already_committed"
+    assert duplicate_body["session_id"] == committed_body["session_id"]
+    assert duplicate_body["selection_manifest_id"] == committed_body["selection_manifest_id"]
+    assert duplicate_body["material_preview_hash"] == material["material_preview_hash"]
+    assert duplicate_body["gate_b_decision_manifest_id"] == committed_body["gate_b_decision_manifest_id"]
+
+    reordered_payload = json.loads(json.dumps(payload))
+    reordered_payload["candidate_decisions"] = list(reversed(reordered_payload["candidate_decisions"]))
+    reordered = client.post("/api/v1/layer3/gate-b/decision", json=reordered_payload)
+    assert reordered.status_code == 200
+    reordered_body = reordered.json()
+    assert reordered_body["status"] == "already_committed"
+    assert reordered_body["session_id"] == committed_body["session_id"]
+    assert reordered_body["gate_b_decision_manifest_id"] == committed_body["gate_b_decision_manifest_id"]
+
+    conflicting_context_payload = json.loads(json.dumps(payload))
+    conflicting_context_payload["source_set_id"] = "different-source-set"
+    context_conflict = client.post("/api/v1/layer3/gate-b/decision", json=conflicting_context_payload)
+    assert context_conflict.status_code == 409
+    assert context_conflict.json()["error_code"] == "idempotency_conflict"
+
+    conflicting_payload = json.loads(json.dumps(payload))
+    conflicting_payload["candidate_decisions"][1]["decision"] = "flagged"
+    conflicting_payload["candidate_decisions"][1]["operator_reason"] = "Changed after retry."
+    conflict = client.post("/api/v1/layer3/gate-b/decision", json=conflicting_payload)
+    assert conflict.status_code == 409
+    assert conflict.json()["error_code"] == "idempotency_conflict"
+
+    with client.layer3_session_factory() as db:
+        assert db.query(L3Session).count() == 1
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
 
 
 def test_layer3_api_gate_c_commit_typing_materializes_once_when_explicit(client: TestClient) -> None:

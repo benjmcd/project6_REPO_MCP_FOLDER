@@ -41,6 +41,7 @@ Hard rules:
 - Render associated-cohort descriptive-summary workbench slices from explicit register state as well: docs `80`/`81`, PR `#432`, docs `82`/`83`, PR `#438`, docs `84`/`85`, PR `#443`, docs `86`/`87`, PR `#447`, docs `88`/`89`, PR `#451`, docs `90`/`91`, PR `#456`, PR `#458` docs `92`/`93`, PR `#460`, PR `#462`, PR `#464` docs `94`/`95`, PR `#466`, docs `96`/`97`, PR `#479`, and any future branch-local associated-cohort handoff/export prepare UI projection/proof, APS-dispatch governance, delivery governance, or external export/download slice must remain separately classified so planning docs are not mistaken for implementation and PR `#456`, docs `92`/`93`, PR `#460`, PR `#462`, docs `94`/`95`, PR `#466`, docs `96`/`97`, or future branch-local rendered proof are not mistaken for downstream behavior beyond their frozen boundary.
 - Render provider/public URL and connector/destination governance as explicit planning/control workbench slices when docs `110`/`111` or docs `112`/`113` are present. Do not collapse docs `112`/`113` into APS owner-service handoff dispatch, provider/public URL governance, or a live connector/destination implementation.
 - Render qualitative APS content document execution governance as an explicit planning/control workbench slice when docs `114`/`115` are present. Do not collapse docs `114`/`115` into older QUAL1 planning docs, PR `#513` trace representation, APS content document selection/typing, wrapped quantitative `DatasetVersion` execution, document trace rendering, or live qualitative execution.
+- If the local progress packet includes the `2026-05-05` auth/security deferral overlay, render it as near-term planning direction: remaining authentication/security work, provider/public URL implementation, connector/destination dispatch, upload-security hardening, signed-reference security hardening, qualitative/hybrid/RAG execution, and broad source/runtime/schema widening are not immediate next slices by default. Prefer non-security progress/proof/state/idempotency/refactor work unless a later explicit directive changes that scope.
 - Treat `state_model` and `artifact_render_contract.state_visuals` as required vocabularies for every `main_state` used by `milestones` or `layer3_workbench_slices`; do not invent unstyled or undeclared state labels during rendering.
 
 Required sections in order:
@@ -68,6 +69,10 @@ Critical architectural rule:
 - If it cannot, then the scheduled refresh must rewrite the artifact itself from the refreshed manifest and board during every successful refresh.
 
 Current repo-side facts to preserve:
+- local-only progress/proof sync on `2026-05-05` used `C:\Users\benny\Downloads\worktree_for_audits` with `HEAD == project6-origin/main == cb06daf6d964cb24497a4819b1b88704c4bf8f74`; no GitHub, fetch, pull, browser runtime, database runtime, or remote-hosting metadata was used
+- local current main includes PR `#527` through PR `#530` as Layer 3 modular extraction/refactor work after the PR `#522` through PR `#525` governance chain; preserve this as current local repo truth without treating it as a broad feature expansion
+- the `2026-05-05` progress/proof sync fixes snapshot metadata drift and near-term direction only; it does not re-audit every historical progress paragraph
+- branch `codex/l3-proof-idempotency-hardening` contains branch-only Gate B post-commit retry idempotency and material-preview hash hardening after the local-only progress/proof sync; render it as branch-only implementation evidence, not current-main truth, until merged
 - current `main` includes the bounded APS multisource implementation from PR `#101`
 - current `main` includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the export-package first shared-consumer freeze and its docs-only closeout from PR `#106` and PR `#107`
@@ -290,4 +295,5 @@ Success criteria:
 - done, current focus, candidate next consumers, and deferred scope are visually distinct
 - each deferred item shows both candidate-next and current-focus activation criteria in static HTML
 - the scheduled refresh and the artifact are wired so the visible artifact actually updates after refresh
+- `python .\tools\l3-progress-check.py` passes after any progress-packet edit
 ```

@@ -73,11 +73,13 @@ Hard rule:
 
 ## Current Snapshot
 
-As of `2026-05-04`:
-- seed local checkout used to prepare this post-PR522 docs/control refresh: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-post522-sync-p25` on branch `codex/l3-post522-sync-p25`
+As of `2026-05-05`:
+- seed local checkout used to prepare this local-only progress/proof sync: `C:\Users\benny\Downloads\worktree_for_audits`
 - valid local authority rule: use a clean checkout whose contents match the artifact state being refreshed; prefer current `main` for merged repo truth and the active branch checkout only when an open or branch-only milestone is explicitly declared
 - authoritative remote branch: `project6-origin/main`
-- snapshot base for this selected-pass associated-cohort durable signed-reference and residual-settlement current-main state: current `project6-origin/main` at `06225beec51d4114ba6b155a773feff20eca021d` after PR `#522` merged bounded APS parser/bridge/provenance residual settlement; PR `#487` implements the explicit associated-cohort rendered delivery UI gate, PR `#499` implements bounded backend/API same-origin signed-reference generation/use, PR `#513` does not make qualitative execution or downstream runtime behavior live, PR `#514` governs only rendered same-origin signed-reference controls, PR `#520` adds only durable token hash records, generation/use receipts, audit rows, revocation table awareness without a public endpoint, durable missing-state failure, and single-use replay denial, and PR `#522` hardens only confirmed APS table/parser bridge and material-preview provenance residuals while keeping provider/public URLs, connector/destination dispatch, qualitative execution, rendered UI changes, package mutation, new source/schema/runtime scope, broader UI, and full mockup behavior deferred
+- snapshot base for this local-only progress/proof sync: current `project6-origin/main` at `cb06daf6d964cb24497a4819b1b88704c4bf8f74`; `HEAD` matched `project6-origin/main` and `git diff --name-status HEAD project6-origin/main` was empty during the sync
+- local-only progress/control correction: the sync records that PR `#527` through PR `#530` are present on local current main as Layer 3 modular extraction/refactor work, fixes progress-manifest snapshot drift, and defers remaining authentication/security work from near-term planning; it does not re-audit or rewrite every historical progress paragraph
+- branch-only implementation correction: branch `codex/l3-proof-idempotency-hardening` adds bounded Gate B idempotency/material-preview-hash hardening after the local-only progress/proof sync; treat it as branch evidence, not current-main truth, until merged
 - planning/control addition: docs `110`/`111` define provider/public URL governance as not admitted and require a later implementation-entry freeze before provider/private signed URL, provider public URL, or public proxy URL behavior can be built
 - planning/control addition: docs `112`/`113` define connector/destination dispatch governance as not admitted and require a later implementation-entry freeze before internal dispatch records, a named connector dispatch, or a named destination dispatch can be built
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
@@ -345,6 +347,14 @@ Hard rule:
 - do not invent another later APS family lane by default from this merged-main state alone
 
 ## Candidate Next Consumers
+
+Near-term direction as of the local-only `2026-05-05` sync:
+
+- remaining authentication/security work is intentionally deferred and must not be selected as the next slice by default
+- provider/public URL implementation, connector/destination dispatch, upload-security hardening, signed-reference security hardening, qualitative/hybrid/RAG execution, and broad source/runtime/schema widening remain blocked as immediate next slices
+- branch `codex/l3-proof-idempotency-hardening` now contains branch-only Gate B post-commit retry idempotency and material-preview hash hardening; do not keep treating that exact slice as still unstarted
+- if work continues now, prefer non-security state/proof/refactor work: canonical state/action contract hardening, frontend session recovery against existing backend authority, no-behavior-change service extraction, or a narrow idempotency/hash follow-up only if fresh proof finds a missed edge
+- the historical candidate/deferred entries below remain useful boundary records, not near-term implementation recommendations
 
 - current-main state: PR `#487` proves associated-cohort rendered delivery UI activation through an explicit server-authoritative gate over the existing same-origin attachment form
 - current-main docs `102`/`103` from PR `#497` select signed delivery-reference planning/control questions; PR `#499` implements the bounded backend/API same-origin signed-reference generation/use path and proves token/signature strategy, route ownership, expiry, stale-authority failure, and no row/file creation
