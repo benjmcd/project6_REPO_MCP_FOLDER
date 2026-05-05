@@ -17,7 +17,7 @@ This file is intentionally scoped. It is not an exhaustive Layer 3 index, not a 
 - The same source-boundary service owns `UNSUPPORTED_SOURCE_CLASSES == ("rag_vector_index", "arbitrary_local_directory", "broad_file_upload", "web_connector", "unbounded_runtime_db")`.
 - `backend/app/services/layer3_workbench.py` consumes those source-boundary constants/helpers for bootstrap, preflight, source preview, and source/material candidate id parsing.
 - `backend/app/services/layer3_workbench.py` reports `single_aps_doc_qualitative_execution` as `True`, while `broad_qualitative_execution`, `hybrid_execution`, and `rag_vector_retrieval` feature flags remain `False`.
-- `backend/app/services/layer3_state_action_contract.py` records `single_aps_doc_qualitative_execution` in `STATE_ACTION_ADMITTED_CAPABILITIES`, and keeps `broad_qualitative_execution`, `hybrid_execution`, `rag_vector_retrieval`, `provider_public_url`, `connector_destination_dispatch`, `package_mutation_reconstruction`, `frontend_only_durable_state`, `hidden_llm_planning`, and `auth_security_hardening` in `STATE_ACTION_DEFERRED_CAPABILITIES` with `admitted: False`.
+- `backend/app/services/layer3_state_action_contract.py` records exact bounded capabilities in `STATE_ACTION_ADMITTED_CAPABILITIES`, including `single_aps_doc_qualitative_execution`, `internal_dispatch_record_only`, and branch-local `package_supersession_preview_only`, and keeps `broad_qualitative_execution`, `hybrid_execution`, `rag_vector_retrieval`, `provider_public_url`, `connector_destination_dispatch`, `package_mutation_reconstruction`, `frontend_only_durable_state`, `hidden_llm_planning`, and `auth_security_hardening` in `STATE_ACTION_DEFERRED_CAPABILITIES` with `admitted: False`.
 - `backend/tests/test_layer3_workbench.py` and `backend/tests/test_layer3_api.py` assert key deferred capabilities remain unadmitted and do not become action ids.
 - `backend/tests/test_layer3_page.py` proves frontend session recovery markers exist, including server revalidation and Gate B draft restoration markers. That is not proof of full mockup activation.
 
@@ -31,7 +31,7 @@ The mockup files under `next_milestone_plans/layer3-mockups/` are target-state d
 - broad local upload or directory source expansion;
 - provider/public URL support;
 - connector/destination dispatch;
-- package mutation or reconstruction;
+- package mutation or reconstruction beyond exact read-only `package_supersession_preview_only`;
 - hidden LLM planning;
 - frontend-only durable state;
 - full mockup activation.
@@ -87,4 +87,4 @@ This note blocks broad activation from mockup, progress, or Codesight evidence a
 - Post-merge `main` workflow for `7d07477a` passed both `backend-layer3-api` and `test`.
 - The remaining local working-tree noise during post-merge audit was limited to out-of-scope local sidecars and `.omc/state/*`.
 
-This recheck validates the merged current-main bounded state/action, session-status migration constraint alignment, frontend recovery, service-extraction, DTO/error-boundary including the plan-preview, source-preview, and material-preview DTO boundaries, package-hash, same-origin signed-reference service proof, single APS-document qualitative execution, and fail-closed proof posture. It does not implement or newly admit generic connector/destination dispatch, package mutation/reconstruction, broad source/upload expansion, broad qualitative/hybrid/RAG execution, provider/public URLs, full mockup activation, or authentication/security hardening. Existing bounded APS owner-service dispatch, package construction/submit, same-origin delivery, same-origin signed-reference behavior, and single APS-document qualitative execution must not be relabeled as those broader deferred categories.
+This recheck validates the merged current-main bounded state/action, session-status migration constraint alignment, frontend recovery, service-extraction, DTO/error-boundary including the plan-preview, source-preview, and material-preview DTO boundaries, package-hash, same-origin signed-reference service proof, single APS-document qualitative execution, and fail-closed proof posture. It does not implement or newly admit generic connector/destination dispatch, package mutation/reconstruction beyond exact read-only `package_supersession_preview_only`, broad source/upload expansion, broad qualitative/hybrid/RAG execution, provider/public URLs, full mockup activation, or authentication/security hardening. Existing bounded APS owner-service dispatch, package construction/submit, same-origin delivery, same-origin signed-reference behavior, and single APS-document qualitative execution must not be relabeled as those broader deferred categories.

@@ -2,7 +2,7 @@
 
 ## Status
 
-Post-synthesis authority guardrail: `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` records the current local synthesis correction for mockup, Codesight, progress-prose, and stale-audit overclaims. This deferred-gates document remains a freeze/control document only; it does not implement or newly admit provider/public URLs, broad connector/destination dispatch, package mutation/reconstruction, broad source/upload expansion, broad qualitative/hybrid/RAG execution, authentication/security work, or full mockup activation. The exact `internal_dispatch_record_only` runtime is live only as an internal record and does not change the broader deferred gates. Doc `122_PACKAGE_MUTATION_FREEZE.md` freezes `package_supersession_preview_only` as the first package mutation/reconstruction entry candidate, but it is planning/proof only and does not make runtime package mutation live.
+Post-synthesis authority guardrail: `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` records the current local synthesis correction for mockup, Codesight, progress-prose, and stale-audit overclaims. This deferred-gates document remains a freeze/control document only; it does not implement or newly admit provider/public URLs, broad connector/destination dispatch, package mutation/reconstruction commit, broad source/upload expansion, broad qualitative/hybrid/RAG execution, authentication/security work, or full mockup activation. The exact `internal_dispatch_record_only` runtime is live only as an internal record and does not change the broader deferred gates. Doc `122_PACKAGE_MUTATION_FREEZE.md` now governs a live `package_supersession_preview_only` runtime only as a read-only preview with no database writes, no package payload writes, and no in-place mutation.
 
 Current-main decision freeze for the remaining requested deferred categories after PR `#499`, PR `#513`, and PR `#514` rendered signed-reference UI slice in `104_signed-ui.md`.
 
@@ -16,13 +16,13 @@ Current-main docs `112_CONNECTOR_DISPATCH_FREEZE.md` and `113_CONNECTOR_DISPATCH
 
 Current-main docs `114_QUAL_APS_EXEC_FREEZE.md`, `115_QUAL_APS_EXEC_CONTRACT.md`, and `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md` freeze and narrow qualitative APS content document execution to the one initial `single_aps_doc_qualitative_pass` mode. That exact mode is implemented on current main; broader qualitative execution, hybrid execution, RAG/vector execution, qualitative package/handoff/export, and hidden LLM planning remain not admitted.
 
-Current-main doc `122_PACKAGE_MUTATION_FREEZE.md` freezes package mutation/reconstruction as not runtime-admitted and selects `package_supersession_preview_only` as the first eligible implementation-entry candidate. This does not admit package payload rewrite, package row mutation, package reconstruction commit, editable package variants, provider/public URLs, connector/destination dispatch, source widening, qualitative/hybrid/RAG execution, schema/model/migration changes, full mockup activation, or authentication/security work.
+Current-main doc `122_PACKAGE_MUTATION_FREEZE.md` freezes package mutation/reconstruction commit as not runtime-admitted and selects the exact `package_supersession_preview_only` runtime as the first eligible implementation-entry candidate. This read-only route does not admit package payload rewrite, package row mutation, package reconstruction commit, editable package variants, provider/public URLs, connector/destination dispatch, source widening, qualitative/hybrid/RAG execution, schema/model/migration changes, full mockup activation, or authentication/security work.
 
 This file does not implement deferred broad behavior. It defines the minimum questions, blockers, and proof gates required before any of the following can become an implementation lane:
 
 - provider/public signed URL generation;
 - broad connector/destination dispatch beyond the exact internal record-only lane;
-- package supersession preview beyond doc `122`, and any package mutation/reconstruction commit;
+- package supersession behavior beyond the exact read-only doc `122` route, and any package mutation/reconstruction commit;
 - durable token, receipt, revocation, and audit behavior beyond PR `#520`, including public/API/UI revocation or cleanup/read-model expansion;
 - broad qualitative execution beyond the admitted single APS-document qualitative pass.
 
@@ -63,7 +63,7 @@ This lane must not be folded into signed-reference UI work. The signed-reference
 
 ## Package Mutation/Reconstruction
 
-Current decision: planning/control frozen by doc `122`; runtime package mutation/reconstruction remains not admitted. The only selected future entry candidate is `package_supersession_preview_only`, which is a read-only preview mode with no database writes, no package payload writes, and no in-place mutation.
+Current decision: planning/control frozen by doc `122`; runtime package mutation/reconstruction commit remains not admitted. The exact `package_supersession_preview_only` runtime is live only as a read-only preview with no database writes, no package payload writes, and no in-place mutation.
 
 Broader implementation cannot begin until doc `122` constraints are preserved and these are specified or explicitly kept blocked:
 

@@ -1,17 +1,17 @@
 # Layer 3 Merged-Main Closeout
 
-Status: current-main closeout after PR #538 merged at `project6-origin/main=329fc6d5`, with branch-local package mutation/reconstruction entry-freeze sync.
+Status: current-main closeout after PR #538 merged at `project6-origin/main=329fc6d5`, later refreshed after PR #539 merged at `project6-origin/main=c44a8762`, with branch-local package supersession preview runtime sync.
 
-This file is post-merge documentation/proof synchronization only. It does not admit new runtime behavior, implement a deferred lane, or replace live source/tests as authority.
+This file is post-merge documentation/proof synchronization only. It does not replace live source/tests as authority. The package supersession preview row is branch-local until its PR lands; it admits only the exact read-only preview route and does not admit broad package mutation/reconstruction.
 
 ## Authority Snapshot
 
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
-- docs_sync_branch: `codex/l3-package-mutation-freeze`
-- merged_pr: `#538`
-- merged_main_head: `329fc6d5`
+- docs_sync_branch: `codex/l3-package-supersession-preview`
+- merged_pr: `#539`
+- merged_main_head: `c44a8762`
 - current baseline ref: `project6-origin/main`
-- local docs-sync authority was read from `project6-origin/main=329fc6d5` and must be rechecked if `project6-origin/main` moves.
+- local docs-sync authority was read from `project6-origin/main=c44a8762` and must be rechecked if `project6-origin/main` moves.
 - known local caveat: `.omc/state/hud-state.json`, `.omc/state/hud-stdin-cache.json`, `.codesight/`, `.cursorrules`, `.github/copilot-instructions.md`, `CLAUDE.md`, and `codex.md` are local operator/sidecar state and are not implementation evidence.
 
 Authority order for this closeout:
@@ -21,6 +21,8 @@ Authority order for this closeout:
 3. `tools/l3-progress-check.py`.
 4. `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` and `118_L3_GOAL_AUDIT.md`.
 5. Older planning docs and mockups only as target-state or historical context.
+
+Historical current-main proof after PR #538 remains retained for source-boundary, DTO-boundary, signed-reference, and session-status invariant checks; branch-local package preview proof is additive and must not be treated as broad package mutation/reconstruction proof until its own PR lands.
 
 ## Prompt-To-Artifact Checklist
 
@@ -37,11 +39,11 @@ Authority order for this closeout:
 | Material-preview DTO boundary | Implemented and guarded | `backend/app/api/layer3.py` `Layer3MaterialPreviewRequest`; `backend/tests/test_layer3_api.py::test_layer3_api_material_preview_rejects_extra_fields_before_service_execution`; progress checker verifies the strict request boundary | Material preview known fields only; no broad upload, local directory ingestion, RAG/vector source, web connector source, runtime DB widening, connector/destination dispatch, package mutation/reconstruction, provider/public URL, mockup, or auth/security behavior change. |
 | Internal connector dispatch record | Implemented narrowly; broad dispatch remains blocked | `121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md`; `backend/app/services/layer3_connector_dispatch_entry.py`; `backend/app/api/layer3.py`; `backend/tests/test_layer3_api.py`; `backend/app/services/layer3_state_action_contract.py` admits exact `internal_dispatch_record_only` while keeping `connector_destination_dispatch` deferred | Records a response-safe internal receipt in existing `L3ReconciliationRecord.summary_json` only; no external connector invocation, destination write, connector-run creation, provider/public URL, package mutation/reconstruction, source widening, qualitative/hybrid/RAG execution, rendered controls, full mockup activation, or auth/security behavior. |
 | Generic connector/destination dispatch | Not implemented; remains blocked | `backend/app/services/layer3_state_action_contract.py` keeps `connector_destination_dispatch` deferred; `116_SECURITY_SOURCE_DELIVERY_BOUNDARY_FREEZE.md` and `118_L3_GOAL_AUDIT.md` keep broad dispatch unsupported | Needs a later implementation-entry freeze selecting exactly one broader dispatch mode. |
-| Package mutation/reconstruction | Entry freeze selected; runtime not implemented and remains blocked | `122_PACKAGE_MUTATION_FREEZE.md` selects `package_supersession_preview_only` for a future read-only preview lane; `backend/app/services/layer3_state_action_contract.py` keeps `package_mutation_reconstruction` deferred; `118_L3_GOAL_AUDIT.md` rejects relabeling package construction/submit as mutation/reconstruction | Existing package construction/submit is bounded and not package rewrite, amendment, supersession, or reconstruction. The freeze does not add a route, service, model, migration, row update, payload rewrite, or UI control. |
+| Package mutation/reconstruction | Read-only preview route is live; package mutation/reconstruction commit remains blocked. | `122_PACKAGE_MUTATION_FREEZE.md` selects and bounds `package_supersession_preview_only`; `backend/app/services/layer3_package_mutation_entry.py`; `backend/app/api/layer3.py`; `backend/tests/test_layer3_api.py`; `backend/app/services/layer3_state_action_contract.py` admits exact read-only preview while keeping `package_mutation_reconstruction` deferred; `118_L3_GOAL_AUDIT.md` rejects relabeling package construction/submit as mutation/reconstruction | Existing package construction/submit is bounded and not package rewrite, amendment, supersession, or reconstruction. The preview route does not add a model, migration, package row update, payload rewrite, commit path, or UI control. |
 | Broad source/upload expansion | Not implemented; remains blocked | `backend/app/services/layer3_source_boundary.py`; `backend/tests/test_layer3_source_boundary.py`; progress checker verifies supported and unsupported source classes | Only `dataset_version` and `aps_content_document` are admitted. |
 | Qualitative/hybrid/RAG execution | Exact single APS-document qualitative pass implemented; broad qualitative/hybrid/RAG remains blocked | `backend/app/services/layer3_qual_aps_execution.py`; `backend/tests/test_layer3_qual_aps_execution.py`; `backend/app/services/layer3_state_action_contract.py`; progress checker verifies exact/broad split | Only `single_aps_doc_qualitative_pass` is admitted. |
 | Full mockup activation | Not implemented; remains blocked | `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`; `118_L3_GOAL_AUDIT.md` | Mockups are target-state artifacts and do not admit runtime behavior. |
-| Authority-boundary preservation | Preserved | `python .\tools\l3-progress-check.py` passes; focused Layer 3 backend suite passed with `267 passed`; PR #538 checks and post-merge `main` workflow passed; broad capabilities remain `admitted: false` | This is current-main proof after PR #538 plus this package mutation/reconstruction freeze, not proof of deferred broad lanes. |
+| Authority-boundary preservation | Preserved | `python .\tools\l3-progress-check.py` must pass; focused Layer 3 backend suite must pass; broad capabilities remain `admitted: false` | This is current-main proof through PR #539 plus branch-local package supersession preview sync, not proof of deferred broad lanes. |
 
 ## Validation Evidence
 
@@ -51,7 +53,7 @@ Run from `C:\Users\benny\Downloads\worktree_for_audits`.
 python .\tools\l3-progress-check.py
 ```
 
-Expected and observed result during this post-merge docs/proof sync:
+Expected and observed result during this branch-local package preview pass:
 
 ```text
 Layer 3 progress state check: PASS
@@ -60,16 +62,22 @@ Layer 3 progress state check: PASS
 Focused backend proof command:
 
 ```powershell
-$layer3Tests = Get-ChildItem -Path '.\backend\tests' -Filter 'test_layer3_*.py' | Sort-Object Name | ForEach-Object { ".\backend\tests\$($_.Name)" }; python -m pytest @layer3Tests -q
+$files = Get-ChildItem -Path '.\backend\tests' -Filter 'test_layer3_*.py' | Sort-Object Name | ForEach-Object { ".\backend\tests\$($_.Name)" }; python -m pytest $files -q
 ```
 
-Observed result during this closeout pass:
+Observed result during this branch-local package preview pass:
+
+```text
+271 passed, 4 warnings
+```
+
+The repeated Windows pytest temp cleanup `PermissionError` appeared after successful pytest exit in some runs and did not change the command exit code.
+
+Historical PR #538 local proof retained for earlier invariant checks:
 
 ```text
 267 passed, 4 warnings
 ```
-
-The repeated Windows pytest temp cleanup `PermissionError` appeared after successful pytest exit in some runs and did not change the command exit code.
 
 PR #538 CI proof:
 
@@ -98,7 +106,7 @@ Merged as bounded current-main scope:
 Not ready to claim:
 
 - generic connector/destination dispatch beyond `internal_dispatch_record_only`;
-- package mutation/reconstruction;
+- package mutation/reconstruction beyond read-only `package_supersession_preview_only`;
 - broad source/upload expansion;
 - broad qualitative execution outside `single_aps_doc_qualitative_pass`;
 - hybrid execution;
