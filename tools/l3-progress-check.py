@@ -25,6 +25,9 @@ BRANCH_CLOSEOUT = PLANNING_DOCS / "120_L3_CLOSEOUT.md"
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
+SESSION_ENTRY_MIGRATION = (
+    ROOT / "backend" / "alembic" / "versions" / "0012_layer3_session_entry.py"
+)
 LAYER3_API = ROOT / "backend" / "app" / "api" / "layer3.py"
 SOURCE_BOUNDARY_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_boundary.py"
@@ -36,6 +39,7 @@ WORKBENCH_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_workbench.py"
 )
 SOURCE_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_source_boundary.py"
+SESSION_ENTRY_TEST = ROOT / "backend" / "tests" / "test_layer3_session_entry.py"
 SIGNED_REFERENCE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_signed_reference_state.py"
 )
@@ -584,17 +588,17 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "backend/tests/test_layer3_source_boundary.py",
         ],
         GOAL_AUDIT: [
-            "updated after material-preview DTO boundary hardening",
+            "updated after session-status migration constraint alignment",
             "backend/app/services/layer3_source_boundary.py",
             "backend/tests/test_layer3_source_boundary.py",
             "does not widen source classes",
-            "263 passed",
+            "264 passed",
         ],
         BRANCH_CLOSEOUT: [
-            "Status: local branch closeout for `codex/l3-frontend-session-recovery` after material-preview DTO boundary hardening.",
+            "Status: local branch closeout for `codex/l3-frontend-session-recovery` after session-status migration constraint alignment.",
             "review/merge preparation only",
             "backend/app/services/layer3_source_boundary.py",
-            "263 passed, 4 warnings",
+            "264 passed, 4 warnings",
             "Layer 3 progress state check: PASS",
             "generic connector/destination dispatch",
             "package mutation/reconstruction",
@@ -644,12 +648,12 @@ def _check_signed_reference_state_guard(errors: list[str]) -> None:
             "backend/app/services/layer3_signed_reference_state.py",
             "backend/tests/test_layer3_signed_reference_state.py",
             "concurrent single-use proof",
-            "263 passed",
+            "264 passed",
         ],
         BRANCH_CLOSEOUT: [
             "backend/app/services/layer3_signed_reference_state.py",
             "backend/tests/test_layer3_signed_reference_state.py",
-            "263 passed, 4 warnings",
+            "264 passed, 4 warnings",
             "same-origin signed-reference service proof",
         ],
     }
@@ -693,12 +697,12 @@ def _check_plan_preview_request_guard(errors: list[str]) -> None:
         GOAL_AUDIT: [
             "Layer3PlanPreviewRequest",
             "test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation",
-            "263 passed",
+            "264 passed",
         ],
         BRANCH_CLOSEOUT: [
             "Layer3PlanPreviewRequest",
             "test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation",
-            "263 passed, 4 warnings",
+            "264 passed, 4 warnings",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -744,12 +748,12 @@ def _check_source_preview_request_guard(errors: list[str]) -> None:
         GOAL_AUDIT: [
             "Layer3SourcePreviewRequest",
             "test_layer3_api_source_preview_rejects_extra_fields_before_service_execution",
-            "263 passed",
+            "264 passed",
         ],
         BRANCH_CLOSEOUT: [
             "Layer3SourcePreviewRequest",
             "test_layer3_api_source_preview_rejects_extra_fields_before_service_execution",
-            "263 passed, 4 warnings",
+            "264 passed, 4 warnings",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -795,12 +799,12 @@ def _check_material_preview_request_guard(errors: list[str]) -> None:
         GOAL_AUDIT: [
             "Layer3MaterialPreviewRequest",
             "test_layer3_api_material_preview_rejects_extra_fields_before_service_execution",
-            "263 passed",
+            "264 passed",
         ],
         BRANCH_CLOSEOUT: [
             "Layer3MaterialPreviewRequest",
             "test_layer3_api_material_preview_rejects_extra_fields_before_service_execution",
-            "263 passed, 4 warnings",
+            "264 passed, 4 warnings",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -808,6 +812,55 @@ def _check_material_preview_request_guard(errors: list[str]) -> None:
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing material-preview request guard term: {term}")
+
+
+def _check_session_status_migration_constraint(errors: list[str]) -> None:
+    migration_text = _read_required_text(SESSION_ENTRY_MIGRATION, errors)
+    for term in (
+        "sa.CheckConstraint(",
+        "ck_l3_session_status",
+        "active_loading",
+        "active_planning",
+        "active_execution",
+        "completed",
+        "completed_with_warnings",
+        "failed",
+    ):
+        if term not in migration_text:
+            errors.append(f"{_rel(SESSION_ENTRY_MIGRATION)} missing session-status migration term: {term}")
+
+    test_text = _read_required_text(SESSION_ENTRY_TEST, errors)
+    for term in (
+        "test_layer3_session_entry_migration_defines_status_check_constraint",
+        "SESSION_ENTRY_MIGRATION",
+        "ck_l3_session_status",
+        "L3_SESSION_STATUS_VALUES",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(SESSION_ENTRY_TEST)} missing session-status migration proof term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: [
+            "0012_layer3_session_entry.py",
+            "test_layer3_session_entry_migration_defines_status_check_constraint",
+            "session-status migration constraint",
+        ],
+        GOAL_AUDIT: [
+            "0012_layer3_session_entry.py",
+            "test_layer3_session_entry_migration_defines_status_check_constraint",
+            "264 passed",
+        ],
+        BRANCH_CLOSEOUT: [
+            "0012_layer3_session_entry.py",
+            "test_layer3_session_entry_migration_defines_status_check_constraint",
+            "264 passed, 4 warnings",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing session-status migration term: {term}")
 
 
 def _check_progress_text_surfaces(errors: list[str]) -> None:
@@ -881,10 +934,12 @@ def main() -> int:
         QUAL_APS_ENTRY_FREEZE,
         BRANCH_CLOSEOUT,
         STATE_ACTION_CONTRACT,
+        SESSION_ENTRY_MIGRATION,
         LAYER3_API,
         SOURCE_BOUNDARY_SERVICE,
         WORKBENCH_SERVICE,
         SOURCE_BOUNDARY_TEST,
+        SESSION_ENTRY_TEST,
         SIGNED_REFERENCE_STATE_SERVICE,
         SIGNED_REFERENCE_STATE_TEST,
         LAYER3_API_TEST,
@@ -905,6 +960,7 @@ def main() -> int:
     _check_plan_preview_request_guard(errors)
     _check_source_preview_request_guard(errors)
     _check_material_preview_request_guard(errors)
+    _check_session_status_migration_constraint(errors)
     _check_progress_text_surfaces(errors)
     _check_ci_layer3_backend_guardrail(errors)
 

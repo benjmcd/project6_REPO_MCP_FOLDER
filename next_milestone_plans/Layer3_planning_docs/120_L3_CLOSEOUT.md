@@ -1,6 +1,6 @@
 # Layer 3 Bounded Branch Closeout
 
-Status: local branch closeout for `codex/l3-frontend-session-recovery` after material-preview DTO boundary hardening.
+Status: local branch closeout for `codex/l3-frontend-session-recovery` after session-status migration constraint alignment.
 
 This file is review/merge preparation only. It does not admit new runtime behavior, implement a deferred lane, or replace live source/tests as authority.
 
@@ -8,7 +8,7 @@ This file is review/merge preparation only. It does not admit new runtime behavi
 
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
 - branch: `codex/l3-frontend-session-recovery`
-- latest committed branch head before this material-preview closeout update: `789a00c3`
+- latest committed branch head before this session-status migration constraint update: `73d6f607`
 - current baseline ref: `project6-origin/main`
 - known local caveat: `.omc/state/hud-state.json`, `.omc/state/hud-stdin-cache.json`, `.codesight/`, `.cursorrules`, `.github/copilot-instructions.md`, `CLAUDE.md`, and `codex.md` are local operator/sidecar state and are not implementation evidence.
 
@@ -26,6 +26,7 @@ Authority order for this closeout:
 | --- | --- | --- | --- |
 | Synthesis critical items before broader work | Partially complete and bounded | `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`; `118_L3_GOAL_AUDIT.md`; `tools/l3-progress-check.py` | Auth/security remains deferred; broad activation remains blocked. |
 | Canonical state/action contract | Implemented and guarded | `backend/app/services/layer3_state_action_contract.py`; `backend/tests/test_layer3_workbench.py`; `backend/tests/test_layer3_api.py`; progress checker verifies admitted/deferred capability split | Deferred capability ids are not action ids. |
+| Session-status migration constraint | Implemented and guarded | `backend/alembic/versions/0012_layer3_session_entry.py`; `backend/tests/test_layer3_session_entry.py::test_layer3_session_entry_migration_defines_status_check_constraint`; progress checker verifies the migration/test/doc proof terms | `L3Session.status` vocabulary only; no broad state-machine rewrite, lifecycle recovery, supersession, execution, source, package, connector, mockup, or auth/security behavior change. |
 | Frontend session recovery | Implemented earlier on this branch | `backend/app/review_ui/static/layer3.js`; `backend/tests/test_layer3_page.py`; `e2e/layer3-workbench.spec.js`; recorded headed/headless proof in `118_L3_GOAL_AUDIT.md` | Server-revalidated recovery only; not frontend-only durable state or full mockup activation. |
 | Service extraction to reduce workbench risk | Implemented narrowly | `backend/app/services/layer3_plan_revision_state.py`; `backend/app/services/layer3_gate_b_state.py`; `backend/app/services/layer3_source_boundary.py`; related tests | No broad `layer3_workbench.py` rewrite. |
 | Same-origin signed-reference service proof | Implemented and guarded | `backend/app/services/layer3_signed_reference_state.py`; `backend/tests/test_layer3_signed_reference_state.py`; progress checker verifies the atomic conditional update and lifecycle/concurrent-use proof | Same-origin signed-reference state only; no provider/public URL, revocation API, connector/destination dispatch, or broad delivery behavior. |
@@ -37,7 +38,7 @@ Authority order for this closeout:
 | Broad source/upload expansion | Not implemented; remains blocked | `backend/app/services/layer3_source_boundary.py`; `backend/tests/test_layer3_source_boundary.py`; progress checker verifies supported and unsupported source classes | Only `dataset_version` and `aps_content_document` are admitted. |
 | Qualitative/hybrid/RAG execution | Exact single APS-document qualitative pass implemented; broad qualitative/hybrid/RAG remains blocked | `backend/app/services/layer3_qual_aps_execution.py`; `backend/tests/test_layer3_qual_aps_execution.py`; `backend/app/services/layer3_state_action_contract.py`; progress checker verifies exact/broad split | Only `single_aps_doc_qualitative_pass` is admitted. |
 | Full mockup activation | Not implemented; remains blocked | `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`; `118_L3_GOAL_AUDIT.md` | Mockups are target-state artifacts and do not admit runtime behavior. |
-| Authority-boundary preservation | Preserved | `python .\tools\l3-progress-check.py` passes; focused Layer 3 backend suite passed with `263 passed`; broad capabilities remain `admitted: false` | This is branch-local proof, not merged-main proof. |
+| Authority-boundary preservation | Preserved | `python .\tools\l3-progress-check.py` passes; focused Layer 3 backend suite passed with `264 passed`; broad capabilities remain `admitted: false` | This is branch-local proof, not merged-main proof. |
 
 ## Validation Evidence
 
@@ -47,7 +48,7 @@ Run from `C:\Users\benny\Downloads\worktree_for_audits`.
 python .\tools\l3-progress-check.py
 ```
 
-Expected and observed result after material-preview DTO boundary hardening:
+Expected and observed result after session-status migration constraint alignment:
 
 ```text
 Layer 3 progress state check: PASS
@@ -62,7 +63,7 @@ $layer3Tests = Get-ChildItem -Path '.\backend\tests' -Filter 'test_layer3_*.py' 
 Observed result during this closeout pass:
 
 ```text
-263 passed, 4 warnings
+264 passed, 4 warnings
 ```
 
 The repeated Windows pytest temp cleanup `PermissionError` appeared after successful pytest exit in some runs and did not change the command exit code.
@@ -72,6 +73,7 @@ The repeated Windows pytest temp cleanup `PermissionError` appeared after succes
 Ready to review as a bounded branch:
 
 - canonical state/action contract hardening;
+- session-status migration constraint alignment;
 - frontend session recovery;
 - narrow service extractions;
 - same-origin signed-reference service proof;
