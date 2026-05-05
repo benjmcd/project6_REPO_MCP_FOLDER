@@ -87,6 +87,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
 class Layer3PlanApprovalRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    schema_id: str | None = None
+    schema_version: int | None = None
     client_request_id: str | None = None
     session_id: str
     preview_id: str
@@ -98,6 +100,8 @@ class Layer3PlanApprovalRequest(BaseModel):
 class Layer3PlanPreviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    schema_id: str | None = None
+    schema_version: int | None = None
     client_request_id: str | None = None
     session_id: str | None = None
     preview_scope: str | None = None
@@ -198,6 +202,8 @@ class Layer3ExecutionSelectionRequest(BaseModel):
 class Layer3PlanRevisionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    schema_id: str | None = None
+    schema_version: int | None = None
     client_request_id: str | None = None
     session_id: str | None = None
     preview_id: str | None = None
@@ -1427,6 +1433,8 @@ PLAN_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
     "description": "Strict plan-preview fields; execution/package/handoff/source-widening fields are rejected before service mutation.",
     "required": ["session_id"],
     "properties": {
+        "schema_id": {"type": "string", "enum": ["layer3.plan_preview_request.v1"]},
+        "schema_version": {"type": "integer"},
         "client_request_id": {"type": "string"},
         "session_id": {"type": "string"},
         "preview_scope": {"type": "string", "enum": ["owner_service_default"]},
@@ -1441,6 +1449,8 @@ PLAN_APPROVAL_REQUEST_SCHEMA: dict[str, Any] = {
     "description": "Strict plan-approval fields; extra execution/package/handoff fields are rejected before service mutation.",
     "required": ["session_id", "preview_id", "preview_hash", "operator_confirmation"],
     "properties": {
+        "schema_id": {"type": "string", "enum": ["layer3.plan_approval_request.v1"]},
+        "schema_version": {"type": "integer"},
         "client_request_id": {"type": "string"},
         "session_id": {"type": "string"},
         "preview_id": {"type": "string"},
@@ -1457,6 +1467,8 @@ PLAN_REVISION_REQUEST_SCHEMA: dict[str, Any] = {
     "description": "Strict plan-revision fields; explicit execution/package/handoff/source-widening fields remain fail-closed.",
     "required": ["session_id", "preview_id", "preview_hash", "operator_decision"],
     "properties": {
+        "schema_id": {"type": "string", "enum": ["layer3.plan_revision_request.v1"]},
+        "schema_version": {"type": "integer"},
         "client_request_id": {"type": "string"},
         "session_id": {"type": "string"},
         "preview_id": {"type": "string"},

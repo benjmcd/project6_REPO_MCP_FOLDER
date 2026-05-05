@@ -621,6 +621,7 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
     ]["schema"]
     assert preview_request_schema["additionalProperties"] is False
     assert set(preview_request_schema["required"]) == {"session_id"}
+    assert preview_request_schema["properties"]["schema_id"]["enum"] == ["layer3.plan_preview_request.v1"]
     assert preview_request_schema["properties"]["preview_scope"]["enum"] == ["owner_service_default"]
     assert preview_request_schema["properties"]["include_exclusions"]["type"] == "boolean"
     assert "source-widening fields are rejected before service mutation" in preview_request_schema["description"]
@@ -653,8 +654,15 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
         "preview_hash",
         "operator_confirmation",
     }
+    assert approval_request_schema["properties"]["schema_id"]["enum"] == ["layer3.plan_approval_request.v1"]
     assert approval_request_schema["properties"]["operator_confirmation"] == {"type": "boolean", "enum": [True]}
     assert approval_request_schema["properties"]["approval_scope"]["enum"] == ["owner_service_default"]
+
+    revision_request_schema = spec["paths"]["/api/v1/layer3/plan/revise"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert revision_request_schema["additionalProperties"] is False
+    assert revision_request_schema["properties"]["schema_id"]["enum"] == ["layer3.plan_revision_request.v1"]
 
     approval_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/approve", "post")
     assert approval_schema["title"] == "Layer3PlanApprovalResponse"

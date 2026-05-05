@@ -15,6 +15,8 @@ REFRESH_SPEC = ROOT / "next_milestone_plans" / "layer3_progress_refresh_spec.md"
 PROGRESS_PROMPT = ROOT / "next_milestone_plans" / "progress-prompt.md"
 PROOF_MANIFEST = ROOT / "next_milestone_plans" / "layer3_workbench_proof_manifest.json"
 PLAYWRIGHT_WORKFLOW = ROOT / ".github" / "workflows" / "playwright.yml"
+LAYER3_API_REQUIREMENTS = ROOT / "backend" / "tests" / "requirements-layer3-api.txt"
+BROWSER_REQUIREMENTS = ROOT / "backend" / "tests" / "requirements-browser.txt"
 PLANNING_DOCS = ROOT / "next_milestone_plans" / "Layer3_planning_docs"
 QUAL_APS_FREEZE = PLANNING_DOCS / "114_QUAL_APS_EXEC_FREEZE.md"
 LOCAL_BOUNDARY = PLANNING_DOCS / "116_SECURITY_SOURCE_DELIVERY_BOUNDARY_FREEZE.md"
@@ -916,6 +918,16 @@ def _check_ci_layer3_backend_guardrail(errors: list[str]) -> None:
     required_name = "Run focused Layer 3 backend pytest guardrail"
     if required_name not in text:
         errors.append("backend Layer 3 CI guardrail step name must reflect focused coverage")
+    if "requirements-layer3-api.txt" not in text:
+        errors.append("Layer 3 CI workflow must track requirements-layer3-api.txt dependency changes")
+
+    api_requirements = _read_required_text(LAYER3_API_REQUIREMENTS, errors)
+    if "pyarrow" not in api_requirements:
+        errors.append("Layer 3 API test requirements must include a parquet engine such as pyarrow")
+
+    browser_requirements = _read_required_text(BROWSER_REQUIREMENTS, errors)
+    if "-r requirements-layer3-api.txt" not in browser_requirements:
+        errors.append("browser harness requirements must include focused Layer 3 API requirements")
 
 
 def main() -> int:
@@ -927,6 +939,8 @@ def main() -> int:
         PROGRESS_PROMPT,
         PROOF_MANIFEST,
         PLAYWRIGHT_WORKFLOW,
+        LAYER3_API_REQUIREMENTS,
+        BROWSER_REQUIREMENTS,
         QUAL_APS_FREEZE,
         LOCAL_BOUNDARY,
         SYNTHESIS_BOUNDARY,
