@@ -1016,6 +1016,8 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
     ]
     assert submit_request_schema["properties"]["output_package_ids"]["type"] == "array"
     _assert_string_array_or_string_map_schema(submit_request_schema["properties"]["payload_hashes"])
+    assert submit_request_schema["properties"]["handoff"]["description"].startswith("Known but non-admitted")
+    assert submit_request_schema["properties"]["package_payload"]["description"].startswith("Known but non-admitted")
 
     submit_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/submit", "post")
     assert submit_schema["title"] == "Layer3PackageReviewSubmitResponse"
@@ -8829,6 +8831,26 @@ def test_layer3_api_package_review_submit_prechecks_fail_closed(
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "package_review_submit_scope_not_admitted"
     assert set(forbidden.json()["blocked_fields"]) == {"handoff", "package_payload"}
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={**base_payload, "destination_connector": "not-admitted"},
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        assert "package_review_submit" not in reconciliation.summary_json
+    finally:
+        db.close()
 
     notes_required = client.post(
         "/api/v1/layer3/package/review/submit",
