@@ -1431,6 +1431,14 @@ def _check_qualitative_capability_boundary(errors: list[str]) -> None:
             errors.append(f"{_rel(QUAL_APS_TEST)} missing qualitative boundary proof term: {term}")
     if "test_qualitative_hybrid_rag_boundary_contract_keeps_broad_execution_fail_closed" not in qual_test_text:
         errors.append(f"{_rel(QUAL_APS_TEST)} missing qualitative boundary contract proof")
+    for term in (
+        "test_single_aps_doc_qualitative_owner_error_maps_without_side_effects",
+        "Layer3QualApsExecutionError",
+        "analysis_execution_start_not_admitted",
+        "} == counts_before",
+    ):
+        if term not in qual_test_text:
+            errors.append(f"{_rel(QUAL_APS_TEST)} missing qualitative owner-service error proof term: {term}")
 
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     for term in (
@@ -1457,11 +1465,23 @@ def _check_qualitative_capability_boundary(errors: list[str]) -> None:
             "single_aps_doc_qualitative_execution",
             "broad_qualitative_execution",
             "broad qualitative or hybrid execution outside the admitted single APS-document qualitative pass",
+            "test_single_aps_doc_qualitative_owner_error_maps_without_side_effects",
+            "analysis_execution_start_not_admitted",
+            "PR #558",
         ],
         GOAL_AUDIT: [
             "The active goal is not complete.",
             "Only `single_aps_doc_qualitative_pass` is admitted",
             "broad qualitative execution beyond the single APS-document qualitative pass",
+            "test_single_aps_doc_qualitative_owner_error_maps_without_side_effects",
+            "qualitative owner-service error-boundary proof merged after PR #558",
+            "5831ff2f",
+        ],
+        CLOSEOUT_DOC: [
+            "PR #558 qualitative owner-service error-boundary proof",
+            "test_single_aps_doc_qualitative_owner_error_maps_without_side_effects",
+            "qualitative owner-service errors are proof-hardened",
+            "Merged main head after PR #558: 5831ff2f.",
         ],
         QUAL_APS_ENTRY_FREEZE: [
             "selected the single APS content-document qualitative lane",
