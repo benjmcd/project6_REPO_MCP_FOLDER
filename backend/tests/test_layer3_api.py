@@ -861,6 +861,8 @@ def test_layer3_execution_result_openapi_contracts(client: TestClient) -> None:
         "blocked",
     ]
     assert review_request_schema["properties"]["reviewed_output_items"]["type"] == "array"
+    assert review_request_schema["properties"]["package_review"]["description"].startswith("Known but non-admitted")
+    assert review_request_schema["properties"]["source_expansion"]["description"].startswith("Known but non-admitted")
 
     review_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/result/review", "post")
     assert review_schema["title"] == "Layer3ExecutionResultReviewResponse"
@@ -9224,6 +9226,34 @@ def test_layer3_api_execution_result_review_prechecks_fail_closed(
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "execution_result_review_scope_not_admitted"
     assert set(forbidden.json()["blocked_fields"]) == {"package_review", "rerun", "rewrite_output"}
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={
+            "client_request_id": "api-result-review-unknown-extra",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_decision": "approved",
+            "destination_connector": "not-admitted",
+        },
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        stored_pass = db.query(L3PassRun).one()
+        assert "execution_result_review" not in (stored_pass.summary_json or {})
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
 
     not_started = client.post(
         "/api/v1/layer3/execution/result/review",

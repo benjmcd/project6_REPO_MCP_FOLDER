@@ -257,6 +257,43 @@ class Layer3ExecutionResultStatusRequest(BaseModel):
     runtime_db_write: Any | None = None
 
 
+class Layer3ExecutionResultReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    operator_decision: str | None = None
+    review_notes: str | None = None
+    reviewed_output_items: list[dict[str, Any]] | None = None
+    analysis_run_id: str | None = None
+    package: Any | None = None
+    package_review: Any | None = None
+    handoff: Any | None = None
+    export: Any | None = None
+    rerun: Any | None = None
+    retry: Any | None = None
+    recover: Any | None = None
+    cancel: Any | None = None
+    selected_pass_ids: Any | None = None
+    pass_run_ids: Any | None = None
+    new_analysis_plan: Any | None = None
+    plan_revision: Any | None = None
+    source_expansion: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    schema_migration: Any | None = None
+    runtime_db_write: Any | None = None
+    artifact_manifest: Any | None = None
+    package_variant: Any | None = None
+    aps_handoff: Any | None = None
+    edited_findings: Any | None = None
+    rewrite_output: Any | None = None
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -1229,6 +1266,28 @@ EXECUTION_RESULT_REVIEW_REQUEST_SCHEMA: dict[str, Any] = {
         "review_notes": {"type": "string"},
         "reviewed_output_items": {"type": "array", "items": {"type": "object", "additionalProperties": True}},
         "analysis_run_id": {"type": "string"},
+        "package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "export": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rerun": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "retry": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "recover": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "cancel": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "selected_pass_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "pass_run_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "new_analysis_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "plan_revision": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_expansion": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_migration": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "runtime_db_write": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_variant": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "aps_handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "edited_findings": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rewrite_output": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -1765,10 +1824,10 @@ def post_execution_result_status(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_execution_result_review(
-    payload: dict[str, Any],
+    payload: Layer3ExecutionResultReviewRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.execution_result_review(db, payload))
+    return _json_or_error(lambda: layer3_workbench.execution_result_review(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
