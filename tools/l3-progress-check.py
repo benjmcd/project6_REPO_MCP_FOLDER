@@ -3151,6 +3151,27 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
             "proof/refactor hardening through PR #584",
             "No broad execution, package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior is admitted.",
         ),
+        MANIFEST: (
+            "PR #584/commit 9cdd1e88 as no-behavior-change plan-flow request contract extraction proof",
+            "merged_live_bounded_plan_flow_request_contract_extraction",
+            "snapshot_base_main_commit\": \"9cdd1e88593d21e269d00dda50eae98ab852d219",
+            "Post-PR584 current-main progress/proof sync",
+            "does not admit broad execution, package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior",
+        ),
+        BOARD: (
+            "Plan-flow request contract extraction",
+            "PR `#584`/commit `9cdd1e88`",
+            "backend/app/services/layer3_plan_flow_contract.py",
+            "merged live no-behavior-change refactor/proof",
+            "full focused Layer 3 suite with `304 passed, 4 warnings`",
+        ),
+        PROOF_MANIFEST: (
+            "Layer 3 proof readiness through PR #584",
+            "latest_plan_flow_request_contract_extraction_pr",
+            "plan_flow_request_contract_extraction_current_boundary_proof",
+            "9cdd1e88593d21e269d00dda50eae98ab852d219",
+            "no-behavior-change plan-flow request contract extraction proof",
+        ),
     }
     for path, terms in required_doc_terms.items():
         text = _read_required_text(path, errors)
