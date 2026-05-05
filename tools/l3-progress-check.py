@@ -1837,12 +1837,14 @@ def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
             "4793d8d1",
         ],
         CLOSEOUT_DOC: [
-            "Functional boundary evidence currently targets PR #556 at `project6-origin/main=93fe525b`",
+            "Functional boundary evidence still targets PR #556 at `project6-origin/main=93fe525b`",
             "This file is post-merge documentation/proof synchronization only.",
             "bounded snapshot, not an evergreen manifest",
             "snapshot_target_ref: `project6-origin/main`",
             "functional_boundary_head: `93fe525b`",
             "functional_boundary_role: last runtime-affecting Layer 3 boundary captured in this snapshot",
+            "proof_snapshot_head: `369e4131`",
+            "latest_proof_boundary_pr: `#562`",
             "not a self-updating current-main marker",
             "latest_functional_boundary_pr: `#556`",
             "docs_sync_reference_pr: `#551`",
@@ -2447,10 +2449,14 @@ def _check_response_contract_extraction(errors: list[str]) -> None:
         GOAL_AUDIT: (
             "response envelope extraction",
             "layer3_response_contract.py",
+            "response envelope extraction proof merged after PR #562",
+            "369e4131",
         ),
         CLOSEOUT_DOC: (
             "layer3_response_contract.py",
             "Response envelope extraction",
+            "PR #562 response envelope extraction proof",
+            "Merged main head after PR #562: 369e4131.",
         ),
     }
     for path, terms in required_doc_terms.items():
