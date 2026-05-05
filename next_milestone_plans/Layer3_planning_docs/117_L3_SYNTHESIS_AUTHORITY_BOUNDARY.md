@@ -67,3 +67,15 @@ The synthesis-supported direction after the already-landed proof/state/refactor 
 - defer broad feature activation until a separate freeze and proof plan admit exactly one lane.
 
 This note blocks broad activation from mockup, progress, or Codesight evidence alone.
+
+## Branch Verification Recheck
+
+- Local branch head at this recheck: `8205b6c2e58547c72edbcaf5a4c5687e517cbfa0`.
+- This recheck is branch-local proof for `codex/l3-frontend-session-recovery`; it does not claim merged-main state beyond `project6-origin/main`.
+- `python -m pytest $files -q`, where `$files` is the local `backend/tests/test_layer3*.py` set, passed with `248 passed, 4 warnings`.
+- `python .\tools\l3-progress-check.py` passed with `Layer 3 progress state check: PASS`.
+- `npx playwright test layer3-workbench.spec.js --project=chromium` passed with `12 passed`.
+- `npx playwright test layer3-workbench.spec.js --project=chromium --headed` passed with `12 passed`.
+- `git diff --check` and `git diff --cached --check` passed; the remaining working-tree noise was limited to out-of-scope local sidecars and `.omc/state/*`.
+
+This recheck validates the branch's bounded state/action, frontend recovery, service-extraction, DTO/error-boundary, package-hash, and fail-closed proof posture. It does not implement or newly admit generic connector/destination dispatch, package mutation/reconstruction, broad source/upload expansion, qualitative/hybrid/RAG execution, provider/public URLs, full mockup activation, or authentication/security hardening. Existing bounded APS owner-service dispatch, package construction/submit, same-origin delivery, and same-origin signed-reference behavior must not be relabeled as those broader deferred categories.
