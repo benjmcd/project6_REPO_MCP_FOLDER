@@ -2,7 +2,7 @@
 
 ## Status
 
-Post-synthesis authority guardrail: `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` records the current local synthesis correction for mockup, Codesight, progress-prose, and stale-audit overclaims. This deferred-gates document remains a freeze/control document only; it does not implement or newly admit provider/public URLs, broad connector/destination dispatch, package mutation/reconstruction commit, broad source/upload expansion, broad qualitative/hybrid/RAG execution, authentication/security work, or full mockup activation. The exact `internal_dispatch_record_only` runtime is live only as an internal record and does not change the broader deferred gates. Doc `122_PACKAGE_MUTATION_FREEZE.md` now governs a live `package_supersession_preview_only` runtime only as a read-only preview with no database writes, no package payload writes, and no in-place mutation.
+Post-synthesis authority guardrail: `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` records the current local synthesis correction for mockup, Codesight, progress-prose, and stale-audit overclaims. This deferred-gates document remains a freeze/control document only; it does not implement or newly admit provider/public URLs, broad connector/destination dispatch, package mutation/reconstruction commit, broad source/upload expansion, broad qualitative/hybrid/RAG execution, authentication/security work, or full mockup activation. The exact `internal_dispatch_record_only` runtime is live only as an internal record and does not change the broader deferred gates. Doc `122_PACKAGE_MUTATION_FREEZE.md` now governs a live `package_supersession_preview_only` runtime only as a read-only preview with no database writes, no package payload writes, and no in-place mutation. Doc `123_SOURCE_EXPANSION_FREEZE.md` freezes `supported_source_classes_only`; source upload, local directory, broad file upload, web connector, RAG/vector, and unbounded runtime DB source expansion remain blocked.
 
 Current-main decision freeze for the remaining requested deferred categories after PR `#499`, PR `#513`, and PR `#514` rendered signed-reference UI slice in `104_signed-ui.md`.
 
@@ -23,8 +23,25 @@ This file does not implement deferred broad behavior. It defines the minimum que
 - provider/public signed URL generation;
 - broad connector/destination dispatch beyond the exact internal record-only lane;
 - package supersession behavior beyond the exact read-only doc `122` route, and any package mutation/reconstruction commit;
+- source upload, local directory, broad file upload, web connector, RAG/vector, and unbounded runtime DB source expansion beyond `supported_source_classes_only`;
 - durable token, receipt, revocation, and audit behavior beyond PR `#520`, including public/API/UI revocation or cleanup/read-model expansion;
 - broad qualitative execution beyond the admitted single APS-document qualitative pass.
+
+## Source Upload/Expansion
+
+Current decision: planning/control frozen by doc `123`; runtime source expansion remains not admitted. Current-main source selection is `supported_source_classes_only`, limited to `dataset_version` and `aps_content_document`.
+
+Broader implementation cannot begin until doc `123` constraints are preserved and these are specified or explicitly kept blocked:
+
+- source storage authority and allowed roots;
+- upload size, type, parsing, and retention constraints;
+- local directory traversal and symlink policy;
+- web connector destination/source authority;
+- RAG/vector index ownership, refresh, citation, and deletion semantics;
+- runtime DB source query scope and row/tenant boundaries;
+- tests proving unsupported source families fail closed without package, execution, connector, provider URL, or mockup activation side effects.
+
+This lane must not be folded into package mutation, connector dispatch, provider/public URL, qualitative/RAG execution, or mockup activation work.
 
 ## Provider/Public Signed URLs
 
