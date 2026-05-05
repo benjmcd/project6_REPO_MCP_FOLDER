@@ -9,6 +9,8 @@ This artifact governs the bounded package supersession commit lineage runtime ad
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
 - baseline_ref: `project6-origin/main`
 - implementation_branch: `codex/l3-package-supersession-commit-runtime`
+- merged_pr: `#556`
+- merged_main_head: `93fe525b`
 - predecessor runtime freeze: `122_PACKAGE_MUTATION_FREEZE.md`
 - predecessor runtime mode: `package_supersession_preview_only`
 - replacement authority prerequisite: `127_PACKAGE_REPLACEMENT_SET_FREEZE.md` is implemented as `replacement_package_set_authority`
