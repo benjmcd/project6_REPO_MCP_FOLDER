@@ -39,6 +39,9 @@ STATE_ACTION_CONTRACT = (
 STATE_MODEL_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_state_model_contract.py"
 )
+EXECUTION_REQUEST_CONTRACT_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_execution_request_contract.py"
+)
 HANDOFF_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_handoff_contract.py"
 )
@@ -130,6 +133,9 @@ LAYER3_READINESS_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_readi
 LAYER3_BOOTSTRAP_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_bootstrap_contract.py"
 LAYER3_STATE_MODEL_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_state_model_contract.py"
+)
+LAYER3_EXECUTION_REQUEST_CONTRACT_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_execution_request_contract.py"
 )
 LAYER3_HANDOFF_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_handoff_contract.py"
@@ -2968,6 +2974,90 @@ def _check_state_model_contract_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing state-model contract extraction doc term: {term}")
 
 
+def _check_execution_request_contract_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(EXECUTION_REQUEST_CONTRACT_SERVICE, errors)
+    for term in (
+        "ANALYSIS_EXECUTION_START_ALLOWED_FIELDS = frozenset(",
+        "ANALYSIS_EXECUTION_START_FORBIDDEN_FIELDS = frozenset(",
+        "EXECUTION_RESULT_STATUS_ALLOWED_FIELDS = frozenset(",
+        "EXECUTION_RESULT_STATUS_FORBIDDEN_FIELDS = frozenset(",
+        "EXECUTION_RESULT_REVIEW_ALLOWED_FIELDS = frozenset(",
+        "EXECUTION_RESULT_REVIEW_FORBIDDEN_FIELDS = frozenset(",
+        "def analysis_execution_start_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
+        "def execution_result_status_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
+        "def execution_result_review_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
+        '"run_all"',
+        '"result_review"',
+        '"package_review"',
+        '"source_expansion"',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(EXECUTION_REQUEST_CONTRACT_SERVICE)} missing execution request contract term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_execution_request_contract import (",
+        "ANALYSIS_EXECUTION_START_ALLOWED_FIELDS",
+        "EXECUTION_RESULT_STATUS_FORBIDDEN_FIELDS",
+        "EXECUTION_RESULT_REVIEW_FORBIDDEN_FIELDS",
+        "blocked_payload_fields = analysis_execution_start_blocked_fields(payload)",
+        "blocked_payload_fields = execution_result_status_blocked_fields(payload)",
+        "blocked_payload_fields = execution_result_review_blocked_fields(payload)",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing execution request contract extraction term: {term}")
+    for stale_term in (
+        "ANALYSIS_EXECUTION_START_FORBIDDEN_FIELDS = frozenset(",
+        "ANALYSIS_EXECUTION_START_ALLOWED_FIELDS = frozenset(",
+        "EXECUTION_RESULT_STATUS_FORBIDDEN_FIELDS = frozenset(",
+        "EXECUTION_RESULT_STATUS_ALLOWED_FIELDS = frozenset(",
+        "EXECUTION_RESULT_REVIEW_FORBIDDEN_FIELDS = frozenset(",
+        "EXECUTION_RESULT_REVIEW_ALLOWED_FIELDS = frozenset(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns execution request contract term: {stale_term}")
+
+    test_text = _read_required_text(LAYER3_EXECUTION_REQUEST_CONTRACT_TEST, errors)
+    for term in (
+        "test_execution_request_contract_is_shared_without_behavior_change",
+        "test_execution_request_contract_blocks_same_fields_as_legacy_logic",
+        "layer3_workbench.ANALYSIS_EXECUTION_START_ALLOWED_FIELDS",
+        "contract.analysis_execution_start_blocked_fields(start_payload)",
+        "contract.execution_result_status_blocked_fields(status_payload)",
+        "contract.execution_result_review_blocked_fields(review_payload)",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_EXECUTION_REQUEST_CONTRACT_TEST)} missing execution request contract test term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: (
+            "execution request/result contract extraction",
+            "layer3_execution_request_contract.py",
+            "test_layer3_execution_request_contract.py",
+        ),
+        GOAL_AUDIT: (
+            "branch-local execution request/result contract extraction",
+            "layer3_execution_request_contract.py",
+            "test_layer3_execution_request_contract.py",
+            "does not change analysis execution start, execution result status, or execution result review allowlists, denylists, blocked-field behavior, emitted execution responses, or any deferred broad capability",
+        ),
+        CLOSEOUT_DOC: (
+            "Branch-local execution request/result contract extraction proof",
+            "layer3_execution_request_contract.py",
+            "test_layer3_execution_request_contract.py",
+            "Focused execution-request-contract suite:",
+            "Focused execution request API regression:",
+            "Local focused Layer 3 backend suite:",
+            "No broad execution, package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior is admitted.",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing execution request contract extraction doc term: {term}")
+
+
 def _check_handoff_contract_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(HANDOFF_CONTRACT_SERVICE, errors)
     for term in (
@@ -3330,6 +3420,7 @@ def main() -> int:
         READINESS_CONTRACT_SERVICE,
         BOOTSTRAP_CONTRACT_SERVICE,
         STATE_MODEL_CONTRACT_SERVICE,
+        EXECUTION_REQUEST_CONTRACT_SERVICE,
         PACKAGE_REVIEW_CONTRACT_SERVICE,
         EXTERNAL_EXPORT_CONTRACT_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
@@ -3355,6 +3446,7 @@ def main() -> int:
         LAYER3_READINESS_CONTRACT_TEST,
         LAYER3_BOOTSTRAP_CONTRACT_TEST,
         LAYER3_STATE_MODEL_CONTRACT_TEST,
+        LAYER3_EXECUTION_REQUEST_CONTRACT_TEST,
         HANDOFF_CONTRACT_SERVICE,
         LAYER3_HANDOFF_CONTRACT_TEST,
         LAYER3_PACKAGE_REVIEW_CONTRACT_TEST,
@@ -3399,6 +3491,7 @@ def main() -> int:
     _check_readiness_contract_extraction(errors)
     _check_bootstrap_contract_extraction(errors)
     _check_state_model_contract_extraction(errors)
+    _check_execution_request_contract_extraction(errors)
     _check_handoff_contract_extraction(errors)
     _check_package_review_contract_extraction(errors)
     _check_external_export_contract_extraction(errors)
