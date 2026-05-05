@@ -42,6 +42,9 @@ STATE_MODEL_CONTRACT_SERVICE = (
 HANDOFF_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_handoff_contract.py"
 )
+PACKAGE_REVIEW_CONTRACT_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_package_review_contract.py"
+)
 EXTERNAL_EXPORT_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_export_contract.py"
 )
@@ -130,6 +133,9 @@ LAYER3_STATE_MODEL_CONTRACT_TEST = (
 )
 LAYER3_HANDOFF_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_handoff_contract.py"
+)
+LAYER3_PACKAGE_REVIEW_CONTRACT_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_package_review_contract.py"
 )
 LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_external_export_contract.py"
@@ -3045,6 +3051,90 @@ def _check_handoff_contract_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing handoff contract extraction doc term: {term}")
 
 
+def _check_package_review_contract_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(PACKAGE_REVIEW_CONTRACT_SERVICE, errors)
+    for term in (
+        "PACKAGE_REVIEW_PREVIEW_ALLOWED_FIELDS = frozenset(",
+        "PACKAGE_REVIEW_PREVIEW_FORBIDDEN_FIELDS = frozenset(",
+        "PACKAGE_CONSTRUCTION_COMMIT_ALLOWED_FIELDS = frozenset(",
+        "PACKAGE_CONSTRUCTION_COMMIT_FORBIDDEN_FIELDS = frozenset(",
+        "PACKAGE_REVIEW_SUBMIT_ALLOWED_FIELDS = frozenset(",
+        "PACKAGE_REVIEW_SUBMIT_FORBIDDEN_FIELDS = frozenset(",
+        "def package_review_preview_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
+        "def package_construction_commit_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
+        "def package_review_submit_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
+        '"package_payload"',
+        '"source_expansion"',
+        '"local_upload"',
+        '"schema_migration"',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(PACKAGE_REVIEW_CONTRACT_SERVICE)} missing package review contract term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_package_review_contract import (",
+        "PACKAGE_REVIEW_PREVIEW_ALLOWED_FIELDS",
+        "PACKAGE_CONSTRUCTION_COMMIT_FORBIDDEN_FIELDS",
+        "PACKAGE_REVIEW_SUBMIT_FORBIDDEN_FIELDS",
+        "blocked_payload_fields = package_review_preview_blocked_fields(payload)",
+        "blocked_payload_fields = package_construction_commit_blocked_fields(payload)",
+        "blocked_payload_fields = package_review_submit_blocked_fields(payload)",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing package review contract extraction term: {term}")
+    for stale_term in (
+        "PACKAGE_REVIEW_PREVIEW_FORBIDDEN_FIELDS = frozenset(",
+        "PACKAGE_REVIEW_PREVIEW_ALLOWED_FIELDS = frozenset(",
+        "PACKAGE_CONSTRUCTION_COMMIT_FORBIDDEN_FIELDS = frozenset(",
+        "PACKAGE_CONSTRUCTION_COMMIT_ALLOWED_FIELDS = frozenset(",
+        "PACKAGE_REVIEW_SUBMIT_FORBIDDEN_FIELDS = frozenset(",
+        "PACKAGE_REVIEW_SUBMIT_ALLOWED_FIELDS = frozenset(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns package review contract term: {stale_term}")
+
+    test_text = _read_required_text(LAYER3_PACKAGE_REVIEW_CONTRACT_TEST, errors)
+    for term in (
+        "test_package_review_contract_is_shared_without_behavior_change",
+        "test_package_review_contract_blocks_same_fields_as_legacy_logic",
+        "layer3_workbench.PACKAGE_REVIEW_PREVIEW_ALLOWED_FIELDS",
+        "contract.package_review_preview_blocked_fields(preview_payload)",
+        "contract.package_construction_commit_blocked_fields(commit_payload)",
+        "contract.package_review_submit_blocked_fields(submit_payload)",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_PACKAGE_REVIEW_CONTRACT_TEST)} missing package review contract test term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: (
+            "package review/construction/submit contract extraction",
+            "layer3_package_review_contract.py",
+            "test_layer3_package_review_contract.py",
+        ),
+        GOAL_AUDIT: (
+            "branch-local package review/construction/submit contract extraction",
+            "layer3_package_review_contract.py",
+            "test_layer3_package_review_contract.py",
+            "does not change package review preview, package construction commit, package review submit allowlists, denylists, blocked-field behavior, emitted package-review responses, emitted package-construction responses, or any deferred broad capability",
+        ),
+        CLOSEOUT_DOC: (
+            "Branch-local package review/construction/submit contract extraction proof",
+            "layer3_package_review_contract.py",
+            "test_layer3_package_review_contract.py",
+            "Focused package-review-contract suite:",
+            "Focused package review API regression:",
+            "Local focused Layer 3 backend suite:",
+            "No package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior is admitted.",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing package review contract extraction doc term: {term}")
+
+
 def _check_external_export_contract_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(EXTERNAL_EXPORT_CONTRACT_SERVICE, errors)
     for term in (
@@ -3232,6 +3322,7 @@ def main() -> int:
         READINESS_CONTRACT_SERVICE,
         BOOTSTRAP_CONTRACT_SERVICE,
         STATE_MODEL_CONTRACT_SERVICE,
+        PACKAGE_REVIEW_CONTRACT_SERVICE,
         EXTERNAL_EXPORT_CONTRACT_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
         PACKAGE_MUTATION_SERVICE,
@@ -3258,6 +3349,7 @@ def main() -> int:
         LAYER3_STATE_MODEL_CONTRACT_TEST,
         HANDOFF_CONTRACT_SERVICE,
         LAYER3_HANDOFF_CONTRACT_TEST,
+        LAYER3_PACKAGE_REVIEW_CONTRACT_TEST,
         LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST,
         LAYER3_WORKBENCH_E2E,
         MOCKUP_ASSETS,
@@ -3300,6 +3392,7 @@ def main() -> int:
     _check_bootstrap_contract_extraction(errors)
     _check_state_model_contract_extraction(errors)
     _check_handoff_contract_extraction(errors)
+    _check_package_review_contract_extraction(errors)
     _check_external_export_contract_extraction(errors)
 
     if errors:
