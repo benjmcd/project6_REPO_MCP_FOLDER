@@ -307,11 +307,53 @@ def test_bootstrap_is_explicit_about_first_slice_limits() -> None:
     assert result["features"]["rag_vector_retrieval"] is False
     assert result["features"]["typing_override_enabled"] is False
     assert result["unavailable_gate_labels"] == ["plan", "execution", "results", "package"]
+    contract = result["state_action_contract"]
+    assert contract["schema_id"] == "layer3.state_action_contract.v1"
+    assert contract["gate_labels"] == result["gate_labels"]
+    assert contract["active_gate_labels"] == result["active_gate_labels"]
+    assert contract["unavailable_gate_labels"] == result["unavailable_gate_labels"]
+    assert "gate_b_decision" in contract["action_ids"]
+    assert "external_export_download_deliver" in contract["action_ids"]
+    assert "rag_vector_retrieval" not in contract["action_ids"]
     assert result["authority_rail"]["browser_only_state"] == [
         "expanded_rows",
         "hidden_uncommitted_candidates",
         "selected_tab",
     ]
+
+
+def test_state_action_contract_is_derived_from_state_model_without_admitting_deferred_work() -> None:
+    readiness = layer3_workbench.readiness_contract()
+    state_model = readiness["state_model"]
+    contract = readiness["state_action_contract"]
+
+    assert contract["state_model_schema_id"] == state_model["schema_id"]
+    assert contract["authority_order"] == state_model["authority_order"]
+    assert contract["state_action_matrix"] == state_model["states"]
+    assert contract["state_count"] == len(state_model["states"])
+    assert contract["states"] == [state["state"] for state in state_model["states"]]
+
+    derived_action_ids = sorted(
+        {
+            action
+            for state in state_model["states"]
+            for action in state["allowed_next_actions"]
+        }
+    )
+    assert contract["action_ids"] == derived_action_ids
+    assert contract["decision_sets"]["gate_b"] == ["approved", "denied", "isolated", "flagged"]
+    assert contract["decision_sets"]["external_export_download_deliver"] == [
+        "deliver_external_export_download"
+    ]
+
+    deferred_capabilities = {item["capability"]: item for item in contract["deferred_capabilities"]}
+    assert deferred_capabilities["qualitative_execution"]["admitted"] is False
+    assert deferred_capabilities["hybrid_execution"]["admitted"] is False
+    assert deferred_capabilities["rag_vector_retrieval"]["admitted"] is False
+    assert deferred_capabilities["provider_public_url"]["admitted"] is False
+    assert deferred_capabilities["connector_destination_dispatch"]["admitted"] is False
+    assert deferred_capabilities["auth_security_hardening"]["reason"] == "deferred_by_operator_instruction"
+    assert not set(deferred_capabilities).intersection(contract["action_ids"])
 
 
 def test_preflight_fails_closed_on_missing_intent_and_unsupported_sources() -> None:

@@ -35,6 +35,7 @@ class Layer3WorkbenchBootstrapResponse(Layer3BaseResponse):
     gate_labels: list[str]
     active_gate_labels: list[str]
     unavailable_gate_labels: list[str]
+    state_action_contract: dict[str, Any]
     features: dict[str, bool]
     execution_readiness: dict[str, Any]
     authority_rail: dict[str, Any]
@@ -75,6 +76,7 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     implemented_gates: list[str]
     deferred_gates: list[str]
     state_model: dict[str, Any]
+    state_action_contract: dict[str, Any]
     preview_hash_contract: dict[str, Any]
     material_preview_hash_contract: dict[str, Any]
     idempotency_contract: dict[str, Any]
@@ -1284,6 +1286,7 @@ class Layer3SessionSummaryResponse(Layer3BaseResponse):
     aps_handoff_dispatch: dict[str, Any]
     external_export_download: dict[str, Any]
     sublayer_visualization: dict[str, Any]
+    state_action_contract: dict[str, Any]
     downstream_unavailable: list[str]
     authority_rail: dict[str, Any]
 
