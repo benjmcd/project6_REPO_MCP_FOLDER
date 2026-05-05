@@ -5202,7 +5202,7 @@
       "broad package mutation/reconstruction"
     ]
   },
-  "branch_state_summary": "Post-PR584 current-main progress/proof sync plus package replacement artifact manifest-only runtime, package replacement namespace planning/control freeze, and package replacement namespace implementation-entry freeze: PR #535/commit 7d07477a made the exact single APS-document qualitative execution path live, PR #558 proof-hardened qualitative owner-service error mapping, PR #559 synchronized docs/proof, PR #584/commit 9cdd1e88 merged no-behavior-change plan-flow request contract extraction proof, the current bounded package runtime admits only `replacement_package_artifact_manifest_only` through server-side manifest verification of existing replacement refs/hashes, doc `130` freezes the separate replacement output package table design, doc `131` governs the bounded live `replacement_package_namespace_rows` runtime, and broad package mutation/reconstruction remains blocked. Broad qualitative/hybrid/RAG, connector/destination, provider/public URL, source/upload expansion, authentication/security, source/schema/runtime widening, package mutation/reconstruction, replacement package artifact generation, replacement package row creation, package payload writes, and full mockup activation remain deferred.",
+  "branch_state_summary": "Post-PR584 current-main progress/proof sync plus package replacement artifact manifest-only runtime, package replacement namespace planning/control freeze, and package replacement namespace implementation-entry freeze: PR #535/commit 7d07477a made the exact single APS-document qualitative execution path live, PR #558 proof-hardened qualitative owner-service error mapping, PR #559 synchronized docs/proof, PR #584/commit 9cdd1e88 merged no-behavior-change plan-flow request contract extraction proof, the current bounded package runtime admits only `replacement_package_artifact_manifest_only` through server-side manifest verification of existing replacement refs/hashes, doc `130` freezes the separate replacement output package table design, PR #593/doc `131` governs the bounded live `replacement_package_namespace_rows` runtime, and broad package mutation/reconstruction remains blocked. Broad qualitative/hybrid/RAG, connector/destination, provider/public URL, source/upload expansion, authentication/security, source/schema/runtime widening, package mutation/reconstruction, replacement package artifact generation, replacement package row creation, package payload writes, and full mockup activation remain deferred.",
   "authoritative_file_refs": [
     "next_milestone_plans/Layer3_planning_docs/104_signed-ui.md",
     "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md",
@@ -5285,6 +5285,7 @@
       "future_owner_service": "backend/app/services/layer3_replacement_package_namespace.py",
       "future_model": "L3ReplacementOutputPackage",
       "future_migration": "backend/alembic/versions/0021_layer3_replacement_output_package.py"
-    }
+    },
+    "implementation_pr": "#593"
   }
 }
