@@ -29,6 +29,7 @@ CONNECTOR_ENTRY_FREEZE = PLANNING_DOCS / "121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md
 PACKAGE_MUTATION_FREEZE = PLANNING_DOCS / "122_PACKAGE_MUTATION_FREEZE.md"
 SOURCE_EXPANSION_FREEZE = PLANNING_DOCS / "123_SOURCE_EXPANSION_FREEZE.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
+MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -52,13 +53,17 @@ PACKAGE_MUTATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_package_mutation_entry.py"
 )
 QUAL_APS_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_qual_aps_execution.py"
+MOCKUP_BOUNDARY_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_mockup_boundary.py"
 SOURCE_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_source_boundary.py"
 QUAL_APS_TEST = ROOT / "backend" / "tests" / "test_layer3_qual_aps_execution.py"
+MOCKUP_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_mockup_boundary.py"
 SESSION_ENTRY_TEST = ROOT / "backend" / "tests" / "test_layer3_session_entry.py"
 SIGNED_REFERENCE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_signed_reference_state.py"
 )
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
+MOCKUP_ASSETS = ROOT / "next_milestone_plans" / "layer3-mockups" / "assets.md"
+MOCKUP_SPEC = ROOT / "next_milestone_plans" / "layer3-mockups" / "mockup-spec.txt"
 
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 
@@ -812,6 +817,7 @@ def _check_qualitative_capability_boundary(errors: list[str]) -> None:
                 "broad_qualitative_execution",
                 "hybrid_execution",
                 "rag_vector_retrieval",
+                "full_mockup_activation",
             ):
                 if term not in blocked:
                     errors.append(
@@ -834,6 +840,7 @@ def _check_qualitative_capability_boundary(errors: list[str]) -> None:
         "connector_destination_dispatch": None,
         "package_mutation_reconstruction": None,
         "frontend_only_durable_state": None,
+        "full_mockup_activation": "mockups_target_state_only",
         "hidden_llm_planning": None,
         "auth_security_hardening": "deferred_by_operator_instruction",
     }
@@ -1138,6 +1145,170 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing source-boundary term: {term}")
+
+
+def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
+    deferred = _capability_map(
+        _load_literal_assignment(
+            STATE_ACTION_CONTRACT, "STATE_ACTION_DEFERRED_CAPABILITIES", errors
+        ),
+        "STATE_ACTION_DEFERRED_CAPABILITIES",
+        errors,
+    )
+    full_mockup = deferred.get("full_mockup_activation")
+    if full_mockup is None:
+        errors.append("deferred capabilities missing full_mockup_activation")
+    else:
+        if full_mockup.get("admitted") is not False:
+            errors.append("full_mockup_activation must remain admitted false")
+        if full_mockup.get("reason") != "mockups_target_state_only":
+            errors.append("full_mockup_activation reason drifted from mockups_target_state_only")
+
+    expected_deferred = (
+        "full_mockup_activation",
+        "frontend_only_durable_state",
+        "broad_execution",
+        "broad_qualitative_execution",
+        "hybrid_execution",
+        "rag_vector_retrieval",
+        "local_upload_or_directory_source_expansion",
+        "provider_public_url",
+        "connector_destination_dispatch",
+        "package_mutation_reconstruction",
+        "hidden_llm_planning",
+    )
+    expected_forbidden_fields = (
+        "mockup_activation",
+        "frontend_only_state",
+        "browser_local_persistence",
+        "rag_plan",
+        "vector_plan",
+        "source_upload",
+        "local_directory",
+        "connector_id",
+        "destination_id",
+        "provider_url",
+        "public_url",
+        "package_payload",
+        "hidden_llm_plan",
+    )
+    expected_evidence = (
+        "live_source_owner",
+        "route_api_contract",
+        "server_authority_contract",
+        "negative_invariant_proof",
+        "headed_browser_proof",
+        "headless_browser_proof",
+        "progress_check_guard",
+    )
+    mockup_deferred = _load_literal_assignment(
+        MOCKUP_BOUNDARY_SERVICE, "MOCKUP_DEFERRED_CAPABILITIES", errors
+    )
+    mockup_forbidden = _load_literal_assignment(
+        MOCKUP_BOUNDARY_SERVICE, "MOCKUP_FORBIDDEN_RUNTIME_FIELDS", errors
+    )
+    mockup_evidence = _load_literal_assignment(
+        MOCKUP_BOUNDARY_SERVICE, "MOCKUP_REQUIRED_ACTIVATION_EVIDENCE", errors
+    )
+    if mockup_deferred != expected_deferred:
+        errors.append(
+            "mockup deferred capabilities drifted: "
+            f"expected {expected_deferred!r}, found {mockup_deferred!r}"
+        )
+    if mockup_forbidden != expected_forbidden_fields:
+        errors.append(
+            "mockup forbidden runtime fields drifted: "
+            f"expected {expected_forbidden_fields!r}, found {mockup_forbidden!r}"
+        )
+    if mockup_evidence != expected_evidence:
+        errors.append(
+            "mockup required activation evidence drifted: "
+            f"expected {expected_evidence!r}, found {mockup_evidence!r}"
+        )
+
+    service_text = _read_required_text(MOCKUP_BOUNDARY_SERVICE, errors)
+    for term in (
+        "MOCKUP_TRUTH_STATE_CONTRACT_SCHEMA_ID = \"layer3.mockup_truth_state_contract.v1\"",
+        "MOCKUP_TRUTH_STATE_MODE = \"mockups_target_state_only\"",
+        "MOCKUP_AUTHORITY_ROLE = \"target_state_design_specification\"",
+        "def mockup_truth_state_contract(",
+        "\"mockups_are_runtime_authority\": False",
+        "\"full_mockup_activation_enabled\": False",
+        "\"frontend_only_durable_state_enabled\": False",
+        "\"broad_execution_enabled\": False",
+        "\"source_widening_enabled\": False",
+        "\"connector_destination_dispatch_enabled\": False",
+        "\"package_mutation_reconstruction_enabled\": False",
+        "\"provider_public_url_enabled\": False",
+        "\"hidden_llm_planning_enabled\": False",
+        "\"mutates_runtime_state\": False",
+        "\"requires_later_freeze\": True",
+        "\"requires_browser_proof_before_ui_activation\": True",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(MOCKUP_BOUNDARY_SERVICE)} missing mockup contract term: {term}")
+
+    test_text = _read_required_text(MOCKUP_BOUNDARY_TEST, errors)
+    for term in expected_deferred + expected_forbidden_fields + expected_evidence:
+        if term not in test_text:
+            errors.append(f"{_rel(MOCKUP_BOUNDARY_TEST)} missing mockup boundary proof term: {term}")
+    if "test_mockup_truth_state_contract_keeps_full_mockup_activation_fail_closed" not in test_text:
+        errors.append(f"{_rel(MOCKUP_BOUNDARY_TEST)} missing mockup boundary contract proof")
+
+    mockup_assets_text = _read_required_text(MOCKUP_ASSETS, errors)
+    for term in (
+        "Status: source inventory for operator-local mockup assets.",
+        "bitmap and SVG mockup assets are recorded by path",
+        "rather than copied into the repo",
+    ):
+        if term not in mockup_assets_text:
+            errors.append(f"{_rel(MOCKUP_ASSETS)} missing mockup inventory term: {term}")
+
+    mockup_spec_text = _read_required_text(MOCKUP_SPEC, errors)
+    for term in (
+        "Status: pre-implementation design/specification draft",
+        "target-state/design-intent authority only",
+        "Do not treat this specification as activation permission for the entire mockup.",
+        "Do not claim the full mockup workbench exists",
+    ):
+        if term not in mockup_spec_text:
+            errors.append(f"{_rel(MOCKUP_SPEC)} missing mockup spec authority term: {term}")
+
+    required_doc_terms = {
+        MOCKUP_TRUTH_FREEZE: [
+            "selected_mockup_truth_state_mode: `mockups_target_state_only`",
+            "layer3.mockup_truth_state_contract.v1",
+            "full_mockup_activation_enabled: `False`",
+            "frontend_only_durable_state_enabled: `False`",
+            "mockups_are_runtime_authority: `False`",
+            "No full mockup activation, frontend-only durable state, broad execution, source widening, connector/destination dispatch, provider/public URL support, package mutation/reconstruction, hidden LLM planning, or broad qualitative/hybrid/RAG execution is admitted.",
+        ],
+        DEFERRED_GATES: [
+            "125_MOCKUP_TRUTH_STATE_FREEZE.md",
+            "mockups_target_state_only",
+            "full mockup activation and frontend-only durable state remain blocked",
+        ],
+        SYNTHESIS_BOUNDARY: [
+            "125_MOCKUP_TRUTH_STATE_FREEZE.md",
+            "mockup_truth_state_contract()",
+            "layer3.mockup_truth_state_contract.v1",
+        ],
+        GOAL_AUDIT: [
+            "125_MOCKUP_TRUTH_STATE_FREEZE.md",
+            "full_mockup_activation",
+            "mockups_target_state_only",
+        ],
+        CLOSEOUT_DOC: [
+            "125_MOCKUP_TRUTH_STATE_FREEZE.md",
+            "mockup_truth_state_contract()",
+            "full mockup activation remains blocked",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing mockup truth-state term: {term}")
 
 
 def _check_signed_reference_state_guard(errors: list[str]) -> None:
@@ -1476,20 +1647,25 @@ def main() -> int:
         PACKAGE_MUTATION_FREEZE,
         SOURCE_EXPANSION_FREEZE,
         QUAL_HYBRID_RAG_FREEZE,
+        MOCKUP_TRUTH_FREEZE,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
         LAYER3_API,
         SOURCE_BOUNDARY_SERVICE,
         QUAL_APS_SERVICE,
+        MOCKUP_BOUNDARY_SERVICE,
         WORKBENCH_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
         PACKAGE_MUTATION_SERVICE,
         SOURCE_BOUNDARY_TEST,
         QUAL_APS_TEST,
+        MOCKUP_BOUNDARY_TEST,
         SESSION_ENTRY_TEST,
         SIGNED_REFERENCE_STATE_SERVICE,
         SIGNED_REFERENCE_STATE_TEST,
         LAYER3_API_TEST,
+        MOCKUP_ASSETS,
+        MOCKUP_SPEC,
     ):
         _require_file(path, errors)
 
@@ -1505,6 +1681,7 @@ def main() -> int:
     _check_package_mutation_freeze(errors)
     _check_qualitative_capability_boundary(errors)
     _check_source_boundary_contract(errors)
+    _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
     _check_plan_preview_request_guard(errors)
     _check_source_preview_request_guard(errors)

@@ -18,6 +18,7 @@ STATE_ACTION_ADMITTED_CAPABILITIES = (
             "broad_qualitative_execution",
             "hybrid_execution",
             "rag_vector_retrieval",
+            "full_mockup_activation",
         ],
     },
     {
@@ -102,6 +103,12 @@ STATE_ACTION_DEFERRED_CAPABILITIES = (
         "capability": "frontend_only_durable_state",
         "admitted": False,
         "reason": "server_authority_required",
+    },
+    {
+        "capability": "full_mockup_activation",
+        "admitted": False,
+        "reason": "mockups_target_state_only",
+        "scope": "mockup assets and specs are design artifacts, not runtime authority",
     },
     {
         "capability": "hidden_llm_planning",
