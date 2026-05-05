@@ -1,0 +1,216 @@
+# Layer 3 Package Mutation Freeze
+
+Status: implementation-entry freeze only for package mutation/reconstruction lifecycle after PR #538 merged at `project6-origin/main=329fc6d5`.
+
+This artifact selects the first safe package mutation/reconstruction entry mode, but it does not implement runtime behavior. It does not add an API route, service, model, migration, package row update, payload rewrite, payload deletion, handoff/export change, connector dispatch, source expansion, qualitative/hybrid/RAG execution, rendered control, full mockup activation, or authentication/security work.
+
+## Authority Snapshot
+
+- authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
+- planning_branch: `codex/l3-package-mutation-freeze`
+- baseline_ref: `project6-origin/main`
+- baseline_commit: `329fc6d5`
+- source gates: `105_deferred-gates.md`, `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`, `118_L3_GOAL_AUDIT.md`, `120_L3_CLOSEOUT.md`, package construction docs `50`/`51` and `88`/`89`, and connector entry doc `121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md`
+- source code checked: `backend/app/services/layer3_state_action_contract.py`, `backend/app/services/layer3_workbench.py`, focused Layer 3 API tests, and package construction planning docs
+- local caveat: `.omc/state/*` and local sidecars are operator/tooling state and are not evidence for this freeze
+
+## Decision
+
+The first package mutation/reconstruction lane must use exactly this mode:
+
+- selected_package_lifecycle_mode: `package_supersession_preview_only`
+
+This mode is a future read-only server preview of a possible immutable package supersession. It may compare an existing package set, existing payload refs, existing payload hashes, and existing downstream receipts against a proposed reconstruction intent. It must not mutate, overwrite, delete, rebuild, replace, or append package payload bytes or package rows.
+
+The immutable package rule is frozen here:
+
+- immutable_package_rule: existing `L3OutputPackage` rows and package payload files are immutable after construction; any future reconstruction must be represented as a new, separately admitted supersession lineage after preview proof, not as in-place package mutation.
+
+The other candidate modes remain blocked:
+
+- `in_place_package_payload_rewrite` remains blocked because package rows, payload refs, hashes, handoff/export records, APS handoff records, external export/download readiness, and connector dispatch records may already depend on the original package bytes.
+- `package_reconstruction_commit` remains blocked because no repo-confirmed supersession row model, lifecycle state, migration, or downstream invalidation contract is selected here.
+- `package_variant_editing` remains blocked because editable package variants are target-state/mockup concepts and do not have live authority.
+
+## Why This Outranks Runtime Mutation
+
+Current repo authority proves bounded package construction and review-submit paths, not package mutation/reconstruction. Existing service boundaries list `package_payload`, `package_variant_content`, `rewrite_output`, and `rebuild_package` as forbidden downstream fields; existing tests prove the related package payload and rewrite request paths fail closed.
+
+Runtime mutation before an immutable supersession rule would be fragile because it could invalidate:
+
+- `L3OutputPackage.payload_ref`
+- `L3OutputPackage.payload_hash`
+- `L3ReconciliationRecord.summary_json`
+- package-review submit authority
+- handoff/export preparation authority
+- APS handoff dispatch authority
+- external export/download readiness
+- signed-reference delivery authority
+- internal connector dispatch records
+
+The narrow preview-only mode reduces this risk by forcing future work to prove package identity, downstream dependency detection, and supersession semantics before any package bytes or package rows can change.
+
+## Future Implementation Scope
+
+A later implementation PR may implement only:
+
+- owner service: `backend/app/services/layer3_package_mutation_entry.py` or a directly owned helper under the package-entry service family if live audit proves that is narrower
+- API route: at most one preview route, expected as `/api/v1/layer3/package/mutation/preview`
+- request schema: strict Pydantic request model with `extra="forbid"`
+- response schema: response-safe `layer3.package_supersession_preview.v1`
+- mode: `package_supersession_preview_only`
+- persistence: none, unless a later freeze separately admits a durable preview record
+- write behavior: no database writes and no filesystem writes
+- authority source: existing package construction rows, existing reconciliation record, existing payload refs/hashes, and existing downstream state only
+
+This freeze does not admit a commit route. If preview proof later shows a commit is needed, that commit requires a separate freeze with model/migration and downstream invalidation or lineage rules.
+
+## Required Future Preview Request Fields
+
+A future preview request must require:
+
+- `client_request_id`
+- `session_id`
+- `analysis_plan_id`
+- `pass_run_id`
+- `reconciliation_record_id`
+- `output_package_ids`
+- `package_kinds`
+- `payload_refs`
+- `payload_hashes`
+- `package_review_preview_hash`
+- `package_review_submit_record_ref`, if package-review submit already exists
+- `handoff_export_record_ref`, if handoff/export preparation already exists
+- `aps_handoff_record_ref`, if APS handoff dispatch already exists
+- `external_export_download_record_ref`, if external export/download readiness already exists
+- `connector_dispatch_record_ref`, if internal connector dispatch record already exists
+- `operator_decision`
+
+`operator_decision` must be exactly `preview_package_supersession`.
+
+## Forbidden Future Preview Request Fields
+
+A future request must reject these before service execution:
+
+- `package_payload`
+- `package_variant_content`
+- `rewrite_output`
+- `rebuild_package`
+- `mutate_package`
+- `replace_package`
+- `delete_package`
+- `update_payload_ref`
+- `update_payload_hash`
+- `artifact_manifest`
+- `analysis_artifact`
+- `handoff`
+- `export`
+- `connector_key`
+- `connector_run_id`
+- `destination_id`
+- `destination_url`
+- `provider_public_url`
+- `public_url`
+- `signed_url`
+- `download_url`
+- `source_upload`
+- `local_directory`
+- `rag_vector_index`
+- `runtime_db_write`
+- `qualitative_plan`
+- `hybrid_execution`
+- `rag_execution`
+- `hidden_llm_planning`
+- `schema_migration`
+- `approved_plan_supersession`
+- `result_review_amendment`
+- `package_review_amendment`
+- `handoff_export_amendment`
+- `aps_handoff_amendment`
+- `retry`
+- `rerun`
+- `cancel`
+
+## Positive Invariants
+
+The future implementation is acceptable only when:
+
+- `package_supersession_preview_only` is the only admitted package mutation/reconstruction entry mode.
+- Broad `package_mutation_reconstruction` remains unadmitted until a separate commit freeze exists.
+- Existing package rows and payload files are treated as immutable authority.
+- The preview detects existing downstream dependencies before claiming any package can be superseded.
+- The response exposes only response-safe preview metadata.
+- Duplicate preview requests are deterministic without persistence side effects.
+
+## Negative Invariants
+
+The future implementation must prove no accidental:
+
+- `L3OutputPackage` row creation, update, or deletion
+- `L3ReconciliationRecord` row creation, update, or deletion
+- package payload file creation, overwrite, or deletion
+- package-review submit/decision state
+- handoff/export preparation or delivery state
+- APS handoff dispatch state
+- external export/download readiness or delivery state
+- connector dispatch state
+- provider/public URL generation
+- source/upload/local-directory/RAG/vector expansion
+- `L3PassRun` creation
+- `AnalysisRun` creation
+- `AnalysisArtifact` creation
+- schema/model/migration changes
+- qualitative/hybrid/RAG execution
+- frontend-only durable state
+- hidden LLM planning
+- full mockup activation
+- authentication/security scope reopening
+
+## Runtime Test Plan For A Later Code Slice
+
+A later implementation must include focused backend/API tests proving:
+
+- missing package authority fails closed before service execution;
+- stale package ids, payload refs, payload hashes, package-review submit refs, handoff/export refs, APS handoff refs, external export/download refs, and connector dispatch refs fail closed;
+- forbidden package mutation, package rewrite, source, connector, provider, schema, runtime, qualitative, hybrid, RAG, and mockup fields are rejected before service execution;
+- correct preview request returns a response-safe `layer3.package_supersession_preview.v1` body without persistence;
+- duplicate preview requests are deterministic;
+- no `L3OutputPackage`, `L3ReconciliationRecord`, `AnalysisArtifact`, `AnalysisRun`, `L3PassRun`, connector, source, handoff/export, delivery, provider URL, or payload file side effect occurs;
+- existing package construction, package-review submit, handoff/export, APS dispatch, external export/download, signed-reference, and connector-record paths keep their existing behavior.
+
+Browser proof is not required unless the implementation admits rendered package mutation controls. This freeze does not admit rendered controls.
+
+## Current Slice Validation
+
+This docs/proof slice is accepted when:
+
+- this file exists and contains `selected_package_lifecycle_mode: package_supersession_preview_only`;
+- `105_deferred-gates.md` and `118_L3_GOAL_AUDIT.md` mention this freeze without claiming runtime implementation;
+- `backend/app/services/layer3_state_action_contract.py` keeps `package_mutation_reconstruction` deferred and absent from admitted capabilities;
+- `backend/app/services/layer3_workbench.py` still treats `package_payload`, `package_variant_content`, `rewrite_output`, and `rebuild_package` as forbidden downstream fields;
+- `backend/tests/test_layer3_api.py` still contains fail-closed proof for package payload/rewrite fields on existing package and downstream routes;
+- `tools/l3-progress-check.py` requires this freeze and still verifies runtime package mutation/reconstruction remains unadmitted;
+- `python .\tools\l3-progress-check.py` passes;
+- `git diff --check` reports no whitespace errors.
+
+## Explicit Non-Goals
+
+- package payload rewrite
+- package row mutation
+- package row deletion
+- package reconstruction commit
+- package supersession commit
+- editable package variants
+- package-review submit/decision changes
+- handoff/export changes
+- APS handoff changes
+- external export/download changes
+- connector/destination dispatch changes
+- provider/public URL support
+- source/upload/local-directory/RAG/vector expansion
+- qualitative/hybrid/RAG execution
+- rendered package mutation controls
+- retry/cancel/recovery/queue behavior
+- schema/model/migration changes
+- full mockup activation
+- authentication/security hardening
