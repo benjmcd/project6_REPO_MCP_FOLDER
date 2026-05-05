@@ -1263,6 +1263,10 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
     assert prepare_request_schema["properties"]["operator_decision"]["enum"] == ["prepare_external_export_download"]
     _assert_string_array_or_string_map_schema(prepare_request_schema["properties"]["payload_refs"])
     _assert_string_array_or_string_map_schema(prepare_request_schema["properties"]["payload_hashes"])
+    assert prepare_request_schema["properties"]["public_url"]["description"].startswith("Known but non-admitted")
+    assert prepare_request_schema["properties"]["connector_dispatch"]["description"].startswith(
+        "Known but non-admitted"
+    )
 
     prepare_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/export/download/prepare", "post")
     assert prepare_schema["title"] == "Layer3ExternalExportDownloadPrepareResponse"
@@ -7906,6 +7910,17 @@ def test_layer3_api_external_export_download_prepare_prechecks_fail_closed(
         response = client.post("/api/v1/layer3/handoff/export/download/prepare", json=payload)
         assert response.status_code == expected_status, response.json()
         assert response.json()["error_code"] == expected_error
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/handoff/export/download/prepare",
+        json={**base_payload, "provider_public_url": "https://example.invalid/bundle.json"},
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "provider_public_url"]
+        for item in unknown_extra.json()["detail"]
+    )
 
     db = client.layer3_session_factory()
     try:
