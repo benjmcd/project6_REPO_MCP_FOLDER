@@ -150,6 +150,11 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "const LAYER3_GATE_B_DRAFT_STORAGE_KEY = 'layer3_workbench_gate_b_draft_v1';" in js.text
     assert "LAYER3_SESSION_RECOVERY_SCHEMA_ID = 'layer3.browser_session_recovery.v1'" in js.text
     assert "LAYER3_GATE_B_DRAFT_SCHEMA_ID = 'layer3.gate_b_draft_snapshot.v1'" in js.text
+    assert "function stateActionContractSignature" in js.text
+    assert "state_action_contract_signature: stateActionContractSignature(State.sessionSummary)" in js.text
+    assert "state_action_contract_signature: stateActionContractSignature()" in js.text
+    assert "anchor.state_action_contract_signature !== currentContract" in js.text
+    assert "draft.state_action_contract_signature !== currentContract" in js.text
     assert "isSharedThemePreference" in js.text
     assert "value === 'workbench'" in js.text
     assert "localStorage.removeItem(LAYER3_THEME_STORAGE_KEY)" in js.text

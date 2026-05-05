@@ -91,6 +91,9 @@ SIGNED_REFERENCE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_signed_reference_state.py"
 )
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
+LAYER3_PAGE_TEST = ROOT / "backend" / "tests" / "test_layer3_page.py"
+LAYER3_JS = ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js"
+LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
 MOCKUP_ASSETS = ROOT / "next_milestone_plans" / "layer3-mockups" / "assets.md"
 MOCKUP_SPEC = ROOT / "next_milestone_plans" / "layer3-mockups" / "mockup-spec.txt"
 
@@ -2333,6 +2336,74 @@ def _check_qualitative_progress_sync(manifest: dict[str, Any], errors: list[str]
                 errors.append(f"{_rel(path)} missing qualitative progress sync term: {term}")
 
 
+def _check_state_action_contract_frontend_signature(errors: list[str]) -> None:
+    js_text = _read_required_text(LAYER3_JS, errors)
+    required_js_terms = (
+        "function stateActionContractSignature(source = null)",
+        "state_action_contract_signature: stateActionContractSignature(State.sessionSummary)",
+        "state_action_contract_signature: stateActionContractSignature()",
+        "anchor.state_action_contract_signature !== currentContract",
+        "draft.state_action_contract_signature !== currentContract",
+        "const summaryContract = stateActionContractSignature(summary)",
+        "state_action_matrix: stateActionMatrixSignatureItems(contract.state_action_matrix)",
+        "admitted_capabilities: capabilitySignatureItems(contract.admitted_capabilities)",
+        "deferred_capabilities: capabilitySignatureItems(contract.deferred_capabilities)",
+    )
+    for term in required_js_terms:
+        if term not in js_text:
+            errors.append(f"{_rel(LAYER3_JS)} missing state/action contract signature term: {term}")
+
+    stale_js_terms = (
+        "anchor.state_action_contract_schema_id !== currentContract",
+        "draft.state_action_contract_schema_id !== currentContract",
+        "const summaryContract = stateActionContractSchemaId(summary)",
+    )
+    for term in stale_js_terms:
+        if term in js_text:
+            errors.append(f"{_rel(LAYER3_JS)} still compares frontend recovery using schema-id-only term: {term}")
+
+    required_test_terms = {
+        LAYER3_PAGE_TEST: (
+            "function stateActionContractSignature",
+            "state_action_contract_signature: stateActionContractSignature(State.sessionSummary)",
+            "anchor.state_action_contract_signature !== currentContract",
+            "draft.state_action_contract_signature !== currentContract",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "clears schema-id-only Gate B drafts after contract signature hardening",
+            "stale-schema-id-only-draft",
+            "draftBeforeReload.state_action_contract_signature",
+            "storageAfterCommit.recovery.state_action_contract_signature",
+            '"schema_id":"layer3.state_action_contract.v1"',
+        ),
+    }
+    for path, terms in required_test_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing state/action contract signature proof term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: (
+            "state_action_contract_signature",
+            "frontend recovery with state/action contract signature invalidation",
+        ),
+        GOAL_AUDIT: (
+            "state/action contract signature hardening",
+            "schema-id-only stale Gate B drafts clear on load",
+        ),
+        CLOSEOUT_DOC: (
+            "state_action_contract_signature",
+            "Contract-signature invalidation rejects stale browser snapshots",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing state/action contract signature doc term: {term}")
+
+
 def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
     required_terms = {
         MODELS: [
@@ -2434,6 +2505,7 @@ def main() -> int:
         PACKAGE_MUTATION_SERVICE,
         REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE,
         PACKAGE_SUPERSESSION_COMMIT_SERVICE,
+        LAYER3_JS,
         SOURCE_BOUNDARY_TEST,
         QUAL_APS_TEST,
         MOCKUP_BOUNDARY_TEST,
@@ -2444,6 +2516,8 @@ def main() -> int:
         SIGNED_REFERENCE_STATE_SERVICE,
         SIGNED_REFERENCE_STATE_TEST,
         LAYER3_API_TEST,
+        LAYER3_PAGE_TEST,
+        LAYER3_WORKBENCH_E2E,
         MOCKUP_ASSETS,
         MOCKUP_SPEC,
     ):
@@ -2475,6 +2549,7 @@ def main() -> int:
     _check_ci_layer3_backend_guardrail(errors)
     if manifest:
         _check_qualitative_progress_sync(manifest, errors)
+    _check_state_action_contract_frontend_signature(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
