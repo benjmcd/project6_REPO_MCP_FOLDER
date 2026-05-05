@@ -95,6 +95,15 @@ class Layer3PlanApprovalRequest(BaseModel):
     approval_scope: str | None = None
 
 
+class Layer3PlanPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    preview_scope: str | None = None
+    include_exclusions: bool | None = None
+
+
 class Layer3GateBDecisionItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -1388,7 +1397,8 @@ GATE_C_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 
 PLAN_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
+    "additionalProperties": False,
+    "description": "Strict plan-preview fields; execution/package/handoff/source-widening fields are rejected before service mutation.",
     "required": ["session_id"],
     "properties": {
         "client_request_id": {"type": "string"},
@@ -2241,8 +2251,11 @@ def post_gate_c_override(payload: dict[str, Any]) -> JSONResponse:
     openapi_extra={"requestBody": _json_request_body(PLAN_PREVIEW_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409, 500),
 )
-def post_plan_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.plan_preview(db, payload))
+def post_plan_preview(
+    payload: Layer3PlanPreviewRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.plan_preview(db, payload.model_dump(exclude_none=True)))
 
 
 @router.post(

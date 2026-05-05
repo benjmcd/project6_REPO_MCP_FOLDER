@@ -1,6 +1,6 @@
 # Layer 3 Bounded Branch Closeout
 
-Status: local branch closeout for `codex/l3-frontend-session-recovery` after same-origin signed-reference service proof hardening.
+Status: local branch closeout for `codex/l3-frontend-session-recovery` after plan-preview DTO boundary hardening.
 
 This file is review/merge preparation only. It does not admit new runtime behavior, implement a deferred lane, or replace live source/tests as authority.
 
@@ -29,12 +29,13 @@ Authority order for this closeout:
 | Frontend session recovery | Implemented earlier on this branch | `backend/app/review_ui/static/layer3.js`; `backend/tests/test_layer3_page.py`; `e2e/layer3-workbench.spec.js`; recorded headed/headless proof in `118_L3_GOAL_AUDIT.md` | Server-revalidated recovery only; not frontend-only durable state or full mockup activation. |
 | Service extraction to reduce workbench risk | Implemented narrowly | `backend/app/services/layer3_plan_revision_state.py`; `backend/app/services/layer3_gate_b_state.py`; `backend/app/services/layer3_source_boundary.py`; related tests | No broad `layer3_workbench.py` rewrite. |
 | Same-origin signed-reference service proof | Implemented and guarded | `backend/app/services/layer3_signed_reference_state.py`; `backend/tests/test_layer3_signed_reference_state.py`; progress checker verifies the atomic conditional update and lifecycle/concurrent-use proof | Same-origin signed-reference state only; no provider/public URL, revocation API, connector/destination dispatch, or broad delivery behavior. |
+| Plan-preview DTO boundary | Implemented and guarded | `backend/app/api/layer3.py` `Layer3PlanPreviewRequest`; `backend/tests/test_layer3_api.py::test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation`; progress checker verifies the strict request boundary | Plan preview known fields only; no plan materialization, execution, package, handoff, source widening, mockup, or auth/security behavior change. |
 | Connector/destination dispatch | Not implemented; remains blocked | `backend/app/services/layer3_state_action_contract.py` keeps `connector_destination_dispatch` deferred; `116_SECURITY_SOURCE_DELIVERY_BOUNDARY_FREEZE.md` and `118_L3_GOAL_AUDIT.md` keep broad dispatch unsupported | Needs a later implementation-entry freeze selecting exactly one dispatch mode. |
 | Package mutation/reconstruction | Not implemented; remains blocked | `backend/app/services/layer3_state_action_contract.py` keeps `package_mutation_reconstruction` deferred; `118_L3_GOAL_AUDIT.md` rejects relabeling package construction/submit as mutation/reconstruction | Existing package construction/submit is bounded and not package rewrite, amendment, supersession, or reconstruction. |
 | Broad source/upload expansion | Not implemented; remains blocked | `backend/app/services/layer3_source_boundary.py`; `backend/tests/test_layer3_source_boundary.py`; progress checker verifies supported and unsupported source classes | Only `dataset_version` and `aps_content_document` are admitted. |
 | Qualitative/hybrid/RAG execution | Exact single APS-document qualitative pass implemented; broad qualitative/hybrid/RAG remains blocked | `backend/app/services/layer3_qual_aps_execution.py`; `backend/tests/test_layer3_qual_aps_execution.py`; `backend/app/services/layer3_state_action_contract.py`; progress checker verifies exact/broad split | Only `single_aps_doc_qualitative_pass` is admitted. |
 | Full mockup activation | Not implemented; remains blocked | `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`; `118_L3_GOAL_AUDIT.md` | Mockups are target-state artifacts and do not admit runtime behavior. |
-| Authority-boundary preservation | Preserved | `python .\tools\l3-progress-check.py` passes; focused Layer 3 backend suite passed with `260 passed`; broad capabilities remain `admitted: false` | This is branch-local proof, not merged-main proof. |
+| Authority-boundary preservation | Preserved | `python .\tools\l3-progress-check.py` passes; focused Layer 3 backend suite passed with `261 passed`; broad capabilities remain `admitted: false` | This is branch-local proof, not merged-main proof. |
 
 ## Validation Evidence
 
@@ -44,7 +45,7 @@ Run from `C:\Users\benny\Downloads\worktree_for_audits`.
 python .\tools\l3-progress-check.py
 ```
 
-Expected and observed result after same-origin signed-reference service proof hardening:
+Expected and observed result after plan-preview DTO boundary hardening:
 
 ```text
 Layer 3 progress state check: PASS
@@ -59,7 +60,7 @@ $layer3Tests = Get-ChildItem -Path '.\backend\tests' -Filter 'test_layer3_*.py' 
 Observed result during this closeout pass:
 
 ```text
-260 passed, 4 warnings
+261 passed, 4 warnings
 ```
 
 The repeated Windows pytest temp cleanup `PermissionError` appeared after successful pytest exit in some runs and did not change the command exit code.
@@ -72,6 +73,7 @@ Ready to review as a bounded branch:
 - frontend session recovery;
 - narrow service extractions;
 - same-origin signed-reference service proof;
+- plan-preview DTO boundary hardening;
 - source-boundary extraction and verifier guard;
 - single APS-document qualitative execution;
 - proof/state drift checks;

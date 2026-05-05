@@ -617,10 +617,11 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
     preview_request_schema = spec["paths"]["/api/v1/layer3/plan/preview"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert preview_request_schema["additionalProperties"] is True
+    assert preview_request_schema["additionalProperties"] is False
     assert set(preview_request_schema["required"]) == {"session_id"}
     assert preview_request_schema["properties"]["preview_scope"]["enum"] == ["owner_service_default"]
     assert preview_request_schema["properties"]["include_exclusions"]["type"] == "boolean"
+    assert "source-widening fields are rejected before service mutation" in preview_request_schema["description"]
 
     preview_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/preview", "post")
     assert preview_schema["title"] == "Layer3PlanPreviewResponse"
@@ -3855,6 +3856,39 @@ def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_sess
         assert stored_plan.approved_by_operator is True
         assert stored_plan.plan_json["approval_only"] is True
         assert stored_plan.plan_json["execution_started"] is False
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation(client: TestClient, tmp_path) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    rejected = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-plan-preview-strict-extra",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+            "execute": True,
+        },
+    )
+
+    assert rejected.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "execute"]
+        for item in rejected.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3AnalysisPlan).count() == 0
         assert db.query(L3PassRun).count() == 0
         assert db.query(AnalysisRun).count() == 0
     finally:

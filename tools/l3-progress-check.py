@@ -25,6 +25,7 @@ BRANCH_CLOSEOUT = PLANNING_DOCS / "120_L3_CLOSEOUT.md"
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
+LAYER3_API = ROOT / "backend" / "app" / "api" / "layer3.py"
 SOURCE_BOUNDARY_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_boundary.py"
 )
@@ -38,6 +39,7 @@ SOURCE_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_source_boundary
 SIGNED_REFERENCE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_signed_reference_state.py"
 )
+LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 
@@ -582,17 +584,17 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "backend/tests/test_layer3_source_boundary.py",
         ],
         GOAL_AUDIT: [
-            "updated after same-origin signed-reference service proof hardening",
+            "updated after plan-preview DTO boundary hardening",
             "backend/app/services/layer3_source_boundary.py",
             "backend/tests/test_layer3_source_boundary.py",
             "does not widen source classes",
-            "260 passed",
+            "261 passed",
         ],
         BRANCH_CLOSEOUT: [
-            "Status: local branch closeout for `codex/l3-frontend-session-recovery` after same-origin signed-reference service proof hardening.",
+            "Status: local branch closeout for `codex/l3-frontend-session-recovery` after plan-preview DTO boundary hardening.",
             "review/merge preparation only",
             "backend/app/services/layer3_source_boundary.py",
-            "260 passed, 4 warnings",
+            "261 passed, 4 warnings",
             "Layer 3 progress state check: PASS",
             "generic connector/destination dispatch",
             "package mutation/reconstruction",
@@ -642,12 +644,12 @@ def _check_signed_reference_state_guard(errors: list[str]) -> None:
             "backend/app/services/layer3_signed_reference_state.py",
             "backend/tests/test_layer3_signed_reference_state.py",
             "concurrent single-use proof",
-            "260 passed",
+            "261 passed",
         ],
         BRANCH_CLOSEOUT: [
             "backend/app/services/layer3_signed_reference_state.py",
             "backend/tests/test_layer3_signed_reference_state.py",
-            "260 passed, 4 warnings",
+            "261 passed, 4 warnings",
             "same-origin signed-reference service proof",
         ],
     }
@@ -656,6 +658,54 @@ def _check_signed_reference_state_guard(errors: list[str]) -> None:
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing signed-reference guard term: {term}")
+
+
+def _check_plan_preview_request_guard(errors: list[str]) -> None:
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "class Layer3PlanPreviewRequest(BaseModel):",
+        "model_config = ConfigDict(extra=\"forbid\")",
+        "PLAN_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {",
+        "\"additionalProperties\": False",
+        "source-widening fields are rejected before service mutation",
+        "payload: Layer3PlanPreviewRequest",
+        "layer3_workbench.plan_preview(db, payload.model_dump(exclude_none=True))",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing plan-preview request guard term: {term}")
+
+    test_text = _read_required_text(LAYER3_API_TEST, errors)
+    for term in (
+        "test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation",
+        "api-plan-preview-strict-extra",
+        "extra_forbidden",
+        "db.query(L3AnalysisPlan).count() == 0",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_API_TEST)} missing plan-preview proof term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: [
+            "Layer3PlanPreviewRequest",
+            "test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation",
+            "plan-preview DTO boundary",
+        ],
+        GOAL_AUDIT: [
+            "Layer3PlanPreviewRequest",
+            "test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation",
+            "261 passed",
+        ],
+        BRANCH_CLOSEOUT: [
+            "Layer3PlanPreviewRequest",
+            "test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation",
+            "261 passed, 4 warnings",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing plan-preview guard term: {term}")
 
 
 def _check_progress_text_surfaces(errors: list[str]) -> None:
@@ -729,11 +779,13 @@ def main() -> int:
         QUAL_APS_ENTRY_FREEZE,
         BRANCH_CLOSEOUT,
         STATE_ACTION_CONTRACT,
+        LAYER3_API,
         SOURCE_BOUNDARY_SERVICE,
         WORKBENCH_SERVICE,
         SOURCE_BOUNDARY_TEST,
         SIGNED_REFERENCE_STATE_SERVICE,
         SIGNED_REFERENCE_STATE_TEST,
+        LAYER3_API_TEST,
     ):
         _require_file(path, errors)
 
@@ -748,6 +800,7 @@ def main() -> int:
     _check_qualitative_capability_boundary(errors)
     _check_source_boundary_contract(errors)
     _check_signed_reference_state_guard(errors)
+    _check_plan_preview_request_guard(errors)
     _check_progress_text_surfaces(errors)
     _check_ci_layer3_backend_guardrail(errors)
 
