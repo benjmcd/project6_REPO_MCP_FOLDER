@@ -338,6 +338,134 @@ def _check_snapshot_consistency(manifest: dict[str, Any], errors: list[str]) -> 
         errors.append("snapshot commit fields disagree: " + detail)
 
 
+def _check_package_namespace_progress_sync(
+    manifest: dict[str, Any], errors: list[str]
+) -> None:
+    expected_commit = "3f238652f909e31e371be86fdfa31d7833e6236e"
+    snapshot_values = {
+        "snapshot_base_main_commit": manifest.get("snapshot_base_main_commit"),
+        "artifact_scope.snapshot_base_main_commit": _nested(
+            manifest, "artifact_scope", "snapshot_base_main_commit"
+        ),
+        "current_snapshot.snapshot_base_main_commit": _nested(
+            manifest, "current_snapshot", "snapshot_base_main_commit"
+        ),
+    }
+    for name, value in snapshot_values.items():
+        if value != expected_commit:
+            errors.append(
+                f"{name} must identify the post-PR593 package namespace runtime "
+                f"base commit {expected_commit}"
+            )
+
+    for name, source in (
+        (
+            "artifact_scope.snapshot_base_main_commit_source",
+            _nested(manifest, "artifact_scope", "snapshot_base_main_commit_source"),
+        ),
+        (
+            "current_snapshot.snapshot_base_main_commit_source",
+            _nested(manifest, "current_snapshot", "snapshot_base_main_commit_source"),
+        ),
+    ):
+        if not isinstance(source, str):
+            errors.append(f"{name} must be present after package namespace runtime sync")
+            continue
+        for term in (
+            expected_commit,
+            "after PR #593 package namespace runtime",
+            "without runtime behavior changes",
+        ):
+            if term not in source:
+                errors.append(f"{name} missing post-PR593 namespace sync term: {term}")
+
+    namespace_runtime = manifest.get("package_replacement_namespace_runtime")
+    if not isinstance(namespace_runtime, dict):
+        errors.append("manifest missing package_replacement_namespace_runtime object")
+    else:
+        expected_fields = {
+            "mode": "replacement_package_namespace_rows",
+            "source_gate": "131_PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE",
+            "live_behavior_change": True,
+            "route": "/api/v1/layer3/package/replacement-namespace/record",
+            "owner_service": "backend/app/services/layer3_replacement_package_namespace.py",
+            "model": "L3ReplacementOutputPackage",
+            "table": "l3_replacement_output_package",
+            "migration": "backend/alembic/versions/0021_layer3_replacement_output_package.py",
+            "request_dto": "Layer3ReplacementPackageNamespaceRecordRequest",
+            "response_dto": "Layer3ReplacementPackageNamespaceRecordResponse",
+            "implementation_pr": "#593",
+        }
+        for key, expected in expected_fields.items():
+            if namespace_runtime.get(key) != expected:
+                errors.append(
+                    "package_replacement_namespace_runtime."
+                    f"{key}={namespace_runtime.get(key)!r} but expected {expected!r}"
+                )
+        blocked_scope = namespace_runtime.get("blocked_scope")
+        if not isinstance(blocked_scope, list):
+            errors.append("package_replacement_namespace_runtime missing blocked_scope")
+        else:
+            for blocked in (
+                "source L3OutputPackage row creation, update, or deletion",
+                "package payload write",
+                "package payload rewrite",
+                "replacement package artifact generation",
+                "provider/public URL support",
+                "connector/destination dispatch",
+                "broad qualitative/hybrid/RAG execution",
+                "full mockup activation",
+                "authentication/security hardening",
+                "broad package mutation/reconstruction",
+            ):
+                if blocked not in blocked_scope:
+                    errors.append(
+                        "package_replacement_namespace_runtime.blocked_scope "
+                        f"missing {blocked}"
+                    )
+
+    stale_scope_text = "\n".join(
+        str(item)
+        for collection in (
+            _nested(manifest, "artifact_scope", "notes"),
+            _nested(manifest, "artifact_scope", "state_notes"),
+        )
+        if isinstance(collection, list)
+        for item in collection
+    )
+    for stale in (
+        "future contract terms only",
+        "does not admit runtime route creation",
+        "This implementation-entry slice adds `131_PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE.md`",
+    ):
+        if stale in stale_scope_text:
+            errors.append(
+                "artifact_scope package namespace runtime notes still contain "
+                f"stale future-only wording: {stale}"
+            )
+
+    required_summary_terms = {
+        "branch_state_summary": manifest.get("branch_state_summary"),
+        "current_snapshot.branch_state_summary": _nested(
+            manifest, "current_snapshot", "branch_state_summary"
+        ),
+    }
+    for name, summary in required_summary_terms.items():
+        if not isinstance(summary, str):
+            errors.append(f"{name} must be present after package namespace runtime sync")
+            continue
+        for term in (
+            "PR #593",
+            "bounded live `replacement_package_namespace_rows` runtime",
+            "separate `l3_replacement_output_package` metadata rows",
+            "broad package mutation/reconstruction remains blocked",
+        ):
+            if term not in summary:
+                errors.append(f"{name} missing package namespace runtime sync term: {term}")
+        if "implementation-entry freeze" in summary:
+            errors.append(f"{name} still describes namespace runtime as implementation-entry")
+
+
 def _check_summary_counts(manifest: dict[str, Any], errors: list[str]) -> None:
     summary = manifest.get("summary_counts")
     slices = manifest.get("layer3_workbench_slices")
@@ -4321,6 +4449,7 @@ def main() -> int:
     _load_json(PROOF_MANIFEST, errors)
     if manifest:
         _check_snapshot_consistency(manifest, errors)
+        _check_package_namespace_progress_sync(manifest, errors)
         _check_summary_counts(manifest, errors)
         _check_current_decision(manifest, errors)
         _check_referenced_paths(manifest, errors)
