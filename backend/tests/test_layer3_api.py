@@ -386,10 +386,11 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
     preflight_request_schema = spec["paths"]["/api/v1/layer3/preflight"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert preflight_request_schema["additionalProperties"] is True
+    assert preflight_request_schema["additionalProperties"] is False
     assert set(preflight_request_schema["required"]) == {"natural_language_intent"}
     assert preflight_request_schema["properties"]["natural_language_intent"]["type"] == "string"
     assert preflight_request_schema["properties"]["manual_constraints"]["additionalProperties"] is True
+    assert "source-widening fields are rejected before service execution" in preflight_request_schema["description"]
     assert preflight_request_schema["properties"]["manual_constraints"]["properties"]["source_classes"]["items"][
         "enum"
     ] == ["dataset_version", "aps_content_document"]
@@ -1541,7 +1542,12 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
 @pytest.mark.parametrize(
     ("service_name", "method", "path", "payload"),
     [
-        ("preflight", "post", "/api/v1/layer3/preflight", {}),
+        (
+            "preflight",
+            "post",
+            "/api/v1/layer3/preflight",
+            {"natural_language_intent": "Forced API boundary proof."},
+        ),
         ("source_preview", "post", "/api/v1/layer3/source-preview", {"preflight_id": "preflight-forced"}),
         (
             "material_preview",
@@ -4426,6 +4432,32 @@ def test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation(cl
         assert db.query(AnalysisRun).count() == 0
     finally:
         db.close()
+
+
+def test_layer3_api_preflight_rejects_extra_fields_before_service_execution(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    def _unexpected_preflight(_payload):
+        raise AssertionError("preflight service should not run when request validation rejects extra fields")
+
+    monkeypatch.setattr(layer3_workbench, "preflight", _unexpected_preflight)
+
+    rejected = client.post(
+        "/api/v1/layer3/preflight",
+        json={
+            "client_request_id": "api-preflight-strict-extra",
+            "natural_language_intent": "Select admitted source classes only.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+            "local_directory": "C:/not-admitted",
+        },
+    )
+
+    assert rejected.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "local_directory"]
+        for item in rejected.json()["detail"]
+    )
 
 
 def test_layer3_api_source_preview_rejects_extra_fields_before_service_execution(client: TestClient) -> None:

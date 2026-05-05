@@ -88,6 +88,17 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     deferred_decisions: dict[str, Any]
 
 
+class Layer3PreflightRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str | None = None
+    natural_language_intent: str
+    manual_constraints: dict[str, Any] | None = None
+    actor: str | None = None
+
+
 class Layer3PlanApprovalRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -1503,8 +1514,8 @@ SOURCE_CLASS_SCHEMA: dict[str, Any] = {
 
 PREFLIGHT_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known preflight fields; current runtime tolerates extra metadata fields.",
+    "additionalProperties": False,
+    "description": "Known preflight fields; source-widening fields are rejected before service execution.",
     "required": ["natural_language_intent"],
     "properties": {
         "schema_id": {"type": "string", "enum": ["layer3.preflight_request.v1"]},
@@ -2602,8 +2613,8 @@ def get_readiness() -> dict[str, Any]:
     openapi_extra={"requestBody": _json_request_body(PREFLIGHT_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400),
 )
-def post_preflight(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.preflight(payload))
+def post_preflight(payload: Layer3PreflightRequest) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.preflight(payload.model_dump(exclude_none=True)))
 
 
 @router.post(

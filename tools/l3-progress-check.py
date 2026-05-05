@@ -1379,6 +1379,50 @@ def _check_signed_reference_state_guard(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing signed-reference guard term: {term}")
 
 
+def _check_preflight_request_guard(errors: list[str]) -> None:
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "class Layer3PreflightRequest(BaseModel):",
+        "model_config = ConfigDict(extra=\"forbid\")",
+        "PREFLIGHT_REQUEST_SCHEMA: dict[str, Any] = {",
+        "\"additionalProperties\": False",
+        "source-widening fields are rejected before service execution",
+        "payload: Layer3PreflightRequest",
+        "layer3_workbench.preflight(payload.model_dump(exclude_none=True))",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing preflight request guard term: {term}")
+
+    test_text = _read_required_text(LAYER3_API_TEST, errors)
+    for term in (
+        "test_layer3_api_preflight_rejects_extra_fields_before_service_execution",
+        "api-preflight-strict-extra",
+        "local_directory",
+        "extra_forbidden",
+        "preflight service should not run when request validation rejects extra fields",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_API_TEST)} missing preflight request guard test term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: [
+            "Layer3PreflightRequest",
+            "test_layer3_api_preflight_rejects_extra_fields_before_service_execution",
+            "preflight DTO boundary",
+        ],
+        GOAL_AUDIT: [
+            "Layer3PreflightRequest",
+            "test_layer3_api_preflight_rejects_extra_fields_before_service_execution",
+            "preflight DTO boundary",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing preflight request guard term: {term}")
+
+
 def _check_plan_preview_request_guard(errors: list[str]) -> None:
     api_text = _read_required_text(LAYER3_API, errors)
     for term in (
@@ -1701,6 +1745,7 @@ def main() -> int:
     _check_source_boundary_contract(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
+    _check_preflight_request_guard(errors)
     _check_plan_preview_request_guard(errors)
     _check_source_preview_request_guard(errors)
     _check_material_preview_request_guard(errors)
