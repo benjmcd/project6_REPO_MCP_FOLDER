@@ -241,7 +241,7 @@ And to the qualitative APS content document execution planning/control freeze:
 - `next_milestone_plans/Layer3_planning_docs/114_QUAL_APS_EXEC_FREEZE.md`
 - `next_milestone_plans/Layer3_planning_docs/115_QUAL_APS_EXEC_CONTRACT.md`
 
-Docs `114`/`115` freeze qualitative APS content document execution as not admitted after PR `#525` connector/destination dispatch governance. Current code supports APS content documents through source preview, material preview, source trace, Gate B snapshots, and qualitative/document-chunk typing; current pass execution remains wrapped quantitative over `DatasetVersion` inputs and qualitative-only sets still fail closed. A future implementation-entry freeze must choose the exact `single_aps_doc_qualitative_pass` mode and prove chunk/citation/trace authority, execution owner, result/review vocabulary, anti-`DatasetVersion` isolation, failure behavior, and tests before code.
+Docs `114`/`115` remain the historical qualitative APS content document governance after PR `#525` connector/destination dispatch governance. Doc `119`, current code, and the live proof surfaces now admit only the exact `single_aps_doc_qualitative_pass`; doc `124` keeps broad qualitative, qualitative cohort, hybrid, RAG/vector, source widening, package/handoff/export, connector/destination, provider/public URL, full mockup, hidden LLM planning, and auth/security behavior blocked.
 
 And to the descriptive-summary Gate C admission packet, whose single-item implementation boundary was satisfied by PR `#417` after PR `#411` lower-level method support:
 - `next_milestone_plans/Layer3_planning_docs/75_L3_DESCRIPTIVE_SUMMARY_GATEC_ADMISSION_FREEZE.md`
@@ -1394,13 +1394,12 @@ Start with:
 - `backend/tests/test_layer3_typing_entry.py`
 - `backend/tests/test_layer3_pass_entry.py`
 
-Read docs `114`/`115` as planning/control only:
-- qualitative APS content document execution remains blocked by default
-- current live APS document support stops at selection, trace, material preview, Gate B snapshot, and qualitative/document-chunk typing
-- current pass execution is wrapped quantitative and requires `DatasetVersion` authority; qualitative-only pass-entry sets still fail closed
-- a future qualitative APS execution implementation must choose exactly one mode: `single_aps_doc_qualitative_pass`
-- APS document identity, chunk ordering/limits, citation/trace refs, execution owner, result/review vocabulary, idempotency, failure states, no-leakage behavior, and tests must be named before code
-- `DatasetVersion` conversion, wrapped quantitative `run_analysis(...)`, associated-cohort qualitative execution, document trace changes, rendered controls, package/handoff/export, provider/public URLs, connector/destination dispatch, source ingestion, schema/runtime/source widening, and full mockup activation remain out unless separately frozen
+Read docs `114`/`115` as historical planning/control only, then read docs `119` and `124` plus current code for live truth:
+- exact `single_aps_doc_qualitative_pass` is now the only admitted qualitative APS execution mode
+- current live APS document support includes selection, trace, material preview, Gate B snapshot, qualitative/document-chunk typing, and the bounded single-document qualitative pass
+- the qualitative pass must not reuse `DatasetVersion` conversion or wrapped quantitative `run_analysis(...)`
+- APS document identity, chunk ordering/limits, citation/trace refs, execution owner, result/review vocabulary, idempotency, failure states, no-leakage behavior, and tests remain required for any future expansion beyond the exact admitted mode
+- associated-cohort qualitative execution, broad qualitative execution, hybrid/RAG/vector behavior, document trace changes, rendered controls, package/handoff/export, provider/public URLs, connector/destination dispatch, source ingestion, schema/runtime/source widening, and full mockup activation remain out unless separately frozen
 
 ### If you are auditing the Layer 3 workbench APS handoff dispatch freeze
 
