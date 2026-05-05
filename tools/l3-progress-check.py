@@ -23,7 +23,7 @@ LOCAL_BOUNDARY = PLANNING_DOCS / "116_SECURITY_SOURCE_DELIVERY_BOUNDARY_FREEZE.m
 SYNTHESIS_BOUNDARY = PLANNING_DOCS / "117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md"
 GOAL_AUDIT = PLANNING_DOCS / "118_L3_GOAL_AUDIT.md"
 QUAL_APS_ENTRY_FREEZE = PLANNING_DOCS / "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md"
-BRANCH_CLOSEOUT = PLANNING_DOCS / "120_L3_CLOSEOUT.md"
+CLOSEOUT_DOC = PLANNING_DOCS / "120_L3_CLOSEOUT.md"
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -590,15 +590,19 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "backend/tests/test_layer3_source_boundary.py",
         ],
         GOAL_AUDIT: [
-            "updated after session-status migration constraint alignment",
+            "current-main completion audit after PR #535 merged",
             "backend/app/services/layer3_source_boundary.py",
             "backend/tests/test_layer3_source_boundary.py",
             "does not widen source classes",
             "264 passed",
         ],
-        BRANCH_CLOSEOUT: [
-            "Status: local branch closeout for `codex/l3-frontend-session-recovery` after session-status migration constraint alignment.",
-            "review/merge preparation only",
+        CLOSEOUT_DOC: [
+            "Status: current-main closeout after PR #535 merged at `project6-origin/main=7d07477a`.",
+            "post-merge documentation/proof synchronization only",
+            "PR #535",
+            "post-merge `main` workflow",
+            "backend-layer3-api",
+            "current-main proof after PR #535",
             "backend/app/services/layer3_source_boundary.py",
             "264 passed, 4 warnings",
             "Layer 3 progress state check: PASS",
@@ -652,7 +656,7 @@ def _check_signed_reference_state_guard(errors: list[str]) -> None:
             "concurrent single-use proof",
             "264 passed",
         ],
-        BRANCH_CLOSEOUT: [
+        CLOSEOUT_DOC: [
             "backend/app/services/layer3_signed_reference_state.py",
             "backend/tests/test_layer3_signed_reference_state.py",
             "264 passed, 4 warnings",
@@ -701,7 +705,7 @@ def _check_plan_preview_request_guard(errors: list[str]) -> None:
             "test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation",
             "264 passed",
         ],
-        BRANCH_CLOSEOUT: [
+        CLOSEOUT_DOC: [
             "Layer3PlanPreviewRequest",
             "test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation",
             "264 passed, 4 warnings",
@@ -752,7 +756,7 @@ def _check_source_preview_request_guard(errors: list[str]) -> None:
             "test_layer3_api_source_preview_rejects_extra_fields_before_service_execution",
             "264 passed",
         ],
-        BRANCH_CLOSEOUT: [
+        CLOSEOUT_DOC: [
             "Layer3SourcePreviewRequest",
             "test_layer3_api_source_preview_rejects_extra_fields_before_service_execution",
             "264 passed, 4 warnings",
@@ -803,7 +807,7 @@ def _check_material_preview_request_guard(errors: list[str]) -> None:
             "test_layer3_api_material_preview_rejects_extra_fields_before_service_execution",
             "264 passed",
         ],
-        BRANCH_CLOSEOUT: [
+        CLOSEOUT_DOC: [
             "Layer3MaterialPreviewRequest",
             "test_layer3_api_material_preview_rejects_extra_fields_before_service_execution",
             "264 passed, 4 warnings",
@@ -852,7 +856,7 @@ def _check_session_status_migration_constraint(errors: list[str]) -> None:
             "test_layer3_session_entry_migration_defines_status_check_constraint",
             "264 passed",
         ],
-        BRANCH_CLOSEOUT: [
+        CLOSEOUT_DOC: [
             "0012_layer3_session_entry.py",
             "test_layer3_session_entry_migration_defines_status_check_constraint",
             "264 passed, 4 warnings",
@@ -946,7 +950,7 @@ def main() -> int:
         SYNTHESIS_BOUNDARY,
         GOAL_AUDIT,
         QUAL_APS_ENTRY_FREEZE,
-        BRANCH_CLOSEOUT,
+        CLOSEOUT_DOC,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
         LAYER3_API,
