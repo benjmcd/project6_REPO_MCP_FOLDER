@@ -39,6 +39,9 @@ STATE_ACTION_CONTRACT = (
 STATE_MODEL_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_state_model_contract.py"
 )
+HANDOFF_CONTRACT_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_handoff_contract.py"
+)
 EXTERNAL_EXPORT_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_external_export_contract.py"
 )
@@ -124,6 +127,9 @@ LAYER3_READINESS_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_readi
 LAYER3_BOOTSTRAP_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_bootstrap_contract.py"
 LAYER3_STATE_MODEL_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_state_model_contract.py"
+)
+LAYER3_HANDOFF_CONTRACT_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_handoff_contract.py"
 )
 LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_external_export_contract.py"
@@ -2956,6 +2962,82 @@ def _check_state_model_contract_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing state-model contract extraction doc term: {term}")
 
 
+def _check_handoff_contract_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(HANDOFF_CONTRACT_SERVICE, errors)
+    for term in (
+        "HANDOFF_EXPORT_PREPARE_ALLOWED_FIELDS = frozenset(",
+        "HANDOFF_EXPORT_PREPARE_FORBIDDEN_FIELDS = frozenset(",
+        "APS_HANDOFF_DISPATCH_ALLOWED_FIELDS = frozenset(",
+        "APS_HANDOFF_DISPATCH_FORBIDDEN_FIELDS = frozenset(",
+        "def handoff_export_prepare_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
+        "def aps_handoff_dispatch_blocked_fields(payload: Mapping[str, Any]) -> list[str]:",
+        '"connector_dispatch"',
+        '"source_expansion"',
+        '"local_upload"',
+        '"schema_migration"',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(HANDOFF_CONTRACT_SERVICE)} missing handoff contract term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_handoff_contract import (",
+        "HANDOFF_EXPORT_PREPARE_ALLOWED_FIELDS",
+        "APS_HANDOFF_DISPATCH_FORBIDDEN_FIELDS",
+        "blocked_payload_fields = handoff_export_prepare_blocked_fields(payload)",
+        "blocked_payload_fields = aps_handoff_dispatch_blocked_fields(payload)",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing handoff contract extraction term: {term}")
+    for stale_term in (
+        "HANDOFF_EXPORT_PREPARE_FORBIDDEN_FIELDS = frozenset(",
+        "HANDOFF_EXPORT_PREPARE_ALLOWED_FIELDS = frozenset(",
+        "APS_HANDOFF_DISPATCH_FORBIDDEN_FIELDS = frozenset(",
+        "APS_HANDOFF_DISPATCH_ALLOWED_FIELDS = frozenset(",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns handoff contract term: {stale_term}")
+
+    test_text = _read_required_text(LAYER3_HANDOFF_CONTRACT_TEST, errors)
+    for term in (
+        "test_handoff_contract_is_shared_without_behavior_change",
+        "test_handoff_contract_blocks_same_fields_as_legacy_logic",
+        "layer3_workbench.HANDOFF_EXPORT_PREPARE_ALLOWED_FIELDS",
+        "contract.handoff_export_prepare_blocked_fields(prepare_payload)",
+        "contract.aps_handoff_dispatch_blocked_fields(dispatch_payload)",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_HANDOFF_CONTRACT_TEST)} missing handoff contract test term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: (
+            "handoff/export and APS handoff contract extraction",
+            "layer3_handoff_contract.py",
+            "test_layer3_handoff_contract.py",
+        ),
+        GOAL_AUDIT: (
+            "branch-local handoff/export and APS handoff contract extraction",
+            "layer3_handoff_contract.py",
+            "test_layer3_handoff_contract.py",
+            "does not change handoff/export or APS handoff allowlists, denylists, blocked-field behavior, emitted handoff/export responses, emitted APS handoff responses, or any deferred broad capability",
+        ),
+        CLOSEOUT_DOC: (
+            "branch-local handoff/export and APS handoff contract extraction",
+            "layer3_handoff_contract.py",
+            "test_layer3_handoff_contract.py",
+            "Focused handoff-contract suite: 2 passed.",
+            "Focused handoff API regression: 18 passed, 111 deselected, 4 warnings.",
+            "Local focused Layer 3 backend suite: 298 passed, 4 warnings.",
+            "No broad `layer3_workbench.py` rewrite and no behavior change beyond extracted ownership.",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing handoff contract extraction doc term: {term}")
+
+
 def _check_external_export_contract_extraction(errors: list[str]) -> None:
     service_text = _read_required_text(EXTERNAL_EXPORT_CONTRACT_SERVICE, errors)
     for term in (
@@ -3024,6 +3106,7 @@ def _check_external_export_contract_extraction(errors: list[str]) -> None:
             "proof_snapshot_head: `6be9b127`",
             "PR #575 external export/download contract extraction proof | Auth/security remains deferred",
             "proof/refactor hardening through PR #575",
+            "external export/download contract extraction;",
             "Focused external-export-contract suite: 2 passed.",
             "Pre-merge PR #575 checks: backend-layer3-api SUCCESS; test SUCCESS.",
             "Merged main head after PR #575: 6be9b127.",
@@ -3167,6 +3250,8 @@ def main() -> int:
         LAYER3_READINESS_CONTRACT_TEST,
         LAYER3_BOOTSTRAP_CONTRACT_TEST,
         LAYER3_STATE_MODEL_CONTRACT_TEST,
+        HANDOFF_CONTRACT_SERVICE,
+        LAYER3_HANDOFF_CONTRACT_TEST,
         LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST,
         LAYER3_WORKBENCH_E2E,
         MOCKUP_ASSETS,
@@ -3208,6 +3293,7 @@ def main() -> int:
     _check_readiness_contract_extraction(errors)
     _check_bootstrap_contract_extraction(errors)
     _check_state_model_contract_extraction(errors)
+    _check_handoff_contract_extraction(errors)
     _check_external_export_contract_extraction(errors)
 
     if errors:
