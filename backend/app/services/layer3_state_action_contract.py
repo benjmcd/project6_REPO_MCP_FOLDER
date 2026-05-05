@@ -99,6 +99,26 @@ STATE_ACTION_ADMITTED_CAPABILITIES = (
             "full_mockup_activation",
         ],
     },
+    {
+        "capability": "replacement_package_artifact_manifest_only",
+        "admitted": True,
+        "source_gate": "129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE",
+        "scope": "server-side manifest verification of existing replacement package artifact refs and hashes with no artifact generation, package row mutation, or payload write",
+        "owner_service": "backend/app/services/layer3_replacement_package_artifact_manifest.py",
+        "blocked_downstream": [
+            "package_mutation_reconstruction",
+            "replacement_package_artifact_generation",
+            "replacement_output_package_rows",
+            "package_payload_rewrite",
+            "provider_public_url",
+            "connector_destination_dispatch",
+            "local_upload_or_directory_source_expansion",
+            "broad_qualitative_execution",
+            "hybrid_execution",
+            "rag_vector_retrieval",
+            "full_mockup_activation",
+        ],
+    },
 )
 
 STATE_ACTION_DEFERRED_CAPABILITIES = (
@@ -190,6 +210,7 @@ def build_state_action_contract(
     package_supersession_preview_operator_decision: str,
     replacement_package_set_authority_operator_decision: str,
     package_supersession_commit_operator_decision: str,
+    replacement_package_artifact_manifest_operator_decision: str,
     terminal_pass_statuses: Iterable[str],
 ) -> dict[str, Any]:
     state_action_matrix = _clone_json(state_model["states"])
@@ -227,6 +248,7 @@ def build_state_action_contract(
             "package_supersession_preview": [package_supersession_preview_operator_decision],
             "record_replacement_package_set_authority": [replacement_package_set_authority_operator_decision],
             "package_supersession_commit": [package_supersession_commit_operator_decision],
+            "replacement_package_artifact_manifest": [replacement_package_artifact_manifest_operator_decision],
         },
         "terminal_pass_statuses": sorted(terminal_pass_statuses),
         "admitted_capabilities": _clone_json(STATE_ACTION_ADMITTED_CAPABILITIES),

@@ -37,6 +37,7 @@ from app.models.models import (
     L3PackageSupersessionCommit,
     L3PassRun,
     L3ReconciliationRecord,
+    L3ReplacementPackageArtifactManifest,
     L3ReplacementPackageSetAuthority,
     L3Session,
     L3SignedReferenceAuditEvent,
@@ -50,6 +51,7 @@ from app.services import (
     layer3_package_mutation_entry,
     layer3_package_supersession_commit,
     layer3_pass_entry as layer3_pass_entry_module,
+    layer3_replacement_package_artifact_manifest,
     layer3_replacement_package_set_authority,
     layer3_workbench,
 )
@@ -1572,6 +1574,96 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
         "authority_rail",
     } <= set(commit_schema["required"])
 
+    artifact_manifest_request_schema = spec["paths"][
+        "/api/v1/layer3/package/replacement-artifact/manifest/record"
+    ]["post"]["requestBody"]["content"]["application/json"]["schema"]
+    assert artifact_manifest_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "replacement_package_set_authority_id",
+        "package_supersession_commit_id",
+        "package_supersession_commit_basis_hash",
+        "replacement_package_set_id",
+        "replacement_package_set_hash",
+        "replacement_package_kinds",
+        "replacement_payload_refs",
+        "replacement_payload_hashes",
+        "hash_algorithm",
+        "artifact_namespace",
+        "artifact_manifest_hash",
+        "authority_basis_hash",
+        "operator_decision",
+    } == set(artifact_manifest_request_schema["required"])
+    assert artifact_manifest_request_schema["properties"]["operator_decision"]["enum"] == [
+        "record_replacement_package_artifact_manifest"
+    ]
+    assert artifact_manifest_request_schema["properties"]["hash_algorithm"]["enum"] == ["sha256"]
+    assert artifact_manifest_request_schema["properties"]["artifact_namespace"]["enum"] == [
+        "replacement-package-artifacts"
+    ]
+    assert artifact_manifest_request_schema["properties"]["generate_artifact"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert artifact_manifest_request_schema["properties"]["replacement_output_package_ids"]["description"].startswith(
+        "Known but non-admitted"
+    )
+
+    artifact_manifest_schema = _openapi_response_schema(
+        spec,
+        "/api/v1/layer3/package/replacement-artifact/manifest/record",
+        "post",
+    )
+    assert artifact_manifest_schema["title"] == "Layer3ReplacementPackageArtifactManifestResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "replacement_package_artifact_manifest_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "replacement_package_set_authority_id",
+        "package_supersession_commit_id",
+        "package_supersession_commit_basis_hash",
+        "replacement_package_set_id",
+        "replacement_package_set_hash",
+        "replacement_package_kinds",
+        "replacement_payload_refs",
+        "replacement_payload_hashes",
+        "verified_artifact_refs",
+        "verified_artifact_hashes",
+        "verified_artifact_byte_sizes",
+        "hash_algorithm",
+        "artifact_namespace",
+        "artifact_manifest_hash",
+        "authority_basis_hash",
+        "manifest_snapshot",
+        "operator_decision",
+        "replacement_package_artifact_manifest_mode",
+        "source_gate",
+        "manifest_record_persisted",
+        "artifact_generation_enabled",
+        "package_row_mutation_enabled",
+        "package_payload_write_enabled",
+        "l3_output_package_write_enabled",
+        "broad_package_mutation_enabled",
+        "source_widening_enabled",
+        "connector_dispatch_enabled",
+        "provider_public_url_enabled",
+        "qualitative_hybrid_rag_execution_enabled",
+        "frontend_only_durable_state_enabled",
+        "downstream_unavailable",
+        "next_state",
+        "authority_rail",
+    } <= set(artifact_manifest_schema["required"])
+
     record_request_schema = spec["paths"]["/api/v1/layer3/handoff/connector/record"]["post"]["requestBody"][
         "content"
     ]["application/json"]["schema"]
@@ -1689,6 +1781,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("/api/v1/layer3/package/review/commit", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/package/review/submit", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/package/mutation/preview", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/package/replacement-artifact/manifest/record", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/prepare", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/aps/dispatch", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/download/prepare", "post"): ("400", "404", "409"),
@@ -1826,6 +1919,40 @@ def test_layer3_connector_dispatch_record_api_boundary_returns_workbench_error_e
     assert body["recoverable"] is False
     assert body["blocked_fields"] == ["forced_field"]
     assert body["next_allowed_actions"] == ["inspect_connector_record_boundary"]
+
+
+def test_layer3_replacement_package_artifact_manifest_api_boundary_returns_workbench_error_envelope(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    def _raise_forced_boundary_error(*_args, **_kwargs):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "forced_replacement_artifact_manifest_boundary_error",
+            "Forced replacement artifact manifest boundary proof.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+            blocked_fields=["forced_field"],
+            next_allowed_actions=["inspect_replacement_artifact_manifest_boundary"],
+        )
+
+    monkeypatch.setattr(
+        layer3_replacement_package_artifact_manifest,
+        "record_replacement_package_artifact_manifest",
+        _raise_forced_boundary_error,
+    )
+
+    response = client.post("/api/v1/layer3/package/replacement-artifact/manifest/record", json={})
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="forced_replacement_artifact_manifest_boundary_error",
+    )
+    assert body["message"] == "Forced replacement artifact manifest boundary proof."
+    assert body["recoverable"] is False
+    assert body["blocked_fields"] == ["forced_field"]
+    assert body["next_allowed_actions"] == ["inspect_replacement_artifact_manifest_boundary"]
 
 
 def test_layer3_package_supersession_preview_api_boundary_returns_workbench_error_envelope(
@@ -3570,6 +3697,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap_body["features"]["package_supersession_preview"] is True
     assert bootstrap_body["features"]["replacement_package_set_authority"] is True
     assert bootstrap_body["features"]["package_supersession_commit"] is True
+    assert bootstrap_body["features"]["replacement_package_artifact_manifest"] is True
     assert bootstrap_body["features"]["package_review"] is False
     assert bootstrap_body["features"]["external_export"] is False
     assert bootstrap_body["features"]["dispatch"] is False
@@ -3621,6 +3749,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         bootstrap_body["execution_readiness"]["package_supersession_commit_endpoint"]
         == "/api/v1/layer3/package/supersession/commit"
     )
+    assert bootstrap_body["execution_readiness"]["replacement_package_artifact_manifest_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["replacement_package_artifact_manifest_endpoint"]
+        == "/api/v1/layer3/package/replacement-artifact/manifest/record"
+    )
     assert bootstrap_body["execution_readiness"]["package_review_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_handoff_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_export_admitted"] is False
@@ -3667,6 +3800,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert (
         readiness_body["package_supersession_commit_endpoint"]
         == "/api/v1/layer3/package/supersession/commit"
+    )
+    assert readiness_body["replacement_package_artifact_manifest_admitted"] is True
+    assert (
+        readiness_body["replacement_package_artifact_manifest_endpoint"]
+        == "/api/v1/layer3/package/replacement-artifact/manifest/record"
     )
     assert readiness_body["package_review_admitted"] is False
     assert readiness_body["external_handoff_admitted"] is False
