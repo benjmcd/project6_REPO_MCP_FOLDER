@@ -25,6 +25,16 @@ This active progress packet also includes `74_L3_DEFERRED_IMPLEMENTATION_PLAYBOO
 
 Current `main` also includes PR `#522` as a bounded APS parser/bridge/provenance review-residual settlement after PR `#520` durable same-origin signed-reference runtime and PR `#521` docs/control sync. Classify it as a residual hardening record for CSV/XLSX duplicate-header collision handling, XLSX sparse far-right column fail-closed behavior, dataset-bridge boolean null preservation, SEC/EDGAR admitted-form normalization and time-column diagnostics, CSV bridge coexistence with the generic table bridge, and newest APS provenance ordering for Layer 3 material preview. Do not classify PR `#522` as provider/public URL behavior, connector/destination dispatch, qualitative execution, rendered UI behavior, package mutation, or source/schema/runtime widening beyond those bounded parser/bridge/provenance corrections.
 
+Local-only `2026-05-05` progress/proof sync:
+- authority checkout: `C:\Users\benny\Downloads\worktree_for_audits`
+- authority commit: `cb06daf6d964cb24497a4819b1b88704c4bf8f74`
+- authority rule used: `HEAD` matched `project6-origin/main`, and `git diff --name-status HEAD project6-origin/main` was empty
+- remote state was not refreshed; do not treat this local-only sync as GitHub proof for open/merged PR state beyond local git history
+- local current main includes PR `#527` through PR `#530` as Layer 3 modular extraction/refactor work after the PR `#522` through PR `#525` governance chain; do not treat those modular extractions as broad feature expansion
+- remaining authentication/security work is intentionally deferred from near-term planning
+- provider/public URL implementation, connector/destination dispatch, upload-security hardening, signed-reference security hardening, qualitative/hybrid/RAG execution, broad source/runtime/schema widening, package mutation/reconstruction, and full mockup activation are not immediate next slices by default
+- near-term work should stay on non-security progress/proof/state/idempotency/refactor surfaces unless a later explicit directive changes that scope
+
 Docs `110_PROVIDER_URL_FREEZE.md` and `111_PROVIDER_URL_CONTRACT.md`, when present, are planning/control provider/public URL governance only. They freeze provider/public URL behavior as not admitted after PR `#520` durable same-origin signed-reference runtime and PR `#522` residual settlement. Do not classify them as provider URL generation, public URL generation, object-store ACL behavior, connector/destination dispatch, rendered provider URL controls, package mutation, schema/runtime/source widening, qualitative execution, or route behavior by themselves.
 
 Docs `112_CONNECTOR_DISPATCH_FREEZE.md` and `113_CONNECTOR_DISPATCH_CONTRACT.md`, when present, are planning/control connector/destination dispatch governance only. They freeze connector/destination/generic downstream dispatch behavior as not admitted after the same-origin delivery, same-origin signed-reference, durable state, residual-settlement, and provider/public URL governance chain. Do not classify them as connector-run creation, destination selection, generic downstream dispatch, rendered connector controls, provider/public URLs, package mutation, schema/runtime/source widening, qualitative execution, queue/retry/cancel behavior, or route behavior by themselves.
@@ -173,11 +183,13 @@ as the local authority for this artifact, because it may be on a different branc
 
 ## Required Output Files
 
-Maintain exactly these files:
+Maintain the canonical progress packet files:
 - `next_milestone_plans/layer3_progress_manifest.json`
 - `next_milestone_plans/layer3_progress_board.md`
+- `next_milestone_plans/layer3_progress_refresh_spec.md`
+- `next_milestone_plans/progress-prompt.md`
 
-Optional render surfaces are allowed, but only if they do not replace or contradict those two files.
+Optional render surfaces are allowed, but only if they do not replace or contradict those four files.
 Any external live artifact or dashboard must also obey:
 - `next_milestone_plans/progress-ui-spec.md`
 
@@ -203,15 +215,18 @@ Any external live artifact or dashboard must also obey:
 15. If the APS next-step decision has changed, or the bounded APS packet is now settled with no further active next lane, update `next_required_decision` in the manifest and the matching sections in the board and prompt.
 16. If the Layer 3 workbench next-step decision has changed, update `layer3_workbench_current_decision` without repurposing the APS `next_required_decision`.
 17. If the live artifact cannot read refreshed files at view time, regenerate the artifact itself from the refreshed manifest and board instead of leaving a stale embedded snapshot in place.
-18. Fail closed if GitHub state cannot be refreshed:
+18. Run the local validate-only checker after editing the progress packet:
+   - `python .\tools\l3-progress-check.py`
+   - the checker must pass before claiming the packet is internally synced
+19. Fail closed if GitHub state cannot be refreshed:
    - keep the last known manifest state
    - mark the refresh as stale instead of inventing merged/open status
-19. If the current checkout carries a milestone that is not yet merged on `main`:
+20. If the current checkout carries a milestone that is not yet merged on `main`:
    - keep that milestone as `branch_only` only when no open or merged GitHub PR exists
    - upgrade it to `open` once GitHub confirms a PR exists
    - do not upgrade it to `merged` until GitHub confirms the merge
    - do not hide it from active artifact surfaces if the manifest declares it
-20. If the current checkout carries branch-local planning-only prep or docs/progress sync beyond current `main`:
+21. If the current checkout carries branch-local planning-only prep or docs/progress sync beyond current `main`:
    - keep a GitHub-backed open planning or docs/progress follow-up visible while GitHub still shows the PR open, even if equivalent content is already present locally
    - keep any additional branch-local planning-only companion updates, including future revisions to `26_L3_WB_INPUTS.md`, `28_L3_WB_FIRST_SLICE_FREEZE.md`, or a branch-local `27_L3_QUAL1_INPUTS.md`, as branch-local prep rather than merged milestone history until GitHub and current `main` both confirm them
    - do not let either change settled packet counts unless both GitHub state and current `main` repo truth warrant it
