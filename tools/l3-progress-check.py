@@ -31,6 +31,7 @@ SOURCE_EXPANSION_FREEZE = PLANNING_DOCS / "123_SOURCE_EXPANSION_FREEZE.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
 PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
+PACKAGE_REPLACEMENT_SET_FREEZE = PLANNING_DOCS / "127_PACKAGE_REPLACEMENT_SET_FREEZE.md"
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -793,6 +794,7 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
     required_freeze_terms = [
         "Status: implementation-entry freeze only for `package_supersession_commit_entry`; no runtime behavior admitted.",
         "selected_package_lifecycle_mode: `package_supersession_commit_entry`",
+        "replacement authority prerequisite: `127_PACKAGE_REPLACEMENT_SET_FREEZE.md`",
         "`package_supersession_preview_only` remains the only admitted package lifecycle runtime",
         "`package_mutation_reconstruction` remains deferred",
         "future owner service candidate: `backend/app/services/layer3_package_supersession_commit.py`",
@@ -804,6 +806,7 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
         "no runtime route, service, model, migration, UI control, package row mutation, package payload write, or package commit behavior is added by this slice",
         "package supersession commit runtime",
         "authentication/security hardening",
+        "package supersession commit runtime remains blocked until that prerequisite is implemented and proven separately",
     ]
     for term in required_freeze_terms:
         if term not in freeze_text:
@@ -831,6 +834,12 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
             "Package supersession commit entry freeze",
             "Docs/proof-only; no runtime behavior admitted",
             "No commit route, service, model, migration, package row mutation",
+        ],
+        PACKAGE_REPLACEMENT_SET_FREEZE: [
+            "selected_package_lifecycle_mode: `replacement_package_set_authority`",
+            "no runtime behavior admitted",
+            "L3OutputPackage",
+            "uq_l3_output_package_session_kind",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -865,6 +874,93 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
         blocked = preview.get("blocked_downstream")
         if not isinstance(blocked, list) or "package_supersession_commit" not in blocked:
             errors.append("package_supersession_preview_only must still block package_supersession_commit")
+
+
+def _check_package_replacement_set_freeze(errors: list[str]) -> None:
+    freeze_text = _read_required_text(PACKAGE_REPLACEMENT_SET_FREEZE, errors)
+    required_freeze_terms = [
+        "Status: implementation-entry freeze only for `replacement_package_set_authority`; no runtime behavior admitted.",
+        "selected_package_lifecycle_mode: `replacement_package_set_authority`",
+        "current uniqueness blocker: `uq_l3_output_package_session_kind` keeps one output package per `(session_id, package_kind)`",
+        "`package_supersession_preview_only` remains the only admitted package lifecycle runtime",
+        "`package_mutation_reconstruction` remains deferred",
+        "option A: a dedicated replacement package set table",
+        "option B: a package-set namespace model",
+        "option C: a separately frozen package construction variant lane",
+        "`operator_decision` must be exactly `record_replacement_package_set_authority`",
+        "no runtime route, service, model, migration, UI control, package row creation, package row mutation, package payload write, replacement package-set behavior, or package commit behavior is added by this slice",
+        "replacement package row creation",
+        "replacement package payload creation",
+        "authentication/security hardening",
+    ]
+    for term in required_freeze_terms:
+        if term not in freeze_text:
+            errors.append(f"{_rel(PACKAGE_REPLACEMENT_SET_FREEZE)} missing replacement package-set term: {term}")
+
+    required_doc_terms = {
+        DEFERRED_GATES: [
+            "127_PACKAGE_REPLACEMENT_SET_FREEZE.md",
+            "replacement_package_set_authority",
+            "no replacement package rows, replacement payloads",
+            "runtime package mutation/reconstruction commit remains not admitted",
+        ],
+        PACKAGE_COMMIT_FREEZE: [
+            "127_PACKAGE_REPLACEMENT_SET_FREEZE.md",
+            "replacement package-set authority prerequisite",
+            "package supersession commit runtime remains blocked",
+        ],
+        GOAL_AUDIT: [
+            "127_PACKAGE_REPLACEMENT_SET_FREEZE.md",
+            "replacement package-set authority is frozen as docs/proof-only",
+            "unique by `(session_id, package_kind)`",
+        ],
+        CLOSEOUT_DOC: [
+            "Replacement package-set authority freeze",
+            "Docs/proof-only; no runtime behavior admitted",
+            "No replacement package rows, replacement payloads",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing replacement package-set term: {term}")
+
+    models_text = _read_required_text(MODELS, errors)
+    for term in (
+        "class L3OutputPackage",
+        "UniqueConstraint(\"session_id\", \"package_kind\", name=\"uq_l3_output_package_session_kind\")",
+        "payload_ref: Mapped[str]",
+        "payload_hash: Mapped[str]",
+    ):
+        if term not in models_text:
+            errors.append(f"{_rel(MODELS)} missing replacement-set blocker term: {term}")
+    for forbidden in (
+        "L3ReplacementPackageSet",
+        "L3PackageReplacementSet",
+        "replacement_package_set_id: Mapped",
+    ):
+        if forbidden in models_text:
+            errors.append(f"{_rel(MODELS)} contains runtime replacement package-set model term: {forbidden}")
+
+    admitted = _capability_map(
+        _load_literal_assignment(STATE_ACTION_CONTRACT, "STATE_ACTION_ADMITTED_CAPABILITIES", errors),
+        "STATE_ACTION_ADMITTED_CAPABILITIES",
+        errors,
+    )
+    deferred = _capability_map(
+        _load_literal_assignment(STATE_ACTION_CONTRACT, "STATE_ACTION_DEFERRED_CAPABILITIES", errors),
+        "STATE_ACTION_DEFERRED_CAPABILITIES",
+        errors,
+    )
+    for capability in ("replacement_package_set_authority", "package_supersession_commit"):
+        if capability in admitted:
+            errors.append(f"{capability} must not be admitted by the docs-only replacement package-set freeze")
+    package_mutation = deferred.get("package_mutation_reconstruction")
+    if package_mutation is None:
+        errors.append("deferred capabilities missing package_mutation_reconstruction")
+    elif package_mutation.get("admitted") is not False:
+        errors.append("package_mutation_reconstruction must remain admitted false after replacement package-set freeze")
 
 
 def _check_qualitative_capability_boundary(errors: list[str]) -> None:
@@ -1889,6 +1985,7 @@ def main() -> int:
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
         PACKAGE_COMMIT_FREEZE,
+        PACKAGE_REPLACEMENT_SET_FREEZE,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
         GATE_B_IDEMPOTENCY_MIGRATION,
@@ -1925,6 +2022,7 @@ def main() -> int:
     _check_connector_dispatch_entry_freeze(errors)
     _check_package_mutation_freeze(errors)
     _check_package_commit_entry_freeze(errors)
+    _check_package_replacement_set_freeze(errors)
     _check_qualitative_capability_boundary(errors)
     _check_source_boundary_contract(errors)
     _check_mockup_truth_state_boundary(errors)

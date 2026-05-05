@@ -11,6 +11,7 @@ This artifact selects a future package lifecycle lane. It does not implement a r
 - implementation_branch: `codex/l3-package-supersession-commit-freeze`
 - predecessor runtime freeze: `122_PACKAGE_MUTATION_FREEZE.md`
 - predecessor runtime mode: `package_supersession_preview_only`
+- replacement authority prerequisite: `127_PACKAGE_REPLACEMENT_SET_FREEZE.md`
 - current admitted runtime: `package_supersession_preview_only` remains the only admitted package lifecycle runtime
 - current deferred capability: `package_mutation_reconstruction` remains deferred
 - evidence boundary: live source, tests, and `tools/l3-progress-check.py` outrank this document
@@ -23,7 +24,7 @@ The next package lifecycle question is narrowed to exactly this future mode:
 
 This is an implementation-entry freeze, not a runtime admission. It exists because the read-only preview route now proves package identity, payload identity, and downstream dependency inspection without side effects. A future commit path may be considered only if it preserves that immutable authority.
 
-The selected future mode is not in-place package mutation. It must be modeled as an immutable supersession lineage event that points from an existing package set to a separately proven replacement package set. Existing `L3OutputPackage` rows and existing package payload files remain immutable authority.
+The selected future mode is not in-place package mutation. It must be modeled as an immutable supersession lineage event that points from an existing package set to a separately proven replacement package set. Existing `L3OutputPackage` rows and existing package payload files remain immutable authority. Doc `127_PACKAGE_REPLACEMENT_SET_FREEZE.md` records the replacement package-set authority prerequisite; package supersession commit runtime remains blocked until that prerequisite is implemented and proven separately.
 
 ## Why This Lane
 
@@ -87,6 +88,7 @@ The model must not update or delete `L3OutputPackage` rows. It must not overwrit
 The current docs/proof slice is acceptable only when:
 
 - `126_PACKAGE_COMMIT_FREEZE.md` exists and selects only `package_supersession_commit_entry`;
+- `127_PACKAGE_REPLACEMENT_SET_FREEZE.md` exists and keeps replacement package-set authority as implementation-entry only;
 - `package_supersession_preview_only` remains the only admitted package lifecycle runtime;
 - `package_mutation_reconstruction` remains deferred in `backend/app/services/layer3_state_action_contract.py`;
 - no runtime route, service, model, migration, UI control, package row mutation, package payload write, or package commit behavior is added by this slice;
