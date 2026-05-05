@@ -180,8 +180,8 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
     else:
         required_terms = [
             "defer remaining authentication/security",
-            "merged PR #531 Gate B idempotency/material-preview-hash hardening",
-            "non-security state/proof/refactor slice",
+            "merged PR #533 state_action_contract hardening",
+            "non-security proof/state/refactor slice",
         ]
         for term in required_terms:
             if term not in next_required:
@@ -194,9 +194,9 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
     allowed_text = "\n".join(str(item) for item in allowed_actions)
     required_allowed = [
         "progress/proof/state drift checker",
-        "canonical state/action contract",
+        "state/action contract drift checker",
         "preview hash/idempotency follow-up",
-        "frontend session recovery",
+        "frontend server-contract consumption",
         "no-behavior-change service extraction",
     ]
     for term in required_allowed:
@@ -274,8 +274,8 @@ def _check_local_boundary(errors: list[str]) -> None:
     allowed_intro = "Allowed near-term next slices are narrow and proof-oriented, but not authentication/security work"
     if allowed_intro not in allowed:
         errors.append("Allowed Next Slices section no longer records near-term auth/security deferral")
-    if "PR `#531` already merged Gate B post-commit retry idempotency and material-preview hash hardening" not in allowed:
-        errors.append("Allowed Next Slices section no longer records merged PR #531 Gate B hardening status")
+    if "PR `#533` already merged server-derived `state_action_contract` hardening" not in allowed:
+        errors.append("Allowed Next Slices section no longer records merged PR #533 state/action contract hardening status")
 
     allowed_part, _, blocked_part = allowed.partition("Not allowed as immediate next slices from this freeze:")
     if not blocked_part:
@@ -284,8 +284,8 @@ def _check_local_boundary(errors: list[str]) -> None:
 
     required_near_term = [
         "Gate B idempotency/hash follow-up only if fresh proof finds a missed edge after merged PR `#531`",
-        "Frontend session recovery and Gate B draft-loss hardening",
-        "Canonical state/action contract hardening",
+        "Frontend server-contract consumption, session recovery, and Gate B draft-loss hardening",
+        "State/action contract drift checker only if fresh proof shows post-PR533 contract drift",
         "Preview hash/idempotency contract hardening beyond merged PR `#531`",
         "Progress/proof/state drift checker",
         "No-behavior-change service extraction",
@@ -318,26 +318,27 @@ def _check_progress_text_surfaces(errors: list[str]) -> None:
     required_by_file = {
         BOARD: [
             "As of `2026-05-05`",
-            "3fb7875ba7cc0325f8cdac0b1aca8d3df0bd44de",
+            "4d2bac8f68e52f7205210d19cce64576dc0384c4",
             "remaining authentication/security work is intentionally deferred",
             "PR `#531` now makes Gate B post-commit retry idempotency and material-preview hash hardening current-main bounded behavior",
-            "prefer non-security state/proof/refactor work",
+            "PR `#533` now makes server-derived `state_action_contract` hardening current-main bounded behavior",
+            "prefer non-security proof/state/refactor work",
         ],
         REFRESH_SPEC: [
-            "Post-PR531 `2026-05-05` progress/proof sync",
-            "3fb7875ba7cc0325f8cdac0b1aca8d3df0bd44de",
-            "remote state was refreshed only enough to settle PR `#531` merged/current-main status",
-            "remaining authentication/security work is intentionally deferred",
-            "PR `#531` makes Gate B post-commit retry idempotency and material-preview hash hardening current-main bounded behavior",
-            "near-term work should stay on non-security progress/proof/state/refactor surfaces",
+            "Post-PR533 `2026-05-05` progress/proof sync",
+            "4d2bac8f68e52f7205210d19cce64576dc0384c4",
+            "confirmed the PR `#533` implementation commit is merged",
+            "remaining authentication/security work is still intentionally deferred",
+            "PR `#533` makes server-derived `state_action_contract` metadata current-main bounded behavior",
+            "near-term work should stay on non-security proof/state/refactor surfaces",
             "python .\\tools\\l3-progress-check.py",
         ],
         PROGRESS_PROMPT: [
-            "post-PR531 progress/proof sync on `2026-05-05`",
-            "3fb7875ba7cc0325f8cdac0b1aca8d3df0bd44de",
+            "post-PR533 progress/proof sync on `2026-05-05`",
+            "4d2bac8f68e52f7205210d19cce64576dc0384c4",
             "remaining authentication/security work",
-            "current main includes PR `#531` as bounded Gate B post-commit retry idempotency and material-preview hash hardening",
-            "Prefer non-security progress/proof/state/idempotency/refactor work",
+            "current main includes PR `#533` as bounded server-derived `state_action_contract` hardening",
+            "Prefer non-security progress/proof/state/refactor work",
             "python .\\tools\\l3-progress-check.py",
         ],
     }
