@@ -23,6 +23,14 @@ from app.models.models import (
     L3Session,
 )
 from app.services.layer3_session_entry import (
+    SESSION_STATUS_ACTIVE_EXECUTION,
+    SESSION_STATUS_ACTIVE_LOADING,
+    SESSION_STATUS_ACTIVE_PLANNING,
+    SESSION_STATUS_COMPLETED,
+    SESSION_STATUS_COMPLETED_WITH_WARNINGS,
+    SESSION_STATUS_FAILED,
+    SESSION_STATUS_VALUES,
+    TERMINAL_SESSION_STATUS_VALUES,
     SessionEntryRequest,
     SnapshotMaterial,
     commit_selection,
@@ -30,6 +38,27 @@ from app.services.layer3_session_entry import (
     finalize_session,
     record_retrieval_event,
 )
+
+
+def test_layer3_session_status_vocabulary_is_canonical():
+    assert SESSION_STATUS_VALUES == frozenset(
+        {
+            SESSION_STATUS_ACTIVE_LOADING,
+            SESSION_STATUS_ACTIVE_PLANNING,
+            SESSION_STATUS_ACTIVE_EXECUTION,
+            SESSION_STATUS_COMPLETED,
+            SESSION_STATUS_COMPLETED_WITH_WARNINGS,
+            SESSION_STATUS_FAILED,
+        }
+    )
+    assert TERMINAL_SESSION_STATUS_VALUES == frozenset(
+        {
+            SESSION_STATUS_COMPLETED,
+            SESSION_STATUS_COMPLETED_WITH_WARNINGS,
+            SESSION_STATUS_FAILED,
+        }
+    )
+    assert TERMINAL_SESSION_STATUS_VALUES < SESSION_STATUS_VALUES
 
 
 def _make_session():

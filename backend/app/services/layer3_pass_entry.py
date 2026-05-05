@@ -25,6 +25,8 @@ from app.models.models import (
     uuid_str,
 )
 from app.services.layer3_session_entry import (
+    SESSION_STATUS_ACTIVE_EXECUTION,
+    SESSION_STATUS_ACTIVE_PLANNING,
     SESSION_STATUS_COMPLETED,
     SESSION_STATUS_COMPLETED_WITH_WARNINGS,
     SESSION_STATUS_FAILED,
@@ -57,9 +59,6 @@ def run_analysis(*args: Any, **kwargs: Any) -> Any:
 
     return _run_analysis(*args, **kwargs)
 
-
-SESSION_STATUS_ACTIVE_PLANNING = "active_planning"
-SESSION_STATUS_ACTIVE_EXECUTION = "active_execution"
 
 PLAN_STATUS_FORMED = "formed"
 PLAN_STATUS_APPROVED = "approved"
