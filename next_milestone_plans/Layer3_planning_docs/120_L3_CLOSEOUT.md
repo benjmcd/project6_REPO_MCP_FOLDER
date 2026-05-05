@@ -1,6 +1,6 @@
 # Layer 3 Merged-Main Closeout
 
-Status: bounded merged-main proof snapshot. Functional boundary evidence currently targets PR #550 at `project6-origin/main=4793d8d1`; later docs/proof synchronization lanes do not change the functional boundary or admit new runtime capability.
+Status: bounded merged-main proof snapshot. Functional boundary evidence currently targets PR #556 at `project6-origin/main=93fe525b`; later docs/proof synchronization lanes do not change the functional boundary or admit new runtime capability.
 
 This file is post-merge documentation/proof synchronization only. It is a bounded snapshot, not an evergreen manifest, and it does not replace live source/tests as authority. The package supersession preview row admits only the exact read-only preview route and does not admit broad package mutation/reconstruction. The replacement package-set authority row admits only the exact durable metadata authority record and does not admit replacement package rows or package payload writes. The package supersession commit entry row admits only the exact durable lineage record and does not admit package row mutation, package payload writes, replacement package row creation, UI controls, or broad package mutation/reconstruction. The qualitative/hybrid/RAG row admits only the exact single APS-document qualitative pass and does not admit broad qualitative, hybrid, RAG/vector, hidden LLM, source widening, connector, or package mutation behavior. The mockup truth-state row keeps mockups as target-state design/specification artifacts and does not admit full mockup activation.
 
@@ -8,10 +8,10 @@ This file is post-merge documentation/proof synchronization only. It is a bounde
 
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
 - snapshot_target_ref: `project6-origin/main`
-- functional_boundary_head: `4793d8d1`
+- functional_boundary_head: `93fe525b`
 - functional_boundary_role: last runtime-affecting Layer 3 boundary captured in this snapshot
-- snapshot_role: bounded proof snapshot after PR #550 durable Gate B idempotency claim hardening; not an evergreen manifest and not a self-updating current-main marker
-- latest_functional_boundary_pr: `#550`
+- snapshot_role: bounded proof snapshot after PR #556 package supersession commit lineage hardening; not an evergreen manifest and not a self-updating current-main marker
+- latest_functional_boundary_pr: `#556`
 - docs_sync_reference_pr: `#551`
 - docs_sync_reference_role: historical proof synchronization only; do not infer the live `project6-origin/main` SHA from this field.
 - current_main_rule: re-read live git and rerun `python .\tools\l3-progress-check.py` before new work; do not treat any SHA in this file as an evergreen current-main assertion.
@@ -25,7 +25,7 @@ Authority order for this closeout:
 4. `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` and `118_L3_GOAL_AUDIT.md`.
 5. Older planning docs and mockups only as target-state or historical context.
 
-Historical current-main proof after PR #538 remains retained for source-boundary, DTO-boundary, signed-reference, and session-status invariant checks; PR #540 package preview proof is additive and must not be treated as broad package mutation/reconstruction proof.
+Historical current-main proof after PR #538 remains retained for source-boundary, DTO-boundary, signed-reference, and session-status invariant checks; PR #540 package preview proof, PR #554 replacement package-set authority proof, and PR #556 package supersession commit lineage proof are additive and must not be treated as broad package mutation/reconstruction proof.
 
 ## Prompt-To-Artifact Checklist
 
@@ -50,7 +50,7 @@ Historical current-main proof after PR #538 remains retained for source-boundary
 | Broad source/upload expansion | Not implemented; remains blocked | `123_SOURCE_EXPANSION_FREEZE.md`; `backend/app/services/layer3_source_boundary.py`; `backend/tests/test_layer3_source_boundary.py`; progress checker verifies supported and unsupported source classes plus the `supported_source_classes_only` contract | Only `dataset_version` and `aps_content_document` are admitted. |
 | Qualitative/hybrid/RAG execution | Exact single APS-document qualitative pass implemented; broad qualitative/hybrid/RAG remains blocked | `124_QUAL_HYBRID_RAG_FREEZE.md`; `backend/app/services/layer3_qual_aps_execution.py`; `qualitative_hybrid_rag_boundary_contract()` exposes `single_aps_doc_qualitative_pass_only`; `backend/tests/test_layer3_qual_aps_execution.py`; `test_qualitative_hybrid_rag_boundary_contract_keeps_broad_execution_fail_closed`; `backend/app/services/layer3_state_action_contract.py`; progress checker verifies exact/broad split | Only `single_aps_doc_qualitative_pass` is admitted. Broad qualitative execution, qualitative cohort execution, comparative execution, cross-document synthesis, hybrid execution, RAG/vector execution, hidden LLM planning, qualitative package/handoff/export, source widening, connector/destination dispatch, and package mutation/reconstruction remain blocked. |
 | Full mockup activation | Not implemented; remains blocked with explicit truth-state contract | `125_MOCKUP_TRUTH_STATE_FREEZE.md`; `backend/app/services/layer3_mockup_boundary.py`; `mockup_truth_state_contract()` exposes `mockups_target_state_only`; `backend/app/services/layer3_state_action_contract.py` keeps `full_mockup_activation` admitted false; `backend/tests/test_layer3_mockup_boundary.py`; `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`; `118_L3_GOAL_AUDIT.md` | Mockups are target-state artifacts and do not admit runtime behavior. full mockup activation remains blocked until a later lane names a live source owner, route/API contract, server authority contract, headed/headless browser proof, and negative invariant proof. |
-| Authority-boundary preservation | Preserved | `python .\tools\l3-progress-check.py` must pass; focused Layer 3 backend suite must pass; broad capabilities remain `admitted: false` | This is functional-boundary proof through PR #550 plus historical docs/proof synchronization, not proof of deferred broad lanes. |
+| Authority-boundary preservation | Preserved | `python .\tools\l3-progress-check.py` must pass; focused Layer 3 backend suite must pass; broad capabilities remain `admitted: false` | This is functional-boundary proof through PR #556 plus historical docs/proof synchronization, not proof of deferred broad lanes. |
 
 ## Validation Evidence
 
@@ -191,6 +191,15 @@ PR #550 durable Gate B idempotency proof:
 Local focused Layer 3 backend suite: 278 passed, 4 warnings.
 Pre-merge PR #550 checks: backend-layer3-api SUCCESS; test SUCCESS.
 Merged main head after PR #550: 4793d8d1.
+Post-merge progress proof: Layer 3 progress state check: PASS.
+```
+
+PR #556 package supersession commit lineage proof:
+
+```text
+Local focused Layer 3 backend suite: 286 passed, 4 warnings.
+Pre-merge PR #556 checks: backend-layer3-api SUCCESS; test SUCCESS.
+Merged main head after PR #556: 93fe525b.
 Post-merge progress proof: Layer 3 progress state check: PASS.
 ```
 
