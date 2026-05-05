@@ -39,6 +39,12 @@ L3_SESSION_STATUS_VALUES = (
     L3_SESSION_STATUS_COMPLETED_WITH_WARNINGS,
     L3_SESSION_STATUS_FAILED,
 )
+L3_GATE_B_IDEMPOTENCY_STATUS_CLAIMED = "claimed"
+L3_GATE_B_IDEMPOTENCY_STATUS_COMMITTED = "committed"
+L3_GATE_B_IDEMPOTENCY_STATUS_VALUES = (
+    L3_GATE_B_IDEMPOTENCY_STATUS_CLAIMED,
+    L3_GATE_B_IDEMPOTENCY_STATUS_COMMITTED,
+)
 
 
 class TimestampMixin:
@@ -805,6 +811,36 @@ class L3SelectionManifest(Base):
 
     session: Mapped[L3Session] = relationship(back_populates="manifests")
     descriptors: Mapped[list["L3Descriptor"]] = relationship(back_populates="selection_manifest", cascade="all, delete-orphan")
+
+
+class L3GateBIdempotencyKey(Base):
+    __tablename__ = "l3_gate_b_idempotency_key"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_l3_gate_b_idempotency_client_request"),
+        CheckConstraint(
+            f"status IN ({', '.join(repr(status) for status in L3_GATE_B_IDEMPOTENCY_STATUS_VALUES)})",
+            name="ck_l3_gate_b_idempotency_status",
+        ),
+        Index("ix_l3_gate_b_idempotency_session", "session_id"),
+        Index("ix_l3_gate_b_idempotency_status", "status"),
+    )
+
+    gate_b_idempotency_key_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    request_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    preflight_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_set_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    material_preview_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    material_preview_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    gate_b_decision_manifest_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default=L3_GATE_B_IDEMPOTENCY_STATUS_CLAIMED)
+    session_id: Mapped[str | None] = mapped_column(ForeignKey("l3_session.session_id"))
+    selection_manifest_id: Mapped[str | None] = mapped_column(ForeignKey("l3_selection_manifest.selection_manifest_id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    session: Mapped[L3Session | None] = relationship()
+    selection_manifest: Mapped[L3SelectionManifest | None] = relationship()
 
 
 class L3Descriptor(Base):
