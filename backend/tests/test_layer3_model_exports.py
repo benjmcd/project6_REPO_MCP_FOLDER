@@ -24,6 +24,7 @@ L3_MODEL_NAMES = (
     "L3PackageSupersessionCommit",
     "L3PassRun",
     "L3ReconciliationRecord",
+    "L3ReplacementPackageArtifactManifest",
     "L3ReplacementPackageSetAuthority",
     "L3RetrievalEvent",
     "L3SelectionManifest",

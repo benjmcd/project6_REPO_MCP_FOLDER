@@ -606,6 +606,7 @@ def _workbench_state_action_contract() -> dict[str, Any]:
         package_supersession_preview_operator_decision="preview_package_supersession",
         replacement_package_set_authority_operator_decision="record_replacement_package_set_authority",
         package_supersession_commit_operator_decision="commit_package_supersession",
+        replacement_package_artifact_manifest_operator_decision="record_replacement_package_artifact_manifest",
         terminal_pass_statuses=EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES,
     )
 
