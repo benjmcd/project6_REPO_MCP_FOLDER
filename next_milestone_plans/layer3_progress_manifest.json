@@ -155,7 +155,8 @@
       "Current `main` now also includes PR #584/commit 9cdd1e88 as no-behavior-change plan-flow request contract extraction proof: `backend/app/services/layer3_plan_flow_contract.py` owns the plan approval, plan revision, and execution selection forbidden-field contracts while `backend/app/services/layer3_workbench.py` keeps emitted plan-flow behavior unchanged. PR #584 does not admit broad execution, package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior.",
       "This planning/control slice adds `128_PACKAGE_REPLACEMENT_ARTIFACT_FREEZE.md` as a docs-only package lifecycle prerequisite: `replacement_package_artifact_authority_only` remains planning-only until a later implementation-entry freeze chooses exactly one artifact authority mode. It does not admit replacement package artifact generation, replacement package row creation, payload writes, rendered package mutation controls, connector/destination dispatch, provider/public URL support, source widening, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior.",
       "This bounded runtime slice implements only `replacement_package_artifact_manifest_only` under `129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE.md`: server-side manifest verification of existing replacement refs/hashes through `/api/v1/layer3/package/replacement-artifact/manifest/record`, `backend/app/services/layer3_replacement_package_artifact_manifest.py`, `L3ReplacementPackageArtifactManifest`, and `0020_layer3_replacement_package_artifact_manifest.py`. It does not implement replacement package artifact generation, replacement package row creation, package row mutation, package payload write, rendered package mutation control, connector/destination dispatch, provider/public URL support, source widening, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior.",
-      "This planning/control slice adds `130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md` as a docs-only package lifecycle namespace prerequisite: `replacement_package_namespace_rows` remains planning/control-only with `selected_namespace_design: separate_replacement_output_package_table`, preserving source `L3OutputPackage` rows and `uq_l3_output_package_session_kind`. It does not admit replacement package row creation, source-table row reuse, model/migration changes, routes, package payload writes, rendered controls, connector/destination dispatch, provider/public URL support, source widening, broad qualitative/hybrid/RAG execution, full mockup activation, auth/security behavior, or broad package mutation/reconstruction."
+      "This planning/control slice adds `130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md` as a docs-only package lifecycle namespace prerequisite: `replacement_package_namespace_rows` remains planning/control-only with `selected_namespace_design: separate_replacement_output_package_table`, preserving source `L3OutputPackage` rows and `uq_l3_output_package_session_kind`. It does not admit replacement package row creation, source-table row reuse, model/migration changes, routes, package payload writes, rendered controls, connector/destination dispatch, provider/public URL support, source widening, broad qualitative/hybrid/RAG execution, full mockup activation, auth/security behavior, or broad package mutation/reconstruction.",
+      "This implementation-entry slice adds `131_PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE.md` as the future contract for `replacement_package_namespace_rows`: route, owner service, model, table, migration, request/response DTOs, idempotency basis, stale-authority behavior, and tests. It does not admit runtime route creation, replacement package row creation, model/migration changes, payload writes, rendered controls, connector/destination dispatch, provider/public URL support, source widening, broad qualitative/hybrid/RAG execution, full mockup activation, auth/security behavior, or broad package mutation/reconstruction."
     ],
     "state_notes": [
       "Current main after PR #227 includes the bounded selected-pass result-review endpoint: POST /api/v1/layer3/execution/result/review records one operator review decision against one terminal selected pass after result/status authority, writes only existing L3PassRun/L3Session JSON summaries, and still does not admit package review, handoff/export, rerun/recovery, new execution, source/schema/runtime widening, UI changes, local upload/directory ingestion, qualitative/hybrid/RAG/vector execution, or full mockup activation.",
@@ -179,6 +180,7 @@
       "Docs 122, 126, 127, and 129 govern the current package lifecycle runtimes only as read-only `package_supersession_preview_only`, metadata-only `replacement_package_set_authority`, lineage-only `package_supersession_commit_entry`, and manifest-only `replacement_package_artifact_manifest_only`. Doc `128_PACKAGE_REPLACEMENT_ARTIFACT_FREEZE.md` is planning/control only and blocks replacement package artifact generation until a later freeze names that surface.",
       "Doc `129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE.md` governs only `replacement_package_artifact_manifest_only`: server-side manifest verification of existing replacement refs/hashes with an immutable manifest row. Replacement package artifact generation, replacement package row creation, payload writes, rendered package mutation controls, and broad package mutation/reconstruction remain blocked.",
       "Doc `130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md` governs only planning/control `replacement_package_namespace_rows`: future replacement package rows must use `selected_namespace_design: separate_replacement_output_package_table` while preserving `uq_l3_output_package_session_kind`; no replacement rows, source-table row reuse, model/migration changes, routes, payload writes, rendered controls, or broad package mutation/reconstruction are live.",
+      "Doc `131_PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE.md` governs only implementation-entry contract terms for `replacement_package_namespace_rows`: `/api/v1/layer3/package/replacement-namespace/record`, `backend/app/services/layer3_replacement_package_namespace.py`, `L3ReplacementOutputPackage`, `l3_replacement_output_package`, `0021_layer3_replacement_output_package.py`, strict DTOs, idempotency basis, stale-authority behavior, and tests remain future contract terms only.",
       "Docs 92/93 are current-main planning/control governance by themselves. PR #460 separately implements only the backend/API associated-cohort internal handoff/export prepare-only decision after exact PR #456 approved submit authority. This branch separately projects and proves the rendered prepare path over that server authority; it does not implement downstream dispatch."
     ],
     "authoritative_file_refs": [
@@ -5199,11 +5201,41 @@
       "broad package mutation/reconstruction"
     ]
   },
-  "branch_state_summary": "Post-PR584 current-main progress/proof sync plus package replacement artifact manifest-only runtime and package replacement namespace planning/control freeze: PR #535/commit 7d07477a made the exact single APS-document qualitative execution path live, PR #558 proof-hardened qualitative owner-service error mapping, PR #559 synchronized docs/proof, PR #584/commit 9cdd1e88 merged no-behavior-change plan-flow request contract extraction proof, the current bounded package runtime admits only `replacement_package_artifact_manifest_only` through server-side manifest verification of existing replacement refs/hashes, and doc `130` freezes only future `replacement_package_namespace_rows` as a separate replacement output package table design. Broad qualitative/hybrid/RAG, connector/destination, provider/public URL, source/upload expansion, authentication/security, source/schema/runtime widening, package mutation/reconstruction, replacement package artifact generation, replacement package row creation, package payload writes, and full mockup activation remain deferred.",
+  "package_replacement_namespace_entry_freeze": {
+    "mode": "replacement_package_namespace_rows",
+    "source_gate": "131_PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE",
+    "live_behavior_change": false,
+    "future_route": "/api/v1/layer3/package/replacement-namespace/record",
+    "future_owner_service": "backend/app/services/layer3_replacement_package_namespace.py",
+    "future_model": "L3ReplacementOutputPackage",
+    "future_table": "l3_replacement_output_package",
+    "future_migration": "backend/alembic/versions/0021_layer3_replacement_output_package.py",
+    "future_request_dto": "Layer3ReplacementPackageNamespaceRecordRequest",
+    "future_response_dto": "Layer3ReplacementPackageNamespaceRecordResponse",
+    "accepted_scope": "implementation-entry contract terms only for future replacement package namespace rows",
+    "blocked_scope": [
+      "runtime route changes",
+      "model or migration changes",
+      "replacement package row creation",
+      "replacement L3OutputPackage row creation in the source table",
+      "package payload write",
+      "package payload rewrite",
+      "rendered package mutation controls",
+      "provider/public URL support",
+      "connector/destination dispatch",
+      "source widening",
+      "broad qualitative/hybrid/RAG execution",
+      "full mockup activation",
+      "authentication/security hardening",
+      "broad package mutation/reconstruction"
+    ]
+  },
+  "branch_state_summary": "Post-PR584 current-main progress/proof sync plus package replacement artifact manifest-only runtime, package replacement namespace planning/control freeze, and package replacement namespace implementation-entry freeze: PR #535/commit 7d07477a made the exact single APS-document qualitative execution path live, PR #558 proof-hardened qualitative owner-service error mapping, PR #559 synchronized docs/proof, PR #584/commit 9cdd1e88 merged no-behavior-change plan-flow request contract extraction proof, the current bounded package runtime admits only `replacement_package_artifact_manifest_only` through server-side manifest verification of existing replacement refs/hashes, doc `130` freezes only future `replacement_package_namespace_rows` as a separate replacement output package table design, and doc `131` freezes only future namespace implementation-entry contract terms. Broad qualitative/hybrid/RAG, connector/destination, provider/public URL, source/upload expansion, authentication/security, source/schema/runtime widening, package mutation/reconstruction, replacement package artifact generation, replacement package row creation, package payload writes, and full mockup activation remain deferred.",
   "authoritative_file_refs": [
     "next_milestone_plans/Layer3_planning_docs/104_signed-ui.md",
     "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md",
     "next_milestone_plans/Layer3_planning_docs/130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md",
+    "next_milestone_plans/Layer3_planning_docs/131_PACKAGE_REPLACEMENT_NAMESPACE_ENTRY_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/106_DURABLE_FREEZE.md",
     "next_milestone_plans/Layer3_planning_docs/107_DURABLE_CONTRACT.md",
     "next_milestone_plans/Layer3_planning_docs/108_DURABLE_ENTRY.md",
