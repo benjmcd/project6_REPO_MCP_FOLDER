@@ -22,7 +22,7 @@ This file is not an implementation freeze and does not admit new runtime behavio
 | Connector/destination dispatch | Not implemented; planning/control only | `112_CONNECTOR_DISPATCH_FREEZE.md`; `113_CONNECTOR_DISPATCH_CONTRACT.md`; `105_deferred-gates.md`; `backend/app/services/layer3_state_action_contract.py` keeps `connector_destination_dispatch` unadmitted. | Requires a later implementation-entry freeze selecting exactly one dispatch mode and concrete connector/destination authority. |
 | Package mutation/reconstruction | Not implemented; blocked | `105_deferred-gates.md`; `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`; `backend/app/services/layer3_state_action_contract.py` keeps `package_mutation_reconstruction` unadmitted. | Existing bounded package construction/submit is not package mutation, reconstruction, amendment, supersession, or payload rewrite. |
 | Broad source/upload expansion | Not implemented; blocked | `backend/app/services/layer3_workbench.py` supports only `dataset_version` and `aps_content_document`; unsupported classes include `rag_vector_index`, `arbitrary_local_directory`, `broad_file_upload`, `web_connector`, and `unbounded_runtime_db`. | Requires a later source/runtime widening freeze before local upload, directory source, RAG/vector source, or web connector source work. |
-| Qualitative/hybrid/RAG execution | Not implemented; planning/control only | `114_QUAL_APS_EXEC_FREEZE.md`; `115_QUAL_APS_EXEC_CONTRACT.md`; `backend/app/services/layer3_workbench.py` feature flags keep qualitative, hybrid, and RAG/vector execution false; tests assert deferred capability posture. | Qualitative APS execution requires a later implementation-entry freeze for exactly `single_aps_doc_qualitative_pass`; hybrid and RAG/vector remain broader no-go lanes. |
+| Qualitative/hybrid/RAG execution | Runtime not implemented; single APS-document qualitative entry freeze selected branch-locally | `114_QUAL_APS_EXEC_FREEZE.md`; `115_QUAL_APS_EXEC_CONTRACT.md`; `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md`; `backend/app/services/layer3_workbench.py` feature flags keep qualitative, hybrid, and RAG/vector execution false; tests assert deferred capability posture. | `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md` narrows the future first qualitative lane to `single_aps_doc_qualitative_pass`; it does not implement runtime behavior. Hybrid and RAG/vector remain broader no-go lanes. |
 | Full mockup activation | Not implemented; blocked | `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` states mockups are target-state design/spec artifacts and cannot admit broad features. `e2e/layer3-workbench.spec.js` proves bounded rendered behavior only. | Full mockup activation would require separate freezes per capability and browser proof; current UI slices are not full mockup behavior. |
 | Authority-boundary preservation | Current branch preserves it | Deferred capabilities remain `admitted: false`; local proof includes backend focused tests, progress checker, and headed/headless browser proof. | Any future lane must re-run this audit against fresh source before broadening scope. |
 
@@ -37,7 +37,7 @@ The following named goal items remain intentionally unavailable because current 
 - generic connector/destination dispatch;
 - package mutation/reconstruction;
 - broad source/upload expansion;
-- qualitative/hybrid/RAG execution;
+- qualitative/hybrid/RAG execution runtime behavior;
 - full mockup activation;
 - authentication/security hardening.
 
@@ -50,7 +50,8 @@ The next runtime implementation is blocked unless a later freeze selects exactly
 Supported next actions are:
 
 - review/merge preparation for the current bounded branch;
-- a docs/proof-only implementation-entry freeze for exactly one deferred lane if live evidence justifies it;
+- a future runtime implementation of `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md` if the next lane is qualitative APS execution;
+- a docs/proof-only implementation-entry freeze for another deferred lane if live evidence justifies it;
 - additional narrow proof/state/refactor hardening if fresh source inspection finds a concrete uncovered edge.
 
 Unsupported next actions are:
@@ -58,6 +59,6 @@ Unsupported next actions are:
 - broad connector/destination dispatch;
 - package rewrite/reconstruction;
 - broad upload/local-directory/RAG/vector source expansion;
-- qualitative/hybrid/RAG execution implementation;
+- broad qualitative execution outside the `single_aps_doc_qualitative_pass` freeze, hybrid execution, or RAG execution implementation;
 - full mockup activation;
 - authentication/security work while it remains deferred.
