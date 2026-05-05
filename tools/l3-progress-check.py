@@ -18,12 +18,14 @@ PLAYWRIGHT_WORKFLOW = ROOT / ".github" / "workflows" / "playwright.yml"
 LAYER3_API_REQUIREMENTS = ROOT / "backend" / "tests" / "requirements-layer3-api.txt"
 BROWSER_REQUIREMENTS = ROOT / "backend" / "tests" / "requirements-browser.txt"
 PLANNING_DOCS = ROOT / "next_milestone_plans" / "Layer3_planning_docs"
+DEFERRED_GATES = PLANNING_DOCS / "105_deferred-gates.md"
 QUAL_APS_FREEZE = PLANNING_DOCS / "114_QUAL_APS_EXEC_FREEZE.md"
 LOCAL_BOUNDARY = PLANNING_DOCS / "116_SECURITY_SOURCE_DELIVERY_BOUNDARY_FREEZE.md"
 SYNTHESIS_BOUNDARY = PLANNING_DOCS / "117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md"
 GOAL_AUDIT = PLANNING_DOCS / "118_L3_GOAL_AUDIT.md"
 QUAL_APS_ENTRY_FREEZE = PLANNING_DOCS / "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md"
 CLOSEOUT_DOC = PLANNING_DOCS / "120_L3_CLOSEOUT.md"
+CONNECTOR_ENTRY_FREEZE = PLANNING_DOCS / "121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md"
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -402,6 +404,73 @@ def _check_local_boundary(errors: list[str]) -> None:
             errors.append(f"blocked term appears in allowed near-term list: {term}")
         if term not in blocked_part:
             errors.append(f"immediate no-go list missing blocked term: {term}")
+
+
+def _check_connector_dispatch_entry_freeze(errors: list[str]) -> None:
+    entry_text = _read_required_text(CONNECTOR_ENTRY_FREEZE, errors)
+    required_entry_terms = [
+        "Status: implementation-entry freeze only for `internal_dispatch_record_only`",
+        "selected_dispatch_mode: `internal_dispatch_record_only`",
+        "- external connector invocation",
+        "- destination write",
+        "- connector-run creation",
+        "- provider/public URL support",
+        "- package mutation/reconstruction",
+        "- broad source/upload expansion",
+        "- qualitative/hybrid/RAG execution",
+        "- full mockup activation",
+        "L3ReconciliationRecord.summary_json",
+        "operator_decision` must be exactly `record_internal_connector_dispatch`",
+        "must reject these before service mutation",
+        "authentication/security scope reopening",
+    ]
+    for term in required_entry_terms:
+        if term not in entry_text:
+            errors.append(f"{_rel(CONNECTOR_ENTRY_FREEZE)} missing connector entry term: {term}")
+
+    required_doc_terms = {
+        DEFERRED_GATES: [
+            "121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md",
+            "`internal_dispatch_record_only` as the next implementation-entry candidate",
+            "Runtime implementation is not admitted by this file",
+            "`single_named_connector_dispatch` and `single_named_destination_dispatch` remain blocked",
+        ],
+        GOAL_AUDIT: [
+            "121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md",
+            "implementation-entry freeze selected for the next narrow lane",
+            "Only `internal_dispatch_record_only` is selected for a future code slice",
+            "External connector invocation, destination writes, generic downstream dispatch",
+        ],
+        CLOSEOUT_DOC: [
+            "generic connector/destination dispatch",
+            "package mutation/reconstruction",
+            "broad source/upload expansion",
+            "full mockup activation",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing connector entry term: {term}")
+
+    admitted = _capability_map(
+        _load_literal_assignment(STATE_ACTION_CONTRACT, "STATE_ACTION_ADMITTED_CAPABILITIES", errors),
+        "STATE_ACTION_ADMITTED_CAPABILITIES",
+        errors,
+    )
+    deferred = _capability_map(
+        _load_literal_assignment(STATE_ACTION_CONTRACT, "STATE_ACTION_DEFERRED_CAPABILITIES", errors),
+        "STATE_ACTION_DEFERRED_CAPABILITIES",
+        errors,
+    )
+    connector = deferred.get("connector_destination_dispatch")
+    if connector is None:
+        errors.append("deferred capabilities missing connector_destination_dispatch")
+    elif connector.get("admitted") is not False:
+        errors.append("connector_destination_dispatch must remain admitted false until runtime code is added")
+    if "connector_destination_dispatch" in admitted:
+        errors.append("connector_destination_dispatch must not appear in admitted capabilities for the entry-freeze slice")
 
 
 def _check_qualitative_capability_boundary(errors: list[str]) -> None:
@@ -945,12 +1014,14 @@ def main() -> int:
         PLAYWRIGHT_WORKFLOW,
         LAYER3_API_REQUIREMENTS,
         BROWSER_REQUIREMENTS,
+        DEFERRED_GATES,
         QUAL_APS_FREEZE,
         LOCAL_BOUNDARY,
         SYNTHESIS_BOUNDARY,
         GOAL_AUDIT,
         QUAL_APS_ENTRY_FREEZE,
         CLOSEOUT_DOC,
+        CONNECTOR_ENTRY_FREEZE,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
         LAYER3_API,
@@ -972,6 +1043,7 @@ def main() -> int:
         _check_current_decision(manifest, errors)
         _check_referenced_paths(manifest, errors)
     _check_local_boundary(errors)
+    _check_connector_dispatch_entry_freeze(errors)
     _check_qualitative_capability_boundary(errors)
     _check_source_boundary_contract(errors)
     _check_signed_reference_state_guard(errors)

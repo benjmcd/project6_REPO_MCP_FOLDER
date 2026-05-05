@@ -12,9 +12,9 @@ Current-main docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` named the im
 
 Current-main docs `110_PROVIDER_URL_FREEZE.md` and `111_PROVIDER_URL_CONTRACT.md` freeze provider/public URL behavior as not admitted. They require a future implementation-entry freeze to choose exactly one provider/public mode and prove provider/object-store authority, ACL/expiry/revocation/header/security behavior, leakage controls, and tests before code.
 
-Current-main docs `112_CONNECTOR_DISPATCH_FREEZE.md` and `113_CONNECTOR_DISPATCH_CONTRACT.md` freeze connector/destination/generic downstream dispatch behavior as not admitted. They require a future implementation-entry freeze to choose exactly one dispatch mode and prove connector/destination authority, lifecycle, idempotency, authorization, receipt/audit, failure, and test behavior before code.
+Current-main docs `112_CONNECTOR_DISPATCH_FREEZE.md` and `113_CONNECTOR_DISPATCH_CONTRACT.md` freeze connector/destination/generic downstream dispatch behavior as not admitted. Doc `121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md` now selects `internal_dispatch_record_only` as the only implementation-entry candidate for the next connector lane, but it does not implement runtime behavior and does not admit external connector invocation, destination writes, provider/public URLs, package mutation/reconstruction, source widening, qualitative/hybrid/RAG execution, or full mockup activation.
 
-Current branch docs `114_QUAL_APS_EXEC_FREEZE.md`, `115_QUAL_APS_EXEC_CONTRACT.md`, and `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md` freeze and narrow qualitative APS content document execution to the one initial `single_aps_doc_qualitative_pass` mode. That exact mode is implemented branch-locally; broader qualitative execution, hybrid execution, RAG/vector execution, qualitative package/handoff/export, and hidden LLM planning remain not admitted.
+Current-main docs `114_QUAL_APS_EXEC_FREEZE.md`, `115_QUAL_APS_EXEC_CONTRACT.md`, and `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md` freeze and narrow qualitative APS content document execution to the one initial `single_aps_doc_qualitative_pass` mode. That exact mode is implemented on current main; broader qualitative execution, hybrid execution, RAG/vector execution, qualitative package/handoff/export, and hidden LLM planning remain not admitted.
 
 This file does not implement deferred behavior. It defines the minimum questions, blockers, and proof gates required before any of the following can become an implementation lane:
 
@@ -41,12 +41,12 @@ This lane must stay separate from same-origin signed references. A same-origin s
 
 ## Connector/Destination Dispatch
 
-Current decision: planning/control frozen by docs `112`/`113`; implementation not admitted.
+Current decision: planning/control frozen by docs `112`/`113`; doc `121` selects `internal_dispatch_record_only` as the next implementation-entry candidate. Runtime implementation is not admitted by this file.
 
-Implementation cannot begin until these are specified:
+Implementation cannot begin until the `121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md` constraints are followed and these are specified or explicitly kept blocked:
 
 - destination model and allowed destination ids;
-- exact dispatch mode: `internal_dispatch_record_only`, `single_named_connector_dispatch`, or `single_named_destination_dispatch`;
+- exact dispatch mode: `internal_dispatch_record_only` for the first lane; `single_named_connector_dispatch` and `single_named_destination_dispatch` remain blocked;
 - connector-run lifecycle;
 - server-side connector/destination allowlist and configuration authority;
 - retry, cancel, and failure semantics;
