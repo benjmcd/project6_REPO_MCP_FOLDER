@@ -356,10 +356,50 @@ def record_used_signed_reference(
                 next_allowed_actions=["regenerate_external_export_download_signed_reference"],
             )
 
-        token_row.use_count += 1
-        token_row.state = SIGNED_REFERENCE_TOKEN_STATE_USED
-        token_row.last_used_at = now
-        token_row.updated_at = now
+        consumed = (
+            db.query(L3SignedReferenceToken)
+            .filter(
+                L3SignedReferenceToken.signed_reference_token_id == token_row.signed_reference_token_id,
+                L3SignedReferenceToken.state == SIGNED_REFERENCE_TOKEN_STATE_READY,
+                L3SignedReferenceToken.use_count < L3SignedReferenceToken.max_use_count,
+            )
+            .update(
+                {
+                    L3SignedReferenceToken.use_count: L3SignedReferenceToken.use_count + 1,
+                    L3SignedReferenceToken.state: SIGNED_REFERENCE_TOKEN_STATE_USED,
+                    L3SignedReferenceToken.last_used_at: now,
+                    L3SignedReferenceToken.updated_at: now,
+                },
+                synchronize_session=False,
+            )
+        )
+        if consumed != 1:
+            db.rollback()
+            audit = L3SignedReferenceAuditEvent(
+                signed_reference_audit_event_id=uuid_str(),
+                signed_reference_token_id=token_row.signed_reference_token_id,
+                event_type="use",
+                event_status="rejected",
+                request_id=request_id,
+                authority_hash=authority_hash,
+                reason_code="single_use_replay_denied",
+                event_payload_json={
+                    "use_count": token_row.use_count,
+                    "max_use_count": token_row.max_use_count,
+                },
+                created_at=now,
+            )
+            db.add(audit)
+            db.commit()
+            raise SignedReferenceStateError(
+                "external_export_download_signed_reference_replay_denied",
+                "Signed delivery reference token has already been used.",
+                blocked_fields=["signed_reference_token"],
+                next_allowed_actions=["regenerate_external_export_download_signed_reference"],
+            )
+
+        db.flush()
+        db.refresh(token_row)
         receipt = L3SignedReferenceReceipt(
             signed_reference_receipt_id=uuid_str(),
             signed_reference_token_id=token_row.signed_reference_token_id,

@@ -28,10 +28,16 @@ STATE_ACTION_CONTRACT = (
 SOURCE_BOUNDARY_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_boundary.py"
 )
+SIGNED_REFERENCE_STATE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_signed_reference_state.py"
+)
 WORKBENCH_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_workbench.py"
 )
 SOURCE_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_source_boundary.py"
+SIGNED_REFERENCE_STATE_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_signed_reference_state.py"
+)
 
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 
@@ -576,17 +582,17 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "backend/tests/test_layer3_source_boundary.py",
         ],
         GOAL_AUDIT: [
-            "updated after `cb88d923`",
+            "updated after same-origin signed-reference service proof hardening",
             "backend/app/services/layer3_source_boundary.py",
             "backend/tests/test_layer3_source_boundary.py",
             "does not widen source classes",
-            "255 passed",
+            "260 passed",
         ],
         BRANCH_CLOSEOUT: [
-            "Status: local branch closeout for `codex/l3-frontend-session-recovery` after `94ddf72d`.",
+            "Status: local branch closeout for `codex/l3-frontend-session-recovery` after same-origin signed-reference service proof hardening.",
             "review/merge preparation only",
             "backend/app/services/layer3_source_boundary.py",
-            "255 passed, 4 warnings",
+            "260 passed, 4 warnings",
             "Layer 3 progress state check: PASS",
             "generic connector/destination dispatch",
             "package mutation/reconstruction",
@@ -600,6 +606,56 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing source-boundary term: {term}")
+
+
+def _check_signed_reference_state_guard(errors: list[str]) -> None:
+    service_text = _read_required_text(SIGNED_REFERENCE_STATE_SERVICE, errors)
+    for term in (
+        "def record_used_signed_reference(",
+        "L3SignedReferenceToken.state == SIGNED_REFERENCE_TOKEN_STATE_READY",
+        "L3SignedReferenceToken.use_count < L3SignedReferenceToken.max_use_count",
+        "synchronize_session=False",
+        "external_export_download_signed_reference_replay_denied",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(SIGNED_REFERENCE_STATE_SERVICE)} missing signed-reference guard term: {term}")
+
+    test_text = _read_required_text(SIGNED_REFERENCE_STATE_TEST, errors)
+    for term in (
+        "test_record_generated_signed_reference_persists_sanitized_durable_state",
+        "test_single_use_reference_records_one_delivery_and_rejects_replay",
+        "test_revoked_reference_fails_closed_and_records_rejected_audit",
+        "test_expired_reference_fails_closed_and_marks_token_expired",
+        "test_concurrent_single_use_reference_does_not_double_deliver",
+        "INTERNAL_ARTIFACT_REF_PLACEHOLDER",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(SIGNED_REFERENCE_STATE_TEST)} missing signed-reference proof term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: [
+            "backend/app/services/layer3_signed_reference_state.py",
+            "backend/tests/test_layer3_signed_reference_state.py",
+            "atomic conditional update",
+        ],
+        GOAL_AUDIT: [
+            "backend/app/services/layer3_signed_reference_state.py",
+            "backend/tests/test_layer3_signed_reference_state.py",
+            "concurrent single-use proof",
+            "260 passed",
+        ],
+        BRANCH_CLOSEOUT: [
+            "backend/app/services/layer3_signed_reference_state.py",
+            "backend/tests/test_layer3_signed_reference_state.py",
+            "260 passed, 4 warnings",
+            "same-origin signed-reference service proof",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing signed-reference guard term: {term}")
 
 
 def _check_progress_text_surfaces(errors: list[str]) -> None:
@@ -676,6 +732,8 @@ def main() -> int:
         SOURCE_BOUNDARY_SERVICE,
         WORKBENCH_SERVICE,
         SOURCE_BOUNDARY_TEST,
+        SIGNED_REFERENCE_STATE_SERVICE,
+        SIGNED_REFERENCE_STATE_TEST,
     ):
         _require_file(path, errors)
 
@@ -689,6 +747,7 @@ def main() -> int:
     _check_local_boundary(errors)
     _check_qualitative_capability_boundary(errors)
     _check_source_boundary_contract(errors)
+    _check_signed_reference_state_guard(errors)
     _check_progress_text_surfaces(errors)
     _check_ci_layer3_backend_guardrail(errors)
 
