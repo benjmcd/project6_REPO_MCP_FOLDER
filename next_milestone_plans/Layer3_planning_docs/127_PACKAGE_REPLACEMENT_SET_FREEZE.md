@@ -2,7 +2,7 @@
 
 Status: implementation-entry freeze plus bounded runtime contract for `replacement_package_set_authority`.
 
-This artifact resolves the prerequisite discovered after `126_PACKAGE_COMMIT_FREEZE.md`: a package supersession commit cannot be implemented until the repo has an authority model for a replacement immutable package set. The exact runtime admitted by this contract is `POST /api/v1/layer3/package/replacement-set/record`, backed by `backend/app/services/layer3_replacement_package_set_authority.py` and `L3ReplacementPackageSetAuthority`. It records replacement package-set ids, refs, hashes, and authority basis only. It does not create or update `L3OutputPackage` rows, write package payload files, implement package supersession commit, render UI controls, dispatch connectors, widen sources, run qualitative/hybrid/RAG work, create provider/public URLs, activate mockups, or perform authentication/security work.
+This artifact resolves the prerequisite discovered after `126_PACKAGE_COMMIT_FREEZE.md`: a package supersession commit requires a repo-owned authority model for a replacement immutable package set. The exact runtime admitted by this contract is `POST /api/v1/layer3/package/replacement-set/record`, backed by `backend/app/services/layer3_replacement_package_set_authority.py` and `L3ReplacementPackageSetAuthority`. It records replacement package-set ids, refs, hashes, and authority basis only. It does not create or update `L3OutputPackage` rows, write package payload files, render UI controls, dispatch connectors, widen sources, run qualitative/hybrid/RAG work, create provider/public URLs, activate mockups, or perform authentication/security work. The separate `package_supersession_commit_entry` runtime consumes this authority only as immutable lineage input and does not widen this replacement-set runtime.
 
 ## Authority Snapshot
 
@@ -17,7 +17,7 @@ This artifact resolves the prerequisite discovered after `126_PACKAGE_COMMIT_FRE
 - owner service: `backend/app/services/layer3_replacement_package_set_authority.py`
 - authority model: `L3ReplacementPackageSetAuthority`
 - migration: `0018_layer3_replacement_package_set_authority.py`
-- current admitted package lifecycle runtimes: `package_supersession_preview_only` and `replacement_package_set_authority`
+- current admitted package lifecycle runtimes: `package_supersession_preview_only`, `replacement_package_set_authority`, and `package_supersession_commit_entry`
 - current deferred capability: `package_mutation_reconstruction` remains deferred
 - evidence boundary: live source, tests, and `tools/l3-progress-check.py` outrank this document
 
@@ -76,7 +76,7 @@ This runtime is acceptable only when tests prove:
 - existing `L3OutputPackage` rows are unchanged;
 - existing package payload files are unchanged;
 - existing `L3ReconciliationRecord.summary_json` package construction state is unchanged unless a separate lineage model is created;
-- package supersession commit remains blocked until replacement package-set authority exists;
+- package supersession commit lineage must consume an existing replacement package-set authority and must not mutate this authority record;
 - no provider/public URL, connector/destination dispatch, source expansion, qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior is admitted.
 
 Current proof surfaces:
@@ -95,11 +95,11 @@ The current bounded runtime slice is acceptable only when:
 - `backend/app/services/layer3_replacement_package_set_authority.py` owns the runtime;
 - `L3ReplacementPackageSetAuthority` records replacement package-set metadata without using replacement `L3OutputPackage` rows;
 - `0018_layer3_replacement_package_set_authority.py` preserves unique `client_request_id` and `authority_basis_hash`;
-- `package_supersession_preview_only` and `replacement_package_set_authority` are the only admitted package lifecycle runtimes;
+- `package_supersession_preview_only`, `replacement_package_set_authority`, and `package_supersession_commit_entry` are the only admitted package lifecycle runtimes;
 - `package_mutation_reconstruction` remains deferred in `backend/app/services/layer3_state_action_contract.py`;
 - `L3OutputPackage` still has `uq_l3_output_package_session_kind`, so the replacement-set blocker remains explicit;
-- `126_PACKAGE_COMMIT_FREEZE.md` states package supersession commit remains blocked until a dedicated supersession lineage model/migration is implemented and proven;
-- no UI control, replacement `L3OutputPackage` row creation, package row mutation, package payload write, package supersession commit behavior, connector dispatch, source widening, qualitative/hybrid/RAG execution, provider/public URL behavior, full mockup activation, or auth/security behavior is added by this slice;
+- `126_PACKAGE_COMMIT_FREEZE.md` states package supersession commit is admitted only as a dedicated immutable lineage record after this replacement authority exists;
+- no UI control, replacement `L3OutputPackage` row creation, package row mutation, package payload write, connector dispatch, source widening, qualitative/hybrid/RAG execution, provider/public URL behavior, full mockup activation, or auth/security behavior is added by this slice;
 - `105_deferred-gates.md`, `118_L3_GOAL_AUDIT.md`, and `120_L3_CLOSEOUT.md` label this as a bounded metadata-authority runtime only;
 - `tools/l3-progress-check.py` fails closed if this boundary drifts.
 
@@ -111,7 +111,7 @@ This slice must not accidentally admit or implement:
 - replacement package payload creation;
 - package row update or deletion;
 - package payload rewrite, overwrite, deletion, or reconstruction;
-- package supersession commit runtime;
+- package supersession commit behavior inside this replacement-authority route;
 - package variant editing;
 - package-review submit/decision changes;
 - handoff/export changes;

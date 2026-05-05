@@ -33,6 +33,7 @@ from app.models.models import (
     L3GateBIdempotencyKey,
     L3MaterialSnapshot,
     L3OutputPackage,
+    L3PackageSupersessionCommit,
     L3PassRun,
     L3ReconciliationRecord,
     L3ReplacementPackageSetAuthority,

@@ -13,6 +13,7 @@ from app.api.deps import get_db
 from app.services import (
     layer3_connector_dispatch_entry,
     layer3_package_mutation_entry,
+    layer3_package_supersession_commit,
     layer3_replacement_package_set_authority,
     layer3_workbench,
 )
@@ -78,6 +79,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     package_supersession_preview_endpoint: str
     replacement_package_set_authority_admitted: bool
     replacement_package_set_authority_endpoint: str
+    package_supersession_commit_admitted: bool
+    package_supersession_commit_endpoint: str
     package_review_admitted: bool
     external_handoff_admitted: bool
     external_export_admitted: bool
@@ -603,6 +606,65 @@ class Layer3ReplacementPackageSetAuthorityRequest(BaseModel):
     retry: Any | None = None
     rerun: Any | None = None
     cancel: Any | None = None
+
+
+class Layer3PackageSupersessionCommitRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    package_supersession_preview_hash: str | None = None
+    source_package_set_hash: str | None = None
+    source_output_package_ids: list[str] | None = None
+    source_package_kinds: list[str] | None = None
+    source_payload_refs: list[str] | None = None
+    source_payload_hashes: list[str] | None = None
+    replacement_package_set_authority_id: str | None = None
+    replacement_package_set_id: str | None = None
+    replacement_package_set_hash: str | None = None
+    replacement_package_kinds: list[str] | None = None
+    replacement_payload_refs: list[str] | None = None
+    replacement_payload_hashes: list[str] | None = None
+    replacement_authority_basis_hash: str | None = None
+    downstream_dependency_hash: str | None = None
+    commit_basis_hash: str | None = None
+    operator_decision: str | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    replacement_output_package_ids: Any | None = None
+    replacement_package_payloads: Any | None = None
+    edited_package_content: Any | None = None
+    rewrite_output: Any | None = None
+    rebuild_package: Any | None = None
+    mutate_package: Any | None = None
+    replace_package: Any | None = None
+    delete_package: Any | None = None
+    update_package_row: Any | None = None
+    package_row_mutation: Any | None = None
+    package_payload_rewrite: Any | None = None
+    artifact_manifest: Any | None = None
+    analysis_artifact: Any | None = None
+    handoff_package: Any | None = None
+    export_package: Any | None = None
+    connector_key: Any | None = None
+    connector_payload: Any | None = None
+    destination_id: Any | None = None
+    provider_public_url: Any | None = None
+    public_url: Any | None = None
+    signed_url: Any | None = None
+    source_upload: Any | None = None
+    local_directory: Any | None = None
+    rag_plan: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_execution: Any | None = None
+    rag_execution: Any | None = None
+    hidden_llm_plan: Any | None = None
+    ui_control: Any | None = None
+    auth_context: Any | None = None
+    security_context: Any | None = None
 
 
 class Layer3HandoffExportPrepareRequest(BaseModel):
@@ -1201,6 +1263,46 @@ class Layer3ReplacementPackageSetAuthorityResponse(Layer3BaseResponse):
     package_row_mutation_enabled: bool
     package_payload_write_enabled: bool
     package_supersession_commit_enabled: bool
+    broad_package_mutation_enabled: bool
+    source_widening_enabled: bool
+    connector_dispatch_enabled: bool
+    provider_public_url_enabled: bool
+    qualitative_hybrid_rag_execution_enabled: bool
+    frontend_only_durable_state_enabled: bool
+    downstream_unavailable: list[str]
+    next_state: str
+    authority_rail: dict[str, Any]
+
+
+class Layer3PackageSupersessionCommitResponse(Layer3BaseResponse):
+    package_supersession_commit_id: str
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    reconciliation_record_id: str
+    replacement_package_set_authority_id: str
+    package_supersession_preview_hash: str
+    source_package_set_hash: str
+    source_output_package_ids: list[str]
+    source_package_kinds: list[str]
+    source_payload_refs: list[str]
+    source_payload_hashes: list[str]
+    replacement_package_set_id: str
+    replacement_package_set_hash: str
+    replacement_package_kinds: list[str]
+    replacement_payload_refs: list[str]
+    replacement_payload_hashes: list[str]
+    replacement_authority_basis_hash: str
+    downstream_dependency_hash: str
+    commit_basis_hash: str
+    commit_snapshot: dict[str, Any]
+    operator_decision: str
+    package_supersession_commit_mode: str
+    source_gate: str
+    package_supersession_commit_record_persisted: bool
+    package_row_mutation_enabled: bool
+    package_payload_write_enabled: bool
+    l3_output_package_write_enabled: bool
     broad_package_mutation_enabled: bool
     source_widening_enabled: bool
     connector_dispatch_enabled: bool
@@ -2340,6 +2442,102 @@ REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SCHEMA: dict[str, Any] = {
 }
 
 
+PACKAGE_SUPERSESSION_COMMIT_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Durable package supersession commit lineage record. It records immutable lineage from the existing "
+        "source package set to an existing replacement package-set authority without mutating package rows "
+        "or writing package payloads."
+    ),
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "package_supersession_preview_hash",
+        "source_package_set_hash",
+        "source_output_package_ids",
+        "source_package_kinds",
+        "source_payload_refs",
+        "source_payload_hashes",
+        "replacement_package_set_authority_id",
+        "replacement_package_set_id",
+        "replacement_package_set_hash",
+        "replacement_package_kinds",
+        "replacement_payload_refs",
+        "replacement_payload_hashes",
+        "replacement_authority_basis_hash",
+        "downstream_dependency_hash",
+        "commit_basis_hash",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "package_supersession_preview_hash": {"type": "string"},
+        "source_package_set_hash": {"type": "string"},
+        "source_output_package_ids": {"type": "array", "items": {"type": "string"}},
+        "source_package_kinds": {
+            "type": "array",
+            "items": {"type": "string", "enum": ["canonical_internal", "user_facing", "review_facing"]},
+        },
+        "source_payload_refs": {"type": "array", "items": {"type": "string"}},
+        "source_payload_hashes": {"type": "array", "items": {"type": "string"}},
+        "replacement_package_set_authority_id": {"type": "string"},
+        "replacement_package_set_id": {"type": "string"},
+        "replacement_package_set_hash": {"type": "string"},
+        "replacement_package_kinds": {
+            "type": "array",
+            "items": {"type": "string", "enum": ["canonical_internal", "user_facing", "review_facing"]},
+        },
+        "replacement_payload_refs": {"type": "array", "items": {"type": "string"}},
+        "replacement_payload_hashes": {"type": "array", "items": {"type": "string"}},
+        "replacement_authority_basis_hash": {"type": "string"},
+        "downstream_dependency_hash": {"type": "string"},
+        "commit_basis_hash": {"type": "string"},
+        "operator_decision": {"type": "string", "enum": ["commit_package_supersession"]},
+        "package_payload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_variant_content": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "replacement_output_package_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "replacement_package_payloads": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "edited_package_content": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rewrite_output": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rebuild_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "mutate_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "replace_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "delete_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "update_package_row": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_row_mutation": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_payload_rewrite": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "analysis_artifact": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "export_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "connector_key": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "connector_payload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "destination_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "provider_public_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "public_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "signed_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "qualitative_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hybrid_execution": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_execution": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hidden_llm_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "ui_control": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "auth_context": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "security_context": {"description": "Known but non-admitted; service rejects fail-closed."},
+    },
+}
+
+
 HANDOFF_EXPORT_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -3058,6 +3256,24 @@ def post_package_replacement_set_record(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_replacement_package_set_authority.record_replacement_package_set_authority(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.post(
+    "/package/supersession/commit",
+    response_model=Layer3PackageSupersessionCommitResponse,
+    openapi_extra={"requestBody": _json_request_body(PACKAGE_SUPERSESSION_COMMIT_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_package_supersession_commit(
+    payload: Layer3PackageSupersessionCommitRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_package_supersession_commit.commit_package_supersession(
             db,
             payload.model_dump(exclude_unset=True),
         )
