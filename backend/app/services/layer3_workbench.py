@@ -7,7 +7,6 @@ import hmac
 import json
 import os
 import time
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -131,6 +130,15 @@ from app.services.layer3_workbench_package_state import (
 )
 from app.services.layer3_state_action_contract import build_state_action_contract
 from app.services.layer3_state_model_contract import build_workbench_state_model
+from app.services.layer3_external_export_contract import (
+    EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ALLOWED_FIELDS,
+    EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORBIDDEN_FIELDS,
+    EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS,
+    EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FORBIDDEN_FIELDS,
+    ExternalExportDownloadDelivery,
+    external_export_download_delivery_blocked_fields,
+    external_export_download_prepare_blocked_fields,
+)
 from app.services.layer3_response_contract import (
     LAYER3_SCHEMA_VERSION as SCHEMA_VERSION,
     base_response as _base_response,
@@ -789,138 +797,6 @@ APS_HANDOFF_DISPATCH_ALLOWED_FIELDS = frozenset(
         "analysis_run_id",
     }
 )
-EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FORBIDDEN_FIELDS = frozenset(
-    {
-        "download",
-        "download_url",
-        "download_token",
-        "public_url",
-        "signed_url",
-        "local_file_path",
-        "external_target",
-        "destination",
-        "destination_selector",
-        "connector_run_id",
-        "connector_dispatch",
-        "generic_dispatch",
-        "dispatch",
-        "send",
-        "runtime_db_write",
-        "analysis_artifact",
-        "artifact_manifest",
-        "create_package",
-        "rebuild_package",
-        "package_payload",
-        "package_variant_content",
-        "rewrite_output",
-        "edited_findings",
-        "result_review_amendment",
-        "package_review_amendment",
-        "rerun",
-        "retry",
-        "recover",
-        "cancel",
-        "selected_pass_ids",
-        "pass_run_ids",
-        "new_analysis_plan",
-        "plan_revision",
-        "source_expansion",
-        "local_upload",
-        "local_directory",
-        "schema_migration",
-    }
-)
-EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS = frozenset(
-    {
-        "session_id",
-        "analysis_plan_id",
-        "pass_run_id",
-        "preview_id",
-        "preview_hash",
-        "result_review_record_ref",
-        "package_review_preview_hash",
-        "reconciliation_record_id",
-        "output_package_ids",
-        "package_kinds",
-        "payload_refs",
-        "payload_hashes",
-        "package_review_submit_record_ref",
-        "package_review_state",
-        "prepare_record_ref",
-        "handoff_export_state",
-        "handoff_export_envelope_ref",
-        "handoff_target",
-        "export_mode",
-        "aps_handoff_record_ref",
-        "aps_handoff_state",
-        "aps_handoff_target",
-        "dispatch_mode",
-        "aps_output_package_id",
-        "aps_output_package_kind",
-        "aps_bundle_ref",
-        "aps_bundle_id",
-        "aps_schema_id",
-        "export_download_target",
-        "download_mode",
-        "operator_decision",
-        "client_request_id",
-        "decision_notes",
-        "analysis_run_id",
-        "aps_bundle_hash",
-        "aps_bundle_size_bytes",
-    }
-)
-EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORBIDDEN_FIELDS = frozenset(
-    {
-        "download_url",
-        "download_token",
-        "public_url",
-        "signed_url",
-        "local_file_path",
-        "external_target",
-        "destination",
-        "destination_selector",
-        "destination_id",
-        "connector_run_id",
-        "connector_dispatch",
-        "generic_dispatch",
-        "dispatch",
-        "send",
-        "runtime_db_write",
-        "analysis_artifact",
-        "artifact_manifest",
-        "create_package",
-        "rebuild_package",
-        "package_payload",
-        "package_variant_content",
-        "rewrite_output",
-        "edited_findings",
-        "result_review_amendment",
-        "package_review_amendment",
-        "handoff_export_amendment",
-        "aps_handoff_amendment",
-        "rerun",
-        "retry",
-        "recover",
-        "cancel",
-        "selected_pass_ids",
-        "pass_run_ids",
-        "new_analysis_plan",
-        "plan_revision",
-        "source_expansion",
-        "local_upload",
-        "local_directory",
-        "schema_migration",
-    }
-)
-EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ALLOWED_FIELDS = EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS | frozenset(
-    {
-        "external_export_download_record_ref",
-        "export_download_descriptor_ref",
-        "external_export_download_state",
-        "delivery_mode",
-    }
-)
 EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 ANALYSIS_EXECUTION_START_DOWNSTREAM_UNAVAILABLE = ("results", "package", "handoff")
 EXECUTION_RESULT_STATUS_DOWNSTREAM_UNAVAILABLE = ("result_review", "package", "handoff")
@@ -1042,15 +918,6 @@ WORKBENCH_STATE_MODEL_STATE_NAMES = {
     "EXECUTION_RESULT_STATUS_BLOCKED_STATE": EXECUTION_RESULT_STATUS_BLOCKED_STATE,
     "EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE": EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE,
 }
-@dataclass(frozen=True)
-class ExternalExportDownloadDelivery:
-    artifact_path: Path
-    media_type: str
-    filename: str
-    headers: dict[str, str]
-    authority: dict[str, Any] = field(default_factory=dict)
-
-
 def _signed_reference_state_workbench_error(exc: SignedReferenceStateError) -> Layer3WorkbenchError:
     return Layer3WorkbenchError(
         exc.error_code,
@@ -8789,9 +8656,7 @@ def external_export_download_prepare(
             next_allowed_actions=["submit_complete_external_export_download_prepare_request"],
         )
 
-    unknown = sorted(key for key in payload if key not in EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS)
-    forbidden = sorted(key for key in EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FORBIDDEN_FIELDS if key in payload)
-    blocked_payload_fields = sorted(set(unknown) | set(forbidden))
+    blocked_payload_fields = external_export_download_prepare_blocked_fields(payload)
     if blocked_payload_fields:
         blocked_text = ", ".join(blocked_payload_fields)
         raise Layer3WorkbenchError(
@@ -9718,9 +9583,7 @@ def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> Ex
             next_allowed_actions=["submit_complete_external_export_download_delivery_request"],
         )
 
-    unknown = sorted(key for key in payload if key not in EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ALLOWED_FIELDS)
-    forbidden = sorted(key for key in EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORBIDDEN_FIELDS if key in payload)
-    blocked_payload_fields = sorted(set(unknown) | set(forbidden))
+    blocked_payload_fields = external_export_download_delivery_blocked_fields(payload)
     if blocked_payload_fields:
         blocked_text = ", ".join(blocked_payload_fields)
         raise Layer3WorkbenchError(
