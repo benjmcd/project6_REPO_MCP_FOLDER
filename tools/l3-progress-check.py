@@ -62,6 +62,9 @@ SIGNED_REFERENCE_STATE_SERVICE = (
 WORKBENCH_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_workbench.py"
 )
+RESPONSE_CONTRACT_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_response_contract.py"
+)
 CONNECTOR_DISPATCH_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_connector_dispatch_entry.py"
 )
@@ -92,6 +95,7 @@ SIGNED_REFERENCE_STATE_TEST = (
 )
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 LAYER3_PAGE_TEST = ROOT / "backend" / "tests" / "test_layer3_page.py"
+LAYER3_RESPONSE_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_response_contract.py"
 LAYER3_JS = ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js"
 LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
 MOCKUP_ASSETS = ROOT / "next_milestone_plans" / "layer3-mockups" / "assets.md"
@@ -2404,6 +2408,58 @@ def _check_state_action_contract_frontend_signature(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing state/action contract signature doc term: {term}")
 
 
+def _check_response_contract_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(RESPONSE_CONTRACT_SERVICE, errors)
+    for term in (
+        "LAYER3_SCHEMA_VERSION = 1",
+        "def base_response(",
+        '"schema_version": LAYER3_SCHEMA_VERSION',
+        '"request_id": request_id or uuid_str()',
+        '"server_time": utcnow_iso_z()',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(RESPONSE_CONTRACT_SERVICE)} missing response contract term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_response_contract import",
+        "LAYER3_SCHEMA_VERSION as SCHEMA_VERSION",
+        "base_response as _base_response",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing response contract extraction term: {term}")
+    if "SCHEMA_VERSION = 1" in workbench_text:
+        errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns the Layer 3 schema version constant")
+    if "def _base_response(" in workbench_text:
+        errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns _base_response instead of importing it")
+
+    test_text = _read_required_text(LAYER3_RESPONSE_CONTRACT_TEST, errors)
+    for term in (
+        "test_layer3_base_response_contract_is_shared_without_behavior_change",
+        "base_response(\"layer3.test_response.v1\"",
+        "bootstrap = layer3_workbench.bootstrap()",
+        "assert bootstrap[\"schema_version\"] == LAYER3_SCHEMA_VERSION",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_RESPONSE_CONTRACT_TEST)} missing response contract test term: {term}")
+
+    required_doc_terms = {
+        GOAL_AUDIT: (
+            "response envelope extraction",
+            "layer3_response_contract.py",
+        ),
+        CLOSEOUT_DOC: (
+            "layer3_response_contract.py",
+            "Response envelope extraction",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing response contract extraction doc term: {term}")
+
+
 def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
     required_terms = {
         MODELS: [
@@ -2501,6 +2557,7 @@ def main() -> int:
         QUAL_APS_SERVICE,
         MOCKUP_BOUNDARY_SERVICE,
         WORKBENCH_SERVICE,
+        RESPONSE_CONTRACT_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
         PACKAGE_MUTATION_SERVICE,
         REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE,
@@ -2517,6 +2574,7 @@ def main() -> int:
         SIGNED_REFERENCE_STATE_TEST,
         LAYER3_API_TEST,
         LAYER3_PAGE_TEST,
+        LAYER3_RESPONSE_CONTRACT_TEST,
         LAYER3_WORKBENCH_E2E,
         MOCKUP_ASSETS,
         MOCKUP_SPEC,
@@ -2550,6 +2608,7 @@ def main() -> int:
     if manifest:
         _check_qualitative_progress_sync(manifest, errors)
     _check_state_action_contract_frontend_signature(errors)
+    _check_response_contract_extraction(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

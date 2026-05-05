@@ -131,6 +131,10 @@ from app.services.layer3_workbench_package_state import (
     unexpected_package_kinds as package_state_unexpected_package_kinds,
 )
 from app.services.layer3_state_action_contract import build_state_action_contract
+from app.services.layer3_response_contract import (
+    LAYER3_SCHEMA_VERSION as SCHEMA_VERSION,
+    base_response as _base_response,
+)
 from app.services.layer3_qual_aps_execution import (
     ENGINE_FAMILY_QUAL_APS_DOCUMENT,
     Layer3QualApsExecutionError,
@@ -138,7 +142,6 @@ from app.services.layer3_qual_aps_execution import (
     is_single_aps_doc_qualitative_planned_pass,
 )
 
-SCHEMA_VERSION = 1
 ROUTE = "/review/layer3"
 API_ROOT = "/api/v1/layer3"
 APS_ADMITTED_TABLE_SOURCE_FAMILIES = (
@@ -1122,16 +1125,6 @@ def _urlsafe_b64encode(data: bytes) -> str:
 def _urlsafe_b64decode(value: str) -> bytes:
     padding = "=" * (-len(value) % 4)
     return base64.urlsafe_b64decode(f"{value}{padding}".encode("ascii"))
-
-
-def _base_response(schema_id: str, *, request_id: str | None = None, status: str = "ok") -> dict[str, Any]:
-    return {
-        "schema_id": schema_id,
-        "schema_version": SCHEMA_VERSION,
-        "request_id": request_id or uuid_str(),
-        "server_time": _utcnow_iso(),
-        "status": status,
-    }
 
 
 def workbench_error_response(exc: Layer3WorkbenchError, *, request_id: str | None = None) -> dict[str, Any]:
