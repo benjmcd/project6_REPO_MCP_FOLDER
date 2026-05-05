@@ -6,7 +6,9 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
 from sqlalchemy import create_engine
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 os.environ["DB_INIT_MODE"] = "none"
@@ -16,6 +18,7 @@ sys.path.insert(0, str(BACKEND))
 
 from app.db.session import Base
 from app.models.models import (
+    L3_SESSION_STATUS_VALUES,
     L3Descriptor,
     L3MaterialSnapshot,
     L3RetrievalEvent,
@@ -41,7 +44,7 @@ from app.services.layer3_session_entry import (
 
 
 def test_layer3_session_status_vocabulary_is_canonical():
-    assert SESSION_STATUS_VALUES == frozenset(
+    assert SESSION_STATUS_VALUES == frozenset(L3_SESSION_STATUS_VALUES) == frozenset(
         {
             SESSION_STATUS_ACTIVE_LOADING,
             SESSION_STATUS_ACTIVE_PLANNING,
@@ -59,6 +62,29 @@ def test_layer3_session_status_vocabulary_is_canonical():
         }
     )
     assert TERMINAL_SESSION_STATUS_VALUES < SESSION_STATUS_VALUES
+
+
+def test_layer3_session_status_model_default_uses_canonical_active_state():
+    db = _make_session()
+    try:
+        session = L3Session(selection_manifest_id="manifest-default")
+        db.add(session)
+        db.commit()
+        db.refresh(session)
+
+        assert session.status == SESSION_STATUS_ACTIVE_LOADING
+    finally:
+        db.close()
+
+
+def test_layer3_session_status_check_constraint_rejects_unknown_status():
+    db = _make_session()
+    try:
+        db.add(L3Session(selection_manifest_id="manifest-invalid", status="draft_created"))
+        with pytest.raises(IntegrityError):
+            db.commit()
+    finally:
+        db.close()
 
 
 def _make_session():
