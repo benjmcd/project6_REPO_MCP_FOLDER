@@ -675,7 +675,7 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
     revision_request_schema = spec["paths"]["/api/v1/layer3/plan/revise"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert revision_request_schema["additionalProperties"] is True
+    assert revision_request_schema["additionalProperties"] is False
     assert set(revision_request_schema["required"]) == {
         "session_id",
         "preview_id",
@@ -686,6 +686,8 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
         "reject_current_preview",
         "request_revision",
     ]
+    assert revision_request_schema["properties"]["execute"]["description"].startswith("Known but non-admitted")
+    assert revision_request_schema["properties"]["rag_plan"]["description"].startswith("Known but non-admitted")
 
     revision_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/revise", "post")
     assert revision_schema["title"] == "Layer3PlanRevisionResponse"
@@ -3807,6 +3809,35 @@ def test_layer3_api_plan_revision_request_revision_prechecks(client: TestClient,
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "execution_not_admitted"
     assert forbidden.json()["blocked_fields"] == ["execute"]
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/plan/revise",
+        json={
+            "client_request_id": "api-plan-revision-unknown-extra",
+            "session_id": session_id,
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+            "operator_decision": "request_revision",
+            "destination_connector": "not-admitted",
+        },
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        session = db.get(L3Session, session_id)
+        assert session is not None
+        assert "plan_revision_control" not in (session.summary_json or {})
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
 
     mismatch = client.post(
         "/api/v1/layer3/plan/revise",

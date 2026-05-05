@@ -160,6 +160,36 @@ class Layer3ExecutionSelectionRequest(BaseModel):
     hybrid_plan: Any | None = None
 
 
+class Layer3PlanRevisionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    operator_decision: str | None = None
+    operator_note: str | None = None
+    execute: Any | None = None
+    execution: Any | None = None
+    run: Any | None = None
+    run_analysis: Any | None = None
+    package: Any | None = None
+    package_review: Any | None = None
+    handoff: Any | None = None
+    plan_edits: Any | None = None
+    natural_language_plan: Any | None = None
+    llm_plan: Any | None = None
+    execution_started: Any | None = None
+    create_pass_runs: Any | None = None
+    pass_run_ids: Any | None = None
+    artifact_manifest: Any | None = None
+    result_review: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_plan: Any | None = None
+    rag_plan: Any | None = None
+    vector_plan: Any | None = None
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -963,8 +993,8 @@ PLAN_APPROVAL_REQUEST_SCHEMA: dict[str, Any] = {
 
 PLAN_REVISION_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known plan-revision fields; explicit execution/package/handoff fields remain fail-closed.",
+    "additionalProperties": False,
+    "description": "Strict plan-revision fields; explicit execution/package/handoff/source-widening fields remain fail-closed.",
     "required": ["session_id", "preview_id", "preview_hash", "operator_decision"],
     "properties": {
         "client_request_id": {"type": "string"},
@@ -973,6 +1003,25 @@ PLAN_REVISION_REQUEST_SCHEMA: dict[str, Any] = {
         "preview_hash": {"type": "string"},
         "operator_decision": {"type": "string", "enum": ["reject_current_preview", "request_revision"]},
         "operator_note": {"type": "string"},
+        "execute": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "execution": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "run": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "run_analysis": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "plan_edits": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "natural_language_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "llm_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "execution_started": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "create_pass_runs": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "pass_run_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "qualitative_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hybrid_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "vector_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -1553,8 +1602,11 @@ def post_plan_approve(
     openapi_extra={"requestBody": _json_request_body(PLAN_REVISION_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409, 500),
 )
-def post_plan_revise(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.plan_revision(db, payload))
+def post_plan_revise(
+    payload: Layer3PlanRevisionRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.plan_revision(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
