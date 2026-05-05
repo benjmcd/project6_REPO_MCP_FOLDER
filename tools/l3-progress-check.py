@@ -39,6 +39,9 @@ STATE_ACTION_CONTRACT = (
 STATE_MODEL_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_state_model_contract.py"
 )
+EXTERNAL_EXPORT_CONTRACT_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_external_export_contract.py"
+)
 SESSION_ENTRY_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0012_layer3_session_entry.py"
 )
@@ -121,6 +124,9 @@ LAYER3_READINESS_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_readi
 LAYER3_BOOTSTRAP_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_bootstrap_contract.py"
 LAYER3_STATE_MODEL_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_state_model_contract.py"
+)
+LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_external_export_contract.py"
 )
 LAYER3_JS = ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js"
 LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
@@ -809,7 +815,8 @@ def _check_package_mutation_freeze(errors: list[str]) -> None:
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     readiness_text = _read_required_text(READINESS_CONTRACT_SERVICE, errors)
     bootstrap_text = _read_required_text(BOOTSTRAP_CONTRACT_SERVICE, errors)
-    contract_text = f"{workbench_text}\n{readiness_text}\n{bootstrap_text}"
+    external_export_text = _read_required_text(EXTERNAL_EXPORT_CONTRACT_SERVICE, errors)
+    contract_text = f"{workbench_text}\n{readiness_text}\n{bootstrap_text}\n{external_export_text}"
     for term in (
         "\"package_supersession_preview\"",
         "\"package_supersession_preview_admitted\": True",
@@ -825,7 +832,10 @@ def _check_package_mutation_freeze(errors: list[str]) -> None:
         "\"aps_handoff_amendment\"",
     ):
         if term not in contract_text:
-            errors.append(f"{_rel(WORKBENCH_SERVICE)} or {_rel(READINESS_CONTRACT_SERVICE)} missing package mutation blocked-field term: {term}")
+            errors.append(
+                f"{_rel(WORKBENCH_SERVICE)}, {_rel(READINESS_CONTRACT_SERVICE)}, "
+                f"or {_rel(EXTERNAL_EXPORT_CONTRACT_SERVICE)} missing package mutation blocked-field term: {term}"
+            )
 
     test_text = _read_required_text(LAYER3_API_TEST, errors)
     for term in (
@@ -2946,6 +2956,76 @@ def _check_state_model_contract_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing state-model contract extraction doc term: {term}")
 
 
+def _check_external_export_contract_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(EXTERNAL_EXPORT_CONTRACT_SERVICE, errors)
+    for term in (
+        "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS = frozenset(",
+        "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FORBIDDEN_FIELDS = frozenset(",
+        "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_ALLOWED_FIELDS = EXTERNAL_EXPORT_DOWNLOAD_PREPARE_ALLOWED_FIELDS | frozenset(",
+        "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_FORBIDDEN_FIELDS = frozenset(",
+        "class ExternalExportDownloadDelivery",
+        "def external_export_download_prepare_blocked_fields(",
+        "def external_export_download_delivery_blocked_fields(",
+        '"public_url"',
+        '"connector_run_id"',
+        '"local_directory"',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(EXTERNAL_EXPORT_CONTRACT_SERVICE)} missing external export contract term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_external_export_contract import",
+        "ExternalExportDownloadDelivery",
+        "external_export_download_prepare_blocked_fields(payload)",
+        "external_export_download_delivery_blocked_fields(payload)",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing external export contract extraction term: {term}")
+    for stale_term in (
+        "from dataclasses import dataclass, field",
+        "@dataclass(frozen=True)\nclass ExternalExportDownloadDelivery:",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns external export contract term: {stale_term!r}")
+
+    test_text = _read_required_text(LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST, errors)
+    for term in (
+        "test_external_export_download_contract_is_shared_without_behavior_change",
+        "test_external_export_download_contract_blocks_same_fields_as_legacy_logic",
+        "ExternalExportDownloadDelivery",
+        "external_export_download_prepare_blocked_fields",
+        "external_export_download_delivery_blocked_fields",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST)} missing external export contract test term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: (
+            "external export/download contract extraction",
+            "layer3_external_export_contract.py",
+            "test_layer3_external_export_contract.py",
+        ),
+        GOAL_AUDIT: (
+            "external export/download contract extraction",
+            "layer3_external_export_contract.py",
+            "test_layer3_external_export_contract.py",
+            "does not change external export/download allowlists, denylists, blocked-field behavior, delivery value object shape, emitted delivery responses, or any deferred broad capability",
+        ),
+        CLOSEOUT_DOC: (
+            "external export/download contract extraction",
+            "layer3_external_export_contract.py",
+            "test_layer3_external_export_contract.py",
+            "Focused external-export-contract suite: 2 passed.",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing external export contract extraction doc term: {term}")
+
+
 def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
     required_terms = {
         MODELS: [
@@ -3052,6 +3132,7 @@ def main() -> int:
         READINESS_CONTRACT_SERVICE,
         BOOTSTRAP_CONTRACT_SERVICE,
         STATE_MODEL_CONTRACT_SERVICE,
+        EXTERNAL_EXPORT_CONTRACT_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
         PACKAGE_MUTATION_SERVICE,
         REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE,
@@ -3075,6 +3156,7 @@ def main() -> int:
         LAYER3_READINESS_CONTRACT_TEST,
         LAYER3_BOOTSTRAP_CONTRACT_TEST,
         LAYER3_STATE_MODEL_CONTRACT_TEST,
+        LAYER3_EXTERNAL_EXPORT_CONTRACT_TEST,
         LAYER3_WORKBENCH_E2E,
         MOCKUP_ASSETS,
         MOCKUP_SPEC,
@@ -3115,6 +3197,7 @@ def main() -> int:
     _check_readiness_contract_extraction(errors)
     _check_bootstrap_contract_extraction(errors)
     _check_state_model_contract_extraction(errors)
+    _check_external_export_contract_extraction(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
