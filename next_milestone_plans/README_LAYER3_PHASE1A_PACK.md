@@ -9,6 +9,11 @@ Use it to orient quickly across the three active pack directories:
 - `next_milestone_plans/Layer3_execution_handoff`
 - `next_milestone_plans/Layer3_execution_freeze`
 
+Post-synthesis authority guardrail:
+- `next_milestone_plans/Layer3_planning_docs/117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`
+
+That guardrail is the current tracked pointer for preventing mockup, Codesight, progress-prose, or stale-audit overclaims. It is not an implementation freeze and does not activate broad execution, qualitative/hybrid/RAG, provider/public URL support, connector/destination dispatch, package mutation/reconstruction, broad source/upload expansion, or full mockup behavior.
+
 It also now points to the narrow post-Phase 1A Gate C entry-freeze bridge:
 - `next_milestone_plans/Layer3_planning_docs/04_GATEC_ENTRY_FREEZE.md`
 
