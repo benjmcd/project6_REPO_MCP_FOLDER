@@ -1,17 +1,17 @@
 # Layer 3 Merged-Main Closeout
 
-Status: current-main closeout after PR #535 merged at `project6-origin/main=7d07477a`.
+Status: current-main closeout after PR #538 merged at `project6-origin/main=329fc6d5`, with branch-local package mutation/reconstruction entry-freeze sync.
 
 This file is post-merge documentation/proof synchronization only. It does not admit new runtime behavior, implement a deferred lane, or replace live source/tests as authority.
 
 ## Authority Snapshot
 
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
-- docs_sync_branch: `codex/l3-post535-doc-sync`
-- merged_pr: `#535`
-- merged_main_head: `7d07477a`
+- docs_sync_branch: `codex/l3-package-mutation-freeze`
+- merged_pr: `#538`
+- merged_main_head: `329fc6d5`
 - current baseline ref: `project6-origin/main`
-- local docs-sync authority was read from `project6-origin/main=7d07477a` and must be rechecked if `project6-origin/main` moves.
+- local docs-sync authority was read from `project6-origin/main=329fc6d5` and must be rechecked if `project6-origin/main` moves.
 - known local caveat: `.omc/state/hud-state.json`, `.omc/state/hud-stdin-cache.json`, `.codesight/`, `.cursorrules`, `.github/copilot-instructions.md`, `CLAUDE.md`, and `codex.md` are local operator/sidecar state and are not implementation evidence.
 
 Authority order for this closeout:
@@ -37,11 +37,11 @@ Authority order for this closeout:
 | Material-preview DTO boundary | Implemented and guarded | `backend/app/api/layer3.py` `Layer3MaterialPreviewRequest`; `backend/tests/test_layer3_api.py::test_layer3_api_material_preview_rejects_extra_fields_before_service_execution`; progress checker verifies the strict request boundary | Material preview known fields only; no broad upload, local directory ingestion, RAG/vector source, web connector source, runtime DB widening, connector/destination dispatch, package mutation/reconstruction, provider/public URL, mockup, or auth/security behavior change. |
 | Internal connector dispatch record | Implemented narrowly; broad dispatch remains blocked | `121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md`; `backend/app/services/layer3_connector_dispatch_entry.py`; `backend/app/api/layer3.py`; `backend/tests/test_layer3_api.py`; `backend/app/services/layer3_state_action_contract.py` admits exact `internal_dispatch_record_only` while keeping `connector_destination_dispatch` deferred | Records a response-safe internal receipt in existing `L3ReconciliationRecord.summary_json` only; no external connector invocation, destination write, connector-run creation, provider/public URL, package mutation/reconstruction, source widening, qualitative/hybrid/RAG execution, rendered controls, full mockup activation, or auth/security behavior. |
 | Generic connector/destination dispatch | Not implemented; remains blocked | `backend/app/services/layer3_state_action_contract.py` keeps `connector_destination_dispatch` deferred; `116_SECURITY_SOURCE_DELIVERY_BOUNDARY_FREEZE.md` and `118_L3_GOAL_AUDIT.md` keep broad dispatch unsupported | Needs a later implementation-entry freeze selecting exactly one broader dispatch mode. |
-| Package mutation/reconstruction | Not implemented; remains blocked | `backend/app/services/layer3_state_action_contract.py` keeps `package_mutation_reconstruction` deferred; `118_L3_GOAL_AUDIT.md` rejects relabeling package construction/submit as mutation/reconstruction | Existing package construction/submit is bounded and not package rewrite, amendment, supersession, or reconstruction. |
+| Package mutation/reconstruction | Entry freeze selected; runtime not implemented and remains blocked | `122_PACKAGE_MUTATION_FREEZE.md` selects `package_supersession_preview_only` for a future read-only preview lane; `backend/app/services/layer3_state_action_contract.py` keeps `package_mutation_reconstruction` deferred; `118_L3_GOAL_AUDIT.md` rejects relabeling package construction/submit as mutation/reconstruction | Existing package construction/submit is bounded and not package rewrite, amendment, supersession, or reconstruction. The freeze does not add a route, service, model, migration, row update, payload rewrite, or UI control. |
 | Broad source/upload expansion | Not implemented; remains blocked | `backend/app/services/layer3_source_boundary.py`; `backend/tests/test_layer3_source_boundary.py`; progress checker verifies supported and unsupported source classes | Only `dataset_version` and `aps_content_document` are admitted. |
 | Qualitative/hybrid/RAG execution | Exact single APS-document qualitative pass implemented; broad qualitative/hybrid/RAG remains blocked | `backend/app/services/layer3_qual_aps_execution.py`; `backend/tests/test_layer3_qual_aps_execution.py`; `backend/app/services/layer3_state_action_contract.py`; progress checker verifies exact/broad split | Only `single_aps_doc_qualitative_pass` is admitted. |
 | Full mockup activation | Not implemented; remains blocked | `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`; `118_L3_GOAL_AUDIT.md` | Mockups are target-state artifacts and do not admit runtime behavior. |
-| Authority-boundary preservation | Preserved | `python .\tools\l3-progress-check.py` passes; focused Layer 3 backend suite passed with `264 passed`; PR #535 checks and post-merge `main` workflow passed; broad capabilities remain `admitted: false` | This is current-main proof after PR #535, not proof of deferred broad lanes. |
+| Authority-boundary preservation | Preserved | `python .\tools\l3-progress-check.py` passes; focused Layer 3 backend suite passed with `267 passed`; PR #538 checks and post-merge `main` workflow passed; broad capabilities remain `admitted: false` | This is current-main proof after PR #538 plus this package mutation/reconstruction freeze, not proof of deferred broad lanes. |
 
 ## Validation Evidence
 
@@ -66,16 +66,16 @@ $layer3Tests = Get-ChildItem -Path '.\backend\tests' -Filter 'test_layer3_*.py' 
 Observed result during this closeout pass:
 
 ```text
-264 passed, 4 warnings
+267 passed, 4 warnings
 ```
 
 The repeated Windows pytest temp cleanup `PermissionError` appeared after successful pytest exit in some runs and did not change the command exit code.
 
-PR #535 CI proof:
+PR #538 CI proof:
 
 ```text
-Pre-merge PR #535 checks: backend-layer3-api SUCCESS; test SUCCESS.
-Post-merge main workflow run 25363495856 for 7d07477a: backend-layer3-api SUCCESS; test SUCCESS.
+Pre-merge PR #538 checks: backend-layer3-api SUCCESS; test SUCCESS.
+Post-merge main workflow run 25365937051 for 329fc6d5: backend-layer3-api SUCCESS; test SUCCESS.
 ```
 
 ## Merge-Readiness Boundary
