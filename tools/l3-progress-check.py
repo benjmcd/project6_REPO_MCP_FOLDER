@@ -17,6 +17,7 @@ PROOF_MANIFEST = ROOT / "next_milestone_plans" / "layer3_workbench_proof_manifes
 PLAYWRIGHT_WORKFLOW = ROOT / ".github" / "workflows" / "playwright.yml"
 LAYER3_API_REQUIREMENTS = ROOT / "backend" / "tests" / "requirements-layer3-api.txt"
 BROWSER_REQUIREMENTS = ROOT / "backend" / "tests" / "requirements-browser.txt"
+PHASE1A_README = ROOT / "next_milestone_plans" / "README_LAYER3_PHASE1A_PACK.md"
 PLANNING_DOCS = ROOT / "next_milestone_plans" / "Layer3_planning_docs"
 DEFERRED_GATES = PLANNING_DOCS / "105_deferred-gates.md"
 QUAL_APS_FREEZE = PLANNING_DOCS / "114_QUAL_APS_EXEC_FREEZE.md"
@@ -317,6 +318,7 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         required_terms = [
             "defer remaining authentication/security",
             "merged PR #533 state_action_contract hardening",
+            "PR #558 qualitative owner-service error-boundary proof",
             "non-security proof/state/refactor slice",
         ]
         for term in required_terms:
@@ -332,8 +334,9 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
         "progress/proof/state drift checker",
         "state/action contract drift checker",
         "preview hash/idempotency follow-up",
-        "frontend server-contract consumption",
+        "revision recovery lifecycle freeze",
         "no-behavior-change service extraction",
+        "future implementation-entry freeze",
     ]
     for term in required_allowed:
         if term not in allowed_text:
@@ -2238,6 +2241,98 @@ def _check_ci_layer3_backend_guardrail(errors: list[str]) -> None:
         errors.append("browser harness requirements must include focused Layer 3 API requirements")
 
 
+def _check_qualitative_progress_sync(manifest: dict[str, Any], errors: list[str]) -> None:
+    live_state = "merged_live_bounded_single_aps_doc_qualitative_execution"
+    decision = manifest.get("layer3_workbench_current_decision")
+    if not isinstance(decision, dict):
+        return
+    if decision.get("state") != live_state:
+        errors.append(
+            "layer3_workbench_current_decision must classify exact single APS-doc "
+            "qualitative execution as current-main bounded behavior"
+        )
+
+    state_model = manifest.get("state_model")
+    if not isinstance(state_model, dict) or live_state not in state_model:
+        errors.append(f"state_model missing {live_state}")
+
+    slices = manifest.get("layer3_workbench_slices")
+    if isinstance(slices, list):
+        matching = [
+            item
+            for item in slices
+            if isinstance(item, dict) and item.get("main_state") == live_state
+        ]
+        if len(matching) != 1:
+            errors.append(f"layer3_workbench_slices must contain exactly one {live_state}")
+
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    proof_scope = proof_manifest.get("scope") if isinstance(proof_manifest, dict) else {}
+    if isinstance(proof_scope, dict):
+        expected = {
+            "latest_qualitative_aps_execution_implementation_pr": "#535",
+            "latest_qualitative_aps_execution_error_proof_pr": "#558",
+        }
+        for key, value in expected.items():
+            if proof_scope.get(key) != value:
+                errors.append(f"{_rel(PROOF_MANIFEST)} {key} must be {value}")
+    if "single_aps_doc_qualitative_execution_current_boundary_proof" not in proof_manifest:
+        errors.append(f"{_rel(PROOF_MANIFEST)} missing qualitative current-boundary proof object")
+
+    progress_surfaces = (
+        MANIFEST,
+        BOARD,
+        PROOF_MANIFEST,
+        REFRESH_SPEC,
+        PROGRESS_PROMPT,
+        PHASE1A_README,
+    )
+    stale_terms = (
+        "Do not implement qualitative APS content document execution until a later implementation-entry freeze chooses exactly single_aps_doc_qualitative_pass.",
+        "qualitative-only sets still fail closed",
+        "qualitative APS content document execution remains blocked by default",
+        "current live APS document support stops at selection",
+    )
+    for path in progress_surfaces:
+        text = _read_required_text(path, errors)
+        for term in stale_terms:
+            if term in text:
+                errors.append(f"{_rel(path)} contains stale qualitative progress wording: {term}")
+
+    required_terms = {
+        MANIFEST: (
+            live_state,
+            "PR #558 qualitative owner-service error-boundary proof",
+            "PR #559 docs/proof sync",
+        ),
+        BOARD: (
+            "Single APS-document qualitative execution boundary",
+            "PR `#558` proof-hardened qualitative owner-service error mapping",
+        ),
+        PROOF_MANIFEST: (
+            "latest_qualitative_aps_execution_implementation_pr",
+            "single_aps_doc_qualitative_execution_current_boundary_proof",
+        ),
+        REFRESH_SPEC: (
+            "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md",
+            "classify only `single_aps_doc_qualitative_pass` as live bounded behavior",
+        ),
+        PROGRESS_PROMPT: (
+            "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md",
+            "render only the exact `single_aps_doc_qualitative_pass` as live bounded behavior",
+        ),
+        PHASE1A_README: (
+            "exact `single_aps_doc_qualitative_pass` is now the only admitted qualitative APS execution mode",
+            "broad qualitative",
+        ),
+    }
+    for path, terms in required_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing qualitative progress sync term: {term}")
+
+
 def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
     required_terms = {
         MODELS: [
@@ -2378,6 +2473,8 @@ def main() -> int:
     _check_session_status_migration_constraint(errors)
     _check_progress_text_surfaces(errors)
     _check_ci_layer3_backend_guardrail(errors)
+    if manifest:
+        _check_qualitative_progress_sync(manifest, errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
