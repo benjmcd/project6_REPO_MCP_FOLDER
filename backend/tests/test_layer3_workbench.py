@@ -39,6 +39,7 @@ from app.models.models import (
 )
 from app.services import layer3_workbench
 from app.services.layer3_workbench import Layer3WorkbenchError
+from app.services.layer3_state_action_contract import STATE_ACTION_CONTRACT_SCHEMA_ID
 
 
 @pytest.fixture()
@@ -308,7 +309,7 @@ def test_bootstrap_is_explicit_about_first_slice_limits() -> None:
     assert result["features"]["typing_override_enabled"] is False
     assert result["unavailable_gate_labels"] == ["plan", "execution", "results", "package"]
     contract = result["state_action_contract"]
-    assert contract["schema_id"] == "layer3.state_action_contract.v1"
+    assert contract["schema_id"] == STATE_ACTION_CONTRACT_SCHEMA_ID
     assert contract["gate_labels"] == result["gate_labels"]
     assert contract["active_gate_labels"] == result["active_gate_labels"]
     assert contract["unavailable_gate_labels"] == result["unavailable_gate_labels"]

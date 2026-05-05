@@ -1,0 +1,123 @@
+from __future__ import annotations
+
+from copy import deepcopy
+from typing import Any, Iterable
+
+
+STATE_ACTION_CONTRACT_SCHEMA_ID = "layer3.state_action_contract.v1"
+
+STATE_ACTION_DEFERRED_CAPABILITIES = (
+    {
+        "capability": "qualitative_execution",
+        "admitted": False,
+        "reason": "requires_later_freeze",
+    },
+    {
+        "capability": "hybrid_execution",
+        "admitted": False,
+        "reason": "requires_later_freeze",
+    },
+    {
+        "capability": "rag_vector_retrieval",
+        "admitted": False,
+        "reason": "requires_source_breadth_freeze",
+    },
+    {
+        "capability": "local_upload_or_directory_source_expansion",
+        "admitted": False,
+        "reason": "requires_source_runtime_widening_freeze",
+    },
+    {
+        "capability": "provider_public_url",
+        "admitted": False,
+        "reason": "requires_later_delivery_boundary_freeze",
+    },
+    {
+        "capability": "connector_destination_dispatch",
+        "admitted": False,
+        "reason": "requires_later_delivery_boundary_freeze",
+    },
+    {
+        "capability": "package_mutation_reconstruction",
+        "admitted": False,
+        "reason": "requires_later_package_lifecycle_freeze",
+    },
+    {
+        "capability": "frontend_only_durable_state",
+        "admitted": False,
+        "reason": "server_authority_required",
+    },
+    {
+        "capability": "hidden_llm_planning",
+        "admitted": False,
+        "reason": "owner_service_plan_authority_required",
+    },
+    {
+        "capability": "auth_security_hardening",
+        "admitted": False,
+        "reason": "deferred_by_operator_instruction",
+    },
+)
+
+
+def _clone_json(value: Any) -> Any:
+    return deepcopy(value)
+
+
+def _string_list(values: Iterable[Any]) -> list[str]:
+    return [str(value) for value in values]
+
+
+def build_state_action_contract(
+    *,
+    state_model: dict[str, Any],
+    schema_version: int,
+    gate_labels: Iterable[str],
+    active_gate_labels: Iterable[str],
+    unavailable_gate_labels: Iterable[str],
+    plan_preview_unavailable_gate_labels: Iterable[str],
+    gate_b_decisions: Iterable[str],
+    plan_revision_decisions: Iterable[str],
+    execution_result_review_decisions: Iterable[str],
+    package_review_submit_decisions: Iterable[str],
+    handoff_export_prepare_decisions: Iterable[str],
+    aps_handoff_dispatch_operator_decision: str,
+    external_export_download_operator_decision: str,
+    external_export_download_delivery_operator_decision: str,
+    terminal_pass_statuses: Iterable[str],
+) -> dict[str, Any]:
+    state_action_matrix = _clone_json(state_model["states"])
+    action_ids = sorted(
+        {
+            str(action)
+            for state in state_action_matrix
+            for action in state.get("allowed_next_actions", [])
+        }
+    )
+    return {
+        "schema_id": STATE_ACTION_CONTRACT_SCHEMA_ID,
+        "schema_version": schema_version,
+        "scope": "server_authoritative_workbench_states_and_actions",
+        "state_model_schema_id": state_model["schema_id"],
+        "authority_order": list(state_model["authority_order"]),
+        "gate_labels": _string_list(gate_labels),
+        "active_gate_labels": _string_list(active_gate_labels),
+        "unavailable_gate_labels": _string_list(unavailable_gate_labels),
+        "plan_preview_unavailable_gate_labels": _string_list(plan_preview_unavailable_gate_labels),
+        "state_count": len(state_action_matrix),
+        "states": [str(state["state"]) for state in state_action_matrix],
+        "action_ids": action_ids,
+        "state_action_matrix": state_action_matrix,
+        "decision_sets": {
+            "gate_b": list(gate_b_decisions),
+            "plan_revision": sorted(plan_revision_decisions),
+            "execution_result_review": sorted(execution_result_review_decisions),
+            "package_review_submit": sorted(package_review_submit_decisions),
+            "handoff_export_prepare": sorted(handoff_export_prepare_decisions),
+            "aps_handoff_dispatch": [aps_handoff_dispatch_operator_decision],
+            "external_export_download_prepare": [external_export_download_operator_decision],
+            "external_export_download_deliver": [external_export_download_delivery_operator_decision],
+        },
+        "terminal_pass_statuses": sorted(terminal_pass_statuses),
+        "deferred_capabilities": _clone_json(STATE_ACTION_DEFERRED_CAPABILITIES),
+    }
