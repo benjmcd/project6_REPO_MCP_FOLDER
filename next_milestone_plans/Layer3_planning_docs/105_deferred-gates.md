@@ -95,7 +95,7 @@ This lane likely requires schema/model/migration review if it changes the curren
 
 ## Qualitative APS Content Document Execution
 
-Current decision: `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md` admitted and branch-local code implements the exact `single_aps_doc_qualitative_pass` mode only.
+Current decision: `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md` admitted and current-main code implements the exact `single_aps_doc_qualitative_pass` mode only.
 
 Any broader qualitative implementation cannot begin until these are specified:
 
