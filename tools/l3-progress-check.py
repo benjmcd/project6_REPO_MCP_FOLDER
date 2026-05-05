@@ -36,6 +36,9 @@ PACKAGE_REPLACEMENT_SET_FREEZE = PLANNING_DOCS / "127_PACKAGE_REPLACEMENT_SET_FR
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
+STATE_MODEL_CONTRACT_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_state_model_contract.py"
+)
 SESSION_ENTRY_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0012_layer3_session_entry.py"
 )
@@ -116,6 +119,9 @@ LAYER3_AUTHORITY_RAIL_TEST = ROOT / "backend" / "tests" / "test_layer3_authority
 LAYER3_PREVIEW_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_preview_contract.py"
 LAYER3_READINESS_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_readiness_contract.py"
 LAYER3_BOOTSTRAP_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_bootstrap_contract.py"
+LAYER3_STATE_MODEL_CONTRACT_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_state_model_contract.py"
+)
 LAYER3_JS = ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js"
 LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
 MOCKUP_ASSETS = ROOT / "next_milestone_plans" / "layer3-mockups" / "assets.md"
@@ -1688,7 +1694,7 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "267 passed",
         ],
         CLOSEOUT_DOC: [
-            "Status: bounded merged-main proof snapshot through PR #571 bootstrap contract extraction.",
+            "Status: bounded merged-main proof snapshot through PR #571 bootstrap contract extraction plus branch-local no-behavior-change state-model contract extraction record.",
             "123_SOURCE_EXPANSION_FREEZE.md",
             "post-merge documentation/proof synchronization only",
             "PR #538",
@@ -1910,6 +1916,7 @@ def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
             "PR #571 bootstrap contract extraction proof",
             "Merged main head after PR #571: 47351763.",
             "Bootstrap contract extraction focused proof",
+            "State-model contract extraction focused proof",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -2868,6 +2875,73 @@ def _check_bootstrap_contract_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing bootstrap contract extraction doc term: {term}")
 
 
+def _check_state_model_contract_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(STATE_MODEL_CONTRACT_SERVICE, errors)
+    for term in (
+        'STATE_MODEL_SCHEMA_ID = "layer3.workbench_state_model.v1"',
+        "def build_workbench_state_model(",
+        '\"authority_order\": [',
+        '\"states\": [',
+        '_state(state_names, "EXECUTION_SELECTION_STATE")',
+        '_state(state_names, "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_READY_STATE")',
+        '\"execution_readiness_blocked\"',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(STATE_MODEL_CONTRACT_SERVICE)} missing state-model contract term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_state_model_contract import build_workbench_state_model",
+        "WORKBENCH_STATE_MODEL_STATE_NAMES",
+        "def _workbench_state_model(",
+        "return build_workbench_state_model(state_names=WORKBENCH_STATE_MODEL_STATE_NAMES)",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing state-model contract extraction term: {term}")
+    if 'STATE_MODEL_SCHEMA_ID = "layer3.workbench_state_model.v1"' in workbench_text:
+        errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns state-model schema id literal")
+
+    test_text = _read_required_text(LAYER3_STATE_MODEL_CONTRACT_TEST, errors)
+    for term in (
+        "test_layer3_state_model_contract_is_shared_without_behavior_change",
+        "build_workbench_state_model(",
+        "direct_state_model == readiness_state_model",
+        'readiness_state_model["schema_id"] == STATE_MODEL_SCHEMA_ID',
+        '"external_export_download_delivery_ready"',
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_STATE_MODEL_CONTRACT_TEST)} missing state-model contract test term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: (
+            "state-model contract extraction",
+            "layer3_state_model_contract.py",
+            "test_layer3_state_model_contract.py",
+        ),
+        GOAL_AUDIT: (
+            "state-model contract extraction",
+            "layer3_state_model_contract.py",
+            "test_layer3_state_model_contract.py",
+            "focused proof passed with `1 passed`",
+            "294 passed",
+            "does not change emitted state models",
+        ),
+        CLOSEOUT_DOC: (
+            "branch-local no-behavior-change state-model contract extraction record",
+            "layer3_state_model_contract.py",
+            "layer3.workbench_state_model.v1",
+            "State-model contract extraction focused proof",
+            "Focused state-model-contract suite: 1 passed.",
+            "Local focused Layer 3 backend suite: 294 passed, 4 warnings.",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing state-model contract extraction doc term: {term}")
+
+
 def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
     required_terms = {
         MODELS: [
@@ -2973,6 +3047,7 @@ def main() -> int:
         PREVIEW_CONTRACT_SERVICE,
         READINESS_CONTRACT_SERVICE,
         BOOTSTRAP_CONTRACT_SERVICE,
+        STATE_MODEL_CONTRACT_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
         PACKAGE_MUTATION_SERVICE,
         REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE,
@@ -2995,6 +3070,7 @@ def main() -> int:
         LAYER3_PREVIEW_CONTRACT_TEST,
         LAYER3_READINESS_CONTRACT_TEST,
         LAYER3_BOOTSTRAP_CONTRACT_TEST,
+        LAYER3_STATE_MODEL_CONTRACT_TEST,
         LAYER3_WORKBENCH_E2E,
         MOCKUP_ASSETS,
         MOCKUP_SPEC,
@@ -3034,6 +3110,7 @@ def main() -> int:
     _check_preview_contract_extraction(errors)
     _check_readiness_contract_extraction(errors)
     _check_bootstrap_contract_extraction(errors)
+    _check_state_model_contract_extraction(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
