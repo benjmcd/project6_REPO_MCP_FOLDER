@@ -60,7 +60,7 @@ Before implementation can begin, the future lane must prove:
 
 This freeze does not admit:
 
-- qualitative execution implementation;
+- additional qualitative execution implementation outside the exact branch-local `single_aps_doc_qualitative_pass` lane;
 - qualitative associated-cohort execution;
 - hybrid, comparative, cross-modal, RAG, vector, LLM, agent, DAG, queue, retry, cancel, or recovery behavior;
 - using `DatasetVersion`, aligned-wide-table materialization, or existing wrapped quantitative `run_analysis(...)` as the qualitative APS document execution engine;

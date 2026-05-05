@@ -1,8 +1,8 @@
 # Layer 3 Qualitative APS Execution Entry Freeze
 
-Status: branch-local implementation-entry freeze for a future qualitative APS content-document execution lane.
+Status: branch-local implementation-entry freeze that selected the single APS content-document qualitative lane before commit `a672b71d` implemented it.
 
-This file does not implement qualitative execution, add a route, add a service, add a model or migration, change `/review/layer3`, create `L3PassRun`, create `AnalysisRun`, write artifacts, enable package/handoff/export, or admit hybrid/RAG/vector behavior. It narrows the next admissible qualitative work to one exact future implementation lane so runtime work cannot be inferred from mockups, progress prose, or generic qualitative wording.
+This file did not itself implement qualitative execution, add a route, add a service, add a model or migration, change `/review/layer3`, create `L3PassRun`, create `AnalysisRun`, write artifacts, enable package/handoff/export, or admit hybrid/RAG/vector behavior. It narrowed the admissible qualitative work to one exact implementation lane so runtime work cannot be inferred from mockups, progress prose, or generic qualitative wording.
 
 ## Why This Lane
 
@@ -26,7 +26,7 @@ Name: `single_aps_doc_qualitative_pass`.
 
 Type: implementation-entry freeze only.
 
-Future implementation may admit exactly one qualitative execution mode:
+The selected implementation may admit exactly one qualitative execution mode:
 
 - one committed Layer 3 session;
 - one `L3MaterialSnapshot` with `source_shape == "aps_content_document"`;

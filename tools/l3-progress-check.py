@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import json
 import re
 import sys
@@ -14,11 +15,17 @@ REFRESH_SPEC = ROOT / "next_milestone_plans" / "layer3_progress_refresh_spec.md"
 PROGRESS_PROMPT = ROOT / "next_milestone_plans" / "progress-prompt.md"
 PROOF_MANIFEST = ROOT / "next_milestone_plans" / "layer3_workbench_proof_manifest.json"
 PLAYWRIGHT_WORKFLOW = ROOT / ".github" / "workflows" / "playwright.yml"
-LOCAL_BOUNDARY = (
-    ROOT
-    / "next_milestone_plans"
-    / "Layer3_planning_docs"
-    / "116_SECURITY_SOURCE_DELIVERY_BOUNDARY_FREEZE.md"
+PLANNING_DOCS = ROOT / "next_milestone_plans" / "Layer3_planning_docs"
+QUAL_APS_FREEZE = PLANNING_DOCS / "114_QUAL_APS_EXEC_FREEZE.md"
+LOCAL_BOUNDARY = PLANNING_DOCS / "116_SECURITY_SOURCE_DELIVERY_BOUNDARY_FREEZE.md"
+SYNTHESIS_BOUNDARY = PLANNING_DOCS / "117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md"
+GOAL_AUDIT = PLANNING_DOCS / "118_L3_GOAL_AUDIT.md"
+QUAL_APS_ENTRY_FREEZE = PLANNING_DOCS / "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md"
+STATE_ACTION_CONTRACT = (
+    ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
+)
+WORKBENCH_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_workbench.py"
 )
 
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -47,6 +54,69 @@ def _load_json(path: Path, errors: list[str]) -> dict[str, Any]:
         errors.append(f"JSON root must be an object: {_rel(path)}")
         return {}
     return payload
+
+
+def _read_required_text(path: Path, errors: list[str]) -> str:
+    if not path.exists():
+        errors.append(f"missing required text file: {_rel(path)}")
+        return ""
+    if path.is_file() and path.stat().st_size == 0:
+        errors.append(f"empty required text file: {_rel(path)}")
+        return ""
+    return path.read_text(encoding="utf-8")
+
+
+def _load_literal_assignment(path: Path, name: str, errors: list[str]) -> Any:
+    text = _read_required_text(path, errors)
+    if not text:
+        return None
+    try:
+        module = ast.parse(text, filename=_rel(path))
+    except SyntaxError as exc:
+        errors.append(f"cannot parse Python source for {_rel(path)}: {exc}")
+        return None
+
+    for node in module.body:
+        value_node = None
+        target_names: list[str] = []
+        if isinstance(node, ast.Assign):
+            value_node = node.value
+            target_names = [
+                target.id for target in node.targets if isinstance(target, ast.Name)
+            ]
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            value_node = node.value
+            target_names = [node.target.id]
+        if name not in target_names or value_node is None:
+            continue
+        try:
+            return ast.literal_eval(value_node)
+        except (SyntaxError, ValueError) as exc:
+            errors.append(f"{_rel(path)} {name} must be a literal assignment: {exc}")
+            return None
+
+    errors.append(f"{_rel(path)} missing literal assignment: {name}")
+    return None
+
+
+def _capability_map(value: Any, name: str, errors: list[str]) -> dict[str, dict[str, Any]]:
+    if not isinstance(value, (list, tuple)):
+        errors.append(f"{name} must be a list or tuple of capability objects")
+        return {}
+
+    capabilities: dict[str, dict[str, Any]] = {}
+    for item in value:
+        if not isinstance(item, dict):
+            errors.append(f"{name} contains a non-object entry: {item!r}")
+            continue
+        capability = item.get("capability")
+        if not isinstance(capability, str) or not capability:
+            errors.append(f"{name} contains an entry without a capability id: {item!r}")
+            continue
+        if capability in capabilities:
+            errors.append(f"{name} contains duplicate capability id: {capability}")
+        capabilities[capability] = item
+    return capabilities
 
 
 def _require_file(path: Path, errors: list[str]) -> None:
@@ -304,7 +374,7 @@ def _check_local_boundary(errors: list[str]) -> None:
         "provider/public URL implementation",
         "connector/destination dispatch",
         "broad upload/source expansion",
-        "qualitative/hybrid/RAG execution",
+        "broad qualitative/hybrid/RAG execution",
         "package mutation/reconstruction",
         "full mockup activation",
     ]
@@ -313,6 +383,124 @@ def _check_local_boundary(errors: list[str]) -> None:
             errors.append(f"blocked term appears in allowed near-term list: {term}")
         if term not in blocked_part:
             errors.append(f"immediate no-go list missing blocked term: {term}")
+
+
+def _check_qualitative_capability_boundary(errors: list[str]) -> None:
+    admitted = _capability_map(
+        _load_literal_assignment(
+            STATE_ACTION_CONTRACT, "STATE_ACTION_ADMITTED_CAPABILITIES", errors
+        ),
+        "STATE_ACTION_ADMITTED_CAPABILITIES",
+        errors,
+    )
+    deferred = _capability_map(
+        _load_literal_assignment(
+            STATE_ACTION_CONTRACT, "STATE_ACTION_DEFERRED_CAPABILITIES", errors
+        ),
+        "STATE_ACTION_DEFERRED_CAPABILITIES",
+        errors,
+    )
+
+    exact = admitted.get("single_aps_doc_qualitative_execution")
+    if exact is None:
+        errors.append(
+            "state/action contract missing admitted exact capability: "
+            "single_aps_doc_qualitative_execution"
+        )
+    else:
+        if exact.get("admitted") is not True:
+            errors.append("single_aps_doc_qualitative_execution must be admitted true")
+        if exact.get("source_gate") != "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE":
+            errors.append("single_aps_doc_qualitative_execution source_gate drifted")
+        if exact.get("owner_service") != "backend/app/services/layer3_qual_aps_execution.py":
+            errors.append("single_aps_doc_qualitative_execution owner_service drifted")
+        blocked = exact.get("blocked_downstream")
+        if not isinstance(blocked, list):
+            errors.append("single_aps_doc_qualitative_execution missing blocked_downstream list")
+        else:
+            for term in (
+                "qualitative_package_handoff_export",
+                "broad_qualitative_execution",
+                "hybrid_execution",
+                "rag_vector_retrieval",
+            ):
+                if term not in blocked:
+                    errors.append(
+                        "single_aps_doc_qualitative_execution blocked_downstream "
+                        f"missing {term}"
+                    )
+
+    if "qualitative_execution" in deferred:
+        errors.append(
+            "deferred capabilities must use broad_qualitative_execution, "
+            "not ambiguous qualitative_execution"
+        )
+
+    expected_deferred = {
+        "broad_qualitative_execution": "single_aps_doc_qualitative_pass_only",
+        "hybrid_execution": None,
+        "rag_vector_retrieval": None,
+        "local_upload_or_directory_source_expansion": None,
+        "provider_public_url": None,
+        "connector_destination_dispatch": None,
+        "package_mutation_reconstruction": None,
+        "frontend_only_durable_state": None,
+        "hidden_llm_planning": None,
+        "auth_security_hardening": "deferred_by_operator_instruction",
+    }
+    for capability, expected_reason in expected_deferred.items():
+        item = deferred.get(capability)
+        if item is None:
+            errors.append(f"deferred capabilities missing {capability}")
+            continue
+        if item.get("admitted") is not False:
+            errors.append(f"{capability} must remain admitted false")
+        if expected_reason is not None and item.get("reason") != expected_reason:
+            errors.append(f"{capability} reason drifted from {expected_reason}")
+        if capability in admitted:
+            errors.append(f"{capability} must not also appear as an admitted capability")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        '"single_aps_doc_qualitative_execution_admitted": True',
+        '"single_aps_doc_qualitative_execution": True',
+        '"broad_qualitative_execution": False',
+        '"hybrid_execution": False',
+        '"rag_vector_retrieval": False',
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing qualitative boundary term: {term}")
+
+    required_doc_terms = {
+        QUAL_APS_FREEZE: [
+            "exact branch-local `single_aps_doc_qualitative_pass` lane",
+            "all other qualitative/hybrid/cohort paths still fail closed",
+        ],
+        LOCAL_BOUNDARY: [
+            "single APS-document qualitative pass",
+            "broad qualitative execution outside the admitted single APS-document qualitative pass",
+            "broad qualitative/hybrid/RAG execution",
+        ],
+        SYNTHESIS_BOUNDARY: [
+            "single_aps_doc_qualitative_execution",
+            "broad_qualitative_execution",
+            "broad qualitative or hybrid execution outside the admitted single APS-document qualitative pass",
+        ],
+        GOAL_AUDIT: [
+            "The active goal is not complete.",
+            "Only `single_aps_doc_qualitative_pass` is admitted",
+            "broad qualitative execution beyond the single APS-document qualitative pass",
+        ],
+        QUAL_APS_ENTRY_FREEZE: [
+            "selected the single APS content-document qualitative lane",
+            "No other qualitative, hybrid, RAG, vector, cohort, comparative, cross-document, connector, provider, package, or full-mockup behavior is admitted.",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing qualitative boundary term: {term}")
 
 
 def _check_progress_text_surfaces(errors: list[str]) -> None:
@@ -372,7 +560,21 @@ def _check_ci_layer3_backend_guardrail(errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    for path in (MANIFEST, BOARD, REFRESH_SPEC, PROGRESS_PROMPT, PROOF_MANIFEST, PLAYWRIGHT_WORKFLOW):
+    for path in (
+        MANIFEST,
+        BOARD,
+        REFRESH_SPEC,
+        PROGRESS_PROMPT,
+        PROOF_MANIFEST,
+        PLAYWRIGHT_WORKFLOW,
+        QUAL_APS_FREEZE,
+        LOCAL_BOUNDARY,
+        SYNTHESIS_BOUNDARY,
+        GOAL_AUDIT,
+        QUAL_APS_ENTRY_FREEZE,
+        STATE_ACTION_CONTRACT,
+        WORKBENCH_SERVICE,
+    ):
         _require_file(path, errors)
 
     manifest = _load_json(MANIFEST, errors)
@@ -383,6 +585,7 @@ def main() -> int:
         _check_current_decision(manifest, errors)
         _check_referenced_paths(manifest, errors)
     _check_local_boundary(errors)
+    _check_qualitative_capability_boundary(errors)
     _check_progress_text_surfaces(errors)
     _check_ci_layer3_backend_guardrail(errors)
 
