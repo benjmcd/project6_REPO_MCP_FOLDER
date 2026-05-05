@@ -327,6 +327,16 @@ Post-merge full Layer 3 backend suite: 300 passed, 4 warnings.
 No package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior is admitted.
 ```
 
+Branch-local execution request/result contract extraction proof:
+
+```text
+Files: backend/app/services/layer3_execution_request_contract.py; backend/tests/test_layer3_execution_request_contract.py.
+Focused execution-request-contract suite: 2 passed.
+Focused execution request API regression: 11 passed, 118 deselected, 4 warnings.
+Local focused Layer 3 backend suite: 302 passed, 4 warnings.
+No broad execution, package mutation/reconstruction, package payload rewrite, source widening, connector/destination dispatch, provider/public URL support, broad qualitative/hybrid/RAG execution, full mockup activation, or auth/security behavior is admitted.
+```
+
 ## Merge-Readiness Boundary
 
 Merged as bounded current-main scope:
