@@ -72,6 +72,7 @@ Current repo-side facts to preserve:
 - local-only progress/proof sync on `2026-05-05` used `C:\Users\benny\Downloads\worktree_for_audits` with `HEAD == project6-origin/main == cb06daf6d964cb24497a4819b1b88704c4bf8f74`; no GitHub, fetch, pull, browser runtime, database runtime, or remote-hosting metadata was used
 - local current main includes PR `#527` through PR `#530` as Layer 3 modular extraction/refactor work after the PR `#522` through PR `#525` governance chain; preserve this as current local repo truth without treating it as a broad feature expansion
 - the `2026-05-05` progress/proof sync fixes snapshot metadata drift and near-term direction only; it does not re-audit every historical progress paragraph
+- branch `codex/l3-proof-idempotency-hardening` contains branch-only Gate B post-commit retry idempotency and material-preview hash hardening after the local-only progress/proof sync; render it as branch-only implementation evidence, not current-main truth, until merged
 - current `main` includes the bounded APS multisource implementation from PR `#101`
 - current `main` includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the export-package first shared-consumer freeze and its docs-only closeout from PR `#106` and PR `#107`

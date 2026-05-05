@@ -79,6 +79,7 @@ As of `2026-05-05`:
 - authoritative remote branch: `project6-origin/main`
 - snapshot base for this local-only progress/proof sync: current `project6-origin/main` at `cb06daf6d964cb24497a4819b1b88704c4bf8f74`; `HEAD` matched `project6-origin/main` and `git diff --name-status HEAD project6-origin/main` was empty during the sync
 - local-only progress/control correction: the sync records that PR `#527` through PR `#530` are present on local current main as Layer 3 modular extraction/refactor work, fixes progress-manifest snapshot drift, and defers remaining authentication/security work from near-term planning; it does not re-audit or rewrite every historical progress paragraph
+- branch-only implementation correction: branch `codex/l3-proof-idempotency-hardening` adds bounded Gate B idempotency/material-preview-hash hardening after the local-only progress/proof sync; treat it as branch evidence, not current-main truth, until merged
 - planning/control addition: docs `110`/`111` define provider/public URL governance as not admitted and require a later implementation-entry freeze before provider/private signed URL, provider public URL, or public proxy URL behavior can be built
 - planning/control addition: docs `112`/`113` define connector/destination dispatch governance as not admitted and require a later implementation-entry freeze before internal dispatch records, a named connector dispatch, or a named destination dispatch can be built
 - current `main` includes the bounded APS multisource implementation slice from PR `#101`
@@ -351,7 +352,8 @@ Near-term direction as of the local-only `2026-05-05` sync:
 
 - remaining authentication/security work is intentionally deferred and must not be selected as the next slice by default
 - provider/public URL implementation, connector/destination dispatch, upload-security hardening, signed-reference security hardening, qualitative/hybrid/RAG execution, and broad source/runtime/schema widening remain blocked as immediate next slices
-- if work continues now, prefer non-security state/proof/idempotency/refactor work: progress/proof/state drift checking, Gate B idempotency, canonical state/action contract hardening, preview hash/idempotency hardening, frontend session recovery against existing backend authority, or no-behavior-change service extraction
+- branch `codex/l3-proof-idempotency-hardening` now contains branch-only Gate B post-commit retry idempotency and material-preview hash hardening; do not keep treating that exact slice as still unstarted
+- if work continues now, prefer non-security state/proof/refactor work: canonical state/action contract hardening, frontend session recovery against existing backend authority, no-behavior-change service extraction, or a narrow idempotency/hash follow-up only if fresh proof finds a missed edge
 - the historical candidate/deferred entries below remain useful boundary records, not near-term implementation recommendations
 
 - current-main state: PR `#487` proves associated-cohort rendered delivery UI activation through an explicit server-authoritative gate over the existing same-origin attachment form

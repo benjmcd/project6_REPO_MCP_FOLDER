@@ -207,12 +207,12 @@ Block before upload/source expansion:
 
 ## Allowed Next Slices
 
-Allowed near-term next slices are narrow and proof-oriented, but not authentication/security work:
+Allowed near-term next slices are narrow and proof-oriented, but not authentication/security work. Branch `codex/l3-proof-idempotency-hardening` already contains branch-only Gate B post-commit retry idempotency and material-preview hash hardening; do not treat that exact slice as still unstarted after this branch commit.
 
-1. Gate B idempotency proof and implementation.
+1. Gate B idempotency/hash follow-up only if fresh proof finds a missed edge in the branch-local hardening.
 2. Frontend session recovery and Gate B draft-loss hardening.
 3. Canonical state/action contract hardening.
-4. Preview hash/idempotency contract hardening.
+4. Preview hash/idempotency contract hardening beyond the branch-local Gate B/material-preview slice only if evidence warrants it.
 5. Progress/proof/state drift checker.
 6. No-behavior-change service extraction if scoped to reducing `layer3_workbench.py` risk without changing runtime behavior.
 7. CI expansion only for non-security Layer 3 state/idempotency/proof coverage.

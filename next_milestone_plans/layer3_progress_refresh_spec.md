@@ -31,9 +31,10 @@ Local-only `2026-05-05` progress/proof sync:
 - authority rule used: `HEAD` matched `project6-origin/main`, and `git diff --name-status HEAD project6-origin/main` was empty
 - remote state was not refreshed; do not treat this local-only sync as GitHub proof for open/merged PR state beyond local git history
 - local current main includes PR `#527` through PR `#530` as Layer 3 modular extraction/refactor work after the PR `#522` through PR `#525` governance chain; do not treat those modular extractions as broad feature expansion
+- branch `codex/l3-proof-idempotency-hardening` contains branch-only Gate B post-commit retry idempotency and material-preview hash hardening after this local-only sync; do not treat that branch-only implementation as current-main behavior until merged
 - remaining authentication/security work is intentionally deferred from near-term planning
 - provider/public URL implementation, connector/destination dispatch, upload-security hardening, signed-reference security hardening, qualitative/hybrid/RAG execution, broad source/runtime/schema widening, package mutation/reconstruction, and full mockup activation are not immediate next slices by default
-- near-term work should stay on non-security progress/proof/state/idempotency/refactor surfaces unless a later explicit directive changes that scope
+- near-term work should stay on non-security progress/proof/state/refactor surfaces unless a later explicit directive changes that scope; repeat Gate B idempotency/hash work only if fresh proof finds a missed edge in the branch-local hardening
 
 Docs `110_PROVIDER_URL_FREEZE.md` and `111_PROVIDER_URL_CONTRACT.md`, when present, are planning/control provider/public URL governance only. They freeze provider/public URL behavior as not admitted after PR `#520` durable same-origin signed-reference runtime and PR `#522` residual settlement. Do not classify them as provider URL generation, public URL generation, object-store ACL behavior, connector/destination dispatch, rendered provider URL controls, package mutation, schema/runtime/source widening, qualitative execution, or route behavior by themselves.
 

@@ -117,6 +117,7 @@ def _check_summary_counts(manifest: dict[str, Any], errors: list[str]) -> None:
 
     planning = 0
     live = 0
+    branch_only_implementation = 0
     malformed = 0
     for item in slices:
         if not isinstance(item, dict):
@@ -130,6 +131,8 @@ def _check_summary_counts(manifest: dict[str, Any], errors: list[str]) -> None:
             planning += 1
         if "live_bounded" in state:
             live += 1
+        if state.startswith("branch_only_implementation"):
+            branch_only_implementation += 1
 
     if malformed:
         errors.append(f"layer3_workbench_slices contains malformed records: {malformed}")
@@ -138,6 +141,7 @@ def _check_summary_counts(manifest: dict[str, Any], errors: list[str]) -> None:
         "workbench_slice_records": len(slices),
         "workbench_planning_only_slices": planning,
         "workbench_live_bounded_slices": live,
+        "workbench_branch_only_implementation_slices": branch_only_implementation,
     }
     for key, actual in expected.items():
         recorded = summary.get(key)
@@ -176,7 +180,8 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
     else:
         required_terms = [
             "defer remaining authentication/security",
-            "non-security state/proof/idempotency/refactor slice",
+            "branch-local Gate B idempotency/material-preview-hash hardening",
+            "non-security state/proof/refactor slice",
         ]
         for term in required_terms:
             if term not in next_required:
@@ -189,9 +194,8 @@ def _check_current_decision(manifest: dict[str, Any], errors: list[str]) -> None
     allowed_text = "\n".join(str(item) for item in allowed_actions)
     required_allowed = [
         "progress/proof/state drift checker",
-        "Gate B idempotency",
         "canonical state/action contract",
-        "preview hash/idempotency",
+        "preview hash/idempotency follow-up",
         "frontend session recovery",
         "no-behavior-change service extraction",
     ]
@@ -270,6 +274,8 @@ def _check_local_boundary(errors: list[str]) -> None:
     allowed_intro = "Allowed near-term next slices are narrow and proof-oriented, but not authentication/security work"
     if allowed_intro not in allowed:
         errors.append("Allowed Next Slices section no longer records near-term auth/security deferral")
+    if "branch-only Gate B post-commit retry idempotency and material-preview hash hardening" not in allowed:
+        errors.append("Allowed Next Slices section no longer records branch-local Gate B hardening status")
 
     allowed_part, _, blocked_part = allowed.partition("Not allowed as immediate next slices from this freeze:")
     if not blocked_part:
@@ -277,10 +283,10 @@ def _check_local_boundary(errors: list[str]) -> None:
         return
 
     required_near_term = [
-        "Gate B idempotency proof and implementation",
+        "Gate B idempotency/hash follow-up only if fresh proof finds a missed edge",
         "Frontend session recovery and Gate B draft-loss hardening",
         "Canonical state/action contract hardening",
-        "Preview hash/idempotency contract hardening",
+        "Preview hash/idempotency contract hardening beyond the branch-local Gate B/material-preview slice",
         "Progress/proof/state drift checker",
         "No-behavior-change service extraction",
     ]
@@ -314,20 +320,23 @@ def _check_progress_text_surfaces(errors: list[str]) -> None:
             "As of `2026-05-05`",
             "cb06daf6d964cb24497a4819b1b88704c4bf8f74",
             "remaining authentication/security work is intentionally deferred",
-            "prefer non-security state/proof/idempotency/refactor work",
+            "branch-only Gate B post-commit retry idempotency and material-preview hash hardening",
+            "prefer non-security state/proof/refactor work",
         ],
         REFRESH_SPEC: [
             "Local-only `2026-05-05` progress/proof sync",
             "cb06daf6d964cb24497a4819b1b88704c4bf8f74",
             "remote state was not refreshed",
             "remaining authentication/security work is intentionally deferred",
-            "near-term work should stay on non-security progress/proof/state/idempotency/refactor surfaces",
+            "branch-only Gate B post-commit retry idempotency and material-preview hash hardening",
+            "near-term work should stay on non-security progress/proof/state/refactor surfaces",
             "python .\\tools\\l3-progress-check.py",
         ],
         PROGRESS_PROMPT: [
             "local-only progress/proof sync on `2026-05-05`",
             "cb06daf6d964cb24497a4819b1b88704c4bf8f74",
             "remaining authentication/security work",
+            "branch-only Gate B post-commit retry idempotency and material-preview hash hardening",
             "Prefer non-security progress/proof/state/idempotency/refactor work",
             "python .\\tools\\l3-progress-check.py",
         ],
