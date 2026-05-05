@@ -1,6 +1,6 @@
 # Layer 3 Package Mutation Freeze
 
-Status: implementation-entry freeze plus bounded runtime contract for `package_supersession_preview_only` on branch `codex/l3-package-supersession-preview` from `project6-origin/main=c44a8762`.
+Status: implementation-entry freeze plus bounded runtime contract for `package_supersession_preview_only`, implemented on current main by PR #540 at `project6-origin/main=c23a48c1`.
 
 This artifact selects and governs the first safe package mutation/reconstruction entry mode. Runtime implementation scope is limited to `/api/v1/layer3/package/mutation/preview` and `backend/app/services/layer3_package_mutation_entry.py`. It does not add a commit route, model, migration, package row update, payload rewrite, payload deletion, handoff/export change, connector dispatch, source expansion, qualitative/hybrid/RAG execution, rendered control, full mockup activation, or authentication/security work.
 
@@ -8,8 +8,9 @@ This artifact selects and governs the first safe package mutation/reconstruction
 
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
 - implementation_branch: `codex/l3-package-supersession-preview`
+- merged_pr: `#540`
 - baseline_ref: `project6-origin/main`
-- baseline_commit: `c44a8762`
+- baseline_commit: `c23a48c1`
 - source gates: `105_deferred-gates.md`, `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`, `118_L3_GOAL_AUDIT.md`, `120_L3_CLOSEOUT.md`, package construction docs `50`/`51` and `88`/`89`, and connector entry doc `121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md`
 - source code checked: `backend/app/services/layer3_state_action_contract.py`, `backend/app/services/layer3_workbench.py`, `backend/app/services/layer3_package_mutation_entry.py`, `backend/app/api/layer3.py`, focused Layer 3 API tests, and package construction planning docs
 - local caveat: `.omc/state/*` and local sidecars are operator/tooling state and are not evidence for this freeze
