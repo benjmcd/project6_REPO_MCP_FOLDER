@@ -1,16 +1,17 @@
-# Layer 3 Bounded Branch Closeout
+# Layer 3 Merged-Main Closeout
 
-Status: local branch closeout for `codex/l3-frontend-session-recovery` after session-status migration constraint alignment.
+Status: current-main closeout after PR #535 merged at `project6-origin/main=7d07477a`.
 
-This file is review/merge preparation only. It does not admit new runtime behavior, implement a deferred lane, or replace live source/tests as authority.
+This file is post-merge documentation/proof synchronization only. It does not admit new runtime behavior, implement a deferred lane, or replace live source/tests as authority.
 
 ## Authority Snapshot
 
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
-- branch: `codex/l3-frontend-session-recovery`
-- latest committed implementation branch head before this merge-prep evidence update: `099c0da3`
+- docs_sync_branch: `codex/l3-post535-doc-sync`
+- merged_pr: `#535`
+- merged_main_head: `7d07477a`
 - current baseline ref: `project6-origin/main`
-- local merge-prep evidence is captured below and must be re-run if `project6-origin/main` moves.
+- local docs-sync authority was read from `project6-origin/main=7d07477a` and must be rechecked if `project6-origin/main` moves.
 - known local caveat: `.omc/state/hud-state.json`, `.omc/state/hud-stdin-cache.json`, `.codesight/`, `.cursorrules`, `.github/copilot-instructions.md`, `CLAUDE.md`, and `codex.md` are local operator/sidecar state and are not implementation evidence.
 
 Authority order for this closeout:
@@ -28,7 +29,7 @@ Authority order for this closeout:
 | Synthesis critical items before broader work | Partially complete and bounded | `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`; `118_L3_GOAL_AUDIT.md`; `tools/l3-progress-check.py` | Auth/security remains deferred; broad activation remains blocked. |
 | Canonical state/action contract | Implemented and guarded | `backend/app/services/layer3_state_action_contract.py`; `backend/tests/test_layer3_workbench.py`; `backend/tests/test_layer3_api.py`; progress checker verifies admitted/deferred capability split | Deferred capability ids are not action ids. |
 | Session-status migration constraint | Implemented and guarded | `backend/alembic/versions/0012_layer3_session_entry.py`; `backend/tests/test_layer3_session_entry.py::test_layer3_session_entry_migration_defines_status_check_constraint`; progress checker verifies the migration/test/doc proof terms | `L3Session.status` vocabulary only; no broad state-machine rewrite, lifecycle recovery, supersession, execution, source, package, connector, mockup, or auth/security behavior change. |
-| Frontend session recovery | Implemented earlier on this branch | `backend/app/review_ui/static/layer3.js`; `backend/tests/test_layer3_page.py`; `e2e/layer3-workbench.spec.js`; recorded headed/headless proof in `118_L3_GOAL_AUDIT.md` | Server-revalidated recovery only; not frontend-only durable state or full mockup activation. |
+| Frontend session recovery | Implemented and merged via PR #535 | `backend/app/review_ui/static/layer3.js`; `backend/tests/test_layer3_page.py`; `e2e/layer3-workbench.spec.js`; recorded headed/headless proof in `118_L3_GOAL_AUDIT.md`; PR #535 checks and post-merge `main` workflow passed | Server-revalidated recovery only; not frontend-only durable state or full mockup activation. |
 | Service extraction to reduce workbench risk | Implemented narrowly | `backend/app/services/layer3_plan_revision_state.py`; `backend/app/services/layer3_gate_b_state.py`; `backend/app/services/layer3_source_boundary.py`; related tests | No broad `layer3_workbench.py` rewrite. |
 | Same-origin signed-reference service proof | Implemented and guarded | `backend/app/services/layer3_signed_reference_state.py`; `backend/tests/test_layer3_signed_reference_state.py`; progress checker verifies the atomic conditional update and lifecycle/concurrent-use proof | Same-origin signed-reference state only; no provider/public URL, revocation API, connector/destination dispatch, or broad delivery behavior. |
 | Plan-preview DTO boundary | Implemented and guarded | `backend/app/api/layer3.py` `Layer3PlanPreviewRequest`; `backend/tests/test_layer3_api.py::test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation`; progress checker verifies the strict request boundary | Plan preview known fields only; no plan materialization, execution, package, handoff, source widening, mockup, or auth/security behavior change. |
@@ -39,7 +40,7 @@ Authority order for this closeout:
 | Broad source/upload expansion | Not implemented; remains blocked | `backend/app/services/layer3_source_boundary.py`; `backend/tests/test_layer3_source_boundary.py`; progress checker verifies supported and unsupported source classes | Only `dataset_version` and `aps_content_document` are admitted. |
 | Qualitative/hybrid/RAG execution | Exact single APS-document qualitative pass implemented; broad qualitative/hybrid/RAG remains blocked | `backend/app/services/layer3_qual_aps_execution.py`; `backend/tests/test_layer3_qual_aps_execution.py`; `backend/app/services/layer3_state_action_contract.py`; progress checker verifies exact/broad split | Only `single_aps_doc_qualitative_pass` is admitted. |
 | Full mockup activation | Not implemented; remains blocked | `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`; `118_L3_GOAL_AUDIT.md` | Mockups are target-state artifacts and do not admit runtime behavior. |
-| Authority-boundary preservation | Preserved | `python .\tools\l3-progress-check.py` passes; focused Layer 3 backend suite passed with `264 passed`; broad capabilities remain `admitted: false` | This is branch-local proof, not merged-main proof. |
+| Authority-boundary preservation | Preserved | `python .\tools\l3-progress-check.py` passes; focused Layer 3 backend suite passed with `264 passed`; PR #535 checks and post-merge `main` workflow passed; broad capabilities remain `admitted: false` | This is current-main proof after PR #535, not proof of deferred broad lanes. |
 
 ## Validation Evidence
 
@@ -49,7 +50,7 @@ Run from `C:\Users\benny\Downloads\worktree_for_audits`.
 python .\tools\l3-progress-check.py
 ```
 
-Expected and observed result after session-status migration constraint alignment:
+Expected and observed result during this post-merge docs/proof sync:
 
 ```text
 Layer 3 progress state check: PASS
@@ -69,23 +70,16 @@ Observed result during this closeout pass:
 
 The repeated Windows pytest temp cleanup `PermissionError` appeared after successful pytest exit in some runs and did not change the command exit code.
 
-Local merge-prep command:
-
-```powershell
-git merge-tree --write-tree project6-origin/main HEAD
-```
-
-Expected local result:
+PR #535 CI proof:
 
 ```text
-command exits 0 and prints a merge-tree object id
+Pre-merge PR #535 checks: backend-layer3-api SUCCESS; test SUCCESS.
+Post-merge main workflow run 25363495856 for 7d07477a: backend-layer3-api SUCCESS; test SUCCESS.
 ```
-
-Observed locally during merge-prep against `project6-origin/main=81deeb24`: the command exited 0 and printed a merge-tree object id. This proves the branch had no local merge conflict against that local baseline at command time only. Re-run the command before landing, especially if `HEAD` or `project6-origin/main` moves.
 
 ## Merge-Readiness Boundary
 
-Ready to review as a bounded branch:
+Merged as bounded current-main scope:
 
 - canonical state/action contract hardening;
 - session-status migration constraint alignment;
@@ -114,4 +108,4 @@ Not ready to claim:
 
 ## Next Decision
 
-The next productive step is local review/merge preparation for this bounded branch. Any later runtime expansion must start with a separate implementation-entry freeze that selects exactly one currently deferred lane and proves live authority for it.
+The immediate next step is this post-merge docs/proof sync. After it lands, any later runtime expansion must start with a separate implementation-entry freeze that selects exactly one currently deferred lane and proves live authority for it.
