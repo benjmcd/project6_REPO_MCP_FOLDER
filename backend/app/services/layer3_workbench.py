@@ -136,14 +136,12 @@ from app.services.layer3_response_contract import (
 )
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 from app.services.layer3_authority_rail import authority_rail as _authority_rail
+from app.services.layer3_bootstrap_contract import build_bootstrap_contract
 from app.services.layer3_preview_contract import (
     plan_preview_hash_contract as _plan_preview_hash_contract,
     preview_identity as _preview_identity,
 )
-from app.services.layer3_readiness_contract import (
-    EXECUTION_READINESS_SCHEMA_ID,
-    build_readiness_contract,
-)
+from app.services.layer3_readiness_contract import build_readiness_contract
 from app.services.layer3_qual_aps_execution import (
     ENGINE_FAMILY_QUAL_APS_DOCUMENT,
     Layer3QualApsExecutionError,
@@ -1546,95 +1544,20 @@ def readiness_contract() -> dict[str, Any]:
 
 
 def bootstrap() -> dict[str, Any]:
-    return {
-        **_base_response("layer3.workbench_bootstrap.v1"),
-        "route": ROUTE,
-        "api_root": API_ROOT,
-        "supported_source_classes": list(SUPPORTED_SOURCE_CLASSES),
-        "preview_only_source_classes": [],
-        "unsupported_source_classes": list(UNSUPPORTED_SOURCE_CLASSES),
-        "gate_labels": list(GATE_LABELS),
-        "active_gate_labels": list(ACTIVE_GATES),
-        "unavailable_gate_labels": list(DOWNSTREAM_UNAVAILABLE),
-        "state_action_contract": _workbench_state_action_contract(),
-        "features": {
-            "plan_preview": True,
-            "plan_approval": True,
-            "execution_selection": True,
-            "analysis_execution_start": True,
-            "execution_result_status": True,
-            "execution_result_review": True,
-            "package_review_preview": True,
-            "package_construction_commit": True,
-            "package_review_submit": True,
-            "handoff_export_prepare": True,
-            "aps_handoff_dispatch": True,
-            "external_export_download_prepare": True,
-            "external_export_download_deliver": True,
-            "internal_connector_dispatch_record": True,
-            "package_supersession_preview": True,
-            "replacement_package_set_authority": True,
-            "package_supersession_commit": True,
-            "analysis_execution": False,
-            "single_aps_doc_qualitative_execution": True,
-            "broad_qualitative_execution": False,
-            "hybrid_execution": False,
-            "rag_vector_retrieval": False,
-            "package_review": False,
-            "handoff": False,
-            "external_export": False,
-            "dispatch": False,
-            "runtime_snapshot_db_writes": False,
-            "schema_widening": False,
-            "typing_override_enabled": False,
-        },
-        "execution_readiness": {
-            "schema_id": EXECUTION_READINESS_SCHEMA_ID,
-            "execution_admitted": False,
-            "execution_enabled": False,
-            "execution_selection_admitted": True,
-            "execution_selection_endpoint": f"{API_ROOT}/execution/select",
-            "analysis_execution_admitted": False,
-            "analysis_execution_start_admitted": True,
-            "analysis_execution_start_endpoint": f"{API_ROOT}/execution/start",
-            "execution_result_status_admitted": True,
-            "execution_result_status_endpoint": f"{API_ROOT}/execution/result/status",
-            "execution_result_review_admitted": True,
-            "execution_result_review_endpoint": f"{API_ROOT}/execution/result/review",
-            "package_review_preview_admitted": True,
-            "package_review_preview_endpoint": f"{API_ROOT}/package/review/preview",
-            "package_construction_commit_admitted": True,
-            "package_construction_commit_endpoint": f"{API_ROOT}/package/review/commit",
-            "package_review_submit_admitted": True,
-            "package_review_submit_endpoint": f"{API_ROOT}/package/review/submit",
-            "handoff_export_prepare_admitted": True,
-            "handoff_export_prepare_endpoint": f"{API_ROOT}/handoff/export/prepare",
-            "aps_handoff_dispatch_admitted": True,
-            "aps_handoff_dispatch_endpoint": f"{API_ROOT}/handoff/aps/dispatch",
-            "external_export_download_prepare_admitted": True,
-            "external_export_download_prepare_endpoint": f"{API_ROOT}/handoff/export/download/prepare",
-            "external_export_download_deliver_admitted": True,
-            "external_export_download_deliver_endpoint": f"{API_ROOT}/handoff/export/download/deliver",
-            "internal_connector_dispatch_record_admitted": True,
-            "internal_connector_dispatch_record_endpoint": f"{API_ROOT}/handoff/connector/record",
-            "package_supersession_preview_admitted": True,
-            "package_supersession_preview_endpoint": f"{API_ROOT}/package/mutation/preview",
-            "replacement_package_set_authority_admitted": True,
-            "replacement_package_set_authority_endpoint": f"{API_ROOT}/package/replacement-set/record",
-            "package_supersession_commit_admitted": True,
-            "package_supersession_commit_endpoint": f"{API_ROOT}/package/supersession/commit",
-            "package_review_admitted": False,
-            "external_handoff_admitted": False,
-            "external_export_admitted": False,
-            "dispatch_admitted": False,
-            "readiness_state": "execution_readiness_blocked",
-            "readiness_endpoint": f"{API_ROOT}/readiness",
-        },
-        "authority_rail": _authority_rail(
+    return build_bootstrap_contract(
+        route=ROUTE,
+        api_root=API_ROOT,
+        supported_source_classes=SUPPORTED_SOURCE_CLASSES,
+        unsupported_source_classes=UNSUPPORTED_SOURCE_CLASSES,
+        gate_labels=GATE_LABELS,
+        active_gate_labels=ACTIVE_GATES,
+        unavailable_gate_labels=DOWNSTREAM_UNAVAILABLE,
+        state_action_contract=_workbench_state_action_contract(),
+        authority_rail=_authority_rail(
             current_gate="intent",
             browser_only_state=["expanded_rows", "hidden_uncommitted_candidates", "selected_tab"],
         ),
-    }
+    )
 
 
 def _manual_constraints(payload: dict[str, Any]) -> dict[str, Any]:
