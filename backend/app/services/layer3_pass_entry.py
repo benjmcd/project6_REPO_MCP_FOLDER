@@ -36,6 +36,13 @@ from app.services.layer3_typing_entry import (
     SET_TYPE_ASSOCIATED_COHORT,
     SET_TYPE_SINGLE_ITEM,
 )
+from app.services.layer3_qual_aps_execution import (
+    ENGINE_FAMILY_QUAL_APS_DOCUMENT,
+    PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE,
+    QUAL_APS_METHOD_NAME,
+    QUAL_APS_SOURCE_GATE,
+    qualitative_aps_candidate_exclusion_reason,
+)
 from app.services.layer3_utils import (
     json_clone as _json_clone,
     stable_hash as _stable_hash,
@@ -145,6 +152,7 @@ class _AdmittedSetCandidate:
     pass_scope: str
     source_gate: str
     selected_method_name: str
+    engine_family: str = ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
     dataset_version_id: str | None = None
     input_payload_ref: str | None = None
     prepared_cohort: _PreparedCohortCandidate | None = None
@@ -657,15 +665,6 @@ def _classify_sets(
             raise Layer3PassEntryError(
                 f"Layer 3 analysis set '{analysis_set.analysis_set_id}' references a missing analysis unit"
             )
-        if analysis_unit.analysis_modality != MODALITY_QUANTITATIVE:
-            excluded.append(
-                _exclusion_entry(
-                    analysis_set,
-                    reason_code="analysis_modality_not_admitted",
-                    analysis_modality=analysis_unit.analysis_modality,
-                )
-            )
-            continue
         member_snapshot_ids = list(analysis_unit.member_snapshot_ids_json or [])
         if len(member_snapshot_ids) != 1:
             excluded.append(
@@ -681,6 +680,40 @@ def _classify_sets(
             raise Layer3PassEntryError(
                 f"Layer 3 analysis unit '{analysis_unit.analysis_unit_id}' references a missing material snapshot"
             )
+        if analysis_unit.analysis_modality != MODALITY_QUANTITATIVE:
+            if analysis_unit.analysis_modality == "qualitative":
+                exclusion_reason = qualitative_aps_candidate_exclusion_reason(
+                    db,
+                    analysis_set=analysis_set,
+                    analysis_unit=analysis_unit,
+                    material_snapshot=snapshot,
+                )
+                if exclusion_reason is None:
+                    admitted.append(
+                        _AdmittedSetCandidate(
+                            analysis_set=analysis_set,
+                            analysis_units=(analysis_unit,),
+                            snapshots=(snapshot,),
+                            pass_type=PASS_TYPE_SINGLE_ITEM,
+                            pass_scope=PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE,
+                            source_gate=QUAL_APS_SOURCE_GATE,
+                            selected_method_name=QUAL_APS_METHOD_NAME,
+                            engine_family=ENGINE_FAMILY_QUAL_APS_DOCUMENT,
+                            input_payload_ref=snapshot.payload_ref,
+                        )
+                    )
+                    continue
+                reason_code = exclusion_reason
+            else:
+                reason_code = "analysis_modality_not_admitted"
+            excluded.append(
+                _exclusion_entry(
+                    analysis_set,
+                    reason_code=reason_code,
+                    analysis_modality=analysis_unit.analysis_modality,
+                )
+            )
+            continue
         if snapshot.source_shape != "dataset_version":
             excluded.append(
                 _exclusion_entry(
@@ -761,6 +794,47 @@ def _preserve_phase1a_loading_closure(session: L3Session) -> dict[str, Any]:
     return summary
 
 
+def _is_single_aps_doc_qualitative_candidate(candidate: _AdmittedSetCandidate) -> bool:
+    return (
+        candidate.engine_family == ENGINE_FAMILY_QUAL_APS_DOCUMENT
+        and candidate.pass_scope == PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE
+        and candidate.selected_method_name == QUAL_APS_METHOD_NAME
+        and candidate.source_gate == QUAL_APS_SOURCE_GATE
+    )
+
+
+def _planned_pass_source_fields(candidate: _AdmittedSetCandidate) -> dict[str, Any]:
+    if candidate.dataset_version_id is not None:
+        return {"dataset_version_id": candidate.dataset_version_id}
+    if candidate.prepared_cohort is not None:
+        return {"source_dataset_version_ids_json": list(candidate.prepared_cohort.source_dataset_version_ids)}
+    if _is_single_aps_doc_qualitative_candidate(candidate):
+        snapshot = candidate.snapshots[0]
+        identity = snapshot.source_identity_json or {}
+        return {
+            "material_snapshot_id": snapshot.material_snapshot_id,
+            "content_id": identity.get("content_id"),
+            "content_contract_id": identity.get("content_contract_id"),
+            "chunking_contract_id": identity.get("chunking_contract_id"),
+        }
+    raise Layer3PassEntryError(
+        f"Layer 3 analysis set '{candidate.analysis_set.analysis_set_id}' has no admitted planned-pass source fields"
+    )
+
+
+def _plan_formation_reason(admitted: list[_AdmittedSetCandidate]) -> str:
+    if any(_is_single_aps_doc_qualitative_candidate(candidate) for candidate in admitted):
+        return "single_aps_doc_qualitative_pass_entry"
+    return "quantitative_dataset_version_backed_gatec_only"
+
+
+def _plan_source_gate(admitted: list[_AdmittedSetCandidate]) -> str:
+    source_gates = {candidate.source_gate for candidate in admitted}
+    if len(source_gates) == 1:
+        return next(iter(source_gates))
+    return "mixed_gatec_pass_entry"
+
+
 def _plan_payload(
     admitted: list[_AdmittedSetCandidate],
     excluded: list[dict[str, Any]],
@@ -773,7 +847,7 @@ def _plan_payload(
                 "set_type": candidate.analysis_set.set_type,
                 "pass_type": candidate.pass_type,
                 "pass_scope": candidate.pass_scope,
-                "engine_family": ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS,
+                "engine_family": candidate.engine_family,
                 "selected_method_name": candidate.selected_method_name,
                 "source_gate": candidate.source_gate,
                 **(
@@ -791,29 +865,13 @@ def _plan_payload(
                     if candidate.pass_type == PASS_TYPE_ASSOCIATED_COHORT
                     else {}
                 ),
-                **(
-                    {"dataset_version_id": candidate.dataset_version_id}
-                    if candidate.dataset_version_id is not None
-                    else {
-                        "source_dataset_version_ids_json": list(
-                            candidate.prepared_cohort.source_dataset_version_ids
-                        )
-                    }
-                ),
+                **_planned_pass_source_fields(candidate),
             }
             for candidate in admitted
         ],
         "excluded_sets_json": _json_clone(excluded),
-        "formation_reason": "quantitative_dataset_version_backed_gatec_only",
-        "source_gate": (
-            SOURCE_GATE_COHORT_DESC_FREEZE
-            if any(candidate.source_gate == SOURCE_GATE_COHORT_DESC_FREEZE for candidate in admitted)
-            else (
-                SOURCE_GATE_COHORT_FREEZE
-                if any(candidate.pass_type == PASS_TYPE_ASSOCIATED_COHORT for candidate in admitted)
-                else SOURCE_GATE_PASS_FREEZE
-            )
-        ),
+        "formation_reason": _plan_formation_reason(admitted),
+        "source_gate": _plan_source_gate(admitted),
     }
 
 
@@ -832,6 +890,7 @@ def _preview_admitted_entry(candidate: _AdmittedSetCandidate) -> dict[str, Any]:
         "analysis_modality": candidate.analysis_set.formation_basis_json.get("analysis_modality"),
         "pass_type": candidate.pass_type,
         "pass_scope": candidate.pass_scope,
+        "engine_family": candidate.engine_family,
         "readiness": "admitted",
         "source_summary": _candidate_source_summary(candidate),
     }
@@ -877,7 +936,12 @@ def _preview_planned_pass(candidate: _AdmittedSetCandidate) -> dict[str, Any]:
         "pass_type": candidate.pass_type,
         "pass_scope": candidate.pass_scope,
         "analysis_set_id": candidate.analysis_set.analysis_set_id,
-        "method_family": "repo_supported_quantitative",
+        "method_family": (
+            "repo_supported_qualitative_aps_document"
+            if _is_single_aps_doc_qualitative_candidate(candidate)
+            else "repo_supported_quantitative"
+        ),
+        "engine_family": candidate.engine_family,
         "selected_method_name": candidate.selected_method_name,
         "execution_status": "not_started",
         "preview_only": True,
@@ -886,6 +950,8 @@ def _preview_planned_pass(candidate: _AdmittedSetCandidate) -> dict[str, Any]:
         result["dataset_version_id"] = candidate.dataset_version_id
     if candidate.prepared_cohort is not None:
         result["source_dataset_version_ids"] = list(candidate.prepared_cohort.source_dataset_version_ids)
+    if _is_single_aps_doc_qualitative_candidate(candidate):
+        result.update(_planned_pass_source_fields(candidate))
     return result
 
 
@@ -974,6 +1040,13 @@ def _load_admitted_preview_basis(
         unit_by_id=unit_by_id,
         snapshot_by_id=snapshot_by_id,
     )
+    qualitative_admitted = [
+        candidate for candidate in admitted if _is_single_aps_doc_qualitative_candidate(candidate)
+    ]
+    if qualitative_admitted and (len(qualitative_admitted) != 1 or len(admitted) != 1 or len(analysis_sets) != 1):
+        raise Layer3PassEntryError(
+            "single_aps_doc_qualitative_pass admits exactly one qualitative APS document analysis set"
+        )
     if not admitted:
         raise Layer3PassEntryError(
             f"Layer 3 session '{session_id}' has no admissible analysis sets for Gate C pass entry"
@@ -1097,6 +1170,7 @@ def _initial_pass_summary(candidate: _AdmittedSetCandidate) -> dict[str, Any]:
         "selected_method_name": candidate.selected_method_name,
         "analysis_set_id": candidate.analysis_set.analysis_set_id,
         "pass_scope": candidate.pass_scope,
+        "engine_family": candidate.engine_family,
         "source_gate": candidate.source_gate,
         "analysis_run_id": None,
     }
@@ -1104,6 +1178,9 @@ def _initial_pass_summary(candidate: _AdmittedSetCandidate) -> dict[str, Any]:
         snapshot = candidate.snapshots[0]
         summary["source_snapshot_id"] = snapshot.material_snapshot_id
         summary["source_snapshot_payload_ref"] = snapshot.payload_ref
+        if _is_single_aps_doc_qualitative_candidate(candidate):
+            summary["source_shape"] = snapshot.source_shape
+            summary.update(_planned_pass_source_fields(candidate))
     else:
         assert candidate.prepared_cohort is not None
         summary["derived_dataset_version_id"] = None
@@ -1455,6 +1532,11 @@ def _execute_passes(
     wrapped_analysis_run_ids: list[str] = []
 
     for candidate in admitted:
+        if candidate.engine_family != ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS:
+            raise Layer3PassEntryError(
+                "Gate C materialize_pass_entry still admits only wrapped quantitative immediate execution; "
+                "use plan approval, execution selection, and selected-pass start for single APS-document qualitative execution"
+            )
         pass_run_id = uuid_str()
         dataset_version_id = candidate.dataset_version_id
         input_payload_ref = candidate.input_payload_ref

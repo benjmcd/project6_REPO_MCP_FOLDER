@@ -117,6 +117,12 @@ from app.services.layer3_workbench_package_state import (
     unexpected_package_kinds as package_state_unexpected_package_kinds,
 )
 from app.services.layer3_state_action_contract import build_state_action_contract
+from app.services.layer3_qual_aps_execution import (
+    ENGINE_FAMILY_QUAL_APS_DOCUMENT,
+    Layer3QualApsExecutionError,
+    execute_single_aps_doc_qualitative_pass,
+    is_single_aps_doc_qualitative_planned_pass,
+)
 
 SCHEMA_VERSION = 1
 ROUTE = "/review/layer3"
@@ -4081,6 +4087,31 @@ def _output_metadata_summary(pass_run: L3PassRun) -> tuple[dict[str, Any] | None
             "cohort_shape": payload.get("cohort_shape"),
             "requested_method_name": payload.get("requested_method_name"),
             "requested_method_source": payload.get("requested_method_source"),
+            "engine_family": payload.get("engine_family"),
+            "pass_type": payload.get("pass_type"),
+            "source_shape": payload.get("source_shape"),
+            "material_snapshot_id": payload.get("material_snapshot_id"),
+            "analysis_unit_id": payload.get("analysis_unit_id"),
+            "content_id": (
+                payload.get("content_id")
+                or (
+                    payload.get("document_identity", {}).get("content_id")
+                    if isinstance(payload.get("document_identity"), dict)
+                    else None
+                )
+            ),
+            "chunk_ids": (
+                list(payload.get("chunk_summary", {}).get("chunk_ids"))
+                if isinstance(payload.get("chunk_summary"), dict)
+                and isinstance(payload.get("chunk_summary", {}).get("chunk_ids"), list)
+                else None
+            ),
+            "chunk_hashes": (
+                list(payload.get("chunk_summary", {}).get("chunk_hashes"))
+                if isinstance(payload.get("chunk_summary"), dict)
+                and isinstance(payload.get("chunk_summary", {}).get("chunk_hashes"), list)
+                else None
+            ),
         },
         None,
     )
@@ -4192,6 +4223,23 @@ def _ensure_result_review_source_admitted(
     raise Layer3WorkbenchError(
         "associated_cohort_result_review_not_admitted",
         "Execution result-review is admitted only for exact selected-pass descriptive associated-cohort result/status output.",
+        status="blocked",
+        http_status=409,
+        next_allowed_actions=["inspect_execution_result_status"],
+    )
+
+
+def _raise_if_qualitative_aps_downstream_not_admitted(
+    *,
+    status_body: dict[str, Any],
+    action_label: str,
+    error_code: str,
+) -> None:
+    if status_body.get("engine_family") != ENGINE_FAMILY_QUAL_APS_DOCUMENT:
+        return
+    raise Layer3WorkbenchError(
+        error_code,
+        f"{action_label} is not admitted for the single APS-document qualitative execution slice.",
         status="blocked",
         http_status=409,
         next_allowed_actions=["inspect_execution_result_status"],
@@ -5015,15 +5063,31 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
             status="conflict",
             http_status=409,
         )
-    if pass_run.engine_family != ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS or str(planned_pass.get("engine_family") or "") != ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS:
+    qualitative_aps_pass = is_single_aps_doc_qualitative_planned_pass(
+        pass_run=pass_run,
+        planned_pass=planned_pass,
+    )
+    wrapped_quantitative_pass = (
+        pass_run.engine_family == ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
+        and str(planned_pass.get("engine_family") or "") == ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
+    )
+    if not wrapped_quantitative_pass and not qualitative_aps_pass:
         raise Layer3WorkbenchError(
             "unsupported_analysis_execution_engine",
-            "This execution-start slice admits only wrapped quantitative pass runs.",
+            "This execution-start slice admits only wrapped quantitative pass runs or the frozen single APS-document qualitative pass.",
             status="conflict",
             http_status=409,
         )
     planned_pass_type = str(planned_pass.get("pass_type") or pass_run.pass_type)
-    if planned_pass_type not in {PASS_TYPE_SINGLE_ITEM, PASS_TYPE_ASSOCIATED_COHORT}:
+    if qualitative_aps_pass:
+        if planned_pass_type != PASS_TYPE_SINGLE_ITEM:
+            raise Layer3WorkbenchError(
+                "unsupported_analysis_execution_source_breadth",
+                "Single APS-document qualitative execution admits only one selected single-item pass run.",
+                status="conflict",
+                http_status=409,
+            )
+    elif planned_pass_type not in {PASS_TYPE_SINGLE_ITEM, PASS_TYPE_ASSOCIATED_COHORT}:
         raise Layer3WorkbenchError(
             "unsupported_analysis_execution_source_breadth",
             "This execution-start slice admits only selected single-item pass runs or exact descriptive associated-cohort pass runs.",
@@ -5061,13 +5125,21 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
         )
 
     try:
-        execute_selected_pass_run(
-            db,
-            pass_run=pass_run,
-            planned_pass=planned_pass,
-            client_request_id=request_id,
-        )
-    except Layer3PassEntryError as exc:
+        if qualitative_aps_pass:
+            execute_single_aps_doc_qualitative_pass(
+                db,
+                pass_run=pass_run,
+                planned_pass=planned_pass,
+                client_request_id=request_id,
+            )
+        else:
+            execute_selected_pass_run(
+                db,
+                pass_run=pass_run,
+                planned_pass=planned_pass,
+                client_request_id=request_id,
+            )
+    except (Layer3PassEntryError, Layer3QualApsExecutionError) as exc:
         raise Layer3WorkbenchError(
             "analysis_execution_start_not_admitted",
             str(exc),
@@ -5309,10 +5381,18 @@ def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, A
             status="conflict",
             http_status=409,
         )
-    if pass_run.engine_family != ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS or str(planned_pass.get("engine_family") or "") != ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS:
+    qualitative_aps_pass = is_single_aps_doc_qualitative_planned_pass(
+        pass_run=pass_run,
+        planned_pass=planned_pass,
+    )
+    wrapped_quantitative_pass = (
+        pass_run.engine_family == ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
+        and str(planned_pass.get("engine_family") or "") == ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
+    )
+    if not wrapped_quantitative_pass and not qualitative_aps_pass:
         raise Layer3WorkbenchError(
             "unsupported_execution_result_status_engine",
-            "This result/status slice admits only wrapped quantitative pass runs.",
+            "This result/status slice admits only wrapped quantitative pass runs or the frozen single APS-document qualitative pass.",
             status="conflict",
             http_status=409,
         )
@@ -5321,7 +5401,15 @@ def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, A
         planned_pass=planned_pass,
         pass_run=pass_run,
     )
-    if planned_pass_type != PASS_TYPE_SINGLE_ITEM and not associated_cohort_descriptive:
+    if qualitative_aps_pass:
+        if planned_pass_type != PASS_TYPE_SINGLE_ITEM:
+            raise Layer3WorkbenchError(
+                "unsupported_execution_result_status_source_breadth",
+                "Single APS-document qualitative result/status admits only one selected single-item pass run.",
+                status="conflict",
+                http_status=409,
+            )
+    elif planned_pass_type != PASS_TYPE_SINGLE_ITEM and not associated_cohort_descriptive:
         raise Layer3WorkbenchError(
             "unsupported_execution_result_status_source_breadth",
             "This result/status slice admits only selected single-item pass runs or exact descriptive associated-cohort pass runs.",
@@ -6772,6 +6860,11 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    _raise_if_qualitative_aps_downstream_not_admitted(
+        status_body=status_body,
+        action_label="Package-review preview",
+        error_code="qualitative_aps_package_review_preview_not_admitted",
+    )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).first()
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).first()
@@ -7042,6 +7135,11 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    _raise_if_qualitative_aps_downstream_not_admitted(
+        status_body=status_body,
+        action_label="Package construction commit",
+        error_code="qualitative_aps_package_construction_commit_not_admitted",
+    )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
     analysis_plan = (
