@@ -3,9 +3,9 @@
 ## Authority Snapshot
 
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
-- authority_commit: `cb06daf6d964cb24497a4819b1b88704c4bf8f74`
+- authority_commit: `3fb7875ba7cc0325f8cdac0b1aca8d3df0bd44de`
 - baseline_ref: `project6-origin/main`
-- baseline_check: `HEAD` equals `project6-origin/main`; `git diff --name-status HEAD project6-origin/main` produced no committed-tree differences during this slice.
+- baseline_check: PR `#531` merged at `3fb7875ba7cc0325f8cdac0b1aca8d3df0bd44de`; `git ls-remote project6-origin refs/heads/main` returned the same commit during the post-PR531 progress/proof sync.
 - working_tree_caveat: pre-existing local operator/tooling state is present in `.omc/state/hud-state.json` and `.omc/state/hud-stdin-cache.json`; approved local sidecars are also present (`.codesight/`, `.cursorrules`, `.github/copilot-instructions.md`, `CLAUDE.md`, `codex.md`). These are not treated as implementation evidence.
 - slice_mode: planning/docs-only boundary freeze. No runtime code, tests, frontend assets, models, migrations, manifests, generated artifacts, or database state are changed by this slice.
 - near_term_direction: remaining authentication/security work is intentionally deferred. This artifact records boundaries and blockers only; it is not a recommendation to implement auth, proxy proof, upload security, or delivery-security hardening next.
@@ -207,12 +207,12 @@ Block before upload/source expansion:
 
 ## Allowed Next Slices
 
-Allowed near-term next slices are narrow and proof-oriented, but not authentication/security work. Branch `codex/l3-proof-idempotency-hardening` already contains branch-only Gate B post-commit retry idempotency and material-preview hash hardening; do not treat that exact slice as still unstarted after this branch commit.
+Allowed near-term next slices are narrow and proof-oriented, but not authentication/security work. PR `#531` already merged Gate B post-commit retry idempotency and material-preview hash hardening; do not treat that exact slice as still unstarted or branch-only after the post-PR531 sync.
 
-1. Gate B idempotency/hash follow-up only if fresh proof finds a missed edge in the branch-local hardening.
+1. Gate B idempotency/hash follow-up only if fresh proof finds a missed edge after merged PR `#531`.
 2. Frontend session recovery and Gate B draft-loss hardening.
 3. Canonical state/action contract hardening.
-4. Preview hash/idempotency contract hardening beyond the branch-local Gate B/material-preview slice only if evidence warrants it.
+4. Preview hash/idempotency contract hardening beyond merged PR `#531` only if evidence warrants it.
 5. Progress/proof/state drift checker.
 6. No-behavior-change service extraction if scoped to reducing `layer3_workbench.py` risk without changing runtime behavior.
 7. CI expansion only for non-security Layer 3 state/idempotency/proof coverage.
