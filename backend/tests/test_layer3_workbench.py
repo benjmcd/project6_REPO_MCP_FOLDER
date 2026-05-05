@@ -352,6 +352,7 @@ def test_state_action_contract_is_derived_from_state_model_without_admitting_def
     assert contract["decision_sets"]["record_replacement_package_set_authority"] == [
         "record_replacement_package_set_authority"
     ]
+    assert contract["decision_sets"]["package_supersession_commit"] == ["commit_package_supersession"]
 
     admitted_capabilities = {item["capability"]: item for item in contract["admitted_capabilities"]}
     assert admitted_capabilities["single_aps_doc_qualitative_execution"]["admitted"] is True
@@ -379,6 +380,12 @@ def test_state_action_contract_is_derived_from_state_model_without_admitting_def
     assert (
         admitted_capabilities["replacement_package_set_authority"]["owner_service"]
         == "backend/app/services/layer3_replacement_package_set_authority.py"
+    )
+    assert admitted_capabilities["package_supersession_commit_entry"]["admitted"] is True
+    assert admitted_capabilities["package_supersession_commit_entry"]["source_gate"] == "126_PACKAGE_COMMIT_FREEZE"
+    assert (
+        admitted_capabilities["package_supersession_commit_entry"]["owner_service"]
+        == "backend/app/services/layer3_package_supersession_commit.py"
     )
 
     deferred_capabilities = {item["capability"]: item for item in contract["deferred_capabilities"]}
