@@ -23,6 +23,7 @@ L3_MODEL_NAMES = (
     "L3OutputPackage",
     "L3PassRun",
     "L3ReconciliationRecord",
+    "L3ReplacementPackageSetAuthority",
     "L3RetrievalEvent",
     "L3SelectionManifest",
     "L3Session",

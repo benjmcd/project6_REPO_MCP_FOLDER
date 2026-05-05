@@ -41,6 +41,9 @@ SESSION_ENTRY_MIGRATION = (
 GATE_B_IDEMPOTENCY_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0017_layer3_gate_b_idempotency.py"
 )
+REPLACEMENT_PACKAGE_SET_AUTHORITY_MIGRATION = (
+    ROOT / "backend" / "alembic" / "versions" / "0018_layer3_replacement_package_set_authority.py"
+)
 LAYER3_API = ROOT / "backend" / "app" / "api" / "layer3.py"
 MODELS = ROOT / "backend" / "app" / "models" / "models.py"
 SOURCE_BOUNDARY_SERVICE = (
@@ -61,6 +64,9 @@ CONNECTOR_DISPATCH_SERVICE = (
 PACKAGE_MUTATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_package_mutation_entry.py"
 )
+REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_replacement_package_set_authority.py"
+)
 QUAL_APS_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_qual_aps_execution.py"
 MOCKUP_BOUNDARY_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_mockup_boundary.py"
 SOURCE_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_source_boundary.py"
@@ -68,6 +74,9 @@ QUAL_APS_TEST = ROOT / "backend" / "tests" / "test_layer3_qual_aps_execution.py"
 MOCKUP_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_mockup_boundary.py"
 SESSION_ENTRY_TEST = ROOT / "backend" / "tests" / "test_layer3_session_entry.py"
 GATE_B_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_gate_b_state.py"
+REPLACEMENT_PACKAGE_SET_AUTHORITY_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_replacement_package_set_authority.py"
+)
 SIGNED_REFERENCE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_signed_reference_state.py"
 )
@@ -640,7 +649,7 @@ def _check_package_mutation_freeze(errors: list[str]) -> None:
         GOAL_AUDIT: [
             "122_PACKAGE_MUTATION_FREEZE.md",
             "Read-only supersession preview implementation is live and tested",
-            "Only `package_supersession_preview_only` is admitted",
+            "Only `package_supersession_preview_only` and `replacement_package_set_authority` are admitted package lifecycle runtimes",
             "Existing bounded package construction/submit is not package mutation",
         ],
         CLOSEOUT_DOC: [
@@ -795,7 +804,7 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
         "Status: implementation-entry freeze only for `package_supersession_commit_entry`; no runtime behavior admitted.",
         "selected_package_lifecycle_mode: `package_supersession_commit_entry`",
         "replacement authority prerequisite: `127_PACKAGE_REPLACEMENT_SET_FREEZE.md`",
-        "`package_supersession_preview_only` remains the only admitted package lifecycle runtime",
+        "replacement package-set authority prerequisite through a bounded metadata-authority runtime",
         "`package_mutation_reconstruction` remains deferred",
         "future owner service candidate: `backend/app/services/layer3_package_supersession_commit.py`",
         "future API route candidate: `/api/v1/layer3/package/supersession/commit`",
@@ -806,7 +815,7 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
         "no runtime route, service, model, migration, UI control, package row mutation, package payload write, or package commit behavior is added by this slice",
         "package supersession commit runtime",
         "authentication/security hardening",
-        "package supersession commit runtime remains blocked until that prerequisite is implemented and proven separately",
+        "package supersession commit runtime remains blocked until a dedicated supersession lineage model/migration is implemented and proven separately",
     ]
     for term in required_freeze_terms:
         if term not in freeze_text:
@@ -827,8 +836,8 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
         ],
         GOAL_AUDIT: [
             "126_PACKAGE_COMMIT_FREEZE.md",
-            "package supersession commit entry is frozen as docs/proof-only",
-            "adds no route, service, model, migration, package row mutation",
+            "package supersession commit entry remains docs/proof-only",
+            "adds no commit route, service, model, migration, package row mutation",
         ],
         CLOSEOUT_DOC: [
             "Package supersession commit entry freeze",
@@ -837,7 +846,7 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
         ],
         PACKAGE_REPLACEMENT_SET_FREEZE: [
             "selected_package_lifecycle_mode: `replacement_package_set_authority`",
-            "no runtime behavior admitted",
+            "/api/v1/layer3/package/replacement-set/record",
             "L3OutputPackage",
             "uq_l3_output_package_session_kind",
         ],
@@ -869,7 +878,7 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
         errors.append("package_mutation_reconstruction must remain admitted false after package commit entry freeze")
     preview = admitted.get("package_supersession_preview_only")
     if preview is None or preview.get("admitted") is not True:
-        errors.append("package_supersession_preview_only must remain the only admitted package lifecycle runtime")
+        errors.append("package_supersession_preview_only must remain admitted true")
     else:
         blocked = preview.get("blocked_downstream")
         if not isinstance(blocked, list) or "package_supersession_commit" not in blocked:
@@ -879,16 +888,22 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
 def _check_package_replacement_set_freeze(errors: list[str]) -> None:
     freeze_text = _read_required_text(PACKAGE_REPLACEMENT_SET_FREEZE, errors)
     required_freeze_terms = [
-        "Status: implementation-entry freeze only for `replacement_package_set_authority`; no runtime behavior admitted.",
+        "Status: implementation-entry freeze plus bounded runtime contract for `replacement_package_set_authority`.",
         "selected_package_lifecycle_mode: `replacement_package_set_authority`",
         "current uniqueness blocker: `uq_l3_output_package_session_kind` keeps one output package per `(session_id, package_kind)`",
-        "`package_supersession_preview_only` remains the only admitted package lifecycle runtime",
+        "selected runtime route: `/api/v1/layer3/package/replacement-set/record`",
+        "owner service: `backend/app/services/layer3_replacement_package_set_authority.py`",
+        "authority model: `L3ReplacementPackageSetAuthority`",
+        "migration: `0018_layer3_replacement_package_set_authority.py`",
+        "current admitted package lifecycle runtimes: `package_supersession_preview_only` and `replacement_package_set_authority`",
         "`package_mutation_reconstruction` remains deferred",
-        "option A: a dedicated replacement package set table",
-        "option B: a package-set namespace model",
-        "option C: a separately frozen package construction variant lane",
+        "This slice selects option A from the freeze",
+        "Option B and option C remain deferred",
         "`operator_decision` must be exactly `record_replacement_package_set_authority`",
-        "no runtime route, service, model, migration, UI control, package row creation, package row mutation, package payload write, replacement package-set behavior, or package commit behavior is added by this slice",
+        "This runtime is acceptable only when tests prove",
+        "test_layer3_api_replacement_package_set_authority_records_without_package_row_or_payload_mutation",
+        "test_layer3_api_replacement_package_set_authority_prechecks_fail_closed",
+        "test_replacement_package_set_authority_concurrent_duplicate_request_records_one_authority",
         "replacement package row creation",
         "replacement package payload creation",
         "authentication/security hardening",
@@ -901,23 +916,23 @@ def _check_package_replacement_set_freeze(errors: list[str]) -> None:
         DEFERRED_GATES: [
             "127_PACKAGE_REPLACEMENT_SET_FREEZE.md",
             "replacement_package_set_authority",
-            "no replacement package rows, replacement payloads",
+            "durable metadata authority record with no replacement package rows",
             "runtime package mutation/reconstruction commit remains not admitted",
         ],
         PACKAGE_COMMIT_FREEZE: [
             "127_PACKAGE_REPLACEMENT_SET_FREEZE.md",
-            "replacement package-set authority prerequisite",
-            "package supersession commit runtime remains blocked",
+            "bounded metadata-authority runtime",
+            "package supersession commit runtime remains blocked until a dedicated supersession lineage model/migration is implemented and proven separately",
         ],
         GOAL_AUDIT: [
             "127_PACKAGE_REPLACEMENT_SET_FREEZE.md",
-            "replacement package-set authority is frozen as docs/proof-only",
+            "bounded replacement package-set authority runtime is live and tested",
             "unique by `(session_id, package_kind)`",
         ],
         CLOSEOUT_DOC: [
-            "Replacement package-set authority freeze",
-            "Docs/proof-only; no runtime behavior admitted",
-            "No replacement package rows, replacement payloads",
+            "Replacement package-set authority",
+            "Implemented and guarded as bounded metadata authority runtime",
+            "No replacement `L3OutputPackage` rows, replacement payload writes",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -932,16 +947,95 @@ def _check_package_replacement_set_freeze(errors: list[str]) -> None:
         "UniqueConstraint(\"session_id\", \"package_kind\", name=\"uq_l3_output_package_session_kind\")",
         "payload_ref: Mapped[str]",
         "payload_hash: Mapped[str]",
+        "class L3ReplacementPackageSetAuthority",
+        "UniqueConstraint(\"client_request_id\", name=\"uq_l3_replacement_package_set_client_request\")",
+        "UniqueConstraint(\"authority_basis_hash\", name=\"uq_l3_replacement_package_set_basis_hash\")",
+        "CheckConstraint(",
+        "record_replacement_package_set_authority",
     ):
         if term not in models_text:
-            errors.append(f"{_rel(MODELS)} missing replacement-set blocker term: {term}")
+            errors.append(f"{_rel(MODELS)} missing replacement package-set model term: {term}")
     for forbidden in (
-        "L3ReplacementPackageSet",
-        "L3PackageReplacementSet",
-        "replacement_package_set_id: Mapped",
+        "class L3ReplacementPackageSet(",
+        "class L3PackageReplacementSet(",
     ):
         if forbidden in models_text:
-            errors.append(f"{_rel(MODELS)} contains runtime replacement package-set model term: {forbidden}")
+            errors.append(f"{_rel(MODELS)} contains broad replacement package-set model term: {forbidden}")
+
+    migration_text = _read_required_text(REPLACEMENT_PACKAGE_SET_AUTHORITY_MIGRATION, errors)
+    for term in (
+        "revision = \"0018_layer3_replacement_package_set_authority\"",
+        "down_revision = \"0017_layer3_gate_b_idempotency\"",
+        "\"l3_replacement_package_set_authority\"",
+        "sa.UniqueConstraint(\"client_request_id\", name=\"uq_l3_replacement_package_set_client_request\")",
+        "sa.UniqueConstraint(\"authority_basis_hash\", name=\"uq_l3_replacement_package_set_basis_hash\")",
+        "sa.CheckConstraint(",
+        "record_replacement_package_set_authority",
+        "\"ix_l3_replacement_package_set_session\"",
+        "\"ix_l3_replacement_package_set_reconciliation\"",
+    ):
+        if term not in migration_text:
+            errors.append(f"{_rel(REPLACEMENT_PACKAGE_SET_AUTHORITY_MIGRATION)} missing replacement authority migration term: {term}")
+
+    service_text = _read_required_text(REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE, errors)
+    for term in (
+        "REPLACEMENT_PACKAGE_SET_AUTHORITY_MODE = \"replacement_package_set_authority\"",
+        "REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_DECISION = \"record_replacement_package_set_authority\"",
+        "REPLACEMENT_PACKAGE_SET_AUTHORITY_FORBIDDEN_FIELDS",
+        "replacement_package_set_hash",
+        "replacement_package_set_authority_basis_hash",
+        "record_replacement_package_set_authority",
+        "replacement_package_set_authority_scope_not_admitted",
+        "replacement_package_set_authority_source_package_set_hash_mismatch",
+        "replacement_package_set_authority_replacement_package_set_hash_mismatch",
+        "replacement_package_set_authority_basis_hash_mismatch",
+        "replacement_package_set_authority_reuses_source_payload_ref",
+        "replacement_package_set_authority_in_progress",
+        "\"package_row_mutation_enabled\": False",
+        "\"package_payload_write_enabled\": False",
+        "\"package_supersession_commit_enabled\": False",
+        "\"provider_public_url_enabled\": False",
+        "\"qualitative_hybrid_rag_execution_enabled\": False",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE)} missing replacement authority service term: {term}")
+    for forbidden in (
+        "L3OutputPackage(",
+        "AnalysisRun(",
+        "AnalysisArtifact(",
+        "L3PassRun(",
+        "ConnectorRun(",
+        "write_bytes(",
+    ):
+        if forbidden in service_text:
+            errors.append(f"{_rel(REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE)} contains forbidden creation/write term: {forbidden}")
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "Layer3ReplacementPackageSetAuthorityRequest",
+        "Layer3ReplacementPackageSetAuthorityResponse",
+        "REPLACEMENT_PACKAGE_SET_AUTHORITY_REQUEST_SCHEMA",
+        "\"/package/replacement-set/record\"",
+        "record_replacement_package_set_authority",
+        "\"package_payload\": {\"description\": \"Known but non-admitted; service rejects fail-closed.\"}",
+        "\"package_supersession_commit\": {\"description\": \"Known but non-admitted; service rejects fail-closed.\"}",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing replacement authority API term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "\"replacement_package_set_authority\"",
+        "\"record_replacement_package_set_authority\"",
+        "\"replacement_package_set_authority_admitted\": True",
+        "\"client_request_id_required_for_replacement_package_set_authority\": True",
+        "\"duplicate_replacement_package_set_authority\"",
+        "\"replacement_package_set_authority_uses_unique_request_and_basis\": True",
+        "record_replacement_package_set_authority",
+        "package row mutation, payload writes, and supersession commit remain blocked",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing replacement authority workbench term: {term}")
 
     admitted = _capability_map(
         _load_literal_assignment(STATE_ACTION_CONTRACT, "STATE_ACTION_ADMITTED_CAPABILITIES", errors),
@@ -953,14 +1047,75 @@ def _check_package_replacement_set_freeze(errors: list[str]) -> None:
         "STATE_ACTION_DEFERRED_CAPABILITIES",
         errors,
     )
-    for capability in ("replacement_package_set_authority", "package_supersession_commit"):
-        if capability in admitted:
-            errors.append(f"{capability} must not be admitted by the docs-only replacement package-set freeze")
+    replacement_authority = admitted.get("replacement_package_set_authority")
+    if replacement_authority is None:
+        errors.append("admitted capabilities missing replacement_package_set_authority")
+    else:
+        if replacement_authority.get("admitted") is not True:
+            errors.append("replacement_package_set_authority must be admitted true")
+        if replacement_authority.get("source_gate") != "127_PACKAGE_REPLACEMENT_SET_FREEZE":
+            errors.append("replacement_package_set_authority source_gate drifted")
+        if replacement_authority.get("owner_service") != "backend/app/services/layer3_replacement_package_set_authority.py":
+            errors.append("replacement_package_set_authority owner_service drifted")
+        blocked = replacement_authority.get("blocked_downstream")
+        if not isinstance(blocked, list):
+            errors.append("replacement_package_set_authority missing blocked_downstream list")
+        else:
+            for term in (
+                "package_mutation_reconstruction",
+                "package_supersession_commit",
+                "package_row_mutation",
+                "package_payload_rewrite",
+                "provider_public_url",
+                "connector_destination_dispatch",
+                "local_upload_or_directory_source_expansion",
+                "broad_qualitative_execution",
+                "hybrid_execution",
+                "rag_vector_retrieval",
+                "full_mockup_activation",
+            ):
+                if term not in blocked:
+                    errors.append(f"replacement_package_set_authority blocked_downstream missing {term}")
+    if "package_supersession_commit" in admitted:
+        errors.append("package_supersession_commit must not be admitted by replacement package-set authority runtime")
     package_mutation = deferred.get("package_mutation_reconstruction")
     if package_mutation is None:
         errors.append("deferred capabilities missing package_mutation_reconstruction")
     elif package_mutation.get("admitted") is not False:
         errors.append("package_mutation_reconstruction must remain admitted false after replacement package-set freeze")
+
+    state_contract_text = _read_required_text(STATE_ACTION_CONTRACT, errors)
+    for term in (
+        "\"replacement_package_set_authority\"",
+        "\"owner_service\": \"backend/app/services/layer3_replacement_package_set_authority.py\"",
+        "\"source_gate\": \"127_PACKAGE_REPLACEMENT_SET_FREEZE\"",
+        "\"record_replacement_package_set_authority\": [replacement_package_set_authority_operator_decision]",
+    ):
+        if term not in state_contract_text:
+            errors.append(f"{_rel(STATE_ACTION_CONTRACT)} missing replacement authority state/action term: {term}")
+
+    for path, terms in {
+        LAYER3_API_TEST: (
+            "test_layer3_api_replacement_package_set_authority_records_without_package_row_or_payload_mutation",
+            "test_layer3_api_replacement_package_set_authority_prechecks_fail_closed",
+            "package_row_mutation_enabled",
+            "package_payload_write_enabled",
+            "package_supersession_commit_enabled",
+            "replacement_package_set_authority_scope_not_admitted",
+            "replacement_package_set_authority_basis_hash_mismatch",
+        ),
+        REPLACEMENT_PACKAGE_SET_AUTHORITY_TEST: (
+            "test_replacement_package_set_authority_migration_defines_durable_unique_authority",
+            "test_replacement_package_set_authority_concurrent_duplicate_request_records_one_authority",
+            "uq_l3_replacement_package_set_client_request",
+            "uq_l3_replacement_package_set_basis_hash",
+            "replacement_package_set_authority_in_progress",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing replacement authority proof term: {term}")
 
 
 def _check_qualitative_capability_boundary(errors: list[str]) -> None:
@@ -1989,6 +2144,7 @@ def main() -> int:
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
         GATE_B_IDEMPOTENCY_MIGRATION,
+        REPLACEMENT_PACKAGE_SET_AUTHORITY_MIGRATION,
         LAYER3_API,
         MODELS,
         GATE_B_STATE_SERVICE,
@@ -1998,11 +2154,13 @@ def main() -> int:
         WORKBENCH_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
         PACKAGE_MUTATION_SERVICE,
+        REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE,
         SOURCE_BOUNDARY_TEST,
         QUAL_APS_TEST,
         MOCKUP_BOUNDARY_TEST,
         SESSION_ENTRY_TEST,
         GATE_B_STATE_TEST,
+        REPLACEMENT_PACKAGE_SET_AUTHORITY_TEST,
         SIGNED_REFERENCE_STATE_SERVICE,
         SIGNED_REFERENCE_STATE_TEST,
         LAYER3_API_TEST,
