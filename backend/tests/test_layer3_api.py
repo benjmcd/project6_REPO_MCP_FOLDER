@@ -639,7 +639,7 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
     approval_request_schema = spec["paths"]["/api/v1/layer3/plan/approve"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert approval_request_schema["additionalProperties"] is True
+    assert approval_request_schema["additionalProperties"] is False
     assert set(approval_request_schema["required"]) == {
         "session_id",
         "preview_id",
@@ -3836,6 +3836,54 @@ def test_layer3_api_plan_approval_rejects_confirmation_and_preview_mismatch(clie
     )
     assert mismatch.status_code == 409
     assert mismatch.json()["error_code"] == "preview_mismatch"
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_plan_approval_rejects_extra_fields_before_service_mutation(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-plan-approval-strict-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    ).json()
+
+    rejected = client.post(
+        "/api/v1/layer3/plan/approve",
+        json={
+            "client_request_id": "api-plan-approval-strict-extra",
+            "session_id": session_id,
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+            "execute": True,
+        },
+    )
+
+    assert rejected.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "execute"]
+        for item in rejected.json()["detail"]
+    )
 
     db = client.layer3_session_factory()
     try:

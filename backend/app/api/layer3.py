@@ -84,6 +84,17 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     deferred_decisions: dict[str, Any]
 
 
+class Layer3PlanApprovalRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str
+    preview_id: str
+    preview_hash: str
+    operator_confirmation: bool
+    approval_scope: str | None = None
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -871,8 +882,8 @@ PLAN_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 
 PLAN_APPROVAL_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known plan-approval fields; explicit execution/package/handoff fields remain fail-closed.",
+    "additionalProperties": False,
+    "description": "Strict plan-approval fields; extra execution/package/handoff fields are rejected before service mutation.",
     "required": ["session_id", "preview_id", "preview_hash", "operator_confirmation"],
     "properties": {
         "client_request_id": {"type": "string"},
@@ -1433,8 +1444,16 @@ def post_plan_preview(payload: dict[str, Any], db: Session = Depends(get_db)) ->
     openapi_extra={"requestBody": _json_request_body(PLAN_APPROVAL_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409, 500),
 )
-def post_plan_approve(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.plan_approval(db, payload))
+def post_plan_approve(
+    payload: Layer3PlanApprovalRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_workbench.plan_approval(
+            db,
+            payload.model_dump(exclude_none=True),
+        )
+    )
 
 
 @router.post(
