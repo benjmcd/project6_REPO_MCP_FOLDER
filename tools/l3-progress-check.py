@@ -1300,15 +1300,17 @@ def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
             "PR #544 separately established the `mockups_target_state_only` truth-state boundary with `274 passed`",
             "PR #545 was docs/proof synchronization only",
             "36526ee1",
+            "PR #547 established `Layer3PreflightRequest`",
+            "54c5d8ef",
         ],
         CLOSEOUT_DOC: [
-            "proof-snapshot synchronized after PR #545 merged at `project6-origin/main=36526ee1`",
+            "preflight DTO boundary proof synchronized after PR #547 merged at `project6-origin/main=54c5d8ef`",
             "This file is post-merge documentation/proof synchronization only.",
             "bounded snapshot, not an evergreen manifest",
             "snapshot_target_ref: `project6-origin/main`",
-            "snapshot_target_head: `36526ee1`",
-            "latest_functional_boundary_pr: `#544`",
-            "latest_docs_sync_pr: `#545`",
+            "snapshot_target_head: `54c5d8ef`",
+            "latest_functional_boundary_pr: `#547`",
+            "latest_docs_sync_pr: `#548`",
             "125_MOCKUP_TRUTH_STATE_FREEZE.md",
             "mockup_truth_state_contract()",
             "full mockup activation remains blocked",
@@ -1316,6 +1318,8 @@ def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
             "Merged main head after PR #544: 005ef212753adf2feb859b28362a0bee3d7d72d1.",
             "Pre-merge PR #545 checks: backend-layer3-api SUCCESS; test SUCCESS.",
             "Merged main head after PR #545: 36526ee1.",
+            "Pre-merge PR #547 checks: backend-layer3-api SUCCESS; test SUCCESS.",
+            "Merged main head after PR #547: 54c5d8ef.",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -1414,6 +1418,12 @@ def _check_preflight_request_guard(errors: list[str]) -> None:
             "Layer3PreflightRequest",
             "test_layer3_api_preflight_rejects_extra_fields_before_service_execution",
             "preflight DTO boundary",
+        ],
+        CLOSEOUT_DOC: [
+            "Preflight DTO boundary",
+            "Layer3PreflightRequest",
+            "test_layer3_api_preflight_rejects_extra_fields_before_service_execution",
+            "preflight DTO boundary proof synchronized after PR #547",
         ],
     }
     for path, terms in required_doc_terms.items():
