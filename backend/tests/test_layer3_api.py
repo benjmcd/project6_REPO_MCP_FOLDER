@@ -907,6 +907,8 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
         "preview_id",
         "preview_hash",
     }
+    assert preview_request_schema["properties"]["package"]["description"].startswith("Known but non-admitted")
+    assert preview_request_schema["properties"]["source_expansion"]["description"].startswith("Known but non-admitted")
 
     preview_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/preview", "post")
     assert preview_schema["title"] == "Layer3PackageReviewPreviewResponse"
@@ -9010,6 +9012,35 @@ def test_layer3_api_package_review_preview_prechecks_fail_closed(
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "package_review_preview_scope_not_admitted"
     assert set(forbidden.json()["blocked_fields"]) == {"package", "handoff", "rerun", "rewrite_output"}
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "destination_connector": "not-admitted",
+        },
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        stored_pass = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).one()
+        assert "package_review_preview" not in (stored_pass.summary_json or {})
+        assert db.query(L3OutputPackage).count() == 0
+        assert db.query(L3ReconciliationRecord).count() == 0
+    finally:
+        db.close()
 
     stale_preview = client.post(
         "/api/v1/layer3/package/review/preview",

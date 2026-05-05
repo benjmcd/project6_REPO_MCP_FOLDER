@@ -294,6 +294,44 @@ class Layer3ExecutionResultReviewRequest(BaseModel):
     rewrite_output: Any | None = None
 
 
+class Layer3PackageReviewPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    result_review_record_ref: str | None = None
+    analysis_run_id: str | None = None
+    package: Any | None = None
+    package_review_decision: Any | None = None
+    create_package: Any | None = None
+    package_variant: Any | None = None
+    output_package_id: Any | None = None
+    reconciliation_record_id: Any | None = None
+    handoff: Any | None = None
+    export: Any | None = None
+    rerun: Any | None = None
+    retry: Any | None = None
+    recover: Any | None = None
+    cancel: Any | None = None
+    selected_pass_ids: Any | None = None
+    pass_run_ids: Any | None = None
+    new_analysis_plan: Any | None = None
+    plan_revision: Any | None = None
+    source_expansion: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    schema_migration: Any | None = None
+    runtime_db_write: Any | None = None
+    artifact_manifest: Any | None = None
+    aps_handoff: Any | None = None
+    edited_findings: Any | None = None
+    rewrite_output: Any | None = None
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -1295,6 +1333,7 @@ EXECUTION_RESULT_REVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 PACKAGE_REVIEW_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
+    "description": "Strict package-review preview fields; explicit package/handoff/source-widening fields remain fail-closed.",
     "required": ["session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"],
     "properties": {
         "client_request_id": {"type": "string"},
@@ -1305,6 +1344,31 @@ PACKAGE_REVIEW_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
         "preview_hash": {"type": "string"},
         "result_review_record_ref": {"type": "string"},
         "analysis_run_id": {"type": "string"},
+        "package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review_decision": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "create_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_variant": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "output_package_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "reconciliation_record_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "export": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rerun": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "retry": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "recover": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "cancel": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "selected_pass_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "pass_run_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "new_analysis_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "plan_revision": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_expansion": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_migration": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "runtime_db_write": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "aps_handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "edited_findings": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rewrite_output": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -1837,10 +1901,10 @@ def post_execution_result_review(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_review_preview(
-    payload: dict[str, Any],
+    payload: Layer3PackageReviewPreviewRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.package_review_preview(db, payload))
+    return _json_or_error(lambda: layer3_workbench.package_review_preview(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
