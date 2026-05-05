@@ -2,7 +2,7 @@
 
 ## Status
 
-Post-synthesis authority guardrail: `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` records the current local synthesis correction for mockup, Codesight, progress-prose, and stale-audit overclaims. This deferred-gates document remains a freeze/control document only; it does not implement or newly admit provider/public URLs, connector/destination dispatch, package mutation/reconstruction, broad source/upload expansion, broad qualitative/hybrid/RAG execution, authentication/security work, or full mockup activation.
+Post-synthesis authority guardrail: `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` records the current local synthesis correction for mockup, Codesight, progress-prose, and stale-audit overclaims. This deferred-gates document remains a freeze/control document only; it does not implement or newly admit provider/public URLs, broad connector/destination dispatch, package mutation/reconstruction, broad source/upload expansion, broad qualitative/hybrid/RAG execution, authentication/security work, or full mockup activation. The exact `internal_dispatch_record_only` runtime is live only as an internal record and does not change the broader deferred gates.
 
 Current-main decision freeze for the remaining requested deferred categories after PR `#499`, PR `#513`, and PR `#514` rendered signed-reference UI slice in `104_signed-ui.md`.
 
@@ -12,14 +12,14 @@ Current-main docs `108_DURABLE_ENTRY.md` and `109_DURABLE_STATE.md` named the im
 
 Current-main docs `110_PROVIDER_URL_FREEZE.md` and `111_PROVIDER_URL_CONTRACT.md` freeze provider/public URL behavior as not admitted. They require a future implementation-entry freeze to choose exactly one provider/public mode and prove provider/object-store authority, ACL/expiry/revocation/header/security behavior, leakage controls, and tests before code.
 
-Current-main docs `112_CONNECTOR_DISPATCH_FREEZE.md` and `113_CONNECTOR_DISPATCH_CONTRACT.md` freeze connector/destination/generic downstream dispatch behavior as not admitted. Doc `121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md` now selects `internal_dispatch_record_only` as the only implementation-entry candidate for the next connector lane, but it does not implement runtime behavior and does not admit external connector invocation, destination writes, provider/public URLs, package mutation/reconstruction, source widening, qualitative/hybrid/RAG execution, or full mockup activation.
+Current-main docs `112_CONNECTOR_DISPATCH_FREEZE.md` and `113_CONNECTOR_DISPATCH_CONTRACT.md` freeze connector/destination/generic downstream dispatch behavior as not admitted. Doc `121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md` now selects and bounds `internal_dispatch_record_only`; that exact runtime is live only as an internal record in existing `L3ReconciliationRecord.summary_json`. `connector_destination_dispatch` remains deferred, and `single_named_connector_dispatch` and `single_named_destination_dispatch` remain blocked. This does not admit external connector invocation, destination writes, provider/public URLs, package mutation/reconstruction, source widening, qualitative/hybrid/RAG execution, or full mockup activation.
 
 Current-main docs `114_QUAL_APS_EXEC_FREEZE.md`, `115_QUAL_APS_EXEC_CONTRACT.md`, and `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md` freeze and narrow qualitative APS content document execution to the one initial `single_aps_doc_qualitative_pass` mode. That exact mode is implemented on current main; broader qualitative execution, hybrid execution, RAG/vector execution, qualitative package/handoff/export, and hidden LLM planning remain not admitted.
 
-This file does not implement deferred behavior. It defines the minimum questions, blockers, and proof gates required before any of the following can become an implementation lane:
+This file does not implement deferred broad behavior. It defines the minimum questions, blockers, and proof gates required before any of the following can become an implementation lane:
 
 - provider/public signed URL generation;
-- connector/destination dispatch;
+- broad connector/destination dispatch beyond the exact internal record-only lane;
 - durable token, receipt, revocation, and audit behavior beyond PR `#520`, including public/API/UI revocation or cleanup/read-model expansion;
 - broad qualitative execution beyond the admitted single APS-document qualitative pass.
 
@@ -41,9 +41,9 @@ This lane must stay separate from same-origin signed references. A same-origin s
 
 ## Connector/Destination Dispatch
 
-Current decision: planning/control frozen by docs `112`/`113`; doc `121` selects `internal_dispatch_record_only` as the next implementation-entry candidate. Runtime implementation is not admitted by this file.
+Current decision: planning/control frozen by docs `112`/`113`; doc `121` selects `internal_dispatch_record_only` as the first exact lane. That runtime is live only as an internal record at `/api/v1/layer3/handoff/connector/record`; broad `connector_destination_dispatch` remains deferred.
 
-Implementation cannot begin until the `121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md` constraints are followed and these are specified or explicitly kept blocked:
+Broader implementation cannot begin until the `121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md` constraints are preserved and these are specified or explicitly kept blocked:
 
 - destination model and allowed destination ids;
 - exact dispatch mode: `internal_dispatch_record_only` for the first lane; `single_named_connector_dispatch` and `single_named_destination_dispatch` remain blocked;

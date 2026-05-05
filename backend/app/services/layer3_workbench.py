@@ -275,6 +275,7 @@ EXTERNAL_EXPORT_DOWNLOAD_READY_STATE = "external_export_download_ready"
 EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE = "external_export_download_prepared"
 EXTERNAL_EXPORT_DOWNLOAD_BLOCKED_STATE = "external_export_download_blocked"
 EXTERNAL_EXPORT_DOWNLOAD_CONFLICT_STATE = "external_export_download_conflict"
+CONNECTOR_DISPATCH_RECORDED_STATE = "connector_dispatch_recorded"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_UNAVAILABLE_STATE = "external_export_download_delivery_unavailable"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_READY_STATE = "external_export_download_delivery_ready"
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE = "external_export_download_delivered"
@@ -1496,12 +1497,31 @@ def _workbench_state_model() -> dict[str, Any]:
             {
                 "state": EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE,
                 "authority_source": "reference_only_external_export_download_readiness_descriptor",
-                "allowed_next_actions": ["inspect_external_export_download_readiness", "external_export_download_deliver"],
+                "allowed_next_actions": [
+                    "inspect_external_export_download_readiness",
+                    "external_export_download_deliver",
+                    "internal_connector_dispatch_record",
+                ],
                 "forbidden_downstream_actions": [
                     "download_url",
                     "connector_dispatch",
                     "destination_selection",
                     "generic_downstream_dispatch",
+                ],
+            },
+            {
+                "state": CONNECTOR_DISPATCH_RECORDED_STATE,
+                "authority_source": "existing_l3_reconciliation_record_connector_dispatch_record",
+                "allowed_next_actions": ["inspect_internal_connector_dispatch_record"],
+                "forbidden_downstream_actions": [
+                    "external_connector_invocation",
+                    "destination_write",
+                    "connector_run_creation",
+                    "provider_public_url",
+                    "package_mutation_reconstruction",
+                    "source_upload_expansion",
+                    "broad_qualitative_hybrid_rag_execution",
+                    "full_mockup_activation",
                 ],
             },
             {
@@ -1634,6 +1654,7 @@ def _workbench_state_action_contract() -> dict[str, Any]:
         aps_handoff_dispatch_operator_decision=APS_HANDOFF_DISPATCH_OPERATOR_DECISION,
         external_export_download_operator_decision=EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION,
         external_export_download_delivery_operator_decision=EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION,
+        connector_dispatch_record_operator_decision="record_internal_connector_dispatch",
         terminal_pass_statuses=EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES,
     )
 
@@ -1702,6 +1723,8 @@ def readiness_contract() -> dict[str, Any]:
         "external_export_download_prepare_endpoint": f"{API_ROOT}/handoff/export/download/prepare",
         "external_export_download_deliver_admitted": True,
         "external_export_download_deliver_endpoint": f"{API_ROOT}/handoff/export/download/deliver",
+        "internal_connector_dispatch_record_admitted": True,
+        "internal_connector_dispatch_record_endpoint": f"{API_ROOT}/handoff/connector/record",
         "package_review_admitted": False,
         "external_handoff_admitted": False,
         "external_export_admitted": False,
@@ -1777,6 +1800,7 @@ def readiness_contract() -> dict[str, Any]:
             "aps_handoff_dispatch": "admitted only for server-side APS evidence-bundle handoff after handoff_export_prepared",
             "external_export_download_prepare": "admitted only as a reference-only readiness descriptor after aps_handoff_dispatched; browser download remains disabled",
             "external_export_download_deliver": "admitted only as same-origin streaming of the already validated APS evidence-bundle artifact after recorded readiness; public or signed URLs remain disabled",
+            "internal_connector_dispatch_record": "admitted only as response-safe internal dispatch intent record after associated-cohort external export/download readiness; external invocation and destination writes remain blocked",
             "external_handoff_export_dispatch": "browser download, public/signed URL generation, connector dispatch, destination selection, and non-APS dispatch still require later freezes",
         },
     }
@@ -1808,6 +1832,7 @@ def bootstrap() -> dict[str, Any]:
             "aps_handoff_dispatch": True,
             "external_export_download_prepare": True,
             "external_export_download_deliver": True,
+            "internal_connector_dispatch_record": True,
             "analysis_execution": False,
             "single_aps_doc_qualitative_execution": True,
             "broad_qualitative_execution": False,
@@ -1848,6 +1873,8 @@ def bootstrap() -> dict[str, Any]:
             "external_export_download_prepare_endpoint": f"{API_ROOT}/handoff/export/download/prepare",
             "external_export_download_deliver_admitted": True,
             "external_export_download_deliver_endpoint": f"{API_ROOT}/handoff/export/download/deliver",
+            "internal_connector_dispatch_record_admitted": True,
+            "internal_connector_dispatch_record_endpoint": f"{API_ROOT}/handoff/connector/record",
             "package_review_admitted": False,
             "external_handoff_admitted": False,
             "external_export_admitted": False,
