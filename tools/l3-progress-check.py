@@ -24,9 +24,13 @@ QUAL_APS_ENTRY_FREEZE = PLANNING_DOCS / "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md"
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
+SOURCE_BOUNDARY_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_source_boundary.py"
+)
 WORKBENCH_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_workbench.py"
 )
+SOURCE_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_source_boundary.py"
 
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 
@@ -503,6 +507,87 @@ def _check_qualitative_capability_boundary(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing qualitative boundary term: {term}")
 
 
+def _check_source_boundary_contract(errors: list[str]) -> None:
+    supported = _load_literal_assignment(
+        SOURCE_BOUNDARY_SERVICE, "SUPPORTED_SOURCE_CLASSES", errors
+    )
+    unsupported = _load_literal_assignment(
+        SOURCE_BOUNDARY_SERVICE, "UNSUPPORTED_SOURCE_CLASSES", errors
+    )
+
+    expected_supported = ("dataset_version", "aps_content_document")
+    expected_unsupported = (
+        "rag_vector_index",
+        "arbitrary_local_directory",
+        "broad_file_upload",
+        "web_connector",
+        "unbounded_runtime_db",
+    )
+    if supported != expected_supported:
+        errors.append(
+            "source boundary supported classes drifted: "
+            f"expected {expected_supported!r}, found {supported!r}"
+        )
+    if unsupported != expected_unsupported:
+        errors.append(
+            "source boundary unsupported classes drifted: "
+            f"expected {expected_unsupported!r}, found {unsupported!r}"
+        )
+
+    service_text = _read_required_text(SOURCE_BOUNDARY_SERVICE, errors)
+    for term in (
+        "def requested_source_classes(",
+        "def unsupported_requested(",
+        "def source_class_from_source_candidate_id(",
+        "def source_class_from_material_candidate_id(",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(SOURCE_BOUNDARY_SERVICE)} missing helper: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    required_imports = (
+        "from app.services.layer3_source_boundary import",
+        "requested_source_classes as _requested_source_classes",
+        "unsupported_requested as _unsupported_requested",
+        "source_class_from_source_candidate_id as _source_class_from_source_candidate_id",
+        "source_class_from_material_candidate_id as _source_class_from_material_candidate_id",
+    )
+    for term in required_imports:
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing source-boundary import: {term}")
+    for assignment in ("SUPPORTED_SOURCE_CLASSES", "UNSUPPORTED_SOURCE_CLASSES"):
+        if re.search(rf"^{assignment}\s*=", workbench_text, re.MULTILINE):
+            errors.append(
+                f"{_rel(WORKBENCH_SERVICE)} must not redeclare {assignment}; "
+                "source boundary owns it"
+            )
+
+    test_text = _read_required_text(SOURCE_BOUNDARY_TEST, errors)
+    for term in expected_supported + expected_unsupported:
+        if term not in test_text:
+            errors.append(f"{_rel(SOURCE_BOUNDARY_TEST)} missing source class proof term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: [
+            "backend/app/services/layer3_source_boundary.py",
+            "SUPPORTED_SOURCE_CLASSES",
+            "UNSUPPORTED_SOURCE_CLASSES",
+            "backend/tests/test_layer3_source_boundary.py",
+        ],
+        GOAL_AUDIT: [
+            "updated after `bd6e0f1c`",
+            "backend/app/services/layer3_source_boundary.py",
+            "backend/tests/test_layer3_source_boundary.py",
+            "does not widen source classes",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-boundary term: {term}")
+
+
 def _check_progress_text_surfaces(errors: list[str]) -> None:
     required_by_file = {
         BOARD: [
@@ -573,7 +658,9 @@ def main() -> int:
         GOAL_AUDIT,
         QUAL_APS_ENTRY_FREEZE,
         STATE_ACTION_CONTRACT,
+        SOURCE_BOUNDARY_SERVICE,
         WORKBENCH_SERVICE,
+        SOURCE_BOUNDARY_TEST,
     ):
         _require_file(path, errors)
 
@@ -586,6 +673,7 @@ def main() -> int:
         _check_referenced_paths(manifest, errors)
     _check_local_boundary(errors)
     _check_qualitative_capability_boundary(errors)
+    _check_source_boundary_contract(errors)
     _check_progress_text_surfaces(errors)
     _check_ci_layer3_backend_guardrail(errors)
 

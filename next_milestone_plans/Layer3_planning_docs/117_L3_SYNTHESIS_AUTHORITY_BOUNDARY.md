@@ -6,15 +6,16 @@ This file is intentionally scoped. It is not an exhaustive Layer 3 index, not a 
 
 ## Current Authority Snapshot
 
-- Local branch head when this note was written: `86d420643152fc8c5b99be0f5dce4ebdbb6d5ee9`.
+- Local branch head when this note was first written: `86d420643152fc8c5b99be0f5dce4ebdbb6d5ee9`.
 - Live source and tests outrank this document.
 - `C:\Users\benny\Downloads\synthesis.txt` accepted that Layer 3 is real and bounded, but rejected treating mockups, Codesight summaries, progress manifests, or rendered UI presence as complete runtime proof.
 - Authentication/security work remains deferred by explicit operator instruction; this note does not reopen that lane.
 
 ## Live-Boundary Evidence
 
-- `backend/app/services/layer3_workbench.py` admits only `dataset_version` and `aps_content_document` as Layer 3 source classes.
-- The same workbench lists `rag_vector_index`, `arbitrary_local_directory`, `broad_file_upload`, `web_connector`, and `unbounded_runtime_db` as unsupported source classes.
+- `backend/app/services/layer3_source_boundary.py` owns `SUPPORTED_SOURCE_CLASSES == ("dataset_version", "aps_content_document")`.
+- The same source-boundary service owns `UNSUPPORTED_SOURCE_CLASSES == ("rag_vector_index", "arbitrary_local_directory", "broad_file_upload", "web_connector", "unbounded_runtime_db")`.
+- `backend/app/services/layer3_workbench.py` consumes those source-boundary constants/helpers for bootstrap, preflight, source preview, and source/material candidate id parsing.
 - `backend/app/services/layer3_workbench.py` reports `single_aps_doc_qualitative_execution` as `True`, while `broad_qualitative_execution`, `hybrid_execution`, and `rag_vector_retrieval` feature flags remain `False`.
 - `backend/app/services/layer3_state_action_contract.py` records `single_aps_doc_qualitative_execution` in `STATE_ACTION_ADMITTED_CAPABILITIES`, and keeps `broad_qualitative_execution`, `hybrid_execution`, `rag_vector_retrieval`, `provider_public_url`, `connector_destination_dispatch`, `package_mutation_reconstruction`, `frontend_only_durable_state`, `hidden_llm_planning`, and `auth_security_hardening` in `STATE_ACTION_DEFERRED_CAPABILITIES` with `admitted: False`.
 - `backend/tests/test_layer3_workbench.py` and `backend/tests/test_layer3_api.py` assert key deferred capabilities remain unadmitted and do not become action ids.
@@ -56,6 +57,7 @@ Do not treat Codesight route response summaries as exact current DTO truth. Read
 - `backend/tests/test_layer3_api.py::test_layer3_api_session_summary_fails_closed_on_manifest_mismatch` is the scoped live proof for a `CL10` service-boundary hardening step. The server now rejects a session whose recorded `selection_manifest_id` diverges from the server-owned manifest row. This is not a database migration, does not add the circular `L3Session.selection_manifest_id` foreign key, and does not alter the normal `commit_selection(...)` happy path.
 - `backend/tests/test_layer3_api.py::test_layer3_api_json_or_error_call_sites_return_workbench_error_envelope` is the scoped live proof for the synthesis `CL19` API error-boundary recheck. It forces each `_json_or_error` route call-site to raise a `Layer3WorkbenchError` and verifies the API returns the structured `layer3.workbench_error.v1` envelope. This is route-boundary proof only; it does not claim every possible non-`Layer3WorkbenchError` exception is converted.
 - `backend/tests/test_layer3_package_entry.py::test_gated_package_entry_emits_canonical_user_and_review_packages` now proves the `CL34` canonicalization boundary for package payloads: package rows hash the exact pretty-text JSON bytes persisted on disk, and those payload hashes are intentionally distinct from compact stable hashes. This is an invariant proof, not a package mutation/reconstruction feature.
+- `backend/tests/test_layer3_source_boundary.py` is the scoped live proof for the no-behavior-change source-boundary extraction. `backend/app/services/layer3_source_boundary.py` owns the admitted source classes, deferred unsupported source classes, and source/material candidate id parsing. This extraction does not admit RAG/vector retrieval, broad upload, local directory ingestion, web connector sources, runtime DB widening, connector dispatch, package mutation/reconstruction, or full mockup activation.
 
 ## Supported Next-Action Boundary
 
