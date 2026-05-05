@@ -146,10 +146,23 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".layer3-header .header-right select" in css.text
     assert "const API_ROOT = '/api/v1/layer3';" in js.text
     assert "const LAYER3_THEME_STORAGE_KEY = 'layer3_workbench_theme';" in js.text
+    assert "const LAYER3_SESSION_RECOVERY_STORAGE_KEY = 'layer3_workbench_session_recovery_v1';" in js.text
+    assert "const LAYER3_GATE_B_DRAFT_STORAGE_KEY = 'layer3_workbench_gate_b_draft_v1';" in js.text
+    assert "LAYER3_SESSION_RECOVERY_SCHEMA_ID = 'layer3.browser_session_recovery.v1'" in js.text
+    assert "LAYER3_GATE_B_DRAFT_SCHEMA_ID = 'layer3.gate_b_draft_snapshot.v1'" in js.text
     assert "isSharedThemePreference" in js.text
     assert "value === 'workbench'" in js.text
     assert "localStorage.removeItem(LAYER3_THEME_STORAGE_KEY)" in js.text
     assert "localStorage.removeItem(THEME_STORAGE_KEY)" in js.text
+    assert "localStorage, LAYER3_SESSION_RECOVERY_STORAGE_KEY" in js.text
+    assert "sessionStorage, LAYER3_GATE_B_DRAFT_STORAGE_KEY" in js.text
+    assert "browser_restore_only_server_revalidated_on_commit" in js.text
+    assert "async function recoverSessionFromStorage" in js.text
+    assert "State.sessionSummary = summary" in js.text
+    assert "restoreGateBDraftSnapshot" in js.text
+    assert "client_request_id: gateBRequestId()" in js.text
+    assert "State.gateB?.session_id && State.gateC?.authority_rail?.typing_status === 'committed'" not in js.text
+    assert "localStorage, LAYER3_GATE_B_DRAFT_STORAGE_KEY" not in js.text
     assert "navigateToStep" in js.text
     assert "scrollIntoView" in js.text
     assert "renderSublayerMap" in js.text
