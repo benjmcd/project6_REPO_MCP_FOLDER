@@ -1,17 +1,17 @@
 # Layer 3 Merged-Main Closeout
 
-Status: current-main closeout after PR #538 merged at `project6-origin/main=329fc6d5`, later refreshed after PR #539 merged at `project6-origin/main=c44a8762`, with branch-local package supersession preview runtime sync.
+Status: current-main closeout after PR #538 merged at `project6-origin/main=329fc6d5`, later refreshed after PR #539 merged at `project6-origin/main=c44a8762`, and refreshed again after PR #540 merged at `project6-origin/main=c23a48c1`.
 
-This file is post-merge documentation/proof synchronization only. It does not replace live source/tests as authority. The package supersession preview row is branch-local until its PR lands; it admits only the exact read-only preview route and does not admit broad package mutation/reconstruction.
+This file is post-merge documentation/proof synchronization only. It does not replace live source/tests as authority. The package supersession preview row admits only the exact read-only preview route and does not admit broad package mutation/reconstruction.
 
 ## Authority Snapshot
 
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
-- docs_sync_branch: `codex/l3-package-supersession-preview`
-- merged_pr: `#539`
-- merged_main_head: `c44a8762`
+- docs_sync_branch: `codex/l3-pr540-postmerge-doc-sync`
+- merged_pr: `#540`
+- merged_main_head: `c23a48c1`
 - current baseline ref: `project6-origin/main`
-- local docs-sync authority was read from `project6-origin/main=c44a8762` and must be rechecked if `project6-origin/main` moves.
+- local docs-sync authority was read from `project6-origin/main=c23a48c1` and must be rechecked if `project6-origin/main` moves.
 - known local caveat: `.omc/state/hud-state.json`, `.omc/state/hud-stdin-cache.json`, `.codesight/`, `.cursorrules`, `.github/copilot-instructions.md`, `CLAUDE.md`, and `codex.md` are local operator/sidecar state and are not implementation evidence.
 
 Authority order for this closeout:
@@ -22,7 +22,7 @@ Authority order for this closeout:
 4. `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` and `118_L3_GOAL_AUDIT.md`.
 5. Older planning docs and mockups only as target-state or historical context.
 
-Historical current-main proof after PR #538 remains retained for source-boundary, DTO-boundary, signed-reference, and session-status invariant checks; branch-local package preview proof is additive and must not be treated as broad package mutation/reconstruction proof until its own PR lands.
+Historical current-main proof after PR #538 remains retained for source-boundary, DTO-boundary, signed-reference, and session-status invariant checks; PR #540 package preview proof is additive and must not be treated as broad package mutation/reconstruction proof.
 
 ## Prompt-To-Artifact Checklist
 
@@ -43,7 +43,7 @@ Historical current-main proof after PR #538 remains retained for source-boundary
 | Broad source/upload expansion | Not implemented; remains blocked | `backend/app/services/layer3_source_boundary.py`; `backend/tests/test_layer3_source_boundary.py`; progress checker verifies supported and unsupported source classes | Only `dataset_version` and `aps_content_document` are admitted. |
 | Qualitative/hybrid/RAG execution | Exact single APS-document qualitative pass implemented; broad qualitative/hybrid/RAG remains blocked | `backend/app/services/layer3_qual_aps_execution.py`; `backend/tests/test_layer3_qual_aps_execution.py`; `backend/app/services/layer3_state_action_contract.py`; progress checker verifies exact/broad split | Only `single_aps_doc_qualitative_pass` is admitted. |
 | Full mockup activation | Not implemented; remains blocked | `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md`; `118_L3_GOAL_AUDIT.md` | Mockups are target-state artifacts and do not admit runtime behavior. |
-| Authority-boundary preservation | Preserved | `python .\tools\l3-progress-check.py` must pass; focused Layer 3 backend suite must pass; broad capabilities remain `admitted: false` | This is current-main proof through PR #539 plus branch-local package supersession preview sync, not proof of deferred broad lanes. |
+| Authority-boundary preservation | Preserved | `python .\tools\l3-progress-check.py` must pass; focused Layer 3 backend suite must pass; broad capabilities remain `admitted: false` | This is current-main proof through PR #540, not proof of deferred broad lanes. |
 
 ## Validation Evidence
 
@@ -53,7 +53,7 @@ Run from `C:\Users\benny\Downloads\worktree_for_audits`.
 python .\tools\l3-progress-check.py
 ```
 
-Expected and observed result during this branch-local package preview pass:
+Expected and observed result during the PR #540 package preview pass:
 
 ```text
 Layer 3 progress state check: PASS
@@ -65,7 +65,7 @@ Focused backend proof command:
 $files = Get-ChildItem -Path '.\backend\tests' -Filter 'test_layer3_*.py' | Sort-Object Name | ForEach-Object { ".\backend\tests\$($_.Name)" }; python -m pytest $files -q
 ```
 
-Observed result during this branch-local package preview pass:
+Observed result during the PR #540 package preview pass:
 
 ```text
 271 passed, 4 warnings
@@ -86,6 +86,13 @@ Pre-merge PR #538 checks: backend-layer3-api SUCCESS; test SUCCESS.
 Post-merge main workflow run 25365937051 for 329fc6d5: backend-layer3-api SUCCESS; test SUCCESS.
 ```
 
+PR #540 CI proof:
+
+```text
+Pre-merge PR #540 checks: backend-layer3-api SUCCESS; test SUCCESS.
+Merged main head after PR #540: c23a48c1755e7a4f4db6963d0ca430d35b0d80fd.
+```
+
 ## Merge-Readiness Boundary
 
 Merged as bounded current-main scope:
@@ -100,6 +107,7 @@ Merged as bounded current-main scope:
 - material-preview DTO boundary hardening;
 - source-boundary extraction and verifier guard;
 - single APS-document qualitative execution;
+- read-only package supersession preview;
 - proof/state drift checks;
 - goal-audit closeout state.
 
