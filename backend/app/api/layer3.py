@@ -104,6 +104,17 @@ class Layer3PlanPreviewRequest(BaseModel):
     include_exclusions: bool | None = None
 
 
+class Layer3SourcePreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str | None = None
+    preflight_id: str
+    selected_source_classes: list[str] | None = None
+    actor: str | None = None
+
+
 class Layer3GateBDecisionItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -1286,8 +1297,8 @@ PREFLIGHT_REQUEST_SCHEMA: dict[str, Any] = {
 
 SOURCE_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known source-preview fields; selected_source_classes defaults to supported source classes.",
+    "additionalProperties": False,
+    "description": "Strict source-preview fields; source expansion fields are rejected before service execution.",
     "required": ["preflight_id"],
     "properties": {
         "schema_id": {"type": "string", "enum": ["layer3.source_preview_request.v1"]},
@@ -2175,8 +2186,8 @@ def post_preflight(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
     openapi_extra={"requestBody": _json_request_body(SOURCE_PREVIEW_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400),
 )
-def post_source_preview(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.source_preview(payload))
+def post_source_preview(payload: Layer3SourcePreviewRequest) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.source_preview(payload.model_dump(exclude_none=True)))
 
 
 @router.post(

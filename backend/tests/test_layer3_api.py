@@ -409,8 +409,9 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
     source_request_schema = spec["paths"]["/api/v1/layer3/source-preview"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert source_request_schema["additionalProperties"] is True
+    assert source_request_schema["additionalProperties"] is False
     assert set(source_request_schema["required"]) == {"preflight_id"}
+    assert "source expansion fields are rejected before service execution" in source_request_schema["description"]
     assert source_request_schema["properties"]["selected_source_classes"]["items"]["enum"] == [
         "dataset_version",
         "aps_content_document",
@@ -1361,7 +1362,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
     ("service_name", "method", "path", "payload"),
     [
         ("preflight", "post", "/api/v1/layer3/preflight", {}),
-        ("source_preview", "post", "/api/v1/layer3/source-preview", {}),
+        ("source_preview", "post", "/api/v1/layer3/source-preview", {"preflight_id": "preflight-forced"}),
         ("material_preview", "post", "/api/v1/layer3/material-preview", {}),
         ("aps_dataset_version_candidates", "get", "/api/v1/layer3/dataset-version-candidates?limit=1", None),
         ("aps_content_document_candidates", "get", "/api/v1/layer3/aps-content-document-candidates?limit=1", None),
@@ -3889,6 +3890,41 @@ def test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation(cl
     db = client.layer3_session_factory()
     try:
         assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_source_preview_rejects_extra_fields_before_service_execution(client: TestClient) -> None:
+    preflight = client.post(
+        "/api/v1/layer3/preflight",
+        json={
+            "client_request_id": "api-source-preview-strict-preflight",
+            "natural_language_intent": "Select admitted source classes only.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+        },
+    ).json()
+
+    rejected = client.post(
+        "/api/v1/layer3/source-preview",
+        json={
+            "client_request_id": "api-source-preview-strict-extra",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version"],
+            "local_directory": "C:/not-admitted",
+        },
+    )
+
+    assert rejected.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "local_directory"]
+        for item in rejected.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3Session).count() == 0
         assert db.query(L3PassRun).count() == 0
         assert db.query(AnalysisRun).count() == 0
     finally:
