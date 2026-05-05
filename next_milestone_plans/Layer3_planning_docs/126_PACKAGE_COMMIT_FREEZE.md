@@ -12,7 +12,7 @@ This artifact selects a future package lifecycle lane. It does not implement a r
 - predecessor runtime freeze: `122_PACKAGE_MUTATION_FREEZE.md`
 - predecessor runtime mode: `package_supersession_preview_only`
 - replacement authority prerequisite: `127_PACKAGE_REPLACEMENT_SET_FREEZE.md` is implemented only as `replacement_package_set_authority`
-- current admitted runtime: `package_supersession_preview_only` remains the only admitted package lifecycle runtime
+- current admitted package lifecycle runtimes: `package_supersession_preview_only` and `replacement_package_set_authority`
 - current deferred capability: `package_mutation_reconstruction` remains deferred
 - evidence boundary: live source, tests, and `tools/l3-progress-check.py` outrank this document
 
@@ -89,7 +89,7 @@ The current docs/proof slice is acceptable only when:
 
 - `126_PACKAGE_COMMIT_FREEZE.md` exists and selects only `package_supersession_commit_entry`;
 - `127_PACKAGE_REPLACEMENT_SET_FREEZE.md` exists and keeps replacement package-set authority limited to a metadata-authority runtime;
-- `package_supersession_preview_only` remains the only admitted package lifecycle runtime;
+- `package_supersession_preview_only` and `replacement_package_set_authority` remain the only admitted package lifecycle runtimes;
 - `package_mutation_reconstruction` remains deferred in `backend/app/services/layer3_state_action_contract.py`;
 - no runtime route, service, model, migration, UI control, package row mutation, package payload write, or package commit behavior is added by this slice;
 - `105_deferred-gates.md`, `118_L3_GOAL_AUDIT.md`, and `120_L3_CLOSEOUT.md` label this as implementation-entry only;
