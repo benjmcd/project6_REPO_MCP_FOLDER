@@ -960,6 +960,8 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
         "user_facing",
         "review_facing",
     ]
+    assert commit_request_schema["properties"]["handoff"]["description"].startswith("Known but non-admitted")
+    assert commit_request_schema["properties"]["package_payload"]["description"].startswith("Known but non-admitted")
 
     commit_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/commit", "post")
     assert commit_schema["title"] == "Layer3PackageConstructionCommitResponse"
@@ -8926,6 +8928,24 @@ def test_layer3_api_package_construction_commit_prechecks_fail_closed(
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "package_construction_commit_scope_not_admitted"
     assert set(forbidden.json()["blocked_fields"]) == {"handoff", "package_payload"}
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={**base_payload, "destination_connector": "not-admitted"},
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3OutputPackage).count() == 0
+        assert db.query(L3ReconciliationRecord).count() == 0
+    finally:
+        db.close()
 
     stale_preview = client.post(
         "/api/v1/layer3/package/review/commit",
