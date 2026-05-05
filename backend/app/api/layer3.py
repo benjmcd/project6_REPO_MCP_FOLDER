@@ -95,6 +95,30 @@ class Layer3PlanApprovalRequest(BaseModel):
     approval_scope: str | None = None
 
 
+class Layer3GateBDecisionItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate_id: str
+    decision: str
+    operator_reason: str | None = None
+    decision_basis: dict[str, Any] | None = None
+
+
+class Layer3GateBDecisionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str | None = None
+    preflight_id: str | None = None
+    source_set_id: str | None = None
+    material_preview_id: str | None = None
+    material_preview_hash: str | None = None
+    actor: str | None = None
+    candidate_decisions: list[Layer3GateBDecisionItem]
+    commit_reason: str | None = None
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -808,7 +832,7 @@ MATERIAL_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 
 GATE_B_DECISION_ITEM_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
+    "additionalProperties": False,
     "required": ["candidate_id", "decision"],
     "properties": {
         "candidate_id": {"type": "string"},
@@ -829,8 +853,8 @@ GATE_B_DECISION_ITEM_SCHEMA: dict[str, Any] = {
 
 GATE_B_DECISION_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known Gate B fields; denied, isolated, and flagged decisions require operator_reason at runtime.",
+    "additionalProperties": False,
+    "description": "Strict Gate B fields; denied, isolated, and flagged decisions require operator_reason at runtime.",
     "required": ["candidate_decisions"],
     "properties": {
         "schema_id": {"type": "string", "enum": ["layer3.gate_b_decision_request.v1"]},
@@ -1402,8 +1426,11 @@ def get_aps_content_document_candidates(limit: int = 50, db: Session = Depends(g
     openapi_extra={"requestBody": _json_request_body(GATE_B_DECISION_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 409),
 )
-def post_gate_b_decision(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.gate_b_decision(db, payload))
+def post_gate_b_decision(
+    payload: Layer3GateBDecisionRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.gate_b_decision(db, payload.model_dump(exclude_none=True)))
 
 
 @router.post(
