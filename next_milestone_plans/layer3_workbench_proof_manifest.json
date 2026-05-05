@@ -1,7 +1,7 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
-  "status": "Layer 3 proof readiness through PR #588 package replacement artifact manifest-only runtime: signed-reference proof readiness, provider/public URL governance, connector/destination governance, exact single APS-document qualitative execution, qualitative/hybrid/RAG boundary proof, qualitative owner-service error-boundary proof, no-behavior-change plan-flow request contract extraction proof from PR #584, docs-only replacement package artifact prerequisite proof, and bounded replacement artifact manifest verification proof",
+  "status": "Layer 3 proof readiness through PR #588 package replacement artifact manifest-only runtime plus package namespace planning/control proof: signed-reference proof readiness, provider/public URL governance, connector/destination governance, exact single APS-document qualitative execution, qualitative/hybrid/RAG boundary proof, qualitative owner-service error-boundary proof, no-behavior-change plan-flow request contract extraction proof from PR #584, docs-only replacement package artifact prerequisite proof, bounded replacement artifact manifest verification proof, and replacement package namespace planning/control proof",
   "scope": {
     "source_branch": "codex/l3-package-artifact-manifest-runtime",
     "merged_pr": "#588",
@@ -9,9 +9,9 @@
     "base_remote": "project6-origin/main",
     "base_commit": "c4186ae3a7fe0be2ba97defd743777ff14bc381d",
     "source_base_commit": "c4186ae3a7fe0be2ba97defd743777ff14bc381d",
-    "purpose": "Record current proof readiness through PR #588 and the bounded replacement package artifact manifest-only runtime. Historical per-slice records preserve their original planning-only boundaries, while current top-level qualitative fields classify the exact single_aps_doc_qualitative_pass as live bounded behavior, current plan-flow fields classify PR #584 request contract extraction as no-behavior-change refactor/proof hardening, and current package artifact manifest fields classify only server-side verification of existing replacement refs/hashes as live.",
+    "purpose": "Record current proof readiness through PR #588, the bounded replacement package artifact manifest-only runtime, and the package replacement namespace planning/control freeze. Historical per-slice records preserve their original planning-only boundaries, while current top-level qualitative fields classify the exact single_aps_doc_qualitative_pass as live bounded behavior, current plan-flow fields classify PR #584 request contract extraction as no-behavior-change refactor/proof hardening, current package artifact manifest fields classify only server-side verification of existing replacement refs/hashes as live, and current package namespace fields classify `replacement_package_namespace_rows` as planning/control-only.",
     "live_behavior_change": true,
-    "live_behavior_change_summary": "This slice admits only `replacement_package_artifact_manifest_only`: server-side manifest verification of existing replacement artifact refs/hashes with an immutable manifest row. It does not generate artifacts, create replacement `L3OutputPackage` rows, write package payloads, mutate package rows, add rendered controls, or admit broad package mutation/reconstruction. Current main already admits only the exact single_aps_doc_qualitative_pass plus PR #584 no-behavior-change plan-flow request contract extraction; `128_PACKAGE_REPLACEMENT_ARTIFACT_FREEZE.md` remains planning/control proof for `replacement_package_artifact_authority_only`. Broad qualitative/hybrid/RAG, source widening, connector/destination, provider/public URL, package mutation/reconstruction, full mockup, hidden LLM planning, and auth/security behavior remain blocked.",
+    "live_behavior_change_summary": "This slice admits only `replacement_package_artifact_manifest_only`: server-side manifest verification of existing replacement artifact refs/hashes with an immutable manifest row. It does not generate artifacts, create replacement `L3OutputPackage` rows, write package payloads, mutate package rows, add rendered controls, or admit broad package mutation/reconstruction. Current main already admits only the exact single_aps_doc_qualitative_pass plus PR #584 no-behavior-change plan-flow request contract extraction; `128_PACKAGE_REPLACEMENT_ARTIFACT_FREEZE.md` remains planning/control proof for `replacement_package_artifact_authority_only`, and `130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md` remains planning/control proof for `replacement_package_namespace_rows`. Broad qualitative/hybrid/RAG, source widening, connector/destination, provider/public URL, package mutation/reconstruction, full mockup, hidden LLM planning, and auth/security behavior remain blocked.",
     "latest_package_replacement_artifact_freeze_branch": "codex/l3-package-artifact-authority-freeze",
     "latest_package_replacement_artifact_freeze_live_behavior_change": false,
     "latest_package_replacement_artifact_freeze_summary": "Doc 128 freezes only the future `replacement_package_artifact_authority_only` prerequisite. Current `replacement_package_set_authority` refs and hashes remain metadata only and are not proof that replacement payload bytes exist, are server-owned, or were generated by a repo-owned owner service.",
@@ -20,6 +20,10 @@
     "latest_package_replacement_artifact_manifest_runtime_merge_commit": "e17e22afce24a69a300bd90f1af13046edf6b246",
     "latest_package_replacement_artifact_manifest_runtime_live_behavior_change": true,
     "latest_package_replacement_artifact_manifest_runtime_summary": "Doc 129 remains the implementation-entry planning authority, and this slice implements only `replacement_package_artifact_manifest_only` through `/api/v1/layer3/package/replacement-artifact/manifest/record`, `backend/app/services/layer3_replacement_package_artifact_manifest.py`, `L3ReplacementPackageArtifactManifest`, and `0020_layer3_replacement_package_artifact_manifest.py`. It verifies existing replacement refs/hashes and records an immutable manifest row without generating payload bytes, creating replacement package rows, writing package payloads, mutating package rows, adding rendered controls, or admitting broad package mutation/reconstruction.",
+    "latest_package_replacement_namespace_freeze_branch": "codex/l3-package-namespace-freeze",
+    "latest_package_replacement_namespace_freeze_base_commit": "f4698f7cdc1cb1ddd01511eb47de5ad37f1b8b56",
+    "latest_package_replacement_namespace_freeze_live_behavior_change": false,
+    "latest_package_replacement_namespace_freeze_summary": "Doc 130 freezes only future `replacement_package_namespace_rows` as a separate replacement output package table design. It preserves source `L3OutputPackage` authority and `uq_l3_output_package_session_kind` and does not admit replacement package row creation, source-table row reuse, model/migration changes, routes, package payload writes, rendered controls, or broad package mutation/reconstruction.",
     "latest_implementation_pr": "#520",
     "latest_implementation_branch": "codex/l3-durable-runtime-p23",
     "latest_implementation_summary": "PR #520 implements durable same-origin signed-reference token, receipt, revocation, and audit state behind the existing PR #499 generation/use endpoints while preserving token-only response semantics and keeping provider/public URLs, connector/destination dispatch, qualitative execution, package mutation, broader UI, and full mockup activation deferred.",
@@ -3762,6 +3766,60 @@
       "python -m pytest .\\backend\\tests\\test_layer3_replacement_package_artifact_manifest.py -q",
       "python -m pytest .\\backend\\tests\\test_layer3_api.py .\\backend\\tests\\test_layer3_readiness_contract.py .\\backend\\tests\\test_layer3_state_model_contract.py .\\backend\\tests\\test_layer3_bootstrap_contract.py .\\backend\\tests\\test_layer3_model_exports.py -q",
       "python -m pytest .\\backend\\tests\\test_layer3_replacement_package_set_authority.py .\\backend\\tests\\test_layer3_package_supersession_commit.py .\\backend\\tests\\test_layer3_replacement_package_artifact_manifest.py -q",
+      "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest @tests -q",
+      "git diff --check"
+    ]
+  },
+  "package_replacement_namespace_freeze_proof": {
+    "scope": "Planning/control proof for `130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md`; no runtime behavior is admitted.",
+    "planning_branch": "codex/l3-package-namespace-freeze",
+    "base_commit": "f4698f7cdc1cb1ddd01511eb47de5ad37f1b8b56",
+    "live_behavior_change": false,
+    "files_changed": [
+      "next_milestone_plans/Layer3_planning_docs/130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md",
+      "next_milestone_plans/Layer3_planning_docs/105_deferred-gates.md",
+      "next_milestone_plans/Layer3_planning_docs/117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md",
+      "next_milestone_plans/Layer3_planning_docs/118_L3_GOAL_AUDIT.md",
+      "next_milestone_plans/Layer3_planning_docs/120_L3_CLOSEOUT.md",
+      "next_milestone_plans/layer3_progress_manifest.json",
+      "next_milestone_plans/layer3_progress_board.md",
+      "next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "tools/l3-progress-check.py"
+    ],
+    "authority_basis": [
+      "Baseline `project6-origin/main` resolved to f4698f7cdc1cb1ddd01511eb47de5ad37f1b8b56 after PR #590 before this planning/control slice.",
+      "`backend/app/models/models.py` defines `L3OutputPackage` with `uq_l3_output_package_session_kind` over `(session_id, package_kind)`.",
+      "`backend/alembic/versions/0015_layer3_package_entry.py` creates the same `uq_l3_output_package_session_kind` constraint.",
+      "`129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE.md` and its live runtime prove existing replacement refs/hashes can be server-verified, but do not create replacement package rows or payload bytes.",
+      "`130_PACKAGE_REPLACEMENT_NAMESPACE_FREEZE.md` selects only `replacement_package_namespace_rows` with `selected_namespace_design: separate_replacement_output_package_table` for a future implementation-entry freeze."
+    ],
+    "non_goals": [
+      "replacement package row creation",
+      "replacement L3OutputPackage row creation in the source table",
+      "weakening uq_l3_output_package_session_kind",
+      "model or migration changes",
+      "runtime routes",
+      "package payload creation, rewrite, overwrite, deletion, or reconstruction",
+      "package payload bytes accepted from the browser",
+      "rendered package mutation controls",
+      "L3PassRun creation",
+      "AnalysisRun creation",
+      "AnalysisArtifact creation",
+      "L3ReconciliationRecord creation, update, or deletion",
+      "source/schema/runtime widening",
+      "broad qualitative/hybrid/RAG execution",
+      "provider/public URL support",
+      "connector/destination dispatch",
+      "frontend-only durable state",
+      "hidden LLM planning",
+      "full mockup activation",
+      "authentication/security hardening"
+    ],
+    "verification": [
+      "python -c \"from pathlib import Path; compile(Path('tools/l3-progress-check.py').read_text(encoding='utf-8'), 'tools/l3-progress-check.py', 'exec')\"",
+      "python .\\tools\\l3-progress-check.py",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
       "$tests = Get-ChildItem .\\backend\\tests -Filter 'test_layer3*.py' | ForEach-Object { '.\\backend\\tests\\' + $_.Name }; python -m pytest @tests -q",
       "git diff --check"
     ]
