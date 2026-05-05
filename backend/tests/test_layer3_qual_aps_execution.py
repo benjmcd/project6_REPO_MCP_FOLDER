@@ -34,9 +34,12 @@ from app.services import layer3_workbench
 from app.services.layer3_qual_aps_execution import (
     ENGINE_FAMILY_QUAL_APS_DOCUMENT,
     PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE,
+    QUALITATIVE_BOUNDARY_CONTRACT_SCHEMA_ID,
+    QUALITATIVE_BOUNDARY_MODE,
     QUAL_APS_METHOD_NAME,
     QUAL_APS_OUTPUT_SCHEMA_ID,
     QUAL_APS_SOURCE_GATE,
+    qualitative_hybrid_rag_boundary_contract,
 )
 from app.services.layer3_workbench import Layer3WorkbenchError
 
@@ -252,6 +255,60 @@ def _commit_single_doc_plan(db, tmp_path: Path, *, content_id: str = "content-qu
         "pass_run_id": selection["pass_run_ids"][0],
         "content_id": content_id,
     }
+
+
+def test_qualitative_hybrid_rag_boundary_contract_keeps_broad_execution_fail_closed() -> None:
+    contract = qualitative_hybrid_rag_boundary_contract()
+
+    assert contract["schema_id"] == QUALITATIVE_BOUNDARY_CONTRACT_SCHEMA_ID
+    assert contract["mode"] == QUALITATIVE_BOUNDARY_MODE
+    assert contract["owner_service"] == "backend/app/services/layer3_qual_aps_execution.py"
+    assert contract["admitted_execution_modes"] == [PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE]
+    assert contract["admitted_engine_family"] == ENGINE_FAMILY_QUAL_APS_DOCUMENT
+    assert contract["admitted_method_name"] == QUAL_APS_METHOD_NAME
+    assert contract["admitted_source_gate"] == QUAL_APS_SOURCE_GATE
+    assert set(contract["deferred_capabilities"]) >= {
+        "broad_qualitative_execution",
+        "qualitative_associated_cohort_execution",
+        "comparative_qualitative_execution",
+        "cross_document_synthesis",
+        "hybrid_execution",
+        "rag_vector_retrieval",
+        "hidden_llm_planning",
+        "qualitative_package_handoff_export",
+    }
+    assert set(contract["forbidden_runtime_fields"]) >= {
+        "qualitative_plan",
+        "hybrid_plan",
+        "rag_plan",
+        "vector_plan",
+        "run_all",
+        "artifact_manifest",
+        "package_payload",
+        "package_variant_content",
+        "rewrite_output",
+        "connector_id",
+        "destination_id",
+        "provider_url",
+        "public_url",
+        "source_upload",
+        "schema_migration",
+        "runtime_db_write",
+        "hidden_llm_plan",
+    }
+    assert contract["single_aps_doc_qualitative_execution_enabled"] is True
+    assert contract["broad_qualitative_execution_enabled"] is False
+    assert contract["qualitative_associated_cohort_execution_enabled"] is False
+    assert contract["comparative_qualitative_execution_enabled"] is False
+    assert contract["cross_document_synthesis_enabled"] is False
+    assert contract["hybrid_execution_enabled"] is False
+    assert contract["rag_vector_retrieval_enabled"] is False
+    assert contract["hidden_llm_planning_enabled"] is False
+    assert contract["qualitative_package_handoff_export_enabled"] is False
+    assert contract["source_widening_enabled"] is False
+    assert contract["connector_destination_dispatch_enabled"] is False
+    assert contract["package_mutation_reconstruction_enabled"] is False
+    assert contract["requires_later_freeze"] is True
 
 
 def test_single_aps_doc_qualitative_pass_executes_without_analysis_run_or_dataset_version(db_session, tmp_path) -> None:

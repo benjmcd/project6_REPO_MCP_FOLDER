@@ -33,12 +33,43 @@ QUAL_APS_METHOD_NAME = "single_aps_doc_qualitative_pass"
 QUAL_APS_SOURCE_GATE = "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE"
 QUAL_APS_OUTPUT_SCHEMA_ID = "layer3.single_aps_doc_qualitative_output.v1"
 ANALYSIS_EXECUTION_START_STATE_SCHEMA_ID = "layer3.analysis_execution_start_state.v1"
+QUALITATIVE_BOUNDARY_CONTRACT_SCHEMA_ID = "layer3.qualitative_hybrid_rag_boundary_contract.v1"
+QUALITATIVE_BOUNDARY_MODE = "single_aps_doc_qualitative_pass_only"
 
 PASS_TYPE_SINGLE_ITEM = "single_item"
 PASS_STATUS_SELECTED_NOT_STARTED = "selected_not_started"
 PASS_STATUS_COMPLETED = "completed"
 MODALITY_QUALITATIVE = "qualitative"
 SOURCE_SHAPE_APS_CONTENT_DOCUMENT = "aps_content_document"
+QUALITATIVE_BOUNDARY_DEFERRED_CAPABILITIES = (
+    "broad_qualitative_execution",
+    "qualitative_associated_cohort_execution",
+    "comparative_qualitative_execution",
+    "cross_document_synthesis",
+    "hybrid_execution",
+    "rag_vector_retrieval",
+    "hidden_llm_planning",
+    "qualitative_package_handoff_export",
+)
+QUALITATIVE_BOUNDARY_FORBIDDEN_RUNTIME_FIELDS = (
+    "qualitative_plan",
+    "hybrid_plan",
+    "rag_plan",
+    "vector_plan",
+    "run_all",
+    "artifact_manifest",
+    "package_payload",
+    "package_variant_content",
+    "rewrite_output",
+    "connector_id",
+    "destination_id",
+    "provider_url",
+    "public_url",
+    "source_upload",
+    "schema_migration",
+    "runtime_db_write",
+    "hidden_llm_plan",
+)
 
 
 class Layer3QualApsExecutionError(ValueError):
@@ -59,6 +90,33 @@ class _QualApsBasis:
 class Layer3QualApsExecutionResult:
     pass_run: L3PassRun
     output_payload_ref: str
+
+
+def qualitative_hybrid_rag_boundary_contract() -> dict[str, Any]:
+    return {
+        "schema_id": QUALITATIVE_BOUNDARY_CONTRACT_SCHEMA_ID,
+        "mode": QUALITATIVE_BOUNDARY_MODE,
+        "owner_service": "backend/app/services/layer3_qual_aps_execution.py",
+        "admitted_execution_modes": [PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE],
+        "admitted_engine_family": ENGINE_FAMILY_QUAL_APS_DOCUMENT,
+        "admitted_method_name": QUAL_APS_METHOD_NAME,
+        "admitted_source_gate": QUAL_APS_SOURCE_GATE,
+        "deferred_capabilities": list(QUALITATIVE_BOUNDARY_DEFERRED_CAPABILITIES),
+        "forbidden_runtime_fields": list(QUALITATIVE_BOUNDARY_FORBIDDEN_RUNTIME_FIELDS),
+        "single_aps_doc_qualitative_execution_enabled": True,
+        "broad_qualitative_execution_enabled": False,
+        "qualitative_associated_cohort_execution_enabled": False,
+        "comparative_qualitative_execution_enabled": False,
+        "cross_document_synthesis_enabled": False,
+        "hybrid_execution_enabled": False,
+        "rag_vector_retrieval_enabled": False,
+        "hidden_llm_planning_enabled": False,
+        "qualitative_package_handoff_export_enabled": False,
+        "source_widening_enabled": False,
+        "connector_destination_dispatch_enabled": False,
+        "package_mutation_reconstruction_enabled": False,
+        "requires_later_freeze": True,
+    }
 
 
 def is_single_aps_doc_qualitative_planned_pass(*, pass_run: L3PassRun, planned_pass: dict[str, Any]) -> bool:
