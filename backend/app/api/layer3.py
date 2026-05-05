@@ -17,7 +17,7 @@ from app.services import (
     layer3_replacement_package_set_authority,
     layer3_workbench,
 )
-from app.services.layer3_workbench import Layer3WorkbenchError
+from app.services.layer3_workbench_error import Layer3WorkbenchError, workbench_error_response
 
 router = APIRouter()
 
@@ -2962,7 +2962,7 @@ def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JS
     except Layer3WorkbenchError as exc:
         return JSONResponse(
             status_code=exc.http_status,
-            content=layer3_workbench.workbench_error_response(exc),
+            content=workbench_error_response(exc),
         )
 
 
@@ -3387,7 +3387,7 @@ async def post_external_export_download_deliver(
     except Layer3WorkbenchError as exc:
         return JSONResponse(
             status_code=exc.http_status,
-            content=layer3_workbench.workbench_error_response(exc),
+            content=workbench_error_response(exc),
         )
     return FileResponse(
         path=delivery.artifact_path,
@@ -3437,7 +3437,7 @@ def post_external_export_download_signed_reference_use(
     except Layer3WorkbenchError as exc:
         return JSONResponse(
             status_code=exc.http_status,
-            content=layer3_workbench.workbench_error_response(exc),
+            content=workbench_error_response(exc),
         )
     return FileResponse(
         path=delivery.artifact_path,
