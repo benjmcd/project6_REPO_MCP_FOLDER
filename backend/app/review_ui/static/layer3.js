@@ -4690,6 +4690,7 @@ async function commitGateB() {
             preflight_id: State.preflight?.preflight_id,
             source_set_id: State.sourcePreview?.source_set_id,
             material_preview_id: State.materialPreview?.material_preview_id,
+            material_preview_hash: State.materialPreview?.material_preview_hash,
             candidate_decisions: decisions,
             commit_reason: 'operator_gate_b_decision',
             actor: 'operator',

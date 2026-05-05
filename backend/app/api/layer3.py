@@ -76,6 +76,7 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     deferred_gates: list[str]
     state_model: dict[str, Any]
     preview_hash_contract: dict[str, Any]
+    material_preview_hash_contract: dict[str, Any]
     idempotency_contract: dict[str, Any]
     concurrency_contract: dict[str, Any]
     deferred_decisions: dict[str, Any]
@@ -99,6 +100,7 @@ class Layer3SourcePreviewResponse(Layer3BaseResponse):
 
 class Layer3MaterialPreviewResponse(Layer3BaseResponse):
     material_preview_id: str
+    material_preview_hash: str
     material_candidates: list[dict[str, Any]]
     partial_retrieval: bool
     authority_rail: dict[str, Any]
@@ -122,6 +124,7 @@ class Layer3ApsContentDocumentCandidatesResponse(Layer3BaseResponse):
 class Layer3GateBDecisionResponse(Layer3BaseResponse):
     session_id: str
     selection_manifest_id: str
+    material_preview_hash: str
     gate_b_decision_manifest_id: str
     approved_candidate_ids: list[str]
     denied_candidate_ids: list[str]
@@ -823,6 +826,7 @@ GATE_B_DECISION_REQUEST_SCHEMA: dict[str, Any] = {
         "preflight_id": {"type": "string"},
         "source_set_id": {"type": "string"},
         "material_preview_id": {"type": "string"},
+        "material_preview_hash": {"type": "string"},
         "actor": {"type": "string"},
         "candidate_decisions": {
             "type": "array",
@@ -1382,7 +1386,7 @@ def get_aps_content_document_candidates(limit: int = 50, db: Session = Depends(g
     "/gate-b/decision",
     response_model=Layer3GateBDecisionResponse,
     openapi_extra={"requestBody": _json_request_body(GATE_B_DECISION_REQUEST_SCHEMA)},
-    responses=_workbench_error_responses(400),
+    responses=_workbench_error_responses(400, 409),
 )
 def post_gate_b_decision(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.gate_b_decision(db, payload))
