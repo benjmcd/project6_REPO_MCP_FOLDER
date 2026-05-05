@@ -1352,7 +1352,11 @@ def _workbench_state_model() -> dict[str, Any]:
             {
                 "state": PACKAGE_CONSTRUCTED_STATE,
                 "authority_source": "l3_reconciliation_record_and_three_l3_output_package_rows",
-                "allowed_next_actions": ["inspect_package_payloads", "package_review_submit"],
+                "allowed_next_actions": [
+                    "inspect_package_payloads",
+                    "package_review_submit",
+                    "package_supersession_preview",
+                ],
                 "forbidden_downstream_actions": ["handoff", "export"],
             },
             {
@@ -1376,7 +1380,11 @@ def _workbench_state_model() -> dict[str, Any]:
             {
                 "state": PACKAGE_REVIEW_APPROVED_STATE,
                 "authority_source": "bounded_operator_package_review_submit_state",
-                "allowed_next_actions": ["inspect_package_review_decision", "handoff_export_prepare"],
+                "allowed_next_actions": [
+                    "inspect_package_review_decision",
+                    "handoff_export_prepare",
+                    "package_supersession_preview",
+                ],
                 "forbidden_downstream_actions": ["aps_handoff", "external_export", "downstream_dispatch"],
             },
             {
@@ -1655,6 +1663,7 @@ def _workbench_state_action_contract() -> dict[str, Any]:
         external_export_download_operator_decision=EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION,
         external_export_download_delivery_operator_decision=EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION,
         connector_dispatch_record_operator_decision="record_internal_connector_dispatch",
+        package_supersession_preview_operator_decision="preview_package_supersession",
         terminal_pass_statuses=EXECUTION_RESULT_STATUS_TERMINAL_PASS_STATUSES,
     )
 
@@ -1725,6 +1734,8 @@ def readiness_contract() -> dict[str, Any]:
         "external_export_download_deliver_endpoint": f"{API_ROOT}/handoff/export/download/deliver",
         "internal_connector_dispatch_record_admitted": True,
         "internal_connector_dispatch_record_endpoint": f"{API_ROOT}/handoff/connector/record",
+        "package_supersession_preview_admitted": True,
+        "package_supersession_preview_endpoint": f"{API_ROOT}/package/mutation/preview",
         "package_review_admitted": False,
         "external_handoff_admitted": False,
         "external_export_admitted": False,
@@ -1753,6 +1764,7 @@ def readiness_contract() -> dict[str, Any]:
             "client_request_id_required_for_aps_handoff_dispatch": True,
             "client_request_id_required_for_external_export_download_prepare": True,
             "client_request_id_required_for_external_export_download_deliver": True,
+            "client_request_id_required_for_package_supersession_preview": True,
             "duplicate_gate_b_decision": "same required client_request_id, provided source context, provided material_preview_id, and decision manifest returns existing Gate B session; conflicts fail closed",
             "gate_b_decision_idempotency_scope": "post_commit_retry_only",
             "gate_b_decision_concurrent_duplicate_lock": False,
@@ -1769,6 +1781,7 @@ def readiness_contract() -> dict[str, Any]:
             "duplicate_aps_handoff_dispatch": "same client_request_id and same prepared-envelope authority returns existing APS handoff state; conflicts fail closed",
             "duplicate_external_export_download_prepare": "same client_request_id and same APS handoff authority returns existing readiness state; conflicts fail closed",
             "duplicate_external_export_download_deliver": "read-only delivery revalidates the recorded readiness descriptor and may re-stream the same existing artifact",
+            "duplicate_package_supersession_preview": "read-only package supersession preview recomputes the same package-set and downstream-dependency hash without persistence",
             "duplicate_without_client_request_id": "server-authoritative state conflicts still prevent duplicate durable approval or revision-control state",
             "analysis_execution": "broad analysis execution remains blocked; selected-pass execution start is admitted separately",
         },
@@ -1787,6 +1800,7 @@ def readiness_contract() -> dict[str, Any]:
             "aps_handoff_dispatch_uses_session_reconciliation_and_package_locks": True,
             "external_export_download_prepare_uses_session_reconciliation_and_package_locks": True,
             "external_export_download_deliver_uses_session_reconciliation_and_package_locks": True,
+            "package_supersession_preview_is_read_only": True,
             "broad_analysis_execution_requires_later_freeze": True,
         },
         "deferred_decisions": {
@@ -1801,6 +1815,7 @@ def readiness_contract() -> dict[str, Any]:
             "external_export_download_prepare": "admitted only as a reference-only readiness descriptor after aps_handoff_dispatched; browser download remains disabled",
             "external_export_download_deliver": "admitted only as same-origin streaming of the already validated APS evidence-bundle artifact after recorded readiness; public or signed URLs remain disabled",
             "internal_connector_dispatch_record": "admitted only as response-safe internal dispatch intent record after associated-cohort external export/download readiness; external invocation and destination writes remain blocked",
+            "package_supersession_preview": "admitted only as read-only immutable package supersession preview; package row mutation, payload rewrite, and supersession commit remain blocked",
             "external_handoff_export_dispatch": "browser download, public/signed URL generation, connector dispatch, destination selection, and non-APS dispatch still require later freezes",
         },
     }
@@ -1833,6 +1848,7 @@ def bootstrap() -> dict[str, Any]:
             "external_export_download_prepare": True,
             "external_export_download_deliver": True,
             "internal_connector_dispatch_record": True,
+            "package_supersession_preview": True,
             "analysis_execution": False,
             "single_aps_doc_qualitative_execution": True,
             "broad_qualitative_execution": False,
@@ -1875,6 +1891,8 @@ def bootstrap() -> dict[str, Any]:
             "external_export_download_deliver_endpoint": f"{API_ROOT}/handoff/export/download/deliver",
             "internal_connector_dispatch_record_admitted": True,
             "internal_connector_dispatch_record_endpoint": f"{API_ROOT}/handoff/connector/record",
+            "package_supersession_preview_admitted": True,
+            "package_supersession_preview_endpoint": f"{API_ROOT}/package/mutation/preview",
             "package_review_admitted": False,
             "external_handoff_admitted": False,
             "external_export_admitted": False,

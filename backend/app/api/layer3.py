@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.services import layer3_connector_dispatch_entry, layer3_workbench
+from app.services import layer3_connector_dispatch_entry, layer3_package_mutation_entry, layer3_workbench
 from app.services.layer3_workbench import Layer3WorkbenchError
 
 router = APIRouter()
@@ -69,6 +69,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     external_export_download_deliver_endpoint: str
     internal_connector_dispatch_record_admitted: bool
     internal_connector_dispatch_record_endpoint: str
+    package_supersession_preview_admitted: bool
+    package_supersession_preview_endpoint: str
     package_review_admitted: bool
     external_handoff_admitted: bool
     external_export_admitted: bool
@@ -459,6 +461,69 @@ class Layer3PackageReviewSubmitRequest(BaseModel):
     runtime_db_write: Any | None = None
     artifact_manifest: Any | None = None
     analysis_artifact: Any | None = None
+
+
+class Layer3PackageSupersessionPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    output_package_ids: list[str] | None = None
+    package_kinds: list[str] | None = None
+    payload_refs: list[str] | None = None
+    payload_hashes: list[str] | None = None
+    package_review_preview_hash: str | None = None
+    operator_decision: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    analysis_run_id: str | None = None
+    result_review_record_ref: str | None = None
+    package_review_submit_record_ref: str | None = None
+    handoff_export_record_ref: str | None = None
+    aps_handoff_record_ref: str | None = None
+    external_export_download_record_ref: str | None = None
+    connector_dispatch_record_ref: str | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    rewrite_output: Any | None = None
+    rebuild_package: Any | None = None
+    mutate_package: Any | None = None
+    replace_package: Any | None = None
+    delete_package: Any | None = None
+    update_payload_ref: Any | None = None
+    update_payload_hash: Any | None = None
+    artifact_manifest: Any | None = None
+    analysis_artifact: Any | None = None
+    handoff: Any | None = None
+    export: Any | None = None
+    connector_key: Any | None = None
+    connector_run_id: Any | None = None
+    destination_id: Any | None = None
+    destination_url: Any | None = None
+    provider_public_url: Any | None = None
+    public_url: Any | None = None
+    signed_url: Any | None = None
+    download_url: Any | None = None
+    source_upload: Any | None = None
+    local_directory: Any | None = None
+    rag_vector_index: Any | None = None
+    runtime_db_write: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_execution: Any | None = None
+    rag_execution: Any | None = None
+    hidden_llm_planning: Any | None = None
+    schema_migration: Any | None = None
+    approved_plan_supersession: Any | None = None
+    result_review_amendment: Any | None = None
+    package_review_amendment: Any | None = None
+    handoff_export_amendment: Any | None = None
+    aps_handoff_amendment: Any | None = None
+    retry: Any | None = None
+    rerun: Any | None = None
+    cancel: Any | None = None
 
 
 class Layer3HandoffExportPrepareRequest(BaseModel):
@@ -991,6 +1056,42 @@ class Layer3PackageReviewSubmitResponse(Layer3BaseResponse):
     package_review_submit_enabled: bool
     handoff_enabled: bool
     export_enabled: bool
+    downstream_unavailable: list[str]
+    next_state: str
+    authority_rail: dict[str, Any]
+
+
+class Layer3PackageSupersessionPreviewResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    preview_identity: dict[str, Any]
+    analysis_run_id: str | None
+    result_review_record_ref: str | None
+    package_review_preview_hash: str
+    reconciliation_record_id: str
+    output_package_ids: list[str]
+    package_kinds: list[str]
+    payload_refs: list[str]
+    payload_hashes: list[str]
+    operator_decision: str
+    package_supersession_preview_mode: str
+    package_supersession_preview_hash: str
+    package_set_hash: str
+    package_rows: list[dict[str, Any]]
+    downstream_dependencies: list[dict[str, Any]]
+    downstream_dependency_detected: bool
+    immutable_package_rule_enforced: bool
+    package_row_mutation_enabled: bool
+    package_payload_rewrite_enabled: bool
+    package_supersession_commit_enabled: bool
+    database_write_enabled: bool
+    filesystem_write_enabled: bool
+    broad_package_mutation_enabled: bool
+    source_widening_enabled: bool
+    connector_dispatch_enabled: bool
+    provider_public_url_enabled: bool
+    qualitative_hybrid_rag_execution_enabled: bool
     downstream_unavailable: list[str]
     next_state: str
     authority_rail: dict[str, Any]
@@ -1945,6 +2046,92 @@ PACKAGE_REVIEW_SUBMIT_REQUEST_SCHEMA: dict[str, Any] = {
 }
 
 
+PACKAGE_SUPERSESSION_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Read-only package supersession preview. Existing package rows and payload refs remain immutable; "
+        "broad package mutation/reconstruction stays fail-closed."
+    ),
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_preview_hash",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "output_package_ids": {"type": "array", "items": {"type": "string"}},
+        "package_kinds": {
+            "type": "array",
+            "items": {"type": "string", "enum": ["canonical_internal", "user_facing", "review_facing"]},
+        },
+        "payload_refs": {"type": "array", "items": {"type": "string"}},
+        "payload_hashes": {"type": "array", "items": {"type": "string"}},
+        "package_review_preview_hash": {"type": "string"},
+        "operator_decision": {"type": "string", "enum": ["preview_package_supersession"]},
+        "preview_id": {"type": "string"},
+        "preview_hash": {"type": "string"},
+        "analysis_run_id": {"type": "string"},
+        "result_review_record_ref": {"type": "string"},
+        "package_review_submit_record_ref": {"type": "string"},
+        "handoff_export_record_ref": {"type": "string"},
+        "aps_handoff_record_ref": {"type": "string"},
+        "external_export_download_record_ref": {"type": "string"},
+        "connector_dispatch_record_ref": {"type": "string"},
+        "package_payload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_variant_content": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rewrite_output": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rebuild_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "mutate_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "replace_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "delete_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "update_payload_ref": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "update_payload_hash": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "analysis_artifact": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "export": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "connector_key": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "connector_run_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "destination_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "destination_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "provider_public_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "public_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "signed_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "download_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_vector_index": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "runtime_db_write": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "qualitative_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hybrid_execution": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_execution": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hidden_llm_planning": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_migration": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "approved_plan_supersession": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_review_amendment": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review_amendment": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff_export_amendment": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "aps_handoff_amendment": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "retry": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rerun": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "cancel": {"description": "Known but non-admitted; service rejects fail-closed."},
+    },
+}
+
+
 HANDOFF_EXPORT_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -2631,6 +2818,24 @@ def post_package_review_submit(
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.package_review_submit(db, payload.model_dump(exclude_unset=True)))
+
+
+@router.post(
+    "/package/mutation/preview",
+    response_model=Layer3PackageSupersessionPreviewResponse,
+    openapi_extra={"requestBody": _json_request_body(PACKAGE_SUPERSESSION_PREVIEW_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_package_mutation_preview(
+    payload: Layer3PackageSupersessionPreviewRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_package_mutation_entry.preview_package_supersession(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
 
 
 @router.post(
