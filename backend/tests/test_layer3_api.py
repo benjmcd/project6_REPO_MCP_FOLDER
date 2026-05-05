@@ -38,8 +38,17 @@ from app.models.models import (
     L3SignedReferenceReceipt,
     L3SignedReferenceToken,
 )
-from app.services.layer3_aps_handoff import PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF
-from app.services import dataframe_io, layer3_pass_entry as layer3_pass_entry_module
+from app.services import (
+    dataframe_io,
+    layer3_pass_entry as layer3_pass_entry_module,
+    layer3_workbench,
+)
+from app.services.layer3_aps_handoff import (
+    PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+    Layer3ApsHandoffError,
+)
+from app.services.layer3_package_entry import Layer3PackageEntryError
+from app.services.layer3_pass_entry import Layer3PassEntryError
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
     SnapshotMaterial,
@@ -48,7 +57,7 @@ from app.services.layer3_session_entry import (
     finalize_session,
     record_retrieval_event,
 )
-from app.services.layer3_typing_entry import materialize_typing_entry
+from app.services.layer3_typing_entry import Layer3TypingEntryError, materialize_typing_entry
 from main import app
 from test_layer3_aps_handoff import _seed_aps_content_fixture, _seed_timeseries_dataset_version
 from test_layer3_pass_entry import (
@@ -273,6 +282,16 @@ def _assert_common_response_envelope(body: dict) -> None:
     assert body["request_id"]
     assert body["server_time"].endswith("Z")
     assert body["status"]
+
+
+def _assert_workbench_error_response(response, *, status_code: int, error_code: str) -> dict:
+    assert response.status_code == status_code
+    body = response.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.workbench_error.v1"
+    assert body["error_code"] == error_code
+    assert "detail" not in body
+    return body
 
 
 def _openapi_response_schema(spec: dict, path: str, method: str) -> dict:
@@ -2422,6 +2441,182 @@ def _prepare_aps_handoff_dispatch(
             prepare_body=prepare_body,
         ),
     )
+
+
+def test_layer3_api_gate_c_preview_maps_typing_entry_error(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    def _raise_typing_entry_error(*_args, **_kwargs):
+        raise Layer3TypingEntryError(
+            f"Layer 3 session '{session_id}' already has typing records"
+        )
+
+    monkeypatch.setattr(
+        layer3_workbench,
+        "materialize_typing_entry",
+        _raise_typing_entry_error,
+    )
+
+    response = client.post(
+        "/api/v1/layer3/gate-c/preview",
+        json={
+            "client_request_id": "api-gate-c-typing-error-map",
+            "session_id": session_id,
+            "commit_typing": True,
+        },
+    )
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="typing_already_materialized",
+    )
+    assert body["status"] == "blocked"
+
+
+def test_layer3_api_plan_preview_maps_pass_entry_error(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    def _raise_pass_entry_error(*_args, **_kwargs):
+        raise Layer3PassEntryError(
+            f"Layer 3 session '{session_id}' has no admissible analysis sets for Gate C pass entry"
+        )
+
+    monkeypatch.setattr(layer3_workbench, "preview_pass_entry", _raise_pass_entry_error)
+
+    response = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-plan-preview-pass-error-map",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    )
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="no_admissible_plan",
+    )
+    assert body["status"] == "blocked"
+
+
+def test_layer3_api_package_review_commit_maps_package_entry_error(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        _status_body,
+        review_body,
+    ) = _execute_and_approve_quant_result_review(
+        client,
+        tmp_path,
+        request_id="api-package-entry-error-map",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+    package_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": "api-package-entry-error-map-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert package_preview.status_code == 200
+
+    def _raise_package_entry_error(*_args, **_kwargs):
+        raise Layer3PackageEntryError("forced package-entry proof failure")
+
+    monkeypatch.setattr(
+        layer3_workbench,
+        "materialize_workbench_package_commit",
+        _raise_package_entry_error,
+    )
+
+    response = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": "api-package-entry-error-map-commit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": package_preview.json()[
+                "package_review_preview_hash"
+            ],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="package_construction_commit_blocked",
+    )
+    assert body["status"] == "conflict"
+    assert body["next_allowed_actions"] == ["inspect_existing_package_state"]
+
+
+def test_layer3_api_aps_handoff_dispatch_maps_owner_service_error(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    *_, dispatch_payload = _prepare_aps_handoff_dispatch(
+        client,
+        tmp_path,
+        request_id="api-aps-owner-service-error-map",
+    )
+
+    def _raise_aps_handoff_error(*_args, **_kwargs):
+        raise Layer3ApsHandoffError("forced APS handoff proof failure")
+
+    monkeypatch.setattr(
+        layer3_workbench,
+        "materialize_aps_handoff",
+        _raise_aps_handoff_error,
+    )
+
+    response = client.post("/api/v1/layer3/handoff/aps/dispatch", json=dispatch_payload)
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="aps_handoff_dispatch_blocked",
+    )
+    assert body["status"] == "blocked"
+    assert body["blocked_fields"] == ["aps_handoff_target"]
 
 
 def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
