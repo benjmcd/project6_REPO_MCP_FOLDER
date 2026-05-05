@@ -30,6 +30,7 @@ PACKAGE_MUTATION_FREEZE = PLANNING_DOCS / "122_PACKAGE_MUTATION_FREEZE.md"
 SOURCE_EXPANSION_FREEZE = PLANNING_DOCS / "123_SOURCE_EXPANSION_FREEZE.md"
 QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 MOCKUP_TRUTH_FREEZE = PLANNING_DOCS / "125_MOCKUP_TRUTH_STATE_FREEZE.md"
+PACKAGE_COMMIT_FREEZE = PLANNING_DOCS / "126_PACKAGE_COMMIT_FREEZE.md"
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -785,6 +786,85 @@ def _check_package_mutation_freeze(errors: list[str]) -> None:
     ):
         if term not in test_text:
             errors.append(f"{_rel(LAYER3_API_TEST)} missing package mutation blocked proof term: {term}")
+
+
+def _check_package_commit_entry_freeze(errors: list[str]) -> None:
+    freeze_text = _read_required_text(PACKAGE_COMMIT_FREEZE, errors)
+    required_freeze_terms = [
+        "Status: implementation-entry freeze only for `package_supersession_commit_entry`; no runtime behavior admitted.",
+        "selected_package_lifecycle_mode: `package_supersession_commit_entry`",
+        "`package_supersession_preview_only` remains the only admitted package lifecycle runtime",
+        "`package_mutation_reconstruction` remains deferred",
+        "future owner service candidate: `backend/app/services/layer3_package_supersession_commit.py`",
+        "future API route candidate: `/api/v1/layer3/package/supersession/commit`",
+        "future response schema: `layer3.package_supersession_commit.v1`",
+        "future operator decision: `commit_package_supersession`",
+        "a dedicated supersession lineage model/migration",
+        "`operator_decision` must be exactly `commit_package_supersession`",
+        "no runtime route, service, model, migration, UI control, package row mutation, package payload write, or package commit behavior is added by this slice",
+        "package supersession commit runtime",
+        "authentication/security hardening",
+    ]
+    for term in required_freeze_terms:
+        if term not in freeze_text:
+            errors.append(f"{_rel(PACKAGE_COMMIT_FREEZE)} missing package commit freeze term: {term}")
+
+    required_doc_terms = {
+        DEFERRED_GATES: [
+            "126_PACKAGE_COMMIT_FREEZE.md",
+            "package_supersession_commit_entry",
+            "no runtime behavior admitted",
+            "runtime package mutation/reconstruction commit remains not admitted",
+        ],
+        PACKAGE_MUTATION_FREEZE: [
+            "126_PACKAGE_COMMIT_FREEZE.md",
+            "package_supersession_commit_entry",
+            "docs/proof-only",
+            "still does not admit a commit route",
+        ],
+        GOAL_AUDIT: [
+            "126_PACKAGE_COMMIT_FREEZE.md",
+            "package supersession commit entry is frozen as docs/proof-only",
+            "adds no route, service, model, migration, package row mutation",
+        ],
+        CLOSEOUT_DOC: [
+            "Package supersession commit entry freeze",
+            "Docs/proof-only; no runtime behavior admitted",
+            "No commit route, service, model, migration, package row mutation",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing package commit entry term: {term}")
+
+    admitted = _capability_map(
+        _load_literal_assignment(STATE_ACTION_CONTRACT, "STATE_ACTION_ADMITTED_CAPABILITIES", errors),
+        "STATE_ACTION_ADMITTED_CAPABILITIES",
+        errors,
+    )
+    deferred = _capability_map(
+        _load_literal_assignment(STATE_ACTION_CONTRACT, "STATE_ACTION_DEFERRED_CAPABILITIES", errors),
+        "STATE_ACTION_DEFERRED_CAPABILITIES",
+        errors,
+    )
+    if "package_supersession_commit" in admitted:
+        errors.append("package_supersession_commit must not be admitted by the docs-only commit freeze")
+    if "package_supersession_commit_entry" in admitted:
+        errors.append("package_supersession_commit_entry must not be admitted by the docs-only commit freeze")
+    package_mutation = deferred.get("package_mutation_reconstruction")
+    if package_mutation is None:
+        errors.append("deferred capabilities missing package_mutation_reconstruction")
+    elif package_mutation.get("admitted") is not False:
+        errors.append("package_mutation_reconstruction must remain admitted false after package commit entry freeze")
+    preview = admitted.get("package_supersession_preview_only")
+    if preview is None or preview.get("admitted") is not True:
+        errors.append("package_supersession_preview_only must remain the only admitted package lifecycle runtime")
+    else:
+        blocked = preview.get("blocked_downstream")
+        if not isinstance(blocked, list) or "package_supersession_commit" not in blocked:
+            errors.append("package_supersession_preview_only must still block package_supersession_commit")
 
 
 def _check_qualitative_capability_boundary(errors: list[str]) -> None:
@@ -1808,6 +1888,7 @@ def main() -> int:
         SOURCE_EXPANSION_FREEZE,
         QUAL_HYBRID_RAG_FREEZE,
         MOCKUP_TRUTH_FREEZE,
+        PACKAGE_COMMIT_FREEZE,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
         GATE_B_IDEMPOTENCY_MIGRATION,
@@ -1843,6 +1924,7 @@ def main() -> int:
     _check_local_boundary(errors)
     _check_connector_dispatch_entry_freeze(errors)
     _check_package_mutation_freeze(errors)
+    _check_package_commit_entry_freeze(errors)
     _check_qualitative_capability_boundary(errors)
     _check_source_boundary_contract(errors)
     _check_mockup_truth_state_boundary(errors)
