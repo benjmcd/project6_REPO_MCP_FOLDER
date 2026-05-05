@@ -331,6 +331,7 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
         "api_root",
         "features",
         "execution_readiness",
+        "state_action_contract",
         "authority_rail",
     } <= set(bootstrap_schema["required"])
     assert bootstrap_schema["properties"]["features"]["additionalProperties"]["type"] == "boolean"
@@ -346,6 +347,7 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
         "execution_admitted",
         "execution_enabled",
         "state_model",
+        "state_action_contract",
         "preview_hash_contract",
         "material_preview_hash_contract",
         "idempotency_contract",
@@ -1496,6 +1498,7 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
         "aps_handoff_dispatch",
         "external_export_download",
         "sublayer_visualization",
+        "state_action_contract",
         "downstream_unavailable",
         "authority_rail",
     } <= set(session_schema["required"])
@@ -2505,6 +2508,17 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["external_export_admitted"] is False
     assert readiness_body["dispatch_admitted"] is False
     assert readiness_body["readiness_state"] == "execution_readiness_blocked"
+    assert bootstrap_body["state_action_contract"] == readiness_body["state_action_contract"]
+    assert readiness_body["state_action_contract"]["schema_id"] == "layer3.state_action_contract.v1"
+    assert "analysis_execution_start" in readiness_body["state_action_contract"]["action_ids"]
+    assert "external_export_download_deliver" in readiness_body["state_action_contract"]["action_ids"]
+    deferred_capabilities = {
+        item["capability"]: item for item in readiness_body["state_action_contract"]["deferred_capabilities"]
+    }
+    assert deferred_capabilities["qualitative_execution"]["admitted"] is False
+    assert deferred_capabilities["provider_public_url"]["admitted"] is False
+    assert deferred_capabilities["connector_destination_dispatch"]["admitted"] is False
+    assert deferred_capabilities["auth_security_hardening"]["reason"] == "deferred_by_operator_instruction"
     assert readiness_body["preview_hash_contract"]["schema_id"] == "layer3.plan_preview_hash.v1"
     assert readiness_body["material_preview_hash_contract"]["schema_id"] == "layer3.material_preview_hash.v1"
     assert readiness_body["material_preview_hash_contract"]["supplied_hash_required_current_slice"] is False
