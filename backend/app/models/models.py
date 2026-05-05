@@ -1029,6 +1029,54 @@ class L3OutputPackage(Base, TimestampMixin):
     reconciliation_record: Mapped[L3ReconciliationRecord] = relationship()
 
 
+class L3ReplacementPackageSetAuthority(Base):
+    __tablename__ = "l3_replacement_package_set_authority"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_l3_replacement_package_set_client_request"),
+        UniqueConstraint("authority_basis_hash", name="uq_l3_replacement_package_set_basis_hash"),
+        CheckConstraint(
+            "operator_decision = 'record_replacement_package_set_authority'",
+            name="ck_l3_replacement_package_set_operator_decision",
+        ),
+        Index("ix_l3_replacement_package_set_session", "session_id"),
+        Index("ix_l3_replacement_package_set_reconciliation", "reconciliation_record_id"),
+    )
+
+    replacement_package_set_authority_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    analysis_plan_id: Mapped[str] = mapped_column(ForeignKey("l3_analysis_plan.analysis_plan_id"), nullable=False)
+    pass_run_id: Mapped[str] = mapped_column(ForeignKey("l3_pass_run.pass_run_id"), nullable=False)
+    reconciliation_record_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_reconciliation_record.reconciliation_record_id"),
+        nullable=False,
+    )
+    source_package_set_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_output_package_ids_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    source_package_kinds_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    source_payload_refs_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    source_payload_hashes_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    replacement_package_set_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    replacement_package_set_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    replacement_package_kinds_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    replacement_payload_refs_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    replacement_payload_hashes_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    authority_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    authority_snapshot_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    operator_decision: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    session: Mapped[L3Session] = relationship()
+    analysis_plan: Mapped[L3AnalysisPlan] = relationship()
+    pass_run: Mapped[L3PassRun] = relationship()
+    reconciliation_record: Mapped[L3ReconciliationRecord] = relationship()
+
+
 class L3SignedReferenceToken(Base):
     __tablename__ = "l3_signed_reference_token"
     __table_args__ = (
