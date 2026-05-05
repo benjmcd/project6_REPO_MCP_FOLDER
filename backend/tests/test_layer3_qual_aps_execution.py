@@ -36,6 +36,7 @@ from app.services.layer3_qual_aps_execution import (
     PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE,
     QUALITATIVE_BOUNDARY_CONTRACT_SCHEMA_ID,
     QUALITATIVE_BOUNDARY_MODE,
+    Layer3QualApsExecutionError,
     QUAL_APS_METHOD_NAME,
     QUAL_APS_OUTPUT_SCHEMA_ID,
     QUAL_APS_SOURCE_GATE,
@@ -386,6 +387,65 @@ def test_single_aps_doc_qualitative_execution_is_idempotent_for_same_request(db_
     assert second["status"] == "already_completed"
     assert db_session.query(AnalysisRun).count() == 0
     assert db_session.query(L3PassRun).count() == 1
+
+
+def test_single_aps_doc_qualitative_owner_error_maps_without_side_effects(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    flow = _commit_single_doc_plan(db_session, tmp_path, content_id="content-qual-aps-owner-error")
+    counts_before = {
+        "analysis_runs": db_session.query(AnalysisRun).count(),
+        "dataset_versions": db_session.query(DatasetVersion).count(),
+        "output_packages": db_session.query(L3OutputPackage).count(),
+        "reconciliation_records": db_session.query(L3ReconciliationRecord).count(),
+        "connector_runs": db_session.query(ConnectorRun).count(),
+        "connector_run_targets": db_session.query(ConnectorRunTarget).count(),
+    }
+
+    def _raise_qualitative_owner_error(*_args, **_kwargs):
+        raise Layer3QualApsExecutionError("forced qualitative APS owner-service proof failure")
+
+    monkeypatch.setattr(
+        layer3_workbench,
+        "execute_single_aps_doc_qualitative_pass",
+        _raise_qualitative_owner_error,
+    )
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.analysis_execution_start(
+            db_session,
+            {
+                "client_request_id": "req-qual-start-owner-error",
+                "session_id": flow["session_id"],
+                "analysis_plan_id": flow["analysis_plan_id"],
+                "pass_run_id": flow["pass_run_id"],
+                "preview_id": flow["preview_id"],
+                "preview_hash": flow["preview_hash"],
+            },
+        )
+
+    assert exc.value.error_code == "analysis_execution_start_not_admitted"
+    assert exc.value.status == "conflict"
+    assert exc.value.http_status == 409
+    assert "forced qualitative APS owner-service proof failure" in exc.value.message
+
+    pass_run = db_session.get(L3PassRun, flow["pass_run_id"])
+    assert pass_run.status == "selected_not_started"
+    assert pass_run.output_payload_ref is None
+    assert pass_run.summary_json["selection_state"] == "execution_selected_not_started"
+    assert pass_run.summary_json["execution_started"] is False
+    assert pass_run.summary_json["analysis_run_id"] is None
+    assert "analysis_execution_start" not in pass_run.summary_json
+    assert {
+        "analysis_runs": db_session.query(AnalysisRun).count(),
+        "dataset_versions": db_session.query(DatasetVersion).count(),
+        "output_packages": db_session.query(L3OutputPackage).count(),
+        "reconciliation_records": db_session.query(L3ReconciliationRecord).count(),
+        "connector_runs": db_session.query(ConnectorRun).count(),
+        "connector_run_targets": db_session.query(ConnectorRunTarget).count(),
+    } == counts_before
 
 
 def test_single_aps_doc_qualitative_execution_rejects_forbidden_request_fields(db_session, tmp_path) -> None:
