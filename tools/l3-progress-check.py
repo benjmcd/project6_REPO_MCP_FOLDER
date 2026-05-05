@@ -28,6 +28,7 @@ CLOSEOUT_DOC = PLANNING_DOCS / "120_L3_CLOSEOUT.md"
 CONNECTOR_ENTRY_FREEZE = PLANNING_DOCS / "121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md"
 PACKAGE_MUTATION_FREEZE = PLANNING_DOCS / "122_PACKAGE_MUTATION_FREEZE.md"
 SOURCE_EXPANSION_FREEZE = PLANNING_DOCS / "123_SOURCE_EXPANSION_FREEZE.md"
+QUAL_HYBRID_RAG_FREEZE = PLANNING_DOCS / "124_QUAL_HYBRID_RAG_FREEZE.md"
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -50,7 +51,9 @@ CONNECTOR_DISPATCH_SERVICE = (
 PACKAGE_MUTATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_package_mutation_entry.py"
 )
+QUAL_APS_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_qual_aps_execution.py"
 SOURCE_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_source_boundary.py"
+QUAL_APS_TEST = ROOT / "backend" / "tests" / "test_layer3_qual_aps_execution.py"
 SESSION_ENTRY_TEST = ROOT / "backend" / "tests" / "test_layer3_session_entry.py"
 SIGNED_REFERENCE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_signed_reference_state.py"
@@ -846,6 +849,81 @@ def _check_qualitative_capability_boundary(errors: list[str]) -> None:
         if capability in admitted:
             errors.append(f"{capability} must not also appear as an admitted capability")
 
+    expected_qual_deferred = (
+        "broad_qualitative_execution",
+        "qualitative_associated_cohort_execution",
+        "comparative_qualitative_execution",
+        "cross_document_synthesis",
+        "hybrid_execution",
+        "rag_vector_retrieval",
+        "hidden_llm_planning",
+        "qualitative_package_handoff_export",
+    )
+    expected_qual_forbidden_fields = (
+        "qualitative_plan",
+        "hybrid_plan",
+        "rag_plan",
+        "vector_plan",
+        "run_all",
+        "artifact_manifest",
+        "package_payload",
+        "package_variant_content",
+        "rewrite_output",
+        "connector_id",
+        "destination_id",
+        "provider_url",
+        "public_url",
+        "source_upload",
+        "schema_migration",
+        "runtime_db_write",
+        "hidden_llm_plan",
+    )
+    qual_deferred = _load_literal_assignment(
+        QUAL_APS_SERVICE, "QUALITATIVE_BOUNDARY_DEFERRED_CAPABILITIES", errors
+    )
+    qual_forbidden = _load_literal_assignment(
+        QUAL_APS_SERVICE, "QUALITATIVE_BOUNDARY_FORBIDDEN_RUNTIME_FIELDS", errors
+    )
+    if qual_deferred != expected_qual_deferred:
+        errors.append(
+            "qualitative boundary deferred capabilities drifted: "
+            f"expected {expected_qual_deferred!r}, found {qual_deferred!r}"
+        )
+    if qual_forbidden != expected_qual_forbidden_fields:
+        errors.append(
+            "qualitative boundary forbidden runtime fields drifted: "
+            f"expected {expected_qual_forbidden_fields!r}, found {qual_forbidden!r}"
+        )
+
+    qual_service_text = _read_required_text(QUAL_APS_SERVICE, errors)
+    for term in (
+        "QUALITATIVE_BOUNDARY_CONTRACT_SCHEMA_ID = \"layer3.qualitative_hybrid_rag_boundary_contract.v1\"",
+        "QUALITATIVE_BOUNDARY_MODE = \"single_aps_doc_qualitative_pass_only\"",
+        "def qualitative_hybrid_rag_boundary_contract(",
+        "\"single_aps_doc_qualitative_execution_enabled\": True",
+        "\"broad_qualitative_execution_enabled\": False",
+        "\"qualitative_associated_cohort_execution_enabled\": False",
+        "\"comparative_qualitative_execution_enabled\": False",
+        "\"cross_document_synthesis_enabled\": False",
+        "\"hybrid_execution_enabled\": False",
+        "\"rag_vector_retrieval_enabled\": False",
+        "\"hidden_llm_planning_enabled\": False",
+        "\"qualitative_package_handoff_export_enabled\": False",
+        "\"source_widening_enabled\": False",
+        "\"connector_destination_dispatch_enabled\": False",
+        "\"package_mutation_reconstruction_enabled\": False",
+        "\"requires_later_freeze\": True",
+    ):
+        if term not in qual_service_text:
+            errors.append(f"{_rel(QUAL_APS_SERVICE)} missing qualitative contract term: {term}")
+
+    qual_test_text = _read_required_text(QUAL_APS_TEST, errors)
+    for term in expected_qual_deferred + expected_qual_forbidden_fields:
+        if term not in qual_test_text:
+            errors.append(f"{_rel(QUAL_APS_TEST)} missing qualitative boundary proof term: {term}")
+    if "test_qualitative_hybrid_rag_boundary_contract_keeps_broad_execution_fail_closed" not in qual_test_text:
+        errors.append(f"{_rel(QUAL_APS_TEST)} missing qualitative boundary contract proof")
+
     workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
     for term in (
         '"single_aps_doc_qualitative_execution_admitted": True',
@@ -880,6 +958,15 @@ def _check_qualitative_capability_boundary(errors: list[str]) -> None:
         QUAL_APS_ENTRY_FREEZE: [
             "selected the single APS content-document qualitative lane",
             "No other qualitative, hybrid, RAG, vector, cohort, comparative, cross-document, connector, provider, package, or full-mockup behavior is admitted.",
+        ],
+        QUAL_HYBRID_RAG_FREEZE: [
+            "selected_qualitative_hybrid_rag_mode: `single_aps_doc_qualitative_pass_only`",
+            "layer3.qualitative_hybrid_rag_boundary_contract.v1",
+            "broad_qualitative_execution_enabled: `False`",
+            "hybrid_execution_enabled: `False`",
+            "rag_vector_retrieval_enabled: `False`",
+            "hidden_llm_planning_enabled: `False`",
+            "No broad qualitative execution, qualitative cohort execution, comparative execution, cross-document synthesis, hybrid execution, RAG/vector retrieval, hidden LLM planning, qualitative package/handoff/export, source widening, connector/destination dispatch, or package mutation/reconstruction is admitted.",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -1388,14 +1475,17 @@ def main() -> int:
         CONNECTOR_ENTRY_FREEZE,
         PACKAGE_MUTATION_FREEZE,
         SOURCE_EXPANSION_FREEZE,
+        QUAL_HYBRID_RAG_FREEZE,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
         LAYER3_API,
         SOURCE_BOUNDARY_SERVICE,
+        QUAL_APS_SERVICE,
         WORKBENCH_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
         PACKAGE_MUTATION_SERVICE,
         SOURCE_BOUNDARY_TEST,
+        QUAL_APS_TEST,
         SESSION_ENTRY_TEST,
         SIGNED_REFERENCE_STATE_SERVICE,
         SIGNED_REFERENCE_STATE_TEST,
