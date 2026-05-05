@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import json
 import re
 import sys
@@ -13,12 +14,38 @@ BOARD = ROOT / "next_milestone_plans" / "layer3_progress_board.md"
 REFRESH_SPEC = ROOT / "next_milestone_plans" / "layer3_progress_refresh_spec.md"
 PROGRESS_PROMPT = ROOT / "next_milestone_plans" / "progress-prompt.md"
 PROOF_MANIFEST = ROOT / "next_milestone_plans" / "layer3_workbench_proof_manifest.json"
-LOCAL_BOUNDARY = (
-    ROOT
-    / "next_milestone_plans"
-    / "Layer3_planning_docs"
-    / "116_SECURITY_SOURCE_DELIVERY_BOUNDARY_FREEZE.md"
+PLAYWRIGHT_WORKFLOW = ROOT / ".github" / "workflows" / "playwright.yml"
+LAYER3_API_REQUIREMENTS = ROOT / "backend" / "tests" / "requirements-layer3-api.txt"
+BROWSER_REQUIREMENTS = ROOT / "backend" / "tests" / "requirements-browser.txt"
+PLANNING_DOCS = ROOT / "next_milestone_plans" / "Layer3_planning_docs"
+QUAL_APS_FREEZE = PLANNING_DOCS / "114_QUAL_APS_EXEC_FREEZE.md"
+LOCAL_BOUNDARY = PLANNING_DOCS / "116_SECURITY_SOURCE_DELIVERY_BOUNDARY_FREEZE.md"
+SYNTHESIS_BOUNDARY = PLANNING_DOCS / "117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md"
+GOAL_AUDIT = PLANNING_DOCS / "118_L3_GOAL_AUDIT.md"
+QUAL_APS_ENTRY_FREEZE = PLANNING_DOCS / "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md"
+BRANCH_CLOSEOUT = PLANNING_DOCS / "120_L3_CLOSEOUT.md"
+STATE_ACTION_CONTRACT = (
+    ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
+SESSION_ENTRY_MIGRATION = (
+    ROOT / "backend" / "alembic" / "versions" / "0012_layer3_session_entry.py"
+)
+LAYER3_API = ROOT / "backend" / "app" / "api" / "layer3.py"
+SOURCE_BOUNDARY_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_source_boundary.py"
+)
+SIGNED_REFERENCE_STATE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_signed_reference_state.py"
+)
+WORKBENCH_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_workbench.py"
+)
+SOURCE_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_source_boundary.py"
+SESSION_ENTRY_TEST = ROOT / "backend" / "tests" / "test_layer3_session_entry.py"
+SIGNED_REFERENCE_STATE_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_signed_reference_state.py"
+)
+LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 
@@ -46,6 +73,69 @@ def _load_json(path: Path, errors: list[str]) -> dict[str, Any]:
         errors.append(f"JSON root must be an object: {_rel(path)}")
         return {}
     return payload
+
+
+def _read_required_text(path: Path, errors: list[str]) -> str:
+    if not path.exists():
+        errors.append(f"missing required text file: {_rel(path)}")
+        return ""
+    if path.is_file() and path.stat().st_size == 0:
+        errors.append(f"empty required text file: {_rel(path)}")
+        return ""
+    return path.read_text(encoding="utf-8")
+
+
+def _load_literal_assignment(path: Path, name: str, errors: list[str]) -> Any:
+    text = _read_required_text(path, errors)
+    if not text:
+        return None
+    try:
+        module = ast.parse(text, filename=_rel(path))
+    except SyntaxError as exc:
+        errors.append(f"cannot parse Python source for {_rel(path)}: {exc}")
+        return None
+
+    for node in module.body:
+        value_node = None
+        target_names: list[str] = []
+        if isinstance(node, ast.Assign):
+            value_node = node.value
+            target_names = [
+                target.id for target in node.targets if isinstance(target, ast.Name)
+            ]
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            value_node = node.value
+            target_names = [node.target.id]
+        if name not in target_names or value_node is None:
+            continue
+        try:
+            return ast.literal_eval(value_node)
+        except (SyntaxError, ValueError) as exc:
+            errors.append(f"{_rel(path)} {name} must be a literal assignment: {exc}")
+            return None
+
+    errors.append(f"{_rel(path)} missing literal assignment: {name}")
+    return None
+
+
+def _capability_map(value: Any, name: str, errors: list[str]) -> dict[str, dict[str, Any]]:
+    if not isinstance(value, (list, tuple)):
+        errors.append(f"{name} must be a list or tuple of capability objects")
+        return {}
+
+    capabilities: dict[str, dict[str, Any]] = {}
+    for item in value:
+        if not isinstance(item, dict):
+            errors.append(f"{name} contains a non-object entry: {item!r}")
+            continue
+        capability = item.get("capability")
+        if not isinstance(capability, str) or not capability:
+            errors.append(f"{name} contains an entry without a capability id: {item!r}")
+            continue
+        if capability in capabilities:
+            errors.append(f"{name} contains duplicate capability id: {capability}")
+        capabilities[capability] = item
+    return capabilities
 
 
 def _require_file(path: Path, errors: list[str]) -> None:
@@ -303,7 +393,7 @@ def _check_local_boundary(errors: list[str]) -> None:
         "provider/public URL implementation",
         "connector/destination dispatch",
         "broad upload/source expansion",
-        "qualitative/hybrid/RAG execution",
+        "broad qualitative/hybrid/RAG execution",
         "package mutation/reconstruction",
         "full mockup activation",
     ]
@@ -312,6 +402,467 @@ def _check_local_boundary(errors: list[str]) -> None:
             errors.append(f"blocked term appears in allowed near-term list: {term}")
         if term not in blocked_part:
             errors.append(f"immediate no-go list missing blocked term: {term}")
+
+
+def _check_qualitative_capability_boundary(errors: list[str]) -> None:
+    admitted = _capability_map(
+        _load_literal_assignment(
+            STATE_ACTION_CONTRACT, "STATE_ACTION_ADMITTED_CAPABILITIES", errors
+        ),
+        "STATE_ACTION_ADMITTED_CAPABILITIES",
+        errors,
+    )
+    deferred = _capability_map(
+        _load_literal_assignment(
+            STATE_ACTION_CONTRACT, "STATE_ACTION_DEFERRED_CAPABILITIES", errors
+        ),
+        "STATE_ACTION_DEFERRED_CAPABILITIES",
+        errors,
+    )
+
+    exact = admitted.get("single_aps_doc_qualitative_execution")
+    if exact is None:
+        errors.append(
+            "state/action contract missing admitted exact capability: "
+            "single_aps_doc_qualitative_execution"
+        )
+    else:
+        if exact.get("admitted") is not True:
+            errors.append("single_aps_doc_qualitative_execution must be admitted true")
+        if exact.get("source_gate") != "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE":
+            errors.append("single_aps_doc_qualitative_execution source_gate drifted")
+        if exact.get("owner_service") != "backend/app/services/layer3_qual_aps_execution.py":
+            errors.append("single_aps_doc_qualitative_execution owner_service drifted")
+        blocked = exact.get("blocked_downstream")
+        if not isinstance(blocked, list):
+            errors.append("single_aps_doc_qualitative_execution missing blocked_downstream list")
+        else:
+            for term in (
+                "qualitative_package_handoff_export",
+                "broad_qualitative_execution",
+                "hybrid_execution",
+                "rag_vector_retrieval",
+            ):
+                if term not in blocked:
+                    errors.append(
+                        "single_aps_doc_qualitative_execution blocked_downstream "
+                        f"missing {term}"
+                    )
+
+    if "qualitative_execution" in deferred:
+        errors.append(
+            "deferred capabilities must use broad_qualitative_execution, "
+            "not ambiguous qualitative_execution"
+        )
+
+    expected_deferred = {
+        "broad_qualitative_execution": "single_aps_doc_qualitative_pass_only",
+        "hybrid_execution": None,
+        "rag_vector_retrieval": None,
+        "local_upload_or_directory_source_expansion": None,
+        "provider_public_url": None,
+        "connector_destination_dispatch": None,
+        "package_mutation_reconstruction": None,
+        "frontend_only_durable_state": None,
+        "hidden_llm_planning": None,
+        "auth_security_hardening": "deferred_by_operator_instruction",
+    }
+    for capability, expected_reason in expected_deferred.items():
+        item = deferred.get(capability)
+        if item is None:
+            errors.append(f"deferred capabilities missing {capability}")
+            continue
+        if item.get("admitted") is not False:
+            errors.append(f"{capability} must remain admitted false")
+        if expected_reason is not None and item.get("reason") != expected_reason:
+            errors.append(f"{capability} reason drifted from {expected_reason}")
+        if capability in admitted:
+            errors.append(f"{capability} must not also appear as an admitted capability")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        '"single_aps_doc_qualitative_execution_admitted": True',
+        '"single_aps_doc_qualitative_execution": True',
+        '"broad_qualitative_execution": False',
+        '"hybrid_execution": False',
+        '"rag_vector_retrieval": False',
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing qualitative boundary term: {term}")
+
+    required_doc_terms = {
+        QUAL_APS_FREEZE: [
+            "exact branch-local `single_aps_doc_qualitative_pass` lane",
+            "all other qualitative/hybrid/cohort paths still fail closed",
+        ],
+        LOCAL_BOUNDARY: [
+            "single APS-document qualitative pass",
+            "broad qualitative execution outside the admitted single APS-document qualitative pass",
+            "broad qualitative/hybrid/RAG execution",
+        ],
+        SYNTHESIS_BOUNDARY: [
+            "single_aps_doc_qualitative_execution",
+            "broad_qualitative_execution",
+            "broad qualitative or hybrid execution outside the admitted single APS-document qualitative pass",
+        ],
+        GOAL_AUDIT: [
+            "The active goal is not complete.",
+            "Only `single_aps_doc_qualitative_pass` is admitted",
+            "broad qualitative execution beyond the single APS-document qualitative pass",
+        ],
+        QUAL_APS_ENTRY_FREEZE: [
+            "selected the single APS content-document qualitative lane",
+            "No other qualitative, hybrid, RAG, vector, cohort, comparative, cross-document, connector, provider, package, or full-mockup behavior is admitted.",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing qualitative boundary term: {term}")
+
+
+def _check_source_boundary_contract(errors: list[str]) -> None:
+    supported = _load_literal_assignment(
+        SOURCE_BOUNDARY_SERVICE, "SUPPORTED_SOURCE_CLASSES", errors
+    )
+    unsupported = _load_literal_assignment(
+        SOURCE_BOUNDARY_SERVICE, "UNSUPPORTED_SOURCE_CLASSES", errors
+    )
+
+    expected_supported = ("dataset_version", "aps_content_document")
+    expected_unsupported = (
+        "rag_vector_index",
+        "arbitrary_local_directory",
+        "broad_file_upload",
+        "web_connector",
+        "unbounded_runtime_db",
+    )
+    if supported != expected_supported:
+        errors.append(
+            "source boundary supported classes drifted: "
+            f"expected {expected_supported!r}, found {supported!r}"
+        )
+    if unsupported != expected_unsupported:
+        errors.append(
+            "source boundary unsupported classes drifted: "
+            f"expected {expected_unsupported!r}, found {unsupported!r}"
+        )
+
+    service_text = _read_required_text(SOURCE_BOUNDARY_SERVICE, errors)
+    for term in (
+        "def requested_source_classes(",
+        "def unsupported_requested(",
+        "def source_class_from_source_candidate_id(",
+        "def source_class_from_material_candidate_id(",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(SOURCE_BOUNDARY_SERVICE)} missing helper: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    required_imports = (
+        "from app.services.layer3_source_boundary import",
+        "requested_source_classes as _requested_source_classes",
+        "unsupported_requested as _unsupported_requested",
+        "source_class_from_source_candidate_id as _source_class_from_source_candidate_id",
+        "source_class_from_material_candidate_id as _source_class_from_material_candidate_id",
+    )
+    for term in required_imports:
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing source-boundary import: {term}")
+    for assignment in ("SUPPORTED_SOURCE_CLASSES", "UNSUPPORTED_SOURCE_CLASSES"):
+        if re.search(rf"^{assignment}\s*=", workbench_text, re.MULTILINE):
+            errors.append(
+                f"{_rel(WORKBENCH_SERVICE)} must not redeclare {assignment}; "
+                "source boundary owns it"
+            )
+
+    test_text = _read_required_text(SOURCE_BOUNDARY_TEST, errors)
+    for term in expected_supported + expected_unsupported:
+        if term not in test_text:
+            errors.append(f"{_rel(SOURCE_BOUNDARY_TEST)} missing source class proof term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: [
+            "backend/app/services/layer3_source_boundary.py",
+            "SUPPORTED_SOURCE_CLASSES",
+            "UNSUPPORTED_SOURCE_CLASSES",
+            "backend/tests/test_layer3_source_boundary.py",
+        ],
+        GOAL_AUDIT: [
+            "updated after session-status migration constraint alignment",
+            "backend/app/services/layer3_source_boundary.py",
+            "backend/tests/test_layer3_source_boundary.py",
+            "does not widen source classes",
+            "264 passed",
+        ],
+        BRANCH_CLOSEOUT: [
+            "Status: local branch closeout for `codex/l3-frontend-session-recovery` after session-status migration constraint alignment.",
+            "review/merge preparation only",
+            "backend/app/services/layer3_source_boundary.py",
+            "264 passed, 4 warnings",
+            "Layer 3 progress state check: PASS",
+            "generic connector/destination dispatch",
+            "package mutation/reconstruction",
+            "broad source/upload expansion",
+            "broad qualitative execution outside `single_aps_doc_qualitative_pass`",
+            "full mockup activation",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-boundary term: {term}")
+
+
+def _check_signed_reference_state_guard(errors: list[str]) -> None:
+    service_text = _read_required_text(SIGNED_REFERENCE_STATE_SERVICE, errors)
+    for term in (
+        "def record_used_signed_reference(",
+        "L3SignedReferenceToken.state == SIGNED_REFERENCE_TOKEN_STATE_READY",
+        "L3SignedReferenceToken.use_count < L3SignedReferenceToken.max_use_count",
+        "synchronize_session=False",
+        "external_export_download_signed_reference_replay_denied",
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(SIGNED_REFERENCE_STATE_SERVICE)} missing signed-reference guard term: {term}")
+
+    test_text = _read_required_text(SIGNED_REFERENCE_STATE_TEST, errors)
+    for term in (
+        "test_record_generated_signed_reference_persists_sanitized_durable_state",
+        "test_single_use_reference_records_one_delivery_and_rejects_replay",
+        "test_revoked_reference_fails_closed_and_records_rejected_audit",
+        "test_expired_reference_fails_closed_and_marks_token_expired",
+        "test_concurrent_single_use_reference_does_not_double_deliver",
+        "INTERNAL_ARTIFACT_REF_PLACEHOLDER",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(SIGNED_REFERENCE_STATE_TEST)} missing signed-reference proof term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: [
+            "backend/app/services/layer3_signed_reference_state.py",
+            "backend/tests/test_layer3_signed_reference_state.py",
+            "atomic conditional update",
+        ],
+        GOAL_AUDIT: [
+            "backend/app/services/layer3_signed_reference_state.py",
+            "backend/tests/test_layer3_signed_reference_state.py",
+            "concurrent single-use proof",
+            "264 passed",
+        ],
+        BRANCH_CLOSEOUT: [
+            "backend/app/services/layer3_signed_reference_state.py",
+            "backend/tests/test_layer3_signed_reference_state.py",
+            "264 passed, 4 warnings",
+            "same-origin signed-reference service proof",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing signed-reference guard term: {term}")
+
+
+def _check_plan_preview_request_guard(errors: list[str]) -> None:
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "class Layer3PlanPreviewRequest(BaseModel):",
+        "model_config = ConfigDict(extra=\"forbid\")",
+        "PLAN_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {",
+        "\"additionalProperties\": False",
+        "source-widening fields are rejected before service mutation",
+        "payload: Layer3PlanPreviewRequest",
+        "layer3_workbench.plan_preview(db, payload.model_dump(exclude_none=True))",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing plan-preview request guard term: {term}")
+
+    test_text = _read_required_text(LAYER3_API_TEST, errors)
+    for term in (
+        "test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation",
+        "api-plan-preview-strict-extra",
+        "extra_forbidden",
+        "db.query(L3AnalysisPlan).count() == 0",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_API_TEST)} missing plan-preview proof term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: [
+            "Layer3PlanPreviewRequest",
+            "test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation",
+            "plan-preview DTO boundary",
+        ],
+        GOAL_AUDIT: [
+            "Layer3PlanPreviewRequest",
+            "test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation",
+            "264 passed",
+        ],
+        BRANCH_CLOSEOUT: [
+            "Layer3PlanPreviewRequest",
+            "test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation",
+            "264 passed, 4 warnings",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing plan-preview guard term: {term}")
+
+
+def _check_source_preview_request_guard(errors: list[str]) -> None:
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "class Layer3SourcePreviewRequest(BaseModel):",
+        "model_config = ConfigDict(extra=\"forbid\")",
+        "SOURCE_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {",
+        "\"additionalProperties\": False",
+        "source expansion fields are rejected before service execution",
+        "payload: Layer3SourcePreviewRequest",
+        "layer3_workbench.source_preview(payload.model_dump(exclude_none=True))",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing source-preview request guard term: {term}")
+
+    test_text = _read_required_text(LAYER3_API_TEST, errors)
+    for term in (
+        "test_layer3_api_source_preview_rejects_extra_fields_before_service_execution",
+        "api-source-preview-strict-extra",
+        "local_directory",
+        "extra_forbidden",
+        "db.query(L3Session).count() == 0",
+        "db.query(L3PassRun).count() == 0",
+        "db.query(AnalysisRun).count() == 0",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_API_TEST)} missing source-preview request proof term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: [
+            "Layer3SourcePreviewRequest",
+            "test_layer3_api_source_preview_rejects_extra_fields_before_service_execution",
+            "source-preview DTO boundary",
+        ],
+        GOAL_AUDIT: [
+            "Layer3SourcePreviewRequest",
+            "test_layer3_api_source_preview_rejects_extra_fields_before_service_execution",
+            "264 passed",
+        ],
+        BRANCH_CLOSEOUT: [
+            "Layer3SourcePreviewRequest",
+            "test_layer3_api_source_preview_rejects_extra_fields_before_service_execution",
+            "264 passed, 4 warnings",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-preview request guard term: {term}")
+
+
+def _check_material_preview_request_guard(errors: list[str]) -> None:
+    api_text = _read_required_text(LAYER3_API, errors)
+    for term in (
+        "class Layer3MaterialPreviewRequest(BaseModel):",
+        "model_config = ConfigDict(extra=\"forbid\")",
+        "MATERIAL_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {",
+        "\"additionalProperties\": False",
+        "source expansion fields are rejected before service execution",
+        "payload: Layer3MaterialPreviewRequest",
+        "layer3_workbench.material_preview(payload.model_dump(exclude_none=True), db)",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing material-preview request guard term: {term}")
+
+    test_text = _read_required_text(LAYER3_API_TEST, errors)
+    for term in (
+        "test_layer3_api_material_preview_rejects_extra_fields_before_service_execution",
+        "api-material-preview-strict-extra",
+        "local_directory",
+        "extra_forbidden",
+        "db.query(L3Session).count() == 0",
+        "db.query(L3PassRun).count() == 0",
+        "db.query(AnalysisRun).count() == 0",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_API_TEST)} missing material-preview request proof term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: [
+            "Layer3MaterialPreviewRequest",
+            "test_layer3_api_material_preview_rejects_extra_fields_before_service_execution",
+            "material-preview DTO boundary",
+        ],
+        GOAL_AUDIT: [
+            "Layer3MaterialPreviewRequest",
+            "test_layer3_api_material_preview_rejects_extra_fields_before_service_execution",
+            "264 passed",
+        ],
+        BRANCH_CLOSEOUT: [
+            "Layer3MaterialPreviewRequest",
+            "test_layer3_api_material_preview_rejects_extra_fields_before_service_execution",
+            "264 passed, 4 warnings",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing material-preview request guard term: {term}")
+
+
+def _check_session_status_migration_constraint(errors: list[str]) -> None:
+    migration_text = _read_required_text(SESSION_ENTRY_MIGRATION, errors)
+    for term in (
+        "sa.CheckConstraint(",
+        "ck_l3_session_status",
+        "active_loading",
+        "active_planning",
+        "active_execution",
+        "completed",
+        "completed_with_warnings",
+        "failed",
+    ):
+        if term not in migration_text:
+            errors.append(f"{_rel(SESSION_ENTRY_MIGRATION)} missing session-status migration term: {term}")
+
+    test_text = _read_required_text(SESSION_ENTRY_TEST, errors)
+    for term in (
+        "test_layer3_session_entry_migration_defines_status_check_constraint",
+        "SESSION_ENTRY_MIGRATION",
+        "ck_l3_session_status",
+        "L3_SESSION_STATUS_VALUES",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(SESSION_ENTRY_TEST)} missing session-status migration proof term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: [
+            "0012_layer3_session_entry.py",
+            "test_layer3_session_entry_migration_defines_status_check_constraint",
+            "session-status migration constraint",
+        ],
+        GOAL_AUDIT: [
+            "0012_layer3_session_entry.py",
+            "test_layer3_session_entry_migration_defines_status_check_constraint",
+            "264 passed",
+        ],
+        BRANCH_CLOSEOUT: [
+            "0012_layer3_session_entry.py",
+            "test_layer3_session_entry_migration_defines_status_check_constraint",
+            "264 passed, 4 warnings",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing session-status migration term: {term}")
 
 
 def _check_progress_text_surfaces(errors: list[str]) -> None:
@@ -351,9 +902,62 @@ def _check_progress_text_surfaces(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing local sync term: {term}")
 
 
+def _check_ci_layer3_backend_guardrail(errors: list[str]) -> None:
+    if not PLAYWRIGHT_WORKFLOW.exists():
+        errors.append(f"missing required workflow file: {_rel(PLAYWRIGHT_WORKFLOW)}")
+        return
+    text = PLAYWRIGHT_WORKFLOW.read_text(encoding="utf-8")
+    required = "python -m pytest ./backend/tests/test_layer3_*.py -q"
+    if required not in text:
+        errors.append(
+            "backend Layer 3 CI guardrail must run the focused test_layer3_*.py family"
+        )
+    old_single_file = "python -m pytest ./backend/tests/test_layer3_api.py -q"
+    if old_single_file in text:
+        errors.append("backend Layer 3 CI guardrail regressed to the single API test file")
+    required_name = "Run focused Layer 3 backend pytest guardrail"
+    if required_name not in text:
+        errors.append("backend Layer 3 CI guardrail step name must reflect focused coverage")
+    if "requirements-layer3-api.txt" not in text:
+        errors.append("Layer 3 CI workflow must track requirements-layer3-api.txt dependency changes")
+
+    api_requirements = _read_required_text(LAYER3_API_REQUIREMENTS, errors)
+    if "pyarrow" not in api_requirements:
+        errors.append("Layer 3 API test requirements must include a parquet engine such as pyarrow")
+
+    browser_requirements = _read_required_text(BROWSER_REQUIREMENTS, errors)
+    if "-r requirements-layer3-api.txt" not in browser_requirements:
+        errors.append("browser harness requirements must include focused Layer 3 API requirements")
+
+
 def main() -> int:
     errors: list[str] = []
-    for path in (MANIFEST, BOARD, REFRESH_SPEC, PROGRESS_PROMPT, PROOF_MANIFEST):
+    for path in (
+        MANIFEST,
+        BOARD,
+        REFRESH_SPEC,
+        PROGRESS_PROMPT,
+        PROOF_MANIFEST,
+        PLAYWRIGHT_WORKFLOW,
+        LAYER3_API_REQUIREMENTS,
+        BROWSER_REQUIREMENTS,
+        QUAL_APS_FREEZE,
+        LOCAL_BOUNDARY,
+        SYNTHESIS_BOUNDARY,
+        GOAL_AUDIT,
+        QUAL_APS_ENTRY_FREEZE,
+        BRANCH_CLOSEOUT,
+        STATE_ACTION_CONTRACT,
+        SESSION_ENTRY_MIGRATION,
+        LAYER3_API,
+        SOURCE_BOUNDARY_SERVICE,
+        WORKBENCH_SERVICE,
+        SOURCE_BOUNDARY_TEST,
+        SESSION_ENTRY_TEST,
+        SIGNED_REFERENCE_STATE_SERVICE,
+        SIGNED_REFERENCE_STATE_TEST,
+        LAYER3_API_TEST,
+    ):
         _require_file(path, errors)
 
     manifest = _load_json(MANIFEST, errors)
@@ -364,7 +968,15 @@ def main() -> int:
         _check_current_decision(manifest, errors)
         _check_referenced_paths(manifest, errors)
     _check_local_boundary(errors)
+    _check_qualitative_capability_boundary(errors)
+    _check_source_boundary_contract(errors)
+    _check_signed_reference_state_guard(errors)
+    _check_plan_preview_request_guard(errors)
+    _check_source_preview_request_guard(errors)
+    _check_material_preview_request_guard(errors)
+    _check_session_status_migration_constraint(errors)
     _check_progress_text_surfaces(errors)
+    _check_ci_layer3_backend_guardrail(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

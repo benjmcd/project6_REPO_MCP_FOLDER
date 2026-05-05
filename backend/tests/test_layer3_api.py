@@ -28,8 +28,10 @@ from app.models.models import (
     AnalysisArtifact,
     AnalysisRun,
     ConnectorRun,
+    L3AnalysisGroup,
     L3AnalysisPlan,
     L3AnalysisSet,
+    L3AnalysisUnit,
     L3OutputPackage,
     L3PassRun,
     L3ReconciliationRecord,
@@ -37,9 +39,19 @@ from app.models.models import (
     L3SignedReferenceAuditEvent,
     L3SignedReferenceReceipt,
     L3SignedReferenceToken,
+    L3TypingRecord,
 )
-from app.services.layer3_aps_handoff import PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF
-from app.services import dataframe_io, layer3_pass_entry as layer3_pass_entry_module
+from app.services import (
+    dataframe_io,
+    layer3_pass_entry as layer3_pass_entry_module,
+    layer3_workbench,
+)
+from app.services.layer3_aps_handoff import (
+    PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF,
+    Layer3ApsHandoffError,
+)
+from app.services.layer3_package_entry import Layer3PackageEntryError
+from app.services.layer3_pass_entry import Layer3PassEntryError
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
     SnapshotMaterial,
@@ -48,7 +60,7 @@ from app.services.layer3_session_entry import (
     finalize_session,
     record_retrieval_event,
 )
-from app.services.layer3_typing_entry import materialize_typing_entry
+from app.services.layer3_typing_entry import Layer3TypingEntryError, materialize_typing_entry
 from main import app
 from test_layer3_aps_handoff import _seed_aps_content_fixture, _seed_timeseries_dataset_version
 from test_layer3_pass_entry import (
@@ -275,6 +287,16 @@ def _assert_common_response_envelope(body: dict) -> None:
     assert body["status"]
 
 
+def _assert_workbench_error_response(response, *, status_code: int, error_code: str) -> dict:
+    assert response.status_code == status_code
+    body = response.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.workbench_error.v1"
+    assert body["error_code"] == error_code
+    assert "detail" not in body
+    return body
+
+
 def _openapi_response_schema(spec: dict, path: str, method: str) -> dict:
     schema = spec["paths"][path][method]["responses"]["200"]["content"]["application/json"]["schema"]
     ref = schema.get("$ref")
@@ -387,8 +409,9 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
     source_request_schema = spec["paths"]["/api/v1/layer3/source-preview"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert source_request_schema["additionalProperties"] is True
+    assert source_request_schema["additionalProperties"] is False
     assert set(source_request_schema["required"]) == {"preflight_id"}
+    assert "source expansion fields are rejected before service execution" in source_request_schema["description"]
     assert source_request_schema["properties"]["selected_source_classes"]["items"]["enum"] == [
         "dataset_version",
         "aps_content_document",
@@ -411,8 +434,9 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
     material_request_schema = spec["paths"]["/api/v1/layer3/material-preview"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert material_request_schema["additionalProperties"] is True
+    assert material_request_schema["additionalProperties"] is False
     assert set(material_request_schema["required"]) == {"source_candidate_ids"}
+    assert "source expansion fields are rejected before service execution" in material_request_schema["description"]
     assert material_request_schema["properties"]["source_candidate_ids"]["items"]["type"] == "string"
     assert material_request_schema["properties"]["source_candidate_ids"]["minItems"] == 1
     assert material_request_schema["properties"]["query_basis"]["properties"]["terms"]["items"]["type"] == "string"
@@ -526,12 +550,13 @@ def test_layer3_gate_openapi_contracts(client: TestClient) -> None:
     gate_b_request_schema = spec["paths"]["/api/v1/layer3/gate-b/decision"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert gate_b_request_schema["additionalProperties"] is True
-    assert set(gate_b_request_schema["required"]) == {"candidate_decisions"}
+    assert gate_b_request_schema["additionalProperties"] is False
+    assert set(gate_b_request_schema["required"]) == {"client_request_id", "candidate_decisions"}
+    assert gate_b_request_schema["properties"]["client_request_id"]["minLength"] == 1
     assert gate_b_request_schema["properties"]["candidate_decisions"]["minItems"] == 1
     assert gate_b_request_schema["properties"]["material_preview_hash"]["type"] == "string"
     gate_b_decision_item_schema = gate_b_request_schema["properties"]["candidate_decisions"]["items"]
-    assert gate_b_decision_item_schema["additionalProperties"] is True
+    assert gate_b_decision_item_schema["additionalProperties"] is False
     assert set(gate_b_decision_item_schema["required"]) == {"candidate_id", "decision"}
     assert gate_b_decision_item_schema["properties"]["decision"]["enum"] == [
         "approved",
@@ -564,7 +589,7 @@ def test_layer3_gate_openapi_contracts(client: TestClient) -> None:
     gate_c_request_schema = spec["paths"]["/api/v1/layer3/gate-c/preview"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert gate_c_request_schema["additionalProperties"] is True
+    assert gate_c_request_schema["additionalProperties"] is False
     assert set(gate_c_request_schema["required"]) == {"session_id"}
     assert gate_c_request_schema["properties"]["commit_typing"]["type"] == "boolean"
 
@@ -594,10 +619,12 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
     preview_request_schema = spec["paths"]["/api/v1/layer3/plan/preview"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert preview_request_schema["additionalProperties"] is True
+    assert preview_request_schema["additionalProperties"] is False
     assert set(preview_request_schema["required"]) == {"session_id"}
+    assert preview_request_schema["properties"]["schema_id"]["enum"] == ["layer3.plan_preview_request.v1"]
     assert preview_request_schema["properties"]["preview_scope"]["enum"] == ["owner_service_default"]
     assert preview_request_schema["properties"]["include_exclusions"]["type"] == "boolean"
+    assert "source-widening fields are rejected before service mutation" in preview_request_schema["description"]
 
     preview_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/preview", "post")
     assert preview_schema["title"] == "Layer3PlanPreviewResponse"
@@ -620,15 +647,22 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
     approval_request_schema = spec["paths"]["/api/v1/layer3/plan/approve"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert approval_request_schema["additionalProperties"] is True
+    assert approval_request_schema["additionalProperties"] is False
     assert set(approval_request_schema["required"]) == {
         "session_id",
         "preview_id",
         "preview_hash",
         "operator_confirmation",
     }
+    assert approval_request_schema["properties"]["schema_id"]["enum"] == ["layer3.plan_approval_request.v1"]
     assert approval_request_schema["properties"]["operator_confirmation"] == {"type": "boolean", "enum": [True]}
     assert approval_request_schema["properties"]["approval_scope"]["enum"] == ["owner_service_default"]
+
+    revision_request_schema = spec["paths"]["/api/v1/layer3/plan/revise"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert revision_request_schema["additionalProperties"] is False
+    assert revision_request_schema["properties"]["schema_id"]["enum"] == ["layer3.plan_revision_request.v1"]
 
     approval_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/approve", "post")
     assert approval_schema["title"] == "Layer3PlanApprovalResponse"
@@ -653,7 +687,7 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
     revision_request_schema = spec["paths"]["/api/v1/layer3/plan/revise"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert revision_request_schema["additionalProperties"] is True
+    assert revision_request_schema["additionalProperties"] is False
     assert set(revision_request_schema["required"]) == {
         "session_id",
         "preview_id",
@@ -664,6 +698,8 @@ def test_layer3_plan_openapi_contracts(client: TestClient) -> None:
         "reject_current_preview",
         "request_revision",
     ]
+    assert revision_request_schema["properties"]["execute"]["description"].startswith("Known but non-admitted")
+    assert revision_request_schema["properties"]["rag_plan"]["description"].startswith("Known but non-admitted")
 
     revision_schema = _openapi_response_schema(spec, "/api/v1/layer3/plan/revise", "post")
     assert revision_schema["title"] == "Layer3PlanRevisionResponse"
@@ -693,7 +729,7 @@ def test_layer3_execution_openapi_contracts(client: TestClient) -> None:
     selection_request_schema = spec["paths"]["/api/v1/layer3/execution/select"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert selection_request_schema["additionalProperties"] is True
+    assert selection_request_schema["additionalProperties"] is False
     assert set(selection_request_schema["required"]) == {
         "client_request_id",
         "session_id",
@@ -701,6 +737,9 @@ def test_layer3_execution_openapi_contracts(client: TestClient) -> None:
         "preview_id",
         "preview_hash",
     }
+    assert selection_request_schema["properties"]["operator_reason"]["type"] == "string"
+    assert selection_request_schema["properties"]["execution"]["description"].startswith("Known but non-admitted")
+    assert selection_request_schema["properties"]["rag_plan"]["description"].startswith("Known but non-admitted")
 
     selection_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/select", "post")
     assert selection_schema["title"] == "Layer3ExecutionSelectionResponse"
@@ -735,6 +774,8 @@ def test_layer3_execution_openapi_contracts(client: TestClient) -> None:
         "preview_hash",
     }
     assert start_request_schema["properties"]["execution_mode"]["enum"] == ["synchronous_single_pass"]
+    assert start_request_schema["properties"]["run_all"]["description"].startswith("Known but non-admitted")
+    assert start_request_schema["properties"]["source_expansion"]["description"].startswith("Known but non-admitted")
 
     start_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/start", "post")
     assert start_schema["title"] == "Layer3AnalysisExecutionStartResponse"
@@ -775,6 +816,8 @@ def test_layer3_execution_result_openapi_contracts(client: TestClient) -> None:
         "preview_hash",
     }
     assert status_request_schema["properties"]["operator_view_mode"]["enum"] == ["status_only"]
+    assert status_request_schema["properties"]["result_review"]["description"].startswith("Known but non-admitted")
+    assert status_request_schema["properties"]["runtime_db_write"]["description"].startswith("Known but non-admitted")
 
     status_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/result/status", "post")
     assert status_schema["title"] == "Layer3ExecutionResultStatusResponse"
@@ -830,6 +873,8 @@ def test_layer3_execution_result_openapi_contracts(client: TestClient) -> None:
         "blocked",
     ]
     assert review_request_schema["properties"]["reviewed_output_items"]["type"] == "array"
+    assert review_request_schema["properties"]["package_review"]["description"].startswith("Known but non-admitted")
+    assert review_request_schema["properties"]["source_expansion"]["description"].startswith("Known but non-admitted")
 
     review_schema = _openapi_response_schema(spec, "/api/v1/layer3/execution/result/review", "post")
     assert review_schema["title"] == "Layer3ExecutionResultReviewResponse"
@@ -874,6 +919,8 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
         "preview_id",
         "preview_hash",
     }
+    assert preview_request_schema["properties"]["package"]["description"].startswith("Known but non-admitted")
+    assert preview_request_schema["properties"]["source_expansion"]["description"].startswith("Known but non-admitted")
 
     preview_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/preview", "post")
     assert preview_schema["title"] == "Layer3PackageReviewPreviewResponse"
@@ -925,6 +972,8 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
         "user_facing",
         "review_facing",
     ]
+    assert commit_request_schema["properties"]["handoff"]["description"].startswith("Known but non-admitted")
+    assert commit_request_schema["properties"]["package_payload"]["description"].startswith("Known but non-admitted")
 
     commit_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/commit", "post")
     assert commit_schema["title"] == "Layer3PackageConstructionCommitResponse"
@@ -979,6 +1028,8 @@ def test_layer3_package_openapi_contracts(client: TestClient) -> None:
     ]
     assert submit_request_schema["properties"]["output_package_ids"]["type"] == "array"
     _assert_string_array_or_string_map_schema(submit_request_schema["properties"]["payload_hashes"])
+    assert submit_request_schema["properties"]["handoff"]["description"].startswith("Known but non-admitted")
+    assert submit_request_schema["properties"]["package_payload"]["description"].startswith("Known but non-admitted")
 
     submit_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/review/submit", "post")
     assert submit_schema["title"] == "Layer3PackageReviewSubmitResponse"
@@ -1047,6 +1098,8 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
     ]
     _assert_string_array_or_string_map_schema(prepare_request_schema["properties"]["payload_refs"])
     _assert_string_array_or_string_map_schema(prepare_request_schema["properties"]["payload_hashes"])
+    assert prepare_request_schema["properties"]["dispatch"]["description"].startswith("Known but non-admitted")
+    assert prepare_request_schema["properties"]["package_payload"]["description"].startswith("Known but non-admitted")
 
     prepare_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/export/prepare", "post")
     assert prepare_schema["title"] == "Layer3HandoffExportPrepareResponse"
@@ -1120,6 +1173,10 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
     assert dispatch_request_schema["properties"]["operator_decision"]["enum"] == ["dispatch_aps_handoff"]
     _assert_string_array_or_string_map_schema(dispatch_request_schema["properties"]["payload_refs"])
     _assert_string_array_or_string_map_schema(dispatch_request_schema["properties"]["payload_hashes"])
+    assert dispatch_request_schema["properties"]["connector_dispatch"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert dispatch_request_schema["properties"]["download_url"]["description"].startswith("Known but non-admitted")
 
     dispatch_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/aps/dispatch", "post")
     assert dispatch_schema["title"] == "Layer3ApsHandoffDispatchResponse"
@@ -1218,6 +1275,10 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
     assert prepare_request_schema["properties"]["operator_decision"]["enum"] == ["prepare_external_export_download"]
     _assert_string_array_or_string_map_schema(prepare_request_schema["properties"]["payload_refs"])
     _assert_string_array_or_string_map_schema(prepare_request_schema["properties"]["payload_hashes"])
+    assert prepare_request_schema["properties"]["public_url"]["description"].startswith("Known but non-admitted")
+    assert prepare_request_schema["properties"]["connector_dispatch"]["description"].startswith(
+        "Known but non-admitted"
+    )
 
     prepare_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/export/download/prepare", "post")
     assert prepare_schema["title"] == "Layer3ExternalExportDownloadPrepareResponse"
@@ -1304,6 +1365,95 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
     }
     for (path, method), statuses in route_statuses.items():
         _assert_workbench_error_responses(spec, path, method, statuses)
+
+
+@pytest.mark.parametrize(
+    ("service_name", "method", "path", "payload"),
+    [
+        ("preflight", "post", "/api/v1/layer3/preflight", {}),
+        ("source_preview", "post", "/api/v1/layer3/source-preview", {"preflight_id": "preflight-forced"}),
+        (
+            "material_preview",
+            "post",
+            "/api/v1/layer3/material-preview",
+            {"source_candidate_ids": ["src-dataset_version-forced"]},
+        ),
+        ("aps_dataset_version_candidates", "get", "/api/v1/layer3/dataset-version-candidates?limit=1", None),
+        ("aps_content_document_candidates", "get", "/api/v1/layer3/aps-content-document-candidates?limit=1", None),
+        (
+            "gate_b_decision",
+            "post",
+            "/api/v1/layer3/gate-b/decision",
+            {
+                "client_request_id": "forced-boundary",
+                "candidate_decisions": [{"candidate_id": "c1", "decision": "approved"}],
+            },
+        ),
+        ("gate_c_preview", "post", "/api/v1/layer3/gate-c/preview", {"session_id": "session-forced"}),
+        ("plan_preview", "post", "/api/v1/layer3/plan/preview", {}),
+        (
+            "plan_approval",
+            "post",
+            "/api/v1/layer3/plan/approve",
+            {
+                "session_id": "session-forced",
+                "preview_id": "preview-forced",
+                "preview_hash": "hash-forced",
+                "operator_confirmation": True,
+            },
+        ),
+        ("plan_revision", "post", "/api/v1/layer3/plan/revise", {}),
+        ("execution_selection", "post", "/api/v1/layer3/execution/select", {}),
+        ("analysis_execution_start", "post", "/api/v1/layer3/execution/start", {}),
+        ("execution_result_status", "post", "/api/v1/layer3/execution/result/status", {}),
+        ("execution_result_review", "post", "/api/v1/layer3/execution/result/review", {}),
+        ("package_review_preview", "post", "/api/v1/layer3/package/review/preview", {}),
+        ("package_construction_commit", "post", "/api/v1/layer3/package/review/commit", {}),
+        ("package_review_submit", "post", "/api/v1/layer3/package/review/submit", {}),
+        ("handoff_export_prepare", "post", "/api/v1/layer3/handoff/export/prepare", {}),
+        ("aps_handoff_dispatch", "post", "/api/v1/layer3/handoff/aps/dispatch", {}),
+        ("external_export_download_prepare", "post", "/api/v1/layer3/handoff/export/download/prepare", {}),
+        (
+            "external_export_download_generate_signed_reference",
+            "post",
+            "/api/v1/layer3/handoff/export/download/signed-reference/generate",
+            {},
+        ),
+        ("session_summary", "get", "/api/v1/layer3/session/session-forced", None),
+    ],
+)
+def test_layer3_api_json_or_error_call_sites_return_workbench_error_envelope(
+    client: TestClient,
+    monkeypatch,
+    service_name: str,
+    method: str,
+    path: str,
+    payload: dict | None,
+) -> None:
+    def _raise_forced_boundary_error(*_args, **_kwargs):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "forced_api_boundary_error",
+            "Forced API boundary proof.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+            blocked_fields=["forced_field"],
+            next_allowed_actions=["inspect_api_boundary"],
+        )
+
+    monkeypatch.setattr(layer3_workbench, service_name, _raise_forced_boundary_error)
+
+    response = client.get(path) if method == "get" else client.post(path, json=payload)
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="forced_api_boundary_error",
+    )
+    assert body["message"] == "Forced API boundary proof."
+    assert body["recoverable"] is False
+    assert body["blocked_fields"] == ["forced_field"]
+    assert body["next_allowed_actions"] == ["inspect_api_boundary"]
 
 
 def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
@@ -1509,6 +1659,13 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
         "404",
     )
     assert session_error_schema["title"] == "Layer3WorkbenchErrorResponse"
+    session_conflict_schema = _openapi_response_schema_for_status(
+        spec,
+        "/api/v1/layer3/session/{session_id}",
+        "get",
+        "409",
+    )
+    assert session_conflict_schema["title"] == "Layer3WorkbenchErrorResponse"
 
 
 def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
@@ -2424,6 +2581,208 @@ def _prepare_aps_handoff_dispatch(
     )
 
 
+def test_layer3_api_gate_c_preview_maps_typing_entry_error(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    def _raise_typing_entry_error(*_args, **_kwargs):
+        raise Layer3TypingEntryError(
+            f"Layer 3 session '{session_id}' already has typing records"
+        )
+
+    monkeypatch.setattr(
+        layer3_workbench,
+        "materialize_typing_entry",
+        _raise_typing_entry_error,
+    )
+
+    response = client.post(
+        "/api/v1/layer3/gate-c/preview",
+        json={
+            "client_request_id": "api-gate-c-typing-error-map",
+            "session_id": session_id,
+            "commit_typing": True,
+        },
+    )
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="typing_already_materialized",
+    )
+    assert body["status"] == "blocked"
+
+
+def test_layer3_api_plan_preview_maps_pass_entry_error(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    def _raise_pass_entry_error(*_args, **_kwargs):
+        raise Layer3PassEntryError(
+            f"Layer 3 session '{session_id}' has no admissible analysis sets for Gate C pass entry"
+        )
+
+    monkeypatch.setattr(layer3_workbench, "preview_pass_entry", _raise_pass_entry_error)
+
+    response = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-plan-preview-pass-error-map",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    )
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="no_admissible_plan",
+    )
+    assert body["status"] == "blocked"
+
+
+def test_layer3_api_session_summary_fails_closed_on_manifest_mismatch(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+        session = db.get(L3Session, session_id)
+        assert session is not None
+        session.selection_manifest_id = "mismatched-manifest-id"
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(f"/api/v1/layer3/session/{session_id}")
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="selection_manifest_mismatch",
+    )
+    assert body["status"] == "conflict"
+    assert body["blocked_fields"] == ["selection_manifest_id"]
+    assert body["next_allowed_actions"] == ["inspect_session_manifest_state"]
+
+
+def test_layer3_api_package_review_commit_maps_package_entry_error(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        _status_body,
+        review_body,
+    ) = _execute_and_approve_quant_result_review(
+        client,
+        tmp_path,
+        request_id="api-package-entry-error-map",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+    package_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": "api-package-entry-error-map-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert package_preview.status_code == 200
+
+    def _raise_package_entry_error(*_args, **_kwargs):
+        raise Layer3PackageEntryError("forced package-entry proof failure")
+
+    monkeypatch.setattr(
+        layer3_workbench,
+        "materialize_workbench_package_commit",
+        _raise_package_entry_error,
+    )
+
+    response = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": "api-package-entry-error-map-commit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": package_preview.json()[
+                "package_review_preview_hash"
+            ],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="package_construction_commit_blocked",
+    )
+    assert body["status"] == "conflict"
+    assert body["next_allowed_actions"] == ["inspect_existing_package_state"]
+
+
+def test_layer3_api_aps_handoff_dispatch_maps_owner_service_error(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    *_, dispatch_payload = _prepare_aps_handoff_dispatch(
+        client,
+        tmp_path,
+        request_id="api-aps-owner-service-error-map",
+    )
+
+    def _raise_aps_handoff_error(*_args, **_kwargs):
+        raise Layer3ApsHandoffError("forced APS handoff proof failure")
+
+    monkeypatch.setattr(
+        layer3_workbench,
+        "materialize_aps_handoff",
+        _raise_aps_handoff_error,
+    )
+
+    response = client.post("/api/v1/layer3/handoff/aps/dispatch", json=dispatch_payload)
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="aps_handoff_dispatch_blocked",
+    )
+    assert body["status"] == "blocked"
+    assert body["blocked_fields"] == ["aps_handoff_target"]
+
+
 def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     bootstrap = client.get("/api/v1/layer3/bootstrap")
     assert bootstrap.status_code == 200
@@ -2512,10 +2871,19 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["state_action_contract"]["schema_id"] == "layer3.state_action_contract.v1"
     assert "analysis_execution_start" in readiness_body["state_action_contract"]["action_ids"]
     assert "external_export_download_deliver" in readiness_body["state_action_contract"]["action_ids"]
+    admitted_capabilities = {
+        item["capability"]: item for item in readiness_body["state_action_contract"]["admitted_capabilities"]
+    }
+    assert admitted_capabilities["single_aps_doc_qualitative_execution"]["admitted"] is True
+    assert (
+        admitted_capabilities["single_aps_doc_qualitative_execution"]["source_gate"]
+        == "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE"
+    )
     deferred_capabilities = {
         item["capability"]: item for item in readiness_body["state_action_contract"]["deferred_capabilities"]
     }
-    assert deferred_capabilities["qualitative_execution"]["admitted"] is False
+    assert "qualitative_execution" not in deferred_capabilities
+    assert deferred_capabilities["broad_qualitative_execution"]["admitted"] is False
     assert deferred_capabilities["provider_public_url"]["admitted"] is False
     assert deferred_capabilities["connector_destination_dispatch"]["admitted"] is False
     assert deferred_capabilities["auth_security_hardening"]["reason"] == "deferred_by_operator_instruction"
@@ -2524,7 +2892,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["material_preview_hash_contract"]["supplied_hash_required_current_slice"] is False
     assert readiness_body["idempotency_contract"]["client_request_id_supported"] is True
     assert readiness_body["idempotency_contract"]["client_request_id_required_current_slice"] is False
-    assert readiness_body["idempotency_contract"]["client_request_id_required_for_gate_b_decision"] is False
+    assert readiness_body["idempotency_contract"]["client_request_id_required_for_gate_b_decision"] is True
     assert "duplicate_gate_b_decision" in readiness_body["idempotency_contract"]
     assert readiness_body["idempotency_contract"]["gate_b_decision_idempotency_scope"] == "post_commit_retry_only"
     assert readiness_body["idempotency_contract"]["gate_b_decision_concurrent_duplicate_lock"] is False
@@ -3038,6 +3406,96 @@ def test_layer3_api_gate_b_duplicate_candidate_decisions_fail_closed(client: Tes
         assert db.query(L3OutputPackage).count() == 0
 
 
+def test_layer3_api_gate_b_rejects_extra_fields_before_session_mutation(client: TestClient) -> None:
+    preflight, source, material = _prepare_material(client)
+    first = material["material_candidates"][0]
+
+    rejected = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": "api-gate-b-strict-extra",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "material_preview_hash": material["material_preview_hash"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": first["candidate_id"],
+                    "decision": "approved",
+                    "operator_reason": "",
+                    "decision_basis": {
+                        "source_ref": first["source_ref"],
+                        "query_basis": first["query_basis"],
+                        "provenance_ref": first["provenance_ref"],
+                    },
+                    "analysis_run_id": "run-should-not-be-accepted",
+                }
+            ],
+            "actor": "pytest",
+            "execute": True,
+        },
+    )
+
+    assert rejected.status_code == 422
+    detail = rejected.json()["detail"]
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "execute"]
+        for item in detail
+    )
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "candidate_decisions", 0, "analysis_run_id"]
+        for item in detail
+    )
+    with client.layer3_session_factory() as db:
+        assert db.query(L3Session).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+
+
+def test_layer3_api_gate_b_requires_client_request_id_before_session_mutation(client: TestClient) -> None:
+    preflight, source, material = _prepare_material(client)
+    first = material["material_candidates"][0]
+    payload = {
+        "preflight_id": preflight["preflight_id"],
+        "source_set_id": source["source_set_id"],
+        "material_preview_id": material["material_preview_id"],
+        "material_preview_hash": material["material_preview_hash"],
+        "candidate_decisions": [
+            {
+                "candidate_id": first["candidate_id"],
+                "decision": "approved",
+                "operator_reason": "",
+                "decision_basis": {
+                    "source_ref": first["source_ref"],
+                    "query_basis": first["query_basis"],
+                    "provenance_ref": first["provenance_ref"],
+                },
+            }
+        ],
+        "actor": "pytest",
+    }
+
+    missing = client.post("/api/v1/layer3/gate-b/decision", json=payload)
+    assert missing.status_code == 422
+    assert any(item.get("loc") == ["body", "client_request_id"] for item in missing.json()["detail"])
+
+    blank = client.post("/api/v1/layer3/gate-b/decision", json={**payload, "client_request_id": "   "})
+    assert blank.status_code == 400
+    blank_body = blank.json()
+    _assert_common_response_envelope(blank_body)
+    assert blank_body["error_code"] == "client_request_id_required"
+
+    with client.layer3_session_factory() as db:
+        assert db.query(L3Session).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+
+
 def test_layer3_api_gate_b_duplicate_client_request_id_is_idempotent(client: TestClient) -> None:
     preflight, source, material = _prepare_material(client)
     first, second = material["material_candidates"]
@@ -3112,6 +3570,66 @@ def test_layer3_api_gate_b_duplicate_client_request_id_is_idempotent(client: Tes
 
     with client.layer3_session_factory() as db:
         assert db.query(L3Session).count() == 1
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+
+
+def test_layer3_api_gate_c_rejects_extra_fields_before_typing_mutation(client: TestClient) -> None:
+    preflight, source, material = _prepare_material(client)
+    first = material["material_candidates"][0]
+    gate_b = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": "api-gate-b-before-strict-gate-c",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": first["candidate_id"],
+                    "decision": "approved",
+                    "operator_reason": "",
+                    "decision_basis": {
+                        "source_ref": first["source_ref"],
+                        "query_basis": first["query_basis"],
+                        "provenance_ref": first["provenance_ref"],
+                    },
+                }
+            ],
+            "actor": "pytest",
+        },
+    ).json()
+
+    rejected = client.post(
+        "/api/v1/layer3/gate-c/preview",
+        json={
+            "client_request_id": "api-gate-c-strict-extra",
+            "session_id": gate_b["session_id"],
+            "commit_typing": True,
+            "analysis_run_id": "run-should-not-be-accepted",
+            "execute": True,
+        },
+    )
+
+    assert rejected.status_code == 422
+    detail = rejected.json()["detail"]
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "analysis_run_id"]
+        for item in detail
+    )
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "execute"]
+        for item in detail
+    )
+    with client.layer3_session_factory() as db:
+        assert db.query(L3Session).count() == 1
+        assert db.query(L3TypingRecord).count() == 0
+        assert db.query(L3AnalysisUnit).count() == 0
+        assert db.query(L3AnalysisGroup).count() == 0
+        assert db.query(L3AnalysisSet).count() == 0
         assert db.query(L3PassRun).count() == 0
         assert db.query(AnalysisRun).count() == 0
         assert db.query(AnalysisArtifact).count() == 0
@@ -3359,6 +3877,119 @@ def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_sess
         db.close()
 
 
+def test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation(client: TestClient, tmp_path) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    rejected = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-plan-preview-strict-extra",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+            "execute": True,
+        },
+    )
+
+    assert rejected.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "execute"]
+        for item in rejected.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_source_preview_rejects_extra_fields_before_service_execution(client: TestClient) -> None:
+    preflight = client.post(
+        "/api/v1/layer3/preflight",
+        json={
+            "client_request_id": "api-source-preview-strict-preflight",
+            "natural_language_intent": "Select admitted source classes only.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+        },
+    ).json()
+
+    rejected = client.post(
+        "/api/v1/layer3/source-preview",
+        json={
+            "client_request_id": "api-source-preview-strict-extra",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version"],
+            "local_directory": "C:/not-admitted",
+        },
+    )
+
+    assert rejected.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "local_directory"]
+        for item in rejected.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3Session).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_material_preview_rejects_extra_fields_before_service_execution(client: TestClient) -> None:
+    preflight = client.post(
+        "/api/v1/layer3/preflight",
+        json={
+            "client_request_id": "api-material-preview-strict-preflight",
+            "natural_language_intent": "Select admitted material only.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+        },
+    ).json()
+    source = client.post(
+        "/api/v1/layer3/source-preview",
+        json={
+            "client_request_id": "api-material-preview-strict-source",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version"],
+        },
+    ).json()
+
+    rejected = client.post(
+        "/api/v1/layer3/material-preview",
+        json={
+            "client_request_id": "api-material-preview-strict-extra",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "source_candidate_ids": [source["source_candidates"][0]["source_candidate_id"]],
+            "query_basis": {"terms": ["admitted"], "filters": {"dataset_version_ids": []}},
+            "local_directory": "C:/not-admitted",
+        },
+    )
+
+    assert rejected.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "local_directory"]
+        for item in rejected.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3Session).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
 def test_layer3_api_plan_revision_rejects_current_preview_without_execution(client: TestClient, tmp_path) -> None:
     db = client.layer3_session_factory()
     try:
@@ -3497,6 +4128,35 @@ def test_layer3_api_plan_revision_request_revision_prechecks(client: TestClient,
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "execution_not_admitted"
     assert forbidden.json()["blocked_fields"] == ["execute"]
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/plan/revise",
+        json={
+            "client_request_id": "api-plan-revision-unknown-extra",
+            "session_id": session_id,
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+            "operator_decision": "request_revision",
+            "destination_connector": "not-admitted",
+        },
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        session = db.get(L3Session, session_id)
+        assert session is not None
+        assert "plan_revision_control" not in (session.summary_json or {})
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
 
     mismatch = client.post(
         "/api/v1/layer3/plan/revise",
@@ -3651,6 +4311,54 @@ def test_layer3_api_plan_approval_rejects_confirmation_and_preview_mismatch(clie
         db.close()
 
 
+def test_layer3_api_plan_approval_rejects_extra_fields_before_service_mutation(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+    finally:
+        db.close()
+
+    preview = client.post(
+        "/api/v1/layer3/plan/preview",
+        json={
+            "client_request_id": "api-plan-approval-strict-preview",
+            "session_id": session_id,
+            "include_exclusions": True,
+            "preview_scope": "owner_service_default",
+        },
+    ).json()
+
+    rejected = client.post(
+        "/api/v1/layer3/plan/approve",
+        json={
+            "client_request_id": "api-plan-approval-strict-extra",
+            "session_id": session_id,
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+            "execute": True,
+        },
+    )
+
+    assert rejected.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "execute"]
+        for item in rejected.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
 def test_layer3_api_execution_selection_creates_only_pass_run_shells(client: TestClient, tmp_path) -> None:
     session_id, preview_body, approval_body = _approve_quant_plan(client, tmp_path)
 
@@ -3773,6 +4481,24 @@ def test_layer3_api_execution_selection_prechecks_fail_closed(client: TestClient
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "analysis_execution_not_admitted"
     assert set(forbidden.json()["blocked_fields"]) == {"execution", "run_analysis"}
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": "api-execution-selection-unknown-extra",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "destination_connector": "not-admitted",
+        },
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
 
     stale_preview = client.post(
         "/api/v1/layer3/execution/select",
@@ -5754,9 +6480,12 @@ def test_layer3_api_handoff_export_prepare_prechecks_fail_closed(
         "/api/v1/layer3/handoff/export/prepare",
         json={**base_payload, "unexpected_control": True},
     )
-    assert unknown.status_code == 400
-    assert unknown.json()["error_code"] == "handoff_export_prepare_scope_not_admitted"
-    assert unknown.json()["blocked_fields"] == ["unexpected_control"]
+    assert unknown.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "unexpected_control"]
+        for item in unknown.json()["detail"]
+    )
 
     for decision in ("hold", "decline", "blocked"):
         notes_required = client.post(
@@ -7479,6 +8208,17 @@ def test_layer3_api_external_export_download_prepare_prechecks_fail_closed(
         assert response.status_code == expected_status, response.json()
         assert response.json()["error_code"] == expected_error
 
+    unknown_extra = client.post(
+        "/api/v1/layer3/handoff/export/download/prepare",
+        json={**base_payload, "provider_public_url": "https://example.invalid/bundle.json"},
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "provider_public_url"]
+        for item in unknown_extra.json()["detail"]
+    )
+
     db = client.layer3_session_factory()
     try:
         reconciliation = db.query(L3ReconciliationRecord).filter(
@@ -7650,6 +8390,117 @@ def test_layer3_api_external_export_download_deliver_streams_validated_bundle_wi
     finally:
         db.close()
     assert files_under_tmp() == files_before
+
+
+def test_layer3_api_external_export_download_deliver_fails_closed_when_bundle_artifact_missing(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        dispatch_payload,
+    ) = _prepare_aps_handoff_dispatch(
+        client,
+        tmp_path,
+        request_id="api-external-export-download-deliver-missing-artifact",
+    )
+    dispatch = client.post("/api/v1/layer3/handoff/aps/dispatch", json=dispatch_payload)
+    assert dispatch.status_code == 200, dispatch.json()
+    dispatch_body = dispatch.json()
+    prepare_payload = _external_export_download_prepare_payload(
+        request_id="api-external-export-download-deliver-missing-artifact-prepare",
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+    )
+    readiness = client.post("/api/v1/layer3/handoff/export/download/prepare", json=prepare_payload)
+    assert readiness.status_code == 200, readiness.json()
+    readiness_body = readiness.json()
+    deliver_payload = _external_export_download_deliver_payload(
+        request_id="api-external-export-download-deliver-missing-artifact-deliver",
+        prepare_payload=prepare_payload,
+        readiness_body=readiness_body,
+    )
+    bundle_path = Path(readiness_body["source_artifact_ref"])
+    archived_dir = tmp_path / "archive"
+    archived_dir.mkdir()
+    archived_bundle_path = archived_dir / bundle_path.name
+    bundle_path.replace(archived_bundle_path)
+    assert not bundle_path.exists()
+    assert archived_bundle_path.exists()
+
+    def files_under_tmp() -> set[str]:
+        return {str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*") if path.is_file()}
+
+    files_before = files_under_tmp()
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "analysis_artifacts": db.query(AnalysisArtifact).count(),
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "output_packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+        readiness_state_before = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json["external_export_download_prepare"]
+        )
+    finally:
+        db.close()
+
+    delivery = client.post("/api/v1/layer3/handoff/export/download/deliver", json=deliver_payload)
+    assert delivery.status_code == 409
+    body = delivery.json()
+    assert body["schema_id"] == "layer3.workbench_error.v1"
+    assert body["error_code"] == "external_export_download_delivery_source_artifact_unavailable"
+    assert body["blocked_fields"] == ["aps_bundle_ref"]
+    assert "download_url" not in delivery.headers
+    assert "public_url" not in delivery.headers
+    assert "signed_url" not in delivery.headers
+    assert "connector_run_id" not in delivery.headers
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "analysis_artifacts": db.query(AnalysisArtifact).count(),
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "output_packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_before
+        readiness_state_after = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json["external_export_download_prepare"]
+        )
+        assert readiness_state_after == readiness_state_before
+    finally:
+        db.close()
+    assert files_under_tmp() == files_before
+    assert not bundle_path.exists()
+    assert archived_bundle_path.exists()
 
 
 def test_layer3_api_external_export_download_deliver_malformed_json_fails_closed(
@@ -8128,6 +8979,17 @@ def test_layer3_api_aps_handoff_dispatch_prechecks_fail_closed(
         assert response.status_code == expected_status
         assert response.json()["error_code"] == expected_error
 
+    unknown_extra = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json={**base_payload, "destination_connector": "not-admitted"},
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
+
     db = client.layer3_session_factory()
     try:
         reconciliation = db.query(L3ReconciliationRecord).filter(
@@ -8413,6 +9275,26 @@ def test_layer3_api_package_review_submit_prechecks_fail_closed(
     assert forbidden.json()["error_code"] == "package_review_submit_scope_not_admitted"
     assert set(forbidden.json()["blocked_fields"]) == {"handoff", "package_payload"}
 
+    unknown_extra = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={**base_payload, "destination_connector": "not-admitted"},
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        assert "package_review_submit" not in reconciliation.summary_json
+    finally:
+        db.close()
+
     notes_required = client.post(
         "/api/v1/layer3/package/review/submit",
         json={**base_payload, "operator_decision": "changes_requested"},
@@ -8512,6 +9394,24 @@ def test_layer3_api_package_construction_commit_prechecks_fail_closed(
     assert forbidden.json()["error_code"] == "package_construction_commit_scope_not_admitted"
     assert set(forbidden.json()["blocked_fields"]) == {"handoff", "package_payload"}
 
+    unknown_extra = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={**base_payload, "destination_connector": "not-admitted"},
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3OutputPackage).count() == 0
+        assert db.query(L3ReconciliationRecord).count() == 0
+    finally:
+        db.close()
+
     stale_preview = client.post(
         "/api/v1/layer3/package/review/commit",
         json={**base_payload, "preview_hash": "stale-preview-hash"},
@@ -8597,6 +9497,35 @@ def test_layer3_api_package_review_preview_prechecks_fail_closed(
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "package_review_preview_scope_not_admitted"
     assert set(forbidden.json()["blocked_fields"]) == {"package", "handoff", "rerun", "rewrite_output"}
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "destination_connector": "not-admitted",
+        },
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        stored_pass = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).one()
+        assert "package_review_preview" not in (stored_pass.summary_json or {})
+        assert db.query(L3OutputPackage).count() == 0
+        assert db.query(L3ReconciliationRecord).count() == 0
+    finally:
+        db.close()
 
     stale_preview = client.post(
         "/api/v1/layer3/package/review/preview",
@@ -8814,6 +9743,34 @@ def test_layer3_api_execution_result_review_prechecks_fail_closed(
     assert forbidden.json()["error_code"] == "execution_result_review_scope_not_admitted"
     assert set(forbidden.json()["blocked_fields"]) == {"package_review", "rerun", "rewrite_output"}
 
+    unknown_extra = client.post(
+        "/api/v1/layer3/execution/result/review",
+        json={
+            "client_request_id": "api-result-review-unknown-extra",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "operator_decision": "approved",
+            "destination_connector": "not-admitted",
+        },
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        stored_pass = db.query(L3PassRun).one()
+        assert "execution_result_review" not in (stored_pass.summary_json or {})
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
     not_started = client.post(
         "/api/v1/layer3/execution/result/review",
         json={
@@ -8935,6 +9892,31 @@ def test_layer3_api_execution_result_status_prechecks_fail_closed(client: TestCl
     assert forbidden.status_code == 400
     assert forbidden.json()["error_code"] == "execution_result_status_scope_not_admitted"
     assert set(forbidden.json()["blocked_fields"]) == {"package_review", "rerun", "result_review"}
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/execution/result/status",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "destination_connector": "not-admitted",
+        },
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3PassRun).count() == 1
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
 
     unsupported_view = client.post(
         "/api/v1/layer3/execution/result/status",
@@ -9169,6 +10151,25 @@ def test_layer3_api_analysis_execution_start_prechecks_fail_closed(client: TestC
         "schema_widening",
         "source_expansion",
     }
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-analysis-execution-start-unknown-extra",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "destination_connector": "not-admitted",
+        },
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "destination_connector"]
+        for item in unknown_extra.json()["detail"]
+    )
 
     stale_preview = client.post(
         "/api/v1/layer3/execution/start",

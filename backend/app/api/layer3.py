@@ -6,7 +6,7 @@ from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -82,6 +82,577 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     idempotency_contract: dict[str, Any]
     concurrency_contract: dict[str, Any]
     deferred_decisions: dict[str, Any]
+
+
+class Layer3PlanApprovalRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str | None = None
+    session_id: str
+    preview_id: str
+    preview_hash: str
+    operator_confirmation: bool
+    approval_scope: str | None = None
+
+
+class Layer3PlanPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str | None = None
+    session_id: str | None = None
+    preview_scope: str | None = None
+    include_exclusions: bool | None = None
+
+
+class Layer3SourcePreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str | None = None
+    preflight_id: str
+    selected_source_classes: list[str] | None = None
+    actor: str | None = None
+
+
+class Layer3MaterialPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str | None = None
+    preflight_id: str | None = None
+    source_set_id: str | None = None
+    source_candidate_ids: list[str] = Field(min_length=1)
+    dataset_version_ids: list[str] | None = None
+    aps_content_document_ids: list[str] | None = None
+    query_basis: dict[str, Any] | None = None
+    actor: str | None = None
+
+
+class Layer3GateBDecisionItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate_id: str
+    decision: str
+    operator_reason: str | None = None
+    decision_basis: dict[str, Any] | None = None
+
+
+class Layer3GateBDecisionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    preflight_id: str | None = None
+    source_set_id: str | None = None
+    material_preview_id: str | None = None
+    material_preview_hash: str | None = None
+    actor: str | None = None
+    candidate_decisions: list[Layer3GateBDecisionItem]
+    commit_reason: str | None = None
+
+
+class Layer3GateCPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str | None = None
+    session_id: str
+    commit_typing: bool | None = None
+    actor: str | None = None
+
+
+class Layer3ExecutionSelectionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    operator_reason: str | None = None
+    execute: Any | None = None
+    execution: Any | None = None
+    run: Any | None = None
+    run_analysis: Any | None = None
+    start_execution: Any | None = None
+    analysis_run_id: Any | None = None
+    analysis_run_ids: Any | None = None
+    result_review: Any | None = None
+    results: Any | None = None
+    package: Any | None = None
+    package_review: Any | None = None
+    handoff: Any | None = None
+    artifact_manifest: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    rag_plan: Any | None = None
+    vector_plan: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_plan: Any | None = None
+
+
+class Layer3PlanRevisionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str | None = None
+    session_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    operator_decision: str | None = None
+    operator_note: str | None = None
+    execute: Any | None = None
+    execution: Any | None = None
+    run: Any | None = None
+    run_analysis: Any | None = None
+    package: Any | None = None
+    package_review: Any | None = None
+    handoff: Any | None = None
+    plan_edits: Any | None = None
+    natural_language_plan: Any | None = None
+    llm_plan: Any | None = None
+    execution_started: Any | None = None
+    create_pass_runs: Any | None = None
+    pass_run_ids: Any | None = None
+    artifact_manifest: Any | None = None
+    result_review: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_plan: Any | None = None
+    rag_plan: Any | None = None
+    vector_plan: Any | None = None
+
+
+class Layer3AnalysisExecutionStartRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    execution_mode: str | None = None
+    operator_reason: str | None = None
+    run_all: Any | None = None
+    batch: Any | None = None
+    package: Any | None = None
+    package_review: Any | None = None
+    handoff: Any | None = None
+    result_review: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    rag_plan: Any | None = None
+    vector_plan: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_plan: Any | None = None
+    approved_plan_supersession: Any | None = None
+    schema_migration: Any | None = None
+    artifact_manifest: Any | None = None
+    results: Any | None = None
+    source_expansion: Any | None = None
+    schema_widening: Any | None = None
+
+
+class Layer3ExecutionResultStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    analysis_run_id: str | None = None
+    operator_view_mode: str | None = None
+    approve_result: Any | None = None
+    reject_result: Any | None = None
+    result_review: Any | None = None
+    result_decision: Any | None = None
+    edited_findings: Any | None = None
+    package: Any | None = None
+    package_review: Any | None = None
+    handoff: Any | None = None
+    export: Any | None = None
+    rerun: Any | None = None
+    retry: Any | None = None
+    cancel: Any | None = None
+    run_all: Any | None = None
+    batch: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    rag_plan: Any | None = None
+    vector_plan: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_plan: Any | None = None
+    approved_plan_supersession: Any | None = None
+    schema_migration: Any | None = None
+    runtime_db_write: Any | None = None
+
+
+class Layer3ExecutionResultReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    operator_decision: str | None = None
+    review_notes: str | None = None
+    reviewed_output_items: list[dict[str, Any]] | None = None
+    analysis_run_id: str | None = None
+    package: Any | None = None
+    package_review: Any | None = None
+    handoff: Any | None = None
+    export: Any | None = None
+    rerun: Any | None = None
+    retry: Any | None = None
+    recover: Any | None = None
+    cancel: Any | None = None
+    selected_pass_ids: Any | None = None
+    pass_run_ids: Any | None = None
+    new_analysis_plan: Any | None = None
+    plan_revision: Any | None = None
+    source_expansion: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    schema_migration: Any | None = None
+    runtime_db_write: Any | None = None
+    artifact_manifest: Any | None = None
+    package_variant: Any | None = None
+    aps_handoff: Any | None = None
+    edited_findings: Any | None = None
+    rewrite_output: Any | None = None
+
+
+class Layer3PackageReviewPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    result_review_record_ref: str | None = None
+    analysis_run_id: str | None = None
+    package: Any | None = None
+    package_review_decision: Any | None = None
+    create_package: Any | None = None
+    package_variant: Any | None = None
+    output_package_id: Any | None = None
+    reconciliation_record_id: Any | None = None
+    handoff: Any | None = None
+    export: Any | None = None
+    rerun: Any | None = None
+    retry: Any | None = None
+    recover: Any | None = None
+    cancel: Any | None = None
+    selected_pass_ids: Any | None = None
+    pass_run_ids: Any | None = None
+    new_analysis_plan: Any | None = None
+    plan_revision: Any | None = None
+    source_expansion: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    schema_migration: Any | None = None
+    runtime_db_write: Any | None = None
+    artifact_manifest: Any | None = None
+    aps_handoff: Any | None = None
+    edited_findings: Any | None = None
+    rewrite_output: Any | None = None
+
+
+class Layer3PackageConstructionCommitRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    result_review_record_ref: str | None = None
+    package_review_preview_hash: str | None = None
+    analysis_run_id: str | None = None
+    expected_package_kinds: list[str] | None = None
+    package_review_decision: Any | None = None
+    submit_package_review: Any | None = None
+    approve_package: Any | None = None
+    reject_package: Any | None = None
+    handoff: Any | None = None
+    export: Any | None = None
+    rerun: Any | None = None
+    retry: Any | None = None
+    recover: Any | None = None
+    cancel: Any | None = None
+    selected_pass_ids: Any | None = None
+    pass_run_ids: Any | None = None
+    new_analysis_plan: Any | None = None
+    plan_revision: Any | None = None
+    source_expansion: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    schema_migration: Any | None = None
+    runtime_db_write: Any | None = None
+    artifact_manifest: Any | None = None
+    analysis_artifact: Any | None = None
+    aps_handoff: Any | None = None
+    edited_findings: Any | None = None
+    rewrite_output: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+
+
+class Layer3PackageReviewSubmitRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    result_review_record_ref: str | None = None
+    package_review_preview_hash: str | None = None
+    reconciliation_record_id: str | None = None
+    output_package_ids: Any | None = None
+    payload_hashes: Any | None = None
+    operator_decision: str | None = None
+    decision_notes: str | None = None
+    analysis_run_id: str | None = None
+    expected_package_kinds: Any | None = None
+    handoff: Any | None = None
+    export: Any | None = None
+    aps_handoff: Any | None = None
+    create_package: Any | None = None
+    rebuild_package: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    rewrite_output: Any | None = None
+    edited_findings: Any | None = None
+    result_review_amendment: Any | None = None
+    rerun: Any | None = None
+    retry: Any | None = None
+    recover: Any | None = None
+    cancel: Any | None = None
+    selected_pass_ids: Any | None = None
+    pass_run_ids: Any | None = None
+    new_analysis_plan: Any | None = None
+    plan_revision: Any | None = None
+    source_expansion: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    schema_migration: Any | None = None
+    runtime_db_write: Any | None = None
+    artifact_manifest: Any | None = None
+    analysis_artifact: Any | None = None
+
+
+class Layer3HandoffExportPrepareRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    result_review_record_ref: str | None = None
+    package_review_preview_hash: str | None = None
+    reconciliation_record_id: str | None = None
+    output_package_ids: Any | None = None
+    payload_refs: Any | None = None
+    payload_hashes: Any | None = None
+    package_review_submit_record_ref: str | None = None
+    package_review_state: str | None = None
+    handoff_target: str | None = None
+    export_mode: str | None = None
+    operator_decision: str | None = None
+    decision_notes: str | None = None
+    analysis_run_id: str | None = None
+    expected_package_kinds: Any | None = None
+    aps_handoff: Any | None = None
+    dispatch: Any | None = None
+    send: Any | None = None
+    external_export: Any | None = None
+    external_target: Any | None = None
+    download: Any | None = None
+    connector_run_id: Any | None = None
+    runtime_db_write: Any | None = None
+    analysis_artifact: Any | None = None
+    artifact_manifest: Any | None = None
+    create_package: Any | None = None
+    rebuild_package: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    rewrite_output: Any | None = None
+    edited_findings: Any | None = None
+    result_review_amendment: Any | None = None
+    package_review_amendment: Any | None = None
+    rerun: Any | None = None
+    retry: Any | None = None
+    recover: Any | None = None
+    cancel: Any | None = None
+    selected_pass_ids: Any | None = None
+    pass_run_ids: Any | None = None
+    new_analysis_plan: Any | None = None
+    plan_revision: Any | None = None
+    source_expansion: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    schema_migration: Any | None = None
+
+
+class Layer3ApsHandoffDispatchRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    result_review_record_ref: str | None = None
+    package_review_preview_hash: str | None = None
+    reconciliation_record_id: str | None = None
+    output_package_ids: Any | None = None
+    package_kinds: Any | None = None
+    payload_refs: Any | None = None
+    payload_hashes: Any | None = None
+    package_review_submit_record_ref: str | None = None
+    package_review_state: str | None = None
+    prepare_record_ref: str | None = None
+    handoff_export_state: str | None = None
+    handoff_export_envelope_ref: str | None = None
+    handoff_target: str | None = None
+    export_mode: str | None = None
+    aps_handoff_target: str | None = None
+    dispatch_mode: str | None = None
+    operator_decision: str | None = None
+    decision_notes: str | None = None
+    analysis_run_id: str | None = None
+    external_export: Any | None = None
+    external_target: Any | None = None
+    download: Any | None = None
+    download_url: Any | None = None
+    destination: Any | None = None
+    destination_selector: Any | None = None
+    connector_run_id: Any | None = None
+    connector_dispatch: Any | None = None
+    dispatch: Any | None = None
+    send: Any | None = None
+    runtime_db_write: Any | None = None
+    analysis_artifact: Any | None = None
+    artifact_manifest: Any | None = None
+    create_package: Any | None = None
+    rebuild_package: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    rewrite_output: Any | None = None
+    edited_findings: Any | None = None
+    result_review_amendment: Any | None = None
+    package_review_amendment: Any | None = None
+    rerun: Any | None = None
+    retry: Any | None = None
+    recover: Any | None = None
+    cancel: Any | None = None
+    selected_pass_ids: Any | None = None
+    pass_run_ids: Any | None = None
+    new_analysis_plan: Any | None = None
+    plan_revision: Any | None = None
+    source_expansion: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    schema_migration: Any | None = None
+
+
+class Layer3ExternalExportDownloadPrepareRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    preview_id: str | None = None
+    preview_hash: str | None = None
+    result_review_record_ref: str | None = None
+    package_review_preview_hash: str | None = None
+    reconciliation_record_id: str | None = None
+    output_package_ids: Any | None = None
+    package_kinds: Any | None = None
+    payload_refs: Any | None = None
+    payload_hashes: Any | None = None
+    package_review_submit_record_ref: str | None = None
+    package_review_state: str | None = None
+    prepare_record_ref: str | None = None
+    handoff_export_state: str | None = None
+    handoff_export_envelope_ref: str | None = None
+    handoff_target: str | None = None
+    export_mode: str | None = None
+    aps_handoff_record_ref: str | None = None
+    aps_handoff_state: str | None = None
+    aps_handoff_target: str | None = None
+    dispatch_mode: str | None = None
+    aps_output_package_id: str | None = None
+    aps_output_package_kind: str | None = None
+    aps_bundle_ref: str | None = None
+    aps_bundle_id: str | None = None
+    aps_schema_id: str | None = None
+    export_download_target: str | None = None
+    download_mode: str | None = None
+    operator_decision: str | None = None
+    decision_notes: str | None = None
+    analysis_run_id: str | None = None
+    aps_bundle_hash: str | None = None
+    aps_bundle_size_bytes: int | None = None
+    download: Any | None = None
+    download_url: Any | None = None
+    download_token: Any | None = None
+    public_url: Any | None = None
+    signed_url: Any | None = None
+    local_file_path: Any | None = None
+    external_target: Any | None = None
+    destination: Any | None = None
+    destination_selector: Any | None = None
+    connector_run_id: Any | None = None
+    connector_dispatch: Any | None = None
+    generic_dispatch: Any | None = None
+    dispatch: Any | None = None
+    send: Any | None = None
+    runtime_db_write: Any | None = None
+    analysis_artifact: Any | None = None
+    artifact_manifest: Any | None = None
+    create_package: Any | None = None
+    rebuild_package: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    rewrite_output: Any | None = None
+    edited_findings: Any | None = None
+    result_review_amendment: Any | None = None
+    package_review_amendment: Any | None = None
+    rerun: Any | None = None
+    retry: Any | None = None
+    recover: Any | None = None
+    cancel: Any | None = None
+    selected_pass_ids: Any | None = None
+    pass_run_ids: Any | None = None
+    new_analysis_plan: Any | None = None
+    plan_revision: Any | None = None
+    source_expansion: Any | None = None
+    local_upload: Any | None = None
+    local_directory: Any | None = None
+    schema_migration: Any | None = None
 
 
 class Layer3PreflightResponse(Layer3BaseResponse):
@@ -747,8 +1318,8 @@ PREFLIGHT_REQUEST_SCHEMA: dict[str, Any] = {
 
 SOURCE_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known source-preview fields; selected_source_classes defaults to supported source classes.",
+    "additionalProperties": False,
+    "description": "Strict source-preview fields; source expansion fields are rejected before service execution.",
     "required": ["preflight_id"],
     "properties": {
         "schema_id": {"type": "string", "enum": ["layer3.source_preview_request.v1"]},
@@ -763,8 +1334,8 @@ SOURCE_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 
 MATERIAL_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known material-preview fields; preflight/source-set ids are carried as authority context.",
+    "additionalProperties": False,
+    "description": "Strict material-preview fields; source expansion fields are rejected before service execution.",
     "required": ["source_candidate_ids"],
     "properties": {
         "schema_id": {"type": "string", "enum": ["layer3.material_preview_request.v1"]},
@@ -797,7 +1368,7 @@ MATERIAL_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 
 GATE_B_DECISION_ITEM_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
+    "additionalProperties": False,
     "required": ["candidate_id", "decision"],
     "properties": {
         "candidate_id": {"type": "string"},
@@ -818,13 +1389,13 @@ GATE_B_DECISION_ITEM_SCHEMA: dict[str, Any] = {
 
 GATE_B_DECISION_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known Gate B fields; denied, isolated, and flagged decisions require operator_reason at runtime.",
-    "required": ["candidate_decisions"],
+    "additionalProperties": False,
+    "description": "Strict Gate B fields; client_request_id is required for durable idempotency and denied, isolated, and flagged decisions require operator_reason at runtime.",
+    "required": ["client_request_id", "candidate_decisions"],
     "properties": {
         "schema_id": {"type": "string", "enum": ["layer3.gate_b_decision_request.v1"]},
         "schema_version": {"type": "integer", "enum": [1]},
-        "client_request_id": {"type": "string"},
+        "client_request_id": {"type": "string", "minLength": 1},
         "preflight_id": {"type": "string"},
         "source_set_id": {"type": "string"},
         "material_preview_id": {"type": "string"},
@@ -842,8 +1413,8 @@ GATE_B_DECISION_REQUEST_SCHEMA: dict[str, Any] = {
 
 GATE_C_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known Gate C preview fields; commit_typing controls owner-service materialization.",
+    "additionalProperties": False,
+    "description": "Strict Gate C preview fields; commit_typing controls owner-service materialization.",
     "required": ["session_id"],
     "properties": {
         "schema_id": {"type": "string", "enum": ["layer3.gate_c_preview_request.v1"]},
@@ -858,9 +1429,12 @@ GATE_C_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 
 PLAN_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
+    "additionalProperties": False,
+    "description": "Strict plan-preview fields; execution/package/handoff/source-widening fields are rejected before service mutation.",
     "required": ["session_id"],
     "properties": {
+        "schema_id": {"type": "string", "enum": ["layer3.plan_preview_request.v1"]},
+        "schema_version": {"type": "integer"},
         "client_request_id": {"type": "string"},
         "session_id": {"type": "string"},
         "preview_scope": {"type": "string", "enum": ["owner_service_default"]},
@@ -871,10 +1445,12 @@ PLAN_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 
 PLAN_APPROVAL_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known plan-approval fields; explicit execution/package/handoff fields remain fail-closed.",
+    "additionalProperties": False,
+    "description": "Strict plan-approval fields; extra execution/package/handoff fields are rejected before service mutation.",
     "required": ["session_id", "preview_id", "preview_hash", "operator_confirmation"],
     "properties": {
+        "schema_id": {"type": "string", "enum": ["layer3.plan_approval_request.v1"]},
+        "schema_version": {"type": "integer"},
         "client_request_id": {"type": "string"},
         "session_id": {"type": "string"},
         "preview_id": {"type": "string"},
@@ -887,24 +1463,45 @@ PLAN_APPROVAL_REQUEST_SCHEMA: dict[str, Any] = {
 
 PLAN_REVISION_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known plan-revision fields; explicit execution/package/handoff fields remain fail-closed.",
+    "additionalProperties": False,
+    "description": "Strict plan-revision fields; explicit execution/package/handoff/source-widening fields remain fail-closed.",
     "required": ["session_id", "preview_id", "preview_hash", "operator_decision"],
     "properties": {
+        "schema_id": {"type": "string", "enum": ["layer3.plan_revision_request.v1"]},
+        "schema_version": {"type": "integer"},
         "client_request_id": {"type": "string"},
         "session_id": {"type": "string"},
         "preview_id": {"type": "string"},
         "preview_hash": {"type": "string"},
         "operator_decision": {"type": "string", "enum": ["reject_current_preview", "request_revision"]},
         "operator_note": {"type": "string"},
+        "execute": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "execution": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "run": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "run_analysis": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "plan_edits": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "natural_language_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "llm_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "execution_started": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "create_pass_runs": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "pass_run_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "qualitative_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hybrid_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "vector_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
 
 EXECUTION_SELECTION_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known execution-selection fields; explicit execution/run/result/package/handoff fields remain fail-closed.",
+    "additionalProperties": False,
+    "description": "Strict execution-selection fields; explicit execution/run/result/package/handoff/source-widening fields remain fail-closed.",
     "required": ["client_request_id", "session_id", "analysis_plan_id", "preview_id", "preview_hash"],
     "properties": {
         "client_request_id": {"type": "string"},
@@ -912,6 +1509,26 @@ EXECUTION_SELECTION_REQUEST_SCHEMA: dict[str, Any] = {
         "analysis_plan_id": {"type": "string"},
         "preview_id": {"type": "string"},
         "preview_hash": {"type": "string"},
+        "operator_reason": {"type": "string"},
+        "execute": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "execution": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "run": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "run_analysis": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "start_execution": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "analysis_run_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "analysis_run_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "results": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "vector_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "qualitative_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hybrid_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -919,6 +1536,7 @@ EXECUTION_SELECTION_REQUEST_SCHEMA: dict[str, Any] = {
 ANALYSIS_EXECUTION_START_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
+    "description": "Strict analysis execution-start fields; explicit batch/package/handoff/source-widening fields remain fail-closed.",
     "required": ["client_request_id", "session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"],
     "properties": {
         "client_request_id": {"type": "string"},
@@ -929,6 +1547,24 @@ ANALYSIS_EXECUTION_START_REQUEST_SCHEMA: dict[str, Any] = {
         "preview_hash": {"type": "string"},
         "execution_mode": {"type": "string", "enum": ["synchronous_single_pass"]},
         "operator_reason": {"type": "string"},
+        "run_all": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "batch": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "vector_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "qualitative_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hybrid_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "approved_plan_supersession": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_migration": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "results": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_expansion": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_widening": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -936,6 +1572,7 @@ ANALYSIS_EXECUTION_START_REQUEST_SCHEMA: dict[str, Any] = {
 EXECUTION_RESULT_STATUS_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
+    "description": "Strict status-only result inspection fields; explicit review/package/handoff/source-widening fields remain fail-closed.",
     "required": ["session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"],
     "properties": {
         "client_request_id": {"type": "string"},
@@ -946,6 +1583,29 @@ EXECUTION_RESULT_STATUS_REQUEST_SCHEMA: dict[str, Any] = {
         "preview_hash": {"type": "string"},
         "analysis_run_id": {"type": "string"},
         "operator_view_mode": {"type": "string", "enum": ["status_only"]},
+        "approve_result": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "reject_result": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_decision": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "edited_findings": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "export": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rerun": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "retry": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "cancel": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "run_all": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "batch": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "vector_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "qualitative_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hybrid_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "approved_plan_supersession": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_migration": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "runtime_db_write": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -974,6 +1634,28 @@ EXECUTION_RESULT_REVIEW_REQUEST_SCHEMA: dict[str, Any] = {
         "review_notes": {"type": "string"},
         "reviewed_output_items": {"type": "array", "items": {"type": "object", "additionalProperties": True}},
         "analysis_run_id": {"type": "string"},
+        "package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "export": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rerun": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "retry": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "recover": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "cancel": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "selected_pass_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "pass_run_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "new_analysis_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "plan_revision": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_expansion": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_migration": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "runtime_db_write": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_variant": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "aps_handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "edited_findings": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rewrite_output": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -981,6 +1663,7 @@ EXECUTION_RESULT_REVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 PACKAGE_REVIEW_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
+    "description": "Strict package-review preview fields; explicit package/handoff/source-widening fields remain fail-closed.",
     "required": ["session_id", "analysis_plan_id", "pass_run_id", "preview_id", "preview_hash"],
     "properties": {
         "client_request_id": {"type": "string"},
@@ -991,6 +1674,31 @@ PACKAGE_REVIEW_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
         "preview_hash": {"type": "string"},
         "result_review_record_ref": {"type": "string"},
         "analysis_run_id": {"type": "string"},
+        "package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review_decision": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "create_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_variant": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "output_package_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "reconciliation_record_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "export": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rerun": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "retry": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "recover": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "cancel": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "selected_pass_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "pass_run_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "new_analysis_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "plan_revision": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_expansion": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_migration": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "runtime_db_write": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "aps_handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "edited_findings": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rewrite_output": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -998,6 +1706,7 @@ PACKAGE_REVIEW_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 PACKAGE_CONSTRUCTION_COMMIT_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
+    "description": "Strict package construction commit fields; explicit review/handoff/source-widening/package-payload fields remain fail-closed.",
     "required": [
         "client_request_id",
         "session_id",
@@ -1022,6 +1731,32 @@ PACKAGE_CONSTRUCTION_COMMIT_REQUEST_SCHEMA: dict[str, Any] = {
             "type": "array",
             "items": {"type": "string", "enum": ["canonical_internal", "user_facing", "review_facing"]},
         },
+        "package_review_decision": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "submit_package_review": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "approve_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "reject_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "export": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rerun": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "retry": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "recover": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "cancel": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "selected_pass_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "pass_run_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "new_analysis_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "plan_revision": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_expansion": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_migration": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "runtime_db_write": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "analysis_artifact": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "aps_handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "edited_findings": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rewrite_output": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_payload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_variant_content": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -1065,6 +1800,31 @@ PACKAGE_REVIEW_SUBMIT_REQUEST_SCHEMA: dict[str, Any] = {
             "type": "array",
             "items": {"type": "string", "enum": ["canonical_internal", "user_facing", "review_facing"]},
         },
+        "handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "export": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "aps_handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "create_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rebuild_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_payload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_variant_content": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rewrite_output": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "edited_findings": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_review_amendment": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rerun": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "retry": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "recover": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "cancel": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "selected_pass_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "pass_run_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "new_analysis_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "plan_revision": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_expansion": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_migration": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "runtime_db_write": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "analysis_artifact": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -1119,6 +1879,36 @@ HANDOFF_EXPORT_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
             "type": "array",
             "items": {"type": "string", "enum": ["canonical_internal", "user_facing", "review_facing"]},
         },
+        "aps_handoff": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "dispatch": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "send": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "external_export": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "external_target": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "download": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "connector_run_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "runtime_db_write": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "analysis_artifact": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "create_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rebuild_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_payload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_variant_content": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rewrite_output": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "edited_findings": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_review_amendment": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review_amendment": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rerun": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "retry": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "recover": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "cancel": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "selected_pass_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "pass_run_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "new_analysis_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "plan_revision": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_expansion": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_migration": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -1181,6 +1971,39 @@ APS_HANDOFF_DISPATCH_REQUEST_SCHEMA: dict[str, Any] = {
         "operator_decision": {"type": "string", "enum": ["dispatch_aps_handoff"]},
         "decision_notes": {"type": "string"},
         "analysis_run_id": {"type": "string"},
+        "external_export": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "external_target": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "download": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "download_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "destination": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "destination_selector": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "connector_run_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "connector_dispatch": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "dispatch": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "send": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "runtime_db_write": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "analysis_artifact": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "create_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rebuild_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_payload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_variant_content": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rewrite_output": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "edited_findings": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_review_amendment": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review_amendment": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rerun": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "retry": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "recover": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "cancel": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "selected_pass_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "pass_run_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "new_analysis_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "plan_revision": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_expansion": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_migration": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -1263,6 +2086,43 @@ EXTERNAL_EXPORT_DOWNLOAD_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
         "analysis_run_id": {"type": "string"},
         "aps_bundle_hash": {"type": "string"},
         "aps_bundle_size_bytes": {"type": "integer"},
+        "download": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "download_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "download_token": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "public_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "signed_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_file_path": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "external_target": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "destination": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "destination_selector": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "connector_run_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "connector_dispatch": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "generic_dispatch": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "dispatch": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "send": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "runtime_db_write": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "analysis_artifact": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "artifact_manifest": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "create_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rebuild_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_payload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_variant_content": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rewrite_output": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "edited_findings": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "result_review_amendment": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_review_amendment": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rerun": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "retry": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "recover": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "cancel": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "selected_pass_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "pass_run_ids": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "new_analysis_plan": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "plan_revision": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_expansion": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "schema_migration": {"description": "Known but non-admitted; service rejects fail-closed."},
     },
 }
 
@@ -1353,8 +2213,8 @@ def post_preflight(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
     openapi_extra={"requestBody": _json_request_body(SOURCE_PREVIEW_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400),
 )
-def post_source_preview(payload: dict[str, Any]) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.source_preview(payload))
+def post_source_preview(payload: Layer3SourcePreviewRequest) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.source_preview(payload.model_dump(exclude_none=True)))
 
 
 @router.post(
@@ -1363,8 +2223,11 @@ def post_source_preview(payload: dict[str, Any]) -> dict[str, Any] | JSONRespons
     openapi_extra={"requestBody": _json_request_body(MATERIAL_PREVIEW_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400),
 )
-def post_material_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.material_preview(payload, db))
+def post_material_preview(
+    payload: Layer3MaterialPreviewRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.material_preview(payload.model_dump(exclude_none=True), db))
 
 
 @router.get(
@@ -1391,8 +2254,11 @@ def get_aps_content_document_candidates(limit: int = 50, db: Session = Depends(g
     openapi_extra={"requestBody": _json_request_body(GATE_B_DECISION_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 409),
 )
-def post_gate_b_decision(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.gate_b_decision(db, payload))
+def post_gate_b_decision(
+    payload: Layer3GateBDecisionRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.gate_b_decision(db, payload.model_dump(exclude_none=True)))
 
 
 @router.post(
@@ -1401,8 +2267,11 @@ def post_gate_b_decision(payload: dict[str, Any], db: Session = Depends(get_db))
     openapi_extra={"requestBody": _json_request_body(GATE_C_PREVIEW_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409),
 )
-def post_gate_c_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.gate_c_preview(db, payload))
+def post_gate_c_preview(
+    payload: Layer3GateCPreviewRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.gate_c_preview(db, payload.model_dump(exclude_none=True)))
 
 
 @router.post(
@@ -1423,8 +2292,11 @@ def post_gate_c_override(payload: dict[str, Any]) -> JSONResponse:
     openapi_extra={"requestBody": _json_request_body(PLAN_PREVIEW_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409, 500),
 )
-def post_plan_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.plan_preview(db, payload))
+def post_plan_preview(
+    payload: Layer3PlanPreviewRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.plan_preview(db, payload.model_dump(exclude_none=True)))
 
 
 @router.post(
@@ -1433,8 +2305,16 @@ def post_plan_preview(payload: dict[str, Any], db: Session = Depends(get_db)) ->
     openapi_extra={"requestBody": _json_request_body(PLAN_APPROVAL_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409, 500),
 )
-def post_plan_approve(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.plan_approval(db, payload))
+def post_plan_approve(
+    payload: Layer3PlanApprovalRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_workbench.plan_approval(
+            db,
+            payload.model_dump(exclude_none=True),
+        )
+    )
 
 
 @router.post(
@@ -1443,8 +2323,11 @@ def post_plan_approve(payload: dict[str, Any], db: Session = Depends(get_db)) ->
     openapi_extra={"requestBody": _json_request_body(PLAN_REVISION_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409, 500),
 )
-def post_plan_revise(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.plan_revision(db, payload))
+def post_plan_revise(
+    payload: Layer3PlanRevisionRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.plan_revision(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
@@ -1453,8 +2336,11 @@ def post_plan_revise(payload: dict[str, Any], db: Session = Depends(get_db)) -> 
     openapi_extra={"requestBody": _json_request_body(EXECUTION_SELECTION_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409),
 )
-def post_execution_select(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.execution_selection(db, payload))
+def post_execution_select(
+    payload: Layer3ExecutionSelectionRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.execution_selection(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
@@ -1463,8 +2349,11 @@ def post_execution_select(payload: dict[str, Any], db: Session = Depends(get_db)
     openapi_extra={"requestBody": _json_request_body(ANALYSIS_EXECUTION_START_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400, 404, 409),
 )
-def post_execution_start(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.analysis_execution_start(db, payload))
+def post_execution_start(
+    payload: Layer3AnalysisExecutionStartRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.analysis_execution_start(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
@@ -1474,10 +2363,10 @@ def post_execution_start(payload: dict[str, Any], db: Session = Depends(get_db))
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_execution_result_status(
-    payload: dict[str, Any],
+    payload: Layer3ExecutionResultStatusRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.execution_result_status(db, payload))
+    return _json_or_error(lambda: layer3_workbench.execution_result_status(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
@@ -1487,10 +2376,10 @@ def post_execution_result_status(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_execution_result_review(
-    payload: dict[str, Any],
+    payload: Layer3ExecutionResultReviewRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.execution_result_review(db, payload))
+    return _json_or_error(lambda: layer3_workbench.execution_result_review(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
@@ -1500,10 +2389,10 @@ def post_execution_result_review(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_review_preview(
-    payload: dict[str, Any],
+    payload: Layer3PackageReviewPreviewRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.package_review_preview(db, payload))
+    return _json_or_error(lambda: layer3_workbench.package_review_preview(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
@@ -1513,10 +2402,10 @@ def post_package_review_preview(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_review_commit(
-    payload: dict[str, Any],
+    payload: Layer3PackageConstructionCommitRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.package_construction_commit(db, payload))
+    return _json_or_error(lambda: layer3_workbench.package_construction_commit(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
@@ -1526,10 +2415,10 @@ def post_package_review_commit(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_package_review_submit(
-    payload: dict[str, Any],
+    payload: Layer3PackageReviewSubmitRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.package_review_submit(db, payload))
+    return _json_or_error(lambda: layer3_workbench.package_review_submit(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
@@ -1540,10 +2429,10 @@ def post_package_review_submit(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_handoff_export_prepare(
-    payload: dict[str, Any],
+    payload: Layer3HandoffExportPrepareRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.handoff_export_prepare(db, payload))
+    return _json_or_error(lambda: layer3_workbench.handoff_export_prepare(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
@@ -1553,10 +2442,10 @@ def post_handoff_export_prepare(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_aps_handoff_dispatch(
-    payload: dict[str, Any],
+    payload: Layer3ApsHandoffDispatchRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.aps_handoff_dispatch(db, payload))
+    return _json_or_error(lambda: layer3_workbench.aps_handoff_dispatch(db, payload.model_dump(exclude_unset=True)))
 
 
 @router.post(
@@ -1566,10 +2455,12 @@ def post_aps_handoff_dispatch(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_external_export_download_prepare(
-    payload: dict[str, Any],
+    payload: Layer3ExternalExportDownloadPrepareRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.external_export_download_prepare(db, payload))
+    return _json_or_error(
+        lambda: layer3_workbench.external_export_download_prepare(db, payload.model_dump(exclude_unset=True))
+    )
 
 
 @router.post(
@@ -1683,7 +2574,10 @@ def post_external_export_download_signed_reference_use(
 @router.get(
     "/session/{session_id}",
     response_model=Layer3SessionSummaryResponse,
-    responses={404: {"model": Layer3WorkbenchErrorResponse}},
+    responses={
+        404: {"model": Layer3WorkbenchErrorResponse},
+        409: {"model": Layer3WorkbenchErrorResponse},
+    },
 )
 def get_session_summary(session_id: str, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.session_summary(db, session_id))

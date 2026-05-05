@@ -47,6 +47,7 @@ from app.services.layer3_session_entry import (
     record_retrieval_event,
 )
 from app.services.layer3_typing_entry import materialize_typing_entry
+from app.services.layer3_utils import stable_hash, stable_json_text_bytes, stable_json_text_hash
 
 
 def _make_session():
@@ -315,6 +316,10 @@ def test_gated_package_entry_emits_canonical_user_and_review_packages(tmp_path):
             assert payload_path.exists()
             assert payload_path.parent == (Path(tmp_path) / "artifacts" / "layer3")
             assert hashlib.sha256(payload_path.read_bytes()).hexdigest() == row.payload_hash
+            payload = _load_payload(row.payload_ref)
+            assert payload_path.read_bytes() == stable_json_text_bytes(payload)
+            assert row.payload_hash == stable_json_text_hash(payload)
+            assert row.payload_hash != stable_hash(payload)
             assert row.summary_json["package_kind"] == row.package_kind
 
         canonical_payload = _load_payload(canonical_row.payload_ref)

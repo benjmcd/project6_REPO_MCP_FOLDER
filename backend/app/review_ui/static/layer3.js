@@ -1,6 +1,11 @@
 const API_ROOT = '/api/v1/layer3';
 const THEME_STORAGE_KEY = 'nrc_aps_review_theme';
 const LAYER3_THEME_STORAGE_KEY = 'layer3_workbench_theme';
+const LAYER3_SESSION_RECOVERY_STORAGE_KEY = 'layer3_workbench_session_recovery_v1';
+const LAYER3_GATE_B_DRAFT_STORAGE_KEY = 'layer3_workbench_gate_b_draft_v1';
+const LAYER3_SESSION_RECOVERY_SCHEMA_ID = 'layer3.browser_session_recovery.v1';
+const LAYER3_GATE_B_DRAFT_SCHEMA_ID = 'layer3.gate_b_draft_snapshot.v1';
+const GATE_B_DRAFT_TTL_MS = 12 * 60 * 60 * 1000;
 
 const State = {
     bootstrap: null,
@@ -50,6 +55,7 @@ const State = {
     externalExportDownloadSignedReferenceUse: null,
     externalExportDownloadSignedReferenceUsePending: false,
     gateBDecisions: {},
+    gateBClientRequestId: null,
     materialFilter: '',
     events: [],
     themePreference: document.documentElement.dataset.themePreference || 'system',
@@ -558,6 +564,231 @@ function currentSessionId() {
         || State.planPreview?.session_id
         || State.gateC?.session_id
         || null;
+}
+
+function storageGet(storage, key) {
+    try {
+        const raw = storage?.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+    } catch (_error) {
+        return null;
+    }
+}
+
+function storageSet(storage, key, value) {
+    try {
+        storage?.setItem(key, JSON.stringify(value));
+        return true;
+    } catch (_error) {
+        return false;
+    }
+}
+
+function storageRemove(storage, key) {
+    try {
+        storage?.removeItem(key);
+    } catch (_error) {
+        // Browser storage can be unavailable in private or locked-down contexts.
+    }
+}
+
+function stateActionContractSchemaId(source = null) {
+    return source?.state_action_contract?.schema_id || State.bootstrap?.state_action_contract?.schema_id || null;
+}
+
+function sameStringList(left, right) {
+    const leftValues = [...(left || [])].map(String).sort();
+    const rightValues = [...(right || [])].map(String).sort();
+    return leftValues.length === rightValues.length && leftValues.every((value, index) => value === rightValues[index]);
+}
+
+function materialPreviewCandidateIds(preview = State.materialPreview) {
+    return (preview?.material_candidates || [])
+        .map((candidate) => candidate.candidate_id)
+        .filter(Boolean)
+        .sort();
+}
+
+function isTypingCommitted() {
+    return Boolean(
+        State.gateC?.authority_rail?.typing_status === 'committed'
+        || State.sessionSummary?.gate_c_summary?.typing_committed === true
+    );
+}
+
+function persistSessionRecoveryAnchor(source) {
+    const sessionId = currentSessionId();
+    if (!sessionId) return;
+    const anchor = {
+        schema_id: LAYER3_SESSION_RECOVERY_SCHEMA_ID,
+        schema_version: 1,
+        session_id: sessionId,
+        selection_manifest_id: State.sessionSummary?.selection_manifest_id || State.gateB?.selection_manifest_id || null,
+        current_gate: State.sessionSummary?.current_gate || currentAuthorityRail()?.current_gate || null,
+        state_action_contract_schema_id: stateActionContractSchemaId(State.sessionSummary),
+        source,
+        updated_at: new Date().toISOString(),
+    };
+    storageSet(localStorage, LAYER3_SESSION_RECOVERY_STORAGE_KEY, anchor);
+}
+
+function clearSessionRecoveryAnchor() {
+    storageRemove(localStorage, LAYER3_SESSION_RECOVERY_STORAGE_KEY);
+}
+
+function loadSessionRecoveryAnchor() {
+    const anchor = storageGet(localStorage, LAYER3_SESSION_RECOVERY_STORAGE_KEY);
+    if (!anchor || anchor.schema_id !== LAYER3_SESSION_RECOVERY_SCHEMA_ID || !anchor.session_id) {
+        storageRemove(localStorage, LAYER3_SESSION_RECOVERY_STORAGE_KEY);
+        return null;
+    }
+    const currentContract = stateActionContractSchemaId();
+    if (
+        currentContract
+        && anchor.state_action_contract_schema_id
+        && anchor.state_action_contract_schema_id !== currentContract
+    ) {
+        storageRemove(localStorage, LAYER3_SESSION_RECOVERY_STORAGE_KEY);
+        addEvent('Stored session recovery anchor skipped after contract change.');
+        return null;
+    }
+    return anchor;
+}
+
+async function recoverSessionFromStorage() {
+    const anchor = loadSessionRecoveryAnchor();
+    if (!anchor) return false;
+    try {
+        const summary = await getJson(`/session/${encodeURIComponent(anchor.session_id)}`);
+        const currentContract = stateActionContractSchemaId();
+        const summaryContract = stateActionContractSchemaId(summary);
+        if (currentContract && summaryContract && currentContract !== summaryContract) {
+            clearSessionRecoveryAnchor();
+            addEvent('Stored session recovery anchor no longer matches the server contract.');
+            return false;
+        }
+        State.sessionSummary = summary;
+        State.resultStatusError = null;
+        State.resultReviewError = null;
+        State.packageReviewPreviewError = null;
+        State.packageConstructionError = null;
+        State.packageReviewSubmitError = null;
+        State.handoffExportPrepareError = null;
+        State.apsHandoffDispatchError = null;
+        State.externalExportDownloadPrepareError = null;
+        State.externalExportDownloadSignedReferenceError = null;
+        clearGateBDraftSnapshot();
+        persistSessionRecoveryAnchor('session_recovery');
+        addEvent(`Session ${summary.session_id} restored from server state.`);
+        return true;
+    } catch (error) {
+        clearSessionRecoveryAnchor();
+        addEvent(`Stored session recovery anchor cleared: ${error.message}`);
+        return false;
+    }
+}
+
+function gateBDraftExpiresAt() {
+    return new Date(Date.now() + GATE_B_DRAFT_TTL_MS).toISOString();
+}
+
+function gateBDraftExpired(draft) {
+    const expiresAt = Date.parse(draft?.expires_at || '');
+    return Number.isFinite(expiresAt) && expiresAt <= Date.now();
+}
+
+function currentGateBDraftIdentity() {
+    return {
+        preflight_id: State.preflight?.preflight_id || null,
+        source_set_id: State.sourcePreview?.source_set_id || null,
+        material_preview_id: State.materialPreview?.material_preview_id || null,
+        material_preview_hash: State.materialPreview?.material_preview_hash || null,
+        candidate_ids: materialPreviewCandidateIds(),
+    };
+}
+
+function gateBDraftMatchesCurrentPreview(draft) {
+    const current = currentGateBDraftIdentity();
+    return Boolean(
+        draft?.material_preview_id
+        && current.material_preview_id
+        && draft.material_preview_id === current.material_preview_id
+        && draft.material_preview_hash === current.material_preview_hash
+        && sameStringList(draft.candidate_ids, current.candidate_ids)
+    );
+}
+
+function buildGateBDraftSnapshot() {
+    if (!(State.materialPreview?.material_candidates || []).length) return null;
+    const clientRequestId = State.gateBClientRequestId || requestId();
+    State.gateBClientRequestId = clientRequestId;
+    return {
+        schema_id: LAYER3_GATE_B_DRAFT_SCHEMA_ID,
+        schema_version: 1,
+        draft_authority: 'browser_restore_only_server_revalidated_on_commit',
+        client_request_id: clientRequestId,
+        state_action_contract_schema_id: stateActionContractSchemaId(),
+        expires_at: gateBDraftExpiresAt(),
+        ...currentGateBDraftIdentity(),
+        preflight: State.preflight,
+        source_preview: State.sourcePreview,
+        material_preview: State.materialPreview,
+        gate_b_decisions: State.gateBDecisions,
+    };
+}
+
+function persistGateBDraftSnapshot() {
+    const snapshot = buildGateBDraftSnapshot();
+    if (!snapshot) return;
+    storageSet(sessionStorage, LAYER3_GATE_B_DRAFT_STORAGE_KEY, snapshot);
+}
+
+function clearGateBDraftSnapshot() {
+    State.gateBClientRequestId = null;
+    storageRemove(sessionStorage, LAYER3_GATE_B_DRAFT_STORAGE_KEY);
+}
+
+function restoreGateBDraftSnapshot() {
+    if (currentSessionId()) return false;
+    const draft = storageGet(sessionStorage, LAYER3_GATE_B_DRAFT_STORAGE_KEY);
+    if (!draft || draft.schema_id !== LAYER3_GATE_B_DRAFT_SCHEMA_ID || gateBDraftExpired(draft)) {
+        storageRemove(sessionStorage, LAYER3_GATE_B_DRAFT_STORAGE_KEY);
+        return false;
+    }
+    const currentContract = stateActionContractSchemaId();
+    if (
+        currentContract
+        && draft.state_action_contract_schema_id
+        && draft.state_action_contract_schema_id !== currentContract
+    ) {
+        storageRemove(sessionStorage, LAYER3_GATE_B_DRAFT_STORAGE_KEY);
+        addEvent('Gate B draft skipped after contract change.');
+        return false;
+    }
+    if (!draft.material_preview?.material_preview_id || !draft.material_preview?.material_preview_hash) {
+        storageRemove(sessionStorage, LAYER3_GATE_B_DRAFT_STORAGE_KEY);
+        return false;
+    }
+    if (State.materialPreview?.material_preview_id && !gateBDraftMatchesCurrentPreview(draft)) {
+        storageRemove(sessionStorage, LAYER3_GATE_B_DRAFT_STORAGE_KEY);
+        addEvent('Gate B draft skipped after material preview mismatch.');
+        return false;
+    }
+    State.preflight = draft.preflight || null;
+    State.sourcePreview = draft.source_preview || null;
+    State.materialPreview = draft.material_preview;
+    State.gateBDecisions = draft.gate_b_decisions || {};
+    State.gateBClientRequestId = draft.client_request_id || requestId();
+    addEvent('Gate B draft restored for server revalidation.');
+    return true;
+}
+
+function gateBRequestId() {
+    if (!State.gateBClientRequestId) {
+        State.gateBClientRequestId = requestId();
+        persistGateBDraftSnapshot();
+    }
+    return State.gateBClientRequestId;
 }
 
 function clearExternalExportDownloadPrepareState() {
@@ -1367,6 +1598,7 @@ function syncDecisionStateFromRow(row) {
         decision: row.querySelector('.decision-select')?.value || 'approved',
         operator_reason: row.querySelector('.reason-input')?.value || '',
     };
+    persistGateBDraftSnapshot();
 }
 
 function termsFromIntent(intent) {
@@ -2448,11 +2680,15 @@ function materialCandidateById(candidateId) {
 
 function initializeGateBDecisions() {
     State.gateBDecisions = {};
+    State.gateBClientRequestId = null;
     for (const candidate of State.materialPreview?.material_candidates || []) {
         State.gateBDecisions[candidate.candidate_id] = {
             decision: 'approved',
             operator_reason: '',
         };
+    }
+    if (!restoreGateBDraftSnapshot()) {
+        persistGateBDraftSnapshot();
     }
 }
 
@@ -2507,12 +2743,12 @@ function renderGateCPanel() {
 }
 
 function canPlanPreview() {
-    return Boolean(State.gateB?.session_id && State.gateC?.authority_rail?.typing_status === 'committed');
+    return Boolean(currentSessionId() && isTypingCommitted());
 }
 
 function canPlanApprove() {
     return Boolean(
-        State.gateB?.session_id
+        currentSessionId()
         && State.planPreview?.schema_id === 'layer3.plan_preview_result.v1'
         && State.planPreview?.preview_id
         && State.planPreview?.preview_hash
@@ -2524,7 +2760,7 @@ function canPlanApprove() {
 
 function canPlanRevise() {
     return Boolean(
-        State.gateB?.session_id
+        currentSessionId()
         && State.planPreview?.schema_id === 'layer3.plan_preview_result.v1'
         && State.planPreview?.preview_id
         && State.planPreview?.preview_hash
@@ -3770,7 +4006,8 @@ function handleOperationDockKeydown(event) {
 }
 
 function setGateControls() {
-    const gateCCommitted = State.gateC?.authority_rail?.typing_status === 'committed';
+    const gateCCommitted = isTypingCommitted();
+    const sessionId = currentSessionId();
     const authority = selectedResultAuthority();
     const reviewRecorded = Boolean(recordedResultReview());
     const resultReviewControlsEnabled = Boolean(
@@ -3830,8 +4067,8 @@ function setGateControls() {
         && !State.externalExportDownloadSignedReferenceUsePending
     );
     elements.gateBSubmit.disabled = !(State.materialPreview?.material_candidates || []).length;
-    elements.gateCPreview.disabled = !State.gateB?.session_id || gateCCommitted;
-    elements.gateCCommit.disabled = !State.gateB?.session_id || gateCCommitted;
+    elements.gateCPreview.disabled = !sessionId || gateCCommitted;
+    elements.gateCCommit.disabled = !sessionId || gateCCommitted;
     elements.planPreview.disabled = !canPlanPreview() || Boolean(State.planApproval) || Boolean(State.planRevision) || State.planRevisionPending;
     elements.planReject.disabled = !canPlanRevise();
     elements.planRequestRevision.disabled = !canPlanRevise();
@@ -4191,6 +4428,7 @@ async function refreshSessionSummary() {
         if (previousSessionId && previousSessionId !== State.sessionSummary.session_id) {
             clearResultReviewState({ keepSummary: true });
         }
+        persistSessionRecoveryAnchor('manual_refresh');
         State.resultStatusError = null;
         State.resultReviewError = null;
         State.packageReviewPreviewError = null;
@@ -4308,6 +4546,7 @@ async function commitPackageConstruction() {
         addEvent('Package set committed.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.packageConstruction.session_id)}`);
+            persistSessionRecoveryAnchor('package_construction_refresh');
         } catch (refreshError) {
             addEvent(`Package committed; session refresh blocked: ${refreshError.message}`);
         }
@@ -4348,6 +4587,7 @@ async function submitPackageReview(event) {
         addEvent('Package review submitted.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.packageReviewSubmit.session_id)}`);
+            persistSessionRecoveryAnchor('package_review_submit_refresh');
         } catch (refreshError) {
             addEvent(`Package review submitted; session refresh blocked: ${refreshError.message}`);
         }
@@ -4385,6 +4625,7 @@ async function submitHandoffExportPrepare(event) {
         addEvent('Handoff/export preparation recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.handoffExportPrepare.session_id)}`);
+            persistSessionRecoveryAnchor('handoff_export_prepare_refresh');
         } catch (refreshError) {
             addEvent(`Handoff/export preparation recorded; session refresh blocked: ${refreshError.message}`);
         }
@@ -4419,6 +4660,7 @@ async function submitApsHandoffDispatch(event) {
         addEvent('APS handoff dispatch recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.apsHandoffDispatch.session_id)}`);
+            persistSessionRecoveryAnchor('aps_handoff_dispatch_refresh');
         } catch (refreshError) {
             addEvent(`APS handoff dispatch recorded; session refresh blocked: ${refreshError.message}`);
         }
@@ -4451,6 +4693,7 @@ async function submitExternalExportDownloadPrepare(event) {
         addEvent('External export/download readiness recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.externalExportDownloadPrepare.session_id)}`);
+            persistSessionRecoveryAnchor('external_export_download_prepare_refresh');
         } catch (refreshError) {
             addEvent(`External readiness recorded; session refresh blocked: ${refreshError.message}`);
         }
@@ -4490,6 +4733,7 @@ async function submitExternalExportDownloadDelivery(event) {
         addEvent('External export/download bundle submitted as browser-managed same-origin attachment.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(currentSessionId())}`);
+            persistSessionRecoveryAnchor('external_export_download_delivery_refresh');
         } catch (refreshError) {
             addEvent(`External delivery completed; session refresh blocked: ${refreshError.message}`);
         }
@@ -4594,6 +4838,7 @@ async function submitResultReview(event) {
         addEvent('Result review recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.resultReview.session_id)}`);
+            persistSessionRecoveryAnchor('result_review_refresh');
         } catch (refreshError) {
             addEvent(`Review recorded; session refresh blocked: ${refreshError.message}`);
         }
@@ -4663,9 +4908,11 @@ async function runPreflightFlow(event) {
         initializeGateBDecisions();
         State.gateB = null;
         State.gateC = null;
+        State.sessionSummary = null;
         State.planPreview = null;
         State.planApproval = null;
         State.planRevision = null;
+        clearSessionRecoveryAnchor();
         clearResultReviewState();
         addEvent('Material preview loaded.');
         renderAll();
@@ -4686,7 +4933,7 @@ async function commitGateB() {
     try {
         State.gateB = await postJson('/gate-b/decision', {
             schema_id: 'layer3.gate_b_decision_request.v1',
-            client_request_id: requestId(),
+            client_request_id: gateBRequestId(),
             preflight_id: State.preflight?.preflight_id,
             source_set_id: State.sourcePreview?.source_set_id,
             material_preview_id: State.materialPreview?.material_preview_id,
@@ -4700,6 +4947,8 @@ async function commitGateB() {
         State.planApproval = null;
         State.planRevision = null;
         clearResultReviewState();
+        clearGateBDraftSnapshot();
+        persistSessionRecoveryAnchor('gate_b_commit');
         addEvent(`Gate B committed session ${State.gateB.session_id}.`);
         renderAll();
     } catch (error) {
@@ -4711,20 +4960,22 @@ async function commitGateB() {
 }
 
 async function previewGateC() {
-    if (!State.gateB?.session_id) return;
-    if (State.gateC?.authority_rail?.typing_status === 'committed') return;
+    const sessionId = currentSessionId();
+    if (!sessionId) return;
+    if (isTypingCommitted()) return;
     setBusy(elements.gateCPreview, true, 'Preview Gate C');
     try {
         State.gateC = await postJson('/gate-c/preview', {
             schema_id: 'layer3.gate_c_preview_request.v1',
             client_request_id: requestId(),
-            session_id: State.gateB.session_id,
+            session_id: sessionId,
             commit_typing: false,
         });
         State.planPreview = null;
         State.planApproval = null;
         State.planRevision = null;
         clearResultReviewState();
+        persistSessionRecoveryAnchor('gate_c_preview');
         addEvent('Gate C typing preview loaded.');
         renderAll();
     } catch (error) {
@@ -4736,19 +4987,21 @@ async function previewGateC() {
 }
 
 async function commitGateC() {
-    if (!State.gateB?.session_id) return;
+    const sessionId = currentSessionId();
+    if (!sessionId) return;
     setBusy(elements.gateCCommit, true, 'Commit Gate C Typing');
     try {
         State.gateC = await postJson('/gate-c/preview', {
             schema_id: 'layer3.gate_c_preview_request.v1',
             client_request_id: requestId(),
-            session_id: State.gateB.session_id,
+            session_id: sessionId,
             commit_typing: true,
         });
         State.planPreview = null;
         State.planApproval = null;
         State.planRevision = null;
         clearResultReviewState();
+        persistSessionRecoveryAnchor('gate_c_commit');
         addEvent('Gate C typing committed.');
         renderAll();
     } catch (error) {
@@ -4766,13 +5019,14 @@ async function previewPlan() {
         State.planPreview = await postJson('/plan/preview', {
             schema_id: 'layer3.plan_preview_request.v1',
             client_request_id: requestId(),
-            session_id: State.gateB.session_id,
+            session_id: currentSessionId(),
             include_exclusions: true,
             preview_scope: 'owner_service_default',
         });
         State.planApproval = null;
         State.planRevision = null;
         clearResultReviewState();
+        persistSessionRecoveryAnchor('plan_preview');
         addEvent('Plan preview loaded.');
         renderAll();
     } catch (error) {
@@ -4797,13 +5051,14 @@ async function approvePlan() {
         State.planApproval = await postJson('/plan/approve', {
             schema_id: 'layer3.plan_approval_request.v1',
             client_request_id: requestId(),
-            session_id: State.gateB.session_id,
+            session_id: currentSessionId(),
             preview_id: State.planPreview.preview_id,
             preview_hash: State.planPreview.preview_hash,
             operator_confirmation: true,
             approval_scope: 'owner_service_default',
         });
         clearResultReviewState();
+        persistSessionRecoveryAnchor('plan_approval');
         addEvent('Plan approved. Execution has not started.');
         renderAll();
     } catch (error) {
@@ -4825,12 +5080,13 @@ async function revisePlan(operatorDecision) {
         State.planRevision = await postJson('/plan/revise', {
             schema_id: 'layer3.plan_revision_request.v1',
             client_request_id: requestId(),
-            session_id: State.gateB.session_id,
+            session_id: currentSessionId(),
             preview_id: State.planPreview.preview_id,
             preview_hash: State.planPreview.preview_hash,
             operator_decision: operatorDecision,
         });
         clearResultReviewState();
+        persistSessionRecoveryAnchor('plan_revision');
         addEvent(operatorDecision === 'reject_current_preview' ? 'Plan rejected. Execution has not started.' : 'Plan revision requested. Execution has not started.');
         renderAll();
     } catch (error) {
@@ -4869,6 +5125,10 @@ async function init() {
         State.bootstrap = await getJson('/bootstrap');
         await loadDatasetVersionCandidates();
         await loadApsContentDocumentCandidates();
+        const sessionRecovered = await recoverSessionFromStorage();
+        if (!sessionRecovered) {
+            restoreGateBDraftSnapshot();
+        }
         renderUnavailable(State.bootstrap.unavailable_gate_labels);
         renderAuthority(State.bootstrap.authority_rail);
         renderContext();
