@@ -69,10 +69,10 @@ Critical architectural rule:
 - If it cannot, then the scheduled refresh must rewrite the artifact itself from the refreshed manifest and board during every successful refresh.
 
 Current repo-side facts to preserve:
-- local-only progress/proof sync on `2026-05-05` used `C:\Users\benny\Downloads\worktree_for_audits` with `HEAD == project6-origin/main == cb06daf6d964cb24497a4819b1b88704c4bf8f74`; no GitHub, fetch, pull, browser runtime, database runtime, or remote-hosting metadata was used
-- local current main includes PR `#527` through PR `#530` as Layer 3 modular extraction/refactor work after the PR `#522` through PR `#525` governance chain; preserve this as current local repo truth without treating it as a broad feature expansion
-- the `2026-05-05` progress/proof sync fixes snapshot metadata drift and near-term direction only; it does not re-audit every historical progress paragraph
-- branch `codex/l3-proof-idempotency-hardening` contains branch-only Gate B post-commit retry idempotency and material-preview hash hardening after the local-only progress/proof sync; render it as branch-only implementation evidence, not current-main truth, until merged
+- post-PR531 progress/proof sync on `2026-05-05` used `C:\Users\benny\Downloads\worktree_for_audits` on branch `codex/l3-post531-progress-sync` with `project6-origin/main == 3fb7875ba7cc0325f8cdac0b1aca8d3df0bd44de`; GitHub PR state and `git ls-remote project6-origin refs/heads/main` confirmed PR `#531` merged at that commit
+- local current main includes PR `#527` through PR `#530` as Layer 3 modular extraction/refactor work after the PR `#522` through PR `#526` governance chain; preserve this as current local repo truth without treating it as a broad feature expansion
+- current main includes PR `#531` as bounded Gate B post-commit retry idempotency and material-preview hash hardening; render it as merged current-main bounded behavior, not branch-only evidence
+- the `2026-05-05` post-PR531 progress/proof sync fixes PR `#531` merge status, snapshot metadata, and near-term direction only; it does not re-audit every historical progress paragraph
 - current `main` includes the bounded APS multisource implementation from PR `#101`
 - current `main` includes the docs-only multisource closeout from PR `#102`
 - current `main` also includes the export-package first shared-consumer freeze and its docs-only closeout from PR `#106` and PR `#107`
