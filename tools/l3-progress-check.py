@@ -65,6 +65,9 @@ WORKBENCH_SERVICE = (
 RESPONSE_CONTRACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_response_contract.py"
 )
+AUTHORITY_RAIL_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_authority_rail.py"
+)
 CONNECTOR_DISPATCH_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_connector_dispatch_entry.py"
 )
@@ -96,6 +99,7 @@ SIGNED_REFERENCE_STATE_TEST = (
 LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 LAYER3_PAGE_TEST = ROOT / "backend" / "tests" / "test_layer3_page.py"
 LAYER3_RESPONSE_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_response_contract.py"
+LAYER3_AUTHORITY_RAIL_TEST = ROOT / "backend" / "tests" / "test_layer3_authority_rail.py"
 LAYER3_JS = ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js"
 LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
 MOCKUP_ASSETS = ROOT / "next_milestone_plans" / "layer3-mockups" / "assets.md"
@@ -2466,6 +2470,57 @@ def _check_response_contract_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing response contract extraction doc term: {term}")
 
 
+def _check_authority_rail_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(AUTHORITY_RAIL_SERVICE, errors)
+    for term in (
+        'DEFAULT_DOWNSTREAM_UNAVAILABLE = ("plan", "execution", "results", "package")',
+        "def authority_rail(",
+        '"schema_id": "layer3.authority_rail.v1"',
+        '"schema_version": LAYER3_SCHEMA_VERSION',
+        '"downstream_unavailable": list(downstream_unavailable or DEFAULT_DOWNSTREAM_UNAVAILABLE)',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(AUTHORITY_RAIL_SERVICE)} missing authority rail term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    import_term = "from app.services.layer3_authority_rail import authority_rail as _authority_rail"
+    if import_term not in workbench_text:
+        errors.append(f"{_rel(WORKBENCH_SERVICE)} missing authority rail extraction import")
+    if "def _authority_rail(" in workbench_text:
+        errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns _authority_rail instead of importing it")
+
+    test_text = _read_required_text(LAYER3_AUTHORITY_RAIL_TEST, errors)
+    for term in (
+        "test_layer3_authority_rail_contract_is_shared_without_behavior_change",
+        'bootstrap_rail = layer3_workbench.bootstrap()["authority_rail"]',
+        'assert bootstrap_rail["schema_version"] == LAYER3_SCHEMA_VERSION',
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_AUTHORITY_RAIL_TEST)} missing authority rail test term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: (
+            "authority rail extraction",
+            "layer3_authority_rail.py",
+            "test_layer3_authority_rail.py",
+        ),
+        GOAL_AUDIT: (
+            "authority rail extraction",
+            "layer3_authority_rail.py",
+        ),
+        CLOSEOUT_DOC: (
+            "authority rail extraction",
+            "layer3_authority_rail.py",
+            "layer3.authority_rail.v1",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing authority rail extraction doc term: {term}")
+
+
 def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
     required_terms = {
         MODELS: [
@@ -2564,6 +2619,7 @@ def main() -> int:
         MOCKUP_BOUNDARY_SERVICE,
         WORKBENCH_SERVICE,
         RESPONSE_CONTRACT_SERVICE,
+        AUTHORITY_RAIL_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
         PACKAGE_MUTATION_SERVICE,
         REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE,
@@ -2581,6 +2637,7 @@ def main() -> int:
         LAYER3_API_TEST,
         LAYER3_PAGE_TEST,
         LAYER3_RESPONSE_CONTRACT_TEST,
+        LAYER3_AUTHORITY_RAIL_TEST,
         LAYER3_WORKBENCH_E2E,
         MOCKUP_ASSETS,
         MOCKUP_SPEC,
@@ -2615,6 +2672,7 @@ def main() -> int:
         _check_qualitative_progress_sync(manifest, errors)
     _check_state_action_contract_frontend_signature(errors)
     _check_response_contract_extraction(errors)
+    _check_authority_rail_extraction(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
