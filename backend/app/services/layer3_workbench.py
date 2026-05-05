@@ -1705,7 +1705,7 @@ def readiness_contract() -> dict[str, Any]:
             "schema_id": "layer3.idempotency_contract.v1",
             "client_request_id_supported": True,
             "client_request_id_required_current_slice": False,
-            "client_request_id_required_for_gate_b_decision": False,
+            "client_request_id_required_for_gate_b_decision": True,
             "client_request_id_required_for_execution_selection": True,
             "client_request_id_required_for_analysis_execution_start": True,
             "client_request_id_required_for_execution_result_status": False,
@@ -1717,7 +1717,7 @@ def readiness_contract() -> dict[str, Any]:
             "client_request_id_required_for_aps_handoff_dispatch": True,
             "client_request_id_required_for_external_export_download_prepare": True,
             "client_request_id_required_for_external_export_download_deliver": True,
-            "duplicate_gate_b_decision": "same client_request_id, provided source context, provided material_preview_id, and decision manifest returns existing Gate B session; conflicts fail closed",
+            "duplicate_gate_b_decision": "same required client_request_id, provided source context, provided material_preview_id, and decision manifest returns existing Gate B session; conflicts fail closed",
             "gate_b_decision_idempotency_scope": "post_commit_retry_only",
             "gate_b_decision_concurrent_duplicate_lock": False,
             "duplicate_plan_approval": "returns existing approved-plan conflict; no duplicate L3AnalysisPlan",
@@ -2861,7 +2861,14 @@ def _gate_b_response_from_session(
 
 
 def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
-    request_id = str(payload.get("client_request_id") or "").strip() or uuid_str()
+    request_id = str(payload.get("client_request_id") or "").strip()
+    if not request_id:
+        raise Layer3WorkbenchError(
+            "client_request_id_required",
+            "client_request_id is required for Gate B idempotency.",
+            status="blocked",
+            blocked_fields=["client_request_id"],
+        )
     preflight_id = str(payload.get("preflight_id") or "").strip()
     source_set_id = str(payload.get("source_set_id") or "").strip()
     material_preview_id = str(payload.get("material_preview_id") or "").strip()

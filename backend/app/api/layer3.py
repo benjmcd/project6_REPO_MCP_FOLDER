@@ -6,7 +6,7 @@ from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
@@ -109,7 +109,7 @@ class Layer3GateBDecisionRequest(BaseModel):
 
     schema_id: str | None = None
     schema_version: int | None = None
-    client_request_id: str | None = None
+    client_request_id: str = Field(min_length=1)
     preflight_id: str | None = None
     source_set_id: str | None = None
     material_preview_id: str | None = None
@@ -1349,12 +1349,12 @@ GATE_B_DECISION_ITEM_SCHEMA: dict[str, Any] = {
 GATE_B_DECISION_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
-    "description": "Strict Gate B fields; denied, isolated, and flagged decisions require operator_reason at runtime.",
-    "required": ["candidate_decisions"],
+    "description": "Strict Gate B fields; client_request_id is required for durable idempotency and denied, isolated, and flagged decisions require operator_reason at runtime.",
+    "required": ["client_request_id", "candidate_decisions"],
     "properties": {
         "schema_id": {"type": "string", "enum": ["layer3.gate_b_decision_request.v1"]},
         "schema_version": {"type": "integer", "enum": [1]},
-        "client_request_id": {"type": "string"},
+        "client_request_id": {"type": "string", "minLength": 1},
         "preflight_id": {"type": "string"},
         "source_set_id": {"type": "string"},
         "material_preview_id": {"type": "string"},

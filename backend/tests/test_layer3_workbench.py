@@ -390,6 +390,21 @@ def test_preview_shapes_keep_owner_service_and_planning_shape_separate() -> None
     assert material["authority_rail"]["persistence_mode"] == "preview_only"
 
 
+def test_gate_b_requires_client_request_id_before_persistence(db_session) -> None:
+    preflight, source, material = _preflight_source_material()
+    payload = _gate_b_payload(preflight, source, material)
+    payload.pop("client_request_id")
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.gate_b_decision(db_session, payload)
+
+    assert exc.value.error_code == "client_request_id_required"
+    assert exc.value.blocked_fields == ["client_request_id"]
+    assert db_session.query(L3Session).count() == 0
+    assert db_session.query(L3SelectionManifest).count() == 0
+    assert db_session.query(L3MaterialSnapshot).count() == 0
+
+
 def test_gate_b_persists_only_approved_material_through_layer3_owner_services(db_session) -> None:
     preflight, source, material = _preflight_source_material()
 

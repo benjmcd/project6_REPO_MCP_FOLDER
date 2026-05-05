@@ -549,7 +549,8 @@ def test_layer3_gate_openapi_contracts(client: TestClient) -> None:
         "application/json"
     ]["schema"]
     assert gate_b_request_schema["additionalProperties"] is False
-    assert set(gate_b_request_schema["required"]) == {"candidate_decisions"}
+    assert set(gate_b_request_schema["required"]) == {"client_request_id", "candidate_decisions"}
+    assert gate_b_request_schema["properties"]["client_request_id"]["minLength"] == 1
     assert gate_b_request_schema["properties"]["candidate_decisions"]["minItems"] == 1
     assert gate_b_request_schema["properties"]["material_preview_hash"]["type"] == "string"
     gate_b_decision_item_schema = gate_b_request_schema["properties"]["candidate_decisions"]["items"]
@@ -2749,7 +2750,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["material_preview_hash_contract"]["supplied_hash_required_current_slice"] is False
     assert readiness_body["idempotency_contract"]["client_request_id_supported"] is True
     assert readiness_body["idempotency_contract"]["client_request_id_required_current_slice"] is False
-    assert readiness_body["idempotency_contract"]["client_request_id_required_for_gate_b_decision"] is False
+    assert readiness_body["idempotency_contract"]["client_request_id_required_for_gate_b_decision"] is True
     assert "duplicate_gate_b_decision" in readiness_body["idempotency_contract"]
     assert readiness_body["idempotency_contract"]["gate_b_decision_idempotency_scope"] == "post_commit_retry_only"
     assert readiness_body["idempotency_contract"]["gate_b_decision_concurrent_duplicate_lock"] is False
@@ -3304,6 +3305,47 @@ def test_layer3_api_gate_b_rejects_extra_fields_before_session_mutation(client: 
         and item.get("loc") == ["body", "candidate_decisions", 0, "analysis_run_id"]
         for item in detail
     )
+    with client.layer3_session_factory() as db:
+        assert db.query(L3Session).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(AnalysisArtifact).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+
+
+def test_layer3_api_gate_b_requires_client_request_id_before_session_mutation(client: TestClient) -> None:
+    preflight, source, material = _prepare_material(client)
+    first = material["material_candidates"][0]
+    payload = {
+        "preflight_id": preflight["preflight_id"],
+        "source_set_id": source["source_set_id"],
+        "material_preview_id": material["material_preview_id"],
+        "material_preview_hash": material["material_preview_hash"],
+        "candidate_decisions": [
+            {
+                "candidate_id": first["candidate_id"],
+                "decision": "approved",
+                "operator_reason": "",
+                "decision_basis": {
+                    "source_ref": first["source_ref"],
+                    "query_basis": first["query_basis"],
+                    "provenance_ref": first["provenance_ref"],
+                },
+            }
+        ],
+        "actor": "pytest",
+    }
+
+    missing = client.post("/api/v1/layer3/gate-b/decision", json=payload)
+    assert missing.status_code == 422
+    assert any(item.get("loc") == ["body", "client_request_id"] for item in missing.json()["detail"])
+
+    blank = client.post("/api/v1/layer3/gate-b/decision", json={**payload, "client_request_id": "   "})
+    assert blank.status_code == 400
+    blank_body = blank.json()
+    _assert_common_response_envelope(blank_body)
+    assert blank_body["error_code"] == "client_request_id_required"
+
     with client.layer3_session_factory() as db:
         assert db.query(L3Session).count() == 0
         assert db.query(L3PassRun).count() == 0
