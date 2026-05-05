@@ -21,6 +21,7 @@ LOCAL_BOUNDARY = PLANNING_DOCS / "116_SECURITY_SOURCE_DELIVERY_BOUNDARY_FREEZE.m
 SYNTHESIS_BOUNDARY = PLANNING_DOCS / "117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md"
 GOAL_AUDIT = PLANNING_DOCS / "118_L3_GOAL_AUDIT.md"
 QUAL_APS_ENTRY_FREEZE = PLANNING_DOCS / "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md"
+BRANCH_CLOSEOUT = PLANNING_DOCS / "120_L3_CLOSEOUT.md"
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -581,6 +582,18 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "does not widen source classes",
             "255 passed",
         ],
+        BRANCH_CLOSEOUT: [
+            "Status: local branch closeout for `codex/l3-frontend-session-recovery` after `94ddf72d`.",
+            "review/merge preparation only",
+            "backend/app/services/layer3_source_boundary.py",
+            "255 passed, 4 warnings",
+            "Layer 3 progress state check: PASS",
+            "generic connector/destination dispatch",
+            "package mutation/reconstruction",
+            "broad source/upload expansion",
+            "broad qualitative execution outside `single_aps_doc_qualitative_pass`",
+            "full mockup activation",
+        ],
     }
     for path, terms in required_doc_terms.items():
         text = _read_required_text(path, errors)
@@ -658,6 +671,7 @@ def main() -> int:
         SYNTHESIS_BOUNDARY,
         GOAL_AUDIT,
         QUAL_APS_ENTRY_FREEZE,
+        BRANCH_CLOSEOUT,
         STATE_ACTION_CONTRACT,
         SOURCE_BOUNDARY_SERVICE,
         WORKBENCH_SERVICE,
