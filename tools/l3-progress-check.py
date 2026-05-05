@@ -1567,6 +1567,45 @@ def _check_package_replacement_artifact_manifest_freeze(errors: list[str]) -> No
             if term not in text:
                 errors.append(f"{_rel(path)} missing package artifact manifest freeze term: {term}")
 
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    if isinstance(proof_manifest, dict):
+        status = proof_manifest.get("status")
+        if not isinstance(status, str) or "Layer 3 proof readiness through PR #588" not in status:
+            errors.append(f"{_rel(PROOF_MANIFEST)} status must name PR #588 as the current proof boundary")
+        proof_scope = proof_manifest.get("scope")
+        if not isinstance(proof_scope, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing scope metadata")
+        else:
+            expected_scope = {
+                "source_branch": "codex/l3-package-artifact-manifest-runtime",
+                "merged_pr": "#588",
+                "merge_commit": "e17e22afce24a69a300bd90f1af13046edf6b246",
+                "base_commit": "c4186ae3a7fe0be2ba97defd743777ff14bc381d",
+                "source_base_commit": "c4186ae3a7fe0be2ba97defd743777ff14bc381d",
+                "latest_package_replacement_artifact_manifest_runtime_pr": "#588",
+                "latest_package_replacement_artifact_manifest_runtime_merge_commit": "e17e22afce24a69a300bd90f1af13046edf6b246",
+            }
+            for key, expected_value in expected_scope.items():
+                if proof_scope.get(key) != expected_value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} scope.{key} must be {expected_value}")
+        manifest_proof = proof_manifest.get("package_replacement_artifact_manifest_runtime_proof")
+        if not isinstance(manifest_proof, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing package artifact manifest runtime proof metadata")
+        else:
+            expected_proof = {
+                "implementation_branch": "codex/l3-package-artifact-manifest-runtime",
+                "implementation_pr": "#588",
+                "base_commit": "c4186ae3a7fe0be2ba97defd743777ff14bc381d",
+                "implementation_commit": "947adcd337722a0bec31e87c1b7e361ba8ed7908",
+                "merge_commit": "e17e22afce24a69a300bd90f1af13046edf6b246",
+            }
+            for key, expected_value in expected_proof.items():
+                if manifest_proof.get(key) != expected_value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} package_replacement_artifact_manifest_runtime_proof.{key} "
+                        f"must be {expected_value}"
+                    )
+
     admitted = _capability_map(
         _load_literal_assignment(STATE_ACTION_CONTRACT, "STATE_ACTION_ADMITTED_CAPABILITIES", errors),
         "STATE_ACTION_ADMITTED_CAPABILITIES",
@@ -3472,7 +3511,7 @@ def _check_plan_flow_contract_extraction(errors: list[str]) -> None:
             "full focused Layer 3 suite with `304 passed, 4 warnings`",
         ),
         PROOF_MANIFEST: (
-            "Layer 3 proof readiness through PR #584",
+            "no-behavior-change plan-flow request contract extraction proof from PR #584",
             "latest_plan_flow_request_contract_extraction_pr",
             "plan_flow_request_contract_extraction_current_boundary_proof",
             "9cdd1e88593d21e269d00dda50eae98ab852d219",
