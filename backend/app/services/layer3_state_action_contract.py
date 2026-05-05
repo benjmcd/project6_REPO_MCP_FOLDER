@@ -20,6 +20,25 @@ STATE_ACTION_ADMITTED_CAPABILITIES = (
             "rag_vector_retrieval",
         ],
     },
+    {
+        "capability": "internal_dispatch_record_only",
+        "admitted": True,
+        "source_gate": "121_CONNECTOR_DISPATCH_ENTRY_FREEZE",
+        "scope": "response-safe internal connector dispatch intent record with no external connector invocation or destination write",
+        "owner_service": "backend/app/services/layer3_connector_dispatch_entry.py",
+        "blocked_downstream": [
+            "connector_destination_dispatch",
+            "single_named_connector_dispatch",
+            "single_named_destination_dispatch",
+            "provider_public_url",
+            "package_mutation_reconstruction",
+            "local_upload_or_directory_source_expansion",
+            "broad_qualitative_execution",
+            "hybrid_execution",
+            "rag_vector_retrieval",
+            "full_mockup_activation",
+        ],
+    },
 )
 
 STATE_ACTION_DEFERRED_CAPABILITIES = (
@@ -101,6 +120,7 @@ def build_state_action_contract(
     aps_handoff_dispatch_operator_decision: str,
     external_export_download_operator_decision: str,
     external_export_download_delivery_operator_decision: str,
+    connector_dispatch_record_operator_decision: str,
     terminal_pass_statuses: Iterable[str],
 ) -> dict[str, Any]:
     state_action_matrix = _clone_json(state_model["states"])
@@ -134,6 +154,7 @@ def build_state_action_contract(
             "aps_handoff_dispatch": [aps_handoff_dispatch_operator_decision],
             "external_export_download_prepare": [external_export_download_operator_decision],
             "external_export_download_deliver": [external_export_download_delivery_operator_decision],
+            "connector_dispatch_record": [connector_dispatch_record_operator_decision],
         },
         "terminal_pass_statuses": sorted(terminal_pass_statuses),
         "admitted_capabilities": _clone_json(STATE_ACTION_ADMITTED_CAPABILITIES),

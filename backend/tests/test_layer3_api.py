@@ -43,6 +43,7 @@ from app.models.models import (
 )
 from app.services import (
     dataframe_io,
+    layer3_connector_dispatch_entry,
     layer3_pass_entry as layer3_pass_entry_module,
     layer3_workbench,
 )
@@ -1338,6 +1339,103 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
     } <= set(prepare_schema["required"])
     assert "delivery_ui" in prepare_schema["properties"]
 
+    record_request_schema = spec["paths"]["/api/v1/layer3/handoff/connector/record"]["post"]["requestBody"][
+        "content"
+    ]["application/json"]["schema"]
+    assert record_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "aps_handoff_target",
+        "aps_output_package_id",
+        "aps_output_package_kind",
+        "aps_bundle_ref",
+        "source_artifact_hash",
+        "source_artifact_size_bytes",
+        "external_export_download_record_ref",
+        "external_export_download_state",
+        "delivery_mode",
+        "operator_decision",
+    } == set(record_request_schema["required"])
+    assert record_request_schema["properties"]["delivery_mode"]["enum"] == ["same_origin_artifact_stream"]
+    assert record_request_schema["properties"]["operator_decision"]["enum"] == [
+        "record_internal_connector_dispatch"
+    ]
+    assert record_request_schema["properties"]["connector_key"]["description"].startswith("Known but non-admitted")
+    assert record_request_schema["properties"]["provider_public_url"]["description"].startswith(
+        "Known but non-admitted"
+    )
+
+    record_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/connector/record", "post")
+    assert record_schema["title"] == "Layer3ConnectorDispatchRecordResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_identity",
+        "analysis_run_id",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "reconciliation_record_id",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "aps_handoff_target",
+        "aps_output_package_id",
+        "aps_output_package_kind",
+        "aps_bundle_ref",
+        "source_artifact_ref",
+        "source_artifact_schema_id",
+        "source_artifact_hash",
+        "source_artifact_size_bytes",
+        "external_export_download_record_ref",
+        "external_export_download_state",
+        "external_export_download_descriptor_ref",
+        "delivery_mode",
+        "operator_decision",
+        "decision_notes",
+        "dispatch_mode",
+        "connector_dispatch_record_state",
+        "connector_dispatch_record_ref",
+        "internal_dispatch_record_only_enabled",
+        "external_connector_invocation_enabled",
+        "destination_write_enabled",
+        "connector_run_created",
+        "provider_public_url_enabled",
+        "package_mutation_enabled",
+        "source_widening_enabled",
+        "qualitative_hybrid_rag_execution_enabled",
+        "downstream_unavailable",
+        "next_state",
+        "authority_rail",
+    } <= set(record_schema["required"])
+
 
 def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> None:
     spec = client.get("/openapi.json").json()
@@ -1360,6 +1458,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("/api/v1/layer3/handoff/export/prepare", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/aps/dispatch", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/download/prepare", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/handoff/connector/record", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/download/signed-reference/generate", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/handoff/export/download/signed-reference/use", "post"): ("400", "404", "409"),
     }
@@ -1454,6 +1553,40 @@ def test_layer3_api_json_or_error_call_sites_return_workbench_error_envelope(
     assert body["recoverable"] is False
     assert body["blocked_fields"] == ["forced_field"]
     assert body["next_allowed_actions"] == ["inspect_api_boundary"]
+
+
+def test_layer3_connector_dispatch_record_api_boundary_returns_workbench_error_envelope(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    def _raise_forced_boundary_error(*_args, **_kwargs):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "forced_connector_record_boundary_error",
+            "Forced connector record boundary proof.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+            blocked_fields=["forced_field"],
+            next_allowed_actions=["inspect_connector_record_boundary"],
+        )
+
+    monkeypatch.setattr(
+        layer3_connector_dispatch_entry,
+        "record_internal_connector_dispatch",
+        _raise_forced_boundary_error,
+    )
+
+    response = client.post("/api/v1/layer3/handoff/connector/record", json={})
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="forced_connector_record_boundary_error",
+    )
+    assert body["message"] == "Forced connector record boundary proof."
+    assert body["recoverable"] is False
+    assert body["blocked_fields"] == ["forced_field"]
+    assert body["next_allowed_actions"] == ["inspect_connector_record_boundary"]
 
 
 def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
@@ -2429,6 +2562,208 @@ def _external_export_download_deliver_payload(
     return payload
 
 
+def _connector_dispatch_record_payload(
+    *,
+    request_id: str,
+    session_id: str,
+    approval_body: dict,
+    selection_body: dict,
+    review_body: dict,
+    commit_body: dict,
+    submit_body: dict,
+    prepare_body: dict,
+    dispatch_body: dict,
+    readiness_body: dict,
+    decision_notes: str | None = None,
+) -> dict:
+    payload = {
+        "client_request_id": request_id,
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": selection_body["pass_run_ids"][0],
+        "analysis_run_id": readiness_body["analysis_run_id"],
+        "result_review_record_ref": review_body["review_record_ref"],
+        "package_review_preview_hash": commit_body["package_review_preview_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": [package["output_package_id"] for package in commit_body["output_packages"]],
+        "package_kinds": commit_body["package_kinds"],
+        "payload_refs": commit_body["payload_refs"],
+        "payload_hashes": commit_body["payload_hashes"],
+        "package_review_submit_record_ref": submit_body["submit_record_ref"],
+        "prepare_record_ref": prepare_body["prepare_record_ref"],
+        "handoff_export_state": prepare_body["handoff_export_state"],
+        "aps_handoff_record_ref": dispatch_body["aps_handoff_record_ref"],
+        "aps_handoff_state": dispatch_body["aps_handoff_state"],
+        "aps_handoff_target": dispatch_body["aps_handoff_target"],
+        "aps_output_package_id": dispatch_body["aps_output_package_id"],
+        "aps_output_package_kind": dispatch_body["aps_output_package_kind"],
+        "aps_bundle_ref": dispatch_body["aps_bundle_ref"],
+        "source_artifact_hash": readiness_body["source_artifact_hash"],
+        "source_artifact_size_bytes": readiness_body["source_artifact_size_bytes"],
+        "source_artifact_ref": readiness_body["source_artifact_ref"],
+        "source_artifact_schema_id": readiness_body["source_artifact_schema_id"],
+        "external_export_download_record_ref": readiness_body["external_export_download_record_ref"],
+        "external_export_download_state": readiness_body["external_export_download_state"],
+        "external_export_download_descriptor_ref": readiness_body["export_download_descriptor_ref"],
+        "delivery_mode": "same_origin_artifact_stream",
+        "operator_decision": "record_internal_connector_dispatch",
+    }
+    if decision_notes is not None:
+        payload["decision_notes"] = decision_notes
+    return payload
+
+
+def _prepare_cohort_connector_dispatch_record(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+    *,
+    request_id: str,
+) -> tuple[str, dict, dict, dict, dict, dict, dict, dict, dict, dict]:
+    _patch_cohort_dataframe_persistence(monkeypatch, tmp_path)
+    session_id, preview_body, approval_body = _approve_cohort_aps_handoff_plan(client, tmp_path)
+    selection = client.post(
+        "/api/v1/layer3/execution/select",
+        json={
+            "client_request_id": f"{request_id}-selection",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert selection.status_code == 200
+    selection_body = selection.json()
+    start_body, status_body, review_body = _start_and_approve_quant_result_review(
+        client,
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        request_id=request_id,
+    )
+    assert status_body["pass_type"] == "associated_cohort"
+    pass_run_id = selection_body["pass_run_ids"][0]
+    package_preview = client.post(
+        "/api/v1/layer3/package/review/preview",
+        json={
+            "client_request_id": f"{request_id}-package-preview",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+        },
+    )
+    assert package_preview.status_code == 200
+    package_preview_body = package_preview.json()
+    assert package_preview_body["pass_type"] == "associated_cohort"
+    package_commit = client.post(
+        "/api/v1/layer3/package/review/commit",
+        json={
+            "client_request_id": f"{request_id}-package-commit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": package_preview_body["package_review_preview_hash"],
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert package_commit.status_code == 200
+    commit_body = package_commit.json()
+    package_submit = client.post(
+        "/api/v1/layer3/package/review/submit",
+        json={
+            "client_request_id": f"{request_id}-package-submit",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+            "analysis_run_id": start_body["analysis_run_id"],
+            "result_review_record_ref": review_body["review_record_ref"],
+            "package_review_preview_hash": commit_body["package_review_preview_hash"],
+            "reconciliation_record_id": commit_body["reconciliation_record_id"],
+            "output_package_ids": [package["output_package_id"] for package in commit_body["output_packages"]],
+            "payload_hashes": commit_body["payload_hashes"],
+            "operator_decision": "approved",
+            "expected_package_kinds": ["canonical_internal", "user_facing", "review_facing"],
+        },
+    )
+    assert package_submit.status_code == 200
+    submit_body = package_submit.json()
+    prepare = client.post(
+        "/api/v1/layer3/handoff/export/prepare",
+        json=_handoff_export_prepare_payload(
+            request_id=f"{request_id}-prepare",
+            session_id=session_id,
+            preview_body=preview_body,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=commit_body,
+            submit_body=submit_body,
+        ),
+    )
+    assert prepare.status_code == 200
+    prepare_body = prepare.json()
+    dispatch = client.post(
+        "/api/v1/layer3/handoff/aps/dispatch",
+        json=_aps_handoff_dispatch_payload(
+            request_id=f"{request_id}-aps-dispatch",
+            session_id=session_id,
+            preview_body=preview_body,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+        ),
+    )
+    assert dispatch.status_code == 200, dispatch.json()
+    dispatch_body = dispatch.json()
+    readiness = client.post(
+        "/api/v1/layer3/handoff/export/download/prepare",
+        json=_external_export_download_prepare_payload(
+            request_id=f"{request_id}-download-prepare",
+            session_id=session_id,
+            preview_body=preview_body,
+            approval_body=approval_body,
+            selection_body=selection_body,
+            start_body=start_body,
+            review_body=review_body,
+            commit_body=commit_body,
+            submit_body=submit_body,
+            prepare_body=prepare_body,
+            dispatch_body=dispatch_body,
+        ),
+    )
+    assert readiness.status_code == 200, readiness.json()
+    readiness_body = readiness.json()
+    assert readiness_body["pass_type"] == "associated_cohort"
+    return (
+        session_id,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        dispatch_body,
+        readiness_body,
+    )
+
+
 def _insert_orphan_aps_handoff_package(
     client: TestClient,
     tmp_path,
@@ -2798,6 +3133,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap_body["features"]["aps_handoff_dispatch"] is True
     assert bootstrap_body["features"]["external_export_download_prepare"] is True
     assert bootstrap_body["features"]["external_export_download_deliver"] is True
+    assert bootstrap_body["features"]["internal_connector_dispatch_record"] is True
     assert bootstrap_body["features"]["package_review"] is False
     assert bootstrap_body["features"]["external_export"] is False
     assert bootstrap_body["features"]["dispatch"] is False
@@ -2828,6 +3164,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert (
         bootstrap_body["execution_readiness"]["external_export_download_deliver_endpoint"]
         == "/api/v1/layer3/handoff/export/download/deliver"
+    )
+    assert bootstrap_body["execution_readiness"]["internal_connector_dispatch_record_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["internal_connector_dispatch_record_endpoint"]
+        == "/api/v1/layer3/handoff/connector/record"
     )
     assert bootstrap_body["execution_readiness"]["package_review_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_handoff_admitted"] is False
@@ -2862,6 +3203,8 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["external_export_download_prepare_endpoint"] == "/api/v1/layer3/handoff/export/download/prepare"
     assert readiness_body["external_export_download_deliver_admitted"] is True
     assert readiness_body["external_export_download_deliver_endpoint"] == "/api/v1/layer3/handoff/export/download/deliver"
+    assert readiness_body["internal_connector_dispatch_record_admitted"] is True
+    assert readiness_body["internal_connector_dispatch_record_endpoint"] == "/api/v1/layer3/handoff/connector/record"
     assert readiness_body["package_review_admitted"] is False
     assert readiness_body["external_handoff_admitted"] is False
     assert readiness_body["external_export_admitted"] is False
@@ -2871,6 +3214,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["state_action_contract"]["schema_id"] == "layer3.state_action_contract.v1"
     assert "analysis_execution_start" in readiness_body["state_action_contract"]["action_ids"]
     assert "external_export_download_deliver" in readiness_body["state_action_contract"]["action_ids"]
+    assert "internal_connector_dispatch_record" in readiness_body["state_action_contract"]["action_ids"]
     admitted_capabilities = {
         item["capability"]: item for item in readiness_body["state_action_contract"]["admitted_capabilities"]
     }
@@ -2878,6 +3222,12 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert (
         admitted_capabilities["single_aps_doc_qualitative_execution"]["source_gate"]
         == "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE"
+    )
+    assert admitted_capabilities["internal_dispatch_record_only"]["admitted"] is True
+    assert admitted_capabilities["internal_dispatch_record_only"]["source_gate"] == "121_CONNECTOR_DISPATCH_ENTRY_FREEZE"
+    assert (
+        admitted_capabilities["internal_dispatch_record_only"]["owner_service"]
+        == "backend/app/services/layer3_connector_dispatch_entry.py"
     )
     deferred_capabilities = {
         item["capability"]: item for item in readiness_body["state_action_contract"]["deferred_capabilities"]
@@ -2953,6 +3303,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         "external_export_download_delivered",
         "external_export_download_delivery_blocked",
         "external_export_download_delivery_conflict",
+        "connector_dispatch_recorded",
         "execution_readiness_blocked",
     } <= states
 
@@ -8085,6 +8436,396 @@ def test_layer3_api_external_export_download_prepare_records_reference_only_desc
         "destination_selection",
         "generic_downstream_dispatch",
     ]
+
+
+def test_layer3_api_connector_dispatch_record_records_internal_receipt_without_side_effects(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        review_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        dispatch_body,
+        readiness_body,
+    ) = _prepare_cohort_connector_dispatch_record(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-connector-dispatch-record-success",
+    )
+    payload = _connector_dispatch_record_payload(
+        request_id="api-connector-dispatch-record-success-record",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+        readiness_body=readiness_body,
+        decision_notes="Record internal connector dispatch intent only.",
+    )
+
+    def files_under_tmp() -> set[str]:
+        return {str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*") if path.is_file()}
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+        packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+    finally:
+        db.close()
+    files_before = files_under_tmp()
+
+    record = client.post("/api/v1/layer3/handoff/connector/record", json=payload)
+    assert record.status_code == 200, record.json()
+    body = record.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.connector_dispatch_record.v1"
+    assert body["status"] == "recorded"
+    assert body["session_id"] == session_id
+    assert body["analysis_plan_id"] == approval_body["analysis_plan_id"]
+    assert body["pass_run_id"] == selection_body["pass_run_ids"][0]
+    assert body["result_review_record_ref"] == review_body["review_record_ref"]
+    assert body["package_review_preview_hash"] == commit_body["package_review_preview_hash"]
+    assert body["reconciliation_record_id"] == commit_body["reconciliation_record_id"]
+    assert body["output_package_ids"] == payload["output_package_ids"]
+    assert body["package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert body["payload_refs"] == commit_body["payload_refs"]
+    assert body["payload_hashes"] == commit_body["payload_hashes"]
+    assert body["package_review_submit_record_ref"] == submit_body["submit_record_ref"]
+    assert body["package_review_state"] == "package_review_approved"
+    assert body["prepare_record_ref"] == prepare_body["prepare_record_ref"]
+    assert body["handoff_export_state"] == "handoff_export_prepared"
+    assert body["aps_handoff_record_ref"] == dispatch_body["aps_handoff_record_ref"]
+    assert body["aps_handoff_state"] == "aps_handoff_dispatched"
+    assert body["aps_handoff_target"] == "aps_evidence_bundle"
+    assert body["aps_output_package_id"] == dispatch_body["aps_output_package_id"]
+    assert body["aps_output_package_kind"] == PACKAGE_KIND_APS_EVIDENCE_BUNDLE_HANDOFF
+    assert body["aps_bundle_ref"] == dispatch_body["aps_bundle_ref"]
+    assert body["source_artifact_hash"] == readiness_body["source_artifact_hash"]
+    assert body["source_artifact_size_bytes"] == readiness_body["source_artifact_size_bytes"]
+    assert body["external_export_download_record_ref"] == readiness_body["external_export_download_record_ref"]
+    assert body["external_export_download_state"] == "external_export_download_prepared"
+    assert body["external_export_download_descriptor_ref"] == readiness_body["export_download_descriptor_ref"]
+    assert body["delivery_mode"] == "same_origin_artifact_stream"
+    assert body["operator_decision"] == "record_internal_connector_dispatch"
+    assert body["dispatch_mode"] == "internal_dispatch_record_only"
+    assert body["connector_dispatch_record_state"] == "connector_dispatch_recorded"
+    assert body["internal_dispatch_record_only_enabled"] is True
+    assert body["external_connector_invocation_enabled"] is False
+    assert body["destination_write_enabled"] is False
+    assert body["connector_run_created"] is False
+    assert body["provider_public_url_enabled"] is False
+    assert body["package_mutation_enabled"] is False
+    assert body["source_widening_enabled"] is False
+    assert body["qualitative_hybrid_rag_execution_enabled"] is False
+    assert body["downstream_unavailable"] == [
+        "external_connector_invocation",
+        "destination_write",
+        "connector_run_creation",
+        "provider_public_url",
+        "package_mutation_reconstruction",
+        "source_upload_expansion",
+        "broad_qualitative_hybrid_rag_execution",
+        "full_mockup_activation",
+    ]
+    for forbidden_key in (
+        "connector_key",
+        "connector_run_id",
+        "destination_id",
+        "destination_url",
+        "provider_url",
+        "public_url",
+        "signed_url",
+        "download_url",
+        "package_payload",
+        "package_variant_content",
+        "rewrite_output",
+    ):
+        assert forbidden_key not in body
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_before
+        packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after == packages_before
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        connector_state = reconciliation.summary_json["connector_dispatch_record"]
+        assert connector_state["schema_id"] == "layer3.connector_dispatch_record_state.v1"
+        assert connector_state["connector_dispatch_record_ref"] == body["connector_dispatch_record_ref"]
+        assert connector_state["connector_dispatch_record_state"] == "connector_dispatch_recorded"
+        assert connector_state["dispatch_mode"] == "internal_dispatch_record_only"
+        assert connector_state["record_source_gate"] == "121_CONNECTOR_DISPATCH_ENTRY_FREEZE"
+        assert connector_state["external_connector_invocation_enabled"] is False
+        assert connector_state["destination_write_enabled"] is False
+        assert connector_state["connector_run_created"] is False
+    finally:
+        db.close()
+    assert files_under_tmp() == files_before
+
+    replay = client.post("/api/v1/layer3/handoff/connector/record", json=payload)
+    assert replay.status_code == 200
+    replay_body = replay.json()
+    assert replay_body["status"] == "already_recorded"
+    assert replay_body["connector_dispatch_record_ref"] == body["connector_dispatch_record_ref"]
+
+    same_basis_new_request = client.post(
+        "/api/v1/layer3/handoff/connector/record",
+        json={**payload, "client_request_id": "api-connector-dispatch-record-new-request"},
+    )
+    assert same_basis_new_request.status_code == 409
+    assert same_basis_new_request.json()["error_code"] == "connector_dispatch_record_already_recorded"
+
+    conflicting_notes = client.post(
+        "/api/v1/layer3/handoff/connector/record",
+        json={**payload, "decision_notes": "Changing notes after connector record must fail closed."},
+    )
+    assert conflicting_notes.status_code == 409
+    assert conflicting_notes.json()["error_code"] == "connector_dispatch_record_already_recorded"
+
+
+def test_layer3_api_connector_dispatch_record_prechecks_fail_closed(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    missing = client.post(
+        "/api/v1/layer3/handoff/connector/record",
+        json={"client_request_id": "api-connector-dispatch-record-missing", "session_id": "session-only"},
+    )
+    assert missing.status_code == 400
+    assert set(missing.json()["blocked_fields"]) >= {
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "aps_handoff_target",
+        "aps_output_package_id",
+        "aps_output_package_kind",
+        "aps_bundle_ref",
+        "source_artifact_hash",
+        "source_artifact_size_bytes",
+        "external_export_download_record_ref",
+        "external_export_download_state",
+        "delivery_mode",
+        "operator_decision",
+    }
+
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        review_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        dispatch_body,
+        readiness_body,
+    ) = _prepare_cohort_connector_dispatch_record(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-connector-dispatch-record-prechecks",
+    )
+    base_payload = _connector_dispatch_record_payload(
+        request_id="api-connector-dispatch-record-prechecks-record",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+        readiness_body=readiness_body,
+    )
+
+    cases = [
+        (
+            {**base_payload, "connector_key": "external-connector"},
+            400,
+            "connector_dispatch_record_scope_not_admitted",
+        ),
+        (
+            {**base_payload, "delivery_mode": "provider_public_url"},
+            400,
+            "connector_dispatch_record_delivery_mode_not_admitted",
+        ),
+        (
+            {**base_payload, "operator_decision": "dispatch_connector"},
+            400,
+            "unsupported_connector_dispatch_record_decision",
+        ),
+        (
+            {**base_payload, "source_artifact_hash": "stale-hash"},
+            409,
+            "connector_dispatch_record_source_artifact_hash_mismatch",
+        ),
+        (
+            {**base_payload, "external_export_download_record_ref": "stale-download-ref"},
+            409,
+            "connector_dispatch_record_external_export_download_record_ref_mismatch",
+        ),
+        (
+            {**base_payload, "payload_hashes": ["stale-hash", *base_payload["payload_hashes"][1:]]},
+            409,
+            "connector_dispatch_record_payload_hashes_mismatch",
+        ),
+    ]
+    for payload, expected_status, expected_error in cases:
+        response = client.post("/api/v1/layer3/handoff/connector/record", json=payload)
+        assert response.status_code == expected_status, response.json()
+        assert response.json()["error_code"] == expected_error
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        assert "connector_dispatch_record" not in reconciliation.summary_json
+        summary_before = dict(reconciliation.summary_json)
+        reconciliation.summary_json = {
+            key: value
+            for key, value in summary_before.items()
+            if key != "external_export_download_prepare"
+        }
+        db.commit()
+    finally:
+        db.close()
+
+    not_prepared = client.post("/api/v1/layer3/handoff/connector/record", json=base_payload)
+    assert not_prepared.status_code == 409
+    assert not_prepared.json()["error_code"] == "connector_dispatch_record_requires_external_export_download_prepare"
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        reconciliation.summary_json = summary_before
+        db.commit()
+    finally:
+        db.close()
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/handoff/connector/record",
+        json={**base_payload, "provider_destination_url": "https://example.invalid/bundle.json"},
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "provider_destination_url"]
+        for item in unknown_extra.json()["detail"]
+    )
+
+    (
+        non_cohort_session_id,
+        non_cohort_preview_body,
+        non_cohort_approval_body,
+        non_cohort_selection_body,
+        non_cohort_start_body,
+        non_cohort_review_body,
+        _non_cohort_package_preview_body,
+        non_cohort_commit_body,
+        non_cohort_submit_body,
+        non_cohort_prepare_body,
+        non_cohort_dispatch_payload,
+    ) = _prepare_aps_handoff_dispatch(
+        client,
+        tmp_path,
+        request_id="api-connector-dispatch-record-non-cohort",
+    )
+    non_cohort_dispatch = client.post("/api/v1/layer3/handoff/aps/dispatch", json=non_cohort_dispatch_payload)
+    assert non_cohort_dispatch.status_code == 200, non_cohort_dispatch.json()
+    non_cohort_dispatch_body = non_cohort_dispatch.json()
+    non_cohort_readiness = client.post(
+        "/api/v1/layer3/handoff/export/download/prepare",
+        json=_external_export_download_prepare_payload(
+            request_id="api-connector-dispatch-record-non-cohort-download",
+            session_id=non_cohort_session_id,
+            preview_body=non_cohort_preview_body,
+            approval_body=non_cohort_approval_body,
+            selection_body=non_cohort_selection_body,
+            start_body=non_cohort_start_body,
+            review_body=non_cohort_review_body,
+            commit_body=non_cohort_commit_body,
+            submit_body=non_cohort_submit_body,
+            prepare_body=non_cohort_prepare_body,
+            dispatch_body=non_cohort_dispatch_body,
+        ),
+    )
+    assert non_cohort_readiness.status_code == 200, non_cohort_readiness.json()
+    non_cohort_payload = _connector_dispatch_record_payload(
+        request_id="api-connector-dispatch-record-non-cohort-record",
+        session_id=non_cohort_session_id,
+        approval_body=non_cohort_approval_body,
+        selection_body=non_cohort_selection_body,
+        review_body=non_cohort_review_body,
+        commit_body=non_cohort_commit_body,
+        submit_body=non_cohort_submit_body,
+        prepare_body=non_cohort_prepare_body,
+        dispatch_body=non_cohort_dispatch_body,
+        readiness_body=non_cohort_readiness.json(),
+    )
+    non_cohort_record = client.post("/api/v1/layer3/handoff/connector/record", json=non_cohort_payload)
+    assert non_cohort_record.status_code == 409
+    assert non_cohort_record.json()["error_code"] == "connector_dispatch_record_source_not_admitted"
 
 
 def test_layer3_api_external_export_download_prepare_prechecks_fail_closed(

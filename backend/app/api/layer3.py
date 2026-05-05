@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.services import layer3_workbench
+from app.services import layer3_connector_dispatch_entry, layer3_workbench
 from app.services.layer3_workbench import Layer3WorkbenchError
 
 router = APIRouter()
@@ -67,6 +67,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     external_export_download_prepare_endpoint: str
     external_export_download_deliver_admitted: bool
     external_export_download_deliver_endpoint: str
+    internal_connector_dispatch_record_admitted: bool
+    internal_connector_dispatch_record_endpoint: str
     package_review_admitted: bool
     external_handoff_admitted: bool
     external_export_admitted: bool
@@ -655,6 +657,71 @@ class Layer3ExternalExportDownloadPrepareRequest(BaseModel):
     schema_migration: Any | None = None
 
 
+class Layer3ConnectorDispatchRecordRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    result_review_record_ref: str | None = None
+    package_review_preview_hash: str | None = None
+    output_package_ids: list[str] | None = None
+    package_kinds: list[str] | None = None
+    payload_refs: list[str] | None = None
+    payload_hashes: list[str] | None = None
+    package_review_submit_record_ref: str | None = None
+    prepare_record_ref: str | None = None
+    handoff_export_state: str | None = None
+    aps_handoff_record_ref: str | None = None
+    aps_handoff_state: str | None = None
+    aps_handoff_target: str | None = None
+    aps_output_package_id: str | None = None
+    aps_output_package_kind: str | None = None
+    aps_bundle_ref: str | None = None
+    source_artifact_hash: str | None = None
+    source_artifact_size_bytes: int | None = None
+    external_export_download_record_ref: str | None = None
+    external_export_download_state: str | None = None
+    delivery_mode: str | None = None
+    operator_decision: str | None = None
+    decision_notes: str | None = None
+    analysis_run_id: str | None = None
+    external_export_download_descriptor_ref: str | None = None
+    source_artifact_ref: str | None = None
+    source_artifact_schema_id: str | None = None
+    connector_key: Any | None = None
+    connector_run_id: Any | None = None
+    connector_secret: Any | None = None
+    destination_id: Any | None = None
+    destination_secret: Any | None = None
+    destination_url: Any | None = None
+    provider_url: Any | None = None
+    provider_public_url: Any | None = None
+    public_url: Any | None = None
+    signed_url: Any | None = None
+    download_url: Any | None = None
+    bucket: Any | None = None
+    object_key: Any | None = None
+    local_path: Any | None = None
+    local_file_path: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    rebuild_package: Any | None = None
+    rewrite_output: Any | None = None
+    source_upload: Any | None = None
+    local_directory: Any | None = None
+    rag_vector_index: Any | None = None
+    runtime_db_write: Any | None = None
+    retry: Any | None = None
+    rerun: Any | None = None
+    cancel: Any | None = None
+    hybrid_execution: Any | None = None
+    rag_execution: Any | None = None
+    hidden_llm_planning: Any | None = None
+
+
 class Layer3PreflightResponse(Layer3BaseResponse):
     preflight_id: str
     normalized_intent: dict[str, Any]
@@ -1063,6 +1130,55 @@ class Layer3ExternalExportDownloadPrepareResponse(Layer3BaseResponse):
     generic_downstream_dispatch_enabled: bool
     downstream_unavailable: list[str]
     delivery_ui: dict[str, Any] | None = None
+    next_state: str
+    authority_rail: dict[str, Any]
+
+
+class Layer3ConnectorDispatchRecordResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    preview_identity: dict[str, Any]
+    analysis_run_id: str | None
+    result_review_record_ref: str
+    package_review_preview_hash: str
+    reconciliation_record_id: str
+    output_package_ids: list[str]
+    package_kinds: list[str]
+    payload_refs: list[str]
+    payload_hashes: list[str]
+    package_review_submit_record_ref: str
+    package_review_state: str
+    prepare_record_ref: str
+    handoff_export_state: str
+    aps_handoff_record_ref: str
+    aps_handoff_state: str
+    aps_handoff_target: str
+    aps_output_package_id: str
+    aps_output_package_kind: str
+    aps_bundle_ref: str
+    source_artifact_ref: str
+    source_artifact_schema_id: str
+    source_artifact_hash: str
+    source_artifact_size_bytes: int
+    external_export_download_record_ref: str
+    external_export_download_state: str
+    external_export_download_descriptor_ref: str
+    delivery_mode: str
+    operator_decision: str
+    decision_notes: str | None
+    dispatch_mode: str
+    connector_dispatch_record_state: str
+    connector_dispatch_record_ref: str
+    internal_dispatch_record_only_enabled: bool
+    external_connector_invocation_enabled: bool
+    destination_write_enabled: bool
+    connector_run_created: bool
+    provider_public_url_enabled: bool
+    package_mutation_enabled: bool
+    source_widening_enabled: bool
+    qualitative_hybrid_rag_execution_enabled: bool
+    downstream_unavailable: list[str]
     next_state: str
     authority_rail: dict[str, Any]
 
@@ -2127,6 +2243,102 @@ EXTERNAL_EXPORT_DOWNLOAD_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
 }
 
 
+CONNECTOR_DISPATCH_RECORD_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": [
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "result_review_record_ref",
+        "package_review_preview_hash",
+        "output_package_ids",
+        "package_kinds",
+        "payload_refs",
+        "payload_hashes",
+        "package_review_submit_record_ref",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "aps_handoff_target",
+        "aps_output_package_id",
+        "aps_output_package_kind",
+        "aps_bundle_ref",
+        "source_artifact_hash",
+        "source_artifact_size_bytes",
+        "external_export_download_record_ref",
+        "external_export_download_state",
+        "delivery_mode",
+        "operator_decision",
+    ],
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "result_review_record_ref": {"type": "string"},
+        "package_review_preview_hash": {"type": "string"},
+        "output_package_ids": {"type": "array", "items": {"type": "string"}},
+        "package_kinds": {"type": "array", "items": {"type": "string"}},
+        "payload_refs": {"type": "array", "items": {"type": "string"}},
+        "payload_hashes": {"type": "array", "items": {"type": "string"}},
+        "package_review_submit_record_ref": {"type": "string"},
+        "prepare_record_ref": {"type": "string"},
+        "handoff_export_state": {"type": "string", "enum": ["handoff_export_prepared"]},
+        "aps_handoff_record_ref": {"type": "string"},
+        "aps_handoff_state": {"type": "string", "enum": ["aps_handoff_dispatched"]},
+        "aps_handoff_target": {"type": "string", "enum": ["aps_evidence_bundle"]},
+        "aps_output_package_id": {"type": "string"},
+        "aps_output_package_kind": {"type": "string", "enum": ["aps_evidence_bundle_handoff"]},
+        "aps_bundle_ref": {"type": "string"},
+        "source_artifact_hash": {"type": "string"},
+        "source_artifact_size_bytes": {"type": "integer"},
+        "external_export_download_record_ref": {"type": "string"},
+        "external_export_download_state": {"type": "string", "enum": ["external_export_download_prepared"]},
+        "delivery_mode": {"type": "string", "enum": ["same_origin_artifact_stream"]},
+        "operator_decision": {"type": "string", "enum": ["record_internal_connector_dispatch"]},
+        "decision_notes": {"type": "string"},
+        "analysis_run_id": {"type": "string"},
+        "external_export_download_descriptor_ref": {"type": "string"},
+        "source_artifact_ref": {"type": "string"},
+        "source_artifact_schema_id": {"type": "string"},
+        "connector_key": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "connector_run_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "connector_secret": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "destination_id": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "destination_secret": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "destination_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "provider_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "provider_public_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "public_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "signed_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "download_url": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "bucket": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "object_key": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_path": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_file_path": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_payload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "package_variant_content": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rebuild_package": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rewrite_output": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "source_upload": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "local_directory": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_vector_index": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "runtime_db_write": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "retry": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rerun": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "cancel": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hybrid_execution": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "rag_execution": {"description": "Known but non-admitted; service rejects fail-closed."},
+        "hidden_llm_planning": {"description": "Known but non-admitted; service rejects fail-closed."},
+    },
+}
+
+
 class Layer3SessionSummaryResponse(Layer3BaseResponse):
     session_id: str
     selection_manifest_id: str
@@ -2460,6 +2672,24 @@ def post_external_export_download_prepare(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_workbench.external_export_download_prepare(db, payload.model_dump(exclude_unset=True))
+    )
+
+
+@router.post(
+    "/handoff/connector/record",
+    response_model=Layer3ConnectorDispatchRecordResponse,
+    openapi_extra={"requestBody": _json_request_body(CONNECTOR_DISPATCH_RECORD_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_connector_dispatch_record(
+    payload: Layer3ConnectorDispatchRecordRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_connector_dispatch_entry.record_internal_connector_dispatch(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
     )
 
 
