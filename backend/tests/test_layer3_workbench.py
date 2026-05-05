@@ -305,6 +305,8 @@ def test_bootstrap_is_explicit_about_first_slice_limits() -> None:
     assert result["features"]["analysis_execution"] is False
     assert result["features"]["plan_preview"] is True
     assert result["features"]["execution_result_review"] is True
+    assert result["features"]["single_aps_doc_qualitative_execution"] is True
+    assert result["features"]["broad_qualitative_execution"] is False
     assert result["features"]["rag_vector_retrieval"] is False
     assert result["features"]["typing_override_enabled"] is False
     assert result["unavailable_gate_labels"] == ["plan", "execution", "results", "package"]
@@ -347,14 +349,28 @@ def test_state_action_contract_is_derived_from_state_model_without_admitting_def
         "deliver_external_export_download"
     ]
 
+    admitted_capabilities = {item["capability"]: item for item in contract["admitted_capabilities"]}
+    assert admitted_capabilities["single_aps_doc_qualitative_execution"]["admitted"] is True
+    assert (
+        admitted_capabilities["single_aps_doc_qualitative_execution"]["source_gate"]
+        == "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE"
+    )
+    assert (
+        admitted_capabilities["single_aps_doc_qualitative_execution"]["owner_service"]
+        == "backend/app/services/layer3_qual_aps_execution.py"
+    )
+
     deferred_capabilities = {item["capability"]: item for item in contract["deferred_capabilities"]}
-    assert deferred_capabilities["qualitative_execution"]["admitted"] is False
+    assert "qualitative_execution" not in deferred_capabilities
+    assert deferred_capabilities["broad_qualitative_execution"]["admitted"] is False
+    assert deferred_capabilities["broad_qualitative_execution"]["reason"] == "single_aps_doc_qualitative_pass_only"
     assert deferred_capabilities["hybrid_execution"]["admitted"] is False
     assert deferred_capabilities["rag_vector_retrieval"]["admitted"] is False
     assert deferred_capabilities["provider_public_url"]["admitted"] is False
     assert deferred_capabilities["connector_destination_dispatch"]["admitted"] is False
     assert deferred_capabilities["auth_security_hardening"]["reason"] == "deferred_by_operator_instruction"
     assert not set(deferred_capabilities).intersection(contract["action_ids"])
+    assert not set(admitted_capabilities).intersection(contract["action_ids"])
 
 
 def test_preflight_fails_closed_on_missing_intent_and_unsupported_sources() -> None:

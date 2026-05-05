@@ -2855,10 +2855,19 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["state_action_contract"]["schema_id"] == "layer3.state_action_contract.v1"
     assert "analysis_execution_start" in readiness_body["state_action_contract"]["action_ids"]
     assert "external_export_download_deliver" in readiness_body["state_action_contract"]["action_ids"]
+    admitted_capabilities = {
+        item["capability"]: item for item in readiness_body["state_action_contract"]["admitted_capabilities"]
+    }
+    assert admitted_capabilities["single_aps_doc_qualitative_execution"]["admitted"] is True
+    assert (
+        admitted_capabilities["single_aps_doc_qualitative_execution"]["source_gate"]
+        == "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE"
+    )
     deferred_capabilities = {
         item["capability"]: item for item in readiness_body["state_action_contract"]["deferred_capabilities"]
     }
-    assert deferred_capabilities["qualitative_execution"]["admitted"] is False
+    assert "qualitative_execution" not in deferred_capabilities
+    assert deferred_capabilities["broad_qualitative_execution"]["admitted"] is False
     assert deferred_capabilities["provider_public_url"]["admitted"] is False
     assert deferred_capabilities["connector_destination_dispatch"]["admitted"] is False
     assert deferred_capabilities["auth_security_hardening"]["reason"] == "deferred_by_operator_instruction"

@@ -24,7 +24,7 @@ This file is not an implementation freeze and does not admit new runtime behavio
 | Broad source/upload expansion | Not implemented; blocked | `backend/app/services/layer3_workbench.py` supports only `dataset_version` and `aps_content_document`; unsupported classes include `rag_vector_index`, `arbitrary_local_directory`, `broad_file_upload`, `web_connector`, and `unbounded_runtime_db`. | Requires a later source/runtime widening freeze before local upload, directory source, RAG/vector source, or web connector source work. |
 | Qualitative/hybrid/RAG execution | Single APS-document qualitative execution is implemented and tested branch-locally; hybrid and RAG/vector execution remain blocked | `114_QUAL_APS_EXEC_FREEZE.md`; `115_QUAL_APS_EXEC_CONTRACT.md`; `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md`; `backend/app/services/layer3_qual_aps_execution.py`; `backend/app/services/layer3_pass_entry.py`; `backend/app/services/layer3_workbench.py`; `backend/tests/test_layer3_qual_aps_execution.py`; `python -m pytest .\backend\tests\test_layer3_qual_aps_execution.py -q` passed; focused and full Layer 3 suites passed. | Only `single_aps_doc_qualitative_pass` is admitted. Broad qualitative execution, hybrid execution, RAG/vector execution, qualitative package/handoff/export, and hidden LLM planning remain no-go lanes. |
 | Full mockup activation | Not implemented; blocked | `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` states mockups are target-state design/spec artifacts and cannot admit broad features. `e2e/layer3-workbench.spec.js` proves bounded rendered behavior only. | Full mockup activation would require separate freezes per capability and browser proof; current UI slices are not full mockup behavior. |
-| Authority-boundary preservation | Current branch preserves it | Deferred capabilities remain `admitted: false`; local proof includes backend focused tests, progress checker, and headed/headless browser proof. | Any future lane must re-run this audit against fresh source before broadening scope. |
+| Authority-boundary preservation | Current branch preserves it | `single_aps_doc_qualitative_execution` is recorded as an exact admitted capability; broad/deferred capabilities remain `admitted: false`; local proof includes backend focused tests, progress checker, and headed/headless browser proof. | Any future lane must re-run this audit against fresh source before broadening scope. |
 
 ## Completion Decision
 
@@ -59,6 +59,6 @@ Unsupported next actions are:
 - broad connector/destination dispatch;
 - package rewrite/reconstruction;
 - broad upload/local-directory/RAG/vector source expansion;
-- broad qualitative execution outside the `single_aps_doc_qualitative_pass` freeze, hybrid execution, or RAG execution implementation;
+- broad qualitative execution outside the `single_aps_doc_qualitative_pass` freeze, hybrid execution, or any RAG execution;
 - full mockup activation;
 - authentication/security work while it remains deferred.

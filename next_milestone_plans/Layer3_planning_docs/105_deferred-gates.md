@@ -2,7 +2,7 @@
 
 ## Status
 
-Post-synthesis authority guardrail: `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` records the current local synthesis correction for mockup, Codesight, progress-prose, and stale-audit overclaims. This deferred-gates document remains a freeze/control document only; it does not implement or newly admit provider/public URLs, connector/destination dispatch, package mutation/reconstruction, broad source/upload expansion, qualitative/hybrid/RAG execution, authentication/security work, or full mockup activation.
+Post-synthesis authority guardrail: `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` records the current local synthesis correction for mockup, Codesight, progress-prose, and stale-audit overclaims. This deferred-gates document remains a freeze/control document only; it does not implement or newly admit provider/public URLs, connector/destination dispatch, package mutation/reconstruction, broad source/upload expansion, broad qualitative/hybrid/RAG execution, authentication/security work, or full mockup activation.
 
 Current-main decision freeze for the remaining requested deferred categories after PR `#499`, PR `#513`, and PR `#514` rendered signed-reference UI slice in `104_signed-ui.md`.
 
@@ -14,14 +14,14 @@ Current-main docs `110_PROVIDER_URL_FREEZE.md` and `111_PROVIDER_URL_CONTRACT.md
 
 Current-main docs `112_CONNECTOR_DISPATCH_FREEZE.md` and `113_CONNECTOR_DISPATCH_CONTRACT.md` freeze connector/destination/generic downstream dispatch behavior as not admitted. They require a future implementation-entry freeze to choose exactly one dispatch mode and prove connector/destination authority, lifecycle, idempotency, authorization, receipt/audit, failure, and test behavior before code.
 
-Current-main docs `114_QUAL_APS_EXEC_FREEZE.md` and `115_QUAL_APS_EXEC_CONTRACT.md` freeze qualitative APS content document execution behavior as not admitted. They require a future implementation-entry freeze to choose the one initial `single_aps_doc_qualitative_pass` mode and prove APS document unit authority, chunk/citation/trace input rules, execution owner, result/review vocabulary, anti-`DatasetVersion` isolation, failure behavior, and tests before code.
+Current branch docs `114_QUAL_APS_EXEC_FREEZE.md`, `115_QUAL_APS_EXEC_CONTRACT.md`, and `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md` freeze and narrow qualitative APS content document execution to the one initial `single_aps_doc_qualitative_pass` mode. That exact mode is implemented branch-locally; broader qualitative execution, hybrid execution, RAG/vector execution, qualitative package/handoff/export, and hidden LLM planning remain not admitted.
 
 This file does not implement deferred behavior. It defines the minimum questions, blockers, and proof gates required before any of the following can become an implementation lane:
 
 - provider/public signed URL generation;
 - connector/destination dispatch;
 - durable token, receipt, revocation, and audit behavior beyond PR `#520`, including public/API/UI revocation or cleanup/read-model expansion;
-- qualitative APS content document execution.
+- broad qualitative execution beyond the admitted single APS-document qualitative pass.
 
 ## Provider/Public Signed URLs
 
@@ -76,11 +76,11 @@ This lane likely requires schema/model/migration review if it changes the curren
 
 ## Qualitative APS Content Document Execution
 
-Current decision: planning/control frozen by docs `114`/`115`; implementation not admitted.
+Current decision: `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md` admitted and branch-local code implements the exact `single_aps_doc_qualitative_pass` mode only.
 
-Implementation cannot begin until these are specified:
+Any broader qualitative implementation cannot begin until these are specified:
 
-- exact initial execution mode: `single_aps_doc_qualitative_pass`;
+- exact additional execution mode, if any, and how it composes with `single_aps_doc_qualitative_pass`;
 - qualitative unit contract for APS content documents;
 - method admission policy for qualitative and qualitative-document inputs;
 - execution engine owner;
@@ -89,7 +89,7 @@ Implementation cannot begin until these are specified:
 - whether output is fact/finding/insight/caveat/result, and how those terms are constrained;
 - tests proving DatasetVersion quantitative execution is not reused accidentally for qualitative content.
 
-The currently live APS content document path is selection, trace, material preview, typing/display support, and theme alignment. It is not a qualitative execution engine. Current tests prove APS content documents can be listed, previewed, traced, snapshotted, and typed as qualitative document chunks, while qualitative-only pass-entry sets still fail closed without creating plan, pass, or analysis rows.
+The currently live APS content document path includes selection, trace, material preview, typing/display support, theme alignment, and the exact single-document qualitative execution pass. Current tests prove APS content documents can be listed, previewed, traced, snapshotted, typed as qualitative document chunks, executed through `single_aps_doc_qualitative_pass` without `AnalysisRun` or `DatasetVersion`, and blocked from qualitative package/handoff/export broadening.
 
 ## Common Stop Conditions
 
@@ -100,6 +100,6 @@ Stop before implementation if the intended change needs:
 - external provider credentials or ACL changes;
 - package reconstruction or mutation;
 - source ingestion/upload/directory expansion;
-- qualitative/hybrid/RAG/vector execution;
+- broad qualitative/hybrid/RAG/vector execution beyond the admitted single APS-document qualitative pass;
 - rendered controls beyond the exact lane being admitted;
 - a claim that PR `#513` made runtime behavior live.

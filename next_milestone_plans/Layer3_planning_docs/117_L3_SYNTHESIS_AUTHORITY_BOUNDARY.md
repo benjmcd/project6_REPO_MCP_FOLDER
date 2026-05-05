@@ -15,8 +15,8 @@ This file is intentionally scoped. It is not an exhaustive Layer 3 index, not a 
 
 - `backend/app/services/layer3_workbench.py` admits only `dataset_version` and `aps_content_document` as Layer 3 source classes.
 - The same workbench lists `rag_vector_index`, `arbitrary_local_directory`, `broad_file_upload`, `web_connector`, and `unbounded_runtime_db` as unsupported source classes.
-- `backend/app/services/layer3_workbench.py` reports `qualitative_execution`, `hybrid_execution`, and `rag_vector_retrieval` feature flags as `False`.
-- `backend/app/services/layer3_state_action_contract.py` keeps `qualitative_execution`, `hybrid_execution`, `rag_vector_retrieval`, `provider_public_url`, `connector_destination_dispatch`, `package_mutation_reconstruction`, `frontend_only_durable_state`, `hidden_llm_planning`, and `auth_security_hardening` in `STATE_ACTION_DEFERRED_CAPABILITIES` with `admitted: False`.
+- `backend/app/services/layer3_workbench.py` reports `single_aps_doc_qualitative_execution` as `True`, while `broad_qualitative_execution`, `hybrid_execution`, and `rag_vector_retrieval` feature flags remain `False`.
+- `backend/app/services/layer3_state_action_contract.py` records `single_aps_doc_qualitative_execution` in `STATE_ACTION_ADMITTED_CAPABILITIES`, and keeps `broad_qualitative_execution`, `hybrid_execution`, `rag_vector_retrieval`, `provider_public_url`, `connector_destination_dispatch`, `package_mutation_reconstruction`, `frontend_only_durable_state`, `hidden_llm_planning`, and `auth_security_hardening` in `STATE_ACTION_DEFERRED_CAPABILITIES` with `admitted: False`.
 - `backend/tests/test_layer3_workbench.py` and `backend/tests/test_layer3_api.py` assert key deferred capabilities remain unadmitted and do not become action ids.
 - `backend/tests/test_layer3_page.py` proves frontend session recovery markers exist, including server revalidation and Gate B draft restoration markers. That is not proof of full mockup activation.
 
@@ -25,7 +25,7 @@ This file is intentionally scoped. It is not an exhaustive Layer 3 index, not a 
 The mockup files under `next_milestone_plans/layer3-mockups/` are target-state design/specification artifacts. They may guide later freeze writing, but they do not admit:
 
 - broad execution;
-- qualitative or hybrid execution;
+- broad qualitative or hybrid execution outside the admitted single APS-document qualitative pass;
 - RAG/vector/semantic retrieval;
 - broad local upload or directory source expansion;
 - provider/public URL support;
@@ -78,4 +78,4 @@ This note blocks broad activation from mockup, progress, or Codesight evidence a
 - `npx playwright test layer3-workbench.spec.js --project=chromium --headed` passed with `12 passed`.
 - `git diff --check` and `git diff --cached --check` passed; the remaining working-tree noise was limited to out-of-scope local sidecars and `.omc/state/*`.
 
-This recheck validates the branch's bounded state/action, frontend recovery, service-extraction, DTO/error-boundary, package-hash, and fail-closed proof posture. It does not implement or newly admit generic connector/destination dispatch, package mutation/reconstruction, broad source/upload expansion, qualitative/hybrid/RAG execution, provider/public URLs, full mockup activation, or authentication/security hardening. Existing bounded APS owner-service dispatch, package construction/submit, same-origin delivery, and same-origin signed-reference behavior must not be relabeled as those broader deferred categories.
+This recheck validates the branch's bounded state/action, frontend recovery, service-extraction, DTO/error-boundary, package-hash, single APS-document qualitative execution, and fail-closed proof posture. It does not implement or newly admit generic connector/destination dispatch, package mutation/reconstruction, broad source/upload expansion, broad qualitative/hybrid/RAG execution, provider/public URLs, full mockup activation, or authentication/security hardening. Existing bounded APS owner-service dispatch, package construction/submit, same-origin delivery, same-origin signed-reference behavior, and single APS-document qualitative execution must not be relabeled as those broader deferred categories.

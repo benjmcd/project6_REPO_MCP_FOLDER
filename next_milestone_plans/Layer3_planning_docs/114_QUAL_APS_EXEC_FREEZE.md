@@ -2,9 +2,9 @@
 
 ## Status
 
-Current-main planning/control freeze for qualitative APS content document execution after PR `#525` connector/destination dispatch governance.
+Current-main planning/control freeze for qualitative APS content document execution after PR `#525` connector/destination dispatch governance. Branch-local doc `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md` and commit `a672b71d` later admitted and implemented only the exact `single_aps_doc_qualitative_pass` mode.
 
-This document does not implement qualitative execution, add a route, change `/review/layer3`, change document trace rendering, add a model or migration, mutate package/handoff/export behavior, widen source ingestion, dispatch to connectors or destinations, create provider/public URLs, or create runtime rows/files. It freezes the decision that qualitative APS content document execution remains not admitted until a later implementation-entry freeze proves one exact APS-document execution contract.
+This document itself did not implement qualitative execution, add a route, change `/review/layer3`, change document trace rendering, add a model or migration, mutate package/handoff/export behavior, widen source ingestion, dispatch to connectors or destinations, or create provider/public URLs. It remains the guardrail that blocks every qualitative, hybrid, RAG/vector, package, source, provider, connector, and mockup behavior outside the exact `single_aps_doc_qualitative_pass` lane.
 
 ## Current Live Boundary
 
@@ -18,28 +18,29 @@ Current `project6-origin/main` supports APS content documents as selectable and 
 - `backend/tests/test_layer3_workbench.py` proves APS content document candidate listing, material-preview trace, and Gate B snapshot persistence.
 - `backend/tests/test_layer3_typing_entry.py` proves APS content documents type as qualitative document chunks.
 
-Current pass entry remains wrapped quantitative:
+Pre-`119` pass entry was wrapped quantitative only; branch-local code now additionally admits the exact single APS-document qualitative pass:
 
 - `backend/app/services/layer3_pass_entry.py` admits `quantitative_single_item_dataset_version` and `quantitative_associated_cohort_dataset_version` scopes.
-- `execute_selected_pass_run(...)` requires `engine_family == "wrapped_quantitative_analysis"`.
+- `backend/app/services/layer3_pass_entry.py` now also admits `single_aps_doc_qualitative_pass` only for one qualitative `aps_content_document` analysis set.
+- `execute_selected_pass_run(...)` still requires `engine_family == "wrapped_quantitative_analysis"`; qualitative APS execution is owned by `backend/app/services/layer3_qual_aps_execution.py`.
 - single-item execution requires a `dataset_version_id`.
 - associated-cohort execution derives an aligned wide-table `DatasetVersion` before calling `run_analysis(...)`.
 - `run_analysis(...)` is still invoked with `dataset_version_id` and an admitted quantitative method name.
-- `backend/tests/test_layer3_pass_entry.py` proves qualitative-only sets fail closed with no `L3AnalysisPlan`, `L3PassRun`, or `AnalysisRun`.
+- `backend/tests/test_layer3_qual_aps_execution.py` proves the single APS-document qualitative pass creates no `AnalysisRun` or `DatasetVersion` and blocks package broadening.
 
 PR `#513` UI/theme trace alignment is representation-only over one APS content-document trace sample. It is not execution authority.
 
 ## Decision
 
-Qualitative APS content document execution remains blocked.
+Qualitative APS content document execution remains blocked except for the exact branch-local `single_aps_doc_qualitative_pass`.
 
-The next admissible step is not runtime implementation. The next admissible step is a later implementation-entry freeze only if live repo evidence and operator need prove that selectable/typed APS document chunks must produce a bounded Layer 3 result inside the workbench chain.
+Any next qualitative step is not broad runtime implementation. It requires a later implementation-entry freeze only if live repo evidence and operator need prove that behavior beyond the existing single-document pass is necessary.
 
-If that evidence exists later, the first implementation lane must choose exactly one initial execution mode:
+The implemented first lane chose exactly one initial execution mode:
 
 - `single_aps_doc_qualitative_pass`: execute one selected `aps_content_document` analysis unit for one committed Layer 3 session, with bounded chunk/citation/trace input and one response-safe qualitative result record.
 
-Do not implement associated-cohort qualitative execution, hybrid execution, comparative execution, cross-document synthesis, RAG, vector retrieval, generic LLM orchestration, document-trace rendering changes, connector dispatch, provider/public URLs, or package mutation in the first qualitative APS execution lane.
+Do not add associated-cohort qualitative execution, hybrid execution, comparative execution, cross-document synthesis, RAG, vector retrieval, generic LLM orchestration, document-trace rendering changes, connector dispatch, provider/public URLs, or package mutation to the single APS-document qualitative execution lane.
 
 ## Required Activation Evidence
 

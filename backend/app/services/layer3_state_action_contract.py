@@ -6,11 +6,28 @@ from typing import Any, Iterable
 
 STATE_ACTION_CONTRACT_SCHEMA_ID = "layer3.state_action_contract.v1"
 
+STATE_ACTION_ADMITTED_CAPABILITIES = (
+    {
+        "capability": "single_aps_doc_qualitative_execution",
+        "admitted": True,
+        "source_gate": "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE",
+        "scope": "exact single APS content document qualitative pass after plan approval and execution selection",
+        "owner_service": "backend/app/services/layer3_qual_aps_execution.py",
+        "blocked_downstream": [
+            "qualitative_package_handoff_export",
+            "broad_qualitative_execution",
+            "hybrid_execution",
+            "rag_vector_retrieval",
+        ],
+    },
+)
+
 STATE_ACTION_DEFERRED_CAPABILITIES = (
     {
-        "capability": "qualitative_execution",
+        "capability": "broad_qualitative_execution",
         "admitted": False,
-        "reason": "requires_later_freeze",
+        "reason": "single_aps_doc_qualitative_pass_only",
+        "scope": "all qualitative execution outside the exact single APS-document qualitative pass",
     },
     {
         "capability": "hybrid_execution",
@@ -119,5 +136,6 @@ def build_state_action_contract(
             "external_export_download_deliver": [external_export_download_delivery_operator_decision],
         },
         "terminal_pass_statuses": sorted(terminal_pass_statuses),
+        "admitted_capabilities": _clone_json(STATE_ACTION_ADMITTED_CAPABILITIES),
         "deferred_capabilities": _clone_json(STATE_ACTION_DEFERRED_CAPABILITIES),
     }

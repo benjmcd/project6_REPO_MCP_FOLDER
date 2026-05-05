@@ -2,9 +2,9 @@
 
 ## Status
 
-Current-main planning/control contract paired with `114_QUAL_APS_EXEC_FREEZE.md`.
+Current-main planning/control contract paired with `114_QUAL_APS_EXEC_FREEZE.md`. Branch-local doc `119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md` and commit `a672b71d` later implemented only the exact `single_aps_doc_qualitative_pass` mode described here.
 
-This contract defines the minimum admissibility rules for any future qualitative APS content document execution lane. It does not allocate a live route, execution service, model/migration, result row, rendered control, document trace behavior, package behavior, provider/public URL behavior, connector/destination behavior, source-ingestion behavior, or runtime write.
+This contract defines the minimum admissibility rules for qualitative APS content document execution. It does not admit behavior outside the implemented single-document pass and still does not allocate a model/migration, rendered control, document trace behavior, package behavior, provider/public URL behavior, connector/destination behavior, source-ingestion behavior, or broad runtime write.
 
 ## Authority Order
 
@@ -14,8 +14,8 @@ Use this order before auditing or extending qualitative APS content document exe
 2. `backend/app/models/models.py` for `ApsContentDocument`, `ApsContentChunk`, `ApsContentLinkage`, `L3MaterialSnapshot`, `L3TypingRecord`, `L3AnalysisUnit`, `L3AnalysisSet`, and `L3PassRun` schema truth;
 3. `backend/app/services/layer3_workbench.py` for `aps_content_document` source preview, material preview, source trace, and Gate B snapshot authority;
 4. `backend/app/services/layer3_typing_entry.py` for qualitative/document-chunk typing authority;
-5. `backend/app/services/layer3_pass_entry.py` for the current wrapped-quantitative pass-entry/execution boundary;
-6. `backend/tests/test_layer3_workbench.py`, `backend/tests/test_layer3_typing_entry.py`, and `backend/tests/test_layer3_pass_entry.py` for current proof boundaries;
+5. `backend/app/services/layer3_pass_entry.py` for pass-entry admission and `backend/app/services/layer3_qual_aps_execution.py` for the exact single-document qualitative execution owner;
+6. `backend/tests/test_layer3_workbench.py`, `backend/tests/test_layer3_typing_entry.py`, `backend/tests/test_layer3_pass_entry.py`, and `backend/tests/test_layer3_qual_aps_execution.py` for current proof boundaries;
 7. docs `25`/`27` for older qualitative single-item planning-only context;
 8. `105_deferred-gates.md`, `114_QUAL_APS_EXEC_FREEZE.md`, and this contract for current qualitative APS execution governance.
 
@@ -34,7 +34,7 @@ Reserved labels:
 - `qual_aps_doc_exec_review_approved`;
 - `qual_aps_doc_exec_review_rejected`.
 
-These labels are not live states by themselves. They may be used only by a later implementation freeze, progress/control sync, or code lane that explicitly admits the qualitative APS document execution path.
+These labels are not live states by themselves. Branch-local code admits the exact single-document pass through the existing workbench selection, execution-start, result/status, and result-review states; any broader use still needs a later implementation freeze, progress/control sync, or code lane.
 
 ## Admission Contract
 
