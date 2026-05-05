@@ -1851,8 +1851,8 @@ def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
             "snapshot_target_ref: `project6-origin/main`",
             "functional_boundary_head: `93fe525b`",
             "functional_boundary_role: last runtime-affecting Layer 3 boundary captured in this snapshot",
-            "proof_snapshot_head: `3418d429`",
-            "latest_proof_boundary_pr: `#564`",
+            "proof_snapshot_head: `ac367350`",
+            "latest_proof_boundary_pr: `#566`",
             "not a self-updating current-main marker",
             "latest_functional_boundary_pr: `#556`",
             "docs_sync_reference_pr: `#551`",
@@ -1875,6 +1875,8 @@ def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
             "Merged main head after PR #550: 4793d8d1.",
             "PR #564 authority rail extraction proof",
             "Merged main head after PR #564: 3418d429.",
+            "PR #566 preview hash/identity contract extraction proof",
+            "Merged main head after PR #566: ac367350.",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -2586,11 +2588,17 @@ def _check_preview_contract_extraction(errors: list[str]) -> None:
         GOAL_AUDIT: (
             "preview hash/identity contract extraction",
             "layer3_preview_contract.py",
+            "PR #566 established `backend/app/services/layer3_preview_contract.py`",
+            "ac367350",
+            "290 passed",
         ),
         CLOSEOUT_DOC: (
             "preview hash/identity contract extraction",
             "layer3_preview_contract.py",
             "preview identity envelopes",
+            "PR #566 preview hash/identity contract extraction proof",
+            "Merged main head after PR #566: ac367350.",
+            "Focused preview-contract/authority-rail/response/workbench/API suite: 147 passed, 5 warnings.",
         ),
     }
     for path, terms in required_doc_terms.items():
