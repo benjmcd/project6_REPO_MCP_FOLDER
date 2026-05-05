@@ -1,6 +1,6 @@
 # Layer 3 Merged-Main Closeout
 
-Status: bounded merged-main proof snapshot through PR #573 state-model contract extraction. Functional boundary evidence still targets PR #556 at `project6-origin/main=93fe525b`; PR #558 adds qualitative owner-service error-boundary proof at `project6-origin/main=5831ff2f`; PR #562 adds no-behavior-change response envelope extraction proof at `project6-origin/main=369e4131`; PR #564 adds no-behavior-change authority rail extraction proof at `project6-origin/main=3418d429`; PR #566 adds no-behavior-change preview hash/identity contract extraction proof at `project6-origin/main=ac367350`; PR #568 adds no-behavior-change readiness contract extraction proof at `project6-origin/main=6b1a12f0`; PR #569 adds no-behavior-change workbench error extraction proof at `project6-origin/main=5e09187e`; PR #571 adds no-behavior-change bootstrap contract extraction proof at `project6-origin/main=47351763`; PR #573 adds no-behavior-change state-model contract extraction proof at `project6-origin/main=ebb6d9c2`. Later docs/proof synchronization lanes, readiness contract extraction, workbench error extraction, bootstrap contract extraction, and state-model contract extraction do not change the functional boundary or admit new runtime capability.
+Status: bounded merged-main proof snapshot through PR #575 external export/download contract extraction. Functional boundary evidence still targets PR #556 at `project6-origin/main=93fe525b`; PR #558 adds qualitative owner-service error-boundary proof at `project6-origin/main=5831ff2f`; PR #562 adds no-behavior-change response envelope extraction proof at `project6-origin/main=369e4131`; PR #564 adds no-behavior-change authority rail extraction proof at `project6-origin/main=3418d429`; PR #566 adds no-behavior-change preview hash/identity contract extraction proof at `project6-origin/main=ac367350`; PR #568 adds no-behavior-change readiness contract extraction proof at `project6-origin/main=6b1a12f0`; PR #569 adds no-behavior-change workbench error extraction proof at `project6-origin/main=5e09187e`; PR #571 adds no-behavior-change bootstrap contract extraction proof at `project6-origin/main=47351763`; PR #573 adds no-behavior-change state-model contract extraction proof at `project6-origin/main=ebb6d9c2`; PR #575 adds no-behavior-change external export/download contract extraction proof at `project6-origin/main=6be9b127`. Later docs/proof synchronization lanes, readiness contract extraction, workbench error extraction, bootstrap contract extraction, state-model contract extraction, and external export/download contract extraction do not change the functional boundary or admit new runtime capability.
 
 This file is post-merge documentation/proof synchronization only. It is a bounded snapshot, not an evergreen manifest, and it does not replace live source/tests as authority. The package supersession preview row admits only the exact read-only preview route and does not admit broad package mutation/reconstruction. The replacement package-set authority row admits only the exact durable metadata authority record and does not admit replacement package rows or package payload writes. The package supersession commit entry row admits only the exact durable lineage record and does not admit package row mutation, package payload writes, replacement package row creation, UI controls, or broad package mutation/reconstruction. The qualitative/hybrid/RAG row admits only the exact single APS-document qualitative pass and does not admit broad qualitative, hybrid, RAG/vector, hidden LLM, source widening, connector, or package mutation behavior. The mockup truth-state row keeps mockups as target-state design/specification artifacts and does not admit full mockup activation.
 
@@ -10,11 +10,11 @@ This file is post-merge documentation/proof synchronization only. It is a bounde
 - snapshot_target_ref: `project6-origin/main`
 - functional_boundary_head: `93fe525b`
 - functional_boundary_role: last runtime-affecting Layer 3 boundary captured in this snapshot
-- proof_snapshot_head: `ebb6d9c2`
+- proof_snapshot_head: `6be9b127`
 - proof_snapshot_role: latest proof/refactor Layer 3 boundary captured in this snapshot
-- snapshot_role: bounded proof snapshot after PR #573 state-model contract extraction proof; not an evergreen manifest and not a self-updating current-main marker
+- snapshot_role: bounded proof snapshot after PR #575 external export/download contract extraction proof; not an evergreen manifest and not a self-updating current-main marker
 - latest_functional_boundary_pr: `#556`
-- latest_proof_boundary_pr: `#573`
+- latest_proof_boundary_pr: `#575`
 - docs_sync_reference_pr: `#551`
 - docs_sync_reference_role: historical proof synchronization only; do not infer the live `project6-origin/main` SHA from this field.
 - current_main_rule: re-read live git and rerun `python .\tools\l3-progress-check.py` before new work; do not treat any SHA in this file as an evergreen current-main assertion.
@@ -28,7 +28,7 @@ Authority order for this closeout:
 4. `117_L3_SYNTHESIS_AUTHORITY_BOUNDARY.md` and `118_L3_GOAL_AUDIT.md`.
 5. Older planning docs and mockups only as target-state or historical context.
 
-Historical current-main proof after PR #538 remains retained for source-boundary, DTO-boundary, signed-reference, and session-status invariant checks; PR #540 package preview proof, PR #554 replacement package-set authority proof, PR #556 package supersession commit lineage proof, PR #558 qualitative owner-service error-boundary proof, PR #562 response envelope extraction proof, PR #564 authority rail extraction proof, PR #566 preview hash/identity contract extraction proof, PR #568 readiness contract extraction proof, PR #569 workbench error extraction proof, PR #571 bootstrap contract extraction proof, and PR #573 state-model contract extraction proof are additive and must not be treated as broad package mutation/reconstruction, broad qualitative/hybrid/RAG, connector/destination dispatch, source widening, provider/public URL, full mockup activation, or auth/security proof.
+Historical current-main proof after PR #538 remains retained for source-boundary, DTO-boundary, signed-reference, and session-status invariant checks; PR #540 package preview proof, PR #554 replacement package-set authority proof, PR #556 package supersession commit lineage proof, PR #558 qualitative owner-service error-boundary proof, PR #562 response envelope extraction proof, PR #564 authority rail extraction proof, PR #566 preview hash/identity contract extraction proof, PR #568 readiness contract extraction proof, PR #569 workbench error extraction proof, PR #571 bootstrap contract extraction proof, PR #573 state-model contract extraction proof, and PR #575 external export/download contract extraction proof are additive and must not be treated as broad package mutation/reconstruction, broad qualitative/hybrid/RAG, connector/destination dispatch, source widening, provider/public URL, full mockup activation, or auth/security proof.
 
 ## Prompt-To-Artifact Checklist
 
@@ -290,11 +290,15 @@ Post-merge progress proof: Layer 3 progress state check: PASS.
 Post-merge full Layer 3 backend suite: 294 passed, 4 warnings.
 ```
 
-External export/download contract extraction focused proof:
+PR #575 external export/download contract extraction proof:
 
 ```text
 Focused external-export-contract suite: 2 passed.
 Local focused Layer 3 backend suite: 296 passed, 4 warnings.
+Pre-merge PR #575 checks: backend-layer3-api SUCCESS; test SUCCESS.
+Merged main head after PR #575: 6be9b127.
+Post-merge progress proof: Layer 3 progress state check: PASS.
+Post-merge full Layer 3 backend suite: 296 passed, 4 warnings.
 ```
 
 ## Merge-Readiness Boundary
