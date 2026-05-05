@@ -1086,6 +1086,8 @@ def test_layer3_handoff_openapi_contracts(client: TestClient) -> None:
     ]
     _assert_string_array_or_string_map_schema(prepare_request_schema["properties"]["payload_refs"])
     _assert_string_array_or_string_map_schema(prepare_request_schema["properties"]["payload_hashes"])
+    assert prepare_request_schema["properties"]["dispatch"]["description"].startswith("Known but non-admitted")
+    assert prepare_request_schema["properties"]["package_payload"]["description"].startswith("Known but non-admitted")
 
     prepare_schema = _openapi_response_schema(spec, "/api/v1/layer3/handoff/export/prepare", "post")
     assert prepare_schema["title"] == "Layer3HandoffExportPrepareResponse"
@@ -6173,9 +6175,12 @@ def test_layer3_api_handoff_export_prepare_prechecks_fail_closed(
         "/api/v1/layer3/handoff/export/prepare",
         json={**base_payload, "unexpected_control": True},
     )
-    assert unknown.status_code == 400
-    assert unknown.json()["error_code"] == "handoff_export_prepare_scope_not_admitted"
-    assert unknown.json()["blocked_fields"] == ["unexpected_control"]
+    assert unknown.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden"
+        and item.get("loc") == ["body", "unexpected_control"]
+        for item in unknown.json()["detail"]
+    )
 
     for decision in ("hold", "decline", "blocked"):
         notes_required = client.post(
