@@ -26,6 +26,7 @@ GOAL_AUDIT = PLANNING_DOCS / "118_L3_GOAL_AUDIT.md"
 QUAL_APS_ENTRY_FREEZE = PLANNING_DOCS / "119_L3_QUAL_APS_EXEC_ENTRY_FREEZE.md"
 CLOSEOUT_DOC = PLANNING_DOCS / "120_L3_CLOSEOUT.md"
 CONNECTOR_ENTRY_FREEZE = PLANNING_DOCS / "121_CONNECTOR_DISPATCH_ENTRY_FREEZE.md"
+PACKAGE_MUTATION_FREEZE = PLANNING_DOCS / "122_PACKAGE_MUTATION_FREEZE.md"
 STATE_ACTION_CONTRACT = (
     ROOT / "backend" / "app" / "services" / "layer3_state_action_contract.py"
 )
@@ -572,6 +573,112 @@ def _check_connector_dispatch_entry_freeze(errors: list[str]) -> None:
             errors.append(f"{_rel(LAYER3_API_TEST)} missing connector proof term: {term}")
 
 
+def _check_package_mutation_freeze(errors: list[str]) -> None:
+    freeze_text = _read_required_text(PACKAGE_MUTATION_FREEZE, errors)
+    required_freeze_terms = [
+        "Status: implementation-entry freeze only for package mutation/reconstruction lifecycle",
+        "selected_package_lifecycle_mode: `package_supersession_preview_only`",
+        "immutable_package_rule: existing `L3OutputPackage` rows and package payload files are immutable",
+        "This artifact selects the first safe package mutation/reconstruction entry mode, but it does not implement runtime behavior.",
+        "no database writes and no filesystem writes",
+        "operator_decision` must be exactly `preview_package_supersession`",
+        "must reject these before service execution",
+        "- `package_payload`",
+        "- `package_variant_content`",
+        "- `rewrite_output`",
+        "- `rebuild_package`",
+        "- `mutate_package`",
+        "- `replace_package`",
+        "- `delete_package`",
+        "- `provider_public_url`",
+        "- `source_upload`",
+        "- `rag_vector_index`",
+        "- `hybrid_execution`",
+        "- `rag_execution`",
+        "- `schema_migration`",
+        "- `approved_plan_supersession`",
+        "- `result_review_amendment`",
+        "- `package_review_amendment`",
+        "- authentication/security scope reopening",
+        "no `L3OutputPackage`, `L3ReconciliationRecord`, `AnalysisArtifact`, `AnalysisRun`, `L3PassRun`, connector, source, handoff/export, delivery, provider URL, or payload file side effect occurs",
+    ]
+    for term in required_freeze_terms:
+        if term not in freeze_text:
+            errors.append(f"{_rel(PACKAGE_MUTATION_FREEZE)} missing package mutation freeze term: {term}")
+
+    required_doc_terms = {
+        DEFERRED_GATES: [
+            "122_PACKAGE_MUTATION_FREEZE.md",
+            "`package_supersession_preview_only` as the first package mutation/reconstruction entry candidate",
+            "runtime package mutation/reconstruction remains not admitted",
+            "no database writes, no package payload writes, and no in-place mutation",
+        ],
+        GOAL_AUDIT: [
+            "122_PACKAGE_MUTATION_FREEZE.md",
+            "Entry freeze selected; runtime not implemented and remains blocked",
+            "First eligible candidate is `package_supersession_preview_only`",
+            "Existing bounded package construction/submit is not package mutation",
+        ],
+        CLOSEOUT_DOC: [
+            "122_PACKAGE_MUTATION_FREEZE.md",
+            "package_supersession_preview_only",
+            "The freeze does not add a route, service, model, migration, row update, payload rewrite, or UI control.",
+        ],
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing package mutation freeze term: {term}")
+
+    admitted = _capability_map(
+        _load_literal_assignment(STATE_ACTION_CONTRACT, "STATE_ACTION_ADMITTED_CAPABILITIES", errors),
+        "STATE_ACTION_ADMITTED_CAPABILITIES",
+        errors,
+    )
+    deferred = _capability_map(
+        _load_literal_assignment(STATE_ACTION_CONTRACT, "STATE_ACTION_DEFERRED_CAPABILITIES", errors),
+        "STATE_ACTION_DEFERRED_CAPABILITIES",
+        errors,
+    )
+    package_mutation = deferred.get("package_mutation_reconstruction")
+    if package_mutation is None:
+        errors.append("deferred capabilities missing package_mutation_reconstruction")
+    elif package_mutation.get("admitted") is not False:
+        errors.append("package_mutation_reconstruction must remain admitted false for the preview-only freeze")
+    if "package_mutation_reconstruction" in admitted:
+        errors.append("package_mutation_reconstruction must not appear in admitted capabilities for the preview-only freeze")
+    if "package_supersession_preview_only" in admitted:
+        errors.append("package_supersession_preview_only must not be admitted by this docs/proof freeze")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "\"rebuild_package\"",
+        "\"package_payload\"",
+        "\"package_variant_content\"",
+        "\"rewrite_output\"",
+        "\"result_review_amendment\"",
+        "\"package_review_amendment\"",
+        "\"handoff_export_amendment\"",
+        "\"aps_handoff_amendment\"",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing package mutation blocked-field term: {term}")
+
+    test_text = _read_required_text(LAYER3_API_TEST, errors)
+    for term in (
+        "package_construction_commit_scope_not_admitted",
+        "package_review_submit_scope_not_admitted",
+        "package_review_preview_scope_not_admitted",
+        "\"package_payload\"",
+        "\"package_variant_content\"",
+        "\"rewrite_output\"",
+        "\"package_mutation_reconstruction\"",
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_API_TEST)} missing package mutation blocked proof term: {term}")
+
+
 def _check_qualitative_capability_boundary(errors: list[str]) -> None:
     admitted = _capability_map(
         _load_literal_assignment(
@@ -758,21 +865,21 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "backend/tests/test_layer3_source_boundary.py",
         ],
         GOAL_AUDIT: [
-            "current-main completion audit after PR #535 merged",
+            "current-main completion audit after PR #538 merged",
             "backend/app/services/layer3_source_boundary.py",
             "backend/tests/test_layer3_source_boundary.py",
             "does not widen source classes",
-            "264 passed",
+            "267 passed",
         ],
         CLOSEOUT_DOC: [
-            "Status: current-main closeout after PR #535 merged at `project6-origin/main=7d07477a`.",
+            "Status: current-main closeout after PR #538 merged at `project6-origin/main=329fc6d5`",
             "post-merge documentation/proof synchronization only",
-            "PR #535",
+            "PR #538",
             "post-merge `main` workflow",
             "backend-layer3-api",
-            "current-main proof after PR #535",
+            "current-main proof after PR #538",
             "backend/app/services/layer3_source_boundary.py",
-            "264 passed, 4 warnings",
+            "267 passed, 4 warnings",
             "Layer 3 progress state check: PASS",
             "generic connector/destination dispatch",
             "package mutation/reconstruction",
@@ -822,12 +929,12 @@ def _check_signed_reference_state_guard(errors: list[str]) -> None:
             "backend/app/services/layer3_signed_reference_state.py",
             "backend/tests/test_layer3_signed_reference_state.py",
             "concurrent single-use proof",
-            "264 passed",
+            "267 passed",
         ],
         CLOSEOUT_DOC: [
             "backend/app/services/layer3_signed_reference_state.py",
             "backend/tests/test_layer3_signed_reference_state.py",
-            "264 passed, 4 warnings",
+            "267 passed, 4 warnings",
             "same-origin signed-reference service proof",
         ],
     }
@@ -871,12 +978,12 @@ def _check_plan_preview_request_guard(errors: list[str]) -> None:
         GOAL_AUDIT: [
             "Layer3PlanPreviewRequest",
             "test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation",
-            "264 passed",
+            "267 passed",
         ],
         CLOSEOUT_DOC: [
             "Layer3PlanPreviewRequest",
             "test_layer3_api_plan_preview_rejects_extra_fields_before_service_mutation",
-            "264 passed, 4 warnings",
+            "267 passed, 4 warnings",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -922,12 +1029,12 @@ def _check_source_preview_request_guard(errors: list[str]) -> None:
         GOAL_AUDIT: [
             "Layer3SourcePreviewRequest",
             "test_layer3_api_source_preview_rejects_extra_fields_before_service_execution",
-            "264 passed",
+            "267 passed",
         ],
         CLOSEOUT_DOC: [
             "Layer3SourcePreviewRequest",
             "test_layer3_api_source_preview_rejects_extra_fields_before_service_execution",
-            "264 passed, 4 warnings",
+            "267 passed, 4 warnings",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -973,12 +1080,12 @@ def _check_material_preview_request_guard(errors: list[str]) -> None:
         GOAL_AUDIT: [
             "Layer3MaterialPreviewRequest",
             "test_layer3_api_material_preview_rejects_extra_fields_before_service_execution",
-            "264 passed",
+            "267 passed",
         ],
         CLOSEOUT_DOC: [
             "Layer3MaterialPreviewRequest",
             "test_layer3_api_material_preview_rejects_extra_fields_before_service_execution",
-            "264 passed, 4 warnings",
+            "267 passed, 4 warnings",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -1022,12 +1129,12 @@ def _check_session_status_migration_constraint(errors: list[str]) -> None:
         GOAL_AUDIT: [
             "0012_layer3_session_entry.py",
             "test_layer3_session_entry_migration_defines_status_check_constraint",
-            "264 passed",
+            "267 passed",
         ],
         CLOSEOUT_DOC: [
             "0012_layer3_session_entry.py",
             "test_layer3_session_entry_migration_defines_status_check_constraint",
-            "264 passed, 4 warnings",
+            "267 passed, 4 warnings",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -1121,6 +1228,7 @@ def main() -> int:
         QUAL_APS_ENTRY_FREEZE,
         CLOSEOUT_DOC,
         CONNECTOR_ENTRY_FREEZE,
+        PACKAGE_MUTATION_FREEZE,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
         LAYER3_API,
@@ -1144,6 +1252,7 @@ def main() -> int:
         _check_referenced_paths(manifest, errors)
     _check_local_boundary(errors)
     _check_connector_dispatch_entry_freeze(errors)
+    _check_package_mutation_freeze(errors)
     _check_qualitative_capability_boundary(errors)
     _check_source_boundary_contract(errors)
     _check_signed_reference_state_guard(errors)
