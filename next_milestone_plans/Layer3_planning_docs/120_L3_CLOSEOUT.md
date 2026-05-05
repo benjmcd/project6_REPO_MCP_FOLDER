@@ -8,8 +8,9 @@ This file is review/merge preparation only. It does not admit new runtime behavi
 
 - authority_worktree: `C:\Users\benny\Downloads\worktree_for_audits`
 - branch: `codex/l3-frontend-session-recovery`
-- latest committed branch head before this session-status migration constraint update: `73d6f607`
+- latest committed implementation branch head before this merge-prep evidence update: `099c0da3`
 - current baseline ref: `project6-origin/main`
+- local merge-prep evidence is captured below and must be re-run if `project6-origin/main` moves.
 - known local caveat: `.omc/state/hud-state.json`, `.omc/state/hud-stdin-cache.json`, `.codesight/`, `.cursorrules`, `.github/copilot-instructions.md`, `CLAUDE.md`, and `codex.md` are local operator/sidecar state and are not implementation evidence.
 
 Authority order for this closeout:
@@ -67,6 +68,20 @@ Observed result during this closeout pass:
 ```
 
 The repeated Windows pytest temp cleanup `PermissionError` appeared after successful pytest exit in some runs and did not change the command exit code.
+
+Local merge-prep command:
+
+```powershell
+git merge-tree --write-tree project6-origin/main HEAD
+```
+
+Observed local result after `HEAD=099c0da3` and `project6-origin/main=81deeb24`:
+
+```text
+93e8a66d215633e2321829df6c141165b185f1be
+```
+
+This proves the current branch has no local merge conflict against the current local baseline only. Re-run the command before landing if `project6-origin/main` moves.
 
 ## Merge-Readiness Boundary
 
