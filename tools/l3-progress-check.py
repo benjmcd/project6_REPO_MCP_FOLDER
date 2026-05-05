@@ -1123,7 +1123,7 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "267 passed",
         ],
         CLOSEOUT_DOC: [
-            "Status: current-main closeout after PR #538 merged at `project6-origin/main=329fc6d5`",
+            "Status: bounded merged-main proof snapshot after PR #538 merged at `project6-origin/main=329fc6d5`",
             "123_SOURCE_EXPANSION_FREEZE.md",
             "post-merge documentation/proof synchronization only",
             "PR #538",
@@ -1298,21 +1298,32 @@ def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
             "full_mockup_activation",
             "mockups_target_state_only",
             "PR #544 separately established the `mockups_target_state_only` truth-state boundary with `274 passed`",
+            "PR #545 was docs/proof synchronization only",
+            "36526ee1",
         ],
         CLOSEOUT_DOC: [
-            "refreshed after PR #544 merged at `project6-origin/main=005ef212`",
-            "current_branch: `codex/l3-pr544-postmerge-doc-sync`",
-            "latest_merged_pr: `#544`",
-            "merged_main_head: `005ef212`",
+            "proof-snapshot synchronized after PR #545 merged at `project6-origin/main=36526ee1`",
+            "This file is post-merge documentation/proof synchronization only.",
+            "bounded snapshot, not an evergreen manifest",
+            "snapshot_target_ref: `project6-origin/main`",
+            "snapshot_target_head: `36526ee1`",
+            "latest_functional_boundary_pr: `#544`",
+            "latest_docs_sync_pr: `#545`",
             "125_MOCKUP_TRUTH_STATE_FREEZE.md",
             "mockup_truth_state_contract()",
             "full mockup activation remains blocked",
             "Pre-merge PR #544 checks: backend-layer3-api SUCCESS; test SUCCESS.",
             "Merged main head after PR #544: 005ef212753adf2feb859b28362a0bee3d7d72d1.",
+            "Pre-merge PR #545 checks: backend-layer3-api SUCCESS; test SUCCESS.",
+            "Merged main head after PR #545: 36526ee1.",
         ],
     }
     for path, terms in required_doc_terms.items():
         text = _read_required_text(path, errors)
+        if path == CLOSEOUT_DOC:
+            for stale_term in ("latest_merged_pr:", "current_branch:", "merged_main_head: `005ef212`"):
+                if stale_term in text:
+                    errors.append(f"{_rel(path)} retains stale evergreen closeout term: {stale_term}")
         for term in terms:
             if term not in text:
                 errors.append(f"{_rel(path)} missing mockup truth-state term: {term}")
