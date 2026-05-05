@@ -115,6 +115,21 @@ class Layer3SourcePreviewRequest(BaseModel):
     actor: str | None = None
 
 
+class Layer3MaterialPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str | None = None
+    preflight_id: str | None = None
+    source_set_id: str | None = None
+    source_candidate_ids: list[str] = Field(min_length=1)
+    dataset_version_ids: list[str] | None = None
+    aps_content_document_ids: list[str] | None = None
+    query_basis: dict[str, Any] | None = None
+    actor: str | None = None
+
+
 class Layer3GateBDecisionItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -1313,8 +1328,8 @@ SOURCE_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
 
 MATERIAL_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "additionalProperties": True,
-    "description": "Known material-preview fields; preflight/source-set ids are carried as authority context.",
+    "additionalProperties": False,
+    "description": "Strict material-preview fields; source expansion fields are rejected before service execution.",
     "required": ["source_candidate_ids"],
     "properties": {
         "schema_id": {"type": "string", "enum": ["layer3.material_preview_request.v1"]},
@@ -2196,8 +2211,11 @@ def post_source_preview(payload: Layer3SourcePreviewRequest) -> dict[str, Any] |
     openapi_extra={"requestBody": _json_request_body(MATERIAL_PREVIEW_REQUEST_SCHEMA)},
     responses=_workbench_error_responses(400),
 )
-def post_material_preview(payload: dict[str, Any], db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
-    return _json_or_error(lambda: layer3_workbench.material_preview(payload, db))
+def post_material_preview(
+    payload: Layer3MaterialPreviewRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(lambda: layer3_workbench.material_preview(payload.model_dump(exclude_none=True), db))
 
 
 @router.get(

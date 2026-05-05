@@ -434,8 +434,9 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
     material_request_schema = spec["paths"]["/api/v1/layer3/material-preview"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
-    assert material_request_schema["additionalProperties"] is True
+    assert material_request_schema["additionalProperties"] is False
     assert set(material_request_schema["required"]) == {"source_candidate_ids"}
+    assert "source expansion fields are rejected before service execution" in material_request_schema["description"]
     assert material_request_schema["properties"]["source_candidate_ids"]["items"]["type"] == "string"
     assert material_request_schema["properties"]["source_candidate_ids"]["minItems"] == 1
     assert material_request_schema["properties"]["query_basis"]["properties"]["terms"]["items"]["type"] == "string"
@@ -1363,7 +1364,12 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
     [
         ("preflight", "post", "/api/v1/layer3/preflight", {}),
         ("source_preview", "post", "/api/v1/layer3/source-preview", {"preflight_id": "preflight-forced"}),
-        ("material_preview", "post", "/api/v1/layer3/material-preview", {}),
+        (
+            "material_preview",
+            "post",
+            "/api/v1/layer3/material-preview",
+            {"source_candidate_ids": ["src-dataset_version-forced"]},
+        ),
         ("aps_dataset_version_candidates", "get", "/api/v1/layer3/dataset-version-candidates?limit=1", None),
         ("aps_content_document_candidates", "get", "/api/v1/layer3/aps-content-document-candidates?limit=1", None),
         (
@@ -3912,6 +3918,51 @@ def test_layer3_api_source_preview_rejects_extra_fields_before_service_execution
             "client_request_id": "api-source-preview-strict-extra",
             "preflight_id": preflight["preflight_id"],
             "selected_source_classes": ["dataset_version"],
+            "local_directory": "C:/not-admitted",
+        },
+    )
+
+    assert rejected.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "local_directory"]
+        for item in rejected.json()["detail"]
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3Session).count() == 0
+        assert db.query(L3PassRun).count() == 0
+        assert db.query(AnalysisRun).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_api_material_preview_rejects_extra_fields_before_service_execution(client: TestClient) -> None:
+    preflight = client.post(
+        "/api/v1/layer3/preflight",
+        json={
+            "client_request_id": "api-material-preview-strict-preflight",
+            "natural_language_intent": "Select admitted material only.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+        },
+    ).json()
+    source = client.post(
+        "/api/v1/layer3/source-preview",
+        json={
+            "client_request_id": "api-material-preview-strict-source",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version"],
+        },
+    ).json()
+
+    rejected = client.post(
+        "/api/v1/layer3/material-preview",
+        json={
+            "client_request_id": "api-material-preview-strict-extra",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "source_candidate_ids": [source["source_candidates"][0]["source_candidate_id"]],
+            "query_basis": {"terms": ["admitted"], "filters": {"dataset_version_ids": []}},
             "local_directory": "C:/not-admitted",
         },
     )
