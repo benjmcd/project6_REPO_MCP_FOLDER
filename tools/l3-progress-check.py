@@ -68,6 +68,9 @@ RESPONSE_CONTRACT_SERVICE = (
 AUTHORITY_RAIL_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_authority_rail.py"
 )
+PREVIEW_CONTRACT_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_preview_contract.py"
+)
 CONNECTOR_DISPATCH_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_connector_dispatch_entry.py"
 )
@@ -100,6 +103,7 @@ LAYER3_API_TEST = ROOT / "backend" / "tests" / "test_layer3_api.py"
 LAYER3_PAGE_TEST = ROOT / "backend" / "tests" / "test_layer3_page.py"
 LAYER3_RESPONSE_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_response_contract.py"
 LAYER3_AUTHORITY_RAIL_TEST = ROOT / "backend" / "tests" / "test_layer3_authority_rail.py"
+LAYER3_PREVIEW_CONTRACT_TEST = ROOT / "backend" / "tests" / "test_layer3_preview_contract.py"
 LAYER3_JS = ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js"
 LAYER3_WORKBENCH_E2E = ROOT / "e2e" / "layer3-workbench.spec.js"
 MOCKUP_ASSETS = ROOT / "next_milestone_plans" / "layer3-mockups" / "assets.md"
@@ -2529,6 +2533,73 @@ def _check_authority_rail_extraction(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing authority rail extraction doc term: {term}")
 
 
+def _check_preview_contract_extraction(errors: list[str]) -> None:
+    service_text = _read_required_text(PREVIEW_CONTRACT_SERVICE, errors)
+    for term in (
+        'PLAN_PREVIEW_IDENTITY_SCHEMA_ID = "layer3.plan_preview_identity.v1"',
+        'MATERIAL_PREVIEW_HASH_SCHEMA_ID = "layer3.material_preview_hash.v1"',
+        "def plan_preview_hash_contract(",
+        '"owner_service_plan_version"',
+        '"query_basis"',
+        '"supplied_hash_required_current_slice": False',
+        "def preview_identity(",
+        '"stale_preview_writes_blocked": True',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(PREVIEW_CONTRACT_SERVICE)} missing preview contract term: {term}")
+
+    workbench_text = _read_required_text(WORKBENCH_SERVICE, errors)
+    for term in (
+        "from app.services.layer3_preview_contract import",
+        "plan_preview_hash_contract as _plan_preview_hash_contract",
+        "material_preview_hash_contract as _material_preview_hash_contract",
+        "preview_identity as _preview_identity",
+    ):
+        if term not in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} missing preview contract extraction import term: {term}")
+    for stale_term in (
+        "def _plan_preview_hash_contract(",
+        "def _material_preview_hash_contract(",
+        "def _preview_identity(",
+        "PLAN_PREVIEW_HASH_INCLUDED_INPUTS = (",
+        "MATERIAL_PREVIEW_HASH_INCLUDED_INPUTS = (",
+    ):
+        if stale_term in workbench_text:
+            errors.append(f"{_rel(WORKBENCH_SERVICE)} still owns preview contract term: {stale_term}")
+
+    test_text = _read_required_text(LAYER3_PREVIEW_CONTRACT_TEST, errors)
+    for term in (
+        "test_layer3_preview_contracts_are_shared_without_behavior_change",
+        "readiness = layer3_workbench.readiness_contract()",
+        'assert readiness["preview_hash_contract"] == plan_contract',
+        'assert readiness["material_preview_hash_contract"] == material_contract',
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_PREVIEW_CONTRACT_TEST)} missing preview contract test term: {term}")
+
+    required_doc_terms = {
+        SYNTHESIS_BOUNDARY: (
+            "preview hash/identity contract extraction",
+            "layer3_preview_contract.py",
+            "test_layer3_preview_contract.py",
+        ),
+        GOAL_AUDIT: (
+            "preview hash/identity contract extraction",
+            "layer3_preview_contract.py",
+        ),
+        CLOSEOUT_DOC: (
+            "preview hash/identity contract extraction",
+            "layer3_preview_contract.py",
+            "preview identity envelopes",
+        ),
+    }
+    for path, terms in required_doc_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing preview contract extraction doc term: {term}")
+
+
 def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
     required_terms = {
         MODELS: [
@@ -2628,6 +2699,7 @@ def main() -> int:
         WORKBENCH_SERVICE,
         RESPONSE_CONTRACT_SERVICE,
         AUTHORITY_RAIL_SERVICE,
+        PREVIEW_CONTRACT_SERVICE,
         CONNECTOR_DISPATCH_SERVICE,
         PACKAGE_MUTATION_SERVICE,
         REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE,
@@ -2646,6 +2718,7 @@ def main() -> int:
         LAYER3_PAGE_TEST,
         LAYER3_RESPONSE_CONTRACT_TEST,
         LAYER3_AUTHORITY_RAIL_TEST,
+        LAYER3_PREVIEW_CONTRACT_TEST,
         LAYER3_WORKBENCH_E2E,
         MOCKUP_ASSETS,
         MOCKUP_SPEC,
@@ -2681,6 +2754,7 @@ def main() -> int:
     _check_state_action_contract_frontend_signature(errors)
     _check_response_contract_extraction(errors)
     _check_authority_rail_extraction(errors)
+    _check_preview_contract_extraction(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
