@@ -2928,6 +2928,15 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                     status="conflict",
                     http_status=409,
                 )
+            if existing_manifest.session_id != existing_session.session_id:
+                raise Layer3WorkbenchError(
+                    "selection_manifest_mismatch",
+                    "A matching Gate B idempotency record points at a manifest owned by a different session.",
+                    status="conflict",
+                    http_status=409,
+                    blocked_fields=["selection_manifest_id"],
+                    next_allowed_actions=["inspect_session_manifest_state"],
+                )
             existing_decision_manifest = (
                 (existing_session.operator_context_json or {}).get("layer3_gate_b_decision_manifest_v1")
             )
@@ -3063,15 +3072,37 @@ def _load_session(db: Session, session_id: str) -> L3Session:
     return session
 
 
-def _source_classes_from_latest_manifest(db: Session, session_id: str) -> list[str]:
+def _latest_selection_manifest_for_session(db: Session, *, session: L3Session) -> L3SelectionManifest:
     manifest = (
         db.query(L3SelectionManifest)
-        .filter(L3SelectionManifest.session_id == session_id)
+        .filter(L3SelectionManifest.session_id == session.session_id)
         .order_by(L3SelectionManifest.committed_at.desc())
         .first()
     )
     if manifest is None:
-        return []
+        raise Layer3WorkbenchError(
+            "selection_manifest_missing",
+            f"Layer 3 session '{session.session_id}' has no selection manifest.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["selection_manifest_id"],
+            next_allowed_actions=["inspect_session_manifest_state"],
+        )
+    if str(session.selection_manifest_id or "") != str(manifest.selection_manifest_id or ""):
+        raise Layer3WorkbenchError(
+            "selection_manifest_mismatch",
+            "Layer 3 session selection_manifest_id does not match the server-owned manifest row.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["selection_manifest_id"],
+            next_allowed_actions=["inspect_session_manifest_state"],
+        )
+    return manifest
+
+
+def _source_classes_from_latest_manifest(db: Session, session_id: str) -> list[str]:
+    session = _load_session(db, session_id)
+    manifest = _latest_selection_manifest_for_session(db, session=session)
     hints = manifest.source_plane_hints_json or {}
     hinted_classes = hints.get("source_classes")
     if isinstance(hinted_classes, list):
@@ -11452,14 +11483,7 @@ def _external_export_download_prepare_summary(
 
 def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     session = _load_session(db, session_id)
-    manifest = (
-        db.query(L3SelectionManifest)
-        .filter(L3SelectionManifest.session_id == session_id)
-        .order_by(L3SelectionManifest.committed_at.desc())
-        .first()
-    )
-    if manifest is None:
-        raise Layer3WorkbenchError("session_not_found", f"Layer 3 session '{session_id}' has no selection manifest.", http_status=404)
+    manifest = _latest_selection_manifest_for_session(db, session=session)
 
     typing_record_count = db.query(L3TypingRecord).filter(L3TypingRecord.session_id == session_id).count()
     analysis_unit_count = db.query(L3AnalysisUnit).filter(L3AnalysisUnit.session_id == session_id).count()

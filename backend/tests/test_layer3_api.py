@@ -1559,6 +1559,13 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
         "404",
     )
     assert session_error_schema["title"] == "Layer3WorkbenchErrorResponse"
+    session_conflict_schema = _openapi_response_schema_for_status(
+        spec,
+        "/api/v1/layer3/session/{session_id}",
+        "get",
+        "409",
+    )
+    assert session_conflict_schema["title"] == "Layer3WorkbenchErrorResponse"
 
 
 def _approve_quant_plan(client: TestClient, tmp_path) -> tuple[str, dict, dict]:
@@ -2547,6 +2554,32 @@ def test_layer3_api_plan_preview_maps_pass_entry_error(
         error_code="no_admissible_plan",
     )
     assert body["status"] == "blocked"
+
+
+def test_layer3_api_session_summary_fails_closed_on_manifest_mismatch(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    db = client.layer3_session_factory()
+    try:
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+        session = db.get(L3Session, session_id)
+        assert session is not None
+        session.selection_manifest_id = "mismatched-manifest-id"
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(f"/api/v1/layer3/session/{session_id}")
+
+    body = _assert_workbench_error_response(
+        response,
+        status_code=409,
+        error_code="selection_manifest_mismatch",
+    )
+    assert body["status"] == "conflict"
+    assert body["blocked_fields"] == ["selection_manifest_id"]
+    assert body["next_allowed_actions"] == ["inspect_session_manifest_state"]
 
 
 def test_layer3_api_package_review_commit_maps_package_entry_error(

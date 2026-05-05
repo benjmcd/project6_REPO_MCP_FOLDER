@@ -2520,7 +2520,10 @@ def post_external_export_download_signed_reference_use(
 @router.get(
     "/session/{session_id}",
     response_model=Layer3SessionSummaryResponse,
-    responses={404: {"model": Layer3WorkbenchErrorResponse}},
+    responses={
+        404: {"model": Layer3WorkbenchErrorResponse},
+        409: {"model": Layer3WorkbenchErrorResponse},
+    },
 )
 def get_session_summary(session_id: str, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.session_summary(db, session_id))
