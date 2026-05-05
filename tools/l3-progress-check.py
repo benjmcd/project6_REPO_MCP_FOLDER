@@ -72,6 +72,9 @@ REPLACEMENT_PACKAGE_SET_AUTHORITY_MIGRATION = (
 PACKAGE_SUPERSESSION_COMMIT_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0019_layer3_package_supersession_commit.py"
 )
+REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_MIGRATION = (
+    ROOT / "backend" / "alembic" / "versions" / "0020_layer3_replacement_package_artifact_manifest.py"
+)
 LAYER3_API = ROOT / "backend" / "app" / "api" / "layer3.py"
 MODELS = ROOT / "backend" / "app" / "models" / "models.py"
 SOURCE_BOUNDARY_SERVICE = (
@@ -116,6 +119,9 @@ REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE = (
 PACKAGE_SUPERSESSION_COMMIT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_package_supersession_commit.py"
 )
+REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_replacement_package_artifact_manifest.py"
+)
 QUAL_APS_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_qual_aps_execution.py"
 MOCKUP_BOUNDARY_SERVICE = ROOT / "backend" / "app" / "services" / "layer3_mockup_boundary.py"
 SOURCE_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_source_boundary.py"
@@ -128,6 +134,9 @@ REPLACEMENT_PACKAGE_SET_AUTHORITY_TEST = (
 )
 PACKAGE_SUPERSESSION_COMMIT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_package_supersession_commit.py"
+)
+REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_replacement_package_artifact_manifest.py"
 )
 SIGNED_REFERENCE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_signed_reference_state.py"
@@ -732,14 +741,14 @@ def _check_package_mutation_freeze(errors: list[str]) -> None:
         GOAL_AUDIT: [
             "122_PACKAGE_MUTATION_FREEZE.md",
             "Read-only supersession preview implementation is live and tested",
-            "Only `package_supersession_preview_only`, `replacement_package_set_authority`, and `package_supersession_commit_entry` are admitted package lifecycle runtimes",
+            "Only `package_supersession_preview_only`, `replacement_package_set_authority`, `package_supersession_commit_entry`, and `replacement_package_artifact_manifest_only` are admitted package lifecycle runtimes",
             "128_PACKAGE_REPLACEMENT_ARTIFACT_FREEZE.md",
             "Existing bounded package construction/submit is not package mutation",
         ],
         CLOSEOUT_DOC: [
             "122_PACKAGE_MUTATION_FREEZE.md",
             "package_supersession_preview_only",
-            "Read-only preview route is live; replacement package-set metadata authority is live; package supersession commit lineage route is live; package replacement artifact authority is planning/control only; package replacement artifact manifest-only verification is planning/control only; broad package mutation/reconstruction remains blocked.",
+            "Read-only preview route is live; replacement package-set metadata authority is live; package supersession commit lineage route is live; package replacement artifact authority is planning/control only; package replacement artifact manifest-only verification is live; broad package mutation/reconstruction remains blocked.",
         ],
     }
     for path, terms in required_doc_terms.items():
@@ -932,7 +941,7 @@ def _check_package_commit_entry_freeze(errors: list[str]) -> None:
             "bounded package supersession commit lineage runtime is live and tested on current main",
             "L3PackageSupersessionCommit",
             "PR #556 established `L3PackageSupersessionCommit`",
-            "`package_supersession_preview_only`, `replacement_package_set_authority`, and `package_supersession_commit_entry`",
+            "`package_supersession_preview_only`, `replacement_package_set_authority`, `package_supersession_commit_entry`, and `replacement_package_artifact_manifest_only`",
         ],
         CLOSEOUT_DOC: [
             "Package supersession commit entry",
@@ -1417,19 +1426,19 @@ def _check_package_replacement_artifact_freeze(errors: list[str]) -> None:
         GOAL_AUDIT: (
             "Doc `128_PACKAGE_REPLACEMENT_ARTIFACT_FREEZE.md` is planning/control only.",
             "planning-only `replacement_package_artifact_authority_only`",
-            "future package lifecycle implementation PR only after doc `129` is satisfied",
+            "future package lifecycle freeze for replacement package artifact generation or replacement package row namespace",
         ),
         CLOSEOUT_DOC: (
             "package replacement artifact authority row is planning/control only",
             "128_PACKAGE_REPLACEMENT_ARTIFACT_FREEZE.md",
             "replacement_package_artifact_authority_only",
-            "Doc `128` and doc `129` are not runtime authority.",
+            "Doc `128` remains planning/control authority for any later artifact generation or replacement package row namespace.",
         ),
         MANIFEST: (
             "128_PACKAGE_REPLACEMENT_ARTIFACT_FREEZE.md",
             "replacement_package_artifact_authority_only",
-            "Docs 122, 126, and 127 govern the current package lifecycle runtimes only",
-            "server-owned or server-verified",
+            "Docs 122, 126, 127, and 129 govern the current package lifecycle runtimes only",
+            "blocks replacement package artifact generation and replacement package row creation",
         ),
         BOARD: (
             "Current package planning/control correction",
@@ -1513,41 +1522,41 @@ def _check_package_replacement_artifact_manifest_freeze(errors: list[str]) -> No
         DEFERRED_GATES: (
             "129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE.md",
             "replacement_package_artifact_manifest_only",
-            "implementation-entry planning/control only",
-            "still admits no runtime behavior by itself",
+            "server-side manifest verification through `/api/v1/layer3/package/replacement-artifact/manifest/record`",
+            "no package payload write, no replacement package row, no artifact generation",
         ),
         SYNTHESIS_BOUNDARY: (
             "129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE.md",
-            "implementation-entry planning/control freeze only",
             "replacement_package_artifact_manifest_only",
-            "server-side manifest verification",
+            "live runtime is bounded to `/api/v1/layer3/package/replacement-artifact/manifest/record`",
+            "backend/tests/test_layer3_replacement_package_artifact_manifest.py",
         ),
         GOAL_AUDIT: (
-            "Doc `129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE.md` is implementation-entry planning/control only.",
+            "Doc `129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE.md` remains the implementation-entry planning authority",
             "replacement_package_artifact_manifest_only",
-            "future package lifecycle implementation PR only after doc `129` is satisfied",
+            "bounded runtime now adds `/api/v1/layer3/package/replacement-artifact/manifest/record`",
         ),
         CLOSEOUT_DOC: (
-            "package replacement artifact manifest row is implementation-entry planning/control only",
+            "package replacement artifact manifest row admits only the exact `/api/v1/layer3/package/replacement-artifact/manifest/record`",
             "129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE.md",
             "replacement_package_artifact_manifest_only",
-            "Doc `128` and doc `129` are not runtime authority.",
+            "The manifest route records immutable server-side verification only",
         ),
         MANIFEST: (
             "129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE.md",
+            "package_replacement_artifact_manifest_runtime",
             "replacement_package_artifact_manifest_only",
-            "future server-side manifest verification",
-            "broad package mutation/reconstruction blocked",
+            "backend/app/services/layer3_replacement_package_artifact_manifest.py",
         ),
         BOARD: (
-            "Current package implementation-entry planning correction",
-            "Package replacement artifact manifest freeze",
+            "Current package manifest runtime correction",
+            "Package replacement artifact manifest runtime",
             "replacement_package_artifact_manifest_only",
-            "does not implement a route, model, migration",
+            "live bounded implementation",
         ),
         PROOF_MANIFEST: (
-            "package_replacement_artifact_manifest_planning_control_proof",
-            "latest_package_replacement_artifact_manifest_freeze_branch",
+            "package_replacement_artifact_manifest_runtime_proof",
+            "latest_package_replacement_artifact_manifest_runtime_branch",
             "replacement_package_artifact_manifest_only",
             "without generating payload bytes or creating replacement package rows",
         ),
@@ -1568,8 +1577,39 @@ def _check_package_replacement_artifact_manifest_freeze(errors: list[str]) -> No
         "STATE_ACTION_DEFERRED_CAPABILITIES",
         errors,
     )
-    if "replacement_package_artifact_manifest_only" in admitted:
-        errors.append("replacement_package_artifact_manifest_only must not be admitted as a live capability before implementation")
+    manifest_capability = admitted.get("replacement_package_artifact_manifest_only")
+    if manifest_capability is None:
+        errors.append("replacement_package_artifact_manifest_only must be admitted after manifest runtime implementation")
+    else:
+        if manifest_capability.get("admitted") is not True:
+            errors.append("replacement_package_artifact_manifest_only admitted flag must be true after implementation")
+        if manifest_capability.get("source_gate") != "129_PACKAGE_REPLACEMENT_ARTIFACT_MANIFEST_FREEZE":
+            errors.append("replacement_package_artifact_manifest_only source_gate drifted")
+        if (
+            manifest_capability.get("owner_service")
+            != "backend/app/services/layer3_replacement_package_artifact_manifest.py"
+        ):
+            errors.append("replacement_package_artifact_manifest_only owner_service drifted")
+        blocked = manifest_capability.get("blocked_downstream")
+        if not isinstance(blocked, list):
+            errors.append("replacement_package_artifact_manifest_only missing blocked_downstream list")
+        else:
+            for blocked_capability in (
+                "package_mutation_reconstruction",
+                "replacement_package_artifact_generation",
+                "replacement_output_package_rows",
+                "package_payload_rewrite",
+                "provider_public_url",
+                "connector_destination_dispatch",
+                "local_upload_or_directory_source_expansion",
+                "broad_qualitative_execution",
+                "full_mockup_activation",
+            ):
+                if blocked_capability not in blocked:
+                    errors.append(
+                        "replacement_package_artifact_manifest_only missing blocked downstream "
+                        f"capability: {blocked_capability}"
+                    )
     package_mutation = deferred.get("package_mutation_reconstruction")
     if package_mutation is None:
         errors.append("deferred capabilities missing package_mutation_reconstruction")
@@ -1579,10 +1619,52 @@ def _check_package_replacement_artifact_manifest_freeze(errors: list[str]) -> No
         "package_supersession_preview_only",
         "replacement_package_set_authority",
         "package_supersession_commit_entry",
+        "replacement_package_artifact_manifest_only",
     ):
         item = admitted.get(capability)
         if item is None or item.get("admitted") is not True:
-            errors.append(f"{capability} must remain admitted while artifact manifest freeze is planning-only")
+            errors.append(f"{capability} must remain admitted while artifact manifest runtime is live")
+
+    required_runtime_terms = {
+        REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_SERVICE: (
+            "REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_MODE",
+            "record_replacement_package_artifact_manifest",
+            "replacement_package_artifact_manifest_authority_basis_hash",
+            "artifact_generation_enabled",
+            "package_row_mutation_enabled",
+            "provider_public_url_enabled",
+            "connector_dispatch_enabled",
+        ),
+        REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_MIGRATION: (
+            "0020_layer3_replacement_package_artifact_manifest",
+            "l3_replacement_package_artifact_manifest",
+            "uq_l3_replacement_artifact_manifest_client_request",
+            "uq_l3_replacement_artifact_manifest_basis_hash",
+        ),
+        MODELS: (
+            "class L3ReplacementPackageArtifactManifest",
+            "uq_l3_replacement_artifact_manifest_client_request",
+            "ck_l3_replacement_artifact_manifest_operator_decision",
+            "verified_artifact_refs_json",
+        ),
+        LAYER3_API: (
+            "Layer3ReplacementPackageArtifactManifestRequest",
+            "Layer3ReplacementPackageArtifactManifestResponse",
+            '"/package/replacement-artifact/manifest/record"',
+            "record_replacement_package_artifact_manifest",
+        ),
+        REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_TEST: (
+            "test_replacement_package_artifact_manifest_records_server_verified_manifest_only",
+            "test_replacement_package_artifact_manifest_prechecks_fail_closed",
+            "test_replacement_package_artifact_manifest_rejects_hash_mismatch_outside_namespace_and_source_ref_reuse",
+            "test_replacement_package_artifact_manifest_concurrent_duplicate_request_records_one_manifest",
+        ),
+    }
+    for path, terms in required_runtime_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing package artifact manifest runtime term: {term}")
 
 
 def _check_qualitative_capability_boundary(errors: list[str]) -> None:
@@ -1952,7 +2034,7 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "267 passed",
         ],
         CLOSEOUT_DOC: [
-            "Status: bounded merged-main proof snapshot through PR #584 plan-flow request contract extraction.",
+            "Status: bounded proof snapshot through PR #584 plan-flow request contract extraction plus the package replacement artifact manifest-only runtime slice.",
             "123_SOURCE_EXPANSION_FREEZE.md",
             "post-merge documentation/proof synchronization only",
             "PR #538",
