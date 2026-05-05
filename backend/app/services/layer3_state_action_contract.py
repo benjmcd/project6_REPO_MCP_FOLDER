@@ -60,6 +60,26 @@ STATE_ACTION_ADMITTED_CAPABILITIES = (
             "full_mockup_activation",
         ],
     },
+    {
+        "capability": "replacement_package_set_authority",
+        "admitted": True,
+        "source_gate": "127_PACKAGE_REPLACEMENT_SET_FREEZE",
+        "scope": "durable replacement package-set authority record with no package row or payload mutation",
+        "owner_service": "backend/app/services/layer3_replacement_package_set_authority.py",
+        "blocked_downstream": [
+            "package_mutation_reconstruction",
+            "package_row_mutation",
+            "package_payload_rewrite",
+            "package_supersession_commit",
+            "provider_public_url",
+            "connector_destination_dispatch",
+            "local_upload_or_directory_source_expansion",
+            "broad_qualitative_execution",
+            "hybrid_execution",
+            "rag_vector_retrieval",
+            "full_mockup_activation",
+        ],
+    },
 )
 
 STATE_ACTION_DEFERRED_CAPABILITIES = (
@@ -149,6 +169,7 @@ def build_state_action_contract(
     external_export_download_delivery_operator_decision: str,
     connector_dispatch_record_operator_decision: str,
     package_supersession_preview_operator_decision: str,
+    replacement_package_set_authority_operator_decision: str,
     terminal_pass_statuses: Iterable[str],
 ) -> dict[str, Any]:
     state_action_matrix = _clone_json(state_model["states"])
@@ -184,6 +205,7 @@ def build_state_action_contract(
             "external_export_download_deliver": [external_export_download_delivery_operator_decision],
             "connector_dispatch_record": [connector_dispatch_record_operator_decision],
             "package_supersession_preview": [package_supersession_preview_operator_decision],
+            "record_replacement_package_set_authority": [replacement_package_set_authority_operator_decision],
         },
         "terminal_pass_statuses": sorted(terminal_pass_statuses),
         "admitted_capabilities": _clone_json(STATE_ACTION_ADMITTED_CAPABILITIES),

@@ -36,6 +36,7 @@ from app.models.models import (
     L3OutputPackage,
     L3PassRun,
     L3ReconciliationRecord,
+    L3ReplacementPackageSetAuthority,
     L3Session,
     L3SignedReferenceAuditEvent,
     L3SignedReferenceReceipt,
@@ -47,6 +48,7 @@ from app.services import (
     layer3_connector_dispatch_entry,
     layer3_package_mutation_entry,
     layer3_pass_entry as layer3_pass_entry_module,
+    layer3_replacement_package_set_authority,
     layer3_workbench,
 )
 from app.services.layer3_aps_handoff import (
@@ -1412,6 +1414,82 @@ def test_layer3_external_export_download_openapi_contracts(client: TestClient) -
         "authority_rail",
     } <= set(supersession_schema["required"])
 
+    replacement_request_schema = spec["paths"]["/api/v1/layer3/package/replacement-set/record"]["post"][
+        "requestBody"
+    ]["content"]["application/json"]["schema"]
+    assert replacement_request_schema["additionalProperties"] is False
+    assert {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "source_package_set_hash",
+        "source_output_package_ids",
+        "source_package_kinds",
+        "source_payload_refs",
+        "source_payload_hashes",
+        "replacement_package_set_id",
+        "replacement_package_set_hash",
+        "replacement_package_kinds",
+        "replacement_payload_refs",
+        "replacement_payload_hashes",
+        "authority_basis_hash",
+        "operator_decision",
+    } == set(replacement_request_schema["required"])
+    assert replacement_request_schema["properties"]["operator_decision"]["enum"] == [
+        "record_replacement_package_set_authority"
+    ]
+    assert replacement_request_schema["properties"]["package_payload"]["description"].startswith(
+        "Known but non-admitted"
+    )
+    assert replacement_request_schema["properties"]["package_supersession_commit"]["description"].startswith(
+        "Known but non-admitted"
+    )
+
+    replacement_schema = _openapi_response_schema(spec, "/api/v1/layer3/package/replacement-set/record", "post")
+    assert replacement_schema["title"] == "Layer3ReplacementPackageSetAuthorityResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "replacement_package_set_authority_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "source_package_set_hash",
+        "source_output_package_ids",
+        "source_package_kinds",
+        "source_payload_refs",
+        "source_payload_hashes",
+        "replacement_package_set_id",
+        "replacement_package_set_hash",
+        "replacement_package_kinds",
+        "replacement_payload_refs",
+        "replacement_payload_hashes",
+        "authority_basis_hash",
+        "authority_snapshot",
+        "operator_decision",
+        "replacement_package_set_authority_mode",
+        "source_gate",
+        "authority_record_persisted",
+        "package_row_mutation_enabled",
+        "package_payload_write_enabled",
+        "package_supersession_commit_enabled",
+        "broad_package_mutation_enabled",
+        "source_widening_enabled",
+        "connector_dispatch_enabled",
+        "provider_public_url_enabled",
+        "qualitative_hybrid_rag_execution_enabled",
+        "frontend_only_durable_state_enabled",
+        "downstream_unavailable",
+        "next_state",
+        "authority_rail",
+    } <= set(replacement_schema["required"])
+
     record_request_schema = spec["paths"]["/api/v1/layer3/handoff/connector/record"]["post"]["requestBody"][
         "content"
     ]["application/json"]["schema"]
@@ -2551,6 +2629,65 @@ def _package_supersession_preview_payload(
     return {key: value for key, value in payload.items() if value is not None}
 
 
+def _replacement_package_set_authority_payload(
+    *,
+    request_id: str,
+    session_id: str,
+    approval_body: dict,
+    selection_body: dict,
+    commit_body: dict,
+    source_package_set_hash: str,
+) -> dict:
+    replacement_package_set_id = f"replacement-set-{request_id}"
+    replacement_package_kinds = list(commit_body["package_kinds"])
+    replacement_payload_refs = [f"{payload_ref}.replacement" for payload_ref in commit_body["payload_refs"]]
+    replacement_payload_hashes = [
+        hashlib.sha256(f"{request_id}:{package_kind}:{payload_ref}".encode("utf-8")).hexdigest()
+        for package_kind, payload_ref in zip(replacement_package_kinds, replacement_payload_refs)
+    ]
+    replacement_package_set_hash = layer3_replacement_package_set_authority.replacement_package_set_hash(
+        replacement_package_set_id=replacement_package_set_id,
+        replacement_package_kinds=replacement_package_kinds,
+        replacement_payload_refs=replacement_payload_refs,
+        replacement_payload_hashes=replacement_payload_hashes,
+    )
+    authority_basis_hash = layer3_replacement_package_set_authority.replacement_package_set_authority_basis_hash(
+        session_id=session_id,
+        analysis_plan_id=approval_body["analysis_plan_id"],
+        pass_run_id=selection_body["pass_run_ids"][0],
+        reconciliation_record_id=commit_body["reconciliation_record_id"],
+        source_package_set_hash=source_package_set_hash,
+        source_output_package_ids=[package["output_package_id"] for package in commit_body["output_packages"]],
+        source_package_kinds=commit_body["package_kinds"],
+        source_payload_refs=commit_body["payload_refs"],
+        source_payload_hashes=commit_body["payload_hashes"],
+        replacement_package_set_id=replacement_package_set_id,
+        replacement_package_set_hash=replacement_package_set_hash,
+        replacement_package_kinds=replacement_package_kinds,
+        replacement_payload_refs=replacement_payload_refs,
+        replacement_payload_hashes=replacement_payload_hashes,
+    )
+    return {
+        "client_request_id": request_id,
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": selection_body["pass_run_ids"][0],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "source_package_set_hash": source_package_set_hash,
+        "source_output_package_ids": [package["output_package_id"] for package in commit_body["output_packages"]],
+        "source_package_kinds": commit_body["package_kinds"],
+        "source_payload_refs": commit_body["payload_refs"],
+        "source_payload_hashes": commit_body["payload_hashes"],
+        "replacement_package_set_id": replacement_package_set_id,
+        "replacement_package_set_hash": replacement_package_set_hash,
+        "replacement_package_kinds": replacement_package_kinds,
+        "replacement_payload_refs": replacement_payload_refs,
+        "replacement_payload_hashes": replacement_payload_hashes,
+        "authority_basis_hash": authority_basis_hash,
+        "operator_decision": "record_replacement_package_set_authority",
+    }
+
+
 def _handoff_export_prepare_payload(
     *,
     request_id: str,
@@ -3291,6 +3428,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert bootstrap_body["features"]["external_export_download_deliver"] is True
     assert bootstrap_body["features"]["internal_connector_dispatch_record"] is True
     assert bootstrap_body["features"]["package_supersession_preview"] is True
+    assert bootstrap_body["features"]["replacement_package_set_authority"] is True
     assert bootstrap_body["features"]["package_review"] is False
     assert bootstrap_body["features"]["external_export"] is False
     assert bootstrap_body["features"]["dispatch"] is False
@@ -3332,6 +3470,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         bootstrap_body["execution_readiness"]["package_supersession_preview_endpoint"]
         == "/api/v1/layer3/package/mutation/preview"
     )
+    assert bootstrap_body["execution_readiness"]["replacement_package_set_authority_admitted"] is True
+    assert (
+        bootstrap_body["execution_readiness"]["replacement_package_set_authority_endpoint"]
+        == "/api/v1/layer3/package/replacement-set/record"
+    )
     assert bootstrap_body["execution_readiness"]["package_review_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_handoff_admitted"] is False
     assert bootstrap_body["execution_readiness"]["external_export_admitted"] is False
@@ -3369,6 +3512,11 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["internal_connector_dispatch_record_endpoint"] == "/api/v1/layer3/handoff/connector/record"
     assert readiness_body["package_supersession_preview_admitted"] is True
     assert readiness_body["package_supersession_preview_endpoint"] == "/api/v1/layer3/package/mutation/preview"
+    assert readiness_body["replacement_package_set_authority_admitted"] is True
+    assert (
+        readiness_body["replacement_package_set_authority_endpoint"]
+        == "/api/v1/layer3/package/replacement-set/record"
+    )
     assert readiness_body["package_review_admitted"] is False
     assert readiness_body["external_handoff_admitted"] is False
     assert readiness_body["external_export_admitted"] is False
@@ -3380,6 +3528,7 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert "external_export_download_deliver" in readiness_body["state_action_contract"]["action_ids"]
     assert "internal_connector_dispatch_record" in readiness_body["state_action_contract"]["action_ids"]
     assert "package_supersession_preview" in readiness_body["state_action_contract"]["action_ids"]
+    assert "record_replacement_package_set_authority" in readiness_body["state_action_contract"]["action_ids"]
     admitted_capabilities = {
         item["capability"]: item for item in readiness_body["state_action_contract"]["admitted_capabilities"]
     }
@@ -3400,6 +3549,12 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
         admitted_capabilities["package_supersession_preview_only"]["owner_service"]
         == "backend/app/services/layer3_package_mutation_entry.py"
     )
+    assert admitted_capabilities["replacement_package_set_authority"]["admitted"] is True
+    assert admitted_capabilities["replacement_package_set_authority"]["source_gate"] == "127_PACKAGE_REPLACEMENT_SET_FREEZE"
+    assert (
+        admitted_capabilities["replacement_package_set_authority"]["owner_service"]
+        == "backend/app/services/layer3_replacement_package_set_authority.py"
+    )
     deferred_capabilities = {
         item["capability"]: item for item in readiness_body["state_action_contract"]["deferred_capabilities"]
     }
@@ -3416,7 +3571,12 @@ def test_layer3_api_full_first_slice_flow(client: TestClient) -> None:
     assert readiness_body["idempotency_contract"]["client_request_id_required_current_slice"] is False
     assert readiness_body["idempotency_contract"]["client_request_id_required_for_gate_b_decision"] is True
     assert readiness_body["idempotency_contract"]["client_request_id_required_for_package_supersession_preview"] is True
+    assert (
+        readiness_body["idempotency_contract"]["client_request_id_required_for_replacement_package_set_authority"]
+        is True
+    )
     assert "duplicate_package_supersession_preview" in readiness_body["idempotency_contract"]
+    assert "duplicate_replacement_package_set_authority" in readiness_body["idempotency_contract"]
     assert "duplicate_gate_b_decision" in readiness_body["idempotency_contract"]
     assert readiness_body["idempotency_contract"]["gate_b_decision_idempotency_scope"] == "durable_claim_and_post_commit_retry"
     assert readiness_body["idempotency_contract"]["gate_b_decision_concurrent_duplicate_lock"] is True
@@ -8924,6 +9084,294 @@ def test_layer3_api_package_supersession_preview_prechecks_fail_closed(
             L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
         ).one()
         assert "package_supersession_preview" not in reconciliation.summary_json
+    finally:
+        db.close()
+
+
+def test_layer3_api_replacement_package_set_authority_records_without_package_row_or_payload_mutation(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        _preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _commit_payload,
+    ) = _construct_quant_package_set(client, tmp_path, request_id="api-replacement-package-authority-success")
+    preview_payload = _package_supersession_preview_payload(
+        request_id="api-replacement-package-authority-success-preview",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+    )
+    preview = client.post("/api/v1/layer3/package/mutation/preview", json=preview_payload)
+    assert preview.status_code == 200, preview.json()
+    payload = _replacement_package_set_authority_payload(
+        request_id="api-replacement-package-authority-success-record",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        source_package_set_hash=preview.json()["package_set_hash"],
+    )
+
+    def files_under_tmp() -> set[str]:
+        return {str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*") if path.is_file()}
+
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+            "replacement_authorities": db.query(L3ReplacementPackageSetAuthority).count(),
+        }
+        packages_before = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        reconciliation_before = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json
+        )
+    finally:
+        db.close()
+    files_before = files_under_tmp()
+
+    record = client.post("/api/v1/layer3/package/replacement-set/record", json=payload)
+    assert record.status_code == 200, record.json()
+    body = record.json()
+    _assert_common_response_envelope(body)
+    assert body["schema_id"] == "layer3.replacement_package_set_authority.v1"
+    assert body["status"] == "recorded"
+    assert body["session_id"] == session_id
+    assert body["source_package_set_hash"] == payload["source_package_set_hash"]
+    assert body["source_output_package_ids"] == payload["source_output_package_ids"]
+    assert body["source_package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert body["source_payload_refs"] == payload["source_payload_refs"]
+    assert body["source_payload_hashes"] == payload["source_payload_hashes"]
+    assert body["replacement_package_set_id"] == payload["replacement_package_set_id"]
+    assert body["replacement_package_set_hash"] == payload["replacement_package_set_hash"]
+    assert body["replacement_package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert body["replacement_payload_refs"] == payload["replacement_payload_refs"]
+    assert body["replacement_payload_hashes"] == payload["replacement_payload_hashes"]
+    assert body["authority_basis_hash"] == payload["authority_basis_hash"]
+    assert body["operator_decision"] == "record_replacement_package_set_authority"
+    assert body["replacement_package_set_authority_mode"] == "replacement_package_set_authority"
+    assert body["source_gate"] == "127_PACKAGE_REPLACEMENT_SET_FREEZE"
+    assert body["authority_record_persisted"] is True
+    assert body["package_row_mutation_enabled"] is False
+    assert body["package_payload_write_enabled"] is False
+    assert body["package_supersession_commit_enabled"] is False
+    assert body["broad_package_mutation_enabled"] is False
+    assert body["source_widening_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["provider_public_url_enabled"] is False
+    assert body["qualitative_hybrid_rag_execution_enabled"] is False
+    assert body["frontend_only_durable_state_enabled"] is False
+    assert body["downstream_unavailable"] == [
+        "package_row_mutation",
+        "package_payload_rewrite",
+        "package_supersession_commit",
+        "provider_public_url",
+        "connector_destination_dispatch",
+        "source_upload_expansion",
+        "broad_qualitative_hybrid_rag_execution",
+        "full_mockup_activation",
+    ]
+    assert body["authority_snapshot"]["negative_invariants"]["creates_l3_output_package"] is False
+    assert body["authority_snapshot"]["negative_invariants"]["writes_package_payload"] is False
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+            "replacement_authorities": db.query(L3ReplacementPackageSetAuthority).count(),
+        } == {**counts_before, "replacement_authorities": counts_before["replacement_authorities"] + 1}
+        authority = db.query(L3ReplacementPackageSetAuthority).one()
+        assert authority.replacement_package_set_authority_id == body["replacement_package_set_authority_id"]
+        assert authority.authority_basis_hash == payload["authority_basis_hash"]
+        packages_after = [
+            (
+                package.output_package_id,
+                package.package_kind,
+                package.status,
+                package.payload_ref,
+                package.payload_hash,
+                package.summary_json,
+            )
+            for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind.asc()).all()
+        ]
+        assert packages_after == packages_before
+        reconciliation_after = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json
+        )
+        assert reconciliation_after == reconciliation_before
+    finally:
+        db.close()
+    assert files_under_tmp() == files_before
+
+    replay = client.post("/api/v1/layer3/package/replacement-set/record", json=payload)
+    assert replay.status_code == 200, replay.json()
+    assert replay.json()["status"] == "already_recorded"
+    assert replay.json()["replacement_package_set_authority_id"] == body["replacement_package_set_authority_id"]
+
+    same_basis = client.post(
+        "/api/v1/layer3/package/replacement-set/record",
+        json={**payload, "client_request_id": "api-replacement-package-authority-same-basis"},
+    )
+    assert same_basis.status_code == 200, same_basis.json()
+    assert same_basis.json()["status"] == "already_recorded"
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3ReplacementPackageSetAuthority).count() == 1
+    finally:
+        db.close()
+
+
+def test_layer3_api_replacement_package_set_authority_prechecks_fail_closed(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    missing = client.post(
+        "/api/v1/layer3/package/replacement-set/record",
+        json={"client_request_id": "api-replacement-package-authority-missing", "session_id": "session-only"},
+    )
+    assert missing.status_code == 400
+    assert set(missing.json()["blocked_fields"]) >= {
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "source_package_set_hash",
+        "source_output_package_ids",
+        "source_package_kinds",
+        "source_payload_refs",
+        "source_payload_hashes",
+        "replacement_package_set_id",
+        "replacement_package_set_hash",
+        "replacement_package_kinds",
+        "replacement_payload_refs",
+        "replacement_payload_hashes",
+        "authority_basis_hash",
+        "operator_decision",
+    }
+
+    (
+        session_id,
+        _preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        _commit_payload,
+    ) = _construct_quant_package_set(client, tmp_path, request_id="api-replacement-package-authority-prechecks")
+    preview_payload = _package_supersession_preview_payload(
+        request_id="api-replacement-package-authority-prechecks-preview",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+    )
+    preview = client.post("/api/v1/layer3/package/mutation/preview", json=preview_payload)
+    assert preview.status_code == 200, preview.json()
+    base_payload = _replacement_package_set_authority_payload(
+        request_id="api-replacement-package-authority-prechecks-record",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        source_package_set_hash=preview.json()["package_set_hash"],
+    )
+    cases = [
+        (
+            {**base_payload, "package_payload": {"unsafe": True}},
+            400,
+            "replacement_package_set_authority_scope_not_admitted",
+        ),
+        (
+            {**base_payload, "operator_decision": "commit_package_supersession"},
+            400,
+            "unsupported_replacement_package_set_authority_decision",
+        ),
+        (
+            {**base_payload, "source_package_set_hash": "stale-source-package-set-hash"},
+            409,
+            "replacement_package_set_authority_source_package_set_hash_mismatch",
+        ),
+        (
+            {
+                **base_payload,
+                "source_payload_hashes": ["stale-hash", *base_payload["source_payload_hashes"][1:]],
+            },
+            409,
+            "replacement_package_set_authority_source_payload_hashes_mismatch",
+        ),
+        (
+            {**base_payload, "replacement_payload_refs": base_payload["source_payload_refs"]},
+            409,
+            "replacement_package_set_authority_reuses_source_payload_ref",
+        ),
+        (
+            {**base_payload, "replacement_package_set_hash": "stale-replacement-package-set-hash"},
+            409,
+            "replacement_package_set_authority_replacement_package_set_hash_mismatch",
+        ),
+        (
+            {**base_payload, "authority_basis_hash": "stale-authority-basis-hash"},
+            409,
+            "replacement_package_set_authority_basis_hash_mismatch",
+        ),
+    ]
+    for payload, expected_status, expected_error in cases:
+        response = client.post("/api/v1/layer3/package/replacement-set/record", json=payload)
+        assert response.status_code == expected_status, response.json()
+        assert response.json()["error_code"] == expected_error
+
+    unknown_extra = client.post(
+        "/api/v1/layer3/package/replacement-set/record",
+        json={**base_payload, "replacement_output_package_ids": ["not-admitted"]},
+    )
+    assert unknown_extra.status_code == 422
+    assert any(
+        item.get("type") == "extra_forbidden" and item.get("loc") == ["body", "replacement_output_package_ids"]
+        for item in unknown_extra.json()["detail"]
+    )
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3ReplacementPackageSetAuthority).count() == 0
+        assert db.query(L3OutputPackage).count() == 3
     finally:
         db.close()
 
