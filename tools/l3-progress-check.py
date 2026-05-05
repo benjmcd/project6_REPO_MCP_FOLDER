@@ -36,9 +36,16 @@ STATE_ACTION_CONTRACT = (
 SESSION_ENTRY_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0012_layer3_session_entry.py"
 )
+GATE_B_IDEMPOTENCY_MIGRATION = (
+    ROOT / "backend" / "alembic" / "versions" / "0017_layer3_gate_b_idempotency.py"
+)
 LAYER3_API = ROOT / "backend" / "app" / "api" / "layer3.py"
+MODELS = ROOT / "backend" / "app" / "models" / "models.py"
 SOURCE_BOUNDARY_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_boundary.py"
+)
+GATE_B_STATE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_gate_b_state.py"
 )
 SIGNED_REFERENCE_STATE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_signed_reference_state.py"
@@ -58,6 +65,7 @@ SOURCE_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_source_boundary
 QUAL_APS_TEST = ROOT / "backend" / "tests" / "test_layer3_qual_aps_execution.py"
 MOCKUP_BOUNDARY_TEST = ROOT / "backend" / "tests" / "test_layer3_mockup_boundary.py"
 SESSION_ENTRY_TEST = ROOT / "backend" / "tests" / "test_layer3_session_entry.py"
+GATE_B_STATE_TEST = ROOT / "backend" / "tests" / "test_layer3_gate_b_state.py"
 SIGNED_REFERENCE_STATE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_signed_reference_state.py"
 )
@@ -1711,6 +1719,66 @@ def _check_ci_layer3_backend_guardrail(errors: list[str]) -> None:
         errors.append("browser harness requirements must include focused Layer 3 API requirements")
 
 
+def _check_gate_b_durable_idempotency_claim(errors: list[str]) -> None:
+    required_terms = {
+        MODELS: [
+            "class L3GateBIdempotencyKey",
+            "uq_l3_gate_b_idempotency_client_request",
+            "ck_l3_gate_b_idempotency_status",
+            "L3_GATE_B_IDEMPOTENCY_STATUS_CLAIMED",
+            "L3_GATE_B_IDEMPOTENCY_STATUS_COMMITTED",
+        ],
+        GATE_B_IDEMPOTENCY_MIGRATION: [
+            "revision = \"0017_layer3_gate_b_idempotency\"",
+            "down_revision = \"0016_layer3_signed_reference_state\"",
+            "l3_gate_b_idempotency_key",
+            "uq_l3_gate_b_idempotency_client_request",
+            "ck_l3_gate_b_idempotency_status",
+        ],
+        GATE_B_STATE_SERVICE: [
+            "claim_gate_b_idempotency",
+            "complete_gate_b_idempotency_claim",
+            "gate_b_idempotency_claim_matches",
+            "gate_b_idempotency_request_hash",
+            "L3GateBIdempotencyKey",
+        ],
+        WORKBENCH_SERVICE: [
+            "claim_gate_b_idempotency",
+            "complete_gate_b_idempotency_claim",
+            "find_gate_b_idempotency_claim",
+            "\"gate_b_decision_idempotency_scope\": \"durable_claim_and_post_commit_retry\"",
+            "\"gate_b_decision_concurrent_duplicate_lock\": True",
+            "gate_b_idempotency_in_progress",
+        ],
+        GATE_B_STATE_TEST: [
+            "test_gate_b_idempotency_migration_defines_durable_unique_claim",
+            "test_gate_b_idempotency_claim_round_trips_and_matches",
+            "test_gate_b_decision_concurrent_duplicate_client_request_id_uses_durable_claim",
+            "ThreadPoolExecutor",
+        ],
+        LAYER3_API_TEST: [
+            "L3GateBIdempotencyKey",
+            "\"durable_claim_and_post_commit_retry\"",
+            "gate_b_decision_concurrent_duplicate_lock",
+        ],
+        SYNTHESIS_BOUNDARY: [
+            "0017_layer3_gate_b_idempotency.py",
+            "test_gate_b_decision_concurrent_duplicate_client_request_id_uses_durable_claim",
+            "without admitting execution, source widening, package mutation/reconstruction, connector/destination dispatch",
+        ],
+        GOAL_AUDIT: [
+            "durable Gate B idempotency claim proof",
+            "L3GateBIdempotencyKey",
+            "test_gate_b_decision_concurrent_duplicate_client_request_id_uses_durable_claim",
+        ],
+    }
+    for path, terms in required_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing Gate B durable idempotency term: {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -1736,7 +1804,10 @@ def main() -> int:
         MOCKUP_TRUTH_FREEZE,
         STATE_ACTION_CONTRACT,
         SESSION_ENTRY_MIGRATION,
+        GATE_B_IDEMPOTENCY_MIGRATION,
         LAYER3_API,
+        MODELS,
+        GATE_B_STATE_SERVICE,
         SOURCE_BOUNDARY_SERVICE,
         QUAL_APS_SERVICE,
         MOCKUP_BOUNDARY_SERVICE,
@@ -1747,6 +1818,7 @@ def main() -> int:
         QUAL_APS_TEST,
         MOCKUP_BOUNDARY_TEST,
         SESSION_ENTRY_TEST,
+        GATE_B_STATE_TEST,
         SIGNED_REFERENCE_STATE_SERVICE,
         SIGNED_REFERENCE_STATE_TEST,
         LAYER3_API_TEST,
@@ -1769,6 +1841,7 @@ def main() -> int:
     _check_source_boundary_contract(errors)
     _check_mockup_truth_state_boundary(errors)
     _check_signed_reference_state_guard(errors)
+    _check_gate_b_durable_idempotency_claim(errors)
     _check_preflight_request_guard(errors)
     _check_plan_preview_request_guard(errors)
     _check_source_preview_request_guard(errors)
