@@ -51,6 +51,7 @@ Do not treat Codesight route response summaries as exact current DTO truth. Read
 - The proof moves the prepared APS bundle artifact inside the isolated pytest temp tree, then verifies delivery returns a structured `409` `external_export_download_delivery_source_artifact_unavailable` error.
 - The proof verifies no new `AnalysisArtifact`, `AnalysisRun`, `ConnectorRun`, `L3OutputPackage`, `L3PassRun`, or `L3ReconciliationRecord` rows are created, recorded readiness state is unchanged, and no `download_url`, `public_url`, `signed_url`, or `connector_run_id` headers are emitted.
 - Scope limit: this is delivery-path fail-closed proof only. It does not implement artifact cleanup, artifact reconstruction, provider/public URLs, connector dispatch, package mutation/reconstruction, signed-reference concurrency/revocation, source widening, or full mockup activation.
+- `backend/tests/test_layer3_model_exports.py` is the scoped live proof for the synthesis `CL11` model-discoverability gap. The `L3*` SQLAlchemy models are re-exported from `app.models`; this is import-surface cleanup only and does not change model definitions, schema, migrations, persistence behavior, routes, or runtime state.
 
 ## Supported Next-Action Boundary
 
