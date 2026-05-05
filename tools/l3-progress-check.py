@@ -1123,7 +1123,7 @@ def _check_source_boundary_contract(errors: list[str]) -> None:
             "267 passed",
         ],
         CLOSEOUT_DOC: [
-            "Status: bounded merged-main proof snapshot after PR #538 merged at `project6-origin/main=329fc6d5`",
+            "Status: bounded merged-main proof snapshot.",
             "123_SOURCE_EXPANSION_FREEZE.md",
             "post-merge documentation/proof synchronization only",
             "PR #538",
@@ -1304,13 +1304,17 @@ def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
             "54c5d8ef",
         ],
         CLOSEOUT_DOC: [
-            "preflight DTO boundary proof synchronized after PR #547 merged at `project6-origin/main=54c5d8ef`",
+            "Functional boundary evidence currently targets PR #547 at `project6-origin/main=54c5d8ef`",
             "This file is post-merge documentation/proof synchronization only.",
             "bounded snapshot, not an evergreen manifest",
             "snapshot_target_ref: `project6-origin/main`",
-            "snapshot_target_head: `54c5d8ef`",
+            "functional_boundary_head: `54c5d8ef`",
+            "functional_boundary_role: last runtime-affecting Layer 3 boundary captured in this snapshot",
+            "not a self-updating current-main marker",
             "latest_functional_boundary_pr: `#547`",
-            "latest_docs_sync_pr: `#548`",
+            "docs_sync_reference_pr: `#548`",
+            "do not infer the live `project6-origin/main` SHA from this field",
+            "current_main_rule: re-read live git and rerun `python .\\tools\\l3-progress-check.py` before new work",
             "125_MOCKUP_TRUTH_STATE_FREEZE.md",
             "mockup_truth_state_contract()",
             "full mockup activation remains blocked",
@@ -1320,12 +1324,22 @@ def _check_mockup_truth_state_boundary(errors: list[str]) -> None:
             "Merged main head after PR #545: 36526ee1.",
             "Pre-merge PR #547 checks: backend-layer3-api SUCCESS; test SUCCESS.",
             "Merged main head after PR #547: 54c5d8ef.",
+            "Pre-merge PR #548 checks: backend-layer3-api SUCCESS; test SUCCESS.",
+            "Merged main head after PR #548: e0183721.",
         ],
     }
     for path, terms in required_doc_terms.items():
         text = _read_required_text(path, errors)
         if path == CLOSEOUT_DOC:
-            for stale_term in ("latest_merged_pr:", "current_branch:", "merged_main_head: `005ef212`"):
+            for stale_term in (
+                "latest_merged_pr:",
+                "current_branch:",
+                "merged_main_head: `005ef212`",
+                "snapshot_target_head:",
+                "latest_docs_sync_pr:",
+                "current baseline ref:",
+                "local authority was read from",
+            ):
                 if stale_term in text:
                     errors.append(f"{_rel(path)} retains stale evergreen closeout term: {stale_term}")
         for term in terms:
@@ -1423,7 +1437,7 @@ def _check_preflight_request_guard(errors: list[str]) -> None:
             "Preflight DTO boundary",
             "Layer3PreflightRequest",
             "test_layer3_api_preflight_rejects_extra_fields_before_service_execution",
-            "preflight DTO boundary proof synchronized after PR #547",
+            "PR #547 preflight DTO boundary proof",
         ],
     }
     for path, terms in required_doc_terms.items():
