@@ -45,6 +45,13 @@ Do not treat Codesight route tags such as `[auth]` as proof of in-app authentica
 
 Do not treat Codesight route response summaries as exact current DTO truth. Read `backend/app/api/layer3.py`, `backend/app/services/layer3_workbench.py`, service modules, and tests before making route or schema claims.
 
+## Post-Synthesis Proof Recheck
+
+- `backend/tests/test_layer3_api.py::test_layer3_api_external_export_download_deliver_fails_closed_when_bundle_artifact_missing` is the scoped live proof for the synthesis `CL36` missing-artifact recheck on the same-origin external export/download delivery path.
+- The proof moves the prepared APS bundle artifact inside the isolated pytest temp tree, then verifies delivery returns a structured `409` `external_export_download_delivery_source_artifact_unavailable` error.
+- The proof verifies no new `AnalysisArtifact`, `AnalysisRun`, `ConnectorRun`, `L3OutputPackage`, `L3PassRun`, or `L3ReconciliationRecord` rows are created, recorded readiness state is unchanged, and no `download_url`, `public_url`, `signed_url`, or `connector_run_id` headers are emitted.
+- Scope limit: this is delivery-path fail-closed proof only. It does not implement artifact cleanup, artifact reconstruction, provider/public URLs, connector dispatch, package mutation/reconstruction, signed-reference concurrency/revocation, source widening, or full mockup activation.
+
 ## Supported Next-Action Boundary
 
 The synthesis-supported direction after the already-landed proof/state/refactor slices is:

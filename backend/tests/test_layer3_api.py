@@ -8137,6 +8137,117 @@ def test_layer3_api_external_export_download_deliver_streams_validated_bundle_wi
     assert files_under_tmp() == files_before
 
 
+def test_layer3_api_external_export_download_deliver_fails_closed_when_bundle_artifact_missing(
+    client: TestClient,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        preview_body,
+        approval_body,
+        selection_body,
+        start_body,
+        review_body,
+        _package_preview_body,
+        commit_body,
+        submit_body,
+        prepare_body,
+        dispatch_payload,
+    ) = _prepare_aps_handoff_dispatch(
+        client,
+        tmp_path,
+        request_id="api-external-export-download-deliver-missing-artifact",
+    )
+    dispatch = client.post("/api/v1/layer3/handoff/aps/dispatch", json=dispatch_payload)
+    assert dispatch.status_code == 200, dispatch.json()
+    dispatch_body = dispatch.json()
+    prepare_payload = _external_export_download_prepare_payload(
+        request_id="api-external-export-download-deliver-missing-artifact-prepare",
+        session_id=session_id,
+        preview_body=preview_body,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        start_body=start_body,
+        review_body=review_body,
+        commit_body=commit_body,
+        submit_body=submit_body,
+        prepare_body=prepare_body,
+        dispatch_body=dispatch_body,
+    )
+    readiness = client.post("/api/v1/layer3/handoff/export/download/prepare", json=prepare_payload)
+    assert readiness.status_code == 200, readiness.json()
+    readiness_body = readiness.json()
+    deliver_payload = _external_export_download_deliver_payload(
+        request_id="api-external-export-download-deliver-missing-artifact-deliver",
+        prepare_payload=prepare_payload,
+        readiness_body=readiness_body,
+    )
+    bundle_path = Path(readiness_body["source_artifact_ref"])
+    archived_dir = tmp_path / "archive"
+    archived_dir.mkdir()
+    archived_bundle_path = archived_dir / bundle_path.name
+    bundle_path.replace(archived_bundle_path)
+    assert not bundle_path.exists()
+    assert archived_bundle_path.exists()
+
+    def files_under_tmp() -> set[str]:
+        return {str(path.relative_to(tmp_path)) for path in tmp_path.rglob("*") if path.is_file()}
+
+    files_before = files_under_tmp()
+    db = client.layer3_session_factory()
+    try:
+        counts_before = {
+            "analysis_artifacts": db.query(AnalysisArtifact).count(),
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "output_packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        }
+        readiness_state_before = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json["external_export_download_prepare"]
+        )
+    finally:
+        db.close()
+
+    delivery = client.post("/api/v1/layer3/handoff/export/download/deliver", json=deliver_payload)
+    assert delivery.status_code == 409
+    body = delivery.json()
+    assert body["schema_id"] == "layer3.workbench_error.v1"
+    assert body["error_code"] == "external_export_download_delivery_source_artifact_unavailable"
+    assert body["blocked_fields"] == ["aps_bundle_ref"]
+    assert "download_url" not in delivery.headers
+    assert "public_url" not in delivery.headers
+    assert "signed_url" not in delivery.headers
+    assert "connector_run_id" not in delivery.headers
+
+    db = client.layer3_session_factory()
+    try:
+        assert {
+            "analysis_artifacts": db.query(AnalysisArtifact).count(),
+            "analysis_runs": db.query(AnalysisRun).count(),
+            "connector_runs": db.query(ConnectorRun).count(),
+            "output_packages": db.query(L3OutputPackage).count(),
+            "pass_runs": db.query(L3PassRun).count(),
+            "reconciliations": db.query(L3ReconciliationRecord).count(),
+        } == counts_before
+        readiness_state_after = (
+            db.query(L3ReconciliationRecord)
+            .filter(L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"])
+            .one()
+            .summary_json["external_export_download_prepare"]
+        )
+        assert readiness_state_after == readiness_state_before
+    finally:
+        db.close()
+    assert files_under_tmp() == files_before
+    assert not bundle_path.exists()
+    assert archived_bundle_path.exists()
+
+
 def test_layer3_api_external_export_download_deliver_malformed_json_fails_closed(
     client: TestClient,
 ) -> None:
